@@ -10,6 +10,17 @@ export interface WorkoutsHeaderProps {
   finishedCount: number;
   onBack: () => void;
   onAddCatalog: () => void;
+  /**
+   * Чи належить поточний вигляд власному МАРШРУТУ (`/fizruk/catalog`,
+   * `/fizruk/templates`). На таких екранах вихід малює шапка модуля
+   * (`FizrukHeader` контекстний back), і друга стрілка тут була б дублем —
+   * саме її бачили поруч із парою «Назад»/«На хаб» (PR-Z7).
+   *
+   * Коли вигляд перемикається ВСЕРЕДИНІ вкладки (`section` не задано),
+   * стрілка тут — єдиний вихід, бо маршрут не змінювався і контекстного
+   * back у шапки немає. Тому прапорець, а не безумовне зняття.
+   */
+  routeOwnsBack?: boolean | undefined;
 }
 
 /**
@@ -24,6 +35,7 @@ export function WorkoutsHeader({
   finishedCount,
   onBack,
   onAddCatalog,
+  routeOwnsBack = false,
 }: WorkoutsHeaderProps) {
   const title =
     view === "catalog"
@@ -47,7 +59,7 @@ export function WorkoutsHeader({
 
   return (
     <div className="flex items-center gap-3 mb-3">
-      {view !== "home" ? (
+      {view !== "home" && !routeOwnsBack ? (
         <button
           type="button"
           className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] -ml-1 rounded-xl flex items-center justify-center text-text hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
@@ -67,7 +79,9 @@ export function WorkoutsHeader({
       </div>
       {view === "catalog" ? (
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           size="sm"
           className="h-9 px-4"
           onClick={onAddCatalog}

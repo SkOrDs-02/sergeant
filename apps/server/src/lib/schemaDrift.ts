@@ -177,9 +177,25 @@ export function __resetSchemaDriftCacheForTests(): void {
  * @param captureMessage Транспорт алерту (у проді — `Sentry.captureMessage`).
  *   Інжектиться, щоб модуль лишався тестованим без Sentry.
  */
+/**
+ * Який саме розлад схеми стався. Два сигнали НЕЗАЛЕЖНІ й можуть спрацювати на
+ * одному й тому ж буті — база вміє бути одночасно і позаду образу, і попереду.
+ *
+ * - `drift` — образ попереду бази: є шиплені міграції, яких база не бачила.
+ *   Ендпоінти, що читають нові колонки, віддаватимуть 500. Це `error`.
+ * - `unknown_migrations` — база попереду образу: у леджері є імена, яких образ
+ *   не шипить. Зазвичай це відкат на старіший реліз. Запити при цьому
+ *   працюють, тож це `warning`, а не `error`.
+ */
+export type SchemaDriftSignal = "drift" | "unknown_migrations";
+
 export async function reportSchemaDriftAtBoot(
   pool: Pick<Pool, "query">,
-  captureMessage: (message: string, context: SchemaDriftReport) => void,
+  captureMessage: (
+    message: string,
+    context: SchemaDriftReport,
+    signal: SchemaDriftSignal,
+  ) => void,
 ): Promise<SchemaDriftReport | null> {
   markSchemaDriftCheckStarted();
 
@@ -198,12 +214,40 @@ export async function reportSchemaDriftAtBoot(
   lastReport = report;
   checkState = "done";
 
+  // Транспорт алерту не має права завалити бут — тому кожен емит загорнутий.
+  const emit = (message: string, signal: SchemaDriftSignal): void => {
+    try {
+      captureMessage(message, report, signal);
+    } catch {
+      /* noop */
+    }
+  };
+
+  // AI-DANGER: цей блок мусить стояти ПЕРЕД раннім виходом по `inSync` і не
+  // залежати від нього.
+  //
+  // `inSync` рахується як `pending.length === 0 && !migrationsDirMissing` —
+  // `unknown` у нього НЕ входить, і це правильно: база попереду образу нічого
+  // не ламає в рантаймі. Але наслідок був той, що щойно `pending` спорожнів,
+  // функція виходила раніше, і `unknown` лишався самим лише рядком у логах.
+  //
+  // Ціна цього — не теоретична (знахідка 2026-09-17). Три легасі-імені з
+  // репозиторію-попередника тримали `unknown` непорожнім місяцями, через що
+  // `MIGRATION_DRIFT_BLOCKS_READINESS` не можна було ввімкнути в принципі:
+  // гейт відкидав би кожен деплой. Полагодила це міграція 143 — і перевірити,
+  // що вона спрацювала, стало НЕМОЖЛИВО з дашборда, бо `pending` на той
+  // момент уже був порожній. Тобто єдине число, заради якого робилась уся
+  // робота, було невидиме саме тоді, коли його треба було прочитати.
   if (report.unknown.length > 0) {
     logger.warn({
       msg: "schema_drift_unknown_migrations",
       unknown: report.unknown,
       hint: "База мігрована далі, ніж цей образ — схоже на відкат на старіший реліз.",
     });
+    emit(
+      `Schema drift: ${report.unknown.length} applied migration(s) are unknown to this image — the database is ahead, which usually means a rollback to an older release.`,
+      "unknown_migrations",
+    );
   }
 
   if (report.inSync) {
@@ -236,11 +280,7 @@ export async function reportSchemaDriftAtBoot(
       : "Pre-deploy міграції не відпрацювали. Запусти `node dist-server/migrate.js` проти цієї бази перед тим, як пускати трафік.",
   });
 
-  try {
-    captureMessage(message, report);
-  } catch {
-    // Транспорт алерту не має права завалити бут.
-  }
+  emit(message, "drift");
 
   return report;
 }

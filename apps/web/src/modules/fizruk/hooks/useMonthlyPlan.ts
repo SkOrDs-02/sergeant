@@ -3,14 +3,15 @@ import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { safeReadLS } from "@shared/lib/storage/storage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { deviceDayKey } from "@sergeant/shared";
 
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractMonthlyPlanSnapshot } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractMonthlyPlanSnapshot,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+  type FizrukIntendedSliceRef,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -28,9 +29,9 @@ interface MonthlyPlanState {
 }
 
 function todayKey() {
-  // Kyiv-anchored day key so the plan's "today" doesn't drift for users whose
-  // host clock is outside Europe/Kyiv (domain invariant: day boundaries in Kyiv).
-  return getKyivDayKey();
+  // Device day key (ADR-0078, рішення власника 2026-09-29): "сьогодні" плану —
+  // та сама доба, що бачить користувач на телефоні.
+  return deviceDayKey();
 }
 
 const DEFAULT_STATE: MonthlyPlanState = {
@@ -69,18 +70,20 @@ function loadInitialState(): MonthlyPlanState {
   return loadState();
 }
 
-function saveState(s: MonthlyPlanState): void {
+function saveState(
+  s: MonthlyPlanState,
+  intended: FizrukIntendedSliceRef<"monthlyPlan">,
+): void {
   // Teardown Phase 3 — SQLite-only write via the dual-write pipeline; the
   // LS mirror was removed. Fire-and-forget; the trigger is a no-op when no
   // dual-write context is registered.
-  const prevDualWrite =
-    peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-  const nextDualWrite = {
-    ...prevDualWrite,
-    monthlyPlan: extractMonthlyPlanSnapshot(s),
-  };
+  const transition = fizrukDualWriteTransition(
+    "monthlyPlan",
+    intended,
+    extractMonthlyPlanSnapshot(s),
+  );
   try {
-    triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+    triggerFizrukDualWrite(transition.prev, transition.next);
   } catch {
     /* trigger is fire-and-forget — never propagate */
   }
@@ -88,6 +91,7 @@ function saveState(s: MonthlyPlanState): void {
 
 export function useMonthlyPlan() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
+  const intended = useFizrukIntendedSlice<"monthlyPlan">(sqliteCacheTick);
   const [state, setState] = useSqliteTickOverlay<MonthlyPlanState>(
     sqliteCacheTick,
     () => {
@@ -106,22 +110,22 @@ export function useMonthlyPlan() {
           reminderHour: Math.max(0, Math.min(23, hour)),
           reminderMinute: Math.max(0, Math.min(59, minute)),
         };
-        saveState(next);
+        saveState(next, intended);
         return next;
       });
     },
-    [setState],
+    [intended, setState],
   );
 
   const setReminderEnabled = useCallback(
     (enabled: boolean) => {
       setState((prev) => {
         const next = { ...prev, reminderEnabled: !!enabled };
-        saveState(next);
+        saveState(next, intended);
         return next;
       });
     },
-    [setState],
+    [intended, setState],
   );
 
   const setDayTemplate = useCallback(
@@ -134,11 +138,11 @@ export function useMonthlyPlan() {
           days[dateKey] = { templateId };
         }
         const next = { ...prev, days };
-        saveState(next);
+        saveState(next, intended);
         return next;
       });
     },
-    [setState],
+    [intended, setState],
   );
 
   const getTemplateForDate = useCallback(

@@ -138,6 +138,26 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
     expect(flat.some((m) => m.text === "Твій баланс — 1000 грн.")).toBe(true);
   });
 
+  it("drops empty assistant replies from history so the server does not 400 the whole thread", async () => {
+    sendMock.mockResolvedValue({ text: "Ок." });
+    const { result } = renderSend([
+      { id: "u1", role: "user", text: "як мої звички" },
+      { id: "a1", role: "assistant", text: "" },
+    ]);
+
+    await act(async () => {
+      await result.current.send("а за місяць?");
+    });
+
+    const payload = sendMock.mock.calls[0]![0] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(payload.messages).toEqual([
+      { role: "user", content: "як мої звички" },
+      { role: "user", content: "а за місяць?" },
+    ]);
+  });
+
   it("runs a validated tool call through executeActions then streams the follow-up", async () => {
     const setMessages = vi.fn();
     sendMock.mockResolvedValue({
@@ -291,6 +311,93 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
   });
 });
 
+// AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — коли
+// синтез (другий тур) падає, картка інструмента вже побудована з результату
+// ВИКОНАННЯ на клієнті. Клас інструмента (`getToolOutcomeClass`) вирішує,
+// як картка про це каже.
+describe("useChatSend — AI-6 картки на провалі синтезу", () => {
+  it("state-mutating (log_water): дія лишається «Виконано», лише дописується примітка", async () => {
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      }
+    });
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 250 } }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 250 мл води" },
+    ]);
+    streamMock.mockRejectedValue(new Error("Денний ліміт AI вичерпано"));
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("випив 250 мл води");
+    });
+
+    const finalMessages = captured.at(-1) ?? [];
+    const assistantMsg = finalMessages.find(
+      (m) => m.role === "assistant" && m.cards && m.cards.length > 0,
+    );
+    expect(assistantMsg).toBeDefined();
+    const card = assistantMsg!.cards!.find((c) => c.toolName === "log_water");
+    expect(card?.status).toBe("completed");
+    expect(card?.summary).toContain("Пояснення не дійшло");
+  });
+
+  it("advice (suggest_meal): картка переходить у failed замість «завершеної» поради", async () => {
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      }
+    });
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "suggest_meal", input: { meal_type: "dinner" } },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      {
+        name: "suggest_meal",
+        result: "Зʼїдено сьогодні: 1200 ккал. Залишилось: 800 ккал.",
+      },
+    ]);
+    streamMock.mockRejectedValue(new Error("Денний ліміт AI вичерпано"));
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("порадь вечерю");
+    });
+
+    const finalMessages = captured.at(-1) ?? [];
+    const assistantMsg = finalMessages.find(
+      (m) => m.role === "assistant" && m.cards && m.cards.length > 0,
+    );
+    expect(assistantMsg).toBeDefined();
+    const card = assistantMsg!.cards!.find(
+      (c) => c.toolName === "suggest_meal",
+    );
+    expect(card?.status).toBe("failed");
+    expect(card?.summary).toBe(
+      "Не вдалося отримати відповідь. Спробуй ще раз.",
+    );
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Гейт підтвердження незворотних дій (канон hub-coach §8).
 //
@@ -321,7 +428,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
 
@@ -347,13 +454,13 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
 
     await waitFor(() =>
       expect(result.current.confirmDestructive.pending?.items).toEqual([
-        { name: "delete_transaction", summary: "транзакція m_42" },
+        { name: "delete_transaction", summary: "операція m_42" },
       ]),
     );
 
@@ -372,7 +479,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
     await waitFor(() =>
@@ -391,7 +498,7 @@ describe("useChatSend — підтвердження незворотних ді
   it("згода → інструмент виконується", async () => {
     destructiveResponse();
     executeActionsMock.mockResolvedValue([
-      { name: "delete_transaction", result: "Транзакцію m_42 видалено" },
+      { name: "delete_transaction", result: "Операцію m_42 видалено" },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "Готово!" }), {
@@ -403,7 +510,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
     await waitFor(() =>
@@ -415,6 +522,110 @@ describe("useChatSend — підтвердження незворотних ді
       await sending;
     });
 
+    await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
+  });
+
+  // B21/B22 (рішення власника 2026-09-29): канали ін'єкції з чужого тексту.
+  describe.each([
+    {
+      name: "remember",
+      input: { fact: "алергія на горіхи", category: "allergy" },
+      summary: "«алергія на горіхи»",
+    },
+    {
+      name: "create_transaction",
+      input: { type: "expense", amount: 200, category: "food" },
+      summary: "витрата 200 грн, food",
+    },
+    {
+      name: "export_module_data",
+      input: { module: "finyk", format: "json" },
+      summary: "модуль finyk, формат json",
+    },
+  ])("$name", ({ name, input, summary }) => {
+    function response() {
+      sendMock.mockResolvedValue({
+        tool_calls: [{ id: "tc1", name, input }],
+        tool_calls_raw: [{ id: "tc1" }],
+      });
+    }
+
+    it("не виконується без згоди («Ні» → нічого не виконано)", async () => {
+      response();
+      const { result } = renderSend();
+
+      let sending!: Promise<void>;
+      await act(async () => {
+        sending = result.current.send("тест");
+        await Promise.resolve();
+      });
+      await waitFor(() =>
+        expect(result.current.confirmDestructive.pending?.items).toEqual([
+          { name, summary },
+        ]),
+      );
+      expect(executeActionsMock).not.toHaveBeenCalled();
+
+      await act(async () => {
+        result.current.confirmDestructive.reject();
+        await sending;
+      });
+      expect(executeActionsMock).not.toHaveBeenCalled();
+      expect(streamMock).not.toHaveBeenCalled();
+    });
+
+    it("після «Так» виконується", async () => {
+      response();
+      executeActionsMock.mockResolvedValue([{ name, result: "ok", ok: true }]);
+      streamMock.mockResolvedValue(
+        new Response(JSON.stringify({ text: "Готово!" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const { result } = renderSend();
+
+      let sending!: Promise<void>;
+      await act(async () => {
+        sending = result.current.send("тест");
+        await Promise.resolve();
+      });
+      await waitFor(() =>
+        expect(result.current.confirmDestructive.pending).not.toBeNull(),
+      );
+      await act(async () => {
+        result.current.confirmDestructive.accept();
+        await sending;
+      });
+      await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
+    });
+  });
+
+  it("бюджетний тул з undo (B39) виконується БЕЗ діалогу", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        {
+          id: "tc1",
+          name: "set_budget_limit",
+          input: { category_id: "food", limit: 5000 },
+        },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "set_budget_limit", result: "ok", ok: true },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const { result } = renderSend();
+    await act(async () => {
+      await result.current.send("постав ліміт");
+    });
+    expect(result.current.confirmDestructive.pending).toBeNull();
     await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
   });
 
@@ -440,7 +651,7 @@ describe("useChatSend — підтвердження незворотних ді
     const { result } = renderSend();
 
     await act(async () => {
-      await result.current.send("сховай транзакцію m_7");
+      await result.current.send("сховай операцію m_7");
     });
 
     expect(result.current.confirmDestructive.pending).toBeNull();

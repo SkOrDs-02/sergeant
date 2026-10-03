@@ -138,7 +138,7 @@ describe("convertUnits", () => {
       name: "convert_units",
       input: { value: 100, from: "kg", to: "lb" },
     });
-    expect(result).toContain("220.46");
+    expect(result).toContain("220,46");
   });
 
   it("converts lb to kg correctly", () => {
@@ -162,7 +162,7 @@ describe("convertUnits", () => {
       name: "convert_units",
       input: { value: 10, from: "km", to: "mi" },
     });
-    expect(result).toContain("6.21");
+    expect(result).toContain("6,21");
   });
 
   it("converts kcal to kj", () => {
@@ -170,6 +170,6 @@ describe("convertUnits", () => {
       name: "convert_units",
       input: { value: 100, from: "kcal", to: "kj" },
     });
-    expect(result).toContain("418.4");
+    expect(result).toContain("418,4");
   });
 });

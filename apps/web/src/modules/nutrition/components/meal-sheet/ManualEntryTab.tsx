@@ -75,7 +75,7 @@ export function ManualEntryTab({
                   "transition-[background-color,color] focus-visible:outline-none",
                   "focus-visible:ring-2 focus-visible:ring-nutrition/60",
                   isActive
-                    ? "bg-nutrition-strong text-white"
+                    ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
                     : "text-muted hover:text-text",
                 )}
               >
@@ -98,14 +98,15 @@ export function ManualEntryTab({
         <PackageEntryStep onCreated={onCreated} />
       ) : (
         <>
-          <p className="text-style-caption text-muted">
+          <p className="text-style-body text-muted">
             Далі введеш назву й КБЖВ за всю порцію: так, як зʼїв. Вага тут не
             потрібна, а запис у пошук не потрапляє.
           </p>
           <Button
             type="button"
-            variant="primary"
-            module="nutrition"
+            variant="solid"
+            tone="nutrition"
+
             className="w-full min-h-[44px]"
             onClick={onWholeMeal}
           >

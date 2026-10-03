@@ -10,8 +10,7 @@
  * (`useExerciseCatalog`, `useWorkouts`, `useRecovery`,
  * `useWorkoutTemplates`, `useMonthlyPlan`, `useMeasurements`,
  * `useRestDayOverdueInsight`, `usePrPendingInsight`, `usePrLatest`,
- * `useActiveFizrukWorkout`, `useAuth`) plus its 4 real children
- * (`HeroCard`, `StatusStrip`, `RecentWorkoutsSection`, `PrBadge`) to
+ * `useActiveFizrukWorkout`, `useAuth`) plus its real children to
  * `data-testid` divs, and asserted only "mounts without crashing" /
  * testid-presence — none of it protected the props contract between
  * `Dashboard` and its children.
@@ -21,12 +20,15 @@
  * `FizrukApp` shell, out of scope for a page-level test) or plain
  * `localStorage`/pure-selector hooks — with **no network calls and no
  * heavy browser API**, so none of them need mocking: this file renders
- * them for real, plus the real `HeroCard`/`StatusStrip`/
- * `RecentWorkoutsSection`/`PrBadge` children, wired to a real
- * `AuthProvider`/`ApiClientProvider` and a real MSW `/api/v1/me`
- * transport (the only network call in the render tree).
+ * them for real, plus the real `HeroCard`/`RecentWorkoutsSection`/
+ * `PrBadge` children, wired to a real `AuthProvider`/`ApiClientProvider`
+ * and a real MSW `/api/v1/me` transport (the only network call in the
+ * render tree). `HeroCard`'s old streak/week sibling — a three-tile strip
+ * rendered below it — is gone (спека `fizruk-hero-recovery-bars.md`
+ * рішення 3): that readout moved into the hero's own kicker.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import type { ComponentProps } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -40,7 +42,11 @@ import { server } from "../../../test/msw/server";
 import { Dashboard } from "./Dashboard";
 
 const mockNavigate = vi.fn();
-const defaultProps = {
+// Типізовано САМИМ пропсовим типом сторінки, а не виведено з літерала:
+// `Partial<typeof defaultProps>` звужував перекриття до тих ключів, що тут
+// перелічені, тож новий опційний проп не можна було передати в
+// `renderDashboard` взагалі — помилка типу, а не пропущений кейс.
+const defaultProps: ComponentProps<typeof Dashboard> = {
   onOpenPrograms: vi.fn(),
   activeProgram: null,
   todaySession: null,
@@ -75,7 +81,9 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function renderDashboard(props: Partial<typeof defaultProps> = {}) {
+function renderDashboard(
+  props: Partial<ComponentProps<typeof Dashboard>> = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -91,7 +99,7 @@ function renderDashboard(props: Partial<typeof defaultProps> = {}) {
 }
 
 describe("Dashboard — guest, no data (real hooks + real children)", () => {
-  it("renders the real HeroCard empty state with a Kyiv-anchored greeting", async () => {
+  it("renders the real HeroCard empty state with the date+streak kicker", async () => {
     renderDashboard();
 
     // Real sr-only page heading (not a stubbed testid).
@@ -100,9 +108,11 @@ describe("Dashboard — guest, no data (real hooks + real children)", () => {
     ).toBeInTheDocument();
 
     // Real `HeroCard` in its "empty" state (no templates, no active
-    // workout, no plan session) renders the Kyiv-anchored greeting +
-    // date kicker and the "no templates yet" copy.
-    expect(screen.getByText(/Доброго ранку ·/)).toBeInTheDocument();
+    // workout, no plan session) renders the kicker and the "no templates yet"
+    // copy. With no streak and no workouts the kicker is the date alone:
+    // zeros («серія 0 тижн. · 0 тренувань») are not shown on first run.
+    expect(screen.queryByText(/серія/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 тренувань/)).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Створити шаблон" }),
     ).toBeInTheDocument();
@@ -111,60 +121,87 @@ describe("Dashboard — guest, no data (real hooks + real children)", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the real StatusStrip with zero-state KPI chips", async () => {
+  it("renders the hero body-empty message for a guest with no training history (рішення 1)", async () => {
     renderDashboard();
-    const strip = await screen.findByRole("region", {
-      name: "Статус: готовність, серія, тиждень",
-    });
     expect(
-      screen.getByRole("button", { name: /Готовність: ОК/ }),
+      await screen.findByText(/Тіло ще не має історії/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Серія: 0 тижнів/ }),
-    ).toBeInTheDocument();
-    expect(strip).toBeInTheDocument();
   });
 
   it("does not render RecentWorkoutsSection when there are no completed workouts", async () => {
     renderDashboard();
-    await screen.findByText(/Доброго ранку ·/);
+    await screen.findByRole("button", { name: "Створити шаблон" });
     expect(
       screen.queryByRole("heading", { name: "Останні тренування" }),
     ).not.toBeInTheDocument();
   });
 
-  it("clicking the hero's 'Створити шаблон' CTA navigates to Workouts in templates mode (real sessionStorage write)", async () => {
+  it("CTA шаблонів веде на власний маршрут і НЕ пише прапорець у sessionStorage", async () => {
+    // PR-Z8. Перевірка навмисно тримає обидві половини: і куди ведемо, і
+    // що сховище лишається чистим. Сама лише перша половина пройшла б і
+    // тоді, коли б запис прапорця забули прибрати, — а це саме той
+    // безадресний вхід, задля зняття якого правка й робилась.
     const user = userEvent.setup();
     renderDashboard();
     await user.click(
       await screen.findByRole("button", { name: "Створити шаблон" }),
     );
-    expect(mockNavigate).toHaveBeenCalledWith("workouts");
-    expect(window.sessionStorage.getItem("fizruk_workouts_mode")).toBe(
-      "templates",
-    );
+    expect(mockNavigate).toHaveBeenCalledWith("templates");
+    expect(window.sessionStorage.getItem("fizruk_workouts_mode")).toBeNull();
   });
 
-  it("clicking the 'Готовність' status chip navigates to Тіло (real onNavigate wiring)", async () => {
-    const user = userEvent.setup();
+  it("порожній план БЕЗ `onQuickStart` лишає стару пару кнопок", () => {
+    // Парний до наступного: доводить, що нова головна кнопка з'являється
+    // САМЕ від пропа, а не завжди. Без цього кейсу тест нижче не відрізняв
+    // би «кнопка з'явилась, бо є проп» від «кнопка з'явилась завжди».
     renderDashboard();
+    expect(
+      screen.queryByRole("button", { name: "Швидкий старт" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("порожній план пропонує ПОЧАТИ, коли старт доступний", async () => {
+    // PR-Z6. До цього на першому запуску Огляд не мав жодної кнопки, що
+    // стартує тренування: «Створити шаблон» і «До програм» вели у списки,
+    // а єдиний старт жив на сусідній вкладці «Тренування».
+    const user = userEvent.setup();
+    const onQuickStart = vi.fn();
+    renderDashboard({ onQuickStart });
+
     await user.click(
-      await screen.findByRole("button", { name: /Готовність: ОК/ }),
+      await screen.findByRole("button", { name: "Швидкий старт" }),
     );
-    expect(mockNavigate).toHaveBeenCalledWith("body");
+    expect(onQuickStart).toHaveBeenCalledTimes(1);
+
+    // Шлях до шаблонів не зник, а опустився на щабель нижче — інакше
+    // правка міняла б одну відсутню дію на іншу.
+    expect(
+      screen.getByRole("button", { name: /створити шаблон/i }),
+    ).toBeInTheDocument();
   });
 });
 
 describe("Dashboard — signed-in visitor before hydration", () => {
-  it("shows the loading skeleton instead of the hero until the SQLite warm cache boots", async () => {
+  // Перевернуто 2026-09-14 (PR-Z9). Тест стверджував, що скелетон стоїть
+  // «поки `workoutsLoaded`/`templatesLoaded` false», і власним коментарем
+  // пояснював, що в цьому дереві `useFizrukSqliteReadBoot` НЕМАЄ взагалі —
+  // тобто пінив стан, з якого немає виходу: без бута прапорці не стануть
+  // `true` ніколи, і скелетон вічний. Те саме ставалось у продакшні, коли
+  // бут падав (`getSqliteDb()` перекидає помилку, поруч `migrateFizruk`).
+  //
+  // Новий контракт: скелетон тримається на «бут ЗАРАЗ у польоті». Коли
+  // бута немає — як у цьому дереві — малюється вміст, а не очікування.
+  it("без бута читання малює вміст, а не вічний скелетон", async () => {
     server.use(meAuthenticatedHandler());
     renderDashboard();
 
+    // Той самий якір, що й у сусідніх кейсах цього файлу: заголовок
+    // сторінки з'являється лише коли рендериться справжнє тіло, не скелетон.
     expect(
-      await screen.findByRole("status", { name: "Завантаження дашборду" }),
+      await screen.findByRole("heading", { name: "Огляд", hidden: true }),
     ).toBeInTheDocument();
-    // The hero never mounts while `workoutsLoaded`/`templatesLoaded` are
-    // false (no `useFizrukSqliteReadBoot` in this page-level tree).
-    expect(screen.queryByText(/Доброго ранку ·/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("status", { name: "Завантаження дашборду" }),
+    ).not.toBeInTheDocument();
   });
 });

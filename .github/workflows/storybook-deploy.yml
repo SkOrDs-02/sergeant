@@ -1,7 +1,7 @@
 name: Storybook deploy
 
-# Owner: @SkOrDs-02 (solo maintainer).
-# Initiative: docs/90-work/initiatives/archive/_0007-design-system-tooling.md (Phase 5).
+# Owner: @klas149 (solo maintainer).
+# Initiative: https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0007-design-system-tooling.md (Phase 5).
 #
 # Builds the @sergeant/web Storybook on every push to `main` and publishes
 # the static output to GitHub Pages so reviewers + designers always have a
@@ -21,20 +21,9 @@ name: Storybook deploy
 # repeated failure (> 2x/week) → reopen and pair with the round-N
 # initiative author.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/web/**"
-      - "packages/design-tokens/**"
-      - ".github/workflows/storybook-deploy.yml"
-      - "mockups/**"
-  pull_request:
-    paths:
-      - "apps/web/**"
-      - "packages/design-tokens/**"
-      - ".github/workflows/storybook-deploy.yml"
-      - "mockups/**"
+  workflow_dispatch:
 
 permissions:
   contents: read

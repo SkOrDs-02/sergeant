@@ -3,8 +3,6 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { WarmupCooldownChecklist } from "./WarmupCooldownChecklist";
 
-const color = { border: "border-fizruk/30", text: "text-fizruk" };
-
 describe("WarmupCooldownChecklist", () => {
   afterEach(cleanup);
 
@@ -16,7 +14,6 @@ describe("WarmupCooldownChecklist", () => {
         items={null}
         onToggle={vi.fn()}
         onInit={onInit}
-        color={color}
       />,
     );
 
@@ -36,7 +33,6 @@ describe("WarmupCooldownChecklist", () => {
         ]}
         onToggle={onToggle}
         onInit={vi.fn()}
-        color={color}
       />,
     );
 
@@ -57,7 +53,6 @@ describe("WarmupCooldownChecklist", () => {
         ]}
         onToggle={vi.fn()}
         onInit={vi.fn()}
-        color={color}
       />,
     );
 
@@ -81,7 +76,6 @@ describe("WarmupCooldownChecklist", () => {
         items={[{ id: "a", label: "Біг", done: true }]}
         onToggle={vi.fn()}
         onInit={vi.fn()}
-        color={color}
       />,
     );
 

@@ -78,7 +78,15 @@ export function useRecurringDetectedInsight({
       title: `Знайшов повторення: ${merchantName}`,
       subtitle: `~${amountDisplay} ${symbol} щомісяця. Зробити регулярним платежем?`,
       askAiPrompt: `Схоже, зʼявився регулярний платіж "${merchantName}" ~${amountDisplay} ${symbol}/міс. Підкажи, як його краще обліковувати і чи не дублюється він із наявними.`,
-      action: { type: "navigate", path: "/finyk/assets" },
+      // AI-CONTEXT: до 2026-09-13 вело на `/finyk/assets` — сторінку, де
+      // підписки й «Можливі підписки» жили ДО переносу 2026-09-03
+      // (`PlanningSubscriptions`, рішення власника: «Активи» — це баланс,
+      // усе про майбутнє — Планування). Після переносу тап по інсайту був
+      // редіректом у нікуди: на «Активах» кандидата вже не показує ніщо.
+      // `?section=recurring` не просто веде на потрібну сторінку, а й
+      // розкриває сам блок «Можливі підписки» — інакше юзер приїжджає на
+      // згорнутий акордеон і знову не бачить, що саме знайдено.
+      action: { type: "navigate", path: "/finyk/budgets?section=recurring" },
       // Stays "module" post-Phase 5e: recurring-detection prompt needs the
       // in-Finyk tx history preview to be persuasive — surfacing on Hub
       // without the merchant pattern context = weak conversion.

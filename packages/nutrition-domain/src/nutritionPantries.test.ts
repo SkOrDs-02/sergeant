@@ -3,6 +3,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_PLACE_ID,
+  STORAGE_PLACES,
+  ensureStoragePlaces,
+  isKnownStoragePlace,
   makeDefaultPantry,
   normalizePantries,
   updatePantry,
@@ -12,7 +16,7 @@ import type { Pantry } from "./nutritionTypes.js";
 describe("makeDefaultPantry", () => {
   it("повертає початковий 'home' Pantry з порожніми items + text", () => {
     const p = makeDefaultPantry();
-    expect(p).toEqual({ id: "home", name: "Дім", items: [], text: "" });
+    expect(p).toEqual({ id: "home", name: "Комора", items: [], text: "" });
   });
 
   it("кожен виклик дає НОВИЙ обʼєкт (не shared reference)", () => {
@@ -21,6 +25,61 @@ describe("makeDefaultPantry", () => {
     expect(a).not.toBe(b);
     a.items.push({ name: "x", qty: 1, unit: null, notes: null });
     expect(b.items).toEqual([]);
+  });
+});
+
+describe("storage places", () => {
+  it("exposes stable known places and the legacy default id", () => {
+    expect(DEFAULT_PLACE_ID).toBe("home");
+    expect(STORAGE_PLACES.map((place) => place.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+    ]);
+    expect(isKnownStoragePlace("home")).toBe(true);
+    expect(isKnownStoragePlace("fridge")).toBe(true);
+    expect(isKnownStoragePlace("unknown")).toBe(false);
+    expect(isKnownStoragePlace(null)).toBe(false);
+  });
+
+  it("creates missing places without moving legacy or custom data", () => {
+    const legacy = {
+      id: "home",
+      name: "Дім",
+      items: [{ name: "Хліб", qty: 1, unit: "шт", notes: null }],
+      text: "старі дані",
+    };
+    const custom = { id: "garage", name: "Гараж", items: [], text: "" };
+    const result = ensureStoragePlaces([legacy, custom]);
+
+    expect(result.map((pantry) => pantry.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+      "garage",
+    ]);
+    expect(result[2]).toMatchObject({
+      id: "home",
+      name: "Комора",
+      text: "старі дані",
+    });
+    expect(result[2]!.items).toEqual(legacy.items);
+    expect(result[3]).toBe(custom);
+  });
+
+  it("keeps user-renamed known places and handles missing input", () => {
+    expect(ensureStoragePlaces(undefined)).toEqual([
+      { id: "fridge", name: "Холодильник", items: [], text: "" },
+      { id: "freezer", name: "Морозилка", items: [], text: "" },
+      { id: "home", name: "Комора", items: [], text: "" },
+    ]);
+    const renamed = {
+      id: "fridge",
+      name: "Маленький холодильник",
+      items: [],
+      text: "",
+    };
+    expect(ensureStoragePlaces([renamed])[0]).toBe(renamed);
   });
 });
 
@@ -98,11 +157,47 @@ describe("normalizePantries", () => {
       normalizePantries([{ id: "p1", name: "X", items: "garbage" }]),
     ).toMatchObject([{ items: [] }]);
   });
+
+  it("normalizes valid sources and drops malformed ones", () => {
+    const [pantry] = normalizePantries([
+      {
+        id: "p1",
+        items: [
+          {
+            name: "Молоко",
+            qty: 2,
+            unit: "л",
+            sources: [
+              {
+                name: "Молоко 0.9 л",
+                qty: 2,
+                unit: "0.9л",
+                addedAt: undefined,
+                packCount: 2,
+              },
+              { name: "", qty: 1, unit: "шт" },
+              { name: "Сміття", qty: 0, unit: "шт" },
+              null,
+            ],
+          },
+        ],
+      },
+    ]);
+    expect(pantry!.items[0]!.sources).toEqual([
+      {
+        name: "Молоко 0.9 л",
+        qty: 2,
+        unit: "0.9л",
+        addedAt: null,
+        packCount: 2,
+      },
+    ]);
+  });
 });
 
 describe("updatePantry", () => {
   const items: Pantry[] = [
-    { id: "home", name: "Дім", items: [], text: "" },
+    { id: "home", name: "Комора", items: [], text: "" },
     { id: "office", name: "Офіс", items: [], text: "lunch" },
   ];
 
@@ -126,7 +221,7 @@ describe("updatePantry", () => {
     expect(next).toHaveLength(3);
     expect(next[0]).toEqual({
       id: "home",
-      name: "Дім",
+      name: "Комора",
       items: [],
       text: "fresh",
     });
@@ -147,7 +242,7 @@ describe("updatePantry", () => {
       text: "init",
     }));
     expect(next).toEqual([
-      { id: "home", name: "Дім", items: [], text: "init" },
+      { id: "home", name: "Комора", items: [], text: "init" },
     ]);
   });
 });

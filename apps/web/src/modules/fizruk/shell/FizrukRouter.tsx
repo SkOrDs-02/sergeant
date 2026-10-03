@@ -29,6 +29,8 @@ const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   exercise: "Не вдалось показати вправу",
   workout: "Не вдалось показати активне тренування",
   history: "Не вдалось показати історію тренувань",
+  catalog: "Не вдалось показати каталог вправ",
+  templates: "Не вдалось показати шаблони",
 };
 
 // Per-page lazy chunks. Previously this file eager-imported all nine
@@ -63,11 +65,24 @@ export interface FizrukRouterProps {
   page: FizrukPage;
   exerciseId?: string | undefined;
   workoutId?: string | undefined;
+  /** `workout/<id>/<itemId>` — вправа, відкрита на весь екран у сесії. */
+  workoutItemId?: string | undefined;
+  /**
+   * Спека `fizruk-hero-recovery-bars.md` рішення 4 — атласна зона (або
+   * зона травми), яку hero-рядок просить підсвітити на сторінці «Атлас».
+   */
+  atlasMuscleId?: string | undefined;
   activeProgramId: string | null;
   activeProgram: TrainingProgramDef | null;
   activateProgram: (id: string) => void;
   deactivateProgram: () => void;
   todaySession: RouterTodaySession | null;
+  /**
+   * Лічильник запитів «відкрити аркуш „Почати тренування“» (PWA-інтент
+   * `start_workout`, клавіша `N`). Кожен інкремент відкриває аркуш на
+   * домашній «Тренувань»; `0` — нічого не просили.
+   */
+  quickStartRequest?: number | undefined;
   /**
    * Switch the active Fizruk page. Accepts either a typed `FizrukPage`
    * (`onNavigate("workouts")`) or a `<page>/<segment>` deep-link string
@@ -76,6 +91,7 @@ export interface FizrukRouterProps {
    * deep-link without reaching into `window.location.hash`.
    */
   onNavigate: (target: FizrukPage | string) => void;
+  onQuickStart: () => void;
   onStartProgramWorkout: (
     session: ProgramSessionDef,
     program: TrainingProgramDef,
@@ -89,13 +105,17 @@ function renderPage(props: FizrukRouterProps) {
     page,
     exerciseId,
     workoutId,
+    workoutItemId,
+    atlasMuscleId,
     activeProgramId,
     activeProgram,
     activateProgram,
     deactivateProgram,
     todaySession,
+    quickStartRequest,
     onNavigate,
     onStartProgramWorkout,
+    onQuickStart,
     onOpenModule,
   } = props;
   switch (page) {
@@ -106,12 +126,25 @@ function renderPage(props: FizrukRouterProps) {
           activeProgram={activeProgram}
           todaySession={todaySession}
           onStartProgramWorkout={onStartProgramWorkout}
+          onQuickStart={onQuickStart}
           onNavigate={onNavigate}
         />
       );
     case "atlas":
-      return <Atlas onOpenBody={() => onNavigate("body")} />;
-    case "workouts":
+      return (
+        <Atlas
+          onOpenBody={() => onNavigate("body")}
+          focusMuscleId={atlasMuscleId}
+        />
+      );
+    case "workouts": {
+      // Плитка «За програмою» в аркуші «Почати тренування» — той самий
+      // старт, що й hero-картка Огляду; без активної програми чи без сесії
+      // на сьогодні плитки немає.
+      const programSession =
+        activeProgram && todaySession
+          ? activeProgram.sessions?.[todaySession.sessionKey]
+          : undefined;
       return (
         <Workouts
           onOpenRoutine={
@@ -119,12 +152,31 @@ function renderPage(props: FizrukRouterProps) {
               ? () => onOpenModule("routine", { hash: "calendar" })
               : undefined
           }
+          quickStartRequest={quickStartRequest}
           onNavigate={onNavigate}
+          programStart={
+            programSession && activeProgram && todaySession
+              ? {
+                  label: todaySession.name,
+                  onStart: () =>
+                    onStartProgramWorkout(programSession, activeProgram),
+                }
+              : undefined
+          }
         />
       );
+    }
+    case "catalog":
+      return <Workouts section="catalog" onNavigate={onNavigate} />;
+    case "templates":
+      return <Workouts section="templates" onNavigate={onNavigate} />;
     case "workout":
       return (
-        <ActiveWorkout workoutId={workoutId ?? ""} onNavigate={onNavigate} />
+        <ActiveWorkout
+          workoutId={workoutId ?? ""}
+          focusItemId={workoutItemId}
+          onNavigate={onNavigate}
+        />
       );
     case "history":
       return <WorkoutHistory onNavigate={onNavigate} />;

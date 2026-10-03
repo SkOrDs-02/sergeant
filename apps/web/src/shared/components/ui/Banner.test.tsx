@@ -14,8 +14,11 @@ describe("Banner", () => {
     const banner = screen.getByTestId("banner");
     expect(banner).toHaveTextContent("Синхронізація готова");
     expect(banner).toHaveAttribute("aria-live", "polite");
-    expect(banner.className).toContain("bg-panelHi/60");
-    expect(banner.className).toContain("text-text");
+    // Суцільна заливка, не напівпрозора: `bg-panelHi/60` змішувалась із тлом
+    // під банером і втрачала відмінність від нього (хвиля 5 аудиту
+    // контрасту). `toHaveClass` звіряє токен класу цілком, а не підрядок.
+    expect(banner).toHaveClass("bg-panelHi", "border-line", "text-text");
+    expect(banner.className).not.toMatch(/bg-panelHi\//);
   });
 
   it.each([
@@ -55,7 +58,10 @@ describe("Banner", () => {
     );
 
     const banner = screen.getByTestId("banner");
-    expect(banner.className).toContain("bg-panelHi/60");
-    expect(banner.className).toContain("text-text");
+    // Суцільна заливка, не напівпрозора: `bg-panelHi/60` змішувалась із тлом
+    // під банером і втрачала відмінність від нього (хвиля 5 аудиту
+    // контрасту). `toHaveClass` звіряє токен класу цілком, а не підрядок.
+    expect(banner).toHaveClass("bg-panelHi", "border-line", "text-text");
+    expect(banner.className).not.toMatch(/bg-panelHi\//);
   });
 });

@@ -1,16 +1,14 @@
 name: Docs freshness check
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "**/*.md"
-      - "scripts/docs/**"
-      - ".github/workflows/docs-freshness.yml"
+  schedule:
+    - cron: "50 5 * * 1"
 
 permissions:
   issues: write
@@ -55,6 +53,13 @@ jobs:
         # Always produce the dashboard so engineers can download a single
         # HTML file from any run instead of grepping the allowlist or the
         # open-issues list.
+        #
+        # З 2026-10-01 це ЄДИНА опублікована копія дашборда: у репо він не
+        # комітиться (gitignored). `OUTPUT` обовʼязковий: без нього генератор
+        # писав у `docs/governance/governance/`, а крок нижче вивантажував
+        # `dist/…`, якого не існувало, тож артефакт виходив порожнім.
+        env:
+          OUTPUT: dist/freshness-dashboard.html
         run: node scripts/docs/generate-freshness-dashboard.mjs
 
       - name: Upload freshness dashboard
@@ -63,4 +68,7 @@ jobs:
         with:
           name: docs-freshness-dashboard
           path: dist/freshness-dashboard.html
+          # `error`, а не дефолтний `warn`: розходження шляхів тут уже раз
+          # мовчки давало порожній артефакт.
+          if-no-files-found: error
           retention-days: 30

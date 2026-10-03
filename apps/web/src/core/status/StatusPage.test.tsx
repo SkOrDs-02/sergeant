@@ -149,6 +149,13 @@ describe("StatusPage", () => {
     expect(
       screen.getByTestId("status-row-console-bot").getAttribute("data-status"),
     ).toBe("degraded");
+    // Regression: `status-timestamp` used to carry `opacity-80`, which
+    // dilutes the danger-variant `text-danger-soft-fg` colour below AA
+    // (3.96:1 measured vs. ≥4.5:1 required) when the overall banner paints
+    // danger (status === "down").
+    expect(
+      screen.getByTestId("status-timestamp").className.split(/\s+/),
+    ).not.toContain("opacity-80");
   });
 
   it("renders an error card with retry when fetch returns non-2xx", async () => {
@@ -159,6 +166,23 @@ describe("StatusPage", () => {
     );
     expect(screen.getByTestId("status-error").textContent).toContain("503");
     expect(screen.getByRole("button", { name: /Спробувати ще/ })).toBeTruthy();
+  });
+
+  it("не розбавляє danger-текст `opacity-80` — regression на axe-порушення 3.96:1 (потрібно ≥4.5:1)", async () => {
+    // Element-level opacity blends `text-danger-soft-fg` toward `bg-danger-soft`
+    // and dropped the effective colour to #c74444 on #fee2e2 (3.96:1). The
+    // token alone clears AA (~5.3:1); diluting it with opacity must not come
+    // back.
+    mockFetchHttpError(503);
+    render(<StatusPage />);
+    await waitFor(() =>
+      expect(screen.getByTestId("status-error")).toBeTruthy(),
+    );
+    const errorCard = screen.getByTestId("status-error");
+    const spans = Array.from(errorCard.querySelectorAll("span"));
+    for (const span of spans) {
+      expect(span.className.split(/\s+/)).not.toContain("opacity-80");
+    }
   });
 
   it("renders an error card when fetch throws (network down)", async () => {
@@ -175,6 +199,79 @@ describe("StatusPage", () => {
       "Не вдалося завантажити статус сервісу.",
     );
     expect(errorCard.textContent).not.toContain("Failed to fetch");
+  });
+
+  // Браузерний свіп 2026-09-16: `/status` білів екраном на 200-ці з іншою
+  // формою тіла — рендер робив `data.components.map` після голого
+  // `as StatusResponse`, і незловлений `TypeError: Cannot read properties
+  // of undefined (reading 'map')` вбивав сторінку. Це найгірший режим
+  // відмови саме тут: сторінку відкривають, щоб дізнатись, чи все працює.
+  // Картка помилки на сторінці вже була — бракувало лише перевірки форми.
+  it.each([
+    ["порожній обʼєкт", {}],
+    ["без `components`", { status: "operational", timestamp: "2026-05-13" }],
+    [
+      "`components` не масив",
+      { status: "operational", timestamp: "2026-05-13", components: {} },
+    ],
+    [
+      "рядок замість компонента",
+      {
+        status: "operational",
+        timestamp: "2026-05-13",
+        components: ["server"],
+      },
+    ],
+    [
+      "компонент без `label`",
+      {
+        status: "operational",
+        timestamp: "2026-05-13",
+        components: [{ id: "server", status: "operational" }],
+      },
+    ],
+    ["null", null],
+    ["масив замість обʼєкта", []],
+  ])(
+    "показує картку помилки, а не падає, коли тіло 200-ки має форму: %s",
+    async (_label, body) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({
+          ok: true,
+          status: 200,
+          json: async () => body,
+        })) as unknown as typeof fetch,
+      );
+      render(<StatusPage />);
+      await waitFor(() =>
+        expect(screen.getByTestId("status-error")).toBeTruthy(),
+      );
+      expect(screen.queryByTestId("status-ready")).toBeNull();
+      expect(screen.getByTestId("status-error").textContent).toContain(
+        "Не вдалося завантажити статус сервісу.",
+      );
+    },
+  );
+
+  // Зворотний бік того ж гейта: валідне тіло з `lastIncident` мусить і далі
+  // рендеритись, інакше перевірка форми зайшла б надто далеко.
+  it("приймає валідне тіло з `lastIncident`", async () => {
+    mockFetchOk(
+      buildResponse({
+        lastIncident: {
+          at: new Date("2026-05-12T09:00:00.000Z").toISOString(),
+          component: "database",
+        },
+      }),
+    );
+    render(<StatusPage />);
+    await waitFor(() =>
+      expect(screen.getByTestId("status-ready")).toBeTruthy(),
+    );
+    expect(screen.getByTestId("status-last-incident").textContent).toContain(
+      "Останній інцидент:",
+    );
   });
 
   it("retries on button click after an error", async () => {

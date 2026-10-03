@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  within,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -171,6 +178,9 @@ function buildStorage(
     manualExpenses: [],
     addManualExpense: vi.fn(),
     removeManualExpense: vi.fn(),
+    manualDebts: [],
+    setManualDebts: vi.fn(),
+    setLinkedTxRole: vi.fn(),
     ...overrides,
   };
 }
@@ -216,6 +226,154 @@ describe("Transactions page shell", () => {
     vi.useRealTimers();
   });
 
+  it("дрил-даун з Аналітики: категорія за минулий місяць відкриває Операції на тому ж місяці", () => {
+    const fetchMonth = vi.fn(() => Promise.resolve());
+    const mayTime = Math.floor(
+      new Date("2026-05-12T12:00:00+03:00").getTime() / 1000,
+    );
+    const foodMay = {
+      ...mkJuneTx("food-may", -100, { time: mayTime }),
+      description: "Травнева їжа",
+      date: "2026-05-12",
+    };
+    const taxiMay = {
+      ...mkJuneTx("taxi-may", -200, { time: mayTime }),
+      description: "Травневе таксі",
+      date: "2026-05-12",
+    };
+    renderTransactions({
+      mono: { fetchMonth, historyTx: [foodMay, taxiMay] },
+      storage: {
+        txCategories: { "food-may": "food", "taxi-may": "transport" },
+      },
+      categoryFilter: "food",
+      categoryMonth: { year: 2026, month: 5 },
+    });
+    expect(screen.getByText(/травень 2026/i)).toBeInTheDocument();
+    expect(fetchMonth).toHaveBeenCalledWith(2026, 4);
+    // Лишився рівно один рядок (категорія «food»), а не всі два за травень.
+    expect(
+      screen.getByRole("button", { name: "Вивантажити операції у CSV: 1" }),
+    ).toBeInTheDocument();
+  });
+
+  describe("CSV-експорт: коли казати «Вивантажено»", () => {
+    // Справжній ланцюжок `exportTransactionsCsv` → `saveStringAsFile`;
+    // підмінена лише межа браузера: blob-URL, клік по `<a download>`,
+    // `navigator.share` і ознаки iOS standalone-PWA. Деталі віддачі файла
+    // пінує `shared/lib/ui/export.test.ts`.
+    const NAV_PROPS = ["share", "canShare", "standalone"] as const;
+    let createObjectURL: ReturnType<typeof vi.fn>;
+    let downloadName: string | null;
+
+    beforeEach(() => {
+      createObjectURL = vi.fn(() => "blob:mock-url");
+      Object.defineProperty(URL, "createObjectURL", {
+        value: createObjectURL,
+        configurable: true,
+      });
+      Object.defineProperty(URL, "revokeObjectURL", {
+        value: vi.fn(),
+        configurable: true,
+      });
+      downloadName = null;
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+        function (this: HTMLAnchorElement) {
+          downloadName = this.download;
+        },
+      );
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      for (const key of NAV_PROPS) {
+        Reflect.deleteProperty(navigator, key);
+      }
+    });
+
+    /** iOS standalone-PWA з `navigator.share`, що відповідає `share`. */
+    function asIosPwa(share: () => Promise<void>) {
+      vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+      );
+      const shareFn = vi.fn(share);
+      Object.defineProperty(navigator, "standalone", {
+        value: true,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, "canShare", {
+        value: () => true,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, "share", {
+        value: shareFn,
+        configurable: true,
+      });
+      return shareFn;
+    }
+
+    const clickExport = async () => {
+      renderTransactions({ mono: { realTx: [SAMPLE_TX] } });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: /Вивантажити операції у CSV/ }),
+        );
+      });
+    };
+
+    it("звичайне завантаження → тост із кількістю рядків і файл видимого місяця", async () => {
+      await clickExport();
+      expect(downloadName).toBe("finyk-2026-06.csv");
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+      expect(mockToast.error).not.toHaveBeenCalled();
+    });
+
+    it("iOS PWA: файл іде в «Поділитись», тост після шерингу", async () => {
+      const share = asIosPwa(() => Promise.resolve());
+      await clickExport();
+      expect(share).toHaveBeenCalledTimes(1);
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+    });
+
+    it("скасування аркуша «Поділитись» — без тосту: вивантаження не було", async () => {
+      asIosPwa(() =>
+        Promise.reject(
+          Object.assign(new Error("closed"), { name: "AbortError" }),
+        ),
+      );
+      await clickExport();
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(mockToast.success).not.toHaveBeenCalled();
+      expect(mockToast.error).not.toHaveBeenCalled();
+    });
+
+    it("збій віддачі — тост «Не вдалося вивантажити операції» з «Повторити»", async () => {
+      createObjectURL.mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+      await clickExport();
+      expect(mockToast.success).not.toHaveBeenCalled();
+      expect(mockToast.error).toHaveBeenCalledTimes(1);
+      expect(String(mockToast.error.mock.calls[0]![0])).toMatch(
+        /вивантажити операції/,
+      );
+
+      // «Повторити» збирає файл заново і, коли віддача вдалась, каже
+      // «Вивантажено…».
+      const action = mockToast.error.mock.calls[0]![2] as {
+        label: string;
+        onClick: () => void;
+      };
+      expect(action.label).toBe("Повторити");
+      await act(async () => {
+        action.onClick();
+      });
+      expect(createObjectURL).toHaveBeenCalledTimes(2);
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+    });
+  });
+
   it("renders the header month label for the current Kyiv month", () => {
     renderTransactions();
     expect(screen.getByText(/червень 2026/i)).toBeInTheDocument();
@@ -241,7 +399,7 @@ describe("Transactions page shell", () => {
   it("renders the transaction filter toolbar", () => {
     renderTransactions();
     expect(
-      screen.getByRole("toolbar", { name: "Фільтр транзакцій" }),
+      screen.getByRole("toolbar", { name: "Фільтр операцій" }),
     ).toBeInTheDocument();
   });
 
@@ -298,6 +456,57 @@ describe("Transactions page shell", () => {
     );
   });
 
+  describe("card ↔ jar transfers", () => {
+    // Реальні описи виписки Monobank (звіт власника): жоден не містить
+    // слова «переказ», а в `accounts` банок немає — вони лише в `jars`.
+    const jarLeg = {
+      ...SAMPLE_TX,
+      id: "jar-leg",
+      amount: -40_000,
+      description: "На білу картку",
+      accountId: "jar-1",
+      _accountId: "jar-1",
+    };
+    const cardLeg = {
+      ...SAMPLE_TX,
+      id: "card-leg",
+      amount: 40_000,
+      description: "Часткове зняття банки «просто»",
+      accountId: "white",
+      _accountId: "white",
+      type: "income" as const,
+    };
+    const accounts = [{ id: "white", type: "white", maskedPan: ["****2222"] }];
+
+    it("suggests the pair from the real Monobank phrasing alone", () => {
+      renderTransactions({ mono: { realTx: [jarLeg, cardLeg], accounts } });
+      expect(
+        screen.getByText("Схоже на внутрішній переказ"),
+      ).toBeInTheDocument();
+    });
+
+    it("a leg on a known jar is a marker even when no description is", () => {
+      const neutral = [
+        { ...jarLeg, description: "Витрата" },
+        { ...cardLeg, description: "Надходження" },
+      ];
+      const { unmount } = renderTransactions({
+        mono: { realTx: neutral, accounts },
+      });
+      expect(
+        screen.queryByText("Схоже на внутрішній переказ"),
+      ).not.toBeInTheDocument();
+      unmount();
+
+      renderTransactions({
+        mono: { realTx: neutral, accounts, jars: [{ monoJarId: "jar-1" }] },
+      });
+      expect(
+        screen.getByText("Схоже на внутрішній переказ"),
+      ).toBeInTheDocument();
+    });
+  });
+
   function buildTransferPair() {
     return [
       {
@@ -319,6 +528,16 @@ describe("Transactions page shell", () => {
       },
     ];
   }
+
+  it("holds transfer suggestions until the SQLite storage cache is warm", () => {
+    renderTransactions({
+      mono: { realTx: buildTransferPair() },
+      storage: { storageReady: false },
+    });
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+  });
 
   it("snoozes a transfer suggestion via 'Не зараз', persisted for the current Kyiv day", () => {
     const pair = buildTransferPair();
@@ -386,12 +605,68 @@ describe("Transactions page shell", () => {
     expect(screen.getByText("Схоже на погашення кредитки")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Погашення не рахується як витрата, витратами були покупки з кредитки",
+        "Погашення не рахується як витрата. Витратою вже були самі покупки кредиткою.",
       ),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("Схоже на внутрішній переказ"),
     ).not.toBeInTheDocument();
+    // Заголовок питає про погашення — кнопки мають відповідати про нього ж,
+    // а не про «переказ» (звіт власника 2026-09-14).
+    expect(
+      screen.getByRole("button", { name: "Так, це погашення" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ні, різні операції" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Пізніше" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Це переказ" }),
+    ).not.toBeInTheDocument();
+    // Кредитний рахунок названо в рядку напрямку: без цього з двох карток
+    // не видно, яка з них кредитка, на якій і тримається вся підказка.
+    expect(screen.getByText(/Чорна.*·\sкредитна/)).toBeInTheDocument();
+  });
+
+  it("confirms a credit-card repayment via the repayment-worded button", () => {
+    const overrideCategory = vi.fn();
+    const pair = buildTransferPair();
+    renderTransactions({
+      mono: {
+        realTx: pair,
+        accounts: [
+          { id: "black", type: "black" },
+          { id: "white", type: "black", creditLimit: 50_000 },
+        ],
+      },
+      storage: { overrideCategory },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Так, це погашення" }));
+    expect(overrideCategory).toHaveBeenNthCalledWith(
+      1,
+      "transfer-out",
+      "internal_transfer",
+    );
+    expect(overrideCategory).toHaveBeenNthCalledWith(
+      2,
+      "transfer-in",
+      "internal_transfer",
+    );
+  });
+
+  it("puts the sign on each leg's amount, not on its date", () => {
+    const pair = buildTransferPair();
+    renderTransactions({ mono: { realTx: pair } });
+    // Регресія, заради якої розкладку й переробляли: знак стояв перед датою
+    // («−11 вер.») і читався як «мінус одинадцяте», а сума в кутку не
+    // належала жодній із двох ніг.
+    const card = screen
+      .getByText("Схоже на внутрішній переказ")
+      .closest("div")?.parentElement;
+    expect(card).toBeTruthy();
+    expect(card?.textContent).toContain("−100");
+    expect(card?.textContent).toContain("+100");
+    expect(card?.textContent).not.toMatch(/[−+]\d+\s*(вер|чер)/);
   });
 
   it("routes the list to the skeleton slot on first-paint loading", () => {
@@ -408,16 +683,18 @@ describe("Transactions page shell", () => {
     renderTransactions({
       mono: buildMono({ realTx: [SAMPLE_TX] }),
     });
-    fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
-    expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Надходження" }));
+    expect(screen.getByText("Немає операцій")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
-  it("routes the list to the first-run empty hero when activeTx is empty and not loading", () => {
+  it("routes the list to the list-scoped no-data state when activeTx is empty and not loading", () => {
     renderTransactions({
       mono: buildMono({ loadingTx: false, realTx: [] }),
     });
-    expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+    // F1: Транзакції більше НЕ повторюють герой Огляду. Порожній перший
+    // вхід віддає власну list-scoped заглушку — див. `TransactionList.tsx`.
+    expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -445,6 +722,18 @@ describe("Transactions page shell", () => {
     expect(
       screen.queryByRole("button", { name: "Змінити категорію" }),
     ).not.toBeInTheDocument();
+    // Категорії живуть у згорнутому `CategoryPickerField`, а не пласким
+    // списком кнопок: спершу тап по тригеру, і лише потім по опції. Тригер
+    // шукаємо за `aria-expanded` всередині секції «Категорія та нотатка», а
+    // не за назвою авто-категорії — інакше тест ламатиметься щоразу, коли
+    // зміниться правило авто-категоризації «Сільпо».
+    const categorySection = screen.getByRole("region", {
+      name: "Категорія та нотатка",
+    });
+    expect(screen.queryByRole("button", { name: "Транспорт" })).toBeNull();
+    fireEvent.click(
+      within(categorySection).getByRole("button", { expanded: false }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Транспорт" }));
     expect(overrideCategory).toHaveBeenCalledWith("tx-1", "transport");
   });
@@ -496,7 +785,7 @@ describe("Transactions page shell", () => {
       />,
     );
     expect(screen.queryByText("синхронізовано")).not.toBeInTheDocument();
-    expect(screen.queryByText("помилка")).not.toBeInTheDocument();
+    expect(screen.queryByText("не синхронізовано")).not.toBeInTheDocument();
     expect(screen.queryByText(/оновлено ·/)).not.toBeInTheDocument();
 
     rerender(

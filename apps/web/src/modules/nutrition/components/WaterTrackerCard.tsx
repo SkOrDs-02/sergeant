@@ -145,8 +145,8 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             type="button"
             onClick={() => handleAdd(ml)}
             className={cn(
-              "h-9 rounded-xl text-style-caption transition-colors",
-              "bg-info-soft text-info-strong dark:text-info border border-info/20",
+              "h-9 rounded-xl text-style-caption transition-colors focus-ring",
+              "bg-info-soft text-info-soft-fg border border-info/20",
               "hover:bg-info/20 active:scale-95",
             )}
           >
@@ -166,7 +166,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
         <div className="flex-1 min-w-0">
           <Input
             value={customMl}
-            onChange={(e) => setCustomMl(e.target.value)}
+            onChange={(e) => setCustomMl(e.target.value.replace(/\D/g, ""))}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -184,8 +184,8 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           onClick={handleCustomAdd}
           disabled={!customMl || Number(customMl) <= 0}
           className={cn(
-            "h-11 px-3 rounded-xl text-style-caption transition-colors shrink-0 whitespace-nowrap",
-            "bg-info-soft text-info-strong dark:text-info border border-info/20",
+            "h-11 px-3 rounded-xl text-style-caption transition-colors shrink-0 whitespace-nowrap focus-ring",
+            "bg-info-soft text-info-soft-fg border border-info/20",
             "hover:bg-info/20 disabled:opacity-50 active:scale-95",
           )}
         >
@@ -196,7 +196,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             type="button"
             onClick={handleUndo}
             title={"Відмінити останнє додавання"}
-            className="h-11 px-3 inline-flex items-center gap-1 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap"
+            className="h-11 px-3 inline-flex items-center gap-1 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap focus-ring"
             aria-label={`Відмінити останнє додавання (${lastAction.amount} мл)`}
           >
             <Icon name="arrow-down-left" size="sm" />
@@ -236,7 +236,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
               }
             }}
             className={cn(
-              "h-11 px-3 inline-flex items-center justify-center rounded-xl text-style-caption transition-colors border shrink-0 whitespace-nowrap",
+              "h-11 px-3 inline-flex items-center justify-center rounded-xl text-style-caption transition-colors border shrink-0 whitespace-nowrap focus-ring",
               resetPending
                 ? "text-danger border-danger/40"
                 : "text-subtle hover:text-danger border-line",

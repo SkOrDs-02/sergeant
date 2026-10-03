@@ -13,6 +13,12 @@
  * switch cases (`summaryFor`/`iconFor`/`titleFor`).
  */
 import type { ChatAction } from "./chatActions/types";
+import {
+  categoryLabelFor,
+  habitNameFor,
+  mealTypeLabelFor,
+} from "./hubChatActionCardsHelpers";
+import { formatNumberUk } from "@sergeant/shared";
 
 type SummaryInput = Record<string, unknown>;
 
@@ -41,21 +47,21 @@ const joinParts = (
 export type SummaryFn = (input: SummaryInput) => string | undefined;
 
 const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
-  create_transaction: (input) =>
-    joinParts([
-      numberField(input, "amount") !== undefined
-        ? `${numberField(input, "amount")} ₴`
-        : undefined,
+  create_transaction: (input) => {
+    const amount = numberField(input, "amount");
+    return joinParts([
+      amount !== undefined ? `${formatNumberUk(amount)} ₴` : undefined,
       stringField(input, "description") || stringField(input, "category_id"),
-    ]),
+    ]);
+  },
 
-  find_transaction: (input) =>
-    joinParts([
+  find_transaction: (input) => {
+    const amount = numberField(input, "amount");
+    return joinParts([
       stringField(input, "query"),
-      numberField(input, "amount") !== undefined
-        ? `${numberField(input, "amount")} ₴`
-        : undefined,
-    ]),
+      amount !== undefined ? `${formatNumberUk(amount)} ₴` : undefined,
+    ]);
+  },
 
   batch_categorize: (input) => {
     const pattern = stringField(input, "pattern");
@@ -63,39 +69,45 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return joinParts([pattern, category ? `→ ${category}` : undefined], " ");
   },
 
-  log_meal: (input) =>
-    joinParts([
-      stringField(input, "meal_type"),
+  log_meal: (input) => {
+    const calories = numberField(input, "calories");
+    return joinParts([
+      mealTypeLabelFor(stringField(input, "meal_type")),
       stringField(input, "description") || stringField(input, "name"),
-      numberField(input, "calories") !== undefined
-        ? `${numberField(input, "calories")} ккал`
-        : undefined,
-    ]),
+      calories !== undefined ? `${formatNumberUk(calories)} ккал` : undefined,
+    ]);
+  },
 
   log_water: (input) => {
     const ml = numberField(input, "amount_ml") ?? numberField(input, "amount");
-    return ml !== undefined ? `${ml} мл` : undefined;
+    return ml !== undefined ? `${formatNumberUk(ml)} мл` : undefined;
   },
 
-  log_set: (input) =>
-    joinParts([
+  log_set: (input) => {
+    const weightKg =
+      numberField(input, "weight_kg") ?? numberField(input, "weight");
+    const reps = numberField(input, "reps");
+    return joinParts([
       stringField(input, "exercise_name") ||
         stringField(input, "name") ||
         stringField(input, "exercise"),
-      numberField(input, "weight_kg") !== undefined
-        ? `${numberField(input, "weight_kg")} кг`
-        : numberField(input, "weight") !== undefined
-          ? `${numberField(input, "weight")} кг`
-          : undefined,
-      numberField(input, "reps") !== undefined
-        ? `${numberField(input, "reps")} повт.`
-        : undefined,
-    ]),
+      weightKg !== undefined ? `${formatNumberUk(weightKg)} кг` : undefined,
+      reps !== undefined ? `${reps} повт.` : undefined,
+    ]);
+  },
 
+  // AI-4 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+  // `habitNameFor` резолвить `hab_<uuid>` у назву звички з локального
+  // стану Рутини; raw id — fallback, коли звички вже немає локально
+  // (видалена / ще не синхронізована), а не типовий шлях.
   mark_habit_done: (input) =>
-    stringField(input, "habit_id") || stringField(input, "name"),
+    habitNameFor(stringField(input, "habit_id")) ||
+    stringField(input, "habit_id") ||
+    stringField(input, "name"),
   create_habit: (input) =>
-    stringField(input, "habit_id") || stringField(input, "name"),
+    stringField(input, "name") ||
+    habitNameFor(stringField(input, "habit_id")) ||
+    stringField(input, "habit_id"),
 
   set_habit_schedule: (input) => {
     const days = input["days"];
@@ -107,7 +119,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   pause_habit: (input) => {
-    const habit = stringField(input, "habit_id");
+    const rawHabitId = stringField(input, "habit_id");
+    const habit = habitNameFor(rawHabitId) || rawHabitId;
     if (input["paused"] === false) {
       return habit ? `${habit} · повернення з паузи` : "повернення з паузи";
     }
@@ -153,69 +166,75 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return txId ? `TX: ${txId}` : undefined;
   },
 
-  set_budget_limit: (input) =>
-    joinParts([
-      stringField(input, "category_id"),
-      numberField(input, "limit") !== undefined ||
-      numberField(input, "target_amount") !== undefined
-        ? `${numberField(input, "limit") ?? numberField(input, "target_amount")} ₴`
-        : undefined,
-    ]),
-  update_budget: (input) =>
-    joinParts([
-      stringField(input, "category_id"),
-      numberField(input, "limit") !== undefined ||
-      numberField(input, "target_amount") !== undefined
-        ? `${numberField(input, "limit") ?? numberField(input, "target_amount")} ₴`
-        : undefined,
-    ]),
+  set_budget_limit: (input) => {
+    const limit =
+      numberField(input, "limit") ?? numberField(input, "target_amount");
+    return joinParts([
+      categoryLabelFor(stringField(input, "category_id")) ||
+        stringField(input, "category_id"),
+      limit !== undefined ? `${formatNumberUk(limit)} ₴` : undefined,
+    ]);
+  },
+  update_budget: (input) => {
+    const limit =
+      numberField(input, "limit") ?? numberField(input, "target_amount");
+    return joinParts([
+      categoryLabelFor(stringField(input, "category_id")) ||
+        stringField(input, "category_id"),
+      limit !== undefined ? `${formatNumberUk(limit)} ₴` : undefined,
+    ]);
+  },
 
-  set_monthly_plan: (input) =>
-    joinParts([
-      numberField(input, "income") !== undefined
-        ? `Дохід: ${numberField(input, "income")} ₴`
+  set_monthly_plan: (input) => {
+    const income = numberField(input, "income");
+    const expense = numberField(input, "expense");
+    const savings = numberField(input, "savings");
+    return joinParts([
+      income !== undefined ? `Дохід: ${formatNumberUk(income)} ₴` : undefined,
+      expense !== undefined
+        ? `Витрати: ${formatNumberUk(expense)} ₴`
         : undefined,
-      numberField(input, "expense") !== undefined
-        ? `Витрати: ${numberField(input, "expense")} ₴`
+      savings !== undefined
+        ? `Заощадження: ${formatNumberUk(savings)} ₴`
         : undefined,
-      numberField(input, "savings") !== undefined
-        ? `Заощадження: ${numberField(input, "savings")} ₴`
-        : undefined,
-    ]),
+    ]);
+  },
 
-  create_debt: (input) =>
-    joinParts([
+  create_debt: (input) => {
+    const amount = numberField(input, "amount");
+    return joinParts([
       stringField(input, "name"),
-      numberField(input, "amount") !== undefined
-        ? `${numberField(input, "amount")} ₴`
-        : undefined,
-    ]),
-  create_receivable: (input) =>
-    joinParts([
+      amount !== undefined ? `${formatNumberUk(amount)} ₴` : undefined,
+    ]);
+  },
+  create_receivable: (input) => {
+    const amount = numberField(input, "amount");
+    return joinParts([
       stringField(input, "name"),
-      numberField(input, "amount") !== undefined
-        ? `${numberField(input, "amount")} ₴`
-        : undefined,
-    ]),
+      amount !== undefined ? `${formatNumberUk(amount)} ₴` : undefined,
+    ]);
+  },
 
-  mark_debt_paid: (input) =>
-    joinParts(
+  mark_debt_paid: (input) => {
+    const amount = numberField(input, "amount");
+    return joinParts(
       [
         stringField(input, "debt_id"),
-        numberField(input, "amount") !== undefined
-          ? `${numberField(input, "amount")} ₴`
-          : undefined,
+        amount !== undefined ? `${formatNumberUk(amount)} ₴` : undefined,
       ],
       " ",
-    ),
+    );
+  },
 
-  add_asset: (input) =>
-    joinParts([
+  add_asset: (input) => {
+    const amount = numberField(input, "amount");
+    return joinParts([
       stringField(input, "name"),
-      numberField(input, "amount") !== undefined
-        ? `${numberField(input, "amount")} ${stringField(input, "currency") || "UAH"}`
+      amount !== undefined
+        ? `${formatNumberUk(amount)} ${stringField(input, "currency") || "UAH"}`
         : undefined,
-    ]),
+    ]);
+  },
 
   split_transaction: (input) => {
     const txId = stringField(input, "tx_id");
@@ -224,30 +243,33 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return `TX: ${txId} → ${Array.isArray(parts) ? parts.length : 0} частин`;
   },
 
-  recurring_expense: (input) =>
-    joinParts([
+  recurring_expense: (input) => {
+    const amount = numberField(input, "amount");
+    return joinParts([
       stringField(input, "name"),
-      numberField(input, "amount") !== undefined
-        ? `${numberField(input, "amount")} ₴`
-        : undefined,
-    ]),
+      amount !== undefined ? `${formatNumberUk(amount)} ₴` : undefined,
+    ]);
+  },
 
   export_report: (input) =>
     `Період: ${stringField(input, "period") || "month"}`,
 
-  create_reminder: (input) =>
-    joinParts(
+  create_reminder: (input) => {
+    const rawHabitId = stringField(input, "habit_id");
+    return joinParts(
       [
-        stringField(input, "habit_id"),
+        habitNameFor(rawHabitId) || rawHabitId,
         stringField(input, "time")
           ? `о ${stringField(input, "time")}`
           : undefined,
       ],
       " ",
-    ),
+    );
+  },
 
   complete_habit_for_date: (input) => {
-    const habitId = stringField(input, "habit_id");
+    const rawHabitId = stringField(input, "habit_id");
+    const habitId = habitNameFor(rawHabitId) || rawHabitId;
     const date = stringField(input, "date");
     const state = input["completed"] === false ? "не виконано" : "виконано";
     if (habitId && date) return `${habitId} · ${date} · ${state}`;
@@ -255,8 +277,14 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return undefined;
   },
 
-  archive_habit: (input) => stringField(input, "habit_id"),
-  edit_habit: (input) => stringField(input, "habit_id"),
+  archive_habit: (input) => {
+    const rawHabitId = stringField(input, "habit_id");
+    return habitNameFor(rawHabitId) || rawHabitId;
+  },
+  edit_habit: (input) => {
+    const rawHabitId = stringField(input, "habit_id");
+    return habitNameFor(rawHabitId) || rawHabitId;
+  },
 
   add_calendar_event: (input) =>
     joinParts([stringField(input, "name"), stringField(input, "date")]),
@@ -267,52 +295,63 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   habit_stats: (input) => {
-    const habitId = stringField(input, "habit_id");
+    const rawHabitId = stringField(input, "habit_id");
+    const habitId = habitNameFor(rawHabitId) || rawHabitId;
     const periodDays = numberField(input, "period_days") ?? 30;
     if (habitId) return `${habitId} · ${periodDays} днів`;
     return undefined;
   },
 
-  add_recipe: (input) =>
-    joinParts([
+  add_recipe: (input) => {
+    const timeMinutes = numberField(input, "time_minutes");
+    return joinParts([
       stringField(input, "title"),
-      numberField(input, "time_minutes") !== undefined
-        ? `${numberField(input, "time_minutes")} хв`
+      timeMinutes !== undefined
+        ? `${formatNumberUk(timeMinutes)} хв`
         : undefined,
-    ]),
+    ]);
+  },
 
   add_to_shopping_list: (input) =>
     joinParts([stringField(input, "name"), stringField(input, "quantity")]),
 
   consume_from_pantry: (input) => stringField(input, "name"),
 
-  set_daily_plan: (input) =>
-    joinParts([
-      numberField(input, "kcal") !== undefined
-        ? `${numberField(input, "kcal")} ккал`
+  set_daily_plan: (input) => {
+    const kcal = numberField(input, "kcal");
+    const proteinG = numberField(input, "protein_g");
+    return joinParts([
+      kcal !== undefined ? `${formatNumberUk(kcal)} ккал` : undefined,
+      proteinG !== undefined
+        ? `${formatNumberUk(proteinG)} г білка`
         : undefined,
-      numberField(input, "protein_g") !== undefined
-        ? `${numberField(input, "protein_g")} г білка`
-        : undefined,
-    ]),
+    ]);
+  },
 
   suggest_meal: (input) =>
-    joinParts([stringField(input, "meal_type"), stringField(input, "focus")]),
+    joinParts([
+      mealTypeLabelFor(stringField(input, "meal_type")),
+      stringField(input, "focus"),
+    ]),
 
-  copy_meal_from_date: (input) =>
-    joinParts([
+  copy_meal_from_date: (input) => {
+    const targetKcal = numberField(input, "target_kcal");
+    return joinParts([
       stringField(input, "source_date"),
-      numberField(input, "target_kcal") !== undefined
-        ? `${numberField(input, "target_kcal")} ккал`
+      targetKcal !== undefined
+        ? `${formatNumberUk(targetKcal)} ккал`
         : undefined,
-    ]),
-  plan_meals_for_day: (input) =>
-    joinParts([
+    ]);
+  },
+  plan_meals_for_day: (input) => {
+    const targetKcal = numberField(input, "target_kcal");
+    return joinParts([
       stringField(input, "source_date"),
-      numberField(input, "target_kcal") !== undefined
-        ? `${numberField(input, "target_kcal")} ккал`
+      targetKcal !== undefined
+        ? `${formatNumberUk(targetKcal)} ккал`
         : undefined,
-    ]),
+    ]);
+  },
 
   plan_workout: (input) => {
     const date = stringField(input, "date");
@@ -330,15 +369,16 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return workoutId ? `ID: ${workoutId}` : "Поточне тренування";
   },
 
-  log_measurement: (input) =>
-    joinParts([
-      numberField(input, "weight_kg") !== undefined
-        ? `${numberField(input, "weight_kg")} кг`
+  log_measurement: (input) => {
+    const weightKg = numberField(input, "weight_kg");
+    const bodyFatPct = numberField(input, "body_fat_pct");
+    return joinParts([
+      weightKg !== undefined ? `${formatNumberUk(weightKg)} кг` : undefined,
+      bodyFatPct !== undefined
+        ? `${formatNumberUk(bodyFatPct)}% жиру`
         : undefined,
-      numberField(input, "body_fat_pct") !== undefined
-        ? `${numberField(input, "body_fat_pct")}% жиру`
-        : undefined,
-    ]),
+    ]);
+  },
 
   add_program_day: (input) => {
     const days = ["нд", "пн", "вт", "ср", "чт", "пт", "сб"];
@@ -350,10 +390,11 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return joinParts([dayName, stringField(input, "name")]);
   },
 
-  log_wellbeing: (input) =>
-    joinParts([
-      numberField(input, "sleep_hours") !== undefined
-        ? `${numberField(input, "sleep_hours")} год сну`
+  log_wellbeing: (input) => {
+    const sleepHours = numberField(input, "sleep_hours");
+    return joinParts([
+      sleepHours !== undefined
+        ? `${formatNumberUk(sleepHours)} год сну`
         : undefined,
       numberField(input, "energy_level") !== undefined
         ? `енергія ${numberField(input, "energy_level")}/5`
@@ -361,12 +402,15 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
       numberField(input, "mood_score") !== undefined
         ? `настрій ${numberField(input, "mood_score")}/5`
         : undefined,
-    ]),
+    ]);
+  },
 
-  log_weight: (input) =>
-    numberField(input, "weight_kg") !== undefined
-      ? `${numberField(input, "weight_kg")} кг`
-      : undefined,
+  log_weight: (input) => {
+    const weightKg = numberField(input, "weight_kg");
+    return weightKg !== undefined
+      ? `${formatNumberUk(weightKg)} кг`
+      : undefined;
+  },
 
   suggest_workout: (input) =>
     stringField(input, "focus") || "Загальне тренування",
@@ -395,7 +439,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     const parts: (string | undefined)[] = [];
     if (desc && desc.length <= 50) parts.push(desc);
     else if (desc) parts.push(desc.slice(0, 50) + "…");
-    if (targetWeight !== undefined) parts.push(`${targetWeight} кг`);
+    if (targetWeight !== undefined)
+      parts.push(`${formatNumberUk(targetWeight)} кг`);
     return parts.length ? parts.join(" · ") : "Нова ціль";
   },
 
@@ -410,28 +455,27 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   habit_trend: (input) =>
     `Період: ${numberField(input, "period_days") ?? 30} днів`,
 
-  calculate_1rm: (input) =>
-    joinParts([
-      numberField(input, "weight_kg") !== undefined
-        ? `${numberField(input, "weight_kg")} кг`
-        : undefined,
-      numberField(input, "reps") !== undefined
-        ? `${numberField(input, "reps")} повт.`
-        : undefined,
-    ]),
+  calculate_1rm: (input) => {
+    const weightKg = numberField(input, "weight_kg");
+    const reps = numberField(input, "reps");
+    return joinParts([
+      weightKg !== undefined ? `${formatNumberUk(weightKg)} кг` : undefined,
+      reps !== undefined ? `${reps} повт.` : undefined,
+    ]);
+  },
 
-  convert_units: (input) =>
-    joinParts(
+  convert_units: (input) => {
+    const value = numberField(input, "value");
+    return joinParts(
       [
-        numberField(input, "value") !== undefined
-          ? `${numberField(input, "value")}`
-          : undefined,
+        value !== undefined ? `${formatNumberUk(value)}` : undefined,
         stringField(input, "from_unit") && stringField(input, "to_unit")
           ? `${stringField(input, "from_unit")} → ${stringField(input, "to_unit")}`
           : undefined,
       ],
       " ",
-    ),
+    );
+  },
 
   save_note: (input) =>
     stringField(input, "title") || stringField(input, "name"),

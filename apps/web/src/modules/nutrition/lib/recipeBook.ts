@@ -2,13 +2,14 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import type { NullableMacros } from "./macros";
+import { normalizeMacrosNullable, type NullableMacros } from "./macros";
 import {
   SERGEANT_STORE,
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../shared/lib/idb/sergeantDb";
-import { generatePrefixedId } from "@sergeant/shared";
+import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
+import { persistNutritionRecipes } from "./nutritionStorage.js";
 
 /**
  * Pre-PR-#010 saved recipes lived in a dedicated `hub_nutrition_recipe_book`
@@ -66,23 +67,6 @@ function txDone(tx: IDBTransaction): Promise<void> {
   });
 }
 
-function clamp0(n: unknown): number {
-  const v = Number(n);
-  return Number.isFinite(v) ? Math.max(0, v) : 0;
-}
-
-function normalizeMacros(mac: unknown): NullableMacros {
-  const m = (mac && typeof mac === "object" ? mac : {}) as Partial<
-    Record<keyof NullableMacros, unknown>
-  >;
-  return {
-    kcal: m.kcal == null ? null : clamp0(m.kcal),
-    protein_g: m.protein_g == null ? null : clamp0(m.protein_g),
-    fat_g: m.fat_g == null ? null : clamp0(m.fat_g),
-    carbs_g: m.carbs_g == null ? null : clamp0(m.carbs_g),
-  };
-}
-
 export function normalizeRecipeForSave(r: unknown): SavedRecipe {
   const raw = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
   const title = String(raw["title"] || "").trim();
@@ -93,8 +77,10 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
   return {
     id,
     title,
-    timeMinutes: raw["timeMinutes"] != null ? clamp0(raw["timeMinutes"]) : null,
-    servings: raw["servings"] != null ? clamp0(raw["servings"]) : null,
+    timeMinutes:
+      raw["timeMinutes"] != null ? clampNonNegative(raw["timeMinutes"]) : null,
+    servings:
+      raw["servings"] != null ? clampNonNegative(raw["servings"]) : null,
     ingredients: Array.isArray(raw["ingredients"])
       ? (raw["ingredients"] as unknown[])
           .map((x) => String(x))
@@ -113,7 +99,7 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
           .filter(Boolean)
           .slice(0, 40)
       : [],
-    macros: normalizeMacros(raw["macros"]),
+    macros: normalizeMacrosNullable(raw["macros"]),
     createdAt:
       raw["createdAt"] != null
         ? Number(raw["createdAt"]) || Date.now()
@@ -124,24 +110,35 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
 
 export async function listSavedRecipes(limit = 200): Promise<SavedRecipe[]> {
   try {
-    await ensureMigrated();
-    const db = await openSergeantDb();
-    if (!db) return [];
-    const tx = db.transaction(STORE, "readonly");
-    const store = tx.objectStore(STORE);
-    const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
-      const r = store.getAll();
-      r.onsuccess = () =>
-        resolve(Array.isArray(r.result) ? (r.result as SavedRecipe[]) : []);
-      r.onerror = () => reject(r.error);
-    });
-    await txDone(tx);
-    return all
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
-      .slice(0, Math.max(1, Number(limit) || 200));
+    return await listSavedRecipesOrThrow(limit);
   } catch {
     return [];
   }
+}
+
+/**
+ * Те саме читання книги, але збій не перетворюється на `[]`. Для екранів, яким
+ * треба відрізнити «рецептів немає» від «книгу не вдалося прочитати»
+ * (`useSavedRecipes`). Решта читачів лишаються на `listSavedRecipes`.
+ */
+export async function listSavedRecipesOrThrow(
+  limit = 200,
+): Promise<SavedRecipe[]> {
+  await ensureMigrated();
+  const db = await openSergeantDb();
+  if (!db) throw new Error("Saved recipe storage unavailable");
+  const tx = db.transaction(STORE, "readonly");
+  const store = tx.objectStore(STORE);
+  const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
+    const r = store.getAll();
+    r.onsuccess = () =>
+      resolve(Array.isArray(r.result) ? (r.result as SavedRecipe[]) : []);
+    r.onerror = () => reject(r.error);
+  });
+  await txDone(tx);
+  return all
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    .slice(0, Math.max(1, Number(limit) || 200));
 }
 
 export async function saveRecipeToBook(
@@ -156,6 +153,7 @@ export async function saveRecipeToBook(
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).put(r);
     await txDone(tx);
+    persistNutritionRecipes(await listSavedRecipes(200));
     return { ok: true, recipe: r };
   } catch {
     return { ok: false, error: "Не вдалося зберегти рецепт" };
@@ -172,6 +170,7 @@ export async function deleteSavedRecipe(id: unknown): Promise<boolean> {
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).delete(key);
     await txDone(tx);
+    persistNutritionRecipes(await listSavedRecipes(200));
     return true;
   } catch {
     return false;
@@ -185,7 +184,7 @@ export function scaleMacros(macros: unknown, factor: unknown): NullableMacros {
     Record<keyof NullableMacros, unknown>
   >;
   const v = (x: unknown): number | null =>
-    x == null ? null : Math.round(clamp0(x) * k * 10) / 10;
+    x == null ? null : Math.round(clampNonNegative(x) * k * 10) / 10;
   return {
     kcal: v(m.kcal),
     protein_g: v(m.protein_g),

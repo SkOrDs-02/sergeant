@@ -167,7 +167,7 @@ describe("nutrition dualWrite orchestrator", () => {
         },
       ],
       waterLog: { "2026-05-01": 500 },
-      shoppingList: { dataJson: '{"categories":[]}' },
+      shoppingList: { dataJson: '{"categories":[{"name":"Інше","items":[]}]}' },
     };
 
     const result = await dualWriteNutritionState(EMPTY, next);
@@ -223,7 +223,9 @@ describe("nutrition dualWrite orchestrator", () => {
       [UID],
     );
     expect(shoppingRows).toHaveLength(1);
-    expect(shoppingRows[0]!["data_json"]).toBe('{"categories":[]}');
+    expect(shoppingRows[0]!["data_json"]).toBe(
+      '{"categories":[{"name":"Інше","items":[]}]}',
+    );
   });
 
   it("triggerNutritionDualWrite is fire-and-forget (resolves immediately)", async () => {
@@ -265,9 +267,51 @@ describe("nutrition dualWrite orchestrator", () => {
     expect(rows).toHaveLength(1);
   });
 
-  it("triggerNutritionDualWrite does nothing when no context is registered", () => {
-    // Should not throw
+  it("triggerNutritionDualWrite does not throw when no context is registered", () => {
     expect(() => triggerNutritionDualWrite(EMPTY, EMPTY)).not.toThrow();
+  });
+
+  // Regression for the blind nutrition run (2026-09-28): the very first
+  // meal typed right after a fresh navigate/reload can land before
+  // `useNutritionDualWriteBoot` registers its context (auth
+  // `status === "loading"`). The write used to be dropped permanently —
+  // `nutritionStorage.ts` saw `prev === null` and reported success
+  // without persisting anything. It must now reach SQLite once a
+  // context registers later in the same page life.
+  it("a write made before context registration is not lost — it lands once a context registers", async () => {
+    const next: NutritionDualWriteState = {
+      ...EMPTY,
+      meals: [
+        {
+          id: "m-early",
+          dateKey: "2026-05-01",
+          time: "08:30",
+          mealType: "breakfast",
+          name: "Рання страва",
+          label: "",
+          macros: null,
+          source: "manual",
+          macroSource: "manual",
+          amountG: null,
+          foodId: null,
+          isDemo: false,
+        },
+      ],
+    };
+
+    // No context registered yet — this used to be silently discarded.
+    triggerNutritionDualWrite(EMPTY, next);
+    expect(isNutritionDualWriteRegistered()).toBe(false);
+
+    // Auth resolves; boot registers a context in the same page life.
+    registerNutritionDualWriteContext(makeCtx());
+    await new Promise((r) => setTimeout(r, 10));
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM nutrition_meals WHERE id = ?",
+      ["m-early"],
+    );
+    expect(rows).toHaveLength(1);
   });
 });
 

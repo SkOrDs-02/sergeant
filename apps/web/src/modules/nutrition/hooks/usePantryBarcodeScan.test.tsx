@@ -142,7 +142,7 @@ describe("usePantryBarcodeScan", () => {
     const { scan, setPantryScanStatus } = setup();
     await scan("4820000000005");
     expect(setPantryScanStatus).toHaveBeenLastCalledWith(
-      "Немає підключення до інтернету.",
+      "Немає підключення до інтернету. Перевір зʼєднання і спробуй ще раз.",
     );
     onLineSpy.mockRestore();
   });
@@ -168,7 +168,7 @@ describe("usePantryBarcodeScan", () => {
     const { scan, setPantryScanStatus } = setup();
     await scan("4820000000007");
     expect(setPantryScanStatus).toHaveBeenLastCalledWith(
-      "Помилка пошуку. Перевір зʼєднання.",
+      "Не вдалося знайти товар. Перевір зʼєднання.",
     );
   });
 });

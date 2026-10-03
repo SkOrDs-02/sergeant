@@ -4,7 +4,7 @@
 // Ledger-backed `pnpm audit` gate. Replaces the blunt `audit-exception`
 // PR-label (which suppressed *every* high-severity advisory at once) with
 // a per-advisory allowlist read from
-// `docs/04-governance/security/audit-exceptions.md`:
+// `docs/governance/security/audit-exceptions.md`:
 //
 //   - A `high`/`moderate` advisory passes only if the ledger names its
 //     GHSA/CVE id AND the exception's due date has not passed.
@@ -27,7 +27,7 @@ import path from "node:path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LEDGER_PATH = path.resolve(
   __dirname,
-  "../../docs/04-governance/security/audit-exceptions.md",
+  "../../docs/governance/security/audit-exceptions.md",
 );
 
 // Severities that the gate treats as blocking unless waived. `critical`
@@ -193,14 +193,28 @@ function todayIso() {
 
 function main() {
   const prod = process.argv.includes("--prod");
-  const args = ["audit", "--json"];
+  // `--audit-level high` звужує і JSON-звіт, і сам обхід графа залежностей
+  // усередині pnpm до critical/high — рівно те, що evaluateAudit взагалі
+  // враховує (BLOCKING_SEVERITIES = critical, high). На великому монорепо
+  // (17 workspaces) саме побудова vulnerable-path даних для moderate/low
+  // advisories, які гейт однаково ігнорує, і роздмухувала heap процесу
+  // `pnpm audit` до OOM у CI.
+  const args = ["audit", "--json", "--audit-level", "high"];
   if (prod) args.push("--prod");
 
   let json = "";
   try {
     json = execFileSync("pnpm", args, {
       encoding: "utf8",
-      maxBuffer: 32 * 1024 * 1024,
+      maxBuffer: 64 * 1024 * 1024,
+      env: {
+        ...process.env,
+        // Дублює heap-запас з CI job env (див. ci.yml) на випадок
+        // локального прогону без NODE_OPTIONS — pnpm сам є Node-процесом
+        // і успадковує цю змінну.
+        NODE_OPTIONS:
+          `${process.env.NODE_OPTIONS ?? ""} --max-old-space-size=6144`.trim(),
+      },
       // Windows resolves `pnpm` to `pnpm.cmd` only through a shell; the
       // args are fixed literals so there is no injection surface.
       shell: process.platform === "win32",
@@ -260,7 +274,7 @@ function main() {
   }
   console.error(
     "\nFix the dependency, or add a dated exception to " +
-      "docs/04-governance/security/audit-exceptions.md (high/moderate only).",
+      "docs/governance/security/audit-exceptions.md (high/moderate only).",
   );
   process.exit(1);
 }

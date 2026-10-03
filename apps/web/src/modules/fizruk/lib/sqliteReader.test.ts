@@ -127,6 +127,50 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.workouts[0]?.wellbeing).toEqual({ energy: 4, mood: 3 });
   });
 
+  // Спека fizruk-readiness-check § Верифікація: обовʼязковий тест на
+  // мовчазну втрату. Готовність і вибір варіанта проходять ЧОТИРИ ланки
+  // (снапшот → колонка → адаптер → читач); пропуск будь-якої не ламає ані
+  // типи, ані решту тестів, а фіча просто перестає працювати.
+  it("готовність і вибір варіанта переживають перезавантаження", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w-readiness",
+          startedAt: "2026-09-02T10:00:00Z",
+          endedAt: "2026-09-02T11:00:00Z",
+          items: [
+            {
+              id: "i-readiness",
+              exerciseId: "squat",
+              nameUk: "Присідання",
+              primaryGroup: "legs",
+              musclesPrimary: [],
+              musclesSecondary: [],
+              type: "strength",
+              chosenVariant: "easier",
+            },
+          ],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+          wellbeing: { sleep: 2, soreness: 1 },
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS,
+      logger: silentLogger,
+    });
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    const workout = cache.workouts.find((w) => w.id === "w-readiness");
+    expect(workout?.wellbeing).toEqual({ sleep: 2, soreness: 1 });
+    expect(workout?.items[0]?.chosenVariant).toBe("easier");
+  });
+
   it("leaves wellbeing null when the workout has none", async () => {
     const ops: FizrukDualWriteOp[] = [
       {
@@ -261,6 +305,66 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.customExercises[0]!.id).toBe("ex-custom-1");
     expect(cache.measurements).toHaveLength(1);
     expect(cache.measurements[0]!.id).toBe("m-1");
+  });
+
+  it("доносить УСІ чотирнадцять полів заміру, а не вісім", async () => {
+    // Регресія (знайдено 2026-09-22): таблиця несла вісім числових колонок
+    // — рівно ті, що доменний реєстр звузив для мобільного, — а веб-форма
+    // (`MEASURE_FIELDS`) збирає чотирнадцять. Жир, шия, передпліччя,
+    // стегно, литка і РІЗНІ ліва/права сторони не мали куди писатись, тож
+    // користувач їх вводив, а після перезавантаження вони зникали.
+    // Міграція 008 / серверна 146 додала колонки.
+    const full = {
+      id: "m-full",
+      at: "2026-05-01T08:00:00.000Z",
+      weightKg: 81.4,
+      bodyFatPct: 18.5,
+      neckCm: 39.5,
+      chestCm: 104.5,
+      waistCm: 82.5,
+      hipsCm: 98.5,
+      bicepLCm: 36.5,
+      bicepRCm: 37.5,
+      forearmLCm: 29.5,
+      forearmRCm: 30.5,
+      thighLCm: 58.5,
+      thighRCm: 59.5,
+      calfLCm: 38.5,
+      calfRCm: 39.5,
+    };
+    await applyFizrukDualWriteOps(
+      handle.client,
+      [{ kind: "measurement-upsert", measurement: full }],
+      { userId: UID, clientTs: TS, logger: silentLogger },
+    );
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    expect(cache.measurements).toEqual([full]);
+    // Дробові значення не округлюються — колонки REAL, а сторони
+    // лишаються різними (раніше єдиний `bicep_cm` зводив їх в одне).
+    expect(cache.measurements[0]!["bicepLCm"]).toBe(36.5);
+    expect(cache.measurements[0]!["bicepRCm"]).toBe(37.5);
+  });
+
+  it("для рядка, записаного до міграції 008, зводить біцепс із bicep_cm", async () => {
+    // Історія на пристрої, який щойно оновився: нові колонки в старих
+    // рядках NULL, і без фолбеку біцепс показувався б порожнім.
+    await handle.client.run(
+      `INSERT INTO fizruk_measurements
+         (id, user_id, measured_at, bicep_cm, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      ["m-legacy", UID, "2026-04-01T08:00:00.000Z", 35.5, TS, TS],
+    );
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    expect(cache.measurements).toEqual([
+      {
+        id: "m-legacy",
+        at: "2026-04-01T08:00:00.000Z",
+        bicepLCm: 35.5,
+        bicepRCm: 35.5,
+      },
+    ]);
   });
 
   it("hydrates daily-log entries with their timestamp intact", async () => {

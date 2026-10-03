@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-09-02
  * Status: Active
  */
 import { memo } from "react";
@@ -9,6 +9,7 @@ import { Money } from "@shared/components/ui/Money";
 import { cn } from "@shared/lib/ui/cn";
 
 import { computePulseStyle } from "./pulseStyle";
+import { MonthStrip, MonthStripHint, type MonthStripDay } from "./MonthStrip";
 
 interface HeroCardProps {
   networth: number;
@@ -23,20 +24,42 @@ interface HeroCardProps {
    * а не бюджет.
    */
   dayBudget?: number | null;
+  /**
+   * Головне число hero (спека `finyk-hero-month-strip.md` § Рішення
+   * дизайну, п.2) — «Лишилось на сьогодні» = `dayBudget − todaySpent`.
+   * `null` РІВНО тоді, коли `dayBudget === null` (плану немає) — без цієї
+   * гілки `null − todaySpent` дав би в JS `-todaySpent`, тобто без плану
+   * hero показав би бадьоре «−N ₴ понад бюджет дня» замість CTA
+   * «Постав план».
+   */
+  todayRemaining?: number | null;
+  todaySpent?: number;
+  /** Стрічка місяця — по одному елементу на кожен день (`MonthStrip`). */
+  dailySpend?: MonthStripDay[];
+  todayKey?: string;
+  /** Витрати місяця (футер стрічки) — те саме число, що й у «Місяць». */
+  spent?: number;
+  planExpense?: number;
   hasExpensePlan?: boolean;
   spendPlanRatio?: number;
   showBalance?: boolean;
   /** Відкриває Планування, щоб задати місячний план. */
   onSetPlan?: (() => void) | undefined;
+  /** Тап по клітинці стрічки → `/finyk/transactions?date=YYYY-MM-DD`. */
+  onOpenDay?: ((dayKey: string) => void) | undefined;
+  /** N-3 (аудит 2026-09-16): один слот навчання на екран - ховає підказку стрічки, поки видимий `FirstInsightBanner`. */
+  suppressMonthStripHint?: boolean;
 }
 
 /**
  * Top hero of the Огляд page. Двоповерхова: компактний рядок з нетворсом
- * та розбивкою (картки/борги) зверху, велике число денного бюджету знизу
- * з акцент-кольором статусу та прогресом місяця.
+ * та розбивкою (картки/борги) зверху, стрічка місяця знизу з головним
+ * числом «Лишилось на сьогодні».
  *
- * Денний бюджет — єдине джерело правди на сторінці; MonthPulseCard більше
- * не дублює це число у блоці «Фінпульс».
+ * Денний бюджет — єдине джерело правди на сторінці; `TodaySummaryCard` і
+ * `MonthPulseCard` прибрані (спека `finyk-hero-month-strip.md`, F1
+ * анти-слоп-аудиту) — їхні незамінні рядки живуть тепер в
+ * `OverviewTextRows` під hero, без власного боксу.
  *
  * Phase 2.1 v2 redesign (C3): chrome тепер через `<Card prominence="hero"
  * module="finyk">` + decorative `--hero-grad-finyk` wash. Статус-акцент
@@ -51,10 +74,18 @@ const HeroCardImpl = function HeroCard({
   daysInMonth,
   daysPassed,
   dayBudget = null,
+  todayRemaining = null,
+  todaySpent = 0,
+  dailySpend = [],
+  todayKey = "",
+  spent = 0,
+  planExpense = 0,
   hasExpensePlan = false,
   spendPlanRatio = 0,
   showBalance = true,
   onSetPlan,
+  onOpenDay,
+  suppressMonthStripHint = false,
 }: HeroCardProps) {
   const { statusText } = computePulseStyle({
     hasExpensePlan,
@@ -63,10 +94,8 @@ const HeroCardImpl = function HeroCard({
   });
 
   const daysLeft = Math.max(0, daysInMonth - daysPassed);
-  const monthProgressPct = Math.min(
-    100,
-    Math.max(0, (daysPassed / daysInMonth) * 100),
-  );
+  const isOverBudget = todayRemaining !== null && todayRemaining < 0;
+  const planPct = hasExpensePlan ? Math.round(spendPlanRatio * 100) : 0;
 
   // Лише для замаскованого варіанта: відкрите число набирає `Money`, який
   // сам тримає і тири (П4), і вхідний tween.
@@ -96,11 +125,12 @@ const HeroCardImpl = function HeroCard({
               заради якого екран відкрили. */}
           <div className="min-w-0">
             <p
+              // Завжди чорнильний тон hero, і за мінуса теж: червоне число
+              // на тонованому зеленому тлі читалось найгірше з усього
+              // екрана (звіт власника 2026-09-03). Знак мінус несе Money,
+              // а «Борги −N ₴» рядком нижче й так каже, звідки мінус.
               className={cn(
-                "text-style-title tabular-nums leading-tight",
-                networth < 0
-                  ? "text-danger-strong dark:text-danger"
-                  : "text-hero-ink",
+                "text-style-title tabular-nums leading-tight text-hero-ink",
                 !showBalance && "tracking-widest",
               )}
             >
@@ -151,10 +181,10 @@ const HeroCardImpl = function HeroCard({
       </div>
 
       <div className="relative border-t border-hero-ink/15 px-5 py-4">
-        {dayBudget == null ? (
-          /* Без місячного плану «можна сьогодні» неможливо порахувати чесно
-             (див. AI-CONTEXT у `useOverviewData`), тому замість вигаданого
-             числа — прямий шлях задати план. */
+        {todayRemaining === null ? (
+          /* Без місячного плану «лишилось на сьогодні» неможливо порахувати
+             чесно (див. AI-CONTEXT у `useOverviewData`), тому замість
+             вигаданого числа — прямий шлях задати план. */
           <div>
             <p className="text-style-headline text-hero-ink leading-tight">
               Скільки можна витрачати на день?
@@ -167,7 +197,7 @@ const HeroCardImpl = function HeroCard({
               <button
                 type="button"
                 onClick={onSetPlan}
-                className="mt-3 touch-target inline-flex items-center rounded-xl border border-hero-ink/25 bg-hero-ink/10 px-4 text-style-label font-semibold text-hero-ink transition-colors hover:bg-hero-ink/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                className="mt-3 touch-target inline-flex items-center rounded-xl border border-hero-ink/25 bg-hero-ink/10 px-4 text-style-label font-semibold text-hero-ink transition-colors hover:bg-hero-ink/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
                 Задати план
               </button>
@@ -182,43 +212,80 @@ const HeroCardImpl = function HeroCard({
               )}
             >
               {showBalance ? (
-                /* «₴/день» — одиниця, а не валюта, тож іде тим самим
-                   приглушеним тиром, що й символ (П4: одиниця не того
-                   самого grade, що сума). */
-                <Money
-                  amount={dayBudget}
-                  animate
-                  tone="inherit"
-                  symbol="₴/день"
-                />
+                isOverBudget ? (
+                  <Money
+                    amount={Math.abs(todayRemaining)}
+                    animate
+                    tone="inherit"
+                    symbol="₴ понад бюджет дня"
+                    className="text-chart-finyk"
+                  />
+                ) : (
+                  <Money amount={todayRemaining} animate tone="inherit" />
+                )
               ) : (
                 "••••"
               )}
             </div>
             <p className="text-style-label text-hero-ink mt-1">
-              <span>Можна сьогодні</span>
+              <span>Лишилось на сьогодні</span>
               <span className="text-hero-ink"> · </span>
               <span className="text-hero-ink font-semibold">{statusText}</span>
+            </p>
+            <p
+              data-testid="hero-today-subline"
+              className="text-style-caption text-hero-ink mt-0.5"
+            >
+              {showBalance ? (
+                <>
+                  витрачено <Money amount={todaySpent} tone="inherit" /> із{" "}
+                  <Money amount={dayBudget ?? 0} tone="inherit" />
+                </>
+              ) : (
+                "витрачено ••••"
+              )}
             </p>
           </>
         )}
 
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-style-caption text-hero-ink mb-1">
-            <span>
-              День {daysPassed} з {daysInMonth}
-            </span>
-            <span className="tabular-nums">
-              {Math.round(monthProgressPct)}%
-            </span>
-          </div>
-          <div className="h-1 rounded-full bg-finyk-soft-border overflow-hidden">
-            <div
-              className="h-full rounded-full bg-linear-to-r from-brand-400 to-brand-500 transition-[width] duration-slower"
-              style={{ width: `${monthProgressPct}%` }}
+        {dailySpend.length > 0 && (
+          <div className="mt-4">
+            <MonthStrip
+              days={dailySpend}
+              todayKey={todayKey}
+              dayBudget={dayBudget}
+              showBalance={showBalance}
+              onOpenDay={(dayKey) => onOpenDay?.(dayKey)}
+            />
+            <MonthStripHint
+              hasPlan={dayBudget !== null}
+              suppressed={suppressMonthStripHint}
             />
           </div>
-        </div>
+        )}
+
+        <p
+          data-testid="hero-strip-footer"
+          className="mt-3 text-style-caption text-hero-ink tabular-nums"
+        >
+          {!showBalance ? (
+            <>
+              •••• за місяць · день {daysPassed} із {daysInMonth}
+            </>
+          ) : hasExpensePlan ? (
+            <>
+              <Money amount={spent} tone="inherit" /> із{" "}
+              <Money amount={planExpense} tone="inherit" />
+              {" · "}
+              {planPct}% плану · день {daysPassed} із {daysInMonth}
+            </>
+          ) : (
+            <>
+              <Money amount={spent} tone="inherit" /> за місяць · день{" "}
+              {daysPassed} із {daysInMonth}
+            </>
+          )}
+        </p>
       </div>
     </Card>
   );

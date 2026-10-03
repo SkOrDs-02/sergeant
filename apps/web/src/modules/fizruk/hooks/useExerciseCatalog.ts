@@ -2,11 +2,11 @@ import { useCallback, useMemo } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractCustomExerciseSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractCustomExerciseSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 import { foldApostrophes } from "@sergeant/shared";
@@ -50,22 +50,23 @@ export function useExerciseCatalog() {
   const musclesUk = FizrukData.MUSCLES_UK;
   const musclesByPrimaryGroup = FizrukData.MUSCLES_BY_PRIMARY_GROUP;
 
+  const intended = useFizrukIntendedSlice<"customExercises">(sqliteCacheTick);
+
   const persistCustom = useCallback(
     (next: RawExerciseDef[]) => {
       setCustomExercises(next);
-      const prevDualWrite =
-        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      const nextDualWrite = {
-        ...prevDualWrite,
-        customExercises: extractCustomExerciseSnapshots(next),
-      };
+      const transition = fizrukDualWriteTransition(
+        "customExercises",
+        intended,
+        extractCustomExerciseSnapshots(next),
+      );
       try {
-        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        triggerFizrukDualWrite(transition.prev, transition.next);
       } catch {
         /* trigger is fire-and-forget — never propagate */
       }
     },
-    [setCustomExercises],
+    [intended, setCustomExercises],
   );
 
   const exercises = useMemo(

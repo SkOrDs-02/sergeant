@@ -1,5 +1,5 @@
 // Migration 039 — focused round-trip for the Finyk tables
-// (Stage 4 / PR #035 of `docs/planning/storage-roadmap.md`).
+// (Stage 4 / PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // Mirrors `035-nutrition-tables.test.ts`: same Docker / pgvector
 // testcontainer harness, same soft-skip behaviour, same assertions
@@ -54,20 +54,34 @@ const FINYK_TABLES = [
   "finyk_tx_splits",
 ] as const;
 
+// SCOPE: сюди входять і індекси, які на таблиці 039 вішають ПІЗНІШІ
+// міграції — тест міряє фактичний стан схеми після всього набору, а не
+// вміст одного файлу. Вісім `_user_cascade_idx` створює
+// `142_cascade_user_id_indexes.sql`: частковий `_user_active_idx`
+// (`WHERE deleted_at IS NULL`) для беззастережного каскадного DELETE не
+// придатний, тож 142 додає беззастережний по `(user_id)` поруч.
 const FINYK_INDEXES = [
   "finyk_assets_user_active_idx",
+  "finyk_assets_user_cascade_idx",
   "finyk_budgets_user_active_idx",
+  "finyk_budgets_user_cascade_idx",
   "finyk_custom_categories_user_active_idx",
+  "finyk_custom_categories_user_cascade_idx",
   "finyk_debts_user_active_idx",
+  "finyk_debts_user_cascade_idx",
   "finyk_hidden_accounts_user_active_idx",
   "finyk_hidden_transactions_user_active_idx",
   "finyk_manual_expenses_user_active_idx",
+  "finyk_manual_expenses_user_cascade_idx",
   "finyk_mono_debt_links_user_idx",
   "finyk_networth_history_user_month_idx",
   "finyk_receivables_user_active_idx",
+  "finyk_receivables_user_cascade_idx",
   "finyk_subscriptions_user_active_idx",
+  "finyk_subscriptions_user_cascade_idx",
   "finyk_tx_categories_user_idx",
   "finyk_tx_filters_user_active_idx",
+  "finyk_tx_filters_user_cascade_idx",
   "finyk_tx_splits_user_idx",
 ] as const;
 
@@ -459,6 +473,13 @@ describe("039_finyk_tables migration", () => {
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.sql");
       await execSqlFile(pool, "096_finyk_fizruk_pk_text.sql");
       await execSqlFile(pool, "108_finyk_networth_history_double.sql");
+      // 142 вішає вісім `_user_cascade_idx` на таблиці 039. Розмотувати
+      // його окремо не треба — `039_finyk_tables.down.sql` зносить самі
+      // таблиці, а з ними й індекси. Але накотити назад обовʼязково,
+      // інакше `after` недорахує рівно тих восьми. Файл увесь на
+      // `CREATE INDEX IF NOT EXISTS`, тож повторний прогін по таблицях,
+      // яких цей цикл не чіпав, — no-op.
+      await execSqlFile(pool, "142_cascade_user_id_indexes.sql");
 
       const after = {
         tables: await listTables(pool),

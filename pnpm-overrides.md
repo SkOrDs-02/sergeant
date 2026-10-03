@@ -1,10 +1,10 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-08.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-01-03.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
-Правила: [`docs/04-governance/governance/pnpm-overrides-policy.md`](docs/04-governance/governance/pnpm-overrides-policy.md).
+Правила: [`docs/governance/governance/pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md).
 
 ---
 
@@ -75,7 +75,7 @@ Vite / postcss-loader тягнуть різні patch-рівні; override га�
 
 **Why:** Деякі transitive залежники підтягували `uuid@v1`–`v8` (CJS-only, без `crypto`
 failsafe). UUID v14 — мажор з ESM-first, покращеним RNG та видаленням deprecated v1/v6 API.
-Пов'язано з hardening card L1 (`docs/04-governance/security/hardening/L1-uuid-override.md`).
+Пов'язано з hardening card L1 (`docs/work/specs/security-hardening/L1-uuid-override.md`).
 
 **Drop when:** Всі workspaces явно залежать від `uuid@^14` або мігрують на `crypto.randomUUID()`
 (native, без пакету).
@@ -149,7 +149,7 @@ pull `protobufjs@8.0.0`. The selector-form override bumps only the vulnerable 8.
 **Drop when:** All transitive consumers declare `protobufjs >=8.0.2` in their own `package.json`,
 or the advisory is retracted.
 
-**Owner:** @Skords-01
+**Owner:** @klas149
 
 **Last reviewed:** 2026-06-05
 
@@ -210,9 +210,56 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 | `js-yaml@>=3.0.0 <3.15.0`        | `3.15.0`          | — (борг)              |
 | `js-yaml@>=4.0.0 <4.3.0`         | `4.3.0`           | — (борг)              |
 | `qs@>=6.11.1 <6.15.2`            | `6.15.2`          | — (борг)              |
-| `axios@>=1.15.2 <1.18.0`         | `>=1.18.0`        | — (борг)              |
-| `fast-uri`                       | `3.1.5`           | — (борг)              |
+| `axios@>=1.15.2 <1.20.0`         | `>=1.20.0`        | — (борг)              |
+| `@grpc/grpc-js@>=1.14.0 <1.14.5` | `>=1.14.5`        | — (борг)              |
+| `fast-uri`                       | `^3.1.6`          | ✅ так                |
 | `ip-address@<10.3.1`             | `>=10.3.1`        | — (борг)              |
+| `browserslist@<4.28.7`           | `>=4.28.7`        | ✅ так                |
 
-Всього: **32** override-ів. Борг на дописування обґрунтувань трекається політикою
-[`pnpm-overrides-policy.md`](docs/04-governance/governance/pnpm-overrides-policy.md) § Правила п.1.
+Всього: **34** override-ів. Борг на дописування обґрунтувань трекається політикою
+[`pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md) § Правила п.1.
+
+---
+
+## `browserslist@<4.28.7` → `>=4.28.7`
+
+**Why:** CVE-2026-73088 (prototype pollution → DoS) і CVE-2026-73089 (необмежений ріст
+пам'яті) у `browserslist <4.28.7`. Пакет — dev-транзитив через `@babel/core →
+@babel/helper-compilation-targets` у кожному воркспейсі, але потрапляє в образ `Dockerfile.api`,
+тож Trivy image scan гейтить його як HIGH. Override піднімає всі копії до 4.28.8 і змінює в
+лок-файлі лише сам пакет та його дані про браузери (`caniuse-lite`, `electron-to-chromium`,
+`node-releases`, `update-browserslist-db`).
+
+**Drop when:** `@babel/helper-compilation-targets` (через `@babel/core`) оголосить
+`browserslist@^4.28.7` або новіше і `pnpm why browserslist -r` не покаже жодної копії `<4.28.7`.
+
+**Last reviewed:** 2026-09-01
+
+## `fast-uri` → `^3.1.6`
+
+**Why:** чотири high-адвайзорі проти `fast-uri <3.1.6`, усі патчаться в `3.1.6`:
+
+| Advisory                                                                                                                                                    | Вразливий діапазон |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| [GHSA-5jgf-p345-68v8](https://github.com/advisories/GHSA-5jgf-p345-68v8) — host confusion через пропущену IDN-канонікалізацію на scheme-relative посиланнях | `>=3.1.3 <3.1.6`   |
+| [GHSA-f65p-4m7j-42xc](https://github.com/advisories/GHSA-f65p-4m7j-42xc) — SSRF через нормалізацію некоректного IPv6                                        | `>=3.0.0 <3.1.6`   |
+| [GHSA-fph4-wmhf-6fwf](https://github.com/advisories/GHSA-fph4-wmhf-6fwf) — SSRF через повторне percent-декодування хоста                                    | `>=3.1.2 <3.1.6`   |
+| [GHSA-jqff-g426-hqxp](https://github.com/advisories/GHSA-jqff-g426-hqxp) — host confusion через percent-encoded нормалізацію схеми                          | `>=3.0.0 <3.1.6`   |
+
+Історія цього запису варта окремої згадки, бо вона зворотна до звичайної. Тут override
+не **лікував** вразливість, а **тримав** її: він стояв точним піном `3.1.5` без
+обґрунтування (у таблиці — «— (борг)»), тож коли 2026-09-02 вийшли ці чотири адвайзорі,
+опубліковані вже `3.1.6` і `3.1.7` до дерева не діставалися, і `Dependency audit` став
+червоним на `main` та на кожному PR.
+
+**Висновок ширший за цей пакет:** точний пін без записаного «чому» — це не фіксація, а
+міна сповільненої дії. Селектор із діапазоном (`^3.1.6`) лагодить те, заради чого пін
+ставили, і не блокує патчі. Політика вже цього вимагає — див.
+[`pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md)
+§ Правила п.1; цей випадок показує, у що обходиться борг на обґрунтуваннях.
+
+**Drop when:** усі споживачі (`ajv`, `fast-json-stringify` і решта fastify-стека)
+оголосять `fast-uri@>=3.1.6` самі, і `pnpm why fast-uri -r` не покаже жодної копії
+`<3.1.6`.
+
+**Last reviewed:** 2026-09-02

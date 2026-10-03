@@ -8,15 +8,17 @@ import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { toKyivISODate } from "@sergeant/shared";
 import { readFinykStatsContext } from "@finyk/utils";
+import { compareAmounts } from "@sergeant/finyk-domain/domain/selectors";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
+import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
-  getPeriodRange,
-  datesInRange,
-  localDateKey,
+  reportWindows,
   type Period,
   type SpendingInputs,
 } from "./hubReports.aggregation";
@@ -89,7 +91,8 @@ function BarChart({
           >
             {vals.map((v, i) => {
               const pct = Math.max(0, Math.min(100, (v / max) * 100));
-              const isToday = dates[i] === localDateKey();
+              // «Сьогодні» для грошей — київське (f6), як і межа доби в агрегаті.
+              const isToday = dates[i] === toKyivISODate();
               const isSelected = selected === i;
               return (
                 <button
@@ -141,47 +144,23 @@ function BarChart({
   );
 }
 
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0)
-    return <span className="text-style-caption text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
+/**
+ * Чип зміни витрат до попереднього періоду за правилом Р4 (канон finyk,
+ * журнал 2026-09-24): відсоток лише коли попередня сума є базою
+ * (`compareAmounts`: ≥ 10 % поточної), інакше абсолютна дельта в гривнях.
+ * Без цього «+946 %» проти минулого періоду з однією витратою на 75 ₴
+ * читалось як дефект. Агрегат картки — цілі гривні (`calcFinykSpendingByDate`
+ * округлює по днях), тож копійки тут `× 100`: точніших значень картка не має.
+ */
+function SpendingDelta({ cur, prev }: { cur: number; prev: number }) {
+  const { pct } = compareAmounts(Math.round(cur * 100), Math.round(prev * 100));
   return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
+    <DeltaChip
+      cur={cur}
+      prev={prev}
+      higherIsBetter={false}
+      {...(pct === null ? { absoluteUnit: "₴" } : {})}
+    />
   );
 }
 
@@ -203,10 +182,23 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
   const mirrorTick = useFinykMonoMirrorTick();
+  // CALC-4 (2026-09-01 product audit): `readFinykStatsContext()` reads
+  // `getCachedFinykSqliteState()` — a synchronous snapshot of the Finyk
+  // SQLite warm cache, refreshed by `refreshCachesAfterPull` once a sync
+  // pull lands. That refresh bumps ONLY this tick
+  // (`notifyFinykSqliteCacheRefresh` — no `hubBus("storageUpdated")`
+  // emit), so on a cold deep-link straight to `/?tab=reports` (nothing
+  // else warmed the Finyk cache yet) this card computed its `useMemo`
+  // once against an empty cache and never re-ran: `bump`/`mirrorTick`
+  // never change for a Finyk-only pull. Reached via SPA nav from
+  // `/finyk/*` it looked fine only because that route had already
+  // warmed the same module-level cache before this card ever mounted.
+  const sqliteCacheTick = useFinykSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates, partial } = useMemo(() => {
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
+    void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
     // W1-CANON-AGG стадія 2d: картка більше не збирає всесвіт власноруч із
     // самого лише mono-mirror — вона бере той самий канонічний контекст, що
     // й тижневий дайджест і коуч, тож готівкові витрати входять у Звіти.
@@ -220,16 +212,20 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       txSplits: txSplits as Record<string, unknown[]>,
     };
 
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    // Гроші ріжуться за Києвом (f6): вікна «до сьогодні» — `w.money`, не
+    // `w.cur`, а день транзакції `aggregateSpending` бере київський.
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateSpending(inputs, curDates),
-      prev: aggregateSpending(inputs, prevDates),
-      dates: curDates,
+      cur: aggregateSpending(inputs, w.money.cur),
+      prev: aggregateSpending(inputs, w.money.prev),
+      prevAny: aggregateSpending(inputs, w.prevAll).total > 0,
+      dates: w.dates,
+      partial: w.money.partial,
     };
-  }, [period, offset, bump, mirrorTick]);
+  }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
+
+  // Нуль в обох вікнах: витрат ще не записували, «0 ₴» тут не результат.
+  const empty = cur.total === 0 && !prevAny;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -257,11 +253,17 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <Money
-              amount={cur.total}
-              className="text-style-body font-bold text-text"
-            />
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            {empty ? (
+              <span className="text-style-body font-bold text-text">–</span>
+            ) : (
+              <>
+                <Money
+                  amount={cur.total}
+                  className="text-style-body font-bold text-text"
+                />
+                <SpendingDelta cur={cur.total} prev={prev.total} />
+              </>
+            )}
           </span>
         )}
         <svg
@@ -282,17 +284,25 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyExpenses}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <Money
               amount={cur.total}
               className="text-style-headline text-text"
             />
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            <SpendingDelta cur={cur.total} prev={prev.total} />
           </div>
           <p className="text-style-caption text-muted">
-            {messages.hub.reportPrevious} <Money amount={prev.total} />
+            {partial
+              ? messages.hub.reportPreviousToDate
+              : messages.hub.reportPrevious}{" "}
+            <Money amount={prev.total} />
           </p>
           <BarChart
             key={`${period}-${offset}`}

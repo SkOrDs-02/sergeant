@@ -43,9 +43,10 @@ export function TransactionSyncPill({
       ? "text-danger-strong dark:text-danger border-danger/30 bg-danger/10"
       : syncState?.status === "partial"
         ? "text-warning-strong dark:text-warning border-warning/30 bg-warning/10"
-        : syncState?.status === "loading"
-          ? "text-subtle border-line/60 bg-panelHi/60"
-          : "text-subtle border-line/60 bg-panelHi/60";
+        : // `loading` і решта станів мали однаковий тон (різнилась лише крапка
+          // нижче), тому гілка одна. Суцільна заливка й межа: напівпрозора
+          // `/60` змішувалась із тлом під пілюлею (хвиля 5 аудиту контрасту).
+          "text-subtle border-line bg-panelHi";
   const dot =
     syncState?.status === "error"
       ? "bg-danger"
@@ -62,7 +63,7 @@ export function TransactionSyncPill({
         : syncState?.status === "partial"
           ? "частково"
           : syncState?.status === "error"
-            ? "помилка"
+            ? "не синхронізовано"
             : "";
   const sourceLabel =
     syncState?.source === "network"

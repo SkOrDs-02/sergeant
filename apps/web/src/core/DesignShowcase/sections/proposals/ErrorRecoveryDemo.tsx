@@ -22,7 +22,7 @@ export function ErrorRecoveryDemo() {
         <MiniPhone dim>
           <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 text-center gap-2">
             <span className="h-10 w-10 rounded-full bg-surface-muted flex items-center justify-center text-muted">
-              <Icon name="alert-triangle" size={20} />
+              <Icon name="alert-triangle" size="lg" />
             </span>
             <p className="text-style-caption text-text">Щось пішло не так</p>
             <p className="text-style-caption text-muted">Оновіть сторінку.</p>
@@ -35,7 +35,7 @@ export function ErrorRecoveryDemo() {
             {recovered ? (
               <>
                 <span className="h-10 w-10 rounded-full bg-accent/15 flex items-center justify-center text-accent">
-                  <Icon name="check-circle" size={20} />
+                  <Icon name="check-circle" size="lg" />
                 </span>
                 <p className="text-style-caption text-text">
                   Секцію відновлено
@@ -47,7 +47,7 @@ export function ErrorRecoveryDemo() {
             ) : (
               <>
                 <span className="h-10 w-10 rounded-full bg-danger/15 flex items-center justify-center text-danger">
-                  <Icon name="cloud-off" size={20} />
+                  <Icon name="cloud-off" size="lg" />
                 </span>
                 <p className="text-style-caption text-text">
                   Не вдалось завантажити звіт
@@ -61,7 +61,7 @@ export function ErrorRecoveryDemo() {
                     onClick={() => setRecovered(true)}
                     className="h-9 rounded-xl bg-accent text-bg text-style-caption font-medium flex items-center justify-center gap-1.5"
                   >
-                    <Icon name="refresh-cw" size={14} /> Повторити
+                    <Icon name="refresh-cw" size="sm" /> Повторити
                   </button>
                   <button
                     type="button"

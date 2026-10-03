@@ -15,25 +15,21 @@
  *   • Empty pantry hint
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+
+// Гейт тижневого плану тягне `usePlan` → react-query; поведінку гейта
+// покриває `core/billing/useFeatureGate.test.tsx`.
+vi.mock("../../../core/billing", () => ({
+  useFeatureGate: () => ({ requireAccess: () => true, paywallOpen: false }),
+  PaywallModal: () => null,
+}));
 import { flatMatch } from "@shared/testing/numberText";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 
 // ─── Stub heavy sub-components ────────────────────────────────────────────
 
-vi.mock("@shared/components/ui/Card", () => ({
-  Card: ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <div data-testid="card" className={className}>
-      {children}
-    </div>
-  ),
-}));
+// `Card` не мокаємо (бюджет vi.mock) — чиста презентаційна обгортка без
+// мережі/сторедж-побічних ефектів, жоден тест тут не читає її testid.
 
 vi.mock("@shared/components/ui/Input", () => ({
   Input: ({
@@ -154,9 +150,7 @@ describe("DailyPlanCard — basic render", () => {
 
   it("renders the description text", () => {
     render(<DailyPlanCard prefs={EMPTY_PREFS} {...defaultHandlers} />);
-    expect(
-      screen.getByText(/AI генерує персоналізований план/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Складу план прийомів їжі/i)).toBeInTheDocument();
   });
 
   it("renders the 'Згенерувати денний план' button and calls fetchDayPlan on click", () => {
@@ -209,7 +203,7 @@ describe("DailyPlanCard — basic render", () => {
         pantryItems={[]}
       />,
     );
-    expect(screen.getByText(/Комору зараз не враховує/i)).toBeInTheDocument();
+    expect(screen.getByText(/Комору зараз не враховую/i)).toBeInTheDocument();
     expect(screen.queryByText(/Додай продукти в комору/i)).toBeNull();
   });
 });
@@ -410,6 +404,28 @@ describe("DailyPlanCard — weekPlan section", () => {
     );
     expect(screen.getByText("Діагностика плану (raw)")).toBeInTheDocument();
     expect(screen.getByText("raw diagnostic text")).toBeInTheDocument();
+  });
+
+  // Regression PR-N8 (аудит 2026-09-13): сира відповідь моделі була видима
+  // КОЖНОМУ в проді — жодного гейта, крім стану даних. Перевірка вище цього
+  // не ловила, бо під Vitest `import.meta.env.DEV` і так `true`: вона
+  // описувала лише dev-гілку, не знаючи про це.
+  it("ховає сиру діагностику в прод-збірці", () => {
+    vi.stubEnv("DEV", false);
+    try {
+      render(
+        <DailyPlanCard
+          prefs={EMPTY_PREFS}
+          {...defaultHandlers}
+          weekPlanRaw="raw diagnostic text"
+          weekPlan={null}
+        />,
+      );
+      expect(screen.queryByText("Діагностика плану (raw)")).toBeNull();
+      expect(screen.queryByText("raw diagnostic text")).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

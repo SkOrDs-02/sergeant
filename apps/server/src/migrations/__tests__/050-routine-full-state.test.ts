@@ -1,5 +1,5 @@
 // Migration 050 — focused round-trip for the Routine full-state tables
-// (Stage 10 / PR #070r-schema of `docs/planning/storage-roadmap.md`).
+// (Stage 10 / PR #070r-schema of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // Mirrors `035-nutrition-tables.test.ts` and `039-finyk-tables.test.ts`:
 // same Docker / pgvector testcontainer harness, same soft-skip
@@ -30,19 +30,23 @@ const MIGRATIONS_DIR = path.resolve(__dirname, "..");
 
 const TIMEOUT_MS = 180_000;
 
-// Stage 10 / PR #070r-schema introduces 7 new tables (extending the
+// Stage 10 / PR #070r-schema introduced 7 new tables (extending the
 // 026_routine_tables.sql baseline of `routine_entries` /
 // `routine_streaks`). The test scopes itself to the new tables only —
 // the baseline pair stays out of this list and out of the
 // down.sql so we don't accidentally drop production tables that
 // migration 026 owns.
+//
+// `routine_pushups` is the seventh: the test applies the WHOLE chain, and
+// 139_drop_routine_pushups.sql removes that table (the push-up counter
+// became ordinary fizruk_workouts — 140). So it is asserted ABSENT in its
+// own case below, not present here.
 const ROUTINE_FULL_STATE_TABLES = [
   "routine_categories",
   "routine_completion_notes",
   "routine_habit_order",
   "routine_habits",
   "routine_prefs",
-  "routine_pushups",
   "routine_tags",
 ] as const;
 
@@ -166,7 +170,7 @@ async function listColumns(
 
 describe("050_routine_full_state migration", () => {
   it(
-    "creates all 7 new routine tables and their explicit indexes after forward migration",
+    "creates the 6 routine tables that survive the full chain (routine_pushups is dropped by 139) and their explicit indexes",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();
@@ -220,6 +224,9 @@ describe("050_routine_full_state migration", () => {
         // дописує колонку В КІНЕЦЬ, тому вона тут після `deleted_at`, а не
         // поруч із легасі-прапором `paused`.
         "pause_intervals",
+        // 135_routine_weekly_target_history.sql — історія тижневої цілі для
+        // `recurrence='flexible'`. Так само фізично додається в кінець.
+        "weekly_target_history",
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
@@ -234,6 +241,8 @@ describe("050_routine_full_state migration", () => {
       expect(byName["tag_ids"]!.nullable).toBe("NO");
       expect(byName["reminder_times"]!.type).toBe("jsonb");
       expect(byName["weekdays"]!.type).toBe("jsonb");
+      expect(byName["weekly_target_history"]!.type).toBe("jsonb");
+      expect(byName["weekly_target_history"]!.nullable).toBe("NO");
       expect(byName["archived"]!.type).toBe("boolean");
       expect(byName["paused"]!.type).toBe("boolean");
       expect(byName["created_at"]!.type).toBe("timestamp with time zone");
@@ -243,7 +252,7 @@ describe("050_routine_full_state migration", () => {
   );
 
   it(
-    "routine_pushups is keyed on (user_id, date_key)",
+    "routine_pushups is gone after the full chain (139) and 139.down restores the 050 shape",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();
@@ -253,6 +262,17 @@ describe("050_routine_full_state migration", () => {
       await resetSchema(pool);
       for (const f of ups) await execSqlFile(pool, f);
 
+      // 139_drop_routine_pushups.sql: лічильник відтискань переїхав у
+      // fizruk_workouts (140), тож після повного ланцюжка таблиці бути не має.
+      const gone = await pool.query<{ reg: string | null }>(
+        `SELECT to_regclass('public.routine_pushups')::text AS reg`,
+      );
+      expect(gone.rows[0]?.reg).toBeNull();
+
+      // Down-ланцюжок 110 → 050 спирається на форму з 050 — її повертає
+      // 139.down.sql. Пін тієї форми (колонки + PK) живе тут, бо після 139
+      // це єдине місце, де вона ще існує.
+      await execSqlFile(pool, "139_drop_routine_pushups.down.sql");
       const cols = await listColumns(pool, "routine_pushups");
       expect(cols.map((c) => c.name)).toEqual([
         "user_id",
@@ -433,6 +453,16 @@ describe("050_routine_full_state migration", () => {
       // повторного накату 098 `after` лишився б без колонки, яку `before`
       // уже має. Та сама причина, що й для 094 вище.
       await execSqlFile(pool, "098_routine_habit_skips.sql");
+      // 135_routine_weekly_target_history.sql — те саме: додає
+      // `weekly_target_history` до `routine_habits`, тож після
+      // перестворення таблиці має бути накочена повторно.
+      //
+      // AI-DANGER: цей список — РУЧНЕ дзеркало міграцій, що доливають
+      // колонки в `routine_habits` після 050, і його вже двічі забували
+      // синхронізувати. Кожна наступна така міграція мусить зʼявитись і
+      // тут, інакше `before` матиме колонку, а `after` — ні. Повний набір:
+      // `grep -l routine_habits apps/server/src/migrations/*.sql`.
+      await execSqlFile(pool, "135_routine_weekly_target_history.sql");
 
       const after = {
         tables: await listFullStateTables(pool),

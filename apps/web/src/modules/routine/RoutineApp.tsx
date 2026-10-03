@@ -28,6 +28,8 @@ import { RoutineHeader } from "./RoutineHeader";
 import { RoutineTimeline } from "./RoutineTimeline";
 import { useRoutineAppState } from "./useRoutineAppState";
 import { useRoutineQuickStatsWriter } from "./hooks/useRoutineQuickStatsWriter";
+import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneCelebration";
+import { messages } from "@shared/i18n/uk";
 
 export interface RoutineAppProps {
   onBackToHub?: () => void;
@@ -56,8 +58,6 @@ export default function RoutineApp({
     setMainTab,
     quickAddHabitOpen,
     quickAddFocusTick,
-    quickAddFirstRunHint,
-    dismissQuickAddFirstRunHint,
     openQuickAddHabit,
     closeQuickAddHabit,
     streakMax,
@@ -67,11 +67,22 @@ export default function RoutineApp({
     handlePullRefreshError,
   } = useRoutineAppState({ pwaAction, onPwaActionConsumed, onOpenModule });
 
+  // Віха серії — тиха плашка (O1). Сидить на `streakMax`, а не в
+  // `onToggleHabit`, і це навмисно: стрік перетинає поріг і з «відмітити
+  // всі» (`onBulkMarkDay`), і після sync із сусіднього пристрою. Хук на
+  // похідному значенні ловить усі шляхи разом; обробник ловив би один.
+  useStreakMilestoneCelebration(
+    "routine",
+    streakMax,
+    messages.routine.streakMilestone.toast,
+  );
+
   // Keep the Hub routine bento card's quick-stats snapshot in sync with real
   // habits/completions, not just the onboarding demo seed.
   useRoutineQuickStatsWriter({
     habits: routine.habits,
     completions: routine.completions,
+    skips: routine.skips,
   });
 
   return (
@@ -83,11 +94,25 @@ export default function RoutineApp({
       {/* `bottom-nav-height-var` — див. FinykApp: навігацію малює модуль,
           тож і змінну висоти для `Sheet` виставляє він. */}
       <MeshBackground className="bottom-nav-height-var">
-        <RoutineHeader
-          onBackToHub={onBackToHub}
-          onGoToHub={onGoToHub}
-          onOpenSettings={onOpenSettings}
-        />
+        {/* `<header>` тут, бо саме Рутина — єдиний модуль, чия шапка
+            лежить поза будь-яким landmark-ом. `ModuleShell` загортає
+            модуль у `<main>`, АЛЕ для routine свідомо підставляє `<div>`
+            (Рутина рендерить власний `<main id="routine-main">` нижче, і
+            два `<main>` були б порушенням). Наслідок: у фініка, фізрука й
+            їжі шапка потрапляє всередину `<main>`, а тут — нікуди, тож
+            «Рутина» і «Звички й події» висіли поза landmark-ами на всіх
+            трьох сторінках модуля (axe `region`, свіп 2026-09-16).
+
+            `<header>` не вкладений у main/article/section, тож дає роль
+            `banner` — єдиний banner на сторінці (перевірено: ані
+            `RootLayout`, ані `ModuleShell` свого не мають). */}
+        <header>
+          <RoutineHeader
+            onBackToHub={onBackToHub}
+            onGoToHub={onGoToHub}
+            onOpenSettings={onOpenSettings}
+          />
+        </header>
 
         <SwipePages
           ids={ROUTINE_TAB_IDS}
@@ -117,8 +142,6 @@ export default function RoutineApp({
           setRoutine={setRoutine}
           quickAddHabitOpen={quickAddHabitOpen}
           quickAddFocusTick={quickAddFocusTick}
-          quickAddFirstRunHint={quickAddFirstRunHint}
-          onDismissQuickAddFirstRunHint={dismissQuickAddFirstRunHint}
           onOpenQuickAddHabit={openQuickAddHabit}
           onCloseQuickAddHabit={closeQuickAddHabit}
         />

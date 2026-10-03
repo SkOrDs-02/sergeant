@@ -153,19 +153,21 @@ exports[`finyk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-stab
       1,
       "[]",
       "[]",
+      "{}",
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
     ],
     "sql": "INSERT INTO finyk_prefs
        (user_id, monthly_plan_json, show_balance,
-        excluded_stat_tx_ids_json, dismissed_recurring_json,
+        excluded_stat_tx_ids_json, dismissed_recurring_json, prefs_json,
         created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET
        monthly_plan_json         = excluded.monthly_plan_json,
        show_balance              = excluded.show_balance,
        excluded_stat_tx_ids_json = excluded.excluded_stat_tx_ids_json,
        dismissed_recurring_json  = excluded.dismissed_recurring_json,
+       prefs_json                = excluded.prefs_json,
        updated_at                = excluded.updated_at
      WHERE excluded.updated_at > finyk_prefs.updated_at",
   },

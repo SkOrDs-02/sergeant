@@ -47,7 +47,9 @@ import type {
 } from "@sergeant/shared";
 import { AiMemoryListQuerySchema } from "@sergeant/shared";
 
+import { runWithUserContext } from "../../dbContext.js";
 import { logger } from "../../obs/logger.js";
+import { ValidationError } from "../../obs/errors.js";
 import { removeMemoryBankEntry } from "../me/profile.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
@@ -99,8 +101,7 @@ export function buildMemoryListHandler(pool: Pool) {
 
     const parsed = AiMemoryListQuerySchema.safeParse(req.query);
     if (!parsed.success) {
-      res.status(400).json({ error: "invalid_query" });
-      return;
+      throw new ValidationError("invalid_query");
     }
     const limit = Math.min(
       parsed.data.limit ?? MEMORY_LIST_DEFAULT_LIMIT,
@@ -114,17 +115,15 @@ export function buildMemoryListHandler(pool: Pool) {
     // Два повні літерали замість одного шаблона з `${cursorClause}`: SQL
     // тут ніколи не склеюється рядками, тож `no-restricted-syntax` не має
     // приводу спрацювати, а читач бачить обидва запити цілком.
-    const result =
+    const result = await runWithUserContext(pool, userId, (client) =>
       cursor === undefined
-        ? await pool.query<MemoryListRow>(SQL_LIST_FIRST_PAGE, [
-            userId,
-            limit + 1,
-          ])
-        : await pool.query<MemoryListRow>(SQL_LIST_AFTER_CURSOR, [
+        ? client.query<MemoryListRow>(SQL_LIST_FIRST_PAGE, [userId, limit + 1])
+        : client.query<MemoryListRow>(SQL_LIST_AFTER_CURSOR, [
             userId,
             limit + 1,
             cursor,
-          ]);
+          ]),
+    );
 
     const hasMore = result.rows.length > limit;
     const page = hasMore ? result.rows.slice(0, limit) : result.rows;
@@ -163,8 +162,7 @@ export function buildMemoryDeleteHandler(pool: Pool) {
     const raw = req.params["id"];
     const id = Number(raw);
     if (!Number.isSafeInteger(id) || id <= 0) {
-      res.status(400).json({ error: "invalid_id" });
-      return;
+      throw new ValidationError("invalid_id");
     }
 
     // L-8 Фаза 2 (2026-08-09): DELETE + узгоджене прибирання з
@@ -174,12 +172,9 @@ export function buildMemoryDeleteHandler(pool: Pool) {
     // на другому запиті), ROLLBACK повертає й сам `ai_memories`-DELETE —
     // інакше факт зникає зі списку, але кнопка "видалення" насправді
     // нічого не гарантує, рівно той баг, що ця зміна лагодить.
-    const client = await pool.connect();
     let deleted = false;
     let source: string | null = null;
-    let rollbackFailed = false;
-    try {
-      await client.query("BEGIN");
+    await runWithUserContext(pool, userId, async (client) => {
       // `user_id = $1` — не декорація: без нього будь-хто з сесією стирав би
       // чужі факти за перебором id. Партиційний ключ теж user_id, тож умова
       // ще й тримає запит в одній партиції.
@@ -197,25 +192,9 @@ export function buildMemoryDeleteHandler(pool: Pool) {
       if (deleted && row?.source === "profile" && row.source_ref) {
         await removeMemoryBankEntry(client, userId, row.source_ref);
       }
-
-      await client.query("COMMIT");
-    } catch (error) {
-      await client.query("ROLLBACK").catch(() => {
-        // ROLLBACK не пройшов — зʼєднання лишилось усередині обірваної
-        // транзакції. Повернути таке в пул означає віддати наступному
-        // викликачу зламане зʼєднання (його перший же запит отримає
-        // `current transaction is aborted`). `release(err)` натомість
-        // знищує зʼєднання, і пул відкриває свіже.
-        //
-        // Оригінальна помилка все одно перемагає — вона й летить далі.
-        rollbackFailed = true;
-      });
-      throw error;
-    } finally {
-      // `release(true)` — знищити, `release()` — повернути в пул.
-      if (rollbackFailed) client.release(true);
-      else client.release();
-    }
+      // BEGIN / COMMIT / ROLLBACK (і `release(true)` на збої ROLLBACK)
+      // веде `runWithUserContext`: обидві зміни атомарні.
+    });
 
     if (deleted) {
       logger.info({

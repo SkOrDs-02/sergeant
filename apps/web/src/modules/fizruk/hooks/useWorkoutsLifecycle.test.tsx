@@ -2,13 +2,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
-import type { WorkoutsView } from "../pages/Workouts.types";
 import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useRestTimerCountdown,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 
 describe("useActiveWorkoutIdPersistence", () => {
@@ -70,13 +68,39 @@ describe("useStaleActiveWorkoutCleanup", () => {
       expect(setId).not.toHaveBeenCalled();
     });
 
-    it("still clears the id when the routed workout genuinely does not exist", () => {
+    // Було «still clears the id when the routed workout genuinely does not
+    // exist». Виявилось, що «взагалі немає» і «ще не приїхало» тут одне й те
+    // саме: `workoutsLoaded` каже про факт прогріву кеша, не про його вміст.
+    // З базою в OPFS прогрів встигає після монтування маршруту, і занулення
+    // ховало щойно створену сесію назавжди — авто-підхоплення під тим самим
+    // прапорцем вимкнене. Картку «не знайдено» малює `activeWorkout === null`,
+    // тож видалена сесія читається так само; різниця лише в оборотності.
+    it("не забирає id маршруту, якщо сесії ще немає у списку", () => {
       const setId = vi.fn();
       renderHook(() =>
         useStaleActiveWorkoutCleanup(true, [], "ghost", setId, {
           routeOwnsWorkoutId: true,
         }),
       );
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("id маршруту доживає до появи сесії у кеші", () => {
+      const setId = vi.fn();
+      const { rerender } = renderHook(
+        ({ workouts }: { workouts: Workout[] }) =>
+          useStaleActiveWorkoutCleanup(true, workouts, "w1", setId, {
+            routeOwnsWorkoutId: true,
+          }),
+        { initialProps: { workouts: [] as Workout[] } },
+      );
+      rerender({ workouts: [{ id: "w1", endedAt: null } as Workout] });
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("без прапорця неіснуючий id досі чиститься", () => {
+      const setId = vi.fn();
+      renderHook(() => useStaleActiveWorkoutCleanup(true, [], "ghost", setId));
       expect(setId).toHaveBeenCalledWith(null);
     });
 
@@ -106,25 +130,6 @@ describe("useStaleActiveWorkoutCleanup", () => {
       );
       expect(setId).toHaveBeenCalledWith(null);
     });
-  });
-});
-
-describe("useWorkoutsViewFromSession", () => {
-  beforeEach(() => sessionStorage.clear());
-
-  it("consumes a templates flag and clears it", () => {
-    sessionStorage.setItem("fizruk_workouts_mode", "templates");
-    const setView = vi.fn();
-    renderHook(() => useWorkoutsViewFromSession(setView));
-    expect(setView).toHaveBeenCalledWith("templates");
-    expect(sessionStorage.getItem("fizruk_workouts_mode")).toBeNull();
-  });
-
-  it("ignores an unknown flag", () => {
-    sessionStorage.setItem("fizruk_workouts_mode", "bogus");
-    const setView = vi.fn<(v: WorkoutsView) => void>();
-    renderHook(() => useWorkoutsViewFromSession(setView));
-    expect(setView).not.toHaveBeenCalled();
   });
 });
 

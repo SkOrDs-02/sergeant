@@ -22,8 +22,9 @@
  * тієї самої транзакції, якою борг виник, роздувала пасив удвічі. Тепер
  * роль зберігається явно на кожній привʼязці:
  *
- *  - `source`   — транзакція, якою борг **виник**; вона лише пояснює вже
- *                 введену суму й НЕ змінює її. Дефолт для нових привʼязок
+ *  - `source`   — транзакція, якою борг **виник**; підтверджує ручну базу
+ *                 без додавання поверх неї, але є її нижньою межею. Дефолт
+ *                 для нових привʼязок
  *                 з origin-знаком і для всіх legacy-привʼязок.
  *  - `increase` — борг **виріс** на цю суму; додається до `totalAmount`.
  *  - `payment`  — погашення; віднімається від ефективної суми.
@@ -39,7 +40,28 @@ export type LinkedTxRole = "source" | "increase" | "payment";
 export interface LinkedTxMeta {
   role: LinkedTxRole;
   amount: number;
+  /** Привʼязка створена авто-правилом (§ Level 2, `debtAutoLink.ts`), а не
+   * рукою користувача — позначка для UI, не бере участі в математиці. */
+  auto?: boolean;
 }
+
+/**
+ * Спільна сигнатура мутатора привʼязки — той самий контракт, яким володіє
+ * `useFinykStorageMutations.setLinkedTxRole` і який приймають усі UI, що
+ * привʼязують/відвʼязують транзакцію до боргу чи дебіторки
+ * (`DebtTxLinkSection`, `AssetsDebtTxPicker`, `ManualExpenseSheet`…).
+ * Винесено в один тип, щоб сигнатура не розповзалась inline-копіями по
+ * кожному файлу (Hard Rule #18 — кожна копія важить у ліміт 600 рядків).
+ */
+export type SetLinkedTxRole = (
+  id: string,
+  txId: string,
+  type: "debt" | "receivable",
+  role: LinkedTxRole | null,
+  amountUAH?: number,
+  /** `auto: true` — привʼязку пише авто-правило (§ Level 2), не людина. */
+  meta?: { auto?: boolean },
+) => void;
 
 export interface Debt {
   id: string;
@@ -51,6 +73,22 @@ export interface Debt {
   emoji?: string;
   dueDate?: string | null;
   currency?: string;
+  /**
+   * Ключове слово авто-привʼязки (§ Level 2, `debtAutoLink.ts`, канон
+   * `docs/product/modules/finyk.md` § Журнал рішень 2026-09-11) —
+   * той самий контракт, що `Subscription.keyword`
+   * (`subscriptionUtils.getLastTxForSubscription`): регістронезалежний
+   * підрядок `description`. Optional — старі записи без поля просто не
+   * матчать нічого (backward compatible, персистується як JSON).
+   */
+  autoLinkKeyword?: string;
+  /**
+   * Id транзакцій, які людина ВІДВʼЯЗАЛА від авто-створеної привʼязки.
+   * Без цього списку матчер того самого правила прив'язав би їх назад
+   * на наступному проході — той самий клас бага, що tombstone-
+   * resurrection у звичках routine.
+   */
+  autoLinkDismissedTxIds?: string[];
   [extra: string]: unknown;
 }
 
@@ -125,6 +163,10 @@ function sumByRole(
     .reduce((sum, link) => sum + link.amount, 0);
 }
 
+function roundHryvnia(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 export function getDebtTxRole(tx: Pick<Tx, "amount">): TxRole {
   return tx.amount > 0
     ? { kind: "origin", label: "Виникнення боргу" }
@@ -191,6 +233,25 @@ export function getDebtOriginated(
   return sumByRole(links, "increase");
 }
 
+/**
+ * Сума операцій, якими борг виник. Вона не додається поверх ручної бази:
+ * якщо користувач уже ввів повну суму, це був би подвійний облік. Водночас
+ * підтверджені джерела не можуть бути більшими за базу, яку показує картка —
+ * у такому разі саме їхня сума стає нижньою межею базового боргу.
+ */
+export function getDebtSourced(
+  debt: Debt,
+  transactions: readonly Tx[] = [],
+): number {
+  const links = resolveLinks(
+    debt?.linkedTxIds || [],
+    debt?.txLinks,
+    transactions,
+    defaultDebtTxRole,
+  );
+  return sumByRole(links, "source");
+}
+
 export function getReceivablePaid(
   receivable: Receivable,
   transactions: readonly Tx[] = [],
@@ -239,17 +300,46 @@ export function getDebtEffectiveTotal(
   debt: Debt,
   transactions: readonly Tx[] = [],
 ): number {
-  return Number(debt?.totalAmount || 0) + getDebtOriginated(debt, transactions);
+  const base = Math.max(
+    Number(debt?.totalAmount || 0),
+    getDebtSourced(debt, transactions),
+  );
+  return roundHryvnia(base + getDebtOriginated(debt, transactions));
+}
+
+/**
+ * Сума операцій, якими виникла дебіторка — дзеркало `getDebtSourced`.
+ * Та сама семантика: `source` не додається поверх ручної бази, але й не
+ * дозволяє показати базу, меншу за суму підтверджених джерел.
+ *
+ * AI-CONTEXT: до 2026-09-16 цієї функції не було, і
+ * `getReceivableEffectiveTotal` рахував `amount + originated`, ігноруючи
+ * роль `source` повністю — тоді як підказка в пікері (`receivableSource`:
+ * «Сума вже врахована») обіцяла те саме, що й для боргу. Асиметрія з
+ * аудиту 2026-09-15 § 3.
+ */
+export function getReceivableSourced(
+  receivable: Receivable,
+  transactions: readonly Tx[] = [],
+): number {
+  const links = resolveLinks(
+    receivable?.linkedTxIds || [],
+    receivable?.txLinks,
+    transactions,
+    defaultReceivableTxRole,
+  );
+  return sumByRole(links, "source");
 }
 
 export function getReceivableEffectiveTotal(
   receivable: Receivable,
   transactions: readonly Tx[] = [],
 ): number {
-  return (
-    Number(receivable?.amount || 0) +
-    getReceivableOriginated(receivable, transactions)
+  const base = Math.max(
+    Number(receivable?.amount || 0),
+    getReceivableSourced(receivable, transactions),
   );
+  return roundHryvnia(base + getReceivableOriginated(receivable, transactions));
 }
 
 export function calcDebtRemaining(
@@ -258,7 +348,10 @@ export function calcDebtRemaining(
 ): number {
   return Math.max(
     0,
-    getDebtEffectiveTotal(debt, transactions) - getDebtPaid(debt, transactions),
+    roundHryvnia(
+      getDebtEffectiveTotal(debt, transactions) -
+        getDebtPaid(debt, transactions),
+    ),
   );
 }
 

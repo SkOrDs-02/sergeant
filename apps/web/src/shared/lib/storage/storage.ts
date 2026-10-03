@@ -9,7 +9,7 @@
  * Implementation: every read/write is routed through {@link webKVStore} (a
  * `KVStore` adapter from `@sergeant/shared`).
  *
- * Stage 9 / PR #064 of `docs/planning/storage-roadmap.md` dropped the
+ * Stage 9 / PR #064 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` dropped the
  * dual-write LS mirror that PR #063 introduced for the 4-week canary.
  * {@link resolveStore} now uses a two-rung ladder:
  *
@@ -304,6 +304,43 @@ export function safeReadStringLSDurable(
   if (mirrored !== null && mirrored !== undefined) return mirrored;
   const raw = webKVStore.getString(key);
   return raw === null ? fallback : raw;
+}
+
+/** JSON-варіант {@link safeWriteStringLSDurable}. */
+export function safeWriteLSDurable(key: string, value: unknown): boolean {
+  let serialized: string;
+  try {
+    serialized = typeof value === "string" ? value : JSON.stringify(value);
+  } catch {
+    return false;
+  }
+  return safeWriteStringLSDurable(key, serialized);
+}
+
+/** JSON-варіант {@link safeReadStringLSDurable}. */
+export function safeReadLSDurable<T = unknown>(
+  key: string,
+  fallback: T | null = null,
+): T | null {
+  const raw = safeReadStringLSDurable(key);
+  if (raw === null) return fallback;
+  try {
+    return (JSON.parse(raw) as T) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** {@link safeReadLSValidated} поверх durable-читання. */
+export function safeReadLSValidatedDurable<T>(
+  key: string,
+  schema: z.ZodType<T>,
+  fallback: T,
+): T {
+  const raw = safeReadLSDurable<unknown>(key);
+  if (raw === null) return fallback;
+  const result = schema.safeParse(raw);
+  return result.success ? result.data : fallback;
 }
 
 /** Remove a key from both the active store and the durable LS mirror. */

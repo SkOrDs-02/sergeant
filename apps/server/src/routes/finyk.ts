@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
+import {
+  rateLimitExpress,
+  requireAiQuota,
+  requireSession,
+  setModule,
+} from "../http/index.js";
 import { createManualExpense } from "../modules/finyk/manualExpenses.js";
 import lookupReceiptHandler from "../modules/finyk/receipts/lookup.js";
 import analyzeReceiptHandler from "../modules/finyk/receipts/analyze.js";
@@ -23,18 +28,20 @@ import getRecentImportsHandler from "../modules/finyk/import/recent.js";
  * реєстрації. Реєструвати тут напряму `/api/v1/...` НЕ можна — після
  * rewrite такий шлях ніколи не зматчиться.
  *
- * Спільний guard-ланцюг (як у `coach`/`nutrition`):
+ * Спільний guard-ланцюг (як у `coach`/`nutrition`) — порядок значущий:
  *   - `setModule("finyk")` — логер/метрики
- *   - broad rate-limit ("api:finyk")
+ *   - pre-auth IP-лімітер ("api:finyk:ip", 600/хв) — ПЕРЕД сесією
  *   - `requireSession()` — лише авторизовані; кладе `req.user.id`
  *     (Better Auth opaque string), на який скоупиться запис. `user_id`
  *     ніколи не приймається з body.
+ *   - per-user лімітер ("api:finyk", 120/хв) — ПІСЛЯ сесії, інакше
+ *     `rateLimitSubject` не бачить `req.user` і бакет мовчки стає per-IP.
  *
  * `POST /manual-expenses` замінює клієнтський `safeWriteLS`-bypass для
  * ручних витрат (state-write-paths doctrine) — це precondition для
  * downstream-міграції `chatActions` (поза скоупом цього PR).
  *
- * Чек-скан v1 (`docs/90-work/planning/specs/receipt-scan.md`):
+ * Чек-скан v1 (`docs/work/specs/receipt-scan.md`):
  *   - `POST /receipts/lookup` — QR/ДПС-шлях, draft без запису в БД.
  *     ДВА ліміти: per-user 30/хв (дешевий відсів) + ГЛОБАЛЬНИЙ добовий
  *     бюджет 800/добу з фіксованим subject-ом — ДПС-токен один на всіх
@@ -45,7 +52,10 @@ import getRecentImportsHandler from "../modules/finyk/import/recent.js";
  *   - `POST /receipts/analyze` — vision-fallback (фото без QR), draft без
  *     запису в БД. Тісніший rate-limit — платний AI-виклик; failMode
  *     closed (ревʼю PR #818): при відмові Redis+PG per-process бакети
- *     множили б дозволений спенд на кількість інстансів.
+ *     множили б дозволений спенд на кількість інстансів. Для Free ще й
+ *     тижневе відро `week:finyk-vision` (5 сканів, спільне зі скрін-імпортом,
+ *     спека `docs/work/specs/access-tiers.md`); QR-шлях вище лишається без
+ *     ліміту, тож вихід у людини, що вперлась, є завжди.
  *   - `POST /receipts` — save: matcher → receipt+items+link (mono) АБО
  *     receipt+items+manual-expense+link (unmatched). Ідемпотентний
  *     повторний скан.
@@ -75,11 +85,32 @@ const DPS_DAILY_GLOBAL_SUBJECT = "dps-token-daily";
 export function createFinykRouter(): Router {
   const r = Router();
   r.use("/api/finyk", setModule("finyk"));
+  // Pre-auth IP-лімітер — ПЕРЕД requireSession() навмисно. `requireSession()`
+  // на невдачі шле 401 і не кличе `next()`, тобто без цього рівня анонімний
+  // флуд бив би по session-store без жодного ліміту. Окремий `key` (суфікс
+  // `:ip`) — інакше лічильник ділився б із per-user бакетом `api:finyk` і
+  // зіпсував би обидва. 600/хв = 5× per-user 120/хв, як у `nutrition.ts`.
+  r.use(
+    "/api/finyk",
+    rateLimitExpress({ key: "api:finyk:ip", limit: 600, windowMs: 60_000 }),
+  );
+  // requireSession() йде ПЕРЕД per-user rateLimitExpress навмисно (рецидив
+  // знахідки B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP. Див. еталон у `chat.ts`.
+  //
+  // Фінік був ЧЕТВЕРТИМ рецидивом цього дефекту і єдиним, якого не побачив
+  // наскрізний огляд 2026-09-13: він перевіряв шість названих роутів, а цей
+  // до списку не входив. Знайшов його гейт `check-auth-before-rate-limit.mjs`
+  // на першому ж прогоні — тобто саме та механічна перевірка, відсутність
+  // якої PR-A3 називала єдиною незакритою частиною.
+  r.use("/api/finyk", requireSession());
   r.use(
     "/api/finyk",
     rateLimitExpress({ key: "api:finyk", limit: 120, windowMs: 60_000 }),
   );
-  r.use("/api/finyk", requireSession());
 
   r.post(
     "/api/finyk/manual-expenses",
@@ -115,6 +146,7 @@ export function createFinykRouter(): Router {
       windowMs: 60_000,
       failMode: "closed",
     }),
+    requireAiQuota("finyk-vision"),
     analyzeReceiptHandler,
   );
   r.post(
@@ -144,6 +176,7 @@ export function createFinykRouter(): Router {
       windowMs: 60_000,
       failMode: "closed",
     }),
+    requireAiQuota("finyk-vision"),
     screenshotAnalyzeHandler,
   );
   r.post(

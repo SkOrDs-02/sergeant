@@ -30,7 +30,7 @@
  *     is a single physical store shared by every partition on the device (no
  *     per-user filename, unlike OPFS), so blindly deleting every `kvvfs-*`
  *     key here would erase the anonymous visitor's rows too — see
- *     `docs/90-work/planning/specs/anonymous-local-first-persistence.md`
+ *     `docs/work/specs/anonymous-local-first-persistence.md`
  *     § «Відомий залишковий ризик»;
  *   - the authoritative nutrition IndexedDB stores (saved recipes, meal
  *     photos, food/barcode catalogue) and the `sync_meta` offline-op queue —

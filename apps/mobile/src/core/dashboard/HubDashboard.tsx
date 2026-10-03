@@ -179,9 +179,6 @@ export function HubDashboard() {
   const todayLabel = useMemo(() => formatToday(new Date()), []);
 
   const { generate } = useWeeklyDigest();
-  const { insight: coachInsightText } = useCoachInsight({
-    enabled: signedIn,
-  });
   const [refreshing, setRefreshing] = useState(false);
 
   // Active vs. inactive modules — driven by the user's onboarding
@@ -253,6 +250,38 @@ export function HubDashboard() {
   // render path (not in an effect) so the flag and the celebration below
   // see the same frame's value, mirroring web's `useHubDashboardState.ts`.
   const hasFirstRealEntry = detectFirstRealEntry(mmkvStore, { trackEvent });
+
+  // One-hero rule: exactly one hero renders per frame, in priority
+  // order. `firstActionVisible` tracks the FTUX flag; `showSoftAuth`
+  // gates on the post-FTUX window (real entry exists, not dismissed,
+  // user not signed in); everything else falls back to the focus
+  // card (which itself renders an empty state when no rec is live).
+  //
+  // Порядок тут навмисний: обидва прапорці рахуються ДО `useCoachInsight`
+  // нижче, бо саме вони вирішують, чи порада взагалі потрапить на екран.
+  const firstActionVisible = firstActionPending;
+  const showSoftAuth =
+    !firstActionVisible && hasFirstRealEntry && !softAuthDismissed && !signedIn;
+
+  /**
+   * Умова запиту ДЗЕРКАЛИТЬ умову рендеру `TodayFocusCard` (третя гілка
+   * hero нижче), і це не стиль, а гроші: `useCoachInsight` б'є в
+   * `api.coach.postInsight`, тобто палить денну AI-квоту Free-плану
+   * (ADR-0085). Доти тут стояло `enabled: signedIn`, тож запит ішов для
+   * БУДЬ-ЯКОГО залогіненого — і в гілках `firstActionVisible` та
+   * `showSoftAuth` людина платила квотою за текст, якого не бачила
+   * (знахідка PR-A1 огляду 2026-09-13).
+   *
+   * AI-DANGER: змінюєш умову рендеру третьої гілки — зміни й цю. На вебі
+   * той самий інваріант винесено в іменований `shouldFetchCoachInsight`
+   * (`apps/web/.../useHubDashboardState.ts:143-149`) з таким самим
+   * застереженням; тут він лишається інлайновим, бо мобільні прапорці
+   * рахуються синхронно з MMKV просто вище.
+   */
+  const coachInsightVisible = signedIn && !firstActionVisible && !showSoftAuth;
+  const { insight: coachInsightText } = useCoachInsight({
+    enabled: coachInsightVisible,
+  });
   // Fire `first_action_completed { module }` once per module that just got its
   // first non-demo entry — must run alongside detectFirstRealEntry on the render
   // path, else the event never emits and the activation funnel stays at 0%.
@@ -367,15 +396,6 @@ export function HubDashboard() {
     },
     [dismissFocus],
   );
-
-  // One-hero rule: exactly one hero renders per frame, in priority
-  // order. `firstActionVisible` tracks the FTUX flag; `showSoftAuth`
-  // gates on the post-FTUX window (real entry exists, not dismissed,
-  // user not signed in); everything else falls back to the focus
-  // card (which itself renders an empty state when no rec is live).
-  const firstActionVisible = firstActionPending;
-  const showSoftAuth =
-    !firstActionVisible && hasFirstRealEntry && !softAuthDismissed && !signedIn;
 
   return (
     <SafeAreaView className="flex-1 bg-bg dark:bg-bg" edges={["top", "bottom"]}>

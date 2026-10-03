@@ -1,31 +1,32 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   Cross-module daily-series reader (outside React): tx splits stay on LS;
-   bank transactions now come from the Mono mirror reader (Dual-write
-   teardown Phase 3). */
 /**
  * `get_daily_series` — вирівняні по днях ряди метрик з усіх 4 модулів +
  * пораховані КОДОМ кореляції (Pearson/Spearman) для кожної пари. Це базовий
  * примітив для «чи повʼязано X з Y»: раніше модель мусила зіставляти агрегати
  * різної форми з кількох query-тулів «в умі», що ненадійно.
  *
- * Усі читання йдуть ЛИШЕ через доменні storage-обгортки (не сирі LS-ключі, крім
- * `finyk_tx_cache`/`finyk_tx_splits`, які не мають SQLite-канону). День — завжди
- * `Europe/Kyiv` (`getKyivDayKey`). Гроші (finyk) віддаються у гривнях —
+ * Усі читання йдуть ЛИШЕ через доменні storage-обгортки, не сирі LS-ключі
+ * (Фінік — `readFinykStatsContext`, див. `loadFinykSpending`). Межа доби
+ * різна за родом даних (рішення власника 2026-10-01, f6; ADR-0078): ГРОШІ
+ * (витрати, доходи, алкоголь, цигарки) ріжуться за `Europe/Kyiv`
+ * (`getKyivDayKey`), решта (звички, їжа, тренування, вага, самопочуття) —
+ * за годинником ПРИСТРОЮ (`deviceDayKey`): саме так Рутина й Харчування
+ * пишуть свої день-ключі. Вісь днів — календарні дати за годинником пристрою,
+ * і «сьогодні» на ній — доба телефона. Гроші (finyk) віддаються у гривнях —
  * `getTxStatAmount` вже ділить копійки на 100.
  *
  * `buildDailySeries` та `computePairwiseCorrelations` — чисті й експортовані
  * навмисно: WP3 (кореляції у weekly digest → памʼять коуча) переюзає той самий
  * обчислювальний код замість дублювання статистики.
  */
+import { calcCategorySpent } from "@sergeant/finyk-domain";
 import {
-  buildFinykSpendingUniverse,
-  calcCategorySpent,
-} from "@sergeant/finyk-domain";
+  CORRELATION_MIN_N,
+  deviceDayKey,
+  formatNumberUk,
+} from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
-import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
-import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
+import { readFinykStatsContext } from "../../../../modules/finyk/lib/lsStats";
 import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { getCachedNutritionSqliteState } from "../../../../modules/nutrition/lib/sqliteReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
@@ -128,7 +129,23 @@ const DAY_MS = 86_400_000;
 const DEFAULT_PERIOD_DAYS = 60;
 const MAX_PERIOD_DAYS = 365;
 const MAX_METRICS = 6;
-const MIN_CORRELATION_POINTS = 4;
+/**
+ * Поріг мовчання. Саме число живе у спільному пакеті
+ * (`packages/shared/src/lib/correlationStandard.ts`), бо його підписує ще й
+ * сервер у промпті коуча; тут лишається локальне імʼя, під яким його знає
+ * решта веб-коду.
+ *
+ * AI-DANGER: ре-експорт стоїть у ЦЬОМУ файлі, а не в `digestCorrelations.ts`,
+ * рівно тому, що `digestCorrelations` імпортує звідси
+ * `computePairwiseCorrelations` - зворотний імпорт замкнув би цикл модулів.
+ *
+ * До 2026-09-22 тут стояло власне число 4, тобто окремий, мʼякший стандарт:
+ * чат-тул заговорював на чотирьох спільних днях там, де дайджест мовчав до
+ * десяти. У системний промпт при цьому лягали ОБИДВА джерела кореляцій,
+ * однаково відформатовані, тож модель не мала як розрізнити, що одне з них
+ * стоїть на вчетверо слабшому доказі.
+ */
+export const MIN_N = CORRELATION_MIN_N;
 const MAX_TABLE_ROWS = 90;
 
 // ─── Утиліти діапазону/парсингу ──────────────────────────────────────────────
@@ -138,13 +155,17 @@ function isoOrUndef(value: unknown): string | undefined {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
 }
 
-/** Inclusive `[from, to]` Kyiv day-key window; explicit dates win over period. */
+/**
+ * Inclusive `[from, to]` day-key window; explicit dates win over period.
+ * Кінець за замовчуванням — сьогодні за годинником пристрою (вісь спільна для
+ * грошей і решти, межу доби кожної метрики ріже її власний читач).
+ */
 function resolveRange(
   dateFrom: unknown,
   dateTo: unknown,
   periodDays: unknown,
 ): { from: string; to: string } {
-  const to = isoOrUndef(dateTo) ?? getKyivDayKey();
+  const to = isoOrUndef(dateTo) ?? deviceDayKey();
   const explicitFrom = isoOrUndef(dateFrom);
   if (explicitFrom) return { from: explicitFrom, to };
   const raw = Number(periodDays);
@@ -157,7 +178,7 @@ function resolveRange(
   return { from, to };
 }
 
-/** Ordered inclusive list of Kyiv day-keys in `[from, to]` (noon-UTC step). */
+/** Ordered inclusive list of calendar day-keys in `[from, to]` (noon-UTC step). */
 function dayRange(from: string, to: string): string[] {
   const out: string[] = [];
   let cur = Date.parse(`${from}T12:00:00Z`);
@@ -179,24 +200,30 @@ function addTo(map: Map<string, number>, day: string, amount: number): void {
 // ─── Читачі метрик → Map<dayKey, value> (лише дні з реальними даними) ─────────
 
 /**
- * Видимі транзакції + спліти — спільна основа для `readFinyk` і
- * `readFinykCategory`. Обидва читачі раніше самі кликали
- * `buildFinykSpendingUniverse` і самі парсили `finyk_tx_splits`, тож пара
- * `spending × alcohol_spending` в одному вікні робила цю роботу двічі.
+ * Транзакції, що рахуються у статистиці Фініка, + спліти + мапи категорій —
+ * спільна основа для `readFinyk` і `readFinykCategory`.
+ *
+ * AI-CONTEXT (2026-10-01): до цього читач збирав всесвіт сам і виключав лише
+ * приховані операції, тож внутрішні перекази, погашення боргів і операції
+ * «не в статистиці» рахувались витратою — «₴ за день» у Звʼязках розходився з
+ * числами Фініка, Звітів і дайджесту на тих самих даних. Спліти він брав із
+ * `finyk_tx_splits`, а той LS-ключ tombstoned (чиститься на буті,
+ * `lsStats.ts`): розбивка за чеком не доходила, і `alcohol_spending` рахував
+ * повну суму покупки або нуль. Тепер — той самий `readFinykStatsContext`, що
+ * й у решти дашбордних споживачів (excluded-set + спліти з SQLite-кешу).
  */
 function loadFinykSpending(): {
   txs: Array<{ id: string; amount: number; time?: number }>;
   splits: Record<string, unknown>;
+  txCategories: Record<string, string>;
+  customCategories: unknown[];
 } {
-  const cached = getCachedFinykSqliteState();
-  const all = buildFinykSpendingUniverse({
-    bankTxs: getVisibleFinykMonoMirrorState().transactions,
-    manualExpenses: cached.manualExpenses,
-  }).transactions as Array<{ id: string; amount: number; time?: number }>;
-  const hidden = cached.hiddenTransactions;
+  const ctx = readFinykStatsContext();
   return {
-    txs: all.filter((t) => !hidden.includes(t.id || "")),
-    splits: ls<Record<string, unknown>>("finyk_tx_splits", {}),
+    txs: ctx.txs.filter((t) => !ctx.excludedTxIds.has(t.id || "")),
+    splits: ctx.txSplits,
+    txCategories: ctx.txCategories,
+    customCategories: ctx.customCategories,
   };
 }
 
@@ -207,7 +234,7 @@ function readFinyk(sign: "spending" | "income"): Map<string, number> {
   // Mono-дзеркало, і для тестера без Monobank метрики spending/income
   // були порожні назавжди — жодна курована пара з Фініком не могла
   // заговорити (знахідка F7 репетиції бета-прогону,
-  // docs/90-work/audits/2026-08-07-beta-rehearsal-run.md).
+  // docs/work/specs/audits/2026-08-07-beta-rehearsal-run.md).
   const { txs, splits } = loadFinykSpending();
   for (const t of txs) {
     if (!t.time) continue;
@@ -238,8 +265,7 @@ function readFinyk(sign: "spending" | "income"): Map<string, number> {
  */
 function readFinykCategory(categoryId: string): Map<string, number> {
   const out = new Map<string, number>();
-  const cached = getCachedFinykSqliteState();
-  const { txs, splits } = loadFinykSpending();
+  const { txs, splits, txCategories, customCategories } = loadFinykSpending();
 
   // Групуємо по днях, а суму за категорією рахує `calcCategorySpent` —
   // їй байдуже, скільки транзакцій у масиві.
@@ -256,9 +282,9 @@ function readFinykCategory(categoryId: string): Map<string, number> {
     const spent = calcCategorySpent(
       dayTxs as never,
       categoryId,
-      cached.txCategories,
+      txCategories,
       splits,
-      cached.customCategories,
+      customCategories,
     );
     if (spent > 0) out.set(day, spent);
   }
@@ -266,8 +292,19 @@ function readFinykCategory(categoryId: string): Map<string, number> {
 }
 
 function readNutritionMacro(macro: "kcal" | "protein"): Map<string, number> {
+  return nutritionMacroReadings(loadNutritionLog(), macro);
+}
+
+/**
+ * Денні суми макросу з уже прочитаного логу. Окремо від читання, щоб момент
+ * запису їжі міг порахувати ряд «після» з нового логу: у сховище запис
+ * доїжджає асинхронно, а момент показується одразу.
+ */
+export function nutritionMacroReadings(
+  log: ReturnType<typeof loadNutritionLog>,
+  macro: "kcal" | "protein",
+): Map<string, number> {
   const out = new Map<string, number>();
-  const log = loadNutritionLog();
   for (const [day, data] of Object.entries(log)) {
     const meals = data?.meals ?? [];
     let sum = 0;
@@ -295,7 +332,8 @@ function readFizrukWorkoutMetric(
   const out = new Map<string, number>();
   for (const w of readFizrukWorkouts()) {
     if (!w.endedAt || !w.startedAt) continue;
-    const day = getKyivDayKey(new Date(w.startedAt));
+    // Тренування — особиста подія: доба пристрою, не київська (ADR-0078).
+    const day = deviceDayKey(new Date(w.startedAt));
     if (kind === "workouts") {
       addTo(out, day, 1);
     } else {
@@ -318,7 +356,8 @@ function readFizrukDaily(kind: "weight" | "wellbeing"): Map<string, number> {
   const out = new Map<string, number>();
   for (const e of readFizrukDailyLog()) {
     if (!e.at) continue;
-    const day = getKyivDayKey(new Date(e.at));
+    // Вага й самопочуття — запис про себе: доба пристрою (ADR-0078).
+    const day = deviceDayKey(new Date(e.at));
     const value =
       kind === "weight" ? e.weightKg : (e.moodScore ?? e.mood ?? null);
     if (typeof value === "number" && Number.isFinite(value))
@@ -457,6 +496,28 @@ export function buildDailySeries(
   return { from: opts.from, to: opts.to, days, raw, metrics };
 }
 
+/**
+ * Той самий ряд із заміненим стовпцем однієї метрики. Структурні нулі
+ * рахуються так само, як у `buildDailySeries`, тож результат не відрізнити
+ * від ряду, побудованого з нових даних із нуля.
+ */
+export function withMetricReadings(
+  series: DailySeries,
+  metric: DailyMetric,
+  readings: Map<string, number>,
+): DailySeries {
+  const dayIndex = new Map(series.days.map((d, i) => [d, i]));
+  const col: (number | undefined)[] = new Array(series.days.length).fill(
+    undefined,
+  );
+  for (const [day, value] of readings) {
+    const i = dayIndex.get(day);
+    if (i !== undefined) col[i] = value;
+  }
+  applyStructuralZeros(col, series.days, readings, ABSENCE_MEANS[metric]);
+  return { ...series, raw: { ...series.raw, [metric]: col } };
+}
+
 // ─── Кореляції ───────────────────────────────────────────────────────────────
 
 function pearson(xs: number[], ys: number[]): number {
@@ -517,7 +578,7 @@ export interface PairCorrelation {
 
 /**
  * Для кожної пари метрик рахує Pearson + Spearman на днях, де ОБИДВІ метрики
- * мають реальне значення (pairwise-complete). Пари з < `MIN_CORRELATION_POINTS`
+ * мають реальне значення (pairwise-complete). Пари з < `MIN_N`
  * спільних точок пропускаються — на малій вибірці кореляція шумова.
  */
 export function computePairwiseCorrelations(
@@ -541,7 +602,7 @@ export function computePairwiseCorrelations(
           ys.push(vb);
         }
       }
-      if (xs.length < MIN_CORRELATION_POINTS) continue;
+      if (xs.length < MIN_N) continue;
       out.push({
         a,
         b,
@@ -585,7 +646,7 @@ function summariseMetric(
     const b = secondHalf.reduce((s, v) => s + v, 0) / secondHalf.length;
     trend = b > a ? " ↑" : b < a ? " ↓" : " →";
   }
-  return `${metric}: середнє ${fmt(mean)} ${METRIC_UNIT[metric]} (${present.length} дн)${trend}`;
+  return `${metric}: середнє ${formatNumberUk(mean, { maximumFractionDigits: 1 })} ${METRIC_UNIT[metric]} (${present.length} дн)${trend}`;
 }
 
 export function formatDailySeries(
@@ -604,10 +665,17 @@ export function formatDailySeries(
   if (metrics.length >= 2) {
     if (correlations.length === 0) {
       lines.push(
-        `Кореляції: недостатньо спільних днів (потрібно ≥${MIN_CORRELATION_POINTS} з обома метриками).`,
+        `Кореляції: недостатньо спільних днів (потрібно ≥${MIN_N} з обома метриками).`,
       );
     } else {
-      lines.push("Кореляції (Pearson r; на спільних днях):");
+      // Джерело й поріг називаються В САМОМУ тексті блоку навмисно
+      // (спека `link-evidence-standard.md`): у системний промпт потрапляють
+      // ДВА однаково відформатованих джерела кореляцій - цей живий
+      // розрахунок і гейтнутий блок із памʼяті коуча. Без підпису модель не
+      // мала як їх розрізнити й зважити.
+      lines.push(
+        `Кореляції (джерело: розрахунок цього тула просто зараз; поріг: n ≥ ${MIN_N} спільних днів, Pearson r):`,
+      );
       for (const c of correlations) {
         lines.push(
           `  ${c.a} ↔ ${c.b}: r=${c.pearson.toFixed(2)} (Spearman ${c.spearman.toFixed(2)}, n=${c.n}): ${strength(c.pearson)}`,

@@ -43,7 +43,7 @@ export function JournalEntryCard({
   // on screen at once.
   const summaryParts: string[] = [];
   if (entry.weightKg != null)
-    summaryParts.push(`${fmtLoose(entry.weightKg)} кг`);
+    summaryParts.push(`${fmtLoose(entry.weightKg)}\u202Fкг`);
   if (entry.sleepHours != null)
     summaryParts.push(`${fmtLoose(entry.sleepHours)} год`);
   const summary = summaryParts.join(" · ");
@@ -58,7 +58,7 @@ export function JournalEntryCard({
       мапить `entries` без верхньої межі, тож перфорація дісталась би
       кожному запису — і матеріал перетворився б на візерунок, тобто на
       декор. Саме від цього застерігає § П3 канону, і саме тому в стосі
-      транзакцій лінійка належить першій поверхні групи, а перфорація —
+      операцій лінійка належить першій поверхні групи, а перфорація —
       останній, а не обом на кожному рядку.
 
       Стосом ці записи теж не є: між ними `space-y-2`, тож пара

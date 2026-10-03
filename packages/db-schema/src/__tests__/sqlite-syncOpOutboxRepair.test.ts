@@ -8,8 +8,8 @@ import {
   type SqliteMigrationClient,
 } from "../migrate/adapters/sqlite.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 import { repairPartialOutboxMigration } from "../sqlite/syncOpOutboxRepair.js";
 
@@ -78,8 +78,8 @@ describe("repairPartialOutboxMigration", () => {
   it("is a no-op on a healthy fully-migrated database", async () => {
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     const ledgerBefore = db
@@ -124,8 +124,8 @@ describe("repairPartialOutboxMigration", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: [ROUTINE_SPIKE_CLIENT_MIGRATIONS[0]!],
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: [ROUTINE_CLIENT_MIGRATIONS[0]!],
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     db.prepare(
@@ -167,7 +167,7 @@ describe("repairPartialOutboxMigration", () => {
     // Stage 2: run the helper. It should restore the legacy table
     // back to its production name and clear 002/003 from the ledger.
     const result = await repairPartialOutboxMigration(client, {
-      ledgerTable: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      ledgerTable: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(result.recovered).toBe(true);
 
@@ -203,8 +203,8 @@ describe("repairPartialOutboxMigration", () => {
     // indistinguishable from a freshly-migrated DB.
     const rerun = await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(rerun.applied).toEqual([
       "002_sync_op_outbox_retry.sql",
@@ -215,6 +215,8 @@ describe("repairPartialOutboxMigration", () => {
       "007_routine_completion_events.sql",
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
+      "010_routine_weekly_target_history.sql",
+      "011_routine_drop_pushups.sql",
     ]);
     expect(rerun.skipped).toEqual(["001_routine_spike.sql"]);
 
@@ -262,18 +264,18 @@ describe("repairPartialOutboxMigration", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: [ROUTINE_SPIKE_CLIENT_MIGRATIONS[0]!],
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: [ROUTINE_CLIENT_MIGRATIONS[0]!],
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     db.exec("ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy");
 
     const first = await repairPartialOutboxMigration(client, {
-      ledgerTable: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      ledgerTable: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(first.recovered).toBe(true);
 
     const second = await repairPartialOutboxMigration(client, {
-      ledgerTable: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      ledgerTable: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(second.recovered).toBe(false);
   });
@@ -289,7 +291,7 @@ describe("repairPartialOutboxMigration", () => {
     `);
 
     const result = await repairPartialOutboxMigration(client, {
-      ledgerTable: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      ledgerTable: ROUTINE_MIGRATIONS_TABLE,
     });
 
     expect(result.recovered).toBe(true);

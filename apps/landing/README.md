@@ -1,11 +1,12 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-11.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
 > **Status:** Active
 
-Маркетинговий лендінг Sergeant. Одна сторінка, одна дія — перехід у
-Telegram-бот вейтліста. Окремий static-білд (Vite + React + Tailwind 4),
-деплоїться окремим Vercel-проєктом, не разом із `apps/web`.
+Маркетинговий сайт Sergeant: 31 маршрут із `src/lib/routeMeta.json`, кожен
+під своє питання людини, і одна дія на всіх — перехід у Telegram-бот
+вейтліста. Окремий static-білд (Vite + React + Tailwind 4), деплоїться
+окремим Vercel-проєктом, не разом із `apps/web`.
 
 ## Локальний запуск
 
@@ -16,14 +17,27 @@ pnpm --filter @sergeant/landing dev     # http://localhost:3100
 Бекенд не потрібен ні для запуску, ні для роботи: сторінка не робить жодного
 запиту до API — конверсія веде на `t.me`.
 
-## Перевірки
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/landing <script>`.
 
 ```bash
-pnpm --filter @sergeant/landing lint
-pnpm --filter @sergeant/landing typecheck
-pnpm --filter @sergeant/landing test
-pnpm --filter @sergeant/landing build
+pnpm --filter @sergeant/landing dev             # Vite dev-сервер → http://localhost:3100
+pnpm --filter @sergeant/landing build           # клієнтська + SSR-збірка, post-build SEO і prerender сторінок
+pnpm --filter @sergeant/landing preview         # превʼю збірки на :3100
+pnpm --filter @sergeant/landing lint            # ESLint
+pnpm --filter @sergeant/landing test            # Vitest
+pnpm --filter @sergeant/landing typecheck       # TypeScript
+pnpm --filter @sergeant/landing shots           # скріншоти сторінок (`scripts/shot-pages.mjs`)
+pnpm --filter @sergeant/landing verify:browser  # браузерна перевірка збірки (`scripts/verify-browser.mjs`)
+pnpm --filter @sergeant/landing test:a11y       # axe-core по ВСІХ маршрутах із routeMeta (гейт CI)
+pnpm --filter @sergeant/landing lighthouse      # Lighthouse-бюджети на чотирьох маршрутах (гейт CI)
+pnpm --filter @sergeant/landing preview:lhci    # превʼю на :4175 для прогону Lighthouse
 ```
+
+Обидва гейти якості будують сайт самі й міряють пререндерений `dist/`, тобто
+рівно те, що бачать людина і краулер. Пороги Lighthouse і причина саме таких
+чисел лежать у `lighthouserc.json`.
 
 ## Деплой на Vercel
 
@@ -56,6 +70,39 @@ pnpm --filter @sergeant/landing build
 `VITE_*` вкомпільовуються в бандл під час білду, а не читаються в рантаймі —
 зміна такої змінної в UI не діє, поки не перебілдиш.
 
+### 404 і статичні маршрути
+
+У `vercel.json` немає catch-all rewrite. Кожен маршрут із `routeMeta.json`
+існує як `dist/<path>/index.html` (postbuild-seo + prerender), а для
+невідомого шляху Vercel віддає `dist/404.html` зі статусом 404: її кладе
+`prerender.mjs` з тіла маршруту `/404`. До 2026-09-02 rewrite віддавав 200 і
+пререндер головної на будь-який битий URL, тобто soft-404 (знахідка
+GEO-аудиту 2026-08-27, P1-1), і краулер індексував дубль головної під кожним
+таким URL. Перевірка після деплою:
+
+```bash
+curl -o /dev/null -w "%{http_code}\n" https://sergeant.com.ua/nope     # 404
+curl -o /dev/null -w "%{http_code}\n" https://sergeant.com.ua/hroshi   # 200
+```
+
+### Що сайт віддає ШІ-краулерам
+
+Краулери ШІ-пошуковиків переважно не виконують JS, тож кожен маршрут
+пререндериться в повний HTML (`scripts/prerender.mjs` через
+`src/entry-server.tsx`) разом із JSON-LD сторінки. Поверх цього білд кладе
+три файли:
+
+| Файл            | Що це                                         | Хто пише            |
+| --------------- | --------------------------------------------- | ------------------- |
+| `sitemap.xml`   | індексовані маршрути з `lastmod`              | `postbuild-seo.mjs` |
+| `llms.txt`      | карта сайту для агентів, рукописна            | руками, `public/`   |
+| `llms-full.txt` | суцільний текст усіх сторінок (лише `<main>`) | `prerender.mjs`     |
+
+`llms.txt` — єдиний із трьох, який ніхто не генерує, тож його покриття
+стереже `src/lib/routeRegistry.test.ts` разом із межами title (30–60) і
+description (120–160). Публічний адрес у всіх трьох місцях приходить з
+`scripts/site-url.mjs` — не вписуй домен у другому місці руками.
+
 ### Якщо тут колись зʼявиться запит до API
 
 Проксі більше немає: сторінка API не викликає, тож edge-middleware лише
@@ -77,19 +124,23 @@ same-origin-проксі дешевший, ніж вписувати туди д
 
 ## Телеметрія
 
-Дві події, обидві з `ANALYTICS_EVENTS` у `@sergeant/shared` (імена не
-вигадуються локально — ренейм ламає дашборди й губить історію):
+Чотири події, усі з `ANALYTICS_EVENTS` у `@sergeant/shared` (імена не
+вигадуються локально — ренейм ламає дашборди й губить історію). Той самий
+перелік словами стоїть у політиці приватності — нова подія = новий рядок
+і там:
 
-| Подія                      | Коли           | Payload                            |
-| -------------------------- | -------------- | ---------------------------------- |
-| `landing_viewed`           | зміна маршруту | `path`, `locale`, `referrer?`      |
-| `landing_telegram_clicked` | клік по CTA    | `source: hero \| footer`, `locale` |
+| Подія                      | Коли                        | Payload                                                   |
+| -------------------------- | --------------------------- | --------------------------------------------------------- |
+| `landing_viewed`           | зміна маршруту              | `path`, `locale`, `referrer?`                             |
+| `landing_telegram_clicked` | клік по CTA                 | `source: hero \| footer \| beta`, `locale`, `ref`, `path` |
+| `landing_widget_changed`   | перемикач 1/3/5 на головній | `trainings: 1 \| 3 \| 5`, `locale`                        |
+| `landing_faq_opened`       | розкриття питання у FAQ     | `question` (літерал із `FAQ_ITEMS`), `locale`             |
 
 ⚠️ **Воронка розірвана між двома системами.** Клік — остання подія, яку бачить
 клієнт; сам `/start` відбувається вже в Telegram і потрапляє в
 `telegram_waitlist`. Тобто чисельник у БД, знаменник у PostHog — зводити
 вручну, автоматичного звіту не буде. Деталі —
-[спека](../../docs/90-work/planning/specs/telegram-waitlist.md).
+[спека](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/90-work/planning/specs/archive/telegram-waitlist.md).
 
 Свідомі обмеження:
 

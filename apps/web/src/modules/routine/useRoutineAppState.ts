@@ -11,8 +11,21 @@
  * canonical routine state (LS-backed), the main tab, filter inputs,
  * the quick-add dialog and the storage-error banner. It also wires
  * the side effects that connect the module to the rest of the app
- * (sqlite read boot, dual-write boot, Finyk preview, reminders,
- * deep-link handling and the PWA `add_habit` action).
+ * (sqlite read boot, Finyk preview, reminders, deep-link handling and
+ * the PWA `add_habit` action).
+ *
+ * AI-DANGER: does NOT call `useRoutineDualWriteBoot()` — that hook is
+ * owned by `RoutineBootCluster` (mounted for every session via
+ * `RootLayout`, independent of whether this module is open) and MUST
+ * stay singular. `registerRoutineDualWriteContext` (`sqliteWriter/index.ts`)
+ * keeps a single-slot registry with a teardown that nulls the slot on
+ * unmount; a second registrant here would overwrite the cluster's
+ * context while mounted and then null the slot on module unmount even
+ * though the cluster is still alive — silently degrading dual-write to
+ * a no-op for the rest of the session (product-full-review audit
+ * 2026-09-13, finding PR-R1). `useSqliteReadBoot()` has no such
+ * teardown — it's an idempotent one-shot boot — so calling it again
+ * here alongside the global cluster is harmless.
  */
 
 import {
@@ -33,6 +46,7 @@ import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useRoutineRoute } from "./hooks/useRoutineRoute";
+import { ROUTINE_TAB_IDS } from "./components/RoutineBottomNav";
 import { useFinykHubPreview } from "../../core/hub/useFinykHubPreview";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import {
@@ -50,7 +64,7 @@ import {
 } from "../../core/observability/analytics";
 import { readSignalContext } from "../../core/observability/valueSignalAttribution";
 import { readStreakExposure } from "./lib/streakExposure";
-import { useRoutineDualWriteBoot } from "./hooks/useRoutineDualWriteBoot";
+import { recordRoutineMoment } from "./lib/routineMoments";
 import { useSqliteReadBoot } from "./hooks/useSqliteReadBoot";
 import { useRoutineReminders } from "./hooks/useRoutineReminders";
 import { HUB_FINYK_ROUTINE_SYNC_EVENT } from "../finyk/hubRoutineSync";
@@ -101,10 +115,6 @@ export interface RoutineAppStateBundle {
   setMainTab: Dispatch<SetStateAction<RoutineMainTab>>;
   quickAddHabitOpen: boolean;
   quickAddFocusTick: number;
-  /** True only on the very first quick-add open of a fresh user. */
-  quickAddFirstRunHint: boolean;
-  /** Acknowledge the first-run hint banner inside the quick-add dialog. */
-  dismissQuickAddFirstRunHint: () => void;
   openQuickAddHabit: () => void;
   closeQuickAddHabit: () => void;
   streakMax: number;
@@ -122,7 +132,6 @@ export function useRoutineAppState({
   const location = useLocation();
   const toast = useToast();
   useSqliteReadBoot();
-  useRoutineDualWriteBoot();
   const [routine, setRoutine] = useRoutineState();
   // Low-priority transition for habit toggles: the checkbox haptic fires
   // instantly while React defers the heavier re-render (full list + persist)
@@ -177,7 +186,15 @@ export function useRoutineAppState({
     "calendar",
     {
       raw: true,
-      validate: (v): v is RoutineMainTab => v === "calendar" || v === "stats",
+      // Звіряємось із КАНОНІЧНИМ списком вкладок, а не з переліком двох.
+      // Тип `RoutineMainTab` — це `"calendar" | "habits" | "stats"`, і поки
+      // тут стояло `v === "calendar" || v === "stats"`, вкладка «Звички»
+      // мовчки не проходила валідацію: після релоаду модуля памʼять
+      // відкидала її і повертала на «Огляд» (browser-QA 2026-09-02).
+      // `ROUTINE_TAB_IDS` походить із того ж `NAV`, що малює нижню
+      // навігацію, тож нова вкладка автоматично стає валідною.
+      validate: (v): v is RoutineMainTab =>
+        (ROUTINE_TAB_IDS as readonly string[]).includes(v as string),
     },
   );
   const mainTab: RoutineMainTab = route.page;
@@ -251,10 +268,23 @@ export function useRoutineAppState({
   // empty-state / FAB are the explicit "Add habit" affordances. We still mark
   // the first-run flag as seen so returning to Routine does not keep carrying
   // stale onboarding state.
+  //
+  // AI-CONTEXT: тому тут немає `quickAddFirstRunHint`, і це не забуте —
+  // прибрано свідомо (знахідка PR-R11 огляду 2026-09-13). Банер
+  // `FirstRunHintBanner` у діалозі пояснював, ЧОМУ той відкрився сам
+  // («Перша звичка: попередня»), тобто його засновок тримався на
+  // авто-відкритті. Рішення вище авто-відкриття зняло, а банер лишився
+  // підключеним до константи `false` — недосяжний, але з виглядом живого
+  // коду, з проп-ланцюжком через чотири компоненти і з зеленим тестом, який
+  // передавав проп напряму. Фінік і Їжа банер МАЮТЬ по-справжньому
+  // (`firstRunFinykActive`, `firstRunNutritionActive` — обидва з
+  // `useModuleFirstRun`); Рутина навмисно ні.
+  //
+  // Захочеш повернути — це один рядок: віддати `isRoutineFirstRun` у діалог
+  // замість константи. Але тоді спершу перепиши копію: стара говорила про
+  // діалог, який людина не відкривала, а тепер вона відкриває його сама.
   const { firstRun: isRoutineFirstRun, markSeen: markRoutineFirstRunSeen } =
     useModuleFirstRun("routine");
-  const [quickAddFirstRunHint, setQuickAddFirstRunHint] =
-    useState<boolean>(false);
   const firstRunSeenRef = useRef(false);
   useEffect(() => {
     if (firstRunSeenRef.current) return;
@@ -263,10 +293,6 @@ export function useRoutineAppState({
     firstRunSeenRef.current = true;
     void Promise.resolve().then(() => markRoutineFirstRunSeen());
   }, [isRoutineFirstRun, markRoutineFirstRunSeen, pwaAction]);
-  const dismissQuickAddFirstRunHint = useCallback(() => {
-    setQuickAddFirstRunHint(false);
-  }, []);
-
   const deepLinkHandledRef = useRef(false);
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
@@ -346,13 +372,20 @@ export function useRoutineAppState({
       //      емісії `outcome` уже заповнений — зайвого стану не треба;
       //   2) сам `trackEvent` лишається поза transition-скоупом, щоб не
       //      зʼїхати в render-фазу (та сама межа, що описана вище).
-      const outcome = { changed: false, done: false };
+      const outcome: {
+        changed: boolean;
+        done: boolean;
+        prev?: RoutineState;
+        next?: RoutineState;
+      } = { changed: false, done: false };
       startHabitTransition(() => {
         const prev = loadRoutineState();
         const next = toggleHabitCompletion(prev, habitId, dateKey);
         if (next !== prev) {
           outcome.changed = true;
           outcome.done = (next.completions[habitId] ?? []).includes(dateKey);
+          outcome.prev = prev;
+          outcome.next = next;
         }
         setRoutine(next);
       });
@@ -360,14 +393,17 @@ export function useRoutineAppState({
       // (`applyToggleHabitCompletion` віддає той самий state). Подія має
       // означати реальну зміну відмітки, інакше знаменник петлі рахує
       // натискання, а не чекіни.
-      if (!outcome.changed) return;
+      if (!outcome.changed || !outcome.prev || !outcome.next) return;
+      // Поза transition з тієї ж причини, що й `trackEvent` нижче: запис у
+      // сховище моментів і телеметрія не мають потрапити в render-фазу.
+      recordRoutineMoment(outcome.prev, outcome.next, habitId, dateKey);
       trackEvent(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED, {
         state: outcome.done ? "done" : "undone",
         source: "ui",
         // Той самий ключ, яким домен адресує відмітку — тобто анкер із
-        // `lib/dayAnchor.ts` (`ROUTINE_DAY_ANCHOR`), не UTC. Наразі це
-        // київське «сьогодні»; ADR-0078 цілиться в device-local, і коли
-        // routine туди переїде, це поле поїде разом із генератором ключа.
+        // `lib/dayAnchor.ts` (`ROUTINE_DAY_ANCHOR`), не UTC. З 2026-09-01 це
+        // device-local «сьогодні» (ADR-0078, LOG-3 cutover) — поле рухається
+        // разом із генератором ключа, тепер уже перемкнутим.
         day_key: dateKey,
         // Показаний стрік — `derived.streakMax`, максимум по ВСІХ звичках,
         // а чекін per-habit. Без цього поля аналіз збрехав би, нібито
@@ -421,7 +457,7 @@ export function useRoutineAppState({
   const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
   const handlePullRefreshError = useCallback(() => {
     // PTR-fail: surface the canonical recovery path (retry the pull) so
-    // the error toast is actionable per docs/ui/toast-policy.md. The
+    // the error toast is actionable per docs/design/ui/toast-policy.md. The
     // retry callback fires the same `requestCloudPull` the PTR gesture
     // used, so the user does not need to remember the gesture.
     toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
@@ -441,6 +477,7 @@ export function useRoutineAppState({
       currentStreak: derived.streakMax,
       completionRate: derived.completionRateVal,
       dayProgress: derived.dayProgress,
+      progressDayKey: derived.progressDayKey,
       timeMode: time.timeMode,
       selectedDay: time.selectedDay,
       todayKey: derived.todayKey,
@@ -526,8 +563,6 @@ export function useRoutineAppState({
     setMainTab,
     quickAddHabitOpen,
     quickAddFocusTick,
-    quickAddFirstRunHint,
-    dismissQuickAddFirstRunHint,
     openQuickAddHabit,
     closeQuickAddHabit,
     streakMax: derived.streakMax,

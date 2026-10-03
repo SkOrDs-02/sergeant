@@ -98,6 +98,10 @@ describe(
             aiMemory: true,
             pushNotifications: true,
             sergeantNudges: false,
+            // Міграція 148: стеля нагадувань на добу. Не дефолтне значення
+            // навмисно, щоб реплей провайдера довів, що число їде з колонки,
+            // а не з фолбеку серіалізатора.
+            pushDailyCap: 3,
             healthDataConsent: true,
             // Явний `null`, а не відсутнє поле: після міграції 116
             // серіалізатор `dataRights.ts` ВЗАВЖДИ віддає ключ
@@ -107,6 +111,10 @@ describe(
             // рівно той дрейф, який provider-replay і має ловити.
             // Відсутність поля перевіряє окрема legacy-інтеракція нижче.
             activeModules: null,
+            // Той самий аргумент, що для `activeModules` вище: після
+            // міграції 137 серіалізатор ЗАВЖДИ віддає ключ `hubPrefs`,
+            // тож пропуск його тут зробив би pact формою pre-137-сервера.
+            hubPrefs: null,
             updatedAt: "2026-08-01T12:00:00.000Z",
           });
         })
@@ -117,6 +125,7 @@ describe(
           expect(out.healthDataConsent).toBe(true);
           expect(typeof out.healthDataConsent).toBe("boolean");
           expect(out.activeModules).toBeNull();
+          expect(out.pushDailyCap).toBe(3);
         });
     });
 
@@ -149,6 +158,8 @@ describe(
           const me = createMeEndpoints(http);
           const out = await me.getPreferences();
           expect(out.healthDataConsent).toBe(false);
+          // Той самий rolling-deploy захист для стелі (міграція 148).
+          expect(out.pushDailyCap).toBe(2);
         });
     });
 
@@ -177,6 +188,7 @@ describe(
             sergeantNudges: false,
             healthDataConsent: false,
             activeModules: ["nutrition", "finyk"],
+            hubPrefs: null,
             updatedAt: "2026-08-05T09:00:00.000Z",
           });
         })
@@ -209,6 +221,7 @@ describe(
             sergeantNudges: false,
             healthDataConsent: false,
             activeModules: [],
+            hubPrefs: null,
             updatedAt: "2026-08-05T09:00:00.000Z",
           });
         })
@@ -218,6 +231,116 @@ describe(
           const out = await me.getPreferences();
           expect(out.activeModules).toEqual([]);
           expect(out.activeModules).not.toBeNull();
+        });
+    });
+
+    // PR-S13 (огляд 2026-09-13, рішення founder-а 2026-09-14): налаштування
+    // вигляду хаба переїхали на акаунт (міграція 137 + `hub_prefs` у
+    // серіалізаторі). Контракт закріплює ту саму три-станову семантику, що
+    // й `activeModules`, бо на ній тримається злиття на буті: `null` —
+    // «сервер не знає, лиши локальні», `{}` — «налаштування є і всі
+    // дефолтні», обʼєкт — власне налаштування.
+    it("round-trips hubPrefs and keeps scalar value types intact", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "user-pact-010 turned calm mode on and hid the motivational line",
+        )
+        .uponReceiving("a GET /api/v1/me/preferences request (hubPrefs set)")
+        .withRequest("GET", "/api/v1/me/preferences", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            analytics: false,
+            aiMemory: true,
+            pushNotifications: false,
+            sergeantNudges: false,
+            healthDataConsent: false,
+            activeModules: null,
+            hubPrefs: { calmMode: true, showMotivational: false },
+            updatedAt: "2026-09-14T09:00:00.000Z",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const me = createMeEndpoints(http);
+          const out = await me.getPreferences();
+          expect(out.hubPrefs).toEqual({
+            calmMode: true,
+            showMotivational: false,
+          });
+          // Тип значення — частина контракту: клієнт кладе його прямо в
+          // boolean-проп, тож `"true"` замість `true` зламало б рендер
+          // мовчки, а не помилкою.
+          expect(typeof out.hubPrefs?.["calmMode"]).toBe("boolean");
+        });
+    });
+
+    it("keeps an explicitly empty hubPrefs distinct from an absent one", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-011 has hub prefs on the account, all at defaults")
+        .uponReceiving("a GET /api/v1/me/preferences request (hubPrefs empty)")
+        .withRequest("GET", "/api/v1/me/preferences", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            analytics: false,
+            aiMemory: true,
+            pushNotifications: false,
+            sergeantNudges: false,
+            healthDataConsent: false,
+            activeModules: null,
+            hubPrefs: {},
+            updatedAt: "2026-09-14T09:00:00.000Z",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const me = createMeEndpoints(http);
+          const out = await me.getPreferences();
+          // Різниця, на якій тримається гідратація: `{}` означає «сервер
+          // знає», тож локальні значення НЕ доливаються вгору; `null`
+          // означає «не знає», і тоді доливаються.
+          expect(out.hubPrefs).toEqual({});
+          expect(out.hubPrefs).not.toBeNull();
+        });
+    });
+
+    it("defaults hubPrefs to null when a pre-137 server omits the field", async () => {
+      // Той самий rolling-deploy аргумент, що й для `healthDataConsent` і
+      // `activeModules`: web на Vercel, сервер на Coolify, і у вікні між
+      // деплоями новий клієнт розмовляє зі старим сервером.
+      await pact
+        .addInteraction()
+        .given("user-pact-012 predates the hub_prefs column")
+        .uponReceiving(
+          "a GET /api/v1/me/preferences request (pre-137 server, no hubPrefs)",
+        )
+        .withRequest("GET", "/api/v1/me/preferences", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            analytics: false,
+            aiMemory: true,
+            pushNotifications: false,
+            sergeantNudges: false,
+            healthDataConsent: false,
+            activeModules: null,
+            updatedAt: "2026-09-14T09:00:00.000Z",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const me = createMeEndpoints(http);
+          const out = await me.getPreferences();
+          expect(out.hubPrefs).toBeNull();
         });
     });
 

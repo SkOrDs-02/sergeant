@@ -1,10 +1,17 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
 import { MIN_N, REPEATING_R, STABLE_N } from "./crossModuleLinkTiers";
+import { REQUIRED_CONSECUTIVE_CHECKS } from "./crossModuleLinkHistory";
+
+// Ці тести міряють драбину СИЛИ, а не повторюваність: серія перевірок
+// передається всюди явно, щоб вони лишились про те, для чого написані.
+// Саму повторюваність як умову ступеня перевіряє
+// `crossModuleLinkHistory.test.ts`.
+const REPEATED = REQUIRED_CONSECUTIVE_CHECKS;
 
 const poleA = {
   module: "fizruk" as const,
@@ -32,6 +39,7 @@ describe("CrossModuleLinkCard — напрямок звʼязку", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={-0.74}
+        checks={REPEATED}
         phrase="У дні тренувань ти витрачаєш менше"
       />,
     );
@@ -52,6 +60,7 @@ describe("CrossModuleLinkCard — напрямок звʼязку", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={-0.74}
+        checks={REPEATED}
       />,
     );
 
@@ -61,7 +70,19 @@ describe("CrossModuleLinkCard — напрямок звʼязку", () => {
 });
 
 describe("CrossModuleLinkCard — перевірка доказів", () => {
-  afterEach(cleanup);
+  // formatDayLabel читає "сьогодні" з реального годинника (deviceDayKey), щоб
+  // рік прибирався для дат того самого року — фіксуємо системний час, інакше
+  // тест зламався б 1 січня, коли реальний рік розійдеться з 2026-08-xx.
+  // `toFake: ["Date"]` лишає setTimeout/setInterval реальними, інакше
+  // `userEvent.click` під фейковими таймерами підвисає.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-15T12:00:00"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    cleanup();
+  });
 
   const days = [
     { key: "2026-08-03", valueA: "1,5", valueB: "380" },
@@ -76,18 +97,19 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={0.62}
+        checks={REPEATED}
         days={days}
       />,
     );
 
-    expect(screen.queryByText("3 серп.")).toBeNull();
+    expect(screen.queryByText("3 серп")).toBeNull();
 
     const toggle = screen.getByRole("button", { name: "Показати ці дні" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     await user.click(toggle);
 
-    expect(screen.getByText("3 серп.")).toBeInTheDocument();
-    expect(screen.getByText("2 серп.")).toBeInTheDocument();
+    expect(screen.getByText("3 серп")).toBeInTheDocument();
+    expect(screen.getByText("2 серп")).toBeInTheDocument();
     expect(screen.getByText("380")).toBeInTheDocument();
     // Підпис пояснює, чому днів саме стільки, а не 60.
     expect(screen.getByText("Дні, за якими я порівнював")).toBeInTheDocument();
@@ -106,6 +128,7 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={0.62}
+        checks={REPEATED}
         days={many}
       />,
     );
@@ -127,6 +150,7 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={0.62}
+        checks={REPEATED}
       />,
     );
 
@@ -146,12 +170,13 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={MIN_N}
         strength={0.4}
+        checks={REPEATED}
         weeks={2}
       />,
     );
 
     expect(screen.getByText("Поки що збіг")).toBeInTheDocument();
-    expect(screen.getByText("2 тижні · 5 спостережень")).toBeInTheDocument();
+    expect(screen.getByText("2 тижні · 10 спостережень")).toBeInTheDocument();
     // Обидва полюси видно з їхнім значенням і одиницею.
     expect(screen.getByText("Фізрук")).toBeInTheDocument();
     expect(screen.getByText("3+")).toBeInTheDocument();
@@ -166,6 +191,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={10}
         strength={REPEATING_R}
+        checks={REPEATED}
       />,
     );
 
@@ -182,6 +208,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={STABLE_N}
         strength={0.82}
+        checks={REPEATED}
         weeks={9}
       />,
     );
@@ -205,6 +232,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={59}
         strength={0.42}
+        checks={REPEATED}
       />,
     );
 
@@ -219,6 +247,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={STABLE_N - 1}
         strength={-0.9}
+        checks={REPEATED}
       />,
     );
 
@@ -237,11 +266,12 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
         poleB={poleB}
         observations={2}
         strength={0.9}
+        checks={REPEATED}
       />,
     );
 
     expect(screen.getByText("Поки що звʼязків не бачу")).toBeInTheDocument();
-    expect(screen.getByText(/2 з 5 спостережень/)).toBeInTheDocument();
+    expect(screen.getByText(/2 з 10 спостережень/)).toBeInTheDocument();
     // Полюси лишаються — контекст «що саме перевіряємо» не зникає, лише
     // конкретні значення/одиниці мовчать.
     expect(screen.getByText("Фізрук")).toBeInTheDocument();
@@ -259,13 +289,14 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
         poleB={poleB}
         observations={40}
         strength={0.1}
+        checks={REPEATED}
       />,
     );
 
     expect(screen.getByText("Поки що звʼязків не бачу")).toBeInTheDocument();
-    // Прогрес-бар не бреше: спостережень уже достатньо (5 з 5), проблема
+    // Прогрес-бар не бреше: спостережень уже достатньо (10 з 10), проблема
     // не в кількості даних, а у відсутності самого звʼязку.
-    expect(screen.getByText("5 з 5 спостережень")).toBeInTheDocument();
+    expect(screen.getByText("10 з 10 спостережень")).toBeInTheDocument();
   });
 
   it("не показує доказову смугу чи місток у порожньому стані", () => {
@@ -275,6 +306,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
         poleB={poleB}
         observations={1}
         strength={0}
+        checks={REPEATED}
       />,
     );
 

@@ -18,7 +18,7 @@ import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
 import type { FoodProduct } from "../../lib/foodDb/foodDb";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
-import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { SEARCH_QUERY_MAX_LEN, type ProductNutrients } from "@sergeant/shared";
 
 /**
  * Підписи зовнішніх джерел пошуку (`FoodSearchProduct.source`, енум
@@ -51,6 +51,18 @@ export interface PickedFood {
     carbs_g?: number | null;
   };
   source?: string;
+  /**
+   * Нутрієнти понад КБЖВ із відповіді на скан (N9). Транзитні: живуть у
+   * вʼюмоделі аркуша й НЕ їдуть у `FoodProduct` — розбір у
+   * `ProductNutrientsRow.tsx`. Ключа немає, коли джерело таких даних не
+   * віддає взагалі; `null` усередині — «спитали, немає».
+   */
+  nutrients?: ProductNutrients;
+  /**
+   * Фото продукту з OFF (U1). Транзитне, як і `nutrients`: у
+   * `FoodProduct` не їде. Немає — картка малює іконку категорії.
+   */
+  imageUrl?: string | null;
 }
 
 interface FoodPickerSectionProps {
@@ -106,8 +118,11 @@ export function FoodPickerSection({
       <Input
         value={foodQuery}
         onChange={(e) => setFoodQuery(e.target.value)}
-        placeholder="Курка, Activia, вівсянка, Lays…"
-        maxLength={NAME_MAX_LEN}
+        placeholder="Курка, Activia, вівсянка, Lays"
+        // Межа сервера, не загальна межа назви: `FoodSearchQuerySchema`
+        // приймає рівно стільки, і довший запит повертався 400-ю, яку екран
+        // показував як «нічого не знайдено».
+        maxLength={SEARCH_QUERY_MAX_LEN}
         showCharCount={false}
         aria-label="Пошук продукту"
         // Не `type="search"` (поле має власний UX без нативного
@@ -137,7 +152,7 @@ export function FoodPickerSection({
                 {/* Роздільник потрібен, коли є з чим розділяти: локальні
                     хіти вище або більше ніж одне зовнішнє джерело. */}
                 {(foodHits.length > 0 || offHitGroups.length > 1) && (
-                  <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold">
+                  <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi font-semibold">
                     {group.label}
                   </li>
                 )}
@@ -158,6 +173,20 @@ export function FoodPickerSection({
             ))}
           </ul>
         </div>
+      )}
+      {offHitGroups.some((g) => g.label === EXTERNAL_SOURCE_LABELS["off"]) && (
+        <p className="text-style-caption text-subtle">
+          Дані про продукти:{" "}
+          <a
+            href="https://world.openfoodfacts.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline focus-ring"
+          >
+            Open Food Facts
+          </a>{" "}
+          (ліцензія ODbL)
+        </p>
       )}
     </div>
   );

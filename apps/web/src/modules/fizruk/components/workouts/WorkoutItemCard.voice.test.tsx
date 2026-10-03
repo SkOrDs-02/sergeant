@@ -72,14 +72,9 @@ function renderCard(
         it={overrides.it ?? makeItem()}
         activeWorkout={overrides.activeWorkout ?? makeWorkout()}
         group={overrides.group ?? null}
-        groupSelectMode={false}
-        isSelected={false}
         isReadOnly={overrides.isReadOnly ?? false}
         lastByExerciseId={{}}
-        musclesUk={{ pec: "Грудні" }}
         recBy={{}}
-        onToggleGroupSelect={vi.fn()}
-        removeItem={vi.fn()}
         updateItem={updateItem}
         setRestTimer={setRestTimer}
         getDefaultForGroup={() => 90}
@@ -111,7 +106,12 @@ describe("WorkoutItemCard voice set entry", () => {
     expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
   });
 
-  it("ignores empty voice parses", () => {
+  // Назва тесту була «ignores empty voice parses» — і саме це й було
+  // проблемою: код ІГНОРУВАВ, тобто виходив мовчки. Людина говорила,
+  // бачила чип із розпізнаним текстом, а далі не з'являлось ні сету, ні
+  // пояснення. Невидимий збій ще й пояснює, чому польових скарг на голос
+  // не було: скаржитись не було на що конкретне.
+  it("не додає сет на порожній розбір — і КАЖЕ про це", () => {
     parseWorkoutSetSpeech.mockReturnValue({
       weight: null,
       reps: null,
@@ -123,16 +123,43 @@ describe("WorkoutItemCard voice set entry", () => {
 
     expect(updateItem).not.toHaveBeenCalled();
     expect(setRestTimer).not.toHaveBeenCalled();
+    // Роль `alert` обовʼязкова: повідомлення зʼявляється у відповідь на
+    // дію, і без неї скрінрідер про нього не дізнається.
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("Не розчув");
   });
 
-  it("does not start rest timer for grouped voice entries", () => {
+  it("вдалий розбір прибирає попереднє повідомлення", () => {
+    parseWorkoutSetSpeech.mockReturnValue({
+      weight: null,
+      reps: null,
+      sets: null,
+    });
+    renderCard();
+    fireEvent.click(screen.getByText("voice-empty"));
+    expect(screen.getByRole("alert")).toBeTruthy();
+
+    parseWorkoutSetSpeech.mockReturnValue({ weight: 80, reps: 8, sets: null });
+    fireEvent.click(screen.getByText("voice-valid"));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  // Сесійний режим 2026-09: у суперсеті відпочинок іде після ОСТАННЬОГО
+  // учасника кола (`restSecAfterCheck`), тож не-останній member таймер
+  // не стартує.
+  it("does not start rest timer for a non-last superset member", () => {
     parseWorkoutSetSpeech.mockReturnValue({
       weight: null,
       reps: 12,
       sets: null,
     });
     renderCard({
-      group: { id: "g1", type: "superset", itemIds: ["it-1"], restSec: 60 },
+      group: {
+        id: "g1",
+        type: "superset",
+        itemIds: ["it-1", "it-2"],
+        restSec: 60,
+      },
     });
 
     fireEvent.click(screen.getByText("voice-valid"));

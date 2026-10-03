@@ -13,15 +13,20 @@
  */
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { FIZRUK_GROUP_LABEL } from "../lib/hubCalendarAggregate";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 
 const COPY = messages.routine.filterChips;
 
-const CHIP_BASE =
-  "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-const CHIP_WRAPPING = "whitespace-normal break-words leading-snug";
+// Чип — це той самий `Button`, що й решта контролів модуля: обраний —
+// solid у тоні Рутини, решта — outline з hairline модуля. Власна розмітка
+// пігулки прибрана (анти-слоп, chip-scroller як дефолтний фільтр); 44px на
+// coarse pointer дає сам Button.
+const CHIP_OFF = "border-routine/40";
+// Довгий тег переноситься рядком, тож фіксована висота `size="xs"` знята.
+const CHIP_WRAPPING =
+  "h-auto min-h-8 py-1.5 whitespace-normal break-words leading-snug text-left";
 
 export interface RoutineFilterChipsProps {
   tagFilter: string | null;
@@ -77,77 +82,89 @@ export function RoutineFilterChips({
       >
         {COPY.heading}
       </SectionHeading>
-      <button
-        type="button"
+      <Button
+        size="xs"
+        variant={tagFilter === null ? "solid" : "outline"}
+        tone={tagFilter === null ? "routine" : "neutral"}
         aria-pressed={tagFilter === null}
         onClick={onClearFilter}
-        className={cn(CHIP_BASE, tagFilter === null ? C.chipOn : C.chipOff)}
+        className={cn("shrink-0", tagFilter !== null && CHIP_OFF)}
       >
         {COPY.all}
-      </button>
+      </Button>
       {showFizruk && (
-        <button
-          type="button"
+        // Джерело з іншого модуля позначає статусний тон, не чужий акцент
+        // (module-accent containment): info для Фізрука, success для
+        // підписок Фініка.
+        <Button
+          size="xs"
+          variant="outline"
+          tone="neutral"
           aria-pressed={tagFilter === "__fizruk"}
           onClick={() => toggle("__fizruk")}
           className={cn(
-            CHIP_BASE,
+            "shrink-0",
             tagFilter === "__fizruk"
               ? "border-info/50 bg-info/10 text-text"
-              : C.chipOff,
+              : CHIP_OFF,
           )}
         >
           {FIZRUK_GROUP_LABEL}
-        </button>
+        </Button>
       )}
       {showFinykSubs && (
-        <button
-          type="button"
+        <Button
+          size="xs"
+          variant="outline"
+          tone="neutral"
           aria-pressed={tagFilter === "__finyk_sub"}
           onClick={() => toggle("__finyk_sub")}
           className={cn(
-            CHIP_BASE,
+            "shrink-0",
             CHIP_WRAPPING,
             "max-w-[75vw] sm:max-w-[200px]",
             tagFilter === "__finyk_sub"
               ? "border-success/40 bg-success/10 text-text"
-              : C.chipOff,
+              : CHIP_OFF,
           )}
         >
           {COPY.finykSubs}
-        </button>
+        </Button>
       )}
       {tagChips.map((name) => (
-        <button
+        <Button
           key={name}
-          type="button"
+          size="xs"
+          variant={tagFilter === name ? "solid" : "outline"}
+          tone={tagFilter === name ? "routine" : "neutral"}
           aria-pressed={tagFilter === name}
           onClick={() => toggle(name)}
           className={cn(
-            CHIP_BASE,
+            "shrink-0",
             CHIP_WRAPPING,
             "max-w-[70vw] sm:max-w-[160px]",
-            tagFilter === name ? C.chipOn : C.chipOff,
+            tagFilter !== name && CHIP_OFF,
           )}
         >
           {name}
-        </button>
+        </Button>
       ))}
       {orphanTagFilter && (
-        <button
-          type="button"
+        <Button
+          size="xs"
+          variant="soft"
+          tone="routine"
           onClick={onClearFilter}
           className={cn(
-            CHIP_BASE,
+            "shrink-0",
             CHIP_WRAPPING,
             "max-w-[70vw] sm:max-w-[160px]",
-            C.chipOn,
           )}
         >
           {orphanTagFilter}
           <span aria-hidden> ×</span>
           <span className="sr-only">{COPY.clearTagFilter}</span>
-        </button>
+        </Button>
       )}
     </div>
   );

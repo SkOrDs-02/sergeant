@@ -1,6 +1,6 @@
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "@sergeant/db-schema/sqlite/migrations";
 import {
   createClientMigrator,
@@ -12,12 +12,12 @@ import {
  * `__migrations` ledger contract (see
  * `packages/db-schema/src/migrate/runner.ts`).
  *
- * `ROUTINE_SPIKE_MIGRATIONS_TABLE` keeps the existing migration table
+ * `ROUTINE_MIGRATIONS_TABLE` keeps the existing migration table
  * name.
  */
 export const migrateRoutine = createClientMigrator(
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 );
 
 export type { SqliteMigrationClient };

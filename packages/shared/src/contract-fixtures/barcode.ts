@@ -24,7 +24,7 @@
  * - `error404` — error envelope (`{ error }`) used for 404/400/500/504.
  *
  * Closes contract slice PR-T29 from
- * `docs/testing/2026-05-05-tests-pr-plan.md` (web `/api/barcode`
+ * `docs/engineering/testing/2026-05-05-tests-pr-plan.md` (web `/api/barcode`
  * consumer contract).
  */
 

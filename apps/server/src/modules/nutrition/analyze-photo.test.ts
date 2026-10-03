@@ -95,6 +95,17 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
         { name: "Буряк", notes: "варений" },
         { name: "Капуста", notes: null },
       ],
+      // Модель відповіла без `items` (стара форма) — нормалізатор синтезує
+      // одну позицію з `dishName`, щоб екран мав що показати рядком, і сума
+      // лишається тим самим числом. Ініціатива 0023, PR-1.
+      items: [
+        {
+          name: "Борщ",
+          macros: { kcal: 180, protein_g: 6, fat_g: 7, carbs_g: 22 },
+          gramsApprox: 350,
+          confidence: 0.82,
+        },
+      ],
       macros: { kcal: 180, protein_g: 6, fat_g: 7, carbs_g: 22 },
       questions: ["Зі сметаною?"],
     });
@@ -229,19 +240,19 @@ describe("nutrition analyze-photo — правила промпта", () => {
   const { system } = buildAnalyzePhotoPrompt({ locale: "uk-UA" });
 
   it("забороняє нуль замість «не знаю»", () => {
-    expect(system).toMatch(/Нуль і «не знаю» — різні речі/);
+    expect(system).toMatch(/Нуль і «не знаю» – різні речі/);
     expect(system).toMatch(/"null" лишай ТІЛЬКИ/);
   });
 
   it("вчить читати етикетку: назва, вага в грамах, таблиця на 100 г", () => {
-    expect(system).toMatch(/Етикетка, цінник чи упаковка продукту — це ЇЖА/);
+    expect(system).toMatch(/Етикетка, цінник чи упаковка продукту – це ЇЖА/);
     expect(system).toMatch(/portion\.gramsApprox/);
     expect(system).toMatch(/вага порції \/ 100/);
   });
 
   it("вимагає оцінку за назвою, коли таблиці харчової цінності немає", () => {
     expect(system).toMatch(
-      /таблиці немає — назва страви вже достатня підстава/,
+      /таблиці немає – назва страви вже достатня підстава/,
     );
   });
 

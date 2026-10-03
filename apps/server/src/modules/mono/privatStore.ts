@@ -12,7 +12,7 @@ import { monoKeyRing } from "./tokenStore.js";
  * Why this module exists: the merchant token used to live in the browser's
  * `localStorage` and travelled to us in an `X-Privat-Token` header, which put
  * a live bank credential one DevTools tab away from anyone using the app.
- * Spec: `docs/90-work/planning/specs/beta-security-readiness.md` (F1).
+ * Spec: `docs/work/specs/beta-security-readiness.md` (F1).
  *
  * The at-rest format deliberately mirrors `mono_connection`: AES-256-GCM in
  * three BYTEA columns plus a `token_key_version`, so both banks decrypt

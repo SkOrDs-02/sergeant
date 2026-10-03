@@ -21,7 +21,7 @@ import { submitFeedbackEntry } from "../modules/feedback/feedbackService.js";
  * Чому endpoint узагалі існує, якщо подія вже летить у PostHog: PostHog —
  * аналітика, і її домен ріжуть блокувальники. До цієї ручки віджет був
  * fire-and-forget, і фідбек від тестера з uBlock зникав назавжди, а UI казав
- * «надіслано». Розбір: docs/03-operations/observability/feedback-loop.md § 2a.
+ * «надіслано». Розбір: docs/operations/observability/feedback-loop.md § 2a.
  *
  * Rate-limit: 20 / IP / годину. Свідомо вільніший за waitlist (10/год) — це
  * канал багрепортів, і людина під час злої сесії тестування легко надішле

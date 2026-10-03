@@ -85,7 +85,7 @@ export function DayReportSheet({
                   className={cn("shrink-0 rounded-xl border font-bold", C.done)}
                   aria-label="Скасувати виконання"
                 >
-                  <Icon name="check" size={14} aria-hidden />
+                  <Icon name="check" size="sm" aria-hidden />
                 </IconButton>
                 <span className="text-style-label text-text flex items-center gap-1.5 truncate">
                   <HabitGlyph value={h.emoji} size="sm" />
@@ -106,53 +106,67 @@ export function DayReportSheet({
             {missed.map((h) => (
               <li
                 key={h.id}
-                className="flex items-center gap-3 rounded-xl bg-panel border border-line px-3 py-2.5"
+                className="rounded-xl bg-panel border border-line px-3 py-2.5"
               >
-                <IconButton
-                  size="xs"
-                  variant="ghost"
-                  onClick={() => onToggleHabit(h.id, dateKey)}
-                  className="shrink-0 rounded-xl border border-line font-bold text-muted"
-                  aria-label="Відмітити як виконано"
-                >
-                  <Icon name="circle-outline" size={14} aria-hidden />
-                </IconButton>
-                <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
-                  <HabitGlyph value={h.emoji} size="sm" />
-                  <span className="truncate">{h.name}</span>
-                </span>
-                {onSetSkip && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAskingFor((cur) => (cur === h.id ? null : h.id))
-                    }
-                    className="touch-target ml-auto shrink-0 rounded-lg px-2 text-style-caption text-subtle hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
-                    aria-expanded={askingFor === h.id}
+                <div className="flex items-center gap-3">
+                  <IconButton
+                    size="xs"
+                    variant="ghost"
+                    onClick={() => onToggleHabit(h.id, dateKey)}
+                    className="shrink-0 rounded-xl border border-line font-bold text-muted"
+                    aria-label="Відмітити як виконано"
                   >
-                    Не зміг
-                  </button>
+                    <Icon name="circle-outline" size="sm" aria-hidden />
+                  </IconButton>
+                  <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
+                    <HabitGlyph value={h.emoji} size="sm" />
+                    <span className="truncate">{h.name}</span>
+                  </span>
+                  {onSetSkip && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAskingFor((cur) => (cur === h.id ? null : h.id))
+                      }
+                      className="touch-target ml-auto shrink-0 rounded-lg px-2 text-style-caption text-subtle hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
+                      aria-expanded={askingFor === h.id}
+                      // Лише коли група причин у DOM: інакше посилання на
+                      // неіснуючий id.
+                      aria-controls={
+                        askingFor === h.id ? `skip-reasons-${h.id}` : undefined
+                      }
+                    >
+                      Не зміг
+                    </button>
+                  )}
+                </div>
+                {/* Причини живуть у рядку своєї звички: одна група під усім
+                    списком не казала, до якого пропуску вона відноситься. */}
+                {onSetSkip && askingFor === h.id && (
+                  <div
+                    id={`skip-reasons-${h.id}`}
+                    role="group"
+                    aria-label={`Причина пропуску: ${h.name}`}
+                    className="mt-2 flex flex-wrap gap-1.5"
+                  >
+                    {SKIP_REASON_OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        type="button"
+                        onClick={() => {
+                          onSetSkip(h.id, o.value);
+                          setAskingFor(null);
+                        }}
+                        className="touch-target rounded-full border border-line px-3 text-style-caption text-text hover:bg-routine-surface/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </li>
             ))}
           </ul>
-          {onSetSkip && askingFor !== null && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {SKIP_REASON_OPTIONS.map((o) => (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => {
-                    onSetSkip(askingFor, o.value);
-                    setAskingFor(null);
-                  }}
-                  className="touch-target rounded-full border border-line px-3 text-style-caption text-text hover:bg-routine-surface/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -186,7 +200,7 @@ export function DayReportSheet({
               </li>
             ))}
           </ul>
-          <p className="text-style-caption text-muted mt-2">
+          <p className="text-style-body text-muted mt-2">
             Заявлений пропуск не рахується провалом і не ламає серію.
           </p>
         </div>

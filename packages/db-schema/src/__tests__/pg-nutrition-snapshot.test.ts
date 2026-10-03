@@ -17,7 +17,7 @@ import {
  * locking down the column ordering, types, nullability, indexes, and
  * defaults that mirror migration 035_nutrition_tables.sql.
  *
- * Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 / PR #031 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 
 describe("pg/nutritionMeals schema snapshot", () => {
@@ -434,7 +434,7 @@ describe("pg/nutritionPantryEvents schema snapshot", () => {
     // Клієнт генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`,
     // `<pantryId>::<idx>::<name>`), тож UUID тут дав би 22P02 на кожному
     // реальному push-і — той самий баг, що в
-    // docs/90-work/tech-debt/backend.md § «Routine: PK-тип».
+    // docs/work/specs/tech-debt/backend.md § «Routine: PK-тип».
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );

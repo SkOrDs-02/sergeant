@@ -15,12 +15,8 @@ import {
   hasExistingData,
   markOnboardingCompletedFired,
   isOnboardingCompletedFired,
-  isDemoActive,
-  clearDemoFlag,
   buildFinalPicks,
-  DEMO_LOCAL_USER_ID,
 } from "./onboardingGate";
-import { DEMO_FLAG_KEY } from "./seedDemoData/keys";
 
 beforeEach(() => {
   localStorage.clear();
@@ -71,24 +67,7 @@ describe("onboardingGate", () => {
     expect(isOnboardingCompletedFired()).toBe(true);
   });
 
-  it("isDemoActive reflects the demo flag key", () => {
-    expect(isDemoActive()).toBe(false);
-    localStorage.setItem(DEMO_FLAG_KEY, "1");
-    expect(isDemoActive()).toBe(true);
-  });
-
-  it("clearDemoFlag removes the demo flag", () => {
-    localStorage.setItem(DEMO_FLAG_KEY, "1");
-    expect(isDemoActive()).toBe(true);
-    clearDemoFlag();
-    expect(isDemoActive()).toBe(false);
-  });
-
   it("re-exports buildFinalPicks from @sergeant/shared", () => {
     expect(typeof buildFinalPicks).toBe("function");
-  });
-
-  it("exposes a stable synthetic demo user id", () => {
-    expect(DEMO_LOCAL_USER_ID).toBe("demo-local");
   });
 });

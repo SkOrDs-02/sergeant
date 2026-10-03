@@ -17,28 +17,28 @@ const MODULE_ACTIVE_CLASSES: Record<
   { border: string; bg: string; icon: string; check: string }
 > = {
   finyk: {
-    border: "border-finyk/60",
+    border: "border-finyk-edge",
     bg: "bg-finyk/8",
     icon: "bg-finyk/15 text-finyk",
-    check: "bg-finyk-strong",
+    check: "bg-finyk-strong dark:bg-finyk dark:text-bg",
   },
   fizruk: {
-    border: "border-fizruk/60",
+    border: "border-fizruk-edge",
     bg: "bg-fizruk/8",
     icon: "bg-fizruk/15 text-fizruk",
-    check: "bg-fizruk-strong",
+    check: "bg-fizruk-strong dark:bg-fizruk dark:text-bg",
   },
   routine: {
-    border: "border-routine/60",
+    border: "border-routine-edge",
     bg: "bg-routine/8",
     icon: "bg-routine/15 text-routine",
-    check: "bg-routine-strong",
+    check: "bg-routine-strong dark:bg-routine dark:text-bg",
   },
   nutrition: {
-    border: "border-nutrition/60",
+    border: "border-nutrition-edge",
     bg: "bg-nutrition/8",
     icon: "bg-nutrition/15 text-nutrition",
-    check: "bg-nutrition-strong",
+    check: "bg-nutrition-strong dark:bg-nutrition dark:text-bg",
   },
 };
 
@@ -64,9 +64,9 @@ export function ModuleRow({
   onToggle: () => void;
 }) {
   const activeClasses = MODULE_ACTIVE_CLASSES[card.id] ?? {
-    border: "border-brand-500/60",
+    border: "border-control",
     bg: "bg-brand-500/8",
-    icon: "bg-brand-500/15 text-brand-strong dark:text-brand",
+    icon: "bg-brand-500/15 text-brand-strong",
     check: "bg-brand-strong",
   };
 
@@ -92,7 +92,7 @@ export function ModuleRow({
         )}
         aria-hidden
       >
-        <Icon name="check" size={12} strokeWidth={3} />
+        <Icon name="check" size="xs" strokeWidth={3} />
       </span>
       <div className="flex items-center gap-3">
         <span

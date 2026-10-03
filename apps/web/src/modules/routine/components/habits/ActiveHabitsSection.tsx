@@ -66,15 +66,14 @@ export function ActiveHabitsSection({
       <SectionHeading as="h2" size="xs" variant="routine">
         Активні звички
       </SectionHeading>
-      <p className="text-style-caption text-subtle leading-snug">
-        Порядок у списку = порядок у календарі. На десктопі можна перетягнути;
-        на телефоні: кнопки ↑↓. Для клавіатури та скрінрідерів зручніші кнопки
-        ↑↓.
+      <p className="text-style-body text-subtle leading-snug">
+        Порядок у списку = порядок у календарі. На десктопі можна перетягнути,
+        на телефоні й з клавіатури: «Вище» і «Нижче» в меню «⋯».
       </p>
       <Input
         className="routine-touch-field w-full max-w-md"
         {...searchFieldProps("habit-list-search")}
-        placeholder="Пошук у списку звичок…"
+        placeholder="Пошук у списку звичок"
         value={habitListQuery}
         onChange={(e) => setHabitListQuery(e.target.value)}
         aria-label="Пошук звичок у списку"
@@ -93,14 +92,33 @@ export function ActiveHabitsSection({
           module="routine"
           action={
             typeof onOpenCalendar === "function" ? (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onOpenCalendar}
-              >
+              <Button type="button" variant="outline" onClick={onOpenCalendar}>
                 Перейти до календаря
               </Button>
             ) : undefined
+          }
+        />
+      )}
+      {/* Порожній РЕЗУЛЬТАТ ПОШУКУ — не те саме, що порожній список. Вище
+          `EmptyState` ловить лише `!hasActive` («звичок ще немає»), тож при
+          непорожньому списку й запиті без збігів під полем не було нічого:
+          ані пояснення, ані виходу (знахідка PR-R13 огляду 2026-09-13).
+          Форма взята з такого ж випадку в цьому ж модулі —
+          `RoutineCalendarPanel.tsx:391-405`: заголовок, причина і кнопка, що
+          скидає саме той фільтр, який сховав список. */}
+      {hasActive && filteredActiveHabits.length === 0 && (
+        <EmptyState
+          title="Нічого не знайшов"
+          description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
+          module="routine"
+          action={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setHabitListQuery("")}
+            >
+              Скинути пошук
+            </Button>
           }
         />
       )}

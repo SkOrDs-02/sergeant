@@ -1,7 +1,7 @@
 # Пакет finyk-domain
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-11.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-04.
 > **Status:** Active
 
-Продуктовий контекст модуля: `Read .agents/skills/sergeant-module-finyk/SKILL.md` → канон `docs/01-product/model/finyk.md`.
+Продуктовий контекст модуля: `Read .agents/skills/sergeant-module-finyk/SKILL.md` → канон `docs/product/modules/finyk.md`.
 Ключові інваріанти: чиста доменна логіка, спільна для web/mobile; гроші — копійки як `number`.

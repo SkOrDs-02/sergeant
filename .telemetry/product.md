@@ -24,7 +24,7 @@
 - **Primary language:** TypeScript (strict, `noUncheckedIndexedAccess: true`).
 - **Frameworks:** Vite + React (web), Expo + React Native (mobile, with Capacitor shell variant), Node (server).
 - **Database:** PostgreSQL via Drizzle.
-- **Background jobs:** none visible in tracking layer; cron-style ops in `ops/n8n-workflows`.
+- **Background jobs:** none visible in tracking layer; cron-style ops у серверних таймерах (ADR-0089; n8n виведено — ADR-0090).
 - **HTTP client:** `fetch` (built-in) on all platforms.
 - **Module organization:** pnpm + Turborepo monorepo; `packages/shared` is the cross-platform source of truth for analytics constants.
 - **Auth:** Better Auth (Apple + Google OAuth + email/password).
@@ -78,11 +78,11 @@
 
 ## Integration Targets
 
-| Destination  | Purpose                                                           | Priority  |
-| ------------ | ----------------------------------------------------------------- | --------- |
-| PostHog (EU) | product analytics, funnels, A/B exposure, person-properties       | primary   |
-| Sentry       | error + perf monitoring (must share user_id with PostHog)         | primary   |
-| Grafana      | infra metrics + n8n workflow snapshots (e.g. WF-60 growth funnel) | secondary |
+| Destination  | Purpose                                                     | Priority  |
+| ------------ | ----------------------------------------------------------- | --------- |
+| PostHog (EU) | product analytics, funnels, A/B exposure, person-properties | primary   |
+| Sentry       | error + perf monitoring (must share user_id with PostHog)   | primary   |
+| Grafana      | infra metrics + growth-funnel snapshots (server-side timer) | secondary |
 
 No CDP. Direct integrations. PostHog handles routing; no Segment.
 

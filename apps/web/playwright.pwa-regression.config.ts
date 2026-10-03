@@ -15,6 +15,18 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // Та сама ручка, що в `playwright.config.ts` (a11y) і
+    // `playwright.beta.config.ts`: контейнерні QA-середовища постачають
+    // власний Chromium іншої ревізії й забороняють `playwright install`.
+    // Без неї цей контур там не стартує взагалі — а саме тут тріажили
+    // червоний `@critical` (аудит `web-qa-pre-beta.md` § 8).
+    ...(process.env["PW_CHROMIUM_PATH"]
+      ? {
+          launchOptions: {
+            executablePath: process.env["PW_CHROMIUM_PATH"],
+          },
+        }
+      : {}),
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },

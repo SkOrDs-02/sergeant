@@ -1,10 +1,10 @@
-import { createDocument } from "zod-openapi";
 import { z } from "zod";
 
 import * as schemas from "../schemas/api";
 import * as receiptSchemas from "../schemas/receipts";
 import * as importSchemas from "../schemas/import";
 import * as silpoSchemas from "../schemas/silpo";
+import * as finykSchemas from "../schemas/finyk";
 
 /**
  * Builds OpenAPI 3.1 document from zod-схем у `@sergeant/shared/schemas/api`.
@@ -31,6 +31,25 @@ const MeResponse = schemas.MeResponseSchema.meta({
   id: "MeResponse",
   description: "Відповідь на GET /api/me.",
 });
+const MeDeleteBody = schemas.MeDeleteBodySchema.meta({
+  id: "MeDeleteBody",
+  description:
+    "Тіло DELETE /api/me. Пароль обовʼязковий для акаунтів із credential-входом і безпредметний для OAuth-акаунтів.",
+});
+const MeDeleteResponse = schemas.MeDeleteResponseSchema.meta({
+  id: "MeDeleteResponse",
+  description:
+    "Відповідь DELETE /api/me. `deletedAt` — коли сервер прийняв прохання; `scheduledPurgeAt` — коли акаунт зникне (30 днів).",
+});
+const MeDeletionStatusResponse = schemas.MeDeletionStatusResponseSchema.meta({
+  id: "MeDeletionStatusResponse",
+  description:
+    "Відповідь GET /api/me/deletion-status. `pending: false` — акаунт активний, дат немає.",
+});
+const MeRestoreResponse = schemas.MeRestoreResponseSchema.meta({
+  id: "MeRestoreResponse",
+  description: "Відповідь POST /api/me/restore — прохання скасоване.",
+});
 const UserProfilePutBody = schemas.UserProfilePutBodySchema.meta({
   id: "UserProfilePutBody",
   description:
@@ -41,6 +60,44 @@ const UserProfileResponse = schemas.UserProfileResponseSchema.meta({
   description:
     "Відповідь GET/PUT /api/me/profile. `profile: {}` / `updatedAt: null` — дефолт, коли рядка ще немає.",
 });
+const UserPreferences = schemas.UserPreferencesSchema.meta({
+  id: "UserPreferences",
+  description:
+    "Відповідь GET/PATCH /api/me/preferences — налаштування користувача.",
+});
+const UserPreferencesPatch = schemas.UserPreferencesPatchSchema.meta({
+  id: "UserPreferencesPatch",
+  description:
+    "Тіло PATCH /api/me/preferences — часткове оновлення налаштувань.",
+});
+const MeExportResponse = schemas.MeExportResponseSchema.meta({
+  id: "MeExportResponse",
+  description:
+    "Відповідь GET /api/me/export — повний експорт даних користувача (GDPR-право на доступ).",
+});
+const SyncV2PushRequest = schemas.SyncV2PushSchema.meta({
+  id: "SyncV2PushRequest",
+  description: "Тіло POST /api/v2/sync/push — пачка op-ів per-row op-log sync.",
+});
+const SyncV2PullQuery = schemas.SyncV2PullSchema.meta({
+  id: "SyncV2PullQuery",
+  description:
+    "Query для GET /api/v2/sync/pull і /stream: `since` (курсор по id) та `limit`.",
+});
+const CspReportBody = schemas.CspReportBodySchema.meta({
+  id: "CspReportBody",
+  description:
+    "POST /api/csp-report — legacy `csp-report`, Reporting-API масив або bare-об'єкт (Safari).",
+});
+const ManualExpenseCreate = finykSchemas.ManualExpenseCreateSchema.meta({
+  id: "ManualExpenseCreate",
+  description: "Тіло POST /api/finyk/manual-expenses (сума в копійках).",
+});
+const ManualExpenseCreateResponse =
+  finykSchemas.ManualExpenseCreateResponseSchema.meta({
+    id: "ManualExpenseCreateResponse",
+    description: "Відповідь 201 POST /api/finyk/manual-expenses.",
+  });
 const ChatRequest = schemas.ChatRequestSchema.meta({
   id: "ChatRequest",
   description:
@@ -133,14 +190,6 @@ const CoachMemoryPost = schemas.CoachMemoryPostSchema.meta({
 const PrivatQuery = schemas.PrivatQuerySchema.meta({
   id: "PrivatQuery",
   description: "Query для GET /api/privat.",
-});
-const PushSubscribe = schemas.PushSubscribeSchema.meta({
-  id: "PushSubscribe",
-  description: "Web-push subscribe (legacy).",
-});
-const PushUnsubscribe = schemas.PushUnsubscribeSchema.meta({
-  id: "PushUnsubscribe",
-  description: "Web-push unsubscribe (legacy).",
 });
 const PushRegister = schemas.PushRegisterSchema.meta({
   id: "PushRegister",
@@ -341,7 +390,7 @@ const BillingCheckoutResponse = schemas.BillingCheckoutResponseSchema.meta({
 const BillingStatusResponse = schemas.BillingStatusResponseSchema.meta({
   id: "BillingStatusResponse",
   description:
-    "Поточний subscription state користувача, серіалізований з subscriptions (m056).",
+    "Поточний subscription state користувача, серіалізований з subscriptions (m056), плюс знімок доступу `access` (стан free/trial/pro/grace, фічі реєстру, тижневі лічильники).",
 });
 const BillingPortalResponse = schemas.BillingPortalResponseSchema.meta({
   id: "BillingPortalResponse",
@@ -495,8 +544,20 @@ const ApiError = z
 export const namedSchemas = {
   User,
   MeResponse,
+  MeDeleteBody,
+  MeDeleteResponse,
+  MeDeletionStatusResponse,
+  MeRestoreResponse,
   UserProfilePutBody,
   UserProfileResponse,
+  UserPreferences,
+  UserPreferencesPatch,
+  MeExportResponse,
+  SyncV2PushRequest,
+  SyncV2PullQuery,
+  CspReportBody,
+  ManualExpenseCreate,
+  ManualExpenseCreateResponse,
   ChatRequest,
   ChatUsageResponse,
   RecallMemoryRequest,
@@ -517,8 +578,6 @@ export const namedSchemas = {
   CoachInsight,
   CoachMemoryPost,
   PrivatQuery,
-  PushSubscribe,
-  PushUnsubscribe,
   PushRegister,
   PushUnregister,
   PushSend,
@@ -582,5 +641,3 @@ export const namedSchemas = {
   ImportBatchUndoResponse,
   ApiError,
 } as const;
-
-export { createDocument };

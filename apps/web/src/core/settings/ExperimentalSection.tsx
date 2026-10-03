@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { messages } from "@shared/i18n/uk";
+import { Banner } from "@shared/components/ui/Banner";
 import { Icon } from "@shared/components/ui/Icon";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
 import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
@@ -61,27 +62,18 @@ export function ExperimentalSection() {
     // єдине джерело: `settingsSectionsCatalog.ts`, дзеркалиться в
     // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
     <SettingsGroup title={settingsSectionTitle("experimental")} icon="tool">
-      <p className="text-style-caption text-subtle leading-snug">
-        {copy.intro}
-      </p>
-      <div
-        role="note"
-        // V-5: `warn` не існує у дизайн-системі (реальний токен — `warning`,
-        // див. packages/design-tokens/tailwind-preset.js) — банер рендерився
-        // без кольору/бордера. Патерн border/bg відповідає іншим
-        // warning-банерам (FinykManualExpenseConflictBanner).
-        className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5"
-      >
+      <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
+      <Banner variant="warning" role="note" className="flex items-start gap-3">
         <Icon
           name="alert-triangle"
-          size={16}
+          size="md"
           className="text-warning-strong dark:text-warning shrink-0 mt-0.5"
           aria-hidden
         />
         <p className="text-style-caption text-text leading-snug">
           {copy.warningBanner}
         </p>
-      </div>
+      </Banner>
       {!acknowledged && (
         <div className="flex items-start gap-3 text-text">
           <input
@@ -103,24 +95,27 @@ export function ExperimentalSection() {
           </label>
         </div>
       )}
-      <div
-        className="space-y-4"
-        aria-disabled={togglesDisabled || undefined}
-        // Поки користувач не визнав ризик — тумблери видимі, але tap-and-flip
-        // без ефекту: setFlag-no-op гасить взаємодію, opacity натякає, що
-        // секція розблоковується чекбоксом вище.
-        style={togglesDisabled ? { opacity: 0.55 } : undefined}
-      >
+      {/*
+        Блокування тепер на САМОМУ тумблері, а не на коробці навколо нього.
+        Доти тут стояли `aria-disabled` на цьому `div`, `opacity: 0.55` і
+        no-op в `onChange` — виглядало заблокованим, але для клавіатури й
+        скрінрідера кожен тумблер лишався звичайним активним switch-ем:
+        сфокусувати, натиснути, почути підтвердження — і нічого не
+        станеться. Знахідка PR-S11.
+
+        `opacity` на контейнері прибрано навмисно: `Switch` у вимкненому
+        стані вже гасить себе сам (`opacity-60`), а подвійне приглушення
+        робило підписи менш читабельними без жодної нової інформації.
+      */}
+      <div className="space-y-4">
         {items.map((flag) => (
           <ToggleRow
             key={flag.id}
             label={flag.label}
             description={flag.description}
             checked={Boolean(flags[flag.id])}
-            onChange={(checked) => {
-              if (togglesDisabled) return;
-              setFlag(flag.id, checked);
-            }}
+            disabled={togglesDisabled}
+            onChange={(checked) => setFlag(flag.id, checked)}
           />
         ))}
       </div>

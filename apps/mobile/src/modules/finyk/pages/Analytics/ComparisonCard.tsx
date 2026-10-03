@@ -18,7 +18,9 @@ export type ComparisonKind = "expense" | "income";
 interface ComparisonRowProps {
   label: string;
   current: number;
-  prev: number;
+  diff: number;
+  /** Відсоток з точних копійок, з домену; `null`, коли бази немає (Р4). */
+  pct: number | null;
   kind?: ComparisonKind;
 }
 
@@ -29,11 +31,10 @@ function fmt(uah: number): string {
 function ComparisonRow({
   label,
   current,
-  prev,
+  diff,
+  pct,
   kind = "expense",
 }: ComparisonRowProps) {
-  const diff = current - prev;
-  const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
   const up = diff > 0;
   const upIsGood = kind === "income";
   const good = diff === 0 ? null : up === upIsGood;
@@ -54,10 +55,10 @@ function ComparisonRow({
         <Text className="text-sm font-medium text-fg tabular-nums">
           {fmt(current)} ₴
         </Text>
-        {prev > 0 && pct !== null ? (
+        {pct !== null || diff !== 0 ? (
           <Text className={"text-xs tabular-nums " + tint}>
             {up ? "+" : ""}
-            {pct}%
+            {pct === null ? `${fmt(diff)} ₴` : `${Math.round(pct)}%`}
           </Text>
         ) : null}
       </View>
@@ -75,12 +76,14 @@ function ComparisonCardComponent({ comparison }: ComparisonCardProps) {
       <ComparisonRow
         label="Витрати"
         current={comparison.currentSpent}
-        prev={comparison.prevSpent}
+        diff={comparison.diff}
+        pct={comparison.diffPct}
       />
       <ComparisonRow
         label="Дохід"
         current={comparison.currentIncome}
-        prev={comparison.prevIncome}
+        diff={comparison.incomeDiff}
+        pct={comparison.incomeDiffPct}
         kind="income"
       />
     </View>

@@ -53,4 +53,29 @@ describe("computeRoutineQuickStats", () => {
       streak: 0,
     });
   });
+
+  it("excludes a skipped day from today's denominator and keeps the streak flexible (findings 1.5/1.6)", () => {
+    // `b` was skipped ("не зміг") today instead of completed — the hero's
+    // own progress ring drops it from "N of M"; the Hub card must match.
+    const skips = {
+      b: { [TODAY]: { reason: "sick" as const, at: "2026-07-23T10:00:00Z" } },
+    };
+    const stats = computeRoutineQuickStats(habits, completions, TODAY, skips);
+    // scheduled today: a + b, minus the skipped `b` → 1; done: a → 1.
+    expect(stats.todayDone).toBe(1);
+    expect(stats.todayTotal).toBe(1);
+  });
+
+  it("carries a mid-streak skip into the flexible streak instead of breaking it", () => {
+    // `a` has a 3-day hard streak ending yesterday, then a skip today
+    // instead of a completion — the flexible streak survives it.
+    const withGap: Record<string, string[]> = {
+      a: ["2026-07-22", "2026-07-21", "2026-07-20"],
+    };
+    const skips = {
+      a: { [TODAY]: { reason: "sick" as const, at: "2026-07-23T10:00:00Z" } },
+    };
+    const stats = computeRoutineQuickStats([habits[0]!], withGap, TODAY, skips);
+    expect(stats.streak).toBe(3);
+  });
 });

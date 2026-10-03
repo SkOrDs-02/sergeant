@@ -14,7 +14,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import type { Meal, NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
+import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
 
 const {
   mockListSavedRecipes,
@@ -102,13 +102,6 @@ const PREFS: NutritionPrefs = {
   exclude: "",
 } as NutritionPrefs;
 
-const PANTRY: Pantry = {
-  id: "pantry-1",
-  name: "Дім",
-  items: [],
-  text: "",
-};
-
 const SAVED_RECIPE: import("../lib/recipeBook").SavedRecipe = {
   id: "rcp_saved_001",
   title: "Вівсяна каша",
@@ -143,7 +136,6 @@ function makeProps(
 ): Parameters<typeof RecipesCard>[0] {
   return {
     busy: false,
-    activePantry: PANTRY,
     prefs: PREFS,
     setPrefs: vi.fn(),
     recommendRecipes: vi.fn(),
@@ -278,6 +270,32 @@ describe("RecipesCard — addRecipeAsMeal branches", () => {
     const portionInput = screen.getByDisplayValue("1");
     fireEvent.change(portionInput, { target: { value: "2" } });
     fireEvent.click(screen.getByRole("button", { name: /У журнал/i }));
+    await waitFor(() => expect(addMealToLog).toHaveBeenCalledTimes(1));
+    expect(addMealToLog.mock.calls[0]![0].macros.kcal).toBe(700);
+  });
+
+  it("показує підсумок на N порцій наживо і пише в журнал те саме число", async () => {
+    // Регресія: множник писав лише `portionById`, і результат було видно
+    // тільки після «+ У журнал» - поле виглядало зламаним. Макроси рецепта -
+    // на ОДНУ порцію (рішення власника 2026-10-01), тож підрядок лишається
+    // «/ порція», а підсумок на N порцій живе окремо.
+    const addMealToLog = vi
+      .fn<(meal: Meal) => Promise<void>>()
+      .mockResolvedValue(undefined);
+    mockListSavedRecipes.mockResolvedValue([SAVED_RECIPE]);
+    renderCard(makeProps({ addMealToLog }));
+    await expandSavedSection();
+    expect(screen.getByText(/≈ 350 ккал \/ порція/)).toBeTruthy();
+    expect(screen.queryByText(/усього/)).toBeNull();
+
+    fireEvent.change(screen.getByDisplayValue("1"), {
+      target: { value: "2" },
+    });
+    expect(screen.getByText(/→ усього ≈ 700 ккал/)).toBeTruthy();
+    // Ціна однієї порції від множника не залежить.
+    expect(screen.getByText(/≈ 350 ккал \/ порція/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "+ У журнал ×2" }));
     await waitFor(() => expect(addMealToLog).toHaveBeenCalledTimes(1));
     expect(addMealToLog.mock.calls[0]![0].macros.kcal).toBe(700);
   });

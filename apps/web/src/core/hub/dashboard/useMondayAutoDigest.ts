@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { safeReadLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { useHubPref, HUB_PREF_MONDAY_AUTO } from "../../settings/hubPrefs";
 import {
   getWeekKey,
   loadDigest,
@@ -41,16 +39,23 @@ export function useMondayAutoDigest() {
   );
   const { generate } = useWeeklyDigest(previousWeekKey);
   const firedRef = useRef(false);
+  // Прапорець переїхав у мішок `hub_prefs_v1` разом із рештою хабових
+  // налаштувань (залишок PR-S13), тож тепер він ще й спільний між
+  // пристроями. Дефолт ON зберігся: відсутність ключа = увімкнено.
+  const [mondayAuto] = useHubPref<boolean>(HUB_PREF_MONDAY_AUTO, true);
 
   useEffect(() => {
-    const enabled =
-      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") !== "0";
-    if (!enabled) return;
+    if (!mondayAuto) return;
 
     const now = new Date();
-    // Kyiv-anchored weekday so the Monday auto-digest fires on Kyiv's Monday,
-    // not the host-local one (domain invariant: day boundaries in Europe/Kyiv).
-    const isMonday = getKyivDateParts(now).weekday === 1;
+    // Device-local weekday — той самий годинник, що й `getWeekKey`
+    // (device-local, ADR-0078 §parity з mobile). Раніше гейт брав київський
+    // weekday, а `weekKey` рахувався за пристроєм: у поясах на захід від
+    // Києва понеділок за Києвом наставав РАНІШЕ понеділка за пристроєм, і
+    // гейт спрацьовував на позаминулому `previousWeekKey` (audit
+    // unification-modules §1.2).
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: matches getWeekKey's device-local clock, not a display/report value.
+    const isMonday = now.getDay() === 1;
     if (!isMonday) return;
 
     if (loadDigest(previousWeekKey)) return;
@@ -62,5 +67,12 @@ export function useMondayAutoDigest() {
       generate();
     }, 3000);
     return () => clearTimeout(timer);
-  }, [generate, previousWeekKey]);
+    // `mondayAuto` у залежностях — не поступка лінтеру. Прапорець тепер
+    // реактивний (мішок `hub_prefs_v1`), тож вимкнення ПІД ЧАС відліку
+    // тригерить очищення і гасить таймер — раніше значення читалось один
+    // раз усередині ефекту, і скасувати вже запущений відлік було нічим.
+    // Зворотний бік: `firedRef` лишається піднятим, тож повторне
+    // вмикання в тій же сесії відлік не переозброїть. Це навмисно —
+    // консервативніше не згенерувати, ніж згенерувати попри відмову.
+  }, [generate, previousWeekKey, mondayAuto]);
 }

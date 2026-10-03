@@ -13,7 +13,7 @@
 // index.ts`, `tools/openclaw/src/index.ts`, etc. (run `pnpm
 // lint:eslint-config-diff` to regenerate; CI guards in PR-31 phase-2).
 //
-// Phase 2 (deferred — see `docs/90-work/initiatives/archive/stack-pulse-2026-05/
+// Phase 2 (deferred — see `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/
 // pr-31-eslint-config-split.md` § Acceptance criteria) extracts each
 // surface-specific block (apps/web, apps/server, apps/mobile, apps/
 // mobile-shell, tools/openclaw, packages/**) into per-app `eslint.
@@ -69,12 +69,6 @@ export const baselineIgnores = {
     "**/.turbo/**",
     "storybook-static/**",
     "**/storybook-static/**",
-    // `ops/n8n-workflows/_lib/*` ships paste-into-n8n Function-node
-    // templates. They use top-level `return` (legal inside an n8n
-    // sandbox, not legal in a regular ES module) and run inside n8n's
-    // own bundled lint/sandbox — eslint here would only produce false
-    // positives. Prettier still formats them via lint-staged.
-    "ops/n8n-workflows/_lib/**",
     // `.claude/workflows/*` are scripts for the Claude Code Workflow
     // tool. They run inside an async sandbox where `args`, `log`,
     // `agent`, `phase`, `pipeline`, `parallel`, `budget`, and top-level
@@ -146,7 +140,7 @@ export const baseline = [
       // Initiative 0021 closed (2026-07-10, PR #177): all react-hooks v7
       // rules cleared monorepo-wide — web/mobile in eslint.web.js /
       // eslint.mobile.js; baseline holds `error` for server, mobile-shell,
-      // openclaw. See docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md.
+      // openclaw. See docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md.
       "react-hooks/set-state-in-effect": "error",
       "react-hooks/preserve-manual-memoization": "error",
       "react-hooks/purity": "error",

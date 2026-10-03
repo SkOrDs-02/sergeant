@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-08-04
+ * Last validated: 2026-09-11
  * Status: Active
  *
  * Integration tests for FinykApp — over-mocking refactor.
@@ -28,7 +28,9 @@
  */
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import {
+  act,
   configure,
+  fireEvent,
   render,
   screen,
   within,
@@ -36,12 +38,13 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { AuthProvider } from "../../core/auth/AuthContext";
+import { useOpenSignIn } from "../../core/auth/useOpenSignIn";
 import { server } from "../../test/msw/server";
 
 // ── Heavy browser API (sqlite-wasm worker) — see file docstring ────────────
@@ -108,7 +111,7 @@ beforeAll(async () => {
 // why the same test passed with `-t` and failed in the file. Same reasoning as
 // the raised `testTimeout` in `vitest.config.js`: give slow-runner timing
 // enough room that only a real hang goes red.
-configure({ asyncUtilTimeout: 5000 });
+configure({ asyncUtilTimeout: 10000 });
 
 /** Default handlers every test needs — `useMonobank` always fires the
  * sync-state query and `AuthProvider` always fires `/me`, regardless of
@@ -120,8 +123,12 @@ beforeEach(() => {
   server.use(meUnauthenticatedHandler(), disconnectedSyncStateHandler());
 });
 
+// `onOpenAuth` обовʼязковий (A1, аудит 2026-09-11 хвиля 2) — тестам, яким
+// вхід байдужий, дістається безпечний no-op замість `undefined`.
+const NOOP_AUTH = () => {};
+
 function renderApp(
-  props: React.ComponentProps<typeof FinykApp> = {},
+  props: React.ComponentProps<typeof FinykApp> = { onOpenAuth: NOOP_AUTH },
   initialEntries: string[] = ["/finyk"],
 ) {
   const queryClient = new QueryClient({
@@ -170,7 +177,7 @@ describe("FinykApp — shell + default page (real component tree)", () => {
       screen.getByRole("button", { name: "Підключити Monobank" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Без банку продовжити" }),
+      screen.getByRole("button", { name: "Не зараз" }),
     ).toBeInTheDocument();
 
     // Real `Overview` page (sr-only page heading, not a stubbed testid).
@@ -188,10 +195,60 @@ describe("FinykApp — shell + default page (real component tree)", () => {
     renderApp({
       onBackToHub: vi.fn(),
       onOpenSettings: vi.fn(),
+      onOpenAuth: NOOP_AUTH,
       pwaAction: null,
       onPwaActionConsumed: vi.fn(),
     });
     expect(bottomNav()).toBeInTheDocument();
+  });
+});
+
+// Регресія A1 (аудит 2026-09-11, хвиля 2): наскрізна перевірка через
+// СПРАВЖНЄ дерево (FinykApp → Overview → LocalOnlyDataBanner), не через
+// ізольований юніт хука. Раніше `onOpenAuth` у Фініку мав фолбек
+// `?? (() => navigate("/auth"))` — зайвий редірект-хоп; тепер пропс
+// обовʼязковий і `Overview` передає його в банер без обгортки.
+describe("FinykApp — sign-in wiring (A1)", () => {
+  function RealSignInFinykApp() {
+    const onOpenAuth = useOpenSignIn();
+    return <FinykApp onOpenAuth={onOpenAuth} />;
+  }
+
+  function LocationProbe() {
+    const location = useLocation();
+    return <span data-testid="probe-location">{location.pathname}</span>;
+  }
+
+  it("тап «Увійти» в durability-банері веде на /sign-in прямим SPA-переходом", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ApiClientProvider client={apiClient}>
+          <MemoryRouter initialEntries={["/finyk"]}>
+            <AuthProvider>
+              <ToastProvider>
+                <RealSignInFinykApp />
+                <LocationProbe />
+              </ToastProvider>
+            </AuthProvider>
+          </MemoryRouter>
+        </ApiClientProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("probe-location")).toHaveTextContent("/finyk");
+
+    const signInButton = await screen.findByRole("button", {
+      name: "Увійти",
+    });
+    fireEvent.click(signInButton);
+
+    // Жодного `/auth`-хопу: `MemoryRouter` тут не монтує
+    // `StandaloneRoutes`, тож якби код і далі ходив через аліас,
+    // локація лишилась би на ньому, а не перескочила на `/sign-in`.
+    expect(screen.getByTestId("probe-location")).toHaveTextContent("/sign-in");
   });
 });
 
@@ -207,10 +264,9 @@ describe("FinykApp — real page routing via the bottom nav", () => {
   it("navigates to the real Transactions page (real empty-state copy) on tab click", async () => {
     renderApp();
     await userEvent.click(navButton("Операції"));
-    // No mono/manual data at all → real `ModuleEmptyState` for finyk.
-    expect(
-      await screen.findByText("Куди йдуть твої гроші?"),
-    ).toBeInTheDocument();
+    // No mono/manual data at all → the list-scoped no-data state, not
+    // Overview's `ModuleEmptyState` hero (founder-UX audit round 2, F1).
+    expect(await screen.findByText("Операцій ще немає")).toBeInTheDocument();
   });
 
   it("navigates to the real Analytics page on tab click", async () => {
@@ -246,24 +302,71 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
     });
     // Real `FinykLoginScreen` inside the overlay.
     expect(
-      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+      within(dialog).getByPlaceholderText("Встав токен Mono API"),
     ).toBeInTheDocument();
   });
 
-  it("hides the NoBankBanner after Continue-without-bank is clicked (real LS write)", async () => {
+  it("hides the NoBankBanner on dismiss, writes a timestamp and keeps manual-only unset", async () => {
     renderApp();
-    expect(
-      screen.getByRole("button", { name: "Підключити Monobank" }),
-    ).toBeInTheDocument();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Без банку продовжити" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Не зараз" }));
 
     expect(
       screen.queryByRole("button", { name: "Підключити Monobank" }),
     ).not.toBeInTheDocument();
-    expect(window.localStorage.getItem("finyk_manual_only_v1")).toBe("1");
+    expect(
+      Number(window.localStorage.getItem("finyk_bank_banner_dismissed_at_v1")),
+    ).toBeGreaterThan(0);
+    expect(window.localStorage.getItem("finyk_manual_only_v1")).toBeNull();
+  });
+
+  it("shows the NoBankBanner again 7 days after dismiss, not before", async () => {
+    const t0 = Date.now();
+    const nowSpy = vi.spyOn(Date, "now");
+    nowSpy.mockReturnValue(t0);
+    const first = renderApp();
+    await userEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+    first.unmount();
+
+    nowSpy.mockReturnValue(t0 + 6 * 24 * 60 * 60 * 1000);
+    const second = renderApp();
+    expect(
+      screen.queryByRole("button", { name: "Підключити Monobank" }),
+    ).not.toBeInTheDocument();
+    second.unmount();
+
+    nowSpy.mockReturnValue(t0 + 7 * 24 * 60 * 60 * 1000);
+    renderApp();
+    expect(
+      screen.getByRole("button", { name: "Підключити Monobank" }),
+    ).toBeInTheDocument();
+    nowSpy.mockRestore();
+  });
+
+  it("shows the banner on the SAME mounted instance once the 7-day snooze elapses", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    try {
+      renderApp();
+      fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+      expect(
+        screen.queryByRole("button", { name: "Підключити Monobank" }),
+      ).not.toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(7 * 24 * 60 * 60 * 1000 - 1000);
+      });
+      expect(
+        screen.queryByRole("button", { name: "Підключити Monobank" }),
+      ).not.toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(
+        screen.getByRole("button", { name: "Підключити Monobank" }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -343,7 +446,7 @@ describe("FinykApp — regression: malformed /api/v1/mono/accounts payload (deep
       ),
     );
 
-    renderApp({}, ["/finyk/assets"]);
+    renderApp({ onOpenAuth: NOOP_AUTH }, ["/finyk/assets"]);
 
     // Real Assets page rendered (not the SectionErrorBoundary fallback).
     expect(
@@ -389,7 +492,7 @@ describe("FinykApp — a rejected Mono token surfaces the real authError banner"
       name: "Підключення Monobank",
     });
     await userEvent.type(
-      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+      within(dialog).getByPlaceholderText("Встав токен Mono API"),
       "bad-token",
     );
     await userEvent.click(

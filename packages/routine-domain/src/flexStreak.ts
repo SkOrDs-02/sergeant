@@ -27,13 +27,14 @@
  * разом із бампом `METRICS_VERSION`.
  */
 
-import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
+import { dateKeyMinusDays } from "./dateKeys.js";
 import {
   dateKeyInPauseInterval,
   habitCountsTowardMetrics,
   habitScheduledOnDate,
 } from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
+import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
 
 /**
  * Скільки виконаних днів «оплачують» одну заморозку.
@@ -127,13 +128,6 @@ export interface FlexibleStreakBreakdown {
   window: FlexibleStreakDayCell[];
 }
 
-function dateKeyMinusDays(baseKey: string, daysBack: number): string {
-  const d = parseDateKey(baseKey);
-  d.setDate(d.getDate() - daysBack);
-  d.setHours(12, 0, 0, 0);
-  return dateKeyFromDate(d);
-}
-
 /**
  * Розібрана поточна серія звички — з провенансом кожного мʼякого дня.
  *
@@ -185,7 +179,14 @@ export function flexibleStreakBreakdown(
     // «в очікуванні», а не провал.
     return {
       ...empty,
-      todayPending: habitScheduledOnDate(habit, todayKey),
+      // Той самий предикат, що й у циклі нижче: без `weekDoneCount` гнучка
+      // звичка з добраною ціллю висіла б «в очікуванні» в дні, коли робити
+      // вже нічого не треба.
+      todayPending: habitScheduledOnDate(habit, todayKey, {
+        weekDoneCount: isFlexibleHabit(habit)
+          ? weekDoneCountExcludingDate(completionsForHabit, todayKey)
+          : undefined,
+      }),
     };
   }
   const startKey = habit.startDate || earliest || todayKey;
@@ -206,7 +207,36 @@ export function flexibleStreakBreakdown(
       keys.push(key);
       continue;
     }
-    if (!habitScheduledOnDate(habit, key)) {
+    // Гнучка звичка («N разів на тиждень») перестає бути запланованою в
+    // день, коли тижневу ціль уже добрано — той самий предикат, що вже
+    // діє в стрічці (`calendarEvents.ts`) і в heatmap (`heatmap/grid.ts`).
+    // Без `weekDoneCount` `habitScheduledOnDate` для `flexible` завжди
+    // істинний, тож кожен день понад ціль ставав «miss»: він зʼїдав
+    // grace-бюджет, а другий підряд рвав серію. Людина з ціллю «3 рази»,
+    // яка зробила рівно 3, бачила обірваний стрік — покарання за те, що
+    // вона виконала план (PR-R4, аудит 2026-09-13).
+    //
+    // Це НЕ останній call-site того самого класу — просто останній, що
+    // рухає число стріку. Без `weekDoneCount` лишаються ще три, кожен зі
+    // своїм наслідком і кожен поза цим PR: `chatActions/routineActions.ts`
+    // (гнучка звичка з добраною ціллю потрапляє в «пропущені» у відповіді
+    // чату), `apps/mobile/.../useCalendarAggregates.ts` (`canBulkMark`
+    // пропонує «відмітити все», коли робити вже нічого не треба) і
+    // `apps/server/src/lib/reminders/due.ts` (нагадування про добрану
+    // ціль). Перші два — презентація, третій — пуш; жоден не входить у
+    // METRICS_VERSION, тому й не тягне за собою підняття версії.
+    //
+    // Окремо: у `streaks.ts` виклики без `weekDoneCount` теж є, і чіпати
+    // їх НЕ треба. `streakForHabit` і `bestStreakForHabit` до них просто не
+    // доходять для гнучкої звички — обидва раніше роблять
+    // `if (isFlexibleHabit(habit)) return weeklyGoalStreakWeeks(...)`, тобто
+    // рахують серію в ТИЖНЯХ, а не в днях. А `flexibleCompletionForDays`
+    // передає `weekDoneCount: 0` навмисно: йому потрібні всі кандидатні дні,
+    // тижневу ціль він застосовує сам нижче.
+    const weekDone = isFlexibleHabit(habit)
+      ? weekDoneCountExcludingDate(completionsForHabit, key)
+      : undefined;
+    if (!habitScheduledOnDate(habit, key, { weekDoneCount: weekDone })) {
       kinds.push("off");
       keys.push(key);
       continue;
@@ -344,6 +374,54 @@ export function flexibleMaxActiveStreak(
     m = Math.max(
       m,
       flexibleStreakForHabit(h, completions[h.id] || [], todayKey, {
+        skipsForHabit: skips[h.id],
+      }),
+    );
+  }
+  return m;
+}
+
+/**
+ * Гнучкий аналог `maxStreakAllTime` — найдовша серія за всю історію
+ * звички, з тими самими трьома механізмами мʼякості, а не лише «поточна».
+ *
+ * Без цього «найкраща серія сьогодні» (`flexibleMaxActiveStreak`) могла
+ * показувати БІЛЬШЕ, ніж «за весь час» (`maxStreakAllTime`) — неможливе для
+ * користувача сусідство двох чисел на одній картці (unification audit
+ * 2026-08-31, finding 1.22): 7 виконаних днів, один прощений пропуск, ще
+ * 5 виконаних днів давали поточну серію 12 проти рекорду 7.
+ *
+ * Якорить `flexibleStreakBreakdown` на кожному виконаному дні — будь-яка
+ * найдовша серія за визначенням закінчується на «done», інші якорі
+ * зайві.
+ */
+export function flexibleMaxStreakAllTime(
+  habit: Habit,
+  completionsForHabit: string[] | undefined,
+  opts: FlexibleStreakOptions = {},
+): number {
+  if (!habitCountsTowardMetrics(habit)) return 0;
+  const done = completionsForHabit || [];
+  let best = 0;
+  for (const key of done) {
+    const days = flexibleStreakBreakdown(habit, done, key, opts).days;
+    if (days > best) best = days;
+  }
+  return best;
+}
+
+/** Гнучкий аналог `maxStreakAllTime` по всіх неархівних звичках. */
+export function flexibleMaxStreakAllTimeAcrossHabits(
+  habits: Habit[],
+  completions: Record<string, string[]>,
+  skips: Record<string, Record<string, HabitSkip>> = {},
+): number {
+  let m = 0;
+  for (const h of habits) {
+    if (h.archived) continue;
+    m = Math.max(
+      m,
+      flexibleMaxStreakAllTime(h, completions[h.id] || [], {
         skipsForHabit: skips[h.id],
       }),
     );

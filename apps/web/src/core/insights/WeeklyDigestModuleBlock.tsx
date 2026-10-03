@@ -29,7 +29,7 @@ const MODULE_CONFIG: Record<
   finyk: {
     icon: "credit-card",
     label: "Фінанси",
-    colorClass: "text-brand-strong dark:text-brand",
+    colorClass: "text-brand-strong",
     bgClass: "bg-finyk-soft",
     borderClass: "border-finyk-soft-border/60",
   },
@@ -182,6 +182,7 @@ export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
                   {data.recommendations.map((rec: string, i: number) => (
                     <div key={i} className="flex items-start gap-1.5">
                       <span
+                        aria-hidden
                         className={cn(
                           "text-style-caption font-bold mt-0.5 shrink-0",
                           cfg.colorClass,

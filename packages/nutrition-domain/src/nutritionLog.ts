@@ -9,12 +9,13 @@ import {
   macrosHasAnyValue,
   macrosToTotals,
   normalizeMacrosNullable,
-  toLocalISODate,
   type Macros,
   type NullableMacros,
 } from "@sergeant/shared";
 
+import { addDeviceDays } from "./deviceDayKey.js";
 import {
+  MEAL_ORDER,
   isMealTypeId,
   labelForMealType,
   mealTypeFromLabel,
@@ -217,6 +218,34 @@ export function isEstimatedMeal(meal: Meal | null | undefined): boolean {
   return meal?.macroSource === "photoAI";
 }
 
+/**
+ * Meal type of a logged row, mirroring the fallback used by
+ * `mealTypeBreakdown`/`mealTypeKcalForDay` (web `nutritionStats.ts`):
+ * `mealType` first, then a legacy label match.
+ */
+function resolvedMealType(m: Meal | null | undefined) {
+  return isMealTypeId(m?.mealType) ? m.mealType : mealTypeFromLabel(m?.label);
+}
+
+/**
+ * Count of distinct meal occasions (`MEAL_ORDER`) with non-zero kcal for
+ * the day — see `DaySummary.loggedMealTypesCount` doc for why this exists
+ * separately from a raw row count.
+ */
+function countLoggedMealTypes(meals: readonly Meal[]): number {
+  const kcalByType = new Map<string, number>();
+  for (const m of meals) {
+    const type = resolvedMealType(m);
+    const kcal = macrosToTotals(m?.macros).kcal;
+    kcalByType.set(type, (kcalByType.get(type) ?? 0) + kcal);
+  }
+  let count = 0;
+  for (const type of MEAL_ORDER) {
+    if ((kcalByType.get(type) ?? 0) > 0) count += 1;
+  }
+  return count;
+}
+
 export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
   const day = log?.[date];
   const meals = (Array.isArray(day?.meals) ? day.meals : []) as Meal[];
@@ -230,6 +259,7 @@ export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
   return {
     date,
     mealCount: meals.length,
+    loggedMealTypesCount: countLoggedMealTypes(meals),
     hasMeals: meals.length > 0,
     hasAnyMacros,
     estimatedKcalShare,
@@ -237,16 +267,17 @@ export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
   };
 }
 
+/**
+ * Зсув `YYYY-MM-DD` на `deltaDays` за годинником ПРИСТРОЮ (ADR-0078).
+ *
+ * unification-modules.md #1.17: раніше форматував результат через
+ * `toLocalISODate` (Europe/Kyiv), тож для пристроїв східніше Києва
+ * `addDaysISODate(key, -1)` міг повернути позавчора замість учора.
+ * `addDeviceDays` — той самий пристроєвий годинник, що вже дає день-ключ
+ * журналу, тож пара «день-ключ + зсув» більше не змішує два годинники.
+ */
 export function addDaysISODate(iso: string, deltaDays: number): string {
-  // ISO-формат `YYYY-MM-DD` — split дає рівно 3 елементи; `noUncheckedIndexedAccess`
-  // цього не виводить, тому розпаковуємо явно з fallback на 0 (`new Date(0,-1,…)`
-  // деградує плавно для битих рядків замість throw-у на `undefined - 1`).
-  const parts = iso.split("-").map(Number);
-  const y = parts[0] ?? 0;
-  const m = parts[1] ?? 0;
-  const d = parts[2] ?? 0;
-  const dt = new Date(y, m - 1, d + deltaDays);
-  return toLocalISODate(dt);
+  return addDeviceDays(iso, deltaDays);
 }
 
 export function duplicatePreviousDayMeals(
@@ -310,17 +341,27 @@ export function searchMealsByName(
   return results.sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/** Останні `dayCount` день-ключів, що закінчуються на `endIso`, найстаріший першим. */
+export function lastNDayKeysOldestFirst(
+  endIso: string,
+  dayCount: number,
+): string[] {
+  const keys: string[] = [];
+  for (let i = dayCount - 1; i >= 0; i--) {
+    keys.push(addDaysISODate(endIso, -i));
+  }
+  return keys;
+}
+
 export function getMacrosForDateRange(
   log: NutritionLogLike,
   endIso: string,
   dayCount: number,
 ): MacrosRow[] {
-  const rows: MacrosRow[] = [];
-  for (let i = dayCount - 1; i >= 0; i--) {
-    const d = addDaysISODate(endIso, -i);
-    rows.push({ date: d, ...getDayMacros(log, d) });
-  }
-  return rows;
+  return lastNDayKeysOldestFirst(endIso, dayCount).map((d) => ({
+    date: d,
+    ...getDayMacros(log, d),
+  }));
 }
 
 export function estimateLogBytes(log: NutritionLogLike): number {

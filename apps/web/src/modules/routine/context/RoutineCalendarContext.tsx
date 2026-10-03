@@ -38,6 +38,8 @@ export interface RoutineCalendarData {
   currentStreak: number;
   completionRate: RoutineCompletionRate;
   dayProgress: RoutineDayProgress;
+  /** День, за який рахується `dayProgress` — див. `useRoutineDerivedData`. */
+  progressDayKey: string;
   timeMode: RoutineTimeMode;
   selectedDay: string;
   todayKey: string;

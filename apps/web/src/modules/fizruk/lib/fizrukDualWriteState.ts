@@ -2,7 +2,7 @@
  * Snapshot extraction + cache peek helpers for the Fizruk dual-write
  * pipeline.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * The hooks (`useWorkouts`, `useExerciseCatalog`, `useMeasurements`)
  * and the residual-import boot helper share these helpers so the
  * dual-write payloads are computed in exactly one place.
@@ -27,6 +27,7 @@ import type {
 
 import { isFizrukDualWriteRegistered } from "./sqliteWriter/index.js";
 import {
+  type FizrukCustomActivitySnapshot,
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
@@ -41,6 +42,7 @@ import {
 import { getCachedFizrukSqliteState } from "./sqliteReader.js";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
+type ActivityDef = FizrukData.ActivityDef;
 
 /**
  * Stage 12 — minimal hook-side shapes the extractors accept. They are
@@ -94,7 +96,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   monthlyPlan: null,
   workoutTemplates: [],
   injuries: [],
-  pushups: {},
+  customActivities: [],
 };
 
 /**
@@ -116,7 +118,9 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
         cache.workoutTemplates ?? [],
       ),
       injuries: extractInjurySnapshots(cache.injuries ?? []),
-      pushups: cache.pushupsByDate ?? {},
+      customActivities: extractCustomActivitySnapshots(
+        cache.customActivities ?? [],
+      ),
     };
   } catch {
     return null;
@@ -147,6 +151,17 @@ export function extractCustomExerciseSnapshots(
   for (const e of customExercises) {
     if (!e || typeof e !== "object" || !e.id) continue;
     out.push({ ...e, id: String(e.id) });
+  }
+  return out;
+}
+
+export function extractCustomActivitySnapshots(
+  customActivities: readonly ActivityDef[],
+): FizrukCustomActivitySnapshot[] {
+  const out: FizrukCustomActivitySnapshot[] = [];
+  for (const a of customActivities) {
+    if (!a || typeof a !== "object" || !a.id) continue;
+    out.push({ ...a, id: String(a.id) });
   }
   return out;
 }
@@ -298,6 +313,11 @@ function toWorkoutSnapshot(workout: Workout): FizrukWorkoutSnapshot {
     wellbeing: workout.wellbeing
       ? toWellbeingSnapshot(workout.wellbeing)
       : null,
+    kcalBurned:
+      typeof workout.kcalBurned === "number" &&
+      Number.isFinite(workout.kcalBurned)
+        ? workout.kcalBurned
+        : null,
   };
 }
 
@@ -313,6 +333,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     sets?: FizrukSetSnapshot[];
     durationSec?: number;
     distanceM?: number;
+    chosenVariant?: string;
   } = {
     id: String(item.id),
     exerciseId: String(item.exerciseId ?? ""),
@@ -335,6 +356,10 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
   if (typeof item.distanceM === "number") out.distanceM = item.distanceM;
+  // Той самий білий список, що й у `toWellbeingSnapshot`: без цього рядка
+  // вибір варіанта не переживе перезавантаження, а лічильник трьох
+  // полегшень поспіль ніколи не спрацює.
+  if (item.chosenVariant !== undefined) out.chosenVariant = item.chosenVariant;
   return out as FizrukItemSnapshot;
 }
 
@@ -372,13 +397,29 @@ function toChecklistSnapshot(item: ChecklistItem): {
   };
 }
 
+/**
+ * AI-DANGER: це БІЛИЙ СПИСОК, а не копія обʼєкта. `WorkoutWellbeing` має
+ * індексну сигнатуру, тож нове поле типізується без правок ТУТ — і мовчки
+ * гине по дорозі в SQLite: типи зелені, тести зелені, зникає лише продукт.
+ * Рівно так уже губились `energy` / `mood` (див. `AI-DANGER` у
+ * `sqliteReader.ts`). Додав поле у `WorkoutWellbeing` — додай його і сюди.
+ */
 function toWellbeingSnapshot(w: WorkoutWellbeing): {
   energy?: number | null;
   mood?: number | null;
+  sleep?: number | null;
+  soreness?: number | null;
 } {
-  const out: { energy?: number | null; mood?: number | null } = {};
+  const out: {
+    energy?: number | null;
+    mood?: number | null;
+    sleep?: number | null;
+    soreness?: number | null;
+  } = {};
   if (w.energy !== undefined) out.energy = w.energy;
   if (w.mood !== undefined) out.mood = w.mood;
+  if (w.sleep !== undefined) out.sleep = w.sleep;
+  if (w.soreness !== undefined) out.soreness = w.soreness;
   return out;
 }
 

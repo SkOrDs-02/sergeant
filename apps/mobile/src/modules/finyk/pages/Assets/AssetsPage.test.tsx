@@ -75,8 +75,8 @@ describe("AssetsPage", () => {
     render(<AssetsPage testID="assets" seed={SEED} />);
 
     // Rows render with their labels.
-    expect(screen.getByText("⬜ Біла картка")).toBeTruthy();
-    expect(screen.getByText("🖤 Кредитна картка")).toBeTruthy();
+    expect(screen.getByText("Біла картка")).toBeTruthy();
+    expect(screen.getByText("Кредитна картка")).toBeTruthy();
     expect(screen.getByText("Готівка")).toBeTruthy();
     expect(screen.getByText("Батя")).toBeTruthy();
     expect(screen.getByText("Оля")).toBeTruthy();

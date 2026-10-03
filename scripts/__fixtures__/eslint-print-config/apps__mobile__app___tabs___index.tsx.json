@@ -1210,7 +1210,9 @@
       "ecmaFeatures": {
         "jsx": true
       },
-      "jsxPragma": null
+      "jsxPragma": null,
+      "projectService": true,
+      "tsconfigRootDir": "<repo>"
     },
     "sourceType": "module"
   },
@@ -1826,6 +1828,9 @@
     ],
     "@typescript-eslint/no-extra-semi": [
       0
+    ],
+    "@typescript-eslint/no-floating-promises": [
+      2
     ],
     "@typescript-eslint/no-misused-new": [
       2
@@ -2833,6 +2838,19 @@
     ],
     "sergeant-design/no-strict-bypass": [
       2
+    ],
+    "sergeant-design/require-toast-error-action": [
+      2,
+      {
+        "allowlist": [
+          "apps/web/src/core/pricing/WaitlistForm.tsx",
+          "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
+          "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
+          "apps/web/src/shared/lib/ui/undoToast.tsx",
+          "apps/mobile/src/lib/showUndoToast.ts",
+          "apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts"
+        ]
+      }
     ],
     "sergeant-design/ukrainian-copy": [
       2

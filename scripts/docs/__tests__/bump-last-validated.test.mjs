@@ -236,8 +236,6 @@ describe("bumpFiles", () => {
 
 describe("DEFAULT_CONFIG (sanity)", () => {
   it("excludes ADR by default", () => {
-    assert.ok(
-      DEFAULT_CONFIG.excludeGlobs.includes("docs/04-governance/adr/**"),
-    );
+    assert.ok(DEFAULT_CONFIG.excludeGlobs.includes("docs/governance/adr/**"));
   });
 });

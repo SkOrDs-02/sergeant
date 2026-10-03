@@ -53,7 +53,7 @@ export function timeReducer(state: TimeState, action: TimeAction): TimeState {
       if (action.mode === "month") {
         return {
           timeMode: "month",
-          // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: `todayDate()` уже звело добу до київського календаря; getter-и лише читають її частини, межа доби тут не вирішується.
+          // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: `todayDate()` уже звело добу до device-local календаря; getter-и лише читають її частини, межа доби тут не вирішується.
           monthCursor: { y: t.getFullYear(), m: t.getMonth() },
           selectedDay: tk,
         };
@@ -77,7 +77,7 @@ export function timeReducer(state: TimeState, action: TimeAction): TimeState {
       const t = todayDate();
       return {
         ...state,
-        // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: `todayDate()` уже звело добу до київського календаря; getter-и лише читають її частини, межа доби тут не вирішується.
+        // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: `todayDate()` уже звело добу до device-local календаря; getter-и лише читають її частини, межа доби тут не вирішується.
         monthCursor: { y: t.getFullYear(), m: t.getMonth() },
         selectedDay: dateKeyFromDate(t),
       };
@@ -134,8 +134,8 @@ export function timeReducer(state: TimeState, action: TimeAction): TimeState {
           // «сьогодні»; коли користувач гортає інший місяць — не смикаємо.
           if (state.selectedDay !== action.prevTodayKey) return state;
           // Рік/місяць беремо прямо з ключа `YYYY-MM-DD`, а не з host-local
-          // getter-ів: `tk` уже нормалізований під київську добу, тож зайвий
-          // прохід через `Date` лише повертав би ту саму цифру.
+          // getter-ів: `tk` уже нормалізований під добу пристрою (ADR-0078),
+          // тож зайвий прохід через `Date` лише повертав би ту саму цифру.
           return {
             ...state,
             monthCursor: {
@@ -158,7 +158,7 @@ export function initialTimeState(): TimeState {
   const t = todayDate();
   return {
     timeMode: "today",
-    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: `todayDate()` уже звело добу до київського календаря; getter-и лише читають її частини, межа доби тут не вирішується.
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: `todayDate()` уже звело добу до device-local календаря; getter-и лише читають її частини, межа доби тут не вирішується.
     monthCursor: { y: t.getFullYear(), m: t.getMonth() },
     selectedDay: dateKeyFromDate(t),
   };

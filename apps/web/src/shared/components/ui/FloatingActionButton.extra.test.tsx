@@ -36,6 +36,19 @@ afterEach(() => {
 });
 
 describe("FloatingActionButton — single action", () => {
+  it("публікує свою нижню смугу в --sgt-fab-inset на <html>, доки видима", () => {
+    // `page-tabbar-pad` бере з цієї змінної запас під FAB, щоб останній
+    // рядок контенту не лягав під кнопку (критика екранів 2026-09-23).
+    const { unmount } = render(<FloatingActionButton onClick={() => {}} />);
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toMatch(/^\d+px$/);
+    unmount();
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toBe("");
+  });
+
   it("fires onClick when there are no actions", () => {
     const onClick = vi.fn();
     render(<FloatingActionButton onClick={onClick} aria-label="Додати" />);
@@ -62,8 +75,16 @@ describe("FloatingActionButton — single action", () => {
       <FloatingActionButton aria-label="V" variant="v2-fizruk" size="lg" />,
     );
     const btn = screen.getByRole("button", { name: "V" });
-    expect(btn.className).toContain("from-cyan-400");
+    expect(btn.className).toContain("bg-fizruk-strong");
+    expect(btn.className).not.toContain("bg-gradient");
     expect(btn.className).toContain("w-16");
+  });
+
+  it("у темній темі бере акцент модуля, як solid-кнопка, а не -strong", () => {
+    render(<FloatingActionButton aria-label="R" variant="routine" />);
+    const btn = screen.getByRole("button", { name: "R" });
+    expect(btn.className).toContain("dark:bg-routine");
+    expect(btn.className).toContain("dark:text-bg");
   });
 
   it("does not advertise a popup when there are no actions", () => {
@@ -148,6 +169,37 @@ describe("FloatingActionButton — scroll-to-hide", () => {
     });
     fireEvent.scroll(window);
     expect(outer.className).not.toContain("translate-y-24");
+  });
+
+  it("ховається й від прокрутки внутрішнього контейнера, не лише вікна", () => {
+    // Їжа гортає власний контейнер сторінок, а `scroll` не спливає до window.
+    render(
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
+        <FloatingActionButton aria-label="Inner" />
+      </div>,
+    );
+    const outer = screen.getByRole("button", { name: "Inner" }).parentElement!;
+    const scroller = screen.getByTestId("scroller");
+
+    scroller.scrollTop = 200;
+    fireEvent.scroll(scroller);
+    expect(outer.className).toContain("translate-y-24");
+
+    scroller.scrollTop = 120;
+    fireEvent.scroll(scroller);
+    expect(outer.className).not.toContain("translate-y-24");
+  });
+
+  it("лишає резерв під собою, коли ховається від прокрутки", () => {
+    render(<FloatingActionButton aria-label="Keep" />);
+    Object.defineProperty(window, "scrollY", {
+      value: 300,
+      configurable: true,
+    });
+    fireEvent.scroll(window);
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toMatch(/^\d+px$/);
   });
 
   // Перенесено з `RoutineBottomNav.test.tsx`: після уніфікації FAB

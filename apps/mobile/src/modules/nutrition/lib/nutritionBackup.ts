@@ -1,7 +1,7 @@
 /**
  * Mobile Nutrition — backup payload helpers.
  *
- * Stage 13 PR #071 of `docs/planning/storage-roadmap.md` — mirror of
+ * Stage 13 PR #071 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — mirror of
  * `apps/web/src/modules/nutrition/domain/nutritionBackup.ts`. Reads
  * via the SQLite warm cache (`loadNutritionLog` / `loadNutritionPrefs` /
  * `loadActivePantryId` / `loadPantries`); writes via the dual-write
@@ -16,6 +16,7 @@ import {
   defaultNutritionPrefs,
   isMealTypeId,
   normalizeNutritionLog,
+  normalizeNutritionPrefs,
   type NutritionLog,
   type NutritionPrefs,
   type Pantry,
@@ -119,6 +120,20 @@ function normalizePrefs(x: unknown): NutritionPrefs {
     dailyTargetProtein_g: optionalPositiveNumber(p.dailyTargetProtein_g),
     dailyTargetFat_g: optionalPositiveNumber(p.dailyTargetFat_g),
     dailyTargetCarbs_g: optionalPositiveNumber(p.dailyTargetCarbs_g),
+    adaptiveGoalEnabled: Boolean(p.adaptiveGoalEnabled),
+    adaptiveGoalIntent: p.adaptiveGoalIntent,
+    adaptiveGoalLastUpdatedAt:
+      typeof p.adaptiveGoalLastUpdatedAt === "string"
+        ? p.adaptiveGoalLastUpdatedAt
+        : null,
+    // Знімок підстави проходить бекап через доменну нормалізацію, а не
+    // копіюється як є: половина знімка дала б картці «витрата ≈NaN».
+    // Дзеркало web-гілки — бекап крос-платформенний, тож обидві сторони
+    // мусять чистити знімок однаково, інакше експорт з одного пристрою
+    // ламає картку на іншому.
+    adaptiveGoalLastReason: normalizeNutritionPrefs({
+      adaptiveGoalLastReason: p.adaptiveGoalLastReason,
+    }).adaptiveGoalLastReason,
     mealTemplates: Array.isArray(p.mealTemplates)
       ? p.mealTemplates.slice(0, 40)
       : [],

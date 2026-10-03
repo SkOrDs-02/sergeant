@@ -44,6 +44,8 @@ export function RootRoute() {
   );
 }
 
+import { RouteErrorElement } from "./RouteErrorElement";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -52,6 +54,11 @@ export const router = createBrowserRouter([
     // empty tree (and silences the React Router "No HydrateFallback"
     // console warning in production).
     HydrateFallback: PageLoader,
+    // A rejected `lazy: () => import(...)` below (stale chunk hash after a
+    // deploy, dropped request) is caught by the router itself, so without
+    // this the user sees React Router's default English "Unexpected
+    // Application Error!" page and the chunk-reload recovery never fires.
+    errorElement: <RouteErrorElement />,
     children: [
       // Per-module lazy routes — each renders a DIFFERENT component,
       // fixing the mixed-shape match-object bug (see Phase 2 history above).

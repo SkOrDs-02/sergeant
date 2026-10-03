@@ -37,7 +37,7 @@ describe("EMPTY_FIZRUK_DUAL_WRITE_STATE", () => {
       monthlyPlan: null,
       workoutTemplates: [],
       injuries: [],
-      pushups: {},
+      customActivities: [],
     });
   });
 });
@@ -85,6 +85,45 @@ describe("extractWorkoutSnapshots", () => {
     expect(snap!.groups).toEqual([{ id: "g1", itemIds: ["i1"] }]);
     expect(snap!.warmup).toEqual([{ id: "c1", done: true, label: "stretch" }]);
     expect(snap!.wellbeing).toEqual({ energy: 4, mood: 5 });
+  });
+
+  it("проводить sleep/soreness і chosenVariant крізь БІЛИЙ СПИСОК", () => {
+    // Найдорожчий баг цієї фічі — мовчазна втрата: `WorkoutWellbeing` має
+    // індексну сигнатуру, тож нове поле типізується без правок конвертера і
+    // просто зникає по дорозі в SQLite. Типи зелені, тести зелені, гине
+    // лише продукт (той самий сценарій, що в AI-DANGER у sqliteReader).
+    // Цей тест існує рівно для того, щоб такий пропуск був червоним.
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w3",
+        startedAt: "2026-09-02T10:00:00Z",
+        endedAt: null,
+        items: [
+          {
+            id: "i1",
+            exerciseId: "squat",
+            nameUk: "Присідання",
+            primaryGroup: "legs",
+            musclesPrimary: [],
+            musclesSecondary: [],
+            type: "strength",
+            chosenVariant: "easier",
+          },
+        ],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        wellbeing: { energy: 4, mood: 5, sleep: 2, soreness: 1 },
+      } as never,
+    ]);
+    expect(snap!.wellbeing).toEqual({
+      energy: 4,
+      mood: 5,
+      sleep: 2,
+      soreness: 1,
+    });
+    expect(snap!.items[0]!["chosenVariant"]).toBe("easier");
   });
 
   it("defaults missing fields safely", () => {

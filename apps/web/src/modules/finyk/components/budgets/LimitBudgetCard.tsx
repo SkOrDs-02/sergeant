@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-21
+ * Last validated: 2026-09-24
  * Status: Active
  */
 import { memo, useId, useState } from "react";
@@ -45,12 +45,20 @@ interface LimitBudgetCardProps {
    * «в лімітах є іконки, а у витратах немає» — саме про цю розбіжність.
    */
   customCategories?: readonly { id: string }[] | undefined;
+  /** «Приховати суми» (PR-F3) — маскує факт/ліміт/залишок/розбивку. */
+  showBalance?: boolean;
   /**
    * Розбивка факту по категоріях комбо-ліміту (рішення founder-а 2026-08-25:
    * «сума + розбивка»). Рендериться лише коли рядків 2+; для одиночного
    * ліміту проп не передається.
    */
   breakdown?: readonly LimitBreakdownRow[] | undefined;
+  /**
+   * Прогноз витрат на кінець місяця за поточним темпом (`calcLimitPace`).
+   * `null`/відсутнє — прогнозу нема: перші два дні місяця, не місячний
+   * період або ще жодної витрати.
+   */
+  forecast?: number | null | undefined;
   spent: number;
   pctRaw: number;
   pctRounded: number;
@@ -74,7 +82,9 @@ function LimitBudgetCardComponent({
   budget,
   categoryLabel,
   customCategories = [],
+  showBalance = true,
   breakdown,
+  forecast,
   spent,
   pctRaw,
   pctRounded,
@@ -115,8 +125,14 @@ function LimitBudgetCardComponent({
   // Сума «витрачено / ліміт» — один рядок, ніколи не рветься по «/».
   const amountNode = (
     <span className={cn("tabular-nums whitespace-nowrap", amountTone)}>
-      {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
-      {NARROW_NBSP}₴
+      {showBalance ? (
+        <>
+          {formatNumberUk(Math.round(spent))} / {formatNumberUk(budget.limit)}
+          {NARROW_NBSP}₴
+        </>
+      ) : (
+        "••••"
+      )}
     </span>
   );
 
@@ -171,7 +187,8 @@ function LimitBudgetCardComponent({
             <Button
               className="flex-1"
               size="sm"
-              variant="danger"
+              variant="soft"
+              tone="danger"
               onClick={onDelete}
             >
               Видалити
@@ -245,7 +262,7 @@ function LimitBudgetCardComponent({
                 onClick={onBeginEdit}
                 aria-label="Редагувати ліміт"
               >
-                <Icon name="edit" size={16} aria-hidden />
+                <Icon name="edit" size="md" aria-hidden />
               </Button>
             </div>
           </div>
@@ -272,9 +289,14 @@ function LimitBudgetCardComponent({
                   : "text-subtle",
             )}
           >
-            {overLimit ? (
+            {!showBalance ? (
+              "••••"
+            ) : overLimit ? (
+              /* З копійками навмисно: суму перевищення людина звіряє з
+                 записами, це регістр звірки, а не аналітики (канон § 6.1,
+                 рішення 2026-09-24). */
               <>
-                Перевищено на <Money amount={spent - budget.limit} />
+                Перевищено на <Money amount={spent - budget.limit} kopecks />
               </>
             ) : (
               <>
@@ -282,6 +304,12 @@ function LimitBudgetCardComponent({
               </>
             )}
           </div>
+          {showBalance && forecast != null && forecast > 0 && (
+            <div className="text-style-caption text-subtle mt-1">
+              За поточним темпом до кінця місяця ~
+              <Money amount={Math.round(forecast)} />
+            </div>
+          )}
 
           {breakdown && breakdown.length > 1 && (
             // Розбивка факту комбо-ліміту: видно, ЩО саме зʼїло бюджет.
@@ -301,7 +329,7 @@ function LimitBudgetCardComponent({
                     <span className="truncate">{row.label}</span>
                   </span>
                   <span className="tabular-nums shrink-0">
-                    <Money amount={row.spent} />
+                    {showBalance ? <Money amount={row.spent} /> : "••••"}
                   </span>
                 </li>
               ))}
@@ -321,12 +349,12 @@ function LimitBudgetCardComponent({
                         className="flex-1 flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-panelHi transition-colors"
                       >
                         <span className="flex items-center gap-2 text-style-caption text-text">
-                          <Icon name="sparkles" size={16} aria-hidden />
-                          AI-порада
+                          <Icon name="sergeant" size="md" aria-hidden />
+                          Порада Сержанта
                         </span>
                         <Icon
                           name="chevron-down"
-                          size={14}
+                          size="sm"
                           className={cn(
                             "transition-transform text-muted",
                             adviceOpen ? "rotate-180" : "",

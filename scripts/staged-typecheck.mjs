@@ -45,7 +45,7 @@ const REPO_ROOT = resolve(__dirname, "..");
 // (`scripts/pre-commit-timing.mjs`) sets `SERGEANT_TIMING_LOG` to a session-
 // scoped JSONL file; downstream scripts append `{ stage, ms }` records so the
 // summary shows per-stage breakdown. Pure best-effort — never block a commit.
-// Contract documented in `docs/02-engineering/development/pre-commit-timing.md`.
+// Contract documented in `docs/engineering/development/pre-commit-timing.md`.
 function emitStageTiming(stage, ms) {
   const log = process.env.SERGEANT_TIMING_LOG;
   if (!log) return;
@@ -91,6 +91,12 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
   // `import.meta.env.VITE_*` access trips TS4111 under
   // noPropertyAccessFromIndexSignature once apps/web enabled the flag.
   "apps/web/tsconfig.json": ["src/vite-env.d.ts"],
+  // `fonts.d.ts` оголошує CSS-only пакети шрифтів (`@fontsource-variable/manrope`,
+  // `@fontsource/unbounded/*`), які `main.tsx` імпортує заради side-effect.
+  // Повний tsc резолвить їх через `"main": "index.css"` + `vite/client`, а
+  // `tsc-files` без `include` — ні (TS2882). Знайдено 2026-09-01, коли
+  // `main.tsx` уперше потрапив у staged.
+  "apps/landing/tsconfig.json": ["src/fonts.d.ts"],
 };
 
 /**

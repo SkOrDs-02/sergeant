@@ -104,7 +104,7 @@ export async function goto(page: Page, route: string): Promise<void> {
       `Біла сторінка на ${route}: #root лишився порожнім. ` +
         `Reload ${recovered ? "врятував" : "НЕ врятував"} екран. ` +
         `Симптом гонки service-worker-а з бутом (аудит 2026-08-05, знахідка B1) — ` +
-        `дивись docs/90-work/audits/2026-08-05-browser-profile-testing.md.`,
+        `дивись docs/work/specs/audits/2026-08-05-browser-profile-testing.md.`,
     );
   }
   await expect(

@@ -16,7 +16,7 @@ vi.mock("../../obs/logger.js", () => ({
 
 // Креденшели більше не приходять із заголовків — вони лежать зашифровані
 // в `privat_connection` і резолвляться за сесією (спека
-// `docs/90-work/planning/specs/beta-security-readiness.md`, F1).
+// `docs/work/specs/beta-security-readiness.md`, F1).
 vi.mock("./privatStore.js", () => ({
   loadPrivatCredentials: vi.fn(),
 }));
@@ -226,7 +226,7 @@ describe("privat handler — upstream delegation", () => {
       await handler(makeReq(), res);
       expect(res.statusCode).toBe(status);
       expect(res.body).toEqual({
-        error: "Невірні credentials PrivatBank",
+        error: "Неправильні дані входу PrivatBank",
         code: "PRIVAT_CREDENTIALS_INVALID",
       });
       expect(JSON.stringify(res.body)).not.toContain("token dump");

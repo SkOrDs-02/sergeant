@@ -17,7 +17,9 @@ vi.mock("./WeeklyDigestStories", () => ({
 vi.mock("./useWeeklyDigest", () => ({
   useWeeklyDigest: (...args: unknown[]) => useWeeklyDigestMock(...args),
   useDigestHistory: (...args: unknown[]) => useDigestHistoryMock(...args),
-  getWeekKey: () => "2025-W46",
+  // Без аргументу — поточний тиждень, з датою — минулий (картка рахує його
+  // як «поточний мінус 7 днів»).
+  getWeekKey: (d?: Date) => (d ? "2025-11-03" : "2025-11-10"),
   // Картка читає coverage окремо від тіла звіту (аудит nutrition § E-4):
   // `summary` пише модель, а «залоговано N/7» мусить лишитись фактом.
   aggregateNutrition: () => null,
@@ -64,7 +66,9 @@ describe("WeeklyDigestCard — DataState routing", () => {
     ).toBeNull();
   });
 
-  it("renders the empty slot with a generate button on the current week when there is no digest", () => {
+  // Рішення власника 2026-09-03: звіт створює лише понеділкова
+  // автогенерація, кнопки «Згенерувати звіт» у порожньому стані немає.
+  it("renders the empty slot WITHOUT a generate button on the current week when there is no digest", () => {
     useWeeklyDigestMock.mockReturnValue({
       digest: null,
       loading: false,
@@ -78,9 +82,51 @@ describe("WeeklyDigestCard — DataState routing", () => {
     render(<WeeklyDigestCard />);
 
     expect(
-      screen.getByRole("button", { name: /згенерувати звіт/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: /згенерувати звіт/i }),
+    ).toBeNull();
+    expect(screen.getByText(/зʼявиться сам у понеділок/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/генерую звіт тижня/i)).toBeNull();
+  });
+
+  it("opens on last week's digest when the new week has none yet (Monday auto-report)", () => {
+    useDigestHistoryMock.mockReturnValue({
+      data: [{ weekKey: "2025-11-03", weekRange: "03 — 09 листоп." }],
+    });
+    useWeeklyDigestMock.mockReturnValue({
+      digest: null,
+      loading: true,
+      error: null,
+      weekRange: "03 — 09 листоп.",
+      generate: vi.fn(),
+      isCurrentWeek: false,
+      canGenerate: true,
+    });
+
+    render(<WeeklyDigestCard />);
+
+    expect(useWeeklyDigestMock).toHaveBeenLastCalledWith("2025-11-03");
+  });
+
+  it("stays on the current week once it has its own digest", () => {
+    useDigestHistoryMock.mockReturnValue({
+      data: [
+        { weekKey: "2025-11-10", weekRange: "10 — 16 листоп." },
+        { weekKey: "2025-11-03", weekRange: "03 — 09 листоп." },
+      ],
+    });
+    useWeeklyDigestMock.mockReturnValue({
+      digest: null,
+      loading: true,
+      error: null,
+      weekRange: "10 — 16 листоп.",
+      generate: vi.fn(),
+      isCurrentWeek: true,
+      canGenerate: true,
+    });
+
+    render(<WeeklyDigestCard />);
+
+    expect(useWeeklyDigestMock).toHaveBeenLastCalledWith("2025-11-10");
   });
 
   it("renders the empty slot with a 'not stored' message on a past week", () => {

@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Оболонка звітної картки хабу — власний матеріал «край і зріз» (П3,
- * `docs/05-design/design/anti-slop-strategy.md`).
+ * `docs/design/design/anti-slop-strategy.md`).
  *
  * AI-CONTEXT: чому `stub`, а не пара `rule`/`perf` як у стосі транзакцій.
  * Стос вимагає СУМІЖНОСТІ: у списку транзакцій день і його рядки стоять

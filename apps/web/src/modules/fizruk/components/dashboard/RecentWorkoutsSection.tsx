@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-13
  * Status: Active
  */
 /**
@@ -18,8 +18,9 @@
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import type { DashboardRecentWorkout } from "@sergeant/fizruk-domain/domain";
-import { formatNumberUk } from "@sergeant/shared";
+import { deviceDayKey, formatNumberUk } from "@sergeant/shared";
 
 export interface RecentWorkoutsSectionProps {
   readonly recent: readonly DashboardRecentWorkout[];
@@ -30,36 +31,40 @@ function formatDateShort(iso: string | null): string {
   if (!iso) return "";
   const ms = Date.parse(iso);
   if (!Number.isFinite(ms)) return "";
-  try {
-    return new Date(ms).toLocaleDateString("uk-UA", {
-      day: "numeric",
-      month: "short",
-    });
-  } catch {
-    return "";
-  }
+  return formatDayKeyUk(deviceDayKey(ms), {
+    todayKey: deviceDayKey(),
+    relative: false,
+  });
 }
 
 function formatDuration(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return "—";
-  const mins = Math.round(sec / 60);
-  if (mins < 60) return `${mins} хв`;
+  // Підлога в одну хвилину. Без неї тренування коротше за 30 с підписувалось
+  // «0 хв» — запис існує, а тривалість у нього нульова (browser-QA
+  // 2026-09-02). Той самий гард уже стоїть у `WorkoutsHome`, і тримати їх
+  // різними не можна: обидві поверхні підписують ОДНЕ тренування, тож
+  // чесніше «< 1 хв» тут дало б розбіжність у двох місцях замість нуля в
+  // одному.
+  const mins = Math.max(1, Math.round(sec / 60));
+  if (mins < 60) return `${mins}\u202Fхв`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return m === 0 ? `${h} год` : `${h} год ${m} хв`;
+  return m === 0 ? `${h}\u202Fгод` : `${h}\u202Fгод ${m}\u202Fхв`;
 }
 
+/**
+ * PR-Z3 (аудит 2026-09-13, хвиля 6): раніше великі значення показувались
+ * як «1,5 т» — реальні тонни тут ще менш чесні за голе «кг», бо ця
+ * величина взагалі не маса, а `вага_кг × повторення`
+ * (`computeWorkoutTonnageKg`). Канонічний підпис — "кг×повт", той самий,
+ * що вже стояв у `WeeklyVolumeChart` і тепер уніфікований по всьому
+ * модулю (`WorkoutSummaryView`, `WorkoutFinishSheets`). Абревіатуру до
+ * тонн знято разом зі зняттям неоднозначної одиниці — жодна інша
+ * поверхня fizruk не скорочує велике число так само.
+ */
 function formatTonnage(kg: number): string {
   if (!Number.isFinite(kg) || kg <= 0) return "—";
-  if (kg >= 1000) {
-    const thousands = kg / 1000;
-    const rounded =
-      thousands >= 10 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
-    // Кома, а не крапка: `${rounded}` дає «1.5 т» посеред українського
-    // набору. Рядок тут лишається рядком свідомо — див. `StatusStrip`.
-    return `${formatNumberUk(rounded)} т`;
-  }
-  return `${Math.round(kg)} кг`;
+  return `${formatNumberUk(Math.round(kg))} кг×повт`;
 }
 
 export function RecentWorkoutsSection({
@@ -134,7 +139,9 @@ export function RecentWorkoutsSection({
                   <span className="text-style-label text-fizruk-strong dark:text-fizruk">
                     {formatTonnage(row.tonnageKg)}
                   </span>
-                  <span className="text-style-caption text-muted">тоннаж</span>
+                  {/* PR-Z3: назва метрики уніфікована з `WorkoutSummaryView`
+                      / `WorkoutFinishSheets` — усюди "Обʼєм", не "тоннаж". */}
+                  <span className="text-style-caption text-muted">Обʼєм</span>
                 </div>
               </li>
             ))}

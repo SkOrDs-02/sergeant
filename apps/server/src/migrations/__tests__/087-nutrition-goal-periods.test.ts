@@ -66,7 +66,7 @@ describe("087 — форма таблиці", () => {
     // (`gp::<effective_from>::<values>::<deviceId>`), щоб повторна доставка
     // push-а була no-op, а не другим періодом з тими самими числами.
     // UUID-колонка дала б 22P02 на кожному реальному push-і — той самий
-    // клас багу, що в docs/90-work/tech-debt/backend.md § «Routine: PK-тип».
+    // клас багу, що в docs/work/specs/tech-debt/backend.md § «Routine: PK-тип».
     const body = createTableBody(up);
     expect(body).toMatch(/id\s+TEXT PRIMARY KEY/);
     expect(body).not.toMatch(/\bUUID\b/);

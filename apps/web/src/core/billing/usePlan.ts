@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { billingApi } from "@shared/api";
 import { billingKeys } from "@shared/lib/api/queryKeys";
-import type { BillingStatusResponse } from "@sergeant/shared";
+import { useAuthOptional } from "../auth/AuthContext";
+import type { BillingAccess, BillingStatusResponse } from "@sergeant/shared";
 
 /**
  * Web-side billing skeleton (initiative 0010 Phase 4.1).
@@ -17,7 +18,7 @@ import type { BillingStatusResponse } from "@sergeant/shared";
  * via `queryClient.invalidateQueries`. Provider webhooks (LiqPay/Plata;
  * Stripe dormant for UA) may also NOTIFY-broadcast `subscriptions.changed`;
  * a listener PR will bridge that to React Query
- * (`docs/01-product/launch/business/06-monetization-architecture.md`).
+ * (`docs/work/specs/launch/business/06-monetization-architecture.md`).
  */
 
 export type Plan = "free" | "pro";
@@ -25,24 +26,35 @@ export type Plan = "free" | "pro";
 export interface UsePlanResult {
   /** `"free"` is the default while loading or unauthenticated. */
   plan: Plan;
-  /** True only when an active/trialing/past_due subscription is on-file. */
+  /** True коли сервер каже, що Premium діє: `pro`, `trial` або `grace`. */
   isPro: boolean;
   /** Mirrors `useQuery` loading state — distinct from `plan === "free"`. */
   isLoading: boolean;
   /** Raw subscription payload (id, status, currentPeriodEnd…) for UI hints. */
   subscription: BillingStatusResponse["subscription"] | null;
+  /**
+   * Знімок доступу від сервера (стан, фічі реєстру, тижневі лічильники).
+   * Web нічого не обчислює з плану сам (спека access-tiers): під час trial і
+   * grace два місця обчислення розійшлися б. `null` поки запит у польоті.
+   */
+  access: BillingAccess | null;
 }
 
 function selectPlan(data: BillingStatusResponse): Plan {
-  // Server contract: BillingPlan is `"plus" | "pro"`; ADR-0051 removed the
-  // Plus tier from active scope, so anything non-`null` collapses to "pro".
-  return data.subscription.active ? "pro" : "free";
+  return data.access.state === "free" ? "free" : "pro";
 }
 
 export function usePlan(): UsePlanResult {
+  // FUN-1 (аудит 2026-09): анонімний бут стріляв у `/api/billing/status`
+  // і збирав 401 у консоль на кожному маршруті. Без сесії план і так
+  // «free» — запит не потрібен. Поза `AuthProvider` (голі юніт-тести)
+  // поведінка попередня.
+  const auth = useAuthOptional();
+  const signedOut = auth?.status === "unauthenticated";
   const query = useQuery({
     queryKey: billingKeys.status,
     queryFn: ({ signal }) => billingApi.status({ signal }),
+    enabled: !signedOut,
     // Plan rarely changes — 60 s staleTime is enough to coalesce focus
     // refetches across tabs; webhook-driven invalidation picks up fresh
     // post-checkout state without polling the server.
@@ -60,5 +72,6 @@ export function usePlan(): UsePlanResult {
     isPro: plan === "pro",
     isLoading: query.isLoading,
     subscription,
+    access: query.data?.access ?? null,
   };
 }

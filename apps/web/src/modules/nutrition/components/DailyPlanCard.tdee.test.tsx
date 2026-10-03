@@ -9,8 +9,21 @@
 //   - lists three goals with the computed kcal/macros when complete,
 //   - calls `setPrefs` with the matching numbers when one is picked.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Гейт тижневого плану тягне `usePlan` → react-query; поведінку гейта
+// покриває `core/billing/useFeatureGate.test.tsx`.
+vi.mock("../../../core/billing", () => ({
+  useFeatureGate: () => ({ requireAccess: () => true, paywallOpen: false }),
+  PaywallModal: () => null,
+}));
 import { flatMatch } from "@shared/testing/numberText";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
 import {
@@ -30,6 +43,7 @@ const completeBiometrics: Biometrics = {
   activityLevel: "moderate",
   weightKg: 80,
   weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+  countWorkoutsInGoal: false,
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -92,12 +106,38 @@ describe("DailyPlanCard «Підказати з пресету»", () => {
       screen.getByRole("button", { name: /Підказати з пресету/u }),
     );
 
-    expect(
-      screen.getByText(/Заповни біометрію в профілі/u),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/У профілі бракує:/u)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Заповнити в профілі/u }),
     ).toBeInTheDocument();
+  });
+
+  // Регресія browser-QA 2026-09-03: людина заповнювала частину профілю
+  // (у звіті — «заповнив, повернувся, все одно пише треба заповнити»),
+  // а стара статична підказка перелічувала всі пʼять полів незалежно
+  // від того, скільки вже було заповнено — та сама фраза для «нуль
+  // заповнено» і «чотири з пʼяти» читалась як «нічого не зберіглось».
+  it("names ONLY the fields still missing, not the full static list, once some are filled", () => {
+    renderCard({
+      biometrics: {
+        ...completeBiometrics,
+        sex: null,
+        activityLevel: null,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Підказати з пресету/u }),
+    );
+
+    const menu = screen.getByRole("menu");
+    expect(
+      within(menu).getByText("У профілі бракує: стать, рівень активності."),
+    ).toBeInTheDocument();
+    // Заповнені height/birthDate/weight не мають зʼявитись у списку —
+    // інакше це знову «той самий текст незалежно від прогресу».
+    expect(within(menu).queryByText(/зріст/u)).not.toBeInTheDocument();
+    expect(within(menu).queryByText(/вага/u)).not.toBeInTheDocument();
   });
 
   it("lists every goal with computed kcal when biometrics is complete", () => {

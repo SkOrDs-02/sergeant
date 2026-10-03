@@ -1,8 +1,8 @@
 ---
 name: sergeant-review-squad
-description: Use for Sergeant PR review touching 3+ governed surfaces — spawns 4 Agent Team reviewers (contract, design, security, docs) in parallel then synthesizes; UA: ревʼю PR через 3+ governed surfaces паралельно.
+description: "Use for Sergeant PR review touching 3+ governed surfaces — spawns 4 Agent Team reviewers (contract, design, security, docs) in parallel then synthesizes; UA: ревʼю PR через 3+ governed surfaces паралельно."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Review squad для Sergeant PRs
@@ -78,6 +78,6 @@ Teammates автоматично завантажують CLAUDE.md і project c
 
 ## Playbooks
 
-- [`docs/00-start/playbooks/run-squad-review.md`](../../../docs/00-start/playbooks/run-squad-review.md) — step-by-step рецепт запуску review squad
-- [`docs/04-governance/governance/review-checklist.md`](../../../docs/04-governance/governance/review-checklist.md) — governance checklist (Stage 1 spec-compliance)
-- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/start/instructions/run-squad-review.md`](../../../docs/start/instructions/run-squad-review.md) — step-by-step рецепт запуску review squad
+- [`docs/governance/governance/review-checklist.md`](../../../docs/governance/governance/review-checklist.md) — governance checklist (Stage 1 spec-compliance)
+- [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — каталог всіх skills

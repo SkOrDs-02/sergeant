@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-01
+ * Last validated: 2026-09-03
  * Status: Active
  *
  * Makes the browser Back button close an open dialog instead of leaving
@@ -46,7 +46,7 @@ const pendingRollbacks = new Set<ReturnType<typeof setTimeout>>();
  * ⚠️ Інженерний дефолт. Це не косметика й не «на всяк випадок»: React Router 7
  * комітить навігацію через `startTransition`, і на найближчих тактах вона ще
  * НЕ застосована. На 0 мс відкат стабільно випереджав коміт і скасовував
- * перехід («Перейти до Pro» лишав користувача на `/insights`); на 32 мс тест
+ * перехід («Перейти на Premium» лишав користувача на `/insights`); на 32 мс тест
  * ставав flaky — проходив лише з ретраю. 150 мс дає транзиції завершитись із
  * запасом і лишається невідчутним: натиснути Back швидше людина не встигає.
  */
@@ -81,7 +81,14 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
     const hrefAtPush = window.location.href;
     window.history.pushState({ [MARKER]: entryId }, "");
 
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Стос діалогів: `popstate` летить УСІМ відкритим. Коли вкладений аркуш
+      // (пікер заняття над формою запису) закривається і відкочує свій
+      // запис, верхнім стає запис зовнішнього — і той не повинен закритись
+      // разом із вкладеним. Свій запис ще зверху = це не наш Back. Читаємо
+      // `event.state`, а не `history.state`: тести диспатчать подію вручну.
+      const state = event.state as Record<string, unknown> | null;
+      if (state && state[MARKER] === entryId) return;
       // The entry is already gone — don't try to pop it on cleanup.
       ownsEntry = false;
       onCloseRef.current();
@@ -110,7 +117,7 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
       // Межа кадру, а не `setTimeout(0)`: React Router 7 комітить навігацію
       // через `startTransition`, і на наступному ж такті вона ЩЕ не
       // застосована — `setTimeout(0)` встигав відкотити її до коміту, і
-      // «Перейти до Pro» лишав користувача на тій самій сторінці
+      // «Перейти на Premium» лишав користувача на тій самій сторінці
       // (`paywall-locale-journeys.spec.ts`). Кадр дає транзиції завершитись.
       const timer = setTimeout(() => {
         pendingRollbacks.delete(timer);

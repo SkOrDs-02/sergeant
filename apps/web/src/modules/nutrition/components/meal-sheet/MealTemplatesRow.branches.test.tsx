@@ -27,6 +27,19 @@ const TEMPLATE = {
   macros: { kcal: 280, protein_g: 18, fat_g: 20, carbs_g: 2 },
 };
 
+/**
+ * Секція згорнута за замовчуванням (аркуш прийому їжі більше не стіна з
+ * пʼяти блоків), а згорнутий вміст несе `aria-hidden` — тож `getByRole`
+ * його не бачить, як не бачить і скрінрідер. Тести працюють із вмістом,
+ * не зі згортанням, тому просто відкривають секцію.
+ */
+function expandTemplates() {
+  const toggle = screen.getByRole("button", { name: /Швидкі прийоми/ });
+  // Ідемпотентно: секція памʼятає стан у сховищі, тож після першого тесту
+  // вона вже відкрита — беззастережний клік згортав би її назад.
+  if (toggle.getAttribute("aria-expanded") === "false") fireEvent.click(toggle);
+}
+
 describe("MealTemplatesRow", () => {
   it("returns null when templates are empty", () => {
     const { container } = render(
@@ -45,6 +58,7 @@ describe("MealTemplatesRow", () => {
         onSelected={onSelected}
       />,
     );
+    expandTemplates();
     fireEvent.click(screen.getByRole("button", { name: "Омлет" }));
     expect(setForm).toHaveBeenCalled();
     expect(onSelected).toHaveBeenCalled();
@@ -52,6 +66,10 @@ describe("MealTemplatesRow", () => {
 
   it("does not render edit/delete affordances without setPrefs", () => {
     render(<MealTemplatesRow mealTemplates={[TEMPLATE]} setForm={vi.fn()} />);
+    // Без розгортання тест проходив би з хибної причини: `aria-hidden`
+    // згорнутої секції ховає від `queryByRole` геть усе, і твердження
+    // «кнопок немає» стало б істинним незалежно від `setPrefs`.
+    expandTemplates();
     expect(
       screen.queryByRole("button", {
         name: "Редагувати швидкий прийом Омлет",
@@ -75,6 +93,7 @@ describe("MealTemplatesRow", () => {
         onEditTemplate={onEditTemplate}
       />,
     );
+    expandTemplates();
     fireEvent.click(
       screen.getByRole("button", {
         name: "Редагувати швидкий прийом Омлет",
@@ -94,6 +113,7 @@ describe("MealTemplatesRow", () => {
         setPrefs={setPrefs}
       />,
     );
+    expandTemplates();
     fireEvent.click(
       screen.getByRole("button", {
         name: "Видалити швидкий прийом Омлет",

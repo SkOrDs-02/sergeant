@@ -1,7 +1,7 @@
 /**
  * `user_profile.payload.memoryBank` → `ai_memories` (`source='profile'`)
  * дзеркалення. L-8 Фаза 2 (2026-08-09,
- * docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md).
+ * docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md).
  *
  * Контекст: Фаза 1 (міграція 118) розширила `ALLOWED_MEMORY_SOURCES` +
  * CHECK-constraint значенням `'profile'`, але лишила його "дозволеним, але
@@ -77,6 +77,7 @@ import { createHash } from "node:crypto";
 import type { Pool } from "pg";
 
 import { env } from "../../env.js";
+import { runWithUserContext } from "../../dbContext.js";
 import { logger, serializeError } from "../../obs/logger.js";
 import { getAiMemory } from "./bootstrap.js";
 import { enqueueMemoryIngest } from "./ingestQueue.js";
@@ -334,7 +335,7 @@ async function runChunked<T>(
 function toRememberInput(
   userId: string,
   entry: NormalizedProfileMemoryEntry,
-): RememberInput & { dedupeSalt: string } {
+): RememberInput & { dedupeSalt: string; healthData: boolean } {
   return {
     userId,
     source: PROFILE_SOURCE,
@@ -342,6 +343,17 @@ function toRememberInput(
     content: entry.fact,
     metadata: { category: entry.category },
     dedupeSalt: contentFingerprint(entry.fact),
+    // PR-S3: факт із категорії «Здоровʼя» (в UI банку памʼяті —
+    // `health: { label: "Здоровʼя" }`) потребує окремої згоди на
+    // ПЕРСИСТЕНТНИЙ запис (GDPR Art. 9). Решта категорій — ні: те, що
+    // людина любить каву, спеціальною категорією даних не є.
+    //
+    // Категорія нормалізована (`normalizeCategory` — trim + lowercase),
+    // тож порівняння з літералом безпечне. Клієнт може прислати будь-що —
+    // усе незнайоме стає `other` і гейт не вмикає; це правильний бік
+    // помилки, бо гейт тут не про приховування, а про згоду на категорію,
+    // яку продукт сам і називає.
+    healthData: entry.category === "health",
   };
 }
 
@@ -377,14 +389,16 @@ export async function mirrorProfileMemoryEntries(
     normalizeIncomingEntries(rawEntries);
 
   try {
-    const existing = await pool.query<ExistingProfileMemoryRow>(
-      `SELECT source_ref, content
-         FROM ai_memories
-        WHERE user_id = $1
-          AND source = $2
-          AND source_ref IS NOT NULL
-          AND deleted_at IS NULL`,
-      [userId, PROFILE_SOURCE],
+    const existing = await runWithUserContext(pool, userId, (client) =>
+      client.query<ExistingProfileMemoryRow>(
+        `SELECT source_ref, content
+           FROM ai_memories
+          WHERE user_id = $1
+            AND source = $2
+            AND source_ref IS NOT NULL
+            AND deleted_at IS NULL`,
+        [userId, PROFILE_SOURCE],
+      ),
     );
 
     const existingBySourceRef = new Map<string, string>();

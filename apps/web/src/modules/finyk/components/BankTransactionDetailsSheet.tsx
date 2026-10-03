@@ -13,6 +13,10 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type {
+  Debt,
+  LinkedTxRole,
+} from "@sergeant/finyk-domain/domain/debtEngine";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
@@ -21,19 +25,30 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { Switch } from "@shared/components/ui/Switch";
 import { messages } from "@shared/i18n/uk";
 import {
-  INCOME_CATEGORIES,
   INTERNAL_TRANSFER_ID,
   MCC_CATEGORIES,
   mergeExpenseCategoryDefinitions,
+  mergeIncomeCategoryDefinitions,
 } from "../constants";
 import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
+import {
+  findMerchantRule,
+  type MerchantRule,
+  type MerchantRuleIndex,
+} from "@sergeant/finyk-domain/lib/merchantRules";
+import { DebtTxLinkSection } from "./DebtTxLinkSection";
+import { MerchantRuleOffer } from "./MerchantRuleOffer";
 import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 import { ReceiptItemsSection } from "./ReceiptItemsSection";
+import {
+  KYIV_TIME_ZONE,
+  formatDateTimeShort,
+} from "@shared/lib/time/formatDate";
 
 interface BankTransactionAccount {
   id?: string | undefined;
@@ -50,10 +65,32 @@ export interface BankTransactionDetailsSheetProps {
   note?: string | undefined;
   txSplits: TxSplitsMap;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /**
+   * Правила «Завжди так для цього магазину»: категорія операції без явного
+   * override-а береться з правила, а після зміни категорії нижче зʼявляється
+   * пропозиція закріпити її за мерчантом.
+   */
+  merchantRules?: MerchantRuleIndex | undefined;
+  onCreateMerchantRule?:
+    ((transaction: Transaction, categoryId: string) => void) | undefined;
+  onRemoveMerchantRule?: ((rule: MerchantRule) => void) | undefined;
   /** Device-local чек, привʼязаний до цієї транзакції (спека § Розгортка)
    * — `null` коли цей пристрій про чек не знає (`useFinykReceiptLinks`). */
   receiptId?: number | null | undefined;
   hideAmount?: boolean | undefined;
+  /** Пасиви + мутатори для мостика «Борг → пасив» (спека finyk-observations,
+   * PR-3; узагальнено 2026-09-11 на обидва напрямки) — потрібні для
+   * надходження з категорією `debt-income` (роль `source`) і для витрати
+   * з категорією `debt` (роль `payment`). */
+  manualDebts: readonly Debt[];
+  setManualDebts: (updater: (debts: Debt[]) => Debt[]) => void;
+  setLinkedTxRole: (
+    id: string,
+    txId: string,
+    type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH?: number,
+  ) => void;
   onCategoryChange: (id: string, categoryId: string | null) => void;
   onNoteChange: (id: string, note: string | null) => void;
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
@@ -74,11 +111,12 @@ const ACCOUNT_LABELS: Readonly<Record<string, string>> = {
 function formatTransactionDate(transaction: Transaction): string {
   const milliseconds = Number(transaction.time) * 1000;
   if (Number.isFinite(milliseconds) && milliseconds > 0) {
-    return new Intl.DateTimeFormat("uk-UA", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: "Europe/Kyiv",
-    }).format(new Date(milliseconds));
+    // `withYear` збігається байт-у-байт із `dateStyle:"medium"` +
+    // `timeStyle:"short"` — закріплено тестом у `formatDate.test.ts`.
+    return formatDateTimeShort(new Date(milliseconds), {
+      withYear: true,
+      timeZone: KYIV_TIME_ZONE,
+    });
   }
   return transaction.date || "Дата не вказана";
 }
@@ -111,8 +149,14 @@ export function BankTransactionDetailsSheet({
   note,
   txSplits,
   customCategories = [],
+  merchantRules,
+  onCreateMerchantRule,
+  onRemoveMerchantRule,
   receiptId = null,
   hideAmount = false,
+  manualDebts,
+  setManualDebts,
+  setLinkedTxRole,
   onCategoryChange,
   onNoteChange,
   onSplitChange,
@@ -123,14 +167,25 @@ export function BankTransactionDetailsSheet({
   const copy = messages.finyk.transactionDetails;
   const isIncome = transaction.amount > 0;
   const category = isIncome
-    ? getIncomeCategoryForTransaction(transaction, overrideCatId)
+    ? getIncomeCategoryForTransaction(
+        transaction,
+        overrideCatId,
+        customCategories,
+        merchantRules,
+      )
     : getExpenseCategoryForTransaction(
         transaction,
         overrideCatId,
         customCategories as readonly unknown[],
+        merchantRules,
       );
+  const merchantRule = findMerchantRule(
+    merchantRules,
+    transaction,
+    isIncome ? "income" : "expense",
+  );
   const categoryOptions = useMemo(() => {
-    if (isIncome) return INCOME_CATEGORIES;
+    if (isIncome) return mergeIncomeCategoryDefinitions(customCategories);
     const merged = mergeExpenseCategoryDefinitions(
       customCategories as readonly unknown[],
     );
@@ -140,7 +195,27 @@ export function BankTransactionDetailsSheet({
     return internal ? [...merged, internal] : merged;
   }, [customCategories, isIncome]);
   const existingSplits = txSplits[transaction.id] ?? [];
+  // `DebtTxLinkSection` бере дату одним рядком — зводимо обидві форми
+  // (ISO-поле і unix-секунди) тут, де вони обидві видні.
+  const txDateIso =
+    transaction.date || new Date(Number(transaction.time) * 1000).toISOString();
   const totalAmount = Math.abs(transaction.amount / 100);
+  // CodeRabbit finding #1 (PR #1103): a split transaction can carry only a
+  // PART of its total under category `debt` (e.g. 1000 ₴ tx split into
+  // 300 ₴ debt + 700 ₴ other). `DebtTxLinkSection` payment link must use
+  // that portion, not the full `totalAmount` — else linking overstates the
+  // payment and the liability's remaining balance drops too far. `null`
+  // (no splits) tells the section to fall back to the full amount.
+  // Рівно `0` — окремий випадок, НЕ «взяти повну суму»: транзакція
+  // розділена, і людина не віднесла до боргу нічого. Тоді секції
+  // привʼязки взагалі немає (гейт нижче) — привʼязка на 0 ₴ була б
+  // мовчазним хибним числом, тим самим класом бага, що й завищення.
+  const debtPaymentSplitAmountUAH =
+    existingSplits.length > 0
+      ? existingSplits
+          .filter((split) => split.categoryId === "debt")
+          .reduce((sum, split) => sum + (Number(split.amount) || 0), 0)
+      : null;
   const [showSplitEditor, setShowSplitEditor] = useState(false);
   const [splitCategoryPicker, setSplitCategoryPicker] = useState<number | null>(
     null,
@@ -187,8 +262,9 @@ export function BankTransactionDetailsSheet({
       bodyClassName="px-4 pb-6"
       footer={
         <Button
-          variant="primary"
-          module="finyk"
+          variant="solid"
+          tone="finyk"
+
           onClick={onClose}
           className="w-full"
         >
@@ -263,6 +339,49 @@ export function BankTransactionDetailsSheet({
           />
         </section>
 
+        {(onCreateMerchantRule || onRemoveMerchantRule) && (
+          <MerchantRuleOffer
+            transaction={transaction}
+            isIncome={isIncome}
+            overrideCatId={overrideCatId}
+            rule={merchantRule}
+            customCategories={customCategories}
+            onCreate={
+              onCreateMerchantRule
+                ? (categoryId) => onCreateMerchantRule(transaction, categoryId)
+                : undefined
+            }
+            onRemove={onRemoveMerchantRule}
+          />
+        )}
+
+        {isIncome && category.id === "debt-income" && (
+          <DebtTxLinkSection
+            txId={transaction.id}
+            txAmountKop={transaction.amount}
+            txDateIso={txDateIso}
+            manualDebts={manualDebts}
+            setManualDebts={setManualDebts}
+            setLinkedTxRole={setLinkedTxRole}
+            txRole="source"
+          />
+        )}
+
+        {!isIncome &&
+          category.id === "debt" &&
+          debtPaymentSplitAmountUAH !== 0 && (
+            <DebtTxLinkSection
+              txId={transaction.id}
+              txAmountKop={transaction.amount}
+              txDateIso={txDateIso}
+              manualDebts={manualDebts}
+              setManualDebts={setManualDebts}
+              setLinkedTxRole={setLinkedTxRole}
+              txRole="payment"
+              splitAmountUAH={debtPaymentSplitAmountUAH}
+            />
+          )}
+
         {!isIncome && (
           <section className="rounded-2xl border border-line bg-panel p-3">
             <div className="flex items-center justify-between gap-3">
@@ -277,8 +396,9 @@ export function BankTransactionDetailsSheet({
                 </p>
               </div>
               <Button
-                variant="secondary"
-                module="finyk"
+                variant="soft"
+                tone="finyk"
+
                 size="xs"
                 onClick={openSplitEditor}
               >

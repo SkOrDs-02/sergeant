@@ -8,15 +8,15 @@ import {
 } from "../migrate/adapters/sqlite.js";
 import { runMigrations } from "../migrate/runner.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 import { enqueueOutboxIncrement } from "../sqlite/syncOpOutboxEnqueue.js";
 
 /**
  * Integration tests for the durable outbox enqueue helper for
  * PN-counter `op='increment'` envelopes (PR #042d-builder of
- * `docs/planning/storage-roadmap.md`). Runs the full SPIKE +
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Runs the full SPIKE +
  * PR #040 + PR #042d-prep migration stack against a fresh
  * `:memory:` engine, then drives the helper through every public
  * branch of its contract:
@@ -77,8 +77,8 @@ describe("enqueueOutboxIncrement", () => {
     client = syncClient(db);
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
   });
 

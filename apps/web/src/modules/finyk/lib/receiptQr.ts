@@ -4,7 +4,7 @@
  *
  * Парсер QR-коду фіскального чека ДПС — чиста функція, без React/мережі.
  *
- * Спека (`docs/90-work/planning/specs/receipt-scan.md` § Флоу v1): QR
+ * Спека (`docs/work/specs/receipt-scan.md` § Флоу v1): QR
  * фіскального чека кодує URL виду
  * `https://cabinet.tax.gov.ua/cashregs/check?id=..&date=..&time=..&fn=..&sm=..`.
  * Клієнт парсить URL і шле пʼять полів у `POST /api/finyk/receipts/lookup`

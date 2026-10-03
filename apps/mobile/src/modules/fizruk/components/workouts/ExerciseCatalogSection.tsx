@@ -196,7 +196,7 @@ function ExerciseRow({
       accessibilityRole="button"
       accessibilityLabel={`Додати ${title}`}
       accessibilityHint={
-        onLongPress ? "Утримайте, щоб відкрити деталі вправи" : undefined
+        onLongPress ? "Утримай, щоб відкрити деталі вправи" : undefined
       }
       onPress={onPress}
       onLongPress={onLongPress}
@@ -315,7 +315,7 @@ export const ExerciseCatalogSection = memo(function ExerciseCatalogSection({
           testID={`${testID}-empty`}
         >
           <Text className="text-sm font-semibold text-fg">
-            Нічого не знайдено
+            Нічого не знайшов
           </Text>
           <Text className="text-xs text-fg-muted mt-1">
             Спробуй інший пошук або очисти фільтр по групі.

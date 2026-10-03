@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { transcribeApi } from "@shared/api";
+import { friendlyApiError } from "@shared/lib/api/friendlyApiError";
+import type { TranscribeModule } from "@sergeant/shared";
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { accessDenialCopy } from "../../../../core/access/accessDenialCopy";
+import { useCanUse } from "../../../../core/access/useCanUse";
 
 /* -------------------------------------------------------------------------- *
  *  Groq Whisper — server-side STT через `/api/transcribe`.
@@ -44,6 +49,12 @@ function isGroqSupported(): boolean {
 export interface UseGroqVoiceInputOptions {
   lang?: string | undefined;
   promptHint?: string | undefined;
+  /**
+   * Модуль-виклик (`?module=`). Для `nutrition`/`fizruk` сервер без згоди на
+   * дані про здоровʼя відповідає 403 ДО Groq. Декларативний тег: без нього
+   * гейту немає.
+   */
+  module?: TranscribeModule | undefined;
   onResult?: ((transcript: string) => void) | undefined;
   onError?: ((message: string) => void) | undefined;
   /**
@@ -51,6 +62,13 @@ export interface UseGroqVoiceInputOptions {
    * Викликача треба переключитися на Web Speech API для решти сесії.
    */
   onProviderUnavailable?: (() => void) | undefined;
+  /**
+   * Причина, з якої запис НЕ почали (A3, поставка 2). Хто її передає —
+   * показує картку `AccessDenialNotice`; хто ні — отримує ту саму
+   * причину одним рядком через `onError`, тож жоден наявний виклик не
+   * лишається без пояснення.
+   */
+  onDenied?: ((denial: AccessDenial) => void) | undefined;
 }
 
 export interface UseGroqVoiceInputReturn {
@@ -65,10 +83,13 @@ export interface UseGroqVoiceInputReturn {
 export function useGroqVoiceInput({
   lang = "uk-UA",
   promptHint,
+  module,
   onResult,
   onError,
   onProviderUnavailable,
+  onDenied,
 }: UseGroqVoiceInputOptions = {}): UseGroqVoiceInputReturn {
+  const canUse = useCanUse();
   const [listening, setListening] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [supported] = useState(() => isGroqSupported());
@@ -104,7 +125,9 @@ export function useGroqVoiceInput({
       try {
         // Whisper бере 2-літерний ISO-код (`uk-UA` → `uk`).
         const isoLang = lang.split("-")[0]?.trim();
-        const query: { language?: string; prompt?: string } = {};
+        const query: { language?: string; prompt?: string; module?: string } =
+          {};
+        if (module) query.module = module;
         if (isoLang) query.language = isoLang;
         if (promptHint && promptHint.trim()) {
           query.prompt = promptHint.trim().slice(0, 1024);
@@ -122,10 +145,22 @@ export function useGroqVoiceInput({
             return;
           }
           case "provider_unavailable":
-            onProviderUnavailable?.();
-            onError?.(
-              "Голосовий сервер тимчасово недоступний, перемикаюсь на браузерне розпізнавання.",
-            );
+            // Текст для людини формулює ВИКЛИКАЧ, і це не косметика.
+            // Тут стояло «перемикаюсь на браузерне розпізнавання» — на
+            // iOS standalone-PWA це була неправда: Web Speech там не
+            // працює (WebKit 185448/215884), тож кнопка не перемикалась,
+            // а зникала з екрана. Обіцянка в тексті плюс зниклий контрол
+            // гірші за просто збій: людина щойно говорила, їй сказали про
+            // перемикання, і після цього немає ні кнопки, ні пояснення.
+            // Лише викликач знає, чи є куди перемикатись, — тож слово за
+            // ним. Фолбек нижче лишається для тих, хто хендлера не дав.
+            if (onProviderUnavailable) onProviderUnavailable();
+            else onError?.("Голосовий сервер тимчасово недоступний.");
+            return;
+          case "health_consent_required":
+            // Той самий текст-дія, що в чаті (#1250): «Налаштування → Дані
+            // та приватність». Сухе «щось пішло не так» тут глухий кут.
+            onError?.(friendlyApiError(403, result.message));
             return;
           case "unauthorized":
             onError?.(
@@ -142,9 +177,7 @@ export function useGroqVoiceInput({
             onError?.("Браузер записав невідомий формат. Оновись і повтори.");
             return;
           case "error":
-            onError?.(
-              `Помилка розпізнавання (${result.status}). Спробуй ще раз.`,
-            );
+            onError?.("Не вдалося розпізнати запис. Спробуй ще раз.");
             return;
         }
       } catch (err) {
@@ -156,7 +189,7 @@ export function useGroqVoiceInput({
         abortRef.current = null;
       }
     },
-    [lang, promptHint, onResult, onError, onProviderUnavailable],
+    [lang, promptHint, module, onResult, onError, onProviderUnavailable],
   );
 
   const stop = useCallback(() => {
@@ -171,6 +204,19 @@ export function useGroqVoiceInput({
 
   const start = useCallback(async () => {
     if (recorderRef.current || uploading) return;
+
+    // AI-DANGER: гейт стоїть ПЕРЕД `getUserMedia`. Інакше браузер питає
+    // дозвіл на мікрофон, людина його дає, запис іде — і аж тоді сервер
+    // віддає 401. Саме цю послідовність власник описав як «дізнаюсь про
+    // заборону надто пізно»; переставити цей блок нижче означає
+    // повернути її.
+    const denial = canUse("voice-input");
+    if (denial) {
+      if (onDenied) onDenied(denial);
+      else onError?.(accessDenialCopy(denial).short);
+      return;
+    }
+
     const mimeType = pickRecorderMimeType();
     if (mimeType === null) {
       onError?.("Браузер не підтримує запис аудіо.");
@@ -212,16 +258,14 @@ export function useGroqVoiceInput({
       cleanup();
       if (chunks.length === 0) return;
       if (duration < GROQ_MIN_DURATION_MS) {
-        onError?.(
-          "Запис занадто короткий, затисніть і говоріть кілька секунд.",
-        );
+        onError?.("Запис занадто короткий, затисни й говори кілька секунд.");
         return;
       }
       const blob = new Blob(chunks, { type: finalMime });
       void upload(blob, finalMime);
     });
     recorder.addEventListener("error", () => {
-      onError?.("Помилка запису аудіо.");
+      onError?.("Не вдалося записати аудіо. Перевір доступ до мікрофона.");
       cleanup();
       setListening(false);
     });
@@ -236,7 +280,7 @@ export function useGroqVoiceInput({
       cleanup();
       setListening(false);
     }
-  }, [uploading, onError, cleanup, upload, stop]);
+  }, [uploading, canUse, onDenied, onError, cleanup, upload, stop]);
 
   const toggle = useCallback(() => {
     if (listening) stop();

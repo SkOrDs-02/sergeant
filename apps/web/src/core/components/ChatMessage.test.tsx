@@ -230,7 +230,7 @@ describe("ChatMessage — посилання на модуль під картк
     ["finyk", "/finyk", "Фінік"],
     ["fizruk", "/fizruk", "Фізрук"],
     ["routine", "/routine", "Рутина"],
-    ["nutrition", "/nutrition", "Харчування"],
+    ["nutrition", "/nutrition", "Їжа"],
   ])("%s веде на %s", (module, href, label) => {
     renderInRouter(
       <ChatMessage
@@ -282,7 +282,7 @@ describe("TypingIndicator", () => {
   it("renders with correct aria-label", () => {
     renderInRouter(<TypingIndicator />);
     expect(
-      screen.getByRole("status", { name: "Асистент набирає відповідь" }),
+      screen.getByRole("status", { name: "Сержант набирає відповідь" }),
     ).toBeInTheDocument();
   });
 });

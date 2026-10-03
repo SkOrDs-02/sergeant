@@ -19,9 +19,12 @@ export const MODULE_COLORS: Record<string, string> = {
   routine: "bg-routine-soft text-routine-soft-fg",
   nutrition: "bg-nutrition-soft text-nutrition-soft-fg",
   settings: "bg-panelHi text-muted",
-  assistant: "bg-brand-500/10 text-brand-strong dark:text-brand",
-  actions: "bg-brand-500/10 text-brand-strong dark:text-brand",
-  ai: "bg-brand-500/10 text-brand-strong dark:text-brand",
+  // PR-S5 (аудит 2026-09-13 хвиля 5): та сама нейтральна «системна»
+  // заливка, що й `settings` — Профіль теж не є доменними даними.
+  profile: "bg-panelHi text-muted",
+  assistant: "bg-brand-500/10 text-brand-strong",
+  actions: "bg-brand-500/10 text-brand-strong",
+  ai: "bg-brand-500/10 text-brand-strong",
 };
 
 export interface SearchResultItemProps {

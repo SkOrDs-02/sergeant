@@ -48,6 +48,8 @@ export interface FizrukWorkoutSnapshot {
     mood?: number | null;
     [k: string]: unknown;
   } | null;
+  /** Оцінка витрат, ккал. `null` - оцінювати нічим (немає ваги). */
+  readonly kcalBurned?: number | null;
   readonly [extra: string]: unknown;
 }
 

@@ -20,7 +20,7 @@ import type {
 
 /**
  * Tests for {@link bootstrapKvStore} (Stage 9 / PR #062–#064 of
- * `docs/planning/storage-roadmap.md`). Coverage matches the boot-stage
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Coverage matches the boot-stage
  * invariants:
  *
  *  1. Cold boot against an empty `kv_store` populates the warm cache

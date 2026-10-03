@@ -19,13 +19,19 @@ vi.mock("../onboarding/onboardingGate", () => ({
   isDemoActive: () => false,
 }));
 
+// Ловимо `opts`, з якими викликано хук: гейт «Що нового» — це не UI, а саме
+// набір умов, і перевіряти його треба на них.
+const whatsNewOpts = vi.hoisted(() => ({ enabled: undefined as unknown }));
 vi.mock("../whatsNew", () => ({
-  useWhatsNew: () => ({
-    open: false,
-    release: null,
-    onClose: vi.fn(),
-    onCtaClick: vi.fn(),
-  }),
+  useWhatsNew: (opts: { enabled: boolean }) => {
+    whatsNewOpts.enabled = opts.enabled;
+    return {
+      open: false,
+      release: null,
+      onClose: vi.fn(),
+      onCtaClick: vi.fn(),
+    };
+  },
 }));
 
 // Capture the notifications prop handed to the header so we can assert the
@@ -35,22 +41,22 @@ const captured = vi.hoisted(
     ({
       notifications: undefined,
       onOpenSearch: undefined,
-      onOpenPrivacy: undefined,
+      activeTab: undefined,
     }) as {
       notifications: { id: string }[] | undefined;
       onOpenSearch: (() => void) | undefined;
-      onOpenPrivacy: (() => void) | undefined;
+      activeTab: string | undefined;
     },
 );
 vi.mock("./HubHeader", () => ({
   HubHeader: (props: {
     notifications?: { id: string }[];
     onOpenSearch: () => void;
-    onOpenPrivacy: () => void;
+    activeTab?: string;
   }) => {
     captured.notifications = props.notifications;
     captured.onOpenSearch = props.onOpenSearch;
-    captured.onOpenPrivacy = props.onOpenPrivacy;
+    captured.activeTab = props.activeTab;
     return <div data-testid="hub-header" />;
   },
 }));
@@ -121,7 +127,8 @@ function props(overrides: Partial<HubHomeViewProps> = {}): HubHomeViewProps {
     onInstall: vi.fn().mockResolvedValue(undefined),
     onDismissInstall: vi.fn(),
     iosVisible: false,
-    onDismissIos: vi.fn(),
+    onDismissIosForever: vi.fn(),
+    onSnoozeIos: vi.fn(),
     updateAvailable: false,
     onApplyUpdate: vi.fn(),
     openModule: vi.fn(),
@@ -139,7 +146,8 @@ describe("HubHomeView", () => {
     gates.shouldShowOnboarding.mockReturnValue(false);
     captured.notifications = undefined;
     captured.onOpenSearch = undefined;
-    captured.onOpenPrivacy = undefined;
+    captured.activeTab = undefined;
+    whatsNewOpts.enabled = undefined;
   });
 
   afterEach(() => cleanup());
@@ -166,15 +174,21 @@ describe("HubHomeView", () => {
     expect(captured.notifications?.map((n) => n.id)).toContain("pwa-install");
   });
 
-  it("wires header search and privacy callbacks", () => {
+  // PR-H2 (аудит 2026-09-13 хвиля 5): шапка мусить знати активну вкладку,
+  // щоб показати видимий підзаголовок — інакше «Доброго дня» лишається
+  // єдиним видимим текстом на Налаштуваннях/Профілі/Звʼязках.
+  it("forwards the active hub tab to the header", () => {
+    render(<HubHomeView {...props({ ui: makeUi({ hubView: "settings" }) })} />);
+    expect(captured.activeTab).toBe("settings");
+  });
+
+  it("wires the header search callback", () => {
     const ui = makeUi();
     render(<HubHomeView {...props({ ui })} />);
 
     captured.onOpenSearch?.();
-    captured.onOpenPrivacy?.();
 
     expect(ui.setSearchOpen).toHaveBeenCalledWith(true);
-    expect(hubNav.openHubSettingsSection).toHaveBeenCalledWith("privacy");
   });
 
   it("suppresses notifications during the FTUX session", () => {
@@ -206,5 +220,19 @@ describe("HubHomeView", () => {
     fireEvent.click(await screen.findByTestId("keyboard-shortcuts-modal"));
 
     expect(onCloseShortcuts).toHaveBeenCalledTimes(1);
+  });
+
+  // Ревʼю PR #1053. Поки сесія резолвиться, `user` ще `null`, тобто й
+  // `accountCreatedAt`. Якби гейт був відкритий, 2.5-секундний таймер устиг би
+  // показати реліз БЕЗ перевірки віку акаунта, а `shownRef` усередині хука
+  // одноразовий — приїзд `createdAt` після відкриття вже нічого не змінив би.
+  it("не вмикає «Що нового», поки сесія ще резолвиться", () => {
+    render(<HubHomeView {...props({ authLoading: true, user: null })} />);
+    expect(whatsNewOpts.enabled).toBe(false);
+  });
+
+  it("вмикає «Що нового» для того, хто вже минув FTUX", () => {
+    render(<HubHomeView {...props()} />);
+    expect(whatsNewOpts.enabled).toBe(true);
   });
 });

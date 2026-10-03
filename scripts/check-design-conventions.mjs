@@ -4,7 +4,7 @@
 // Механічний гейт для дизайн-конвенцій після ADR-0081 (закриває audit
 // finding E1 — enforcement vacuum: естетичні ESLint-правила retired, а
 // review сам по собі не ловить регресії). Це НЕ повернення AST-лінтів —
-// лише дешевий zero-dep grep-рівень для чотирьох конвенцій, які добре
+// лише дешевий zero-dep grep-рівень для пʼяти конвенцій, які добре
 // ловляться текстово:
 //
 //   1. raw palette hex у className (Tailwind arbitrary value `bg-[#fff]`
@@ -15,7 +15,12 @@
 //      apps/web/src/shared/components/ui/Button.tsx);
 //   3. `text-2xs` (10px) поза allowlist — 12px floor, текст через
 //      `.text-style-*`;
-//   4. довільні під-12px розміри `text-[NNpx]` (NN < 12) поза allowlist.
+//   4. довільні під-12px розміри `text-[NNpx]` (NN < 12) поза allowlist;
+//   5. невідоме імʼя кольору з НАШОЇ родини токенів (`bg-panel-hi` при
+//      токені `panelHi`) — Tailwind мовчки не згенерує клас, елемент
+//      лишиться без кольору, і жодна помилка про це не скаже. Саме цим
+//      правило відрізняється від естетики, яку зняв ADR-0081: тут
+//      порушення означає непрацюючий стиль, а не спірний смак.
 //
 // Anti-false-positive підхід: сканується лише ВМІСТ рядкових літералів
 // ('…', "…", `…`) після зрізання коментарів. Це автоматично пропускає
@@ -26,7 +31,7 @@
 //
 // AST-рівневі конвенції (opacity scale, `-strong` companions,
 // module-accent containment) цим скриптом СВІДОМО не покриті —
-// вони лишаються tokens + review (див. docs/05-design/design/README.md).
+// вони лишаються tokens + review (див. docs/design/design/README.md).
 //
 // Usage:
 //   pnpm lint:design-conventions
@@ -37,6 +42,8 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import preset from "../packages/design-tokens/tailwind-preset.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(__dirname, "..");
@@ -77,6 +84,13 @@ const ALLOWLIST = {
     "apps/web/src/core/DesignShowcase/sections/Typography.tsx",
   ],
   sub12pxArbitrary: [],
+  unknownTokenColor: [
+    // `apps/landing` не споживає `packages/design-tokens` — у нього власний
+    // `@theme` у `apps/landing/src/index.css` (Tailwind 4), тож пресет тут
+    // не є джерелом істини і кожне його імʼя читалось би як невідоме.
+    // Дрейф лендінгових токенів стереже `apps/landing/src/tokens.drift.test.ts`.
+    "apps/landing/src/",
+  ],
 };
 
 // ── Правила ──────────────────────────────────────────────────────────────────
@@ -99,6 +113,106 @@ const TEXT_2XS_RE = /\btext-2xs\b/g;
 
 // 4. Довільний під-12px розмір: text-[NNpx], NN < 12.
 const SUB_12PX_RE = /\btext-\[(\d+(?:\.\d+)?)px\]/g;
+
+// 5. Невідоме імʼя кольору з НАШОЇ родини токенів: `bg-fizruk-strng`.
+//
+// Чому це окремий клас дефекту, а не естетика (тобто чому ADR-0081 його не
+// стосується): одрук у назві токена — Tailwind просто не згенерує клас, і
+// елемент тихо лишиться без кольору. Ніякої помилки, ніякого падіння, а на
+// скріншоті автора все могло виглядати правильно, якщо колір давав батько.
+//
+// Перевіряємо ТІЛЬКИ родини з нашого пресету (`brand`, `fizruk`, `focus`,
+// `surface`, …), а не весь Tailwind. Тому `text-sm`, `bg-cover`, `ring-2`
+// і стандартні палітри (`bg-red-500`) правила не обходять — їхня перша
+// частина просто не є нашою родиною. Джерело істини одне: сам пресет,
+// тож нове імʼя кольору стає валідним автоматично.
+// Ті самі утиліти читають не лише `colors`: `shadow-hero-finyk` живе в
+// `boxShadow`, `bg-hero-grad-finyk` — у `backgroundImage`, `text-brand-strong`
+// — у `textColor`. Без цих секцій правило лаялося б на цілком робочі класи.
+const VALID_COLOR_NAMES = (() => {
+  const extend = preset?.theme?.extend ?? {};
+  const names = flattenColorNames(extend.colors);
+  for (const section of [
+    "textColor",
+    "backgroundImage",
+    "boxShadow",
+    "dropShadow",
+  ]) {
+    for (const key of Object.keys(extend[section] ?? {})) names.add(key);
+  }
+  // Частина утиліт написана руками в CSS, а не згенерована пресетом:
+  // `.bg-routine-heat-l1` живе в `apps/web/src/styles/module-surfaces.css`
+  // (chart-палітра, щоб `chartTheme` не тягав `dark:`-пари). Для них пресет
+  // не джерело істини, тож читаємо самі CSS-файли.
+  for (const name of cssUtilityNames(join(DEFAULT_ROOT, "apps/web/src/styles")))
+    names.add(name);
+  return names;
+})();
+
+/** Імена утиліт, оголошених вручну в наших CSS: `.bg-routine-heat-l1` → `routine-heat-l1`. */
+function cssUtilityNames(dir) {
+  const names = new Set();
+  let entries;
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return names;
+  }
+  for (const entry of entries) {
+    if (!entry.endsWith(".css")) continue;
+    let css;
+    try {
+      css = readFileSync(join(dir, entry), "utf8");
+    } catch {
+      continue;
+    }
+    for (const m of css.matchAll(
+      /\.(?:bg|text|border|ring|fill|stroke|shadow|from|via|to)-([a-z][a-z0-9-]*)/g,
+    )) {
+      // `.text-style-*` — семантична типографічна шкала, не колір. Якби її
+      // імена потрапили сюди, родина `style` стала б «нашою», і правило
+      // почало б вимагати, щоб КОЖЕН `text-style-…` був у пресеті — а їх
+      // видає плагін `semanticTypography`, не секція кольорів.
+      if (m[1].startsWith("style-")) continue;
+      names.add(m[1]);
+    }
+  }
+  return names;
+}
+
+const TOKEN_FAMILIES = new Set(
+  [...VALID_COLOR_NAMES].map((name) => name.split("-")[0]),
+);
+
+// Утиліти, що приймають імʼя кольору. `shadow`/`outline`/`divide` теж
+// кольорові, але приймають і не-кольорові значення — родинна перевірка
+// нижче відсіює ті випадки сама.
+const COLOR_UTILITIES =
+  "bg|text|border|ring|ring-offset|from|via|to|fill|stroke|caret|accent|decoration|outline|divide|placeholder|shadow";
+
+// Варіанти (`dark:`, `hover:`, `group-focus-visible:`) зрізаються, `!` теж,
+// opacity-суфікс `/50` і arbitrary `[...]` не є частиною імені.
+const TOKEN_COLOR_RE = new RegExp(
+  String.raw`(?:^|[\s"'\x60])(?:[a-z][\w-]*:)*!?(?:${COLOR_UTILITIES})-([a-z][a-z0-9]*(?:-[a-z0-9]+)*)(?:\/\d{1,3})?(?=[\s"'\x60]|$)`,
+  "g",
+);
+
+/**
+ * Пласка множина імен кольорів Tailwind-пресета: `{ brand: { DEFAULT, 500 } }`
+ * дає `brand` і `brand-500`. `DEFAULT` — це саме імʼя родини без суфікса.
+ */
+function flattenColorNames(colors, prefix = "") {
+  const out = new Set();
+  for (const [key, value] of Object.entries(colors ?? {})) {
+    const name =
+      key === "DEFAULT" ? prefix : prefix ? `${prefix}-${key}` : String(key);
+    if (name) out.add(name);
+    if (value && typeof value === "object") {
+      for (const nested of flattenColorNames(value, name)) out.add(nested);
+    }
+  }
+  return out;
+}
 
 const RULES = [
   {
@@ -144,6 +258,19 @@ const RULES = [
       return [...literal.content.matchAll(SUB_12PX_RE)].filter(
         (m) => Number.parseFloat(m[1]) < 12,
       );
+    },
+  },
+  {
+    id: "unknownTokenColor",
+    label:
+      "невідоме імʼя кольору з нашої родини токенів — Tailwind не згенерує клас",
+    match(literal) {
+      return [...literal.content.matchAll(TOKEN_COLOR_RE)].filter((m) => {
+        const name = m[1];
+        if (VALID_COLOR_NAMES.has(name)) return false;
+        // Родина наша, повне імʼя — ні: це одрук у токені, а не чужа утиліта.
+        return TOKEN_FAMILIES.has(name.split("-")[0]);
+      });
     },
   },
 ];
@@ -346,13 +473,13 @@ if (isMain) {
     console.error(
       "\nВиправ через design tokens / .text-style-* / focus-visible:, або — якщо це " +
         "усвідомлений виняток — додай файл в ALLOWLIST у scripts/check-design-conventions.mjs " +
-        "з коментарем ЧОМУ. Довідка: docs/05-design/design/design-system.md.",
+        "з коментарем ЧОМУ. Довідка: docs/design/design/design-system.md.",
     );
     process.exit(1);
   }
 
   console.log(
-    `✅ [check-design-conventions] OK — raw hex / focus: / text-2xs / під-12px ` +
+    `✅ [check-design-conventions] OK — raw hex / focus: / text-2xs / під-12px / невідомий токен-колір ` +
       `порушень не знайдено (${SCAN_DIRS.join(", ")}).`,
   );
 }

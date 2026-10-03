@@ -198,8 +198,16 @@
             "brand": "Yagotynske",
             "carbs_100g": 4.8,
             "fat_100g": 2,
+            "imageUrl": "https://images.openfoodfacts.org/images/products/482/001/084/0443/front_uk.200.jpg",
             "kcal_100g": 52,
             "name": "Milk 2%",
+            "nutrients": {
+              "alcohol_100g": null,
+              "fiber_100g": 0,
+              "salt_100g": 0.1,
+              "saturatedFat_100g": 1.2,
+              "sugars_100g": 4.8
+            },
             "protein_100g": 3.4,
             "servingGrams": 250,
             "servingSize": "250 ml",
@@ -257,8 +265,100 @@
       },
       "response": {
         "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": true,
+              "nutrition.weekPlan": true
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "pro",
+            "trialEndsAt": null
+          },
           "subscription": {
             "active": true,
+            "cancelAtPeriodEnd": false,
+            "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
+            "id": 42,
+            "plan": "pro",
+            "provider": "liqpay",
+            "status": "active"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/status request (cancel scheduled)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active liqpay subscription with cancel_at_period_end"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": true,
+              "nutrition.weekPlan": true
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "pro",
+            "trialEndsAt": null
+          },
+          "subscription": {
+            "active": true,
+            "cancelAtPeriodEnd": true,
             "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
             "id": 42,
             "plan": "pro",
@@ -289,8 +389,38 @@
       },
       "response": {
         "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": false,
+              "nutrition.weekPlan": false
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": 20,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": 3,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": 5,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "free",
+            "trialEndsAt": null
+          },
           "subscription": {
             "active": false,
+            "cancelAtPeriodEnd": false,
             "currentPeriodEnd": null,
             "id": null,
             "plan": null,
@@ -590,6 +720,7 @@
           "aiMemory": true,
           "analytics": false,
           "healthDataConsent": false,
+          "hubPrefs": null,
           "pushNotifications": false,
           "sergeantNudges": false,
           "updatedAt": "2026-08-05T09:00:00.000Z"
@@ -624,6 +755,7 @@
           "aiMemory": true,
           "analytics": false,
           "healthDataConsent": false,
+          "hubPrefs": null,
           "pushNotifications": false,
           "sergeantNudges": false,
           "updatedAt": "2026-08-05T09:00:00.000Z"
@@ -655,9 +787,78 @@
           "aiMemory": true,
           "analytics": false,
           "healthDataConsent": true,
+          "hubPrefs": null,
+          "pushDailyCap": 3,
           "pushNotifications": true,
           "sergeantNudges": false,
           "updatedAt": "2026-08-01T12:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (hubPrefs empty)",
+      "providerStates": [
+        {
+          "name": "user-pact-011 has hub prefs on the account, all at defaults"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": {},
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (hubPrefs set)",
+      "providerStates": [
+        {
+          "name": "user-pact-010 turned calm mode on and hid the motivational line"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": {
+            "calmMode": true,
+            "showMotivational": false
+          },
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -717,6 +918,37 @@
           "pushNotifications": false,
           "sergeantNudges": true,
           "updatedAt": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (pre-137 server, no hubPrefs)",
+      "providerStates": [
+        {
+          "name": "user-pact-012 predates the hub_prefs column"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -1299,8 +1531,38 @@
       "response": {
         "body": {
           "accessTokenExpiresAt": "2026-08-24T10:00:00.000Z",
+          "lastErrorCode": null,
+          "lastFailedAt": null,
           "lastSyncAt": "2026-08-17T09:15:00.000Z",
           "receiptsCount": 5,
+          "status": "connected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request (legacy body)",
+      "providerStates": [
+        {
+          "name": "user-pact-004 is served by a server without migration 138"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": null,
+          "lastSyncAt": "2026-08-31T09:15:00.000Z",
+          "receiptsCount": 3,
           "status": "connected"
         },
         "headers": {
@@ -1327,9 +1589,41 @@
       "response": {
         "body": {
           "accessTokenExpiresAt": null,
+          "lastErrorCode": null,
+          "lastFailedAt": null,
           "lastSyncAt": null,
           "receiptsCount": 0,
           "status": "disconnected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request (sync broken)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a connected Silpo account whose sync fails"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": "2026-09-20T10:00:00.000Z",
+          "lastErrorCode": "SILPO_TOOL_ERROR",
+          "lastFailedAt": "2026-09-14T08:00:00.000Z",
+          "lastSyncAt": "2026-08-31T09:15:00.000Z",
+          "receiptsCount": 12,
+          "status": "connected"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -1625,6 +1919,32 @@
           "content-type": "application/json"
         },
         "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/cancel request (nothing to cancel)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a manual grant and no provider subscription"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/cancel"
+      },
+      "response": {
+        "body": {
+          "code": "NO_ACTIVE_SUBSCRIPTION",
+          "error": "No active subscription to cancel"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 409
       }
     },
     {
@@ -2508,6 +2828,30 @@
               }
             ],
             "isFood": true,
+            "items": [
+              {
+                "confidence": 0.88,
+                "gramsApprox": 300,
+                "macros": {
+                  "carbs_g": 20,
+                  "fat_g": 8,
+                  "kcal": 220,
+                  "protein_g": 14
+                },
+                "name": "Борщ"
+              },
+              {
+                "confidence": 0.72,
+                "gramsApprox": 50,
+                "macros": {
+                  "carbs_g": 2,
+                  "fat_g": 4,
+                  "kcal": 60,
+                  "protein_g": 4
+                },
+                "name": "Сметана"
+              }
+            ],
             "macros": {
               "carbs_g": 22,
               "fat_g": 12,
@@ -2884,6 +3228,75 @@
       }
     },
     {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with unclaimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "itemIds": [
+            501,
+            502
+          ],
+          "mode": "auto"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim"
+      },
+      "response": {
+        "body": {
+          "claimedItemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release request (decline)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with claimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "decline": true,
+          "itemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-release"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/silpo/sync request (no body)",
       "providerStates": [
         {
@@ -3113,7 +3526,8 @@
               "idempotency_key": "01HZ000000000000000000000B",
               "status": "applied"
             }
-          ]
+          ],
+          "server_now": "2026-05-12T09:30:01.000Z"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -3153,6 +3567,36 @@
             "weightKg": 62
           },
           "updatedAt": "2026-08-01T12:05:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a PUT /api/v1/silpo/settings request (enable)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "pantryAutoImport": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "PUT",
+        "path": "/api/v1/silpo/settings"
+      },
+      "response": {
+        "body": {
+          "pantryAutoImportSince": "2026-09-25T10:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",

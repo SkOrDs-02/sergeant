@@ -13,6 +13,11 @@
 
 import { isoWeekdayFromDateKey, parseDateKey } from "./dateKeys.js";
 import type { Habit, PauseInterval } from "./types.js";
+import {
+  dateKeyWithinHabitBounds,
+  isFlexibleHabit,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
 
 /** Чи потрапляє день у будь-який заявлений інтервал паузи (межі включні). */
 export function dateKeyInPauseInterval(
@@ -46,6 +51,12 @@ export interface HabitScheduledOptions {
    * число, яке користувач уже бачив, і потребує `metricsVersion`.
    */
   pausedFrom?: string | undefined;
+  /**
+   * Кількість виконань цієї звички в поточному тижні `dateKey`.
+   * Для `recurrence: "flexible"` це вирішує, чи показувати звичку сьогодні:
+   * доки `weekDoneCount < target`, звичка лишається у списку й нагадуваннях.
+   */
+  weekDoneCount?: number | undefined;
 }
 
 /**
@@ -83,13 +94,15 @@ export function habitScheduledOnDate(
     if (opts.pausedFrom === undefined) return false;
     if (dateKey >= opts.pausedFrom) return false;
   }
+  if (!dateKeyWithinHabitBounds(habit, dateKey)) return false;
   const start =
     habit.startDate ||
     (habit.createdAt ? String(habit.createdAt).slice(0, 10) : dateKey);
-  const end = habit.endDate || null;
-  if (dateKey < start) return false;
-  if (end && dateKey > end) return false;
   const r = habit.recurrence || "daily";
+  if (isFlexibleHabit(habit)) {
+    if (opts.weekDoneCount === undefined) return true;
+    return opts.weekDoneCount < weeklyTargetForDate(habit, dateKey);
+  }
   if (r === "once") return dateKey === start;
   if (r === "daily") return true;
   if (r === "weekdays") {

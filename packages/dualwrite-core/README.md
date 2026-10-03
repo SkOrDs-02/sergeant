@@ -1,9 +1,9 @@
 # @sergeant/dualwrite-core
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-15.
 > **Status:** Active
 
-Платформо-нейтральне ядро dual-write фреймворку ([ADR-0073](../../docs/04-governance/adr/0073-dualwrite-generic-framework.md)) для 4 модульних пайплайнів LS/MMKV→SQLite (finyk, fizruk, nutrition, routine; web + mobile). Pure TypeScript, без DOM / React Native / Sentry — усе платформне (логер, телеметрія, uuid) ін'єктується споживачем.
+Платформо-нейтральне ядро dual-write фреймворку ([ADR-0073](../../docs/governance/adr/0073-dualwrite-generic-framework.md)) для 4 модульних пайплайнів LS/MMKV→SQLite (finyk, fizruk, nutrition, routine; web + mobile). Pure TypeScript, без DOM / React Native / Sentry — усе платформне (логер, телеметрія, uuid) ін'єктується споживачем.
 
 ## Що всередині
 
@@ -22,3 +22,15 @@
 - Жодних платформних залежностей у `src/` — mobile typecheck входить у гейт кожного міграційного кроку.
 - LWW-семантика (ADR-0004): guard `excluded.updated_at > table.updated_at` — **строго новіший**, ніколи `>=`.
 - Міграційні PR (кроки 2–9) не змінюють SQL-snapshot тести адаптерів — байт-ідентичність за визначенням.
+
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/dualwrite-core <script>`.
+
+```bash
+pnpm --filter @sergeant/dualwrite-core typecheck      # TypeScript
+pnpm --filter @sergeant/dualwrite-core lint           # ESLint
+pnpm --filter @sergeant/dualwrite-core test           # Vitest
+pnpm --filter @sergeant/dualwrite-core test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/dualwrite-core test:coverage  # Vitest з покриттям
+```

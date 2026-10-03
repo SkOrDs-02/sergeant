@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fileURLToPath } from "node:url";
 
 /**
  * Регресія на три серпневі інциденти 2026 (`is_jar`, `last_token_check_at`,
@@ -27,7 +28,9 @@ vi.mock("../db.js", () => ({
 }));
 vi.mock("../obs/logger.js", () => ({ logger: loggerMock }));
 
-const REAL_MIGRATIONS_DIR = new URL("../migrations", import.meta.url).pathname;
+const REAL_MIGRATIONS_DIR = fileURLToPath(
+  new URL("../migrations", import.meta.url),
+);
 
 import {
   checkSchemaDrift,
@@ -161,6 +164,77 @@ describe("reportSchemaDriftAtBoot", () => {
     await reportSchemaDriftAtBoot(fakePool(["001_a.sql"]), captureMessage);
     expect(captureMessage).not.toHaveBeenCalled();
     expect(loggerMock.error).not.toHaveBeenCalled();
+  });
+
+  // ─────────────────── `unknown` як окремий сигнал ──────────────────────
+  //
+  // Break-test на реальний дефект. До 2026-09-17 `unknown` жив лише в
+  // `logger.warn`, а функція виходила раніше по `inSync` — тож база, що
+  // попереду образу, у дашборді не з'являлась ніколи. Саме через це не можна
+  // було підтвердити, що міграція 143 дочистила леджер: `pending` на той
+  // момент уже був порожній, і мовчання Sentry нічого не означало.
+  it("сигналить про unknown, НАВІТЬ коли pending порожній", async () => {
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql"]);
+    const captureMessage = vi.fn();
+
+    // Ключовий стан: усе шиплене накочено (`inSync: true`), але в леджері є
+    // чуже ім'я. Рівно те, що лишилось би невидимим до цієї правки.
+    const report = await reportSchemaDriftAtBoot(
+      fakePool(["001_a.sql", "999_legacy.sql"]),
+      captureMessage,
+    );
+
+    expect(report?.inSync).toBe(true);
+    expect(report?.pending).toEqual([]);
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    const [message, context, signal] = captureMessage.mock.calls[0]!;
+    expect(signal).toBe("unknown_migrations");
+    expect(context.unknown).toEqual(["999_legacy.sql"]);
+    // Заголовок мусить відрізнятись від drift-повідомлення, інакше Sentry
+    // склеїть два різні стани в одну issue.
+    expect(message).toContain("unknown to this image");
+    expect(message).not.toContain("will 500");
+  });
+
+  it("шле ОБИДВА сигнали, коли база і позаду, і попереду образу", async () => {
+    // Не екзотика: саме так виглядає відкат на старіший реліз, у якому ще й
+    // не докотили власні міграції.
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql", "002_b.sql"]);
+    const captureMessage = vi.fn();
+
+    await reportSchemaDriftAtBoot(
+      fakePool(["001_a.sql", "999_legacy.sql"]),
+      captureMessage,
+    );
+
+    expect(captureMessage).toHaveBeenCalledTimes(2);
+    const signals = captureMessage.mock.calls.map(([, , signal]) => signal);
+    // Порядок важливий: `unknown` емітиться ДО раннього виходу по `inSync`.
+    expect(signals).toEqual(["unknown_migrations", "drift"]);
+  });
+
+  it("не шле unknown-сигнал, коли леджер чистий", async () => {
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql", "002_b.sql"]);
+    const captureMessage = vi.fn();
+
+    await reportSchemaDriftAtBoot(fakePool(["001_a.sql"]), captureMessage);
+
+    const signals = captureMessage.mock.calls.map(([, , signal]) => signal);
+    expect(signals).toEqual(["drift"]);
+  });
+
+  it("не кидає, коли транспорт падає на unknown-сигналі", async () => {
+    // Той самий інваріант, що й для drift: обсервабіліті не валить бут.
+    listShippedMigrationsMock.mockResolvedValue(["001_a.sql"]);
+    const captureMessage = vi.fn(() => {
+      throw new Error("sentry down");
+    });
+    await expect(
+      reportSchemaDriftAtBoot(
+        fakePool(["001_a.sql", "999_legacy.sql"]),
+        captureMessage,
+      ),
+    ).resolves.not.toBeNull();
   });
 
   // Обсервабіліті не має права завалити бут — ні недоступною базою, ні

@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import request from "supertest";
 
 // Windows module reloads for route-level app imports can exceed Vitest's default
@@ -37,6 +45,14 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
   return { mockPool, queryMock, getSessionUserMock };
 });
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
+
 vi.mock("./../db.js", () => ({
   default: mockPool,
   pool: mockPool,
@@ -65,6 +81,14 @@ vi.mock("./../http/index.js", async () => {
       next(),
   };
 });
+
+// Холодний імпорт усього застосунку на слабкій машині триває десятки
+// секунд. Без прогріву перший тест файлу впирався у свої 60 с, а його
+// недороблений імпорт добігав уже під час наступного тесту і з'їдав його
+// `mockResolvedValueOnce`: звідси каскад «випадкових» падінь.
+beforeAll(async () => {
+  await import("./../app.js");
+}, 300_000);
 
 async function loadCreateApp(): Promise<
   (typeof import("./../app.js"))["createApp"]
@@ -220,7 +244,7 @@ describe("finyk routes — POST /manual-expenses validation", () => {
 });
 
 /**
- * Чек-скан v1 (`docs/90-work/planning/specs/receipt-scan.md`) —
+ * Чек-скан v1 (`docs/work/specs/receipt-scan.md`) —
  * route-рівень: guard-ланцюг (setModule → rateLimit → requireSession) +
  * повний-стек ДПС-503-без-токена. Глибша бізнес-логіка (matcher,
  * XML-парсинг, vision-нормалізація, ідемпотентність, серіалізація) уже

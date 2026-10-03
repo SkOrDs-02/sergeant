@@ -15,11 +15,19 @@ import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
-import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
+import type {
+  ExerciseLocation,
+  RawExerciseDef,
+} from "@sergeant/fizruk-domain/data";
+import {
+  ACTIVITY_INTENSITY_MULTIPLIERS,
+  ACTIVITY_MUSCLE_ZONE_MUSCLES,
+  equipmentForLocation,
+  matchesExerciseLocation,
+} from "@sergeant/fizruk-domain/data";
 import type { Workout, WorkoutGroup } from "@sergeant/fizruk-domain";
 import {
   ACTIVE_WORKOUT_KEY,
@@ -36,6 +44,8 @@ import {
   setPendingRetroEnd,
 } from "../lib/pendingRetroEnd";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
+import type { LogPastWorkoutActivity } from "../components/workouts/LogPastWorkoutSheet";
+import { useQuickLog } from "./useQuickLog";
 import {
   trackFizrukWorkoutDiscarded,
   trackFizrukWorkoutStarted,
@@ -69,7 +79,6 @@ export function useWorkoutsOrchestrator(
     addExercise,
     removeExercise,
   } = useExerciseCatalog();
-  const rec = useRecovery();
   const {
     workouts,
     loaded: workoutsLoaded,
@@ -111,11 +120,17 @@ export function useWorkoutsOrchestrator(
   const templateApi = useWorkoutTemplates();
   const [q, setQ] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
+  // «Зал» — не поточне місце людини, а найширший кошик: після того як
+  // портативне залізо перестало бути прив'язаним до дому, там доступний
+  // увесь каталог. Тому дефолт нічого не ховає, а стану «будь-де» немає.
+  const [locationFilter, setLocationFilter] = useState<ExerciseLocation>("gym");
   const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
   /** Форма «Внести проведене заняття» — див. `submitPastWorkout` нижче. */
   const [logPastOpen, setLogPastOpen] = useState(false);
+  /** Сабміт «Швидкого запису» — окремий хук, див. `useQuickLog`. */
+  const quickLog = useQuickLog({ restoreWorkout, toast });
   // Pulled out of `options` so the start callbacks can depend on the function
   // itself rather than on the whole options object, which is a fresh literal
   // on every render of the host page.
@@ -126,6 +141,9 @@ export function useWorkoutsOrchestrator(
   const [activeWorkoutId, setActiveWorkoutId] = useState(
     () => options.requestedWorkoutId ?? safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
+  // Виклик стоїть ПІСЛЯ `activeWorkoutId` навмисно: поточна сесія
+  // виключається з історії відновлення (див. `UseRecoveryOptions`).
+  const rec = useRecovery({ excludeWorkoutId: activeWorkoutId });
   const [finishFlash, setFinishFlash] = useState<FinishFlashState | null>(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] =
@@ -243,7 +261,6 @@ export function useWorkoutsOrchestrator(
     setActiveWorkoutId,
     { routeOwnsWorkoutId: Boolean(options.requestedWorkoutId) },
   );
-  useWorkoutsViewFromSession(setView, !options.requestedWorkoutId);
 
   useLiveWorkoutTick(activeWorkout, setNow);
 
@@ -274,7 +291,7 @@ export function useWorkoutsOrchestrator(
       }
       if (!activeWorkoutId) {
         toast.warning(
-          "Спочатку натисни «+ Нове» у блоці нижче, щоб зʼявилось активне тренування.",
+          "Спочатку натисни «Почати тренування», щоб зʼявилось активне тренування.",
         );
         return;
       }
@@ -287,7 +304,7 @@ export function useWorkoutsOrchestrator(
       const conflicts = recoveryConflictsForExercise(ex, rec.by);
       if (conflicts.injury.blocked) {
         toast.warning(
-          "Ти позначив біль у цій групі. Навантажувати її не раджу.",
+          "Ти позначив біль у цій групі. Вправу додав, але навантажувати не раджу.",
         );
       }
       addExerciseToActive(ex);
@@ -343,7 +360,8 @@ export function useWorkoutsOrchestrator(
       }
       if (tpl?.id) templateApi.markTemplateUsed(tpl.id);
       setActiveWorkoutId(w.id);
-      trackFizrukWorkoutStarted(w.id, "template");
+      // Без id — разовий набір з аркуша «Почати тренування», не шаблон.
+      trackFizrukWorkoutStarted(w.id, tpl?.id ? "template" : "quick_start");
       if (onWorkoutStarted) onWorkoutStarted(w.id);
       else setView("log");
     },
@@ -386,9 +404,34 @@ export function useWorkoutsOrchestrator(
   );
 
   const grouped = useMemo(
-    () => buildGroupedExercises(list, equipmentFilter, primaryGroupsUk),
-    [list, equipmentFilter, primaryGroupsUk],
+    () =>
+      buildGroupedExercises(
+        list,
+        equipmentFilter,
+        primaryGroupsUk,
+        locationFilter,
+      ),
+    [list, equipmentFilter, primaryGroupsUk, locationFilter],
   );
+
+  /**
+   * Скільки вправ дає кожен вид обладнання САМ ПО СОБІ в поточній локації.
+   * Незалежно від інших вибраних: фільтр обладнання працює як OR, тож
+   * кумулятивне число («стане, якщо додати») стрибало б від чужого вибору
+   * і читалось як помилка.
+   */
+  const equipmentCounts = useMemo(() => {
+    const inLocation = list.filter((ex) =>
+      matchesExerciseLocation(ex, locationFilter),
+    );
+    const out: Record<string, number> = {};
+    for (const eq of equipmentForLocation(locationFilter)) {
+      out[eq] = inLocation.filter((ex) =>
+        (ex.equipment ?? []).includes(eq),
+      ).length;
+    }
+    return out;
+  }, [list, locationFilter]);
 
   const finishedCount = useMemo(
     () => (workouts || []).filter((w) => w.endedAt).length,
@@ -441,8 +484,43 @@ export function useWorkoutsOrchestrator(
    * виросли б дві «активні» сесії одночасно.
    */
   const submitPastWorkout = useCallback(
-    ({ startedAt, endedAt }: { startedAt: string; endedAt: string }) => {
+    ({
+      startedAt,
+      endedAt,
+      activity,
+    }: {
+      startedAt: string;
+      endedAt: string;
+      activity?: LogPastWorkoutActivity;
+    }) => {
       setLogPastOpen(false);
+      if (activity) {
+        // Короткий запис нікуди не веде: сесія одразу завершена, слот
+        // «одне активне» не займає, тож і діалог конфлікту тут зайвий.
+        const workout = createWorkoutWithTimes({ startedAt, endedAt });
+        addItem(workout.id, {
+          exerciseId: `activity:${activity.activityId}`,
+          nameUk: activity.nameUk,
+          primaryGroup: "full_body",
+          musclesPrimary: ACTIVITY_MUSCLE_ZONE_MUSCLES[activity.zone],
+          musclesSecondary: [],
+          type: "time",
+          // Інтенсивність множить саме тривалість, що йде у
+          // `loadPointsForItem`: «важко 45 хв» важить як 56. Формулу
+          // навантаження таким чином чіпати не довелось (D4 спеки).
+          durationSec: Math.round(
+            activity.durationSec *
+              ACTIVITY_INTENSITY_MULTIPLIERS[activity.intensity],
+          ),
+          met: activity.met,
+          intensity: activity.intensity,
+        });
+        if (activity.kcalBurned != null) {
+          updateWorkout(workout.id, { kcalBurned: activity.kcalBurned });
+        }
+        trackFizrukWorkoutStarted(workout.id, "past");
+        return;
+      }
       requestWorkoutStart(() => {
         const workout = createWorkoutWithTimes({ startedAt });
         setPendingRetroEnd(workout.id, endedAt);
@@ -453,7 +531,13 @@ export function useWorkoutsOrchestrator(
         else setView("log");
       });
     },
-    [createWorkoutWithTimes, onWorkoutStarted, requestWorkoutStart],
+    [
+      addItem,
+      createWorkoutWithTimes,
+      onWorkoutStarted,
+      requestWorkoutStart,
+      updateWorkout,
+    ],
   );
 
   /**
@@ -536,6 +620,9 @@ export function useWorkoutsOrchestrator(
     setQ,
     equipmentFilter,
     setEquipmentFilter,
+    locationFilter,
+    setLocationFilter,
+    equipmentCounts,
     selected,
     setSelected,
     open,
@@ -580,6 +667,7 @@ export function useWorkoutsOrchestrator(
     logPastOpen,
     setLogPastOpen,
     submitPastWorkout,
+    ...quickLog,
     handleDeleteExerciseConfirm,
     handleRiskyTemplateConfirm,
     summarizeWorkoutForFinish,

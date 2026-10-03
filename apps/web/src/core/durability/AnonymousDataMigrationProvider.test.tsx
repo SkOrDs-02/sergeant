@@ -51,6 +51,7 @@ vi.mock("@shared/hooks/useToast", () => ({
 
 import {
   AnonymousDataMigrationProvider,
+  PROBE_GRACE_MS,
   __resetAnonymousMigrationSingleFlightForTests,
 } from "./AnonymousDataMigrationProvider";
 
@@ -140,8 +141,18 @@ describe("AnonymousDataMigrationProvider", () => {
     renderAt("/", <div>module content</div>);
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-    // `findBy*` чекає до 1 с — довше за 500 мс grace-вікна гейта.
-    expect(await screen.findByRole("status")).toBeInTheDocument();
+    // Чекаємо сам таймер, а не вікно опитування. `findBy*` тут програвав
+    // перегони на завантаженій машині: коли цикл подій блокується довше за
+    // секунду, grace-таймер гейта й 1-секундний тайм-аут `waitFor`
+    // стають готові в одній і тій самій фазі. `setProbeGraceElapsed` відпрацьовує
+    // першим, але рендер React йде окремим завданням через MessageChannel,
+    // тож тайм-аут встигає спрацювати раніше, ніж панель потрапить у DOM.
+    // Власний таймер з пізнішим терміном такого порядку не має: він
+    // гарантовано йде після grace-таймера, а `act` дочекується рендеру.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, PROBE_GRACE_MS + 50));
+    });
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   // Обидві діри з browser QA 2026-08-04 (Obs-009). Синк-runtime-и раніше
@@ -241,6 +252,109 @@ describe("AnonymousDataMigrationProvider", () => {
     expect(
       screen.queryByRole("button", { name: "Повторити" }),
     ).not.toBeInTheDocument();
+  });
+
+  // Регресія 2026-09-13 (звіт власника, PWA): плашка була простим сусідом
+  // застосунку всередині `#root`, а той має фіксовану висоту й
+  // `overflow: hidden`. Shell (`h-app-dvh` = `height: 100%` від рута)
+  // зсовувався вниз рівно на висоту плашки, і нижній навбар виїжджав за
+  // обрізаний край — застосунок лишався без навігації. Тримаємо контракт
+  // верстки: плашка й діти — сусіди у flex-колонці, діти беруть залишок.
+  it("тримає плашку й застосунок у flex-колонці, щоб навбар не виїхав", async () => {
+    migrate.mockRejectedValue(new Error("boom"));
+    renderAt("/", <div>module content</div>);
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Продовжити, перенесу пізніше",
+      }),
+    );
+    const content = await screen.findByText("module content");
+
+    const notice = screen.getByText(/Дані ще не перенесено в профіль/)
+      .parentElement as HTMLElement;
+    const childrenSlot = content.parentElement as HTMLElement;
+    expect(notice.parentElement).toBe(childrenSlot.parentElement);
+    const column = notice.parentElement as HTMLElement;
+    expect(column.className).toContain("flex-col");
+    expect(column.className).toContain("h-full");
+    // Плашка не стискається, застосунок забирає весь залишок висоти.
+    expect(notice.className).toContain("shrink-0");
+    expect(childrenSlot.className).toContain("flex-1");
+    expect(childrenSlot.className).toContain("min-h-0");
+    // Друга половина того ж звіту: текст заїжджав під динамічний острів.
+    expect(notice.className).toContain("safe-area-inset-top");
+  });
+
+  // Той самий екран на LTE у метро: браузер сам каже, що мережі немає, і
+  // тривожний текст про «незахищені синхронізацією» дані там просто
+  // неправдивий — збою переносу не було, був обрив звʼязку.
+  it("на офлайн-обриві показує причину, а не загальний текст збою", async () => {
+    const online = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      // Формулювання Safari для зірваного fetch — його і класифікує
+      // `tickErrorReport` як транспортне.
+      migrate.mockRejectedValue(new TypeError("Load failed"));
+      renderAt("/", <div>module content</div>);
+
+      expect(await screen.findByText(/Немає звʼязку/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/ще не захищені синхронізацією/),
+      ).not.toBeInTheDocument();
+    } finally {
+      online.mockRestore();
+    }
+  });
+
+  // Звіт власника прийшов трьома скріншотами одного й того самого тексту —
+  // діагностувати не було чим. Причина має бути В КАДРІ, бо людина шле фото
+  // екрана, а не заглядає в Sentry. Але саме причина: службовий префікс
+  // кроку і `[vfs=… disk=…]` адресовані нам і лишаються в Sentry-повідомленні
+  // (другий звіт власника, 2026-09-21).
+  it("показує причину збою на екрані, без службового префікса і vfs", async () => {
+    const error = Object.assign(
+      new Error(
+        "anon-migration/pull-before: Забагато запитів. Спробуй через 17 секунд. " +
+          "[vfs=kvvfs disk=14/10254MB]",
+      ),
+      {
+        name: "AnonymousMigrationStepError",
+        step: "pull-before",
+        detail: "Забагато запитів. Спробуй через 17 секунд.",
+      },
+    );
+    migrate.mockRejectedValue(error);
+    renderAt("/", <div>module content</div>);
+
+    expect(
+      await screen.findByText(
+        "pull-before: Забагато запитів. Спробуй через 17 секунд.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/anon-migration\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vfs=/)).not.toBeInTheDocument();
+  });
+
+  // Зворотний бік: чужа помилка (не з нашого кроку) має показати технічний
+  // клас збою, але не випадковий текст рушія.
+  it("показує санітизований код, коли помилка не з переносу", async () => {
+    migrate.mockRejectedValue(new TypeError("Load failed"));
+    renderAt("/", <div>module content</div>);
+
+    await screen.findByRole("button", { name: "Повторити" });
+    expect(screen.getByText("unknown: TypeError")).toBeInTheDocument();
+    expect(screen.queryByText(/Load failed/)).not.toBeInTheDocument();
+  });
+
+  it("показує крок і fallback, коли StepError має порожню причину", async () => {
+    const error = Object.assign(new Error("anon-migration/claim: "), {
+      name: "AnonymousMigrationStepError",
+      step: "claim",
+      detail: "",
+    });
+    migrate.mockRejectedValue(error);
+    renderAt("/", <div>module content</div>);
+
+    expect(await screen.findByText("claim: unknown")).toBeInTheDocument();
   });
 
   // Юридичні тексти мають лишатись доступними за будь-якого стану синку.

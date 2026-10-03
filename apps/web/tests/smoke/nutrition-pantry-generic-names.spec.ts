@@ -1,8 +1,19 @@
 import { test, expect, type Page } from "@playwright/test";
 
 /**
+ * Service Worker вимкнено на рівні спеки. `page.route()` не перехоплює
+ * запити, які йдуть через SW: у трейсах CI-падінь `GET …/silpo/receipts/r-2`
+ * двічі поспіль летів без `_frameref` (тобто з SW) повз мок на реальний
+ * бекенд і ловив 401, після чого аркуш показував «У цьому чеку немає
+ * позицій». Один диспетчер маршрутів (#972) прибрав гонку між патернами,
+ * але не цей обхід. Той самий прийом уже стоїть у
+ * `billing-checkout-smoke.spec.ts`.
+ */
+test.use({ serviceWorkers: "block" });
+
+/**
  * Комора: родові назви, картка продукту з варіантами, нові категорії.
- * Клік-через зі спеки `docs/90-work/planning/specs/pantry-generic-names.md`
+ * Клік-через зі спеки `docs/work/specs/pantry-generic-names.md`
  * § Верифікація.
  *
  * Демо-режим замість реального входу: сценарій нічого не питає в сервера,
@@ -16,6 +27,8 @@ const DEMO_LS: Record<string, string> = {
   hub_demo_seeded_social_v1: "1",
   hub_demo_cleanup_v1_done: "1",
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_real_entry_v1: "1",
   "sergeant.whatsNew.lastSeenId.v1": "2026-05-06-cold-start",
 };
@@ -83,6 +96,18 @@ function summary(receiptId: string, purchasedAt: string, totalKop: number) {
   };
 }
 
+/**
+ * Один обробник на весь `/silpo/receipts*`-простір, а не чотири окремі
+ * `page.route()` з частково пересічними glob/regex-патернами на той самий
+ * префікс. Playwright матчить кілька зареєстрованих маршрутів на один
+ * запит у порядку LIFO — окремі patterns для списку, `r-1` і `r-2` не мали
+ * пересікатись логічно, але саме на цій парі детально й консистентно (за
+ * доказом із трейсів трьох CI-падінь: `GET .../silpo/receipts/r-2` завжди
+ * летів НЕ мокнутим на реальний бекенд і ловив 401) щось у матчингу
+ * розходилось. Один патерн + диспетч по URL усередині прибирає саму
+ * можливість такого — тут просто нема кількох маршрутів, між якими можна
+ * розійтись.
+ */
 async function mockSilpo(page: Page) {
   await page.route("**/silpo/sync-state", (route) =>
     route.fulfill({
@@ -92,12 +117,55 @@ async function mockSilpo(page: Page) {
         status: "connected",
         accessTokenExpiresAt: null,
         lastSyncAt: "2026-08-28T10:00:00.000Z",
+        lastFailedAt: null,
+        lastErrorCode: null,
         receiptsCount: 2,
       }),
     }),
   );
-  await page.route(/\/silpo\/receipts(\?|$)/, (route) =>
-    route.fulfill({
+  await page.route(/\/silpo\/receipts(\/|\?|$)/, (route) => {
+    const url = route.request().url();
+    // fe3984980: підтвердження поповнення спершу бронює позиції на сервері
+    // (`POST …/:id/pantry-claim`), і в комору пишеться лише `claimedItemIds`
+    // з відповіді. Без цього обробника POST падав у гілку деталі чека нижче,
+    // відповідь не проходила `SilpoPantryClaimResponseSchema`, а аркуш
+    // показував тост збою замість запису в комору.
+    if (/\/pantry-claim(\?|$)/.test(url)) {
+      const body = route.request().postDataJSON() as { itemIds: number[] };
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ claimedItemIds: body.itemIds }),
+      });
+    }
+    if (/\/pantry-release(\?|$)/.test(url)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    }
+    if (url.includes(`/silpo/receipts/${SECOND_RECEIPT_ID}`)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...summary(SECOND_RECEIPT_ID, "2026-08-21T10:00:00.000Z", 4400),
+          items: SECOND_RECEIPT_ITEMS,
+        }),
+      });
+    }
+    if (url.includes(`/silpo/receipts/${RECEIPT_ID}`)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...summary(RECEIPT_ID, "2026-08-28T10:00:00.000Z", 15700),
+          items: RECEIPT_ITEMS,
+        }),
+      });
+    }
+    return route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
@@ -107,28 +175,8 @@ async function mockSilpo(page: Page) {
         ],
         nextCursor: null,
       }),
-    }),
-  );
-  await page.route(`**/silpo/receipts/${SECOND_RECEIPT_ID}`, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        ...summary(SECOND_RECEIPT_ID, "2026-08-21T10:00:00.000Z", 4400),
-        items: SECOND_RECEIPT_ITEMS,
-      }),
-    }),
-  );
-  await page.route(`**/silpo/receipts/${RECEIPT_ID}`, (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        ...summary(RECEIPT_ID, "2026-08-28T10:00:00.000Z", 15700),
-        items: RECEIPT_ITEMS,
-      }),
-    }),
-  );
+    });
+  });
 }
 
 async function seedDemo(page: Page) {
@@ -179,12 +227,18 @@ test("@critical pantry: назва з чека згортається до ро�
   await expect(page.getByText("Горіхи та насіння")).toBeVisible();
 
   // 3. Друге поповнення іншим брендом не створює другої позиції.
+  // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
+  await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
   await page.getByRole("button", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: /Додати в комору/ }).click();
+  await page
+    .getByRole("dialog", { name: "Додати продукти" })
+    .getByRole("button", { name: "Закрити" })
+    .click();
 
   await expect(
     page.getByRole("button", { name: /^Редагувати Молоко$/ }),
@@ -204,7 +258,12 @@ test("@critical pantry: назва з чека згортається до ро�
   // 9. Перейменування позиції не втрачає варіантів — друга страховка
   // проти помилки евристики.
   await page.getByRole("button", { name: /^Редагувати Молоко$/ }).click();
-  const nameField = page.getByLabel("Назва");
+  // `exact: true` обовʼязковий: `getByLabel` за замовчуванням матчить
+  // ПІДРЯДКОМ, а на цьому ж екрані живе поле додавання продукту з
+  // доступною назвою «Назва продукту» (`PantryCard`). Без `exact` локатор
+  // ловить обидва і падає на strict-mode violation — саме це й сталось,
+  // щойно тому полю додали `aria-label` замість самого placeholder.
+  const nameField = page.getByLabel("Назва", { exact: true });
   await nameField.fill("Молочко");
   await page.getByRole("button", { name: "Зберегти" }).click();
 
@@ -242,12 +301,18 @@ test("@critical pantry: списання з позиції на два варі�
     page.getByRole("button", { name: /^Редагувати Молоко$/ }),
   ).toBeVisible({ timeout: 20_000 });
 
+  // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
+  await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
   await page.getByRole("button", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: /Додати в комору/ }).click();
+  await page
+    .getByRole("dialog", { name: "Додати продукти" })
+    .getByRole("button", { name: "Закрити" })
+    .click();
   await expect(page.getByText(/1,87\s*л/)).toBeVisible({ timeout: 20_000 });
 
   // Перехід НАВІГАЦІЄЮ, не `page.goto`: у демо-режимі `vite preview`/dev
@@ -259,6 +324,15 @@ test("@critical pantry: списання з позиції на два варі�
     .getByRole("button", { name: "Додати прийом їжі" })
     .first()
     .click({ timeout: 60_000 });
+
+  // Regression 2026-09-07: «пікер комори зник». Комора в add-meal flow
+  // має бути видима одразу; додатковий клік по заголовку тут згорнув би її
+  // назад і сховав чіпи за `inert`.
+  await expect(page.getByRole("button", { name: /З комори/ })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+    { timeout: 30_000 },
+  );
 
   const pantryChip = page
     .getByTestId("from-pantry-chip")
@@ -274,6 +348,10 @@ test("@critical pantry: списання з позиції на два варі�
     timeout: 15_000,
   });
 
+  await expect(page.getByLabel("Вага порції, г")).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByLabel("Вага порції, г").fill("150");
   await page.getByLabel("Ккал").fill("120");
   await page.getByRole("button", { name: "Додати прийом" }).click();
 
@@ -330,12 +408,18 @@ test("@critical pantry: картка продукту не ламає мобіл
     page.getByRole("button", { name: /^Редагувати Молоко$/ }),
   ).toBeVisible({ timeout: 30_000 });
 
+  // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
+  await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
   await page.getByRole("button", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: /Додати в комору/ }).click();
+  await page
+    .getByRole("dialog", { name: "Додати продукти" })
+    .getByRole("button", { name: "Закрити" })
+    .click();
 
   const expand = page.getByRole("button", { name: "Показати покупки" });
   await expect(expand).toBeVisible({ timeout: 30_000 });

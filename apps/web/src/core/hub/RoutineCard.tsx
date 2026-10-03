@@ -7,14 +7,14 @@ import { useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { messages } from "@shared/i18n/uk";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { formatChartTooltip } from "./reportChartLabels";
 import {
   aggregateHabits,
-  getPeriodRange,
-  datesInRange,
+  reportWindows,
   localDateKey,
   type Period,
 } from "./hubReports.aggregation";
@@ -103,50 +103,6 @@ function HabitHeatmap({
   );
 }
 
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0)
-    return <span className="text-style-caption text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
-  return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
-  );
-}
-
 // ── Main card ─────────────────────────────────────────────────────────
 
 interface RoutineCardProps {
@@ -165,7 +121,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, dates, partial } = useMemo(() => {
     void bump; // storage-write tick — forces re-read without calling load* inside deps
     // Canonical routine state from the SQLite warm cache — `hub_routine_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
@@ -180,10 +136,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       habits: routine.habits,
       completions: routine.completions,
     };
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    const w = reportWindows(period, offset);
     // Заморозка минулого (ADR-0079 §2): картка показує й попередній період,
     // тож без `pausedFrom` пауза, поставлена сьогодні, переписала б обидва
     // числа заднім числом — включно з тим, проти якого рахується дельта.
@@ -191,14 +144,19 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     // доби — окремий борг реєстру метрик (стадія 5г).
     const pausedFrom = localDateKey(new Date());
     return {
-      cur: aggregateHabits(routineState, curDates, { pausedFrom }),
-      prev: aggregateHabits(routineState, prevDates, { pausedFrom }),
-      dates: curDates,
+      cur: aggregateHabits(routineState, w.cur, { pausedFrom }),
+      prev: aggregateHabits(routineState, w.prev, { pausedFrom }),
+      dates: w.dates,
+      partial: w.partial,
     };
   }, [period, offset, bump]);
 
   const formattedCurrent = formatNumberUk(cur.pct);
   const formattedPrev = formatNumberUk(prev.pct);
+  // `aggregateHabits` віддає порожній `daily`, коли звичок нема взагалі;
+  // «0%» у такому разі не результат, а відсутність предмета.
+  const empty =
+    Object.keys(cur.daily).length === 0 && Object.keys(prev.daily).length === 0;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -227,9 +185,11 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             <span className="text-style-body font-bold text-text">
-              {formattedCurrent}%
+              {empty ? "–" : `${formattedCurrent}%`}
             </span>
-            <Delta cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
+            {!empty && (
+              <DeltaChip cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
+            )}
           </span>
         )}
         <svg
@@ -250,16 +210,24 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyHabits}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-style-headline text-text">
               {formattedCurrent}%
             </span>
-            <Delta cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
+            <DeltaChip cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
           </div>
           <p className="text-style-caption text-muted">
-            {messages.hub.reportPrevious} {formattedPrev}%
+            {partial
+              ? messages.hub.reportPreviousToDate
+              : messages.hub.reportPrevious}{" "}
+            {formattedPrev}%
           </p>
           <HabitHeatmap
             key={`${period}-${offset}`}

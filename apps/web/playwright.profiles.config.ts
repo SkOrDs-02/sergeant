@@ -28,6 +28,16 @@ export default defineConfig({
     baseURL: process.env["PW_BASE_URL"] || "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // Та сама ручка, що в `playwright.config.ts` (a11y): контейнерні
+    // QA-середовища постачають власний Chromium і забороняють
+    // `playwright install`, а його ревізія не збігається з очікуваною.
+    ...(process.env["PW_CHROMIUM_PATH"]
+      ? {
+          launchOptions: {
+            executablePath: process.env["PW_CHROMIUM_PATH"],
+          },
+        }
+      : {}),
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

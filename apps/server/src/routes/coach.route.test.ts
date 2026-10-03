@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import request from "supertest";
 
 // Cold dynamic imports of the full Express app are slow on Windows when this
@@ -51,10 +59,21 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
   return { mockPool, queryMock, getSessionUserMock };
 });
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
+
 vi.mock("./../db.js", () => ({
   default: mockPool,
   pool: mockPool,
   query: queryMock,
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withUserContext: (_userId: string, fn: (db: unknown) => unknown) =>
+    fn(mockPool),
   ensureSchema: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -64,30 +83,11 @@ vi.mock("./../auth.js", () => ({
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("./../lib/anthropic.js", () => ({
-  // `anthropicMessages` returns `{ response, data }` — see
-  // `apps/server/src/lib/anthropic.ts` `AnthropicMessagesResult`. Production
-  // code reads `aiRes?.ok` to decide whether to throw `ExternalServiceError`,
-  // so we need a minimally-shaped `Response`-like object with `ok: true` and
-  // `status: 200`. Earlier this mock returned the bare `{ content: [...] }`
-  // payload, which made the handler's `if (!aiRes?.ok)` always fire and
-  // surface as a 502 in the test.
-  anthropicMessages: vi.fn().mockResolvedValue({
-    response: { ok: true, status: 200 } as unknown as Response,
-    data: {
-      content: [{ type: "text", text: "Ось порада для тебе." }],
-    },
-  }),
-  extractAnthropicText: vi.fn(
-    (d: { content?: { type: string; text?: string }[] }) =>
-      (d?.content ?? [])
-        .filter((b) => b.type === "text")
-        .map((b) => b.text)
-        .join("\n")
-        .trim(),
-  ),
-  recordAnthropicUsage: vi.fn(),
-}));
+// `../lib/anthropic.js` навмисно НЕ мокаємо: coach-хендлер ходить через
+// `getLLMProvider()`/`invokeLLM()` (`lib/llm/provider.js`), а тест "POST
+// /insight" нижче стабить `LLM_COACH_PROVIDER=stub`, тож справжній
+// `AnthropicProvider` (і разом з ним `lib/anthropic.js`) у ланцюжку викликів
+// не бере участі — сам модуль безпечно вантажиться неподоканим.
 
 vi.mock("./../push/send.js", () => ({
   sendToUserQuietly: vi.fn().mockResolvedValue(undefined),
@@ -100,14 +100,23 @@ vi.mock("./../push/send.js", () => ({
 // `memory: null` замість підставленого обʼєкта. Цей файл тестує route-wiring
 // + handler-shape; rate-limiter має власний `http/rateLimit.test.ts`. Mock-аємо
 // як passthrough.
+// SEC-1 (продуктовий аудит 2026-09, той самий контракт, що B31 у
+// `chat.route.test.ts`): лімітер має бачити `req.user`, інакше бакетить по IP.
+const { rateLimitExpressCalls } = vi.hoisted(() => ({
+  rateLimitExpressCalls: [] as Array<{ hasUser: boolean }>,
+}));
+
 vi.mock("./../http/rateLimit.js", async () => {
   const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
     "./../http/rateLimit.js",
   );
   return {
     ...actual,
-    rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
-      next(),
+    rateLimitExpress:
+      () => (req: { user?: unknown }, _res: unknown, next: () => void) => {
+        rateLimitExpressCalls.push({ hasUser: !!req.user });
+        next();
+      },
   };
 });
 
@@ -117,6 +126,14 @@ vi.mock("./../http/rateLimit.js", async () => {
  * The `vi.mock` calls above are hoisted and persist across `vi.resetModules`,
  * so we do not need to re-register them per test.
  */
+// Холодний імпорт усього застосунку на слабкій машині триває десятки
+// секунд. Без прогріву перший тест файлу впирався у свої 60 с, а його
+// недороблений імпорт добігав уже під час наступного тесту і з'їдав його
+// `mockResolvedValueOnce`: звідси каскад «випадкових» падінь.
+beforeAll(async () => {
+  await import("./../app.js");
+}, 300_000);
+
 async function loadCreateApp(): Promise<
   (typeof import("./../app.js"))["createApp"]
 > {
@@ -126,6 +143,7 @@ async function loadCreateApp(): Promise<
 }
 
 beforeEach(() => {
+  rateLimitExpressCalls.length = 0;
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
@@ -168,6 +186,29 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ snapshot: {} });
     expect(res.status).toBe(401);
+  });
+});
+
+describe("coach routes — middleware order (SEC-1)", () => {
+  // Сесія на рівні роутера ПЕРЕД лімітером (як B31 у `chat.ts`): без цього
+  // `rateLimitSubject` не бачить `req.user` і бакетить `api:coach` по IP.
+  it("лімітер бачить req.user, коли сесія є", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    await request(app).get("/api/coach/memory");
+    expect(rateLimitExpressCalls.length).toBeGreaterThan(0);
+    expect(rateLimitExpressCalls.every((c) => c.hasUser)).toBe(true);
+  });
+
+  it("без сесії 401 віддається до лімітера", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app).get("/api/coach/memory");
+    expect(res.status).toBe(401);
+    expect(rateLimitExpressCalls).toEqual([]);
   });
 });
 

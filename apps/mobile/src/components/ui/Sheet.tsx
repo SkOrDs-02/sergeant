@@ -276,8 +276,8 @@ function SheetContent({
                   <GestureDetector gesture={panGesture}>
                     <Animated.View
                       style={[animatedIndicatorStyle, { borderRadius: 3 }]}
-                      accessibilityLabel="Потягніть вниз щоб закрити"
-                      accessibilityHint="Проведіть пальцем вниз для закриття панелі"
+                      accessibilityLabel="Потягни вниз, щоб закрити"
+                      accessibilityHint="Проведи пальцем вниз, щоб закрити панель"
                     />
                   </GestureDetector>
                 </View>

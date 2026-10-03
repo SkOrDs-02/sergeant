@@ -59,7 +59,7 @@
  *     logout (persister keyed by build-id, not by user-id) і
  *     не мають витікати у IDB-снепшот, що читається з devtools
  *     будь-яким XSS. Список наций — у `@sergeant/shared`
- *     `isSensitiveQueryKey` (PR #004 у `docs/planning/storage-roadmap.md`).
+ *     `isSensitiveQueryKey` (PR #004 у `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *     Дзеркалиться у мобільному `mmkvPersister.ts`.
  *
  * ## Capacitor

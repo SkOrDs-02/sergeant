@@ -3,8 +3,9 @@ import { startViewTransition } from "@shared/lib/ui/viewTransition";
 import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
 import { isHubModuleId, type HubModuleId } from "@shared/lib/modules/hubNav";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { ANALYTICS_EVENTS, type ModuleOpenSource } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
+import { trackEvent } from "../observability/analytics";
 import { recordModuleOpen } from "../lib/recentModules";
 import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
 
@@ -27,6 +28,11 @@ export type { HubModuleId };
 
 export interface OpenModuleOptions {
   hash?: string | null;
+  /**
+   * Звідки відкрито модуль — для `MODULE_OPENED` (базова лінія перед
+   * віссю дії хабу, P3 `anti-slop-strategy.md`). Без значення → `other`.
+   */
+  source?: ModuleOpenSource | undefined;
 }
 
 export interface HubNavigation {
@@ -177,6 +183,15 @@ export function useHubNavigation(): HubNavigation {
       // see `core/lib/recentModules.ts`. Storage failures are swallowed
       // there; nothing here cares about the result.
       recordModuleOpen(typedId);
+      // Базова лінія перед віссю дії хабу (P3, рішення власника
+      // 2026-08-07): «відкриття модуля як продуктова подія». Стріляє
+      // ТУТ, а не в кожному вході окремо, бо крізь цю функцію проходять
+      // усі шляхи — проп із головної, шина `hub:open-module`, PWA-shortcut
+      // із сервіс-воркера. Джерело їде property-полем.
+      trackEvent(ANALYTICS_EVENTS.MODULE_OPENED, {
+        module: typedId,
+        source: opts.source ?? "other",
+      });
       navigate(`/${typedId}${pathSuffix}`, { replace: false });
     },
     [navigate],

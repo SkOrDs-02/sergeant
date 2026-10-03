@@ -2,8 +2,7 @@
  * Last validated: 2026-08-13
  * Status: Active
  */
-import { useState, type Dispatch, type Ref, type SetStateAction } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import type { Dispatch, Ref, SetStateAction } from "react";
 import { Input, Textarea } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
@@ -11,7 +10,11 @@ import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinch
 import { cn } from "@shared/lib/ui/cn";
 import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
+import type { NutritionPhotoItem } from "@sergeant/api-client";
 import { PHOTO_NOTE_MAX_LENGTH } from "../hooks/usePhotoAnalysis";
+import { NotFoodNotice } from "./NotFoodNotice";
+import { PhotoItemsList } from "./PhotoItemsList";
+import { PhotoPrivacyNotice } from "./PhotoPrivacyNotice";
 
 /**
  * Inline "in progress" line — spinner + copy, anchored right where the
@@ -29,72 +32,6 @@ function InlineAnalysisStatus({ text }: { text: string }) {
     >
       <Spinner size="xs" />
       <span>{text}</span>
-    </div>
-  );
-}
-
-/**
- * Ключ підтвердження, що людина прочитала попередження про фото.
- *
- * AI-CONTEXT: рішення founder-а 2026-07-26 — на питання «що робимо з
- * фото» обрано «попередження». Фото єдиний шлях за периметр, який
- * **неможливо** замаскувати: у кадр разом із тарілкою потрапляє чек із
- * адресою, чужа рука, екран телефона. Технічного рішення тут немає, є
- * лише чесність або мовчання.
- *
- * Попередження одноразове навмисно: постійний банер над кожним фото
- * перестають читати за тиждень, і тоді він захищає не людину, а нас.
- *
- * Ack — це ще й гейт автоаналізу (рішення founder-а 2026-08-13):
- * до підтвердження аналіз стартує лише явним тапом, після — сам при
- * виборі/заміні фото. Тому `PhotoStep` читає той самий ключ і слухає
- * `onPrivacyAck`.
- */
-export const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
-
-function PhotoPrivacyNotice({
-  onAck,
-  blockingAnalysis,
-}: {
-  onAck?: (() => void) | undefined;
-  /**
-   * Кадр уже обраний, тариф дозволяє аналіз — і єдине, що його стримує,
-   * це непідтверджений нотіс. Тоді нотіс мусить сам сказати, що він і є
-   * та кнопка, якої людина шукає.
-   */
-  blockingAnalysis?: boolean | undefined;
-}) {
-  const [acked, setAcked] = useState(
-    // Пара read/write мусить бути узгоджена: `safeWriteLS` кладе JSON,
-    // тому й читаємо через `safeReadLS`. Рядковий читач повернув би
-    // `"true"` з лапками і банер не зникав би ніколи.
-    () => safeReadLS<boolean>(PHOTO_PRIVACY_ACK_KEY, false) === true,
-  );
-  if (acked) return null;
-  return (
-    <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
-      <div className="text-style-label text-text">Куди їде фото</div>
-      <p className="mt-1 text-style-caption text-muted leading-relaxed">
-        Щоб визначити КБЖВ, фото відправляється на розпізнавання до зовнішнього
-        AI-сервісу. На відміну від тексту, фото приховати частково не вийде: їде
-        весь кадр. Перевір, що в нього не потрапило зайве.
-      </p>
-      {blockingAnalysis && (
-        <p className="mt-2 text-style-caption text-text leading-relaxed">
-          Аналіз почнеться, щойно підтвердиш це. Доти кадр нікуди не їде.
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          safeWriteLS(PHOTO_PRIVACY_ACK_KEY, true);
-          setAcked(true);
-          onAck?.();
-        }}
-        className="mt-2 min-h-11 px-3 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
-      >
-        {blockingAnalysis ? "Зрозуміло, аналізувати" : "Зрозуміло"}
-      </button>
     </div>
   );
 }
@@ -121,61 +58,9 @@ interface PhotoAnalyzeResult {
   macros?: Partial<NullableMacros> | null;
   confidence?: number | null;
   ingredients?: PhotoIngredient[];
+  /** Позиції кадру; підсумок `macros` вище — їхня сума (ініціатива 0023). */
+  items?: NutritionPhotoItem[];
   questions?: string[];
-}
-
-/**
- * Відмова аналізу: на фото немає їжі.
- *
- * AI-CONTEXT: до цієї гілки картка рендерила КБЖВ, «Зберегти в журнал» і блок
- * «Уточнення порції» щойно результат був не-null — тож фото кота давало нулі,
- * «Впевненість: 100%» і питання «Чи є на фото щось інше, окрім кота?», а
- * кнопка збереження писала це в денний журнал як `macroSource: photoAI`.
- * Найдорожчою була саме кнопка, а не назва: вигадані нулі потрапляли в
- * `estimatedKcalShare` і в підсумок дня.
- */
-const NOT_FOOD_COPY: Record<
-  NutritionNotFoodKind,
-  { title: string; unnamed: string; action: string }
-> = {
-  animal: {
-    title: "Це не страва, а тваринка",
-    unnamed: "На фото тваринка, а не їжа.",
-    action:
-      "Краще погладь і пригости смаколиком, а для журналу зроби фото їжі.",
-  },
-  person: {
-    title: "Це людина, а не страва",
-    unnamed: "На фото людина, а не їжа.",
-    action: "Наведи камеру на тарілку, або додай прийом їжі вручну.",
-  },
-  other: {
-    title: "Не бачу тут страви",
-    unnamed: "На фото немає їжі, для якої можна порахувати КБЖВ.",
-    action: "Обери інше фото вище, або додай прийом їжі вручну.",
-  },
-};
-
-function NotFoodNotice({
-  dishName,
-  kind,
-}: {
-  dishName?: string | null | undefined;
-  kind?: NutritionNotFoodKind | null | undefined;
-}) {
-  const what = (dishName || "").trim();
-  const copy = NOT_FOOD_COPY[kind ?? "other"];
-  return (
-    <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3">
-      <div className="text-style-label text-text">{copy.title}</div>
-      <p className="mt-1 text-style-caption text-muted leading-relaxed">
-        {what
-          ? `На фото схоже на «${what}», порахувати КБЖВ немає з чого.`
-          : copy.unnamed}{" "}
-        {copy.action}
-      </p>
-    </div>
-  );
 }
 
 interface PhotoAnalyzeCardProps {
@@ -217,6 +102,16 @@ interface PhotoAnalyzeCardProps {
    * і без підказки екран виглядав мертвим).
    */
   analysisAwaitingPrivacyAck?: boolean | undefined;
+  /** Прибрати позицію зі списку. Відсутній — список лише для читання. */
+  onRemoveItem?: ((index: number) => void) | undefined;
+  /**
+   * Пікер каталогу під кнопкою «Додати позицію».
+   *
+   * Приходить рендер-функцією, а не хуком пошуку: інакше картка знала б про
+   * `useFoodSearch`, і кожен її тест мусив би мокати мережу заради розмітки,
+   * яка до пошуку відношення не має. `close` згортає пікер назад у кнопку.
+   */
+  renderAddItem?: ((close: () => void) => React.ReactNode) | undefined;
 }
 
 export function PhotoAnalyzeCard({
@@ -240,6 +135,8 @@ export function PhotoAnalyzeCard({
   refining,
   onPrivacyAck,
   analysisAwaitingPrivacyAck,
+  onRemoveItem,
+  renderAddItem,
 }: PhotoAnalyzeCardProps) {
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   return (
@@ -252,7 +149,7 @@ export function PhotoAnalyzeCard({
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
           <div className="text-style-caption text-muted">
-            ШІ визначить КБЖВ і запропонує уточнення
+            AI визначить КБЖВ і запропонує уточнення
           </div>
         </div>
         {analyzeLabel !== null && (
@@ -262,7 +159,7 @@ export function PhotoAnalyzeCard({
             disabled={busy}
             className={cn(
               "text-style-label shrink-0 px-5 h-10 rounded-xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
             )}
           >
             {busy ? "…" : analyzeLabel}
@@ -389,7 +286,7 @@ export function PhotoAnalyzeCard({
                 value: `${fmtMacro(photoResult.macros?.fat_g)} г`,
               },
               {
-                label: "Вуглев.",
+                label: "Вугл",
                 value: `${fmtMacro(photoResult.macros?.carbs_g)} г`,
               },
             ].map((m) => (
@@ -419,6 +316,14 @@ export function PhotoAnalyzeCard({
             ))}
           </div>
 
+          <PhotoItemsList
+            items={photoResult.items ?? []}
+            fmtMacro={fmtMacro}
+            onRemoveItem={onRemoveItem}
+            renderAddItem={renderAddItem}
+            busy={busy}
+          />
+
           {onSaveToLog && (
             /* AI-CONTEXT: тестер 2026-08-13 «ледь не пропустила цей пункт» —
                збереження було outline-кнопкою, а «Перерахувати» нижче —
@@ -436,7 +341,7 @@ export function PhotoAnalyzeCard({
                 disabled={busy}
                 className={cn(
                   "text-style-label inline-flex w-full items-center justify-center gap-2 h-12 rounded-2xl shadow-soft",
-                  "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                  "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 )}
               >
@@ -455,6 +360,9 @@ export function PhotoAnalyzeCard({
                 </svg>
                 Зберегти в журнал
               </button>
+              {/* AI-NOTE: підказка під кнопкою: класичний випадок, який
+                  правило дозволяє лишити в caption, вона супроводжує контрол,
+                  а не читається окремо. */}
               <p className="text-style-caption text-muted text-center">
                 Сам аналіз у журнал не потрапляє, збережи, щоб він порахувався в
                 дні.
@@ -508,7 +416,7 @@ export function PhotoAnalyzeCard({
                     onChange={(e) =>
                       setAnswers((a) => ({ ...a, [q]: e.target.value }))
                     }
-                    placeholder="твоя відповідь…"
+                    placeholder="Твоя відповідь"
                     disabled={busy}
                   />
                 </div>
@@ -541,9 +449,13 @@ export function PhotoAnalyzeCard({
             >
               Перерахувати з урахуванням уточнень
             </button>
-            {/* Чесність про ціну кнопки: перерахунок — це новий прогін
+            {/* AI-NOTE: дисклеймер під контролом, кегль навмисно дрібний,
+                щоб не сперечатися вагою з самою кнопкою.
+                Чесність про ціну кнопки: перерахунок — це новий прогін
                 моделі по всьому кадру, а не точкова правка. Те, що вона
                 вгадала правильно, теж може змінитись. */}
+            {/* AI-NOTE: підказка під контролом (див. коментар вище про
+                ціну кнопки) — caption тут навмисний. */}
             <p className="text-style-caption text-muted">
               Перерахунок оновлює весь результат, а не лише те, що ти згадаєш,
               уже правильні страви теж можуть змінитися.

@@ -49,7 +49,7 @@ export function finykCategoryExists(id: string): boolean {
 }
 
 export function unknownTransactionMessage(id: string): string {
-  return `Не знайшов транзакцію "${id}", знайди її через find_transaction і візьми id звідти.`;
+  return `Не знайшов операцію "${id}", знайди її через find_transaction і візьми id звідти.`;
 }
 
 export function unknownCategoryMessage(id: string): string {

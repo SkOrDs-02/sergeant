@@ -16,11 +16,16 @@
 import { calculateStreak, buildCalendarGrid } from "@sergeant/routine-domain";
 ```
 
-## Тести
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/routine-domain <script>`.
 
 ```bash
-pnpm --filter @sergeant/routine-domain test       # Vitest
-pnpm --filter @sergeant/routine-domain typecheck
+pnpm --filter @sergeant/routine-domain typecheck      # TypeScript
+pnpm --filter @sergeant/routine-domain lint           # ESLint
+pnpm --filter @sergeant/routine-domain test           # Vitest
+pnpm --filter @sergeant/routine-domain test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/routine-domain test:coverage  # Vitest з покриттям
 ```
 
 ## Доменний інваріант

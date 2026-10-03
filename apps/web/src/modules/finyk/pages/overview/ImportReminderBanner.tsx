@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Плашка «залий документи» (спека
- * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ * `docs/work/specs/finyk-import-reminders.md`).
  *
  * AI-CONTEXT: заголовок безособовий («виписку не додавали»), бо минулий
  * час в українській має рід — «ти не додав» було б неправдою половині
@@ -60,14 +60,14 @@ function ImportReminderBannerComponent({
 
   return (
     <Banner role="status" variant="info" className="rounded-2xl">
-      <p className="text-style-body text-content-primary">
+      <p className="text-style-body text-text">
         {`${copy.title[source]} ${daysSince} ${dayWord(daysSince)}`}
       </p>
-      <p className="text-style-caption text-content-secondary mt-1">
+      <p className="text-style-caption text-muted mt-1">
         {`${copy.rhythmPrefix} ${expectedIntervalDays} ${dayWord(expectedIntervalDays)}`}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="secondary" onClick={onAddDocuments}>
+        <Button size="sm" variant="outline" onClick={onAddDocuments}>
           {copy.cta}
         </Button>
         <Button size="sm" variant="ghost" onClick={onSnooze}>
@@ -92,7 +92,7 @@ function ImportReminderBannerComponent({
               type="button"
               aria-label={copy.moreActionsAriaLabel}
             >
-              <Icon name="more-horizontal" size={16} aria-hidden />
+              <Icon name="more-horizontal" size="md" aria-hidden />
             </Button>
           }
         />

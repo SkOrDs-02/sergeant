@@ -33,6 +33,13 @@ export interface ReceiptMatchInput {
  *   - виключають mono-транзакції, ВЖЕ привʼязані до ІНШОГО чека
  *     (`finyk_tx_receipt_links`, tx_kind='mono') — один mono-tx не може
  *     дістати два receipt-и;
+ *   - виключають mono-транзакції, вже привʼязані до Сільпо-чека
+ *     (`silpo_tx_receipt_links`, окремий matcher-конвеєр модуля Silpo,
+ *     `receiptsMatch.ts`) — без цієї перевірки два незалежні matcher-и
+ *     дедуплікували кожен ЛИШЕ свою таблицю лінків, і одна транзакція
+ *     могла дістати і фіскальний, і Сільпо-чек одночасно (§1.14 audit
+ *     finding). Зворотний напрям (Silpo-matcher бачить цю таблицю) —
+ *     турбота модуля Silpo, не цього файлу;
  *   - вимагають `amount < 0` — чек це завжди ВИТРАТА (гроші йдуть з
  *     рахунку), тому надходження такого самого номіналу (переказ,
  *     повернення) навмисно не кандидат matcher-а;
@@ -61,6 +68,10 @@ export async function matchReceiptToMono(
             SELECT 1 FROM finyk_tx_receipt_links l
              WHERE l.tx_kind = 'mono' AND l.tx_ref = t.mono_tx_id
           )
+          AND NOT EXISTS (
+            SELECT 1 FROM silpo_tx_receipt_links sl
+             WHERE sl.user_id = t.user_id AND sl.transaction_id = t.mono_tx_id
+          )
         ORDER BY t.time DESC
         LIMIT 1`,
       [input.userId, input.fiscalNum],
@@ -83,6 +94,10 @@ export async function matchReceiptToMono(
         AND NOT EXISTS (
           SELECT 1 FROM finyk_tx_receipt_links l
            WHERE l.tx_kind = 'mono' AND l.tx_ref = t.mono_tx_id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM silpo_tx_receipt_links sl
+           WHERE sl.user_id = t.user_id AND sl.transaction_id = t.mono_tx_id
         )
       ORDER BY ABS(EXTRACT(EPOCH FROM (t.time - $3::timestamptz))) ASC, t.mono_tx_id ASC
       LIMIT 1`,

@@ -9,6 +9,11 @@ import {
 } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
 import {
+  decryptOpRowForPull,
+  encryptOpRowForStorage,
+} from "../../lib/healthTextCrypto.js";
+import {
+  syncConflictsTotal,
   syncOpLogApplyTotal,
   syncOpLogNullOriginDeviceIdTotal,
   syncOpLogPullLagMs,
@@ -35,13 +40,13 @@ import {
   applyRoutineHabitOrder,
   applyRoutineHabits,
   applyRoutinePrefs,
-  applyRoutinePushups,
   applyUuidNameScopeTable,
 } from "./routine/applySyncFullState.js";
 import {
   applyFizrukWorkouts,
   applyFizrukItems,
   applyFizrukSets,
+  applyFizrukCustomActivities,
   applyFizrukCustomExercises,
   applyFizrukMeasurements,
 } from "./fizruk/applySync.js";
@@ -50,7 +55,6 @@ import {
   applyFizrukMonthlyPlan,
   applyFizrukPlanTemplates,
   applyFizrukPrograms,
-  applyFizrukPushups,
   applyFizrukWellbeing,
   applyFizrukWorkoutTemplates,
 } from "./fizruk/applySyncFullState.js";
@@ -154,11 +158,6 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_tags: uuidNameScope("routine_tags"),
   routine_categories: uuidNameScope("routine_categories"),
   routine_prefs: applyRoutinePrefs,
-  // Phase B переносу власності pushup-даних (канон routine.md §10): нові
-  // клієнти в `routine_pushups` більше не пишуть, handler лишається
-  // compat-шляхом для op-ів зі старих клієнтів. Зняти разом із
-  // DROP TABLE окремою пізнішою міграцією (Hard Rule #4, двофазність).
-  routine_pushups: applyRoutinePushups,
   routine_habit_order: applyRoutineHabitOrder,
   routine_completion_notes: applyRoutineCompletionNotes,
   // Хвиля 4 — третій стан дня «не зміг з причиною» (канон §5).
@@ -171,6 +170,7 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   fizruk_workout_items: applyFizrukItems,
   fizruk_workout_sets: applyFizrukSets,
   fizruk_custom_exercises: applyFizrukCustomExercises,
+  fizruk_custom_activities: applyFizrukCustomActivities,
   fizruk_measurements: applyFizrukMeasurements,
   fizruk_daily_log: applyFizrukDailyLog,
   fizruk_monthly_plan: applyFizrukMonthlyPlan,
@@ -178,9 +178,6 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   fizruk_programs: applyFizrukPrograms,
   fizruk_wellbeing: applyFizrukWellbeing,
   fizruk_workout_templates: applyFizrukWorkoutTemplates,
-  // Перенос власності pushup-даних routine → fizruk (канон routine.md §10,
-  // рішення 2026-08-30); з Phase B це єдиний write-шлях віджимань.
-  fizruk_pushups: applyFizrukPushups,
   // Модель «не можна» (ADR-0083). `site` навмисно не валідується проти
   // серверного enum — словник зон живе в домені й росте, а нерозпізнане
   // значення клієнт відкидає в `activeInjurySites`, тобто воно деградує в
@@ -251,6 +248,23 @@ function metricTable(table: string): string {
   return lookupApplyFn(table) ? table : "__unknown__";
 }
 
+/**
+ * Module label for `sync_conflicts_total` (W4 — метрика конфліктів була
+ * оголошена в `obs/metrics/domain.ts`, але жоден код її не інкрементив, тож
+ * `sum by (module) (rate(sync_conflicts_total[1h]))` з runbook.md
+ * (`SyncConflictSpike`) завжди повертав порожній результат).
+ *
+ * Усі таблиці в `OP_LOG_TABLE_REGISTRY` іменовані `<module>_<rest>`
+ * (`routine_*`, `fizruk_*`, `nutrition_*`, `finyk_*`), тож перший
+ * underscore-сегмент однозначно визначає продуктовий модуль — окремого
+ * реєстру мапінгу не треба, і нова таблиця автоматично потрапляє в
+ * правильний label без правки цього файлу.
+ */
+function conflictModule(table: string): string {
+  const prefix = table.split("_")[0];
+  return prefix ? prefix : "unknown";
+}
+
 export async function syncV2Push(req: Request, res: Response): Promise<void> {
   const start = process.hrtime.bigint();
   const user = (req as WithSessionUser).user!;
@@ -289,45 +303,67 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   let rejectedCount = 0;
   const newlyAppliedForStream: SyncV2StreamOp[] = [];
 
+  /**
+   * Оп уже лежить у журналі. Два шляхи сюди: дедуп-SELECT на початку
+   * ітерації і `ON CONFLICT` після гонки двох вкладок одного акаунта.
+   * Результат для клієнта в обох випадках однаковий, тож і код один.
+   */
+  const recordExistingOpLogRow = (
+    sourceOp: SyncV2Op,
+    r: SyncOpLogDuplicateRow,
+  ): void => {
+    const id = Number(r.id);
+    if (id > lastOpId) lastOpId = id;
+    results.push({
+      idempotency_key: sourceOp.idempotency_key,
+      status: r.status,
+      ...(r.reject_reason != null
+        ? { reason: r.reject_reason }
+        : r.status === "duplicate"
+          ? { reason: "duplicate" }
+          : {}),
+    });
+    if (r.status === "applied") {
+      acceptedCount++;
+      appliedCount++;
+    } else if (r.status === "rejected") {
+      rejectedCount++;
+    }
+    try {
+      syncOpLogApplyTotal.inc({
+        table: metricTable(sourceOp.table),
+        status: "duplicate",
+        reason: "duplicate",
+      });
+    } catch {
+      /* metrics must never break a request */
+    }
+  };
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
+    // Один дедуп-SELECT на весь батч замість одного на оп. Мапа
+    // доповнюється по ходу циклу, тож повтор ключа всередині одного пуша
+    // бачить рядок, записаний раніше в цьому ж батчі. Паралельний пуш, що
+    // закомітився вже після цього SELECT-а, ловить ON CONFLICT нижче, і
+    // тоді apply цього опа відкочується до savepoint-а `op_apply`.
+    const knownOps = new Map<string, SyncOpLogDuplicateRow>();
+    const prior = await client.query<
+      SyncOpLogDuplicateRow & { idempotency_key: string }
+    >(
+      `SELECT id, status, reject_reason, idempotency_key
+         FROM sync_op_log
+        WHERE user_id = $1 AND idempotency_key = ANY($2::text[])`,
+      [user.id, ops.map((o) => o.idempotency_key)],
+    );
+    for (const r of prior.rows) knownOps.set(r.idempotency_key, r);
+
     for (const op of ops) {
-      const dup = await client.query<SyncOpLogDuplicateRow>(
-        `SELECT id, status, reject_reason
-           FROM sync_op_log
-          WHERE user_id = $1 AND idempotency_key = $2`,
-        [user.id, op.idempotency_key],
-      );
-      if (dup.rows.length > 0) {
-        const r = dup.rows[0];
-        const id = Number(r!.id);
-        if (id > lastOpId) lastOpId = id;
-        results.push({
-          idempotency_key: op.idempotency_key,
-          status: r!.status,
-          ...(r!.reject_reason != null
-            ? { reason: r!.reject_reason }
-            : r!.status === "duplicate"
-              ? { reason: "duplicate" }
-              : {}),
-        });
-        if (r!.status === "applied") {
-          acceptedCount++;
-          appliedCount++;
-        } else if (r!.status === "rejected") {
-          rejectedCount++;
-        }
-        try {
-          syncOpLogApplyTotal.inc({
-            table: metricTable(op.table),
-            status: "duplicate",
-            reason: "duplicate",
-          });
-        } catch {
-          /* metrics must never break a request */
-        }
+      const known = knownOps.get(op.idempotency_key);
+      if (known) {
+        recordExistingOpLogRow(op, known);
         continue;
       }
 
@@ -356,8 +392,12 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         reason = "table_not_allowed";
       }
 
+      // `op_apply` лишається відкритим до запису в журнал: якщо ON CONFLICT
+      // покаже, що цей ключ уже записав паралельний пуш, apply відкочується.
+      let applySavepointOpen = false;
       if (status === "applied" && applyFn) {
         await client.query("SAVEPOINT op_apply");
+        applySavepointOpen = true;
         try {
           const applied = await applyFn(client, op, user.id, clientTs);
           if (applied.status === "rejected") {
@@ -379,33 +419,123 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
             err: err instanceof Error ? err.message : String(err),
           });
         }
+      }
+
+      // Запис у журнал — під ВЛАСНИМ savepoint-ом. Доти він стояв голим у
+      // зовнішній транзакції, тож будь-яка його помилка летіла в catch нижче
+      // і робила ROLLBACK усього батча: сотня рядків отримувала 500 і палила
+      // спробу через ОДИН зіпсований оп. Два реальні тригери:
+      //   (а) гонка двох вкладок одного акаунта на унікальному
+      //       `sync_op_log_user_idem_key` — клієнтський гард «один тік за раз»
+      //       живе per-runtime, тобто per-tab, і батчі вкладок перетинаються;
+      //   (б) символ `U+0000` у будь-якому рядковому полі `row` — zod його
+      //       пропускає, Postgres `jsonb` ні, і такий оп стає poison pill, що
+      //       щоразу забирає з собою 99 сусідів.
+      // `ON CONFLICT … DO NOTHING` знімає (а) штатно: хто програв гонку,
+      // бачить порожній RETURNING, дочитує рядок переможця й віддає клієнту
+      // звичайний `duplicate` замість 500. (б) лишається помилкою, але
+      // локальною — оп відхиляється, решта батча їде далі.
+      let insertedRow: SyncOpLogInsertRow | undefined;
+      let racedRow: SyncOpLogDuplicateRow | undefined;
+      let oplogWriteFailed = false;
+
+      await client.query("SAVEPOINT op_log_write");
+      try {
+        const inserted = await client.query<SyncOpLogInsertRow>(
+          `INSERT INTO sync_op_log
+             (user_id, idempotency_key, table_name, op, row, client_ts,
+              origin_device_id, status, reject_reason)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (user_id, idempotency_key) DO NOTHING
+           RETURNING id, server_ts`,
+          [
+            user.id,
+            op.idempotency_key,
+            op.table,
+            op.op,
+            JSON.stringify(encryptOpRowForStorage(op.table, op.row)),
+            clientTs,
+            originDeviceId,
+            status,
+            reason,
+          ],
+        );
+        insertedRow = inserted.rows[0];
+        if (!insertedRow) {
+          const raced = await client.query<SyncOpLogDuplicateRow>(
+            `SELECT id, status, reject_reason
+               FROM sync_op_log
+              WHERE user_id = $1 AND idempotency_key = $2`,
+            [user.id, op.idempotency_key],
+          );
+          racedRow = raced.rows[0];
+          // Конфлікт був, а рядка немає — стан, якого бути не може
+          // (переможець гонки вже закомічений, інакше INSERT би чекав).
+          // Ковтати його як успіх не можна: оп нікуди не записано.
+          if (!racedRow) oplogWriteFailed = true;
+        }
+      } catch (err: unknown) {
+        oplogWriteFailed = true;
         try {
+          await client.query("ROLLBACK TO SAVEPOINT op_log_write");
+        } catch {
+          /* primary rollback below will catch transactional poison */
+        }
+        logger.warn({
+          msg: "sync_v2_oplog_write_failed",
+          op: op.op,
+          table: op.table,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
+      try {
+        await client.query("RELEASE SAVEPOINT op_log_write");
+      } catch {
+        /* idempotent: already released after rollback */
+      }
+      if (applySavepointOpen) {
+        try {
+          if (racedRow) await client.query("ROLLBACK TO SAVEPOINT op_apply");
           await client.query("RELEASE SAVEPOINT op_apply");
         } catch {
-          /* idempotent: already released after rollback */
+          /* primary rollback below will catch transactional poison */
         }
       }
 
-      const inserted = await client.query<SyncOpLogInsertRow>(
-        `INSERT INTO sync_op_log
-           (user_id, idempotency_key, table_name, op, row, client_ts,
-            origin_device_id, status, reject_reason)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id, server_ts`,
-        [
-          user.id,
-          op.idempotency_key,
-          op.table,
-          op.op,
-          JSON.stringify(op.row),
-          clientTs,
-          originDeviceId,
-          status,
-          reason,
-        ],
-      );
-      const insertedRow = inserted.rows[0];
-      const insertedId = Number(insertedRow!.id);
+      if (oplogWriteFailed) {
+        // Рядка в журналі немає, тож pull його не віддасть нікому — для
+        // клієнта це термінальна відмова, а не привід ретраїти: повтор дасть
+        // ту саму помилку. Батч при цьому цілий.
+        rejectedCount++;
+        results.push({
+          idempotency_key: op.idempotency_key,
+          status: "rejected",
+          reason: "oplog_write_failed",
+        });
+        try {
+          syncOpLogApplyTotal.inc({
+            table: metricTable(op.table),
+            status: "rejected",
+            reason: "oplog_write_failed",
+          });
+        } catch {
+          /* metrics must never break a request */
+        }
+        continue;
+      }
+
+      if (!insertedRow) {
+        knownOps.set(op.idempotency_key, racedRow!);
+        recordExistingOpLogRow(op, racedRow!);
+        continue;
+      }
+      knownOps.set(op.idempotency_key, {
+        id: insertedRow.id,
+        status,
+        reject_reason: reason,
+      });
+
+      const insertedId = Number(insertedRow.id);
       if (insertedId > lastOpId) lastOpId = insertedId;
 
       if (status === "applied") {
@@ -421,7 +551,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
           op: op.op,
           row: op.row,
           client_ts: clientTs.toISOString(),
-          server_ts: insertedRow!.server_ts.toISOString(),
+          server_ts: insertedRow.server_ts.toISOString(),
           origin_device_id: originDeviceId,
         });
       } else {
@@ -439,6 +569,12 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
           status,
           reason: status === "applied" ? "none" : reason || "unknown",
         });
+        // Only the freshly-computed rejection counts as a conflict — a
+        // duplicate replay of the same idempotency_key (branch above) is a
+        // client retry of an ALREADY-counted decision, not a new one.
+        if (status === "rejected" && reason === "lww_conflict") {
+          syncConflictsTotal.inc({ module: conflictModule(op.table) });
+        }
       } catch {
         /* metrics must never break a request */
       }
@@ -486,6 +622,13 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     accepted: acceptedCount,
     last_op_id: lastOpId,
     results,
+    // Годинник сервера в момент відповіді. Сервер перевіряє лише годинник,
+    // що ВИПЕРЕДЖАЄ (`CLOCK_SKEW_FORWARD_MS`); відсталий годинник програє
+    // кожен LWW-конфлікт, і клієнт вважав це штатним `lww_conflict`. Це
+    // поле дає клієнту прямий замір зсуву (`core/syncEngine/clockSkew.ts`),
+    // без окремого round-trip-у й без довіри до `Date` header-а проксі
+    // (аудит 2026-09-15 § 2).
+    server_now: new Date().toISOString(),
   });
 }
 
@@ -514,6 +657,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
           AND id > $2
           AND status = 'applied'
           AND origin_device_id IS DISTINCT FROM $3
+          AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
         ORDER BY id ASC
         LIMIT $4`,
       [user.id, since, originDeviceId, limit],
@@ -523,7 +667,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       id: Number(r.id),
       table: r.table_name,
       op: r.op,
-      row: r.row,
+      row: decryptOpRowForPull(r.table_name, r.row),
       client_ts: r.client_ts.toISOString(),
       server_ts: r.server_ts.toISOString(),
       // eslint-disable-next-line sergeant-design/no-bigint-string -- origin_device_id is an opaque TEXT device id (migration 027_sync_op_log.sql), not a pg bigint numeric; Hard Rule #1 N/A.

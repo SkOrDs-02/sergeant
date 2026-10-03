@@ -9,11 +9,10 @@ const { evaluateMock, trackEventMock } = vi.hoisted(() => ({
   trackEventMock: vi.fn(),
 }));
 
-vi.mock("@sergeant/insights", async () => {
-  const actual =
-    await vi.importActual<typeof import("@sergeant/insights")>(
-      "@sergeant/insights",
-    );
+vi.mock("@sergeant/insights/activation", async () => {
+  const actual = await vi.importActual<
+    typeof import("@sergeant/insights/activation")
+  >("@sergeant/insights/activation");
   return {
     ...actual,
     evaluateActivationV2: (input: ActivationInput) => evaluateMock(input),

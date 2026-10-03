@@ -1,8 +1,8 @@
 name: Mobile Shell (iOS)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # iOS build-only lane for the Capacitor shell in `apps/mobile-shell/**`.
 # Proves the shell still compiles on an Apple toolchain every PR.
@@ -27,20 +27,8 @@ name: Mobile Shell (iOS)
 # `workflow_dispatch`. Повернути `apps/web/**` у paths, коли mobile знову
 # в обов'язковому CI-контурі.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/mobile-shell/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/mobile-shell-ios.yml"
-  pull_request:
-    paths:
-      - "apps/mobile-shell/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/mobile-shell-ios.yml"
   workflow_dispatch:
 
 permissions:
@@ -131,7 +119,7 @@ jobs:
         # the related per-surface flags) is `true` — which would
         # silently bypass the `cleartext: false` guarantee declared in
         # `apps/mobile-shell/capacitor.config.ts`. See
-        # `docs/04-governance/security/hardening/L12-ios-app-transport-security.md`.
+        # `docs/work/specs/security-hardening/L12-ios-app-transport-security.md`.
         run: node apps/mobile-shell/scripts/check-info-plist.mjs
 
       - name: Build App scheme for iOS Simulator (no signing)

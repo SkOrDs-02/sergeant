@@ -17,7 +17,11 @@ import {
   habitCountsTowardMetrics,
   habitScheduledOnDate,
 } from "../../schedule.js";
-import type { Habit } from "../../types.js";
+import type { Habit, HabitSkip } from "../../types.js";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "../../weeklyTarget.js";
 import {
   HEATMAP_DAYS,
   HEATMAP_WEEKS,
@@ -149,6 +153,21 @@ export interface BuildHeatmapGridOptions {
    * `metricsVersion`.
    */
   freezePausedPast?: boolean | undefined;
+  /**
+   * Пропуски з причиною: `habitId → dateKey → HabitSkip`.
+   *
+   * Канон §5: «не зміг» — не провал, тож така пара (звичка, день) виходить
+   * зі знаменника клітинки — той самий трактування, що вже мають
+   * `completionRateForRange` і per-habit стрік. Без цього заявлений пропуск
+   * фарбував клітинку РІВНО як мовчазний провал: `HabitRangeGrid` (короткі
+   * зрізи) показує «не зміг» окремим сірим станом, а `HabitHeatmap`
+   * (квартал/рік) на тих самих даних — тим самим кольором, що й провал.
+   * Перемикання зрізу Місяць → Квартал безшумно стирало відмінність
+   * (аудит 2026-09, PR-R8).
+   *
+   * Дефолт (не передано) зберігає історичну поведінку: пропуск = провал.
+   */
+  skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }
 
 /**
@@ -224,10 +243,39 @@ export function buildHeatmapGrid(
 
       let scheduledTotal = 0;
       let scheduledCnt = 0;
+      let skippedCnt = 0;
       for (const h of active) {
-        if (!habitScheduledOnDate(h, dateKey, scheduleOpts)) continue;
+        // Гнучка звичка («N разів на тиждень») перестає бути в знаменнику
+        // того дня, коли тиждень уже добрано. Без цього людина з ціллю
+        // «3 рази» отримувала б ЧОТИРИ незафарбовані дні щотижня — сітка
+        // читалась би як «пропустив», хоча вона зробила рівно те, що
+        // планувала. Лічильник виключає сам день, тож день ВИКОНАННЯ
+        // лишається і в знаменнику, і в чисельнику.
+        const weekDone = isFlexibleHabit(h)
+          ? weekDoneCountExcludingDate(completions?.[h.id], dateKey)
+          : undefined;
+        if (
+          !habitScheduledOnDate(h, dateKey, {
+            ...scheduleOpts,
+            weekDoneCount: weekDone,
+          })
+        )
+          continue;
+        const isDone = completionSets.get(h.id)?.has(dateKey) ?? false;
+        // «Не зміг з причиною» виходить зі ЗНАМЕННИКА, а не рахується
+        // провалом — той самий рядок, що вже стоїть у
+        // `completionRateForRange` (`streaks.ts`). До METRICS_VERSION 14
+        // heatmap був єдиним конвеєром, де заявлений пропуск усе ще тягнув
+        // клітинку вниз: людина казала продукту «хворів», а сітка малювала
+        // це провалом. `skippedCnt` лишається — він дозволяє презентації
+        // відрізнити «увесь незакритий залишок дня — заявлені пропуски» від
+        // «мовчазний провал» (PR-R8, аудит 2026-09-13).
+        if (!isDone && opts.skips?.[h.id]?.[dateKey]) {
+          skippedCnt += 1;
+          continue;
+        }
         scheduledTotal += 1;
-        if (completionSets.get(h.id)?.has(dateKey)) scheduledCnt += 1;
+        if (isDone) scheduledCnt += 1;
       }
 
       const cnt = useScheduled ? scheduledCnt : cntByDay[dateKey] || 0;
@@ -254,6 +302,7 @@ export function buildHeatmapGrid(
         intensity,
         scheduledTotal,
         scheduledCnt,
+        skippedCnt,
       });
 
       const mk = `${dt.getFullYear()}-${dt.getMonth()}`;

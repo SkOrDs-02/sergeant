@@ -4,6 +4,8 @@ import {
   GRACE_EARN_EVERY_DAYS,
   MAX_GRACE_BUDGET,
   flexibleMaxActiveStreak,
+  flexibleMaxStreakAllTime,
+  flexibleMaxStreakAllTimeAcrossHabits,
   flexibleStreakBreakdown,
   flexibleStreakForHabit,
 } from "./flexStreak.js";
@@ -266,5 +268,131 @@ describe("flexibleMaxActiveStreak", () => {
     expect(
       flexibleMaxActiveStreak([a, bHabit, archived], completions, TODAY, skips),
     ).toBe(9);
+  });
+});
+
+describe("flexibleMaxStreakAllTime (finding 1.22)", () => {
+  it("current streak never exceeds the flexible all-time max on the same data", () => {
+    // 7 виконаних, один прощений мовчазний пропуск, ще 5 виконаних —
+    // сама ситуація з фіндингу: жорсткий `maxStreakAllTime` бачив би тут
+    // 7 (найдовший суцільний прогін), а поточна гнучка серія — 12.
+    const done = [...runOfDays("2026-07-27", 7), ...runOfDays(TODAY, 5)];
+    const current = flexibleStreakForHabit(daily(), done, TODAY);
+    const allTime = flexibleMaxStreakAllTime(daily(), done);
+    expect(current).toBe(12);
+    expect(allTime).toBe(12);
+    expect(allTime).toBeGreaterThanOrEqual(current);
+  });
+
+  it("finds a longer historical run than the one ending today", () => {
+    const historical = runOfDays("2026-06-01", 20); // long past streak
+    const current = runOfDays(TODAY, 3); // short recent streak
+    const done = [...historical, ...current];
+    expect(flexibleMaxStreakAllTime(daily(), done)).toBe(20);
+    expect(flexibleStreakForHabit(daily(), done, TODAY)).toBe(3);
+  });
+
+  it("once-habits have no streak by definition", () => {
+    const habit = daily({ recurrence: "once" });
+    expect(flexibleMaxStreakAllTime(habit, runOfDays(TODAY, 5))).toBe(0);
+  });
+
+  it("flexibleMaxStreakAllTimeAcrossHabits takes the max over active habits and honours skips", () => {
+    const a = daily({ id: "a" });
+    const bHabit = daily({ id: "b" });
+    const archived = daily({ id: "c", archived: true });
+    const completions = {
+      a: runOfDays("2026-08-01", 3),
+      b: [...runOfDays("2026-07-30", 8), ...runOfDays(TODAY, 1)],
+      c: runOfDays(TODAY, 100),
+    };
+    const skips = { b: { "2026-07-31": skip("busy") } };
+    expect(
+      flexibleMaxStreakAllTimeAcrossHabits(
+        [a, bHabit, archived],
+        completions,
+        skips,
+      ),
+    ).toBe(9);
+  });
+});
+
+// ── Гнучка звичка «N разів на тиждень» × поденний soft-стрік ────────────────
+//
+// PR-R4 (аудит 2026-09-13), сьомий і останній живий call-site того самого
+// класу. Дві «гнучкості» в цьому файлі — різні сутності з однаковою назвою:
+// `flexibleStreakBreakdown` — це ПОДЕННИЙ стрік із бюджетом прощень (діє на
+// всі звички), а `recurrence: "flexible"` — це «N разів на тиждень». Прогін
+// другого через перший без `weekDoneCount` рахував пропуском кожен день, у
+// який людина нічого й не мала робити: перший такий день зʼїдав grace,
+// другий підряд рвав серію. Тобто продукт карав саме за виконання плану.
+//
+// `streaks.ts` цю розвилку має з самого початку (`isFlexibleHabit` →
+// `weeklyGoalStreakWeeks`), `flexStreak.ts` — не мав.
+describe("flexibleStreakBreakdown × recurrence: flexible", () => {
+  /** Ціль «N разів на тиждень», відлік від 2026-01-01. */
+  function flexible(target = 3, overrides: Partial<Habit> = {}): Habit {
+    return daily({
+      recurrence: "flexible",
+      weeklyTargetHistory: [{ from: "2026-01-01", target }],
+      ...overrides,
+    });
+  }
+
+  // Тиждень 2026-07-27 (Пн) … 2026-08-02 (Нд, і це `TODAY`). Ціль 3,
+  // виконано Пн/Вт/Ср — отже Чт/Пт/Сб/Нд планом не передбачені взагалі.
+  const WEEK_DONE_3 = ["2026-07-27", "2026-07-28", "2026-07-29"];
+
+  it("серія дорівнює трьом виконаним дням, а не рветься об дні понад ціль", () => {
+    const b = flexibleStreakBreakdown(flexible(), WEEK_DONE_3, TODAY);
+
+    expect(b.days).toBe(3);
+    // Найважливіше: жодного прощення не витрачено. До фікса Чт зʼїдав
+    // grace, а Пт рвав серію — саме за те, що тижневу ціль уже добрано.
+    expect(b.graceUsed).toBe(0);
+    expect(b.window.map((d) => d.kind)).not.toContain("miss");
+  });
+
+  it("Чт–Нд після добраної цілі позначені як «off», Пн–Ср — як «done»", () => {
+    const b = flexibleStreakBreakdown(flexible(), WEEK_DONE_3, TODAY);
+    const byKey = new Map(b.window.map((d) => [d.key, d.kind]));
+
+    for (const key of [
+      "2026-07-30",
+      "2026-07-31",
+      "2026-08-01",
+      "2026-08-02",
+    ]) {
+      expect(byKey.get(key)).toBe("off");
+    }
+    for (const key of WEEK_DONE_3) {
+      expect(byKey.get(key)).toBe("done");
+    }
+  });
+
+  // Контраст, який називає ціну бага одним числом: ті самі три відмітки на
+  // ЩОДЕННІЙ звичці дають нуль, бо там Чт–Нд справді пропуски. До фікса
+  // гнучка звичка рахувалась так само — тобто як щоденна.
+  it("ті самі відмітки на щоденній звичці дають 0 — різниця саме в гнучкості", () => {
+    expect(flexibleStreakForHabit(daily(), WEEK_DONE_3, TODAY)).toBe(0);
+    expect(flexibleStreakForHabit(flexible(), WEEK_DONE_3, TODAY)).toBe(3);
+  });
+
+  // Guard: фікс не робить гнучку звичку невразливою. Поки тижневу ціль НЕ
+  // добрано, день без відмітки лишається звичайним пропуском.
+  it("guard: поки ціль НЕ добрано, пропущені дні лишаються пропусками", () => {
+    // Ціль 7 на тиждень — тобто щодня; виконано лише три дні з семи.
+    expect(flexibleStreakForHabit(flexible(7), WEEK_DONE_3, TODAY)).toBe(0);
+  });
+
+  // Guard: щоденних звичок фікс не торкається — `weekDoneCount` для них не
+  // рахується й не передається.
+  it("guard: щоденна звичка з непреривним рядом рахується як раніше", () => {
+    expect(flexibleStreakForHabit(daily(), runOfDays(TODAY, 5), TODAY)).toBe(5);
+  });
+
+  it("сьогодні не висить «в очікуванні», коли тижневу ціль уже добрано", () => {
+    const b = flexibleStreakBreakdown(flexible(), WEEK_DONE_3, TODAY);
+    expect(b.todayPending).toBe(false);
   });
 });

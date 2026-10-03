@@ -2,7 +2,7 @@
  * Sergeant Design System — `InsightCard` (PR-7a).
  *
  * @lifecycle experimental (introduced 2026-05; promoted to active after PR-8)
- * @see docs/design/redesign-v2/governance.md § AI surfaces
+ * @see docs/design/design/redesign-v2/governance.md § AI surfaces
  *
  * AI push card — конкретна пропозиція коли AI знайшов щось важливе.
  * Show-once-per-day, dismissible. Поступово рендериться через
@@ -24,8 +24,9 @@
  * Handoff пропонував `bg-em-900/95` (raw em-palette + opacity modifier).
  * У Sergeant це violation #11. Замість того використовуємо `bg-ink-strong`
  * — semantic token що мапиться на emerald-900 в light / white в dark /
- * pure #000 в HC (via PR-1). Контрастний text-bg-base inverts через
- * theme. Amber icon уживає `bg-celebration/20` (2026-08: коментар раніше
+ * pure #000 в HC (via PR-1). У темній темі картку перевизначено на
+ * `bg-panelHi` з контуром: біла плитка ставала найяскравішою плямою екрана,
+ * яскравішою за hero й головну дію (критика екранів, хвиля 3). Amber icon уживає `bg-celebration/20` (2026-08: коментар раніше
  * помилково називав неіснуючий `bg-celebration-soft` token).
  *
  * ## Module context
@@ -45,7 +46,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { computeAdviceId } from "@sergeant/insights";
+import { computeAdviceId } from "@sergeant/insights/adviceId";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -103,7 +104,7 @@ export interface InsightCardProps {
   /** Called after dismissal is persisted (analytics hook). */
   onDismiss?: () => void;
   /**
-   * Чип «Спитати AI» — відкриває HubChat із префілом `Insight.askAiPrompt`.
+   * Чип «Спитати Сержанта» — відкриває HubChat із префілом `Insight.askAiPrompt`.
    * Рендериться лише коли переданий (усі 9 продуктових інсайтів мають
    * `askAiPrompt`, тож call-site завжди його передає).
    */
@@ -123,7 +124,7 @@ export function InsightCard({
   id,
   title,
   subtitle,
-  ctaLabel = "→",
+  ctaLabel,
   onActivate,
   onDismiss,
   onAskAi,
@@ -143,9 +144,9 @@ export function InsightCard({
   // умову «картку реально видно» перевіряємо всередині ефекту.
   //
   // ПАСТКА, яку тут закрито: `useInsightDismissal` тримає dismissed-id у
-  // localStorage НАЗАВЖДИ (попри docstring вище про show-once-per-day), тож
-  // для вже відкинутої картки shown стріляти не має — інакше знаменник
-  // рахував би покази, яких користувач не бачив.
+  // localStorage до кінця поточної доби (рішення 2026-10-01; раніше —
+  // назавжди), тож для вже відкинутої картки shown стріляти не має —
+  // інакше знаменник рахував би покази, яких користувач не бачив.
   useEffect(() => {
     if (isHidden) return;
     if (shownOnce.has(id)) return;
@@ -229,16 +230,17 @@ export function InsightCard({
       role="group"
       aria-labelledby={titleId}
       className={cn(
-        // v2 push-card chrome — ink-strong solid in light, glass-tinted
-        // in dark (mirrors handoff `bg-em-900/95` intent without raw
-        // palette). Shadow uses elevation `shadow-e3` (overlay tier).
+        // Push-card chrome: ink-strong solid у світлій темі. У темній
+        // ink-strong стає білим, тож картку опускаємо на підняту панель із
+        // контуром; сигнал «від Сержанта» несуть бурштинові гліфи.
         "mx-3.5 mt-2 px-3 py-2.5 rounded-3xl",
         "bg-ink-strong text-bg-base",
+        "dark:bg-panelHi dark:text-text dark:border dark:border-line",
         "flex items-center gap-3 shadow-e3",
         className,
       )}
     >
-      {/* Amber sparkle — celebration-tier visual signal so the card
+      {/* Amber sergeant glyph — celebration-tier visual signal so the card
           reads as "AI noticed something" without competing з module accent. */}
       <span
         aria-hidden
@@ -248,7 +250,7 @@ export function InsightCard({
           "bg-celebration/20 text-celebration",
         )}
       >
-        <Icon name="sparkle" size={16} strokeWidth={2} />
+        <Icon name="sergeant" size="md" strokeWidth={2} />
       </span>
 
       {/* Activate button — title + subtitle. Takes the remaining width. */}
@@ -264,47 +266,51 @@ export function InsightCard({
       >
         <div
           id={titleId}
-          className="text-style-label font-extrabold truncate text-bg-base"
+          className="text-style-label font-extrabold truncate text-bg-base dark:text-text"
         >
           {title}
         </div>
-        <div className="text-style-caption opacity-70 truncate text-bg-base">
+        <div className="text-style-caption opacity-70 truncate text-bg-base dark:text-text">
           {subtitle}
         </div>
       </button>
 
-      {/* «AI» — окремий чип, праворуч перед dismiss (тап по тілу картки
-          лишається навігацією в модуль, це третя незалежна дія).
+      {/* Чип «Спитати Сержанта» — окремий, праворуч перед dismiss (тап по
+          тілу картки лишається навігацією в модуль, це третя незалежна дія).
           Рендериться лише коли call-site передав `onAskAi` — усі 9
           продуктових інсайтів це роблять.
 
-          Підпис саме «AI», а не «Спитати AI»: на 375px довгий підпис з'їдав
+          Чип лише з гліфом, без підпису: на 375px будь-який текст з'їдав
           ширину картки і рубав заголовок із підзаголовком у трикрапку
-          (браузерна перевірка 2026-08-31). Іскра вже несе те саме значення,
-          тож слово «Спитати» платило текстом плашки за нуль нової
-          інформації. Повне формулювання лишається в `aria-label` — для
-          скрінрідера нічого не змінилось. */}
+          (браузерна перевірка 2026-08-31). До 2026-09-01 тут стояло слово
+          «AI» поруч з іскрою; рішення власника Q1 (анти-слоп аудит) замінило
+          іскру на шеврон Сержанта і зняло слово — гліф уже несе значення.
+          Повне формулювання лишається в `aria-label` — для скрінрідера
+          нічого не змінилось. */}
       {onAskAi && (
         <button
           type="button"
           onClick={handleAskAi}
           disabled={askAiDisabled}
           aria-label={
-            askAiDisabled ? "Ліміт AI на сьогодні" : "Спитати AI про це"
+            askAiDisabled
+              ? "Ліміт запитів до Сержанта на сьогодні"
+              : "Спитати Сержанта про це"
           }
-          title={askAiDisabled ? "Ліміт AI на сьогодні" : undefined}
+          title={
+            askAiDisabled ? "Ліміт запитів до Сержанта на сьогодні" : undefined
+          }
           className={cn(
             "shrink-0 touch-target inline-flex items-center justify-center gap-1 px-2 rounded-xl",
             "text-style-caption font-semibold",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-soft-fg/45",
             "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             askAiDisabled
-              ? "bg-white/10 text-bg-base/40 cursor-not-allowed"
+              ? "bg-white/10 text-bg-base/40 dark:text-muted cursor-not-allowed"
               : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
           )}
         >
-          <Icon name="sparkle" size={13} strokeWidth={2} aria-hidden />
-          <span>AI</span>
+          <Icon name="sergeant" size="sm" strokeWidth={2} aria-hidden />
         </button>
       )}
 
@@ -320,7 +326,10 @@ export function InsightCard({
           "focus-visible:ring-2 focus-visible:ring-celebration/45",
         )}
       >
-        {ctaLabel}
+        {/* SLOP-1 (аудит 2026-09): без явної мітки тут стояв текстовий гліф
+            «→» — «гліф у слоті іконки» з анти-слоп стратегії §3.2. Тепер
+            дефолт — справжня іконка; рядок лишається для кастомних міток. */}
+        {ctaLabel ?? <Icon name="close" size="md" aria-hidden />}
       </button>
     </div>
   );

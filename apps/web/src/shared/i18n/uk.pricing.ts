@@ -10,23 +10,25 @@
  * тож переїзд механічний.
  */
 export const pricingMessages = {
-  pageTitle: "Тарифи",
+  pageTitle: "Плани",
   backLabel: "Назад",
-  plansAriaLabel: "Тарифні плани",
+  plansAriaLabel: "Плани",
   hero: {
     headlineLine1: "Sergeant безкоштовний для базового користування.",
     headlineLine2: "Premium, коли треба все одразу.",
     // B4 (браузерний аудит 2026-08-05): прибрано обіцянку «натиснеш Premium —
     // відкриється оплата». Premium ще не запущений, оплати немає, а нижче на
     // тій самій сторінці стоїть waitlist — обіцянка суперечила формі.
-    subtitle:
-      "Один платний план. Без рівнів, без довічної підписки, без trial-таймера.",
+    // Обіцянку «без trial-таймера» знято: новий акаунт може стартувати з
+    // 7 днів Premium (спека access-tiers, ADR про пакетування Free/Premium).
+    subtitle: "Один платний план. Без рівнів і без довічної підписки.",
   },
   tiers: {
     freeName: "Free",
     freePrice: "0 ₴",
     freeCadence: "назавжди",
-    freeTagline: "Усі модулі, ручний трекінг без лімітів. AI: 5 запитів/день.",
+    freeTagline:
+      "Усі модулі, ручний трекінг без лімітів. Сержант: 20 дій на тиждень.",
     premiumName: "Premium",
     // B4: конкретна ціна («199 ₴ / місяць») знята до запуску — вона
     // суперечила waitlist-у «Один лист, коли Premium стартує».
@@ -34,31 +36,31 @@ export const pricingMessages = {
     premiumCadence: "Ціну оголошу на запуску",
     premiumTagline: "Усе розблоковано. Один план, без рівнів і доплат.",
   },
+  // Рядки таблиці: доступ і ліміти кожного бере `core/pricing/pricingTiers.ts`
+  // з реєстру `@sergeant/shared` FEATURES, тут лише підписи.
   features: {
-    allModules: "Усі 4 модулі: повний функціонал",
     manualTracking: "Ручний трекінг без числових лімітів",
-    aiChat: "AI-чат",
-    cloudSync2Devices: "Cloud-sync на 2 пристрої",
-    expensesFinyk: "Витрати у Фініку",
-    aiPhotoFood: "AI-фото їжі у Харчуванні",
-    aiPhotoFoodShort: "AI-фото їжі",
-    manualMeals: "Ручні прийоми їжі",
-    activeWorkoutTemplate: "Активний шаблон тренування",
-    workoutTemplates: "Шаблони тренувань",
-    activeHabits: "Активні звички",
-    habits: "Звички",
-    pdfExport: "PDF-експорт звітів",
-    // B3: `multiCurrency` прибрано — функції не існує. У формі активу валюта
-    // статична («UAH») однаково для Free і Premium; не-гривневі значення
-    // бувають лише у старих записах і в загальний капітал не зводяться.
+    aiActions: "Дії Сержанта: чат, порада, план дня, рецепти",
+    aiPhotoFoodShort: "Фото їжі від Сержанта",
+    finykVision: "AI-скан чека без QR і скрінів банку",
     monoAutoSync: "Авто-синхронізація з Monobank",
     cloudSync: "CloudSync між пристроями",
+    csvExport: "Експорт CSV",
+    voice: "Голосовий ввід",
+    memoryRecall: "Памʼять Сержанта",
+    pdfExport: "PDF-експорт звітів",
+    weekPlan: "План харчування на тиждень",
+    // Озвучення стану рядка для скрінрідера. Доти включена й виключена
+    // функція звучали ІДЕНТИЧНО: різницю несли лише форма іконки
+    // (`check`/`close`) і приглушений колір, а `Icon` без `title`
+    // рендериться `aria-hidden` (аудит 2026-09-16, WF-25; WCAG 1.4.1).
+    includedSr: "входить:",
+    excludedSr: "не входить:",
   },
   limits: {
-    // Leading space intentional — composes як `${N} / місяць`.
-    perMonth: " / місяць",
+    // Leading space intentional: composes як `${N} / тиждень`.
+    perWeek: " / тиждень",
     unlimited: "без ліміту",
-    aiChatPerDay: "5 / день",
   },
   cta: {
     tryPremium: "Спробувати Premium",
@@ -66,8 +68,8 @@ export const pricingMessages = {
     manageSubscription: "Керувати підпискою",
     openingPortal: "Відкриваю керування…",
     switchToFree: "Перейти на Free",
-    currentPlan: "Зараз ваш план",
-    // Гість: «Зараз ваш план» — неправда, поки акаунта немає. Free-CTA
+    currentPlan: "Зараз твій план",
+    // Гість: «Зараз твій план» — неправда, поки акаунта немає. Free-CTA
     // для нього стає входом (browser QA 2026-08-23).
     signInToStart: "Увійти й почати",
   },
@@ -77,21 +79,21 @@ export const pricingMessages = {
   },
   errors: {
     checkoutUnavailable:
-      "Оплата тимчасово недоступна. Можеш залишити email нижче, напишемо, коли можна буде оплатити.",
+      "Оплата тимчасово недоступна. Можеш залишити email нижче, напишу, коли можна буде оплатити.",
     portalNoBillingCustomer:
-      "Не знайдено платіжний профіль. Напиши у підтримку, підключимо вручну.",
+      "Не знайдено платіжний профіль. Напиши у підтримку, підключу вручну.",
     portalUnavailable:
       "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
     portalGeneric:
       "Не вдалося відкрити керування підпискою. Перевір звʼязок і спробуй ще раз.",
   },
   toast: {
-    subscriptionActive: "Підписку активовано, ласкаво просимо в Premium!",
+    subscriptionActive: "Підписку активовано, Premium уже діє.",
     subscriptionActiveCta: "Перейти у налаштування",
     paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
   },
   waitlist: {
-    headline: "Email для waitlist",
+    headline: "Повідомити про запуск Premium",
     subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
   },
   footer:

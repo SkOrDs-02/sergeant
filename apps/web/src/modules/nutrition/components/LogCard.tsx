@@ -17,10 +17,12 @@ import {
   type NutritionLog,
 } from "@sergeant/nutrition-domain";
 import { isMealTypeId, mealTypeFromLabel } from "../lib/mealTypes";
+import { formatLogDateSubline } from "../lib/formatLogDateSubline";
 import { DayLogSheet } from "./DayLogSheet";
 import { LogCardSearch } from "./LogCardSearch";
 import { LogCardWeeklyTable } from "./LogCardWeeklyTable";
 import { LogCardAnalytics } from "./LogCardAnalytics";
+import { MealMomentLine } from "./MealMomentLine";
 
 interface LogCardProps {
   log: NutritionLog;
@@ -104,7 +106,7 @@ export function LogCard({
               {formatDate(selectedDate)}
             </span>
             <span className="text-style-caption text-subtle">
-              {selectedDate}
+              {formatLogDateSubline(selectedDate)}
             </span>
           </div>
           <button
@@ -117,38 +119,25 @@ export function LogCard({
           </button>
         </div>
 
-        {typeof onDuplicateYesterday === "function" && hasPreviousDayMeals && (
-          <button
-            type="button"
-            onClick={() => setDuplicateConfirm(true)}
-            className="w-full h-10 touch-target rounded-2xl border border-line bg-panel/40 px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
-          >
-            Скопіювати з попереднього дня ({previousDayIso})
-          </button>
-        )}
-
-        <LogCardSearch
-          log={log}
-          setSelectedDate={setSelectedDate}
-          onAddMealFromSearch={onAddMealFromSearch}
-        />
-
-        {logSizeWarn && (
-          <div className="rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2 text-style-caption text-warning-strong">
-            Журнал великий (~{Math.round(logBytes / 1024)} КБ).{" "}
+        {/* Лише для порожнього дня: над заповненим днем копія вчорашнього
+            подвоїла б записи і відсувала б сам список униз. */}
+        {typeof onDuplicateYesterday === "function" &&
+          meals.length === 0 &&
+          hasPreviousDayMeals && (
             <button
               type="button"
-              className="underline font-semibold"
-              onClick={() => setTrimConfirm(true)}
+              onClick={() => setDuplicateConfirm(true)}
+              className="w-full h-10 touch-target rounded-2xl border border-line bg-panel px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
             >
-              Залишити лише останні 365 днів
+              {/* Підпис бере той самий `formatDate`, що й заголовок вище:
+                він уміє «Вчора» / «Сьогодні» і лише для дальших дат падає
+                в `ДД.ММ.РРРР`. Раніше тут стояв сирий `previousDayIso`
+                (`2026-09-11`) — і це впадало в око саме тому, що поруч, за
+                60 рядків вище, та сама дата вже показана по-людськи
+                (знахідка PR-N6, аудит 2026-09-13). */}
+              Скопіювати з попереднього дня ({formatDate(previousDayIso)})
             </button>
-          </div>
-        )}
-
-        <LogCardWeeklyTable log={log} selectedDate={selectedDate} />
-
-        <LogCardAnalytics log={log} selectedDate={selectedDate} />
+          )}
 
         {/*
           П3 «край і зріз»: аркуш дня — це `DayLogSheet`, і все, що стоїть
@@ -179,6 +168,8 @@ export function LogCard({
           />
         )}
 
+        <MealMomentLine date={selectedDate} />
+
         <button
           type="button"
           onClick={onAddMeal}
@@ -186,6 +177,29 @@ export function LogCard({
         >
           + Додати прийом їжі
         </button>
+
+        <LogCardSearch
+          log={log}
+          setSelectedDate={setSelectedDate}
+          onAddMealFromSearch={onAddMealFromSearch}
+        />
+
+        {logSizeWarn && (
+          <div className="rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2 text-style-caption text-warning-strong">
+            Журнал великий (~{Math.round(logBytes / 1024)} КБ).{" "}
+            <button
+              type="button"
+              className="underline font-semibold"
+              onClick={() => setTrimConfirm(true)}
+            >
+              Залишити лише останні 365 днів
+            </button>
+          </div>
+        )}
+
+        <LogCardWeeklyTable log={log} selectedDate={selectedDate} />
+
+        <LogCardAnalytics log={log} selectedDate={selectedDate} />
       </div>
 
       <ConfirmDialog

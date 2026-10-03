@@ -1,12 +1,12 @@
 name: Docs automation
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Guards documentation quality on every PR / push:
 #
-#   - playbook-index: regenerates docs/00-start/playbooks/INDEX.md and fails if the
+#   - playbook-index: regenerates docs/start/instructions/INDEX.md and fails if the
 #     checked-in copy drifts from the truth in `**Trigger:**` lines.
 #   - markdown-links: walks every *.md file, verifies every internal link
 #     resolves, and soft-warns on broken external URLs (enable
@@ -19,17 +19,11 @@ name: Docs automation
 # others — a PR author fixing a broken internal link shouldn't also lose
 # the signal about a missing `## Why` section.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    # `edited` lets `pr-body-validator` re-run when the author fixes the
-    # body in the GitHub UI without pushing a new commit. The default
-    # trigger set (`opened, synchronize, reopened`) does not cover body
-    # edits, and "Re-run failed jobs" replays the original event payload —
-    # so without this the only way to re-validate a corrected body was to
-    # push a no-op commit.
-    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+  schedule:
+    - cron: "45 5 * * 1"
 
 permissions:
   contents: read
@@ -51,14 +45,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Check docs/00-start/playbooks/INDEX.md is up to date
+      - name: Check docs/start/instructions/INDEX.md is up to date
         run: node scripts/docs/generate-playbook-index.mjs --check
 
       - name: Check playbook files are in INDEX.md and catalog
         run: node scripts/docs/check-playbook-3way-sync.mjs
 
       - name: Check playbook schema (H1 + freshness + Status + Trigger)
-        # Every playbook in docs/00-start/playbooks/ (excluding INDEX.md, README.md and
+        # Every playbook in docs/start/instructions/ (excluding INDEX.md, README.md and
         # _TEMPLATE*) must declare an H1 title, a `Last validated` freshness
         # header, a `Status` lifecycle marker, and a `**Trigger:**` line.
         # See scripts/docs/check-playbook-schema.mjs for the exact schema.
@@ -82,7 +76,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate docs/04-governance/adr/ graph integrity
+      - name: Validate docs/governance/adr/ graph integrity
         run: node scripts/docs/check-adr-graph.mjs
 
   initiative-followups:
@@ -104,7 +98,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check docs/90-work/initiatives/follow-ups.md is up to date
+      - name: Check docs/work/specs/initiatives/follow-ups.md is up to date
         # Regenerate the consolidated follow-ups index from each initiative's
         # `### Carry-over → successor` block and fail if the on-disk file
         # diverges. Source-of-truth = the initiative files themselves; the
@@ -158,7 +152,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check docs/today.md is up to date
-        # `today.md` is regenerated daily by docs-daily-brief.yml. This
+        # `today.md` drift is caught by the pre-commit derived-artifacts hook
+        # (docs-daily-brief.yml is manual-only since 2026-10-01). This
         # check catches PRs that touch a Status header or initiative
         # frontmatter without re-running the generator.
         run: pnpm docs:check-today
@@ -171,7 +166,7 @@ jobs:
 
       - name: Check WIP limits (soft warn / hard fail)
         # Soft over-limit prints a warning to stderr but exits 0; hard
-        # over-limit exits 1 and blocks the PR. Tuning: docs/04-governance/governance/wip-limits.json
+        # over-limit exits 1 and blocks the PR. Tuning: docs/governance/governance/wip-limits.json
         run: pnpm docs:check-wip-limits
 
       - name: Check trust badge in docs/README.md is up to date
@@ -198,8 +193,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check docs/04-governance/governance/hard-rules-matrix.md is up to date
-        # Regenerate the matrix from docs/04-governance/governance/hard-rules.json and fail if
+      - name: Check docs/governance/governance/hard-rules-matrix.md is up to date
+        # Regenerate the matrix from docs/governance/governance/hard-rules.json and fail if
         # the on-disk file diverges. Pairs with `pnpm lint:hard-rules-registry`,
         # which validates the JSON ↔ AGENTS.md ↔ CONTRIBUTING.md sync.
         run: pnpm hard-rules:check
@@ -230,7 +225,7 @@ jobs:
 
       - name: Check markdown links
         # External URLs are fetched and failures are errors. The default
-        # allowlist at docs/04-governance/governance/external-link-allowlist.json covers known
+        # allowlist at docs/governance/governance/external-link-allowlist.json covers known
         # link-rot in immutable ADRs and hosts that block automated
         # user-agents (each entry carries a 'reason' field).
         run: node scripts/docs/check-markdown-links.mjs --strict-external
@@ -240,10 +235,10 @@ jobs:
         # the drift class where a doc accumulates multiple Last validated rows.
         run: node scripts/docs/check-freshness-single-marker.mjs
 
-      - name: Check docs/04-governance/governance/freshness-dashboard.html is up to date
-        # Committed dashboard ignores daily relative counters in --check mode,
-        # but catches changed row membership and freshness header values.
-        run: node scripts/docs/generate-freshness-dashboard.mjs --check
+      # Перевірки синхронності freshness-dashboard.html тут більше немає:
+      # з 2026-10-01 дашборд не комітиться (gitignored), його збирає
+      # docs-freshness.yml як артефакт. Див. doc-freshness.md § «Чому дашборд
+      # не комітиться».
 
   freshness-cadence:
     # Окрема джоба навмисно. Доти цей крок стояв усередині `pnpm lint` і
@@ -325,7 +320,6 @@ jobs:
             scripts/docs/__tests__/check-freshness.test.mjs \
             scripts/docs/__tests__/check-freshness-single-marker.test.mjs \
             scripts/docs/__tests__/freshness-config.test.mjs \
-            scripts/docs/__tests__/restamp-next-review.test.mjs \
             scripts/docs/__tests__/bump-last-validated-integration.test.mjs \
             scripts/docs/__tests__/check-playbook-3way-sync.test.mjs \
             scripts/docs/__tests__/freshness-stamp.test.mjs \

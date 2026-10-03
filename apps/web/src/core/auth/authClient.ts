@@ -63,7 +63,6 @@ type AuthResult<T = unknown> = {
 
 interface SessionItem {
   id: string;
-  token: string;
   userId: string;
   expiresAt: Date;
   createdAt: Date;
@@ -107,11 +106,6 @@ interface BetterAuthProxyExtensions {
   listSessions: () => Promise<AuthResult<SessionItem[]>>;
   revokeSession: (args: { id: string }) => Promise<AuthResult>;
   revokeSessions: () => Promise<AuthResult>;
-  deleteUser: (args?: {
-    callbackURL?: string;
-    password?: string;
-    token?: string;
-  }) => Promise<AuthResult>;
   sendVerificationEmail: (args: {
     email: string;
     callbackURL?: string;
@@ -183,7 +177,6 @@ const {
   listSessions,
   revokeSession,
   revokeSessions,
-  deleteUser,
   sendVerificationEmail,
   changeEmail,
 } = typedAuthClient;
@@ -263,7 +256,6 @@ export {
   listSessions,
   revokeSession,
   revokeSessions,
-  deleteUser,
   sendVerificationEmail,
   changeEmail,
 };

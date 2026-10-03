@@ -2,7 +2,7 @@
  * SQLite-backed read path for Фізрук (workouts / items / sets,
  * custom exercises, measurements).
  *
- * Stage 4 PR #029 of `docs/planning/storage-roadmap.md`. When the
+ * Stage 4 PR #029 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. When the
  * `feature.fizruk.sqlite_v2.read_sqlite` flag is on, the public hooks
  * (`useWorkouts`, `useExerciseCatalog`, `useMeasurements`) overlay
  * their state from this cache instead of from the LS blob. LS writes
@@ -26,6 +26,7 @@ import type { FizrukData } from "@sergeant/fizruk-domain";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
+type ActivityDef = FizrukData.ActivityDef;
 
 /**
  * Stage 12 / PR #070f-dualwrite — minimal cache shapes for the new
@@ -75,6 +76,8 @@ export interface SqliteFizrukCache {
   workouts: Workout[];
   /** Custom exercises (additions on top of the static catalogue). */
   customExercises: RawExerciseDef[];
+  /** Свої заняття для короткого запису (доповнення до вбудованого каталогу). */
+  customActivities: ActivityDef[];
   /** Body / wellbeing measurements ordered newest-first by `at`. */
   measurements: MeasurementEntry[];
   /**
@@ -100,12 +103,6 @@ export interface SqliteFizrukCache {
    * would make "зняти позначку" indistinguishable from "видалити".
    */
   injuries: CachedInjury[];
-  /**
-   * Лічильник віджимань: `dateKey → reps` (device-local `YYYY-MM-DD`,
-   * ADR-0078). Перенос власності routine → fizruk (канон `routine.md` §10,
-   * рішення 2026-08-30). Порожній обʼєкт — «рядків ще немає».
-   */
-  pushupsByDate: Record<string, number>;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -113,12 +110,12 @@ export interface SqliteFizrukCache {
 const EMPTY_CACHE: SqliteFizrukCache = {
   workouts: [],
   customExercises: [],
+  customActivities: [],
   measurements: [],
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
   injuries: [],
-  pushupsByDate: {},
   refreshedAt: null,
 };
 
@@ -146,6 +143,7 @@ interface WorkoutRow {
   warmup_json: string | null;
   cooldown_json: string | null;
   wellbeing_json: string | null;
+  kcal_burned: number | null;
   [key: string]: unknown;
 }
 
@@ -160,6 +158,7 @@ interface WorkoutItemRow {
   type: string | null;
   duration_sec: number | null;
   distance_m: number | null;
+  chosen_variant: string | null;
   sort_order: number | null;
   [key: string]: unknown;
 }
@@ -180,6 +179,12 @@ interface CustomExerciseRow {
   [key: string]: unknown;
 }
 
+interface CustomActivityRow {
+  id: string;
+  data_json: string | null;
+  [key: string]: unknown;
+}
+
 interface MeasurementRow {
   id: string;
   measured_at: string;
@@ -188,6 +193,16 @@ interface MeasurementRow {
   chest_cm: number | null;
   hips_cm: number | null;
   bicep_cm: number | null;
+  body_fat_pct: number | null;
+  neck_cm: number | null;
+  bicep_l_cm: number | null;
+  bicep_r_cm: number | null;
+  forearm_l_cm: number | null;
+  forearm_r_cm: number | null;
+  thigh_l_cm: number | null;
+  thigh_r_cm: number | null;
+  calf_l_cm: number | null;
+  calf_r_cm: number | null;
   sleep_hours: number | null;
   energy_level: number | null;
   mood: number | null;
@@ -230,6 +245,7 @@ function rowToWorkout(
       ? safeParseJson<WorkoutWellbeing | null>(row.wellbeing_json, null)
       : null,
     items: itemsByWorkout.get(row.id) ?? [],
+    ...(row.kcal_burned != null ? { kcalBurned: row.kcal_burned } : {}),
   };
 }
 
@@ -254,6 +270,17 @@ function rowToWorkoutItem(
   if (sets && sets.length > 0) item.sets = sets;
   if (row.duration_sec != null) item.durationSec = row.duration_sec;
   if (row.distance_m != null) item.distanceM = row.distance_m;
+  // AI-DANGER: без цього рядка колонка читалась би у SELECT і не доїжджала
+  // в `Workout` — рівно той сценарій, який нижче описаний для
+  // `wellbeing_json`. Лічильник трьох полегшень тоді завжди дорівнює нулю,
+  // а типи й тести лишаються зеленими.
+  if (
+    row.chosen_variant === "planned" ||
+    row.chosen_variant === "easier" ||
+    row.chosen_variant === "harder"
+  ) {
+    item.chosenVariant = row.chosen_variant;
+  }
   return item;
 }
 
@@ -264,18 +291,35 @@ function rowToCustomExercise(row: CustomExerciseRow): RawExerciseDef | null {
   return { ...parsed, id: row.id };
 }
 
+function rowToCustomActivity(row: CustomActivityRow): ActivityDef | null {
+  if (!row.data_json) return null;
+  const parsed = safeParseJson<ActivityDef | null>(row.data_json, null);
+  if (!parsed || typeof parsed !== "object") return null;
+  return { ...parsed, id: row.id };
+}
+
 function rowToMeasurement(row: MeasurementRow): MeasurementEntry {
   const entry: MeasurementEntry = { id: row.id, at: row.measured_at };
   if (row.weight_kg != null) entry["weightKg"] = row.weight_kg;
+  if (row.body_fat_pct != null) entry["bodyFatPct"] = row.body_fat_pct;
+  if (row.neck_cm != null) entry["neckCm"] = row.neck_cm;
   if (row.waist_cm != null) entry["waistCm"] = row.waist_cm;
   if (row.chest_cm != null) entry["chestCm"] = row.chest_cm;
   if (row.hips_cm != null) entry["hipsCm"] = row.hips_cm;
-  if (row.bicep_cm != null) {
-    // bicep_cm is the only side-agnostic column; surface to both
-    // legacy fields used by the UI hook.
-    entry["bicepLCm"] = row.bicep_cm;
-    entry["bicepRCm"] = row.bicep_cm;
-  }
+  // Сторони мають власні колонки з міграції 008. `bicep_cm` лишається
+  // зведеним значенням доменного/мобільного реєстру і працює фолбеком для
+  // рядків, записаних ДО 008 (нові колонки там NULL) — інакше історія
+  // замірів на пристрої, який щойно оновився, показала б порожній біцепс.
+  if (row.bicep_l_cm != null) entry["bicepLCm"] = row.bicep_l_cm;
+  else if (row.bicep_cm != null) entry["bicepLCm"] = row.bicep_cm;
+  if (row.bicep_r_cm != null) entry["bicepRCm"] = row.bicep_r_cm;
+  else if (row.bicep_cm != null) entry["bicepRCm"] = row.bicep_cm;
+  if (row.forearm_l_cm != null) entry["forearmLCm"] = row.forearm_l_cm;
+  if (row.forearm_r_cm != null) entry["forearmRCm"] = row.forearm_r_cm;
+  if (row.thigh_l_cm != null) entry["thighLCm"] = row.thigh_l_cm;
+  if (row.thigh_r_cm != null) entry["thighRCm"] = row.thigh_r_cm;
+  if (row.calf_l_cm != null) entry["calfLCm"] = row.calf_l_cm;
+  if (row.calf_r_cm != null) entry["calfRCm"] = row.calf_r_cm;
   if (row.sleep_hours != null) entry["sleepHours"] = row.sleep_hours;
   if (row.energy_level != null) entry["energyLevel"] = row.energy_level;
   if (row.mood != null) entry["mood"] = row.mood;
@@ -393,16 +437,16 @@ export async function refreshFizrukSqliteState(
     itemRows,
     setRows,
     customRows,
+    customActivityRows,
     measurementRows,
     dailyLogRows,
     monthlyPlanRows,
     workoutTemplateRows,
     injuryRows,
-    pushupRows,
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
-              warmup_json, cooldown_json, wellbeing_json
+              warmup_json, cooldown_json, wellbeing_json, kcal_burned
          FROM fizruk_workouts
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY started_at DESC`,
@@ -411,7 +455,7 @@ export async function refreshFizrukSqliteState(
     client.all<WorkoutItemRow>(
       `SELECT id, workout_id, exercise_id, name_uk, primary_group,
               muscles_primary, muscles_secondary, type,
-              duration_sec, distance_m, sort_order
+              duration_sec, distance_m, chosen_variant, sort_order
          FROM fizruk_workout_items
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY workout_id ASC, sort_order ASC, id ASC`,
@@ -430,9 +474,17 @@ export async function refreshFizrukSqliteState(
         WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
+    client.all<CustomActivityRow>(
+      `SELECT id, data_json
+         FROM fizruk_custom_activities
+        WHERE user_id = ? AND deleted_at IS NULL`,
+      [userId],
+    ),
     client.all<MeasurementRow>(
       `SELECT id, measured_at, weight_kg, waist_cm, chest_cm, hips_cm,
-              bicep_cm, sleep_hours, energy_level, mood
+              bicep_cm, body_fat_pct, neck_cm, bicep_l_cm, bicep_r_cm,
+              forearm_l_cm, forearm_r_cm, thigh_l_cm, thigh_r_cm,
+              calf_l_cm, calf_r_cm, sleep_hours, energy_level, mood
          FROM fizruk_measurements
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY measured_at DESC`,
@@ -464,12 +516,6 @@ export async function refreshFizrukSqliteState(
         ORDER BY started_at DESC, id ASC`,
       [userId],
     ),
-    client.all<{ date_key: string; reps: number }>(
-      `SELECT date_key, reps
-         FROM fizruk_pushups
-        WHERE user_id = ?`,
-      [userId],
-    ),
   ]);
 
   // Build sets-by-item map first.
@@ -496,27 +542,26 @@ export async function refreshFizrukSqliteState(
   const customExercises = customRows
     .map(rowToCustomExercise)
     .filter((x): x is RawExerciseDef => x !== null);
+  const customActivities = customActivityRows
+    .map(rowToCustomActivity)
+    .filter((x): x is ActivityDef => x !== null);
   const measurements = measurementRows.map(rowToMeasurement);
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
   const injuries = injuryRows.map(rowToInjury);
-  const pushupsByDate: Record<string, number> = {};
-  for (const row of pushupRows) {
-    pushupsByDate[row.date_key] = row.reps;
-  }
 
   if (seq <= publishedSeq) return cache;
   publishedSeq = seq;
   cache = {
     workouts,
     customExercises,
+    customActivities,
     measurements,
     dailyLog,
     monthlyPlan,
     workoutTemplates,
     injuries,
-    pushupsByDate,
     // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };

@@ -51,4 +51,16 @@ describe("ChatEmpty (PR-26 / §A12)", () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("не обрізає підказку трикрапкою — текст переноситься, а не truncate-иться", () => {
+    // Regression: browser-QA виявило `truncate` на span-і підказки, через що
+    // clientWidth/scrollWidth розходились на 768/1440/1920 однаково — текст
+    // завжди обрізався трикрапкою, хоча сітка мала достатньо місця.
+    render(<ChatEmpty onPickSuggestion={() => {}} />);
+
+    const chip = screen.getByTestId("chat-empty-suggestion-finyk");
+    const textSpan = chip.querySelector("span");
+    expect(textSpan).not.toBeNull();
+    expect(textSpan?.className).not.toContain("truncate");
+  });
 });

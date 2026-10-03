@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Смуга дня — signature-view Їжі (анти-слоп П1,
- * `docs/05-design/design/anti-slop-strategy.md` §4/П1; мокап —
+ * `docs/design/design/anti-slop-strategy.md` §4/П1; мокап —
  * `mockups/product/signature-views.html`, рішення власника 2026-08-06).
  *
  * Діагноз той самий, що дав полотно Рутині й гребінь Фініку: запис страви

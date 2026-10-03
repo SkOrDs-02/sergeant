@@ -86,7 +86,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
       )}
 
       {ai?.summary && (
-        <div className="mt-auto rounded-2xl bg-white/15 backdrop-blur-sm px-4 py-3 border border-white/20">
+        <div className="mt-auto rounded-2xl bg-brand-strong px-4 py-3 border border-white/20">
           <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
             <p className="text-style-caption text-white/85 mt-2 leading-relaxed">

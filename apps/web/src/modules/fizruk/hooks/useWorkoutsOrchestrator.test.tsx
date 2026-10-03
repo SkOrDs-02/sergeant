@@ -211,7 +211,7 @@ describe("useWorkoutsOrchestrator", () => {
 
     it("робить ретро активною сесією", () => {
       // Поки його заповнюють, воно НЕ відрізняється від живого — тож і слот
-      // займає чесно. Інакше «Швидкий старт» поруч дав би дві активні.
+      // займає чесно. Інакше старт поруч дав би дві активні.
       const { result } = setup();
       act(() => result.current.submitPastWorkout(TIMES));
       expect(result.current.activeWorkout?.endedAt).toBeNull();

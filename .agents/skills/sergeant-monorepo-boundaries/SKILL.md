@@ -1,8 +1,8 @@
 ---
 name: sergeant-monorepo-boundaries
-description: Use when a Sergeant change spans multiple apps/packages, extracts shared logic, or import boundaries are unclear — even if the change seems isolated to one app; UA: межі між app/package, спільна логіка в монорепо.
+description: "Use when a Sergeant change spans multiple apps/packages, extracts shared logic, or import boundaries are unclear — even if the change seems isolated to one app; UA: межі між app/package, спільна логіка в монорепо."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Межі монорепо в Sergeant
@@ -39,5 +39,5 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Playbooks
 
-- `docs/00-start/playbooks/cleanup-dead-code.md` — коли витягуєш чи виводиш з обігу спільні модулі.
-- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/cleanup-dead-code.md` — коли витягуєш чи виводиш з обігу спільні модулі.
+- Каталог: `docs/start/agents/agent-skills-catalog.md`.

@@ -22,12 +22,14 @@ import {
   aggregateNutrition,
 } from "./useWeeklyDigest";
 import { WeeklyDigestStories } from "./WeeklyDigestStories";
+import { AdviceFeedback } from "./AdviceFeedback";
 import {
   adviceIdForScope,
   markAdviceShown,
   trackAdviceReaction,
   type AdviceSurface,
 } from "../observability/adviceTelemetry";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 // `hasLiveWeeklyDigest` now lives in `@sergeant/shared` (DOM-free, reused by
 // mobile). The web-side adapter in `@shared/lib/weeklyDigestStorage` binds
@@ -199,7 +201,7 @@ function DigestContent({
       <div className="px-4 pb-4">
         <p className="text-style-body text-muted mb-3 leading-relaxed">
           Замало даних за цей тиждень, AI-звіт вийшов би занадто загальним.
-          Запиши хоча б одну транзакцію, тренування, прийом їжі чи звичку і
+          Запиши хоча б одну операцію, тренування, прийом їжі чи звичку і
           спробуй ще раз.
         </p>
         {canGenerate && (
@@ -246,27 +248,19 @@ function DigestContent({
     </div>
   );
 
+  // Порожній стан БЕЗ кнопки «Згенерувати звіт» (рішення власника
+  // 2026-09-03): звіт створює лише понеділкова автогенерація
+  // (`useMondayAutoDigest`), людина його не замовляє. «Оновити звіт» під
+  // тілом наявного звіту лишається — це перегенерація того, що вже є, а не
+  // створення. `canGenerate` тут далі розрізняє поточний/щойно завершений
+  // тиждень (звіт ще прийде) від давнішого (не збережено — і вже не буде).
   const emptySlot = (
     <div className="px-4 pb-4">
-      {canGenerate ? (
-        <>
-          <p className="text-style-body text-muted mb-3 leading-relaxed">
-            AI-звіт підсумовує прогрес по всіх модулях і дає конкретні
-            рекомендації на наступний тиждень.
-          </p>
-          <button
-            type="button"
-            onClick={onGenerate}
-            className="w-full h-10 min-h-[44px] rounded-xl bg-primary text-bg text-style-label hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
-          >
-            Згенерувати звіт
-          </button>
-        </>
-      ) : (
-        <p className="text-style-body text-muted text-center py-2">
-          Звіт за цей тиждень не збережено
-        </p>
-      )}
+      <p className="text-style-body text-muted text-center py-2 leading-relaxed">
+        {canGenerate
+          ? "Звіт зʼявиться сам у понеділок, коли тиждень завершиться."
+          : "Звіт за цей тиждень не збережено"}
+      </p>
     </div>
   );
 
@@ -339,8 +333,8 @@ function DigestContent({
                         (rec: string, i: number) => (
                           <div key={i} className="flex items-start gap-1.5">
                             <Icon
-                              name="sparkle"
-                              size={12}
+                              name="sergeant"
+                              size="xs"
                               className="text-primary mt-1 shrink-0"
                               aria-hidden
                             />
@@ -352,6 +346,20 @@ function DigestContent({
                       )}
                     </div>
                   )}
+                {/* Підпис авторства + оцінка стоять під ТІЛОМ звіту і лише
+                    коли тіло є: та сама умова видимості, що гейтить
+                    `markAdviceShown` вище. Підписувати порожній стан нема
+                    чого — там немає згенерованого тексту, а питати «чи
+                    корисно» про нього означало б збирати шум у той самий
+                    знаменник. */}
+                {!loading && hasDigestBody(digest) && (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-style-caption text-subtle leading-snug">
+                      {messages.sergeant.weeklyDigestAiSignature}
+                    </p>
+                    <AdviceFeedback adviceId={adviceId} />
+                  </div>
+                )}
                 {canGenerate && (
                   <button
                     type="button"
@@ -402,25 +410,40 @@ interface WeeklyDigestCardProps {
    */
   onCollapse?: () => void;
   /**
-   * Поверхня показу — property `surface` події `ai_advice_shown`. Дефолт
-   * відповідає standalone-використанню у «Звітах»; хаб-дашборд передає
-   * `"hub_dashboard"` явно.
+   * Поверхня показу — property `surface` події `ai_advice_shown`. Єдина
+   * жива поверхня з 2026-09-03 — низ головної (`HubInsightsBlock`);
+   * вкладка «Звʼязки» дайджест більше не рендерить, тож дефолт збігається
+   * з нею. `"hub_reports"` лишається в типі як історичне значення подій.
    */
   surface?: AdviceSurface;
   /**
-   * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — у «Звітах»
-   * картка не загорнута в секцію.
+   * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — для
+   * standalone-рендера (тести, сторіз) без обгортки.
    */
   sectionOpen?: boolean;
 }
 
 export function WeeklyDigestCard({
   onCollapse,
-  surface = "hub_reports",
+  surface = "hub_dashboard",
   sectionOpen = true,
 }: WeeklyDigestCardProps = {}) {
   const currentWeekKey = getWeekKey();
-  const [selectedWeekKey, setSelectedWeekKey] = useState(currentWeekKey);
+  const { data: history = [] } = useDigestHistory();
+  // Понеділковий авто-звіт підбиває МИНУЛИЙ тиждень, тож у понеділок новий
+  // тиждень ще порожній і картка казала «звіт зʼявиться в понеділок» поруч
+  // із готовим звітом. Поки людина сама не обрала тиждень, показуємо
+  // свіжий звіт; історія реактивна, тож підхоплюємо і фонову генерацію.
+  const previousWeekKey = getWeekKey(
+    new Date(new Date(currentWeekKey + "T12:00:00").getTime() - 7 * 86_400_000),
+  );
+  const hasDigestFor = (wk: string) => history.some((h) => h.weekKey === wk);
+  const [pickedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
+  const selectedWeekKey =
+    pickedWeekKey ??
+    (!hasDigestFor(currentWeekKey) && hasDigestFor(previousWeekKey)
+      ? previousWeekKey
+      : currentWeekKey);
   const [showHistory, setShowHistory] = useState(false);
   const [storiesOpen, setStoriesOpen] = useState(false);
 
@@ -434,7 +457,6 @@ export function WeeklyDigestCard({
     isCurrentWeek,
     canGenerate,
   } = useWeeklyDigest(selectedWeekKey);
-  const { data: history = [] } = useDigestHistory();
 
   // Автогенерація по понеділках працює у фоні: звіт зʼявлявся мовчки, і
   // користувач дізнавався про нього, лише якщо сам відкривав блок. Бейдж
@@ -540,7 +562,7 @@ export function WeeklyDigestCard({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-brand-strong dark:text-brand"
+              className="text-brand-strong"
             >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -576,10 +598,7 @@ export function WeeklyDigestCard({
           <div className="flex items-center gap-1.5 shrink-0">
             {digest?.generatedAt && (
               <span className="text-style-caption text-subtle">
-                {new Date(digest.generatedAt).toLocaleDateString("uk-UA", {
-                  day: "numeric",
-                  month: "short",
-                })}
+                {formatDateShort(new Date(digest.generatedAt))}
               </span>
             )}
             {history.length > 1 && (

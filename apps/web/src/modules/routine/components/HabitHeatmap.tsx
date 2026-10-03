@@ -9,8 +9,9 @@ import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { chartHeatmap } from "@shared/charts";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { anchoredTodayDate } from "../lib/dayAnchor";
 import type { Habit, RoutineState } from "../lib/types";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 const HISTORY_WEEKS = 53;
 const FUTURE_WEEKS = 4;
@@ -32,6 +33,8 @@ interface HeatmapCell {
   cnt: number;
   total: number;
   ratio: number;
+  /** Заплановано й не виконано, але позначено «не зміг» (канон §5). */
+  skippedCnt: number;
 }
 
 interface MonthMarker {
@@ -50,6 +53,22 @@ function cellBg(ratio: number, isFuture: boolean): string {
 export interface HabitHeatmapProps {
   habits: Habit[] | null | undefined;
   completions: RoutineState["completions"] | null | undefined;
+  /**
+   * Позначки «не зміг з причиною» (канон §5): `habitId → dateKey → HabitSkip`.
+   *
+   * Без цього пропа клітинка фарбує заявлений пропуск РІВНО як мовчазний
+   * провал — та сама пара «звичка, день», яку `HabitRangeGrid` (коротші
+   * зрізи статистики) уже показує окремим сірим станом. Перемикання
+   * Місяць → Квартал на сторінці статистики безшумно стирало цю
+   * відмінність (аудит 2026-09, PR-R8).
+   *
+   * Проп вмикає НЕ ЛИШЕ візуальну мітку. Заявлений пропуск виходить зі
+   * знаменника клітинки, тобто рухає й `ratio`/`intensity`. Доти, доки
+   * пропа немає, клітинка фарбує пропуск рівно як мовчазний провал — тож
+   * два виклики з ним і без нього дають РІЗНІ числа, а не однакові числа з
+   * різною рамкою.
+   */
+  skips?: RoutineState["skips"];
   /**
    * Скільки ISO-тижнів історії малювати. Дефолт — рік (`HISTORY_WEEKS`);
    * коротші вікна приходять із перемикача діапазону на сторінці статистики
@@ -72,6 +91,7 @@ export interface HabitHeatmapProps {
 export function HabitHeatmap({
   habits,
   completions,
+  skips,
   historyWeeks = HISTORY_WEEKS,
   futureWeeks = FUTURE_WEEKS,
   historyLabel = "рік",
@@ -91,13 +111,11 @@ export function HabitHeatmap({
   });
 
   const { weeks, monthMarkers } = useMemo(() => {
-    // Anchor "today" on Kyiv local calendar so the heatmap's "today" cell
-    // doesn't drift to a different square when the user roams
-    // (consolidated page-audit § Theme 1 — 09 F3). Construct as local-noon
-    // of Kyiv-Y/M/D so the grid arithmetic inside `buildHeatmapGrid`
-    // preserves the calendar day across host TZ.
-    const { year, month, day } = getKyivDateParts();
-    const today = new Date(year, month - 1, day, 12, 0, 0, 0);
+    // Той самий анкер доби, що й решта web-routine (`lib/dayAnchor.ts`), не
+    // окрема копія — інакше хітмап знову міг би показати «сьогодні» в
+    // іншій клітинці, ніж решта картки (unification audit 2026-08-31,
+    // finding 2.3).
+    const today = anchoredTodayDate();
 
     // AI-CONTEXT: знаменник за розкладом — ADR-0079 §3, стадія 3 Хвилі 1.
     // Раніше було `"active"`: кожна неархівна звичка рахувалась у знаменник
@@ -114,6 +132,9 @@ export function HabitHeatmap({
       futureWeeks,
       denominator: "scheduled",
       freezePausedPast: true,
+      // `skips` рухає і `skippedCnt` (мітка «не зміг»), і `ratio` —
+      // заявлений пропуск виходить зі знаменника (METRICS_VERSION 14).
+      ...(skips ? { skips } : {}),
     });
 
     const weeks: HeatmapCell[][] = grid.weeks.map((week) =>
@@ -127,6 +148,7 @@ export function HabitHeatmap({
         cnt: cell.cnt,
         total: cell.total,
         ratio: cell.ratio,
+        skippedCnt: cell.skippedCnt,
       })),
     );
 
@@ -140,8 +162,16 @@ export function HabitHeatmap({
     weeks.forEach((week, weekIdx) => {
       const first = week[0];
       if (!first) return;
-      const firstKyiv = getKyivDateParts(first.dt);
-      const monthKey = `${firstKyiv.year}-${firstKyiv.month}`;
+      // `first.dt` was constructed above from the grid cell's own local
+      // year/month/day (device-local per ADR-0078) — read those same local
+      // getters back, not a Kyiv re-derivation of the instant, or the month
+      // grouping could disagree with the cell it labels near month
+      // boundaries on a device outside Kyiv.
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- див. коментар вище
+      const cellYear = first.dt.getFullYear();
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+      const cellMonth = first.dt.getMonth();
+      const monthKey = `${cellYear}-${cellMonth + 1}`;
       if (monthKey === previousMonth) return;
       previousMonth = monthKey;
       monthMarkers.push({
@@ -151,7 +181,7 @@ export function HabitHeatmap({
     });
 
     return { weeks, monthMarkers };
-  }, [habits, completions, historyWeeks, futureWeeks]);
+  }, [habits, completions, skips, historyWeeks, futureWeeks]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
   const cellPositions = useMemo(() => {
@@ -256,7 +286,7 @@ export function HabitHeatmap({
         Активність: сьогодні та історія
       </SectionHeading>
 
-      <div className="mb-2 text-style-caption text-subtle">
+      <div className="mb-2 text-style-body text-subtle">
         {caption ??
           `Відкривається на сьогодні, гортай ліворуч, щоб побачити історію за ${historyLabel}.`}
       </div>
@@ -315,8 +345,20 @@ export function HabitHeatmap({
                     onKeyDown={(e) => handleCellKeyDown(e, cell.key)}
                     aria-label={
                       cell.total === 0
-                        ? `${cell.key}: нічого не заплановано`
-                        : `${cell.key}: ${cell.cnt} з ${cell.total} запланованих`
+                        ? // Нуль у знаменнику має ДВІ різні причини, і плутати
+                          // їх не можна. Просто день відпочинку — «нічого не
+                          // заплановано». Але з METRICS_VERSION 14 заявлений
+                          // «не зміг» теж виходить зі знаменника, тож день,
+                          // де все заплановане заявлено як «не зміг», теж дає
+                          // нуль — і назвати його «нічого не заплановано»
+                          // означало б стерти те, що людина сама повідомила.
+                          cell.skippedCnt > 0
+                          ? `${cell.key}: не зміг: ${cell.skippedCnt}`
+                          : `${cell.key}: нічого не заплановано`
+                        : `${cell.key}: ${cell.cnt} з ${cell.total} запланованих` +
+                          (cell.skippedCnt > 0
+                            ? `, не зміг: ${cell.skippedCnt}`
+                            : "")
                     }
                     aria-pressed={cell.key === selected}
                     data-today={cell.isToday ? "true" : undefined}
@@ -326,6 +368,16 @@ export function HabitHeatmap({
                       cellBg(cell.ratio, cell.isFuture),
                       cell.isToday && cn("ring-1", HEATMAP.ring),
                       cell.key === selected && "opacity-60",
+                      // Заявлений пропуск (канон §5) — не провал. Заливка
+                      // це вже враховує: пропуск вийшов зі знаменника
+                      // (METRICS_VERSION 14), тож день не тягне колір униз.
+                      // Рамка потрібна саме ТОМУ: без неї день із пропуском
+                      // не відрізнити від дня, коли нічого не планувалось —
+                      // обидва тепер не псують ratio. Той самий сигнал, що
+                      // сірий стан `HabitRangeGrid` дає на коротших зрізах.
+                      !cell.isFuture &&
+                        cell.skippedCnt > 0 &&
+                        "border border-dashed border-line",
                     )}
                   />
                 ))}
@@ -335,17 +387,37 @@ export function HabitHeatmap({
         </div>
       </div>
 
+      {/* Ключ до колірної шкали. Раніше він стояв ГІЛКОЮ ELSE поряд із
+          деталями клітинки — і був недосяжний: `detailCell` це
+          `selectedCell ?? todayCell`, а `todayCell` не буває null, бо сітка
+          будується навколо `today` (`buildHeatmapGrid` завжди включає
+          сьогодні). Тобто else-гілка не виконувалась ЖОДНОГО разу, і пʼять
+          рівнів заповнення лишались без пояснення (аудит 2026-09-16, WF-10).
+          Тепер ключ постійний, а деталі клітинки живуть у власному
+          aria-live-рядку нижче. */}
+      <div
+        role="group"
+        aria-label="Легенда заповнення"
+        className="mt-3 flex items-center gap-2 text-style-caption text-subtle select-none"
+      >
+        <span>менше</span>
+        {HEATMAP.levels.map((c, i) => (
+          <span
+            key={i}
+            role="img"
+            aria-label={`Рівень ${i + 1}`}
+            className={cn("w-2.5 h-2.5 rounded-sm inline-block shrink-0", c)}
+          />
+        ))}
+        <span>більше</span>
+      </div>
+
       {/* Persistent aria-live region: SR announces when a cell is selected */}
-      <div aria-live="polite" aria-atomic="true" className="mt-3">
+      <div aria-live="polite" aria-atomic="true" className="mt-2">
         {detailCell ? (
           <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption">
             <span className="text-subtle truncate">
-              {detailCell.dt.toLocaleDateString("uk-UA", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {formatUaWeekdayDate(detailCell.dt, { withYear: true })}
               {detailCell.isToday ? " · сьогодні" : ""}
             </span>
             <span className="font-semibold text-text shrink-0">
@@ -354,32 +426,20 @@ export function HabitHeatmap({
                 : detailCell.total === 0
                   ? // Зі знаменником за розкладом нуль означає «цього дня
                     // нічого не було заплановано» — день відпочинку, а не
-                    // відсутність звичок узагалі.
-                    "нічого не заплановано"
-                  : `${detailCell.cnt} з ${detailCell.total} запланованих виконано`}
+                    // відсутність звичок узагалі. Виняток — коли все
+                    // заплановане заявлено як «не зміг» (METRICS_VERSION 14):
+                    // такий день теж має нульовий знаменник, але сказати про
+                    // нього «нічого не заплановано» було б неправдою.
+                    detailCell.skippedCnt > 0
+                    ? `не зміг: ${detailCell.skippedCnt}`
+                    : "нічого не заплановано"
+                  : `${detailCell.cnt} з ${detailCell.total} запланованих виконано` +
+                    (detailCell.skippedCnt > 0
+                      ? ` · не зміг: ${detailCell.skippedCnt}`
+                      : "")}
             </span>
           </div>
-        ) : (
-          <div
-            role="group"
-            aria-label="Легенда заповнення"
-            className="flex items-center gap-2 text-style-caption text-subtle select-none"
-          >
-            <span>менше</span>
-            {HEATMAP.levels.map((c, i) => (
-              <span
-                key={i}
-                role="img"
-                aria-label={`Рівень ${i + 1}`}
-                className={cn(
-                  "w-2.5 h-2.5 rounded-sm inline-block shrink-0",
-                  c,
-                )}
-              />
-            ))}
-            <span>більше</span>
-          </div>
-        )}
+        ) : null}
       </div>
     </Card>
   );

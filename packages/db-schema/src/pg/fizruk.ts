@@ -14,7 +14,7 @@ import { sql } from "drizzle-orm";
  * Postgres schema for `fizruk_workouts` table.
  * Mirrors migration 029_fizruk_tables.sql.
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md` — normalized
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — normalized
  * per-session workout rows. Nested display-only data (groups, warmup,
  * cooldown, wellbeing) stored as JSONB.
  */
@@ -32,6 +32,11 @@ export const fizrukWorkouts = pgTable(
     warmupJson: jsonb("warmup_json"),
     cooldownJson: jsonb("cooldown_json"),
     wellbeingJson: jsonb("wellbeing_json"),
+    /**
+     * Оцінка витрачених калорій (міграція 132). Nullable навмисно: без ваги
+     * в профілі оцінювати нічим, і нуль тут означав би «спалено нічого».
+     */
+    kcalBurned: integer("kcal_burned"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -74,6 +79,13 @@ export const fizrukWorkoutItems = pgTable(
     type: text().notNull().default("strength"),
     durationSec: integer("duration_sec"),
     distanceM: integer("distance_m"),
+    /**
+     * Обраний варіант підказки: planned | easier | harder.
+     * NULL = вибору не було (запис до появи чека готовності), і це НЕ те
+     * саме, що "planned": лічильник полегшень читає NULL як обрив стрічки.
+     * CHECK на значення живе в міграції 134.
+     */
+    chosenVariant: text("chosen_variant"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -156,10 +168,44 @@ export const fizrukCustomExercises = pgTable(
 );
 
 /**
+ * Postgres schema for `fizruk_custom_activities` table.
+ * Mirrors migration 132_fizruk_kcal_and_custom_activities.sql.
+ *
+ * Свої заняття для короткого запису - дзеркало `fizruk_custom_exercises`:
+ * увесь вміст у `data_json`, бо форма запису належить домену
+ * (`ActivityDef` у `@sergeant/fizruk-domain`), а не схемі.
+ */
+export const fizrukCustomActivities = pgTable(
+  "fizruk_custom_activities",
+  {
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    userId: text("user_id").notNull(),
+    dataJson: jsonb("data_json").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("fizruk_custom_activities_user_idx")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
  * Postgres schema for `fizruk_measurements` table.
- * Mirrors migration 029_fizruk_tables.sql.
+ * Mirrors migrations 029_fizruk_tables.sql + 146_fizruk_measurement_fields.sql.
  *
  * Body measurements and wellbeing scores. One row per measurement session.
+ * 146 додала решту полів веб-форми (жир, шия, передпліччя, стегно, литка,
+ * розділені біцепси); `bicepCm` лишається як зведене значення доменного /
+ * мобільного реєстру.
  */
 export const fizrukMeasurements = pgTable(
   "fizruk_measurements",
@@ -174,6 +220,16 @@ export const fizrukMeasurements = pgTable(
     chestCm: real("chest_cm"),
     hipsCm: real("hips_cm"),
     bicepCm: real("bicep_cm"),
+    bodyFatPct: real("body_fat_pct"),
+    neckCm: real("neck_cm"),
+    bicepLCm: real("bicep_l_cm"),
+    bicepRCm: real("bicep_r_cm"),
+    forearmLCm: real("forearm_l_cm"),
+    forearmRCm: real("forearm_r_cm"),
+    thighLCm: real("thigh_l_cm"),
+    thighRCm: real("thigh_r_cm"),
+    calfLCm: real("calf_l_cm"),
+    calfRCm: real("calf_r_cm"),
     sleepHours: real("sleep_hours"),
     energyLevel: integer("energy_level"),
     mood: integer(),
@@ -199,7 +255,7 @@ export const fizrukMeasurements = pgTable(
  * Mirrors `apps/server/src/migrations/052_fizruk_full_state.sql` and
  * the SQLite client schema in `packages/db-schema/src/sqlite/fizruk.ts`.
  *
- * Stage 12 / PR #070f-schema of `docs/planning/storage-roadmap.md`.
+ * Stage 12 / PR #070f-schema of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Per-row diary entries (weight, sleep, energy, mood, note); the
  * SQLite mirror omits the FK to `"user"(id)` because the client has
  * no auth schema.
@@ -391,28 +447,4 @@ export const fizrukInjuries = pgTable(
       .on(table.userId, sql`${table.startedAt} DESC`)
       .where(sql`${table.deletedAt} IS NULL`),
   ],
-);
-
-/**
- * Postgres schema for `fizruk_pushups`.
- *
- * Перенос власності pushup-даних routine → fizruk (канон `routine.md` §10,
- * рішення founder-а 2026-08-30: «фізактивність належить fizruk»). Форма
- * 1:1 успадкована від `routine_pushups` (`pg/routine.ts`): один рядок на
- * (user, day) з лічильником повторів; day key — device-local `YYYY-MM-DD`
- * (ADR-0078). Дані копіюються серверною міграцією `131_fizruk_pushups.sql`
- * зі збереженням `updated_at`, тож LWW-конфлікти девайсів вирішуються так
- * само, як і до переносу.
- */
-export const fizrukPushups = pgTable(
-  "fizruk_pushups",
-  {
-    userId: text("user_id").notNull(),
-    dateKey: text("date_key").notNull(),
-    reps: integer().notNull().default(0),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
 );

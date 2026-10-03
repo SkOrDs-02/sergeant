@@ -138,39 +138,56 @@ beforeEach(() => {
 });
 
 describe("connectHandler", () => {
-  it("returns 404 when MONO_WEBHOOK_ENABLED is false", async () => {
+  it("throws NotFoundError(404) when MONO_WEBHOOK_ENABLED is false", async () => {
     mockEnv.MONO_WEBHOOK_ENABLED = false;
-    const res = makeRes();
-    await connectHandler(makeReq({ token: "valid_token_123" }), res);
-    expect(res.statusCode).toBe(404);
+    await expect(
+      connectHandler(makeReq({ token: "valid_token_123" }), makeRes()),
+    ).rejects.toMatchObject({ name: "NotFoundError", status: 404 });
   });
 
-  it("returns 401 when user is not authenticated", async () => {
-    const res = makeRes();
-    await connectHandler(makeReqNoUser({ token: "valid_token_123" }), res);
-    expect(res.statusCode).toBe(401);
+  it("throws UnauthorizedError(401) when user is not authenticated", async () => {
+    await expect(
+      connectHandler(makeReqNoUser({ token: "valid_token_123" }), makeRes()),
+    ).rejects.toMatchObject({
+      name: "UnauthorizedError",
+      status: 401,
+      code: "UNAUTHORIZED",
+    });
   });
 
-  it("returns 400 for invalid or missing token", async () => {
-    const res = makeRes();
-    await connectHandler(makeReq({ token: "" }), res);
-    expect(res.statusCode).toBe(400);
+  it("throws ValidationError(400) for invalid or missing token", async () => {
+    await expect(
+      connectHandler(makeReq({ token: "" }), makeRes()),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      status: 400,
+      code: "VALIDATION",
+      message: "Invalid or missing token",
+    });
   });
 
-  it("returns 401 when Monobank client-info returns 401", async () => {
+  it("throws AppError(401) when Monobank client-info returns 401", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 401,
       text: async () => "Unauthorized",
     });
-    const res = makeRes();
-    await connectHandler(makeReq({ token: "bad_token_12345" }), res);
-    expect(res.statusCode).toBe(401);
-    expect(res.body.error).toBe("Invalid Monobank token");
-    expect(res.body.code).toBe("MONO_TOKEN_INVALID");
-    // Upstream body не має витікати до клієнта (може містити internal
-    // details upstream-сервісу) — тільки нормалізований error/code.
-    expect(res.body.upstream).toBeUndefined();
+
+    let caught: unknown;
+    try {
+      await connectHandler(makeReq({ token: "bad_token_12345" }), makeRes());
+    } catch (err) {
+      caught = err;
+    }
+
+    // Upstream body ("Unauthorized") не має витікати до клієнта (може
+    // містити internal details upstream-сервісу) — тільки нормалізований
+    // message/code.
+    expect(caught).toMatchObject({
+      status: 401,
+      message: "Invalid Monobank token",
+      code: "MONO_TOKEN_INVALID",
+    });
   });
 
   it("connects successfully: calls Monobank, upserts connection + accounts", async () => {
@@ -277,7 +294,7 @@ describe("connectHandler", () => {
     expect(jarUpsertCall).toBeUndefined();
   });
 
-  it("returns 502 when webhook registration fails", async () => {
+  it("throws ExternalServiceError(502) when webhook registration fails", async () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
@@ -289,27 +306,46 @@ describe("connectHandler", () => {
         text: async () => "Internal Server Error",
       });
 
-    const res = makeRes();
-    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
-    expect(res.statusCode).toBe(502);
-    expect(res.body.error).toMatch(/register webhook/i);
-    expect(res.body.code).toBe("MONO_UPSTREAM_ERROR");
+    let caught: unknown;
+    try {
+      await connectHandler(
+        makeReq({ token: "valid_personal_token_12345" }),
+        makeRes(),
+      );
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toMatchObject({
+      name: "ExternalServiceError",
+      status: 502,
+      code: "MONO_UPSTREAM_ERROR",
+    });
+    expect((caught as Error).message).toMatch(/register webhook/i);
     // Сирий upstream-боді ("Internal Server Error") не повертаємо клієнту.
-    expect(res.body.upstream).toBeUndefined();
+    expect((caught as Error).message).not.toContain("Internal Server Error");
   });
 
-  it("returns 504 when client-info fetch times out", async () => {
+  it("throws AppError(504) when client-info fetch times out", async () => {
     mockFetch.mockRejectedValueOnce(
       new DOMException("signal timed out", "TimeoutError"),
     );
 
-    const res = makeRes();
-    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
-    expect(res.statusCode).toBe(504);
-    expect(res.body.error).toMatch(/не відповідає/i);
+    let caught: unknown;
+    try {
+      await connectHandler(
+        makeReq({ token: "valid_personal_token_12345" }),
+        makeRes(),
+      );
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toMatchObject({ status: 504, code: "MONO_TIMEOUT" });
+    expect((caught as Error).message).toMatch(/не відповідає/i);
   });
 
-  it("returns 504 when webhook registration fetch times out", async () => {
+  it("throws AppError(504) when webhook registration fetch times out", async () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
@@ -319,25 +355,37 @@ describe("connectHandler", () => {
         new DOMException("signal timed out", "TimeoutError"),
       );
 
-    const res = makeRes();
-    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
-    expect(res.statusCode).toBe(504);
-    expect(res.body.error).toMatch(/не відповідає/i);
+    let caught: unknown;
+    try {
+      await connectHandler(
+        makeReq({ token: "valid_personal_token_12345" }),
+        makeRes(),
+      );
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toMatchObject({ status: 504, code: "MONO_TIMEOUT" });
+    expect((caught as Error).message).toMatch(/не відповідає/i);
   });
 });
 
 describe("disconnectHandler", () => {
-  it("returns 404 when MONO_WEBHOOK_ENABLED is false", async () => {
+  it("throws NotFoundError(404) when MONO_WEBHOOK_ENABLED is false", async () => {
     mockEnv.MONO_WEBHOOK_ENABLED = false;
-    const res = makeRes();
-    await disconnectHandler(makeReq(), res);
-    expect(res.statusCode).toBe(404);
+    await expect(disconnectHandler(makeReq(), makeRes())).rejects.toMatchObject(
+      { name: "NotFoundError", status: 404 },
+    );
   });
 
-  it("returns 401 when user is not authenticated", async () => {
-    const res = makeRes();
-    await disconnectHandler(makeReqNoUser(), res);
-    expect(res.statusCode).toBe(401);
+  it("throws UnauthorizedError(401) when user is not authenticated", async () => {
+    await expect(
+      disconnectHandler(makeReqNoUser(), makeRes()),
+    ).rejects.toMatchObject({
+      name: "UnauthorizedError",
+      status: 401,
+      code: "UNAUTHORIZED",
+    });
   });
 
   it("disconnects: decrypts token, unregisters webhook, deletes connection", async () => {
@@ -409,11 +457,12 @@ describe("disconnectHandler", () => {
 });
 
 describe("syncStateHandler", () => {
-  it("returns 404 when MONO_WEBHOOK_ENABLED is false", async () => {
+  it("throws NotFoundError(404) when MONO_WEBHOOK_ENABLED is false", async () => {
     mockEnv.MONO_WEBHOOK_ENABLED = false;
-    const res = makeRes();
-    await syncStateHandler(makeReq(), res);
-    expect(res.statusCode).toBe(404);
+    await expect(syncStateHandler(makeReq(), makeRes())).rejects.toMatchObject({
+      name: "NotFoundError",
+      status: 404,
+    });
   });
 
   it("returns disconnected status when no connection exists", async () => {

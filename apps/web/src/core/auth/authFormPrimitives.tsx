@@ -19,7 +19,7 @@ export function PasswordStrengthBar({ password }: { password: string }) {
   const labelColors = [
     "text-danger-strong dark:text-danger",
     "text-amber-500",
-    "text-brand-strong dark:text-brand",
+    "text-brand-strong",
   ];
 
   return (

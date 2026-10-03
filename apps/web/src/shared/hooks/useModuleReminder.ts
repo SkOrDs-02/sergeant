@@ -12,7 +12,7 @@
  * module-specific side effects — this file deliberately knows nothing about
  * routines, workouts, or nutrition.
  *
- * @see docs/04-governance/adr/0067-engagement-mechanism-standardization.md
+ * @see docs/governance/adr/0067-engagement-mechanism-standardization.md
  */
 
 import { useEffect, useState } from "react";

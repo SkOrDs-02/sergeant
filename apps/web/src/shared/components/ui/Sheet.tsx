@@ -8,6 +8,10 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
+import {
+  SHEET_FOOTER_INSET_VAR,
+  useBottomInsetVar,
+} from "../../hooks/useBottomInsetVar";
 import { useKeyboardAwareOverlay } from "../../hooks/useKeyboardAwareOverlay";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useHistoryDismiss } from "../../hooks/useHistoryDismiss";
@@ -32,9 +36,10 @@ import { useVisualKeyboardInset } from "@sergeant/shared";
  *   - 44×44 close button (WCAG tap target) with <Button variant="ghost" iconOnly>
  *   - focus trap + Escape via useDialogFocusTrap
  *   - overlay-click dismiss
- *   - animated slide-up with safe-area + bottom-nav margin so the
- *     panel always clears the module bottom tab bar (see ModuleShell's
- *     `--bottom-nav-height` CSS variable) and the iOS home indicator
+ *   - animated slide-up with a safe-area inset so the panel always clears
+ *     the iOS home indicator (the module bottom tab bar sits under the
+ *     sheet's own scrim, so no space is reserved for it — see the
+ *     `paddingBottom` note below)
  *   - keyboard-inset-aware margin through the shared platform adapter
  *
  * Callers are still responsible for their own form state, validation,
@@ -68,6 +73,21 @@ export interface SheetProps {
    * node so the dialog remains labelled.
    */
   hideHeader?: boolean | undefined;
+  /**
+   * Розтягнути панель на весь екран замість плаваючого аркуша над
+   * нижньою навігацією.
+   *
+   * Звичайний Sheet навмисно піднімається над навбаром (`marginBottom` =
+   * `--sgt-bottom-nav-inset`) і обмежений `90dvh`: це форма для коротких
+   * форм модулів. Для поверхонь, які є повноцінним екраном (HubChat), та
+   * сама геометрія давала дві вади одразу (звіт власника 2026-09-03):
+   * панель висіла над низом екрана, крізь скло просвічував навбар, а
+   * зверху лишалась смужка сторінки в кілька пікселів — не аркуш і не
+   * екран. У цьому режимі панель займає `100dvh`, сама несе safe-area
+   * зверху й знизу (композер лягає над home-індикатором), а закруглення
+   * й нижній відступ зникають. Клавіатурна геометрія лишається спільною.
+   */
+  fullScreen?: boolean | undefined;
   /** Optional keyboard inset override. Normally Sheet detects it centrally. */
   kbInsetPx?: number | undefined;
   /** Sheet z-index. Defaults to 50 — raise for nested sheets. */
@@ -100,6 +120,7 @@ export function Sheet({
   headerRight,
   hideHandle = false,
   hideHeader = false,
+  fullScreen = false,
   kbInsetPx,
   zIndex = 50,
   closeLabel = "Закрити",
@@ -109,7 +130,14 @@ export function Sheet({
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  // Публікує смугу футера на `<html>`, щоб трей тостів (сестра у
+  // `Providers`, до якої локальні змінні не доходять) став над CTA аркуша,
+  // а не на ньому. Виміряно, не пораховано: `innerHeight - rect.top` уже
+  // включає клавіатурний `marginBottom` панелі, тож тост підіймається і над
+  // клавіатурою. Без футера змінна знімається (`active = false`).
+  useBottomInsetVar(footerRef, SHEET_FOOTER_INSET_VAR, open && Boolean(footer));
   const detectedKbInsetPx = useVisualKeyboardInset(open);
   const resolvedKbInsetPx = kbInsetPx ?? detectedKbInsetPx;
   useDialogFocusTrap(open, panelRef, {
@@ -158,11 +186,9 @@ export function Sheet({
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
-  // Lift the panel above the module bottom nav (set via the
-  // `--bottom-nav-height` CSS variable on ModuleShell) plus the iOS
-  // home-indicator inset. The resolved keyboard inset overrides the offset
-  // when the soft keyboard is visible — we want the sheet to hug the
-  // keyboard, not float above where the nav would be.
+  // Геометрія панелі. The resolved keyboard inset overrides the bottom
+  // padding when the soft keyboard is visible — we want the sheet to hug
+  // the keyboard, not float above where the nav would be.
   const baseStyle: CSSProperties =
     resolvedKbInsetPx > 0
       ? {
@@ -171,12 +197,52 @@ export function Sheet({
           // 90dvh sheet without shrinking it pushes its header and focused
           // field above the screen; cap it to the actually visible area so
           // only the sheet body scrolls.
-          maxHeight: `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+          maxHeight: fullScreen
+            ? `calc(100dvh - ${resolvedKbInsetPx}px)`
+            : `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+          // Повноекранна панель має бути повною і над клавіатурою: без
+          // `height` flex-панель лишається за вмістом, і короткий чат не
+          // заповнює видиму зону (ревʼю CodeRabbit, PR #1075).
+          ...(fullScreen
+            ? { height: `calc(100dvh - ${resolvedKbInsetPx}px)` }
+            : {}),
+          // Під клавіатурою home-індикатора не видно, тож нижній
+          // safe-area у fullScreen-режимі стає зайвим порожнім рядком.
+          ...(fullScreen
+            ? { paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: 0 }
+            : {}),
         }
-      : {
-          marginBottom:
-            "calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px))",
-        };
+      : fullScreen
+        ? {
+            marginBottom: 0,
+            // Inline `maxHeight` перекриває класовий `max-h-[90dvh]`, а
+            // `height` тримає панель повною навіть у порожньому чаті.
+            height: "100dvh",
+            maxHeight: "100dvh",
+            paddingTop: "env(safe-area-inset-top, 0px)",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          }
+        : {
+            // Знизу резервуємо РІВНО safe-area, не висоту навігації.
+            //
+            // AI-CONTEXT (звіт власника 2026-09-15: «білий мертвий простір»
+            // під кнопкою аркуша). Тут стояв
+            // `max(--sgt-bottom-nav-inset, --bottom-nav-height + safe-area)`,
+            // тобто ~70-105 px порожнього `bg-panel` під футером кожного
+            // аркуша модуля. Відступ був даниною формі «аркуш плаває НАД
+            // навбаром»; але навбар живе на `z-30`/`z-40`, а оверлей — на
+            // `z-50` зі суцільним скримом `inset-0`, і фокус-трап додатково
+            // робить фон `inert`. Тобто навігація під аркушем і не видима, і
+            // недосяжна — місце під неї резервувалось ні для чого, і воно ж
+            // зʼїдало ті самі пікселі зі стелі `max-h-[90dvh]`.
+            //
+            // Що НЕ змінилось і чому: відступ і далі всередині панелі, а не
+            // `marginBottom`. Марджин відривав панель від низу, під нею
+            // проглядала світла сторінка, і форма візуально скролилась у цей
+            // чужий простір (регресія 2026-09-08) — ця причина нікуди не
+            // поділась, змінилась лише величина.
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          };
   // Запас прокрутки під останніми полями, поки клавіатура відкрита
   // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє
   // рівно стільки, скільки дозволяє `scrollHeight`: для поля в кінці
@@ -248,6 +314,9 @@ export function Sheet({
           variant === "glass"
             ? "bg-surface-glass motion-safe:backdrop-blur-md border-t border-surface-line rounded-t-2xl shadow-nav"
             : "bg-panel border-t border-line rounded-t-3xl shadow-e4",
+          // Повноекранна панель стоїть на краях вʼюпорта: закруглення й
+          // верхня лінія на межі зі статус-баром читаються як артефакт.
+          fullScreen && "rounded-none border-t-0",
           panelClassName,
         )}
       >
@@ -307,7 +376,7 @@ export function Sheet({
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 )}
               >
-                <Icon name="close" size={16} aria-hidden />
+                <Icon name="close" size="md" aria-hidden />
               </button>
             </div>
           </div>
@@ -328,7 +397,11 @@ export function Sheet({
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 px-5 pt-3 pb-4 border-t border-line bg-panel">
+          <div
+            ref={footerRef}
+            data-sheet-footer
+            className="shrink-0 px-5 pt-3 pb-4 border-t border-line bg-panel"
+          >
             {footer}
           </div>
         )}

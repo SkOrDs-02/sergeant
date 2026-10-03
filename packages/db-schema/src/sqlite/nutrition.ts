@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm";
  * on SQLite for both surfaces — web (sqlite-wasm via OPFS-SAH) and mobile
  * (`expo-sqlite`).
  *
- * Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 / PR #031 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Differences from Postgres:
  * - `id` is TEXT (UUID stored as a string — SQLite has no native UUID).
@@ -310,8 +310,8 @@ export const nutritionRecipes = sqliteTable(
 /**
  * SQLite schema for the `nutrition_water_log` table.
  *
- * Один рядок на (user, date) — мілілітри води за день. Дзеркалить
- * `fizruk_pushups` за формою. Day key — `YYYY-MM-DD` у локальному
+ * Один рядок на (user, date) — мілілітри води за день (таку ж форму мав
+ * знятий лічильник віджимань). Day key — `YYYY-MM-DD` у локальному
  * часовому поясі користувача (як уже працює `WaterLog` blob у
  * `packages/nutrition-domain/src/waterLog.ts`).
  *

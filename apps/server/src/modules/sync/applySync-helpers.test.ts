@@ -2,8 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import type { PoolClient } from "pg";
 import {
+  applyIfNewer,
   assertRowUserId,
-  guardUserPkLww,
+  deleteIfNewer,
   guardUuidPkApply,
   queryOne,
   readBoolField,
@@ -176,37 +177,68 @@ describe("softDeleteById", () => {
     );
     expect(result).toEqual({ status: "applied" });
     expect(client.query).toHaveBeenCalledWith(
-      expect.stringContaining(`UPDATE ${table}`),
+      expect.stringMatching(
+        new RegExp(`UPDATE ${table} .* AND updated_at < \\$1$`),
+      ),
       [CLIENT_TS, "row-1", USER_ID],
     );
   });
+
+  it("reports lww_conflict when a newer write lands between the SELECT and the UPDATE", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const client = { query } as unknown as PoolClient;
+    const result = await softDeleteById(
+      client,
+      "routine_habits",
+      "row-1",
+      USER_ID,
+      CLIENT_TS,
+      {
+        user_id: USER_ID,
+        updated_at: new Date("2026-07-01T00:00:00.000Z"),
+        deleted_at: null,
+      },
+    );
+    expect(result).toEqual({ status: "rejected", reason: "lww_conflict" });
+  });
 });
 
-describe("guardUserPkLww", () => {
-  it("allows through when there is no existing row", () => {
-    expect(guardUserPkLww(undefined, CLIENT_TS)).toBeNull();
+describe("deleteIfNewer", () => {
+  it("keeps a delete of a row that never existed as applied", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const client = { query } as unknown as PoolClient;
+    expect(await deleteIfNewer(client, "SQL", [], false)).toEqual({
+      status: "applied",
+    });
   });
 
-  it("allows through when the existing row is older", () => {
-    expect(
-      guardUserPkLww(
-        { updated_at: new Date("2026-07-10T11:00:00.000Z") },
-        CLIENT_TS,
-      ),
-    ).toBeNull();
-  });
-
-  it("rejects on lww_conflict when the existing row is newer or equal", () => {
-    expect(guardUserPkLww({ updated_at: CLIENT_TS }, CLIENT_TS)).toEqual({
+  it("reports lww_conflict when a seen row was updated by a newer push", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const client = { query } as unknown as PoolClient;
+    expect(await deleteIfNewer(client, "SQL", [], true)).toEqual({
       status: "rejected",
       reason: "lww_conflict",
     });
-    expect(
-      guardUserPkLww(
-        { updated_at: new Date("2026-07-10T13:00:00.000Z") },
-        CLIENT_TS,
-      ),
-    ).toEqual({ status: "rejected", reason: "lww_conflict" });
+  });
+});
+
+describe("applyIfNewer", () => {
+  it("reports applied when the guarded write touched a row", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 1 });
+    const client = { query } as unknown as PoolClient;
+    expect(await applyIfNewer(client, "SQL", [1])).toEqual({
+      status: "applied",
+    });
+    expect(query).toHaveBeenCalledWith("SQL", [1]);
+  });
+
+  it("reports lww_conflict when the strict-newer predicate filtered the write", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const client = { query } as unknown as PoolClient;
+    expect(await applyIfNewer(client, "SQL", [])).toEqual({
+      status: "rejected",
+      reason: "lww_conflict",
+    });
   });
 });
 

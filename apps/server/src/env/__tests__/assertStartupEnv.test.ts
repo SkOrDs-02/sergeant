@@ -52,7 +52,7 @@ const PROD_BASELINE = {
 };
 
 describe("isDeployedProduction — host-agnostic prod detection", () => {
-  it("returns true under the Coolify env shape (NODE_ENV=production, no RAILWAY_*)", () => {
+  it("returns true under the Coolify env shape (NODE_ENV=production)", () => {
     expect(isDeployedProduction({ NODE_ENV: "production" })).toBe(true);
   });
 
@@ -60,15 +60,6 @@ describe("isDeployedProduction — host-agnostic prod detection", () => {
     expect(isDeployedProduction({ APP_ENV: "production" })).toBe(true);
     expect(
       isDeployedProduction({ NODE_ENV: "test", APP_ENV: "production" }),
-    ).toBe(true);
-  });
-
-  it("returns true via legacy Railway signals", () => {
-    expect(
-      isDeployedProduction({ NODE_ENV: "test", RAILWAY_ENVIRONMENT: "prod" }),
-    ).toBe(true);
-    expect(
-      isDeployedProduction({ NODE_ENV: "test", RAILWAY_SERVICE_NAME: "api" }),
     ).toBe(true);
   });
 
@@ -102,27 +93,18 @@ describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
     expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);
   });
 
-  it("throws when only RAILWAY_ENVIRONMENT is set (Railway prod without NODE_ENV)", async () => {
+  it("does not treat retired Railway env names as production (ADR-0074)", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
       RAILWAY_ENVIRONMENT: "production",
-      AI_QUOTA_DISABLED: "true",
-    });
-    expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);
-  });
-
-  it("throws when only RAILWAY_SERVICE_NAME is set", async () => {
-    const assertStartupEnv = await loadAssertStartupEnv({
-      ...PROD_BASELINE,
-      NODE_ENV: "test",
       RAILWAY_SERVICE_NAME: "sergeant-api",
       AI_QUOTA_DISABLED: "true",
     });
-    expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);
+    expect(() => assertStartupEnv()).not.toThrow();
   });
 
-  it("throws via APP_ENV=production on Coolify (no NODE_ENV=production, no RAILWAY_*)", async () => {
+  it("throws via APP_ENV=production on Coolify (no NODE_ENV=production)", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
@@ -203,11 +185,11 @@ describe("assertStartupEnv — Hard Rule #20: no OpenClaw PAT in production", ()
     expect(() => assertStartupEnv()).toThrow(/OPENCLAW_GITHUB_PAT, Git_PAT/);
   });
 
-  it("throws under Railway prod even without NODE_ENV=production", async () => {
+  it("throws via APP_ENV=production even without NODE_ENV=production", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
-      RAILWAY_ENVIRONMENT: "production",
+      APP_ENV: "production",
       OPENCLAW_GITHUB_PAT: "ghp_a",
     });
     expect(() => assertStartupEnv()).toThrow(/Hard Rule #20/);
@@ -526,11 +508,11 @@ describe("assertStartupEnv — AI_MEMORY_ENABLED requires VOYAGE_API_KEY (D3)", 
     expect(() => assertStartupEnv()).toThrow(/VOYAGE_API_KEY/);
   });
 
-  it("throws під Railway prod без NODE_ENV=production", async () => {
+  it("throws через APP_ENV=production без NODE_ENV=production", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
-      RAILWAY_ENVIRONMENT: "production",
+      APP_ENV: "production",
       AI_MEMORY_ENABLED: "true",
       VOYAGE_API_KEY: "",
     });
@@ -700,11 +682,11 @@ describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-
     expect(() => assertStartupEnv()).toThrow(/SENTRY_DSN/);
   });
 
-  it("throws under Railway prod even without NODE_ENV=production", async () => {
+  it("throws via APP_ENV=production even without NODE_ENV=production", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...SENTRY_MISSING_BASELINE,
       NODE_ENV: "test",
-      RAILWAY_ENVIRONMENT: "production",
+      APP_ENV: "production",
     });
     expect(() => assertStartupEnv()).toThrow(/SENTRY_DSN/);
   });
@@ -764,5 +746,135 @@ describe("assertStartupEnv — Phase 7 UA billing provider keys", () => {
       PLATA_TOKEN: "test-merchant-token",
     });
     expect(() => assertStartupEnv()).not.toThrow();
+  });
+});
+
+// Дзеркальна конфігурація до трьох перевірок вище: не «провайдер
+// увімкнений, але недоналаштований», а «жодного провайдера не
+// ввімкнено». У проді вона означає, що `requirePlan` не закриває нічого
+// і весь Pro відкритий безкоштовно — рівно стан, у якому цей репо жив до
+// 2026-09-16, бо гейт питав `STRIPE_ENABLED`, а продавали LiqPay і Plata.
+//
+// Warning, а не throw: зупиняти прод через конфігурацію білінгу гірше за
+// саму проблему. Тест стереже, що сигнал бодай є.
+describe("assertStartupEnv — жоден білінг-провайдер не ввімкнено у проді", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("попереджає, коли у проді вимкнені всі три провайдери", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      STRIPE_ENABLED: "false",
+      LIQPAY_ENABLED: "false",
+      PLATA_ENABLED: "false",
+    });
+
+    assertStartupEnv();
+
+    const messages = warn.mock.calls.map((c) => String(c[0]));
+    expect(messages.some((m) => /No billing provider is enabled/.test(m))).toBe(
+      true,
+    );
+  });
+
+  it("мовчить, коли увімкнено хоч одного провайдера", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      STRIPE_ENABLED: "false",
+      LIQPAY_ENABLED: "true",
+      LIQPAY_PUBLIC_KEY: "sandbox_i000000000",
+      LIQPAY_PRIVATE_KEY: "sandbox_private_key",
+      PLATA_ENABLED: "false",
+    });
+
+    assertStartupEnv();
+
+    const messages = warn.mock.calls.map((c) => String(c[0]));
+    expect(messages.some((m) => /No billing provider is enabled/.test(m))).toBe(
+      false,
+    );
+  });
+});
+
+/**
+ * Дефолт `WEBHOOK_HMAC_REQUIRED` перевернуто на `true` 2026-09-16 (рішення
+ * власника): grace-вікно лишилось без предмета після виведення n8n
+ * (ADR-0090). Пастка, яку стережуть ці кейси: прапорець сам собою нічого
+ * не вмикає — `verifyWebhookRequest` виходить із `ok`, коли секрет
+ * порожній, тож така конфігурація виглядає захищеною і мовчить.
+ */
+describe("webhook HMAC — default posture and the silent-no-op guard", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
+
+  async function loadEnv(
+    overrides: Record<string, string> = {},
+  ): Promise<typeof import("../env.js")> {
+    vi.stubEnv("Git_PAT", "");
+    vi.stubEnv("OPENCLAW_GITHUB_PAT", "");
+    for (const [k, v] of Object.entries(overrides)) vi.stubEnv(k, v);
+    vi.resetModules();
+    return import("../env.js");
+  }
+
+  function warnedAbout(warn: { mock: { calls: unknown[][] } }): boolean {
+    return warn.mock.calls.some((call) =>
+      String(call[0]).includes(
+        "WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty",
+      ),
+    );
+  }
+
+  it("requires a signature by default (no env var set)", async () => {
+    const mod = await loadEnv({ NODE_ENV: "development" });
+    expect(mod.env.WEBHOOK_HMAC_REQUIRED).toBe(true);
+  });
+
+  it("still honours an explicit opt-out", async () => {
+    const mod = await loadEnv({
+      NODE_ENV: "development",
+      WEBHOOK_HMAC_REQUIRED: "false",
+    });
+    expect(mod.env.WEBHOOK_HMAC_REQUIRED).toBe(false);
+  });
+
+  it("warns when the flag is on but no secret backs it", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const mod = await loadEnv({
+      NODE_ENV: "development",
+      INTERNAL_API_KEY: "internal-key",
+      WEBHOOK_HMAC_SECRET: "",
+    });
+    mod.assertStartupEnv();
+    expect(warnedAbout(warn)).toBe(true);
+  });
+
+  it("stays quiet once a secret backs the flag", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const mod = await loadEnv({
+      NODE_ENV: "development",
+      INTERNAL_API_KEY: "internal-key",
+      WEBHOOK_HMAC_SECRET: "s".repeat(32),
+    });
+    mod.assertStartupEnv();
+    expect(warnedAbout(warn)).toBe(false);
+  });
+
+  it("stays quiet when the internal API is unconfigured (bearer gate already 503s)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const mod = await loadEnv({
+      NODE_ENV: "development",
+      INTERNAL_API_KEY: "",
+      WEBHOOK_HMAC_SECRET: "",
+    });
+    mod.assertStartupEnv();
+    expect(warnedAbout(warn)).toBe(false);
   });
 });

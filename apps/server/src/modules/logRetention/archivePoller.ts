@@ -50,6 +50,7 @@ import type { Pool } from "pg";
 import { toLocalISODate } from "@sergeant/shared";
 
 import { logger } from "../../obs/logger.js";
+import { waitUntilIdle } from "../../lib/pollerDrain.js";
 import { logArchiveRowsTotal } from "../../obs/metrics.js";
 import { Sentry } from "../../sentry.js";
 
@@ -188,10 +189,20 @@ export class LogArchivePoller {
       clearInterval(this.timer);
       this.timer = null;
     }
-    while (this.running) {
-      await new Promise((r) => setTimeout(r, 20));
-    }
+    // Стеля замість безкінечного busy-wait-у: tick ходить у Postgres (а в
+    // частині полерів — і в зовнішній API), тож «чекати, поки завершиться»
+    // без межі означало б, що зависла залежність тримає весь shutdown.
+    // Після спливу лишаємо tick дограти у фоні — він ідемпотентний, а пул
+    // йому вже може й не відповісти; це кращий зі станів, ніж SIGKILL
+    // посеред graceful-шляху.
+    const drain = await waitUntilIdle(() => this.running);
     this.stopping = false;
+    if (!drain.idle) {
+      logger.warn({
+        msg: "log_archive_poller_stop_timeout",
+        waitedMs: drain.waitedMs,
+      });
+    }
     logger.info({ msg: "log_archive_poller_stopped" });
   }
 

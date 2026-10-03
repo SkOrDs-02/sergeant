@@ -128,7 +128,7 @@ describe("AiMemoryService — disabled flag", () => {
     await svc.remember([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "foo",
       },
@@ -162,8 +162,8 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
-      { userId: "u1", source: "finyk", sourceRef: "tx-1", content: "b" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
+      { userId: "u1", source: "cofounder", sourceRef: "tx-1", content: "b" },
     ]);
     expect(embeddings.calls).toBe(1);
     expect(store.upsertCalls).toBe(1);
@@ -184,14 +184,14 @@ describe("AiMemoryService — enabled", () => {
     });
     // Перший факт — пишеться (store порожній, query → []).
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "алергія" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "алергія" },
     ]);
     expect(store.rows).toHaveLength(1);
     // Повторний майже-ідентичний факт — query знаходить score 0.9 ≥ 0.85 → skip.
     await svc.remember([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "алергія знову",
       },
@@ -209,11 +209,11 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "finyk", sourceRef: "tx-1", content: "x" },
+      { userId: "u1", source: "cofounder", sourceRef: "tx-1", content: "x" },
     ]);
     // Навіть якщо є схожий row, sourceRef!=null пишеться завжди (без dedup-query).
     await svc.remember([
-      { userId: "u1", source: "finyk", sourceRef: "tx-2", content: "x" },
+      { userId: "u1", source: "cofounder", sourceRef: "tx-2", content: "x" },
     ]);
     expect(store.rows).toHaveLength(2);
   });
@@ -228,10 +228,10 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
     ]);
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
     ]);
     expect(store.rows).toHaveLength(2);
   });
@@ -267,8 +267,8 @@ describe("AiMemoryService — enabled", () => {
     });
     await expect(
       svc.remember([
-        { userId: "u1", source: "chat", sourceRef: null, content: "a" },
-        { userId: "u1", source: "chat", sourceRef: null, content: "b" }, // 2 inputs ≠ 1 vec
+        { userId: "u1", source: "digest", sourceRef: null, content: "a" },
+        { userId: "u1", source: "digest", sourceRef: null, content: "b" }, // 2 inputs ≠ 1 vec
       ]),
     ).rejects.toThrow(/2 inputs/);
     expect(store.upsertCalls).toBe(0);
@@ -280,7 +280,7 @@ describe("AiMemoryService — enabled", () => {
     await store.upsert([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "old chat",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -324,7 +324,7 @@ describe("AiMemoryService — enabled", () => {
     await store.upsert([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "a",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -351,7 +351,7 @@ describe("AiMemoryService — enabled", () => {
     await store.upsert([
       {
         userId: "u1",
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-1",
         content: "a",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -364,7 +364,7 @@ describe("AiMemoryService — enabled", () => {
       },
       {
         userId: "u1",
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-2",
         content: "b",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -381,9 +381,38 @@ describe("AiMemoryService — enabled", () => {
       vectorStore: store,
       enabled: true,
     });
-    await svc.forgetSource("u1", "finyk", "tx-1");
+    await svc.forgetSource("u1", "cofounder", "tx-1");
     expect(store.rows).toHaveLength(1);
     expect(store!.rows[0]!.sourceRef).toBe("tx-2");
+  });
+
+  it("recall() — повертає [] без embed-call коли VOYAGE hard daily budget відстрелявся (B10)", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      __resetVoyageBudgetState,
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(6);
+    runVoyageBudgetTick();
+
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+    });
+    const r = await svc.recall({ userId: "u1", query: "find me" });
+    expect(r).toEqual([]);
+    expect(embeddings.calls).toBe(0);
+    expect(store.queryCalls).toBe(0);
+
+    __resetVoyageBudgetState();
+    delete process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"];
+    delete process.env["VOYAGE_DAILY_BUDGET_USD_HARD"];
   });
 
   it("remember() — skip-ить embed-call коли VOYAGE hard daily budget вже відстрелявся", async () => {
@@ -408,7 +437,7 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
     ]);
     expect(embeddings.calls).toBe(0);
     expect(store.upsertCalls).toBe(0);
@@ -453,7 +482,7 @@ describe("AiMemoryService — per-user consent", () => {
     });
 
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "private" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "private" },
     ]);
 
     expect(embeddings.calls).toBe(0);
@@ -475,5 +504,91 @@ describe("AiMemoryService — per-user consent", () => {
     ).resolves.toEqual([]);
     expect(embeddings.calls).toBe(0);
     expect(store.queryCalls).toBe(0);
+  });
+});
+
+describe("AiMemoryService — згода на дані про здоровʼя (GDPR Art. 9)", () => {
+  // Рішення власника 2026-09-29: без `healthDataConsent` health-рядки не
+  // пишуться і не читаються (RAG чату, recall_memory). Ознаки — з metadata,
+  // яку самі продюсери кладуть у рядок (`healthRows.ts`).
+  const rows = [
+    {
+      source: "profile" as const,
+      sourceRef: "p1",
+      content: "тиск 140/90",
+      metadata: { category: "health" },
+    },
+    {
+      source: "profile" as const,
+      sourceRef: "p2",
+      content: "любить каву",
+      metadata: { category: "preferences" },
+    },
+    {
+      source: "digest" as const,
+      sourceRef: "w1",
+      content: "звіт зі спортом",
+      metadata: { sections: { finyk: true, fizruk: true, nutrition: false } },
+    },
+    {
+      source: "digest" as const,
+      sourceRef: "w2",
+      content: "звіт лише про гроші",
+      metadata: { sections: { finyk: true, fizruk: false, nutrition: false } },
+    },
+  ];
+
+  async function seed(healthConsent: boolean | "throws") {
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+      isConsentEnabled: vi.fn().mockResolvedValue(true),
+      isHealthConsentEnabled:
+        healthConsent === "throws"
+          ? vi.fn().mockRejectedValue(new Error("db down"))
+          : vi.fn().mockResolvedValue(healthConsent),
+    });
+    await svc.remember(rows.map((r) => ({ userId: "u1", ...r })));
+    return { svc, store };
+  }
+
+  it("без згоди: health-рядки не пишуться, решта пишеться", async () => {
+    const { store } = await seed(false);
+    expect(store.rows.map((r) => r.sourceRef).sort()).toEqual(["p2", "w2"]);
+  });
+
+  it("збій перевірки згоди = fail-closed (health не пишеться)", async () => {
+    const { store } = await seed("throws");
+    expect(store.rows.map((r) => r.sourceRef).sort()).toEqual(["p2", "w2"]);
+  });
+
+  it("зі згодою: пишеться все", async () => {
+    const { store } = await seed(true);
+    expect(store.rows).toHaveLength(4);
+  });
+
+  it("recall без згоди відфільтровує вже збережені health-рядки; зі згодою — віддає всі", async () => {
+    // Рядки лягли, поки згода була; потім її відкликали.
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    let granted = true;
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+      isConsentEnabled: vi.fn().mockResolvedValue(true),
+      isHealthConsentEnabled: async () => granted,
+    });
+    await svc.remember(rows.map((r) => ({ userId: "u1", ...r })));
+
+    const withConsent = await svc.recall({ userId: "u1", query: "q" });
+    expect(withConsent).toHaveLength(4);
+
+    granted = false;
+    const without = await svc.recall({ userId: "u1", query: "q" });
+    expect(without.map((r) => r.sourceRef).sort()).toEqual(["p2", "w2"]);
   });
 });

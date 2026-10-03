@@ -49,6 +49,21 @@ const NOISE_TOKENS = new Set([
  * Порожній результат (назва складалась лише з шуму) повертає вихідну
  * назву: краще зіставляти по шумній назві, ніж по порожньому рядку.
  */
+/**
+ * Обрізає розділові знаки з кінця токена.
+ *
+ * Навмисно циклом, а не `replace(/[.,;:]+$/u, "")`: той патерн — квадратичний
+ * ReDoS (CodeQL `js/polynomial-redos`, high). Назва з чека приходить із
+ * зовнішнього API, тож рядок із сотень ком — це вхід, який ми не
+ * контролюємо, а не гіпотетика. Цикл дає ту саму поведінку за O(n) без
+ * backtracking.
+ */
+function stripTrailingPunctuation(token: string): string {
+  let end = token.length;
+  while (end > 0 && ".,;:".includes(token[end - 1]!)) end -= 1;
+  return end === token.length ? token : token.slice(0, end);
+}
+
 export function normalizeReceiptItemName(raw: unknown): string {
   const source = String(raw || "").trim();
   if (!source) return "";
@@ -56,7 +71,7 @@ export function normalizeReceiptItemName(raw: unknown): string {
   const kept = source
     .split(/\s+/)
     .filter((token) => {
-      const bare = token.replace(/[.,;]+$/u, "");
+      const bare = stripTrailingPunctuation(token);
       if (!bare) return false;
       if (PACK_TOKEN_RE.test(bare)) return false;
       return !NOISE_TOKENS.has(bare.toLowerCase());
@@ -230,10 +245,6 @@ const LATIN_RE = /[A-Za-z]/u;
 const UPPER_START_RE = /^\p{Lu}/u;
 const HAS_LOWERCASE_RE = /\p{Ll}/u;
 
-function bareToken(token: string): string {
-  return token.replace(/[.,;:]+$/u, "");
-}
-
 /**
  * Родова назва продукту: назва з чека без брендових токенів.
  *
@@ -272,7 +283,7 @@ export function genericFoodName(raw: unknown): string {
   const caseRuleOn = HAS_LOWERCASE_RE.test(cleaned);
   const isBrand = tokens.map((token, i) => {
     if (i === 0) return false;
-    const bare = bareToken(token);
+    const bare = stripTrailingPunctuation(token);
     if (!bare) return false;
     if (GENERIC_NAME_STOP_TOKENS.has(bare.toLowerCase())) return false;
     if (LATIN_RE.test(bare)) return true;

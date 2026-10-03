@@ -3,7 +3,7 @@
  *
  * Stage 12 PR #057f-tombstone-mobile-stage12 + Stage 12.5 PR
  * #057f2-tombstone-mobile-stage12-5 of
- * `docs/planning/storage-roadmap.md`. Mirror coverage of the routine
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirror coverage of the routine
  * residual-import test slice extended to the 9 fizruk MMKV keys
  * tombstoned to date (workouts / custom-exercises / measurements +
  * daily-log / monthly-plan / workout-templates +

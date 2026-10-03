@@ -28,19 +28,6 @@ vi.mock("../../obs/logger.js", () => ({
 vi.mock("../../obs/metrics.js", () => ({
   monoWebhookReceivedTotal: { inc: vi.fn() },
   monoWebhookDurationMs: { observe: vi.fn() },
-  // AI memory ingest hook (PR2). Заглушки достатньо — webhook-test не
-  // верифікує enqueue-метрики напряму, а лише poll-ить, що hook не
-  // throw-нув. Реальні поведінкові тести queue-у — у `ingestQueue.test.ts`.
-  aiMemoryIngestEnqueuedTotal: { inc: vi.fn() },
-  aiMemoryIngestProcessedTotal: { inc: vi.fn() },
-  aiMemoryIngestDurationMs: { observe: vi.fn() },
-  aiMemoryIngestQueueDepth: { set: vi.fn() },
-}));
-
-vi.mock("../ai-memory/ingestQueue.js", () => ({
-  // PR2 hook: webhook-у достатньо знати, що `enqueueMemoryIngest` resolved-ить
-  // без помилки. Реальний flow покрито у ingestQueue.test.ts.
-  enqueueMemoryIngest: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../push/send.js", () => ({
@@ -53,14 +40,12 @@ import {
   monoWebhookDurationMs as _histogram,
 } from "../../obs/metrics.js";
 import { sendToUserQuietly as _sendToUserQuietly } from "../../push/send.js";
-import { enqueueMemoryIngest as _enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { webhookHandler } from "./webhook.js";
 
 const dbQuery = _query as unknown as Mock;
 const pool = _pool as unknown as { connect: Mock; query: Mock };
 const counter = _counter as unknown as { inc: Mock };
 const histogram = _histogram as unknown as { observe: Mock };
-const enqueueMemoryIngest = _enqueueMemoryIngest as unknown as Mock;
 const sendPushMock = _sendToUserQuietly as unknown as Mock;
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -311,7 +296,6 @@ describe("webhookHandler", () => {
     await Promise.resolve();
 
     expect(res.statusCode).toBe(200);
-    expect(enqueueMemoryIngest).not.toHaveBeenCalled();
   });
 
   it("does NOT fire push when ON CONFLICT updates existing transaction (Monobank retry)", async () => {

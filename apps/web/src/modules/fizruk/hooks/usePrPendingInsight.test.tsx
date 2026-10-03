@@ -61,7 +61,7 @@ describe("usePrPendingInsight", () => {
     expect(result.current).not.toBeNull();
     expect(result.current!.id).toBe("fizruk-pr-pending");
     expect(result.current!.title).toContain("Жим лежачи");
-    expect(result.current!.subtitle).toContain("102.5");
+    expect(result.current!.subtitle).toContain("102,5");
   });
 
   it("prefers the active workout when its weight is near PR", () => {

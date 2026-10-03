@@ -1,10 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+  type CachedDailyLogEntry,
+} from "../../../../modules/fizruk/lib/sqliteReader";
+import {
   buildDailySeries,
   computePairwiseCorrelations,
   formatDailySeries,
   getDailySeries,
+  MIN_N,
   type DailySeries,
 } from "./dailySeries";
 
@@ -20,32 +26,53 @@ function series(
   return { from: days[0]!, to: days[n - 1]!, days, raw, metrics };
 }
 
+/** Журнал у SQLite-кеші (не LS — ключ tombstoned): дефолти для полів, яких тест не задає. */
+function seedJournal(
+  rows: Array<Partial<CachedDailyLogEntry> & { at: string }>,
+): CachedDailyLogEntry[] {
+  return rows.map((row, i) => ({
+    id: row.id ?? `dl_seed_${i}`,
+    weightKg: null,
+    sleepHours: null,
+    energyLevel: null,
+    moodScore: null,
+    note: "",
+    ...row,
+  }));
+}
+
 describe("computePairwiseCorrelations", () => {
   it("perfect positive correlation → r ≈ 1", () => {
     const s = series(
       ["spending", "income"],
-      { spending: [1, 2, 3, 4], income: [2, 4, 6, 8] },
-      4,
+      {
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        income: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+      },
+      10,
     );
     const [c] = computePairwiseCorrelations(s);
     expect(c).toBeDefined();
     expect(c!.pearson).toBeCloseTo(1, 5);
     expect(c!.spearman).toBeCloseTo(1, 5);
-    expect(c!.n).toBe(4);
+    expect(c!.n).toBe(10);
   });
 
   it("perfect inverse correlation → r ≈ -1", () => {
     const s = series(
       ["weight", "kcal"],
-      { weight: [1, 2, 3, 4], kcal: [8, 6, 4, 2] },
-      4,
+      {
+        weight: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        kcal: [20, 18, 16, 14, 12, 10, 8, 6, 4, 2],
+      },
+      10,
     );
     const [c] = computePairwiseCorrelations(s);
     expect(c!.pearson).toBeCloseTo(-1, 5);
   });
 
-  it("only pairwise-complete days count; skips pairs with < 4 common points", () => {
-    // Common non-undefined indices: 0, 2, 4 → n=3 → skipped.
+  it(`only pairwise-complete days count; skips pairs with < ${MIN_N} common points`, () => {
+    // Common non-undefined indices: 0, 2, 4 → n=3 → below MIN_N, skipped.
     const s = series(
       ["spending", "weight"],
       {
@@ -61,22 +88,25 @@ describe("computePairwiseCorrelations", () => {
     const s = series(
       ["spending", "income"],
       {
-        // day 3 spending missing → dropped from the pair, rest perfectly correlated
-        spending: [1, 2, undefined, 4, 5],
-        income: [10, 20, 30, 40, 50],
+        // day 6 spending missing → dropped from the pair, rest perfectly correlated
+        spending: [1, 2, 3, 4, 5, undefined, 7, 8, 9, 10, 11],
+        income: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110],
       },
-      5,
+      11,
     );
     const [c] = computePairwiseCorrelations(s);
-    expect(c!.n).toBe(4);
+    expect(c!.n).toBe(10);
     expect(c!.pearson).toBeCloseTo(1, 5);
   });
 
   it("flat metric (zero variance) → NaN, not a crash", () => {
     const s = series(
       ["water", "spending"],
-      { water: [5, 5, 5, 5], spending: [1, 2, 3, 4] },
-      4,
+      {
+        water: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      },
+      10,
     );
     const [c] = computePairwiseCorrelations(s);
     expect(Number.isNaN(c!.pearson)).toBe(true);
@@ -107,6 +137,7 @@ describe("formatDailySeries — fill semantics", () => {
 describe("getDailySeries — executor", () => {
   beforeEach(async () => {
     localStorage.clear();
+    clearFizrukSqliteCache();
     const { clearFinykMonoMirrorCache } =
       await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
@@ -115,6 +146,7 @@ describe("getDailySeries — executor", () => {
   });
   afterEach(async () => {
     localStorage.clear();
+    clearFizrukSqliteCache();
     const { clearFinykMonoMirrorCache } =
       await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
@@ -142,8 +174,8 @@ describe("getDailySeries — executor", () => {
       await import("../../../../modules/finyk/lib/monoMirrorReader");
     const nowSec = Math.floor(Date.now() / 1000);
     const txs: Array<{ id: string; amount: number; time: number }> = [];
-    // 5 consecutive days, one expense + one (proportional) income each.
-    for (let d = 0; d < 5; d++) {
+    // 10 consecutive days, one expense + one (proportional) income each.
+    for (let d = 0; d < 10; d++) {
       const t = nowSec - d * 86400;
       txs.push({ id: `e${d}`, amount: -(1000 + d * 100) * 100, time: t });
       txs.push({ id: `i${d}`, amount: (2000 + d * 200) * 100, time: t });
@@ -291,13 +323,12 @@ describe("buildDailySeries — структурні нулі", () => {
   });
 
   it("weight: пропуск лишається пропуском — це не «важив 0 кг»", () => {
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
         { at: "2026-04-19T09:00:00.000Z", weightKg: 80 },
         { at: "2026-04-21T09:00:00.000Z", weightKg: 79 },
       ]),
-    );
+    });
     const s = buildDailySeries(["weight"], {
       from: "2026-04-19",
       to: "2026-04-22",
@@ -326,26 +357,38 @@ describe("buildDailySeries — структурні нулі", () => {
   });
 
   it("нулі входять У статистику: пара набирає спільні дні, яких без них не було", async () => {
-    await seedDailyHabit(["2026-04-19", "2026-04-21"]);
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([
+    await seedDailyHabit([
+      "2026-04-13",
+      "2026-04-15",
+      "2026-04-17",
+      "2026-04-19",
+      "2026-04-21",
+    ]);
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
+        { at: "2026-04-13T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-14T09:00:00.000Z", moodScore: 2 },
+        { at: "2026-04-15T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-16T09:00:00.000Z", moodScore: 2 },
+        { at: "2026-04-17T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-18T09:00:00.000Z", moodScore: 2 },
         { at: "2026-04-19T09:00:00.000Z", moodScore: 5 },
         { at: "2026-04-20T09:00:00.000Z", moodScore: 2 },
         { at: "2026-04-21T09:00:00.000Z", moodScore: 5 },
         { at: "2026-04-22T09:00:00.000Z", moodScore: 2 },
       ]),
-    );
+    });
     const s = buildDailySeries(["habit_rate", "wellbeing"], {
-      from: "2026-04-19",
+      from: "2026-04-13",
       to: "2026-04-22",
     });
     const [c] = computePairwiseCorrelations(s);
-    // Без структурних нулів спільними були б лише 19-те й 21-ше (n=2, пара
-    // відкидалась як закоротка) — і саме на тих днях, де звичка виконана,
-    // тобто питання ставилось там, де відповідь уже «так».
+    // Без структурних нулів спільними були б лише 5 днів виконання звички
+    // (n=5, пара все одно відкидалась би - нижче MIN_N) - і саме на тих
+    // днях, де звичка виконана, тобто питання ставилось там, де відповідь
+    // уже «так».
     expect(c).toBeDefined();
-    expect(c!.n).toBe(4);
+    expect(c!.n).toBe(10);
     expect(c!.pearson).toBeCloseTo(1, 5);
   });
 });
@@ -478,10 +521,10 @@ describe("formatDailySeries — correlation strength labels", () => {
     const s = series(
       ["spending", "income"],
       {
-        spending: [1, 2, 3, 4, 5, 6, 7, 8],
-        income: [2, 4, 6, 8, 10, 12, 14, 16],
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        income: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
       },
-      8,
+      10,
     );
     const corr = computePairwiseCorrelations(s);
     const out = formatDailySeries(s, corr, "zero");
@@ -492,10 +535,10 @@ describe("formatDailySeries — correlation strength labels", () => {
     const s = series(
       ["weight", "kcal"],
       {
-        weight: [8, 7, 6, 5, 4, 3, 2, 1],
-        kcal: [1, 2, 3, 4, 5, 6, 7, 8],
+        weight: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+        kcal: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       },
-      8,
+      10,
     );
     const corr = computePairwiseCorrelations(s);
     const out = formatDailySeries(s, corr, "zero");

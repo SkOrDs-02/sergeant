@@ -10,9 +10,17 @@
 import type { CategoryDisplay } from "./manualExpenseCategories";
 import { MANUAL_INCOME_TAXONOMY } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import type { IconName } from "@shared/components/ui/Icon";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 
 export type IncomeCategorySlug =
-  "salary" | "freelance" | "gift" | "refund" | "other-income";
+  | "salary"
+  | "freelance"
+  | "gift"
+  | "refund"
+  | "cashback"
+  | "pension"
+  | "debt-income"
+  | "other-income";
 
 /** Похідна від `MANUAL_INCOME_TAXONOMY` — див. `manualExpenseCategories`. */
 export const INCOME_CATEGORY_DISPLAY: Record<
@@ -30,6 +38,42 @@ export const INCOME_CATEGORY_SLUGS: IncomeCategorySlug[] =
 
 export const DEFAULT_INCOME_CATEGORY: IncomeCategorySlug = "salary";
 
+export function incomeCustomCategories(
+  categories: readonly CustomCategoryInput[],
+): CustomCategoryInput[] {
+  return categories.filter(
+    (category) =>
+      typeof category?.id === "string" &&
+      category.id.trim() !== "" &&
+      category.kind === "income",
+  );
+}
+
+export function expenseCustomCategories(
+  categories: readonly CustomCategoryInput[],
+): CustomCategoryInput[] {
+  return categories.filter(
+    (category) =>
+      typeof category?.id === "string" &&
+      category.id.trim() !== "" &&
+      category.kind !== "income",
+  );
+}
+
+export function incomeCategoryDisplay(
+  categories: readonly CustomCategoryInput[],
+): Readonly<Record<string, CategoryDisplay>> {
+  return {
+    ...INCOME_CATEGORY_DISPLAY,
+    ...Object.fromEntries(
+      categories.map((category) => [
+        category.id,
+        { iconName: "tag" as const, label: category.label ?? category.id },
+      ]),
+    ),
+  };
+}
+
 export function isIncomeCategorySlug(
   value: string,
 ): value is IncomeCategorySlug {
@@ -42,5 +86,14 @@ export function upgradeIncomeCategory(
 ): IncomeCategorySlug {
   if (!raw) return DEFAULT_INCOME_CATEGORY;
   const trimmed = raw.trim();
+  const legacy: Record<string, IncomeCategorySlug> = {
+    in_salary: "salary",
+    in_freelance: "freelance",
+    in_cashback: "cashback",
+    in_pension: "pension",
+    in_debt: "debt-income",
+    in_other: "other-income",
+  };
+  if (legacy[trimmed]) return legacy[trimmed];
   return isIncomeCategorySlug(trimmed) ? trimmed : DEFAULT_INCOME_CATEGORY;
 }

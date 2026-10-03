@@ -25,11 +25,17 @@ import {
   type FinykDualWriteState,
 } from "./diff.js";
 import { probeFinykParity } from "./parity.js";
+import {
+  ackDualWrite,
+  journalDualWrite,
+  pendingDualWrites,
+} from "../../../../core/durability/dualWriteJournal.js";
+import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 
 /**
  * Orchestrator for the Finyk SQLite writer layer (formerly dual-write).
  *
- * Stage 4 PR #036 of `docs/planning/storage-roadmap.md`. Mirrors the
+ * Stage 4 PR #036 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors the
  * nutrition SQLite-writer orchestrator pattern from PR #032.
  *
  * Glues together:
@@ -63,7 +69,35 @@ export interface FinykDualWriteContext {
 }
 
 let registeredContext: FinykDualWriteContext | null = null;
+/** Усі живі реєстрації в порядку появи — див. AI-DANGER нижче. */
+const liveContexts: FinykDualWriteContext[] = [];
 
+/**
+ * AI-DANGER: реєстрантів БІЛЬШЕ НІЖ ОДИН, і це навмисно — тому teardown
+ * ПОВЕРТАЄ попередній контекст, а не обнуляє слот.
+ *
+ * Як воно ламалось (знахідка PR-R1, аудит 2026-09-13). Слот був один, а
+ * teardown робив `if (registeredContext === ctx) registeredContext = null`.
+ * Реєструються двоє: глобальний boot-кластер (змонтований завжди через
+ * `RootLayout`) і сам модуль. Модуль реєструється пізніше й перекриває
+ * кластерний контекст; на анмаунті модуля його teardown бачить СВІЙ
+ * контекст у слоті й обнуляє його — а кластер більше нічого не
+ * реєструє, бо його ефект залежить від `[userId]`. Далі
+ * `is…DualWriteRegistered()` вертає `false`, і dual-write мовчки стає
+ * no-op до кінця сесії: запис із чату доїжджає лише до localStorage.
+ *
+ * Чому саме стек, а не «прибрати другого реєстранта». У Фініку кластер
+ * гейтиться на `user || isDemoActive()`, тож для анонімного відвідувача
+ * він не рендериться взагалі — і модульна реєстрація там єдина робоча
+ * (замір 2026-08-06: без неї кожна витрата аноніма жила лише в теплому
+ * кеші й зникала на перезавантаженні). Тобто другий реєстрант потрібен;
+ * поламаний був сам реєстр.
+ *
+ * `liveContexts` тримає всі живі реєстрації в порядку появи, а
+ * `registeredContext` — завжди остання з них. Teardown прибирає СВІЙ
+ * запис зі стека (де б він не стояв) і перераховує поточний. Порядок
+ * анмаунтів тому не має значення.
+ */
 /**
  * Install the dual-write context. Call from the platform bootstrap
  * file when the React Query client and sqlite singletons are available.
@@ -73,16 +107,24 @@ let registeredContext: FinykDualWriteContext | null = null;
 export function registerFinykDualWriteContext(
   ctx: FinykDualWriteContext,
 ): () => void {
+  liveContexts.push(ctx);
   registeredContext = ctx;
+  replayFinykJournal(ctx);
   return () => {
-    if (registeredContext === ctx) registeredContext = null;
+    const at = liveContexts.lastIndexOf(ctx);
+    if (at === -1) return;
+    liveContexts.splice(at, 1);
+    registeredContext = liveContexts[liveContexts.length - 1] ?? null;
   };
 }
 
 /** Test-only escape hatch — clears any registered context. */
 export function __clearFinykDualWriteContextForTests(): void {
   registeredContext = null;
+  liveContexts.length = 0;
   lastIssuedClientTs = null;
+  dualWriteQueue = Promise.resolve();
+  replayedJournalIds.clear();
 }
 
 // DCRUD-108 — last clientTs handed to ANY Finyk dual-write apply, across
@@ -170,19 +212,31 @@ export async function dualWriteFinykState(
   prev: FinykDualWriteState,
   next: FinykDualWriteState,
 ): Promise<DualWriteOutcome> {
-  const outcome = await runDualWriteFinykState(prev, next);
+  const ctx = registeredContext;
+  const outcome = ctx
+    ? await runFinykOps(
+        ctx,
+        diffFinykDualWriteOps(prev, next),
+        nextMonotonicClientTs(ctx),
+        next,
+      )
+    : ({ status: "skipped", reason: "context-unset" } as const);
   recordDualWriteOutcome("finyk", outcome);
   return outcome;
 }
 
-async function runDualWriteFinykState(
-  prev: FinykDualWriteState,
-  next: FinykDualWriteState,
+/**
+ * `clientTs` приходить ззовні, а не береться тут: журнальований запис
+ * відтворюється з ТІЄЮ Ж міткою, що й первинний запуск, інакше пізній
+ * реплей перебив би новішу правку з іншого пристрою. `next` null для
+ * реплею: паритет із повним станом там не має з чим порівнювати.
+ */
+async function runFinykOps(
+  ctx: FinykDualWriteContext,
+  ops: readonly FinykDualWriteOp[],
+  clientTs: string,
+  next: FinykDualWriteState | null,
 ): Promise<DualWriteOutcome> {
-  const ctx = registeredContext;
-  if (!ctx) return { status: "skipped", reason: "context-unset" };
-
-  const ops = diffFinykDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
 
   const userId = ctx.getUserId();
@@ -209,7 +263,7 @@ async function runDualWriteFinykState(
 
   const result = await applyFinykDualWriteOps(client, ops, {
     userId,
-    clientTs: nextMonotonicClientTs(ctx),
+    clientTs,
     logger: ctx.logger,
   });
 
@@ -230,6 +284,7 @@ async function runDualWriteFinykState(
   // (`recordReadFallback`) so triage can tell `SELECT failing` apart
   // from a real LS↔SQLite divergence (`recordParityCheck("…",
   // "mismatch", …)`).
+  if (!next) return { status: "applied", result };
   try {
     const parity = await probeFinykParity(client, userId, next);
     recordParityCheck("finyk", parity.result, parity.details);
@@ -267,10 +322,66 @@ export function triggerFinykDualWrite(
 ): void {
   const ctx = registeredContext;
   if (!ctx) return;
+  // Diff, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:
+  // див. `core/durability/dualWriteJournal.ts`.
+  const ops = diffFinykDualWriteOps(prev, next);
+  const clientTs = nextMonotonicClientTs(ctx);
+  const userId = ctx.getUserId();
+  const journalId =
+    ops.length > 0 && userId
+      ? journalDualWrite<FinykJournalPayload>("finyk", userId, {
+          ops,
+          clientTs,
+        })
+      : null;
+  enqueueFinykRun(ctx, ops, clientTs, next, journalId);
+}
+
+interface FinykJournalPayload {
+  readonly ops: readonly FinykDualWriteOp[];
+  readonly clientTs: string;
+}
+
+/** Реплей відбувається раз на запис, хоч реєстрантів контексту кілька. */
+const replayedJournalIds = new Set<string>();
+
+function replayFinykJournal(ctx: FinykDualWriteContext): void {
+  const userId = ctx.getUserId();
+  if (!userId) return;
+  for (const entry of pendingDualWrites<FinykJournalPayload>("finyk", userId)) {
+    if (replayedJournalIds.has(entry.id)) continue;
+    replayedJournalIds.add(entry.id);
+    enqueueFinykRun(
+      ctx,
+      entry.payload.ops,
+      entry.payload.clientTs,
+      null,
+      entry.id,
+    );
+  }
+}
+
+function enqueueFinykRun(
+  ctx: FinykDualWriteContext,
+  ops: readonly FinykDualWriteOp[],
+  clientTs: string,
+  next: FinykDualWriteState | null,
+  journalId: string | null,
+): void {
   __openFinykSqliteMutationWindow();
   dualWriteQueue = dualWriteQueue
     .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
-    .then(() => dualWriteFinykState(prev, next))
+    .then(async () => {
+      const outboxSettled = outboxCheckpoint();
+      const outcome = await runFinykOps(ctx, ops, clientTs, next);
+      recordDualWriteOutcome("finyk", outcome);
+      // «sqlite недоступна» лишає запис у журналі для наступного буту.
+      // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
+      // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
+      if (journalId && outcome.status === "applied") {
+        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
+      }
+    })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
         error: err instanceof Error ? err.message : String(err),
@@ -329,11 +440,24 @@ export async function applyFinykDualWriteOpsViaContext(
     return { status: "skipped", reason: "sqlite-unavailable" };
   }
 
-  const result = await applyFinykDualWriteOps(client, ops, {
-    userId,
-    clientTs: nextMonotonicClientTs(ctx),
-    logger: ctx.logger,
-  });
+  let result: ApplyDualWriteResult;
+  try {
+    result = await applyFinykDualWriteOps(client, ops, {
+      userId,
+      clientTs: nextMonotonicClientTs(ctx),
+      logger: ctx.logger,
+    });
+  } catch (err) {
+    // Log before re-throwing: this `await` has no local fallback (unlike
+    // the `getMigrationClient()` guard above), so without this the
+    // failure would surface only as a bare unhandled rejection at the
+    // fire-and-forget call sites — see the `.catch` handlers below.
+    logSafe(ctx, "warn", "dual-write apply failed", {
+      ops: ops.length,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
   const outcome: DualWriteOutcome = { status: "applied", result };
   recordDualWriteOutcome("finyk", outcome);
   return outcome;
@@ -363,13 +487,21 @@ export interface ManualExpenseMirrorEntry {
 export function triggerManualExpenseSqliteMirror(
   expense: ManualExpenseMirrorEntry,
 ): void {
-  if (!registeredContext || !expense?.id) return;
+  const ctx = registeredContext;
+  if (!ctx || !expense?.id) return;
   const op: FinykDualWriteOp = {
     kind: "blob-upsert",
     table: "finyk_manual_expenses",
     entry: { id: expense.id, dataJson: JSON.stringify(expense) },
   };
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext([op]))
+    .catch((err) => {
+      logSafe(ctx, "warn", "manual-expense sqlite mirror failed", {
+        id: expense.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 /**
@@ -378,13 +510,21 @@ export function triggerManualExpenseSqliteMirror(
  * the create mirror and the row stops showing up in the overlay read.
  */
 export function triggerManualExpenseDeleteSqliteMirror(id: string): void {
-  if (!registeredContext || !id) return;
+  const ctx = registeredContext;
+  if (!ctx || !id) return;
   const op: FinykDualWriteOp = {
     kind: "blob-delete",
     table: "finyk_manual_expenses",
     id,
   };
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext([op]))
+    .catch((err) => {
+      logSafe(ctx, "warn", "manual-expense sqlite delete mirror failed", {
+        id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 /**
@@ -396,7 +536,8 @@ export function triggerManualExpenseDeleteSqliteMirror(id: string): void {
 export function triggerTxCategorySqliteMirror(
   entries: ReadonlyArray<{ transactionId: string; categoryId: string }>,
 ): void {
-  if (!registeredContext) return;
+  const ctx = registeredContext;
+  if (!ctx) return;
   const ops: FinykDualWriteOp[] = [];
   for (const e of entries) {
     if (!e.transactionId || !e.categoryId) continue;
@@ -406,7 +547,14 @@ export function triggerTxCategorySqliteMirror(
     });
   }
   if (ops.length === 0) return;
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext(ops));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext(ops))
+    .catch((err) => {
+      logSafe(ctx, "warn", "tx-category sqlite mirror failed", {
+        ops: ops.length,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 /**
@@ -415,13 +563,21 @@ export function triggerTxCategorySqliteMirror(
  * agrees with the migrated hidden-tx read.
  */
 export function triggerHiddenTransactionSqliteMirror(txId: string): void {
-  if (!registeredContext || !txId) return;
+  const ctx = registeredContext;
+  if (!ctx || !txId) return;
   const op: FinykDualWriteOp = {
     kind: "id-upsert",
     table: "finyk_hidden_transactions",
     entry: { id: txId },
   };
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext([op]))
+    .catch((err) => {
+      logSafe(ctx, "warn", "hidden-transaction sqlite mirror failed", {
+        id: txId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 function logSafe(

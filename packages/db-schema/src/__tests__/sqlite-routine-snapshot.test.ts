@@ -7,7 +7,6 @@ import {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
   routineCompletionEvents,
@@ -20,8 +19,6 @@ import {
 import {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 
 /**
@@ -29,7 +26,7 @@ import {
  * mirroring the structural lock-down that `pg-routine-snapshot.test.ts`
  * applies to the Postgres source-of-truth.
  *
- * Why both PG and SQLite snapshots: Stage 4 of `docs/planning/storage-roadmap.md`
+ * Why both PG and SQLite snapshots: Stage 4 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * relies on the two schemas staying byte-aligned (mod the documented PG↔SQLite
  * differences in `migrations/index.ts`). Drift here means push/pull echo a row
  * that round-trips with subtly different data, and LWW comparisons stop being
@@ -43,8 +40,8 @@ import {
  *   - partial-index `WHERE` clauses on `routine_entries_user_active_idx_lite`
  *     and `sync_op_outbox_pending_idx_lite`
  *   - the production-named migration constants (`ROUTINE_CLIENT_MIGRATIONS`,
- *     `ROUTINE_MIGRATIONS_TABLE`) and the deprecated `ROUTINE_SPIKE_*` aliases
- *     so consumers can rely on the historical SPIKE names too.
+ *     `ROUTINE_MIGRATIONS_TABLE`); the historical `ROUTINE_SPIKE_*` aliases
+ *     were removed 2026-09-03 after their `@removeBy` date.
  */
 
 describe("sqlite/routineEntries schema snapshot", () => {
@@ -378,6 +375,7 @@ describe("sqlite/routineHabits schema snapshot", () => {
       "reminder_times_json",
       "weekdays_json",
       "pause_intervals_json",
+      "weekly_target_history_json",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -469,19 +467,6 @@ describe("sqlite/routinePrefs schema snapshot", () => {
   });
 });
 
-describe("sqlite/routinePushups schema snapshot", () => {
-  const config = getTableConfig(routinePushups);
-
-  it("has the canonical table name", () => {
-    expect(config.name).toBe("routine_pushups");
-  });
-
-  it("declares all expected columns", () => {
-    const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
-  });
-});
-
 describe("sqlite/routineHabitOrder schema snapshot", () => {
   const config = getTableConfig(routineHabitOrder);
 
@@ -528,8 +513,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the ordered Routine migrations through habit-skips migration 009", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(9);
+  it("exports the ordered Routine migrations through the pushups drop 011", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(11);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -689,18 +674,36 @@ describe("sqlite/migrations exports", () => {
     expect(ROUTINE_CLIENT_MIGRATIONS[7]!.sql).toMatch(
       /CHECK \(status IN \('pending', 'completed'\)\)/,
     );
+
+    expect(ROUTINE_CLIENT_MIGRATIONS[8]!.name).toBe(
+      "009_routine_habit_skips.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[8]!.sql).toMatch(
+      /ALTER TABLE routine_habits ADD COLUMN pause_intervals_json/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[8]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_habit_skips/,
+    );
+
+    expect(ROUTINE_CLIENT_MIGRATIONS[9]!.name).toBe(
+      "010_routine_weekly_target_history.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[9]!.sql).toMatch(
+      /ALTER TABLE routine_habits ADD COLUMN weekly_target_history_json TEXT NOT NULL DEFAULT '\[\]'/,
+    );
+  });
+
+  it("ends with the 011 pushups drop (mirror of server migration 139)", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS[10]!.name).toBe(
+      "011_routine_drop_pushups.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[10]!.sql).toMatch(
+      /DROP TABLE IF EXISTS routine_pushups/,
+    );
   });
 
   it("uses the standard `__migrations` ledger table", () => {
     expect(ROUTINE_MIGRATIONS_TABLE).toBe("__migrations");
-  });
-
-  it("re-exports the deprecated SPIKE-named aliases as the same references", () => {
-    // SPIKE consumers (apps/{web,mobile}/.../sqliteSpike/) must keep
-    // working unchanged; the aliases must be the exact same array, not
-    // a new array with the same contents.
-    expect(ROUTINE_SPIKE_CLIENT_MIGRATIONS).toBe(ROUTINE_CLIENT_MIGRATIONS);
-    expect(ROUTINE_SPIKE_MIGRATIONS_TABLE).toBe(ROUTINE_MIGRATIONS_TABLE);
   });
 });
 

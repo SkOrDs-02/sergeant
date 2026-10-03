@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
-import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { Segmented } from "@shared/components/ui/Segmented";
@@ -8,10 +7,12 @@ import { Stat } from "@shared/components/ui/Stat";
 import { HabitHeatmap } from "./HabitHeatmap";
 import { HabitRangeGrid } from "./HabitRangeGrid";
 import { HabitLeadersBlock } from "./HabitLeadersBlock";
-import { completionRateForRange, maxStreakAllTime } from "../lib/streaks";
-import { dateKeyFromDate, parseDateKey } from "../lib/hubCalendarAggregate";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
+import {
+  completionRateForRange,
+  flexibleMaxStreakAllTimeAcrossHabits,
+} from "../lib/streaks";
+import { dateKeyMinusDays } from "@sergeant/routine-domain";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import {
   ROUTINE_STATS_DEFAULT_RANGE,
   ROUTINE_STATS_RANGES,
@@ -19,16 +20,6 @@ import {
   type RoutineStatsRangeId,
 } from "../lib/statsRanges";
 import type { RoutineState } from "../lib/types";
-
-function dateKeyMinusDays(baseKey: string, daysBack: number): string {
-  const d = parseDateKey(baseKey);
-  // Календарна арифметика на вже київському ключі (`baseKey` приходить з
-  // `getKyivDayKey`), а не читання host-local доби — зсув на N днів назад.
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- calendar arithmetic on a Kyiv-anchored key; not a host day key
-  d.setDate(d.getDate() - daysBack);
-  d.setHours(12, 0, 0, 0);
-  return dateKeyFromDate(d);
-}
 
 const rangeItems = ROUTINE_STATS_RANGES.map((r) => ({
   value: r.id,
@@ -46,9 +37,10 @@ export function RoutineStatsPanel({
   currentStreak,
   hidden,
 }: RoutineStatsPanelProps) {
-  // Kyiv-anchored "today" so day-aggregated stats don't shift around
-  // host TZ (consolidated page-audit § Theme 1 — 09 F3).
-  const todayKey = getKyivDayKey();
+  // Той самий анкер доби, що й решта web-routine (`lib/dayAnchor.ts`), не
+  // окремий прямий виклик — інакше день тут і в сусідніх картках знову
+  // могли б розійтись (unification audit 2026-08-31, finding 2.3).
+  const todayKey = anchoredTodayKey();
 
   // Вибір зрізу навмисно не переживає перезавантаження: писати його в
   // localStorage означало б новий ключ в allowlist заради стану, який
@@ -61,11 +53,15 @@ export function RoutineStatsPanel({
   const summary = useMemo(() => {
     const habits = routine.habits || [];
     const completions = routine.completions || {};
-    const maxAllTime = habits.reduce((acc: number, h) => {
-      if (h.archived) return acc;
-      const m = maxStreakAllTime(h, completions[h.id] || []);
-      return m > acc ? m : acc;
-    }, 0);
+    // Гнучкий аналог, як і `currentStreak` — інакше «Серія сьогодні» могла
+    // показувати БІЛЬШЕ, ніж «Макс. серія» (unification audit 2026-08-31,
+    // finding 1.22): жорсткий рекорд не бачив прощених пропусків, які
+    // гнучка поточна серія вже пережила.
+    const maxAllTime = flexibleMaxStreakAllTimeAcrossHabits(
+      habits,
+      completions,
+      routine.skips ?? {},
+    );
     // `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2). Саме тут вона
     // найпомітніша: усі зрізи цілком лежать у минулому, тож без параметра
     // пауза, поставлена сьогодні, обнуляла б їх усі одразу.
@@ -77,7 +73,13 @@ export function RoutineStatsPanel({
       { pausedFrom: todayKey },
     );
     return { maxAllTime, rate };
-  }, [routine.habits, routine.completions, todayKey, range.days]);
+  }, [
+    routine.habits,
+    routine.completions,
+    routine.skips,
+    todayKey,
+    range.days,
+  ]);
 
   return (
     <div
@@ -106,28 +108,60 @@ export function RoutineStatsPanel({
         <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
           Зведення · {range.hint}
         </SectionHeading>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {/* Той самий `statCard`, що й у сусідів: `statCardHighlight` дає
-              світлу заливку, яка в «Чорнилі» читалась як витік світлої теми
-              (браузерна перевірка 2026-08-17). Акцент несе заголовок картки,
-              а не блок. */}
-          <div className={cn(C.statCard, "col-span-2 sm:col-span-1")}>
-            <Stat
-              label="Виконано"
-              value={
-                <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
-              }
-              sublabel={`${summary.rate.completed}/${summary.rate.scheduled}`}
-              size="md"
-            />
-          </div>
-          <div className={C.statCard}>
-            <Stat label="Серія сьогодні" value={currentStreak} size="md" />
-          </div>
-          <div className={C.statCard}>
-            <Stat label="Макс. серія" value={summary.maxAllTime} size="md" />
-          </div>
-        </div>
+        {/* F1 (анти-слоп аудит 2026-09-01): три однакові плитки «число +
+            підпис» — це та сама stat-граматика, що й тайли хабу й
+            «Аналітика» Їжі, і на одному екрані вона дає ієрархію густини
+            рівно нуль. П4 стратегії застосовано до КІЛЬКОСТІ контейнерів:
+            один показник — hero (`Виконано`, єдине число зі станом за
+            зріз), решта — рядок тексту без власного бокса. Раніше плитки
+            несли ще й `statCardHighlight` зі світлою заливкою, яка в
+            «Чорнилі» читалась як витік світлої теми (браузерна перевірка
+            2026-08-17) — боксів нема, нема й проблеми. */}
+        {/* Відсотка від нуля не буває: коли в зрізі нічого не заплановано,
+            «0%» при «0/0» читався б як провал. */}
+        <Stat
+          label="Виконано"
+          value={
+            summary.rate.scheduled > 0 ? (
+              <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
+            ) : (
+              "–"
+            )
+          }
+          sublabel={
+            summary.rate.scheduled > 0
+              ? `${summary.rate.completed}/${summary.rate.scheduled}`
+              : undefined
+          }
+          size="md"
+        />
+        {/* Обидва числа — крос-звичкові МАКСИМУМИ, не «тримаю все N днів»:
+            `currentStreak` приходить як `streakMax` (`flexibleMaxActiveStreak`
+            по всіх звичках), `maxAllTime` — `flexibleMaxStreakAllTimeAcrossHabits`.
+            Доти підписи казали «Серія сьогодні» й «Макс. серія», тобто людина
+            читала агрегат як власну суцільну серію (знахідка PR-R10).
+
+            AI-DANGER: це ДРУГА поверхня тієї ж знахідки. Першу
+            (`RoutineCalendarHero.tsx:170-178`) виправили раніше — там підпис
+            уже каже «найкраща серія», і там же стоїть пояснення з посиланням
+            на PR-R10. Воно не вберегло цей файл: коментар у файлі А не боронить
+            файл Б. Слово «найкраща» тут узяте звідти навмисно, щоб дві
+            поверхні називали одну величину однаково; міняєш формулювання —
+            міняй в обох. */}
+        <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 text-style-label text-muted">
+          <span>Найкраща серія:</span>
+          <span>сьогодні</span>
+          <span className="font-semibold text-text tabular-nums">
+            {currentStreak}
+          </span>
+          <span aria-hidden className="text-subtle">
+            ·
+          </span>
+          <span>за весь час</span>
+          <span className="font-semibold text-text tabular-nums">
+            {summary.maxAllTime}
+          </span>
+        </p>
       </Card>
 
       {range.view === "rows" ? (
@@ -147,6 +181,7 @@ export function RoutineStatsPanel({
           key={range.id}
           habits={routine.habits}
           completions={routine.completions}
+          skips={routine.skips}
           historyWeeks={range.heatmapWeeks ?? 53}
           futureWeeks={range.heatmapFutureWeeks ?? 4}
           historyLabel={range.heatmapHistoryLabel ?? "рік"}

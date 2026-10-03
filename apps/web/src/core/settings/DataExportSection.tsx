@@ -4,7 +4,9 @@ import { Button } from "@shared/components/ui/Button";
 import { meApi, type MeExportResponse } from "@shared/api";
 import { downloadString } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
+import { useAuthOptional } from "../auth/AuthContext";
 import { HubBackupPanel } from "../hub/HubBackupPanel";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 const m = messages.dataExport;
@@ -17,16 +19,30 @@ function exportFilename(ext: "json" | "csv"): string {
 /**
  * Розкладає серверний експорт у секції CSV.
  *
- * AI-CONTEXT: список секцій привʼязаний до форми `MeExportResponse` і саме
- * тому будується явно, а не обходом обʼєкта рекурсією. Рекурсія дала б
+ * AI-CONTEXT: акаунтні секції привʼязані до форми `MeExportResponse` і саме
+ * тому будуються явно, а не обходом обʼєкта рекурсією. Рекурсія дала б
  * «магічні» назви секцій із ключів схеми (`webSubscriptions`), а файл, який
  * founder попросив «щоб подивитись», має бути читабельним українською.
  * Ціна — новий масив в експорті треба додати сюди руками; тест на це є.
+ *
+ * Модульні секції — виняток із цього правила: їх майже піввсотні, і назва
+ * там уже сама себе пояснює (`finyk_assets`, `routine_habits`). Власний
+ * український рядок на кожну таблицю означав би пів сотні i18n-ключів, які
+ * розходяться з базою при першій же міграції. Тому тут імʼя таблиці як є.
  */
 function toCsvSections(payload: MeExportResponse): ExportCsvSection[] {
   const d = payload.data;
+  const moduleSections: ExportCsvSection[] = [
+    d.finyk,
+    d.fizruk,
+    d.nutrition,
+    d.routine,
+  ].flatMap((section) =>
+    Object.entries(section).map(([table, rows]) => ({ name: table, rows })),
+  );
   return [
     { name: m.sections.moduleData, rows: d.moduleData },
+    ...moduleSections,
     { name: m.sections.monoAccounts, rows: d.mono.accounts },
     { name: m.sections.monoTransactions, rows: d.mono.transactions },
     {
@@ -35,12 +51,22 @@ function toCsvSections(payload: MeExportResponse): ExportCsvSection[] {
     },
     { name: m.sections.subscriptions, rows: d.billing.subscriptions },
     { name: m.sections.pushDevices, rows: d.push.devices },
-    { name: m.sections.aiUsage, rows: d.ai.usageDaily },
-    { name: m.sections.aiMemories, rows: d.ai.memories },
+    { name: m.sections.excluded, rows: d.excluded },
   ];
 }
 
 export function DataExportSection() {
+  const auth = useAuthOptional();
+  /**
+   * Три стани, а не два: `null` означає «ще не знаємо».
+   *
+   * `useAuthOptional` повертає `null` там, де провайдера немає взагалі
+   * (демо-рендер, частина тестів) — там ми теж НЕ знаємо і нічого не
+   * стверджуємо. Те саме поки `isLoading`. Гейт нижче реагує лише на
+   * явне `false`, тобто на підтверджене «це гість».
+   */
+  const signedIn: boolean | null =
+    auth == null || auth.isLoading ? null : auth.user != null;
   const [serverExportBusy, setServerExportBusy] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -73,15 +99,15 @@ export function DataExportSection() {
   };
 
   return (
-    <SettingsGroup title="Експорт/імпорт JSON" icon="download">
-      <p className="text-style-caption text-subtle leading-snug">
+    <SettingsGroup title={settingsSectionTitle("dataExport")} icon="download">
+      <p className="text-style-body text-subtle leading-snug">
         Збережи всі свої локальні дані у файл, його потім можна імпортувати
         назад. Для залогінених користувачів нижче є окремий експорт із серверних
         даних акаунта.
       </p>
       <HubBackupPanel className="" />
 
-      {/* V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+      {/* V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
           §5): три саморобні `<h3 class="text-style-label">` → спільний
           примітив `SettingsSubGroup` (h3, `text-style-overline`) — той
           самий рецепт, канонічно пояснений у `PrivacySection.tsx`.
@@ -91,30 +117,46 @@ export function DataExportSection() {
           `SettingsSubGroup`. */}
       <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
         <SettingsSubGroup title="Права на дані">
-          <p className="text-style-caption text-subtle leading-relaxed">
+          <p className="text-style-body text-subtle leading-relaxed">
             Серверний експорт не включає сирі секрети й токени. Видалити акаунт
             можна у профілі, там зібрані всі дії керування акаунтом.
           </p>
+          {/* PR-S14: дві кнопки б'ють у `meApi.exportAccount`, який для гостя
+              завжди 401. Доти гість натискав їх і отримував помилку — тобто
+              інтерфейс пропонував дію, якої не існує для його стану, і
+              пояснював це вже постфактум. Тепер стан видно ДО натискання.
+
+              AI-DANGER: гейт стоїть на `signedIn === false`, а не на
+              `!signedIn`. Різниця не косметична: доки сесія гідрується,
+              `signedIn` це `null`, і кнопки лишаються як були. Заміна на
+              `!signedIn` зробила б так, що кожен залогінений користувач на
+              частку секунди бачить «увійди» — рівно той дефект, який
+              PR-S2 лікував у сусідній секції. */}
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => void handleServerExport("json")}
-              disabled={serverExportBusy}
+              disabled={serverExportBusy || signedIn === false}
             >
               {serverExportBusy ? m.busy : m.downloadJson}
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => void handleServerExport("csv")}
-              disabled={serverExportBusy}
+              disabled={serverExportBusy || signedIn === false}
             >
               {serverExportBusy ? m.busy : m.downloadCsv}
             </Button>
           </div>
+          {signedIn === false ? (
+            <p className="text-style-caption text-subtle leading-relaxed">
+              {m.guestHint}
+            </p>
+          ) : null}
           <p className="text-style-caption text-subtle leading-relaxed">
             {m.formatsHint}
           </p>
@@ -131,34 +173,12 @@ export function DataExportSection() {
         </SettingsSubGroup>
       </div>
 
-      {/* Рішення founder-а #10, друга половина: маскування без декларації —
-          внутрішня деталь, про яку користувач не знає. Перелік обробників
-          стоїть тут, поруч із експортом, бо це те саме питання «що ви про
-          мене знаєте і куди воно дівається». */}
-      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <SettingsSubGroup title={m.subprocessors.title}>
-          <p className="text-style-caption text-subtle leading-relaxed">
-            {m.subprocessors.body}
-          </p>
-          <p className="text-style-caption text-subtle leading-relaxed">
-            {m.subprocessors.photoNote}
-          </p>
-        </SettingsSubGroup>
-      </div>
-
-      {/* Рішення founder-а #6: попередження за 30 днів + вікно на експорт.
-          Обіцянка живе В ПРОДУКТІ, поруч із кнопками, якими її виконують —
-          а не лише в умовах використання, куди ніхто не заходить. */}
-      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <SettingsSubGroup title={m.sunset.title}>
-          <p className="text-style-caption text-subtle leading-relaxed">
-            {m.sunset.body}
-          </p>
-          <p className="text-style-caption text-subtle leading-relaxed">
-            {m.sunset.bankNote}
-          </p>
-        </SettingsSubGroup>
-      </div>
+      {/* Тут раніше стояли дві декларації — «Куди їдуть дані для AI»
+          (рішення founder-а #10) і sunset-обіцянка (рішення #6). Вони
+          переїхали в «Дані та приватність» (`PrivacySection`) рішенням
+          founder-а 2026-09-14, знахідка PR-S4 продуктового огляду: питання
+          «що ви про мене знаєте» людина носить у приватність, а сюди йде по
+          файл. Розділ тепер про самі файли й нічого більше. */}
     </SettingsGroup>
   );
 }

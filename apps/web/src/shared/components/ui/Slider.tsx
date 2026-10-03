@@ -10,9 +10,9 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { clampToDomain } from "@shared/charts/chartMath";
 
 /**
  * Sergeant Design System — Slider.
@@ -103,10 +103,6 @@ const thumbSize: Record<SliderSize, string> = {
   sm: "w-4 h-4",
   md: "w-5 h-5",
 };
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 function snapToStep(value: number, min: number, step: number): number {
   if (step <= 0) return value;
@@ -210,7 +206,11 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 
     const updateThumb = useCallback(
       (thumb: 0 | 1, rawValue: number, end = false) => {
-        const snapped = clamp(snapToStep(rawValue, min, step), min, max);
+        const snapped = clampToDomain(
+          snapToStep(rawValue, min, step),
+          min,
+          max,
+        );
         if (isRange) {
           const [lo, hi] = currentValue as RangeValue;
           const next: RangeValue =
@@ -234,7 +234,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
         const fraction = isVertical
           ? 1 - (clientY - rect.top) / Math.max(rect.height, 1)
           : (clientX - rect.left) / Math.max(rect.width, 1);
-        return min + clamp(fraction, 0, 1) * (max - min);
+        return min + clampToDomain(fraction, 0, 1) * (max - min);
       },
       [isVertical, max, min],
     );
@@ -424,7 +424,10 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
           onPointerUp={onTrackPointerUp}
           onPointerCancel={onTrackPointerUp}
           className={cn(
-            "relative rounded-full bg-line",
+            // Незаповнений трек — `bg-control` (≥3:1, WCAG 1.4.11), як вимкнений
+            // трек `Switch` і межа полів; `bg-line` давав 1.32 / 1.56 (аудит
+            // 2026-10-01, A3; рішення власника: у тому ж follow-up).
+            "relative rounded-full bg-control",
             isVertical
               ? cn(trackThicknessVertical[size], "h-full mx-auto")
               : cn(trackThickness[size], "w-full my-3"),
@@ -451,7 +454,10 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
                   <span
                     key={t}
                     className={cn(
-                      "absolute block rounded-full bg-muted/60",
+                      // Мітки на темнішому `bg-control`: `bg-muted/60` зливався б
+                      // із треком, непрозорий `bg-panel` читається і на ньому,
+                      // і на заливці.
+                      "absolute block rounded-full bg-panel",
                       isVertical
                         ? "w-1 h-1 left-1/2 -translate-x-1/2"
                         : "w-1 h-1 top-1/2 -translate-y-1/2",
@@ -475,9 +481,3 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 );
 
 Slider.displayName = "Slider";
-
-export function SliderTicks({ children }: { children?: ReactNode }) {
-  // Reserved for future composition: a `<SliderTicks>` slot that
-  // consumers can render below the track for custom tick labels.
-  return <>{children}</>;
-}

@@ -197,7 +197,7 @@ const WHITELIST = [
     table: "user",
     column: "force_verify_at",
     reason:
-      "server-only email-verification Phase D gate (docs/01-product/launch/email-verification-sweep.md); read only by the future Better Auth sign-in hook, never by the client",
+      "server-only email-verification Phase D gate (docs/work/specs/launch/email-verification-sweep.md); read only by the future Better Auth sign-in hook, never by the client",
   },
   // push_subscriptions: soft-delete column not in Drizzle model
   {
@@ -664,6 +664,16 @@ const PG_SQLITE_CROSS_WHITELIST = [
   },
   {
     table: "routine_habits",
+    column: "weekly_target_history",
+    reason: "PG JSONB name; SQLite counterpart is weekly_target_history_json",
+  },
+  {
+    table: "routine_habits",
+    column: "weekly_target_history_json",
+    reason: "SQLite TEXT name; PG counterpart is weekly_target_history",
+  },
+  {
+    table: "routine_habits",
     column: "pause_intervals",
     reason: "PG JSONB name; SQLite counterpart is pause_intervals_json",
   },
@@ -725,9 +735,16 @@ const SQL_ONLY_TABLES = [
   // та webhook-хендлерами (Stripe / Apple IAP / LiqPay), клієнт читає через API.
   "apple_iap_receipts",
   "billing_webhook_events",
-  // Plata recurring-payment credential: encrypted secret consumed only by
-  // the server scheduler/raw-pg billing layer; never exposed through Drizzle.
-  "plata_card_token",
+  // Plata: мапінг «юзер ↔ subscriptionId». `subscription/create` не має
+  // `reference`, тож звʼязок фіксуємо самі (міграція 133). Читає і пише лише
+  // серверний billing-шар сирим pg — `plata.ts` при checkout і `plataSync.ts`
+  // при звірці; клієнт стан підписки бачить через `/api/billing/status`, не
+  // через Drizzle. Той самий контур, що й `subscriptions` вище.
+  //
+  // Попередниця `plata_card_token` тут більше не потрібна: та сама міграція
+  // 133 її дропнула разом із самописною рекуренткою — рекурентні списання
+  // веде monobank, і card-token нам не належить зберігати взагалі.
+  "plata_subscription",
   "revenue_daily",
   "stripe_webhook_events",
   "subscriptions",
@@ -739,10 +756,10 @@ const SQL_ONLY_TABLES = [
   "mono_jar",
   "mono_transaction",
   // ПриватБанк merchant-креденшели під AES-256-GCM (міграція 091). Той самий
-  // контур, що й `mono_connection` / `plata_card_token`: секрет читає лише
-  // серверний банк-проксі, у Drizzle його свідомо немає.
+  // контур, що й `mono_connection`: секрет читає лише серверний банк-проксі,
+  // у Drizzle його свідомо немає.
   "privat_connection",
-  // Чек-скан v1 + Фаза 2 масового ведення (docs/90-work/planning/specs/
+  // Чек-скан v1 + Фаза 2 масового ведення (docs/work/specs/
   // receipt-scan.md, міграції 121/122). Читає й пише лише серверний
   // finyk/receipts + finyk/import модуль (raw pg, той самий контур, що
   // mono_*/apple_iap_receipts) — matcher, lookup/analyze/save,
@@ -836,7 +853,7 @@ const SQL_ONLY_TABLES = [
   "user_preferences",
   // Продуктовий фідбек (міграція 093). Пишеться одним сирим
   // `INSERT INTO feedback_entries` у `feedbackService.ts`; читається руками
-  // через psql (див. docs/03-operations/observability/feedback-loop.md).
+  // через psql (див. docs/operations/observability/feedback-loop.md).
   // Клієнт отримує з API лише `id` вставленого рядка, тож Drizzle-модель
   // не потрібна.
   "feedback_entries",
@@ -1017,7 +1034,7 @@ if (JSON_MODE) {
     }
     console.error(
       "\nFix: after adding a SQL migration, update packages/db-schema/src/pg/*.ts\n" +
-        "     to mirror the same tables/columns. See docs/00-start/playbooks/add-sql-migration.md\n" +
+        "     to mirror the same tables/columns. See docs/start/instructions/add-sql-migration.md\n" +
         "Whitelist: add an entry to WHITELIST in scripts/check-schema-drift.mjs " +
         "for intentional divergences.",
     );

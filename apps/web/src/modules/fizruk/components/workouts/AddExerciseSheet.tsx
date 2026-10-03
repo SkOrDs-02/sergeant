@@ -183,7 +183,7 @@ export function AddExerciseSheet({
                     // каталогу (`WorkoutCatalogSection`) — fizruk-soft
                     // токени замість інверсного «чорнила», щоб обидві
                     // поверхні вибору обладнання виглядали однаково.
-                    "text-xs px-3 py-2.5 min-h-[44px] rounded-full border transition-colors",
+                    "text-xs px-3 py-2.5 min-h-[44px] rounded-xl border transition-colors",
                     active
                       ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
                       : "border-line bg-bg text-muted hover:border-muted hover:text-text",
@@ -207,7 +207,7 @@ export function AddExerciseSheet({
                 key={id}
                 type="button"
                 className={cn(
-                  "text-xs px-3 py-2 min-h-[44px] rounded-full border transition-colors",
+                  "text-xs px-3 py-2 min-h-[44px] rounded-xl border transition-colors",
                   (form.musclesPrimary || []).includes(id)
                     ? "bg-primary border-primary text-bg"
                     : "border-line bg-bg text-muted hover:border-muted hover:text-text",
@@ -235,7 +235,7 @@ export function AddExerciseSheet({
                 key={id}
                 type="button"
                 className={cn(
-                  "text-xs px-3 py-2 min-h-[44px] rounded-full border transition-colors",
+                  "text-xs px-3 py-2 min-h-[44px] rounded-xl border transition-colors",
                   (form.musclesSecondary || []).includes(id)
                     ? "bg-text/80 border-text/80 text-white"
                     : "border-line bg-bg text-muted hover:border-muted hover:text-text",
@@ -270,13 +270,15 @@ export function AddExerciseSheet({
 
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           className="h-12 min-h-[44px]"
           onClick={() => {
             const nameUk = (form.nameUk || "").trim();
             if (!nameUk) {
               setNameError(
-                "Вкажи назву українською, без неї вправу не збережемо.",
+                "Вкажи назву українською, без неї вправа не збережеться.",
               );
               return;
             }
@@ -315,7 +317,7 @@ export function AddExerciseSheet({
           Зберегти
         </Button>
         <Button
-          variant="secondary"
+          variant="outline"
           className="h-12 min-h-[44px]"
           onClick={handleClose}
         >

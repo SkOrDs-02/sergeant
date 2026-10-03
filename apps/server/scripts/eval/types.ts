@@ -6,7 +6,11 @@
  * промпт і голден-сет із пастками.
  */
 
-import type { LLMProviderName } from "../../src/lib/llm/provider.js";
+import type {
+  LLMProviderName,
+  ReasoningEffort,
+} from "../../src/lib/llm/provider.js";
+import type { VoiceMode } from "./judges.js";
 
 /**
  * Вердикт судді: `true` — пройшов, `false` — провалив, рядок — провалив, і
@@ -24,6 +28,8 @@ export interface Candidate {
   provider: Extract<LLMProviderName, "anthropic" | "openrouter">;
   model: string;
   label: string;
+  /** `reasoning.effort` для OpenRouter; без поля шлюз вирішує сам, як у проді. */
+  reasoning?: ReasoningEffort;
 }
 
 /**
@@ -69,8 +75,11 @@ export interface Pipeline {
   /** Дешева перевірка на грубий промах — НЕ оцінка якості. */
   judge: (text: string) => JudgeVerdict;
   cases: GoldenCase[];
-  /** Прогнати VOICE_RULES поверх `judge` (лише user-facing пайплайни). */
-  checkVoice?: boolean;
+  /**
+   * Прогнати VOICE_RULES поверх `judge` (лише user-facing пайплайни) у
+   * режимі того промпта, що їде в прод: `chat` дозволяє жирний і «- ».
+   */
+  checkVoice?: VoiceMode;
   /**
    * Чи ставить прод `cache_control` на цьому шляху. Лише `chat`/`analysis`:
    * решта — одноразові фонові задачі, для них колонка «з кешем» порожня, бо

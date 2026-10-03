@@ -5,6 +5,7 @@
 import { useId } from "react";
 import type { Workout } from "@sergeant/fizruk-domain";
 import { Icon } from "@shared/components/ui/Icon";
+import { formatDateTimeShort, formatTimeHm } from "@shared/lib/time/formatDate";
 import {
   isoToDatetimeLocalValue,
   datetimeLocalValueToIso,
@@ -42,13 +43,13 @@ export interface WorkoutTimeEditorProps {
 }
 
 const INPUT_CLASS =
-  "input-focus-fizruk block w-full min-w-0 max-w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text [min-inline-size:0] [inline-size:100%]";
+  "input-focus-fizruk block w-full min-w-0 max-w-full h-11 rounded-xl border border-line bg-panel px-3 text-sm text-text [min-inline-size:0] [inline-size:100%]";
 
 /** `17:30`. */
 function formatTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+  return formatTimeHm(d);
 }
 
 /**
@@ -70,14 +71,7 @@ function formatEndStamp(startIso: string, endIso: string): string {
     start.getMonth() === end.getMonth() &&
     start.getDate() === end.getDate();
   /* eslint-enable sergeant-design/prefer-kyiv-time */
-  return sameDay
-    ? formatTime(endIso)
-    : end.toLocaleString("uk-UA", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+  return sameDay ? formatTime(endIso) : formatDateTimeShort(end);
 }
 
 export function WorkoutTimeEditor({
@@ -107,7 +101,7 @@ export function WorkoutTimeEditor({
       : "";
 
   return (
-    <details className="group mt-3 rounded-xl border border-line bg-panelHi/50 px-3 py-2">
+    <details className="group mt-3 rounded-xl border border-line bg-panelHi px-3 py-2">
       <summary className="flex items-center justify-between gap-2 min-h-[44px] -mx-1 px-1 rounded-lg cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
         <span className="min-w-0">
           <span className="block text-style-caption text-subtle">
@@ -121,7 +115,7 @@ export function WorkoutTimeEditor({
         </span>
         <Icon
           name="chevron-down"
-          size={16}
+          size="md"
           className="shrink-0 text-subtle transition-transform group-open:rotate-180"
           aria-hidden
         />

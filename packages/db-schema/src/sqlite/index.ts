@@ -9,7 +9,6 @@ export {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
   routineHabitSkips,
@@ -52,9 +51,16 @@ export {
   type SyncOpOutboxStatusCounts,
 } from "./syncOpOutboxStatus.js";
 export {
+  countRejectedOutbox,
+  listRejectedOutbox,
+  type ListRejectedOutboxOptions,
+  type RejectedOutboxRow,
+} from "./syncOpOutboxRejected.js";
+export {
   recoverDeadLetter,
   type RecoverDeadLetterResult,
   type RecoverDeadLetterSelector,
+  type RecoverDeadLetterTarget,
 } from "./syncOpOutboxRecover.js";
 export {
   repairPartialOutboxMigration,
@@ -73,8 +79,6 @@ export {
 export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
   FIZRUK_CLIENT_MIGRATIONS,
   FIZRUK_MIGRATIONS_TABLE,
   NUTRITION_CLIENT_MIGRATIONS,
@@ -89,6 +93,7 @@ export {
   fizrukWorkoutItems,
   fizrukWorkoutSets,
   fizrukCustomExercises,
+  fizrukCustomActivities,
   fizrukMeasurements,
   fizrukDailyLog,
   fizrukMonthlyPlan,
@@ -97,7 +102,6 @@ export {
   fizrukWellbeing,
   fizrukWorkoutTemplates,
   fizrukInjuries,
-  fizrukPushups,
 } from "./fizruk.js";
 export {
   nutritionMeals,

@@ -9,8 +9,8 @@
  *  - Hub-context (фінанси, тренування, звички, харчування) на mobile
  *    поки що порожній: web budgeт читає `window.localStorage`-блоби, які
  *    мобільна апка не дублює один-в-один. Сервер сам fall-back-нить на
- *    generic-instructions у такому разі. Повний context-builder — TODO
- *    Phase 8 react-native-migration.md.
+ *    generic-instructions у такому разі. Повний context-builder —
+ *    TODO(mobile-hub-context): 2027-03-31 — Phase 8 react-native-migration.md.
  *  - Tool-call executor на mobile не запускається (handler-и читають
  *    web-only localStorage shape-и). Натомість картки будуються через
  *    `buildActionCard` і вертаються до сервера як заглушка
@@ -177,7 +177,7 @@ export function useChatSend({
       }, REQUEST_TIMEOUT_MS);
 
       try {
-        // Mobile hub-context — TODO Phase 8. На сервері порожній рядок
+        // Mobile hub-context — TODO(mobile-hub-context): 2027-03-31 (Phase 8). На сервері порожній рядок
         // обробляється як «без даних» — це не блокує assistant-турн.
         const context = "";
 

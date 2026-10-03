@@ -112,7 +112,7 @@ describe("handleAsyncChatAction — recall_memory happy path", () => {
     const out = await handleAsyncChatAction(action);
     expect(typeof out).toBe("string");
     expect(out).toContain('Знайшов 2 схожих записів для "що я їв сьогодні"');
-    expect(out).toContain("Харчування");
+    expect(out).toContain("Їжа");
     expect(out).toContain("2026-04-30");
     expect(out).toContain("92%");
     expect(out).toContain("Сніданок: omelette + кава");
@@ -230,7 +230,7 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
       input: { query: "test" },
     } as unknown as ChatAction;
     const out = await handleAsyncChatAction(action);
-    expect(out).toBe("Потрібна авторизація для пошуку памʼяті.");
+    expect(out).toBe("Увійди, щоб шукати в памʼяті.");
   });
 
   it("→ 503 EMBEDDING_PROVIDER_UNAVAILABLE → 'тимчасово недоступна'", async () => {
@@ -279,7 +279,7 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
     expect(out).toContain("тимчасово недоступна");
   });
 
-  it("→ 500 → загальне HTTP-повідомлення", async () => {
+  it("→ 500 → загальний текст без коду статусу (§3 канону)", async () => {
     fetchMock.mockResolvedValueOnce(
       makeJsonResponse({ code: "RECALL_FAILED" }, { status: 500 }),
     );
@@ -288,7 +288,8 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
       input: { query: "test" },
     } as unknown as ChatAction;
     const out = (await handleAsyncChatAction(action)) as string;
-    expect(out).toContain("HTTP 500");
+    expect(out).toContain("Не вдалося отримати памʼять асистента");
+    expect(out).not.toContain("HTTP");
   });
 
   it("→ AbortError → 'Recall таймаут'", async () => {
@@ -313,5 +314,19 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
     } as unknown as ChatAction;
     const out = (await handleAsyncChatAction(action)) as string;
     expect(out).toContain("Не вдалося звʼязатися");
+  });
+});
+
+describe("handleAsyncChatAction — recall_memory 402 (Free)", () => {
+  it("→ 402 → чесний текст про Premium, без «спробуй ще раз»", async () => {
+    fetchMock.mockResolvedValueOnce(
+      makeJsonResponse({ error: "plan_required" }, { status: 402 }),
+    );
+    const out = await handleAsyncChatAction({
+      name: "recall_memory",
+      input: { query: "що я їв" },
+    } as unknown as ChatAction);
+    expect(String(out)).toContain("Premium");
+    expect(String(out)).not.toContain("Спробуй ще раз");
   });
 });

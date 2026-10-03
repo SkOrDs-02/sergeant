@@ -1,8 +1,22 @@
 import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { EXPORT_CLAIM } from "../content/exportClaim";
+import UpdatedOn from "../components/UpdatedOn";
 
 export default function TermsPage() {
-  usePageMeta(ROUTE_META["/terms"]);
+  usePageMeta({
+    ...ROUTE_META["/terms"],
+    // Та сама `WebPage`-форма, що й на /privacy (див. коментар там).
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: ROUTE_META["/terms"].title,
+      description: ROUTE_META["/terms"].description,
+      inLanguage: "uk",
+      dateModified: ROUTE_META["/terms"].lastmod,
+      publisher: { "@type": "Organization", name: "Sergeant" },
+    },
+  });
 
   const h2 =
     "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";
@@ -13,20 +27,28 @@ export default function TermsPage() {
       <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-4xl">
         Умови використання
       </h1>
-      <p className="mt-3 text-sm text-subtle">Оновлено 28.08.2026</p>
+      <p className="mt-3 text-sm text-subtle">
+        Оновлено <UpdatedOn iso={ROUTE_META["/terms"].lastmod} />
+      </p>
 
       <h2 className={h2}>Це бета</h2>
       <p className={p}>
         Sergeant у закритій беті: щось може ламатись, змінюватись чи зникати без
-        попередження. Чесний стан – у розділі «Доповідь про стан» на головній.
-        Сервіс надається «як є», без гарантій безперервної роботи.
+        попередження. Що саме зламано сьогодні – у{" "}
+        <a
+          href="/stan#vidomi-problemy"
+          className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          «Доповіді про стан»
+        </a>
+        . Сервіс надається «як є», без гарантій безперервної роботи.
       </p>
 
-      <h2 className={h2}>Що обіцяю</h2>
+      <h2 className={h2}>Що обіцяємо</h2>
       <p className={p}>
-        Ядро – модулі, ручний трекінг і підключення банку – безкоштовне
-        назавжди. Твої дані належать тобі: експорт у стандартні формати
-        доступний в один клік, а якщо бета закриється – даних це не стосується,
+        Ядро (модулі, ручний трекінг і підключення банку) безкоштовне назавжди.
+        Твої дані належать тобі. {EXPORT_CLAIM} Якщо продукт зупинятиметься,
+        попередимо щонайменше за 30 днів, і весь цей час експорт працюватиме:
         забереш усе.
       </p>
 

@@ -132,6 +132,20 @@ describe("aggregateCurrentSnapshot", () => {
     mockGetCachedNutritionSqliteState.mockReturnValue({
       refreshedAt: "2026-07-23T12:00:00Z",
       prefs: { dailyTargetKcal: 2300 },
+      goalPeriods: [
+        {
+          id: "goal",
+          effectiveFrom: "2026-07-01",
+          kcal: 2300,
+          proteinG: null,
+          fatG: null,
+          carbsG: null,
+          waterMl: null,
+          origin: "manual",
+          createdAt: "2026-07-01T00:00:00.000Z",
+          deletedAt: null,
+        },
+      ],
       log: {
         "2026-07-21": {
           meals: [

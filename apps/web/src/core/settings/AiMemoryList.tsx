@@ -28,18 +28,20 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import { useOptionalHubShell } from "../app/HubShellContext";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { meApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
 import { cn } from "@shared/lib/ui/cn";
-import type { AiMemoryListItem } from "@sergeant/api-client";
+import { isApiError, type AiMemoryListItem } from "@sergeant/api-client";
 
 // V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
 // портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
+import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 const m = messages.privacy.aiMemory;
 
@@ -54,14 +56,16 @@ const AUTO_OPEN_MAX_ITEMS = 5;
 /** Довші за це факти обрізаються до трьох рядків із кнопкою розгортання. */
 const CLAMP_CHARS = 160;
 
-/** Людські назви джерел. Ключі — `ALLOWED_MEMORY_SOURCES` на сервері. */
+/**
+ * Людські назви джерел. Ключі — `ALLOWED_MEMORY_SOURCES` на сервері.
+ *
+ * Ініціатива 0024 (PR-1, 2026-09-03) звузила серверний enum до чотирьох
+ * живих джерел — `chat`/`finyk`/`fizruk`/`nutrition`/`routine`/`journal`
+ * ніколи не мали продюсера в дереві. Мітки для них прибрані; fallback
+ * `?? item.source` нижче лишається на випадок старих рядків у БД (CHECK-
+ * constraint звужується двофазно, PR-3 тієї ж ініціативи).
+ */
 const SOURCE_LABEL: Record<string, string> = {
-  chat: "Чат",
-  finyk: "Фінік",
-  fizruk: "Фізрук",
-  nutrition: "Харчування",
-  routine: "Рутина",
-  journal: "Щоденник",
   digest: "Підсумок тижня",
   cofounder: "Співзасновник",
   // Рішення власника 2026-08-18: «Продукт» нічого не пояснювало. Ці рядки —
@@ -94,15 +98,29 @@ function sourceLabel(source: string): string {
  */
 const TECHNICAL_SOURCES: ReadonlySet<string> = new Set(["product", "digest"]);
 
+/**
+ * Джерело з ЄДИНИМ редактором в іншому місці — Профіль → «Банк памʼяті»
+ * (рішення власника 2026-08-30, спека `memory-bank-consolidation.md`).
+ *
+ * AI-CONTEXT: до цієї зміни факти профілю мали тут власні хрестики, тобто
+ * список редагувався з двох екранів. Гірше за дубль кнопок був кеш-лаг:
+ * видалення звідси йшло `DELETE /api/ai-memory/:id` і чистило сервер, але
+ * локальний банк (`core/profile/memoryBank.ts`) лишався зі старим записом
+ * до перезавантаження сторінки — і чатовий `my_profile` ще бачив «видалений»
+ * факт. Тепер єдиний шлях видалення починається з локалки, яка свіжа за
+ * визначенням, а на сервер і у вектори це доїжджає наявним ланцюгом
+ * push → `mirrorProfileMemoryEntries` diff.
+ *
+ * Роут `DELETE /api/ai-memory/:id` НЕ чіпаємо: він лишається захисною
+ * когерентністю для прямих викликів API, просто UI ним більше не ходить.
+ */
+const PROFILE_SOURCE = "profile";
+
 function formatDay(iso: string): string {
   // Europe/Kyiv — доменний інваріант: дата факту має читатись у часовому
   // поясі юзера, а не у UTC, інакше вечірні записи «переїжджають» на
   // наступний день.
-  return new Intl.DateTimeFormat("uk-UA", {
-    day: "numeric",
-    month: "long",
-    timeZone: "Europe/Kyiv",
-  }).format(new Date(iso));
+  return formatDayMonth(new Date(iso), { timeZone: KYIV_TIME_ZONE });
 }
 
 interface MemoryGroup {
@@ -168,9 +186,9 @@ function MemoryFact({
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
             className={cn(
-              "mt-1 text-style-caption text-brand-strong dark:text-brand",
+              "mt-1 text-style-caption text-brand-strong",
               "hover:text-brand-600 transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-lg",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg",
             )}
           >
             {expanded ? m.collapseFact : m.expandFact}
@@ -188,12 +206,56 @@ function MemoryFact({
         size="sm"
         aria-label={`${m.deleteAria}: ${item.content}`}
         disabled={deleteDisabled}
-        className="text-danger-strong"
+        className="text-danger-strong hover:text-danger"
         onClick={() => onDelete(item)}
       >
-        <Icon name="close" size={14} aria-hidden />
+        <Icon name="close" size="sm" aria-hidden />
       </Button>
     </li>
+  );
+}
+
+/**
+ * Картка-вказівник замість розкривної групи: показує, скільки фактів
+ * профілю асистент бачить, і веде туди, де вони редагуються.
+ *
+ * Лічильник свідомо рахує ЗАВАНТАЖЕНІ сторінки, а не робить окремий запит:
+ * список і так пагінований, а точна цифра тут нічого не вирішує — вона
+ * орієнтир, не звіт. Якщо людина дотисне «Показати більше», число підросте
+ * разом зі списком.
+ */
+function ProfileGroupCard({ count }: { count: number }) {
+  // `useOptionalHubShell` (не `useHubShell`): секція рендериться і поза
+  // роутером — у тестах і Storybook, — а падати там через відсутній
+  // контекст вона не має. Без шелла картка лишається читабельною, зникає
+  // лише кнопка переходу.
+  const shell = useOptionalHubShell();
+
+  return (
+    <section className="rounded-xl border border-line bg-panel p-3">
+      <div className="flex items-center gap-2">
+        <span className="text-style-label font-semibold text-text">
+          {m.profileGroupTitle}
+        </span>
+        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-style-caption font-bold text-muted">
+          {count}
+        </span>
+      </div>
+      <p className="mt-1 text-style-caption text-subtle leading-relaxed">
+        {m.profileGroupHint}
+      </p>
+      {shell ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          onClick={() => shell.ui.setHubView("profile")}
+        >
+          {m.profileGroupAction}
+        </Button>
+      ) : null}
+    </section>
   );
 }
 
@@ -228,7 +290,7 @@ function MemoryGroupSection({
         className={cn(
           "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl touch-target",
           "border border-line bg-panel hover:bg-panelHi transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         )}
       >
         <span className="flex items-center gap-2 text-style-label font-semibold text-text">
@@ -316,10 +378,31 @@ export function AiMemoryList() {
   }
 
   if (query.isError) {
+    // 401/403 — гість, не збій: список за `requireSession()`. Той самий
+    // патерн, що й у `PrivacySection.loadPreferences` («Увійди в акаунт,
+    // щоб…»), і той самий примітив, що й у порожнього стану нижче — це
+    // саме порожній стан з іншою причиною, а не помилка.
+    if (
+      isApiError(query.error) &&
+      query.error.kind === "http" &&
+      query.error.isAuth
+    ) {
+      return <EmptyState size="sm" description={m.authRequired} />;
+    }
     return (
-      <p className="text-style-caption text-danger-strong" role="alert">
-        {m.loadError}
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-style-caption text-danger-strong" role="alert">
+          {m.loadError}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => void query.refetch()}
+        >
+          {messages.actions.tryAgain}
+        </Button>
+      </div>
     );
   }
 
@@ -336,15 +419,19 @@ export function AiMemoryList() {
   return (
     <div className="space-y-2">
       <div className="space-y-2">
-        {groups.map((group) => (
-          <MemoryGroupSection
-            key={group.source}
-            group={group}
-            defaultOpen={groupsDefaultOpen}
-            onDelete={setPending}
-            deleteDisabled={remove.isPending}
-          />
-        ))}
+        {groups.map((group) =>
+          group.source === PROFILE_SOURCE ? (
+            <ProfileGroupCard key={group.source} count={group.items.length} />
+          ) : (
+            <MemoryGroupSection
+              key={group.source}
+              group={group}
+              defaultOpen={groupsDefaultOpen}
+              onDelete={setPending}
+              deleteDisabled={remove.isPending}
+            />
+          ),
+        )}
       </div>
 
       {query.hasNextPage ? (

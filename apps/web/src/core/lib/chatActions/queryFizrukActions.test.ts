@@ -157,7 +157,7 @@ describe("exercise_progress", () => {
       input: { exercise_name: "жим" },
     });
     expect(out).toContain("Прогрес");
-    expect(out).toMatch(/75 → 82\.5/); // w3 first (75) → w1 last (82.5)
+    expect(out).toMatch(/75 → 82,5/); // w3 first (75) → w1 last (82.5)
   });
 
   it("error: missing exercise_name returns guidance", () => {

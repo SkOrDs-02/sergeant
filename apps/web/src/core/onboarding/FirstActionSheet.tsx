@@ -15,6 +15,9 @@ import {
   formatNumberUk,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
+// AI-CONTEXT: `uk.ts`, не `uk.core` — аркуш живе в лінивому чанку хаба, тож
+// повний каталог йому безкоштовний (розбір — у самій групі `firstAction`).
+import { messages } from "@shared/i18n/uk";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
@@ -41,34 +44,28 @@ interface FirstActionEntry {
  * «Власний варіант» fallback that still deep-links via
  * `openHubModuleWithAction`.
  */
+const COPY = messages.firstAction;
+
 const ACTIONS: Record<ModuleId, FirstActionEntry> = {
   routine: {
     icon: "check",
-    title: "Створи першу звичку",
-    desc: "~5 секунд. І серія днів стартує одразу.",
     accent: "text-routine-soft-fg bg-routine-soft",
-    chipLabel: "Рутина",
+    ...COPY.actions.routine,
   },
   finyk: {
     icon: "credit-card",
-    title: "Додай першу витрату",
-    desc: "~5 секунд, будь-яка сума.",
     accent: "text-finyk-soft-fg bg-finyk-soft",
-    chipLabel: "Фінік",
+    ...COPY.actions.finyk,
   },
   nutrition: {
     icon: "utensils",
-    title: "Запиши перший прийом їжі",
-    desc: "Калорії порахую я.",
     accent: "text-nutrition-soft-fg bg-nutrition-soft",
-    chipLabel: "Їжа",
+    ...COPY.actions.nutrition,
   },
   fizruk: {
     icon: "dumbbell",
-    title: "Увімкни розминку",
-    desc: "10 хв, таймер сам.",
     accent: "text-fizruk-soft-fg bg-fizruk-soft",
-    chipLabel: "Фізрук",
+    ...COPY.actions.fizruk,
   },
 };
 
@@ -115,20 +112,13 @@ function getGoalAwareDesc(moduleId: string, fallback: string): string {
     return `${goals.fizrukWeeklyGoal}× на тиждень, починай із розминки.`;
   }
   if (moduleId === "routine" && goals.routineFirstHabit) {
-    const habitLabels: Record<string, string> = {
-      water: "«Пити воду»",
-      exercise: "«Зарядка»",
-      reading: "«Читання»",
-    };
-    const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
+    const habitLabels: Record<string, string> = COPY.habitLabels;
+    const label =
+      habitLabels[goals.routineFirstHabit] ?? COPY.habitLabels.fallback;
     return `Створи ${label}, і починається серія днів.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
-    const goalLabels: Record<string, string> = {
-      lose: "Схуднути",
-      gain: "Набрати масу",
-      maintain: "Підтримка",
-    };
+    const goalLabels: Record<string, string> = COPY.goalLabels;
     return `${goalLabels[goals.nutritionGoal]}, залогай перший прийом їжі.`;
   }
   return fallback;
@@ -223,19 +213,18 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           radius="lg"
           padding="md"
           className="relative space-y-3"
-          aria-label="Перша дія"
+          aria-label={COPY.sheetLabel}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <SectionHeading as="div" size="xs" variant="subtle">
-                Старт
+                {COPY.kicker}
               </SectionHeading>
               <h2 className="text-style-title text-text mt-0.5">
-                З чого хочеш почати?
+                {COPY.headingMany}
               </h2>
-              <p className="text-style-caption text-muted mt-0.5 leading-snug">
-                Обери модуль для першого запису. Routine не відкриється
-                автоматично.
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
+                {COPY.subtitleSingle}
               </p>
             </div>
             <Button
@@ -243,10 +232,10 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               size="xs"
               iconOnly
               onClick={dismiss}
-              aria-label="Сховати"
+              aria-label={COPY.hideLabel}
               className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
             >
-              <Icon name="close" size={16} />
+              <Icon name="close" size="md" />
             </Button>
           </div>
 
@@ -273,7 +262,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                       )}
                       aria-hidden
                     >
-                      <Icon name={action.icon} size={20} />
+                      <Icon name={action.icon} size="lg" />
                     </span>
                     <span className="min-w-0">
                       <span className="block text-style-title text-text">
@@ -307,19 +296,18 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           radius="lg"
           padding="md"
           className="relative space-y-3"
-          aria-label="Перша дія"
+          aria-label={COPY.sheetLabel}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <SectionHeading as="div" size="xs" variant="subtle">
-                Старт
+                {COPY.kicker}
               </SectionHeading>
               <h2 className="text-style-title text-text mt-0.5">
-                З чого хочеш почати?
+                {COPY.headingMany}
               </h2>
-              <p className="text-style-caption text-muted mt-0.5 leading-snug">
-                Ти обрав кілька модулів, кожен може бути першим, без прихованого
-                пріоритету.
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
+                {COPY.subtitleMulti}
               </p>
             </div>
             <Button
@@ -327,17 +315,17 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               size="xs"
               iconOnly
               onClick={dismiss}
-              aria-label="Сховати"
+              aria-label={COPY.hideLabel}
               className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
             >
-              <Icon name="close" size={16} />
+              <Icon name="close" size="md" />
             </Button>
           </div>
 
           <div
             className="grid grid-cols-1 gap-2 sm:grid-cols-2"
             role="group"
-            aria-label="Обрані модулі для старту"
+            aria-label={COPY.picksLabel}
           >
             {picks.map((id) => {
               const action = ACTIONS[id];
@@ -361,7 +349,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                       )}
                       aria-hidden
                     >
-                      <Icon name={action.icon} size={20} />
+                      <Icon name={action.icon} size="lg" />
                     </span>
                     <span className="min-w-0">
                       <span className="block text-style-title text-text">
@@ -396,18 +384,18 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
         radius="lg"
         padding="md"
         className="relative space-y-3"
-        aria-label="Перша дія"
+        aria-label={COPY.sheetLabel}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <SectionHeading as="div" size="xs" variant="subtle">
-              Старт
+              {COPY.kicker}
             </SectionHeading>
             <h2 className="text-style-title text-text mt-0.5">
-              {picks.length > 1 ? "З чого хочеш почати?" : "Почни з однієї дії"}
+              {picks.length > 1 ? COPY.headingMany : COPY.headingOne}
             </h2>
             <p className="text-style-body text-muted mt-0.5 leading-snug">
-              Твої показники зʼявляться після першого збереженого запису.
+              {COPY.subtitleEmpty}
             </p>
           </div>
           <Button
@@ -415,10 +403,10 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             size="xs"
             iconOnly
             onClick={dismiss}
-            aria-label="Сховати"
+            aria-label={COPY.hideLabel}
             className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
           >
-            <Icon name="close" size={16} />
+            <Icon name="close" size="md" />
           </Button>
         </div>
 
@@ -449,7 +437,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             <Icon
               name="chevron-right"
               size={18}
-              className="text-brand-strong dark:text-brand"
+              className="text-brand-strong"
             />
           </div>
         </button>
@@ -463,9 +451,11 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           <div
             className="flex flex-wrap items-center gap-2 pt-1"
             role="group"
-            aria-label="Інший модуль"
+            aria-label={COPY.otherModuleLabel}
           >
-            <span className="text-style-caption text-muted shrink-0">Або:</span>
+            <span className="text-style-caption text-muted shrink-0">
+              {COPY.orPrefix}
+            </span>
             {others.map((id) => {
               const a = ACTIONS[id];
               return (
@@ -488,7 +478,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                     )}
                     aria-hidden
                   >
-                    <Icon name={a.icon} size={12} />
+                    <Icon name={a.icon} size="xs" />
                   </span>
                   <span className="text-style-caption font-medium">
                     {a.chipLabel}

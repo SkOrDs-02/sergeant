@@ -31,6 +31,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it } from "vitest";
 import { useState, type ReactNode } from "react";
+import { hubKeys } from "@shared/lib/api/queryKeys";
 import { writeMemoryEntries } from "./memoryBank";
 import { useProfileWriteThroughBoot } from "./useProfileWriteThroughBoot";
 
@@ -154,6 +155,67 @@ describe("useProfileWriteThroughBoot", () => {
     // Query would have served user-1's cached response (or never
     // refetched at all) instead of running the queryFn a second time.
     expect(mockReconcile).toHaveBeenNthCalledWith(2, user2Profile, "user-2");
+  });
+});
+
+// Аудит 2026-09-28, D2: кеш `hubKeys.profile` персиститься в IndexedDB, тож
+// після reload він приходить відразу, а `staleTime: Infinity` вважав його
+// свіжим, тож звірка йшла проти знімка з моменту входу, і факти, додані
+// пізніше, гідратувались порожнечею.
+describe("useProfileWriteThroughBoot: reconcile only against a fresh fetch", () => {
+  const stale = {
+    profile: { heightCm: 170 },
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+  const fresh = {
+    profile: { heightCm: 181 },
+    updatedAt: "2026-09-28T10:00:00.000Z",
+  };
+
+  function seededWrapper(seed: unknown) {
+    return function SeededWrapper({ children }: { children: ReactNode }) {
+      const [client] = useState(() => {
+        const c = new QueryClient({
+          defaultOptions: { queries: { retry: false } },
+        });
+        c.setQueryData(hubKeys.profile("user-1"), seed);
+        return c;
+      });
+      return (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      );
+    };
+  }
+
+  it("ignores a restored cache snapshot and reconciles against the server response", async () => {
+    mockUseAuth.mockReturnValue({ user: { id: "user-1" } });
+    mockGetProfile.mockResolvedValue(fresh);
+    renderHook(() => useProfileWriteThroughBoot(), {
+      wrapper: seededWrapper(stale),
+    });
+
+    await waitFor(() =>
+      expect(mockReconcileMemoryBank).toHaveBeenCalledTimes(1),
+    );
+    expect(mockGetProfile).toHaveBeenCalledTimes(1);
+    expect(mockReconcileMemoryBank).toHaveBeenCalledWith(fresh, "user-1");
+    expect(mockReconcile).not.toHaveBeenCalledWith(stale, "user-1");
+  });
+
+  it("re-reconciles against a fresh fetch when the network comes back", async () => {
+    mockUseAuth.mockReturnValue({ user: { id: "user-1" } });
+    mockGetProfile.mockResolvedValueOnce(stale).mockResolvedValueOnce(fresh);
+    renderHook(() => useProfileWriteThroughBoot(), { wrapper: Wrapper });
+    await waitFor(() =>
+      expect(mockReconcileMemoryBank).toHaveBeenCalledTimes(1),
+    );
+
+    window.dispatchEvent(new Event("online"));
+
+    await waitFor(() =>
+      expect(mockReconcileMemoryBank).toHaveBeenCalledTimes(2),
+    );
+    expect(mockReconcileMemoryBank).toHaveBeenLastCalledWith(fresh, "user-1");
   });
 });
 

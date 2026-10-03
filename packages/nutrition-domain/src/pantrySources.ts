@@ -102,6 +102,8 @@ export function capSources(
       qty: sourcesTotal(folded),
       unit: first.unit,
       addedAt: first.addedAt,
+      // Згорнуті покупки мали різні фасування — спільного «× N» у них немає.
+      packCount: null,
     },
     ...rest,
   ];
@@ -152,6 +154,28 @@ function sourceKey(s: PantryItemSource): string {
 }
 
 /**
+ * Вага одного фасування для прификсовування порції в прийомі їжі —
+ * з НАЙСВІЖІШОГО (за `addedAt`) варіанта, що її знає.
+ *
+ * `packGrams` є лише в покупках, довезених через чек Сільпо
+ * (`useSilpoPantryReplenish.ts`): ручний ввід і синтетичний варіант
+ * наявного залишку (`syntheticSource`) його не несуть. `addedAt: null`
+ * рахується як найстаріший запис — так само, як порядок варіантів у
+ * `mergeSources` (наявні спершу, нові в кінець).
+ */
+export function latestPackGrams(
+  sources: readonly PantryItemSource[] | null | undefined,
+): number | null {
+  if (!Array.isArray(sources) || sources.length === 0) return null;
+  let best: PantryItemSource | null = null;
+  for (const s of sources) {
+    if (s.packGrams == null) continue;
+    if (!best || (s.addedAt ?? "") >= (best.addedAt ?? "")) best = s;
+  }
+  return best?.packGrams ?? null;
+}
+
+/**
  * Списує `deductBase` (у базовій одиниці) з обраного варіанта.
  *
  * `preferredName` — назва варіанта, який обрала людина; `null` означає
@@ -184,7 +208,11 @@ export function consumeFromSources(
     if (left <= 0) break;
     const cur = list[i]!;
     const take = Math.min(cur.qty, left);
-    cur.qty = roundBase(cur.qty - take);
+    if (take > 0) {
+      cur.qty = roundBase(cur.qty - take);
+      // Надпочата покупка більше не «2 × 250 мл»: фасування ціле, залишок ні.
+      cur.packCount = null;
+    }
     left = roundBase(left - take);
   }
 

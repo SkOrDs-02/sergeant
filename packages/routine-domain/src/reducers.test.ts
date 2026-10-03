@@ -22,6 +22,7 @@ import {
   applySetCompletionNote,
   applySetHabitArchived,
   applySetHabitOrder,
+  applySetHabitSkip,
   applySetPref,
   applyToggleHabitCompletion,
   applyUpdateCategory,
@@ -56,6 +57,12 @@ function stateWithHabits(habits: Habit[]): RoutineState {
     habitOrder: habits.filter((h) => !h.archived).map((h) => h.id),
   };
 }
+
+// Межа «сьогодні» для редюсерів відмітки (PR-R3). Навмисно далеке
+// майбутнє: жодна дата в наявних кейсах не є «завтра» відносно неї,
+// тож ці тести перевіряють рівно те, що й перевіряли. Сам гейт
+// закритий окремими кейсами нижче.
+const BOUNDS = { todayKey: "2099-12-31" };
 
 describe("routine-domain/reducers — теги і категорії", () => {
   describe("applyCreateTag", () => {
@@ -550,12 +557,14 @@ describe("routine-domain/reducers — completions і нотатки", () => {
   describe("applyToggleHabitCompletion", () => {
     it("повертає state без змін для невідомого habitId", () => {
       const s = stateWithHabits([makeHabit({ id: "h1" })]);
-      expect(applyToggleHabitCompletion(s, "missing", "2026-01-05")).toBe(s);
+      expect(
+        applyToggleHabitCompletion(s, "missing", "2026-01-05", BOUNDS),
+      ).toBe(s);
     });
 
     it("додає відмітку коли звичка запланована і ще не позначена", () => {
       const s = stateWithHabits([makeHabit({ id: "h1" })]);
-      const next = applyToggleHabitCompletion(s, "h1", "2026-01-05");
+      const next = applyToggleHabitCompletion(s, "h1", "2026-01-05", BOUNDS);
       expect(next.completions["h1"]).toEqual(["2026-01-05"]);
     });
 
@@ -569,7 +578,7 @@ describe("routine-domain/reducers — completions і нотатки", () => {
         ...stateWithHabits([habit]),
         completions: { h1: ["2026-01-05"] },
       };
-      const next = applyToggleHabitCompletion(s, "h1", "2026-01-05");
+      const next = applyToggleHabitCompletion(s, "h1", "2026-01-05", BOUNDS);
       expect(next.completions["h1"]).toEqual([]);
     });
 
@@ -580,7 +589,7 @@ describe("routine-domain/reducers — completions і нотатки", () => {
         startDate: "2026-01-01",
       });
       const s = stateWithHabits([habit]);
-      expect(applyToggleHabitCompletion(s, "h1", "2026-01-05")).toBe(s);
+      expect(applyToggleHabitCompletion(s, "h1", "2026-01-05", BOUNDS)).toBe(s);
     });
 
     it("результат сортується і дедуплікується", () => {
@@ -588,7 +597,7 @@ describe("routine-domain/reducers — completions і нотатки", () => {
         ...stateWithHabits([makeHabit({ id: "h1" })]),
         completions: { h1: ["2026-01-05", "2026-01-03"] },
       };
-      const next = applyToggleHabitCompletion(s, "h1", "2026-01-04");
+      const next = applyToggleHabitCompletion(s, "h1", "2026-01-04", BOUNDS);
       expect(next.completions["h1"]).toEqual([
         "2026-01-03",
         "2026-01-04",
@@ -608,7 +617,7 @@ describe("routine-domain/reducers — completions і нотатки", () => {
         ],
         habitOrder: ["h1", "h2"],
       };
-      const next = applyMarkAllScheduledHabitsComplete(s, "2026-01-05");
+      const next = applyMarkAllScheduledHabitsComplete(s, "2026-01-05", BOUNDS);
       expect(next.completions["h1"]).toEqual(["2026-01-05"]);
       expect(next.completions["h2"]).toEqual(["2026-01-05"]);
       expect(next.completions["h3"]).toBeUndefined();
@@ -619,7 +628,9 @@ describe("routine-domain/reducers — completions і нотатки", () => {
         ...stateWithHabits([makeHabit({ id: "h1" })]),
         completions: { h1: ["2026-01-05"] },
       };
-      expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-05")).toBe(s);
+      expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-05", BOUNDS)).toBe(
+        s,
+      );
     });
 
     it("пропускає звички що не заплановані на дату", () => {
@@ -629,7 +640,57 @@ describe("routine-domain/reducers — completions і нотатки", () => {
         startDate: "2026-01-01",
       });
       const s = stateWithHabits([habit]);
-      expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-05")).toBe(s);
+      expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-05", BOUNDS)).toBe(
+        s,
+      );
+    });
+
+    // PR-R2 (продуктовий аудит 2026-09-13, хвиля 2): bulk-варіант писав
+    // completions напряму, минаючи `clearSkip` і `weekDoneCount` — три
+    // стани дня переставали бути взаємовиключними, а гнучка звичка з
+    // виконаною тижневою ціллю все одно отримувала зайву відмітку.
+
+    it("знімає «не зміг» на звичці, яку масово відмічено виконаною (три стани дня взаємно виключні)", () => {
+      const habit = makeHabit({ id: "h1" });
+      const withSkip = applySetHabitSkip(
+        stateWithHabits([habit]),
+        "h1",
+        "2026-01-05",
+        "sick",
+      );
+      expect(withSkip.skips?.["h1"]?.["2026-01-05"]).toBeDefined();
+
+      const next = applyMarkAllScheduledHabitsComplete(
+        withSkip,
+        "2026-01-05",
+        BOUNDS,
+      );
+
+      expect(next.completions["h1"]).toEqual(["2026-01-05"]);
+      expect(next.skips?.["h1"]?.["2026-01-05"]).toBeUndefined();
+    });
+
+    it("не позначає гнучку звичку, що вже виконала тижневу ціль (weekDoneCount проти дефолтної цілі 3)", () => {
+      // Тиждень 2026-01-05 (пн) — 2026-01-11 (нд). Ціль за замовчуванням — 3
+      // рази, і вона вже виконана трьома попередніми днями того ж тижня.
+      const habit = makeHabit({ id: "flex", recurrence: "flexible" });
+      const s: RoutineState = {
+        ...stateWithHabits([habit]),
+        completions: { flex: ["2026-01-05", "2026-01-06", "2026-01-07"] },
+      };
+      expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-08", BOUNDS)).toBe(
+        s,
+      );
+    });
+
+    it("позначає гнучку звичку, поки тижнева ціль ще не досягнута", () => {
+      const habit = makeHabit({ id: "flex", recurrence: "flexible" });
+      const s: RoutineState = {
+        ...stateWithHabits([habit]),
+        completions: { flex: ["2026-01-05"] },
+      };
+      const next = applyMarkAllScheduledHabitsComplete(s, "2026-01-08", BOUNDS);
+      expect(next.completions["flex"]).toEqual(["2026-01-05", "2026-01-08"]);
     });
   });
 
@@ -776,5 +837,77 @@ describe("applyCreateHabit — ідемпотентність за client-genera
       { name: "Пити воду" },
     );
     expect(twice.habits).toHaveLength(2);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// PR-R3: майбутній день не позначається (рішення власника 2026-09-14).
+//
+// Чому окремий блок, а не кейси всередині наявних describe: гейт спільний
+// для ОБОХ шляхів — одиночного і масового, — і знахідка називала лише
+// масовий. Тримати їх поруч означає, що наступний читач побачить обидва
+// разом і не полагодить один, забувши другий.
+// ─────────────────────────────────────────────────────────────────────────
+describe("заборона відмітки майбутнього дня (PR-R3)", () => {
+  const TODAY = { todayKey: "2026-01-05" };
+
+  function stateWithDailyHabit(): RoutineState {
+    return {
+      habits: [
+        {
+          id: "h1",
+          name: "Вода",
+          schedule: { type: "daily" },
+          startDate: "2026-01-01",
+        },
+      ],
+      completions: {},
+    } as unknown as RoutineState;
+  }
+
+  it("одиночна відмітка завтрашнього дня — no-op", () => {
+    const s = stateWithDailyHabit();
+    expect(applyToggleHabitCompletion(s, "h1", "2026-01-06", TODAY)).toBe(s);
+  });
+
+  it("масова відмітка завтрашнього дня — no-op", () => {
+    const s = stateWithDailyHabit();
+    expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-06", TODAY)).toBe(s);
+  });
+
+  it("сьогодні позначається — межа НЕ зсунута на день назад", () => {
+    // Найважливіший кейс блоку. Гейт на `>=` замість `>` зробив би
+    // продукт непридатним: людина не змогла б відмітити звичку за
+    // сьогодні, тобто за єдиний день, який вона й відмічає.
+    const s = stateWithDailyHabit();
+    const next = applyToggleHabitCompletion(s, "h1", "2026-01-05", TODAY);
+    expect(next.completions["h1"]).toEqual(["2026-01-05"]);
+  });
+
+  it("минуле позначається — заборона лише на майбутнє", () => {
+    const s = stateWithDailyHabit();
+    const next = applyToggleHabitCompletion(s, "h1", "2026-01-04", TODAY);
+    expect(next.completions["h1"]).toEqual(["2026-01-04"]);
+  });
+
+  it("ЗНЯТИ відмітку з майбутнього дня можна — дані лишаються виправними", () => {
+    // Записане до появи цієї межі мусить лишатись знімним, інакше
+    // майбутні відмітки зі старих версій застрягли б назавжди. Саме тому
+    // гілка зняття в редюсері стоїть ВИЩЕ гейта.
+    const s = {
+      ...stateWithDailyHabit(),
+      completions: { h1: ["2026-01-09"] },
+    } as unknown as RoutineState;
+    const next = applyToggleHabitCompletion(s, "h1", "2026-01-09", TODAY);
+    expect(next.completions["h1"]).toEqual([]);
+  });
+
+  it("межа рахується за переданим днем, а не за системним годинником", () => {
+    // Пін на те, що редюсер лишився ЧИСТИМ. Якби він кликав `new Date()`
+    // сам, цей кейс залежав би від дати прогону — і зеленів би випадково.
+    const s = stateWithDailyHabit();
+    const far = { todayKey: "2026-01-09" };
+    const next = applyToggleHabitCompletion(s, "h1", "2026-01-06", far);
+    expect(next.completions["h1"]).toEqual(["2026-01-06"]);
   });
 });

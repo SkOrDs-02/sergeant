@@ -36,24 +36,33 @@ import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import type {
   Meal,
   MealTemplate,
+  MealTypeId,
   NutritionPrefs,
   PantryItem,
 } from "@sergeant/nutrition-domain";
+import type { NutritionPhotoResult } from "@shared/api";
 import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
 import { ensureSeedFoods } from "../lib/foodDb/foodDb";
 import { BarcodeScanner } from "./BarcodeScanner";
 import {
+  buildMealsForSave,
   currentTime,
   emptyForm,
-  type MealFormPhotoResult,
+  gramsOrDefault,
+  macrosToFormFields,
+  upsertMealTemplate,
   type MealFormState,
+  type MealSaveTemplate,
 } from "./meal-sheet/mealFormUtils";
 import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
+import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
+import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
+import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
 import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
 import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
@@ -62,6 +71,7 @@ import { BarcodeSection } from "./meal-sheet/BarcodeSection";
 import { AddMealSheetTitle } from "./meal-sheet/AddMealSheetTitle";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
+import { useEditedFoodRehydration } from "./meal-sheet/useEditedFoodRehydration";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
@@ -100,11 +110,6 @@ function macrosAreAllEmpty(macros: {
  * потрапляла НЕ та вага без жодного натяку користувачу. Тиха підміна даних
  * гірша за помилку, тому парсинг тут спільний із КБЖВ.
  */
-function gramsOrDefault(raw: string): number {
-  const parsed = parseDecimalInput(raw);
-  return parsed.ok && parsed.value > 0 ? parsed.value : 100;
-}
-
 interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
@@ -112,6 +117,13 @@ interface AddMealSheetProps {
   onSave: (meal: Meal, photoFile?: File | null) => void;
   /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
   initialStep?: "source" | "photo" | undefined;
+  /**
+   * Тип прийому для НОВОГО запису. Порожньо — тип вгадує годинник
+   * (`mealTypeByNow`), як для FAB. Заповнено рівно тоді, коли людина
+   * тапнула конкретний сегмент hero-стрічки. На редагування не впливає:
+   * там тип уже є в самому записі.
+   */
+  initialMealType?: MealTypeId | null | undefined;
   initialMeal?: Partial<Meal> | null | undefined;
   mealTemplates?: MealTemplate[] | undefined;
   setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
@@ -121,9 +133,16 @@ interface AddMealSheetProps {
   onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
 }
 
-/** Результат кроку «фото», застосований до форми (photo → fill). */
+/**
+ * Результат кроку «фото», застосований до форми (photo → fill).
+ *
+ * `result` — повний `NutritionPhotoResult`, не звужений `MealFormPhotoResult`
+ * (структурно сумісний із ним, тож `emptyForm(result)` і `MacrosEditor`
+ * лишаються без змін): PR-3 (ініціатива 0023) читає звідси `items[]`, щоб
+ * писати N рядків журналу замість одного злитого.
+ */
 interface AppliedPhoto {
-  result: MealFormPhotoResult;
+  result: NutritionPhotoResult;
   file: File | null;
 }
 
@@ -132,6 +151,7 @@ export function AddMealSheet({
   onClose,
   onSave,
   initialStep,
+  initialMealType,
   initialMeal,
   mealTemplates = [],
   setPrefs,
@@ -157,8 +177,15 @@ export function AddMealSheet({
   // to "source" and picks another source doesn't keep photoAI semantics.
   const [appliedPhoto, setAppliedPhoto] = useState<AppliedPhoto | null>(null);
 
-  const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } =
-    useFoodSearch(foodQuery);
+  const search = useFoodSearch(foodQuery);
+  const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
+  const sourcePick = useMealSourcePick({
+    foodQuery,
+    search,
+    setFoodQuery,
+    setPickedFood,
+    setPickedGrams,
+  });
 
   const {
     barcode,
@@ -195,7 +222,16 @@ export function AddMealSheet({
   // fully-built, already-validated payload while the confirm dialog is up;
   // it's cleared on confirm (→ finalizeSave) or cancel (sheet stays open,
   // untouched).
-  const [pendingMeal, setPendingMeal] = useState<Meal | null>(null);
+  //
+  // `meals` — завжди масив: PR-3 (ініціатива 0023) пише N рядків журналу
+  // на одне фото-збереження (по одному на позицію), а не один злитий
+  // рядок — масив довжини 1 покриває звичайний (не-фото) шлях без
+  // гілкування. `template` несе агрегатні назву/тип/КБЖВ для «Запамʼятати
+  // для повтору» — вони стосуються страви цілком, не окремого рядка.
+  const [pendingMeal, setPendingMeal] = useState<{
+    meals: Meal[];
+    template: MealSaveTemplate;
+  } | null>(null);
   const [rememberForRepeat, setRememberForRepeat] = useState(false);
 
   const [prevOpen, setPrevOpen] = useState(false);
@@ -213,15 +249,11 @@ export function AddMealSheet({
         name: String(initialMeal.name || ""),
         mealType: initialMeal.mealType || "breakfast",
         time: initialMeal.time || currentTime(),
-        kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
-        protein_g:
-          mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
-        fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
-        carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
+        ...macrosToFormFields(mac),
         err: "",
       });
     } else {
-      setForm(emptyForm(null));
+      setForm(emptyForm(null, initialMealType));
     }
     setFoodQuery("");
     setPickedFood(null);
@@ -258,6 +290,14 @@ export function AddMealSheet({
   } else if (!open && prevOpen) {
     setPrevOpen(false);
   }
+
+  // Продукт для аркуша редагування — чому без нього порцію змінити було
+  // неможливо, у `useEditedFoodRehydration`.
+  const editedFood = useEditedFoodRehydration({
+    open,
+    meal: initialMeal,
+    setPickedFood,
+  });
 
   function field(key: keyof MealFormState) {
     return (v: string) =>
@@ -317,7 +357,10 @@ export function AddMealSheet({
       ["kcal", "protein_g", "fat_g", "carbs_g"] as const
     ).map((key) => (form[key] === "" ? null : parseDecimalInput(form[key])));
     if (macroInputs.some((m) => m != null && !m.ok)) {
-      setForm((s) => ({ ...s, err: "Некоректне значення КБЖВ." }));
+      setForm((s) => ({
+        ...s,
+        err: "Некоректне значення КБЖВ. Впиши число, наприклад 12,5.",
+      }));
       return;
     }
     const [kcal, protein_g, fat_g, carbs_g] = macroInputs.map((m) =>
@@ -326,7 +369,7 @@ export function AddMealSheet({
     if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
       setForm((s) => ({
         ...s,
-        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
       }));
       return;
     }
@@ -335,7 +378,7 @@ export function AddMealSheet({
     ) {
       setForm((s) => ({
         ...s,
-        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом. Зменш значення.`,
       }));
       return;
     }
@@ -346,7 +389,8 @@ export function AddMealSheet({
     // Раніше при простому редагуванні страви з продуктом звʼязок з foodDb втрачався, бо pickedFood
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
-    const hasAmount = pickedFood || initialMeal?.amount_g != null;
+    const hasAmount =
+      pickedFood || fromPantryItem || initialMeal?.amount_g != null;
     // Нульова (чи стерта) вага при обраному продукті — не «не вказано», а
     // мовчазна розсинхронізація: `gramsOrDefault` підставив би 100, тоді як
     // у полях КБЖВ лишились числа, пораховані під попередню вагу. Ефект у
@@ -369,66 +413,63 @@ export function AddMealSheet({
           ? "productDb"
           : "manual";
     const macros = { kcal, protein_g, fat_g, carbs_g };
-    const meal: Meal = {
-      id: initialMeal?.id || draftId || newMealId(),
+    // PR-3 (ініціатива 0023): фото-аналіз пише N рядків журналу — по одному
+    // на позицію, не один злитий. Побудова винесена в `buildMealsForSave`
+    // (`mealFormUtils.ts`) — сама логіка й обґрунтування там же.
+    const meals = buildMealsForSave({
+      photoItems: appliedPhoto?.result.items,
       time: form.time || currentTime(),
       mealType: form.mealType,
       label: mealLabel,
-      name,
-      macros,
-      source,
-      macroSource,
-      foodId: effectiveFoodId ? String(effectiveFoodId) : null,
-      amount_g: hasAmount ? gramsOrDefault(pickedGrams) : null,
-    };
+      fallbackName: name,
+      fallback: {
+        id: initialMeal?.id || draftId || newMealId(),
+        macros,
+        source,
+        macroSource,
+        foodId: effectiveFoodId ? String(effectiveFoodId) : null,
+        amount_g: hasAmount ? gramsOrDefault(pickedGrams) : null,
+      },
+    });
     // Founder decision: warn, don't block. A meal with all-empty/zero
     // macros (photo AI couldn't identify the food, or a manual entry with
     // nothing typed in) won't move the daily stats at all — surface a
-    // confirm step instead of silently saving a meaningless entry.
-    if (macrosAreAllEmpty(macros)) {
-      setPendingMeal(meal);
+    // confirm step instead of silently saving a meaningless entry. Checked
+    // per-row against what's actually being saved, not the (possibly
+    // hand-edited) aggregate form fields.
+    const template = { name, mealType: form.mealType, macros };
+    if (meals.every((m) => macrosAreAllEmpty(m.macros))) {
+      setPendingMeal({ meals, template });
       return;
     }
-    finalizeSave(meal);
+    finalizeSave(meals, template);
   }
 
-  function finalizeSave(meal: Meal) {
+  function finalizeSave(meals: Meal[], template: MealSaveTemplate) {
     if (fromPantryItem && onConsumePantryItem) {
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
     }
     if (rememberForRepeat && !initialMeal?.id && setPrefs) {
-      setPrefs((prefs) => {
-        const existing = Array.isArray(prefs.mealTemplates)
-          ? prefs.mealTemplates
-          : [];
-        const normalizedName = meal.name.trim().toLocaleLowerCase("uk-UA");
-        const previous = existing.find(
-          (template) =>
-            template.mealType === meal.mealType &&
-            template.name.trim().toLocaleLowerCase("uk-UA") === normalizedName,
-        );
-        const remembered: MealTemplate = {
-          id: previous?.id ?? `tpl_${Date.now()}`,
-          name: meal.name,
-          mealType: meal.mealType,
-          macros: { ...meal.macros },
-        };
-        return {
-          ...prefs,
-          mealTemplates: [
-            remembered,
-            ...existing.filter((template) => template.id !== previous?.id),
-          ].slice(0, 40),
-        };
-      });
+      setPrefs((prefs) => ({
+        ...prefs,
+        mealTemplates: upsertMealTemplate(
+          Array.isArray(prefs.mealTemplates) ? prefs.mealTemplates : [],
+          template,
+        ),
+      }));
     }
     hapticSuccess();
-    onSave(meal, appliedPhoto?.file ?? null);
+    // По одному виклику `onSave` на рядок: undo-тост нижче за течією
+    // (`NutritionOverlays`/`wrappedSaveMeal`) знімає РІВНО той рядок, що
+    // додав, тож людина може відмінити одну хибну позицію з N, не чіпаючи
+    // решту. Сигнатура `onSave(meal, file)` лишається незмінною — жоден
+    // консюмер поза цим файлом не знає про розбивку на кілька рядків.
+    meals.forEach((meal) => onSave(meal, appliedPhoto?.file ?? null));
   }
 
   function handleConfirmEmptyMacrosSave() {
-    if (pendingMeal) finalizeSave(pendingMeal);
+    if (pendingMeal) finalizeSave(pendingMeal.meals, pendingMeal.template);
     setPendingMeal(null);
   }
 
@@ -447,7 +488,7 @@ export function AddMealSheet({
   // the old host-held photoResult used at sheet-open) and remember the
   // applied result for macroSource/thumbnail. A picked food/pantry item
   // from an earlier detour must not survive alongside photoAI macros.
-  function handlePhotoApply(result: MealFormPhotoResult, file: File | null) {
+  function handlePhotoApply(result: NutritionPhotoResult, file: File | null) {
     setPickedFood(null);
     setFromPantryItem(null);
     setForm(emptyForm(result));
@@ -470,6 +511,7 @@ export function AddMealSheet({
   // «Обрати інший продукт» з картки на кроці «fill». Скидаємо звʼязок
   // ПЕРЕД поверненням, інакше авто-перехід нижче миттєво штовхне назад.
   function handleChangeProduct() {
+    editedFood.clear();
     dropSeededMacros();
     setPickedGrams("100");
     setFoodQuery("");
@@ -538,6 +580,10 @@ export function AddMealSheet({
     // походження даних (канон: «скільки логів через AI» має лишатись
     // чесним питанням).
     dropSeededMacros();
+    // Відкладений автопідбір мусить згаснути разом із джерелом: інакше
+    // пошук, що відповість уже після виходу, поверне аркуш на
+    // «Заповнення» з продуктом, від якого людина щойно відмовилась.
+    sourcePick.cancelAutoPick();
     setStep("source");
   }
 
@@ -592,10 +638,7 @@ export function AddMealSheet({
                   onQuickAddMeal={onQuickAddMeal}
                   onQuickAdded={onClose}
                   pantryItems={pantryItems}
-                  // Редагування наявного прийому їжі й вхід одразу на
-                  // «fill» (PWA-шорткат, фото) чека не потребують — і не
-                  // мають будити мережу заради рядка, який там не потрібен.
-                  receiptRowEnabled={step === "source"}
+                  sourcePick={sourcePick}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{
@@ -671,12 +714,17 @@ export function AddMealSheet({
 
             {pickedFood ? (
               <PickedFoodCard
-                form={form}
                 setForm={setForm}
                 pickedFood={pickedFood}
                 pickedGrams={pickedGrams}
                 setPickedGrams={setPickedGrams}
                 onChangeProduct={handleChangeProduct}
+                skipInitialRescale={editedFood.rehydrated}
+              />
+            ) : fromPantryItem ? (
+              <PantryPortionField
+                value={pickedGrams}
+                onChange={setPickedGrams}
               />
             ) : (
               // Редагування наявного прийому джерела не обирає, тож
@@ -685,21 +733,7 @@ export function AddMealSheet({
               // редагуванні), тобто в глухий кут.
               !appliedPhoto &&
               !initialMeal?.id && (
-                // Одиниця мусить бути підписана. Без продукту й без фото
-                // ці поля означають «за всю порцію», а людина з упаковкою
-                // в руках за замовчуванням читає етикетку — тобто на 100 г.
-                <div className="mb-3 rounded-2xl border border-line bg-panelHi px-3 py-2">
-                  <p className="text-style-caption text-muted">
-                    Значення – за всю порцію, як зʼїв, а не на 100 г.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleSwitchToPackage}
-                    className="min-h-11 text-style-caption text-nutrition-strong dark:text-nutrition underline underline-offset-2"
-                  >
-                    Маю етикетку на 100 г
-                  </button>
-                </div>
+                <PortionUnitHint onSwitchToPackage={handleSwitchToPackage} />
               )
             )}
 
@@ -745,6 +779,10 @@ export function AddMealSheet({
                     <span className="block text-style-label text-text">
                       Запамʼятати для повтору
                     </span>
+                    {/* AI-NOTE: кегль тут навмисний — це підказка під
+                        контролом («Запамʼятати для повтору»), а не текст,
+                        який читають окремо; `text-style-body` зрівняв би
+                        її з підписом самого чекбокса. */}
                     <span className="mt-0.5 block text-style-caption text-muted">
                       Назва, тип прийому та КБЖВ зʼявляться серед швидких
                       прийомів.
@@ -757,14 +795,14 @@ export function AddMealSheet({
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 type="button"
-                className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
+                className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
                 onClick={handleSave}
               >
                 {initialMeal?.id ? "Зберегти зміни" : "Додати прийом"}
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 className="h-12 min-h-[44px]"
                 onClick={onClose}
               >

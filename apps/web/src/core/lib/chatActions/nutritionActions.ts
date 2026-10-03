@@ -1,7 +1,10 @@
 import { logger } from "@shared/lib";
-import { pluralUa, type UaPluralForms } from "@sergeant/shared";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { canonicalFoodKey } from "@sergeant/nutrition-domain";
+import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
+import {
+  buildPlacedItems,
+  canonicalFoodKey,
+  todayISODate,
+} from "@sergeant/nutrition-domain";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
 import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
@@ -17,7 +20,6 @@ import {
 import {
   addLogEntry,
   appendNutritionPantryEvent,
-  loadActivePantryId,
   loadNutritionLog,
   loadNutritionPrefs,
   loadPantries,
@@ -65,7 +67,7 @@ export function handleNutritionAction(
       const { name, kcal, protein_g, fat_g, carbs_g } = (
         action as LogMealAction
       ).input;
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       const mealId = `m_${Date.now()}`;
       // `addLogEntry` runs the entry through `normalizeMeal`, filling the
       // canonical Meal shape (mealType/source/macroSource/…) the chat input
@@ -83,7 +85,7 @@ export function handleNutritionAction(
           },
         }),
       );
-      const result = `Прийом їжі "${name || "Без назви"}" записано: ${Math.round(Number(kcal) || 0)} ккал`;
+      const result = `Прийом їжі "${name || "Без назви"}" записано: ${formatNumberUk(Math.round(Number(kcal) || 0))} ккал`;
       return {
         result,
         // `removeLogEntry` is idempotent (filters by id, drops the day when it
@@ -102,7 +104,7 @@ export function handleNutritionAction(
       if (!Number.isFinite(ml) || ml <= 0) {
         return "Некоректна кількість води.";
       }
-      const today = getKyivDayKey();
+      const today = todayISODate();
       const dateKey =
         waterDate && /^\d{4}-\d{2}-\d{2}$/.test(waterDate) ? waterDate : today;
       const log = loadWaterLog();
@@ -110,7 +112,7 @@ export function handleNutritionAction(
       const total = prev + ml;
       saveWaterLog({ ...log, [dateKey]: total });
       return {
-        result: `Додано ${ml} мл води (разом за ${dateKey}: ${total} мл)`,
+        result: `Додано ${formatNumberUk(ml)} мл води (разом за ${dateKey}: ${formatNumberUk(total)} мл)`,
         // Undo віднімає рівно свої ml від поточного значення, а не
         // відновлює prev — інакше паралельні +log_water між додаванням
         // і undo втратилися б. Якщо після віднімання лишился 0 — чистимо key.
@@ -260,24 +262,29 @@ export function handleNutritionAction(
       const { name } = (action as ConsumeFromPantryAction).input;
       const rawName = (name || "").trim();
       if (!rawName) return "Потрібна назва продукту.";
-      const activeId = loadActivePantryId();
+      // Шукаємо в УСІХ місцях, не в «активному»: активної комори більше
+      // немає, і пошук в одній полиці означав би «не знайдено» для всього,
+      // що лежить у холодильнику чи морозилці.
       const pantries = loadPantries();
-      const idx = pantries.findIndex((p) => p.id === activeId);
-      const pantry = idx >= 0 ? pantries[idx] : undefined;
-      if (!pantry) return `Активну комору (${activeId}) не знайдено.`;
       const lower = rawName.toLowerCase();
-      const items = Array.isArray(pantry.items) ? pantry.items : [];
-      const itemIdx = items.findIndex(
+      const placed = buildPlacedItems(pantries).find(
         (it) =>
           String(it.name || "")
             .trim()
             .toLowerCase() === lower,
       );
-      if (itemIdx < 0) {
+      if (!placed) {
         return `Продукт "${rawName}" у коморі не знайдено.`;
       }
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- itemIdx validated via findIndex >= 0 check above
-      const item = items[itemIdx]!;
+      const activeId = placed.pantryId;
+      const idx = pantries.findIndex((p) => p.id === activeId);
+      const pantry = pantries[idx];
+      if (!pantry) return `Продукт "${rawName}" у коморі не знайдено.`;
+      const items = Array.isArray(pantry.items) ? pantry.items : [];
+      const itemIdx = placed.localIdx;
+      // `placed` прийшов саме з цього масиву, тож індекс валідний; сама
+      // позиція — те, що ми вже знайшли.
+      const item = placed;
       const stock = Number(item.qty);
       const hasStock = Number.isFinite(stock) && stock > 0;
 
@@ -325,24 +332,26 @@ export function handleNutritionAction(
       if (partial) {
         const left = stock - asked;
         const unit = item.unit ? ` ${item.unit}` : "";
-        return `Списано ${asked}${unit} «${rawName}», лишилось ${left}${unit} у коморі "${pantry.name}"`;
+        return `Списано ${formatNumberUk(asked)}${unit} «${rawName}», лишилось ${formatNumberUk(left)}${unit} у коморі "${pantry.name}"`;
       }
       return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
     }
     case "clear_pantry": {
-      const activeId = loadActivePantryId();
+      // «Очистити комору» очищає ВСІ місця: комора одна, місця це її
+      // полиці, і лишити холодильник повним після цієї команди означало б
+      // збрехати про виконану дію.
       const pantries = loadPantries();
-      const idx = pantries.findIndex((p) => p.id === activeId);
-      const pantry = idx >= 0 ? pantries[idx] : undefined;
-      if (!pantry) return `Активну комору (${activeId}) не знайдено.`;
-      const items = Array.isArray(pantry.items) ? pantry.items : [];
+      const items = buildPlacedItems(pantries);
       if (items.length === 0) {
-        return `Комора "${pantry.name}" і так порожня.`;
+        return "Комора і так порожня.";
       }
 
-      const next = [...pantries];
-      next[idx] = { ...pantry, items: [] };
-      persistPantries(undefined, undefined, next, activeId);
+      persistPantries(
+        undefined,
+        undefined,
+        pantries.map((p) => ({ ...p, items: [] })),
+        null,
+      );
 
       // Подія на позицію — `adjust` з `absQty: 0`, а не `consume` з дельтою.
       // Чекпойнт каже «тепер нуль» і не потребує знати попередній залишок:
@@ -351,7 +360,7 @@ export function handleNutritionAction(
       for (const item of items) {
         appendNutritionPantryEvent({
           id: null,
-          pantryId: activeId,
+          pantryId: item.pantryId,
           itemId: null,
           itemKey: canonicalFoodKey(String(item.name || "")),
           kind: "adjust",
@@ -364,7 +373,7 @@ export function handleNutritionAction(
       }
 
       const n = items.length;
-      return `Комору "${pantry.name}" очищено: прибрано ${n} ${pluralUa(n, PANTRY_ITEM_FORMS)}`;
+      return `Комору очищено: прибрано ${n} ${pluralUa(n, PANTRY_ITEM_FORMS)}`;
     }
     case "set_daily_plan": {
       const { kcal, protein_g, fat_g, carbs_g, water_ml } = (
@@ -381,27 +390,27 @@ export function handleNutritionAction(
       const kcalN = num(kcal);
       if (kcalN !== null) {
         next.dailyTargetKcal = kcalN;
-        parts.push(`ккал ${kcalN}`);
+        parts.push(`ккал ${formatNumberUk(kcalN)}`);
       }
       const proteinN = num(protein_g);
       if (proteinN !== null) {
         next.dailyTargetProtein_g = proteinN;
-        parts.push(`білок ${proteinN} г`);
+        parts.push(`білок ${formatNumberUk(proteinN)} г`);
       }
       const fatN = num(fat_g);
       if (fatN !== null) {
         next.dailyTargetFat_g = fatN;
-        parts.push(`жири ${fatN} г`);
+        parts.push(`жири ${formatNumberUk(fatN)} г`);
       }
       const carbsN = num(carbs_g);
       if (carbsN !== null) {
         next.dailyTargetCarbs_g = carbsN;
-        parts.push(`вуглеводи ${carbsN} г`);
+        parts.push(`вуглеводи ${formatNumberUk(carbsN)} г`);
       }
       const waterN = num(water_ml);
       if (waterN !== null) {
         next.waterGoalMl = waterN;
-        parts.push(`вода ${waterN} мл`);
+        parts.push(`вода ${formatNumberUk(waterN)} мл`);
       }
       if (parts.length === 0) return "Немає полів для оновлення плану.";
       persistNutritionPrefs(next);
@@ -426,14 +435,14 @@ export function handleNutritionAction(
       // W1-WEIGHT-SOT стадія 2: дзеркалення — через спільний funnel.
       persistFizrukDailyLog([entry, ...readFizrukDailyLog()]);
       recordBodyWeight({ weightKg: n, at: entry.at });
-      return `Вагу записано: ${n} кг`;
+      return `Вагу записано: ${formatNumberUk(n)} кг`;
     }
     // ── Фізрук v2 ──────────────────────────────────────────────
     case "suggest_meal": {
       const { focus, meal_type } = (action as SuggestMealAction).input || {};
       const nutritionLog = loadNutritionLog();
       const nutritionPrefs = loadNutritionPrefs();
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       const todayData = nutritionLog[todayKey];
       const meals = Array.isArray(todayData?.meals) ? todayData.meals : [];
       const eaten = {
@@ -451,8 +460,8 @@ export function handleNutritionAction(
         protein: Math.max(0, target.protein - eaten.protein),
       };
       const parts: string[] = [
-        `Зʼїдено сьогодні: ${Math.round(eaten.kcal)} ккал, ${Math.round(eaten.protein)}г білка`,
-        `Залишилось: ${Math.round(remaining.kcal)} ккал, ${Math.round(remaining.protein)}г білка`,
+        `Зʼїдено сьогодні: ${formatNumberUk(Math.round(eaten.kcal))} ккал, ${formatNumberUk(Math.round(eaten.protein))}г білка`,
+        `Залишилось: ${formatNumberUk(Math.round(remaining.kcal))} ккал, ${formatNumberUk(Math.round(remaining.protein))}г білка`,
       ];
       if (focus) parts.push(`Фокус: ${focus}`);
       if (meal_type) parts.push(`Тип прийому: ${meal_type}`);
@@ -473,7 +482,7 @@ export function handleNutritionAction(
         sourceDay.meals.length === 0
       )
         return `За ${source_date} немає записів їжі.`;
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       let copied: Meal[];
       if (meal_index != null && meal_index !== "") {
         const idx = Number(meal_index);
@@ -493,7 +502,7 @@ export function handleNutritionAction(
       }
       persistNutritionLog(nextLog);
       const totalKcal = copied.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
-      return `Скопійовано ${copied.length} прийом(ів) з ${source_date} (${Math.round(totalKcal)} ккал)`;
+      return `Скопійовано ${copied.length} ${pluralUa(copied.length, { one: "прийом", few: "прийоми", many: "прийомів" })} з ${source_date} (${formatNumberUk(Math.round(totalKcal))} ккал)`;
     }
     case "plan_meals_for_day": {
       const { target_kcal, meals_count, preferences } =
@@ -503,12 +512,14 @@ export function handleNutritionAction(
         Number(target_kcal) || nutritionPrefs.dailyTargetKcal || 2000;
       const count = Number(meals_count) || 3;
       const parts: string[] = [
-        `Планую ${count} прийомів на ${targetKcal} ккал/день`,
-        `Приблизно ${Math.round(targetKcal / count)} ккал на прийом`,
+        `Планую ${count} прийомів на ${formatNumberUk(targetKcal)} ккал/день`,
+        `Приблизно ${formatNumberUk(Math.round(targetKcal / count))} ккал на прийом`,
       ];
       if (preferences) parts.push(`Побажання: ${preferences}`);
       if (nutritionPrefs.dailyTargetProtein_g) {
-        parts.push(`Ціль білка: ${nutritionPrefs.dailyTargetProtein_g}г/день`);
+        parts.push(
+          `Ціль білка: ${formatNumberUk(nutritionPrefs.dailyTargetProtein_g)}г/день`,
+        );
       }
       return (
         parts.join(". ") + ". Рекомендацію сформовано на основі цих даних."

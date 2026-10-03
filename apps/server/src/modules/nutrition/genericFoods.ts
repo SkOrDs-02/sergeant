@@ -210,7 +210,7 @@ export async function seedGenericFoods(): Promise<number> {
   } catch (e) {
     logger.warn(
       { err: e instanceof Error ? e.message : String(e), written },
-      "generic_foods seed failed — базова їжа буде недоступна в пошуку",
+      "generic_foods seed failed – базова їжа буде недоступна в пошуку",
     );
   }
   return written;

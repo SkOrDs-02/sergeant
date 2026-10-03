@@ -10,12 +10,14 @@ import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/ui/cn";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { messages } from "@shared/i18n/uk";
+import { pluralUa } from "@sergeant/shared";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,
   CAPABILITY_MODULE_ORDER,
   groupCapabilitiesByModule,
+  isRecentCapability,
   searchCapabilities,
   type AssistantCapability,
   type CapabilityModule,
@@ -162,7 +164,7 @@ export function AssistantCataloguePage({
             onClick={onClose}
             aria-label="Назад"
           >
-            <Icon name="chevron-left" size={20} />
+            <Icon name="chevron-left" size="lg" />
           </Button>
         </div>
 
@@ -172,36 +174,41 @@ export function AssistantCataloguePage({
               aria-hidden
               className="shrink-0 w-11 h-11 rounded-2xl bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
             >
-              <Icon name="sparkles" size={20} />
+              <Icon name="sergeant" size="lg" />
             </span>
             <div className="flex-1 min-w-0">
               <h1 className="text-style-title text-text leading-tight">
                 {messages.sergeant.capabilitiesSectionTitle}
               </h1>
               <p className="text-style-body text-subtle mt-1 leading-relaxed">
-                Усе, що вміє робити Сержант ({totalCount} сценаріїв). Натисни
-                картку щоб запустити або побачити приклади.
+                Усе, що вміє робити Сержант ({totalCount}{" "}
+                {pluralizeUk(totalCount, ["сценарій", "сценарії", "сценаріїв"])}
+                ). Натисни картку щоб запустити або побачити приклади.
               </p>
             </div>
           </div>
         </Card>
 
-        <CapabilityLegend />
+        <CapabilityLegend
+          showNew={ASSISTANT_CAPABILITIES.some((item) =>
+            isRecentCapability(item.since),
+          )}
+        />
 
         <div className="relative">
           <span
             aria-hidden
             className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
           >
-            <Icon name="search" size={16} />
+            <Icon name="search" size="md" />
           </span>
           <input
             type="search"
             {...searchFieldProps("capabilities-search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Пошук, наприклад, «витрата», «звичка», «1RM»…"
-            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/30 shadow-card"
+            placeholder="Пошук, наприклад, «витрата», «звичка», «1RM»"
+            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
             aria-label="Пошук можливостей"
           />
         </div>
@@ -220,7 +227,7 @@ export function AssistantCataloguePage({
             >
               <Icon
                 name={allCollapsed ? "chevron-down" : "chevron-up"}
-                size={12}
+                size="xs"
                 aria-hidden
               />
               {allCollapsed ? "Розгорнути все" : "Згорнути все"}
@@ -231,7 +238,7 @@ export function AssistantCataloguePage({
         {filtered.length === 0 && (
           <Card variant="flat" radius="lg" padding="xl">
             <p className="text-center text-subtle text-style-body">
-              Нічого не знайдено за «{query}». Спробуй інший термін.
+              Нічого не знайшов за «{query}». Спробуй інший термін.
             </p>
           </Card>
         )}
@@ -326,7 +333,7 @@ function ModuleGroup({
         </span>
         <Icon
           name="chevron-down"
-          size={16}
+          size="md"
           aria-hidden
           className={cn(
             "shrink-0 text-muted transition-transform",
@@ -347,18 +354,11 @@ function ModuleGroup({
   );
 }
 
-// Ukrainian plural form (1 / 2-4 / 5+) — used for the count subtitle on
-// each module card. Kept inline because no existing util covers this.
 function pluralizeUk(
   n: number,
   forms: readonly [string, string, string],
 ): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return forms[0];
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-    return forms[1];
-  return forms[2];
+  return pluralUa(n, { one: forms[0], few: forms[1], many: forms[2] });
 }
 
 interface CapabilityRowProps {
@@ -383,15 +383,15 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
         aria-hidden
         className="shrink-0 w-9 h-9 rounded-xl bg-bg border border-line flex items-center justify-center text-text"
       >
-        <Icon name={capability.icon} size={16} />
+        <Icon name={capability.icon} size="md" />
       </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
           <span className="text-style-label text-text">{capability.label}</span>
-          {capability.isNew && (
+          {isRecentCapability(capability.since) && (
             <BadgeChip
-              tone="success"
-              icon="sparkles"
+              tone="brand"
+              icon="sergeant"
               label="Новинка"
               title="Нещодавно додана можливість"
             />
@@ -420,19 +420,19 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
       <span aria-hidden className="shrink-0 text-subtle pt-1">
         <Icon
           name={capability.requiresInput ? "chevron-right" : "send"}
-          size={14}
+          size="sm"
         />
       </span>
     </button>
   );
 }
 
-function CapabilityLegend() {
+function CapabilityLegend({ showNew }: { showNew: boolean }) {
   return (
     <div
       data-testid="catalogue-legend"
       className={cn(
-        "mb-4 bg-panel/60 border border-line rounded-2xl px-3 py-2.5",
+        "mb-4 bg-panel border border-line rounded-2xl px-3 py-2.5",
         "flex flex-wrap items-center gap-x-3 gap-y-2",
       )}
       aria-label="Що означають позначки"
@@ -448,16 +448,18 @@ function CapabilityLegend() {
         <BadgeChip tone="warning" icon="alert-triangle" label="Ризик" />
         критична дія
       </span>
-      <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
-        <BadgeChip tone="success" icon="sparkles" label="Новинка" />
-        нещодавно додано
-      </span>
+      {showNew && (
+        <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
+          <BadgeChip tone="brand" icon="sparkles" label="Новинка" />
+          нещодавно додано
+        </span>
+      )}
     </div>
   );
 }
 
 interface BadgeChipProps {
-  tone: "brand" | "warning" | "success";
+  tone: "brand" | "warning";
   icon: string;
   label: string;
   title?: string;
@@ -466,7 +468,7 @@ interface BadgeChipProps {
 function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
   const cls =
     tone === "brand"
-      ? "text-brand-strong dark:text-brand bg-brand-500/8 border-brand-500/25"
+      ? "text-brand-strong bg-brand-500/8 border-brand-500/25"
       : tone === "warning"
         ? "text-warning-strong dark:text-warning bg-panel border-warning/25"
         : "text-success-strong dark:text-success bg-success/8 border-success/25";

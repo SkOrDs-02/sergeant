@@ -1,18 +1,28 @@
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import {
   EXERCISE_CATALOG,
   EXERCISES,
+  EXERCISE_IMAGE_IDS,
+  EXERCISE_INJURY_ZONES,
   MUSCLES_BY_PRIMARY_GROUP,
   MUSCLES_UK,
   PRIMARY_GROUPS_UK,
+  equipmentForLocation,
+  exerciseImagePaths,
   findExerciseById,
+  getExerciseLocations,
   getExercisesByPrimaryGroup,
   getExerciseNamesByAtlasMuscle,
+  matchesExerciseLocation,
   mergeExerciseCatalog,
   matchesExerciseSearch,
   searchExercises,
   toExerciseDef,
 } from "./index";
+import { PROGRAM_CATALOGUE } from "../domain/programs/catalogue";
 
 describe("exercise catalog", () => {
   it("exposes a non-empty labels map", () => {
@@ -45,6 +55,227 @@ describe("exercise catalog", () => {
     const chest = getExercisesByPrimaryGroup("chest");
     expect(chest.length).toBeGreaterThan(0);
     for (const ex of chest) expect(ex.primaryGroup).toBe("chest");
+  });
+});
+
+// Гейт цілісності каталогу. Він існує, щоб нова вправа не могла приїхати
+// без мапи зон травм (ADR-0083), без аліасів або з id, який уже зайнятий:
+// це дисципліна, яку не можна лишати на уважність автора PR.
+describe("catalog integrity gate", () => {
+  const webPublicRoot = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../../apps/web/public",
+  );
+
+  it("references existing exercise images", () => {
+    const missing: string[] = [];
+
+    for (const id of EXERCISE_IMAGE_IDS) {
+      for (const imagePath of exerciseImagePaths(id)) {
+        if (
+          !existsSync(resolve(webPublicRoot, imagePath.replace(/^\/+/, "")))
+        ) {
+          missing.push(`${id}:${imagePath}`);
+        }
+      }
+    }
+
+    expect(missing).toEqual([]);
+  });
+
+  // Реєстр пишеться генератором, але лежить у git і його можна відредагувати
+  // руками. Id, якого немає в каталозі, дав би вправі-привиду шлях у public/.
+  it("keeps the image registry aligned with the catalog", () => {
+    const catalogIds = new Set(EXERCISES.map((exercise) => exercise.id));
+    const orphans = [...EXERCISE_IMAGE_IDS].filter((id) => !catalogIds.has(id));
+
+    expect(orphans).toEqual([]);
+    expect(exerciseImagePaths("definitely-not-an-exercise")).toEqual([]);
+  });
+
+  it("maps every exercise to injury zones", () => {
+    const missing = EXERCISES.filter(
+      (ex) => !EXERCISE_INJURY_ZONES[ex.id]?.length,
+    ).map((ex) => ex.id);
+    expect(missing).toEqual([]);
+  });
+
+  it("resolves every program exercise id in the catalog", () => {
+    const unknown: string[] = [];
+    for (const program of PROGRAM_CATALOGUE) {
+      for (const session of Object.values(program.sessions)) {
+        for (const id of session.exerciseIds) {
+          if (!findExerciseById(id)) unknown.push(`${program.id}:${id}`);
+        }
+      }
+    }
+    expect(unknown).toEqual([]);
+  });
+
+  // Домашня програма — це перевірка фільтра локації на реальних даних:
+  // якщо туди просочиться вправа зі штангою, зламається обіцянка «без
+  // обладнання», а не просто тест.
+  it("keeps the home program free of gym-only exercises", () => {
+    const home = PROGRAM_CATALOGUE.find((p) => p.id === "home_bodyweight");
+    expect(home).toBeTruthy();
+    const gymOnly: string[] = [];
+    for (const session of Object.values(home!.sessions)) {
+      for (const id of session.exerciseIds) {
+        const ex = findExerciseById(id);
+        if (!getExerciseLocations(ex).includes("home")) gymOnly.push(id);
+      }
+    }
+    expect(gymOnly).toEqual([]);
+  });
+
+  it("keeps exercise ids unique", () => {
+    const ids = EXERCISES.map((ex) => ex.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("gives every exercise at least one alias", () => {
+    const without = EXERCISES.filter((ex) => !ex.aliases?.length).map(
+      (ex) => ex.id,
+    );
+    expect(without).toEqual([]);
+  });
+
+  it("never shares an alias between two exercises", () => {
+    const owner = new Map<string, string>();
+    const clashes: string[] = [];
+    for (const ex of EXERCISES) {
+      for (const alias of ex.aliases || []) {
+        const key = alias.trim().toLowerCase();
+        const seen = owner.get(key);
+        if (seen) clashes.push(`${alias}: ${seen} / ${ex.id}`);
+        else owner.set(key, ex.id);
+      }
+    }
+    expect(clashes).toEqual([]);
+  });
+
+  it("resolves every exercise to at least one location", () => {
+    const homeless = EXERCISES.filter(
+      (ex) => getExerciseLocations(ex).length === 0,
+    ).map((ex) => ex.id);
+    expect(homeless).toEqual([]);
+  });
+
+  it("gives every exercise a technique description", () => {
+    const without = EXERCISES.filter((ex) => !ex.description?.trim()).map(
+      (ex) => ex.id,
+    );
+    expect(without).toEqual([]);
+  });
+});
+
+describe("equipmentForLocation", () => {
+  it("narrows the equipment list as the location narrows", () => {
+    const gym = equipmentForLocation("gym");
+    const home = equipmentForLocation("home");
+    const outdoor = equipmentForLocation("outdoor");
+    expect(gym).toContain("machine");
+    expect(home).not.toContain("machine");
+    expect(home).toContain("barbell");
+    expect(outdoor).not.toContain("barbell");
+    expect(outdoor).toContain("kettlebell");
+    expect(outdoor.every((eq) => home.includes(eq))).toBe(true);
+    expect(home.every((eq) => gym.includes(eq))).toBe(true);
+  });
+
+  it("returns every kind when no location is given", () => {
+    expect(equipmentForLocation("").length).toBe(
+      equipmentForLocation("gym").length,
+    );
+  });
+});
+
+describe("getExerciseLocations", () => {
+  it("derives location from equipment", () => {
+    expect(getExerciseLocations({ equipment: ["bodyweight"] })).toEqual([
+      "gym",
+      "home",
+      "outdoor",
+    ]);
+    expect(getExerciseLocations({ equipment: ["cable", "machine"] })).toEqual([
+      "gym",
+    ]);
+    expect(getExerciseLocations({ equipment: ["barbell", "bench"] })).toEqual([
+      "gym",
+      "home",
+    ]);
+  });
+
+  it("lets portable equipment travel outdoors", () => {
+    for (const eq of ["kettlebell", "dumbbell", "band"]) {
+      expect(getExerciseLocations({ equipment: [eq] })).toContain("outdoor");
+    }
+  });
+
+  it("keeps the three locations nested: outdoor in home in gym", () => {
+    const idsFor = (loc: "gym" | "home" | "outdoor") =>
+      new Set(
+        EXERCISES.filter((ex) => getExerciseLocations(ex).includes(loc)).map(
+          (ex) => ex.id,
+        ),
+      );
+    const gym = idsFor("gym");
+    const home = idsFor("home");
+    const outdoor = idsFor("outdoor");
+    expect(gym.size).toBe(EXERCISES.length);
+    expect([...home].every((id) => gym.has(id))).toBe(true);
+    expect([...outdoor].every((id) => home.has(id))).toBe(true);
+  });
+
+  it("falls back to gym for unknown or missing equipment", () => {
+    expect(getExerciseLocations({ equipment: [] })).toEqual(["gym"]);
+    expect(getExerciseLocations(null)).toEqual(["gym"]);
+    expect(getExerciseLocations({ equipment: ["hoverboard"] })).toEqual([
+      "gym",
+    ]);
+  });
+
+  it("passes everything through for an empty location filter", () => {
+    expect(matchesExerciseLocation({ equipment: ["machine"] }, "")).toBe(true);
+    expect(matchesExerciseLocation({ equipment: ["machine"] }, "home")).toBe(
+      false,
+    );
+    expect(matchesExerciseLocation({ equipment: ["barbell"] }, "outdoor")).toBe(
+      false,
+    );
+    expect(matchesExerciseLocation({ equipment: ["band"] }, "outdoor")).toBe(
+      true,
+    );
+  });
+});
+
+// Реальні запити людини, а не назви з каталогу: пошук, який не знаходить
+// «бенч», для власника зламаний, навіть якщо всі інші тести зелені.
+describe("slang search", () => {
+  const cases: ReadonlyArray<readonly [string, string]> = [
+    ["бенч", "bench_press_barbell"],
+    ["станова", "deadlift"],
+    ["присід", "squat_barbell"],
+    ["підтяг", "pullup"],
+    ["банки", "bicep_curl_dumbbell"],
+    ["жим лежа", "bench_press_barbell"],
+    ["румунка", "romanian_deadlift"],
+    ["планка", "plank"],
+  ];
+
+  for (const [query, expectedId] of cases) {
+    it(`finds ${expectedId} for "${query}"`, () => {
+      const top = searchExercises(query)
+        .slice(0, 3)
+        .map((ex) => ex.id);
+      expect(top).toContain(expectedId);
+    });
+  }
+
+  it("finds a biceps exercise for «біцуха»", () => {
+    const top = searchExercises("біцуха").slice(0, 3);
+    expect(top.length).toBeGreaterThan(0);
+    expect(top.some((ex) => ex.primaryGroup === "biceps")).toBe(true);
   });
 });
 

@@ -3,7 +3,7 @@
   "version": 1,
   "key": "hub-tab-perf",
   "name": "Hub tab perf",
-  "description": "RUM dashboard for Initiative 0017 (Hub Settings & Reports mount perf). Aggregates HUB_TAB_SWITCH_PERF events emitted by apps/web/src/core/lib/hubPerf.ts: P50/P95 ttiMs per tab, long-task burden, cache-hit ratio, histogram of ttiMs, and longTaskCount P95 per tab. Runbook: docs/03-operations/observability/hub-perf-baseline.md. Baseline pull target: 2026-05-27 (≥ 7 days after Sprint 0 merge 2026-05-20).",
+  "description": "RUM dashboard for Initiative 0017 (Hub Settings & Reports mount perf). Aggregates HUB_TAB_SWITCH_PERF events emitted by apps/web/src/core/lib/hubPerf.ts: P50/P95 ttiMs per tab, long-task burden, cache-hit ratio, histogram of ttiMs, and longTaskCount P95 per tab. Runbook: docs/operations/observability/hub-perf-baseline.md. Baseline pull target: 2026-05-27 (≥ 7 days after Sprint 0 merge 2026-05-20).",
   "timezone": "Europe/Kyiv",
   "events_contract": {
     "hub_tab_switch_perf": {
@@ -124,7 +124,7 @@
       "panel": "tti-trend",
       "condition": "P95 ttiMs for any tab increases ≥20% WoW (rolling 7-day windows)",
       "severity": "P2",
-      "channel": "Telegram #ops (via n8n WF-16 ingest) + PostHog subscription",
+      "channel": "Telegram #ops (server-side digest timer, ADR-0089) + PostHog subscription",
       "notes": "Likely cause: recent deploy added eager-mount cost to a Settings/Reports section. Bisect via Sergeant deploy log."
     },
     {

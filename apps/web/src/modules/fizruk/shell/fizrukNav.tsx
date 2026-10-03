@@ -43,6 +43,8 @@ export function fizrukNavActiveId(page: FizrukPage): FizrukNavItem["id"] {
     case "programs":
     case "history":
     case "exercise":
+    case "catalog":
+    case "templates":
       return "workouts";
     case "progress":
     case "measurements":

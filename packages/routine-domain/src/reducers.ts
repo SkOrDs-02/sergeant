@@ -28,6 +28,7 @@ import {
   normalizeReminderTimesStorage,
   routineUid,
 } from "./storage.js";
+import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
 import type {
   Category,
   CreateHabitOptions,
@@ -173,32 +174,92 @@ export function applySetPref<K extends string>(
 }
 
 /**
- * Перемкнути відмітку виконання звички за день. No-op якщо звичка
- * не запланована на цей день і ще не позначена.
+ * Внутрішній хелпер: додати відмітку виконання за день і зняти «не зміг»
+ * (три стани дня взаємно виключні, канон §5). НЕ перевіряє розклад — виклик
+ * відповідає за це сам, бо у `applyToggleHabitCompletion` і в
+ * `applyMarkAllScheduledHabitsComplete` предикат розкладу викликається з
+ * РІЗНИМИ опціями (`weekDoneCount` для гнучких звичок рахується інакше в
+ * bulk-варіанті). No-op (та сама ідентичність `state`), якщо день уже
+ * відмічено — це і є спільна точка «вже готово, більше нічого робити».
  */
-export function applyToggleHabitCompletion(
+function markHabitDone(
   state: RoutineState,
   habitId: string,
   dateKey: string,
 ): RoutineState {
-  const habit = state.habits.find((h) => h.id === habitId);
-  if (!habit) return state;
   const curSet = new Set(normalizeCompletionList(state.completions[habitId]));
-  let markedDone = false;
-  if (curSet.has(dateKey)) {
-    curSet.delete(dateKey);
-  } else {
-    if (!habitScheduledOnDate(habit, dateKey)) return state;
-    curSet.add(dateKey);
-    markedDone = true;
-  }
+  if (curSet.has(dateKey)) return state;
+  curSet.add(dateKey);
   const cur = [...curSet].sort();
   const next: RoutineState = {
     ...state,
     completions: { ...state.completions, [habitId]: cur },
   };
-  // Три стани дня взаємно виключні: відмітка «зробив» знімає «не зміг».
-  return markedDone ? clearSkip(next, habitId, dateKey) : next;
+  return clearSkip(next, habitId, dateKey);
+}
+
+/**
+ * Межа «сьогодні» для редюсерів, які СТАВЛЯТЬ відмітку.
+ *
+ * AI-CONTEXT: поле обовʼязкове навмисно, і це головне в цьому типі.
+ * Опційна опція тут уже коштувала: рівно так `weekDoneCount` роками не
+ * доїжджав до трьох поверхонь (PR-R4), бо кожен новий call-site мовчки
+ * отримував дефолт. Обовʼязковість робить компілятор єдиним, хто стежить
+ * за повнотою, — і він не забуває.
+ *
+ * Значення — день за годинником **ПРИСТРОЮ** (ADR-0078: межа особистої
+ * доби device-local, не київська). У вебі це `anchoredTodayKey()` з
+ * `routine/lib/dayAnchor.ts`; передавати сюди київський день не можна —
+ * для користувача на захід від Києва це зсунуло б «сьогодні» на добу.
+ */
+export interface CompletionDayBounds {
+  /** Сьогодні за годинником пристрою, `YYYY-MM-DD`. */
+  todayKey: string;
+}
+
+/**
+ * Чи день у майбутньому відносно «сьогодні».
+ *
+ * Обидва ключі — `YYYY-MM-DD`, тож лексикографічне порівняння дає
+ * календарний порядок. Той самий прийом, що в `heatmap/grid.ts:241`.
+ */
+function isFutureDay(dateKey: string, todayKey: string): boolean {
+  return dateKey > todayKey;
+}
+
+/**
+ * Перемкнути відмітку виконання звички за день. No-op якщо звичка
+ * не запланована на цей день і ще не позначена.
+ *
+ * **Майбутній день позначити НЕ можна** (рішення власника 2026-09-14,
+ * знахідка PR-R3). Доти єдиною перевіркою дати був `habitScheduledOnDate`,
+ * а він майбутнє не відсікає взагалі — тож зріз «Завтра» приймав відмітку,
+ * і майбутній факт їхав у серії, у синк і у звіти.
+ *
+ * ЗНЯТИ відмітку з майбутнього дня при цьому можна, і гілка зняття стоїть
+ * ВИЩЕ гейта саме тому: дані, записані до появи цієї межі, мусять лишатись
+ * виправними. Заборона лише на постановку.
+ */
+export function applyToggleHabitCompletion(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+  bounds: CompletionDayBounds,
+): RoutineState {
+  const habit = state.habits.find((h) => h.id === habitId);
+  if (!habit) return state;
+  const curSet = new Set(normalizeCompletionList(state.completions[habitId]));
+  if (curSet.has(dateKey)) {
+    curSet.delete(dateKey);
+    const cur = [...curSet].sort();
+    return {
+      ...state,
+      completions: { ...state.completions, [habitId]: cur },
+    };
+  }
+  if (isFutureDay(dateKey, bounds.todayKey)) return state;
+  if (!habitScheduledOnDate(habit, dateKey)) return state;
+  return markHabitDone(state, habitId, dateKey);
 }
 
 /** Внутрішній хелпер: прибрати позначку пропуску, зберігши незмінність. */
@@ -353,24 +414,42 @@ export function applyResumeHabitFrom(
   };
 }
 
-/** Усі активні звички, заплановані на день, отримують відмітку (якщо ще немає). */
+/**
+ * Усі активні звички, заплановані на день, отримують відмітку (якщо ще
+ * немає). Проведено через той самий `markHabitDone`, що й одиночний
+ * `applyToggleHabitCompletion` — це і знімає «не зміг» на позначених
+ * звичках (три стани дня взаємно виключні, канон §5), і рахує
+ * `weekDoneCount` для гнучких звичок ОКРЕМО на кожну звичку, а не
+ * покладається на дефолт «завжди заплановано», яким `habitScheduledOnDate`
+ * відповідає без опції. Без цього гнучка звичка, що вже виконала тижневу
+ * ціль, отримувала б зайву відмітку від масового «Відмітити все».
+ */
 export function applyMarkAllScheduledHabitsComplete(
   state: RoutineState,
   dateKey: string,
+  bounds: CompletionDayBounds,
 ): RoutineState {
+  // Майбутній день не позначається — той самий гейт, що в одиночному
+  // шляху (PR-R3). Без нього зріз «Завтра» лишався б робочим для масової
+  // дії навіть після заборони одиночної: знахідка називала саме масову,
+  // але діра була в обох.
+  if (isFutureDay(dateKey, bounds.todayKey)) return state;
   const active = state.habits.filter((h) => !h.archived);
-  const completions = { ...state.completions };
+  let next = state;
   let changed = false;
   for (const h of active) {
-    if (!habitScheduledOnDate(h, dateKey)) continue;
-    const set = new Set(normalizeCompletionList(completions[h.id]));
-    if (set.has(dateKey)) continue;
-    set.add(dateKey);
-    completions[h.id] = [...set].sort();
+    const completionsForHabit = normalizeCompletionList(next.completions[h.id]);
+    if (completionsForHabit.includes(dateKey)) continue;
+    const weekDoneCount = isFlexibleHabit(h)
+      ? weekDoneCountExcludingDate(completionsForHabit, dateKey)
+      : undefined;
+    if (!habitScheduledOnDate(h, dateKey, { weekDoneCount })) continue;
+    const marked = markHabitDone(next, h.id, dateKey);
+    if (marked === next) continue;
+    next = marked;
     changed = true;
   }
-  if (!changed) return state;
-  return { ...state, completions };
+  return changed ? next : state;
 }
 
 export function applySetHabitArchived(

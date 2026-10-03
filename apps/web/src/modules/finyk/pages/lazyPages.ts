@@ -30,6 +30,12 @@ export const Transactions = lazyImport(
   "Transactions",
 );
 export const Budgets = lazyImport(() => import("./budgets/Budgets"), "Budgets");
+// Блок підписок Планування — той самий чанк-ритм, що й сторінка: він тягне
+// `useAssetsState` і пікер транзакцій, яких у eager-графі бути не має.
+export const PlanningSubscriptions = lazyImport(
+  () => import("./budgets/PlanningSubscriptions"),
+  "PlanningSubscriptions",
+);
 export const Assets = lazyImport(() => import("./Assets"), "Assets");
 export const Analytics = lazyImport(() => import("./Analytics"), "Analytics");
 

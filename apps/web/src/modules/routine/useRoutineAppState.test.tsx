@@ -12,7 +12,6 @@ const routineAppMocks = vi.hoisted(() => ({
   reactNavigate: vi.fn(),
   setPersistedTab: vi.fn(),
   markSeen: vi.fn(),
-  useRoutineDualWriteBoot: vi.fn(),
   useSqliteReadBoot: vi.fn(),
   useRoutineReminders: vi.fn(),
   setTimeMode: vi.fn(),
@@ -112,9 +111,6 @@ vi.mock("./lib/routineStorage", () => ({
     bulkMarked: dateKey,
   }),
 }));
-vi.mock("./hooks/useRoutineDualWriteBoot", () => ({
-  useRoutineDualWriteBoot: routineAppMocks.useRoutineDualWriteBoot,
-}));
 vi.mock("./hooks/useSqliteReadBoot", () => ({
   useSqliteReadBoot: routineAppMocks.useSqliteReadBoot,
 }));
@@ -166,7 +162,6 @@ describe("useRoutineAppState", () => {
     const { result } = renderHook(() => useRoutineAppState({ onOpenModule }));
 
     expect(routineAppMocks.useSqliteReadBoot).toHaveBeenCalledOnce();
-    expect(routineAppMocks.useRoutineDualWriteBoot).toHaveBeenCalledOnce();
     expect(routineAppMocks.useRoutineReminders).toHaveBeenCalledOnce();
     expect(result.current.mainTab).toBe("calendar");
     expect(result.current.streakMax).toBe(3);
@@ -253,7 +248,6 @@ describe("useRoutineAppState", () => {
     const { result } = renderHook(() => useRoutineAppState({}));
 
     expect(result.current.quickAddHabitOpen).toBe(false);
-    expect(result.current.quickAddFirstRunHint).toBe(false);
     await waitFor(() => {
       expect(routineAppMocks.markSeen).toHaveBeenCalledOnce();
     });
@@ -266,8 +260,5 @@ describe("useRoutineAppState", () => {
       },
       { replace: true },
     );
-
-    act(() => result.current.dismissQuickAddFirstRunHint());
-    expect(result.current.quickAddFirstRunHint).toBe(false);
   });
 });

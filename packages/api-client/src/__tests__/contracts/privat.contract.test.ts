@@ -3,7 +3,7 @@
 // Consumer contract: `/api/v1/privat/*` — Privatbank corporate-API proxy
 // (finyk persona, alternate to the Monobank webhook flow). Credentials are
 // resolved server-side from `privat_connection` by session
-// (`docs/90-work/planning/specs/beta-security-readiness.md`, F1) — no
+// (`docs/work/specs/beta-security-readiness.md`, F1) — no
 // merchant token ever crosses the wire from the client after `connect`.
 //
 // Why this contract: `privat` had zero Pact coverage before this file

@@ -2,19 +2,14 @@ import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import request from "supertest";
 
 /**
- * Route-level contract tests для Pro-gate на nutrition Vision-endpoint-ах.
- *
- * `analyze-photo` / `refine-photo` йдуть через Sonnet 4.6 Vision (cost=3) —
- * найдорожчий AI-шлях, тому вони Pro-only (`requirePlan(pool, "pro")`).
- * Решта nutrition-AI лишається метрованою (free отримує денну квоту), тож
- * gate на них свідомо НЕ навішуємо — це покрито відсутністю 402 нижче.
+ * Route-level contract tests для Premium-гейта nutrition (спека
+ * `docs/work/specs/access-tiers.md`).
  *
  * Покриваємо:
- *   1. Free-юзер → 402 PLAN_REQUIRED на обох Vision-endpoint-ах (Anthropic
- *      не викликається — gate стоїть перед requireAnthropicKey/quota).
- *   2. Pro-юзер → НЕ 402 (запит проходить gate; 402 у цьому стеку продукує
- *      лише requirePlan, тож `not.toBe(402)` — точний сигнал що gate пустив).
- *   3. Метровані text-endpoint-и (day-plan) → НЕ 402 навіть для free.
+ *   1. `week-plan` тільки Premium: Free → 402 PLAN_REQUIRED, Pro → НЕ 402.
+ *   2. Фото (`analyze-photo` / `refine-photo`) більше не гейтяться планом:
+ *      Free має власне тижневе відро фото, тож НЕ 402.
+ *   3. Денний план → НЕ 402 навіть для Free (1 дія з тижневих).
  *
  * Bypass при `STRIPE_ENABLED=false` — unit-покриття у `requirePlan.test.ts`;
  * тут env жорстко `true` на весь файл (env.ts парситься раз при імпорті).
@@ -84,56 +79,43 @@ afterAll(() => {
   else process.env["STRIPE_ENABLED"] = SAVED_STRIPE;
 });
 
-const VISION_ENDPOINTS = [
-  "/api/nutrition/analyze-photo",
-  "/api/nutrition/refine-photo",
-] as const;
+function post(path: string) {
+  return request(createApp())
+    .post(path)
+    .set("X-Requested-With", "XMLHttpRequest")
+    .send({});
+}
 
-describe("nutrition Vision endpoints — Pro gate (free → 402)", () => {
-  beforeEach(() => freePlanRows());
-
-  for (const path of VISION_ENDPOINTS) {
-    it(`→ 402 PLAN_REQUIRED для free-юзера: POST ${path}`, async () => {
-      const app = createApp();
-      const res = await request(app)
-        .post(path)
-        .set("X-Requested-With", "XMLHttpRequest")
-        .send({});
-      expect(res.status).toBe(402);
-      expect(res.body).toMatchObject({
-        code: "PLAN_REQUIRED",
-        requiredPlan: "pro",
-      });
+describe("nutrition week-plan: Premium gate", () => {
+  it("→ 402 PLAN_REQUIRED для free-юзера", async () => {
+    freePlanRows();
+    const res = await post("/api/nutrition/week-plan");
+    expect(res.status).toBe(402);
+    expect(res.body).toMatchObject({
+      code: "PLAN_REQUIRED",
+      requiredPlan: "pro",
     });
-  }
+  });
+
+  it("→ НЕ 402 для активного Pro-юзера", async () => {
+    proPlanRows();
+    const res = await post("/api/nutrition/week-plan");
+    // 402 у цьому стеку продукує лише requirePlan, отже gate пустив запит.
+    expect(res.status).not.toBe(402);
+  });
 });
 
-describe("nutrition Vision endpoints — Pro gate (pro passes)", () => {
-  beforeEach(() => proPlanRows());
+describe("nutrition endpoints без Premium-гейта (Free)", () => {
+  beforeEach(() => freePlanRows());
 
-  for (const path of VISION_ENDPOINTS) {
-    it(`→ НЕ 402 для активного Pro-юзера: POST ${path}`, async () => {
-      const app = createApp();
-      const res = await request(app)
-        .post(path)
-        .set("X-Requested-With", "XMLHttpRequest")
-        .send({});
-      // 402 у цьому стеку продукує лише requirePlan — отже gate пустив запит
-      // далі (наступні guard-и/валідація можуть дати інший статус).
+  for (const path of [
+    "/api/nutrition/analyze-photo",
+    "/api/nutrition/refine-photo",
+    "/api/nutrition/day-plan",
+  ]) {
+    it(`→ НЕ 402 для free-юзера: POST ${path}`, async () => {
+      const res = await post(path);
       expect(res.status).not.toBe(402);
     });
   }
-});
-
-describe("nutrition metered text endpoints — без Pro-gate", () => {
-  beforeEach(() => freePlanRows());
-
-  it("→ НЕ 402 для free-юзера: POST /api/nutrition/day-plan", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/nutrition/day-plan")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({});
-    expect(res.status).not.toBe(402);
-  });
 });

@@ -24,7 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../../..");
 const REGISTRY_PATH = resolve(
   REPO_ROOT,
-  "docs/04-governance/governance/hard-rules.json",
+  "docs/governance/governance/hard-rules.json",
 );
 
 // Fixture used across tests: minimum valid registry shape (canonical schema).
@@ -282,7 +282,7 @@ test("renderMatrixRaw: category legend section enumerates the three buckets", ()
 test("renderMatrixRaw: How-to-add-a-rule section references the playbook", () => {
   const md = renderMatrixRaw(FIXTURE, { now: FROZEN_NOW });
   assert.match(md, /## How to add a rule/);
-  assert.match(md, /docs\/00-start\/playbooks\/add-hard-rule\.md/);
+  assert.match(md, /docs\/start\/instructions\/add-hard-rule\.md/);
 });
 
 // ── renderMatrix (Prettier integration) ──────────────────────────────────────

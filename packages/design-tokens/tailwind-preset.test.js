@@ -18,7 +18,13 @@
 
 import { describe, expect, it } from "vitest";
 import preset from "./tailwind-preset.js";
-import { brandColors, zTier } from "./tokens.js";
+import {
+  accentInkHex,
+  accentStrongHex,
+  brandColors,
+  statusStrongHex,
+  zTier,
+} from "./tokens.js";
 
 describe("@sergeant/design-tokens — tailwind-preset.js", () => {
   it("exports a theme.extend-only preset with no baked-in content globs", () => {
@@ -67,6 +73,45 @@ describe("@sergeant/design-tokens — tailwind-preset.js", () => {
       expect(brand.DEFAULT).not.toBe(brandColors.teal[700]);
       expect(brand.strong).not.toBe(brandColors.teal[800]);
     });
+  });
+
+  describe("textColor — `-strong` як ТЕКСТ іде через тема-змінну", () => {
+    const textColor = preset.theme.extend.textColor;
+
+    // AI-CONTEXT (2026-09-02): `-strong` несе дві ролі — заливку під
+    // `text-white` і текст на поверхні. Розводить їх саме цей блок: `colors`
+    // лишається джерелом для `bg-`/`border-`, а `textColor` перекриває рівно
+    // утиліту `text-`. Якщо запис звідси зникне, Tailwind тихо повернеться до
+    // `colors.{family}.strong` — статичного світлого тиру, і темна тема знову
+    // малюватиме темне по темному (1.11…2.74:1). Візуально це помітно лише
+    // на скріншоті в темній темі, тож перевірка тут.
+    const FAMILIES = [
+      ...Object.keys(statusStrongHex),
+      ...Object.keys(accentStrongHex),
+    ];
+
+    for (const family of FAMILIES) {
+      it(`text-${family}-strong резолвиться через --c-${family}-ink`, () => {
+        expect(textColor[`${family}-strong`]).toContain(
+          `var(--c-${family}-ink`,
+        );
+      });
+    }
+
+    // Fallback усередині `var()` — рівно СВІТЛИЙ тир. Платформа без цих
+    // змінних (майбутній bare-preset) мусить рендерити те саме, що й до
+    // розведення ролей, а не чорнильний тир на світлому фоні.
+    const triple = (hex) =>
+      [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
+
+    for (const [family, hex] of Object.entries(accentStrongHex)) {
+      it(`text-${family}-strong має світлий fallback (${hex})`, () => {
+        expect(textColor[`${family}-strong`]).toContain(triple(hex));
+        expect(textColor[`${family}-strong`]).not.toContain(
+          triple(accentInkHex[family]),
+        );
+      });
+    }
   });
 
   describe("zIndex — semantic tier mirrors zTier exactly", () => {

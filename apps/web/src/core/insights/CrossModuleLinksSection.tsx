@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Секція «Звʼязки між сферами» на `/insights` — власне місце для головного
- * диференціатора продукту (`docs/01-product/model/product-overview.md` §1:
+ * диференціатора продукту (`docs/product/model/product-overview.md` §1:
  * «звʼязки між сферами — головна цінність»). До цього звʼязки доставлялись
  * рядком усередині тижневого звіту й були видимі лише в period=week.
  *
@@ -30,13 +30,21 @@ import { CrossModuleLinkRow } from "./CrossModuleLinkRow";
 import {
   buildCrossModuleSeries,
   notablePairsFromSeries,
+  MIN_N,
+  WINDOW_DAYS,
   type NotablePair,
 } from "./digestCorrelations";
 import {
   linkFromPair,
   closestCrossModulePair,
   silentPoles,
+  bestSingleMetric,
+  singleMetricPole,
 } from "./crossModuleLinkData";
+import { MODULE_TEXT_CLASS } from "./CrossModuleLinkCard";
+import { pairHistoryKey, recordAndCountChecks } from "./crossModuleLinkHistory";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
+import { quietLinks, recordNotableLinks, type QuietLink } from "./quietLinks";
 
 const MAX_CARDS = 3;
 
@@ -54,6 +62,19 @@ const MAX_CARDS = 3;
  *
  * Пара метрик унікальна за побудовою `PAIRS`, тож ключ стабільний.
  */
+function quietLinkText(q: QuietLink): string {
+  const T = messages.crossModuleLink;
+  const base = q.since
+    ? T.quietSince.replace(
+        "{date}",
+        formatDayKeyUk(q.since, { relative: false }),
+      )
+    : T.quietWindow.replace("{days}", String(WINDOW_DAYS));
+  return base
+    .replace("{phrase}", q.phrase)
+    .replace("{module}", T.moduleLabel[q.module]);
+}
+
 function linkKey(pair: NotablePair): string {
   return `${pair.a}-${pair.b}`;
 }
@@ -72,7 +93,7 @@ export default function CrossModuleLinksSection() {
   // закладка, hard reload і холодний старт PWA давали неправду.
   //
   // Знахідка B1 прийомного прогону бети 2026-08-09
-  // (`docs/90-work/audits/2026-08-09-beta-acceptance-run.md`). Раніше той
+  // (`docs/work/specs/audits/2026-08-09-beta-acceptance-run.md`). Раніше той
   // самий симптом бачили в репетиції 2026-08-07, але списали на методику
   // прогону — і навчили лейн ходити в обхід замість того, щоб завести баг.
   //
@@ -92,22 +113,72 @@ export default function CrossModuleLinksSection() {
   // Один прохід по рядах на весь рендер: `buildCrossModuleSeries` читає
   // 60 днів × 10 метрик зі сховища, тож і картки, і стан мовчання беруть
   // дані з ОДНОГО обчислення, а не з двох незалежних.
-  const { links, silent } = useMemo(() => {
+  const { links, silent, smallData, quiet } = useMemo(() => {
     const series = buildCrossModuleSeries();
+    const pairs = notablePairsFromSeries(series);
+
+    // F-5: памʼять про помітні звʼязки пишеться тут із тієї ж причини, що
+    // й тижнева перевірка нижче (синхронне читання під час рендера), і
+    // пояснення рахуються з тих самих рядів, без другого 60-денного проходу.
+    const quiet = quietLinks(
+      series,
+      pairs,
+      recordNotableLinks(pairs, series.to),
+    );
+
+    // Запис перевірки живе саме ТУТ, у тілі мемо, а не в ефекті. Ступінь
+    // читається синхронно під час рендера, тож із ефектом перший показ
+    // тижня рахував би поточну перевірку відсутньою й рівно раз на тиждень
+    // показував би ступінь нижчий за справжній. Виклик ідемпотентний у
+    // межах тижня, тож повторний прогін мемо нічого не додає.
+    const checksByPair = recordAndCountChecks(pairs);
+
     const found: { key: string; link: CrossModuleLinkCardProps }[] = [];
-    for (const pair of notablePairsFromSeries(series)) {
+    for (const pair of pairs) {
       const link = linkFromPair(series, pair);
-      if (link) found.push({ key: linkKey(pair), link });
+      if (link) {
+        found.push({
+          key: linkKey(pair),
+          link: {
+            ...link,
+            checks: checksByPair.get(pairHistoryKey(pair.a, pair.b)) ?? 0,
+          },
+        });
+      }
       if (found.length >= MAX_CARDS) break;
     }
-    if (found.length > 0) return { links: found, silent: null };
+    if (found.length > 0) {
+      return { links: found, silent: null, smallData: null, quiet };
+    }
 
     const closest = closestCrossModulePair(series);
+
+    // Малі дані - окремий стан, а не мʼякший варіант мовчання: доки спільних
+    // днів менше за поріг, картка з ДВОМА полюсами вже називала б пару, про
+    // яку нічого не доведено (ADR-0097).
+    if (closest === null || closest.n < MIN_N) {
+      const single = bestSingleMetric(series);
+      return {
+        links: found,
+        silent: null,
+        smallData: single
+          ? {
+              pole: singleMetricPole(single.metric, single.mean),
+              observations: single.n,
+            }
+          : { pole: null, observations: 0 },
+        quiet,
+      };
+    }
+
     return {
       links: found,
-      silent: closest
-        ? { ...silentPoles(closest.a, closest.b), observations: closest.n }
-        : null,
+      silent: {
+        ...silentPoles(closest.a, closest.b),
+        observations: closest.n,
+      },
+      smallData: null,
+      quiet,
     };
     // deps нижче — це КЛЮЧІ ІНВАЛІДАЦІЇ, а не значення, які читає тіло:
     // `buildCrossModuleSeries` бере дані з модульних кешів і сховища, тобто
@@ -122,10 +193,23 @@ export default function CrossModuleLinksSection() {
         <SectionHeading as="h2" size="xs">
           {messages.crossModuleLink.sectionTitle}
         </SectionHeading>
-        <p className="text-style-caption text-muted leading-relaxed">
+        <p className="text-style-body text-muted leading-relaxed">
           {messages.crossModuleLink.sectionHint}
         </p>
       </div>
+
+      {quiet.length > 0 && (
+        <div className="space-y-1">
+          {quiet.map((q) => (
+            <p
+              key={`${q.phrase}|${q.module}`}
+              className="text-style-caption text-muted leading-relaxed"
+            >
+              {quietLinkText(q)}
+            </p>
+          ))}
+        </div>
+      )}
 
       {links.length > 0 ? (
         <div className="space-y-3">
@@ -142,6 +226,25 @@ export default function CrossModuleLinksSection() {
               <CrossModuleLinkRow key={key} {...link} />
             ),
           )}
+        </div>
+      ) : smallData ? (
+        <div className="space-y-2 rounded-2xl border border-dashed border-line bg-panel p-4">
+          <p className="text-style-label font-bold text-text">
+            {messages.crossModuleLink.smallDataTitle}
+          </p>
+          <p className="text-style-body leading-relaxed text-muted">
+            {smallData.pole
+              ? messages.crossModuleLink.smallDataBody
+              : messages.crossModuleLink.smallDataEmpty}
+          </p>
+          {smallData.pole ? (
+            <p className="text-style-body text-text">
+              <span className={MODULE_TEXT_CLASS[smallData.pole.module]}>
+                {smallData.pole.label}
+              </span>
+              {` · ${smallData.pole.value} ${smallData.pole.unit} · ${smallData.observations} ${messages.crossModuleLink.smallDataDaysNote}`}
+            </p>
+          ) : null}
         </div>
       ) : silent ? (
         // `strength: 0` нижче — не заглушка, а точне твердження: сили звʼязку

@@ -24,7 +24,9 @@ import {
   type PauseInterval,
   type RoutineState,
   type SkipReason,
+  type WeeklyTargetInterval,
 } from "./types.js";
+import { normalizeWeeklyTargetHistory } from "./weeklyTarget.js";
 
 /** localStorage / MMKV key for the whole routine state blob. */
 export const ROUTINE_STORAGE_KEY = "hub_routine_v1";
@@ -128,6 +130,8 @@ export function normalizePauseIntervals(raw: unknown): PauseInterval[] {
   return merged;
 }
 
+export { normalizeWeeklyTargetHistory };
+
 /** Normalize one `dateKey → HabitSkip` map for a single habit. */
 export function normalizeSkipMap(raw: unknown): Record<string, HabitSkip> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
@@ -187,6 +191,9 @@ export function normalizeHabit(h: unknown): Habit {
         ? (src.weekdays as number[])
         : [0, 1, 2, 3, 4, 5, 6],
     pauseIntervals: normalizePauseIntervals(src.pauseIntervals),
+    weeklyTargetHistory: normalizeWeeklyTargetHistory(
+      src.weeklyTargetHistory as WeeklyTargetInterval[] | undefined,
+    ),
   };
 }
 

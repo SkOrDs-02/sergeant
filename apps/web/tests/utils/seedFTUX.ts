@@ -165,6 +165,14 @@ function buildPayload(
   const now = Date.now();
   const set: Record<string, string> = {
     [DARK_MODE_KEY]: theme === "dark" ? "1" : "0",
+    // Банер згоди на аналітику (`AnalyticsConsentGate`) при першому запуску
+    // плаває над таббаром і перекривав би кліки/знімки. Пресетимо «ні»:
+    // PostHog-транспорт вимкнений, ring-buffer `__hubAnalytics` працює як
+    // завжди. Наявне рішення також пропускає крок згоди в онбордингу
+    // (`OnboardingConsentStep`, 2026-10-01), тож `/welcome` у режимі "cold"
+    // веде з «Почати» одразу в хаб. Літерал, не імпорт: `analyticsConsent.ts`
+    // тягне alias-и застосунку, яких Playwright-контекст не резолвить.
+    "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   };
   const remove: string[] = [];
 

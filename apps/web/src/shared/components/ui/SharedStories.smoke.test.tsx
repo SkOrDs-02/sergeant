@@ -46,7 +46,7 @@ describe("shared UI stories", () => {
 
     const empty = render(renderStory(DataStateStories.Empty));
     expect(
-      screen.getByText("Немає транзакцій за вибраний період."),
+      screen.getByText("Немає операцій за вибраний період."),
     ).toBeInTheDocument();
     empty.unmount();
 
@@ -65,9 +65,7 @@ describe("shared UI stories", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Відкрити модал" }));
 
-    expect(screen.getByRole("dialog")).toHaveTextContent(
-      "Видалення транзакції",
-    );
+    expect(screen.getByRole("dialog")).toHaveTextContent("Видалення операції");
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     modal.unmount();
 
@@ -85,7 +83,7 @@ describe("shared UI stories", () => {
     );
   }
 
-  it("renders Toast examples through the provider", () => {
+  it("renders Toast examples through the provider", async () => {
     const single = renderToastStory(ToastStories.Single);
 
     fireEvent.click(
@@ -125,11 +123,13 @@ describe("shared UI stories", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Error + retry action" }),
     );
-    expect(screen.getByText("Транзакцію додано.")).toBeInTheDocument();
+    expect(screen.getByText("Операцію додано.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(screen.getByText("Скасовано.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Повторити" }));
-    expect(screen.getByText("Рецепт завантажено.")).toBeInTheDocument();
+    // Тост, що зникає, тримає слот до кінця exit-анімації (200 мс), тож новий
+    // із черги зʼявляється не миттєво.
+    expect(await screen.findByText("Рецепт завантажено.")).toBeInTheDocument();
     action.unmount();
 
     const stack = renderToastStory(ToastStories.Stack);
@@ -157,7 +157,7 @@ describe("shared UI stories", () => {
     );
     expect(screen.getByText("Видалено категорію «Кафе»")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Повернути" }));
-    expect(screen.getByText("Категорію повернуто.")).toBeInTheDocument();
+    expect(await screen.findByText("Категорію повернуто.")).toBeInTheDocument();
   });
 
   it("renders CommandPalette examples and opens seeded commands", async () => {
@@ -173,8 +173,6 @@ describe("shared UI stories", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     render(renderStory(CommandPaletteStories.InitiallyOpen));
 
-    expect(
-      await screen.findByText("Запитати AI-асистента"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Запитати Сержанта")).toBeInTheDocument();
   });
 });

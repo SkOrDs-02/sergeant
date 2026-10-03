@@ -56,7 +56,6 @@ export const billingApi = apiClient.billing;
 export const meApi = apiClient.me;
 export const weeklyDigestApi = apiClient.weeklyDigest;
 export const transcribeApi = apiClient.transcribe;
-export const webVitalsApi = apiClient.webVitals;
 export const silpoApi = apiClient.silpo;
 
 // Errors, types, HTTP primitives
@@ -112,6 +111,7 @@ export type {
   NutritionPhotoIngredient,
   NutritionPhotoPortion,
   NutritionPhotoResponse,
+  NutritionPhotoItem,
   NutritionPhotoResult,
   NutritionRecipe,
   NutritionRecipesResponse,
@@ -151,12 +151,19 @@ export type {
   SilpoConnectionStatus,
   SilpoDisconnectResponse,
   SilpoEndpoints,
+  SilpoPantryClaimMode,
+  SilpoPantryClaimRequest,
+  SilpoPantryClaimResponse,
+  SilpoPantryReleaseRequest,
+  SilpoPantryReleaseResponse,
   SilpoReceiptChannel,
   SilpoReceiptDetailDto,
   SilpoReceiptItemDto,
   SilpoReceiptsListParams,
   SilpoReceiptsPage,
   SilpoReceiptSummaryDto,
+  SilpoSettingsRequest,
+  SilpoSettingsResponse,
   SilpoSyncResult,
   SilpoSyncState,
   SilpoRelinkResponse,

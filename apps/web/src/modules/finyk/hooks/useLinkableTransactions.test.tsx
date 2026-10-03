@@ -80,15 +80,17 @@ describe("useLinkableTransactions", () => {
     expect(Math.round(spanDays)).toBe(90);
   });
 
-  it("вибір місяця запитує саме той місяць", async () => {
+  it("вибір місяця запитує саме той місяць (реальні київські межі, §1.8)", async () => {
     renderHook(
       () => useLinkableTransactions({ month: "2026-05", enabled: true }),
       { wrapper },
     );
     await waitFor(() => expect(fetchAllMonoTransactions).toHaveBeenCalled());
     const params = fetchAllMonoTransactions.mock.calls[0]?.[0] as Range;
-    expect(params.from).toContain("2026-05-01");
-    expect(params.to).toContain("2026-06-01");
+    // Травень-червень 2026 — літній час у Києві (EEST, UTC+3), тож
+    // київська північ 1 травня/1 червня — це 21:00 UTC попередньої доби.
+    expect(params.from).toBe("2026-04-30T21:00:00.000Z");
+    expect(params.to).toBe("2026-05-31T21:00:00.000Z");
   });
 
   it("зливає базу з підвантаженим діапазоном без дублікатів", async () => {

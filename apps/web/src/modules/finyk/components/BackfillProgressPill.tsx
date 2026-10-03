@@ -7,7 +7,14 @@ import { cn } from "@shared/lib/ui/cn";
 import { ProgressBar } from "@shared/components/ui";
 
 import type { MonoBackfillProgress } from "@shared/api";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
+
+/** «1 транзакція» / «2 транзакції» / «5 транзакцій» — не бінарна форма. */
+const TRANSACTION_FORMS: UaPluralForms = {
+  one: "операція",
+  few: "операції",
+  many: "операцій",
+};
 
 interface BackfillProgressPillProps {
   progress: MonoBackfillProgress | null;
@@ -74,13 +81,14 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
     ? `Завантаження виписки · ${progress.accountsProcessed}/${progress.accountsTotal} рах.`
     : isCompleted
       ? "Завершено"
-      : "Помилка backfill";
+      : "Не вдалося довантажити виписку";
 
   const detail = isRunning
     ? `${formatNumberUk(progress.transactionsProcessed)} тр.`
     : isCompleted
-      ? `${formatNumberUk(progress.transactionsProcessed)} транзакцій`
-      : (progress.lastError ?? "невідома помилка");
+      ? `${formatNumberUk(progress.transactionsProcessed)} ${pluralUa(progress.transactionsProcessed, TRANSACTION_FORMS)}`
+      : (progress.lastError ??
+        "Спробуй ще раз через «Синхронізувати історію».");
 
   return (
     <div
@@ -103,5 +111,3 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
     </div>
   );
 });
-
-export default BackfillProgressPill;

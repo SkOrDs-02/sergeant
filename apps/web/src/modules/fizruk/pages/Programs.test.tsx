@@ -111,6 +111,20 @@ describe("Programs page", () => {
     ).toBeInTheDocument();
   });
 
+  it("фарбує активну програму й дні тренувань акцентом модуля, не success", () => {
+    // Module-accent containment: усередині Фізрука зелений `success`
+    // читається як чужий hue (критика екранів 2026-09-23). Виняток є лише
+    // для рекомендованого відпочинку (рішення власника 2026-08-08), і цей
+    // екран під нього не підпадає.
+    mockWeekdayIndex.mockReturnValue(firstTrainingDay - 1);
+    const props = baseProps();
+    props.activeProgramId = firstProgram.id;
+    props.activeProgram = firstProgram;
+    const { container } = render(<Programs {...props} />);
+    expect(container.querySelector('[class*="success"]')).toBeNull();
+    expect(container.querySelector('[class*="bg-fizruk"]')).not.toBeNull();
+  });
+
   it('shows "Сьогодні відпочинок" on a rest day for the active program', () => {
     const trainingDays = new Set(firstProgram.schedule.map((s) => s.day - 1));
     const restIndex = [0, 1, 2, 3, 4, 5, 6].find((i) => !trainingDays.has(i));

@@ -17,26 +17,30 @@
  *   - `apps/server/src/lib/ragEval/golden.test.ts` (validation).
  */
 
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { z } from "zod";
-import { ALLOWED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
+import { CORPUS_DOMAINS } from "./corpus.js";
 
-const DOMAIN_SCHEMA = z.enum(ALLOWED_MEMORY_SOURCES);
+// Домени golden-запитів збігаються з `source` документів корпусу — див.
+// `CORPUS_DOMAINS` у `corpus.ts` (розчеплений від `ai_memories.source`
+// ініціативою 0024, PR-3, 2026-09-19).
+const DOMAIN_SCHEMA = z.enum(CORPUS_DOMAINS);
 
 export const GoldenQuerySchema = z.object({
   /** Унікальний id (стабільний). Формат: `<domain>-NNN`. */
   id: z.string().min(1),
-  /** Memory-source domain — має бути у `ALLOWED_MEMORY_SOURCES`. */
+  /** Memory-source domain - має бути у `CORPUS_DOMAINS` (`corpus.ts`). */
   domain: DOMAIN_SCHEMA,
   /** Natural-language query. */
   query: z.string().min(1),
   /**
    * Очікувані memory IDs у топ-K retrieval. Формат:
    * `<source>:<sourceRef>` (стабільне посилання на `ai_memories` row;
-   * див. moduledoc). Порядок не важливий — recall@K і P@1 розглядають
-   * членство; MRR — позицію першого hit-у у `retrieved`.
+   * див. moduledoc). Порядок не важливий - recall@K і P@1 розглядають
+   * членство; MRR - позицію першого hit-у у `retrieved`.
    *
    * Snake_case у JSON узгоджений з PR-plan-2026-05.md § PR-20 spec.
    */
@@ -49,7 +53,7 @@ export const GoldenSetSchema = z.object({
   comment: z.string().optional(),
   embeddingModel: z.string().min(1),
   embeddingVersion: z.string().min(1),
-  /** Default K для recall — задається у fixture для self-documenting. */
+  /** Default K для recall - задається у fixture для self-documenting. */
   topK: z.number().int().positive(),
   queries: z.array(GoldenQuerySchema).min(1),
 });
@@ -58,7 +62,7 @@ export type GoldenQuery = z.infer<typeof GoldenQuerySchema>;
 export type GoldenSet = z.infer<typeof GoldenSetSchema>;
 
 /**
- * Парсить JSON-buffer у `GoldenSet`. Pure — без I/O. Корисна для unit-
+ * Парсить JSON-buffer у `GoldenSet`. Pure - без I/O. Корисна для unit-
  * тестів і CLI з `--golden=<path>` overрайдом.
  */
 export function parseGoldenSet(raw: unknown): GoldenSet {
@@ -71,6 +75,19 @@ export function parseGoldenSet(raw: unknown): GoldenSet {
     seenIds.add(q.id);
   }
   return parsed;
+}
+
+/**
+ * Відбиток **текстів запитів** - того, що їде в ембеддинг. Як і в
+ * `corpusTextsFingerprint`, свідомо не sha цілого файлу: правка
+ * коментаря чи `expected_memory_ids` вектора запиту не змінює, і
+ * вимагати за неї платного переембеддингу було б безглуздо.
+ */
+export function goldenQueriesFingerprint(golden: GoldenSet): string {
+  const canonical = golden.queries
+    .map((q) => `${q.id}\n${q.query}`)
+    .join("\n \n");
+  return createHash("sha256").update(canonical, "utf-8").digest("hex");
 }
 
 /**

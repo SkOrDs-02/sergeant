@@ -96,6 +96,37 @@ describe("useUnifiedFinanceData", () => {
     expect(result.current.mergedMono.accounts).toHaveLength(3);
   });
 
+  it("excludes hidden privat accounts from privatTotal, mirroring the mono hidden-filter", () => {
+    const mono = makeMono();
+    const privat = makePrivat({
+      accounts: [
+        { id: "p1", currency: "UAH", balance: 150000 },
+        { id: "p-hidden", currency: "UAH", balance: 300000 },
+      ],
+    });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({
+        mono,
+        privat,
+        hiddenAccountIds: ["p-hidden"],
+      }),
+    );
+    // The hidden account's 3000 grn must not leak into privatTotal (§1.3).
+    expect(result.current.mergedMono.privatTotal).toBe(1500);
+  });
+
+  it("surfaces an overdrawn privat account as privatDebt, not a negative privatTotal", () => {
+    const mono = makeMono();
+    const privat = makePrivat({
+      accounts: [{ id: "p1", currency: "UAH", balance: -300000 }],
+    });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.privatTotal).toBe(0);
+    expect(result.current.mergedMono.privatDebt).toBe(3000);
+  });
+
   it("combines error strings from both sources", () => {
     const mono = makeMono({ error: "mono down" });
     const privat = makePrivat({ error: "privat down" });
@@ -129,5 +160,29 @@ describe("useUnifiedFinanceData", () => {
     expect(result.current.mergedMono.lastUpdated!.getTime()).toBe(
       newer.getTime(),
     );
+  });
+
+  // Regression PR-F7 (аудит 2026-09-13): гілки error/partial/loading читали
+  // обидва провайдери, а успіх — лише Monobank, тож у людини з самим Приватом
+  // об'єднаний статус лишався моновським `idle`.
+  it("lifts a privat-only success into the combined status", () => {
+    const mono = makeMono({ syncState: { status: "idle" } });
+    const privat = makePrivat({
+      connected: true,
+      syncState: { status: "success" },
+    });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.syncState.status).toBe("success");
+  });
+
+  it("keeps idle when neither provider has synced", () => {
+    const mono = makeMono({ syncState: { status: "idle" } });
+    const privat = makePrivat({ connected: true });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.syncState.status).toBe("idle");
   });
 });

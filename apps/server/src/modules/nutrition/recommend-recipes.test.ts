@@ -9,7 +9,7 @@ vi.mock("../../lib/llm/provider.js", () => ({
 }));
 
 import { invokeLLM as _invokeLLM } from "../../lib/llm/provider.js";
-import handler from "./recommend-recipes.js";
+import handler, { buildRecommendRecipesSystem } from "./recommend-recipes.js";
 
 const invokeLLM = _invokeLLM as unknown as Mock;
 
@@ -220,7 +220,7 @@ describe("recommend-recipes handler", () => {
 
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     const messages = JSON.stringify(opts["messages"]);
-    expect(messages).toContain("Не використовувати/алергени: —");
+    expect(messages).toContain("Не використовувати/алергени: немає");
     expect(messages).toContain("гречка");
     expect(messages).toContain("рис");
     expect(messages).toContain("Ціль: low-carb");
@@ -334,5 +334,29 @@ describe("recommend-recipes handler", () => {
 
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     expect(opts["userId"]).toBe("u_recipes");
+  });
+});
+
+describe("buildRecommendRecipesSystem — макроси на одну порцію", () => {
+  // Рішення власника 2026-10-01: `macros` рецепта - на ОДНУ порцію, `servings` -
+  // окреме поле. Клієнт множить макроси на кількість зʼїдених порцій, тож
+  // модель, що віддала підсумок на весь рецепт, тихо завищує журнал у
+  // `servings` разів. Без явного правила в промпті модель вибирає сама.
+  it.each(["prefer", "only", "ignore"] as const)(
+    "режим %s: промпт каже, що макроси на одну порцію, а servings окремо",
+    (mode) => {
+      const system = buildRecommendRecipesSystem(mode);
+      expect(system).toContain("на ОДНУ порцію");
+      expect(system).toContain("а не на весь рецепт");
+      expect(system).toContain("servings");
+      expect(system).toContain("не множ");
+    },
+  );
+
+  it("JSON-схема в промпті лишається без коментарів: модель копіює формат дослівно", () => {
+    const schema =
+      buildRecommendRecipesSystem("prefer").split("Формат JSON:")[1];
+    expect(schema).toBeDefined();
+    expect(schema).not.toContain("//");
   });
 });

@@ -10,10 +10,12 @@ const retrySyncV2DeadLetters = vi.fn();
 const syncStatusRef: {
   syncV2PendingCount: number;
   syncV2DeadLetterCount: number;
+  syncV2RejectedCount: number;
   retrySyncV2DeadLetters: () => Promise<void>;
 } = {
   syncV2PendingCount: 0,
   syncV2DeadLetterCount: 0,
+  syncV2RejectedCount: 0,
   retrySyncV2DeadLetters,
 };
 
@@ -25,13 +27,24 @@ vi.mock("../cloudSync", () => ({
   useSyncStatus: () => ({ ...syncStatusRef, isOnline: onlineRef.value }),
 }));
 
+const purgeNoticeRef: {
+  value: { purged: number; purgedAtIso: string } | null;
+} = { value: null };
+
+vi.mock("../syncEngine/outboxPurgeNotice", () => ({
+  useOutboxPurgeNotice: () => purgeNoticeRef.value,
+  dismissOutboxPurgeNotice: vi.fn(),
+}));
+
 import { OfflineBanner } from "./OfflineBanner";
 
 beforeEach(() => {
   onlineRef.value = true;
   syncStatusRef.syncV2PendingCount = 0;
   syncStatusRef.syncV2DeadLetterCount = 0;
+  syncStatusRef.syncV2RejectedCount = 0;
   retrySyncV2DeadLetters.mockReset();
+  purgeNoticeRef.value = null;
 });
 afterEach(cleanup);
 
@@ -43,13 +56,35 @@ describe("OfflineBanner", () => {
     expect(queryByTestId("offline-banner")).toBeNull();
   });
 
+  it("keeps one live region across states and announces state, not the queue count", () => {
+    const { getByRole, rerender } = render(<OfflineBanner />);
+    const region = getByRole("status");
+    expect(region).toHaveTextContent("");
+
+    act(() => {
+      onlineRef.value = false;
+    });
+    rerender(<OfflineBanner />);
+    // Той самий вузол: регіон, змонтований разом із текстом, не озвучується.
+    expect(getByRole("status")).toBe(region);
+    expect(region).toHaveTextContent(/^Офлайн$/);
+
+    act(() => {
+      onlineRef.value = true;
+      syncStatusRef.syncV2PendingCount = 4;
+    });
+    rerender(<OfflineBanner />);
+    expect(region).toHaveTextContent(/^Синхронізація$/);
+  });
+
   it("renders an 'offline' pill with role=status when offline", () => {
     onlineRef.value = false;
-    const { getByTestId } = render(<OfflineBanner />);
+    const { getByTestId, getByRole } = render(<OfflineBanner />);
     const pill = getByTestId("offline-banner");
     expect(pill.getAttribute("data-state")).toBe("offline");
     expect(pill.tagName).toBe("BUTTON");
-    expect(pill.getAttribute("aria-live")).toBe("polite");
+    expect(pill.getAttribute("aria-live")).toBeNull();
+    expect(getByRole("status")).toHaveTextContent(/Офлайн/);
     expect(pill).toHaveClass("min-h-11", "min-w-11");
     expect(pill).not.toHaveClass("fixed");
     expect(pill.textContent).toContain("Офлайн");
@@ -126,5 +161,54 @@ describe("OfflineBanner", () => {
     });
 
     expect(retrySyncV2DeadLetters).toHaveBeenCalledTimes(1);
+  });
+
+  // tech-debt/frontend.md, знахідка 2026-08-25: відхилений сервером оп був
+  // невидимим — локально запис є, тож виглядає збереженим. Тепер він дає
+  // власний стан пілюлі, коли інших живих станів немає.
+  it("renders a 'rejected' pill when the only anomaly is server-rejected rows", () => {
+    onlineRef.value = true;
+    syncStatusRef.syncV2RejectedCount = 2;
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("rejected");
+    expect(pill.textContent).toContain("2 записи не прийнято");
+  });
+
+  it("lets live states (dead-letter, offline, queue) win over rejected rows", () => {
+    syncStatusRef.syncV2RejectedCount = 2;
+    syncStatusRef.syncV2PendingCount = 1;
+    const { getByTestId } = render(<OfflineBanner />);
+    expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
+      "syncing",
+    );
+  });
+
+  // PR-T2 (2026-09-13 product review, "Тиха втрата даних"): the boot-time
+  // TTL sweep can delete the very rejected/dead-letter rows that would
+  // otherwise keep this pill visible. Without a dedicated lowest-priority
+  // state, the purge leaves no entry point into `SyncStatusSheet`.
+  it("renders a 'purged' pill when the only anomaly is a past outbox purge", () => {
+    onlineRef.value = true;
+    purgeNoticeRef.value = {
+      purged: 4,
+      purgedAtIso: "2026-09-13T00:00:00.000Z",
+    };
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("purged");
+    expect(pill.textContent).toContain("4 старі записи прибрано");
+  });
+
+  it("lets live states win over a past outbox purge", () => {
+    purgeNoticeRef.value = {
+      purged: 4,
+      purgedAtIso: "2026-09-13T00:00:00.000Z",
+    };
+    syncStatusRef.syncV2RejectedCount = 2;
+    const { getByTestId } = render(<OfflineBanner />);
+    expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
+      "rejected",
+    );
   });
 });

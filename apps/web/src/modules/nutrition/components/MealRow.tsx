@@ -56,16 +56,16 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
   const macroSource = String(meal?.macroSource || "manual");
   const sourceLabel =
     macroSource === "photoAI"
-      ? "AI"
+      ? "Сержант"
       : macroSource === "recipeAI"
-        ? "AI-рецепт"
+        ? "рецепт Сержанта"
         : macroSource === "productDb"
           ? "DB"
           : "";
   // 6.4: AI-sourced entries (photoAI / recipeAI) get the nutrition-tinted
-  // sparkles badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
+  // sergeant-glyph badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
   // is a deterministic lookup, not AI inference, so it keeps the neutral
-  // soft tone without the sparkles icon.
+  // soft tone without the sergeant glyph.
   const isAiSourced = macroSource === "photoAI" || macroSource === "recipeAI";
   return (
     <div className="flex items-center gap-3 bg-panelHi rounded-2xl px-3 py-2.5 group">
@@ -97,7 +97,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
               className="shrink-0 inline-flex items-center gap-1 rounded-full"
               title="Походження КБЖВ"
             >
-              {isAiSourced && <Icon name="sparkles" size={10} aria-hidden />}
+              {isAiSourced && <Icon name="sergeant" size={10} aria-hidden />}
               <span>{sourceLabel}</span>
             </Badge>
           )}
@@ -136,7 +136,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         aria-label="Видалити запис"
         className="text-muted hover:text-danger hover:bg-danger/10 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        <Icon name="close" size={14} aria-hidden />
+        <Icon name="close" size="sm" aria-hidden />
       </Button>
     </div>
   );

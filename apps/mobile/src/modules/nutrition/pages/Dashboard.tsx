@@ -23,6 +23,8 @@ import {
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
+  resolveKcalGoalsForDays,
+  stripPlacement,
   type MealTypeId,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
@@ -37,6 +39,7 @@ import { MacroRing } from "../components/MacroRing";
 import { WaterTrackerCard } from "../components/WaterTrackerCard";
 import { WeekKcalChart } from "../components/WeekKcalChart";
 import { useNutritionLog } from "../hooks/useNutritionLog";
+import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
 import { useNutritionPantries } from "../hooks/useNutritionPantries";
 import { useNutritionPrefs } from "../hooks/useNutritionPrefs";
 
@@ -77,7 +80,7 @@ const MACRO_DEFS: readonly MacroDef[] = [
   },
   {
     key: "carbs_g",
-    label: "Вуглев.",
+    label: "Вугл",
     color: chartHex.carbs, // lime-700 #567c0f
     prefKey: "dailyTargetCarbs_g",
     unit: "г",
@@ -160,6 +163,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const api = useApiClient();
   const { nutritionLog, addMeal } = useNutritionLog();
   const { prefs, updatePrefs } = useNutritionPrefs();
+  const goalPeriods = useNutritionGoalPeriods();
   const { pantryItems } = useNutritionPantries();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -188,7 +192,9 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
       setDayPlanBusy(true);
       setDayPlanErr("");
       try {
-        const pantryPayload = pantryItems.slice(0, PANTRY_ITEMS_LIMIT);
+        const pantryPayload = stripPlacement(
+          pantryItems.slice(0, PANTRY_ITEMS_LIMIT),
+        );
         const data = await api.nutrition.dayPlan({
           pantry: pantryPayload,
           targets: {
@@ -304,6 +310,14 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
     () => getMacrosForDateRange(nutritionLog, today, 7),
     [nutritionLog, today],
   );
+  const weekGoals = useMemo(
+    () =>
+      resolveKcalGoalsForDays(
+        goalPeriods,
+        weekRows.map((row) => row.date),
+      ),
+    [goalPeriods, weekRows],
+  );
 
   const hasTargets =
     (prefs.dailyTargetKcal || 0) > 0 ||
@@ -400,7 +414,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
         </Text>
         <WeekKcalChart
           rows={weekRows}
-          targetKcal={prefs.dailyTargetKcal || 0}
+          goalsByDay={weekGoals}
           todayIso={today}
         />
       </Card>

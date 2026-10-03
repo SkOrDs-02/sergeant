@@ -45,6 +45,26 @@ export interface GoalRangeIssue {
 }
 
 /**
+ * Atwater kcal/g — фізичні константи, не продуктове рішення, тож не в
+ * `GOAL_BOUNDS`. unification-modules.md #2.17: п'ять сайтів (план-картка,
+ * банер попередження, смуга відсотків, TDEE, цей файл) рахували те саме
+ * `prot*4 + fat*9 + carb*4` окремими копіями.
+ */
+export const ATWATER_KCAL_PER_G = { protein: 4, fat: 9, carbs: 4 } as const;
+
+export function kcalFromMacros(macros: {
+  protein_g?: number | null;
+  fat_g?: number | null;
+  carbs_g?: number | null;
+}): number {
+  return (
+    (macros.protein_g || 0) * ATWATER_KCAL_PER_G.protein +
+    (macros.fat_g || 0) * ATWATER_KCAL_PER_G.fat +
+    (macros.carbs_g || 0) * ATWATER_KCAL_PER_G.carbs
+  );
+}
+
+/**
  * Перевіряє, чи цільові макро вкладаються в цільові ккал. Якщо ні —
  * повертає {kind: "over"} з різницею; якщо вкладаються, але істотно
  * недотягують — {kind: "under"}; інакше null.
@@ -64,7 +84,9 @@ export function calcMacroKcalMismatch(prefs: NutritionPrefs): {
   const fat = prefs.dailyTargetFat_g ?? 0;
   const carb = prefs.dailyTargetCarbs_g ?? 0;
   if (prot <= 0 && fat <= 0 && carb <= 0) return null;
-  const calc = Math.round(prot * 4 + fat * 9 + carb * 4);
+  const calc = Math.round(
+    kcalFromMacros({ protein_g: prot, fat_g: fat, carbs_g: carb }),
+  );
   const tolerance = Math.round(target * 0.05);
   const diff = calc - target;
   if (diff > tolerance) {

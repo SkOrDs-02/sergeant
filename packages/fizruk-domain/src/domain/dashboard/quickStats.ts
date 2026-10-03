@@ -3,8 +3,8 @@
  * shows for the fizruk module (`weekWorkouts` / `streak`).
  *
  * Thin projection over the Dashboard KPI aggregators so the Hub card
- * renders the exact same numbers as the module's own StatusStrip — the
- * Mon-first Kyiv-anchored weekly count (`computeWeeklyTotals`) and the
+ * renders the exact same numbers as the module's own Dashboard hero kicker —
+ * the Mon-first device-clock weekly count (`computeWeeklyTotals`) and the
  * тижневий стрік (`computeWeeklyStreakWeeks`). No new maths: a
  * second source of truth would let the card drift from the module.
  */
@@ -14,7 +14,7 @@ import { computeWeeklyStreakWeeks } from "./weeklyStreak.js";
 import type { DashboardWorkoutInput } from "./types.js";
 
 export interface FizrukQuickStats {
-  /** Completed workouts in the current Mon-first Kyiv week. */
+  /** Completed workouts in the current Mon-first device-clock week (ADR-0078). */
   weekWorkouts: number;
   /**
    * Тижнів поспіль із ≥X тренувань (канон §7). Раніше тут був щоденний

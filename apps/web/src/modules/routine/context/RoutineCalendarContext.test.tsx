@@ -35,6 +35,7 @@ function makeData(
     currentStreak: 3,
     completionRate: { completed: 2, scheduled: 4, rate: 0.5 },
     dayProgress: { completed: 1, scheduled: 3 },
+    progressDayKey: "2026-07-10",
     timeMode: "today",
     selectedDay: "2026-07-10",
     todayKey: "2026-07-10",

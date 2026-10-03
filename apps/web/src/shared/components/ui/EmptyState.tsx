@@ -438,7 +438,15 @@ interface ModuleConfig {
   title: string;
   description: string;
   hint: string;
-  actionLabel: string;
+  /**
+   * Optional — only meaningful when a call-site actually passes `onAction`.
+   * Founder-UX audit round 2 (F1) flagged `finyk`'s `actionLabel` as dead:
+   * both `Overview.tsx` and `TransactionList.tsx` render `ModuleEmptyState
+   * module="finyk"` without `onAction` on purpose (the global "+ Додати
+   * витрату" FAB already owns that CTA), so the label sat in the config
+   * with nothing ever reading it.
+   */
+  actionLabel?: string;
   accent: string;
   exampleLine1: string;
   exampleLine2: string;
@@ -453,7 +461,7 @@ const MODULE_EMPTY_CONFIG: Record<
     title: "Куди йдуть твої гроші?",
     description: "Додай першу витрату і побач реальну картину бюджету.",
     hint: "Порада: Підключи Monobank для автоматичного імпорту",
-    actionLabel: "Додати витрату",
+    // `actionLabel` навмисно відсутній — див. коментар над `ModuleConfig`.
     accent: "text-finyk bg-finyk-soft dark:bg-finyk/10",
     exampleLine1: "Кава",
     exampleLine2: "-85 ₴ · Сьогодні",
@@ -482,7 +490,7 @@ const MODULE_EMPTY_CONFIG: Record<
     icon: "utensils",
     title: "Що ти їси насправді?",
     description: "Залогай перший прийом їжі й отримай чесну картину.",
-    hint: "Порада: Сфоткай страву, AI порахує калорії",
+    hint: "Порада: Сфоткай страву, Сержант порахує калорії",
     actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
     exampleLine1: "Сніданок",
@@ -583,7 +591,7 @@ export function ModuleEmptyState({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
-          <Icon name="x" size={16} aria-hidden="true" />
+          <Icon name="close" size="md" aria-hidden="true" />
         </button>
       )}
       <EmptyState
@@ -619,11 +627,15 @@ export function ModuleEmptyState({
         action={
           onAction && (
             <Button
-              variant="primary"
+              variant="solid"
               size={compact ? "sm" : "md"}
               onClick={onAction}
             >
-              {actionLabel || config.actionLabel}
+              {/* Fallback for modules (currently only `finyk`) whose config
+                  has no `actionLabel` — the button only renders when the
+                  caller passes `onAction`, so a caller that does so without
+                  an explicit `actionLabel` still gets a labelled button. */}
+              {actionLabel ?? config.actionLabel ?? "Додати"}
             </Button>
           )
         }

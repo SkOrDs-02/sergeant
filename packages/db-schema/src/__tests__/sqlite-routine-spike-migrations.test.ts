@@ -7,13 +7,13 @@ import {
   type SqliteMigrationClient,
 } from "../migrate/adapters/sqlite.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 
 /**
  * Schema-roundtrip smoke for the Stage 3 SPIKE bundled migrations
- * (PR #022 of `docs/planning/storage-roadmap.md`).
+ * (PR #022 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * Locks down four invariants that the web/mobile clients depend on:
  *
@@ -46,7 +46,7 @@ function syncClient(db: BetterSqliteDatabase): SqliteMigrationClient {
   };
 }
 
-describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
+describe("ROUTINE_CLIENT_MIGRATIONS", () => {
   let db: BetterSqliteDatabase;
   let client: SqliteMigrationClient;
 
@@ -62,8 +62,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
   it("applies the bundled migrations end-to-end and creates all four tables", async () => {
     const result = await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(result.applied).toEqual([
       "001_routine_spike.sql",
@@ -75,6 +75,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "007_routine_completion_events.sql",
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
+      "010_routine_weekly_target_history.sql",
+      "011_routine_drop_pushups.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -96,7 +98,6 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "routine_habit_skips",
       "routine_habits",
       "routine_prefs",
-      "routine_pushups",
       "routine_streaks",
       "routine_tags",
       "sync_op_cursor",
@@ -147,6 +148,13 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       .all() as { name: string }[];
     expect(obPk.map((r) => r.name)).toEqual(["id"]);
 
+    const habitCols = db
+      .prepare("SELECT name FROM pragma_table_info('routine_habits')")
+      .all() as { name: string }[];
+    expect(habitCols.map((c) => c.name)).toContain(
+      "weekly_target_history_json",
+    );
+
     const cuPk = db
       .prepare(
         "SELECT name FROM pragma_table_info('sync_op_cursor') WHERE pk != 0",
@@ -183,12 +191,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       .all() as { name: string }[];
     expect(prefsPk.map((r) => r.name)).toEqual(["user_id"]);
 
-    const pushupsPk = db
-      .prepare(
-        "SELECT name FROM pragma_table_info('routine_pushups') WHERE pk != 0",
-      )
-      .all() as { name: string }[];
-    expect(pushupsPk.map((r) => r.name)).toEqual(["user_id", "date_key"]);
+    // `routine_pushups` (004) знята міграцією 011 — таблиці в кінцевій
+    // схемі бути не повинно (перевірено списком таблиць вище).
 
     const orderPk = db
       .prepare(
@@ -209,13 +213,13 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     const second = await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(second.applied).toEqual([]);
     expect(second.skipped).toEqual([
@@ -228,14 +232,16 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "007_routine_completion_events.sql",
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
+      "010_routine_weekly_target_history.sql",
+      "011_routine_drop_pushups.sql",
     ]);
   });
 
   it("supports insert + select on routine_entries and sync_op_outbox", async () => {
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     db.prepare(
@@ -300,8 +306,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
   it("PR #040 sync_op_outbox accepts dead_letter status and rejects unknown statuses", async () => {
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     // dead_letter is now a legal terminal status (was rejected pre-PR-040).
@@ -361,8 +367,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: [ROUTINE_SPIKE_CLIENT_MIGRATIONS[0]!],
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: [ROUTINE_CLIENT_MIGRATIONS[0]!],
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     db.prepare(
@@ -381,8 +387,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
 
     await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     const row = db
@@ -414,8 +420,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
   it("PR #042d-prep accepts op='increment' and rejects unknown op kinds", async () => {
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     // op='increment' is now a legal kind — the PR #042c builder
@@ -472,11 +478,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: [
-        ROUTINE_SPIKE_CLIENT_MIGRATIONS[0]!,
-        ROUTINE_SPIKE_CLIENT_MIGRATIONS[1]!,
-      ],
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: [ROUTINE_CLIENT_MIGRATIONS[0]!, ROUTINE_CLIENT_MIGRATIONS[1]!],
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     // Pending row with retry state populated.
@@ -530,8 +533,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
 
     await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     const rows = db

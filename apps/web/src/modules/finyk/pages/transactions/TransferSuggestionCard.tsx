@@ -4,6 +4,7 @@ import { Card } from "@shared/components/ui/Card";
 import type { TxAccount } from "./Transactions";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
+import { formatDateShort, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 
 interface TransferSuggestionCardProps {
   suggestion: InternalTransferSuggestion;
@@ -63,25 +64,30 @@ export function TransferSuggestionCard({
     typeof toAccount?.creditLimit === "number" && toAccount.creditLimit > 0;
   const amountUah = Math.round(suggestion.amountMinor / 100);
   // Account labels alone ("Чорна • 1234 → Банка") do not let the user recall
-  // which pair of operations this is about. Show each side's own description
-  // and date, the way the transaction list identifies them.
-  const sideLabel = (tx: InternalTransferSuggestion["outgoing"]): string => {
+  // which pair of operations this is about, so each side gets its own row.
+  //
+  // AI-CONTEXT: the sign belongs to the AMOUNT, never to the date. Until
+  // 2026-09-14 these rows read "−11 вер. · Переказ на картку": the minus
+  // was glued to the day number and parsed as "мінус одинадцяте", while the
+  // sum itself sat unsigned in the corner and belonged to neither leg
+  // (owner's report on the credit-repayment card). The bank description is
+  // gone from the rows on purpose — direction was already stated by the
+  // arrow above, and repeating it in the bank's own words ("Переказ на
+  // картку", "З Білої картки") made a third telling of the same fact.
+  const legDate = (tx: InternalTransferSuggestion["outgoing"]): string => {
     const seconds = Number(tx.time);
     const instant = Number.isFinite(seconds)
       ? seconds > 10_000_000_000
         ? seconds
         : seconds * 1000
       : 0;
-    const date = instant
-      ? new Date(instant).toLocaleDateString("uk-UA", {
-          timeZone: "Europe/Kyiv",
-          day: "numeric",
-          month: "short",
-        })
-      : "";
-    const description = (tx.description ?? "").trim();
-    return [date, description].filter(Boolean).join(" · ");
+    if (!instant) return "";
+    return formatDateShort(new Date(instant), { timeZone: KYIV_TIME_ZONE });
   };
+  const legs = [
+    { key: "outgoing", tx: suggestion.outgoing, accountId: fromId, sign: -1 },
+    { key: "incoming", tx: suggestion.incoming, accountId: toId, sign: 1 },
+  ] as const;
 
   return (
     <Card module="finyk" prominence="soft" radius="lg" className="space-y-3">
@@ -94,13 +100,34 @@ export function TransferSuggestionCard({
           </p>
           <p className="text-style-caption text-muted mt-0.5 truncate">
             {accountLabel(fromId, accounts)} → {accountLabel(toId, accounts)}
+            {isCreditCardRepayment
+              ? ` · ${messages.finyk.transferSuggestion.creditAccountTag}`
+              : ""}
           </p>
-          <p className="text-style-caption text-subtle mt-1 truncate">
-            −{sideLabel(suggestion.outgoing)}
-          </p>
-          <p className="text-style-caption text-subtle truncate">
-            +{sideLabel(suggestion.incoming)}
-          </p>
+          <div className="mt-1 space-y-0.5">
+            {legs.map((leg) => (
+              <p
+                key={leg.key}
+                className="text-style-caption text-subtle flex items-baseline gap-2"
+              >
+                <span className="tabular-nums shrink-0">{legDate(leg.tx)}</span>
+                <span className="tabular-nums shrink-0">
+                  {showBalance ? (
+                    <Money
+                      amount={leg.sign * amountUah}
+                      signed
+                      tone="inherit"
+                    />
+                  ) : (
+                    "••••"
+                  )}
+                </span>
+                <span className="truncate">
+                  {accountLabel(leg.accountId, accounts)}
+                </span>
+              </p>
+            ))}
+          </div>
         </div>
         <span className="text-style-label tabular-nums text-finyk-strong dark:text-finyk shrink-0">
           {showBalance ? <Money amount={amountUah} tone="inherit" /> : "••••"}
@@ -119,7 +146,9 @@ export function TransferSuggestionCard({
           tone="finyk"
           onClick={onConfirm}
         >
-          {messages.finyk.transferSuggestion.confirm}
+          {isCreditCardRepayment
+            ? messages.finyk.transferSuggestion.creditRepaymentConfirm
+            : messages.finyk.transferSuggestion.confirm}
         </Button>
         <Button
           type="button"
@@ -128,16 +157,14 @@ export function TransferSuggestionCard({
           tone="neutral"
           onClick={onReject}
         >
-          {messages.finyk.transferSuggestion.reject}
+          {isCreditCardRepayment
+            ? messages.finyk.transferSuggestion.creditRepaymentReject
+            : messages.finyk.transferSuggestion.reject}
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          tone="neutral"
-          onClick={onSnooze}
-        >
-          {messages.finyk.transferSuggestion.dismiss}
+        <Button type="button" size="sm" variant="ghost" onClick={onSnooze}>
+          {isCreditCardRepayment
+            ? messages.finyk.transferSuggestion.creditRepaymentDismiss
+            : messages.finyk.transferSuggestion.dismiss}
         </Button>
       </div>
     </Card>

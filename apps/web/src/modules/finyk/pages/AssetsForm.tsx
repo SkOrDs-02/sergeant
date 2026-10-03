@@ -2,6 +2,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
+import { Money } from "@shared/components/ui/Money";
 import { DateField } from "@shared/components/ui/DateField";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
@@ -14,8 +15,14 @@ import type {
   Debt,
   Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import {
+  getDebtOriginated,
+  getDebtPaid,
+  getDebtSourced,
+} from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
 import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import { DebtAutoLinkField } from "./DebtAutoLinkField";
 import type { TxRowTx } from "../components/TxRow";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
@@ -68,11 +75,11 @@ export function SubscriptionForm({
       />
       <div className="space-y-1.5">
         <Label htmlFor="subscription-transaction-keyword" optional>
-          Пошук транзакції за описом
+          Пошук операції за описом
         </Label>
         <Input
           id="subscription-transaction-keyword"
-          aria-label="Пошук транзакції за описом"
+          aria-label="Пошук операції за описом"
           // Поле стоїть посеред форми з іншими текстовими інпутами, тож без
           // явних `name`/`autocomplete` менеджер паролів має всі підстави
           // прийняти його за логін (див. `searchFieldProps.ts`). Побічно
@@ -87,14 +94,14 @@ export function SubscriptionForm({
           }
         />
       </div>
-      <p className="text-style-caption text-subtle">
-        Якщо не вибрати транзакцію вручну, знайдемо найновішу витрату, опис якої
+      <p className="text-style-body text-subtle">
+        Якщо не вибрати операцію вручну, знайду найновішу витрату, опис якої
         містить цей текст. Пошук не залежить від регістру.
       </p>
       {newSub.keyword.trim() && (
         <p className="text-style-caption text-subtle" role="status">
           {keywordMatch
-            ? `Знайдено: ${keywordMatch.description || "Транзакція"} · ${formatNumberUk(Math.abs(keywordMatch.amount / 100))} ₴`
+            ? `Знайдено: ${keywordMatch.description || "Операція"} · ${formatNumberUk(Math.abs(keywordMatch.amount / 100))} ₴`
             : "Збігів не знайдено"}
         </p>
       )}
@@ -106,10 +113,7 @@ export function SubscriptionForm({
         max="31"
         value={newSub.billingDay}
         onChange={(e) =>
-          setNewSub((a) => ({
-            ...a,
-            billingDay: Number(e.target.value),
-          }))
+          setNewSub((a) => ({ ...a, billingDay: Number(e.target.value) }))
         }
       />
       {(!newSub.name.trim() || !isValidBillingDay(newSub.billingDay)) && (
@@ -162,7 +166,7 @@ export function SubscriptionForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowSubForm(false)}
         >
           Скасувати
@@ -287,7 +291,7 @@ export function ReceivableForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowRecvForm(false)}
         >
           Скасувати
@@ -364,7 +368,7 @@ export function AssetForm({
         </div>
         {isLegacyNonUah && (
           <p
-            className="text-style-caption text-warning-strong dark:text-warning"
+            className="text-style-body text-warning-strong dark:text-warning"
             role="status"
           >
             Це старий запис у {newAsset.currency}. Валюту не змінюю без
@@ -419,7 +423,7 @@ export function AssetForm({
           <Button
             className="flex-1"
             size="sm"
-            variant="secondary"
+            variant="outline"
             onClick={() => setShowAssetForm(false)}
           >
             Скасувати
@@ -441,6 +445,8 @@ export function DebtForm({
   debtFormRef,
   debtNameInputRef,
   editingId,
+  editingDebt,
+  transactions = [],
   onUpdate,
 }: {
   newDebt: {
@@ -448,6 +454,7 @@ export function DebtForm({
     emoji: string;
     totalAmount: string;
     dueDate: string;
+    autoLinkKeyword: string;
   };
   setNewDebt: React.Dispatch<React.SetStateAction<typeof newDebt>>;
   setManualDebts: React.Dispatch<React.SetStateAction<Debt[]>>;
@@ -455,8 +462,20 @@ export function DebtForm({
   debtFormRef: React.RefObject<HTMLElement | null>;
   debtNameInputRef: React.RefObject<HTMLInputElement | null>;
   editingId?: string | null;
+  editingDebt?: Debt | undefined;
+  transactions?: readonly TxRowTx[];
   onUpdate?: (id: string, value: Debt) => void;
 }) {
+  const enteredBase = Number(newDebt.totalAmount.replace(",", ".")) || 0;
+  const sourced = editingDebt ? getDebtSourced(editingDebt, transactions) : 0;
+  const increases = editingDebt
+    ? getDebtOriginated(editingDebt, transactions)
+    : 0;
+  const paid = editingDebt ? getDebtPaid(editingDebt, transactions) : 0;
+  const effectiveBase = Math.max(enteredBase, sourced);
+  const effectiveTotal = effectiveBase + increases;
+  const remaining = Math.max(0, effectiveTotal - paid);
+
   return (
     <Card
       ref={debtFormRef as React.Ref<HTMLElement>}
@@ -475,15 +494,16 @@ export function DebtForm({
       <div className="flex gap-2">
         <Input
           ref={debtNameInputRef as React.Ref<HTMLInputElement>}
-          aria-label="Назва пасиву (кредит, борг…)"
+          aria-label="Назва пасиву (кредит, борг)"
           className="flex-1"
-          placeholder="Назва пасиву (кредит, борг…)"
+          placeholder="Назва пасиву (кредит, борг)"
           maxLength={NAME_MAX_LEN}
           showCharCount={false}
           value={newDebt.name}
           onChange={(e) => setNewDebt((a) => ({ ...a, name: e.target.value }))}
         />
         <VoiceMicButton
+          module="finyk"
           size="md"
           label="Голосовий ввід"
           promptHint="Пасив у гривнях: кредит 50000, борг 12000, іпотека."
@@ -501,17 +521,47 @@ export function DebtForm({
           }}
         />
       </div>
-      <MoneyInput
-        aria-label="Загальна сума у гривнях"
-        placeholder="Загальна сума ₴"
-        value={newDebt.totalAmount}
-        onValueChange={(next) =>
-          setNewDebt((a) => ({
-            ...a,
-            totalAmount: next == null ? "" : String(next),
-          }))
-        }
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor="debt-initial-amount">Початкова сума боргу</Label>
+        <MoneyInput
+          id="debt-initial-amount"
+          aria-label="Початкова сума боргу у гривнях"
+          placeholder="Початкова сума ₴"
+          value={newDebt.totalAmount}
+          onValueChange={(next) =>
+            setNewDebt((a) => ({
+              ...a,
+              totalAmount: next == null ? "" : String(next),
+            }))
+          }
+        />
+      </div>
+      {editingDebt && (
+        <div className="rounded-xl border border-line bg-panel px-3 py-2.5 space-y-1.5">
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Виникнення за операціями</span>
+            <Money amount={sourced} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Збільшення боргу</span>
+            <Money amount={increases} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Сплачено</span>
+            <Money amount={paid} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-line pt-1.5 text-style-label text-text">
+            <span>Залишилось повернути</span>
+            <Money amount={remaining} kopecks />
+          </div>
+          {sourced > enteredBase && (
+            <p className="text-style-body text-subtle">
+              Підтверджені операції виникнення більші за введену початкову суму,
+              тому розрахунок бере їхню суму за базу.
+            </p>
+          )}
+        </div>
+      )}
       <div className="space-y-1.5">
         <Label htmlFor="debt-due-date" optional>
           Дата погашення
@@ -527,6 +577,14 @@ export function DebtForm({
           }
         />
       </div>
+      <DebtAutoLinkField
+        keyword={newDebt.autoLinkKeyword}
+        onKeywordChange={(v) =>
+          setNewDebt((a) => ({ ...a, autoLinkKeyword: v }))
+        }
+        transactions={transactions}
+        editingDebt={editingDebt}
+      />
       {(!newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)) && (
         <p className="text-style-caption text-subtle" role="status">
           Заповни назву та вкажи позитивну суму пасиву.
@@ -558,6 +616,7 @@ export function DebtForm({
                 emoji: "\u{1F4B8}",
                 totalAmount: "",
                 dueDate: "",
+                autoLinkKeyword: "",
               });
               setShowDebtForm(false);
             }
@@ -568,7 +627,7 @@ export function DebtForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowDebtForm(false)}
         >
           Скасувати

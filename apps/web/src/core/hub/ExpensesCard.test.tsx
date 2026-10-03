@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 const getFinykExcludedTxIdsFromStorage = vi.fn(() => [] as string[]);
 const getFinykTxSplitsFromStorage = vi.fn(
@@ -47,6 +47,54 @@ vi.mock("@finyk/lib/monoMirrorReader", () => {
   };
 });
 
+// CALC-4 — the Finyk SQLite warm cache (`manualExpenses`) is a plain
+// module-level snapshot; simulate the pull-hydration race by swapping
+// this mutable box's `.value` and firing the REAL cache-refresh gate
+// (not mocked — the card's fix listens to it via `useFinykSqliteReadTick`).
+import type { SqliteFinykCache } from "@finyk/lib/sqliteReader";
+
+const fakeSqliteCache: { value: SqliteFinykCache } = {
+  value: emptySqliteCache(),
+};
+
+vi.mock("@finyk/lib/sqliteReader", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@finyk/lib/sqliteReader")>();
+  return {
+    ...actual,
+    getCachedFinykSqliteState: () => fakeSqliteCache.value,
+  };
+});
+
+function emptySqliteCache(): SqliteFinykCache {
+  return {
+    hiddenAccounts: [],
+    hiddenTransactions: [],
+    budgets: [],
+    subscriptions: [],
+    manualAssets: [],
+    manualDebts: [],
+    receivables: [],
+    customCategories: [],
+    manualExpenses: [],
+    txCategories: {},
+    txSplits: {},
+    monoDebtLinkedTxIds: {},
+    networthHistory: [],
+    monthlyPlan: null,
+    showBalance: null,
+    excludedStatTxIds: null,
+    dismissedRecurring: null,
+    merchantRules: null,
+    refreshedAt: null,
+  };
+}
+
+import {
+  __resetFinykSqliteReadGateForTests,
+  notifyFinykSqliteCacheRefresh,
+} from "@finyk/lib/sqliteReadGate";
+
 import ExpensesCard from "./ExpensesCard";
 
 // One spending tx (negative amount) timed at noon today. `time` is unix
@@ -72,23 +120,38 @@ describe("ExpensesCard", () => {
     localStorage.clear();
     getFinykExcludedTxIdsFromStorage.mockReturnValue([]);
     getFinykTxSplitsFromStorage.mockReturnValue({});
+    fakeSqliteCache.value = emptySqliteCache();
+    __resetFinykSqliteReadGateForTests();
   });
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
   });
 
+  it("без жодної витрати показує порожній стан, а не «0 ₴»", () => {
+    // Нуль в обох вікнах не результат, а відсутність предмета (критика
+    // екранів 2026-09-23): у шапці тире, розгорнуто текст із дією.
+    render(<ExpensesCard period="week" offset={0} />);
+    expect(screen.queryByText(/0\s*₴/)).toBeNull();
+    expect(screen.getByText("–")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
+    expect(screen.queryByText(/Минулий/i)).toBeNull();
+  });
+
   it("renders collapsed by default with a hryvnia summary and toggles open", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
     render(<ExpensesCard period="week" offset={0} />);
 
-    const toggle = screen.getByRole("button", { name: /Фінік/i });
+    const toggle = screen.getByRole("button", { name: /Витрати/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getAllByText(/₴/).length).toBeGreaterThan(0);
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
+    // Середа: тиждень ще йде, тож порівняння з тими ж днями минулого.
+    expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
   });
 
   /**
@@ -113,7 +176,7 @@ describe("ExpensesCard", () => {
 
     // Розгорнутий стан — ще два `Money`: головне число і підпис із
     // попереднім періодом. PR міняв усі три сайти, тож перевіряємо всі три.
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     const expanded = screen.getAllByText(
       (_, el) =>
         el?.tagName === "SPAN" && el.className.includes("tabular-nums"),
@@ -122,10 +185,75 @@ describe("ExpensesCard", () => {
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
   });
 
-  it("renders the no-data placeholder when the tx cache is empty", () => {
+  // Р4 (канон finyk, журнал 2026-09-24): відсоток лише коли попередня сума
+  // є базою (≥ 10 % поточної), інакше абсолютна дельта в гривнях. Раніше
+  // чип рахував відсоток із круглих гривень без цього правила.
+  describe("дельта до минулого періоду (Р4)", () => {
+    // Середа 2026-08-05: «ті ж дні» минулого тижня — пн-ср 07-27…07-29.
+    const sameDaysLastWeek = Math.floor(
+      new Date("2026-07-29T09:00:00.000Z").getTime() / 1000,
+    );
+    const seed = (prevMinor: number) =>
+      localStorage.setItem(
+        "finyk_tx_cache",
+        JSON.stringify({
+          txs: [
+            ...txCacheToday().txs,
+            {
+              id: "prev",
+              amount: -prevMinor,
+              time: sameDaysLastWeek,
+              description: "Минулий тиждень",
+            },
+          ],
+        }),
+      );
+    const chipText = () =>
+      (screen.getByTestId("delta-chip").textContent ?? "").replace(
+        /[\s\u00a0\u202f]/g,
+        " ",
+      );
+
+    it("минуле ≥ 10 % поточного — відсоток", () => {
+      seed(40_000); // 400 ₴ проти 500 ₴ → +25 %
+      render(<ExpensesCard period="week" offset={0} />);
+      expect(chipText()).toBe("+25%");
+    });
+
+    it("минуле < 10 % поточного — абсолютна дельта в гривнях, без відсотка", () => {
+      seed(2_000); // 20 ₴ проти 500 ₴: «+2400 %» було б шумом
+      render(<ExpensesCard period="week" offset={0} />);
+      expect(chipText()).toBe("+480 ₴");
+    });
+
+    it("те саме в розгорнутому стані картки", () => {
+      seed(2_000);
+      render(<ExpensesCard period="week" offset={0} />);
+      fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+      expect(chipText()).toBe("+480 ₴");
+    });
+  });
+
+  it("не каже «ще не записано», коли минулого тижня витрати були пізніше ніж сьогодні", () => {
+    // Середа: «ті ж дні» минулого тижня (пн-ср) порожні, але в пʼятницю
+    // витрата була. Предмет звіту є, тож порожнього стану не має бути.
+    const lastFriday = Math.floor(
+      new Date("2026-07-31T09:00:00.000Z").getTime() / 1000,
+    );
+    localStorage.setItem(
+      "finyk_tx_cache",
+      JSON.stringify({ txs: [{ id: "t3", amount: -20000, time: lastFriday }] }),
+    );
     render(<ExpensesCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.queryByText(/Витрат ще не записано/)).toBeNull();
+    expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
+  });
+
+  it("renders the empty state when the tx cache is empty", () => {
+    render(<ExpensesCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
   });
 
   it("accepts a bare array tx cache shape", () => {
@@ -137,7 +265,7 @@ describe("ExpensesCard", () => {
       JSON.stringify([{ id: "t2", amount: -30000, time: timeSec }]),
     );
     render(<ExpensesCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     const chart = screen.getByLabelText("Графік");
     expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
   });
@@ -145,7 +273,7 @@ describe("ExpensesCard", () => {
   it("renders month period without crashing", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
     render(<ExpensesCard period="month" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
 
     const scroller = screen.getByTestId("report-chart-scroller");
@@ -153,5 +281,61 @@ describe("ExpensesCard", () => {
     expect(
       scroller.querySelectorAll("button[data-compact]").length,
     ).toBeGreaterThan(28);
+  });
+
+  /**
+   * CALC-4 (2026-09-01 product audit, blocker): deep-link `/?tab=reports`
+   * on a cold boot showed «0 ₴» for an account with 60 days of manual
+   * expenses, while the SAME account via SPA nav (which had already
+   * warmed the Finyk SQLite cache by visiting `/finyk/*` first) showed
+   * the correct total. Root cause: `readFinykStatsContext()` reads a
+   * synchronous `getCachedFinykSqliteState()` snapshot, refreshed by
+   * `refreshCachesAfterPull` once the sync pull lands — but that refresh
+   * only bumps the Finyk SQLite read-tick, never `hubBus("storageUpdated")`,
+   * so `ExpensesCard`'s `useMemo` (gated on `bump`/`mirrorTick`) never
+   * re-ran once the pull-hydrated cache actually warmed after mount.
+   */
+  it("CALC-4: recomputes once the Finyk SQLite cache warms after mount (cold deep-link)", () => {
+    // Cold mount: the SQLite cache hasn't warmed yet (refreshedAt: null) —
+    // this is the deep-link `/?tab=reports` state before the sync pull lands.
+    render(<ExpensesCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
+
+    // The pull lands: SQLite cache warms with a manual expense dated
+    // today, refreshCachesAfterPull calls `notifyFinykSqliteCacheRefresh`
+    // (Finyk-specific tick) — NOT `hubBus("storageUpdated")`.
+    const now = new Date();
+    fakeSqliteCache.value = {
+      ...emptySqliteCache(),
+      manualExpenses: [
+        {
+          id: "m1",
+          date: now.toISOString().slice(0, 10),
+          description: "Продукти",
+          amount: 500,
+          category: "groceries",
+          kind: "expense",
+        },
+      ],
+      refreshedAt: now.toISOString(),
+    };
+    act(() => {
+      notifyFinykSqliteCacheRefresh();
+    });
+
+    // The card must re-aggregate WITHOUT any `bump`/`mirrorTick` change —
+    // the empty-state placeholder must be gone and a real amount shown
+    // (the `Money` component splits "500" / "₴" into separate spans, so
+    // assert on the bar-chart tooltip's `aria-label`, which renders the
+    // full "<date>: <amount> ₴" string as one accessible string).
+    expect(screen.queryByText(/Витрат ще не записано/)).not.toBeInTheDocument();
+    const todayKey = now
+      .toISOString()
+      .slice(5, 10)
+      .split("-")
+      .reverse()
+      .join(".");
+    expect(screen.getByLabelText(`${todayKey}: 500 ₴`)).toBeInTheDocument();
   });
 });

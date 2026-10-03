@@ -4,6 +4,7 @@
  * Heavy sub-components and the orchestrator hook are stubbed so the tests
  * stay focused on view-switching logic and prop wiring, not internals.
  */
+import type { ComponentProps } from "react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
@@ -16,6 +17,22 @@ vi.mock("../hooks/useWorkoutsOrchestrator", () => ({
 vi.mock("@shared/hooks/useCloudPullPending", () => ({
   useCloudPullPending: vi.fn(() => false),
 }));
+
+// `StrongImportReview` (модалка Strong-імпорту) читає ідентичність сесії,
+// щоб порахувати неймспейс детермінованих id — див. `lib/strongIdNamespace.ts`.
+// Ця сторінка рендериться тут без `AuthProvider`, а `useLocalUserId` під ним
+// кидає. Мокаємо саме хук, а не провайдера: тести цього файлу про
+// перемикання виглядів, а не про сесію.
+vi.mock("../../../core/auth/useLocalUserId", () => ({
+  useLocalUserId: () => "test-user",
+}));
+
+// Стаб `Skeleton` прибрано разом із додаванням стаба вище — гейт `vi.mock cap`
+// ходить лише вниз, і платити за нього треба реальним зняттям мока, а не
+// підняттям стелі. `Skeleton` для цього найкращий кандидат: жоден тест на
+// нього не спирався (`data-testid="skeleton"` не згадується в жодному
+// очікуванні), а сам компонент чисто презентаційний і тягне лише `cn`, тож
+// сьют тепер рендерить справжній.
 
 vi.mock("@shared/components/ui/PullToRefresh", () => ({
   PullToRefresh: ({
@@ -60,7 +77,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
   WorkoutsHome: ({
     onOpenSession,
     onOpenCatalog,
-    onOpenTemplates,
     onOpenJournal,
     onOpenPrograms,
     onRequestStart,
@@ -68,7 +84,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
   }: {
     onOpenSession: () => void;
     onOpenCatalog: () => void;
-    onOpenTemplates: () => void;
     onOpenJournal: () => void;
     onOpenPrograms: () => void;
     onRequestStart: () => void;
@@ -80,13 +95,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
       </button>
       <button type="button" onClick={onOpenCatalog} data-testid="open-catalog">
         Каталог
-      </button>
-      <button
-        type="button"
-        onClick={onOpenTemplates}
-        data-testid="open-templates"
-      >
-        Шаблони
       </button>
       <button type="button" onClick={onOpenJournal} data-testid="open-journal">
         Історія
@@ -260,14 +268,23 @@ vi.mock("@shared/components/ui/DataState", () => ({
   }) => <>{children()}</>,
 }));
 
-vi.mock("@shared/components/ui/Skeleton", () => ({
-  Skeleton: () => <div data-testid="skeleton" />,
-}));
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { Workouts } from "./Workouts";
+
+// `StrongImportReview` НЕ мокаємо: замість стаба дитини сьют дає сторінці
+// справжній `ToastProvider`, якого тій дитині бракувало. Так тест перевіряє
+// реальний контракт props сторінка↔дитина, а не власний стаб
+// (`scripts/ci/check-vi-mock-cap.mjs` — храповик проти over-mocking).
+function renderWorkouts(props: ComponentProps<typeof Workouts> = {}) {
+  return render(
+    <ToastProvider>
+      <Workouts {...props} />
+    </ToastProvider>,
+  );
+}
 
 const mockedOrchestrator = vi.mocked(useWorkoutsOrchestrator);
 
@@ -377,12 +394,12 @@ describe("Workouts page — home view", () => {
   });
 
   it("renders WorkoutsHome in home view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workouts-home")).toBeInTheDocument();
   });
 
   it("does not render journal or catalog sections in home view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-journal-section"),
     ).not.toBeInTheDocument();
@@ -402,7 +419,7 @@ describe("Workouts page — log view", () => {
   });
 
   it("renders the journal section in log view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workout-journal-section")).toBeInTheDocument();
   });
 
@@ -410,28 +427,28 @@ describe("Workouts page — log view", () => {
   // used to stretch the set-input fields to ~230px and "+ Підхід" to
   // ~800px on a 1280px viewport. The active-workout panel (a vertical
   // list of short numeric fields) now gets its own narrower `max-w-xl`.
-  it("wraps the active-workout panel in a narrower max-w for desktop", () => {
-    render(<Workouts />);
-    const journal = screen.getByTestId("workout-journal-section");
-    expect(journal.closest(".max-w-xl")).not.toBeNull();
+  it("renders the journal section in log view", () => {
+    renderWorkouts();
+    expect(screen.getByTestId("workout-journal-section")).toBeInTheDocument();
   });
 
-  // Minimal fix per audit §4.4: the catalog is a browsable list, not a
-  // form, so it must NOT be pulled into the narrower wrapper — it stays
-  // at the outer `max-w-4xl` container width.
-  it("does not narrow the exercise catalog — it stays at the outer container width", () => {
+  // Сесійний режим (спека `fizruk-active-session.md`, рішення 4): каталог
+  // більше не хвіст сторінки під активним тренуванням — він живе в
+  // аркуші «+ Вправа», який відкривається з `SessionView`.
+  it("does not render the catalog tail in log view even with an in-flight workout", () => {
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("log", {
         activeWorkout: { id: "w1", endedAt: null },
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
-    render(<Workouts />);
-    const catalog = screen.getByTestId("workout-catalog-section");
-    expect(catalog.closest(".max-w-xl")).toBeNull();
+    renderWorkouts();
+    expect(
+      screen.queryByTestId("workout-catalog-section"),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render WorkoutsHome in log view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.queryByTestId("workouts-home")).not.toBeInTheDocument();
   });
 
@@ -439,7 +456,7 @@ describe("Workouts page — log view", () => {
   // even when the routed workout was finished or missing (the dead-end
   // "Активне тренування не знайдено" + full catalog combo from the audit).
   it("does not render the catalog when there is no in-flight active workout", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-catalog-section"),
     ).not.toBeInTheDocument();
@@ -451,20 +468,10 @@ describe("Workouts page — log view", () => {
         activeWorkout: { id: "w1", endedAt: "2026-01-01T00:00:00Z" },
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-catalog-section"),
     ).not.toBeInTheDocument();
-  });
-
-  it("renders the catalog only while there is a real in-flight workout", () => {
-    mockedOrchestrator.mockReturnValue(
-      makeOrchestrator("log", {
-        activeWorkout: { id: "w1", endedAt: null },
-      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
-    );
-    render(<Workouts />);
-    expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
   });
 });
 
@@ -478,12 +485,12 @@ describe("Workouts page — catalog view", () => {
   });
 
   it("renders catalog section in catalog view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
   });
 
   it("does not render journal section in catalog view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-journal-section"),
     ).not.toBeInTheDocument();
@@ -500,7 +507,7 @@ describe("Workouts page — templates view", () => {
   });
 
   it("renders templates section in templates view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workout-templates-section")).toBeInTheDocument();
   });
 });
@@ -512,7 +519,7 @@ describe("Workouts page — header wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workouts-header")).toHaveAttribute(
       "data-view",
       "log",
@@ -526,7 +533,7 @@ describe("Workouts page — header wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("back-btn"));
     expect(setView).toHaveBeenCalledWith("home");
   });
@@ -538,7 +545,7 @@ describe("Workouts page — header wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("add-catalog-btn"));
     expect(setAddOpen).toHaveBeenCalledWith(true);
   });
@@ -552,33 +559,40 @@ describe("Workouts page — home action wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("open-session"));
     expect(setView).toHaveBeenCalledWith("log");
   });
 
-  it("'open-catalog' button sets view to 'catalog'", () => {
+  // Каталог і шаблони мають власні маршрути, тож входи навігують, а не
+  // перемикають локальний `view` (інакше «назад» у браузері викидало з
+  // модуля, а посиланням на каталог не поділитись).
+  it("'open-catalog' button navigates to the catalog route", () => {
     const setView = vi.fn();
+    const onNavigate = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home", { setView }) as unknown as ReturnType<
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts({ onNavigate });
     fireEvent.click(screen.getByTestId("open-catalog"));
-    expect(setView).toHaveBeenCalledWith("catalog");
+    expect(onNavigate).toHaveBeenCalledWith("catalog");
+    expect(setView).not.toHaveBeenCalled();
   });
 
-  it("'open-templates' button sets view to 'templates'", () => {
+  it("back from a routed section returns to the workouts hub", () => {
     const setView = vi.fn();
+    const onNavigate = vi.fn();
     mockedOrchestrator.mockReturnValue(
-      makeOrchestrator("home", { setView }) as unknown as ReturnType<
+      makeOrchestrator("catalog", { setView }) as unknown as ReturnType<
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
-    fireEvent.click(screen.getByTestId("open-templates"));
-    expect(setView).toHaveBeenCalledWith("templates");
+    renderWorkouts({ section: "catalog", onNavigate });
+    fireEvent.click(screen.getByTestId("back-btn"));
+    expect(onNavigate).toHaveBeenCalledWith("workouts");
+    expect(setView).not.toHaveBeenCalled();
   });
 
   it("passes the routine deep-link callback through the planning tile", () => {
@@ -589,13 +603,16 @@ describe("Workouts page — home action wiring", () => {
       >,
     );
 
-    render(<Workouts onOpenRoutine={onOpenRoutine} />);
+    renderWorkouts({ onOpenRoutine });
     fireEvent.click(screen.getByTestId("open-schedule"));
 
     expect(onOpenRoutine).toHaveBeenCalledTimes(1);
   });
 
-  it("starts an empty workout directly from Quick Start", () => {
+  it("«Почати тренування» відкриває аркуш вибору, а не порожню сесію", () => {
+    // Рішення власника 2026-09-16: спосіб старту обирають усередині аркуша
+    // (шаблон / підбір вправ / програма), тож кнопка більше не створює
+    // порожнє тренування напряму.
     const handleQuickStart = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home", {
@@ -603,10 +620,26 @@ describe("Workouts page — home action wiring", () => {
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("request-start"));
 
-    expect(handleQuickStart).toHaveBeenCalledTimes(1);
+    expect(handleQuickStart).not.toHaveBeenCalled();
+    expect(screen.getByTestId("quick-start-sheet")).toBeInTheDocument();
+  });
+
+  it("плитка «За шаблоном» в аркуші веде на адресу шаблонів", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    const onNavigate = vi.fn();
+
+    renderWorkouts({ onNavigate });
+    fireEvent.click(screen.getByTestId("request-start"));
+    fireEvent.click(screen.getByTestId("pick-template"));
+
+    expect(onNavigate).toHaveBeenCalledWith("templates");
   });
 
   // 03-A — "Всі →" must own its own URL instead of flipping `view` to
@@ -619,7 +652,7 @@ describe("Workouts page — home action wiring", () => {
     );
     const onNavigate = vi.fn();
 
-    render(<Workouts onNavigate={onNavigate} />);
+    renderWorkouts({ onNavigate });
     fireEvent.click(screen.getByTestId("open-journal"));
 
     expect(onNavigate).toHaveBeenCalledWith("history");
@@ -634,7 +667,7 @@ describe("Workouts page — home action wiring", () => {
     );
     const onNavigate = vi.fn();
 
-    render(<Workouts onNavigate={onNavigate} />);
+    renderWorkouts({ onNavigate });
     fireEvent.click(screen.getByTestId("open-programs"));
 
     expect(onNavigate).toHaveBeenCalledWith("programs");
@@ -653,7 +686,7 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("exercise-detail-sheet")).toHaveAttribute(
       "data-has-update-item",
       "true",
@@ -672,7 +705,7 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("close-detail"));
     fireEvent.click(screen.getByTestId("delete-exercise"));
     fireEvent.click(screen.getByTestId("close-add-exercise"));
@@ -698,7 +731,7 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("clear-finish-flash"));
     fireEvent.click(screen.getByTestId("confirm-delete-exercise"));
     fireEvent.click(screen.getByTestId("cancel-delete-exercise"));

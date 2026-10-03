@@ -89,7 +89,7 @@ export function MacroRings({
                     <span
                       className={cn(
                         "text-style-caption tabular-nums",
-                        onHero ? "text-hero-ink/75" : "text-muted",
+                        onHero ? "text-hero-ink" : "text-muted",
                       )}
                     >
                       / {safeGoal}
@@ -102,7 +102,9 @@ export function MacroRings({
               <div
                 className={cn(
                   "text-style-caption",
-                  onHero ? "text-hero-ink" : "text-text",
+                  // Ієрархія «назва над підсумком» на геро — вагою, не
+                  // альфою чорнила (A9, рішення власника 2026-10-01).
+                  onHero ? "font-medium text-hero-ink" : "text-text",
                 )}
               >
                 {label}
@@ -111,7 +113,7 @@ export function MacroRings({
                 <div
                   className={cn(
                     "text-style-caption text-pretty",
-                    onHero ? "text-hero-ink/75" : "text-subtle",
+                    onHero ? "text-hero-ink" : "text-subtle",
                   )}
                 >
                   {outcome}

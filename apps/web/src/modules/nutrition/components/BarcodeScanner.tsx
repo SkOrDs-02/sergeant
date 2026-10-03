@@ -212,14 +212,14 @@ function WebBarcodeScanner({
             </p>
           ) : noRead ? (
             <div role="status" className="space-y-2">
-              <p className="text-style-caption text-muted text-center">
+              <p className="text-style-body text-muted text-center">
                 Не зчитується? Помʼятий або затертий код камера не візьме.
                 Знайди продукт за назвою або введи КБЖВ сам.
               </p>
               {onManualEntry && (
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   className="w-full min-h-[44px]"
                   onClick={() => {
                     setActive(false);

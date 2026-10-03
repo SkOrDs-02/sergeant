@@ -34,7 +34,7 @@ function Card({ high }: { high: boolean }) {
               high ? "bg-accent text-bg" : "bg-accent/15 text-accent",
             )}
           >
-            <Icon name="credit-card" size={16} />
+            <Icon name="credit-card" size="md" />
           </span>
           <span className="text-style-label text-text">Витрати</span>
         </div>

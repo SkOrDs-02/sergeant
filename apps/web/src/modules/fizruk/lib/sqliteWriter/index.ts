@@ -20,14 +20,21 @@ import {
 } from "./adapter.js";
 import {
   diffFizrukDualWriteOps,
+  type FizrukDualWriteOp,
   type FizrukDualWriteState,
 } from "./diff/index.js";
 import { probeFizrukParity } from "./parity.js";
+import {
+  ackDualWrite,
+  journalDualWrite,
+  pendingDualWrites,
+} from "../../../../core/durability/dualWriteJournal.js";
+import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 
 /**
  * Orchestrator for the Fizruk dual-write layer.
  *
- * Stage 4 PR #028 of `docs/planning/storage-roadmap.md`. Mirrors the
+ * Stage 4 PR #028 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors the
  * routine dual-write orchestrator pattern from PR #024.
  *
  * Glues together:
@@ -61,7 +68,35 @@ export interface FizrukDualWriteContext {
 }
 
 let registeredContext: FizrukDualWriteContext | null = null;
+/** Усі живі реєстрації в порядку появи — див. AI-DANGER нижче. */
+const liveContexts: FizrukDualWriteContext[] = [];
 
+/**
+ * AI-DANGER: реєстрантів БІЛЬШЕ НІЖ ОДИН, і це навмисно — тому teardown
+ * ПОВЕРТАЄ попередній контекст, а не обнуляє слот.
+ *
+ * Як воно ламалось (знахідка PR-R1, аудит 2026-09-13). Слот був один, а
+ * teardown робив `if (registeredContext === ctx) registeredContext = null`.
+ * Реєструються двоє: глобальний boot-кластер (змонтований завжди через
+ * `RootLayout`) і сам модуль. Модуль реєструється пізніше й перекриває
+ * кластерний контекст; на анмаунті модуля його teardown бачить СВІЙ
+ * контекст у слоті й обнуляє його — а кластер більше нічого не
+ * реєструє, бо його ефект залежить від `[userId]`. Далі
+ * `is…DualWriteRegistered()` вертає `false`, і dual-write мовчки стає
+ * no-op до кінця сесії: запис із чату доїжджає лише до localStorage.
+ *
+ * Чому саме стек, а не «прибрати другого реєстранта». У Фініку кластер
+ * гейтиться на `user || isDemoActive()`, тож для анонімного відвідувача
+ * він не рендериться взагалі — і модульна реєстрація там єдина робоча
+ * (замір 2026-08-06: без неї кожна витрата аноніма жила лише в теплому
+ * кеші й зникала на перезавантаженні). Тобто другий реєстрант потрібен;
+ * поламаний був сам реєстр.
+ *
+ * `liveContexts` тримає всі живі реєстрації в порядку появи, а
+ * `registeredContext` — завжди остання з них. Teardown прибирає СВІЙ
+ * запис зі стека (де б він не стояв) і перераховує поточний. Порядок
+ * анмаунтів тому не має значення.
+ */
 /**
  * Install the dual-write context. Call from the platform bootstrap
  * file when the React Query client and sqlite singletons are available.
@@ -71,15 +106,23 @@ let registeredContext: FizrukDualWriteContext | null = null;
 export function registerFizrukDualWriteContext(
   ctx: FizrukDualWriteContext,
 ): () => void {
+  liveContexts.push(ctx);
   registeredContext = ctx;
+  replayFizrukJournal(ctx);
   return () => {
-    if (registeredContext === ctx) registeredContext = null;
+    const at = liveContexts.lastIndexOf(ctx);
+    if (at === -1) return;
+    liveContexts.splice(at, 1);
+    registeredContext = liveContexts[liveContexts.length - 1] ?? null;
   };
 }
 
 /** Test-only escape hatch — clears any registered context. */
 export function __clearFizrukDualWriteContextForTests(): void {
   registeredContext = null;
+  liveContexts.length = 0;
+  dualWriteQueue = Promise.resolve();
+  replayedJournalIds.clear();
 }
 
 /**
@@ -105,19 +148,29 @@ export async function dualWriteFizrukState(
   prev: FizrukDualWriteState,
   next: FizrukDualWriteState,
 ): Promise<DualWriteOutcome> {
-  const outcome = await runDualWriteFizrukState(prev, next);
+  const ctx = registeredContext;
+  const outcome = ctx
+    ? await runFizrukOps(
+        ctx,
+        diffFizrukDualWriteOps(prev, next),
+        ctx.getNow(),
+        next,
+      )
+    : ({ status: "skipped", reason: "context-unset" } as const);
   recordDualWriteOutcome("fizruk", outcome);
   return outcome;
 }
 
-async function runDualWriteFizrukState(
-  prev: FizrukDualWriteState,
-  next: FizrukDualWriteState,
+/**
+ * `clientTs` ззовні з тієї ж причини, що й у Фініку: реплей журналу йде з
+ * міткою первинного запуску. `next` null для реплею (паритет пропускаємо).
+ */
+async function runFizrukOps(
+  ctx: FizrukDualWriteContext,
+  ops: readonly FizrukDualWriteOp[],
+  clientTs: string,
+  next: FizrukDualWriteState | null,
 ): Promise<DualWriteOutcome> {
-  const ctx = registeredContext;
-  if (!ctx) return { status: "skipped", reason: "context-unset" };
-
-  const ops = diffFizrukDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
 
   const userId = ctx.getUserId();
@@ -144,7 +197,7 @@ async function runDualWriteFizrukState(
 
   const result = await applyFizrukDualWriteOps(client, ops, {
     userId,
-    clientTs: ctx.getNow(),
+    clientTs,
     logger: ctx.logger,
   });
 
@@ -165,6 +218,7 @@ async function runDualWriteFizrukState(
   // (`recordReadFallback`) so triage can tell `SELECT failing` apart
   // from a real LS↔SQLite divergence (`recordParityCheck("…",
   // "mismatch", …)`).
+  if (!next) return { status: "applied", result };
   try {
     const parity = await probeFizrukParity(client, userId, next);
     recordParityCheck("fizruk", parity.result, parity.details);
@@ -200,10 +254,69 @@ export function triggerFizrukDualWrite(
 ): void {
   const ctx = registeredContext;
   if (!ctx) return;
+  // Diff, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:
+  // див. `core/durability/dualWriteJournal.ts`.
+  const ops = diffFizrukDualWriteOps(prev, next);
+  const clientTs = ctx.getNow();
+  const userId = ctx.getUserId();
+  const journalId =
+    ops.length > 0 && userId
+      ? journalDualWrite<FizrukJournalPayload>("fizruk", userId, {
+          ops,
+          clientTs,
+        })
+      : null;
+  enqueueFizrukRun(ctx, ops, clientTs, next, journalId);
+}
+
+interface FizrukJournalPayload {
+  readonly ops: readonly FizrukDualWriteOp[];
+  readonly clientTs: string;
+}
+
+/** Реплей відбувається раз на запис, хоч реєстрантів контексту кілька. */
+const replayedJournalIds = new Set<string>();
+
+function replayFizrukJournal(ctx: FizrukDualWriteContext): void {
+  const userId = ctx.getUserId();
+  if (!userId) return;
+  for (const entry of pendingDualWrites<FizrukJournalPayload>(
+    "fizruk",
+    userId,
+  )) {
+    if (replayedJournalIds.has(entry.id)) continue;
+    replayedJournalIds.add(entry.id);
+    enqueueFizrukRun(
+      ctx,
+      entry.payload.ops,
+      entry.payload.clientTs,
+      null,
+      entry.id,
+    );
+  }
+}
+
+function enqueueFizrukRun(
+  ctx: FizrukDualWriteContext,
+  ops: readonly FizrukDualWriteOp[],
+  clientTs: string,
+  next: FizrukDualWriteState | null,
+  journalId: string | null,
+): void {
   __openFizrukSqliteMutationWindow();
   dualWriteQueue = dualWriteQueue
     .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
-    .then(() => dualWriteFizrukState(prev, next))
+    .then(async () => {
+      const outboxSettled = outboxCheckpoint();
+      const outcome = await runFizrukOps(ctx, ops, clientTs, next);
+      recordDualWriteOutcome("fizruk", outcome);
+      // «sqlite недоступна» лишає запис у журналі для наступного буту.
+      // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
+      // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
+      if (journalId && outcome.status === "applied") {
+        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
+      }
+    })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
         error: err instanceof Error ? err.message : String(err),

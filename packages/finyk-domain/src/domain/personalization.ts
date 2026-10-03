@@ -11,7 +11,11 @@
 //  - для мерчантів додатково зберігаємо найчастішу категорію
 //    (щоб quick add міг підставити її автоматично).
 // Без ML, без ваг на зразок TF-IDF — тільки підрахунки + сортування.
-import { getCategory, getExpenseCategoryForTransaction } from "../utils";
+import {
+  getCategory,
+  getExpenseCategoryForTransaction,
+  txTimeMs,
+} from "../utils";
 import { MANUAL_EXPENSE_TAXONOMY } from "../lib/manualTaxonomy.js";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import { foldApostrophes } from "@sergeant/shared";
@@ -113,6 +117,11 @@ export const CANONICAL_TO_MANUAL_LABEL: Record<string, string> = {
   beauty: "shopping",
   travel: "travel",
   education: "education",
+  telecom: "telecom",
+  home: "home",
+  pets: "pets",
+  gifts: "gifts",
+  p2p_transfer: "p2p_transfer",
   other: "other",
 };
 
@@ -152,19 +161,32 @@ function normalizeManualLabel(label: string | undefined | null): string {
  * тепер так само робить і агрегація. Джерело обох — `manualTaxonomy.ts`.
  */
 const SLUG_TO_CANONICAL_ID: Record<string, string> = Object.fromEntries(
-  MANUAL_EXPENSE_TAXONOMY.map((d) => [d.id, d.canonicalId]),
+  MANUAL_EXPENSE_TAXONOMY.map((d) => [d.id, d.aggregateId ?? d.canonicalId]),
 );
 
 /** Підпис manual-категорії → canonical id або сам підпис (для custom). */
-export function manualCategoryToCanonicalId(label: string | undefined): string {
+export function manualCategoryToCanonicalId(
+  label: string | undefined,
+  date?: string | Date,
+): string {
   const norm = normalizeManualLabel(label);
   if (!norm) return "other";
-  return SLUG_TO_CANONICAL_ID[norm] || MANUAL_CATEGORY_ID_MAP[norm] || norm;
+  const id = SLUG_TO_CANONICAL_ID[norm] || MANUAL_CATEGORY_ID_MAP[norm] || norm;
+  if (id === "tech" && date) {
+    const timestamp = new Date(date).getTime();
+    if (
+      Number.isFinite(timestamp) &&
+      timestamp < Date.parse("2026-08-31T21:00:00.000Z")
+    )
+      return "shopping";
+  }
+  return id;
 }
 
 function toTimestampMs(tx: Transaction): number {
   if (!tx || !tx.time) return 0;
-  return tx.time > 1e10 ? tx.time : tx.time * 1000;
+  const ms = txTimeMs(tx.time);
+  return Number.isFinite(ms) ? ms : 0;
 }
 
 function toManualTs(me: ManualExpense): number {
@@ -273,7 +295,7 @@ export function getFrequentCategories(
     if (!me) continue;
     const ts = toManualTs(me);
     if (!inWindow(ts)) continue;
-    const canonicalId = manualCategoryToCanonicalId(me.category);
+    const canonicalId = manualCategoryToCanonicalId(me.category, me.date);
     if (canonicalId === INTERNAL_TRANSFER_ID) continue;
     const label = resolveCategoryLabel(
       canonicalId,
@@ -385,7 +407,7 @@ export function getFrequentMerchants(
     if (!me) continue;
     const ts = toManualTs(me);
     if (!inWindow(ts)) continue;
-    const canonicalId = manualCategoryToCanonicalId(me.category);
+    const canonicalId = manualCategoryToCanonicalId(me.category, me.date);
     if (canonicalId === INTERNAL_TRANSFER_ID) continue;
     addHit(
       me.description || "",

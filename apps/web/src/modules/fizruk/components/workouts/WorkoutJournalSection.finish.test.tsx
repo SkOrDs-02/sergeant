@@ -6,8 +6,8 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 // Mock the heavy ActiveWorkoutPanel down to a tiny probe that surfaces the
 // onFinishClick callback as a single button. This keeps the test focused on
 // WorkoutJournalSection's finish flow, not ActiveWorkoutPanel internals.
-vi.mock("../workouts/ActiveWorkoutPanel", () => ({
-  ActiveWorkoutPanel: ({ onFinishClick }: { onFinishClick: () => void }) => (
+vi.mock("../session/SessionView", () => ({
+  SessionView: ({ onFinishClick }: { onFinishClick: () => void }) => (
     <button type="button" data-testid="finish-btn" onClick={onFinishClick}>
       Завершити
     </button>
@@ -45,7 +45,8 @@ function baseProps(
   return {
     activeWorkout: active,
     activeDuration: "00:42",
-    musclesUk: {},
+    onOpenItem: vi.fn(),
+    onAddExercise: vi.fn(),
     recBy: {},
     lastByExerciseId: {},
     setRestTimer: vi.fn(),

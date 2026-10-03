@@ -7,7 +7,7 @@
 //
 //   1. `pnpm audit` → `scripts/ci/audit-exceptions.mjs` — **ledger-aware**:
 //      advisory проходить лише якщо його GHSA/CVE записаний у
-//      `docs/04-governance/security/audit-exceptions.md` і `Due date` не
+//      `docs/governance/security/audit-exceptions.md` і `Due date` не
 //      минув; `critical` не waive-иться ніколи.
 //   2. `osv-scanner` — до цього гейта був **не** ledger-aware: валив джобу
 //      за будь-якої ненульової кількості findings, будь-якої severity.
@@ -55,7 +55,7 @@ import { parseAuditExceptions, parseAuditJson } from "./audit-exceptions.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LEDGER_PATH = path.resolve(
   __dirname,
-  "../../docs/04-governance/security/audit-exceptions.md",
+  "../../docs/governance/security/audit-exceptions.md",
 );
 const DEFAULT_SARIF = "osv-scanner.sarif";
 
@@ -302,7 +302,7 @@ function main() {
   }
   console.error(
     "\nПідніми версію залежності, або додай датований виняток у " +
-      "docs/04-governance/security/audit-exceptions.md § Поточні винятки.",
+      "docs/governance/security/audit-exceptions.md § Поточні винятки.",
   );
   process.exit(1);
 }

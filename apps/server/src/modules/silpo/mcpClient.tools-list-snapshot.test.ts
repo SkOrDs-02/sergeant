@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import toolsListFixture from "./__fixtures__/tools-list.json";
 import { McpToolsListSchema } from "./mcpClient.js";
+import { diffToolContract } from "./toolContract.js";
 
 /**
  * Contract-drift belt (spec § Рішення дизайну "Дрейф схеми tools —
@@ -32,6 +33,12 @@ describe("silpo tools/list contract snapshot", () => {
       "silpo_get_my_shopping_cart",
       "silpo_get_shopping_cart_by_id",
       "silpo_list_branches",
+      "silpo_get_loyalty_info",
+      "silpo_get_my_coupons",
+      "silpo_get_coupon_details",
+      "silpo_get_my_promos",
+      "silpo_get_promo_codes",
+      "silpo_get_my_certificates",
     ]) {
       expect(names.has(required)).toBe(true);
     }
@@ -47,5 +54,63 @@ describe("silpo tools/list contract snapshot", () => {
       "timeslotStart",
       "timeslotEnd",
     ]);
+  });
+
+  // Друга половина пояса. Снапшот вище звіряє код із ЗАПИСОМ; цей тест
+  // звіряє з тим самим записом ТАБЛИЦЮ ОЧІКУВАНЬ, якою в рантаймі
+  // перевіряється ЖИВИЙ сервер (`toolContract.ts`).
+  //
+  // Без нього таблиця могла б розійтися з фікстурою тихо — і рантайм-звірка
+  // почала б рапортувати дрейф там, де його немає, або мовчати там, де він
+  // є. Тобто зламався б сам детектор, і помітили б це найпізніше.
+  it("таблиця очікувань узгоджена із зафіксованою специфікацією", () => {
+    const tools = McpToolsListSchema.parse(toolsListFixture);
+
+    expect(diffToolContract(tools)).toEqual([]);
+  });
+
+  it("детектор реагує на знижену стелю — саме той випадок, що стався 2026-09-14", () => {
+    const tools = McpToolsListSchema.parse(toolsListFixture);
+    // Відтворюємо зміну Сільпо: максимум `limit` онлайн-тули 100 → 10.
+    const lowered = {
+      tools: tools.tools.map((tool) =>
+        tool.name === "silpo_get_my_online_orders"
+          ? {
+              ...tool,
+              inputSchema: {
+                ...(tool as { inputSchema?: Record<string, unknown> })
+                  .inputSchema,
+                properties: { limit: { minimum: 1, maximum: 10 }, offset: {} },
+              },
+            }
+          : tool,
+      ),
+    };
+
+    const drift = diffToolContract(lowered as never);
+
+    expect(drift).toHaveLength(1);
+    expect(drift[0]).toContain("стеля тепер 10");
+  });
+
+  it("детектор реагує на НОВИЙ обовʼязковий аргумент", () => {
+    const tools = McpToolsListSchema.parse(toolsListFixture);
+    const withNewRequired = {
+      tools: tools.tools.map((tool) =>
+        tool.name === "silpo_get_my_online_orders"
+          ? {
+              ...tool,
+              inputSchema: {
+                properties: { limit: { maximum: 100 }, offset: {} },
+                required: ["storeId"],
+              },
+            }
+          : tool,
+      ),
+    };
+
+    const drift = diffToolContract(withNewRequired as never);
+
+    expect(drift[0]).toContain("storeId");
   });
 });

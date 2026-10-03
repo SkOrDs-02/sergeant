@@ -16,6 +16,7 @@ import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { dismissSoftAuth } from "./vibePicks";
 import { messages } from "@shared/i18n/uk";
+import { useHubBannerSlot } from "../hub/bannerBudget";
 
 /**
  * Inline dashboard card offering cloud sync *after* the user has logged
@@ -44,6 +45,8 @@ export function SoftAuthPromptCard({
    */
   sessionDays?: number;
 }) {
+  // Бюджет банерів хабу (F3, 2026-09-01): пріоритет 2, після попередження про локальні дані й демо.
+  const hasSlot = useHubBannerSlot("softAuth");
   const variant = useMemo<SoftAuthCopyVariant>(
     () =>
       assignVariant(
@@ -58,13 +61,14 @@ export function SoftAuthPromptCard({
   );
 
   useEffect(() => {
+    if (!hasSlot) return;
     trackEvent(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, {
       placement: "dashboard",
       variant,
       entryCount,
       sessionDays,
     });
-  }, [variant, entryCount, sessionDays]);
+  }, [variant, entryCount, sessionDays, hasSlot]);
 
   const handleOpenAuth = () => {
     trackEvent(ANALYTICS_EVENTS.AUTH_AFTER_VALUE, { variant });
@@ -77,6 +81,8 @@ export function SoftAuthPromptCard({
     onDismiss?.();
   };
 
+  if (!hasSlot) return null;
+
   return (
     <div
       className={cn(
@@ -87,8 +93,8 @@ export function SoftAuthPromptCard({
       data-variant={variant}
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 shrink-0 rounded-2xl bg-brand-500/15 text-brand-strong dark:text-brand flex items-center justify-center">
-          <Icon name="cloud-check" size={20} aria-hidden />
+        <div className="w-10 h-10 shrink-0 rounded-2xl bg-brand-500/15 text-brand-strong flex items-center justify-center">
+          <Icon name="cloud-check" size="lg" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-style-label text-text">{copy.title}</p>
@@ -99,7 +105,7 @@ export function SoftAuthPromptCard({
             <Button
               type="button"
               onClick={handleOpenAuth}
-              variant="primary"
+              variant="solid"
               size="sm"
             >
               {messages.auth.createAccount}

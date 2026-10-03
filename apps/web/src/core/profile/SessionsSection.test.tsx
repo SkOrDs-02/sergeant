@@ -1,15 +1,11 @@
 // @vitest-environment jsdom
 //
-// Regression test for the production toast
-// `[body.token] Invalid input: expected string, received undefined`
-// that the user reported when clicking "Завершити" in profile sessions.
-//
-// Better Auth's `/revoke-session` endpoint validates the body with
-// `z.object({ token: z.string() })` (see
-// `node_modules/better-auth/dist/api/routes/session.mjs`). The component
-// previously passed `{ id }`, which lands as `body.token === undefined`
-// and surfaces as the user-visible toast above. We pin the contract here
-// so a future refactor cannot regress to `{ id }` silently.
+// Контракт відкликання сесії. Сервер не віддає сирий `token` у
+// `listSessions` (аудит 2026-10-01, sec-05), тому компонент відкликає за
+// `{ id }`, а `hooks.before` на сервері перетворює id на token серед сесій
+// поточного користувача (`apps/server/src/auth/sessionHardeningHooks.ts`).
+// Раніше було навпаки (`{ token }`, бо `{ id }` давало
+// `[body.token] Invalid input`), тож пін стоїть на новому боці контракту.
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
@@ -75,7 +71,6 @@ function renderSection(online: boolean) {
 
 const SAMPLE_SESSION = {
   id: "sess_abc",
-  token: "tok_def",
   userId: "u-1",
   expiresAt: new Date(Date.now() + 86_400_000),
   createdAt: new Date(),
@@ -102,7 +97,7 @@ describe("SessionsSection — revoke flow", () => {
     });
   });
 
-  it("calls revokeSession with the session token (NOT the id)", async () => {
+  it("calls revokeSession with the session id (NOT a token)", async () => {
     renderSection(true);
 
     // Wait for listSessions to populate the row.
@@ -113,10 +108,10 @@ describe("SessionsSection — revoke flow", () => {
     fireEvent.click(revokeButton);
 
     await waitFor(() => expect(revokeSessionMock).toHaveBeenCalledTimes(1));
-    expect(revokeSessionMock).toHaveBeenCalledWith({ token: "tok_def" });
-    // Critical contract pin — `id` must NOT be passed.
+    expect(revokeSessionMock).toHaveBeenCalledWith({ id: "sess_abc" });
+    // Critical contract pin — `token` must NOT be passed.
     expect(revokeSessionMock).not.toHaveBeenCalledWith(
-      expect.objectContaining({ id: expect.anything() }),
+      expect.objectContaining({ token: expect.anything() }),
     );
   });
 
@@ -224,7 +219,6 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
     return [
       {
         id: "sess_current",
-        token: "tok_current",
         userId: "u-1",
         expiresAt: new Date(now + 86_400_000),
         createdAt: new Date(now - 6 * 86_400_000),
@@ -235,7 +229,6 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
       },
       {
         id: "sess_iphone",
-        token: "tok_iphone",
         userId: "u-1",
         expiresAt: new Date(now + 86_400_000),
         createdAt: yesterday,
@@ -246,7 +239,6 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
       },
       {
         id: "sess_linux",
-        token: "tok_linux",
         userId: "u-1",
         expiresAt: new Date(now + 86_400_000),
         createdAt: new Date(now - 3 * 86_400_000),
@@ -430,9 +422,7 @@ describe("SessionsSection — L-18 unsynced-loss gate for current-session revoke
     );
 
     await waitFor(() =>
-      expect(revokeSessionMock).toHaveBeenCalledWith({
-        token: SAMPLE_SESSION.token,
-      }),
+      expect(revokeSessionMock).toHaveBeenCalledWith({ id: SAMPLE_SESSION.id }),
     );
     await waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
     await waitFor(() =>

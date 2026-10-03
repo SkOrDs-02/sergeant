@@ -46,6 +46,37 @@ describe("recordBodyWeight", () => {
     expect(readBiometrics().weightKg).toBeNull();
   });
 
+  // Канонічна межа MEASUREMENT_BOUNDS.weightKg = {20, 400} (ADR-0080,
+  // @sergeant/shared): recordBodyWeight — єдина точка входу всіх пʼяти
+  // писачів ваги, тож саме тут її й тримати, а не лише в chat-executor-ах.
+  describe("канонічна межа MEASUREMENT_BOUNDS.weightKg", () => {
+    it("no-op щойно нижче межі (19 кг)", () => {
+      recordBodyWeight({ weightKg: 19, at: "2026-06-22T08:00:00.000Z" });
+      expect(readBiometrics().weightKg).toBeNull();
+    });
+
+    it("no-op щойно вище межі (401 кг)", () => {
+      recordBodyWeight({ weightKg: 401, at: "2026-06-22T08:00:00.000Z" });
+      expect(readBiometrics().weightKg).toBeNull();
+    });
+
+    it("записує вагу рівно на нижній межі (20 кг)", () => {
+      recordBodyWeight({ weightKg: 20, at: "2026-06-22T08:00:00.000Z" });
+      expect(readBiometrics().weightKg).toBe(20);
+    });
+
+    it("записує вагу рівно на верхній межі (400 кг)", () => {
+      recordBodyWeight({ weightKg: 400, at: "2026-06-22T08:00:00.000Z" });
+      expect(readBiometrics().weightKg).toBe(400);
+    });
+
+    it("no-op на NaN і відʼємному значенні — профіль лишається порожнім", () => {
+      recordBodyWeight({ weightKg: Number.NaN });
+      recordBodyWeight({ weightKg: -70 });
+      expect(readBiometrics().weightKg).toBeNull();
+    });
+  });
+
   it("не чіпає інші поля біометрії", () => {
     writeBiometrics({
       ...BIOMETRICS_DEFAULT,

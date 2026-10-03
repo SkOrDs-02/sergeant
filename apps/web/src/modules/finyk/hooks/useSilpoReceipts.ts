@@ -1,15 +1,22 @@
 /**
  * Last validated: 2026-08-17
  * Status: Active — walking-skeleton experiment (Silpo MCP integration,
- * track A). See `docs/90-work/planning/specs/silpo-mcp-integration.md`.
+ * track A). See `docs/work/specs/silpo-mcp-integration.md`.
  */
-import { useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   isApiError,
   silpoApi,
+  type SilpoPantryClaimMode,
   type SilpoReceiptDetailDto,
   type SilpoReceiptsListParams,
   type SilpoReceiptsPage,
+  type SilpoSettingsResponse,
 } from "@shared/api";
 import { authAwareRetry } from "@shared/lib/api/queryClient";
 import { silpoKeys } from "@shared/lib/api/queryKeys";
@@ -67,6 +74,33 @@ export function useSilpoReceiptDetail(receiptId: string | null | undefined) {
 }
 
 /**
+ * Деталі кількох чеків одним хуком — `useQueries`, бо кількість чеків
+ * відома лише в рантаймі, а `useSilpoReceiptDetail` у циклі порушив би
+ * правила хуків.
+ *
+ * Ключі, `staleTime` і 404-семантика ті самі, що в одиничного хука: кеш
+ * спільний, тож чек, уже відкритий у деталях транзакції, повторного
+ * запиту не робить.
+ */
+export function useSilpoReceiptDetails(
+  receiptIds: readonly string[],
+): SilpoReceiptDetailDto[] {
+  const results = useQueries({
+    queries: receiptIds.map((id) => ({
+      queryKey: silpoKeys.receiptDetail(id),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        silpoApi.receiptDetail(id, { signal }),
+      staleTime: STALE_TIME,
+      retry: (failureCount: number, error: unknown) =>
+        !(isApiError(error) && error.status === 404) && failureCount < 2,
+    })),
+  });
+  return results
+    .map((r) => r.data)
+    .filter((d): d is SilpoReceiptDetailDto => Boolean(d));
+}
+
+/**
  * Finds the receipt (if any) linked to a given mono transaction, and loads
  * its line items. Two-step lookup because `SilpoReceiptSummaryDto.
  * transactionId` lives only on the list endpoint.
@@ -95,5 +129,84 @@ export function useSilpoReceiptForTransaction(
     detail: detail.data,
     isLoading:
       enabled && (list.isLoading || (Boolean(summary) && detail.isLoading)),
+  };
+}
+
+// ──────────────────────── Pantry auto-import (спека silpo-pantry-auto-import.md) ────
+
+function invalidateReceiptCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  // `silpoKeys.all` - той самий широкий інвалідейт, що й `useSilpoWipe`/
+  // `useSilpoUnlinkReceipt`: список чеків кешується по-різному за `limit`,
+  // тож точковий ключ (конкретний `receipts({limit})`) не покрив би інші
+  // сторінки, які теж несуть `pantryClaimedAt`/`pantryClaimedCount`.
+  void queryClient.invalidateQueries({ queryKey: silpoKeys.all });
+}
+
+/**
+ * `PUT /api/silpo/settings` - тумблер «Додавати продукти з чеків у комору
+ * автоматично». Інвалідовує `syncState`: саме звідти читається
+ * `pantryAutoImportSince` (Settings-картка й `useSilpoPantryAutoImport`).
+ */
+export function useSilpoUpdateSettings() {
+  const queryClient = useQueryClient();
+  return useMutation<SilpoSettingsResponse, unknown, boolean>({
+    mutationFn: (pantryAutoImport: boolean) =>
+      silpoApi.updateSettings({ pantryAutoImport }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: silpoKeys.syncState });
+    },
+  });
+}
+
+/**
+ * `POST /api/silpo/receipts/:id/pantry-claim` - атомарне бронювання ПЕРЕД
+ * записом у комору. Повертає лише РЕАЛЬНО заброньовані `itemIds` - виклик
+ * `useSilpoPantryReplenish`/`useSilpoPantryAutoImport` пише в комору рівно
+ * цю підмножину.
+ */
+export function usePantryClaim() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation<
+    number[],
+    unknown,
+    { receiptId: string; itemIds: number[]; mode: SilpoPantryClaimMode }
+  >({
+    mutationFn: ({ receiptId, itemIds, mode }) =>
+      silpoApi
+        .pantryClaim(receiptId, { itemIds, mode })
+        .then((r) => r.claimedItemIds),
+    onSuccess: () => invalidateReceiptCaches(queryClient),
+  });
+  return {
+    claim: (receiptId: string, itemIds: number[], mode: SilpoPantryClaimMode) =>
+      mutation.mutateAsync({ receiptId, itemIds, mode }),
+    isPending: mutation.isPending,
+  };
+}
+
+/**
+ * `POST /api/silpo/receipts/:id/pantry-release` - знімає бронювання.
+ * `decline: true` - «Повернути» в тості автоімпорту (чек більше не
+ * потрапляє в автоімпорт); `decline: false` - сервер кинув помилку між
+ * `pantry-claim` і записом у комору (спека § «Позначка живе на сервері…»).
+ */
+export function usePantryRelease() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation<
+    void,
+    unknown,
+    { receiptId: string; itemIds: number[]; decline: boolean }
+  >({
+    mutationFn: ({ receiptId, itemIds, decline }) =>
+      silpoApi
+        .pantryRelease(receiptId, { itemIds, decline })
+        .then(() => undefined),
+    onSuccess: () => invalidateReceiptCaches(queryClient),
+  });
+  return {
+    release: (receiptId: string, itemIds: number[], decline: boolean) =>
+      mutation.mutateAsync({ receiptId, itemIds, decline }),
   };
 }

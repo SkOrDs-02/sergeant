@@ -11,6 +11,11 @@
  *
  * Dismissal is handled inside <InsightCard> via useInsightDismissal, so
  * this component does not need to track it.
+ *
+ * Builds its own candidates from the three detection hooks directly
+ * (props come from Overview, not from `useFinykInsights`'s internal
+ * fetch), so it filters `showOn` locally with the same "module surface"
+ * condition `useAllInsights` uses, instead of routing through that hook.
  */
 
 import { useNavigate } from "react-router-dom";
@@ -32,6 +37,13 @@ const MAX_VISIBLE = 2;
 
 interface FinykInsightsBlockProps {
   transactions: readonly Transaction[];
+  /**
+   * Історія для інсайту «Знайшов повторення». Окремо від `transactions`, бо
+   * решті інсайтів (перевищення ліміту, кава) потрібен поточний місяць, а
+   * детектору регулярних платежів — фіксоване вікно в кілька місяців.
+   * Без пропа береться `transactions`.
+   */
+  recurringTransactions?: readonly Transaction[] | undefined;
   budgets: readonly Budget[];
   subscriptions?:
     | readonly {
@@ -51,6 +63,7 @@ interface FinykInsightsBlockProps {
 
 export function FinykInsightsBlock({
   transactions,
+  recurringTransactions,
   budgets,
   subscriptions = [],
   dismissedRecurring = [],
@@ -78,7 +91,7 @@ export function FinykInsightsBlock({
   });
 
   const recurringInsight = useRecurringDetectedInsight({
-    transactions,
+    transactions: recurringTransactions ?? transactions,
     subscriptions,
     dismissedRecurring,
     excludedTxIds,
@@ -93,6 +106,9 @@ export function FinykInsightsBlock({
 
   const active = candidates
     .filter((insight): insight is Insight => insight !== null)
+    // Module surface: hide hub-only insights (e.g. budget-overrun, which
+    // duplicates BudgetAlertsList's worst-category row on this same screen).
+    .filter((insight) => insight.showOn !== "hub")
     .slice(0, MAX_VISIBLE);
 
   if (!active.length) return null;

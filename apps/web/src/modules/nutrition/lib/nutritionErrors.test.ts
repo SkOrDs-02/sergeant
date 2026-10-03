@@ -10,7 +10,7 @@ describe("nutritionErrors", () => {
   describe("friendlyApiError", () => {
     it("maps missing AI key 500s to a nutrition-specific message", () => {
       expect(nutritionFriendlyApiError(500, "ANTHROPIC key not set")).toBe(
-        "Сервер харчування не налаштовано (немає ключа AI).",
+        "Сервер харчування не налаштовано. Повідом у підтримку.",
       );
       expect(nutritionFriendlyApiError(500, "API key missing")).toMatch(
         /не налаштовано/,

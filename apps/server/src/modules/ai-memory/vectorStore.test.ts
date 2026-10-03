@@ -47,7 +47,7 @@ function write(
 ): MemoryWrite {
   return {
     userId: USER_ID,
-    source: "chat",
+    source: "digest",
     sourceRef: "msg-1",
     content: "remember this",
     embedding,
@@ -66,12 +66,17 @@ describe("createPgVectorStore", () => {
     await store.upsert([write()]);
 
     expect(client.query.mock.calls[0]?.[0]).toBe("BEGIN");
+    // RLS-контекст ставиться ПАРАМЕТРОМ і з is_local=true, усередині транзакції.
     expect(String(client.query.mock.calls[1]?.[0])).toContain(
+      "set_config('app.user_id', $1, true)",
+    );
+    expect(client.query.mock.calls[1]?.[1]).toEqual([USER_ID]);
+    expect(String(client.query.mock.calls[2]?.[0])).toContain(
       "INSERT INTO ai_memories",
     );
-    expect(client.query.mock.calls[1]?.[1]).toEqual([
+    expect(client.query.mock.calls[2]?.[1]).toEqual([
       USER_ID,
-      "chat",
+      "digest",
       "msg-1",
       "remember this",
       "[0.10000000149011612,0.20000000298023224,0.30000001192092896]",
@@ -80,7 +85,7 @@ describe("createPgVectorStore", () => {
       "1",
       '{"topic":"test"}',
     ]);
-    expect(client.query.mock.calls[2]?.[0]).toBe("COMMIT");
+    expect(client.query.mock.calls[3]?.[0]).toBe("COMMIT");
     expect(client.release).toHaveBeenCalledOnce();
   });
 
@@ -94,7 +99,7 @@ describe("createPgVectorStore", () => {
     ).rejects.toThrow("Embedding contains non-finite value");
 
     expect(client.query.mock.calls[0]?.[0]).toBe("BEGIN");
-    expect(client.query.mock.calls[1]?.[0]).toBe("ROLLBACK");
+    expect(client.query.mock.calls[2]?.[0]).toBe("ROLLBACK");
     expect(client.release).toHaveBeenCalledOnce();
   });
 
@@ -106,7 +111,7 @@ describe("createPgVectorStore", () => {
           rows: [
             {
               id: "42",
-              source: "finyk",
+              source: "cofounder",
               source_ref: "tx-1",
               content: "coffee",
               embedding_provider: "voyage",
@@ -127,28 +132,29 @@ describe("createPgVectorStore", () => {
       userId: USER_ID,
       embedding: Float32Array.of(0.1, 0.2),
       topK: 5,
-      sources: ["finyk"],
+      sources: ["cofounder"],
       efSearch: 16.9,
     });
 
-    expect(client.query.mock.calls[1]?.[0]).toBe(
+    expect(client.query.mock.calls[1]?.[1]).toEqual([USER_ID]);
+    expect(client.query.mock.calls[2]?.[0]).toBe(
       "SET LOCAL hnsw.ef_search = 16",
     );
-    const selectSql = String(client.query.mock.calls[2]?.[0]);
-    const params = client.query.mock.calls[2]?.[1] as unknown[];
+    const selectSql = String(client.query.mock.calls[3]?.[0]);
+    const params = client.query.mock.calls[3]?.[1] as unknown[];
     expect(selectSql).toMatch(/source = ANY\(\$\d+::text\[\]\)/);
     expect(selectSql).toMatch(/embedding_model = \$\d+/);
     expect(params).toEqual([
       USER_ID,
       "[0.10000000149011612,0.20000000298023224]",
       5,
-      ["finyk"],
+      ["cofounder"],
       env.VOYAGE_EMBEDDING_MODEL,
     ]);
     expect(result).toEqual([
       {
         id: 42,
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-1",
         content: "coffee",
         embeddingMeta: {
@@ -162,7 +168,7 @@ describe("createPgVectorStore", () => {
         createdAt: new Date("2026-06-24T10:00:00.000Z"),
       },
     ]);
-    expect(client.query.mock.calls[3]?.[0]).toBe("COMMIT");
+    expect(client.query.mock.calls[4]?.[0]).toBe("COMMIT");
     expect(client.release).toHaveBeenCalledOnce();
   });
 
@@ -190,7 +196,7 @@ describe("createPgVectorStore", () => {
     await expect(
       store.query({ userId: "", embedding: Float32Array.of(0.1), topK: 1 }),
     ).rejects.toThrow("userId is required");
-    await expect(store.deleteBySource("", "chat", "msg-1")).rejects.toThrow(
+    await expect(store.deleteBySource("", "digest", "msg-1")).rejects.toThrow(
       "userId is required",
     );
     await expect(store.deleteAllForUser("")).rejects.toThrow(
@@ -199,17 +205,37 @@ describe("createPgVectorStore", () => {
   });
 
   it("delete helpers pass the scoped SQL parameters and row count through", async () => {
-    const pool = makePool();
-    pool.query
-      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-      .mockResolvedValueOnce({ rows: [], rowCount: 3 });
-    const store = createPgVectorStore(pool);
+    const client = makeClient();
+    client.query.mockImplementation((sql: string) =>
+      Promise.resolve({
+        rows: [],
+        rowCount: sql.startsWith("DELETE FROM ai_memories WHERE user_id")
+          ? 3
+          : 0,
+      }),
+    );
+    const store = createPgVectorStore(makePool(client));
 
-    await store.deleteBySource(USER_ID, "finyk", "tx-1");
-    expect(pool.query.mock.calls[0]?.[1]).toEqual([USER_ID, "finyk", "tx-1"]);
+    // Кожен виклик іде в окремій транзакції з `app.user_id` власника:
+    // BEGIN, set_config, DELETE..., COMMIT.
+    await store.deleteBySource(USER_ID, "cofounder", "tx-1");
+    expect(client.query.mock.calls[1]?.[1]).toEqual([USER_ID]);
+    expect(client.query.mock.calls[2]?.[1]).toEqual([
+      USER_ID,
+      "cofounder",
+      "tx-1",
+    ]);
+    expect(client.query.mock.calls[3]?.[0]).toBe("COMMIT");
 
     await expect(store.deleteAllForUser(USER_ID)).resolves.toBe(3);
-    expect(pool.query.mock.calls[1]?.[1]).toEqual([USER_ID]);
+    expect(client.query.mock.calls[5]?.[1]).toEqual([USER_ID]);
+    expect(client.query.mock.calls[6]?.[1]).toEqual([USER_ID]);
+    // B11: DLQ чиститься тим самим викликом (user_id без FK).
+    expect(client.query.mock.calls[7]?.[0]).toContain(
+      "DELETE FROM ai_memory_ingest_failed",
+    );
+    expect(client.query.mock.calls[7]?.[1]).toEqual([USER_ID]);
+    expect(client.query.mock.calls[8]?.[0]).toBe("COMMIT");
   });
 
   it("health reports pgvector availability and fails closed on DB errors", async () => {

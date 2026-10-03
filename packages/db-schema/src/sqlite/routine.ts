@@ -17,7 +17,7 @@ import { sql } from "drizzle-orm";
  * via OPFS-SAH) and mobile (`expo-sqlite`).
  *
  * History: shipped first as the Stage 3 SPIKE (PR #022 in
- * `docs/planning/storage-roadmap.md`); promoted to production
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`); promoted to production
  * source-of-truth in PR #023. The accompanying inline migration lives
  * in `packages/db-schema/src/sqlite/migrations/index.ts` (`ROUTINE_CLIENT_MIGRATIONS`).
  *
@@ -132,7 +132,7 @@ export const routineCompletionEvents = sqliteTable(
  * clamp-ом `>= 0`). Одиниця виміру — кліки, не послідовні дні. НЕ читай
  * ці стовпці для UI / push / digest: справжній стрік рахується
  * client-side (`streakForHabit`) з `routine_entries`/completions. Канон:
- * `docs/01-product/model/routine.md` §4.
+ * `docs/product/modules/routine.md` §4.
  */
 export const routineStreaks = sqliteTable("routine_streaks", {
   userId: text("user_id").primaryKey(),
@@ -151,10 +151,10 @@ export const routineStreaks = sqliteTable("routine_streaks", {
  *
  * Один рядок на звичку. Поля дзеркалять `Habit` з
  * `@sergeant/routine-domain`. JSON-масиви (`tagIds`, `reminderTimes`,
- * `weekdays`) зберігаються як TEXT (JSON string) — SQLite не має
- * нативного JSONB.
+ * `weekdays`, `weeklyTargetHistory`) зберігаються як TEXT (JSON string) —
+ * SQLite не має нативного JSONB.
  *
- * Stage 10 / PR #070r-schema of `docs/planning/storage-roadmap.md`.
+ * Stage 10 / PR #070r-schema of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 export const routineHabits = sqliteTable(
   "routine_habits",
@@ -185,6 +185,9 @@ export const routineHabits = sqliteTable(
      * DROP COLUMN.
      */
     pauseIntervalsJson: text("pause_intervals_json").notNull().default("[]"),
+    weeklyTargetHistoryJson: text("weekly_target_history_json")
+      .notNull()
+      .default("[]"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -269,28 +272,6 @@ export const routinePrefs = sqliteTable("routine_prefs", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
-
-/**
- * SQLite schema for the `routine_pushups` table.
- *
- * Один рядок на (user, date) — кількість відтискань за день.
- *
- * Власність перенесено у `fizruk_pushups` (канон routine.md §10, Phase B):
- * dual-write і читачі знято, локальна таблиця лишається порожнім
- * артефактом старих міграцій.
- */
-export const routinePushups = sqliteTable(
-  "routine_pushups",
-  {
-    userId: text("user_id").notNull(),
-    dateKey: text("date_key").notNull(),
-    reps: integer().notNull().default(0),
-    updatedAt: text("updated_at")
-      .notNull()
-      .default(sql`(datetime('now'))`),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
-);
 
 /**
  * SQLite schema for the `routine_habit_order` table.
@@ -387,7 +368,7 @@ export const routineCompletionNotes = sqliteTable(
  *       `status='dead_letter'` and waits for human triage.
  *
  * The retry/backoff/dead-letter columns and the `'dead_letter'` status
- * landed in PR #040 (`docs/planning/storage-roadmap.md` Stage 5) on
+ * landed in PR #040 (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 5) on
  * top of the original SPIKE shape from PR #022. The migration
  * recreates the table because SQLite cannot relax a `CHECK` constraint
  * in place — see `002_sync_op_outbox_retry.sql`.

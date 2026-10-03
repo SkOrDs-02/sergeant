@@ -87,15 +87,30 @@ const MODULE_FAMILIES = [
   "nutrition",
 ] as const;
 
-describe("статуси як ТЕКСТ (--c-{status}-ink) на поверхнях ≥ 4.5:1", () => {
+describe("акценти як ТЕКСТ (--c-{family}-ink) на поверхнях ≥ 4.5:1", () => {
   // AI-CONTEXT (2026-08-21): `text-{status}-strong` резолвиться в
   // `--c-{status}-ink`, а не в літерал пресету. До цієї зміни текстовий тир
   // був спільний зі світлою заливкою (red-800), і в темній темі помилка
   // форми виходила 1.9:1 — темно-червоне по темному. Ручні `dark:`-пари в
   // className, якими це лікували раніше, гейта не мали й мовчки пропустили
   // третину місць; змінна має гейт — оцей.
+  //
+  // AI-CONTEXT (2026-09-02): модульна половина того самого дефекту приїхала
+  // сюди рівно тим самим шляхом — `text-{accent}-strong` віддавав тир -800
+  // і давав 1.11…2.74:1 на ink-поверхнях. Тому список тут — усі девʼять
+  // родин, а не чотири статуси: розділені списки й були б наступною сиротою.
   for (const [theme, variables] of Object.entries(THEMES)) {
-    for (const status of ["success", "warning", "danger", "info"] as const) {
+    for (const status of [
+      "success",
+      "warning",
+      "danger",
+      "info",
+      "brand",
+      "finyk",
+      "fizruk",
+      "routine",
+      "nutrition",
+    ] as const) {
       for (const surface of ["c-bg", "c-panel", "c-panel-hi"] as const) {
         it(`${theme}: c-${status}-ink on ${surface} is at least 4.5:1`, () => {
           const foreground = variables[`c-${status}-ink`];

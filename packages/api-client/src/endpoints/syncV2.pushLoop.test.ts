@@ -6,6 +6,7 @@ import type { SyncV2OpKind, SyncV2PushOp, SyncV2PushResponse } from "./syncV2";
 
 import {
   describePushError,
+  isTerminalPushFailure,
   mapDrainedRowToSyncV2PushOp,
   runSyncEnginePushOnce,
   type DrainSyncOpOutboxFn,
@@ -19,7 +20,7 @@ import {
   type SyncV2PushFn,
 } from "./syncV2.pushLoop";
 
-// Stage 5 PR #042e-pushloop (`docs/planning/storage-roadmap.md`).
+// Stage 5 PR #042e-pushloop (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // `runSyncEnginePushOnce` is the top-level orchestrator that ties
 // together five DI primitives (drain → push → markSuccess /
@@ -485,6 +486,164 @@ describe("runSyncEnginePushOnce — transport failure (whole batch retry)", () =
     await runSyncEnginePushOnce(deps, { limit: 100 });
 
     expect(planRetry).toHaveBeenCalledWith(0, NOW, "unknown");
+  });
+});
+
+describe("runSyncEnginePushOnce — terminal HTTP classes (413 / 400 / 422)", () => {
+  // Регресія: будь-який throw із `push` відправляв ВЕСЬ батч у markRetry.
+  // Батч дренеться детерміновано (`ORDER BY id ASC`), тож 413 повторювався
+  // на кожній спробі, і після SYNC_OP_MAX_ATTEMPTS = 10 усі рядки ставали
+  // dead_letter — тиха втрата офлайн-записів.
+  function httpError(status: number): ApiError {
+    return new ApiError({
+      kind: "http",
+      status,
+      message: `status ${status}`,
+      url: "https://api.example.com/api/v2/sync/push",
+    });
+  }
+
+  it.each([413, 400, 422])(
+    "HTTP %i — markRejected на КОЖЕН рядок батча, жодного markRetry",
+    async (status) => {
+      const {
+        deps,
+        drain,
+        push,
+        markSuccess,
+        markRetry,
+        markRejected,
+        planRetry,
+      } = makeDeps();
+      drain.mockResolvedValueOnce([
+        makeRow({ id: 10, idempotencyKey: IDEM_A, attempts: 0 }),
+        makeRow({
+          id: 11,
+          idempotencyKey: IDEM_B,
+          attempts: 3,
+          table: "finyk_budgets",
+          op: "insert" as SyncV2OpKind,
+        }),
+      ]);
+      push.mockRejectedValueOnce(httpError(status));
+
+      const result = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+      expect(result).toEqual({
+        drained: 2,
+        pushed: 0,
+        retried: 0,
+        rejected: 2,
+      });
+      expect(markRetry).not.toHaveBeenCalled();
+      expect(planRetry).not.toHaveBeenCalled();
+      expect(markSuccess).not.toHaveBeenCalled();
+      expect(markRejected).toHaveBeenCalledTimes(2);
+      // Причина — той самий стабільний лейбл, що й у `last_error`, тож
+      // кардинальність лишається обмеженою, а в Sentry видно предмет.
+      expect(markRejected).toHaveBeenNthCalledWith(1, 10, `http_${status}`, {
+        table: "routine_streaks",
+        op: "increment",
+      });
+      expect(markRejected).toHaveBeenNthCalledWith(2, 11, `http_${status}`, {
+        table: "finyk_budgets",
+        op: "insert",
+      });
+    },
+  );
+
+  it.each([401, 403])(
+    "HTTP %i лишається транзієнтом — креденшали оновлюються поза рушієм",
+    async (status) => {
+      const { deps, drain, push, markRetry, markRejected, planRetry } =
+        makeDeps();
+      drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+      push.mockRejectedValueOnce(httpError(status));
+
+      const result = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+      expect(result).toMatchObject({ retried: 1, rejected: 0 });
+      expect(markRejected).not.toHaveBeenCalled();
+      expect(markRetry).toHaveBeenCalledTimes(1);
+      expect(planRetry).toHaveBeenCalledWith(0, NOW, `http_${status}`);
+    },
+  );
+
+  it.each([500, 502, 503])("HTTP %i лишається транзієнтом", async (status) => {
+    const { deps, drain, push, markRetry, markRejected } = makeDeps();
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+    push.mockRejectedValueOnce(httpError(status));
+
+    const result = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(result).toMatchObject({ retried: 1, rejected: 0 });
+    expect(markRejected).not.toHaveBeenCalled();
+    expect(markRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("транспортний збій (не HTTP) лишається транзієнтом", async () => {
+    const { deps, drain, push, markRetry, markRejected } = makeDeps();
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+    push.mockRejectedValueOnce(
+      new ApiError({
+        kind: "network",
+        message: "fetch failed",
+        url: "https://api.example.com/api/v2/sync/push",
+      }),
+    );
+
+    const result = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(result).toMatchObject({ retried: 1, rejected: 0 });
+    expect(markRejected).not.toHaveBeenCalled();
+    expect(markRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it("не-ApiError throwable лишається транзієнтом", async () => {
+    const { deps, drain, push, markRetry, markRejected } = makeDeps();
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+    push.mockRejectedValueOnce(new TypeError("boom"));
+
+    const result = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(result).toMatchObject({ retried: 1, rejected: 0 });
+    expect(markRejected).not.toHaveBeenCalled();
+    expect(markRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("isTerminalPushFailure — класифікатор", () => {
+  it("термінальні лише 400 / 413 / 422 з kind='http'", () => {
+    for (const status of [400, 413, 422]) {
+      expect(
+        isTerminalPushFailure(
+          new ApiError({ kind: "http", status, message: "x", url: "u" }),
+        ),
+      ).toBe(true);
+    }
+    for (const status of [401, 403, 404, 409, 429, 500, 503]) {
+      expect(
+        isTerminalPushFailure(
+          new ApiError({ kind: "http", status, message: "x", url: "u" }),
+        ),
+      ).toBe(false);
+    }
+  });
+
+  it("не-http ApiError і чужі throwables — не термінальні", () => {
+    expect(
+      isTerminalPushFailure(
+        new ApiError({ kind: "network", message: "x", url: "u" }),
+      ),
+    ).toBe(false);
+    expect(
+      isTerminalPushFailure(
+        new ApiError({ kind: "aborted", message: "x", url: "u" }),
+      ),
+    ).toBe(false);
+    expect(isTerminalPushFailure(new TypeError("boom"))).toBe(false);
+    expect(isTerminalPushFailure("nope")).toBe(false);
+    expect(isTerminalPushFailure(undefined)).toBe(false);
   });
 });
 

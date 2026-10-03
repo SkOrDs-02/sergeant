@@ -46,6 +46,22 @@ describe("writeFinykQuickStatsSnapshot", () => {
     expect(updated).toHaveBeenCalledTimes(1);
   });
 
+  it("records the category-limit count only when limits exist", () => {
+    const nowMs = Date.parse("2026-07-29T12:00:00+03:00");
+    expect(
+      JSON.parse(writeFinykQuickStatsSnapshot({ transactions: [], nowMs })),
+    ).not.toHaveProperty("limitsCount");
+    expect(
+      JSON.parse(
+        writeFinykQuickStatsSnapshot({
+          transactions: [],
+          limitsCount: 2,
+          nowMs,
+        }),
+      ).limitsCount,
+    ).toBe(2);
+  });
+
   it("excludes internal movements supplied by the canonical storage layer", () => {
     const nowMs = Date.parse("2026-07-29T12:00:00+03:00");
     const payload = writeFinykQuickStatsSnapshot({

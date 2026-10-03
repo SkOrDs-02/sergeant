@@ -27,18 +27,22 @@ describe("StorageErrorBanner", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("shows a danger alert with the default formatted message on the event", () => {
+  it("shows the catalog copy without the raw reason on the event", () => {
     render(<StorageErrorBanner eventName={EVENT} />);
     dispatchError("QuotaExceededError");
     const alert = screen.getByRole("alert");
-    expect(alert.textContent).toContain("QuotaExceededError");
+    // Сира причина лишається в події для телеметрії, людині її не показуємо
+    // (аудит копі 2026-09-23 §2.5).
+    expect(alert.textContent).not.toContain("QuotaExceededError");
     expect(alert.textContent).toContain("Не вдалося зберегти дані");
   });
 
-  it("falls back to a generic reason when the event has no detail", () => {
+  it("shows the same catalog copy when the event has no detail", () => {
     render(<StorageErrorBanner eventName={EVENT} />);
     dispatchError(undefined);
-    expect(screen.getByRole("alert").textContent).toContain("невідома помилка");
+    const text = screen.getByRole("alert").textContent ?? "";
+    expect(text).toContain("Не вдалося зберегти дані");
+    expect(text).not.toContain("невідома помилка");
   });
 
   it("uses a custom formatMessage when provided", () => {

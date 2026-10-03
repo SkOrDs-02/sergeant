@@ -9,6 +9,7 @@ import {
 } from "../../http/schemas.js";
 import {
   ExternalServiceError,
+  ForbiddenError,
   ValidationError,
   makeAiProviderError,
 } from "../../obs/errors.js";
@@ -20,10 +21,20 @@ import {
   type LLMProvider,
 } from "../../lib/llm/provider.js";
 import { logger } from "../../obs/logger.js";
+import { als } from "../../obs/requestContext.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { getAiMemory } from "../ai-memory/bootstrap.js";
+import { buildWeeklyDigestPrompt } from "./weeklyDigestPrompt.js";
+import { replaceLongDash } from "../../lib/modelText.js";
+import {
+  countModuleSignals,
+  HEALTH_CONSENT_REQUIRED_CODE,
+  HEALTH_CONSENT_REQUIRED_MESSAGE,
+  MIN_SIGNAL_MODULES,
+} from "@sergeant/shared";
+import { resolveHealthConsent } from "../../lib/healthConsent.js";
 
-import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+export { buildWeeklyDigestPrompt };
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 type WithSessionUser = Request & { user?: { id: string } };
@@ -112,31 +123,21 @@ export function extractJsonObject(raw: unknown): unknown {
 }
 
 /**
- * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень — серверне дзеркало
- * `coachSnapshotSignals` (`apps/web/src/core/insights/useCoachInsight.ts`).
+ * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень — тонкий делегат
+ * `countModuleSignals` (`@sergeant/shared`), канон і для клієнтського
+ * `coachSnapshotSignals` (`apps/web/src/core/insights/useCoachInsight.ts`),
+ * зведено за аудитом §2.23 замість двох незалежних копій.
  *
  * AI-CONTEXT (Хвиля 4, hub-coach § G2): `finyk` приїжджає з клієнта
  * ЗАВЖДИ truthy (`aggregateFinyk` повертає нулі навіть без транзакцій), тож
  * стара перевірка «є хоч одна секція» (`!sections.length`) фактично ніколи
  * не спрацьовувала — порожній тиждень завжди мав хоча б finyk-секцію з
  * нулями, і дайджест генерувався з нічого. Рахуємо не «поле присутнє», а
- * факт даних — той самий принцип, що й у коуча.
+ * факт даних.
  */
 export function countDigestSignalModules(data: WeeklyDigestRequest): number {
-  let signals = 0;
-  if ((data.finyk?.txCount ?? 0) > 0) signals++;
-  if ((data.fizruk?.workoutsCount ?? 0) > 0) signals++;
-  if ((data.nutrition?.daysLogged ?? 0) > 0) signals++;
-  if ((data.routine?.habitCount ?? 0) > 0) signals++;
-  return signals;
+  return countModuleSignals(data);
 }
-
-/**
- * Поріг публікації — канон hub-coach §6.2 «краще мовчати, ніж шуміти».
- * Навмисно мінімальний і безспірний, як і в коуча: нуль сигналів — тиждень
- * чесно «без даних», а не заповнений шаблонним аналізом нулів.
- */
-const MIN_SIGNAL_MODULES = 1;
 
 /**
  * PR-25: build template-based digest report з raw метрик (без LLM).
@@ -155,9 +156,9 @@ export function buildTemplateReport(
   return {
     finyk: finyk
       ? {
-          summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} транзакцій.`,
+          summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} операцій.`,
           comment:
-            "Шаблонний звіт без AI-аналізу (Anthropic недоступний або вимкнено). Числа взяті напряму з тижневих даних — інтерпретація буде доступна, коли AI-сервіс відновиться.",
+            "Це лише числа з тижневих даних: розбір зараз недоступний. Висновки додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -167,7 +168,7 @@ export function buildTemplateReport(
             fizruk.recoveryLabel ? `, стан: ${fizruk.recoveryLabel}` : ""
           }.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Покажемо детальний коментар, коли AI-сервіс відновиться.",
+            "Це лише числа з тижневих даних: розбір тренувань додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -175,7 +176,7 @@ export function buildTemplateReport(
       ? {
           summary: `Середньодобово ${nutrition.avgKcal ?? 0} ккал з ${nutrition.daysLogged ?? 0}/7 днів записів.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Деталі (макроси, тенденції) зʼявляться після відновлення AI-сервісу.",
+            "Це лише числа з тижневих даних: макроси й тенденції розберу, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -183,145 +184,12 @@ export function buildTemplateReport(
       ? {
           summary: `${routine.habitCount ?? 0} звичок, загальний відсоток ${routine.overallRate ?? 0}%.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Розширений аналіз стане доступним після відновлення AI-сервісу.",
+            "Це лише числа з тижневих даних: розбір звичок додам, щойно зможу.",
           recommendations: [],
         }
       : null,
     overallRecommendations: [],
   };
-}
-
-/**
- * Промпт тижневого дайджесту — рівно той, що йде в прод.
- *
- * AI-CONTEXT: винесено з хендлера, щоб стенд (`scripts/eval/pipelines.finance.ts`)
- * подавав моделі справжній промпт із реальним блоком ДАНІ, а не однорядкову
- * заглушку. Промпт тут динамічний (збирається з тижневих даних), тому
- * експортується білдер, а не константа — стенд подає йому фіксований зразок
- * тижня.
- *
- * Кидає `ValidationError`, коли жодної секції немає — інваріант лишається на
- * місці, лише переїхав разом зі своїм єдиним користувачем.
- */
-export function buildWeeklyDigestPrompt(data: WeeklyDigestRequest): {
-  system: string;
-  user: string;
-} {
-  const { weekRange, finyk, fizruk, nutrition, routine } = data;
-  const sections: string[] = [];
-
-  if (finyk) {
-    const budgetLine = finyk.monthlyBudget
-      ? `Місячний бюджет: ${finyk.monthlyBudget} грн`
-      : "Місячний бюджет: не встановлено";
-    const topCats =
-      Array.isArray(finyk.topCategories) && finyk.topCategories.length
-        ? finyk.topCategories
-            .map((c) => `  - ${c.name}: ${c.amount} грн`)
-            .join("\n")
-        : "  Немає даних";
-    sections.push(`[ФІНАНСИ (${weekRange || "тиждень"})]
-Витрати: ${finyk.totalSpent ?? 0} грн | Надходження: ${finyk.totalIncome ?? 0} грн
-${budgetLine}
-Топ категорії витрат:
-${topCats}
-Транзакцій: ${finyk.txCount ?? 0}`);
-  }
-
-  if (fizruk) {
-    const exercises =
-      Array.isArray(fizruk.topExercises) && fizruk.topExercises.length
-        ? fizruk.topExercises
-            .map((e) => `  - ${e.name}: ${e.totalVolume} кг`)
-            .join("\n")
-        : "  Немає даних";
-    sections.push(`[ТРЕНУВАННЯ (${weekRange || "тиждень"})]
-Тренувань завершено: ${fizruk.workoutsCount ?? 0}
-Загальний обʼєм: ${fizruk.totalVolume ?? 0} кг
-Стан відновлення: ${fizruk.recoveryLabel ?? "Немає даних"}
-Топ вправи:
-${exercises}`);
-  }
-
-  if (nutrition) {
-    const deficit = (nutrition.targetKcal ?? 0) - (nutrition.avgKcal ?? 0);
-    const balance =
-      deficit > 50
-        ? `дефіцит ${Math.round(deficit)} ккал`
-        : deficit < -50
-          ? `профіцит ${Math.round(Math.abs(deficit))} ккал`
-          : "баланс";
-    sections.push(`[ХАРЧУВАННЯ (${weekRange || "тиждень"})]
-Середньодобово: ${nutrition.avgKcal ?? 0} ккал (ціль ${nutrition.targetKcal ?? 2000} ккал, ${balance})
-Середній БЖВ: Б ${nutrition.avgProtein ?? 0}г / Ж ${nutrition.avgFat ?? 0}г / В ${nutrition.avgCarbs ?? 0}г
-Днів із записами: ${nutrition.daysLogged ?? 0} з 7`);
-  }
-
-  if (routine) {
-    const habitsInfo =
-      Array.isArray(routine.habits) && routine.habits.length
-        ? routine.habits
-            .map(
-              (h) =>
-                `  - ${h.name}: ${h.completionRate}% (${h.done}/${h.total} днів)`,
-            )
-            .join("\n")
-        : "  Немає активних звичок";
-    sections.push(`[ЗВИЧКИ (${weekRange || "тиждень"})]
-Загальний відсоток: ${routine.overallRate ?? 0}%
-Активних звичок: ${routine.habitCount ?? 0}
-По звичках:
-${habitsInfo}`);
-  }
-
-  if (!sections.length) {
-    throw new ValidationError("Немає даних для генерації звіту");
-  }
-
-  const dataContext = sections.join("\n\n");
-  const userPrompt = `Проаналізуй тижневі дані юзера і поверни ТІЛЬКИ валідний JSON (без markdown-обгортки, без \`\`\`json) такого вигляду:
-{
-  "finyk": {
-    "summary": "1 речення: що відбулося з фінансами",
-    "comment": "2-3 речення: аналіз витрат, тенденції",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "fizruk": {
-    "summary": "1 речення: підсумок тренувань",
-    "comment": "2-3 речення: аналіз обʼєму, відновлення",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "nutrition": {
-    "summary": "1 речення: підсумок харчування",
-    "comment": "2-3 речення: аналіз калоражу, макросів",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "routine": {
-    "summary": "1 речення: підсумок звичок",
-    "comment": "2-3 речення: аналіз виконання",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "overallRecommendations": ["загальна рекомендація 1", "загальна рекомендація 2"]
-}
-Якщо даних по модулю немає — поверни null для цього ключа. Відповідай ВИКЛЮЧНО валідним JSON.`;
-
-  const systemPrompt = `Ти аналітик персональних даних користувача додатку "Мій простір".
-
-${ADVICE_BOUNDARY_RULE}
-Відповідай ВИКЛЮЧНО валідним JSON — без markdown, без коментарів, без преамбули.
-Уся аналітика — українською. Числа бери з блоку даних.
-
-ПОКРИТТЯ ДАНИХ — ЧАСТИНА ВЕРДИКТУ, А НЕ ПРИМІТКА.
-Середні по харчуванню рахуються ЛИШЕ за днями із записами, тож два залоговані
-дні дають таку саму «гарну» середню, як і сім. Якщо днів із записами менше
-чотирьох із семи — це і є головний висновок блоку «Харчування»: скажи про
-пропуски прямо і не став тижню вищу оцінку, ніж дозволяють дані. Мало даних —
-це не дефіцит і не успіх, це мало даних.
-
-ДАНІ:
-${dataContext}`;
-
-  return { system: systemPrompt, user: userPrompt };
 }
 
 /**
@@ -338,6 +206,11 @@ export interface WeeklyDigestHandlerOptions {
    * Корисно у тестах і у scoped deployments (e.g. e2e з `false`).
    */
   fallbackOnError?: boolean;
+  /**
+   * Підмінка перевірки `healthDataConsent` для тестів. Production читає
+   * збережену згоду з БД (`resolveHealthConsent`, fail-closed).
+   */
+  resolveHealthConsent?: (userId: string | undefined) => Promise<boolean>;
 }
 
 /**
@@ -351,7 +224,18 @@ export function createWeeklyDigestHandler(
   return async function handler(req: Request, res: Response): Promise<void> {
     const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-    const parsed = parseBody(WeeklyDigestSchema, req);
+    const rawParsed = parseBody(WeeklyDigestSchema, req);
+
+    // Гейт на дані про здоровʼя (GDPR Art. 9, рішення власника 2026-09-29):
+    // без збереженої згоди секції Фізрука й Харчування відкидаємо ДО
+    // лічильника сигналів, промпту й шаблонного fallback-у — ні в модель, ні
+    // в `ai_memories` вони не потраплять. Фінанси/звички звіт не ламає.
+    const healthConsent = await (
+      options.resolveHealthConsent ?? resolveHealthConsent
+    )((req as WithSessionUser).user?.id);
+    const parsed: WeeklyDigestRequest = healthConsent
+      ? rawParsed
+      : { ...rawParsed, fizruk: null, nutrition: null };
     const { weekKey, weekRange, finyk, fizruk, nutrition, routine } = parsed;
 
     // Гейт СТОЇТЬ ПЕРЕД побудовою промпту й перед мережевим викликом — тиждень
@@ -359,8 +243,18 @@ export function createWeeklyDigestHandler(
     // нулів, ані палити виклик LLM. Заміняє стару структурну перевірку
     // `!sections.length`, яка через завжди-truthy `finyk` ніколи не спрацьовувала.
     if (countDigestSignalModules(parsed) < MIN_SIGNAL_MODULES) {
+      // Якби health-секції дали б рівно той сигнал, якого бракує, — це не
+      // «замало даних», а «потрібна згода»: люди мають знати, що робити.
+      if (
+        !healthConsent &&
+        countDigestSignalModules(rawParsed) >= MIN_SIGNAL_MODULES
+      ) {
+        throw new ForbiddenError(HEALTH_CONSENT_REQUIRED_MESSAGE, {
+          code: HEALTH_CONSENT_REQUIRED_CODE,
+        });
+      }
       throw new ValidationError(
-        "Замало даних за цей тиждень для звіту. Додай транзакцію, тренування, прийом їжі чи звичку — і спробуй ще раз.",
+        "Замало даних за цей тиждень для звіту. Додай операцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
         { code: "INSUFFICIENT_DATA" },
       );
     }
@@ -392,6 +286,11 @@ export function createWeeklyDigestHandler(
         endpoint: "internal/weekly-digest",
         timeoutMs: 45_000,
         userId: (req as WithSessionUser).user?.id,
+        // Ініціатива 0025, Фаза 2 — «id прогону». Digest — один Anthropic-виклик
+        // на HTTP-запит, тож переюзаємо вже наявний per-request W3C trace id
+        // (`traceMiddleware`, `obs/requestContext.ts`) замість того, щоб
+        // вигадувати новий: цей самий id уже йде в `X-Trace-Id` і Sentry.
+        traceId: als.getStore()?.traceId ?? undefined,
       },
       options.addBreadcrumb ? { addBreadcrumb: options.addBreadcrumb } : {},
     );
@@ -417,7 +316,9 @@ export function createWeeklyDigestHandler(
       report = templateReport;
       usedFallback = true;
     } else {
-      const rawReport = extractJsonObject(llmResult.text);
+      // Довге тире в JSON буває лише всередині рядків, тож заміна по сирому
+      // тексту дорівнює заміні в кожному текстовому полі звіту (аудит P2-3).
+      const rawReport = extractJsonObject(replaceLongDash(llmResult.text));
       if (!rawReport) {
         if (!fallbackOnError) {
           throw new ExternalServiceError("Не вдалося розпарсити відповідь AI", {
@@ -522,6 +423,14 @@ export function createWeeklyDigestHandler(
               usedFallback,
             },
             dedupeSalt: generatedAt,
+            // PR-S3: тижневий звіт осідає в `ai_memories` і потім щоразу
+            // підмішується в system prompt через `buildRagContext`. Коли в
+            // ньому є секції Фізрука чи Їжі — це дані про здоровʼя, і на
+            // персистентний запис потрібна окрема згода (GDPR Art. 9).
+            // Прапорець рахується з ФАКТИЧНОГО складу звіту, не з джерела:
+            // фінансово-рутинний тиждень health-даних не несе й гейтитись
+            // не має.
+            healthData: !!fizruk || !!nutrition,
           });
         } catch (err) {
           logger.warn({

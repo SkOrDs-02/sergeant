@@ -3,7 +3,7 @@
  * Status: Active
  *
  * `Money` / `Delta` — типографіка чисел (анти-слоп П4,
- * `docs/05-design/design/anti-slop-strategy.md` §4/П4).
+ * `docs/design/design/anti-slop-strategy.md` §4/П4).
  *
  * Sergeant — продукт про числа: гривні, копійки, кілокалорії, кілограми,
  * дні. Власне трактування числа — найдешевша і найстійкіша відмінність,

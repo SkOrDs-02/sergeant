@@ -3,9 +3,9 @@
  * Status: Active
  *
  * `CrossModuleLinkCard` — форма крос-модульного звʼязку (анти-слоп P2,
- * `docs/05-design/design/anti-slop-strategy.md` §5 P2). Головний
+ * `docs/design/design/anti-slop-strategy.md` §5 P2). Головний
  * диференціатор продукту («звʼязки між сферами — головна цінність»,
- * `docs/01-product/model/product-overview.md` §1) зараз доставляється
+ * `docs/product/model/product-overview.md` §1) зараз доставляється
  * рядком у списку інсайтів (`digestCorrelations.ts` → `WeeklyDigestCard`);
  * ця картка — його власна форма, а не ще один рядок.
  *
@@ -33,6 +33,8 @@ import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
+import { deviceDayKey } from "@sergeant/shared";
 import {
   gradeCrossModuleLink,
   nextDaysThreshold,
@@ -110,6 +112,17 @@ export interface CrossModuleLinkCardProps {
    * картка чесно опускає це число замість вигаданого.
    */
   weeks?: number;
+  /**
+   * Скільки тижневих перевірок поспіль пара пройшла
+   * (`crossModuleLinkHistory.ts`). Без цього числа картка лишається на
+   * першому ступені: другий і третій вимагають повторюваності, а не лише
+   * сили (спека `link-evidence-standard.md`, ADR-0097).
+   *
+   * НЕ те саме, що `weeks`. `weeks` - скільки тижнів звʼязок тримається за
+   * даними викликача; `checks` - скільки разів сам продукт перевірив пару
+   * й побачив її. Друге ми рахуємо, перше нам передають.
+   */
+  checks?: number;
 }
 
 /**
@@ -254,13 +267,9 @@ function EvidenceStrip({ observations }: { observations: number }) {
 }
 
 function formatDayLabel(key: string): string {
-  // Парсимо готовий day-key на візуальну мітку — годинник хоста не
-  // читається, тож `prefer-kyiv-time` тут не застосовний (той самий підхід,
-  // що у `HabitStreakCanvas.formatCellDate`).
-  return new Date(`${key}T12:00:00`).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-  });
+  // Канонічний парсер day-key (`dayKeyLabel.ts`) — таблиця доказової смуги
+  // хоче стабільний абсолютний формат для всіх рядків, тож `relative: false`.
+  return formatDayKeyUk(key, { todayKey: deviceDayKey(), relative: false });
 }
 
 /**
@@ -387,10 +396,11 @@ export function CrossModuleLinkCard({
   observations,
   strength,
   weeks,
+  checks,
   phrase,
   days,
 }: CrossModuleLinkCardProps) {
-  const tier = gradeCrossModuleLink(observations, strength);
+  const tier = gradeCrossModuleLink(observations, strength, checks);
   const [daysOpen, setDaysOpen] = useState(false);
 
   return (

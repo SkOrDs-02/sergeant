@@ -14,6 +14,8 @@ describe("fizrukRoute", () => {
       "exercise",
       "workout",
       "history",
+      "catalog",
+      "templates",
     ]);
   });
 

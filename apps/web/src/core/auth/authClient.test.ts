@@ -152,7 +152,6 @@ describe("re-exported auth actions", () => {
       "listSessions",
       "revokeSession",
       "revokeSessions",
-      "deleteUser",
       "sendVerificationEmail",
       "changeEmail",
     ]) {

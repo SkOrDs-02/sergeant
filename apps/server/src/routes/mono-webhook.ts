@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { requireSession, setModule } from "../http/index.js";
+import {
+  requireFreshSession,
+  requireSession,
+  requireVerifiedEmail,
+  setModule,
+} from "../http/index.js";
 import {
   connectHandler,
   disconnectHandler,
@@ -31,7 +36,10 @@ import { webhookHandler } from "../modules/mono/webhook.js";
  * вибирає секрет з header-а (якщо є) або з path-param-у. Header виграє при
  * колізії, тож edge-rewrite зміг би перехопити транспорт без server-change.
  *
- * Решта endpoints — під `requireSession()`.
+ * Решта endpoints — під `requireSession()`; `connect` / `disconnect` — під
+ * `requireFreshSession()` (сесія перевіряється в БД, в обхід 5-хвилинного
+ * cookie-кешу): підʼєднати чужий банк або відʼєднати свій зі вкраденої
+ * сесії має перестати працювати в момент її відкликання, а не за 5 хв.
  */
 export function createMonoWebhookRouter(): Router {
   const r = Router();
@@ -63,21 +71,27 @@ export function createMonoWebhookRouter(): Router {
   // backfill навмисно НЕ гейтнуті: вони не створюють нових прав, лише
   // дають подивитись/відключити вже підʼєднане; disconnect — anti-lock-in.
   //
-  // AI-LEGACY: expires 2026-11-07 — гейт знято, і це ЄДИНИЙ беточний виняток,
-  // який пережив закриття бети. Причина зняття була не в самій беті, а в
-  // доставці верифікаційних листів: поки RESEND_API_KEY / RESEND_FROM не
-  // працюють (`email/authTransactionalMail.ts`), користувач не може
-  // підтвердити пошту й узагалі не підʼєднає Mono, тобто гейт перетворює
-  // фічу на глухий кут.
+  // Гейт повернуто 2026-09-16. Беточний виняток тримався на тому, що
+  // доставка верифікаційних листів не працювала — тоді гейт не закривав би
+  // діру, а перетворював підключення банку на глухий кут для всіх нових.
+  // Передумова відпала з двох боків: `betterAuthEnv.ts` тепер ВІДМОВЛЯЄТЬСЯ
+  // стартувати прод без `RESEND_API_KEY` (знахідка 17 глобального QA
+  // 2026-08-04), а `RESEND_FROM` і верифікований домен налаштовані —
+  // підтверджено власником. Тобто «поки листи не працюють» більше не
+  // описує реальність.
   //
-  // ЩО ЗРОБИТИ: спершу перевірити на проді, що лист про верифікацію реально
-  // доходить, і аж тоді повернути `requireVerifiedEmail()` між
-  // `requireSession()` і `connectHandler` (плюс import із `../http`).
-  // Порядок обовʼязковий: гейт без робочих листів не закриває діру, а
-  // блокує підключення банку всім новим. Регрес-тест чекає в `apiV1.test.ts`
-  // під тим самим маркером.
-  r.post("/api/mono/connect", requireSession(), connectHandler);
-  r.post("/api/mono/disconnect", requireSession(), disconnectHandler);
+  // Порядок ланцюга важливий: `requireFreshSession()` → `requireVerifiedEmail()`
+  // → handler. Перевірка email стоїть ДО `connectHandler`, щоб відсіяти
+  // запит раніше за його побічні ефекти (fetch client-info у Mono,
+  // шифрування токена) — саме заради цього H6 і зроблено middleware, а не
+  // inline-перевіркою.
+  r.post(
+    "/api/mono/connect",
+    requireFreshSession(),
+    requireVerifiedEmail(),
+    connectHandler,
+  );
+  r.post("/api/mono/disconnect", requireFreshSession(), disconnectHandler);
   r.get("/api/mono/sync-state", requireSession(), syncStateHandler);
   r.get("/api/mono/accounts", requireSession(), accountsHandler);
   r.get("/api/mono/jars", requireSession(), jarsHandler);

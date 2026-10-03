@@ -65,6 +65,11 @@ export type CategoryColorKey =
   | "beauty"
   | "health"
   | "debt"
+  | "telecom"
+  | "home"
+  | "pets"
+  | "gifts"
+  | "p2p_transfer"
   | "other"
   /** Спільний тир усіх надходжень — див. `categoryColors` в `tokens.js`. */
   | "income";
@@ -122,6 +127,23 @@ export declare const moduleAccentRgb: Readonly<
 >;
 
 /**
+ * Стіл і зона — фон сторінки (`desk`) і смуга під шапкою модуля (`zone`),
+ * hex per theme. Mirrors `moduleSurfaces` in `tokens.js`; the CSS side is
+ * `--module-desk-rgb` / `--module-zone-rgb` in `theme.css`.
+ */
+export interface ModuleSurfacePair {
+  readonly desk: string;
+  readonly zone: string;
+}
+
+export declare const moduleSurfaces: Readonly<
+  Record<
+    ModuleAccent | "hub",
+    Readonly<{ light: ModuleSurfacePair; dark: ModuleSurfacePair }>
+  >
+>;
+
+/**
  * «Чорнило» (Ink) — dark-first surface + text scale. Mirrors `inkTheme` in
  * `tokens.js`; the runtime export existed since the Чорнило direction landed,
  * but was missing here, so TypeScript consumers could not reach it.
@@ -145,6 +167,13 @@ export declare const inkTheme: Readonly<{
   }>;
   accent: Readonly<Record<ModuleAccent, string>>;
 }>;
+
+/**
+ * Межа контролу (поле вводу, трек перемикача, непозначений чекбокс) — окрема
+ * роль із порогом 3:1 проти кожної поверхні (WCAG 1.4.11). Mirrors
+ * `controlEdge` in `tokens.js`; CSS-дзеркало — `--c-control` у `theme.css`.
+ */
+export declare const controlEdge: Readonly<{ light: string; dark: string }>;
 
 /** Status / semantic colours, keyed by `StatusColor`. */
 export declare const statusColors: Readonly<Record<StatusColor, string>>;
@@ -171,6 +200,25 @@ export declare const statusStrongHex: Readonly<Record<StatusColor, string>>;
  * pins them against the ink surfaces.
  */
 export declare const statusInkHex: Readonly<Record<StatusColor, string>>;
+
+/** Accent families that carry an ink/strong text pair: brand + 4 modules. */
+export type AccentFamily = "brand" | ModuleAccent;
+
+/**
+ * «Чорнило» companions to the accent `-strong` tier — the DARK-theme ink
+ * that `text-{accent}-strong` resolves to (via `--c-{accent}-ink`). The
+ * four modules sit on `-400`, the same tier as `--c-{module}-accent` and
+ * `--c-chart-{module}` in dark; the neutral hub brand sits on stone-300,
+ * matching `--c-brand-soft-fg`. `contrast.test.js` pins them against the
+ * ink surfaces, and documents the light `-800` tier as failing there.
+ */
+export declare const accentInkHex: Readonly<Record<AccentFamily, string>>;
+
+/**
+ * The LIGHT-theme (fill) companions to `accentInkHex` — the `-800` tier
+ * that `bg-{accent}-strong` fills with under `text-white` in both themes.
+ */
+export declare const accentStrongHex: Readonly<Record<AccentFamily, string>>;
 
 /** Semantic chart colour identifiers (macro scale + structural). */
 export type ChartHexKey = "limit" | "neutral" | "protein" | "fat" | "carbs";

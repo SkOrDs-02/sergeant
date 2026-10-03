@@ -23,7 +23,7 @@
     "build:web": "pnpm --filter @sergeant/web build:capacitor",
     "build:android": "pnpm build:web && pnpm sync android",
     "build:ios": "pnpm build:web && pnpm sync ios",
-    "lint": "eslint .",
+    "lint": "eslint --cache .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run && pnpm test:scripts",
     "test:scripts": "node --test scripts/__tests__/*.test.mjs",

@@ -15,6 +15,10 @@ const LOCAL_DEBOUNCE_MS = 180;
 const OFF_DEBOUNCE_MS = 600;
 const OFF_MIN_LEN = 2;
 
+/** Стиль: помилка закінчується підказкою про дію (style-guide §3). */
+const OFF_SEARCH_FAILED =
+  "Пошук по базі продуктів не відповів. Спробуй ще раз або введи КБЖВ вручну.";
+
 // react-query is a useful fit here: repeated searches for the same query
 // return from cache instantly (important for UX when users backspace and
 // retype), requests for stale queries are auto-cancelled via `signal`, and
@@ -44,6 +48,17 @@ export interface UseFoodSearchResult {
   offHits: FoodSearchProduct[];
   foodBusy: boolean;
   offBusy: boolean;
+  /**
+   * Обидва джерела відпрацювали САМЕ поточний запит: debounce догнав, і
+   * жоден запит не в польоті.
+   *
+   * Порожній `foodHits` сам собою не означає «нічого не знайдено» — рівно
+   * так само він виглядає в перші 600 мс, поки зовнішній debounce ще не
+   * догнав набране. Тому автоматичний вибір результату (позиція з чека
+   * Сільпо) чекає на цей прапорець: без нього він вирішував би «промах»
+   * ще до того, як пошук почався.
+   */
+  searchSettled: boolean;
   foodErr: string;
   setFoodErr: Dispatch<SetStateAction<string>>;
 }
@@ -82,12 +97,28 @@ export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
     if (foodErr) setFoodErr("");
   }
 
+  // AI-DANGER: помилку запиту до бази продуктів НЕ можна ковтати. До
+  // 2026-09-03 `off.error` не читав ніхто: `offHits` просто ставали
+  // порожніми, і людина бачила «нічого не знайдено» — відповідь про порожню
+  // базу замість відповіді про збій. Найтихіший випадок — завеликий запит:
+  // сервер віддавав 400, а екран казав, що такого продукту не існує
+  // (browser-QA 2026-09-02). Локальний пошук сюди не входить: `searchFoods`
+  // ковтає свої помилки всередині й повертає `[]` за контрактом.
+  const searchErr = off.isError ? OFF_SEARCH_FAILED : "";
+
   return {
     foodHits: trimmed && localQuery === trimmed ? (local.data ?? []) : [],
     offHits: trimmed && offQuery === trimmed ? (off.data ?? []) : [],
     foodBusy: local.isFetching && localQuery.length > 0,
     offBusy: off.isFetching && offQuery.length >= OFF_MIN_LEN,
-    foodErr,
+    searchSettled:
+      localQuery === trimmed &&
+      offQuery === trimmed &&
+      !local.isFetching &&
+      !off.isFetching,
+    // Ручна помилка (штрихкод, чек) має пріоритет: вона стосується дії,
+    // яку людина щойно зробила, а збій пошуку триває фоном.
+    foodErr: foodErr || searchErr,
     setFoodErr,
   };
 }

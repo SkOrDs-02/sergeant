@@ -4,7 +4,14 @@
 // цільових ккал. Користувачі скаржилися: «1 кг білка це не 1400 ккал».
 // Тут перевіряємо, що warning зʼявляється з коректними числами і що
 // швидкі дії оновлюють prefs так, як обіцяє UI.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Гейт тижневого плану тягне `usePlan` → react-query; поведінку гейта
+// покриває `core/billing/useFeatureGate.test.tsx`.
+vi.mock("../../../core/billing", () => ({
+  useFeatureGate: () => ({ requireAccess: () => true, paywallOpen: false }),
+  PaywallModal: () => null,
+}));
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 
 import { calcGoalRangeIssues, calcMacroKcalMismatch } from "./DailyPlanCard";

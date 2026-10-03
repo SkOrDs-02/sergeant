@@ -145,7 +145,7 @@ function readLS<T>(key: string, fallback: T): T {
 // ─── Фінік ────────────────────────────────────────────────────────────
 
 describe("find_transaction", () => {
-  it("шукає ручну транзакцію за описом і сумою", () => {
+  it("шукає ручну операцію за описом і сумою", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         {
@@ -219,7 +219,7 @@ describe("batch_categorize", () => {
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({});
   });
 
-  it("з dry_run=false записує категорію для matched транзакцій", () => {
+  it("з dry_run=false записує категорію для matched операцій", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
@@ -253,7 +253,7 @@ describe("batch_categorize", () => {
 });
 
 describe("delete_transaction", () => {
-  it("видаляє ручну транзакцію за id", () => {
+  it("видаляє ручну операцію за id", () => {
     localStorage.setItem(
       "finyk_manual_expenses_v1",
       JSON.stringify([
@@ -270,7 +270,7 @@ describe("delete_transaction", () => {
     expect(arr.map((t) => t.id)).toEqual(["m_keep"]);
   });
 
-  it("відмовляє для монобанк-транзакцій (не m_)", () => {
+  it("відмовляє для монобанк-операцій (не m_)", () => {
     const msg = executeAction({
       name: "delete_transaction",
       input: { tx_id: "mono_xyz" },
@@ -293,7 +293,7 @@ describe("update_budget", () => {
       name: "update_budget",
       input: { scope: "limit", category_id: "food", limit: 5000 },
     });
-    expect(msg).toContain("5000");
+    expect(msg).toMatch(/5\s000/);
     const budgets = readLS<
       Array<{ type: string; categoryId?: string; limit?: number }>
     >("finyk_budgets", []);
@@ -324,7 +324,7 @@ describe("update_budget", () => {
       },
     });
     expect(msg).toContain("Відпустка");
-    expect(msg).toContain("5000/30000");
+    expect(msg).toMatch(/5\s000\/30\s000/);
     const budgets = readLS<
       Array<{
         type: string;
@@ -363,7 +363,7 @@ describe("update_budget", () => {
 });
 
 describe("mark_debt_paid", () => {
-  it("створює repayment-транзакцію і закриває борг при повній сумі", () => {
+  it("створює repayment-операцію і закриває борг при повній сумі", () => {
     localStorage.setItem(
       "finyk_debts",
       JSON.stringify([
@@ -435,7 +435,7 @@ describe("add_asset", () => {
       name: "add_asset",
       input: { name: "Депозит ПриватБанк", amount: 100000 },
     });
-    expect(msg).toContain("100000");
+    expect(msg).toMatch(/100\s000/);
     expect(msg).toContain("UAH");
     const assets = readLS<
       Array<{ name: string; amount: number; currency?: string }>
@@ -474,14 +474,15 @@ describe("add_asset", () => {
 });
 
 describe("import_monobank_range", () => {
-  it("очищує кеш місяців у діапазоні і диспатчить подію", () => {
-    // month0: Jan=0 ... Mar=2, Apr=3, May=4, Jun=5
-    localStorage.setItem("finyk_tx_cache_2024_2", '{"stub":1}'); // березень — поза діапазоном
-    localStorage.setItem("finyk_tx_cache_2024_4", '{"stub":1}'); // травень
-    localStorage.setItem("finyk_tx_cache_2024_5", '{"stub":1}'); // червень
-    let dispatched = false;
-    const handler = () => {
-      dispatched = true;
+  // Тест раніше засівав ключі `finyk_tx_cache_<рік>_<місяць0>` і перевіряв, що
+  // дія їх зніме. Це був єдиний у репо автор такої форми ключа — тобто тест
+  // сам створював те, що потім «чистилось», а в продакшні чистити не було
+  // чого. Разом із мертвим циклом прибрано і той пін; лишається справжня
+  // робота дії — подія, яку слухає Фінік. Знахідка PR-T7.
+  it("диспатчить подію імпорту з валідним діапазоном", () => {
+    const seen: Array<{ from: string; to: string }> = [];
+    const handler = (e: Event) => {
+      seen.push((e as CustomEvent<{ from: string; to: string }>).detail);
     };
     window.addEventListener("hub:finyk-mono-import-range", handler);
     const msg = executeAction({
@@ -490,10 +491,10 @@ describe("import_monobank_range", () => {
     });
     window.removeEventListener("hub:finyk-mono-import-range", handler);
     expect(msg).toContain("2024-05-01");
-    expect(localStorage.getItem("finyk_tx_cache_2024_2")).not.toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_2024_4")).toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_2024_5")).toBeNull();
-    expect(dispatched).toBe(true);
+    expect(msg).toContain("2024-06-15");
+    // Відповідь більше не обіцяє чищення кешу, якого не відбувається.
+    expect(msg).not.toContain("Очищено кеш");
+    expect(seen).toEqual([{ from: "2024-05-01", to: "2024-06-15" }]);
   });
 
   it("відмовляє на некоректний формат дат", () => {
@@ -606,7 +607,7 @@ describe("add_program_day", () => {
 });
 
 describe("log_wellbeing", () => {
-  it("записує самопочуття у fizruk_daily_log_v1", () => {
+  it("записує самопочуття через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_wellbeing",
       input: {
@@ -617,18 +618,15 @@ describe("log_wellbeing", () => {
       },
     });
     expect(msg).toContain("вага 78");
-    expect(msg).toContain("сон 7.5");
-    const arr = readLS<
-      Array<{
-        weightKg: number | null;
-        sleepHours: number | null;
-        energyLevel: number | null;
-      }>
-    >("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(78);
-    expect(arr[0]!.sleepHours).toBe(7.5);
-    expect(arr[0]!.energyLevel).toBe(4);
+    expect(msg).toContain("сон 7,5");
+    // LS-ключ `fizruk_daily_log_v1` tombstoned: журнал їде лише в SQLite
+    // через dual-write, тож перевіряємо `next.dailyLog`, а не localStorage.
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(78);
+    expect(next?.dailyLog[0]!.sleepHours).toBe(7.5);
+    expect(next?.dailyLog[0]!.energyLevel).toBe(4);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє якщо немає жодного поля", () => {
@@ -685,15 +683,18 @@ describe("complete_habit_for_date + archive_habit", () => {
     executeAction({ name: "create_habit", input: { name: "Тестова" } });
     const state0 = loadRoutineState();
     const id = state0.habits[0]!.id;
+    // LOG-2 (аудит 2026-09): tool іде через applyToggleHabitCompletion, тож
+    // день ПОЗА розкладом звички (до startDate = сьогодні, 2024-06-15) —
+    // no-op. Беремо день у розкладі.
     executeAction({
       name: "complete_habit_for_date",
-      input: { habit_id: id, date: "2024-06-10" },
+      input: { habit_id: id, date: "2024-06-15" },
     });
     let state = loadRoutineState();
-    expect(state.completions[id]).toEqual(["2024-06-10"]);
+    expect(state.completions[id]).toEqual(["2024-06-15"]);
     executeAction({
       name: "complete_habit_for_date",
-      input: { habit_id: id, date: "2024-06-10", completed: false },
+      input: { habit_id: id, date: "2024-06-15", completed: false },
     });
     state = loadRoutineState();
     expect(state.completions[id]).toEqual([]);
@@ -993,7 +994,7 @@ describe("set_daily_plan", () => {
       name: "set_daily_plan",
       input: { kcal: 2200, protein_g: 150, water_ml: 2500 },
     });
-    expect(msg).toContain("2200");
+    expect(msg).toMatch(/2\s200/);
     const prefs = mem.prefs as Record<string, number | null | undefined>;
     expect(prefs["dailyTargetKcal"]).toBe(2200);
     expect(prefs["dailyTargetProtein_g"]).toBe(150);
@@ -1010,15 +1011,16 @@ describe("set_daily_plan", () => {
 });
 
 describe("log_weight", () => {
-  it("пише вагу у fizruk_daily_log_v1", () => {
+  it("пише вагу через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_weight",
       input: { weight_kg: 77.3 },
     });
-    expect(msg).toContain("77.3");
-    const arr = readLS<Array<{ weightKg: number }>>("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(77.3);
+    expect(msg).toContain("77,3");
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(77.3);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє на 0/неч.", () => {

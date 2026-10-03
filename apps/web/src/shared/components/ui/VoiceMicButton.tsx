@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { TranscribeModule } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { PendingVoiceChip } from "./voice/PendingVoiceChip";
@@ -42,6 +43,12 @@ export interface VoiceMicButtonProps {
    * у Web Speech-fallback.
    */
   promptHint?: string;
+  /**
+   * Модуль, з якого йде голос (`?module=` у `/api/transcribe`). Передавай
+   * ЗАВЖДИ: для `nutrition`/`fizruk` сервер без згоди на дані про здоровʼя
+   * відповідає 403 до Groq (GDPR Art. 9). Без тегу гейт не спрацює.
+   */
+  module?: TranscribeModule;
   /**
    * Якщо `true` (за замовчуванням), після успішного розпізнавання
    * показуємо preview-чипі з 3-секундним таймером авто-підтвердження
@@ -94,6 +101,7 @@ export function VoiceMicButton({
   label,
   disabled = false,
   promptHint,
+  module,
   confirmBeforeCommit = true,
   caption,
   captionWrapperClassName,
@@ -141,17 +149,41 @@ export function VoiceMicButton({
     [confirmBeforeCommit],
   );
 
-  const groq = useGroqVoiceInput({
-    lang,
-    promptHint,
-    onResult: handleTranscript,
-    onError,
-    onProviderUnavailable: () => setForceFallback(true),
-  });
+  // `webspeech` оголошений ПЕРШИМ навмисно: рішення про фолбек нижче
+  // мусить знати, чи той фолбек узагалі існує на цьому пристрої.
   const webspeech = useVoiceInput({
     lang,
     onResult: handleTranscript,
     onError,
+  });
+  const groq = useGroqVoiceInput({
+    lang,
+    promptHint,
+    module,
+    onResult: handleTranscript,
+    onError,
+    onProviderUnavailable: () => {
+      // AI-DANGER: перемикаємось ЛИШЕ коли є на що. Сліпий
+      // `setForceFallback(true)` прибирав кнопку з екрана посеред сесії:
+      // на iOS standalone-PWA `webspeech.supported === false`, тож
+      // `active` ставав непідтримуваним і рендер падав у `return null`
+      // нижче. Саме через це «підтримка голосу» залежала одночасно від
+      // платформи І від наявності серверного ключа — умова зняття
+      // прапорця №1 у `resolveVoiceProvider.ts`.
+      if (webspeech.supported) {
+        setForceFallback(true);
+        onError?.(
+          "Голосовий сервер тимчасово недоступний, перемикаюсь на браузерне розпізнавання.",
+        );
+        return;
+      }
+      // Фолбеку немає — лишаємось на Groq. Кнопка на місці, наступний
+      // тап спробує ще раз; 503 віддається до звернення до upstream,
+      // тож повтор нічого не коштує.
+      onError?.(
+        "Голосовий сервер недоступний, а цей пристрій не розпізнає мову сам. Спробуй пізніше.",
+      );
+    },
   });
 
   const configured = resolveConfiguredProvider();

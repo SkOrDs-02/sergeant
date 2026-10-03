@@ -41,10 +41,10 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
     <div className="mb-3 space-y-0">
       {liabilitiesEmpty && (
         <div className="space-y-2 mb-3">
-          <p className="text-style-caption text-muted px-1">
-            Кредити, розстрочки, позики, комунальні борги, додавайте з датою
-            повернення, привʼязуйте транзакції-платежі, і картка сама покаже
-            прогрес «Сплачено N з M».
+          <p className="text-style-body text-muted px-1">
+            Кредити, розстрочки, позики, комунальні борги, додавай з датою
+            повернення, привʼязуй операції-платежі, і картка сама покаже прогрес
+            «Сплачено N з M».
           </p>
           <div className="flex flex-wrap gap-1.5 px-1">
             {["Кредит", "Розстрочка", "Позика", "Комуналка"].map((chip) => (
@@ -58,7 +58,9 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           </div>
         </div>
       )}
-      {showDebtForm ? (
+      {/* Вхід у форму — quick-action «+ Пасив» угорі сторінки; власна
+          кнопка секції дублювала його (звіт власника 2026-09-03). */}
+      {showDebtForm && (
         <DebtForm
           newDebt={newDebt}
           setNewDebt={setNewDebt}
@@ -70,6 +72,8 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           debtFormRef={debtFormRef}
           debtNameInputRef={debtNameInputRef}
           editingId={editingDebtId}
+          editingDebt={manualDebts.find((debt) => debt.id === editingDebtId)}
+          transactions={transactions}
           onUpdate={(id, value) => {
             setManualDebts((ds) =>
               ds.map((item) =>
@@ -86,23 +90,6 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             setEditingDebtId(null);
           }}
         />
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setEditingDebtId(null);
-            setNewDebt({
-              name: "",
-              emoji: "",
-              totalAmount: "",
-              dueDate: "",
-            });
-            setShowDebtForm(true);
-          }}
-          className="w-full py-2.5 text-style-label rounded-xl bg-danger/10 text-danger-strong dark:bg-danger/15 dark:text-danger border border-danger/30 hover:bg-danger/15 dark:hover:bg-danger/25 active:scale-[0.99] transition-colors shadow-soft mb-2"
-        >
-          + Додати пасив
-        </button>
       )}
       {monoDebtAccounts.map((a, i) => {
         const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];
@@ -142,6 +129,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
               emoji: d.emoji ?? "",
               totalAmount: String(d.totalAmount ?? d.amount ?? ""),
               dueDate: d.dueDate ?? "",
+              autoLinkKeyword: d.autoLinkKeyword ?? "",
             });
             setShowDebtForm(true);
           }}
@@ -154,7 +142,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             const removed = d;
             setManualDebts((ds) => ds.filter((x) => x.id !== removed.id));
             showUndoToast(toast, {
-              msg: `Видалено борг «${removed.name}»`,
+              msg: `Видалено пасив «${removed.name}»`,
               onUndo: () => setManualDebts((ds) => [...ds, removed]),
             });
           }}

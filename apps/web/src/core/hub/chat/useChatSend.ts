@@ -1,22 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { billingKeys, chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import {
   CONTEXT_TTL_MS,
   cancelIdle,
   consumeHubChatSse,
   friendlyApiError,
   friendlyChatError,
+  CHAT_RESPONSE_TOO_LONG_TEXT,
   getActiveModule,
   isHelpCommand,
   makeAssistantMsg,
+  makeErrorMsg,
   makeUserMsg,
   newMsgId,
   requestIdle,
@@ -28,6 +29,7 @@ import { logger } from "@shared/lib";
 import {
   ANALYTICS_EVENTS,
   getToolModule,
+  getToolOutcomeClass,
   type ChatPreset,
 } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
@@ -39,7 +41,7 @@ import {
 } from "./useDestructiveConfirm";
 import { summarizeDestructiveToolInput } from "./destructiveConfirmSummary";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
-import { buildActionCard } from "../../lib/hubChatActionCards";
+import { buildActionCard, isFailureResult } from "../../lib/hubChatActionCards";
 import { setHubStreaming } from "../streamingStore";
 import type { ChatActionCard } from "../../lib/hubChatActionCards";
 import { useFinykHubPreview } from "../useFinykHubPreview";
@@ -48,19 +50,6 @@ import { usePlan } from "../../billing/usePlan";
 import { requiresConfirmation } from "@sergeant/shared";
 
 type ChatMessage = HubChatSession["messages"][number];
-/**
- * Клієнтський пре-гейт пейволу. Мусить збігатися з
- * `billing/effectiveLimits.ts::aiRequestsPerDay` для free-плану.
- *
- * AI-DANGER: тут стояло 15 після того, як сервер зрізали до 5 (PR #464) —
- * тобто клієнт пускав ще десять запитів, які сервер відбивав квотою.
- * Користувач бачив помилку замість пейволу. Точного паритету все одно
- * немає: сервер рахує ОДИНИЦІ (виклик з інструментом коштує 3), а тут
- * рахуються повідомлення, тож це груба нижня оцінка, і сервер лишається
- * джерелом істини. Змінюєш ліміт — зміни в обох місцях і в копії.
- */
-const FREE_DAILY_AI_CHAT_LIMIT = 5;
-const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
 const CANCELLED_BY_USER_TEXT = "Скасовано, нічого не змінено.";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
 const HUB_CHAT_HELP_TEXT = [
@@ -85,25 +74,6 @@ const MAX_STREAM_CHARS = 256 * 1024;
 
 function isAutoTtsEnabled(): boolean {
   return safeReadLS<boolean>(AUTO_TTS_ENABLED_KEY) === true;
-}
-
-type DailyChatCounter = { day: string; count: number };
-
-function readDailyChatCount(): DailyChatCounter {
-  const today = getKyivDayKey();
-  const parsed = safeReadLS<DailyChatCounter>(DAILY_CHAT_COUNT_KEY);
-  if (parsed?.day === today && typeof parsed.count === "number") {
-    return { day: today, count: Math.max(0, parsed.count) };
-  }
-  return { day: today, count: 0 };
-}
-
-function incrementDailyChatCount(): void {
-  const current = readDailyChatCount();
-  safeWriteLS(DAILY_CHAT_COUNT_KEY, {
-    day: current.day,
-    count: current.count + 1,
-  });
 }
 
 /**
@@ -143,7 +113,6 @@ export interface UseChatSendResult {
   speaking: boolean;
   setSpeaking: React.Dispatch<React.SetStateAction<boolean>>;
   online: boolean;
-  hasData: boolean;
   contextState: { status: string; ts: number };
   activeModule: ActiveModule | null;
   /** Send `text` (or the current `input`). `fromVoice` flag triggers TTS reply. */
@@ -151,6 +120,13 @@ export interface UseChatSendResult {
   /** Abort the in-flight request (cancel button or close while streaming). */
   cancelInFlight: () => void;
   paywallOpen: boolean;
+  /**
+   * Free-tier тижневий ліміт AI-дій (`GET /api/chat/usage::limit`).
+   * `null`, поки запит ще не відповів або план Pro — той самий кеш, з
+   * якого читає `ChatUsageCounter`, тож пейвол-копія не тримає власного
+   * числа.
+   */
+  usageLimit: number | null;
   /** Гейт підтвердження незворотних інструментів (канон §8). */
   confirmDestructive: UseDestructiveConfirmResult;
   closePaywall: () => void;
@@ -186,8 +162,22 @@ export function useChatSend({
   const queryClient = useQueryClient();
   const finykPreview = useFinykHubPreview();
   const { isPro } = usePlan();
-  const hasData = finykPreview.data?.hasMonoData ?? false;
   const online = useOnlineStatus();
+
+  // Джерело істини для пре-гейту пейволу: `GET /api/chat/usage` (тижневе
+  // відро `ai.actions`, те саме, що в знімку доступу для `ChatUsageCounter`).
+  // Раніше тут стояв окремий localStorage-лічильник повідомлень: рахував
+  // не те (повідомлення, а не одиниці квоти) і не там (per-device, сервер —
+  // per-user), тож два ходи з інструментом розходились із серверним
+  // рахунком удвічі. `enabled: !isPro` — Pro не гейтиться взагалі, запит
+  // не потрібен.
+  const { data: usageData } = useQuery({
+    queryKey: chatKeys.usage,
+    queryFn: ({ signal }) => chatApi.usage({ signal }),
+    enabled: !isPro,
+    staleTime: 30_000,
+    retry: false,
+  });
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -314,8 +304,8 @@ export function useChatSend({
         setMessages((m) => [
           ...m,
           makeUserMsg(msg),
-          makeAssistantMsg(
-            "Немає підключення. Асистент працює лише онлайн, спробуй ще раз, коли зʼявиться інтернет.",
+          makeErrorMsg(
+            "Немає підключення. Сержант працює лише онлайн, спробуй ще раз, коли зʼявиться інтернет.",
           ),
         ]);
         setInput("");
@@ -332,12 +322,14 @@ export function useChatSend({
       if (turnPreset) presetTurnsRef.current -= 1;
 
       if (!isPro && !turnPreset) {
-        const usage = readDailyChatCount();
-        if (usage.count >= FREE_DAILY_AI_CHAT_LIMIT) {
+        if (
+          usageData &&
+          usageData.remaining != null &&
+          usageData.remaining <= 0
+        ) {
           setPaywallOpen(true);
           return;
         }
-        incrementDailyChatCount();
       }
 
       const shouldSpeak =
@@ -366,6 +358,9 @@ export function useChatSend({
 
       const history = next
         .filter((m) => m.role === "user" || m.role === "assistant")
+        // Порожня відповідь (обірваний або скасований синтез) у history
+        // валить zod-валідацію сервера, і вся розмова ламається до «Нова».
+        .filter((m) => m.text.trim() !== "")
         .slice(-10)
         .map((m) => ({ role: m.role, content: m.text }));
 
@@ -460,8 +455,11 @@ export function useChatSend({
               onClick: () => void sendRef.current?.(msg),
             });
             const fallback = data.text || "Немає відповіді.";
-            setMessages((m) => [...m, makeAssistantMsg(fallback)]);
-            if (shouldSpeak) maybeSpeak(fallback);
+            // Коментар вище прямо каже: «для користувача це збій», інакше
+            // зламаний інструмент виглядав би звичайною текстовою відповіддю.
+            // Досі це відображалось лише в телеметрії, а бульбашка лишалась
+            // невідрізненною — і озвучувалась.
+            setMessages((m) => [...m, makeErrorMsg(fallback)]);
             return;
           }
           const toolCalls = parsed.value;
@@ -590,7 +588,10 @@ export function useChatSend({
            */
           const uncardedText = toolResults
             .filter((_, idx) => builtCards[idx] == null)
-            .map((r) => `✓ ${r.content}`)
+            // Помилковий результат не маркуємо «✓» — це б рапортувало успіх.
+            .map((r) =>
+              isFailureResult(r.content) ? r.content : `✓ ${r.content}`,
+            )
             .join("\n");
           const prefix = uncardedText ? `${uncardedText}\n\n` : "";
 
@@ -606,6 +607,9 @@ export function useChatSend({
           ]);
 
           let followUpText = "";
+          // Синтез (другий тур) міг упасти — тоді в бульбашці лежить текст
+          // помилки, а не відповідь, і озвучувати його не треба.
+          let synthesisFailed = false;
           try {
             const res2 = await chatApi.stream(
               {
@@ -642,7 +646,7 @@ export function useChatSend({
                   // chunks, then throw — the surrounding catch renders the
                   // friendly "Відповідь занадто довга" tail on this turn.
                   ac.abort();
-                  throw new Error("Відповідь занадто довга");
+                  throw new Error(CHAT_RESPONSE_TOO_LONG_TEXT);
                 }
                 acc += delta;
                 setMessages((m) =>
@@ -688,19 +692,58 @@ export function useChatSend({
               );
             }
           } catch (e2) {
+            synthesisFailed = true;
             setMessages((m) =>
-              m.map((x) =>
-                x.id === assistantId
-                  ? // `prefix` уже закінчується порожнім рядком, коли не
-                    // порожній сам; окремі `\n\n` дали б чотири переноси
-                    // з карткою і два ведучі — без неї.
-                    { ...x, text: `${prefix}${friendlyChatError(e2)}` }
-                  : x,
-              ),
+              m.map((x) => {
+                if (x.id !== assistantId) return x;
+                // AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/
+                // findings.md`) — синтез (другий тур) упав, але картки вже
+                // побудовані з результату ВИКОНАННЯ tool-а на клієнті, до
+                // того, як стало відомо, чи синтез узагалі відбудеться.
+                // `getToolOutcomeClass` (`@sergeant/shared`) вирішує, як
+                // саме картка має про це сказати:
+                //   - `state-mutating` (mark_habit_done, create_transaction,
+                //     …) — дія вже сталась незалежно від синтезу; картка
+                //     лишається «Виконано», лише дописуємо, що пояснення
+                //     не дійшло;
+                //   - `advice` (suggest_meal, query_*, …) — цінність саме
+                //     в синтезованому тексті, якого нема, тож «completed»-
+                //     картка з проміжними даними виглядала б як завершена
+                //     рекомендація, якою вона не є — переводимо у `failed`.
+                // Чіпаємо лише картки, що самі стартували як «completed»:
+                // якщо локальний виконавець уже позначив картку `failed`
+                // (сам tool впав), це не про синтез — не переписуємо.
+                const patchedCards = x.cards?.map((c) => {
+                  if (c.status !== "completed") return c;
+                  if (getToolOutcomeClass(c.toolName) === "state-mutating") {
+                    return {
+                      ...c,
+                      summary: `${c.summary} · Пояснення не дійшло.`,
+                    };
+                  }
+                  return {
+                    ...c,
+                    status: "failed" as const,
+                    summary: "Не вдалося отримати відповідь. Спробуй ще раз.",
+                  };
+                });
+                return {
+                  ...x,
+                  // `prefix` уже закінчується порожнім рядком, коли не
+                  // порожній сам; окремі `\n\n` дали б чотири переноси
+                  // з карткою і два ведучі — без неї.
+                  text: `${prefix}${friendlyChatError(e2)}`,
+                  error: true,
+                  ...(patchedCards ? { cards: patchedCards } : {}),
+                };
+              }),
             );
           }
 
-          if (shouldSpeak) {
+          // Синтез упав — у бульбашці текст помилки, і озвучувати його
+          // немає сенсу (той самий принцип, що й `error`-гілка в
+          // `components/ChatMessage.tsx`, де кнопка TTS зникає).
+          if (shouldSpeak && !synthesisFailed) {
             // Озвучуємо те, що людина бачить. Раніше фолбеком був сирий
             // результат виконавця — тобто TTS диктував UUID запису памʼяті
             // вголос. Тепер: відповідь моделі → рядок без картки → короткі
@@ -744,7 +787,7 @@ export function useChatSend({
         if (isAbort && timedOut) {
           setMessages((m) => [
             ...m,
-            makeAssistantMsg("Час очікування вичерпано. Спробуй ще раз."),
+            makeErrorMsg("Час очікування вичерпано. Спробуй ще раз."),
           ]);
           trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, { kind: "aborted" });
         } else if (isAbort) {
@@ -753,7 +796,7 @@ export function useChatSend({
           // як розрив `message_sent − (response_received + error)`.
           setMessages((m) => [...m, makeAssistantMsg("Запит скасовано.")]);
         } else {
-          setMessages((m) => [...m, makeAssistantMsg(friendlyChatError(e))]);
+          setMessages((m) => [...m, makeErrorMsg(friendlyChatError(e))]);
           const kind = isApiError(e) ? e.kind : "unknown";
           trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, {
             kind,
@@ -767,13 +810,13 @@ export function useChatSend({
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
         setHubStreaming(false);
-        // Лічильник квоти (`GET /api/chat/usage`) читався лише на монтуванні
-        // `ChatUsageCounter`, тож пігулка все життя сесії показувала «0/5» —
-        // навіть поруч із 429-помилкою про вичерпаний ліміт; правда
-        // зʼявлялась тільки після перезавантаження сторінки (browser QA
+        // Лічильник квоти читався лише на монтуванні, тож пігулка все життя
+        // сесії показувала «0/5» навіть поруч із 429 (browser QA
         // 2026-08-23). Інвалідовуємо ПІСЛЯ кожного ходу, включно з невдалим:
-        // сервер списує запит і тоді, коли відповідь була помилкою.
+        // сервер списує запит і тоді, коли відповідь була помилкою. Пігулка
+        // читає знімок `billingKeys.status`, пре-гейт читає `chatKeys.usage`.
         queryClient.invalidateQueries({ queryKey: chatKeys.usage });
+        queryClient.invalidateQueries({ queryKey: billingKeys.status });
       }
     },
     [
@@ -791,6 +834,7 @@ export function useChatSend({
       scheduleContextBuild,
       setMessages,
       toast,
+      usageData,
     ],
   );
 
@@ -836,12 +880,12 @@ export function useChatSend({
     speaking,
     setSpeaking,
     online,
-    hasData,
     contextState,
     activeModule,
     send,
     cancelInFlight,
     paywallOpen,
+    usageLimit: usageData?.limit ?? null,
     closePaywall,
     confirmDestructive,
     sendRef,

@@ -1,18 +1,15 @@
 import type { Request, Response } from "express";
+import { weeklyLimit, ChatUsageResponseSchema } from "@sergeant/shared";
 import pool from "../../db.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
-import { effectiveLimits } from "../billing/effectiveLimits.js";
-import { getTodayChatUsage } from "./aiQuota.js";
-import { ChatUsageResponseSchema } from "@sergeant/shared";
+import { getWeeklyUsage } from "./aiQuota.js";
 
 type AuthedRequest = Request & { user?: { id: string } };
 
 /**
- * GET /api/chat/usage — today's Free-tier AI chat quota (PR-42 chat counter).
- * Router wires `requireSession()` first, so `req.user` is always set here.
- * Pro (or any plan with `aiRequestsPerDay: null`) → `limit`/`remaining: null`;
- * the frontend counter pill hides itself in that case instead of showing
- * "∞/∞".
+ * GET /api/chat/usage: this week's Free-tier AI actions (`ai.actions` in the
+ * access registry). Router wires `requireSession()` first, so `req.user` is
+ * always set here. Premium (incl. trial and grace) → `limit`/`remaining: null`.
  */
 export default async function chatUsageHandler(
   req: Request,
@@ -20,14 +17,14 @@ export default async function chatUsageHandler(
 ): Promise<void> {
   const userId = (req as AuthedRequest).user!.id;
   const plan = (await getUserPlan(pool, userId)).plan;
-  const limit = effectiveLimits(plan).aiRequestsPerDay;
+  const limit = weeklyLimit(plan, "ai.actions");
   if (limit == null) {
     res.json(
       ChatUsageResponseSchema.parse({ plan, limit: null, remaining: null }),
     );
     return;
   }
-  const used = await getTodayChatUsage(userId);
+  const used = (await getWeeklyUsage(userId)).ai;
   res.json(
     ChatUsageResponseSchema.parse({
       plan,

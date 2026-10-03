@@ -108,7 +108,7 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
 
   return (
     <div className="space-y-3">
-      <p className="text-style-caption text-muted">
+      <p className="text-style-body text-muted">
         Візьми КБЖВ з етикетки: вони майже завжди наведені на 100 г. Скільки
         саме ти зʼїв, вкажи нижче: макроси перерахуються під цю вагу.
       </p>
@@ -167,13 +167,14 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
           {err}
         </div>
       )}
-      <p className="text-style-caption text-subtle">
+      <p className="text-style-body text-subtle">
         Продукт збережеться на цьому пристрої та буде доступний у пошуку.
       </p>
       <Button
         type="button"
-        variant="primary"
-        module="nutrition"
+        variant="solid"
+        tone="nutrition"
+
         className="w-full min-h-[44px]"
         disabled={busy}
         onClick={() => void handleSubmit()}

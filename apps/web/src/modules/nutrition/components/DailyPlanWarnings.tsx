@@ -3,8 +3,12 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
+import { Banner } from "@shared/components/ui/Banner";
 import { Icon } from "@shared/components/ui/Icon";
-import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  ATWATER_KCAL_PER_G,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { cn } from "@shared/lib/ui/cn";
 import {
   calcGoalRangeIssues,
@@ -96,7 +100,7 @@ export function MacroKcalWarning({
           }
           className={cn(
             "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
-            "border-line/60 bg-bg/40 text-subtle hover:text-text hover:bg-panelHi",
+            "border-line bg-panel text-subtle hover:text-text hover:bg-panelHi",
             "disabled:opacity-50 transition-colors",
           )}
         >
@@ -140,19 +144,25 @@ export function MissingMacrosHint({
   // 30 % білок · 25 % жир · 45 % вуглеводи від цільових ккал → грами.
   // Білок і жир округлюємо вниз, а вуглеводи добираємо залишком,
   // щоб сума макро ніколи не перевищувала цільові ккал.
-  const suggestedProtein = Math.floor((kcal * 0.3) / 4);
-  const suggestedFat = Math.floor((kcal * 0.25) / 9);
-  const remainingKcal = kcal - suggestedProtein * 4 - suggestedFat * 9;
-  const suggestedCarbs = Math.max(0, Math.floor(remainingKcal / 4));
+  const suggestedProtein = Math.floor(
+    (kcal * 0.3) / ATWATER_KCAL_PER_G.protein,
+  );
+  const suggestedFat = Math.floor((kcal * 0.25) / ATWATER_KCAL_PER_G.fat);
+  const remainingKcal =
+    kcal -
+    suggestedProtein * ATWATER_KCAL_PER_G.protein -
+    suggestedFat * ATWATER_KCAL_PER_G.fat;
+  const suggestedCarbs = Math.max(
+    0,
+    Math.floor(remainingKcal / ATWATER_KCAL_PER_G.carbs),
+  );
 
   return (
-    <div
+    <Banner
+      variant="warning"
       role="status"
       aria-live="polite"
-      className={cn(
-        "mt-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5",
-        "text-style-caption space-y-2",
-      )}
+      className="mt-3 text-style-caption space-y-2"
       data-testid="missing-macros-hint"
     >
       <div className="flex items-start gap-2">
@@ -190,7 +200,7 @@ export function MissingMacrosHint({
           {suggestedCarbs}
         </button>
       </div>
-    </div>
+    </Banner>
   );
 }
 
@@ -198,13 +208,11 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
   const issues = calcGoalRangeIssues(prefs);
   if (issues.length === 0) return null;
   return (
-    <div
+    <Banner
+      variant="warning"
       role="status"
       aria-live="polite"
-      className={cn(
-        "mt-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5",
-        "text-style-caption space-y-1",
-      )}
+      className="mt-3 text-style-caption space-y-1"
       data-testid="goal-range-warning"
     >
       <div className="flex items-start gap-2">
@@ -220,6 +228,6 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
           ))}
         </ul>
       </div>
-    </div>
+    </Banner>
   );
 }

@@ -49,7 +49,7 @@ export interface WebBeforeSendEvent {
  * `event.user` до `{ id }`. Усі ці канали (особливо XHR breadcrumbs з
  * `Authorization` header-ом і ручні `Sentry.setExtra('payload', body)`)
  * однаково існують у браузерному SDK, тож контракт PII-handling-у
- * (`docs/security/pii-handling.md`) тримався тільки на сервері.
+ * (`docs/governance/security/pii-handling.md`) тримався тільки на сервері.
  *
  * Сигнатура — `WebBeforeSendEvent` (локальний structural type), щоб
  * не тягнути `@sentry/react` runtime у головний бандл і одночасно
@@ -180,7 +180,7 @@ type WebRouteRule = { readonly match: string; readonly rate: number };
  * SPA route prefixes — longest-prefix-first. Each entry matches the
  * `name` (transaction path) of a `navigation` or `pageload` span.
  * Keep in sync with `apps/web/src/core/app/router.tsx` paths and
- * `docs/observability/sentry-sampling.md`.
+ * `docs/operations/observability/sentry-sampling.md`.
  */
 export const WEB_SENTRY_ROUTE_RULES: readonly WebRouteRule[] = [
   { match: "/onboarding", rate: 1.0 },

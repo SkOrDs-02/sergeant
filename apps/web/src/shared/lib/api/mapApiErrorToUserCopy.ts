@@ -38,7 +38,7 @@ export interface ApiErrorLike {
   statusText?: string | undefined;
 }
 
-const DEFAULT_FALLBACK = "Не вдалося виконати запит";
+const DEFAULT_FALLBACK = "Не вдалося виконати запит.";
 
 /**
  * Канонічна мапа `code` → UA-копія. Лишаємо мінімально необхідний набір
@@ -56,9 +56,9 @@ const DEFAULT_FALLBACK = "Не вдалося виконати запит";
  */
 const CODE_TO_UA_COPY: Readonly<Record<string, string>> = {
   // ── Better Auth BASE_ERROR_CODES (UPPER_SNAKE_CASE) ──────────────────
-  INVALID_PASSWORD: "Невірний поточний пароль.",
-  INVALID_EMAIL: "Невірний формат email.",
-  INVALID_EMAIL_OR_PASSWORD: "Невірний email або пароль.",
+  INVALID_PASSWORD: "Неправильний поточний пароль.",
+  INVALID_EMAIL: "Неправильний формат email.",
+  INVALID_EMAIL_OR_PASSWORD: "Неправильний email або пароль.",
   PASSWORD_TOO_SHORT: "Пароль занадто короткий. Мінімум 10 символів.",
   PASSWORD_TOO_LONG: "Пароль занадто довгий. Максимум 128 символів.",
   USER_NOT_FOUND: "Користувача не знайдено.",

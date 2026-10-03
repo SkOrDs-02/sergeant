@@ -3,7 +3,7 @@ import { ImportReminderBanner } from "./ImportReminderBanner";
 
 /**
  * `ImportReminderBanner` — плашка «залий документи» (спека
- * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ * `docs/work/specs/finyk-import-reminders.md`).
  *
  * Stories покривають обидва типи документа, які журналить
  * `import_batches` (`IMPORT_SOURCES` = виписка + скрін банкінгу), і

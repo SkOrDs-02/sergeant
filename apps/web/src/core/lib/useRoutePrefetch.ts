@@ -57,7 +57,10 @@ const pageImports: Partial<Record<PageKey, () => Promise<unknown>>> = {
   pricing: () => import("../PricingPage"),
   assistant: () => import("../AssistantCataloguePage"),
   resetPassword: () => import("../auth/ResetPasswordPage"),
-  design: () => import("../DesignShowcase"),
+  // Стайлгайд рендериться лише в dev-збірці (`StandaloneRoutes.tsx`), тож
+  // префетчити його в проді нема для чого. Безумовний `import()` тут зводив
+  // нанівець той гейт і тягнув чанк на 192 кБ у прод-бандл.
+  ...(import.meta.env.DEV ? { design: () => import("../DesignShowcase") } : {}),
 };
 
 // Track prefetched chunks to avoid redundant loads

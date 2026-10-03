@@ -6,7 +6,7 @@
  * header-search affordance routes here via `router.push("/hub-search")`.
  *
  * See `apps/mobile/src/core/hub/search/HubSearch.tsx` for the shell and
- * `docs/mobile/react-native-migration.md` (Phase 2 / Hub-core) for the
+ * `docs/engineering/mobile/react-native-migration.md` (Phase 2 / Hub-core) for the
  * porting roadmap.
  */
 

@@ -8,7 +8,16 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { SetStateAction } from "react";
 
+import type { Pantry } from "@sergeant/nutrition-domain";
+
 import { ItemEditSheet, type ItemEditState } from "./ItemEditSheet";
+
+/** Три відомі місця — перемикач місця показується лише коли їх >1. */
+const PLACES: Pantry[] = [
+  { id: "fridge", name: "Холодильник", items: [], text: "" },
+  { id: "freezer", name: "Морозилка", items: [], text: "" },
+  { id: "home", name: "Комора", items: [], text: "" },
+];
 
 function state(overrides: Partial<ItemEditState> = {}): ItemEditState {
   return {
@@ -18,6 +27,7 @@ function state(overrides: Partial<ItemEditState> = {}): ItemEditState {
     qty: "2",
     unit: "л",
     err: "",
+    pantryId: "fridge",
     ...overrides,
   };
 }
@@ -30,6 +40,7 @@ describe("ItemEditSheet", () => {
         setItemEdit={vi.fn()}
         onClose={vi.fn()}
         onSave={vi.fn()}
+        places={PLACES}
       />,
     );
     expect((screen.getByLabelText("Кількість") as HTMLInputElement).value).toBe(
@@ -48,10 +59,18 @@ describe("ItemEditSheet", () => {
         setItemEdit={vi.fn()}
         onClose={vi.fn()}
         onSave={onSave}
+        places={PLACES}
       />,
     );
     fireEvent.click(screen.getByText("Зберегти"));
-    expect(onSave).toHaveBeenCalledWith(0, "Молоко", 3.5, expect.any(String));
+    // Пʼятий аргумент — місце позиції: воно їде разом зі «Зберегти».
+    expect(onSave).toHaveBeenCalledWith(
+      0,
+      "Молоко",
+      3.5,
+      expect.any(String),
+      "fridge",
+    );
   });
 
   it("flags an invalid quantity", () => {
@@ -63,6 +82,7 @@ describe("ItemEditSheet", () => {
         setItemEdit={setItemEdit}
         onClose={vi.fn()}
         onSave={onSave}
+        places={PLACES}
       />,
     );
     fireEvent.click(screen.getByText("Зберегти"));
@@ -78,10 +98,11 @@ describe("ItemEditSheet", () => {
         setItemEdit={vi.fn()}
         onClose={vi.fn()}
         onSave={onSave}
+        places={PLACES}
       />,
     );
     fireEvent.click(screen.getByText("Зберегти"));
-    expect(onSave).toHaveBeenCalledWith(0, "Молоко", null, null);
+    expect(onSave).toHaveBeenCalledWith(0, "Молоко", null, null, "fridge");
   });
 
   it("invokes onClose from cancel", () => {
@@ -92,6 +113,7 @@ describe("ItemEditSheet", () => {
         setItemEdit={vi.fn()}
         onClose={onClose}
         onSave={vi.fn()}
+        places={PLACES}
       />,
     );
     fireEvent.click(screen.getByText("Скасувати"));
@@ -105,6 +127,7 @@ describe("ItemEditSheet", () => {
         setItemEdit={vi.fn()}
         onClose={vi.fn()}
         onSave={vi.fn()}
+        places={PLACES}
       />,
     );
     expect(screen.getByText("Некоректна кількість.")).toBeInTheDocument();
@@ -121,6 +144,7 @@ describe("ItemEditSheet", () => {
         setItemEdit={setItemEdit}
         onClose={vi.fn()}
         onSave={vi.fn()}
+        places={PLACES}
       />,
     );
 

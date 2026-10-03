@@ -18,14 +18,28 @@
  * мають співпадати. Додавання нового source-у — двофазне:
  *  1. PR що бампить ALLOWED_SOURCES + relax-ить CHECK-constraint.
  *  2. PR що додає ingestion-hook для нового source-у.
+ *
+ * Звужено ініціативою 0024: PR-1 (2026-09-03) прибрав `chat`, `finyk`,
+ * `fizruk`, `nutrition`, `routine`, `journal` із TS-рівня — жоден із них
+ * ніколи не мав продюсера в дереві (замір: `docs/work/specs/initiatives/
+ * 0024-ai-memory-source-coverage.md` § Перезамір 2026-09-03). PR-3
+ * (міграція 144, 2026-09-19) звузив і CHECK-constraint у БД до тих самих
+ * чотирьох значень — двофазне звуження завершене, `RETIRED_MEMORY_SOURCES`
+ * нижче порожній. Зворотний шлях (якщо колись знадобиться `chat` як
+ * окреме джерело) — той самий двофазний процес у зворотному напрямку:
+ * спершу розширити ALLOWED_MEMORY_SOURCES + CHECK, потім додати продюсер.
+ *
+ * `cofounder` і `product` лишаються в списку, хоч їхні продюсери
+ * (`backfill.ts`, `eventSync.ts`) видалені PR #928 (2026-08-29) — вони не
+ * входять у цю чистку, бо в БД можуть лишатись legacy-рядки, які мають
+ * читатись/видалятись через UI (список у `RESERVED_SOURCES` нижче,
+ * `sources.test.ts` це охороняє). **Відкрите питання до власника** (замір
+ * на проді 2026-09-19, § «Замір на проді» ініціативи 0024): `cofounder`
+ * має нуль рядків, `product` — 26, тож підстава тримати `cofounder`
+ * саме через legacy-рядки відпала; чи звужувати склад далі до
+ * `digest`+`profile`, вирішує власник — агент цей список сам не звужує.
  */
 export const ALLOWED_MEMORY_SOURCES = [
-  "chat",
-  "finyk",
-  "fizruk",
-  "nutrition",
-  "routine",
-  "journal",
   "digest",
   // LEGACY-source: писався OpenClaw-архівом (`tg_topic_archive` backfill,
   // ADR-0031). OpenClaw retired (ADR-0075), backfill-механіку знято
@@ -38,16 +52,68 @@ export const ALLOWED_MEMORY_SOURCES = [
   // Значення лишається для наявних рядків; двофазне зняття — як вище.
   "product",
   // Migration 118 — L-8, аудит Профілю/Налаштувань (2026-08-08,
-  // docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md). Явно
+  // docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md). Явно
   // заявлені факти про самого користувача (client-side «банк памʼяті»
   // `hub_user_profile_v1` / `USER_PROFILE`, дзеркальований серверним
   // `user_profile` з міграції 115) — НЕ поведінкові events (`product`) і
-  // НЕ витяг із чату (`chat`). ФАЗА 1 (ця міграція): лише CHECK-constraint
-  // + union-тип. Ingestion-hook, що реально пише source='profile' рядки,
-  // приземляється окремим PR-ом (Фаза 2) — до того source дозволений, але
-  // порожній.
+  // НЕ витяг із чату (`chat`). Обидві фази приземлились: CHECK-constraint і
+  // union-тип (міграція 118), а `mirrorProfileMemoryEntries`
+  // (`profileMirror.ts`, викликається з `routes/me.ts` після успішного
+  // `PUT /api/me/profile`) реально пише й прибирає ці рядки — джерело
+  // наповнене, не порожнє.
   "profile",
 ] as const;
+
+/**
+ * Джерела, зняті з `ALLOWED_MEMORY_SOURCES` ініціативою 0024. Порожній з
+ * PR-3 (міграція 144, 2026-09-19): фаза 1 (PR-1, 2026-09-03) прибрала
+ * `chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal` з
+ * TS-рівня, лишивши їх у CHECK-констрейнті `ai_memories_source_check`
+ * для legacy-рядків; фаза 2 (PR-3) звузила CHECK до тих самих чотирьох
+ * значень — на проді для цих шести не було жодного рядка (замір
+ * 2026-09-19, § «Замір на проді» ініціативи 0024), тож DELETE не мав
+ * ефекту.
+ *
+ * Список лишається як точка розширення: додавання нового мертвого
+ * source-у до звуження CHECK повторює ту саму двофазну процедуру — сюди
+ * ж піде наступний кандидат на зняття, якщо колись зʼявиться.
+ *
+ * Споживачі: parity-тест SQL CHECK ↔ TS
+ * (`migrations/__tests__/ai-memories-source-check-parity.test.ts`), який
+ * при порожньому списку зводиться до ALLOWED ↔ SQL. RAG-евал (`lib/
+ * ragEval/corpus.ts`, `golden.ts`) більше НЕ читає цю константу — його
+ * domain-словник розчеплений від `ai_memories.source` (`CORPUS_DOMAINS`
+ * у `corpus.ts`), бо перепризначення source-ів у фікстурі зробило б
+ * кешовані ембеддинги непридатними без платного перегенерування.
+ */
+export const RETIRED_MEMORY_SOURCES = [] as const;
+
+/**
+ * Усі значення `source`, які може мати рядок `ai_memories` у поточній
+ * схемі: те, що приймається (`ALLOWED_MEMORY_SOURCES`) плюс те, що ще
+ * лежить legacy-рядками (`RETIRED_MEMORY_SOURCES`). Має збігатись зі
+ * списком у CHECK-констрейнті — parity-тест це охороняє.
+ */
+export const STORED_MEMORY_SOURCES = [
+  ...ALLOWED_MEMORY_SOURCES,
+  ...RETIRED_MEMORY_SOURCES,
+] as const;
+
+/**
+ * Джерела без активного продюсера в дереві, залишені в
+ * `ALLOWED_MEMORY_SOURCES` навмисно (не за недоглядом). `sources.test.ts`
+ * вимагає, щоб кожне значення `ALLOWED_MEMORY_SOURCES` мало або продюсера
+ * (`enqueueMemoryIngest({ source: "..." })` десь у дереві), або запис тут
+ * із посиланням на рішення.
+ *
+ * `cofounder` і `product` — тимчасово порожні продюсери (PR #928 видалив
+ * `backfill.ts` / `eventSync.ts`, 2026-08-29), лишені для legacy-рядків;
+ * ADR/рішення — `docs/work/specs/initiatives/0024-ai-memory-source-coverage.md`.
+ */
+export const RESERVED_SOURCES: readonly MemorySource[] = [
+  "cofounder",
+  "product",
+];
 
 export type MemorySource = (typeof ALLOWED_MEMORY_SOURCES)[number];
 

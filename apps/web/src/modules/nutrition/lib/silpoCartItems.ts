@@ -3,7 +3,7 @@
  * Status: Active
  *
  * «У кошик Сільпо» зі списку покупок (Silpo integration трек G, спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * `docs/work/specs/silpo-mcp-integration.md` §
  * «Cart (MCP write path)»). Джерело позицій — невідмічені (`checked: false`)
  * рядки поточного `ShoppingList`: відмічене вже куплено, тож у кошик його
  * пропонувати нема сенсу.

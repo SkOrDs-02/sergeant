@@ -53,30 +53,47 @@ describe("stripeProvider adapter", () => {
     }
   });
 
-  it("cancelSubscription is a no-op when the user has no Stripe row", async () => {
+  it("cancelSubscription returns none when the user has no Stripe row", async () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
     const pool = { query } as unknown as Pool;
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await expect(
       stripeProvider.cancelSubscription(pool, "user_1"),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe("none");
     // Ніякого виклику Stripe API без наявної підписки.
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
 
-  it("cancelSubscription is a no-op when STRIPE_SECRET_KEY is unset even with a subscription row", async () => {
+  it("cancelSubscription returns none when STRIPE_SECRET_KEY is unset even with a subscription row", async () => {
     mockEnv["STRIPE_SECRET_KEY"] = undefined;
-    const query = vi
-      .fn()
-      .mockResolvedValue({ rows: [{ provider_subscription_id: "sub_1" }] });
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        { provider_subscription_id: "sub_1", cancel_at_period_end: false },
+      ],
+    });
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await expect(
       stripeProvider.cancelSubscription({ query } as unknown as Pool, "user_1"),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe("none");
     expect(fetchSpy).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancelSubscription is idempotent: an already cancel_at_period_end subscription is not sent to Stripe again", async () => {
+    mockEnv["STRIPE_SECRET_KEY"] = "sk_test_abc";
+    const query = vi.fn().mockResolvedValue({
+      rows: [{ provider_subscription_id: "sub_1", cancel_at_period_end: true }],
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      stripeProvider.cancelSubscription({ query } as unknown as Pool, "user_1"),
+    ).resolves.toBe("already_canceling");
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(query).toHaveBeenCalledTimes(1);
   });
 
@@ -92,10 +109,9 @@ describe("stripeProvider adapter", () => {
         new Response(JSON.stringify({ id: "sub_1" }), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetchMock);
-    await stripeProvider.cancelSubscription(
-      { query } as unknown as Pool,
-      "user_1",
-    );
+    await expect(
+      stripeProvider.cancelSubscription({ query } as unknown as Pool, "user_1"),
+    ).resolves.toBe("canceled");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];

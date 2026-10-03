@@ -8,6 +8,8 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
+import { deviceDayKey } from "@sergeant/shared";
 import { ReturnScale } from "./ReturnScale";
 import { fmtLoose } from "../../lib/numberFmt";
 
@@ -105,7 +107,7 @@ export function PrBoard({
             className={cn(
               "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border",
               prFilter === "all"
-                ? "bg-fizruk-strong text-white border-fizruk-strong"
+                ? "bg-fizruk-strong text-white border-fizruk-strong dark:bg-fizruk dark:text-bg dark:border-fizruk"
                 : "bg-panel border-line text-subtle hover:text-text",
             )}
           >
@@ -120,7 +122,7 @@ export function PrBoard({
               className={cn(
                 "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border whitespace-nowrap",
                 prFilter === g
-                  ? "bg-fizruk-strong text-white border-fizruk-strong"
+                  ? "bg-fizruk-strong text-white border-fizruk-strong dark:bg-fizruk dark:text-bg dark:border-fizruk"
                   : "bg-panel border-line text-subtle hover:text-text",
               )}
             >
@@ -161,7 +163,7 @@ export function PrBoard({
                   <div className="flex items-center gap-2 min-w-0">
                     {podiumRank && (
                       <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning">
-                        <Icon name="award" size={14} aria-hidden />
+                        <Icon name="award" size="sm" aria-hidden />
                         {podiumRank}
                       </span>
                     )}
@@ -188,9 +190,9 @@ export function PrBoard({
                   {p.at && (
                     <span className="text-style-caption text-muted">
                       ·{" "}
-                      {new Date(p.at).toLocaleDateString("uk-UA", {
-                        month: "short",
-                        day: "numeric",
+                      {formatDayKeyUk(deviceDayKey(new Date(p.at)), {
+                        todayKey: deviceDayKey(),
+                        relative: false,
                       })}
                     </span>
                   )}

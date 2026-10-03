@@ -7,12 +7,15 @@ import {
   locateHeaderRow,
   STATEMENT_MAX_FILE_BYTES,
 } from "./statementFile.js";
-import { makeXlsx, makeZip } from "./__fixtures__/makeXlsx.js";
+import {
+  makeXlsx,
+  makeZip,
+} from "@sergeant/tabular-import/__fixtures__/makeXlsx";
 import {
   HtmlFormatError,
   htmlTableToGrid,
   looksLikeHtmlTable,
-} from "./htmlTableGrid.js";
+} from "@sergeant/tabular-import";
 import { ValidationError } from "../../../obs/errors.js";
 
 /** 2026-08-16 у serial-нумерації Excel (епоха 1899-12-30). */

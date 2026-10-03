@@ -7,11 +7,8 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
-import { openHubModule } from "@shared/lib/modules/hubNav";
-import {
-  MODULE_LABELS,
-  type HubModuleId,
-} from "@shared/lib/modules/moduleLabels";
+import { ModuleRail } from "./ModuleRail";
+import type { HubModuleId } from "@shared/lib/modules/moduleLabels";
 import { messages } from "@shared/i18n/uk";
 
 /**
@@ -37,6 +34,13 @@ import { messages } from "@shared/i18n/uk";
 export interface ModuleHeaderProps {
   title?: ReactNode | undefined;
   subtitle?: ReactNode | undefined;
+  /**
+   * Коротша версія `subtitle` для вузьких екранів (< `sm`). На 390 px
+   * підпис Фізрука «Рух · сила · відновлення» не вміщався поруч із двома
+   * кнопками дій і різався до «…віднов…» (VIS-1, аудит 2026-09) — замість
+   * крапок показуємо осмислений короткий рядок.
+   */
+  subtitleShort?: string | undefined;
   eyebrow?: ReactNode | undefined;
   left?: ReactNode | undefined;
   right?: ReactNode | undefined;
@@ -57,7 +61,6 @@ export interface ModuleHeaderProps {
 const MODULE_HEADER_TOKENS: Record<
   ModuleAccent,
   {
-    gradient: string;
     border: string;
     subtitle: string;
     /** Title accent — applied as a left accent dot for module identity. */
@@ -67,28 +70,24 @@ const MODULE_HEADER_TOKENS: Record<
   }
 > = {
   finyk: {
-    gradient: "from-finyk/5",
     border: "border-finyk/15",
     subtitle: "text-finyk-strong dark:text-finyk-300/70",
     accentDot: "bg-finyk",
     accentStrip: "bg-finyk/45",
   },
   fizruk: {
-    gradient: "from-fizruk/5",
     border: "border-fizruk/15",
     subtitle: "text-fizruk-strong dark:text-fizruk-300/70",
     accentDot: "bg-fizruk",
     accentStrip: "bg-fizruk/45",
   },
   routine: {
-    gradient: "from-routine/5",
     border: "border-routine/15",
     subtitle: "text-routine-strong dark:text-routine-300/70",
     accentDot: "bg-routine",
     accentStrip: "bg-routine/45",
   },
   nutrition: {
-    gradient: "from-nutrition/5",
     border: "border-nutrition/15",
     subtitle: "text-nutrition-strong dark:text-nutrition/70",
     accentDot: "bg-nutrition",
@@ -99,6 +98,7 @@ const MODULE_HEADER_TOKENS: Record<
 export function ModuleHeader({
   title,
   subtitle,
+  subtitleShort,
   eyebrow,
   left,
   right,
@@ -114,8 +114,11 @@ export function ModuleHeader({
     <div
       className={cn(
         "shrink-0 backdrop-blur-md z-40 relative safe-area-pt",
+        // Зона: шапка і таби модуля стоять на тоні модуля на крок глибшому
+        // за стіл (`--module-zone-rgb`), не на градієнті до панелі. Текст
+        // тут завжди чорнило або `-strong`, тож глибший тон не зачіпає AA.
         mt
-          ? cn("bg-linear-to-b to-panel/95", mt.gradient, mt.border, "border-b")
+          ? cn("bg-zone", mt.border, "border-b")
           : "bg-panel/95 border-b border-line",
         className,
       )}
@@ -134,7 +137,12 @@ export function ModuleHeader({
           {titleSlot ?? (
             <>
               {eyebrow ? (
-                <span className="text-style-overline text-brand-700 dark:text-brand block leading-none mb-0.5">
+                // AI-NOTE: 2026-09-02 було `text-brand-700 dark:text-brand`
+                // — пара-нуль: обидва класи віддають stone-700, тобто в
+                // темній темі надрядок був 1.75:1. `text-brand-strong`
+                // резолвиться через `--c-brand-ink` і перемикається сам
+                // (розбір — `accentInkHex` у @sergeant/design-tokens).
+                <span className="text-style-overline text-brand-strong block leading-none mb-0.5">
                   {eyebrow}
                 </span>
               ) : null}
@@ -175,7 +183,14 @@ export function ModuleHeader({
                     mt ? mt.subtitle : "text-subtle",
                   )}
                 >
-                  {subtitle}
+                  {subtitleShort ? (
+                    <>
+                      <span className="sm:hidden">{subtitleShort}</span>
+                      <span className="hidden sm:inline">{subtitle}</span>
+                    </>
+                  ) : (
+                    subtitle
+                  )}
                 </span>
               ) : null}
             </>
@@ -224,7 +239,7 @@ export function ModuleHeaderIconButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
+        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
         className,
       )}
       aria-label={ariaLabel}
@@ -255,7 +270,7 @@ export interface ModuleHeaderAssistantButtonProps {
  * `HubChatOverlay.tsx` for the rationale.
  */
 export function ModuleHeaderAssistantButton({
-  ariaLabel = "Відкрити AI-асистента",
+  ariaLabel = "Відкрити Сержанта",
   title,
   className,
 }: ModuleHeaderAssistantButtonProps = {}) {
@@ -267,8 +282,8 @@ export function ModuleHeaderAssistantButton({
         emitHubBus("openChat", { message: null, autoSend: false });
       }}
       className={cn(
-        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         className,
       )}
       aria-label={ariaLabel}
@@ -285,8 +300,15 @@ export function ModuleHeaderAssistantButton({
         strokeLinejoin="round"
         aria-hidden
       >
-        <path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 16l-1.8-4.8L6 9.4l4.2-1.8z" />
-        <path d="M19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7z" />
+        {/* Шеврони Сержанта — той самий гліф, що `Icon name="sergeant"`
+            (Icon.paths.status.tsx), вписаний руками з тієї ж причини, що й
+            іконки перемикача нижче: не тягнути реєстр Icon у шапку. Іскра
+            тут пережила прохід F2 анти-слоп аудиту 2026-09-01 саме тому,
+            що не проходила через реєстр і не ловилась грепом за назвою. */}
+        <circle cx="12" cy="3.5" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M5 11l7-4 7 4" />
+        <path d="M5 16l7-4 7 4" />
+        <path d="M5 21l7-4 7 4" />
       </svg>
     </button>
   );
@@ -324,7 +346,7 @@ export function ModuleHeaderBackButton({
         // (back + hub) meet the 44px touch-target floor explicitly, even
         // though other module-header icon buttons in this file stayed at
         // 40px (pre-existing, out of scope here).
-        "shrink-0 h-11 min-h-[44px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
+        "shrink-0 h-11 min-h-[44px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
         className,
       )}
       aria-label={ariaLabel}
@@ -392,138 +414,12 @@ export function ModuleHeaderHubButton({
   );
 }
 
-// Persistent module switcher — 4 chips, always visible inside a module
-// header. Tap on a non-active chip dispatches `hub:open-module` so the
-// host shell pops the active module and opens the chosen one without
-// the user routing back to the hub manually. Active chip uses the
-// `-strong` companion behind `text-white` per AGENTS.md rule #9.
-//
-// `shared/components/layout` is exempt from rule #12 (module-accent
-// containment), so referencing all 4 module accents in the same file
-// is intentional.
-
-const MODULE_SWITCHER_ORDER: HubModuleId[] = [
-  "finyk",
-  "fizruk",
-  "routine",
-  "nutrition",
-];
-
-// Compact chip labels for the equal-width switcher tabs. Only modules whose
-// full `MODULE_LABELS` name overflows the ~51px tab on a phone need an entry;
-// the rest fall back to the full label. Full names stay in each tab's
-// `aria-label`, so screen readers are unaffected.
-const MODULE_SWITCHER_SHORT_LABELS: Partial<Record<HubModuleId, string>> = {
-  nutrition: "Їжа",
-};
-
-// SVG glyphs are inlined to avoid pulling the full Icon registry into
-// every module header — chip icons are tiny and don't change.
-const MODULE_SWITCHER_ICONS: Record<HubModuleId, ReactNode> = {
-  finyk: (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-      <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-      <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-    </svg>
-  ),
-  fizruk: (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M14.4 14.4 9.6 9.6" />
-      <path d="M18.657 21.485a2 2 0 1 1-2.829-2.828l-1.767 1.768a2 2 0 1 1-2.829-2.829l6.364-6.364a2 2 0 1 1 2.829 2.829l-1.768 1.767a2 2 0 1 1 2.828 2.829z" />
-      <path d="m21.5 21.5-1.4-1.4" />
-      <path d="M3.9 3.9 2.5 2.5" />
-      <path d="M6.404 12.768a2 2 0 1 1-2.829-2.829l1.768-1.767a2 2 0 1 1-2.828-2.829l2.828-2.828a2 2 0 1 1 2.829 2.828l1.767-1.768a2 2 0 1 1 2.829 2.829z" />
-    </svg>
-  ),
-  routine: (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  ),
-  nutrition: (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M3 2v7a3 3 0 0 0 3 3v9" />
-      <path d="M9 2v20" />
-      <path d="M9 9H3" />
-      <path d="M14 2c-1.7 0-3 1.3-3 3v7h3V2Z" />
-      <path d="M14 12v10" />
-      <path d="M21 22V11l-3-3v14" />
-    </svg>
-  ),
-};
-
-const MODULE_SWITCHER_TOKENS: Record<
-  HubModuleId,
-  { active: string; inactive: string; ring: string }
-> = {
-  finyk: {
-    active: "bg-finyk-strong text-white",
-    inactive:
-      "bg-surface-soft-glass border-surface-line text-finyk-strong dark:text-finyk hover:bg-finyk-soft hover:border-finyk-soft-border",
-    ring: "focus-visible:ring-finyk",
-  },
-  fizruk: {
-    active: "bg-fizruk-strong text-white",
-    inactive:
-      "bg-surface-soft-glass border-surface-line text-fizruk-strong dark:text-fizruk-300 hover:bg-fizruk-soft hover:border-fizruk-soft-border",
-    ring: "focus-visible:ring-fizruk",
-  },
-  routine: {
-    active: "bg-routine-strong text-white",
-    inactive:
-      "bg-surface-soft-glass border-surface-line text-routine-strong dark:text-routine hover:bg-routine-soft hover:border-routine-soft-border",
-    ring: "focus-visible:ring-routine",
-  },
-  nutrition: {
-    active: "bg-nutrition-strong text-white",
-    inactive:
-      "bg-surface-soft-glass border-surface-line text-nutrition-strong dark:text-nutrition hover:bg-nutrition-soft hover:border-nutrition-soft-border",
-    ring: "focus-visible:ring-nutrition",
-  },
-};
-
+/**
+ * Перемикач модулів у шапці — тепер лише тонка обгортка над спільним
+ * `ModuleRail` (спека `hub-action-axis.md`: один компонент і на хабі, і в
+ * модулях). Джерело `module_switcher` лишається, щоб базова лінія
+ * `module_opened` не втратила неперервності.
+ */
 export interface ModuleSwitcherProps {
   active: HubModuleId;
   className?: string;
@@ -531,47 +427,11 @@ export interface ModuleSwitcherProps {
 
 export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
   return (
-    <div
-      role="tablist"
-      aria-label={messages.nav.moduleSwitcher}
-      className={cn("flex items-stretch gap-1 px-3 sm:px-4 pb-2", className)}
-    >
-      {MODULE_SWITCHER_ORDER.map((id) => {
-        const isActive = id === active;
-        const tokens = MODULE_SWITCHER_TOKENS[id];
-        const label = MODULE_LABELS[id];
-        // Four equal `flex-1` tabs leave ~51px for the label on a 393px
-        // phone — long names ("Харчування") truncated to "Харчув…". Show a
-        // compact label in the chip; the full name stays in `aria-label`.
-        const chipLabel = MODULE_SWITCHER_SHORT_LABELS[id] ?? label;
-        return (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            aria-label={`Перейти до модуля ${label}`}
-            tabIndex={isActive ? 0 : -1}
-            onClick={() => {
-              if (isActive) return;
-              hapticTap();
-              openHubModule(id);
-            }}
-            className={cn(
-              "flex-1 inline-flex items-center justify-center gap-1.5 h-8 pointer-coarse:h-9 px-2 rounded-xl text-style-caption font-semibold border border-transparent transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-              isActive ? tokens.active : tokens.inactive,
-              tokens.ring,
-            )}
-          >
-            <span aria-hidden className="shrink-0">
-              {MODULE_SWITCHER_ICONS[id]}
-            </span>
-            <span className="truncate">{chipLabel}</span>
-          </button>
-        );
-      })}
-    </div>
+    <ModuleRail
+      active={active}
+      source="module_switcher"
+      className={cn("px-3 sm:px-4 pb-2", className)}
+    />
   );
 }
 

@@ -42,7 +42,7 @@
  *    `withReplicaClient()` (отримує `PoolClient` з replica або
  *    primary, fall-through аналогічно).
  *
- * Runbook: `docs/runbooks/postgres-read-replica.md`.
+ * Runbook: `docs/start/instructions/postgres-read-replica.md`.
  */
 
 import pg from "pg";

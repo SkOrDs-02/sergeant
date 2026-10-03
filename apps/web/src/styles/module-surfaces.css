@@ -187,6 +187,10 @@
          active:scale-[0.98];
 }
 
+.dark .fizruk-cta-accent {
+  @apply bg-fizruk text-bg hover:bg-fizruk/90;
+}
+
 .fizruk-cta-accent:hover {
   box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.15);
 }
@@ -220,10 +224,16 @@
    no per-call-site work. Error state keeps the danger treatment
    (`aria-invalid` opt-out). Specificity (0,2,1) beats the Tailwind
    focus-visible classes (0,2,0). */
+/* AI-CONTEXT (2026-10-01, аудит контрасту, A1): кільце було
+   `--module-accent-rgb / 0.25`, а межа — `/ 0.6`: lime-500 при 25% давав 1.08-1.18:1
+   на білому (3:1 не доходив жоден модуль). Тепер обоє — суцільний
+   `--c-focus-solid` (у піддереві модуля це його `-ink` тир, див. `theme.css`).
+   Правило лишається тут, бо його специфічність (0,3,1) перебиває загальне
+   `:focus-visible` з кінця `theme.css`; колір береться з токена, не з акценту. */
 [data-module-accent]
   :is(input, textarea, select):focus-visible:not([aria-invalid="true"]) {
-  border-color: rgb(var(--module-accent-rgb) / 0.6);
-  --tw-ring-color: rgb(var(--module-accent-rgb) / 0.25);
+  border-color: rgb(var(--c-focus-solid));
+  --tw-ring-color: rgb(var(--c-focus-solid));
 }
 [data-module-accent] :is(input, textarea) {
   caret-color: rgb(var(--module-accent-rgb));

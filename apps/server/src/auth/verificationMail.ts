@@ -117,7 +117,7 @@ export function getWebAppOrigin(): string {
   const fromAllowed = firstHttpOrigin(env.ALLOWED_ORIGINS);
   if (fromAllowed) return fromAllowed;
   if (env.BETTER_AUTH_URL) return stripTrailingSlash(env.BETTER_AUTH_URL);
-  return process.env["NODE_ENV"] === "production" ? "" : DEV_WEB_ORIGIN;
+  return env.NODE_ENV === "production" ? "" : DEV_WEB_ORIGIN;
 }
 
 /**

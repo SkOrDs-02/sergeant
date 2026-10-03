@@ -19,12 +19,24 @@ vi.mock("../hooks/useRecovery", () => ({
   })),
 }));
 
+// jsdom doesn't implement `scrollIntoView` — `focusMuscleId` mount effect
+// (BodyAtlas.tsx, fizruk-hero-recovery-bars.md рішення 4) calls it.
+Element.prototype.scrollIntoView = vi.fn();
+
 describe("Atlas page", () => {
   it("renders the hero heading and the BodyAtlas card", () => {
     render(<Atlas />);
     expect(screen.getByText("Атлас мʼязів")).toBeInTheDocument();
     expect(screen.getByText("Стан відновлення")).toBeInTheDocument();
     expect(screen.getByLabelText("Атлас мʼязів")).toBeInTheDocument();
+  });
+
+  it("forwards focusMuscleId to BodyAtlas (fizruk-hero-recovery-bars.md рішення 4)", () => {
+    render(<Atlas focusMuscleId="chest" />);
+    expect(screen.getByRole("button", { name: "Груди" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("does not reserve the 88px bottom-tabbar clearance — Atlas renders without a bottom nav", () => {

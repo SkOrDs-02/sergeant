@@ -19,6 +19,7 @@ import {
 } from "@sergeant/finyk-domain/constants";
 import type { MonthlyPlan } from "@sergeant/finyk-domain/domain";
 import type { WeeklyDigestPayload } from "@sergeant/api-client";
+import { averageKcalGoalForDays } from "@sergeant/nutrition-domain";
 
 import { getCachedFinykSqliteState } from "@/modules/finyk/lib/sqliteReader";
 import { getCachedFinykMonoMirrorState } from "@/modules/finyk/lib/monoMirrorReader";
@@ -239,8 +240,7 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
   if (nutritionCache.refreshedAt === null) return null;
 
   const log = nutritionCache.log;
-  const prefs = nutritionCache.prefs;
-  const targetKcal = prefs?.dailyTargetKcal ?? 2000;
+  const weekDays: string[] = [];
 
   const monday = new Date(`${weekKey}T00:00:00`);
   let totalKcal = 0;
@@ -253,6 +253,7 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     const dk = localDateKey(d);
+    weekDays.push(dk);
     const meals = log[dk]?.meals ?? [];
     if (meals.length > 0) {
       daysLogged++;
@@ -272,7 +273,8 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
     avgProtein: Math.round(totalProtein / daysLogged),
     avgFat: Math.round(totalFat / daysLogged),
     avgCarbs: Math.round(totalCarbs / daysLogged),
-    targetKcal,
+    targetKcal:
+      averageKcalGoalForDays(nutritionCache.goalPeriods, weekDays) ?? 0,
     daysLogged,
   };
 }

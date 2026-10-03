@@ -199,26 +199,22 @@ describe("FinykSection branch gaps", () => {
     ).toBeInTheDocument();
   });
 
-  // ── Paywall dismiss ───────────────────────────────────────────────────────
+  // ── Пейволу тут більше немає ──────────────────────────────────────────────
 
-  it("dismisses the paywall via «Не зараз» without connecting", async () => {
+  // Раніше цей блок перевіряв закриття пейволу через «Не зараз». Пейволл
+  // знято 2026-09-02: банк-sync безкоштовний (product-overview.md, рядок 7),
+  // тож лишається перевірка, що жодного платного бар'єра не з'являється —
+  // інакше регресія повернулась би тихо.
+  it("shows no paywall for a Free user connecting Monobank", async () => {
     apiState.isPro = false;
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(
-      await screen.findByText("Авто-Mono sync доступний у Pro"),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Не зараз"));
-    await waitFor(() =>
-      expect(
-        screen.queryByText("Авто-Mono sync доступний у Pro"),
-      ).not.toBeInTheDocument(),
-    );
-    expect(mockedConnect).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedConnect).toHaveBeenCalled());
+    expect(screen.queryByText(/Pro/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Не зараз")).not.toBeInTheDocument();
   });
 
   // ── Webhook connect: trim + connecting UI ─────────────────────────────────
@@ -270,7 +266,7 @@ describe("FinykSection branch gaps", () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
     expect(await screen.findByText("Завершено")).toBeInTheDocument();
-    expect(screen.getByText(/120 транзакцій/)).toBeInTheDocument();
+    expect(screen.getByText(/120 операцій/)).toBeInTheDocument();
   });
 
   it("renders BackfillProgressPill with error detail when backfill failed", async () => {
@@ -278,7 +274,9 @@ describe("FinykSection branch gaps", () => {
     backfillState.lastError = "rate limit";
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
-    expect(await screen.findByText("Помилка backfill")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Не вдалося довантажити виписку"),
+    ).toBeInTheDocument();
     expect(screen.getByText("rate limit")).toBeInTheDocument();
   });
 
@@ -287,7 +285,7 @@ describe("FinykSection branch gaps", () => {
   it("applies green border styling when webhook status is active", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
-    const label = await screen.findByText("Webhook активний");
+    const label = await screen.findByText("Синхронізація активна");
     const card = label.closest("[class*='border-']");
     expect(card?.className).toContain("border-success/30");
   });
@@ -301,7 +299,9 @@ describe("FinykSection branch gaps", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Вийти з Monobank?")).toBeInTheDocument();
     expect(
-      within(dialog).getByText(/Webhook-зʼєднання буде відʼєднано/),
+      within(dialog).getByText(
+        /Автоматичне отримання операцій з Monobank вимкнеться/,
+      ),
     ).toBeInTheDocument();
   });
 

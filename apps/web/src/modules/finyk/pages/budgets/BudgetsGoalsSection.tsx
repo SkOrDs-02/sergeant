@@ -24,6 +24,8 @@ export interface BudgetsGoalsSectionProps {
   goalBudgets: GoalBudget[];
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
+  /** «Приховати суми» (PR-F3) — прокидається в кожну `GoalBudgetCard`. */
+  showBalance?: boolean;
   editIdx: number | null;
   setEditIdx: Dispatch<SetStateAction<number | null>>;
   now: Date;
@@ -54,6 +56,7 @@ export function BudgetsGoalsSection({
   goalBudgets,
   budgets,
   setBudgets,
+  showBalance = true,
   editIdx,
   setEditIdx,
   now,
@@ -85,7 +88,7 @@ export function BudgetsGoalsSection({
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="text-muted" aria-hidden>
-            <Icon name="target" size={16} />
+            <Icon name="target" size="md" />
           </span>
           <SectionHeading
             as="span"
@@ -103,7 +106,7 @@ export function BudgetsGoalsSection({
         </span>
         <Icon
           name="chevron-down"
-          size={14}
+          size="sm"
           className={cn(
             "transition-transform text-muted shrink-0",
             goalsOpen ? "rotate-180" : "",
@@ -176,6 +179,7 @@ export function BudgetsGoalsSection({
             <GoalBudgetCard
               key={b.id || i}
               budget={cardBudget}
+              showBalance={showBalance}
               saved={progress.saved}
               pct={progress.pct}
               daysLeft={progress.daysLeft}

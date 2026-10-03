@@ -17,7 +17,7 @@ describe("buildActionCard", () => {
     expect(card?.toolName).toBe("create_transaction");
     expect(card?.status).toBe("completed");
     expect(card?.module).toBe("finyk");
-    expect(card?.title).toContain("Транзакцію");
+    expect(card?.title).toContain("Операцію");
     expect(card?.summary).toContain("120");
     expect(card?.summary).toContain("кава");
   });
@@ -122,7 +122,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "find_transaction",
       input: { query: "АТБ", amount: 450 },
-      result: "Знайдено 1 транзакц.",
+      result: "Знайдено 1 операц.",
     });
     expect(card?.module).toBe("finyk");
     expect(card?.title).toContain("знайдено");
@@ -135,7 +135,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "batch_categorize",
       input: { pattern: "Сільпо", category_id: "food" },
-      result: "Категорію 2 транзакц. змінено на food",
+      result: "Категорію 2 операц. змінено на food",
     });
     expect(card?.module).toBe("finyk");
     expect(card?.title).toContain("Категорії");
@@ -376,7 +376,7 @@ describe("query / analytics tools (talk-to-your-data PR4)", () => {
   });
 
   it("query-картка не truncate-иться навіть для довгого результату", () => {
-    const long = "Знайдено 50 транзакц. ".repeat(20).trim();
+    const long = "Знайдено 50 операц. ".repeat(20).trim();
     const card = buildActionCard({
       name: "query_transactions",
       input: {},
@@ -409,8 +409,39 @@ describe("isRiskyTool", () => {
   });
 
   it("звичайні tools — не risky", () => {
-    expect(isRiskyTool("create_transaction")).toBe(false);
+    expect(isRiskyTool("log_water")).toBe(false);
     expect(isRiskyTool("log_meal")).toBe(false);
     expect(isRiskyTool("morning_briefing")).toBe(false);
+  });
+});
+
+describe("покриття карток (PR-A5)", () => {
+  it.each(["add_program_day", "get_daily_series", "import_monobank_range"])(
+    "будує картку для %s",
+    (name) => {
+      const card = buildActionCard({ name, input: {}, result: "ok" });
+      expect(card).not.toBeNull();
+      expect(card?.title).not.toBe(name);
+    },
+  );
+
+  it("гейт: кожен tool зі схеми має картку або є в явному allowlist", async () => {
+    const { ALL_HUBCHAT_TOOL_NAMES } = await import("@sergeant/shared");
+    // Свідомо без картки (порожньо: нові винятки — лише з обґрунтуванням).
+    const NO_CARD_ALLOWLIST = new Set<string>();
+    const missing = ALL_HUBCHAT_TOOL_NAMES.filter(
+      (name) =>
+        !NO_CARD_ALLOWLIST.has(name) &&
+        buildActionCard({ name, input: {}, result: "ok" }) === null,
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it("isFailureResult розпізнає помилкові результати", async () => {
+    const { isFailureResult } = await import("./hubChatActionCards");
+    expect(isFailureResult("Помилка виконання")).toBe(true);
+    expect(isFailureResult("Не вдалося зберегти")).toBe(true);
+    expect(isFailureResult("Невідома дія: x")).toBe(true);
+    expect(isFailureResult("Нотатку збережено")).toBe(false);
   });
 });

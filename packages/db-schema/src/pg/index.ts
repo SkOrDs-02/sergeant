@@ -13,7 +13,6 @@ export {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
   routineHabitSkips,
@@ -23,6 +22,7 @@ export {
   fizrukWorkoutItems,
   fizrukWorkoutSets,
   fizrukCustomExercises,
+  fizrukCustomActivities,
   fizrukMeasurements,
   fizrukDailyLog,
   fizrukMonthlyPlan,
@@ -31,7 +31,6 @@ export {
   fizrukWellbeing,
   fizrukWorkoutTemplates,
   fizrukInjuries,
-  fizrukPushups,
 } from "./fizruk.js";
 export {
   nutritionMeals,

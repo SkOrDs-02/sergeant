@@ -4,6 +4,7 @@ import type { Pool } from "pg";
 
 import { env } from "../../env/env.js";
 import { safeStringEqual } from "../../http/safeCompare.js";
+import { logger, serializeError } from "../logger.js";
 
 /**
  * Prometheus-реєстр з default-метриками (event loop lag, RSS, heap, GC)
@@ -80,9 +81,8 @@ export const dbPoolAcquireDurationSeconds = new client.Histogram({
 //      pod (labels are constant for the process lifetime).
 //
 // Sources are read at module load (process.env is frozen for our purposes
-// after dotenv-flow). `RAILWAY_GIT_COMMIT_SHA` is injected by Railway on
-// every build (legacy); on Coolify/ghcr the SHA is baked into the image as
-// `GIT_SHA` by `Dockerfile.api`. `SENTRY_RELEASE` is the canonical release tag
+// after dotenv-flow). On Coolify/ghcr the SHA is baked into the image as
+// `GIT_SHA` by `Dockerfile.api` (build-arg from `deploy-api.yml`). `SENTRY_RELEASE` is the canonical release tag
 // if both Sentry-cli and a per-deploy SHA are present (Sentry-cli precedence). Empty
 // strings collapse to `"unknown"` so PromQL queries never see an empty
 // label value (which Prometheus treats as label absence — breaks joins).
@@ -97,17 +97,12 @@ appBuildInfo
   .labels({
     version: env.npm_package_version || "unknown",
     commit: (
-      env.RAILWAY_GIT_COMMIT_SHA ||
       env.GIT_SHA ||
       env.GIT_COMMIT ||
       env.VERCEL_GIT_COMMIT_SHA ||
       "unknown"
     ).slice(0, 12),
-    release:
-      env.SENTRY_RELEASE ||
-      env.RAILWAY_GIT_COMMIT_SHA ||
-      env.GIT_SHA ||
-      "unknown",
+    release: env.SENTRY_RELEASE || env.GIT_SHA || "unknown",
     env: env.NODE_ENV || "development",
     node_version: process.version,
   })
@@ -171,6 +166,12 @@ export function startPoolSampler(
  * `crypto.timingSafeEqual`) замість наївного `!==`, щоб не лікати
  * позицію першої розбіжності через CPU branch-timing — мережевий
  * атакуючий міг би статистично відновити токен побайтово.
+ *
+ * На фейлі рендера тіло відповіді — голе `metrics_error`, без тексту
+ * помилки. Гейт по токену тут коректний, тож ризик вужчий, ніж на
+ * анонімних health-роутах, але правило те саме: повідомлення від
+ * `prom-client` цитує внутрішні імена й може тягнути причину з драйвера
+ * БД. Діагностика живе в лозі, де її читає ops.
  */
 export function metricsHandler(req: Request, res: Response): void {
   const expected = env.METRICS_TOKEN;
@@ -189,10 +190,7 @@ export function metricsHandler(req: Request, res: Response): void {
       res.send(body);
     })
     .catch((err: unknown) => {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? String((err as { message?: unknown }).message)
-          : String(err);
-      res.status(500).type("text/plain").send(`metrics_error: ${msg}`);
+      logger.error({ msg: "metrics_render_failed", err: serializeError(err) });
+      res.status(500).type("text/plain").send("metrics_error");
     });
 }

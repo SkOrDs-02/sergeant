@@ -1,24 +1,56 @@
 import { describe, it, expect } from "vitest";
+import { HEALTH_CONSENT_REQUIRED_MESSAGE } from "@sergeant/shared";
 import { friendlyApiError } from "./friendlyApiError";
 
 describe("friendlyApiError (shared)", () => {
-  it("повертає фіксований текст для 429", () => {
+  it("403 з текстом про згоду на дані про здоровʼя віддає його як є, а не «недоступна для акаунта»", () => {
+    expect(friendlyApiError(403, HEALTH_CONSENT_REQUIRED_MESSAGE)).toBe(
+      HEALTH_CONSENT_REQUIRED_MESSAGE,
+    );
+    expect(friendlyApiError(403, "Forbidden")).toBe(
+      "Ця дія недоступна для поточного акаунта.",
+    );
+  });
+
+  it("для 429 віддає серверне повідомлення (AI-3: конкретний час очікування)", () => {
+    // Сервер (`rateLimitExpress`) тепер сам називає, скільки чекати —
+    // «Забагато запитів. Спробуй через 12 секунд.» — а не голе «пізніше».
+    expect(
+      friendlyApiError(429, "Забагато запитів. Спробуй через 12 секунд."),
+    ).toBe("Забагато запитів. Спробуй через 12 секунд.");
+  });
+
+  it("429 без повідомлення — фолбек на фіксований текст", () => {
     expect(friendlyApiError(429)).toBe(
       "Забагато запитів. Спробуй через хвилину.",
     );
-    expect(friendlyApiError(429, "rate limit")).toBe(
+    expect(friendlyApiError(429, "")).toBe(
       "Забагато запитів. Спробуй через хвилину.",
     );
   });
 
-  it("повертає фіксований текст для 401/403", () => {
-    expect(friendlyApiError(401)).toBe("Доступ заборонено.");
-    expect(friendlyApiError(403, "Forbidden")).toBe("Доступ заборонено.");
+  // 401 і 403 розведені навмисно (поставка 2026-09-06): «не увійшов» і «не
+  // той акаунт/план» — різні стани, і людині від них потрібні різні дії.
+  // Спільне «Доступ заборонено.» не казало ні що сталось, ні що робити.
+  it("повертає різні фіксовані тексти для 401 і 403", () => {
+    expect(friendlyApiError(401)).toBe("Увійди в акаунт, щоб продовжити.");
+    expect(friendlyApiError(403, "Forbidden")).toBe(
+      "Ця дія недоступна для поточного акаунта.",
+    );
   });
 
   it("віддає серверне повідомлення, якщо воно є", () => {
     expect(friendlyApiError(500, "boom")).toBe("boom");
     expect(friendlyApiError(502, "upstream down")).toBe("upstream down");
+  });
+
+  it("шлюзові збої лишаються у формі `Помилка N` — і це навмисно", () => {
+    // Спокуса дати тут текст із дією велика, але `formatApiError` розпізнає
+    // саме цю форму як «маперу нема чого сказати» і підставляє
+    // caller-специфічний fallback, конкретніший за будь-який загальний
+    // текст про шлюз. Доменний текст живе в обгортці HubChat.
+    expect(friendlyApiError(504)).toBe("Помилка 504");
+    expect(friendlyApiError(502)).toBe("Помилка 502");
   });
 
   it("фолбек `Помилка {status}`, коли повідомлення порожнє", () => {

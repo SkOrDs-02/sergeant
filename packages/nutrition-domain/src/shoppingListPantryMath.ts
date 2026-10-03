@@ -1,6 +1,6 @@
 /**
  * «Рівень 1» списку покупок (детермінований, без AI) — спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md`, рішення founder-а
+ * `docs/work/specs/silpo-mcp-integration.md`, рішення founder-а
  * 2026-08-18 «роби рівень 1 потім»: трек G (кошик Сільпо) закрито, це
  * наступний крок поверх ВЖЕ згенерованого AI списку.
  *
@@ -33,6 +33,7 @@ import { isPantryItemLowStock } from "./pantryLowStock.js";
 // продукту комори. Дублювати їх заборонено: розʼїхавшись, вони дадуть
 // різні числа на тих самих даних.
 import {
+  displayDecimalsFor,
   fromBaseNatural,
   fromBaseToUnit,
   toBase,
@@ -92,13 +93,9 @@ function roundTo(value: number, decimals: number): number {
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
 
-/**
- * Розумна точність показу: цілі для `г`/`мл`/`шт`, до сотих для `кг`/`л`
- * (кухонна вага рідко точніша за 10 г, а `1.20 кг` читається гірше за `1.2 кг`).
- */
+/** Точність показу — `displayDecimalsFor` (units.ts), спільна з формою комори. */
 function formatQty(value: number, unit: string): string {
-  const decimals = unit === "кг" || unit === "л" ? 2 : 0;
-  return `${roundTo(value, decimals)} ${unit}`;
+  return `${roundTo(value, displayDecimalsFor(unit))} ${unit}`;
 }
 
 const QUANTITY_RE = /^(\d+(?:[.,]\d+)?)\s*([a-zA-Zа-яА-ЯіїєґІЇЄҐ]+)$/;
@@ -300,8 +297,10 @@ function collectCanonicalKeys(calculated: CalculatedShoppingList): Set<string> {
  * Найспорідненіша категорія списку для нової low-stock позиції: інша
  * позиція списку/«Вже вдома» з тим самим food-category-словником
  * (`categorizeFood`) підказує, куди природно лягла б ця назва — незалежно
- * від того, як AI назвав категорію (лейбли AI і `foodCategories.ts`
- * історично розходяться в пунктуації/формулюванні).
+ * від того, як AI назвав категорію (до 2026-10-01 лейбли AI і
+ * `foodCategories.ts` розходились у переліку й формулюванні; тепер
+ * таксономія одна, але звірка за id категорії лишається надійнішою за
+ * порівняння назв).
  */
 function findRelatedCategoryName(
   calculated: CalculatedShoppingList,

@@ -44,6 +44,7 @@ function coldCache(): SqliteFinykCache {
     showBalance: null,
     excludedStatTxIds: null,
     dismissedRecurring: null,
+    merchantRules: null,
     refreshedAt: null,
   };
 }
@@ -67,6 +68,7 @@ function warmCache(
     monoDebtLinkedTxIds: { "tx-1": ["d1"] },
     networthHistory: [{ date: "2026-07-01", value: 100 } as never],
     customCategories: [{ id: "c1" } as never],
+    manualExpenses: [{ id: "me-1", amount: 42 } as never],
     dismissedRecurring: ["rec-1"],
     ...overrides,
   };
@@ -171,6 +173,7 @@ describe("readFinykBackupFromStorage", () => {
     expect(snapshot.monoDebtLinkedTxIds).toEqual({});
     expect(snapshot.networthHistory).toEqual([]);
     expect(snapshot.customCategories).toEqual([]);
+    expect(snapshot.manualExpenses).toEqual([]);
     // monthlyPlan and dismissedRecurring have their own null-guarded
     // defaults distinct from the generic readJSON([]) fallback.
     expect(snapshot.monthlyPlan).toEqual({
@@ -179,6 +182,37 @@ describe("readFinykBackupFromStorage", () => {
       savings: "",
     });
     expect(snapshot.dismissedRecurring).toEqual([]);
+  });
+
+  // Файл власника від 2026-09-21: 2 417 Б при дев'яти ручних операціях на
+  // 39 308,60 ₴ у базі. В експорті були `hiddenTxIds`, `txCategories`,
+  // `txSplits` — надбудови НАД операціями — і жодної самої операції, бо
+  // ключа просто не було в наборі бекапу.
+  it("кладе в експорт самі ручні операції, а не лише надбудови над ними", () => {
+    fakeCache.value = warmCache({
+      manualExpenses: [
+        { id: "me-1", amount: 39308.6 } as never,
+        { id: "me-2", amount: 120 } as never,
+      ],
+    });
+
+    const snapshot = readFinykBackupFromStorage();
+
+    expect(snapshot.manualExpenses).toEqual([
+      { id: "me-1", amount: 39308.6 },
+      { id: "me-2", amount: 120 },
+    ]);
+  });
+
+  it("проносить ручні операції через нормалізацію без втрат", () => {
+    const rows = [{ id: "me-1", amount: 39308.6 }];
+
+    expect(
+      normalizeFinykBackup({
+        version: FINYK_BACKUP_VERSION,
+        manualExpenses: rows,
+      }),
+    ).toEqual({ manualExpenses: rows });
   });
 
   it("reads persisted LS values instead of defaults when cold and LS has data", () => {
@@ -227,6 +261,9 @@ describe("readFinykBackupFromStorage", () => {
       { date: "2026-07-01", value: 100 },
     ]);
     expect(snapshot.customCategories).toEqual([{ id: "c1" }]);
+    // Ручні витрати — єдина доменна таблиця, якої в конверті не було:
+    // експорт вивозив усе, крім самих операцій.
+    expect(snapshot.manualExpenses).toEqual([{ id: "me-1", amount: 42 }]);
     expect(snapshot.dismissedRecurring).toEqual(["rec-1"]);
   });
 

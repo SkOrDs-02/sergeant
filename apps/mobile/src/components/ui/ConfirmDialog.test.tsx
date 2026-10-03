@@ -69,7 +69,7 @@ describe("ConfirmDialog", () => {
 
   it("danger=false uses the non-destructive primary confirm variant", () => {
     const { getByTestId } = render(
-      <ConfirmDialog open danger={false} confirmLabel="Зберегти" />,
+      <ConfirmDialog open confirmLabel="Зберегти" />,
     );
     // Target the confirm button via its explicit `confirm-dialog-confirm`
     // testID instead of relying on `Pressable` ordering — JSX renders

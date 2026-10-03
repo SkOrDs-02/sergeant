@@ -28,7 +28,9 @@ describe("createDebt", () => {
       input: { name: "Аренда", amount: 5000 },
     });
     expect(out).toMatchObject({ result: expect.stringContaining("Аренда") });
-    expect(out).toMatchObject({ result: expect.stringContaining("5000") });
+    expect(out).toMatchObject({
+      result: expect.stringContaining("5 000"),
+    });
   });
 
   it("persists the new debt via finykChatWrite", () => {
@@ -105,6 +107,28 @@ describe("createDebt", () => {
     const afterUndo = mockWrite.mock.calls[0]![1] as unknown[];
     expect(afterUndo).toHaveLength(0);
   });
+
+  // W2 audit: the model is untrusted input exactly like a manual form —
+  // `Number(amount)` alone let NaN/negative/oversized values through and
+  // reported success. Every case asserts BOTH halves: a rejection string
+  // comes back AND nothing is persisted.
+  describe("rejects an invalid amount without persisting", () => {
+    it.each([
+      ["NaN", Number.NaN],
+      ["negative", -500],
+      ["zero", 0],
+      ["a non-numeric string", "тисяча"],
+      ["above the domain ceiling", 5_000_000_000],
+    ])("%s amount", (_label, amount) => {
+      const out = createDebt({
+        name: "create_debt",
+        input: { name: "Аренда", amount },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toMatch(/додатний amount|завелика/);
+      expect(mockWrite).not.toHaveBeenCalled();
+    });
+  });
 });
 
 // ─── createReceivable ─────────────────────────────────────────────────────────
@@ -116,7 +140,9 @@ describe("createReceivable", () => {
       input: { name: "Іванченко", amount: 2500 },
     });
     expect(out).toMatchObject({ result: expect.stringContaining("Іванченко") });
-    expect(out).toMatchObject({ result: expect.stringContaining("2500") });
+    expect(out).toMatchObject({
+      result: expect.stringContaining("2 500"),
+    });
   });
 
   it("persists via finykChatWrite on finyk_recv key", () => {
@@ -142,6 +168,24 @@ describe("createReceivable", () => {
     result.undo();
     const afterUndo = mockWrite.mock.calls[0]![1] as unknown[];
     expect(afterUndo).toHaveLength(0);
+  });
+
+  describe("rejects an invalid amount without persisting", () => {
+    it.each([
+      ["NaN", Number.NaN],
+      ["negative", -500],
+      ["zero", 0],
+      ["a non-numeric string", "тисяча"],
+      ["above the domain ceiling", 5_000_000_000],
+    ])("%s amount", (_label, amount) => {
+      const out = createReceivable({
+        name: "create_receivable",
+        input: { name: "Іванченко", amount },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toMatch(/додатний amount|завелика/);
+      expect(mockWrite).not.toHaveBeenCalled();
+    });
   });
 });
 

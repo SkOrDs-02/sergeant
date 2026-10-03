@@ -8,6 +8,8 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { useInView } from "@shared/hooks/useInView";
 import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
+import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
+import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
 import { SilpoIntegrationSection } from "./SilpoIntegrationSection";
@@ -19,11 +21,16 @@ import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 // / `main.tsx`) — bracket-доступ, бо ключ не в локальному `ImportMetaEnv`
 // (`vite-env.d.ts` декларує лише `VITE_BUILD_ID` / `VITE_TARGET`, інжектовані
 // unconditionally через `vite.config.js#define`).
+// AI-NOTE: нове підключення ПриватБанку сховано рішенням власника 2026-09-30,
+// поки у Привата немає API-токенів для користувачів. Код, серверні роути,
+// міграції й дані НЕ видаляти — стек у режимі очікування (finyk.md § Privatbank).
+// Дефолт off; не вмикай `VITE_PRIVAT_ENABLED` без нового рішення власника.
 const PRIVAT_ENABLED = import.meta.env["VITE_PRIVAT_ENABLED"] === "true";
 
 interface CustomCategory {
   id: string;
   label: string;
+  kind?: "expense" | "income";
 }
 
 interface ManualExpenseDraft {
@@ -37,10 +44,20 @@ interface ManualExpenseDraft {
 
 interface FinykStorageShape {
   customCategories: CustomCategory[];
-  addCustomCategory: (label: string) => void;
+  addCustomCategory: (
+    label: string,
+    options?: { kind?: "expense" | "income" },
+  ) => void;
   removeCustomCategory: (id: string) => void;
   addManualExpense: (expense: ManualExpenseDraft) => void;
+  // Правила категорій мерчантів. Необовʼязкові у цьому «вужчому вигляді» хука:
+  // секція нижче терпить їх відсутність (мок `useStorage` у тестах).
+  merchantRules?: readonly MerchantRule[] | undefined;
+  deleteMerchantRule?: ((id: string) => MerchantRule[]) | undefined;
+  restoreMerchantRules?: ((rules: readonly MerchantRule[]) => void) | undefined;
 }
+
+const NO_MERCHANT_RULES: readonly MerchantRule[] = [];
 
 export function FinykSection() {
   // Відкладаємо Monobank-запит і poller backfill, доки секція вперше не
@@ -51,11 +68,21 @@ export function FinykSection() {
     addCustomCategory,
     removeCustomCategory,
     addManualExpense,
+    merchantRules,
+    deleteMerchantRule,
+    restoreMerchantRules,
   } = useFinykStorage({}) as FinykStorageShape;
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
+  const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
+    "expense",
+  );
 
   const addCategory = () => {
-    addCustomCategory(newCategoryLabel);
+    if (newCategoryKind === "income") {
+      addCustomCategory(newCategoryLabel, { kind: "income" });
+    } else {
+      addCustomCategory(newCategoryLabel);
+    }
     setNewCategoryLabel("");
   };
 
@@ -74,17 +101,39 @@ export function FinykSection() {
         module="finyk"
         anchorId="settings-finyk"
       >
-        <SettingsSubGroup title="Власні категорії витрат">
-          <p className="text-style-caption text-subtle leading-snug">
-            Додаються до списку категорій у транзакціях, сплітах і лімітах.
-            Іконка підбирається автоматично, емодзі в назві не потрібне.
+        <SettingsSubGroup title="Власні категорії">
+          <p className="text-style-body text-subtle leading-snug">
+            Витрати й надходження мають окремі списки. Іконка підбирається
+            автоматично, емодзі в назві не потрібне.
           </p>
+          <div
+            className="grid grid-cols-2 gap-2"
+            role="group"
+            aria-label="Тип категорії"
+          >
+            {(["expense", "income"] as const).map((kind) => (
+              <Button
+                key={kind}
+                type="button"
+                // Легасі-шлях давав `finyk` / `finyk-soft` через
+                // MODULE_LEGACY_OVERRIDE; канонічний еквівалент — та сама
+                // пара emphasis-ів при спільному tone.
+                variant={newCategoryKind === kind ? "solid" : "soft"}
+                tone="finyk"
+                onClick={() => setNewCategoryKind(kind)}
+              >
+                {kind === "expense" ? "Витрата" : "Надходження"}
+              </Button>
+            ))}
+          </div>
           <div className="flex gap-2">
             <input
               type="text"
               value={newCategoryLabel}
               onChange={(event) => setNewCategoryLabel(event.target.value)}
-              placeholder="Напр. Хобі"
+              placeholder={
+                newCategoryKind === "income" ? "Напр. Підробіток" : "Напр. Хобі"
+              }
               maxLength={80}
               className={catInputClass}
               onKeyDown={(event) => {
@@ -108,8 +157,13 @@ export function FinykSection() {
                   key={category.id}
                   className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line last:border-0"
                 >
-                  <span className="text-style-label truncate">
-                    {category.label}
+                  <span className="min-w-0">
+                    <span className="block text-style-label truncate">
+                      {category.label}
+                    </span>
+                    <span className="block text-style-caption text-subtle">
+                      {category.kind === "income" ? "Надходження" : "Витрата"}
+                    </span>
                   </span>
                   <button
                     type="button"
@@ -125,12 +179,19 @@ export function FinykSection() {
             <EmptyState
               compact
               module="finyk"
-              icon={<Icon name="tag" size={20} />}
+              icon={<Icon name="tag" size="lg" />}
               title="Поки немає власних категорій"
-              description="Додай першу категорію вище, вона зʼявиться у списку транзакцій, сплітів і лімітів."
+              description="Додай першу категорію вище, вона зʼявиться у списку операцій, сплітів і лімітів."
             />
           )}
         </SettingsSubGroup>
+
+        <FinykMerchantRulesSection
+          rules={merchantRules ?? NO_MERCHANT_RULES}
+          customCategories={customCategories}
+          deleteMerchantRule={deleteMerchantRule}
+          restoreMerchantRules={restoreMerchantRules}
+        />
 
         <FinykWebhookServiceSection inView={inView} />
         <SilpoIntegrationSection

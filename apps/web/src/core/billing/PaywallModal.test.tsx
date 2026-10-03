@@ -40,7 +40,7 @@ function renderModal(open: boolean) {
                 onClose={() => {}}
                 surface="ai_chat_limit"
                 title="AI-чат на ліміті"
-                description="Free план: 10 повідомлень/день."
+                description="Free план: 5 запитів/день."
               />
             </>
           }
@@ -63,7 +63,7 @@ describe("PaywallModal", () => {
         <PaywallModal
           open={false}
           onClose={() => {}}
-          surface="cloud_sync"
+          surface="finyk_vision"
           title="CloudSync"
           description="Sync."
         />
@@ -76,7 +76,7 @@ describe("PaywallModal", () => {
         <PaywallModal
           open={true}
           onClose={() => {}}
-          surface="cloud_sync"
+          surface="finyk_vision"
           title="CloudSync"
           description="Sync."
         />
@@ -84,32 +84,36 @@ describe("PaywallModal", () => {
     );
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PAYWALL_VIEWED,
-      { surface: "cloud_sync" },
+      { surface: "finyk_vision" },
     );
   });
 
   it("renders the headline + description and a primary Pro CTA when open", () => {
     renderModal(true);
     expect(screen.getByText("AI-чат на ліміті")).toBeTruthy();
-    expect(screen.getByText("Free план: 10 повідомлень/день.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Перейти до Pro/ })).toBeTruthy();
+    expect(screen.getByText("Free план: 5 запитів/день.")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Перейти на Premium/ }),
+    ).toBeTruthy();
   });
 
-  // B4 (браузерний аудит 2026-08-05): сторінка тарифів каже «без
-  // trial-таймера», тож дефолтний список paywall-у не має обіцяти trial.
+  // Trial дає лише новому акаунту і лише за прапорцем (спека access-tiers),
+  // тож дефолтний список paywall-у не має обіцяти trial.
   it("does not promise a trial in the default feature list", () => {
     renderModal(true);
     expect(screen.queryByText(/trial/i)).toBeNull();
     expect(screen.queryByText(/привʼязки картки/i)).toBeNull();
     // Решта дефолтних булітів лишається на місці.
-    expect(screen.getByText(/Безлімітний AI-чат/)).toBeInTheDocument();
-    expect(screen.getByText(/Експорт CSV\/PDF/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Сержант без тижневого ліміту/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/PDF-звіти/)).toBeInTheDocument();
   });
 
   it("navigates to /pricing?source=paywall when the primary CTA is pressed", () => {
     renderModal(true);
     navigateSpy.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /Перейти до Pro/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Перейти на Premium/ }));
     expect(navigateSpy).toHaveBeenLastCalledWith("/pricing?source=paywall");
   });
 
@@ -120,7 +124,7 @@ describe("PaywallModal", () => {
         <PaywallModal
           open
           onClose={onClose}
-          surface="themes"
+          surface="week_plan"
           title="Themes"
           description="Custom description"
           features={["Feature A", "Feature B"]}
@@ -143,7 +147,7 @@ describe("PaywallModal", () => {
         <PaywallModal
           open={open}
           onClose={onClose}
-          surface="cloud_sync"
+          surface="finyk_vision"
           title="CloudSync"
           description="Sync."
         />

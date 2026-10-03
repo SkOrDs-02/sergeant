@@ -90,9 +90,11 @@ describe("prefetchPage / prefetchPageOnIntent / isPagePrefetched", () => {
 
   it("skips on slow connection", () => {
     shouldPrefetch.mockReturnValue(false);
-    prefetchPage("design");
+    // Навмисно не `design`: той ключ існує лише в dev-збірці, тож тест на
+    // повільне зʼєднання не має від нього залежати.
+    prefetchPage("pricing");
     expect(ricSpy).not.toHaveBeenCalled();
-    expect(isPagePrefetched("design")).toBe(false);
+    expect(isPagePrefetched("pricing")).toBe(false);
   });
 
   it("schedules a page prefetch via idle callback", () => {

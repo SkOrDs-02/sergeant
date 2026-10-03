@@ -1,55 +1,65 @@
-// Rule: тренд витрат — цей тиждень vs минулий (нормалізуємо до того ж дня
-// тижня). Спрацьовує тільки з середи (dowIdx ≥ 2), щоб не блимати у пн/вт
-// з мінімумом даних.
+// Rule: тренд витрат — цей календарний тиждень (пн–нд за Києвом) проти того
+// самого відрізка минулого: на початку тижня пн–ср стоять проти пн–ср, а не
+// неповний тиждень проти повного (`weekSliceWindows`, рішення власника
+// 2026-10-01, f1). Спрацьовує тільки з середи, щоб не блимати у пн/вт із
+// мінімумом даних.
+//
+// Одна картка про темп за раз (f2): коли спрацювала денна «Сьогодні вище
+// середнього» (`evaluateDailyPace`), ця мовчить в обох гілках. Інакше поруч
+// стояли б «вище середнього» і «Чудовий темп» про ті самі гроші.
+//
+// «Відкрити» веде в «Звіт тижня» на хабі (`WEEK_REPORT_ACTION`), а не в огляд
+// Фініка за місяць, де тижневого порівняння немає ніде (f3).
 
 import type { Rule } from "../types.js";
-import { txTimestamp, type FinanceContext } from "../financeContext.js";
+import {
+  financeExcludedTxIds,
+  type FinanceContext,
+} from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
+import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
+import { weekSliceWindows } from "@sergeant/finyk-domain/domain/weekSlices";
+import { evaluateDailyPace } from "./dailyVsWeeklyPace.js";
+import {
+  WEEK_REPORT_ACTION,
+  WEEKLY_PACE_HIGH_REC_ID,
+  WEEKLY_PACE_LOW_REC_ID,
+} from "./paceSignals.js";
 
-function startOfWeek(d: Date): Date {
-  const x = new Date(d);
-  const day = (x.getDay() + 6) % 7; // 0=Mon
-  x.setDate(x.getDate() - day);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
+/** Мінімум прожитих днів тижня (пн = 1), з якого порівняння має сенс: з середи. */
+const MIN_DAYS_ELAPSED = 3;
 
 export const spendingVelocityRule: Rule<FinanceContext> = {
   id: "finyk.spending_velocity",
   module: "finyk",
   evaluate(ctx) {
-    const now = ctx.now;
-    const thisWeekStart = startOfWeek(now);
-    const prevWeekStart = new Date(thisWeekStart);
-    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
-    const dowIdx = (now.getDay() + 6) % 7;
-    if (dowIdx < 2) return [];
+    const { daysElapsed, current, previous } = weekSliceWindows(ctx.now);
+    if (daysElapsed < MIN_DAYS_ELAPSED) return [];
+    if (evaluateDailyPace(ctx)) return [];
 
-    const sumSpending = (start: Date, end: Date): number => {
-      let s = 0;
-      for (const tx of ctx.transactions) {
-        if (ctx.hiddenTxIds.has(tx.id) || ctx.transferIds.has(tx.id)) continue;
-        if ((tx.amount ?? 0) >= 0) continue;
-        const ts = txTimestamp(tx);
-        if (ts >= start.getTime() && ts < end.getTime()) {
-          s += Math.abs(tx.amount / 100);
-        }
-      }
+    const excludedTxIds = financeExcludedTxIds(ctx);
+
+    // Банк — через канонічний агрегатор (враховує спліти й виключені id),
+    // ручні витрати — окремо, calcFinykPeriodAggregate їх не бачить.
+    const sumSpending = (startMs: number, endMs: number): number => {
+      const bank = calcFinykPeriodAggregate(ctx.transactions, {
+        start: startMs,
+        end: endMs,
+        excludedTxIds,
+        txSplits: ctx.txSplits ?? {},
+      }).totalSpent;
+      let manual = 0;
       for (const me of ctx.manualExpenses) {
         const ts = new Date(me.date).getTime();
-        if (ts >= start.getTime() && ts < end.getTime()) {
-          s += Math.abs(Number(me.amount) || 0);
+        if (ts >= startMs && ts < endMs) {
+          manual += Math.abs(Number(me.amount) || 0);
         }
       }
-      return s;
+      return bank + manual;
     };
 
-    const cmpEnd = new Date(thisWeekStart);
-    cmpEnd.setDate(cmpEnd.getDate() + dowIdx + 1);
-    const prevCmpEnd = new Date(prevWeekStart);
-    prevCmpEnd.setDate(prevCmpEnd.getDate() + dowIdx + 1);
-    const thisSpend = sumSpending(thisWeekStart, cmpEnd);
-    const prevSpend = sumSpending(prevWeekStart, prevCmpEnd);
+    const thisSpend = sumSpending(current.startMs, current.endMs);
+    const prevSpend = sumSpending(previous.startMs, previous.endMs);
     if (prevSpend < 500 || thisSpend <= 0) return [];
 
     const ratio = thisSpend / prevSpend;
@@ -57,13 +67,13 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
       const pctMore = Math.round((ratio - 1) * 100);
       return [
         {
-          id: "spending_velocity_high",
+          id: WEEKLY_PACE_HIGH_REC_ID,
           module: "finyk" as const,
           priority: 75,
           icon: "trending-up",
           title: `Витрати на ${pctMore}% вище ніж минулого тижня`,
           body: `За такий же проміжок: ${formatNumberUk(Math.round(thisSpend))} ₴ vs ${formatNumberUk(Math.round(prevSpend))} ₴`,
-          action: "finyk",
+          action: WEEK_REPORT_ACTION,
         },
       ];
     }
@@ -71,13 +81,13 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
       const pctLess = Math.round((1 - ratio) * 100);
       return [
         {
-          id: "spending_velocity_low",
+          id: WEEKLY_PACE_LOW_REC_ID,
           module: "finyk" as const,
           priority: 45,
           icon: "award",
           title: `Витрати на ${pctLess}% нижче ніж минулого тижня`,
           body: `Чудовий темп: ${formatNumberUk(Math.round(thisSpend))} ₴ vs ${formatNumberUk(Math.round(prevSpend))} ₴`,
-          action: "finyk",
+          action: WEEK_REPORT_ACTION,
         },
       ];
     }

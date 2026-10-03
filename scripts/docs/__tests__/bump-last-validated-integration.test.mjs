@@ -36,7 +36,7 @@ describe("bumpFiles (integration)", () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "bump-last-validated-"));
     mkdirSync(join(dir, "docs"), { recursive: true });
-    mkdirSync(join(dir, "docs/04-governance/adr"), { recursive: true });
+    mkdirSync(join(dir, "docs/governance/adr"), { recursive: true });
   });
 
   afterEach(() => {
@@ -68,6 +68,39 @@ describe("bumpFiles (integration)", () => {
     );
   });
 
+  it("normalises absolute paths (lint-staged) to repo-relative before hashing", () => {
+    const rel = "docs/foo.md";
+    writeFileSync(join(dir, rel), HEADER("2026-01-01", "old", "2026-04-01"));
+    const modified = bumpFiles({
+      paths: [join(dir, rel)],
+      today: "2026-04-30",
+      handle: "new",
+      config,
+      rootDir: dir,
+    });
+    assert.deepEqual(modified, [rel]);
+    const after = readFileSync(join(dir, rel), "utf8");
+    // Та сама дата, що й для relative-шляху — інакше `docs:restamp-check`
+    // червоніє після кожного коміту.
+    const due = nextReviewFor(rel, "2026-04-30", config);
+    assert.match(after, new RegExp(`\\*\\*Next review:\\*\\* ${due}\\.`));
+  });
+
+  it("skips excludeGlobs even when the path arrives absolute", () => {
+    const rel = "docs/governance/adr/0001-foo.md";
+    const original = HEADER("2026-01-01", "old", "2026-04-01");
+    writeFileSync(join(dir, rel), original);
+    const modified = bumpFiles({
+      paths: [join(dir, rel)],
+      today: "2026-04-30",
+      handle: "new",
+      config,
+      rootDir: dir,
+    });
+    assert.deepEqual(modified, []);
+    assert.equal(readFileSync(join(dir, rel), "utf8"), original);
+  });
+
   it("uses cadenceOverrides per file", () => {
     const rel = "docs/runbook.md";
     writeFileSync(join(dir, rel), HEADER("2026-01-01", "old", "2026-04-01"));
@@ -86,7 +119,7 @@ describe("bumpFiles (integration)", () => {
   });
 
   it("skips excluded paths (ADR)", () => {
-    const rel = "docs/04-governance/adr/0001-foo.md";
+    const rel = "docs/governance/adr/0001-foo.md";
     const original = HEADER("2026-01-01", "old", "2026-04-01");
     writeFileSync(join(dir, rel), original);
     const modified = bumpFiles({

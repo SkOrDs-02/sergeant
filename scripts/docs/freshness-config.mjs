@@ -30,7 +30,7 @@ const LEGACY_ALLOWLIST_PATH = resolve(__dirname, "freshness-allowlist.json");
 // ── Glob → regex (intentionally minimal) ─────────────────────────────────────
 //
 // Supported syntax: `**` (any depth), `*` (single segment, no `/`), literal
-// strings. That's enough for our patterns (`docs/04-governance/adr/**`, `**/_partials/**`,
+// strings. That's enough for our patterns (`docs/governance/adr/**`, `**/_partials/**`,
 // `**/TEMPLATE*.md`, exact paths). We deliberately avoid pulling in a glob
 // dependency for a 30-line script.
 
@@ -84,7 +84,7 @@ export function matchesAnyGlob(path, globs) {
 // `cadenceOverrides` accepts BOTH exact paths and globs. Precedence:
 //   1. exact path match (most specific — an individual doc always wins);
 //   2. longest matching glob (a deeper prefix beats a shallower one, so
-//      `docs/02-engineering/notes/**` wins over `docs/02-engineering/**`);
+//      `docs/engineering/notes/**` wins over `docs/engineering/**`);
 //   3. `defaultCadenceDays`.
 //
 // Ties in glob length are resolved by declaration order in the JSON — but a
@@ -214,12 +214,12 @@ export const DEFAULT_CONFIG = {
     "**/dist/**",
     "coverage/**",
     "**/coverage/**",
-    // ADR are immutable — see docs/04-governance/governance/doc-freshness.md § "Свідомо виключено"
-    "docs/04-governance/adr/**",
+    // ADR are immutable — see docs/governance/governance/doc-freshness.md § "Свідомо виключено"
+    "docs/governance/adr/**",
     // Templates / index files are not "validated docs"
     "**/_TEMPLATE*.md",
     "**/TEMPLATE*.md",
-    "docs/00-start/playbooks/INDEX.md",
+    "docs/start/instructions/INDEX.md",
     // Skill / agent libraries shipped from upstream — owned outside this repo's
     // documentation cadence
     ".agents/**",

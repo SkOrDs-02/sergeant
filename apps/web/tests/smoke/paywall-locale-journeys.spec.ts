@@ -27,13 +27,15 @@ test("@critical paywall: free-user PDF export opens paywall and leads to pricing
   await expect(paywall).toBeVisible();
   await expect(
     paywall.getByText(
-      "Розширені звіти між модулями та експорт PDF – у Premium підписці.",
+      "Експорт звітів у PDF входить у Premium. Самі звіти й CSV лишаються безкоштовними.",
     ),
   ).toBeVisible();
 
-  await paywall.getByRole("button", { name: "Перейти до Pro" }).click();
+  await paywall.getByRole("button", { name: "Перейти на Premium" }).click();
   await expect(page).toHaveURL(/\/pricing\?source=paywall$/);
-  await expect(page.getByRole("heading", { name: "Тарифи" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Плани", exact: true }),
+  ).toBeVisible();
 });
 
 test("@critical locale: English pricing link renders the English conversion funnel", async ({

@@ -12,6 +12,10 @@ import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
+import {
+  softDeleteCustomActivity,
+  upsertCustomActivity,
+} from "./adapter.customActivities.js";
 import type {
   FizrukCustomExerciseSnapshot,
   FizrukDualWriteOp,
@@ -25,7 +29,6 @@ import {
   MEASUREMENT_DELETE_SQL,
   MEASUREMENT_UPSERT_SQL,
   setMonthlyPlan,
-  setPushups,
   softDeleteDailyLog,
   softDeleteRemovedChildren,
   softDeleteInjury,
@@ -64,7 +67,7 @@ import {
  *   for sets), a shape `buildReconcileChildren` doesn't model.
  * - Sync-v2 outbox bridge: registry tables (`fizruk_workouts`,
  *   `fizruk_workout_items`, `fizruk_workout_sets`, `fizruk_custom_exercises`,
- *   `fizruk_measurements`) fire `enqueueOutboxUpsert` after each local write
+ *   `fizruk_custom_activities`, `fizruk_measurements`) fire `enqueueOutboxUpsert` after each local write
  *   (fire-and-forget; failures are swallowed per R2).
  */
 
@@ -92,6 +95,14 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
     },
     "custom-exercise-delete": async (client, op, rt) => {
       await softDeleteCustomExercise(client, op.exerciseId, rt);
+      return "applied";
+    },
+    "custom-activity-upsert": async (client, op, rt) => {
+      await upsertCustomActivity(client, op.activity, rt);
+      return "applied";
+    },
+    "custom-activity-delete": async (client, op, rt) => {
+      await softDeleteCustomActivity(client, op.activityId, rt);
       return "applied";
     },
     "measurement-upsert": async (client, op, rt) => {
@@ -202,24 +213,6 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
       });
       return "applied";
     },
-    // Перенос власності pushup-даних routine → fizruk (2026-08-30).
-    // Row keys збігаються з колонками SQLite/PG, тож generic pull-apply на
-    // іншому пристрої обходиться без мапера.
-    "pushup-set": async (client, op, rt) => {
-      await setPushups(client, op.dateKey, op.reps, rt);
-      fireSyncOutboxUpsert(client, {
-        userId: rt.userId,
-        table: "fizruk_pushups",
-        op: "insert",
-        clientTs: rt.clientTs,
-        row: {
-          user_id: rt.userId,
-          date_key: op.dateKey,
-          reps: op.reps,
-        },
-      });
-      return "applied";
-    },
     "injury-delete": async (client, op, rt) => {
       await softDeleteInjury(client, op.injuryId, rt);
       fireSyncOutboxUpsert(client, {
@@ -270,6 +263,7 @@ async function upsertWorkout(
   const warmupJson = w.warmup ? JSON.stringify(w.warmup) : null;
   const cooldownJson = w.cooldown ? JSON.stringify(w.cooldown) : null;
   const wellbeingJson = w.wellbeing ? JSON.stringify(w.wellbeing) : null;
+  const kcalBurned = toIntOrNull(w.kcalBurned);
 
   await client.run(WORKOUT_UPSERT_SQL, [
     w.id,
@@ -281,6 +275,7 @@ async function upsertWorkout(
     warmupJson,
     cooldownJson,
     wellbeingJson,
+    kcalBurned,
     clientTs,
     clientTs,
   ]);
@@ -299,6 +294,7 @@ async function upsertWorkout(
       warmup_json: warmupJson,
       cooldown_json: cooldownJson,
       wellbeing_json: wellbeingJson,
+      kcal_burned: kcalBurned,
       created_at: clientTs,
       deleted_at: null,
     },
@@ -346,6 +342,10 @@ async function upsertWorkoutItem(
     item.type ?? "strength",
     item.durationSec ?? null,
     item.distanceM ?? null,
+    // Той самий рядок, якого бракувало `wellbeing` (див. AI-DANGER у
+    // sqliteReader): пропустиш його — вибір варіанта не переживе
+    // перезавантаження, а типи й тести цього не помітять.
+    (item["chosenVariant"] as string | undefined) ?? null,
     sortOrder,
     clientTs,
     clientTs,
@@ -367,6 +367,7 @@ async function upsertWorkoutItem(
       type: item.type ?? "strength",
       duration_sec: item.durationSec ?? null,
       distance_m: item.distanceM ?? null,
+      chosen_variant: (item["chosenVariant"] as string | undefined) ?? null,
       sort_order: sortOrder,
       created_at: clientTs,
       deleted_at: null,
@@ -595,6 +596,18 @@ async function upsertMeasurement(
     toRealOrNull(m["chestCm"]),
     toRealOrNull(m["hipsCm"]),
     toRealOrNull(m["bicepCm"]),
+    // Решта полів веб-форми. До міграції 008 колонок під них не було, і
+    // введене користувачем зникало після перезавантаження.
+    toRealOrNull(m["bodyFatPct"]),
+    toRealOrNull(m["neckCm"]),
+    toRealOrNull(m["bicepLCm"]),
+    toRealOrNull(m["bicepRCm"]),
+    toRealOrNull(m["forearmLCm"]),
+    toRealOrNull(m["forearmRCm"]),
+    toRealOrNull(m["thighLCm"]),
+    toRealOrNull(m["thighRCm"]),
+    toRealOrNull(m["calfLCm"]),
+    toRealOrNull(m["calfRCm"]),
     toRealOrNull(m["sleepHours"]),
     toIntOrNull(m["energyLevel"]),
     toIntOrNull(m["mood"]),
@@ -614,6 +627,16 @@ async function upsertMeasurement(
       chest_cm: toRealOrNull(m["chestCm"]),
       hips_cm: toRealOrNull(m["hipsCm"]),
       bicep_cm: toRealOrNull(m["bicepCm"]),
+      body_fat_pct: toRealOrNull(m["bodyFatPct"]),
+      neck_cm: toRealOrNull(m["neckCm"]),
+      bicep_l_cm: toRealOrNull(m["bicepLCm"]),
+      bicep_r_cm: toRealOrNull(m["bicepRCm"]),
+      forearm_l_cm: toRealOrNull(m["forearmLCm"]),
+      forearm_r_cm: toRealOrNull(m["forearmRCm"]),
+      thigh_l_cm: toRealOrNull(m["thighLCm"]),
+      thigh_r_cm: toRealOrNull(m["thighRCm"]),
+      calf_l_cm: toRealOrNull(m["calfLCm"]),
+      calf_r_cm: toRealOrNull(m["calfRCm"]),
       sleep_hours: toRealOrNull(m["sleepHours"]),
       energy_level: toIntOrNull(m["energyLevel"]),
       mood: toIntOrNull(m["mood"]),

@@ -34,7 +34,7 @@ export function ArchivedHabitsSection({
       <SectionHeading as="h2" size="xs" variant="routine">
         Архів
       </SectionHeading>
-      <p className="text-style-caption text-subtle">
+      <p className="text-style-body text-subtle">
         Не показуються в календарі; відмітки збережені.
       </p>
       <ul className="space-y-2">
@@ -50,7 +50,7 @@ export function ArchivedHabitsSection({
             <div className="flex flex-wrap gap-1.5">
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 className="h-9! px-3! text-xs!"
                 onClick={() =>
@@ -61,9 +61,10 @@ export function ArchivedHabitsSection({
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="soft"
+                tone="danger"
                 size="sm"
-                className="h-9! px-3! text-xs! text-danger-strong dark:text-danger"
+                className="h-9! px-3! text-xs!"
                 onClick={() =>
                   onRequestDelete({ id: h.id, name: h.name, archived: true })
                 }

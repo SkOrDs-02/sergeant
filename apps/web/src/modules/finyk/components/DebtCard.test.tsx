@@ -58,6 +58,20 @@ describe("DebtCard", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("не приховує копійки у точній сумі боргу", () => {
+    const { container } = render(
+      <DebtCard
+        name="Позика"
+        emoji=""
+        remaining={1721.14}
+        paid={0}
+        total={1721.14}
+      />,
+    );
+
+    expect(container).toHaveTextContent(/1[\s\u202f]?721,14/);
+  });
+
   it("masks amounts when showBalance is false", () => {
     render(
       <DebtCard
@@ -117,7 +131,7 @@ describe("DebtCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));
     expect(onDelete).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(2\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(2\)/));
     expect(onLink).toHaveBeenCalledTimes(1);
   });
 });

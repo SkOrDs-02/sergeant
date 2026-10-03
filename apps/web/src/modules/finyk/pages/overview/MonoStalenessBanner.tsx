@@ -37,16 +37,14 @@ function MonoStalenessBannerComponent({
       role="status"
       className="rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3"
     >
-      <p className="text-style-body text-content-primary">
+      <p className="text-style-body text-text">
         {`${copy.title} ${days} ${dayWord}.`}
       </p>
-      <p className="text-style-caption text-content-secondary mt-1">
-        {copy.hint}
-      </p>
+      <p className="text-style-caption text-muted mt-1">{copy.hint}</p>
       {onReconnect && (
         <Button
           size="sm"
-          variant="secondary"
+          variant="outline"
           className="mt-3"
           onClick={onReconnect}
         >

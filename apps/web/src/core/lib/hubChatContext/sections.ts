@@ -8,17 +8,32 @@ import {
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { logger } from "@shared/lib";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { fmt } from "../hubChatUtils";
 import { loadRoutineState } from "../../../modules/routine/lib/routineStorage";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
   loadNutritionPrefs,
 } from "../../../modules/nutrition/lib/nutritionStorage";
+import { resolveKcalGoalsForDays } from "@sergeant/nutrition-domain";
 import { generateRecommendations } from "../recommendationEngine";
 import { generateInsights } from "../insightsEngine";
 import { CATEGORY_META, readMemoryEntries } from "../../profile/memoryBank";
 import type { NutritionMeal } from "./types";
+
+/**
+ * AI-CONTEXT: явний маркер збою джерела для промпт-секцій нижче.
+ *
+ * До цього патча кожна секція гасила свій виняток порожнім `catch {}` —
+ * секція просто зникала з промпту без сліду. Для моделі відсутня секція
+ * невідрізненна від «даних немає», тож вона впевнено відповідала «звичок
+ * немає» / «тренувань немає», хоча джерело просто впало (тимбстоуни цього
+ * файлу вже двічі мігрували джерела — сценарій не гіпотетичний). Тепер
+ * збій підставляє цей рядок замість тиші, а сам виняток іде в `logger`.
+ */
+const DATA_UNAVAILABLE_MARKER = "дані тимчасово недоступні";
 
 /**
  * День-ключ (`YYYY-MM-DD`) для `offsetDays` відносно ЛОКАЛЬНОЇ дати пристрою.
@@ -28,7 +43,7 @@ import type { NutritionMeal } from "./types";
  * Раніше секція рахувала київський день, тож поза Києвом контекст асистента
  * шукав відмітки за ЧУЖИМ ключем: людина у Варшаві о 23:30 бачила «виконано
  * 0 з 5», хоча відмітила все — її запис ліг під завтрашню київську дату.
- * Межа особистої доби належить пристрою ([ADR-0078](../../../../../../docs/04-governance/adr/0078-day-boundary-device-local.md)).
+ * Межа особистої доби належить пристрою ([ADR-0078](../../../../../../docs/governance/adr/0078-day-boundary-device-local.md)).
  *
  * Київ лишається правильним для ФІНАНСОВОГО періоду — див. `finance.ts`, там
  * межа доби навмисно київська (ADR-0078 §3). Не зводь ці два місця до одного.
@@ -80,7 +95,13 @@ export function appendWorkoutLines(lines: string[]): void {
         if (aw)
           activeHint = `${(aw.items || []).length} вправ у поточній сесії (id тренування ${aid})`;
       }
-    } catch {}
+    } catch (err) {
+      logger.warn(
+        "[hubChatContext] не вдалося прочитати активне тренування",
+        err,
+      );
+      activeHint = DATA_UNAVAILABLE_MARKER;
+    }
     lines.push(`[Фізрук активне тренування] ${activeHint}`);
 
     const firstItems = sorted[0]?.items;
@@ -93,7 +114,10 @@ export function appendWorkoutLines(lines: string[]): void {
         .join(", ");
       lines.push(`[Останнє тренування вправи] ${exercises}`);
     }
-  } catch {}
+  } catch (err) {
+    logger.error("[hubChatContext] секція тренувань не сформувалась", err);
+    lines.push(`[Тренування] ${DATA_UNAVAILABLE_MARKER}`);
+  }
 }
 
 export function appendRoutineLines(lines: string[], now: Date): void {
@@ -150,7 +174,10 @@ export function appendRoutineLines(lines: string[], now: Date): void {
     }
     if (streak > 0)
       lines.push(`[Рутина серія] ${streak} днів поспіль (всі звички)`);
-  } catch {}
+  } catch (err) {
+    logger.error("[hubChatContext] секція рутини не сформувалась", err);
+    lines.push(`[Рутина] ${DATA_UNAVAILABLE_MARKER}`);
+  }
 }
 
 export function appendNutritionLines(lines: string[], now: Date): void {
@@ -159,6 +186,7 @@ export function appendNutritionLines(lines: string[], now: Date): void {
     // today's meals + targets, not an empty LS shim.
     const nutritionLog = loadNutritionLog();
     const nutritionPrefs = loadNutritionPrefs();
+    const goalPeriods = loadNutritionGoalPeriods();
     const todayKey = dateKeyFromDate(now);
     const todayData = nutritionLog[todayKey];
 
@@ -196,9 +224,11 @@ export function appendNutritionLines(lines: string[], now: Date): void {
       }
     }
 
+    const weekDays: string[] = [];
     const weekKcalArr: number[] = [];
     for (let i = 6; i >= 0; i--) {
       const dk = deviceDayKeyOffset(now, -i);
+      weekDays.push(dk);
       const dayMeals: NutritionMeal[] = Array.isArray(nutritionLog[dk]?.meals)
         ? (nutritionLog[dk].meals as NutritionMeal[])
         : [];
@@ -212,8 +242,16 @@ export function appendNutritionLines(lines: string[], now: Date): void {
       lines.push(
         `[Харчування тиждень] середньо ${avg} ккал/день (за ${weekKcalArr.length} днів)`,
       );
+      const targets = resolveKcalGoalsForDays(goalPeriods, weekDays);
+      const comparable = weekDays
+        .map((day, index) => `${day}: ${targets[index] ?? "ціль невідома"}`)
+        .join(", ");
+      lines.push(`[Харчування поденні цілі] ${comparable}`);
     }
-  } catch {}
+  } catch (err) {
+    logger.error("[hubChatContext] секція харчування не сформувалась", err);
+    lines.push(`[Харчування] ${DATA_UNAVAILABLE_MARKER}`);
+  }
 }
 
 export function appendAiSignalLines(lines: string[]): void {
@@ -225,7 +263,10 @@ export function appendAiSignalLines(lines: string[]): void {
         lines.push(`  ${r.icon} ${r.title}: ${r.body} (модуль: ${r.module})`);
       });
     }
-  } catch {}
+  } catch (err) {
+    logger.error("[hubChatContext] рекомендації не сформувались", err);
+    lines.push(`[Активні рекомендації] ${DATA_UNAVAILABLE_MARKER}`);
+  }
 
   try {
     const insights = generateInsights();
@@ -235,7 +276,10 @@ export function appendAiSignalLines(lines: string[]): void {
         lines.push(`  ${i.title} (${i.stat}): ${i.detail}`);
       });
     }
-  } catch {}
+  } catch (err) {
+    logger.error("[hubChatContext] інсайти не сформувались", err);
+    lines.push(`[Аналітичні інсайти] ${DATA_UNAVAILABLE_MARKER}`);
+  }
 
   try {
     const profile = readMemoryEntries();
@@ -253,5 +297,8 @@ export function appendAiSignalLines(lines: string[]): void {
         );
       }
     }
-  } catch {}
+  } catch (err) {
+    logger.error("[hubChatContext] профіль користувача не сформувався", err);
+    lines.push(`[Профіль користувача] ${DATA_UNAVAILABLE_MARKER}`);
+  }
 }

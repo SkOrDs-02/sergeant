@@ -74,6 +74,13 @@ const webServer = process.env["PW_SKIP_WEBSERVER"]
       },
     };
 
+// Та сама ручка, що в `playwright.config.ts` (a11y): контейнерні QA-середовища
+// постачають власний Chromium і забороняють `playwright install`. Лише для
+// chromium-проєктів — webkit/mobile-safari мають лишатись на своєму движку.
+const chromiumLaunch = process.env["PW_CHROMIUM_PATH"]
+  ? { launchOptions: { executablePath: process.env["PW_CHROMIUM_PATH"] } }
+  : {};
+
 export default defineConfig({
   testDir: "./tests/smoke",
   fullyParallel: false,
@@ -97,11 +104,13 @@ export default defineConfig({
       // projects. Produces `tests/smoke/.auth/hub-user.json` (gitignored).
       name: "setup",
       testMatch: /.*\.setup\.ts/,
+      use: { ...chromiumLaunch },
     },
     {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
+        ...chromiumLaunch,
         storageState: HUB_USER_AUTH_STATE,
       },
       dependencies: ["setup"],

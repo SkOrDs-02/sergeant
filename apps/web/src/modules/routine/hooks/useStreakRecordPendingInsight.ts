@@ -1,26 +1,34 @@
 import { useMemo } from "react";
 import { pluralDays } from "@sergeant/shared";
 import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
 
 /**
  * Fires when the current cross-habit streak is exactly one day away from
- * the user's personal all-time record — i.e. `currentStreak === longestStreak - 1`.
+ * the user's personal all-time record — i.e. `currentStreak === longestStreak - 1`
+ * and `currentStreak > 0`.
+ *
+ * Копі чесне про арифметику: на `longest - 1` ще один день рекорд лише
+ * ПОВТОРЮЄ (серія стає рівною рекорду), побити його можна тільки днем після.
+ * Тому заголовок/підзаголовок/промпт кажуть «повториш рекорд», а не «побити».
  *
  * `currentStreak` = `flexibleMaxActiveStreak` across all active habits
- * (today's date in Kyiv tz as anchor) — гнучкий стрік, тож заявлена пауза
- * чи пропуск із причиною рекорд не обнуляють.
+ * (today's date, device-local anchor per ADR-0078) — гнучкий стрік, тож
+ * заявлена пауза чи пропуск із причиною рекорд не обнуляють.
  * `longestStreak` = max of `maxStreakAllTime` per active habit — purely local,
  * derived from completion history.
  *
- * Returns `null` when the condition is not met, or when either value is 0.
+ * Returns `null` when the condition is not met, or when either value is 0:
+ * без живої серії (`currentStreak <= 0`) «рекорд поруч» не має змісту — це
+ * казало б «Серія: 0 днів / Ще один, і рекорд 1» людині, яка щойно її
+ * обнулила, а без історії (`longestStreak <= 0`) рекорду немає взагалі.
  */
 export function useStreakRecordPendingInsight(
   routine: RoutineState,
 ): Insight | null {
-  const todayKey = getKyivDayKey();
+  const todayKey = anchoredTodayKey();
 
   const currentStreak = useMemo(
     () =>
@@ -43,17 +51,18 @@ export function useStreakRecordPendingInsight(
   }, [routine.habits, routine.completions]);
 
   return useMemo((): Insight | null => {
-    if (longestStreak <= 0) return null;
+    if (longestStreak <= 0 || currentStreak <= 0) return null;
     if (currentStreak !== longestStreak - 1) return null;
+    const record = `${longestStreak} ${pluralDays(longestStreak)}`;
     return {
       id: "routine-streak-record-pending",
       module: "routine",
       title: `Серія: ${currentStreak} ${pluralDays(currentStreak)}`,
-      subtitle: `Ще один, і рекорд ${longestStreak}`,
+      subtitle: `Ще день, і повториш рекорд ${record}`,
       // Стрік тут — cross-habit агрегат (flexibleMaxActiveStreak по ВСІХ
       // активних звичках разом), не конкретна звичка — те саме, що й title
       // вище, без назви. Founder-рішення 2026-08-30: без підстановки назви.
-      askAiPrompt: `Сьогодні можу побити особистий рекорд стріку (${currentStreak} ${pluralDays(currentStreak)}). Дай коротку мотивацію і підкажи, як не зірватись завтра.`,
+      askAiPrompt: `Моя серія зараз ${currentStreak} ${pluralDays(currentStreak)}, а особистий рекорд ${record}. Ще день, і я його повторю. Дай коротку мотивацію і підкажи, як не зірватись завтра.`,
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     };

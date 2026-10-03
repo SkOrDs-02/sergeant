@@ -45,6 +45,14 @@ describe("deriveChecklistSignals — finyk", () => {
     expect(deriveChecklistSignals(store, "finyk")["set_budget"]).toBe(false);
   });
 
+  it("proves set_budget from a category limit without a monthly plan", () => {
+    store.setString(
+      STORAGE_KEYS.FINYK_QUICK_STATS,
+      JSON.stringify({ todaySpent: 500, budgetLeft: null, limitsCount: 1 }),
+    );
+    expect(deriveChecklistSignals(store, "finyk")["set_budget"]).toBe(true);
+  });
+
   it("never claims connect_bank — that fact lives on the server", () => {
     expect(
       deriveChecklistSignals(store, "finyk")["connect_bank"],

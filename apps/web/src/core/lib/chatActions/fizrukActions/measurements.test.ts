@@ -39,12 +39,12 @@ function emptyCache(
   return {
     workouts: [],
     customExercises: [],
+    customActivities: [],
     measurements: [],
     dailyLog: [],
     monthlyPlan: null,
     workoutTemplates: [],
     injuries: [],
-    pushupsByDate: {},
     refreshedAt: null,
     ...overrides,
   };
@@ -195,5 +195,73 @@ describe("logMeasurement", () => {
       input: { neck_cm: 38 },
     });
     expect(result).toContain("neckCm=38");
+  });
+
+  // Канонічна межа MEASUREMENT_BOUNDS.weightKg = {20, 400} — сервер
+  // реджектить УВЕСЬ рядок заміру на `invalid_weight_kg`, тож клієнт має
+  // відмовити заздалегідь, а не мовчки застрягнути несинхронізованим.
+  describe("weight_kg canonical bound (MEASUREMENT_BOUNDS.weightKg)", () => {
+    it("rejects weight just under the lower bound", () => {
+      const result = logMeasurement({
+        name: "log_measurement",
+        input: { weight_kg: 19 },
+      });
+      expect(result).toContain("Вага має бути від 20 до 400 кг");
+      expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+    });
+
+    it("rejects weight just above the upper bound", () => {
+      const result = logMeasurement({
+        name: "log_measurement",
+        input: { weight_kg: 401 },
+      });
+      expect(result).toContain("Вага має бути від 20 до 400 кг");
+      expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+    });
+
+    it("accepts weight exactly at the lower boundary", () => {
+      const result = logMeasurement({
+        name: "log_measurement",
+        input: { weight_kg: 20 },
+      });
+      expect(result).toContain("weightKg=20");
+      expect(mockTriggerDualWrite).toHaveBeenCalledOnce();
+    });
+
+    it("accepts weight exactly at the upper boundary", () => {
+      const result = logMeasurement({
+        name: "log_measurement",
+        input: { weight_kg: 400 },
+      });
+      expect(result).toContain("weightKg=400");
+      expect(mockTriggerDualWrite).toHaveBeenCalledOnce();
+    });
+
+    it("out-of-bound weight blocks the whole entry, even with other valid fields", () => {
+      const result = logMeasurement({
+        name: "log_measurement",
+        input: { weight_kg: 900, waist_cm: 90 },
+      });
+      expect(result).toContain("Вага має бути від 20 до 400 кг");
+      expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+    });
+
+    it("still ignores NaN weight via the existing finite check (no bound rejection)", () => {
+      const result = logMeasurement({
+        name: "log_measurement",
+        input: { weight_kg: NaN },
+      });
+      expect(result).toContain("Немає жодного валідного поля");
+      expect(result).not.toContain("Вага має бути");
+    });
+
+    it("still ignores negative weight via the existing positivity check (no bound rejection)", () => {
+      const result = logMeasurement({
+        name: "log_measurement",
+        input: { weight_kg: -70 },
+      });
+      expect(result).toContain("Немає жодного валідного поля");
+      expect(result).not.toContain("Вага має бути");
+    });
   });
 });

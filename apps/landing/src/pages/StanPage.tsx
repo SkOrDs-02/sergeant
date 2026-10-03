@@ -1,31 +1,70 @@
 import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import TelegramCta from "../components/TelegramCta";
+import { formatDateUk } from "../lib/dates";
+import { AUTHOR_JSON_LD } from "../content/author";
+import { EXPORT_CLAIM } from "../content/exportClaim";
+import { MOBILE_CLAIM } from "../content/mobileClaim";
 
 /**
  * Єдина сторінка сайту, яка змінюється щотижня, і єдина, де видима дата –
  * частина змісту. `STATUS_UPDATED` мусить збігатися з `lastmod` запису
  * `/stan` у routeMeta і з датою в рядку-містку на головній.
  */
-export const STATUS_UPDATED = "2026-08-31";
-const STATUS_UPDATED_LABEL = "31 серпня 2026";
+export const STATUS_UPDATED = "2026-09-17";
 
 const NOW = [
-  "Автосинк фінансів через Monobank",
+  "Автосинхронізація фінансів через Monobank",
   "Сканер чеків із фото: поодинці й пачкою",
   "Чеки Сільпо підтягуються з програми лояльності",
-  "Логи їжі, тренувань і звичок",
-  "AI-помічник: спитай про свої дані в чаті",
-  "Тижневий підсумок зі звʼязками між сферами",
+  "Журнали їжі, тренувань і звичок",
+  "Сержант: спитай про свої дані в чаті",
+  "Звіт тижня: зведення по кожному модулю щопонеділка",
   "Звʼязки між сферами з рівнем впевненості і розкриттям у дні",
-  "Мобільний застосунок: працює і синхронізується",
 ];
 
 const SOON = [
-  "Глибша аналітика кореляцій",
-  "Динамічні цілі, що підлаштовуються під тебе",
+  "Глибший розбір звʼязків між сферами",
+  "Динамічні цілі в решті модулів: у Харчуванні калорійна ціль уже підлаштовується сама",
   "Єдиний експорт, що зводить акаунтські дані й дані модулів в один файл",
 ];
+
+/**
+ * Гострі кути, на які бета-тестер натрапить сьогодні. Кожен пункт уже
+ * описаний на своїй сторінці; тут вони зібрані в один список, бо /beta
+ * обіцяє «список зламаного» саме тут, а до 2026-09-02 сторінка мала лише
+ * «працює» і «в розробці». Пункт зникає, коли виправлений.
+ */
+const PROBLEMS = [
+  {
+    text: EXPORT_CLAIM,
+    href: "/vyhid",
+    label: "Забрати свої дані",
+  },
+  {
+    text: "Статистика звичок: календар і відсоток виконання вже виключають день із причиною зі знаменника, але зведення на сторінці статистики поки ні.",
+    href: "/zvychky",
+    label: "Звички",
+  },
+  {
+    text: "Шаблон тренування не зберігає ваги й повтори: кожен підхід вводиться заново, кнопки «повторити попередній підхід» немає.",
+    href: "/ruchna-robota",
+    label: "Скільки вводити руками",
+  },
+  {
+    text: "Промах штрихкоду не запамʼятовується сам: привʼязати код до продукту можна руками, але картка промаху цього не пропонує і веде на ручний ввід.",
+    href: "/yizha",
+    label: "Їжа",
+  },
+  {
+    text: "Комора сигналить про вичерпання лише всередині застосунку: бейдж «Закінчується» і рядок у списку покупок є, push-нагадування немає.",
+    href: "/yizha",
+    label: "Їжа",
+  },
+];
+
+const link =
+  "font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 export default function StanPage() {
   usePageMeta({
@@ -36,7 +75,7 @@ export default function StanPage() {
       headline: "Стан розробки Sergeant",
       inLanguage: "uk",
       dateModified: STATUS_UPDATED,
-      author: { "@type": "Person", name: "Автор Sergeant" },
+      author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
   });
@@ -47,13 +86,13 @@ export default function StanPage() {
         Доповідь про стан
       </h1>
       <p className="mt-5 max-w-xl leading-relaxed text-muted">
-        Що працює сьогодні, а що поки що обіцянка. Оновлюється, коли змінюється
-        стан, а не за розкладом.
+        Що працює сьогодні і що поки лише обіцянка. Оновлюється, коли змінюється
+        стан.
       </p>
       <p className="mt-3 text-sm text-subtle">
         Оновлено:{" "}
         <time dateTime={STATUS_UPDATED} className="font-semibold text-muted">
-          {STATUS_UPDATED_LABEL}
+          {formatDateUk(STATUS_UPDATED)}
         </time>
       </p>
 
@@ -91,19 +130,45 @@ export default function StanPage() {
         </div>
       </div>
 
+      <div
+        id="vidomi-problemy"
+        className="mt-14 scroll-mt-16 border-t-2 border-foreground-strong pt-8"
+      >
+        <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong">
+          Відомі проблеми
+        </h2>
+        <p className="mt-3 max-w-2xl leading-relaxed text-muted">
+          Гострі кути, на які натрапиш сьогодні. Кожен уже описаний на своїй
+          сторінці, тут вони зібрані в один список. Пункт зникає звідси, коли
+          виправлений.
+        </p>
+        <ul className="mt-6 flex max-w-2xl flex-col gap-4">
+          {PROBLEMS.map((item) => (
+            <li
+              key={item.text}
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-foreground"
+            >
+              <span
+                aria-hidden="true"
+                className="h-2 w-2 shrink-0 translate-y-px bg-foreground-strong"
+              />
+              <span>
+                {item.text}{" "}
+                <a href={item.href} className={link}>
+                  {item.label}
+                </a>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div className="mt-14 border-t-2 border-foreground-strong pt-8">
         <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong">
           Про мобільний застосунок
         </h2>
         <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-          Раніше тут стояло «у розробці». Це було неточно: застосунок існує,
-          працює і синхронізується з веб-версією.
-        </p>
-        <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-          Чесна відповідь інша: публічний вихід відкладено, поки веб не доведе,
-          що продуктом користуються. Поки цього немає, вкладати в дві поверхні
-          одночасно – це розмазати одну людину на дві роботи. Паритет функцій не
-          обіцяється: частина речей є лише у вебі.
+          {MOBILE_CLAIM} Спершу веб має довести, що продуктом користуються.
         </p>
       </div>
 
@@ -112,17 +177,14 @@ export default function StanPage() {
           Що означають ці слова
         </h2>
         <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-          «Вже працює» – можна відкрити й скористатись сьогодні. Не «код
-          написаний», не «в тестуванні».
+          «Вже працює» – можна відкрити й скористатись сьогодні.
         </p>
         <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-          «У розробці» – я цим займаюсь, але дати не називаю. Дата, названа
-          наперед однією людиною без команди, – це вигадка, за яку потім
-          соромно.
+          «У розробці» – роблю, дати не називаю.
         </p>
         <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-          Чого в списку немає взагалі – того я не планую найближчим часом,
-          навіть якщо це очевидна ідея.
+          Чого в списку немає, того я не планую найближчим часом, навіть якщо це
+          очевидна ідея.
         </p>
         <div className="mt-6">
           <TelegramCta placement="footer" label="Стати в чергу" />

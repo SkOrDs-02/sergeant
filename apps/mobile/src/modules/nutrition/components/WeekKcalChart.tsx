@@ -9,7 +9,7 @@
  * порожнього дня рахуються в одному місці, тож дзеркала не розійдуться.
  *
  * Свідома розбіжність із web: тут НЕМА tap-to-select із ккал вибраного дня
- * (web-first до traction — `docs/00-start/agents/decisions.md`, 2026-06-29).
+ * (web-first до traction — `docs/start/agents/decisions.md`, 2026-06-29).
  * Опора шкали — підписана ціль/стеля — є на обох поверхнях, бо саме без неї
  * графік нечитабельний.
  */
@@ -32,16 +32,21 @@ function fmtKcal(n: number): string {
 
 export interface WeekKcalChartProps {
   rows: MacrosRow[];
-  targetKcal: number;
+  /**
+   * Ціль на КОЖЕН день тижня, вирівняна з `rows`. Не одне число: ціль може
+   * змінитись серед тижня, і минулі дні судяться тією, що діяла тоді
+   * (ADR-0091). `null` — цілі на той день не було.
+   */
+  goalsByDay: readonly (number | null)[];
   todayIso: string;
 }
 
 export function WeekKcalChart({
   rows,
-  targetKcal,
+  goalsByDay,
   todayIso,
 }: WeekKcalChartProps) {
-  const model = computeWeekKcalChart(rows, targetKcal);
+  const model = computeWeekKcalChart(rows, goalsByDay);
 
   const summaryText =
     model.daysLogged > 0
@@ -79,13 +84,15 @@ export function WeekKcalChart({
                 style={{ height: CHART_HEIGHT, justifyContent: "flex-end" }}
                 className="w-full items-center"
               >
-                {model.goalRatio !== null && (
+                {bar.goalRatio !== null && (
+                  // Висота — з ЦЬОГО дня, тож у тижні зі зміненою ціллю
+                  // лінія йде сходинкою (ADR-0091).
                   <View
                     style={{
                       position: "absolute",
                       left: 0,
                       right: 0,
-                      bottom: model.goalRatio * CHART_HEIGHT,
+                      bottom: bar.goalRatio * CHART_HEIGHT,
                       borderTopWidth: 1,
                       borderStyle: "dashed",
                     }}

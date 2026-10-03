@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-07-25
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * Телеметрія AI-поради (Хвиля 2, картка W2-AI-ADVICE-EVENTS, стадія 1).
  *
@@ -44,6 +44,7 @@
  */
 
 import { ANALYTICS_EVENTS, trackEvent } from "./analytics";
+import { deviceDayKey } from "@sergeant/shared";
 
 /**
  * Версія інструментації. Бампається, коли змінюється СЕМАНТИКА показу або
@@ -54,13 +55,22 @@ import { ANALYTICS_EVENTS, trackEvent } from "./analytics";
  * поля когорту «до повного розкату» неможливо відрізати — лишиться гадання
  * про знаменник.
  */
-export const ADVICE_INSTRUMENTATION_VERSION = 1;
+export const ADVICE_INSTRUMENTATION_VERSION = 2;
 
 /** Джерело поради — enum контракту `ai_advice_shown`. */
 export type AdviceSource = "coach_insight" | "weekly_digest";
 
-/** Реакція — дискримінатор контракту `ai_advice_reacted`. */
-export type AdviceReaction = "ask_ai" | "refresh" | "collapse" | "expand";
+/**
+ * Реакція — дискримінатор контракту `ai_advice_reacted`.
+ *
+ * `helpful` / `not_helpful` додані 2026-09-01 разом із бампом
+ * `ADVICE_INSTRUMENTATION_VERSION` до 2 (саме той випадок, який версія
+ * описує: «змінюється набір реакцій»). Це єдина оцінка ЯКОСТІ в усьому
+ * реєстрі — решта реакцій кажуть, що людина зробила, і жодна не каже, чи
+ * порада була варта показу.
+ */
+export type AdviceReaction =
+  "ask_ai" | "refresh" | "collapse" | "expand" | "helpful" | "not_helpful";
 
 /**
  * Поверхня показу — property `surface` події `ai_advice_shown`.
@@ -70,6 +80,9 @@ export type AdviceReaction = "ask_ai" | "refresh" | "collapse" | "expand";
  * показів, без жодної помилки. Нову поверхню додавай СЮДИ, тоді компілятор
  * покаже всі місця, де її треба врахувати.
  */
+// `hub_reports` — історичне значення: вкладка «Звʼязки» перестала рендерити
+// дайджест 2026-09-03, нові події з ним не їдуть; лишається, щоб старі
+// PostHog-запити не зламались на типі.
 export type AdviceSurface = "hub_dashboard" | "hub_reports";
 
 /**
@@ -110,24 +123,6 @@ export function newAdviceId(): string {
   adviceIdCounter += 1;
   return `adv-${Date.now().toString(36)}-${adviceIdCounter.toString(36)}`;
 }
-
-/**
- * Локальний день пристрою у форматі `YYYY-MM-DD` (ADR-0078).
- *
- * Свідомо НЕ `toISOString().slice(0,10)`: UTC-зсув перекидає добу ввечері за
- * київським часом і подія поїхала б із «завтрашнім» `day_key`.
- */
-/* eslint-disable sergeant-design/prefer-kyiv-time --
-   ADR-0078: день належить ПРИСТРОЮ, не Києву. Київський day-key приписав би
-   «учорашній» показ мандрівнику, який читає пораду о 20:00 за місцевим часом.
-   `dateKeyFromDate` не переюзаний свідомо: він живе в `@sergeant/routine-domain`,
-   а `core/observability` не має залежати від доменного пакета модуля. */
-function deviceDayKey(d = new Date()): string {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-/* eslint-enable sergeant-design/prefer-kyiv-time */
 
 /**
  * Стабільний у межах завантаження сторінки `advice_id` для порад, які не

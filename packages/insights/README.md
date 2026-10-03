@@ -17,9 +17,14 @@ src/
 import { generateWeeklyDigest, getRecommendations } from "@sergeant/insights";
 ```
 
-## Тести
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/insights <script>`.
 
 ```bash
-pnpm --filter @sergeant/insights test       # Vitest
-pnpm --filter @sergeant/insights typecheck
+pnpm --filter @sergeant/insights typecheck      # TypeScript
+pnpm --filter @sergeant/insights lint           # ESLint
+pnpm --filter @sergeant/insights test           # Vitest
+pnpm --filter @sergeant/insights test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/insights test:coverage  # Vitest з покриттям
 ```

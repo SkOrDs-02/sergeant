@@ -8,14 +8,10 @@
  */
 
 import { Banner } from "@shared/components/ui/Banner";
-import {
-  DataState,
-  type DataStateQueryLike,
-} from "@shared/components/ui/DataState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
-import { SkeletonHabitRow } from "@shared/components/ui/Skeleton";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
+import { messages } from "@shared/i18n/uk";
 import { RoutineCalendarPanel } from "./components/RoutineCalendarPanel";
 import { RoutineHabitsPanel } from "./components/RoutineHabitsPanel";
 import { RoutineStatsPanel } from "./components/RoutineStatsPanel";
@@ -57,25 +53,24 @@ export function RoutineTimeline({
   onPullRefresh,
   onPullRefreshError,
 }: RoutineTimelineProps) {
+  // AI-DANGER: `isHabitPending` — це прапорець `useTransition` навколо тогла
+  // ОДНІЄЇ звички (`useRoutineAppState.onToggleHabit`), а не завантаження
+  // даних. До 2026-09-03 він годував `<DataState>`, який на час переходу
+  // підміняв усю панель календаря чотирма скелетон-рядками. Наслідки були
+  // два, і гірший — не візуальний: підміна РОЗМОНТОВУВАЛА кнопку, на якій
+  // стоїть фокус, тож клавіатурний користувач після кожної відмітки опинявся
+  // на `<body>` і мусив протабувати список наново (browser-QA 2026-09-02).
+  //
+  // Скелет тут не мав що показувати й на початковому завантаженні: `data`
+  // була літеральним `true`, тобто ніякого асинхронного запиту за цією
+  // «query» не стояло — єдиним станом, який вмикав скелет, був сам перехід.
+  //
+  // Тепер панель лишається змонтованою, а зайнятість повідомляється
+  // `aria-busy` — для читача екрана це те саме «зачекай», але без втрати
+  // фокуса. Не повертай сюди підміну піддерева: ціна одного кадру скелета —
+  // зламана клавіатурна навігація.
   const calendarBusy = isHabitPending && mainTab === "calendar";
-  const calendarQuery: DataStateQueryLike<true> = {
-    data: calendarBusy ? undefined : (true as const),
-    isLoading: calendarBusy,
-  };
   const cloudPullPending = useCloudPullPending();
-
-  const calendarLoadingSkeleton = (
-    <div className="px-4 pt-2 space-y-2 motion-safe:animate-pulse">
-      {[0, 1, 2, 3].map((i) => (
-        <SkeletonHabitRow
-          key={i}
-          shimmer
-          module="routine"
-          style={{ animationDelay: `${i * 40}ms` }}
-        />
-      ))}
-    </div>
-  );
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col min-h-0">
@@ -97,11 +92,7 @@ export function RoutineTimeline({
               role="alert"
               className="flex items-start justify-between gap-3"
             >
-              <span>
-                Не вдалося зберегти дані Рутини ({storageErrorMsg}). Можливо,
-                браузер переповнив сховище, звільни місце або експортуй резервну
-                копію.
-              </span>
+              <span>{messages.errors.generic.storageSaveFailed}</span>
               <button
                 type="button"
                 onClick={onDismissStorageError}
@@ -117,12 +108,9 @@ export function RoutineTimeline({
             actions={calendarActions}
           >
             <SectionErrorBoundary title="Не вдалось показати «Календар»">
-              <DataState
-                query={calendarQuery}
-                skeleton={calendarLoadingSkeleton}
-              >
-                {() => <RoutineCalendarPanel hidden={mainTab !== "calendar"} />}
-              </DataState>
+              <div aria-busy={calendarBusy || undefined}>
+                <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
+              </div>
             </SectionErrorBoundary>
           </RoutineCalendarProvider>
 

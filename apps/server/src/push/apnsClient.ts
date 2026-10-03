@@ -109,6 +109,13 @@ export function getApnsProvider(): apn.Provider | null {
   cachedProvider = new apn.Provider({
     token: { key: cfg.key, keyId: cfg.keyId, teamId: cfg.teamId },
     production: cfg.production,
+    // Стелю часу на запит виставляємо ЯВНО. Зависання тут ніколи не було —
+    // на відміну від FCM-гілки `push/send.ts`, `@parse/node-apn` має власний
+    // дефолт `requestTimeout: 5000` (`lib/config.js`). Але успадкований
+    // дефалт залежності — не наше рішення: bump версії може його змінити
+    // мовчки, а симптом (пуші висять по кілька хвилин у слот нагадувань)
+    // виглядатиме як завгодно, тільки не як наслідок оновлення пакета.
+    requestTimeout: env.PUSH_APNS_REQUEST_TIMEOUT_MS,
   });
   return cachedProvider;
 }

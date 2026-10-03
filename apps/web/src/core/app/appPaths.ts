@@ -21,10 +21,10 @@ export const APP_TITLE = "Sergeant · Твій персональний хаб �
 // name. Format mirrors `APP_TITLE`: `Sergeant · <surface>`.
 export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/status": "Sergeant · Статус системи",
-  "/chat": "Sergeant · Асистент",
+  "/chat": "Sergeant · Чат із Сержантом",
   "/assistant": "Sergeant · Що вміє Сержант",
-  "/capabilities": "Sergeant · Що вміє додаток",
-  "/pricing": "Sergeant · Тарифи",
+  "/capabilities": "Sergeant · Що вміє застосунок",
+  "/pricing": "Sergeant · Плани",
   "/sign-in": "Sergeant · Вхід",
   "/reset-password": "Sergeant · Скидання пароля",
   "/verify-email": "Sergeant · Підтвердження email",
@@ -108,7 +108,7 @@ export const ASSISTANT_PATH = "/assistant";
 /**
  * Каталог можливостей САМОГО ДОДАТКА. Окремо від ASSISTANT_PATH, який
  * перелічує інструменти чату: це два різні питання, і зведення їх на один
- * екран топило б новачка у 60 сценаріях.
+ * екран топило б новачка у десятках сценаріїв.
  */
 export const CAPABILITIES_PATH = "/capabilities";
 
@@ -126,6 +126,25 @@ export const CHAT_PATH = "/chat";
 // dashboard.
 export const WELCOME_PATH = "/welcome";
 
+// Другий вхід у той самий онбординг: `router.tsx` → `onboarding/*` → лінивий
+// `onboarding/route.tsx`, що рендерить `WelcomeScreen`.
+export const ONBOARDING_PATH = "/onboarding";
+
+/**
+ * `true` на екранах онбордингу (`/welcome`, `/onboarding`, `/onboarding/*`).
+ * Згоду на аналітику там питає крок самого онбордингу, тож плаваючий банер
+ * (`AnalyticsConsentGate`) на цих маршрутах мовчить. Кінцевий слеш не
+ * враховується: `/welcome/` — той самий екран.
+ */
+export function isOnboardingPath(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return (
+    path === WELCOME_PATH ||
+    path === ONBOARDING_PATH ||
+    path.startsWith(`${ONBOARDING_PATH}/`)
+  );
+}
+
 export const RESET_PASSWORD_PATH = "/reset-password";
 
 // Лендинг, куди Better Auth редиректить після `GET /api/auth/verify-email`.
@@ -141,6 +160,22 @@ export const LEGAL_PRIVACY_PATH = "/legal/privacy";
 export const LEGAL_TERMS_PATH = "/legal/terms";
 export const LEGAL_COOKIES_PATH = "/legal/cookies";
 export const LEGAL_OFFER_PATH = "/legal/offer";
+
+const LEGAL_ROUTE_PATHS: ReadonlySet<string> = new Set([
+  LEGAL_PRIVACY_PATH,
+  LEGAL_TERMS_PATH,
+  LEGAL_COOKIES_PATH,
+  LEGAL_OFFER_PATH,
+]);
+
+/**
+ * `true` для чотирьох юридичних сторінок (`/legal/*`). Збіг точний — так само,
+ * як у `StandaloneRoutes` (`paths.includes(pathname)`), тож жодного префікса:
+ * новий юридичний шлях додається константою вище і сюди.
+ */
+export function isLegalRoutePath(pathname: string): boolean {
+  return LEGAL_ROUTE_PATHS.has(pathname);
+}
 
 // Anonymous public status page (`/status`). Renders the per-component
 // view from `/api/status`. No auth — same intent as `/pricing` (public

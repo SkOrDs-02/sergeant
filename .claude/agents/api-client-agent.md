@@ -1,7 +1,7 @@
 ---
 name: api-client-agent
 description: "Stage 3 of sergeant-deliver-squad — owns packages/api-client. Mirrors server-agent's response shape into TypeScript types AND writes the .contract.test.ts that proves server serializer ↔ api-client types ↔ test stay in sync (Hard Rule #3 contract triplet). Trigger after server-agent; run before web-agent/mobile-agent. Boundary: does NOT implement server logic or UI — it is the typed contract the UI consumers build against."
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 skills: sergeant-server-api
 ---
@@ -48,7 +48,7 @@ expect(typeof acct.balance).toBe("number"); // NOT "string" — proves Hard Rule
 ## Failure modes to avoid
 
 - **Bigint-as-string leak slips through:** contract test only checks presence, not `typeof` → a `"123"` balance ships. Always assert `typeof === "number"`.
-- **Test doesn't match real server schema:** hand-written Pact mock returns a shape the server never emits → green locally, breaks in prod. Cross-check against the server serializer + `docs/02-engineering/api/openapi.json` (`pnpm api:check-openapi`).
+- **Test doesn't match real server schema:** hand-written Pact mock returns a shape the server never emits → green locally, breaks in prod. Cross-check against the server serializer + `docs/engineering/api/openapi.json` (`pnpm api:check-openapi`).
 - **Orphaned type on delete:** removing a server endpoint but leaving its type → imports break in N places. Grep the repo for the endpoint + type name before deleting.
 
 ## Report to web-agent & mobile-agent
@@ -57,3 +57,7 @@ expect(typeof acct.balance).toBe("number"); // NOT "string" — proves Hard Rule
 - Contract-test status (pass/fail + path).
 - Typecheck + `api:check-openapi` status (✅ or exact errors).
 - Any breaking change or new nullable field the UI must handle.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.

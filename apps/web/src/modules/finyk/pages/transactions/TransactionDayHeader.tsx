@@ -57,13 +57,21 @@ export function TransactionDayHeader({
         // dropped: wide letter-spacing on mixed-case day names (not
         // uppercase) just looked sparse rather than deliberate.
         "text-style-label font-semibold text-text transition-colors",
-        // A soft tint on the header band — distinct from the flush
+        // A solid tint on the header band — distinct from the flush
         // bg-panel rows beneath it — reads as "this label owns these
         // rows" instead of blending into the first row's meta line.
-        "bg-panelHi/45 hover:bg-panelHi",
-        // Separator only when the day is expanded and rows follow beneath —
-        // a collapsed day is a self-contained card and needs no trailing line.
-        !collapsed && "border-b border-line/60",
+        // Суцільний `bg-panelHi`, не `/45`: напівпрозора заливка змішується
+        // з тим, що під нею, і втрачає частину відмінності від рядків. Hover
+        // — `bg-line/40` поверх, бо власний `hover:bg-panelHi` на суцільній
+        // смузі нічого б не міняв (той самий патерн у чипах хаба).
+        "bg-panelHi hover:bg-line/40",
+        // Роздільник під смугою завжди, а не лише в розгорнутому дні (було
+        // `!collapsed && border-b border-line/60`): згорнутий день — це смуга
+        // без власної межі, у світлій темі `panel`/`panelHi` дають їй лише
+        // 1.09 проти столу (`flat` за метрикою `surface`). Той самий
+        // `bg-panelHi border-b border-line`, що в смугах `WorkoutHistoryList`
+        // і `Measurements`; у темній смуга й так `ok` (1.21), лінія її не псує.
+        "border-b border-line",
       )}
     >
       <span className="flex items-center gap-2 min-w-0">

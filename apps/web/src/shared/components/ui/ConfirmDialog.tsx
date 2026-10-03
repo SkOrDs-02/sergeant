@@ -18,7 +18,18 @@ export interface ConfirmDialogProps {
   open: boolean;
   title?: string;
   description?: ReactNode;
-  confirmLabel?: string;
+  /**
+   * Підпис кнопки підтвердження. ОБОВʼЯЗКОВИЙ навмисно.
+   *
+   * Доти тут стояв дефолт `"Видалити"`. Чинних порушень він не спричинив
+   * (єдиний call-site без підпису — видалення шаблону, де «Видалити» й
+   * правильно), але це пастка для наступного автора: забутий підпис на
+   * НЕдеструктивній дії мовчки запропонував би «Видалити». Нейтральний
+   * дефолт на кшталт «Підтвердити» пастку не знімає, а лише перевертає —
+   * забутий підпис на справжньому видаленні звучав би мʼяко там, де людину
+   * треба попередити. Тому дефолту немає: компілятор ловить кожен пропуск.
+   */
+  confirmLabel: string;
   cancelLabel?: string;
   danger?: boolean;
   onConfirm?: () => void;
@@ -40,7 +51,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   open,
   title = "Підтвердити дію",
   description,
-  confirmLabel = "Видалити",
+  confirmLabel,
   cancelLabel = "Скасувати",
   danger = true,
   onConfirm,
@@ -160,11 +171,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
           >
             {confirmLabel}
           </Button>
-          <Button
-            variant="secondary"
-            className="w-full h-12"
-            onClick={onCancel}
-          >
+          <Button variant="outline" className="w-full h-12" onClick={onCancel}>
             {cancelLabel}
           </Button>
         </div>

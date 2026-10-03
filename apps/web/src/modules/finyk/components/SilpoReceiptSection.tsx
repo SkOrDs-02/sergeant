@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-08-18
  * Status: Active — Silpo MCP integration, track B (finyk receipt
- * enrichment). See `docs/90-work/planning/specs/silpo-mcp-integration.md`
+ * enrichment). See `docs/work/specs/silpo-mcp-integration.md`
  * § Рішення дизайну «Спліт — пропозиція, не мовчазний запис».
  *
  * "Чек" section inside `BankTransactionDetailsSheet` — shows Silpo receipt
@@ -37,10 +37,7 @@ import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/catego
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { useSilpoReceiptForTransaction } from "@finyk/hooks/useSilpoReceipts";
-import {
-  useSilpoRelinkReceipt,
-  useSilpoUnlinkReceipt,
-} from "@finyk/hooks/useSilpoMutations";
+import { useSilpoUnlinkReceipt } from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { CATEGORY_ICON_MAP, stripLeadingEmoji } from "./txRowHelpers";
 import { SilpoReceiptPickerSheet } from "./SilpoReceiptPickerSheet";
@@ -168,11 +165,12 @@ export function SilpoReceiptSection({
   // повідомлення. Успіх видно й так (чек зникає після інвалідації), а
   // помилку показуємо рядком поруч із кнопкою.
   const unlinkMutation = useSilpoUnlinkReceipt();
-  const relinkMutation = useSilpoRelinkReceipt();
-  // Чек, який щойно відчепили. Тримаємо ЛОКАЛЬНО, бо після інвалідації
-  // `summary` стає порожнім і секція зникла б разом із можливістю
-  // скасувати — а саме безповоротність і була скаргою.
-  const [undoneReceiptId, setUndoneReceiptId] = useState<string | null>(null);
+  // «У цієї операції ТІЛЬКИ ЩО був чек Сільпо». Тримаємо ЛОКАЛЬНО, бо після
+  // інвалідації `summary` стає порожнім — і без цього прапорця секція
+  // зникла б разом із будь-яким виходом далі. Живе рівно до закриття
+  // деталей транзакції; довше й не потрібно, бо після повторного заходу
+  // операція вже виглядає як звичайна «без чека».
+  const [justUnlinked, setJustUnlinked] = useState(false);
   const { status } = useSilpoSyncState();
   const { summary, detail, isLoading } = useSilpoReceiptForTransaction(
     transactionId,
@@ -231,7 +229,7 @@ export function SilpoReceiptSection({
         <div className="flex items-center gap-2">
           <Icon
             name="shopping-cart"
-            size={16}
+            size="md"
             className="text-muted shrink-0"
             aria-hidden
           />
@@ -243,8 +241,9 @@ export function SilpoReceiptSection({
           {copy.connectPromptHint}
         </p>
         <Button
-          variant="secondary"
-          module="finyk"
+          variant="soft"
+          tone="finyk"
+
           size="sm"
           className="mt-2"
           onClick={() => navigate("/settings?group=modules#settings-finyk")}
@@ -255,48 +254,32 @@ export function SilpoReceiptSection({
     );
   }
 
-  // Відчеплено — але поки в цьому екрані, пропонуємо повернути. Живе
-  // рівно до закриття деталей транзакції: undo без дедлайну вимагав би
-  // серверного журналу дій, а тут вистачає життя компонента.
-  if (!summary && undoneReceiptId) {
-    return (
-      <section className="rounded-2xl border border-line bg-panel p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-style-caption text-muted">{copy.unlinkDone}</p>
-          <button
-            type="button"
-            disabled={relinkMutation.isPending}
-            onClick={() =>
-              relinkMutation.mutate(
-                { transactionId, receiptId: undoneReceiptId },
-                { onSuccess: () => setUndoneReceiptId(null) },
-              )
-            }
-            className="touch-target rounded-xl px-3 text-style-label text-finyk transition-colors hover:text-text disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
-          >
-            {relinkMutation.isPending
-              ? copy.unlinkUndoPending
-              : copy.unlinkUndo}
-          </button>
-        </div>
-        {relinkMutation.isError && (
-          <p role="alert" className="mt-1 text-style-caption text-danger">
-            {copy.unlinkUndoFailed}
-          </p>
-        )}
-      </section>
-    );
-  }
-
-  // Чека немає, але операція виглядає як Сільпо — пропонуємо прикріпити
-  // вручну. Це вихід для всього, що matcher чесно пропустив: родинна
-  // карта, готівка, покупка старіша за завантажену історію банку.
+  // Чека немає — пропонуємо прикріпити вручну. Це вихід для всього, що
+  // matcher чесно пропустив: родинна карта, готівка, покупка старіша за
+  // завантажену історію банку.
+  //
+  // **Той самий стан обслуговує і «щойно відвʼязали».** Спершу там стояла
+  // окрема панель із двома кнопками — «Повернути» (той самий чек назад) і
+  // «Обрати інший» (пікер). Рішення власника 2026-09-17: дві кнопки — це
+  // шум; лишається одна дія, і саме та, що вже існує й зустрічає людину
+  // першою. Скасування випадкового тапу нікуди не дінеться — той самий
+  // чек лежить у пікері першим рядком (він без пари, дата збігається,
+  // сума підсвічена як точна), тож «повернути» робиться тим самим
+  // жестом, що й «виправити». Окремий афорданс під це був другим шляхом
+  // до того самого результату.
   if (!summary) {
     // Рівно `connected`, з тієї ж причини, що й банер вище: під
     // `disabled` (SILPO_ENABLED=false, дефолт проду) прикріплювати
     // нічого — усі роути віддають 503, і кнопка вела б у нікуди. Під
     // `unknown` / `reauth_required` — так само не час пропонувати дію.
-    if (status !== "connected" || !looksLikeSilpo) return null;
+    //
+    // `justUnlinked` обходить евристику по банківському опису: вона
+    // потрібна лише для discoverability на порожньому місці, а тут факт
+    // чека Сільпо вже доведений — він щойно був привʼязаний. Без цього
+    // обходу людина, відвʼязавши хибний чек на операції з описом на
+    // кшталт «FOP PRODUCTY», лишалась би ні з чим.
+    if (status !== "connected") return null;
+    if (!looksLikeSilpo && !justUnlinked) return null;
     return (
       <>
         <div className="flex justify-end">
@@ -333,15 +316,16 @@ export function SilpoReceiptSection({
         <div className="flex items-center gap-2 min-w-0">
           <Icon
             name="shopping-cart"
-            size={16}
+            size="md"
             className="text-muted shrink-0"
             aria-hidden
           />
           <h3 className="text-style-label text-text">{copy.title}</h3>
         </div>
         <Button
-          variant="secondary"
-          module="finyk"
+          variant="soft"
+          tone="finyk"
+
           size="xs"
           disabled={!canPropose}
           aria-expanded={proposalOpen}
@@ -400,8 +384,9 @@ export function SilpoReceiptSection({
           )}
           <div className="flex gap-2 pt-1">
             <Button
-              variant="primary"
-              module="finyk"
+              variant="solid"
+              tone="finyk"
+
               size="xs"
               className="flex-1"
               onClick={confirmSplit}
@@ -462,7 +447,7 @@ export function SilpoReceiptSection({
           disabled={unlinkMutation.isPending}
           onClick={() =>
             unlinkMutation.mutate(transactionId, {
-              onSuccess: ({ receiptId }) => setUndoneReceiptId(receiptId),
+              onSuccess: () => setJustUnlinked(true),
             })
           }
           className="touch-target rounded-xl px-3 text-style-caption text-subtle transition-colors hover:text-text disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"

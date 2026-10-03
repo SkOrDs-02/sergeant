@@ -119,8 +119,29 @@ test("@critical routine: today → tomorrow → week keeps one selected day", as
   await deferAnonymousMigration(page);
 
   await page.goto("/routine", { waitUntil: "domcontentloaded" });
+
+  // Спершу заводимо звичку, і це не декорація тесту. З 2026-09-17 пульт
+  // стрічки (діапазон + тижневий пікер + пошук + чипи) не рендериться в
+  // стані «нема жодної звички І стрічка порожня І фільтр не активний» —
+  // тобто рівно тоді, коли на екрані стоїть «Почни з однієї звички»
+  // (аудит шуму, N-4). Перемикання діапазонів у тому стані не має предмета:
+  // гортати нічого. Регресію, заради якої цей тест існує (тап по даті давав
+  // режим `day` замість `today`/`tomorrow`, репорт власника 2026-08-17), він
+  // перевіряє так само — просто на непорожній стрічці.
+  await page
+    .getByRole("button", { name: "Додати звичку", exact: true })
+    .click();
+  const createDialog = page.getByRole("dialog", { name: "Нова звичка" });
+  await expect(createDialog).toBeVisible();
+  await createDialog.getByLabel("Назва звички").fill("Смоук діапазон");
+  await createDialog
+    .getByRole("button", { name: "Додати звичку", exact: true })
+    .click();
+  await expect(createDialog).toBeHidden();
+
   const range = page.getByRole("tablist", { name: "Діапазон стрічки" });
   const week = page.getByRole("group", { name: "Тиждень" });
+  await expect(range).toBeVisible();
 
   for (const label of ["Сьогодні", "Завтра", "Тиждень"]) {
     await test.step(label, async () => {

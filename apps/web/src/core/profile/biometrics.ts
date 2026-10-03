@@ -14,17 +14,24 @@
  * fizruk, де вона все одно потрібна для КБЖВ), а `weightKg` тут — похідний
  * кеш останнього відомого значення, не незалежний запис.
  *
- * Чому кеш, а не SoT: `hub_biometrics` — localStorage браузера, без
- * серверної таблиці й без історії (одне число, не часовий ряд):
+ * Чому кеш, а не SoT: тут немає ІСТОРІЇ (одне число, не часовий ряд), і
+ * немає op-log-синхронізації:
  *
- *   - немає в `OP_LOG_TABLE_REGISTRY` (`apps/server/src/modules/sync/syncV2.ts`)
- *     і в жодній PG-міграції;
+ *   - немає в `OP_LOG_TABLE_REGISTRY` (`apps/server/src/modules/sync/syncV2.ts`);
  *   - `SYNC_MODULES.profile` (`packages/shared/src/sync/modules.ts`) —
  *     tombstone: жоден рантайм його не споживає;
  *   - серверної таблиці `kv_store` теж немає.
  *
- * Практичний наслідок: «поточна вага» тут НЕ переживає зміну пристрою
- * чи очистку браузера. Історія ваги, яка переживає, живе у fizruk-таблицях
+ * Серверна нога В НАЯВНОСТІ, і це не op-log: міграція 115 дала один
+ * JSONB-рядок на юзера за `GET/PUT /api/me/profile`, а write-through і
+ * boot-звірку тримає `./profileWriteThrough.ts`. Тобто зміну пристрою й
+ * очистку браузера біометрика ПЕРЕЖИВАЄ (до 2026-08 не переживала, і цей
+ * абзац лишався від тих часів). Рядок переписується ЦІЛКОМ, тож читай
+ * застереження над `resolveHalvesAgainstServer` перед будь-якою правкою
+ * пушів: половина, у яку локально ще не писали, там означає «не знаємо»,
+ * а не «порожньо».
+ *
+ * Історія ваги, яка переживає окремо від цього рядка, живе у fizruk-таблицях
  * (`fizruk_daily_log` + `fizruk_measurements`) — читай її через
  * `selectLatestBodyWeight` з `@sergeant/fizruk-domain`. Для юзера, чия вага
  * лишилась тільки тут (записана до cutover-у), клієнтський bootstrap
@@ -52,7 +59,11 @@
  */
 import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage/storage";
+// Durable-пара з тієї ж причини, що й у `memoryBank.ts` (аудит 2026-09-28, D2).
+import {
+  safeReadLSValidatedDurable,
+  safeWriteLSDurable,
+} from "@shared/lib/storage/storage";
 
 export const BIOMETRICS_KEY = STORAGE_KEYS.HUB_BIOMETRICS;
 
@@ -84,7 +95,7 @@ export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number];
  * the i18n error copy, and inline numbers in this schema — and only the
  * first two were kept in lockstep by a pin test. A schema left behind on
  * an old range is the worst kind of drift: `readBiometrics()` parses every
- * read through `safeReadLSValidated`, which falls back to
+ * read through `safeReadLSValidatedDurable`, which falls back to
  * `BIOMETRICS_DEFAULT` — silently dropping the ENTIRE record (birth date,
  * sex, activity level, weight, not just the one out-of-sync field) — the
  * moment a value inside the new-but-not-yet-validated range gets written.
@@ -120,6 +131,20 @@ export const BiometricsSchema = z.object({
    * regardless of which surface initiated it.
    */
   weightUpdatedAt: IsoTimestampSchema.nullable(),
+  /**
+   * Чи враховувати спалене на тренуваннях у денній нормі КБЖВ.
+   *
+   * AI-DANGER: дефолт `false` навмисний і принциповий. Множник рівня
+   * активності в TDEE ВЖЕ враховує тренування оптом наперед, тож додавання
+   * спаленого зверху рахує їх удруге і дозволяє зʼїсти зайве - класична
+   * пастка MyFitnessPal. Увімкнений тумблер перемикає розрахунок на
+   * `sedentary` плюс фактичні витрати дня, а не додає до чинної норми.
+   *
+   * `.catch(false)` - зворотна сумісність: записи, зроблені до появи поля,
+   * не мають провалювати парс і зносити ВЕСЬ профіль у дефолт
+   * (`safeReadLSValidated` при помилці схеми відкидає рядок цілком).
+   */
+  countWorkoutsInGoal: z.boolean().catch(false),
   /** ISO timestamp of the last write to ANY field in this record. */
   updatedAt: IsoTimestampSchema,
 });
@@ -173,7 +198,7 @@ export function setBiometricsOwner(userId: string | null): void {
  * out/anonymous.
  */
 export function readBiometricsOwnerId(): string | null {
-  return safeReadLSValidated(BIOMETRICS_KEY, StoredBiometricsSchema, {
+  return safeReadLSValidatedDurable(BIOMETRICS_KEY, StoredBiometricsSchema, {
     ...BIOMETRICS_DEFAULT,
     ownerId: null,
   }).ownerId;
@@ -188,11 +213,12 @@ export const BIOMETRICS_DEFAULT: Biometrics = {
   activityLevel: null,
   weightKg: null,
   weightUpdatedAt: null,
+  countWorkoutsInGoal: false,
   updatedAt: EPOCH,
 };
 
 export function readBiometrics(): Biometrics {
-  return safeReadLSValidated(
+  return safeReadLSValidatedDurable(
     BIOMETRICS_KEY,
     BiometricsSchema,
     BIOMETRICS_DEFAULT,
@@ -225,7 +251,7 @@ export function subscribeBiometrics(listener: BiometricsListener): () => void {
  * `profileWriteThrough.ts`'s cross-account upload guard.
  */
 export function writeBiometrics(b: Biometrics): void {
-  safeWriteLS(BIOMETRICS_KEY, { ...b, ownerId: currentBiometricsOwner });
+  safeWriteLSDurable(BIOMETRICS_KEY, { ...b, ownerId: currentBiometricsOwner });
   for (const listener of Array.from(biometricsListeners)) {
     try {
       listener(b);
@@ -307,17 +333,54 @@ export function computeAgeYears(
   return age >= 0 ? age : null;
 }
 
+/** Order matches the Profile form's own field order top-to-bottom. */
+export const MISSING_BIOMETRICS_FIELDS = [
+  "heightCm",
+  "birthDate",
+  "sex",
+  "activityLevel",
+  "weightKg",
+] as const;
+export type MissingBiometricsField = (typeof MISSING_BIOMETRICS_FIELDS)[number];
+
+/**
+ * Which fields still block the Mifflin-St Jeor formula, in form order.
+ *
+ * `effectiveWeightKg` lets a caller that already resolved the fizruk-vs-
+ * profile weight fallback (`resolveEffectiveWeightKg` in
+ * `modules/nutrition/lib/tdee.ts`) pass THAT number instead of the raw
+ * `b.weightKg` — otherwise a user with a real fizruk weigh-in but an empty
+ * Profile weight field would see "вага" listed as missing even though
+ * `computeNutritionTargetsFromBiometrics` already has a number to work
+ * with. Defaults to `b.weightKg` for callers that only care about the
+ * Profile record itself (the "Готово до розрахунку" status badge).
+ *
+ * Browser-QA 2026-09-03: the Nutrition preset menu's "заповни профіль"
+ * hint was a static sentence that repeated verbatim no matter how many of
+ * the five fields the user had already filled in Profile — a user who
+ * filled four out of five (most plausibly forgetting `weightKg`, having
+ * assumed their fizruk weigh-in already covered it) saw the exact same
+ * wall of text on return and read it as "nothing saved". Listing the
+ * fields that are STILL missing turns that dead-end into a checklist.
+ */
+export function missingBiometricsFieldsForTdee(
+  b: Biometrics,
+  effectiveWeightKg: number | null = b.weightKg,
+): MissingBiometricsField[] {
+  const missing: MissingBiometricsField[] = [];
+  if (b.heightCm == null) missing.push("heightCm");
+  if (computeAgeYears(b.birthDate) == null) missing.push("birthDate");
+  if (b.sex == null) missing.push("sex");
+  if (b.activityLevel == null) missing.push("activityLevel");
+  if (effectiveWeightKg == null) missing.push("weightKg");
+  return missing;
+}
+
 /**
  * `true` when biometrics has every field needed to run the Mifflin-St
  * Jeor formula (used by Nutrition in PR #2 to enable the
  * "Розрахувати з профілю" CTA).
  */
 export function isBiometricsCompleteForTdee(b: Biometrics): boolean {
-  return (
-    b.heightCm != null &&
-    b.weightKg != null &&
-    b.sex != null &&
-    b.activityLevel != null &&
-    computeAgeYears(b.birthDate) != null
-  );
+  return missingBiometricsFieldsForTdee(b).length === 0;
 }

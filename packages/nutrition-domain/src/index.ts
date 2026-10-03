@@ -31,6 +31,9 @@ export * from "./pantryLedger.js";
 // дня. Споживачів поки немає за задумом (cutover — стадія 3, гейт
 // founder-а) — див. AI-CONTEXT у nutritionGoals.ts.
 export * from "./nutritionGoals.js";
+// Довжина серії днів у нормі калорій (O1 — віхи серії в Їжі).
+export * from "./kcalStreak.js";
+export * from "./adaptiveTdee.js";
 export * from "./mergeItems.js";
 export * from "./recipeIds.js";
 export * from "./foodCategories.js";
@@ -42,6 +45,9 @@ export * from "./deviceDayKey.js";
 export * from "./nutritionTypes.js";
 export * from "./nutritionPrefs.js";
 export * from "./nutritionPantries.js";
+// Місця зберігання: плаский погляд на всі комори разом + правила, за
+// якими позиція потрапляє в місце. Ручний вибір сильніший за вгадування.
+export * from "./pantryPlacement.js";
 export * from "./nutritionLog.js";
 export * from "./quickStats.js";
 // Модель тижневого ккал-графіка (стеля осі, лінія цілі, порожні дні) —
@@ -51,6 +57,9 @@ export * from "./weekKcalChart.js";
 export * from "./waterLog.js";
 export * from "./waterHistory.js";
 export * from "./shoppingList.js";
+// Категорії списку покупок = категорії комори (одна таксономія), плюс
+// зведення старих назв і відповіді моделі до них.
+export * from "./shoppingCategories.js";
 // «Рівень 1» списку покупок (детермінований, без AI): точне віднімання
 // залишків комори + авто-вливання low-stock позицій. Реюзить той самий
 // low-stock поріг, що і бейдж комори (`pantryLowStock.ts`).

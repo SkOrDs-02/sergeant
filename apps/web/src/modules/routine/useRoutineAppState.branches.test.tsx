@@ -16,7 +16,6 @@ const routineAppMocks = vi.hoisted(() => ({
   reactNavigate: vi.fn(),
   setPersistedTab: vi.fn(),
   markSeen: vi.fn(),
-  useRoutineDualWriteBoot: vi.fn(),
   useSqliteReadBoot: vi.fn(),
   useRoutineReminders: vi.fn(),
   setTimeMode: vi.fn(),
@@ -119,9 +118,6 @@ vi.mock("./lib/routineStorage", () => ({
     ...(state as object),
     bulkMarked: dateKey,
   }),
-}));
-vi.mock("./hooks/useRoutineDualWriteBoot", () => ({
-  useRoutineDualWriteBoot: routineAppMocks.useRoutineDualWriteBoot,
 }));
 vi.mock("./hooks/useSqliteReadBoot", () => ({
   useSqliteReadBoot: routineAppMocks.useSqliteReadBoot,

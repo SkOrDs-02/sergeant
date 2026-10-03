@@ -4,6 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Badge } from "@shared/components/ui/Badge";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDateFull } from "@shared/lib/time/formatDate";
 import type {
   WhatsNewItem,
   WhatsNewItemKind,
@@ -12,7 +13,7 @@ import type {
 
 /**
  * `<WhatsNewModal />` — in-product release notes overlay (PR-18 у
- * [FTUX master tracker](docs/01-product/launch/product-os/ftux-master-tracker.md) §3.3).
+ * [FTUX master tracker](docs/work/specs/launch/product-os/ftux-master-tracker.md) §3.3).
  *
  * Render-only — стан / persist / analytics керуються `useWhatsNew()`.
  * Викликач передає `release` і два callback-и:
@@ -89,15 +90,9 @@ export function WhatsNewModal({
   };
 
   const formattedDate = (() => {
-    try {
-      return new Intl.DateTimeFormat("uk-UA", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(new Date(release.date));
-    } catch {
-      return release.date;
-    }
+    const parsed = new Date(release.date);
+    if (Number.isNaN(parsed.getTime())) return release.date;
+    return formatDateFull(parsed);
   })();
 
   return (
@@ -126,7 +121,7 @@ export function WhatsNewModal({
             {messages.whatsNew.dismiss}
           </Button>
           {cta && (
-            <Button variant="primary" onClick={handleCtaClick}>
+            <Button variant="solid" onClick={handleCtaClick}>
               {cta.label}
             </Button>
           )}

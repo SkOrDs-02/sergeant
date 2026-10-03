@@ -1,7 +1,7 @@
 /**
  * Snapshot extractor for the mobile Nutrition dual-write layer.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Reads the
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Reads the
  * SQLite warm cache (Stage 8 PR #057n-tombstone — was MMKV before)
  * and produces a `NutritionDualWriteState` blob that the diff layer
  * can compare.

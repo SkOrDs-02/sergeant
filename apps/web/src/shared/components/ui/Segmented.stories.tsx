@@ -7,7 +7,7 @@ import { Segmented, type SegmentedProps } from "./Segmented";
  * усередині сторінки. Консолідує drift між Fizruk Workouts (solid
  * module-fill tabs) та Routine calendar time-mode chips (soft tinted chips).
  *
- * Two-axis API:
+ * Three-axis API:
  *   - `variant` — accent колір (`brand` за замовчуванням; чотири module-токени
  *                 скоупують активний стан до конкретного модуля).
  *   - `style`   — візуальне трактування активного chip-а:
@@ -17,8 +17,11 @@ import { Segmented, type SegmentedProps } from "./Segmented";
  *                 - `soft`  — `bg-{c}-soft` + accent-border + `text-{c}-strong`,
  *                   більш subtle treatment для filtering chips.
  *
- * Без сабтабів: `<SubTabs>` залишається окремим повноширинним bar-style
- * варіантом. Hapticи на iOS/Android викликаються через `hapticTap()`
+ *   - `layout`  — геометрія ряду: `pill` (за замовчуванням, чипи по
+ *                 ширині підпису) або `bar` (одна повноширинна доріжка).
+ *
+ * `layout="bar"` не заміняє `<SubTabs>`: той компонент — навігація між
+ * вьюхами сторінки, а це контрол усередині екрана. Hapticи на iOS/Android викликаються через `hapticTap()`
  * adapter тільки при зміні значення (не на повторному кліку).
  */
 const meta: Meta<typeof Segmented> = {
@@ -29,6 +32,7 @@ const meta: Meta<typeof Segmented> = {
   argTypes: {
     style: { control: "select", options: ["solid", "soft"] },
     size: { control: "select", options: ["sm", "md"] },
+    layout: { control: "select", options: ["pill", "bar"] },
     variant: {
       control: "select",
       options: ["brand", "fizruk", "routine", "nutrition", "finyk"],
@@ -37,6 +41,7 @@ const meta: Meta<typeof Segmented> = {
   args: {
     style: "soft",
     size: "md",
+    layout: "pill",
     variant: "brand",
   },
 };
@@ -74,6 +79,21 @@ export const Default: Story = {
 export const Solid: Story = {
   args: { style: "solid" },
   render: (args) => <ControlledDemo {...args} />,
+};
+
+/**
+ * `bar` layout — одна повноширинна доріжка з рівних сегментів. Для короткого
+ * фіксованого набору взаємовиключних опцій, який перемикають часто: ширина
+ * не стрибає від довжини підпису, і ряд читається як ОДИН контрол. Довгий
+ * чи відкритий набір лишається `pill`.
+ */
+export const Bar: Story = {
+  args: { layout: "bar" },
+  render: (args) => (
+    <div className="w-[360px]">
+      <ControlledDemo {...args} />
+    </div>
+  ),
 };
 
 /** `sm` size — менший touch-target (36 px) для compact filters. */

@@ -69,12 +69,14 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
   const api = useApiClient();
   const toast = useToast();
   const { prefs, updatePrefs } = useNutritionPrefs();
-  const { activePantry, activePantryId, pantryItems } = useNutritionPantries();
+  const { pantryItems } = useNutritionPantries();
   const { addMeal } = useNutritionLog();
 
   const recipeCacheKey = useMemo(
-    () => buildRecipeCacheKey(activePantryId, pantryItems, prefs),
-    [activePantryId, pantryItems, prefs],
+    // Комора одна на всі місця, тож і кеш рецептів один: скоуп ключа —
+    // увесь запас, а не окрема полиця (активної комори більше немає).
+    () => buildRecipeCacheKey("all", pantryItems, prefs),
+    [pantryItems, prefs],
   );
 
   const [recipes, setRecipes] = useState<RecommendedRecipe[]>([]);
@@ -186,9 +188,8 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
         ) : null}
       </View>
       <Text className="text-xs text-fg-muted">
-        Рекомендації на базі продуктів зі складу (
-        {activePantry?.name || "Склад"}
-        ). Можна вказати час, порції та «не хочу».
+        Рекомендації на базі продуктів з комори. Можна вказати час, порції та
+        «не хочу».
       </Text>
 
       <Card className="gap-3">

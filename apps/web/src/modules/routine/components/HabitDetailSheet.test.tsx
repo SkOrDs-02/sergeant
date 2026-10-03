@@ -6,8 +6,8 @@
  * `streaks` / `hubCalendarAggregate` helpers, so we let those run for
  * real and only stub the destructive `routineStorage` mutators (which
  * touch localStorage) plus the heavy `HabitQuickCreateDialog` editor.
- * "Today" is pinned with fake timers so the Kyiv-anchored calendar /
- * completion-% are deterministic.
+ * "Today" is pinned with fake timers so the device-local (ADR-0078)
+ * calendar / completion-% are deterministic.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
@@ -60,7 +60,7 @@ vi.mock("./HabitQuickCreateDialog", () => ({
 
 import { HabitDetailSheet } from "./HabitDetailSheet";
 
-// 2026-06-16T09:00Z = 12:00 Europe/Kyiv (summer, UTC+3) → Kyiv day 2026-06-16.
+// 2026-06-16T09:00Z → device-local day 2026-06-16 (TZ=UTC in vitest.config.js).
 const FIXED_NOW = new Date("2026-06-16T09:00:00Z");
 
 function makeRoutine(over: Partial<RoutineState> = {}): RoutineState {
@@ -110,6 +110,48 @@ describe("HabitDetailSheet", () => {
       />,
     );
     expect(container.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("гнучку звичку міряє тижнями, а не днями", () => {
+    // 2026-06-16 — вівторок. Ціль 3/тиждень: у цьому тижні дві відмітки
+    // (пн, вт), у попередньому три (пн, ср, пт) — один повний тиждень
+    // поспіль плюс поточний, ще не закритий.
+    //
+    // Без правки сюди приїжджав `flexibleStreakBreakdown` — поденна серія
+    // з бюджетом прощень, ІНША «гнучкість». Вона рахувала пропуском кожен
+    // день, у який людина нічого й не мала робити.
+    render(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine({
+          habits: [
+            {
+              id: "h1",
+              name: "Спорт",
+              emoji: "check",
+              recurrence: "flexible",
+              startDate: "2026-01-01",
+              weeklyTargetHistory: [{ from: "2026-01-01", target: 3 }],
+            },
+          ],
+          completions: {
+            h1: [
+              "2026-06-15",
+              "2026-06-16",
+              "2026-06-08",
+              "2026-06-10",
+              "2026-06-12",
+            ],
+          },
+        })}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Тижнів поспіль")).toBeInTheDocument();
+    expect(screen.queryByText("Поточна серія")).toBeNull();
+    expect(screen.getByText("Цього тижня")).toBeInTheDocument();
+    expect(screen.getByText("2 з 3")).toBeInTheDocument();
   });
 
   it("bridges a transient miss of the same habit id instead of unmounting (sync-race hardening)", () => {
@@ -177,10 +219,12 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    const totalLabel = screen.getByText("Разів виконано");
-    // "Разів виконано" caption sits directly under its count <p> in the card.
-    const card = totalLabel.parentElement!;
-    expect(card.textContent).toContain("3");
+    // Stats card reworked to hero + text line (P2-4, анти-слоп аудит
+    // 2026-09-23): total completions live in the "Усього" text line, not a
+    // standalone tile.
+    const totalLabel = screen.getByText("Усього");
+    const line = totalLabel.parentElement!;
+    expect(line.textContent).toContain("3");
   });
 
   it("renders an em-dash when nothing is scheduled in the windows (all pct null)", () => {
@@ -219,7 +263,7 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    // Starts on the current Kyiv month (червень 2026).
+    // Starts on the current device-local month (ADR-0078; червень 2026).
     expect(screen.getByText(/червень 2026/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Наступний місяць" }));
     expect(screen.getByText(/липень 2026/i)).toBeInTheDocument();

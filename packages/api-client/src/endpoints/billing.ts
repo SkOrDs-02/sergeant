@@ -27,6 +27,8 @@ export type BillingCheckoutResponse = z.infer<
 export type BillingStatusResponse = z.infer<
   typeof BillingStatusResponseBodySchema
 >;
+/** Знімок доступу: стан free/trial/pro/grace, фічі реєстру, тижневі лічильники. */
+export type BillingAccess = BillingStatusResponse["access"];
 export type BillingPortalResponse = z.infer<
   typeof BillingPortalResponseBodySchema
 >;

@@ -6,7 +6,13 @@
 
 import { env } from "../../env.js";
 import { presetInstruction } from "./chatPresets.js";
-import { TOOLS, SYSTEM_PREFIX, filterToolsByActiveModules } from "./tools.js";
+import {
+  TOOLS,
+  SYSTEM_PREFIX,
+  filterToolsByActiveModules,
+  filterToolsByHealthConsent,
+} from "./tools.js";
+import { HEALTH_CONSENT_SYSTEM_NOTE } from "./healthGate.js";
 import type { DashboardModuleId } from "@sergeant/shared";
 import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
 import {
@@ -36,7 +42,7 @@ import {
  *    SYSTEM_PREFIX ≈ 14 400-21 200 токенів.** Тут раніше стояло «~19 шт» і
  *    «~6000+ токенів» — застаріло в 2.4-3.5 рази, і на цій цифрі вже було
  *    побудовано заниження unit-економіки (див.
- *    `docs/01-product/launch/business/01-monetization-and-pricing.md` § 9.5).
+ *    `docs/work/specs/launch/business/01-monetization-and-pricing.md` § 9.5).
  *
  *    Саме цей вимір і породив дві зміни нижче — TTL=1h і tool search.
  *
@@ -129,6 +135,7 @@ function stableCacheControl(): CacheControl {
 export function buildSystem(
   context: string,
   preset?: unknown,
+  healthConsent: boolean = true,
 ): AnthropicSystemBlock[] {
   const cached: AnthropicSystemBlock = {
     type: "text",
@@ -147,6 +154,14 @@ export function buildSystem(
   // клієнтський (`chatPresets.ts`). Клієнт передає лише enum-ідентифікатор.
   const instruction = presetInstruction(preset);
   if (instruction) blocks.push({ type: "text", text: instruction });
+
+  // Без згоди на дані про здоровʼя (`healthGate.ts`) модель має чесно сказати
+  // людині, чому не бачить тренувань/їжі, а не мовчки «нічого не знайшов».
+  // Наш текст, тож без `<user_data>`-огорожі й ПІСЛЯ cached-префікса (той
+  // самий аргумент, що для preset вище): cross-user кеш не зсувається.
+  if (!healthConsent) {
+    blocks.push({ type: "text", text: HEALTH_CONSENT_SYSTEM_NOTE });
+  }
 
   if (context) {
     blocks.push({ type: "text", text: wrapAndScanUserContext(context) });
@@ -242,7 +257,7 @@ export const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(
 const toolsPayloadByModel = new Map<string, ReadonlyArray<object>>();
 
 /** 4 моделі × 4 типові набори модулів із запасом. */
-const MAX_TOOLS_PAYLOAD_CACHE = 32;
+const MAX_TOOLS_PAYLOAD_CACHE = 64;
 
 /**
  * Tools для конкретної моделі. Повертає tool-search-payload, коли модель це
@@ -256,14 +271,21 @@ const MAX_TOOLS_PAYLOAD_CACHE = 32;
 export function buildToolsPayload(
   model: string,
   activeModules?: readonly DashboardModuleId[] | null,
+  healthConsent: boolean = true,
 ): ReadonlyArray<object> {
   // Ключ кешу несе і вибір модулів: інакше перший користувач «прогрів» би
   // мемоїзацію своїм зрізом і роздав її решті — з чужими вирізаними tools.
-  const cacheKey = `${model}|${activeModules ? [...activeModules].sort().join(",") : "*"}`;
+  // `hc0` — без згоди на дані про здоровʼя: health-only tools вирізані, і це
+  // інший набір, ніж для решти. Ключ ОБОВʼЯЗКОВО несе прапор, інакше перший
+  // користувач без згоди «прогрів» би кеш урізаним набором для тих, хто її дав.
+  const cacheKey = `${model}|${activeModules ? [...activeModules].sort().join(",") : "*"}|${healthConsent ? "hc1" : "hc0"}`;
   const cached = toolsPayloadByModel.get(cacheKey);
   if (cached) return cached;
 
-  const registry = filterToolsByActiveModules(TOOLS, activeModules);
+  const registry = filterToolsByHealthConsent(
+    filterToolsByActiveModules(TOOLS, activeModules),
+    healthConsent,
+  );
   const base = env.CHAT_STRICT_TOOLS
     ? keepStrictTrueOnly(registry)
     : stripStrictModeForAnthropic(registry);

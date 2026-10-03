@@ -103,7 +103,7 @@ export type {
   TextareaProps,
 } from "./Input";
 
-export { SectionHeader, SectionHeading } from "./SectionHeading";
+export { SectionHeading } from "./SectionHeading";
 export type {
   SectionHeadingProps,
   SectionHeadingSize,
@@ -136,13 +136,6 @@ export type {
   ProgressBarSize,
   ProgressBarVariant,
 } from "./ProgressBar";
-
-export { ProgressCircle } from "./ProgressCircle";
-export type {
-  ProgressCircleProps,
-  ProgressCircleSize,
-  ProgressCircleVariant,
-} from "./ProgressCircle";
 
 export { ProgressRing } from "./ProgressRing";
 export type {
@@ -306,7 +299,6 @@ export {
   CommandPaletteProvider,
   useCommandPalette,
   useCommandPaletteControls,
-  useCommandPaletteHotkey,
   useRegisterCommand,
 } from "./CommandPalette";
 export type { PaletteCommand } from "./CommandPalette";

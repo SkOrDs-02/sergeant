@@ -10,7 +10,10 @@
  * позиції чека показує ще й Фінік.
  */
 import { formatNumberUk } from "@sergeant/shared";
-import { pantryQtyNatural } from "@sergeant/nutrition-domain";
+import {
+  displayDecimalsFor,
+  pantryQtyNatural,
+} from "@sergeant/nutrition-domain";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
 
 /** Нерозривний — «1,87 л» не має ламатись на два рядки. */
@@ -43,9 +46,8 @@ export function formatPantryQty(
 ): string | null {
   const natural = pantryQtyNatural(qty, unit);
   if (!natural) return formatReceiptQty(qty, unit);
-  const decimals = natural.unit === "кг" || natural.unit === "л" ? 2 : 0;
   const amount = formatNumberUk(natural.value, {
-    maximumFractionDigits: decimals,
+    maximumFractionDigits: displayDecimalsFor(natural.unit),
   });
   return `${amount}${NBSP}${natural.unit}`;
 }

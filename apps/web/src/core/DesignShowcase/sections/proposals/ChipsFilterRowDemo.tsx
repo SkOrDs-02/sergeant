@@ -8,7 +8,7 @@ import { ComparePair, MiniPhone } from "./_Compare";
  * R2-UI-17 — Horizontal chips-filter row with fade edges. **Відхилено.**
  *
  * AI-CONTEXT: цю пропозицію активно рекламувала рівно ту схему, яку
- * анти-слоп-стратегія (`docs/05-design/design/anti-slop-strategy.md`,
+ * анти-слоп-стратегія (`docs/design/design/anti-slop-strategy.md`,
  * атрактор №7 §3.2) називає провальним патерном — горизонтальний
  * chip-scroller-фільтр без стелі, замаскований градієнтними fade-краями.
  * Головного носія цього атрактора закрито 2026-08-06: у `TransactionFilters`
@@ -73,7 +73,7 @@ export function ChipsFilterRowDemo() {
               <div className="px-4 flex items-center justify-between">
                 <span className="text-style-label text-text">Транзакції</span>
                 <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full border border-line bg-panel text-muted">
-                  <Icon name="filter" size={14} />
+                  <Icon name="filter" size="sm" />
                   <span className="text-style-caption">Фільтри</span>
                 </span>
               </div>

@@ -23,8 +23,17 @@ export default defineConfig({
     // тести мокають пул чергою `mockResolvedValueOnce`, і позаплановий
     // UPDATE зʼїдає чужу відповідь. Сама поведінка покрита в
     // `src/lib/lastSeen.test.ts`, де прапорець вмикається явно.
-    env: { LAST_SEEN_TRACKING_ENABLED: "false" },
-    include: ["src/**/*.test.ts"],
+    // Тіньовий Jev-детектор увімкнений за замовчуванням і ходить у мережу з
+    // кожного `prepareToolResults`; у юнітах вимкнений з тієї ж причини, а
+    // вмикається явно в `chat/injectionShadowJev.test.ts`.
+    env: {
+      LAST_SEEN_TRACKING_ENABLED: "false",
+      CHAT_INJECTION_JEV_SHADOW: "false",
+    },
+    // `scripts/**` включено свідомо: `scripts/token-reencrypt-rollover.test.ts`
+    // (ротація ключа шифрування токенів) раніше лежав поза include і не
+    // запускався ніколи. Гейт `scripts/check-test-orphans.mjs` ловить повтор.
+    include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
     // The server suite contains hundreds of module-heavy files. Letting Vitest
@@ -43,6 +52,14 @@ export default defineConfig({
     coverage: {
       ...baseCoverageConfig,
       include: ["src/**/*.ts"],
+      // CLI-точки входу (`rag-eval:embed`, `rag-eval:live`, `eval:tools:judge`)
+      // не імпортує ніхто: це `main()` + розбір аргументів + друк звіту, який
+      // запускає людина руками й платно. Юніт-тест на них не міряє нічого,
+      // окрім самого себе, а їхня присутність у знаменнику робить із
+      // coverage-ратчета датчик кількості CLI-скриптів. Логіка, яку варто
+      // перевіряти, з них винесена: `lib/ragEval/*` і `modules/chat/toolEval/*`
+      // покриті тестами і з покриття НЕ виключені.
+      exclude: [...baseCoverageConfig.exclude, "src/scripts/**"],
       thresholds: {
         // Baseline drift log:
         //  - 2026-04-25 actual: lines 67.13 / branches 79.31 / fns 72.80 / statements 67.13
@@ -55,10 +72,10 @@ export default defineConfig({
         //    handlers (day-plan/food-search/parse-pantry/
         //    shopping-list/week-plan), modules/sync/syncV2.ts, and
         //    modules/digest/weekly-digest.ts. Stale coverage claims in
-        //    docs/90-work/tech-debt/backend.md § "Tests coverage map"
+        //    docs/work/specs/tech-debt/backend.md § "Tests coverage map"
         //    reconciled the same day.
         //  - 2026-08-04 actual: lines 92.95 / branches 82.75 / fns 92.05
-        //    (coverage-depth audit, docs/90-work/audits/
+        //    (coverage-depth audit, docs/work/specs/audits/
         //    2026-08-04-test-coverage-depth-audit.md). Floors ratcheted to
         //    fact − 5пп: the old 60/48/63 safety net sat ~30пп below fact —
         //    a legal degradation corridor no gate would flag. The repo-root

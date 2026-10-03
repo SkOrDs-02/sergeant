@@ -42,7 +42,7 @@ import {
   writeSync,
 } from "node:fs";
 import { execSync } from "node:child_process";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, isAbsolute, relative, sep } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
@@ -65,7 +65,7 @@ const HEADER_LINE_LIMIT = 15;
 // (`scripts/pre-commit-timing.mjs`) sets `SERGEANT_TIMING_LOG` to a session-
 // scoped JSONL file; downstream scripts append `{ stage, ms }` records so the
 // summary shows per-stage breakdown. Best-effort — never block a commit.
-// Contract documented in `docs/02-engineering/development/pre-commit-timing.md`.
+// Contract documented in `docs/engineering/development/pre-commit-timing.md`.
 function emitStageTiming(stage, ms) {
   const log = process.env.SERGEANT_TIMING_LOG;
   if (!log) return;
@@ -242,7 +242,18 @@ export function bumpFiles({
   log = () => {},
 }) {
   const modified = [];
-  for (const rel of paths) {
+  for (const raw of paths) {
+    // lint-staged передає АБСОЛЮТНІ шляхи. Exclude-глоби, каденція і
+    // `reviewJitterDays` рахуються від repo-relative шляху (як у
+    // `check-freshness`), тож без нормалізації бампер писав іншу дату
+    // перегляду, ніж очікує гейт свіжості, і не бачив exclude-глобів.
+    // `.split(sep).join("/")` обовʼязковий: на Windows `relative()` повертає
+    // `docs\foo.md`, а глоби й каденція записані через `/`. Без нормалізації
+    // жоден exclude-глоб не збігався, тобто бампер мовчки штампував файли,
+    // які мав пропустити - і саме на Windows, де цей хук працює щокоміту.
+    const rel = (isAbsolute(raw) ? relative(rootDir, raw) : raw)
+      .split(sep)
+      .join("/");
     if (matchesAnyGlob(rel, config.excludeGlobs)) {
       log(`  skip (excluded): ${rel}`);
       continue;
@@ -342,34 +353,12 @@ if (isMain) {
       // best-effort; lint-staged will handle it
     }
 
-    // Дашборд свіжості ГЕНЕРУЄТЬСЯ з тих самих `Last validated`, які щойно
-    // зсунуто вище, тож без перегенерації він одразу застаріває — і гейт
-    // червоніє вже після мерджу, на НАСТУПНОМУ PR-і, який до цього не
-    // причетний.
-    //
-    // AI-CONTEXT: за одну сесію це впіймали двічі, обидва рази з боку CI і
-    // обидва рази під назвою джоба «Markdown link checker» (він виконує й
-    // цю перевірку теж, тож назва веде не туди). Причина була не в тому,
-    // що хтось забув команду — а в тому, що зсув дат і перегенерація
-    // дашборда жили окремо. Тепер вони в одному кроці.
-    try {
-      execSync("node scripts/docs/generate-freshness-dashboard.mjs", {
-        stdio: "ignore",
-      });
-      execSync(
-        "git add -- docs/04-governance/governance/freshness-dashboard.html",
-        {
-          stdio: "ignore",
-        },
-      );
-    } catch {
-      // best-effort: якщо генератор упав, CI-гейт усе одно це зловить —
-      // краще не блокувати коміт через похідний артефакт.
-    }
-    // Припущення: вивід генератора вже відповідає Prettier (перевірено
-    // 2026-08-07). Тому `git add` тут безпечний, хоч lint-staged і сформував
-    // свій список файлів ДО цього моменту й прогнати Prettier по дашборду
-    // вже не встигне. Якщо генератор колись почне писати інакше — це впіймає
-    // `format:check` у CI на PR-і, тобто ДО мерджу, а не після.
+    // AI-CONTEXT: до 2026-10-01 тут же перегенеровувався і стейджився
+    // `freshness-dashboard.html`. Через це КОЖЕН коміт із `.md` переписував
+    // дашборд, і після кожного мерджу в `main` всі відкриті PR конфліктували
+    // в ньому без жодного змістовного перетину. Дашборд більше не комітиться
+    // (gitignored, генерується на вимогу й CI-артефактом) — не повертай сюди
+    // ні регенерацію, ні `git add`. Див. doc-freshness.md § «Чому дашборд не
+    // комітиться».
   }
 }

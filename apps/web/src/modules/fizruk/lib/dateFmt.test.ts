@@ -14,16 +14,13 @@ describe("formatShortDate", () => {
   it("прибирає рік для дат поточного року", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 8));
-    expect(formatShortDate(new Date(2026, 7, 7))).toBe("7 серп.");
+    expect(formatShortDate(new Date(2026, 7, 7))).toBe("7 серп");
   });
 
-  it("показує повний рік для минулих років — «26 р.» читалось як число дня", () => {
+  it("показує повний рік для минулих років", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 8));
-    // Саме повний збіг, а не `toContain("2025")`: рядок «2025 р.» містить
-    // підрядок «25 р.», тож перевірка на відсутність двоцифрової форми
-    // через `not.toContain` була б завжди хибно-червоною.
-    expect(formatShortDate(new Date(2025, 7, 7))).toBe("7 серп. 2025 р.");
+    expect(formatShortDate(new Date(2025, 7, 7))).toBe("7 серп 2025");
   });
 
   it("межу року бере з годинника пристрою (ADR-0078), не з Києва", () => {

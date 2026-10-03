@@ -191,6 +191,20 @@ describe("weekly digest aggregates", () => {
     mockGetCachedNutritionSqliteState.mockReturnValue({
       refreshedAt: "2026-07-21T12:00:00Z",
       prefs: { dailyTargetKcal: 2400 },
+      goalPeriods: [
+        {
+          id: "goal",
+          effectiveFrom: "2026-07-01",
+          kcal: 2400,
+          proteinG: null,
+          fatG: null,
+          carbsG: null,
+          waterMl: null,
+          origin: "manual",
+          createdAt: "2026-07-01T00:00:00.000Z",
+          deletedAt: null,
+        },
+      ],
       log: {
         "2026-07-20": {
           meals: [
@@ -225,6 +239,7 @@ describe("weekly digest aggregates", () => {
     mockGetCachedNutritionSqliteState.mockReturnValue({
       refreshedAt: "2026-07-21T12:00:00Z",
       prefs: null,
+      goalPeriods: [],
       log: {},
     });
 

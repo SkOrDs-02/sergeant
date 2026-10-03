@@ -162,6 +162,13 @@ export function createAiMemoryDlqInternalRouter(_: { pool: Pool }): Router {
           ...(row.payloadJson.metadata !== undefined
             ? { metadata: row.payloadJson.metadata }
             : {}),
+          // PR-S3: прапорець health-даних мусить пережити DLQ-раунд. Тут
+          // payload перебирається ПОІМЕННО, тож пропущене поле відкрило б
+          // обхід гейта згоди через звичайний ретрай — запис, який гейт
+          // відхилив би на першому проході, ліг би на другому.
+          ...(row.payloadJson.healthData !== undefined
+            ? { healthData: row.payloadJson.healthData }
+            : {}),
         });
         await markDlqRowReplayedStrict(row.id);
         replayed++;

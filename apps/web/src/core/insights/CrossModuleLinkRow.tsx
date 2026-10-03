@@ -7,7 +7,7 @@
  * на місці.
  *
  * AI-CONTEXT: це реалізація принципу П2 анти-слоп плану («ієрархія густини
- * замість однорідної сітки», `docs/05-design/design/anti-slop-strategy.md`),
+ * замість однорідної сітки», `docs/design/design/anti-slop-strategy.md`),
  * а не просто економія пікселів. Три однакові картки стверджують, що три
  * звʼязки рівноцінні, — а вони не рівноцінні: `notablePairsFromSeries`
  * повертає їх упорядкованими за силою. Густина ранжує, однорідна сітка
@@ -40,11 +40,11 @@ import {
  */
 export function CrossModuleLinkRow(props: CrossModuleLinkCardProps) {
   const [open, setOpen] = useState(false);
-  const { poleA, poleB, observations, strength, phrase } = props;
+  const { poleA, poleB, observations, strength, phrase, checks } = props;
 
   // Той самий градієнт, що і в картці. Якщо звʼязку не видно, ступеня немає
   // — рядок тоді не стверджує нічого, крім самої пари.
-  const tier = gradeCrossModuleLink(observations, strength);
+  const tier = gradeCrossModuleLink(observations, strength, checks);
 
   if (open) return <CrossModuleLinkCard {...props} />;
 
@@ -57,7 +57,7 @@ export function CrossModuleLinkRow(props: CrossModuleLinkCardProps) {
         "w-full rounded-2xl border border-line bg-panel px-4 py-3 text-left",
         // `panel-hi` — зареєстрований токен «трохи піднятої» панелі
         // (`tailwind-preset.js` → `panelHi`). `panel-hover` у токенах немає.
-        "transition-colors hover:bg-panel-hi",
+        "transition-colors hover:bg-panelHi",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
       )}
     >

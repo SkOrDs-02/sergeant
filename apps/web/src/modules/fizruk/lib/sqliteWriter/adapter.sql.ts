@@ -36,9 +36,9 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
   table: "fizruk_workouts",
   insertClause: `INSERT INTO fizruk_workouts
        (id, user_id, started_at, ended_at, note, groups_json,
-        warmup_json, cooldown_json, wellbeing_json,
+        warmup_json, cooldown_json, wellbeing_json, kcal_burned,
         created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "started_at" },
@@ -48,6 +48,7 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
     { column: "warmup_json" },
     { column: "cooldown_json" },
     { column: "wellbeing_json" },
+    { column: "kcal_burned" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
   ],
@@ -61,8 +62,8 @@ const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
   insertClause: `INSERT INTO fizruk_workout_items
        (id, workout_id, user_id, exercise_id, name_uk, primary_group,
         muscles_primary, muscles_secondary, type, duration_sec, distance_m,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        chosen_variant, sort_order, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "workout_id" },
@@ -74,6 +75,7 @@ const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
     { column: "type" },
     { column: "duration_sec" },
     { column: "distance_m" },
+    { column: "chosen_variant" },
     { column: "sort_order" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
@@ -120,13 +122,31 @@ const CUSTOM_EXERCISE_UPSERT_SPEC: TableSpec = {
   setIndent: 7,
 };
 
+const CUSTOM_ACTIVITY_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_custom_activities",
+  insertClause: `INSERT INTO fizruk_custom_activities
+       (id, user_id, data_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "data_json" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
 const MEASUREMENT_UPSERT_SPEC: TableSpec = {
   table: "fizruk_measurements",
   insertClause: `INSERT INTO fizruk_measurements
        (id, user_id, measured_at, weight_kg, waist_cm, chest_cm, hips_cm,
-        bicep_cm, sleep_hours, energy_level, mood,
+        bicep_cm, body_fat_pct, neck_cm, bicep_l_cm, bicep_r_cm,
+        forearm_l_cm, forearm_r_cm, thigh_l_cm, thigh_r_cm,
+        calf_l_cm, calf_r_cm, sleep_hours, energy_level, mood,
         created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "measured_at" },
@@ -135,6 +155,16 @@ const MEASUREMENT_UPSERT_SPEC: TableSpec = {
     { column: "chest_cm" },
     { column: "hips_cm" },
     { column: "bicep_cm" },
+    { column: "body_fat_pct" },
+    { column: "neck_cm" },
+    { column: "bicep_l_cm" },
+    { column: "bicep_r_cm" },
+    { column: "forearm_l_cm" },
+    { column: "forearm_r_cm" },
+    { column: "thigh_l_cm" },
+    { column: "thigh_r_cm" },
+    { column: "calf_l_cm" },
+    { column: "calf_r_cm" },
     { column: "sleep_hours" },
     { column: "energy_level" },
     { column: "mood" },
@@ -175,19 +205,6 @@ const MONTHLY_PLAN_UPSERT_SPEC: TableSpec = {
      VALUES (?, ?, ?)`,
   conflictTarget: ["user_id"],
   updateColumns: [{ column: "data_json" }, { column: "updated_at" }],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-// Перенос власності pushup-даних routine → fizruk (канон routine.md §10,
-// рішення 2026-08-30). Форма — дзеркало `nutrition_water_log`.
-const PUSHUPS_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_pushups",
-  insertClause: `INSERT INTO fizruk_pushups (user_id, date_key, reps, updated_at)
-     VALUES (?, ?, ?, ?)`,
-  conflictTarget: ["user_id", "date_key"],
-  updateColumns: [{ column: "reps" }, { column: "updated_at" }],
   upsertGuard: "strictly-newer",
   conflictIndent: 5,
   setIndent: 7,
@@ -250,7 +267,6 @@ const INJURY_UPSERT_SPEC: TableSpec = {
 export const MEASUREMENT_UPSERT_SQL = buildLwwUpsert(MEASUREMENT_UPSERT_SPEC);
 export const DAILY_LOG_UPSERT_SQL = buildLwwUpsert(DAILY_LOG_UPSERT_SPEC);
 export const MONTHLY_PLAN_UPSERT_SQL = buildLwwUpsert(MONTHLY_PLAN_UPSERT_SPEC);
-export const PUSHUPS_UPSERT_SQL = buildLwwUpsert(PUSHUPS_UPSERT_SPEC);
 export const WORKOUT_TEMPLATE_UPSERT_SQL = buildLwwUpsert(
   WORKOUT_TEMPLATE_UPSERT_SPEC,
 );
@@ -262,6 +278,14 @@ export const WORKOUT_DELETE_SQL = buildDelete({
 });
 export const CUSTOM_EXERCISE_DELETE_SQL = buildDelete({
   table: "fizruk_custom_exercises",
+  deletePolicy: "soft",
+  matchColumns: ["id", "user_id"],
+});
+export const CUSTOM_ACTIVITY_UPSERT_SQL = buildLwwUpsert(
+  CUSTOM_ACTIVITY_UPSERT_SPEC,
+);
+export const CUSTOM_ACTIVITY_DELETE_SQL = buildDelete({
+  table: "fizruk_custom_activities",
   deletePolicy: "soft",
   matchColumns: ["id", "user_id"],
 });
@@ -365,20 +389,6 @@ export async function setMonthlyPlan(
   await client.run(MONTHLY_PLAN_UPSERT_SQL, [
     userId,
     monthlyPlan.dataJson ?? "{}",
-    clientTs,
-  ]);
-}
-
-export async function setPushups(
-  client: SqliteMigrationClient,
-  dateKey: string,
-  reps: number,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(PUSHUPS_UPSERT_SQL, [
-    userId,
-    dateKey,
-    toIntOrNull(reps) ?? 0,
     clientTs,
   ]);
 }

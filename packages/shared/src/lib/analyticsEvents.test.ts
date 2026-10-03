@@ -61,6 +61,19 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.NPS_SURVEY_ELIGIBLE).toBe("nps_survey_eligible");
   });
 
+  it("exposes the hub-axis baseline group verbatim", () => {
+    // Базова лінія перед віссю дії хабу (P3). Рядки пінимо, бо саме ці
+    // імена підуть у PostHog-запити двотижневого заміру, з яким потім
+    // порівнюватимуть A1 — ренейм посеред заміру обнулив би порівняння.
+    expect(ANALYTICS_EVENTS.HUB_MODULE_TILE_CLICKED).toBe(
+      "hub_module_tile_clicked",
+    );
+    expect(ANALYTICS_EVENTS.MODULE_OPENED).toBe("module_opened");
+    expect(ANALYTICS_EVENTS.TODAY_FOCUS_CTA_CLICKED).toBe(
+      "today_focus_cta_clicked",
+    );
+  });
+
   it("exposes the billing-failure (observability) event verbatim", () => {
     // Fired server-side from the Stripe webhook handler; PostHog funnels for
     // checkout drop-rate / 3DS-fail rate key off this exact string. Renaming
@@ -85,9 +98,6 @@ describe("ANALYTICS_EVENTS registry", () => {
 
     // Landing surfaces (initiative 0010 Phase 6.1).
     expect(ANALYTICS_EVENTS.LANDING_VIEWED).toBe("landing_viewed");
-    expect(ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED).toBe(
-      "landing_email_captured",
-    );
     expect(ANALYTICS_EVENTS.LANDING_TELEGRAM_CLICKED).toBe(
       "landing_telegram_clicked",
     );
@@ -203,6 +213,11 @@ describe("ANALYTICS_EVENTS registry", () => {
     // Стабільний крос-девайсний advice_id (беta-хардненінг).
     expect(ANALYTICS_EVENTS.ADVICE_SHOWN).toBe("advice_shown");
     expect(ANALYTICS_EVENTS.ADVICE_DISMISSED).toBe("advice_dismissed");
+
+    // Тертя запису: «від кнопки до збереженого».
+    expect(ANALYTICS_EVENTS.ENTRY_COMPOSE_FINISHED).toBe(
+      "entry_compose_finished",
+    );
   });
 
   it("keeps the Wave-2 value-loop group reachable through the single registry", () => {
@@ -231,6 +246,7 @@ describe("ANALYTICS_EVENTS registry", () => {
       ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN,
       ANALYTICS_EVENTS.ADVICE_SHOWN,
       ANALYTICS_EVENTS.ADVICE_DISMISSED,
+      ANALYTICS_EVENTS.ENTRY_COMPOSE_FINISHED,
     ];
 
     // Тип мусить лишатись ЛІТЕРАЛЬНИМ після spread-у, а не розширитись до

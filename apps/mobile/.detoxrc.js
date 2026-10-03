@@ -2,7 +2,7 @@
  * Detox configuration for `@sergeant/mobile`.
  *
  * Paired with the first E2E suite in `apps/mobile/e2e/*` (see
- * `docs/mobile/react-native-migration.md` §8 and §13 Q8).
+ * `docs/engineering/mobile/react-native-migration.md` §8 and §13 Q8).
  *
  * The Expo app uses `@config-plugins/detox` (registered in
  * `app.config.ts`) to patch the generated iOS / Android projects after

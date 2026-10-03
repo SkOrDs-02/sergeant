@@ -6,6 +6,16 @@ vi.mock("../ai-memory/ingestQueue.js", () => ({
   enqueueMemoryIngest: vi.fn(async () => undefined),
 }));
 
+// Гейт згоди на дані про здоровʼя читає БД. За замовчуванням у цьому файлі
+// згода «є» (поведінка до 2026-09-29); сценарії без неї — у окремому
+// `describe` внизу, вони перемикають мок явно.
+const { resolveHealthConsentMock } = vi.hoisted(() => ({
+  resolveHealthConsentMock: vi.fn(),
+}));
+vi.mock("../../lib/healthConsent.js", () => ({
+  resolveHealthConsent: resolveHealthConsentMock,
+}));
+
 import { enqueueMemoryIngest as _enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import defaultHandler, {
   buildTemplateReport,
@@ -92,8 +102,20 @@ const validReport = {
   overallRecommendations: ["Підвищ дисципліну сну"],
 };
 
+// Модель відповіла з довгим тире в `comment`; до клієнта воно доходить
+// коротким (фільтр `replaceLongDash`, аудит анти-слопу P2-3).
+const deliveredReport = {
+  ...validReport,
+  finyk: {
+    ...validReport.finyk,
+    comment: "Топ-категорія – продукти, але без різких аномалій.",
+  },
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
+  resolveHealthConsentMock.mockReset();
+  resolveHealthConsentMock.mockResolvedValue(true);
 });
 
 /**
@@ -332,10 +354,24 @@ describe("weekly-digest handler · prompt assembly", () => {
     expect(opts.timeoutMs).toBe(45_000);
     expect(opts.system).toContain("ФІНАНСИ (2026-W01)");
     expect(opts.system).toContain("Витрати: 1200 грн");
-    expect(opts.system).toContain("Місячний бюджет: 8000 грн");
+    expect(opts.system).toContain(
+      "Місячний бюджет: 8000 грн, тижнева частка 1842 грн, у межах",
+    );
     expect(opts.system).toContain("Продукти: 600 грн");
-    expect(opts.system).toContain("Транзакцій: 42");
+    expect(opts.system).toContain("Операцій: 42");
     expect(res.statusCode).toBe(200);
+  });
+
+  it("finyk: витрати понад тижневу частку бюджету — вердикт із сумою перевищення", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      body: { finyk: { totalSpent: 2000, monthlyBudget: 8000, txCount: 3 } },
+    });
+    await handler(req, makeRes());
+    expect(provider.calls[0]!.system).toContain(
+      "тижнева частка 1842 грн, перевищено на 158 грн",
+    );
   });
 
   it("finyk без monthlyBudget — рядок 'не встановлено'; пусті topCategories — 'Немає даних'", async () => {
@@ -483,11 +519,18 @@ describe("weekly-digest handler · prompt assembly", () => {
 
     const sys = provider.calls[0]!.system!;
     expect(sys).toContain("Витрати: 0 грн | Надходження: 0 грн");
-    expect(sys).toContain("Транзакцій: 0");
+    expect(sys).toContain("Операцій: 0");
     expect(sys).toContain("Тренувань завершено: 0");
     expect(sys).toContain("Загальний обʼєм: 0 кг");
     expect(sys).toContain("Стан відновлення: Немає даних");
-    expect(sys).toContain("Середньодобово: 0 ккал (ціль 2000 ккал");
+    // Ціль тижня береться з журналу періодів, тож для тижня без запису в
+    // ньому (усі тижні до міграції 087) вона невідома — і дайджест каже це
+    // прямо, замість підставляти поточну ціль заднім числом. Рішення
+    // власника 2026-09-11, розбір — `2026-09-11-founder-ux-review-round2.md`
+    // § «Стан перевірок».
+    expect(sys).toContain(
+      "Середньодобово: 0 ккал (ціль невідома, без вердикту: історична ціль невідома)",
+    );
     expect(sys).toContain("Днів із записами: 1 з 7");
     expect(sys).toContain("Загальний відсоток: 0%");
     expect(sys).toContain("Активних звичок: 0");
@@ -510,7 +553,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
@@ -735,7 +778,7 @@ describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {
     const body = res.body as { report: { finyk: { summary: string } | null } };
     // Це template-report: специфічна фраза присутня саме у stub-summary.
     expect(body.report.finyk?.summary).toContain("Витрати 100 грн");
-    expect(body.report.finyk?.summary).toContain("3 транзакцій");
+    expect(body.report.finyk?.summary).toContain("3 операцій");
   });
 
   it("fallback-on-error: parse-error з fallbackOnError=true → 200 template-report", async () => {
@@ -1165,7 +1208,7 @@ describe("buildTemplateReport (PR-25)", () => {
     });
     expect(r.finyk).not.toBeNull();
     expect(r.finyk!.summary).toBe(
-      "Витрати 1500 грн, надходження 3000 грн, 12 транзакцій.",
+      "Витрати 1500 грн, надходження 3000 грн, 12 операцій.",
     );
     expect(r.finyk!.recommendations).toEqual([]);
   });
@@ -1208,7 +1251,7 @@ describe("buildTemplateReport (PR-25)", () => {
       routine: {},
     });
     expect(r.finyk!.summary).toBe(
-      "Витрати 0 грн, надходження 0 грн, 0 транзакцій.",
+      "Витрати 0 грн, надходження 0 грн, 0 операцій.",
     );
     expect(r.fizruk!.summary).toBe("0 тренувань, обсяг 0 кг.");
     expect(r.nutrition!.summary).toBe(
@@ -1360,7 +1403,80 @@ describe("weekly-digest · prod regression — provider failure must not return 
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+});
+
+describe("weekly-digest handler · гейт згоди на дані про здоровʼя (GDPR Art. 9)", () => {
+  // Рішення власника 2026-09-29: без збереженої `healthDataConsent` секції
+  // Фізрука й Харчування не потрапляють ні в промпт, ні в памʼять AI.
+  const body = {
+    weekKey: "2026-01-05",
+    weekRange: "2026-W01",
+    finyk: { totalSpent: 500, totalIncome: 2000, txCount: 5 },
+    routine: { habitCount: 3, overallRate: 70 },
+    fizruk: { workoutsCount: 4, totalVolume: 9999 },
+    nutrition: { avgKcal: 2345, daysLogged: 5 },
+  };
+
+  it("без згоди: у промпті немає тренувань і калорій, решта є", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+
+    const call = provider.calls[0]!;
+    const prompt = `${call.system ?? ""}\n${JSON.stringify(call.messages)}`;
+    expect(prompt).not.toContain("9999");
+    expect(prompt).not.toContain("2345");
+    expect(prompt).toContain("500");
+  });
+
+  it("без згоди: памʼять AI не отримує health-секцій і прапорця healthData", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+    await vi.waitFor(() => expect(enqueueMemoryIngest).toHaveBeenCalled());
+    const payload = enqueueMemoryIngest.mock.calls[0]![0];
+    expect(payload.metadata.sections.fizruk).toBe(false);
+    expect(payload.metadata.sections.nutrition).toBe(false);
+    expect(payload.healthData).toBe(false);
+  });
+
+  it("зі згодою: health-секції в промпті, як раніше", async () => {
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+    const call = provider.calls[0]!;
+    const prompt = `${call.system ?? ""}\n${JSON.stringify(call.messages)}`;
+    expect(prompt).toContain("9999");
+    expect(prompt).toContain("2345");
+  });
+
+  it("без згоди, коли health давав рівно той сигнал, якого бракує: 403 із запитом згоди, не «замало даних»", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler, provider } = buildHandler();
+    await expect(
+      handler(
+        asReq({
+          anthropicKey: "k",
+          user: { id: "user_42" },
+          body: { weekKey: "2026-01-05", fizruk: { workoutsCount: 4 } },
+        }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: "HEALTH_CONSENT_REQUIRED",
+    });
+    expect(provider.calls).toHaveLength(0);
   });
 });

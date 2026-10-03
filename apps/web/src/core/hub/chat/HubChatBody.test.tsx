@@ -63,6 +63,68 @@ function renderBody(overrides: Partial<HubChatBodyProps> = {}) {
 describe("HubChatBody", () => {
   afterEach(() => cleanup());
 
+  // Регресія з browser-QA 2026-09-02: розкриття «це AI» (EU AI Act ст. 50(1))
+  // жило всередині `ChatEmpty`, а `normalizeStoredMessages` підставляла
+  // привітальну репліку в кожну порожню сесію — тож порожній стан був
+  // недосяжний, і розкриття не показувалось ЖОДНОГО разу. Підстановку
+  // прибрано в PR-A7, але розкриття лишається безумовним навмисно (defense
+  // in depth) — тест і далі перевіряє стан, де в стрічці вже є повідомлення.
+  it("shows the AI disclosure even when the greeting message is present", () => {
+    renderBody({
+      messages: [
+        msg("greet", "assistant", "Привіт! Я твій особистий асистент."),
+      ],
+    });
+    expect(screen.getByText(/Відповідає AI, а не людина/)).toBeInTheDocument();
+  });
+
+  it("shows the AI disclosure while the assistant is answering", () => {
+    renderBody({ messages: [msg("1", "user", "Питання")], loading: true });
+    expect(screen.getByText(/Відповідає AI, а не людина/)).toBeInTheDocument();
+  });
+
+  // Регресія з browser-QA 2026-09-02: стрічка лежить у статичному
+  // `role="region"`, а єдина жива область казала лише «Асистент відповідає…».
+  // Тобто незрячий користувач чув, що відповідь іде, і не чув, ЯКА вона.
+  it("announces the finished assistant reply to screen readers", () => {
+    renderBody({
+      messages: [
+        msg("1", "user", "Скільки я витратив?"),
+        msg("2", "assistant", "Цього тижня 1 240 гривень."),
+      ],
+      loading: false,
+    });
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Цього тижня 1 240 гривень.");
+  });
+
+  // Фікстура саме з ЧАСТКОВОЮ відповіддю: `useChatSend` дописує повідомлення
+  // асистента, поки `loading` ще `true`, тож без цього випадку тест не
+  // доводив би головного — що недописаний текст у живу область не тече.
+  // Матчер якірний: підрядок пройшов би й тоді, коли поруч лежить обривок
+  // відповіді (ревʼю PR #1053).
+  it("announces progress, not content, while the reply is streaming", () => {
+    renderBody({
+      messages: [
+        msg("1", "user", "Скільки я витратив?"),
+        msg("2", "assistant", "Цього тижня 1 2"),
+      ],
+      loading: true,
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /^Сержант відповідає…$/,
+    );
+  });
+
+  it("does not announce a failure through the reply region", () => {
+    const failure = {
+      ...msg("1", "assistant", "Асистент зараз недоступний."),
+      error: true,
+    } as unknown as Msg;
+    renderBody({ messages: [failure], loading: false });
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
   it("renders ChatEmpty when there are no messages and not loading", () => {
     renderBody({ messages: [], loading: false });
     expect(screen.getByTestId("chat-empty")).toBeInTheDocument();
@@ -118,10 +180,18 @@ describe("HubChatBody", () => {
     expect(scrollable).toBeInTheDocument();
   });
 
+  it("keeps the scrollable message list reachable from the keyboard", () => {
+    // axe `scrollable-region-focusable`: без tabIndex стрічку без
+    // фокусованих елементів не прогорнути клавіатурою.
+    const { container } = renderBody({ loading: false });
+    const scrollable = container.querySelector('[aria-busy="false"]');
+    expect(scrollable).toHaveAttribute("tabindex", "0");
+  });
+
   it("has aria-live polite region for screen reader announcements", () => {
     const { container } = renderBody({ loading: true });
     const liveRegion = container.querySelector('[role="status"]');
-    expect(liveRegion).toHaveTextContent("Асистент відповідає…");
+    expect(liveRegion).toHaveTextContent("Сержант відповідає…");
     const scrollContainer = container.querySelector('[aria-busy="true"]');
     expect(scrollContainer).not.toHaveAttribute("aria-live");
   });

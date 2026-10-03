@@ -1,4 +1,6 @@
 import { test, expect, type Route } from "@playwright/test";
+import { getWorld } from "../fixtures/worlds";
+import { installWorld } from "../utils/scenario";
 
 // Block the service worker for this spec. The web app registers a SW
 // (`src/sw.ts`) that owns the fetch handler; requests it initiates
@@ -43,57 +45,30 @@ test.use({ serviceWorkers: "block" });
 
 const CHECKOUT_STUB_URL = "https://checkout.stripe.com/c/pay/cs_test_smoke";
 
-// The web app calls the API cross-origin (VITE_API_BASE_URL →
-// http://127.0.0.1:3000), so fulfilled responses must carry CORS
-// headers — and the browser preflights the JSON POST with an OPTIONS
-// request the route handler has to answer too.
-function corsHeaders(origin: string): Record<string, string> {
-  return {
-    "access-control-allow-origin": origin,
-    "access-control-allow-credentials": "true",
-    "access-control-allow-methods": "POST, OPTIONS",
-    "access-control-allow-headers": "content-type",
-  };
-}
-
 test("@critical billing: pricing Premium CTA creates a checkout session and redirects to Stripe", async ({
   page,
-  baseURL,
 }) => {
-  const origin = new URL(baseURL ?? "http://127.0.0.1:4173").origin;
-
   const checkoutRequests: Array<Record<string, unknown>> = [];
-
-  // Match the checkout endpoint by path suffix so the `/api/v1` version
-  // prefix the HttpClient injects (real URL: `/api/v1/billing/checkout`)
-  // does not have to be hard-coded here.
-  await page.route(
-    (url) => url.pathname.endsWith("/billing/checkout"),
-    async (route: Route) => {
-      const request = route.request();
-      if (request.method() === "OPTIONS") {
-        await route.fulfill({ status: 204, headers: corsHeaders(origin) });
-        return;
-      }
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      new URL(request.url()).pathname.endsWith("/billing/checkout")
+    ) {
       checkoutRequests.push(
         (request.postDataJSON() ?? {}) as Record<string, unknown>,
       );
-      // Shape mirrors `BillingCheckoutResponseSchema`
-      // (packages/shared/src/schemas/api.ts) — the api-client zod-parses
-      // the payload, so a drifted mock fails loudly here, not silently.
-      await route.fulfill({
-        status: 200,
-        headers: corsHeaders(origin),
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: true,
-          mode: "test",
-          sessionId: "cs_test_smoke",
-          url: CHECKOUT_STUB_URL,
-        }),
-      });
-    },
-  );
+    }
+  });
+
+  // Світ відповідає лише на checkout: решта (сесія, `/me`, план) іде на
+  // реальний smoke-сервер. `installWorld` сам додає CORS-заголовки і
+  // відповідає на preflight, бо API тут cross-origin
+  // (VITE_API_BASE_URL → http://127.0.0.1:3000). Відповідь типізована
+  // `BillingCheckoutResponse`, тож дрейф контракту ловить typecheck.
+  await installWorld(page, getWorld("empty"), {
+    only: ["/billing/checkout"],
+    checkoutUrl: CHECKOUT_STUB_URL,
+  });
 
   // Stub the Stripe-hosted checkout page so the redirect leg resolves
   // without external network access on the CI runner.
@@ -109,7 +84,9 @@ test("@critical billing: pricing Premium CTA creates a checkout session and redi
   );
 
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Тарифи" })).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: "Плани", exact: true }),
+  ).toBeVisible({
     timeout: 10_000,
   });
 

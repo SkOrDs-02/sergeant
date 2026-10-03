@@ -23,6 +23,7 @@
  * завислий екран. Кожна реальна фаза міняє `label` (`ScanStatus` § шар
  * 2), тож рух видно ще до відповіді сервера.
  */
+import { pluralUa } from "@sergeant/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -37,9 +38,12 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { DEFAULT_CATEGORY, isCategorySlug } from "../manualExpenseCategories";
 import {
   DEFAULT_INCOME_CATEGORY,
+  expenseCustomCategories,
+  incomeCustomCategories,
   isIncomeCategorySlug,
 } from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
+import { useFinykVisionPaywall } from "../receiptScan/useFinykVisionPaywall";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import {
   IMPORT_STATEMENT_FILE_ACCEPT,
@@ -90,16 +94,19 @@ const SKIP_REASON_LABEL: Record<string, string> = {
  * підказки, що робити далі. Сервер тепер каже, що саме він відкинув
  * (`draft.dropped`) і чи обірвалась відповідь моделі (`draft.truncated`).
  */
+const NON_UAH_FORMS = { one: "операцію", few: "операції", many: "операцій" };
+const FAILED_FORMS = { one: "операція", few: "операції", many: "операцій" };
+
 function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
   if (draft.truncated) {
     return "На скріні забагато операцій, не встиг дочитати список. Зроби кілька скрінів по частинах.";
   }
   const { failed, nonUah, unreadable } = draft.dropped;
   if (nonUah > 0 && failed === 0 && unreadable === 0) {
-    return `Знайшов ${nonUah} ${plural(nonUah, "операцію", "операції", "операцій")}, але не в гривні. Імпорт поки працює лише з UAH.`;
+    return `Знайшов ${nonUah} ${pluralUa(nonUah, NON_UAH_FORMS)}, але не в гривні. Імпорт поки працює лише з операціями в гривні.`;
   }
   if (failed > 0 && nonUah === 0 && unreadable === 0) {
-    return `Усі ${failed} ${plural(failed, "операція", "операції", "операцій")} на скріні позначені як невдалі: гроші за ними не рухались.`;
+    return `Усі ${failed} ${pluralUa(failed, FAILED_FORMS)} на скріні позначені як невдалі: гроші за ними не рухались.`;
   }
   if (failed + nonUah + unreadable > 0) {
     return "Бачу операції, але жодну не вдалось прочитати повністю. Спробуй скрін крупніше або без обрізаних країв.";
@@ -107,17 +114,7 @@ function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
   if (draft.docType === "other") {
     return "Це не схоже на екран банківського застосунку. Відкрий список операцій у банку і зроби скрін звідти.";
   }
-  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список транзакцій із сумами.";
-}
-
-/** Українська трійка форм для лічильника (1 / 2-4 / 5+). */
-function plural(n: number, one: string, few: string, many: string): string {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return many;
-  const mod10 = n % 10;
-  if (mod10 === 1) return one;
-  if (mod10 >= 2 && mod10 <= 4) return few;
-  return many;
+  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список операцій із сумами.";
 }
 
 function defaultCategoryFor(direction: "expense" | "income"): string {
@@ -129,11 +126,14 @@ function defaultCategoryFor(direction: "expense" | "income"): string {
  * категорії користувача живуть лише тут, а вбудовані набори витрат і
  * надходжень різні — витратний слаг у рядку доходу дав би порожній чип.
  */
-function makeIsKnownCategory(customIds: ReadonlySet<string>) {
+function makeIsKnownCategory(
+  expenseCustomIds: ReadonlySet<string>,
+  incomeCustomIds: ReadonlySet<string>,
+) {
   return (slug: string, direction: "expense" | "income"): boolean =>
     direction === "income"
-      ? isIncomeCategorySlug(slug)
-      : isCategorySlug(slug) || customIds.has(slug);
+      ? isIncomeCategorySlug(slug) || incomeCustomIds.has(slug)
+      : isCategorySlug(slug) || expenseCustomIds.has(slug);
 }
 
 function summarizeSkipped(skipped: ImportSkippedRow[]): string | null {
@@ -180,7 +180,12 @@ export function BulkImportSheet({
     () => ({
       defaultCategoryFor,
       isKnownCategory: makeIsKnownCategory(
-        new Set((customCategories ?? []).map((c) => c.id)),
+        new Set(
+          expenseCustomCategories(customCategories ?? []).map((c) => c.id),
+        ),
+        new Set(
+          incomeCustomCategories(customCategories ?? []).map((c) => c.id),
+        ),
       ),
     }),
     [customCategories],
@@ -191,6 +196,7 @@ export function BulkImportSheet({
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
 
   const screenshotAnalyze = useImportScreenshotAnalyze();
+  const visionPaywall = useFinykVisionPaywall();
   const statementPreview = useImportStatementPreview();
   const commit = useImportCommit({ storage });
   const batchUndo = useImportBatchUndo({ storage });
@@ -225,6 +231,7 @@ export function BulkImportSheet({
 
   const handleScreenshotSelected = async (file: File) => {
     setFlowError(null);
+    if (!visionPaywall.requireAccess()) return;
     // Спінер до `await`: стиснення великого фото саме по собі помітна
     // пауза, і саме вона першою читалась як зависання.
     setProcessing({ label: "Готую фото…", hint: SCREENSHOT_SLOW_HINT });
@@ -235,7 +242,7 @@ export function BulkImportSheet({
       return;
     }
     setProcessing({
-      label: "Розпізнаю транзакції…",
+      label: "Розпізнаю операції…",
       hint: SCREENSHOT_SLOW_HINT,
     });
     try {
@@ -258,6 +265,7 @@ export function BulkImportSheet({
       setProcessing(null);
       setStage("bulk-review");
     } catch (err) {
+      visionPaywall.onError(err);
       failBackToChoose(formatReceiptError(err, "Не вдалось розпізнати скрін."));
     }
   };
@@ -368,8 +376,10 @@ export function BulkImportSheet({
       footer={
         stage === "bulk-review" ? (
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             loading={commit.isPending}
             disabled={reviewRows.every((r) => !r.selected)}
             onClick={() => void handleCommit()}
@@ -380,7 +390,7 @@ export function BulkImportSheet({
           commitResult &&
           commitResult.created > 0 ? (
           <Button
-            variant="secondary"
+            variant="soft"
             tone="danger"
             className="w-full"
             loading={batchUndo.isPending}
@@ -426,26 +436,28 @@ export function BulkImportSheet({
       {stage === "choose" && (
         <div className="space-y-3">
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             onClick={() => screenshotInputRef.current?.click()}
           >
-            <Icon name="upload" size={16} aria-hidden />
+            <Icon name="upload" size="md" aria-hidden />
             Скрін банкінгу
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             className="w-full"
             onClick={() => csvInputRef.current?.click()}
           >
-            <Icon name="file-text" size={16} aria-hidden />
+            <Icon name="file-text" size="md" aria-hidden />
             Виписка файлом
           </Button>
           {/* Не «CSV, XLS або XLSX»: сервер читає CSV, XLSX і HTML-таблицю,
               яку Приват24 віддає під іменем .xls, але СТАРИЙ бінарний .xls
               (Excel 97) свідомо відхиляє з підказкою перезберегти. Обіцяти
               тут «XLS» — обіцяти те, чого немає. */}
-          <p className="text-style-caption text-subtle">
+          <p className="text-style-body text-subtle">
             Виписка – CSV або XLSX, один файл за раз; файл .xls з банку теж
             спробую. Фото чеків – через «Сканувати чек», там можна кілька
             одразу.
@@ -517,6 +529,7 @@ export function BulkImportSheet({
           )}
         </div>
       )}
+      {visionPaywall.modal}
     </Sheet>
   );
 }

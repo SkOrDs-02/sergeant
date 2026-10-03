@@ -36,6 +36,20 @@ describe("keepReplayableToolBlocks", () => {
     expect(keepReplayableToolBlocks(tampered)).toBeUndefined();
   });
 
+  it("лишає tool_use з полем `caller` від OpenRouter (AI-1)", () => {
+    // AI-1: до фіксу схема (packages/shared/src/schemas/api.ts) відкидала
+    // `tool_use`-блок через невідоме поле `caller`, і фільтр повертав
+    // undefined — клієнт слав `tool_results` без `tool_calls_raw`, сервер
+    // відповідав 400 `CHAT_TOOL_ROUND_TRIP_INCOMPLETE`.
+    const openRouterBlock = {
+      ...TOOL_USE,
+      caller: { type: "assistant" },
+    };
+    expect(keepReplayableToolBlocks([openRouterBlock])).toEqual([
+      openRouterBlock,
+    ]);
+  });
+
   it("повертає undefined, якщо після фільтра не лишилось нічого", () => {
     expect(
       keepReplayableToolBlocks([{ type: "text", text: "лише преамбула" }]),

@@ -218,7 +218,7 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   //
   // NOT here: `/api/chat`, `/api/weekly-digest`. Both used to be anonymous
   // (IP-keyed AI quota) and lived in this list, but the AI-abuse audit
-  // (finding A1, `docs/90-work/audits/ai-abuse-2026-08-05.md`) found that an
+  // (finding A1, `docs/work/specs/audits/ai-abuse-2026-08-05.md`) found that an
   // IP-keyed quota is not a real limit for an IPv6 client (a whole /64 under
   // one subscription) and that both routes spend the owner's Anthropic key —
   // a per-user feature, not a public proxy. Both now sit behind
@@ -255,7 +255,8 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // verifies its provider signature before processing and cannot carry a
   // browser session cookie by design.
   "/api/billing/liqpay-callback",
-  "/api/billing/plata-webhook",
+  "/api/billing/plata-charge",
+  "/api/billing/plata-status",
   // Public VAPID key — frontend reads this to subscribe a push
   // subscription. By design no session, no rate-limit (it's static).
   "/api/push/vapid-public",

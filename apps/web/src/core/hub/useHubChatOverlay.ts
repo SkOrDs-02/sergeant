@@ -10,7 +10,7 @@ import type { ChatPreset } from "@sergeant/shared";
 /**
  * Sergeant v2 Phase 7 D5 — HubChat bottom-sheet overlay.
  *
- * Locked product call (`docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
+ * Locked product call (`docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
  * D5): HubChat opens as a bottom-sheet overlay on top of the current
  * route instead of navigating to `/chat`. The full-screen `/chat` route
  * stays mounted so notifications, push-link emails and the AIPill voice

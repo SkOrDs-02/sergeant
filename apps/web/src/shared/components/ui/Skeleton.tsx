@@ -172,6 +172,7 @@ export function SkeletonText({
   lines = 1,
   gap = "gap-2",
   module,
+  pulse = true,
 }: SkeletonTextProps) {
   if (lines > 1) {
     // Deterministic pseudo-random widths from a small bag so the
@@ -179,7 +180,16 @@ export function SkeletonText({
     const widths = ["w-full", "w-11/12", "w-10/12", "w-9/12", "w-8/12"];
     return (
       <div
-        className={cn("flex flex-col", gap, className)}
+        className={cn(
+          "flex flex-col",
+          gap,
+          // Pulse на КОНТЕЙНЕРІ, а не на кожному рядку — той самий урок,
+          // що вже записано в `PageLoader` (design-audit F8): N рядків
+          // давали N Animation-обʼєктів проти бюджету «≤2 concurrent»
+          // (Hard Rule #17), хоча візуально пульсують як одне ціле.
+          pulse && !shimmer && "motion-safe:animate-pulse",
+          className,
+        )}
         style={style}
         aria-hidden="true"
       >
@@ -195,6 +205,7 @@ export function SkeletonText({
               className={widths[widthIdx]}
               lines={1}
               module={module}
+              pulse={false}
             />
           );
         })}
@@ -206,7 +217,9 @@ export function SkeletonText({
       className={cn(
         module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         "rounded-xl h-3",
-        shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
+        shimmer
+          ? "relative overflow-hidden"
+          : pulse && "motion-safe:animate-pulse",
         className,
       )}
       style={style}
@@ -386,85 +399,6 @@ export function SkeletonWorkoutSet({
       <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
       <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
       <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
-    </div>
-  );
-}
-
-/**
- * SkeletonHeroCard — shape-aware placeholder for the finyk HeroCard.
- *
- * Mirrors the two-zone layout of `HeroCard` exactly:
- *  ─ Top zone: networth label + 2-line cards/debt breakdown
- *  ─ Bottom zone: large day-budget number + status text + month progress bar
- *
- * Used as `<Suspense>` / loading fallback in `finyk/pages/overview` so the
- * transition from skeleton → real card causes no layout shift.
- */
-export function SkeletonHeroCard({
-  className,
-  shimmer = true,
-}: ShapeAwareSkeletonProps) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-line bg-panel overflow-hidden",
-        className,
-      )}
-      aria-hidden="true"
-    >
-      {/* Top zone — networth */}
-      <div className="px-5 pt-4 pb-3 space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <SkeletonText shimmer={shimmer} className="w-14 h-2.5" />
-            <Skeleton shimmer={shimmer} className="w-28 h-7" />
-          </div>
-          <SkeletonText
-            shimmer={shimmer}
-            className="w-20 h-2.5"
-            style={{ animationDelay: "30ms" }}
-          />
-        </div>
-        <SkeletonText
-          shimmer={shimmer}
-          className="w-48 h-2.5"
-          style={{ animationDelay: "60ms" }}
-        />
-      </div>
-
-      {/* Divider */}
-      <div className="border-t border-line/40 mx-0" />
-
-      {/* Bottom zone — day budget */}
-      <div className="px-5 py-4 space-y-2">
-        {/* Big display number */}
-        <Skeleton
-          shimmer={shimmer}
-          className="w-36 h-9"
-          style={{ animationDelay: "90ms" }}
-        />
-        {/* Status text */}
-        <SkeletonText
-          shimmer={shimmer}
-          className="w-40 h-2.5"
-          style={{ animationDelay: "120ms" }}
-        />
-        {/* Month progress row */}
-        <div className="space-y-1 pt-1">
-          <div className="flex items-center justify-between gap-3">
-            <SkeletonText shimmer={shimmer} className="w-20 h-2" />
-            <SkeletonText shimmer={shimmer} className="w-6 h-2" />
-          </div>
-          {/* Progress track */}
-          <div className="h-1 rounded-full bg-panelHi overflow-hidden">
-            <Skeleton
-              shimmer={shimmer}
-              className="h-full w-4/5 rounded-full"
-              style={{ animationDelay: "150ms" }}
-            />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

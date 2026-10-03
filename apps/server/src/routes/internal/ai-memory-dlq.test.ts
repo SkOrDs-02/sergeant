@@ -55,11 +55,11 @@ function sampleRow(overrides: Partial<DlqRow> = {}): DlqRow {
   return {
     id: 42,
     userId: "u1",
-    source: "finyk",
+    source: "cofounder",
     sourceRef: "tx-1",
     payloadJson: {
       userId: "u1",
-      source: "finyk",
+      source: "cofounder",
       sourceRef: "tx-1",
       content: "txn snapshot",
       metadata: { amount: 100 },
@@ -84,7 +84,7 @@ describe("POST /api/internal/ai-memory-dlq/list", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/list")
-      .send({ source: "finyk", limit: 50 });
+      .send({ source: "cofounder", limit: 50 });
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
@@ -92,7 +92,7 @@ describe("POST /api/internal/ai-memory-dlq/list", () => {
       {
         id: 42,
         userId: "u1",
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-1",
         errorMsg: "Voyage 503",
         attempts: 5,
@@ -120,7 +120,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk" });
+      .send({ source: "cofounder" });
 
     expect(res.status).toBe(200);
     expect(res.body.dryRun).toBe(true);
@@ -133,14 +133,14 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
   it("dryRun=false — re-enqueue + mark replayed для кожного row", async () => {
     listDlqRowsMock.mockResolvedValueOnce([
       sampleRow({ id: 1 }),
-      sampleRow({ id: 2, source: "chat", sourceRef: null }),
+      sampleRow({ id: 2, source: "digest", sourceRef: null }),
     ]);
     enqueueMemoryIngestMock.mockResolvedValue(undefined);
 
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk", dryRun: false });
+      .send({ source: "cofounder", dryRun: false });
 
     expect(res.status).toBe(200);
     expect(res.body.dryRun).toBe(false);
@@ -155,7 +155,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
   it("enqueue-failure для row → потрапляє в errors[], НЕ рахується у replayed", async () => {
     listDlqRowsMock.mockResolvedValueOnce([
       sampleRow({ id: 1 }),
-      sampleRow({ id: 2, source: "chat", sourceRef: null }),
+      sampleRow({ id: 2, source: "digest", sourceRef: null }),
     ]);
     // row #1 успішний; row #2 — strict-enqueue кидає (Redis-incident).
     enqueueMemoryIngestMock
@@ -166,7 +166,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk", dryRun: false });
+      .send({ source: "cofounder", dryRun: false });
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(false);
@@ -187,7 +187,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk", dryRun: false });
+      .send({ source: "cofounder", dryRun: false });
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(false);
@@ -213,7 +213,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ eventIds: [99], source: "finyk", dryRun: true });
+      .send({ eventIds: [99], source: "cofounder", dryRun: true });
 
     expect(listDlqRowsMock).toHaveBeenCalledWith(
       expect.objectContaining({ ids: [99] }),
@@ -224,7 +224,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk", limit: 5000 });
+      .send({ source: "cofounder", limit: 5000 });
 
     expect(res.status).toBe(400);
   });

@@ -12,7 +12,7 @@
  * two of the four envelopes in `packages/shared/src/schemas/nutrition.ts`
  * (success + error); the remaining `/api/food-search` and
  * `/api/parse-pantry` endpoints follow the same pattern — track in
- * PR-T30 of `docs/testing/2026-05-05-tests-pr-plan.md`.
+ * PR-T30 of `docs/engineering/testing/2026-05-05-tests-pr-plan.md`.
  *
  * Closes contract slice PR-T29 (web `/api/barcode` consumer contract).
  */

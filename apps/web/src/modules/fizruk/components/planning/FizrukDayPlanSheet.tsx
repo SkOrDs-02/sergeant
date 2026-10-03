@@ -13,6 +13,7 @@ import { useMonthlyPlan } from "../../hooks/useMonthlyPlan";
 import { useWorkoutTemplates } from "../../hooks/useWorkoutTemplates";
 import { useExerciseCatalog } from "../../hooks/useExerciseCatalog";
 import { parseDateKey } from "../../../routine/lib/hubCalendarAggregate";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 interface CatalogExercise {
   id: string;
@@ -53,13 +54,7 @@ export function FizrukDayPlanSheet({
       .filter((e): e is CatalogExercise => Boolean(e));
   }, [currentTemplate, exercises]);
 
-  const dateLabel = dateKey
-    ? parseDateKey(dateKey).toLocaleDateString("uk-UA", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      })
-    : "";
+  const dateLabel = dateKey ? formatUaWeekdayDate(parseDateKey(dateKey)) : "";
 
   const handleAssign = (templateId: string | null) => {
     if (!dateKey) return;
@@ -100,8 +95,8 @@ export function FizrukDayPlanSheet({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
-                  className="text-xs! border border-line shrink-0"
+                  variant="outline"
+                  className="text-xs! shrink-0"
                   onClick={() => handleAssign(null)}
                 >
                   {messages.fizruk.dayPlan.removeTemplate}
@@ -122,7 +117,7 @@ export function FizrukDayPlanSheet({
                     {exerciseList.map((ex) => (
                       <li
                         key={ex.id}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60"
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-info shrink-0" />
                         <span className="text-style-label text-text truncate">
@@ -154,7 +149,7 @@ export function FizrukDayPlanSheet({
                 : messages.fizruk.dayPlan.chooseTemplate}
             </SectionHeading>
             {templates.length === 0 ? (
-              <p className="text-style-caption text-subtle">
+              <p className="text-style-body text-subtle">
                 {messages.fizruk.dayPlan.noTemplates}
               </p>
             ) : (
@@ -174,7 +169,7 @@ export function FizrukDayPlanSheet({
                         "w-full text-left rounded-xl px-3 py-2.5 border transition-colors min-h-[44px]",
                         isActive
                           ? "border-info/50 bg-info/10"
-                          : "border-line bg-panel/60 hover:bg-panelHi",
+                          : "border-line bg-panel hover:bg-panelHi",
                       )}
                     >
                       <p

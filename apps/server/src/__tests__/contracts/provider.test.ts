@@ -53,7 +53,7 @@
 // tests in `apps/server/src/modules/chat/*.test.ts`,
 // `apps/server/src/modules/nutrition/*.test.ts`, and
 // `apps/server/src/modules/sync/*.test.ts`. See
-// `docs/architecture/api-contracts.md § Extending coverage`.
+// `docs/engineering/architecture/api-contracts.md § Extending coverage`.
 //
 // The 9 new receipt-scan/bulk-import routes are likewise `it.todo`
 // gap-marked below (§ "Finyk receipt-scan + bulk-import — explicit gap
@@ -105,10 +105,21 @@ const { mockPool, queryMock, getSessionUserMock, invokeLLMMock } = vi.hoisted(
   },
 );
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
+
 vi.mock("./../../db.js", () => ({
   default: mockPool,
   pool: mockPool,
   query: queryMock,
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withUserContext: (_userId: string, fn: (db: unknown) => unknown) =>
+    fn(mockPool),
   ensureSchema: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -274,7 +285,7 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 76 expected consumer interactions across 50 routes", () => {
+  it("pact file has 86 expected consumer interactions across 53 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
     // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
@@ -282,7 +293,26 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // `screenshot/analyze` із причиною) — `expectedRoutes` нижче не росте.
     // 76, не 75: +1 інтеракція на НОВОМУ маршруті `import/recent` (#930),
     // тож цього разу росте і `expectedRoutes`.
-    expect(pact.interactions).toHaveLength(76);
+    // 79, не 76: +3 інтеракції `hubPrefs` (PR-S13, міграція 137) на вже
+    // покритому `GET /api/v1/me/preferences` — дзеркально до трьох, які
+    // свого часу додав `activeModules`. Маршрут той самий, тож
+    // `expectedRoutes` не росте: змінилась лише кількість інтеракцій.
+    // 80, не 79: +1 інтеракція на вже покритому
+    // `GET /api/v1/silpo/sync-state` — третій стан, якого контракт доти не
+    // знав узагалі: підключено, але синк ПАДАЄ. Саме його відсутність на
+    // дроті й робила два тижні мертвого синку невидимими (міграція 138).
+    // Маршрут той самий, тож `expectedRoutes` не росте.
+    // 81, не 80: ще одна на тому ж маршруті — відповідь СТАРОГО сервера,
+    // без полів провалу. Web і server деплояться окремо, тож це не
+    // гіпотетичний випадок, а вікно між двома деплоями.
+    // 84, не 81: +3 інтеракції на НОВИХ маршрутах silpo — `PUT
+    // /silpo/settings` і пара `pantry-claim` / `pantry-release` (кожен по
+    // одній), тож росте і `expectedRoutes`.
+    // 86, не 84: +2 інтеракції billing на ВЖЕ покритих маршрутах —
+    // `GET /billing/status` зі `subscription.cancelAtPeriodEnd: true` і
+    // `POST /billing/cancel` → 409 `NO_ACTIVE_SUBSCRIPTION`. Маршрути ті
+    // самі, тож `expectedRoutes` не росте.
+    expect(pact.interactions).toHaveLength(86);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -363,6 +393,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v1/silpo/cart",
       "POST /api/v1/silpo/cart/preview",
       "POST /api/v1/silpo/cart/apply",
+      // silpo налаштування і комора: 3 інтеракції / 3 маршрути
+      "PUT /api/v1/silpo/settings",
+      "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim",
+      "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -424,8 +458,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       aiMemory: boolean;
       pushNotifications: boolean;
       sergeantNudges: boolean;
+      pushDailyCap: number;
       healthDataConsent: boolean;
       activeModules: string[] | null;
+      hubPrefs: Record<string, unknown> | null;
       updatedAt: string | null;
     };
 
@@ -437,12 +473,19 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
           ai_memory: expected.aiMemory,
           push_notifications: expected.pushNotifications,
           sergeant_nudges: expected.sergeantNudges,
+          push_daily_cap: expected.pushDailyCap,
           health_data_consent: expected.healthDataConsent,
           // Nullable-колонка без DEFAULT (міграція 116): персона pact-а
           // ще не робила вибору модулів, тож `pg` віддає `null`, а
           // серіалізатор — `activeModules: null` («сервер не знає
           // вибору»), НЕ `[]` («вибір є і він порожній»).
           active_modules: expected.activeModules,
+          // Nullable-колонка без DEFAULT (міграція 137), та сама трійця
+          // станів, що в `active_modules` вище: персона pact-а ще не
+          // синхронізувала налаштування хаба, тож `pg` віддає `null`, а
+          // серіалізатор — `hubPrefs: null` («сервер не знає, лиши
+          // локальні»), НЕ `{}` («знає, і всі дефолтні»).
+          hub_prefs: expected.hubPrefs,
           updated_at: expected.updatedAt,
         },
       ],
@@ -459,6 +502,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // Ключ мусить бути присутній навіть коли вибору немає — на цьому
     // тримається три-станова семантика на клієнті.
     expect(res.body).toHaveProperty("activeModules", null);
+    // Те саме для `hubPrefs`: ключ мусить бути присутній навіть коли
+    // серверних налаштувань немає — інакше клієнт не відрізнить «не знаю»
+    // від «знаю, і все дефолтне», і затре локальні налаштування.
+    expect(res.body).toHaveProperty("hubPrefs", null);
   });
 
   // ── GET /api/v1/me/profile ─────────────────────────────────────────────────
@@ -500,9 +547,21 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-003" });
-    queryMock.mockResolvedValueOnce({
-      rows: [{ payload: expected.profile, updated_at: expected.updatedAt }],
-    });
+    // `upsertUserProfile` пише в транзакції (LWW-гард `memoryBank`):
+    // BEGIN, SELECT … FOR UPDATE, INSERT … RETURNING, COMMIT на клієнті пулу.
+    const client = {
+      query: vi.fn(async (sql: string) =>
+        String(sql).includes("RETURNING payload")
+          ? {
+              rows: [
+                { payload: expected.profile, updated_at: expected.updatedAt },
+              ],
+            }
+          : { rows: [] },
+      ),
+      release: vi.fn(),
+    };
+    mockPool.connect.mockResolvedValueOnce(client);
 
     const app = createApp();
     const res = await request(app)
@@ -804,6 +863,14 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         servingGrams: number | null;
         source: "off" | "usda" | "upcitemdb";
         partial?: boolean;
+        imageUrl?: string | null;
+        nutrients?: {
+          fiber_100g: number | null;
+          sugars_100g: number | null;
+          saturatedFat_100g: number | null;
+          salt_100g: number | null;
+          alcohol_100g: number | null;
+        };
       };
     };
 
@@ -817,14 +884,27 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         product_name_uk: expected.product.name,
         product_name: expected.product.name,
         brands: expected.product.brand,
+        // Нутрієнти теж їдуть із пакта, а не вписані тут окремо: інакше
+        // мок і очікування розійшлися б, і тест перестав би бути доказом
+        // того, що ці поля справді проходять шлях OFF → нормалізатор →
+        // відповідь. `saturated-fat_100g` — саме з дефісом, так його
+        // називає OFF.
         nutriments: {
           "energy-kcal_100g": expected.product.kcal_100g,
           proteins_100g: expected.product.protein_100g,
           fat_100g: expected.product.fat_100g,
           carbohydrates_100g: expected.product.carbs_100g,
+          fiber_100g: expected.product.nutrients?.fiber_100g ?? null,
+          sugars_100g: expected.product.nutrients?.sugars_100g ?? null,
+          "saturated-fat_100g":
+            expected.product.nutrients?.saturatedFat_100g ?? null,
+          salt_100g: expected.product.nutrients?.salt_100g ?? null,
+          alcohol_100g: expected.product.nutrients?.alcohol_100g ?? null,
         },
         serving_size: expected.product.servingSize,
         serving_quantity: expected.product.servingGrams,
+        // Найдрібніший варіант — саме його бере нормалізатор першим.
+        image_front_small_url: expected.product.imageUrl ?? undefined,
       },
     };
 
@@ -889,6 +969,12 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    // КБЖВ-план стоїть за `requireHealthConsent()` (#1250): без згоди на
+    // дані про здоровʼя роут віддає 403. Контракт описує людину, що згоду
+    // дала, тож перший запит у БД (перевірка згоди) її й повертає.
+    queryMock.mockResolvedValueOnce({
+      rows: [{ health_data_consent: true }],
+    });
     // The pact envelope is `{ plan, rawText: null }`. The day-plan
     // handler builds that envelope from the normalised plan + the raw
     // model output — for rawText to be `null` the model JSON must
@@ -931,7 +1017,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   //
   // We instead lock the pact contract to a fixed expected wire-shape
   // and leave a `todo` marker so future maintenance knows where to
-  // extend coverage. See `docs/architecture/api-contracts.md
+  // extend coverage. See `docs/engineering/architecture/api-contracts.md
   // § Extending coverage`.
   it.todo(
     "POST /api/v1/chat — replay against real chat handler (requires streaming Anthropic stub)",

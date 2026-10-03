@@ -13,6 +13,16 @@ export interface TransactionsHeaderProps {
   hiddenCount: number;
   /** Batch selection size — drives the inline "Обери транзакції" hint. */
   selectedCount?: number;
+  /**
+   * Вивантажити видимі операції у CSV. Без колбека кнопка не рендериться:
+   * експортувати нема чого.
+   */
+  onExportCsv?: (() => void) | undefined;
+  /**
+   * Скільки рядків піде у файл. `0` ховає кнопку — порожній CSV із самою
+   * шапкою виглядає як поламаний експорт, а не як порожній місяць.
+   */
+  exportCount?: number;
 }
 
 /**
@@ -36,6 +46,8 @@ export function TransactionsHeader({
   setShowHidden,
   hiddenCount,
   selectedCount = 0,
+  onExportCsv,
+  exportCount = 0,
 }: TransactionsHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-3">
@@ -47,9 +59,7 @@ export function TransactionsHeader({
         >
           <Icon name="chevron-left" size="sm" />
         </button>
-        <span className="text-style-label text-text capitalize px-1">
-          {monthLabel}
-        </span>
+        <span className="text-style-label text-text px-1">{monthLabel}</span>
         <button
           onClick={() => goMonth(1)}
           disabled={isCurrentMonth}
@@ -64,7 +74,7 @@ export function TransactionsHeader({
           <>
             {selectedCount === 0 && (
               <span className="text-style-caption text-muted">
-                Обери транзакції
+                Обери операції
               </span>
             )}
             <button
@@ -102,6 +112,20 @@ export function TransactionsHeader({
                 ) : (
                   <span>{hiddenCount} прих.</span>
                 )}
+              </button>
+            )}
+            {/* Експорт стоїть поруч із «прих.» і режимом вибору — у тому
+                самому кластері дій над видимим списком. Ховається разом із
+                ними в select-режимі: вивантажувати те, що людина зараз
+                перебирає, означало б віддати файл із проміжного стану. */}
+            {onExportCsv && exportCount > 0 && (
+              <button
+                onClick={onExportCsv}
+                className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                title={`Вивантажити ${exportCount} у CSV`}
+                aria-label={`Вивантажити операції у CSV: ${exportCount}`}
+              >
+                <Icon name="download" size="md" aria-hidden />
               </button>
             )}
             <button

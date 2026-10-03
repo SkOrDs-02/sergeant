@@ -131,6 +131,20 @@ export function getKyivShortStamp(input?: Date | number): string {
 }
 
 /**
+ * `DD.MM HH:mm` stamp in Kyiv local time — компактніша форма за
+ * {@link getKyivShortStamp} (без року), для UI, де рік не потрібен: історія
+ * чату, дефолтна назва сесії.
+ */
+export function getKyivShortDateStamp(input?: Date | number): string {
+  const { day, month, hour, minute } = getKyivDateParts(input);
+  const dd = String(day).padStart(2, "0");
+  const mm = String(month).padStart(2, "0");
+  const hh = String(hour).padStart(2, "0");
+  const min = String(minute).padStart(2, "0");
+  return `${dd}.${mm} ${hh}:${min}`;
+}
+
+/**
  * Predicate: is `input` on the same Kyiv-local calendar day as `reference`?
  */
 export function isSameKyivDay(

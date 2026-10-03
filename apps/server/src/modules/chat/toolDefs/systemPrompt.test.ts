@@ -24,7 +24,7 @@ import { TOOLS } from "../tools.js";
 
 describe("SYSTEM_PREFIX — registry-driven", () => {
   it("starts with the canonical assistant intro (cache key sensitivity)", () => {
-    expect(SYSTEM_PREFIX).toMatch(/^Ти персональний асистент/);
+    expect(SYSTEM_PREFIX).toMatch(/^Ти Сержант/);
   });
 
   it("ends with the ДАНІ marker so the per-user context block can append cleanly", () => {
@@ -118,8 +118,12 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
   // 27 токенів кешованого префікса за читабельність кожної відповіді.
   // Baseline перебазовано на факт v23 (1228), запас звужено 1.05 → 1.03 —
   // за тим самим принципом, що й попереднього разу.
-  it("token budget: stays within 103% of baseline (~1228 tokens)", () => {
-    const BASELINE_TOKENS = 1228;
+  //
+  // v24 (2026-09-23): персона Сержанта і чотири рядки поведінки коштують
+  // +196 токенів (1228 → 1424). Це рішення власника за аудитом анти-слопу,
+  // тож baseline перебазовано на факт v24, запас лишається 1.03.
+  it("token budget: stays within 103% of baseline (~1424 tokens)", () => {
+    const BASELINE_TOKENS = 1424;
     const BUDGET = Math.round(BASELINE_TOKENS * 1.03);
     const approxTokens = Math.round(SYSTEM_PREFIX.length / 3.5);
     expect(
@@ -171,6 +175,15 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
     expect(SYSTEM_PREFIX).toContain("delete_transaction (лише ручні m_<id>)");
     expect(SYSTEM_PREFIX).toContain("update_budget (ліміт або ціль)");
     expect(SYSTEM_PREFIX).toContain("batch_categorize (dry_run спершу)");
+  });
+
+  it("забороняє переказувати id, назви інструментів і їхні параметри (v27)", () => {
+    // Регресія: модель витягла в текст користувачу внутрішній параметр
+    // («З group_by=category, але агрегація…»). Рядок про переказ результату
+    // інструмента мусить називати всі три категорії витоку, а не лише id.
+    expect(SYSTEM_PREFIX).toContain(
+      "Результат інструмента переказуй своїми словами, без id, назв інструментів і їхніх параметрів.",
+    );
   });
 
   it("does NOT contain the legacy /help instruction (PR #795 redirected it)", () => {

@@ -13,18 +13,20 @@ import { billingKeys } from "@shared/lib/api/queryKeys";
 import { useToast } from "@shared/hooks/useToast";
 import { useLocale } from "@shared/i18n/useLocale";
 import type { BillingCheckoutResponse } from "@sergeant/api-client";
+import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing";
 import { useAuthOptional } from "./auth/AuthContext";
 import { SIGN_IN_PATH } from "./app/appPaths";
 import { WaitlistForm } from "./pricing/WaitlistForm";
+import { buildTiers, type Tier } from "./pricing/pricingTiers";
 import { LegalLinks } from "./legal/LegalLinks";
 
 /**
  * Phase 7 D3 — Pricing tiers (one paid tier).
  *
- * Decision locked в `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`:
+ * Decision locked в `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`:
  *   Free → Premium €X/міс. No Plus/Pro split, no Lifetime, no trial-only gate.
  *
  * v2 chrome: `<MeshBackground>` shell, `<Card prominence="hero">` для Premium,
@@ -36,24 +38,6 @@ import { LegalLinks } from "./legal/LegalLinks";
  * `plan: "pro"`. User-facing label = "Premium" (D3). Перейменування серверного
  * enum — окремий PR на бекенд.
  */
-
-interface Feature {
-  readonly label: string;
-  /** Free-tier limit annotation. Premium = unlocked, тому залишай undefined там. */
-  readonly limit?: string;
-  /** Якщо `false` — рядок стилізується як "недоступно" (Free-only, gated на Premium). */
-  readonly included?: boolean;
-}
-
-interface Tier {
-  readonly id: "free" | "premium";
-  readonly name: string;
-  readonly price: string;
-  readonly cadence: string;
-  readonly tagline: string;
-  readonly features: ReadonlyArray<Feature>;
-  readonly highlight: boolean;
-}
 
 // AI-NOTE: конкретної ціни Premium тут більше немає (B4, браузерний аудит
 // 2026-08-05). Premium ще не запущений, оплата не підключена, а внизу
@@ -99,55 +83,6 @@ function assertAllowedCheckoutUrl(raw: string): string {
   return parsed.toString();
 }
 
-/**
- * Build the per-locale TIERS array. Lives inside PricingPage so `useLocale`
- * messages can drive every label; memoized on `messages` identity since the
- * resolver returns a frozen reference per locale (the array recomputes only
- * when the user toggles language, not on every parent render).
- */
-function buildTiers(
-  pricing: ReturnType<typeof useLocale>["messages"]["pricing"],
-): ReadonlyArray<Tier> {
-  const limits = pricing.limits;
-  const features = pricing.features;
-  return [
-    {
-      id: "free",
-      name: pricing.tiers.freeName,
-      price: pricing.tiers.freePrice,
-      cadence: pricing.tiers.freeCadence,
-      tagline: pricing.tiers.freeTagline,
-      highlight: false,
-      features: [
-        { label: features.allModules },
-        { label: features.manualTracking },
-        { label: features.aiChat, limit: limits.aiChatPerDay },
-        { label: features.cloudSync2Devices },
-        { label: features.pdfExport, included: false },
-        { label: features.monoAutoSync, included: false },
-      ],
-    },
-    {
-      id: "premium",
-      name: pricing.tiers.premiumName,
-      price: pricing.tiers.premiumPrice,
-      cadence: pricing.tiers.premiumCadence,
-      tagline: pricing.tiers.premiumTagline,
-      highlight: true,
-      features: [
-        { label: features.expensesFinyk, limit: limits.unlimited },
-        { label: features.aiPhotoFoodShort, limit: limits.unlimited },
-        { label: features.workoutTemplates, limit: limits.unlimited },
-        { label: features.habits, limit: limits.unlimited },
-        // B3 (браузерний аудит 2026-08-05): рядок «Активи в іноземній валюті»
-        // прибрано з обох колонок — такої функції в застосунку немає.
-        { label: features.pdfExport },
-        { label: features.cloudSync },
-      ],
-    },
-  ];
-}
-
 export function PricingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -161,9 +96,9 @@ export function PricingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const { isPro: isPremiumActive } = usePlan();
-  // «Зараз ваш план» — твердження про СЕСІЮ, а не про дефолт тарифу. Без
+  // «Зараз твій план» — твердження про СЕСІЮ, а не про дефолт тарифу. Без
   // цієї перевірки анонімний відвідувач бачив бейдж і disabled-кнопку
-  // «Зараз ваш план» на Free-картці, хоча жодного акаунта не існує
+  // «Зараз твій план» на Free-картці, хоча жодного акаунта не існує
   // (browser QA 2026-08-23). `useAuthOptional`: у застосунку `AuthProvider`
   // стоїть над роутом завжди, контексту немає лише у юніт-тестах, що
   // монтують сторінку голою — там лишаємо попередню поведінку.
@@ -176,6 +111,8 @@ export function PricingPage() {
     queryFn: ({ signal }) => billingApi.providers({ signal }),
     staleTime: 5 * 60_000,
     retry: false,
+    // FUN-1 (аудит 2026-09): без сесії ендпоінт віддає 401 — не питаємо.
+    enabled: !signedOut,
   });
   const enabledProviders = providersQuery.data?.providers ?? [];
   // i18n. Resolved messages frozen per-locale у resolver → memo identity
@@ -220,11 +157,15 @@ export function PricingPage() {
       void queryClient.invalidateQueries({ queryKey: billingKeys.status });
       toast.success(t.toast.subscriptionActive, undefined, {
         label: t.toast.subscriptionActiveCta,
-        // Пряма ціль вкладки хаба, не `/settings` — L-1 (2026-08-08,
-        // ще одне місце, знайдене поза заявленим списком у ТЗ фіксу):
-        // `/settings` тепер сам лише редиректить сюди ж, тож старий
-        // виклик платив зайвим стрибком навігації без жодної користі.
-        onClick: () => navigate("/?tab=settings"),
+        // PR-S7 (аудит 2026-09-13 хвиля 5): `navigate("/?tab=settings")`
+        // без таргета секції приземляв людину на чотири згорнуті рядки
+        // «Загальних» — після скасування форсованого розкриття першої
+        // секції (рішення власника 2026-09-11, див. PR-S1) вона НЕ бачила
+        // свій щойно активований план узагалі. `openHubSettingsSection`
+        // — той самий канал, яким інактивна Bento-картка й ⌘K вже
+        // ведуть у конкретну секцію: перемикає таб на «Налаштування» і
+        // скролить/розкриває «Підписка та план» (`#settings-plan`).
+        onClick: () => openHubSettingsSection("plan"),
       });
       return;
     }
@@ -285,7 +226,7 @@ export function PricingPage() {
       cta: "free",
     });
     // Downgrade Premium → Free: Stripe legacy — через Customer Portal у
-    // Settings; LiqPay/Plata — через «Скасувати Pro» у Settings. Тут Free
+    // Settings; LiqPay/Plata — через «Скасувати Premium» у Settings. Тут Free
     // CTA лишається disabled для Premium-юзерів.
     if (isPremiumActive) return;
     // Free-тір вже доступний за замовчуванням — нікуди не ведемо.
@@ -364,7 +305,7 @@ export function PricingPage() {
               onClick={() => navigate(-1)}
               aria-label={t.backLabel}
             >
-              <Icon name="chevron-left" size={20} />
+              <Icon name="chevron-left" size="lg" />
             </Button>
             <h1 className="text-style-title text-text">{t.pageTitle}</h1>
           </header>
@@ -441,29 +382,43 @@ export function PricingPage() {
               // checkout). Один/нуль → звичайна одна CTA (server-default).
               const showProviderChoice =
                 isPremium && !isPremiumActive && enabledProviders.length > 1;
-              // «Чорнило» v3.1 § 3 — Premium renders `prominence="hero"`
-              // (the new saturated finyk gradient); Free stays the
-              // neutral default card. Same JSX block serves both tiers,
-              // so ink tone must branch on `isPremium` rather than using
-              // a fixed text-* class.
-              const headingTone = isPremium ? "text-hero-ink" : "text-text";
-              const mutedTone = isPremium ? "text-hero-ink/70" : "text-muted";
-              const subtleTone = isPremium ? "text-hero-ink/60" : "text-subtle";
-              const checkTone = isPremium
-                ? "text-hero-ink"
-                : "text-brand-strong";
+              // Premium — «чорнило хаба», не hero-градієнт Фініка. До
+              // 2026-09-24 картка рендерилась `module="finyk"
+              // prominence="hero"` («Чорнило» v3.1 § 3), але Тарифи живуть
+              // на нейтральному хабі, а Premium відкриває всі чотири модулі,
+              // тож teal читався як чужий акцент (критика екранів
+              // 2026-09-23; рішення власника 2026-09-24 після порівняння
+              // двох живих кадрів). Заливка та сама, що в primary-кнопки
+              // хаба: stone-800 у світлій темі, інвертована світла плитка з
+              // темним чорнилом у «Чорнилі». Same JSX block serves both
+              // tiers, so ink tone must branch on `isPremium`.
+              const inkTone = "text-hero-ink dark:text-brand-900";
+              const headingTone = isPremium ? inkTone : "text-text";
+              // Чорнило без альфи (A9, рішення власника 2026-10-01): на
+              // Premium-картці приглушені рівні `muted`/`subtle` раніше були
+              // `/95` і `/90` від `hero-ink`. Тепер це те саме повне чорнило,
+              // а ієрархію тримають кегль (`text-style-caption` для лімітів)
+              // і ваги, не прозорість. Храповик `heroInkAlpha` = 0.
+              const mutedTone = isPremium ? inkTone : "text-muted";
+              const subtleTone = isPremium ? inkTone : "text-subtle";
+              const checkTone = isPremium ? inkTone : "text-brand-strong";
+              // Solid-кнопка має ту саму заливку, що й чорнильна картка
+              // (stone-800 / світла плитка в «Чорнилі»), тож на Premium
+              // вона зливалась із фоном. Інверсія: світла плитка на
+              // чорнилі, чорнило на світлій плитці, з тими самими hover.
+              const premiumCtaInverse =
+                "bg-brand-100 text-brand-900 hover:bg-brand-200 active:bg-brand-200 dark:bg-brand-strong dark:text-white dark:hover:bg-brand-900";
 
               return (
                 <Card
                   key={tier.id}
                   as="article"
-                  module={isPremium ? "finyk" : undefined}
-                  prominence={isPremium ? "hero" : "default"}
                   radius="xl"
                   padding="lg"
                   className={cn(
                     "flex flex-col gap-4 motion-safe:animate-stagger-in",
-                    isPremium && "ring-1 ring-brand-200/40",
+                    isPremium &&
+                      "bg-brand-strong border-transparent dark:bg-brand-100",
                   )}
                   // Hard Rule #17: між дітьми стагеру максимум 30 мс,
                   // сумарна затримка ≤150 мс — канонічна форма
@@ -494,7 +449,8 @@ export function PricingPage() {
                           size="sm"
                           className={cn(
                             "shrink-0",
-                            isPremium && "text-hero-ink border-hero-ink/40",
+                            isPremium &&
+                              "text-hero-ink border-hero-ink/40 dark:text-brand-900 dark:border-brand-900/40",
                           )}
                         >
                           {t.cta.currentPlan}
@@ -506,10 +462,14 @@ export function PricingPage() {
                     </p>
                   </header>
 
+                  {/* `text-style-display` має line-height 1, тож нижні
+                      виноси «Скоро» (р, у) впирались у рядок каденції під
+                      ним (зауваження власника 2026-09-24). Запас під
+                      виноси дає сам рядок, а не відступ між блоками. */}
                   <div className="space-y-1">
                     <span
                       className={cn(
-                        "text-style-display tabular-nums",
+                        "block text-style-display tabular-nums leading-[1.15]",
                         headingTone,
                       )}
                     >
@@ -533,13 +493,20 @@ export function PricingPage() {
                         >
                           <Icon
                             name={excluded ? "close" : "check"}
-                            size={16}
+                            size="md"
                             className={cn(
                               "mt-0.5 shrink-0",
                               excluded ? subtleTone : checkTone,
                             )}
                           />
                           <span className="min-w-0">
+                            {/* Іконка декоративна (`Icon` без `title` йде
+                                `aria-hidden`), тож стан рядка озвучує текст. */}
+                            <span className="sr-only">
+                              {excluded
+                                ? t.features.excludedSr
+                                : t.features.includedSr}{" "}
+                            </span>
                             <span>{f.label}</span>
                             {f.limit ? (
                               <span
@@ -562,8 +529,9 @@ export function PricingPage() {
                       {enabledProviders.map((p) => (
                         <Button
                           key={p}
-                          variant="primary"
+                          variant="solid"
                           size="md"
+                          className={premiumCtaInverse}
                           onClick={() => void handlePremiumCta(p)}
                           disabled={checkoutLoading}
                         >
@@ -575,8 +543,15 @@ export function PricingPage() {
                     </div>
                   ) : (
                     <Button
-                      variant={isPremium ? "primary" : "secondary"}
+                      // Канон `(variant, tone)`: `solid`/`outline` при
+                      // нейтральному тоні — це рівно те, що давали легасі
+                      // `primary`/`secondary` (мапа `EMPHASIS_TONE_MAP` у
+                      // `Button.tsx`), тобто вигляд не змінився. Храповик
+                      // `legacyButton` тернарного виразу не бачить, тож цей
+                      // рядок дожив до боргу дизайн-контракту тарифів.
+                      variant={isPremium ? "solid" : "outline"}
                       size="md"
+                      className={isPremium ? premiumCtaInverse : undefined}
                       onClick={
                         isPremium
                           ? onPremiumClick

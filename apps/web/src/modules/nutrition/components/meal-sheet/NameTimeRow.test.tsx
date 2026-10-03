@@ -81,6 +81,25 @@ describe("NameTimeRow", () => {
     expect(screen.getByLabelText("Час")).toBeInTheDocument();
   });
 
+  // Пін на контракт ширини нативного контрола. `[min-inline-size:0]` дає
+  // лише спільний примітив (`DateField` / `TimeField`); сирий `Input` його
+  // НЕ має, і саме так поле ставало ширшим за екран на iOS. Playwright тут
+  // не помічник — Chromium цей дефект не відтворює (заміряно 2026-09-15,
+  // див. docs/start/instructions/fix-mobile-horizontal-overflow.md § 3).
+  it("тримає поле часу в межах рядка — жодного intrinsic-розпирання", () => {
+    const field = vi.fn(() => vi.fn());
+    render(
+      <NameTimeRow
+        form={makeForm({ time: "08:15" })}
+        field={field}
+        setForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText("Час").className).toContain(
+      "[min-inline-size:0]",
+    );
+  });
+
   it("routes name input changes through the field setter", () => {
     const setName = vi.fn();
     const field = vi.fn((key: string) => (key === "name" ? setName : vi.fn()));
@@ -126,10 +145,59 @@ describe("NameTimeRow", () => {
     ) => MealFormState;
     expect(update(makeForm({ err: "old error" }))).toMatchObject({
       name: "Омлет",
-      kcal: "250",
-      protein_g: "30",
+      kcal: "249.6",
+      protein_g: "30.4",
       err: "",
     });
+  });
+
+  /**
+   * Порція, сказана голосом, мусить кудись потрапити.
+   *
+   * `parseMealSpeech` повертає `grams`, підказка Whisper поруч із кнопкою
+   * прямо вчить їх називати — а `MealFormState` поля для них не має: тут
+   * РУЧНИЙ запис, де ккал абсолютні для страви, не на 100 г. Доти число
+   * просто зникало. Назва — єдине поле, здатне його понести.
+   */
+  it("сказана порція йде в назву, а не зникає", () => {
+    vi.mocked(parseMealSpeech).mockReturnValue({
+      name: "Гречка",
+      kcal: 180,
+      protein: null,
+      grams: 200,
+      raw: "гречка двісті грам сто вісімдесят калорій",
+    });
+    const setForm = vi.fn();
+    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mic" }));
+
+    const update = setForm.mock.calls[0]?.[0] as (
+      form: MealFormState,
+    ) => MealFormState;
+    expect(update(makeForm())).toMatchObject({
+      name: "Гречка 200 г",
+      kcal: "180",
+    });
+  });
+
+  it("без порції назва лишається чистою", () => {
+    vi.mocked(parseMealSpeech).mockReturnValue({
+      name: "Омлет",
+      kcal: 250,
+      protein: null,
+      grams: null,
+      raw: "омлет 250 ккал",
+    });
+    const setForm = vi.fn();
+    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mic" }));
+
+    const update = setForm.mock.calls[0]?.[0] as (
+      form: MealFormState,
+    ) => MealFormState;
+    expect(update(makeForm()).name).toBe("Омлет");
   });
 
   it("ignores unparsed voice transcripts and records voice errors", () => {

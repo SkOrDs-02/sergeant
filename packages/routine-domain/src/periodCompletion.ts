@@ -3,7 +3,7 @@
  *
  * AI-CONTEXT: знаменник — **заплановані дні** (`habitScheduledOnDate`), а не
  * «7 днів × кількість звичок». Це ратифікована семантика канону
- * (`docs/01-product/model/routine.md`, ADR-0079 §3): звичка «Пн/Ср/Пт»,
+ * (`docs/product/modules/routine.md`, ADR-0079 §3): звичка «Пн/Ср/Пт»,
  * виконана 3/3, — це 100%, а не 43%. Плоский знаменник карав користувача за
  * дні, у які звичка й не планувалась.
  *
@@ -23,7 +23,13 @@
  */
 
 import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
-import type { Habit } from "./types.js";
+import type { Habit, HabitSkip } from "./types.js";
+import {
+  isFlexibleHabit,
+  weekEndKeyForDateKey,
+  weekStartKeyForDateKey,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
 
 /** Зріз по одній звичці за період. */
 export interface HabitPeriodCompletion {
@@ -59,6 +65,17 @@ export interface RoutinePeriodCompletionOptions {
    * Дефолт (не передано) зберігає історичну поведінку: пауза ретроактивна.
    */
   pausedFrom?: string | undefined;
+  /**
+   * Пропуски з причиною: `habitId → dateKey → HabitSkip`.
+   *
+   * Та сама семантика, що в `CompletionRateOptions.skips` (`./streaks.ts`):
+   * канон §5 виключає день «не зміг» зі ЗНАМЕННИКА, а не рахує його
+   * провалом. Опційне й адитивне — існуючі виклики без цього поля
+   * (дайджест, Hub-Reports) поведінки не міняють (unification audit
+   * 2026-08-31, finding 1.7). Дефолт (не передано) зберігає історичну
+   * поведінку: пропуск = провал.
+   */
+  skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }
 
 export function calcRoutinePeriodCompletion(
@@ -92,11 +109,53 @@ export function calcRoutinePeriodCompletion(
 
   for (const habit of active) {
     const doneSet = new Set(completions?.[habit.id] ?? []);
+    const habitSkips = opts.skips?.[habit.id];
     let habitDone = 0;
     let habitScheduled = 0;
 
+    if (isFlexibleHabit(habit)) {
+      const byWeek = new Map<string, { done: number; days: number }>();
+      for (const dk of keys) {
+        if (
+          !habitScheduledOnDate(habit, dk, {
+            ...scheduleOpts,
+            weekDoneCount: 0,
+          })
+        ) {
+          continue;
+        }
+        if (habitSkips?.[dk] && !doneSet.has(dk)) continue;
+        const weekStart = weekStartKeyForDateKey(dk);
+        const row = byWeek.get(weekStart) ?? { done: 0, days: 0 };
+        row.days += 1;
+        if (doneSet.has(dk)) row.done += 1;
+        byWeek.set(weekStart, row);
+      }
+      for (const [weekStart, row] of byWeek) {
+        const target = Math.min(
+          row.days,
+          weeklyTargetForDate(habit, weekEndKeyForDateKey(weekStart)),
+        );
+        habitScheduled += target;
+        habitDone += Math.min(row.done, target);
+      }
+      completed += habitDone;
+      scheduled += habitScheduled;
+      perHabit.push({
+        id: habit.id,
+        name: habit.name || "Звичка",
+        done: habitDone,
+        scheduled: habitScheduled,
+        completionRate: pctOf(habitDone, habitScheduled),
+      });
+      continue;
+    }
+
     for (const dk of keys) {
       if (!habitScheduledOnDate(habit, dk, scheduleOpts)) continue;
+      // «Не зміг з причиною» виходить зі знаменника, а не рахується
+      // провалом (канон §5) — та сама гілка, що в `completionRateForRange`.
+      if (habitSkips?.[dk] && !doneSet.has(dk)) continue;
       habitScheduled += 1;
       dailyScheduled[dk] = (dailyScheduled[dk] ?? 0) + 1;
       if (doneSet.has(dk)) {

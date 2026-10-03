@@ -1,7 +1,7 @@
 /**
  * Boot-time residual-import helper for the mobile Nutrition MMKV keys.
  *
- * Stage 8 PR #057n-tombstone of `docs/planning/storage-roadmap.md`
+ * Stage 8 PR #057n-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * (mobile parity for `apps/web/src/modules/nutrition/lib/residualImport.ts`).
  * Stage 13 PR #073 extended this drain to also cover the saved-recipes
  * MMKV blob (`nutrition_recipe_book_v1`).

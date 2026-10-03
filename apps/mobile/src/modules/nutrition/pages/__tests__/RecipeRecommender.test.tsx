@@ -161,15 +161,19 @@ beforeEach(() => {
   });
   mockedPantries.mockReturnValue({
     pantries: [],
-    activePantryId: "default",
-    activePantry: {
-      id: "default",
-      name: "Комора",
-      items: [{ name: "яйця", qty: 6, unit: "шт", notes: null }],
-      text: "",
-    },
-    pantryItems: [{ name: "яйця", qty: 6, unit: "шт", notes: null }],
-    setActivePantryId: jest.fn(),
+    placeFilter: null,
+    setPlaceFilter: jest.fn(),
+    moveItemTo: jest.fn(),
+    pantryItems: [
+      {
+        name: "яйця",
+        qty: 6,
+        unit: "шт",
+        notes: null,
+        pantryId: "home",
+        localIdx: 0,
+      },
+    ],
     addLine: jest.fn(),
     applyParsedItems: jest.fn(),
     removeItemAt: jest.fn(),

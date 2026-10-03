@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useCallback } from "react";
 import { type User } from "@sergeant/shared";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
@@ -10,15 +10,12 @@ import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import {
-  shouldShowOnboarding,
-  isDemoActive,
-} from "../onboarding/onboardingGate";
+import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
+import { MemoryOnlyStorageBanner } from "../durability/MemoryOnlyStorageBanner";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
-import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 
 // The shortcuts modal body is heavy (portal + focus-trap + key grid) and
 // only renders on the `?` hotkey, so it ships as its own chunk and loads
@@ -49,7 +46,8 @@ export interface HubHomeViewProps {
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
   iosVisible: boolean;
-  onDismissIos: () => void;
+  onDismissIosForever: () => void;
+  onSnoozeIos: () => void;
   updateAvailable: boolean;
   onApplyUpdate: () => void;
   openModule: HubNavigation["openModule"];
@@ -72,13 +70,29 @@ export function HubHomeView(props: HubHomeViewProps) {
     onInstall,
     onDismissInstall,
     iosVisible,
-    onDismissIos,
+    onDismissIosForever,
+    onSnoozeIos,
     updateAvailable,
     onApplyUpdate,
     openModule,
     shortcutsOpen,
     onCloseShortcuts,
   } = props;
+
+  // Базова лінія перед віссю дії хабу (P3): `MODULE_OPENED` стріляє в
+  // самому `openModule`, а джерело їде опцією. Прямий проп із головної
+  // (плитка, secondary-лінк hero, картка результату FTUX) — `hub_dashboard`;
+  // саму плитку всередині нього видно окремо по `HUB_MODULE_TILE_CLICKED`.
+  // Пошук через модалку — `search`. Решта входів іде шиною і несе джерело
+  // в деталях події.
+  const openFromDashboard = useCallback<HubNavigation["openModule"]>(
+    (id, opts) => openModule(id, { ...opts, source: "hub_dashboard" }),
+    [openModule],
+  );
+  const openFromSearch = useCallback<HubNavigation["openModule"]>(
+    (id, opts) => openModule(id, { ...opts, source: "search" }),
+    [openModule],
+  );
 
   // FTUX session = the window between the splash and the user's first
   // real (non-demo) entry. During this window we intentionally
@@ -102,8 +116,20 @@ export function HubHomeView(props: HubHomeViewProps) {
   // вискакував би одразу при вході в demo («Подивитись приклад») —
   // юзеру, що тільки відкрив приклад і ще нічого не робив, changelog
   // недоречний.
+  //
+  // Самих цих умов НЕ досить: новий акаунт перетинає обидві за кілька
+  // хвилин (перший запис і є виходом із FTUX-вікна), тож «returning user»
+  // тут насправді означало «пробув тут кілька хвилин». Другу половину
+  // гейта тримає `pickRelease` — вона глушить ноти, старші за сам акаунт.
+  //
+  // `!authLoading` — не косметика, а частина того самого гейта: поки сесія
+  // резолвиться, `user` ще `null`, тобто й `accountCreatedAt`, і
+  // 2.5-секундний таймер устиг би відкрити реліз БЕЗ перевірки віку акаунта.
+  // `shownRef` усередині хука одноразовий, тож приїзд `createdAt` після
+  // відкриття вже нічого не змінив би (ревʼю PR #1053).
   const whatsNew = useWhatsNew({
-    enabled: hasFirstRealEntry && !inFtuxSession && !isDemoActive(),
+    enabled: !authLoading && hasFirstRealEntry && !inFtuxSession,
+    accountCreatedAt: user?.createdAt ?? null,
   });
 
   // C · Контроль (home redesign 2026-06): system chrome banners (SW update,
@@ -156,18 +182,21 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubHeader
         onOpenSearch={() => ui.setSearchOpen(true)}
-        onOpenPrivacy={() => openHubSettingsSection("privacy")}
         user={user}
         authLoading={authLoading}
         onShowAuth={onOpenAuth}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
+        activeTab={ui.hubView}
       />
 
+      <MemoryOnlyStorageBanner />
+
       <HubMainContent
-        onOpenModule={openModule}
+        onOpenModule={openFromDashboard}
         iosVisible={iosVisible}
-        onDismissIos={onDismissIos}
+        onDismissIosForever={onDismissIosForever}
+        onSnoozeIos={onSnoozeIos}
         hubView={ui.hubView}
         user={user}
         onShowAuth={onOpenAuth}
@@ -195,8 +224,9 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubModals
         searchOpen={ui.searchOpen}
+        searchQuery={ui.searchQuery}
         onCloseSearch={ui.closeSearch}
-        onOpenModule={openModule}
+        onOpenModule={openFromSearch}
       />
       {shortcutsOpen && (
         <Suspense fallback={null}>

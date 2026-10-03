@@ -123,7 +123,7 @@ export function TagsSection({
         />
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           className="min-h-[44px] shrink-0 px-4"
           onClick={() => {
             // PR-058 (web): пара з reducer-level dedupe у `applyCreateTag`.
@@ -153,7 +153,7 @@ export function TagsSection({
           }}
           aria-label="Додати тег"
         >
-          <Icon name="plus" size={16} aria-hidden />
+          <Icon name="plus" size="md" aria-hidden />
         </Button>
       </div>
       <ul className="flex flex-wrap gap-2">
@@ -211,7 +211,7 @@ export function TagsSection({
                   onClick={() => startEdit(t.id, t.name)}
                   aria-label={`Змінити ${t.name}`}
                 >
-                  <Icon name="edit" size={14} aria-hidden />
+                  <Icon name="edit" size="sm" aria-hidden />
                 </IconButton>
                 <IconButton
                   size="xs"
@@ -237,7 +237,7 @@ export function TagsSection({
                   }}
                   aria-label={`Видалити ${t.name}`}
                 >
-                  <Icon name="close" size={14} aria-hidden />
+                  <Icon name="close" size="sm" aria-hidden />
                 </IconButton>
               </>
             )}

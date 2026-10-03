@@ -1,24 +1,24 @@
+import { pluralUa } from "@sergeant/shared";
 import { useInRouterContext, useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { usePlan } from "./usePlan";
 
 /**
- * Trial-expiry banner (initiative 0010 Phase 4 / audit `2026-05-13-revenue-monetization-roast.md` P1-9).
+ * Банер кінця trial і grace (спека `docs/work/specs/access-tiers.md`).
  *
- * Reads `usePlan()` and renders a single-line CTA when the on-file
- * subscription is `status === "trialing"` and the trial expires in
- * `≤ 7` days. At `≤ 1` day remaining we switch to a sticky variant so
- * the «last call» is visible across hub-view scroll on small screens.
- * Outside the trialing window the component renders `null` — callers
- * (HubMainContent banner stack) mount it unconditionally.
+ * Читає `access.state` зі знімка `/api/billing/status`, нічого не виводить
+ * з плану сам:
+ *   - `trial`: показується за ≤ 2 дні до кінця, в останню добу стає sticky,
+ *     щоб «останній шанс» був видимий при скролі хаба на малому екрані;
+ *   - `grace`: оплата не пройшла, людина ще має Premium до дати кінця grace.
+ * Для `free`, `pro`, під час завантаження і без сесії рендерить `null`,
+ * тож caller-и (стек банерів хаба) монтують його безумовно.
  *
- * Pro plan, free plan, loading, and unauthenticated callers all
- * collapse to `null` via `usePlan()`'s fall-throughs (subscription is
- * `null` while loading / on 401). The component does not invalidate
- * billing queries — `usePlan()` already refetches on focus.
+ * Push і email про кінець trial свідомо не шлемо: серверного планувальника
+ * й email-каналу немає, це лише банер у застосунку.
  *
- * A11y: `role="status"` + `aria-live="polite"` so screen readers
- * announce the countdown change without stealing focus.
+ * A11y: `role="status"` + `aria-live="polite"`, щоб скрінрідер оголосив
+ * зміну відліку без крадіжки фокуса.
  */
 
 export interface TrialBannerProps {
@@ -31,81 +31,83 @@ export interface TrialBannerProps {
   now?: () => number;
 }
 
-function computeDaysLeft(currentPeriodEnd: string, now: number): number {
-  const end = Date.parse(currentPeriodEnd);
-  if (Number.isNaN(end)) {
-    return Number.NaN;
-  }
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.max(0, Math.ceil((end - now) / msPerDay));
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const TRIAL_BANNER_DAYS = 2;
+
+function computeDaysLeft(endIso: string, now: number): number {
+  const end = Date.parse(endIso);
+  if (Number.isNaN(end)) return Number.NaN;
+  return Math.max(0, Math.ceil((end - now) / MS_PER_DAY));
 }
 
 const COPY = {
   endsToday: "Trial завершується сьогодні",
   remainingPrefix: "Залишилось",
   trailing: "trial",
-  body: "Оформіть Pro, щоб не втратити доступ до AI-чату й автосинку Mono.",
-  cta: "Перейти на Pro",
+  // «Premium» — канонічна назва для людини (рішення D3); серверний id
+  // лишається `pro`.
+  body: "Оформи Premium, щоб лишити Сержанта без тижневого ліміту, фото їжі й PDF-звіти.",
+  cta: "Перейти на Premium",
+  graceTitle: "Оплата не пройшла",
+  graceBodyPrefix: "Онови картку до",
+  graceBodySuffix: ", щоб Premium не вимкнувся.",
+  graceCta: "Оновити картку",
   dayForms: { one: "день", few: "дні", many: "днів" },
 } as const;
 
 function pluralizeDays(days: number): string {
-  // Ukrainian plurals — 1 день / 2-4 дні / 5+ днів. Trial windows top
-  // out at 7 days so we only need the three-form rule, not the full
-  // Intl.PluralRules wrapper.
-  const mod10 = days % 10;
-  const mod100 = days % 100;
-  if (mod10 === 1 && mod100 !== 11) return COPY.dayForms.one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-    return COPY.dayForms.few;
-  return COPY.dayForms.many;
+  return pluralUa(days, COPY.dayForms);
+}
+
+function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Kyiv",
+  }).format(new Date(iso));
 }
 
 /**
  * Public wrapper — defers to {@link TrialBannerInner} only when a
  * `<Router>` ancestor is present. `HubMainContent`'s unit tests render
- * the hub layout outside `<MemoryRouter>` (see
- * `apps/web/src/core/app/HubMainContent.test.tsx`); calling
- * `useNavigate()` there would throw. The outer component owns a single
- * `useInRouterContext()` hook call to keep React's hook-order rule
- * intact across mounts.
+ * the hub layout outside `<MemoryRouter>`; calling `useNavigate()` there
+ * would throw.
  */
 export function TrialBanner(props: TrialBannerProps = {}) {
   const inRouter = useInRouterContext();
-  if (!inRouter) {
-    return null;
-  }
-  // Beta: the banner exists only to push a trial towards checkout, and its CTA
-  // lands on a `/pricing` that 404s while commerce is hidden. Bailing out here
-  // rather than inside `TrialBannerInner` also skips `usePlan()`, so a hidden
-  // build never fires the `/api/billing/status` request at all.
+  if (!inRouter) return null;
   return <TrialBannerInner {...props} />;
 }
 
 function TrialBannerInner({ now = Date.now }: TrialBannerProps) {
   const navigate = useNavigate();
-  const { subscription } = usePlan();
+  const { access } = usePlan();
 
-  if (!subscription || subscription.status !== "trialing") {
+  let headline: string;
+  let body: string;
+  let cta: string;
+  let sticky: boolean;
+  let target: string;
+
+  if (access?.state === "trial" && access.trialEndsAt) {
+    const daysLeft = computeDaysLeft(access.trialEndsAt, now());
+    if (Number.isNaN(daysLeft) || daysLeft > TRIAL_BANNER_DAYS) return null;
+    sticky = daysLeft <= 1;
+    headline =
+      daysLeft === 0
+        ? COPY.endsToday
+        : `${COPY.remainingPrefix} ${daysLeft} ${pluralizeDays(daysLeft)} ${COPY.trailing}`;
+    body = COPY.body;
+    cta = COPY.cta;
+    target = "/pricing?source=trial_banner";
+  } else if (access?.state === "grace" && access.graceEndsAt) {
+    sticky = true;
+    headline = COPY.graceTitle;
+    body = `${COPY.graceBodyPrefix} ${formatDate(access.graceEndsAt)}${COPY.graceBodySuffix}`;
+    cta = COPY.graceCta;
+    target = "/settings?billing=manage";
+  } else {
     return null;
-  }
-  if (!subscription.currentPeriodEnd) {
-    return null;
-  }
-
-  const daysLeft = computeDaysLeft(subscription.currentPeriodEnd, now());
-  if (Number.isNaN(daysLeft) || daysLeft > 7) {
-    return null;
-  }
-
-  const sticky = daysLeft <= 1;
-  const headline =
-    daysLeft === 0
-      ? COPY.endsToday
-      : `${COPY.remainingPrefix} ${daysLeft} ${pluralizeDays(daysLeft)} ${COPY.trailing}`;
-
-  function handleCta() {
-    navigate("/pricing?source=trial_banner");
   }
 
   return (
@@ -128,15 +130,15 @@ function TrialBannerInner({ now = Date.now }: TrialBannerProps) {
       >
         <div className="min-w-0 flex-1">
           <p className="text-style-label">{headline}</p>
-          <p className="text-style-caption opacity-80">{COPY.body}</p>
+          <p className="text-style-caption opacity-80">{body}</p>
         </div>
         <Button
-          variant="primary"
+          variant="solid"
           size="sm"
-          onClick={handleCta}
+          onClick={() => navigate(target)}
           className="shrink-0 font-semibold"
         >
-          {COPY.cta}
+          {cta}
         </Button>
       </div>
     </div>

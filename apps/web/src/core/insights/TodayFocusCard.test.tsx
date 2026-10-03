@@ -28,6 +28,12 @@ vi.mock("../lib/recommendationEngine", () => ({
     generateRecommendationsMock(...(args as [])),
 }));
 
+const trackEventMock = vi.fn();
+vi.mock("../observability/analytics", () => ({
+  trackEvent: (...args: unknown[]) => trackEventMock(...args),
+  ANALYTICS_EVENTS: { TODAY_FOCUS_CTA_CLICKED: "today_focus_cta_clicked" },
+}));
+
 // Mock hubNav so we can verify dispatches without real DOM events
 const openHubModuleWithActionMock = vi.fn();
 vi.mock("@shared/lib/modules/hubNav", () => ({
@@ -292,6 +298,41 @@ describe("TodayFocusCard", () => {
     expect(openHubModuleWithActionMock).toHaveBeenCalledWith(
       "fizruk",
       "start_workout",
+      "today_focus_cta",
+    );
+  });
+
+  it("primary CTA з pwaAction стріляє TODAY_FOCUS_CTA_CLICKED і передає джерело", () => {
+    // Базова лінія перед віссю дії хабу (P3): третя з трьох подій.
+    trackEventMock.mockClear();
+    openHubModuleWithActionMock.mockClear();
+    render(
+      <TodayFocusCard
+        focus={{
+          id: "nutrition_protein_low",
+          module: "nutrition",
+          icon: "utensils",
+          title: "Лише 48 г білка",
+          body: "",
+          action: "nutrition",
+          pwaAction: "add_meal",
+        }}
+        onAction={onAction}
+        onDismiss={onDismiss}
+      />,
+    );
+    const buttons = screen.getAllByRole("button");
+    fireEvent.click(buttons.find((b) => b.textContent?.includes("Додати"))!);
+    expect(trackEventMock).toHaveBeenCalledWith("today_focus_cta_clicked", {
+      rec_id: "nutrition_protein_low",
+      module: "nutrition",
+      kind: "primary",
+      has_pwa_action: true,
+    });
+    expect(openHubModuleWithActionMock).toHaveBeenCalledWith(
+      "nutrition",
+      "add_meal",
+      "today_focus_cta",
     );
   });
 
@@ -320,6 +361,56 @@ describe("TodayFocusCard", () => {
     expect(primaryBtn).toBeDefined();
     fireEvent.click(primaryBtn!);
     expect(onAction).toHaveBeenCalledWith("finyk");
+  });
+
+  it("primaryLabel підміняє підпис «Відкрити <модуль>», коли картка веде не в модуль", () => {
+    const focus = {
+      id: "spending_velocity_high",
+      module: "finyk" as const,
+      title: "Витрати на 50% вище",
+      icon: "trending-up",
+      action: "week_report",
+    };
+
+    render(
+      <TodayFocusCard
+        focus={focus}
+        onAction={onAction}
+        onDismiss={onDismiss}
+        primaryLabel="Відкрити звіт тижня"
+      />,
+    );
+
+    expect(screen.queryByText("Відкрити Фінік")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Відкрити звіт тижня/ }),
+    );
+    expect(onAction).toHaveBeenCalledWith("week_report");
+  });
+
+  it("primaryLabel не чіпає імперативну дію: підпис береться з quick-action модуля", () => {
+    const focus = {
+      id: "finyk_daily_vs_weekly_pace",
+      module: "finyk" as const,
+      title: "Сьогодні 500 ₴",
+      icon: "clock",
+      action: "finyk",
+      pwaAction: "add_expense" as const,
+    };
+
+    render(
+      <TodayFocusCard
+        focus={focus}
+        onAction={onAction}
+        onDismiss={onDismiss}
+        primaryLabel="Відкрити звіт тижня"
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Додати витрату/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Відкрити звіт тижня")).toBeNull();
   });
 
   it("рекомендація з pwaAction показує secondary кнопку 'Відкрити <модуль>'", () => {
@@ -400,7 +491,7 @@ describe("TodayFocusCard", () => {
     const focus = {
       id: "routine_streak_7",
       module: "routine" as const,
-      title: "7 днів поспіль! Вогонь!",
+      title: "7 днів поспіль",
       body: "Неймовірна серія!",
       icon: "flame",
       action: "routine",
@@ -592,5 +683,103 @@ describe("useDashboardFocus", () => {
 
     expect(result.current.focus?.id).toBe("r2");
     expect(result.current.rest).toHaveLength(0);
+  });
+
+  describe("«✕» діє до кінця доби, а не назавжди (рішення власника 2026-10-01)", () => {
+    const rec = (id: string, priority: number) => ({
+      id,
+      module: "fizruk",
+      priority,
+      icon: "🏋️",
+      title: id,
+      body: "body",
+      action: "fizruk",
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("відкинуте вчора повертається: статичний id правила не глушиться навіки", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 9, 1, 9, 0, 0));
+      localStorage.setItem(
+        "hub_recs_dismissed_v1",
+        JSON.stringify({
+          fizruk_long_break: new Date(2026, 8, 30, 21, 0, 0).getTime(),
+        }),
+      );
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80),
+      ]);
+
+      const { result } = renderHook(() => useDashboardFocus());
+
+      expect(result.current.focus?.id).toBe("fizruk_long_break");
+    });
+
+    it("відкинуте сьогодні лишається схованим до півночі, потім повертається", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 9, 1, 9, 0, 0));
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80),
+      ]);
+
+      const { result, rerender } = renderHook(() => useDashboardFocus());
+      act(() => {
+        result.current.dismiss("fizruk_long_break");
+      });
+      expect(result.current.focus).toBeNull();
+
+      // Пізно ввечері тієї ж доби — досі схована.
+      vi.setSystemTime(new Date(2026, 9, 1, 23, 59, 0));
+      rerender();
+      expect(result.current.focus).toBeNull();
+
+      // Північ за годинником пристрою — повернулась, перезавантаження не потрібне.
+      vi.setSystemTime(new Date(2026, 9, 2, 0, 1, 0));
+      rerender();
+      expect(result.current.focus?.id).toBe("fizruk_long_break");
+    });
+
+    it("застарілі записи без мітки часу (`true`, `1`) вважаються простроченими", () => {
+      localStorage.setItem(
+        "hub_recs_dismissed_v1",
+        JSON.stringify({ legacy_true: true, legacy_one: 1 }),
+      );
+      generateRecommendationsMock.mockReturnValue([
+        rec("legacy_true", 90),
+        rec("legacy_one", 80),
+      ]);
+
+      const { result } = renderHook(() => useDashboardFocus());
+
+      expect(result.current.focus?.id).toBe("legacy_true");
+      expect(result.current.rest.map((r) => r.id)).toEqual(["legacy_one"]);
+    });
+
+    it("dismiss прибирає з мапи прострочені id", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 9, 1, 9, 0, 0));
+      localStorage.setItem(
+        "hub_recs_dismissed_v1",
+        JSON.stringify({
+          stale: 1,
+          yesterday: new Date(2026, 8, 30).getTime(),
+        }),
+      );
+      generateRecommendationsMock.mockReturnValue([rec("fresh", 80)]);
+
+      const { result } = renderHook(() => useDashboardFocus());
+      act(() => {
+        result.current.dismiss("fresh");
+      });
+
+      expect(
+        Object.keys(
+          JSON.parse(localStorage.getItem("hub_recs_dismissed_v1") || "{}"),
+        ),
+      ).toEqual(["fresh"]);
+    });
   });
 });

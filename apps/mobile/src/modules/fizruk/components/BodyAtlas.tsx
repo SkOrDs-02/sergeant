@@ -4,7 +4,7 @@
  * Web counterpart: `apps/web/src/modules/fizruk/components/BodyAtlas.tsx`,
  * which renders a silhouette through the web-only `body-highlighter`
  * package. React Native has no DOM, so this component implements
- * §6.8 path A of `docs/mobile/react-native-migration.md` — a hand-tuned
+ * §6.8 path A of `docs/engineering/mobile/react-native-migration.md` — a hand-tuned
  * silhouette on `react-native-svg`, sharing the muscle-id contract with
  * the web renderer through `@sergeant/fizruk-domain` (see
  * `packages/fizruk-domain/src/data/bodyAtlas.ts`).

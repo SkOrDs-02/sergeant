@@ -57,7 +57,7 @@ const MODULE_LINK: Partial<
   },
   nutrition: {
     to: "/nutrition",
-    label: "Харчування",
+    label: "Їжа",
     chip: "bg-nutrition-soft text-nutrition-soft-fg",
   },
 };
@@ -84,7 +84,7 @@ function ModuleLink({ module }: { module: ChatActionCardModule }) {
       )}
     >
       {target.label}
-      <Icon name="chevron-right" size={12} />
+      <Icon name="chevron-right" size="xs" />
     </Link>
   );
 }
@@ -122,7 +122,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
         )}
         aria-hidden
       >
-        <Icon name={card.icon || (failed ? "alert" : "check")} size={14} />
+        <Icon name={card.icon || (failed ? "alert" : "check")} size="sm" />
       </span>
 
       <div className="min-w-0 flex-1">
@@ -144,7 +144,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="text-style-caption text-brand-strong dark:text-brand hover:text-brand-600 mt-0.5 transition-colors"
+                className="text-style-caption text-brand-strong hover:text-brand-600 mt-0.5 transition-colors"
               >
                 {expanded ? "Згорнути" : "Показати все"}
               </button>
@@ -210,6 +210,9 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
 function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
   const { role, text, cards } = message;
   const isAssistant = role === "assistant";
+  // Збій — не відповідь моделі. Своя заливка й `role="alert"`, щоб його не
+  // читали як репліку асистента, і без TTS: озвучувати текст помилки нема сенсу.
+  const isError = message.error === true;
 
   return (
     <div
@@ -240,11 +243,14 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
         </span>
       )}
       <div
+        {...(isError ? { role: "alert" as const } : {})}
         className={cn(
           "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-style-body leading-relaxed",
-          isAssistant
-            ? "bg-panel border border-line text-text rounded-bl-sm whitespace-normal"
-            : "bg-primary text-bg rounded-br-sm whitespace-pre-wrap",
+          isAssistant && isError
+            ? "bg-danger/10 border border-danger/30 text-text rounded-bl-sm whitespace-normal"
+            : isAssistant
+              ? "bg-panel border border-line text-text rounded-bl-sm whitespace-normal"
+              : "bg-primary text-bg rounded-br-sm whitespace-pre-wrap",
         )}
       >
         {isAssistant ? <AssistantMessageBody text={text} /> : text}
@@ -268,7 +274,7 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
               <ModuleLink module={c.module} />
             </div>
           ))}
-        {isAssistant && text && text.length > 3 && (
+        {isAssistant && !isError && text && text.length > 3 && (
           <button
             type="button"
             onClick={() => {
@@ -308,7 +314,7 @@ export function TypingIndicator() {
     <div
       className="flex items-end gap-2"
       role="status"
-      aria-label="Асистент набирає відповідь"
+      aria-label="Сержант набирає відповідь"
     >
       <span
         className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/10 text-brand-500"

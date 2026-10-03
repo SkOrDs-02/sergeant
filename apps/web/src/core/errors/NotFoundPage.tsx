@@ -44,33 +44,32 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         primaryAction={
           <Button
             type="button"
-            variant="primary"
+            variant="solid"
             size="lg"
             onClick={() => {
               navigate(homePath, { replace: true });
             }}
           >
-            <Icon name="home" size={16} />
+            <Icon name="home" size="md" />
             На головну
           </Button>
         }
         secondaryAction={
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="lg"
             onClick={() => {
               navigate(-1);
             }}
           >
-            <Icon name="chevron-left" size={16} />
+            <Icon name="chevron-left" size="md" />
             Назад
           </Button>
         }
         // §2 забороняє «ми», але тут це не голос застосунку, а жива команда,
         // до якої людину і просять написати. 1-а однини («напиши мені, я
         // полагоджу») обіцяла б, що битий лінк лагодить сам застосунок.
-        // eslint-disable-next-line sergeant-design/ukrainian-copy -- голос команди, не продукту
         hint="Якщо ти перейшов сюди із зовнішнього посилання, напиши нам, ми його полагодимо."
       />
     </main>

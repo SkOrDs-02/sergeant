@@ -1,7 +1,7 @@
 /**
  * SQLite-backed read path for routine state fields.
  *
- * Stage 4 PR #025 of `docs/planning/storage-roadmap.md`. Originally
+ * Stage 4 PR #025 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Originally
  * read only completions from `routine_entries`. **Stage 10 / PR
  * #070r-dualwrite** extends the reader to all 7 new tables:
  *
@@ -32,7 +32,12 @@ import {
   type Category,
   type RoutinePrefs,
   type SkipReason,
+  type WeeklyTargetInterval,
 } from "@sergeant/routine-domain";
+import {
+  markRoutineLocalWrites,
+  routineLocalWritesMoved,
+} from "./localWriteWindow.js";
 
 // -----------------------------------------------------------------------
 // Legacy completions cache (unchanged API, still used by loadRoutineState)
@@ -162,6 +167,7 @@ export async function refreshSqliteRoutineState(
   userId: string,
 ): Promise<SqliteRoutineStateCache> {
   const seq = ++stateRefreshSeq;
+  const localWrites = markRoutineLocalWrites();
   const [habits, tags, categories, prefs, order, notes, skips] =
     await Promise.all([
       readHabits(client, userId),
@@ -174,6 +180,10 @@ export async function refreshSqliteRoutineState(
     ]);
 
   if (seq <= statePublishedSeq) return stateCache;
+  // Знімок, прочитаний доки локальний запис у польоті, причинно старший за
+  // оптимістичний стан — публікувати його означає затерти щойно створене
+  // нулем. Розбір і заміри — `./localWriteWindow.ts`.
+  if (routineLocalWritesMoved(localWrites)) return stateCache;
   statePublishedSeq = seq;
   stateCache = {
     habits,
@@ -306,6 +316,7 @@ interface HabitRow extends Record<string, unknown> {
   reminder_times_json: string;
   weekdays_json: string;
   pause_intervals_json: string;
+  weekly_target_history_json: string;
   created_at: string;
 }
 
@@ -317,7 +328,7 @@ async function readHabits(
     `SELECT id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
-            pause_intervals_json, created_at
+            pause_intervals_json, weekly_target_history_json, created_at
        FROM routine_habits
       WHERE user_id = ? AND deleted_at IS NULL
       ORDER BY id ASC`,
@@ -338,6 +349,10 @@ async function readHabits(
     reminderTimes: safeJsonParse<string[]>(r.reminder_times_json, []),
     weekdays: safeJsonParse<number[]>(r.weekdays_json, []),
     pauseIntervals: safeJsonParse<PauseInterval[]>(r.pause_intervals_json, []),
+    weeklyTargetHistory: safeJsonParse<WeeklyTargetInterval[]>(
+      r.weekly_target_history_json,
+      [],
+    ),
     createdAt: r.created_at,
   }));
 }

@@ -85,7 +85,7 @@ describe("classifyStatus", () => {
   });
 
   it("handles bold-wrapped status text", () => {
-    // Real-world example from docs/04-governance/security/hardening/I2-secret-scanning-push-protection.md
+    // Real-world example from docs/work/specs/security-hardening/I2-secret-scanning-push-protection.md
     assert.equal(classifyStatus("**Closed (2026-05-04)**"), "closed");
   });
 
@@ -113,6 +113,55 @@ describe("extractPRNumbers", () => {
     assert.deepEqual(extractPRNumbers(content), [2816]);
   });
 
+  // Regression: the 5-digit ceiling alone only rejected *all-numeric* hex.
+  // `#14100e` is 5 digits + a letter, so it used to leak into the dashboard
+  // as «PR 14100» — which is why the founder-UX audit had to write its hex
+  // values without a leading `#`. Same class: `#155e75` → 155,
+  // `#92400e` → 92400, `#44403c` → 44403.
+  it("ignores hex colors whose leading characters are digits", () => {
+    const content = [
+      "ink-база переведена на тепле вугілля `#14100e` / `#1b1613` / `#221c18`;",
+      "акценти `#155e75`, `#92400e`, `#44403c`, `#115e59`, `#065f46`;",
+      "справжня згадка PR #1081 має лишитись.",
+    ].join(" ");
+    assert.deepEqual(extractPRNumbers(content), [1081]);
+  });
+
+  it("ignores CSS shorthand hex and other zero-padded tokens", () => {
+    // `#000` used to surface as «PR 0»; `#012` / `#038` are this repo's
+    // zero-padded storage-roadmap stage labels, not GitHub PR numbers —
+    // linking them to /pull/12 and /pull/38 pointed at unrelated PRs.
+    const content =
+      "інверсія `#000` / `#fff`; Soft-delete — реалізовано (PR #012), дзеркалить PR #038; жива згадка #607.";
+    assert.deepEqual(extractPRNumbers(content), [607]);
+  });
+
+  it("ignores lettered stage labels like `PR #052b`", () => {
+    const content =
+      "cloudSync v1 видалено у PR #052b/#052c, web phase PR #053a, Stage 8 PR #057r.";
+    assert.deepEqual(extractPRNumbers(content), []);
+  });
+
+  it("ignores anchor fragments glued to a file name", () => {
+    // `…/05-motion-offline-error.md#141-motion-tokens-css-custom-properties`
+    // used to surface as «PR 141».
+    const content =
+      "[§14.1](./design-system/05-motion-offline-error.md#141-motion-tokens-css-custom-properties) та [§14.2](./design-system/05-motion-offline-error.md#142-choreography-rules)";
+    assert.deepEqual(extractPRNumbers(content), []);
+  });
+
+  it("ignores HTML numeric entities and identifier-glued hashes", () => {
+    const content = "тире &#8212; тут, профіль `QaProfile#2026`, і PR #925.";
+    assert.deepEqual(extractPRNumbers(content), [925]);
+  });
+
+  it("still accepts a PR number followed by a hyphenated word", () => {
+    // `#788-style баги` is a genuine PR reference — the trailing guard must
+    // reject letters/digits but keep punctuation.
+    const content = "RLS policies (виявляє #788-style баги).";
+    assert.deepEqual(extractPRNumbers(content), [788]);
+  });
+
   it("returns empty array for empty input", () => {
     assert.deepEqual(extractPRNumbers(""), []);
     assert.deepEqual(extractPRNumbers(null), []);
@@ -126,9 +175,9 @@ describe("extractPRNumbers", () => {
 
 describe("shouldSkipFile", () => {
   it("skips README, follow-ups, open-work files", () => {
-    assert.equal(shouldSkipFile("docs/90-work/initiatives/README.md"), true);
+    assert.equal(shouldSkipFile("docs/work/specs/initiatives/README.md"), true);
     assert.equal(
-      shouldSkipFile("docs/90-work/initiatives/follow-ups.md"),
+      shouldSkipFile("docs/work/specs/initiatives/follow-ups.md"),
       true,
     );
     assert.equal(shouldSkipFile("docs/open-work.md"), true);
@@ -136,29 +185,31 @@ describe("shouldSkipFile", () => {
 
   it("skips files in archive directories", () => {
     assert.equal(
-      shouldSkipFile("docs/90-work/initiatives/archive/_0001-foo.md"),
+      shouldSkipFile("docs/work/specs/initiatives/archive/_0001-foo.md"),
       true,
     );
     assert.equal(
-      shouldSkipFile("docs/90-work/planning/archive/old-roadmap.md"),
+      shouldSkipFile("docs/work/specs/planning/archive/old-roadmap.md"),
       true,
     );
   });
 
   it("skips completed-prefix files (_NNNN-…)", () => {
     assert.equal(
-      shouldSkipFile("docs/90-work/initiatives/_0001-module-decomposition.md"),
+      shouldSkipFile(
+        "docs/work/specs/initiatives/_0001-module-decomposition.md",
+      ),
       true,
     );
   });
 
   it("keeps regular tracker files", () => {
     assert.equal(
-      shouldSkipFile("docs/90-work/initiatives/0002-mobile.md"),
+      shouldSkipFile("docs/work/specs/initiatives/0002-mobile.md"),
       false,
     );
     assert.equal(
-      shouldSkipFile("docs/90-work/planning/storage-roadmap.md"),
+      shouldSkipFile("docs/work/specs/planning/storage-roadmap.md"),
       false,
     );
   });
@@ -452,12 +503,12 @@ describe("rewriteRelativeLinks", () => {
   it("rewrites a sibling-file link to be relative to the new file", () => {
     const out = rewriteRelativeLinks(
       "see [tracker](./ftux-master-tracker.md#3-4) for details",
-      "docs/01-product/launch/product-os/paywall-implementation-plan.md",
+      "docs/work/specs/launch/product-os/paywall-implementation-plan.md",
       "docs/open-work.md",
     );
     assert.match(
       out,
-      /\[tracker\]\(\.\/01-product\/launch\/product-os\/ftux-master-tracker\.md#3-4\)/,
+      /\[tracker\]\(\.\/work\/specs\/launch\/product-os\/ftux-master-tracker\.md#3-4\)/,
     );
   });
 
@@ -489,10 +540,10 @@ describe("rewriteRelativeLinks", () => {
   it("rewrites parent-directory references", () => {
     const out = rewriteRelativeLinks(
       "see [config](../../adr/0050.md)",
-      "docs/90-work/initiatives/stack-pulse-2026-05/pr-05.md",
+      "docs/work/specs/initiatives/stack-pulse-2026-05/pr-05.md",
       "docs/open-work.md",
     );
-    assert.match(out, /\[config\]\(\.\/90-work\/adr\/0050\.md\)/);
+    assert.match(out, /\[config\]\(\.\/work\/specs\/adr\/0050\.md\)/);
   });
 
   it("returns input unchanged when no links are present", () => {
@@ -642,7 +693,7 @@ describe("renderOpenWork — enriched initiatives", () => {
         },
         entries: [
           {
-            relPath: "docs/90-work/initiatives/0001-x.md",
+            relPath: "docs/work/specs/initiatives/0001-x.md",
             linkPath: "initiatives/0001-x.md",
             relToRootDir: "0001-x.md",
             title: "X",

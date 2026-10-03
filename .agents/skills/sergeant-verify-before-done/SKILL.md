@@ -1,6 +1,6 @@
 ---
 name: sergeant-verify-before-done
-description: Use before claiming any task done/green/fixed in Sergeant — run the proving command fresh and quote its output, never a scoped-filter or assumed pass; UA: перед «готово/зелено/пофіксив».
+description: "Use before claiming any task done/green/fixed in Sergeant — run the proving command fresh and quote its output, never a scoped-filter or assumed pass; UA: перед «готово/зелено/пофіксив»."
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers whose attention bias toward English persists in tool-routing even when chat is bilingual. The bilingual trigger lives in `description:` so UA-only routing still resolves.
 ---
@@ -50,6 +50,6 @@ If you are about to write "should", "probably", "seems", "Perfect!", "Done!", "I
 
 ## See also
 
-- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — Active Skills catalog.
+- [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — Active Skills catalog.
 - `.agents/skills/sergeant-review-and-merge/SKILL.md` — PR-boundary additions on top of this gate (merge-state check, surface smoke, evidence in the PR comment). **This SKILL owns the gate itself**; review-and-merge points here rather than keeping a parallel command list.
 - `.agents/skills/sergeant-bugfix-and-regression/SKILL.md` — RED-GREEN discipline for the bugfix row above.

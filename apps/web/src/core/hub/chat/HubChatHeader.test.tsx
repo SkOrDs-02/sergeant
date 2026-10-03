@@ -55,7 +55,6 @@ function makeProps(overrides: Partial<HubChatHeaderProps> = {}) {
     detailsOpen: false,
     onDetailsOpenChange: vi.fn(),
     contextState: { status: "ready", ts: 1 },
-    hasData: true,
     sessionInfo: { historyCount: 4, chars: 1234 },
     sessionsCount: 3,
     onOpenHistory: vi.fn(),
@@ -83,7 +82,7 @@ describe("HubChatHeader", () => {
     const props = makeProps();
     renderHeader(props);
 
-    expect(screen.getByText("Асистент")).toBeInTheDocument();
+    expect(screen.getByText("Сержант")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "toggle-details" }));
 
     expect(props.onDetailsOpenChange).toHaveBeenCalledWith(true);
@@ -103,19 +102,20 @@ describe("HubChatHeader", () => {
     expect(props.onOpenHistory).toHaveBeenCalledTimes(1);
   });
 
-  it("surfaces building/no-data states and secondary header actions", () => {
+  it("surfaces the building state and secondary header actions", () => {
     const props = makeProps({
       detailsOpen: true,
       contextState: { status: "building", ts: 2 },
-      hasData: false,
     });
     renderHeader(props);
 
     expect(screen.getByRole("status")).toHaveTextContent("Готую контекст…");
-    expect(screen.getByText(/Mono не підключено/)).toBeInTheDocument();
+    // Звіт власника 2026-09-03: попередження про Mono читало LS-кеш, а не
+    // підключення, і брехало. Його прибрано разом із пропом `hasData`.
+    expect(screen.queryByText(/Mono/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Нова бесіда" }));
-    fireEvent.click(screen.getByRole("button", { name: "Закрити асистента" }));
+    fireEvent.click(screen.getByRole("button", { name: "Закрити чат" }));
 
     expect(props.onClearChat).toHaveBeenCalledTimes(1);
     expect(props.onClose).toHaveBeenCalledTimes(1);
@@ -138,7 +138,7 @@ describe("HubChatHeader", () => {
   it("keeps the title unshrinkable so 393px cannot clip it to «Ас…»", () => {
     renderHeader(makeProps());
 
-    const title = screen.getByText("Асистент");
+    const title = screen.getByText("Сержант");
     expect(title.className).toContain("whitespace-nowrap");
     expect(title.className).not.toContain("truncate");
     // Група «назва + шеврон» не віддає ширину.
@@ -146,7 +146,7 @@ describe("HubChatHeader", () => {
 
     // Праворуч — навпаки: кластер стискається, кнопки ні.
     const newChat = screen.getByRole("button", { name: "Нова бесіда" });
-    const closeBtn = screen.getByRole("button", { name: "Закрити асистента" });
+    const closeBtn = screen.getByRole("button", { name: "Закрити чат" });
     expect(newChat.className).toContain("shrink-0");
     expect(closeBtn.className).toContain("shrink-0");
     const cluster = newChat.parentElement!;

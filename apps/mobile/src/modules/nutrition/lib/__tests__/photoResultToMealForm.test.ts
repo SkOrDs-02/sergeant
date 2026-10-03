@@ -40,6 +40,14 @@ describe("mapPhotoResultToMealForm", () => {
       confidence: 0.9,
       portion: null,
       ingredients: [],
+      items: [
+        {
+          name: "Борщ",
+          macros: { kcal: 220, protein_g: 10.2, fat_g: 5, carbs_g: 30.7 },
+          gramsApprox: null,
+          confidence: 0.9,
+        },
+      ],
       macros: {
         kcal: 220,
         protein_g: 10.2,
@@ -63,6 +71,14 @@ describe("mapPhotoResultToMealForm", () => {
       confidence: 0.2,
       portion: null,
       ingredients: [],
+      items: [
+        {
+          name: "X",
+          macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+          gramsApprox: null,
+          confidence: 0.2,
+        },
+      ],
       macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
       questions: [],
     });

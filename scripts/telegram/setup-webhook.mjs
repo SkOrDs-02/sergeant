@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Реєстрація вебхука бота вейтліста в Telegram.
- * Спека: docs/90-work/planning/specs/telegram-waitlist.md
+ * Спека: docs/work/specs/telegram-waitlist.md
  *
  * Запускати ПІСЛЯ того, як код із роутом `/api/v1/telegram/webhook` уже
  * задеплоєний. До того Telegram почне слати апдейти в 404 і піде в
@@ -84,10 +84,19 @@ function reportInfo(info) {
   );
   if (info.last_error_message) {
     // Це головний симптом «бот мовчить»: Telegram стукає, але не достукується.
-    console.log(`  ⚠️  Остання помилка:  ${info.last_error_message}`);
-    console.log(
-      `      о ${new Date((info.last_error_date ?? 0) * 1000).toISOString()}`,
-    );
+    //
+    // Але поле НЕ очищається після вдалої доставки — воно тримає останню
+    // невдачу скільки завгодно довго. При порожній черзі це вже історія, а
+    // не діагноз: апдейти доходять ЗАРАЗ. Без цієї різниці свіжопочинений
+    // бот виглядає зламаним, і фікс здається таким, що не спрацював.
+    const when = new Date((info.last_error_date ?? 0) * 1000).toISOString();
+    if ((info.pending_update_count ?? 0) === 0) {
+      console.log(`  Остання помилка:     ${info.last_error_message}`);
+      console.log(`      о ${when} — історія: черга порожня, доставка йде`);
+    } else {
+      console.log(`  ⚠️  Остання помилка:  ${info.last_error_message}`);
+      console.log(`      о ${when}`);
+    }
   } else {
     console.log("  Помилок доставки:    немає");
   }

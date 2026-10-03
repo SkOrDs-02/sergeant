@@ -137,7 +137,7 @@ export const CounterReveal = memo(function CounterReveal({
       {maxFormatted !== null && (
         <span
           className={
-            maxTone === "hero-ink" ? "text-hero-ink/60" : "text-subtle"
+            maxTone === "hero-ink" ? "font-normal text-hero-ink" : "text-subtle"
           }
         >
           {" "}

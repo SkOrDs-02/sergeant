@@ -126,6 +126,7 @@ describe("sqliteReader (mobile routine)", () => {
         timeOfDay: undefined,
         reminderTimes: [],
         weekdays: [1, 3, 5],
+        weeklyTargetHistory: [],
         createdAt: "2026-05-01T00:00:00.000Z",
       },
     ]);

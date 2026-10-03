@@ -3,8 +3,8 @@
 //
 // CI metric for the `sergeant-design/no-raw-local-storage` allowlist
 // in `eslint.config.js`. Closes diagnostic
-// `docs/90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md` §2.2
-// (and Hard Rule #20 / `docs/90-work/tech-debt/frontend.md` §2).
+// `docs/work/specs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md` §2.2
+// (and Hard Rule #20 / `docs/work/specs/tech-debt/frontend.md` §2).
 //
 // Why a separate script?
 //   The ESLint rule itself only fires on **non-allowlisted** files.

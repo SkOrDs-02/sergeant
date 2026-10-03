@@ -3,20 +3,23 @@ import {
   INTERNAL_TRANSFER_ID,
 } from "../../../modules/finyk/constants";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
   getMonoTotals,
-  calcCategorySpent,
   calcDebtRemaining,
   calcReceivableRemaining,
   getDebtEffectiveTotal,
   getReceivableEffectiveTotal,
   resolveExpenseCategoryMeta,
+  type MonoAccount,
 } from "../../../modules/finyk/utils";
 import { fmt } from "../hubChatUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 import type { AllData, BudgetGoal, BudgetLimit, CategoryDef } from "./types";
+import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 
 function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   const { year, month, day } = getKyivDateParts(now);
@@ -27,8 +30,17 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysLeft = daysInMonth - dayOfMonth;
 
+  // Через хелпер, а не одним `toLocaleDateString` із повним набором опцій.
+  // Той однорядковий виклик — рівно форма, яку `uaWeekdayDate.ts` позначає
+  // `AI-DANGER`: Node віддає «неділя», Chromium — «неділю» (знахідний
+  // відмінок), тобто юніт-тести помилку не ловлять у принципі. Тут вона не
+  // потрапляла на екран, але їхала в контекст моделі — і модель бачила
+  // граматично зіпсований рядок замість дати (PR-C3, аудит 2026-09-13).
   lines.push(
-    `[Сьогодні] ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Kyiv" })}`,
+    `[Сьогодні] ${formatUaWeekdayDate(now, {
+      timeZone: "Europe/Kyiv",
+      withYear: true,
+    })}`,
   );
   // AI-CONTEXT (2026-08-07): годинник тут не косметика. До цього контекст
   // ніс лише дату, тож на «почни тренування на сьогодні» о 02:48 модель
@@ -45,12 +57,7 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   );
 
   if (d.cacheTime) {
-    const ts = new Intl.DateTimeFormat("uk-UA", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(d.cacheTime));
+    const ts = formatDateTimeShort(new Date(d.cacheTime));
     lines.push(`[Оновлено] ${ts}`);
   }
   if (d.clientName) lines.push(`[Користувач] ${d.clientName}`);
@@ -58,8 +65,13 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
 
 function appendBalanceLines(lines: string[], d: AllData): void {
   if (d.accounts.length === 0) return;
+  const monoAccounts: MonoAccount[] = d.accounts.map((a) => ({
+    id: a.id,
+    balance: a.balance,
+    creditLimit: a.creditLimit,
+  }));
   const { balance, debt: monoDebt } = getMonoTotals(
-    d.accounts as Parameters<typeof getMonoTotals>[0],
+    monoAccounts,
     d.hiddenAccounts,
   );
   const manualDebtTotal = d.manualDebts.reduce(
@@ -95,7 +107,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   // помилка мовчки залежала від того, скільки історії встиг накопичити
   // клієнт. Тепер вікно явне, а самі суми рахує канонічна
   // `calcFinykPeriodAggregate` — та сама, що обслуговує дайджест і
-  // Hub-Reports (реєстр: docs/02-engineering/architecture/metric-registry.md).
+  // Hub-Reports (реєстр: docs/engineering/architecture/metric-registry.md).
   //
   // Межі місяця — host-local, як у дайджеста і Hub-Reports. Київська межа
   // доби лишається окремим боргом на всіх поверхнях одразу (стадія 5г):
@@ -133,7 +145,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
       // Той самий місячний зріз, що й `spent` вище: інакше «Витрати місяця»
       // і сума рядка «Категорії витрат» розійшлися б у межах одного
       // промпт-блоку, і модель отримала б суперечливі числа.
-      spent: calcCategorySpent(
+      spent: calcLimitCategorySpent(
         monthTx,
         c.id,
         d.txCategories,
@@ -171,14 +183,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
             d.txCategories[t.id],
             d.customCategories,
           );
-    const date = t.time
-      ? new Date(t.time * 1000).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "";
+    const date = t.time ? formatDateTimeShort(new Date(t.time * 1000)) : "";
     lines.push(
       `  id:${t.id} | ${date} | ${t.description || "—"} | ${fmt(t.amount / 100)} грн | ${cat.label}`,
     );
@@ -243,7 +248,7 @@ function appendBudgetLines(lines: string[], d: AllData, now: Date): void {
             b.categoryId,
             d.customCategories,
           );
-          const spent = calcCategorySpent(
+          const spent = calcLimitCategorySpent(
             monthTx,
             b.categoryId,
             d.txCategories,

@@ -1,6 +1,6 @@
 name: Mutation testing
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Visibility: a red weekly run creates/refreshes an idempotent
 #             `mutation-testing` issue (job `report-red-run` below) — same
 #             pattern as `pact-drift.yml` / `db-backup-verify.yml`, so a

@@ -43,6 +43,8 @@ export type NewBudgetDraft =
       categoryId: string;
       /** Повний набір категорій ліміту (1+). */
       categoryIds: string[];
+      /** Нові ліміти використовують розділені Shopping і Tech. */
+      categoryTaxonomyVersion: 2;
       /** Власна назва комбо-ліміту; порожньо — авто з категорій. */
       label?: string;
       limit: number;
@@ -70,6 +72,15 @@ interface AddBudgetFormProps {
   jars?: readonly MonoJarDto[];
   onSubmit: (draft: NewBudgetDraft) => void;
   onCancel: () => void;
+  /**
+   * Предвстановлена вкладка при відкритті форми. Founder-UX audit round 2
+   * (F2): комбінований пікер «Запланувати» (`Budgets.tsx`) відкриває цю
+   * форму одразу на потрібному типі, замість того щоб змушувати перемкнути
+   * вкладку вручну. Форма розмонтовується разом із `showForm=false` на
+   * call-site, тож `useState(initialType ?? "limit")` підхоплює нове
+   * значення на кожне відкриття без додаткового `useEffect`.
+   */
+  initialType?: BudgetFormType;
 }
 
 // Іконка цілі. Поле в даних історично зветься `emoji` (і так само зветься
@@ -177,8 +188,11 @@ function AddBudgetFormComponent({
   jars = [],
   onSubmit,
   onCancel,
+  initialType,
 }: AddBudgetFormProps) {
-  const [formType, setFormType] = useState<BudgetFormType>("limit");
+  const [formType, setFormType] = useState<BudgetFormType>(
+    initialType ?? "limit",
+  );
   const fieldId = useId();
   const limitAmountId = `${fieldId}-limit-amount`;
   const limitNameId = `${fieldId}-limit-name`;
@@ -235,6 +249,7 @@ function AddBudgetFormComponent({
         type: "limit",
         categoryId: values.categoryIds[0] ?? "",
         categoryIds: values.categoryIds,
+        categoryTaxonomyVersion: 2,
         ...(label ? { label } : {}),
         limit: amountStringToHryvnia(values.limit),
         period: values.period,
@@ -432,7 +447,7 @@ function AddBudgetFormComponent({
                       aria-label={`Прибрати категорію ${resolveCategoryLabel(id)}`}
                       className="touch-target flex items-center justify-center rounded-xl text-muted hover:text-text transition-colors"
                     >
-                      <Icon name="x" size={16} aria-hidden />
+                      <Icon name="close" size="md" aria-hidden />
                     </button>
                   </li>
                 ))}
@@ -452,7 +467,7 @@ function AddBudgetFormComponent({
             />
             {limitCategoriesError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitCategoriesError}
@@ -474,7 +489,7 @@ function AddBudgetFormComponent({
                       )}»`,
                   )
                   .join("; ")}
-                {" — витрати рахуватимуться в обох лімітах."}
+                {": витрати рахуватимуться в обох лімітах."}
               </p>
             )}
           </div>
@@ -507,7 +522,7 @@ function AddBudgetFormComponent({
             />
             {limitAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitAmountError}
@@ -539,7 +554,7 @@ function AddBudgetFormComponent({
               type="button"
               className="flex-1"
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={onCancel}
             >
               Скасувати
@@ -588,7 +603,7 @@ function AddBudgetFormComponent({
             />
             {goalNameError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalNameError}
@@ -609,7 +624,7 @@ function AddBudgetFormComponent({
             />
             {goalAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalAmountError}
@@ -661,7 +676,7 @@ function AddBudgetFormComponent({
               type="button"
               className="flex-1"
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={onCancel}
             >
               Скасувати

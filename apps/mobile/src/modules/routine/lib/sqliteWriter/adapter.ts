@@ -18,7 +18,7 @@ import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
 /**
  * Async SQLite-side adapter for the routine dual-write layer.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. Migrated onto
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Migrated onto
  * `@sergeant/dualwrite-core` in ADR-0073 крок 8 (mobile mirror of web крок 3):
  * the op-loop is now `createApplyOps` (best-effort) and every standard-shape
  * table's upsert SQL is emitted by the shared `buildLwwUpsert` builder.
@@ -192,8 +192,8 @@ const HABIT_UPSERT_SPEC: TableSpec = {
            (id, user_id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
-            created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+            weekly_target_history_json, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "name" },
@@ -208,6 +208,7 @@ const HABIT_UPSERT_SPEC: TableSpec = {
     { column: "time_of_day" },
     { column: "reminder_times_json" },
     { column: "weekdays_json" },
+    { column: "weekly_target_history_json" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
   ],
@@ -464,6 +465,7 @@ async function upsertHabit(
     h.timeOfDay ?? "",
     JSON.stringify(h.reminderTimes ?? []),
     JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
+    JSON.stringify(h.weeklyTargetHistory ?? []),
     h.createdAt ?? clientTs,
     clientTs,
   ]);
@@ -487,6 +489,7 @@ async function upsertHabit(
       time_of_day: h.timeOfDay ?? "",
       reminder_times_json: JSON.stringify(h.reminderTimes ?? []),
       weekdays_json: JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
+      weekly_target_history_json: JSON.stringify(h.weeklyTargetHistory ?? []),
       created_at: h.createdAt ?? clientTs,
     },
   });

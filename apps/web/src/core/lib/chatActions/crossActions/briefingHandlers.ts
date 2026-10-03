@@ -5,6 +5,9 @@
    Tx splits stay on LS; bank transactions now come from the Mono mirror
    reader (Dual-write teardown Phase 3). */
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
+import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { formatNumberUk } from "@sergeant/shared";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
@@ -15,12 +18,7 @@ import { readFizrukWorkouts } from "../fizrukActions/shared";
 export function morningBriefing(): string {
   const now = new Date();
   const todayKey = getKyivDayKey(now);
-  const dateLabel = new Intl.DateTimeFormat("uk-UA", {
-    timeZone: "Europe/Kyiv",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(now);
+  const dateLabel = formatUaWeekdayDate(now, { timeZone: "Europe/Kyiv" });
   const parts: string[] = [`Доброго ранку! Сьогодні ${dateLabel}`];
   const routineState = loadRoutineState();
   if (routineState.habits.length > 0) {
@@ -45,7 +43,7 @@ export function morningBriefing(): string {
   const todayMeals = nutritionLog[todayKey]?.meals || [];
   const todayKcal = todayMeals.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
   if (todayKcal > 0) {
-    parts.push(`Калорії: ${Math.round(todayKcal)} ккал`);
+    parts.push(`Калорії: ${formatNumberUk(Math.round(todayKcal))} ккал`);
   }
   return parts.join("\n");
 }
@@ -60,20 +58,11 @@ export function weeklySummary(): string {
   );
   parts.push(`Тренувань: ${weekWorkouts.length}`);
   const totalVolume = weekWorkouts.reduce(
-    (total, w) =>
-      total +
-      w.items.reduce(
-        (s, item) =>
-          s +
-          (item.sets ?? []).reduce(
-            (ss, set) => ss + set.weightKg * set.reps,
-            0,
-          ),
-        0,
-      ),
+    (total, w) => total + workoutTonnageKg(w),
     0,
   );
-  if (totalVolume > 0) parts.push(`Обʼєм: ${Math.round(totalVolume)} кг×повт`);
+  if (totalVolume > 0)
+    parts.push(`Обʼєм: ${formatNumberUk(Math.round(totalVolume))} кг×повт`);
   const routineState = loadRoutineState();
   if (routineState.habits.length > 0) {
     const activeHabits = routineState.habits.filter((h) => !h.archived);
@@ -90,7 +79,9 @@ export function weeklySummary(): string {
     }
     const pct =
       totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
-    parts.push(`Звички: ${pct}% (${totalDone}/${totalPossible})`);
+    parts.push(
+      `Звички: ${formatNumberUk(pct)}% (${totalDone}/${totalPossible})`,
+    );
   }
   const nutritionLog = loadNutritionLog();
   const weekKcal: number[] = [];
@@ -104,7 +95,9 @@ export function weeklySummary(): string {
     const avg = Math.round(
       weekKcal.reduce((a, b) => a + b, 0) / weekKcal.length,
     );
-    parts.push(`Калорії: ~${avg} ккал/день (${weekKcal.length} днів)`);
+    parts.push(
+      `Калорії: ~${formatNumberUk(avg)} ккал/день (${weekKcal.length} днів)`,
+    );
   }
   const mirrorTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
@@ -120,7 +113,7 @@ export function weeklySummary(): string {
     const spent = weekTxs
       .filter((t) => t.amount < 0)
       .reduce((s, t) => s + getTxStatAmount(t, txSplits), 0);
-    parts.push(`Витрати: ${Math.round(spent)} грн`);
+    parts.push(`Витрати: ${formatNumberUk(Math.round(spent))} грн`);
   }
   return parts.join("\n");
 }

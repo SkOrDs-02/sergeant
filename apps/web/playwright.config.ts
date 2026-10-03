@@ -23,6 +23,14 @@ export default defineConfig({
   forbidOnly: !!process.env["CI"],
   retries: 0,
   workers: 1,
+  // axe перепрогонює кожне правило на кожному елементі, тож найважчі
+  // поверхні — `/routine/stats` рендерить ~365 клітинок heatmap, і кожну
+  // перевіряють на контраст — упираються в дефолтні 30 с Playwright і на
+  // завантаженій машині їх перевищують. Ті збої були таймаутами, ніколи не
+  // асершенами (`tests/a11y/low-vision.spec.ts`, HC-прогін). Локально ці
+  // тести вкладаються в ~10 с — ціна 90 с лише страховка для повільних
+  // раннерів.
+  timeout: 90_000,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: process.env["PW_BASE_URL"] || "http://127.0.0.1:4173",
@@ -55,6 +63,7 @@ export default defineConfig({
           command:
             "npm run build && npm run preview -- --port 4173 --host 127.0.0.1",
           url: "http://127.0.0.1:4173",
+          env: { VITE_E2E_SEED: "true" },
           reuseExistingServer: !process.env["CI"],
           timeout: 180_000,
           stdout: "pipe" as const,

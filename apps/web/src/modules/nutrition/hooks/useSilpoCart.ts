@@ -3,7 +3,7 @@
  * Status: Active
  *
  * «У кошик Сільпо» зі списку покупок (Silpo integration трек G, спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * `docs/work/specs/silpo-mcp-integration.md` §
  * «Cart (MCP write path)»).
  *
  * Флоу: `cartPreview(items)` — search-only, ніколи не пише в кошик —
@@ -59,6 +59,7 @@ function silpoCartErrorKind(error: unknown): SilpoCartErrorKind {
     case "SILPO_RATE_LIMITED":
     case "SILPO_UPSTREAM_ERROR":
     case "SILPO_SCHEMA_DRIFT":
+    case "SILPO_TOOL_ERROR":
     case "SILPO_DISABLED":
     case "SILPO_CONFIG_MISSING":
       return "unavailable";

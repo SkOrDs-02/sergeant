@@ -4,7 +4,7 @@
 // vi.mock cap-ratchet («не гірше ніж зараз») проти over-mocking у тестах.
 //
 // ЧОМУ ЦЕЙ ГЕЙТ ІСНУЄ
-//   Аудит покриття `docs/90-work/audits/2026-08-04-test-coverage-depth-audit.md`
+//   Аудит покриття `docs/work/specs/audits/2026-08-04-test-coverage-depth-audit.md`
 //   знайшов системну слабкість: 574 файли з `vi.mock` (1830 викликів), з них
 //   десятки — page-тести, де ВСІ хуки й діти застаблені у `<div data-testid>`,
 //   а асерт зводиться до «монтується без краху». Такий тест не захищає
@@ -400,7 +400,7 @@ function main() {
     for (const failure of failures) console.error(`❌ ${failure}`);
     console.error(
       `\nvi.mock cap gate failed: over-mocking погіршився. ` +
-        `Контекст: docs/90-work/audits/2026-08-04-test-coverage-depth-audit.md.`,
+        `Контекст: docs/work/specs/audits/2026-08-04-test-coverage-depth-audit.md.`,
     );
     process.exit(1);
   }

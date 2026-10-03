@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
 import { habitCompletionRate } from "../lib/streaks";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { anchoredTodayKey } from "../lib/dayAnchor";
+import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import type { Habit, RoutineState } from "../lib/types";
@@ -22,9 +23,10 @@ export function HabitLeadersBlock({
     const active = habits.filter((h) => !h.archived);
     if (active.length === 0) return { best: null, worst: null };
 
-    // Kyiv-anchored inclusive 30-day window (today + 29 days back).
-    const endKey = getKyivDayKey();
-    const startKey = getKyivDayKey(windowStartMs);
+    // Device-local inclusive 30-day window (today + 29 days back),
+    // same anchor as the rest of web-routine (ADR-0078, cutover 2026-09-01).
+    const endKey = anchoredTodayKey();
+    const startKey = dateKeyFromDate(new Date(windowStartMs));
 
     const rates = active
       .map((h) => {

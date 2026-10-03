@@ -1,25 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
+import { toKyivISODate } from "@sergeant/shared";
 import pool from "../../db.js";
 import { parseBody } from "../../http/validate.js";
 import { ManualExpenseCreateSchema } from "../../http/schemas.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
-
-/**
- * `Date` → `YYYY-MM-DD` у Europe/Kyiv (домен-інваріант day boundary).
- *
- * НЕ `toISOString().slice(0,10)` — то UTC-день: понеділок 00:30 Kyiv
- * (неділя 22:30 UTC влітку) дав би «неділю» і зламав денні агрегації.
- */
-function kyivDateString(input: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Kyiv",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(input);
-}
 
 /**
  * Канонічна `ManualExpense`-форма, як вона лежить у localStorage
@@ -104,7 +90,7 @@ export async function createManualExpense(
   // UTC-«сьогодні» зламав би денні агрегації на межі доби. Передану `date`
   // (вже валідну `YYYY-MM-DD` зі схеми) лишаємо як є — це календарний день,
   // який користувач явно обрав, без tz-зсуву.
-  const expenseDate = date ?? kyivDateString(new Date());
+  const expenseDate = date ?? toKyivISODate(new Date());
 
   const blob: ManualExpenseBlob = {
     id: randomUUID(),

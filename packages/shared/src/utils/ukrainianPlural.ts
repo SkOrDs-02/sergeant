@@ -70,3 +70,14 @@ const HABITS_FORMS: UaPluralForms = {
 export function pluralHabits(n: number): string {
   return pluralUa(n, HABITS_FORMS);
 }
+
+const SECONDS_FORMS: UaPluralForms = {
+  one: "секунду",
+  few: "секунди",
+  many: "секунд",
+};
+
+/** Іменник у формі, придатній для «через N ___» (rate-limit retry copy). */
+export function pluralSeconds(n: number): string {
+  return pluralUa(n, SECONDS_FORMS);
+}

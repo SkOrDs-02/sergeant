@@ -61,7 +61,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createCspReportRouter());
   app.use(createEmailUnsubscribeRouter({ pool }));
   app.use(createPushRouter());
-  app.use(createTranscribeRouter());
+  app.use(createTranscribeRouter({ pool }));
   app.use(createWaitlistRouter());
   app.use(createFeedbackRouter());
   app.use(createTelegramWebhookRouter({ pool }));

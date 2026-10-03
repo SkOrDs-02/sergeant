@@ -52,7 +52,7 @@ export function BarcodeSection({
     <div className="min-w-0">
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
         className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
         onClick={() => {
           setBarcodeStatus("");

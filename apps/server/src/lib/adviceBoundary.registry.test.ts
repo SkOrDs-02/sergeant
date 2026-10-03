@@ -27,7 +27,7 @@ const MODULES_DIR = join(import.meta.dirname, "..", "modules");
 const ADVICE_PROMPTS = new Set([
   "chat/toolDefs/systemPrompt.ts",
   "chat/coach.ts",
-  "digest/weekly-digest.ts",
+  "digest/weeklyDigestPrompt.ts",
   "nutrition/day-plan.ts",
   "nutrition/week-plan.ts",
   "nutrition/recommend-recipes.ts",
@@ -52,6 +52,10 @@ const EXTRACTION_PROMPTS = new Map([
     "finyk/import/prompts.ts",
     "розпізнає скрін банкінгу з фото (масове ведення, Фаза 2а), повертає структурований JSON doc_type/bank/транзакцій-рядків — не поради",
   ],
+  [
+    "chat/toolEval/judge.ts",
+    "суддя стенду евалу: віддає один рядок вердикту «ОК/ПОГАНО: причина» у звіт прогону і до користувача не потрапляє взагалі — межа порад тут була б мертвим текстом",
+  ],
 ]);
 
 /**
@@ -60,7 +64,15 @@ const EXTRACTION_PROMPTS = new Map([
  * через той промпт, який вони споживають.
  */
 const PROMPT_CONSUMERS = new Map([
+  [
+    "digest/weekly-digest.ts",
+    "передає buildWeeklyDigestPrompt() з weeklyDigestPrompt.ts у system, сам тексту не визначає",
+  ],
   ["chat/chat.ts", "кличе buildSystem() — межа приходить із SYSTEM_PREFIX"],
+  [
+    "digest/weekly-digest.ts",
+    "кличе buildWeeklyDigestPrompt(): межа приходить із weeklyDigestPrompt.ts",
+  ],
   [
     "chat/chatResponseCache.ts",
     "`system: unknown` — поле ключа кешу, не промпт",

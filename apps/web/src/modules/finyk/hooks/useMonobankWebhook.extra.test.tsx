@@ -143,7 +143,7 @@ describe("useMonobankWebhook — extra callbacks", () => {
     expect(result.current.error).toBe("");
   });
 
-  it("backfill surfaces the error message on failure", async () => {
+  it("backfill shows the catalog copy instead of the raw error message", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     mockedBackfill.mockRejectedValue(new Error("backfill boom"));
     const { result } = renderHook(() => useMonobankWebhook(), {
@@ -155,7 +155,9 @@ describe("useMonobankWebhook — extra callbacks", () => {
     await act(async () => {
       await result.current.backfill();
     });
-    expect(result.current.error).toBe("backfill boom");
+    expect(result.current.error).toBe(
+      "Не вдалося довантажити історію операцій. Спробуй ще раз.",
+    );
   });
 
   it("backfill falls back to a generic message for non-Error throws", async () => {
@@ -170,7 +172,9 @@ describe("useMonobankWebhook — extra callbacks", () => {
     await act(async () => {
       await result.current.backfill();
     });
-    expect(result.current.error).toBe("Помилка backfill");
+    expect(result.current.error).toBe(
+      "Не вдалося довантажити історію операцій. Спробуй ще раз.",
+    );
   });
 
   it("clearTxCache invalidates the finyk preview query and clears the error", async () => {
@@ -235,6 +239,55 @@ describe("useMonobankWebhook — extra callbacks", () => {
   });
 });
 
+describe("useMonobankWebhook — fetchMonth latest-request ownership", () => {
+  it("пізня відповідь давнього місяця не перетирає historyTx останнього запиту", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
+    const row = (id: string, time: string) => ({
+      monoTxId: id,
+      monoAccountId: "acc1",
+      time,
+      amount: -100,
+      operationAmount: -100,
+      currencyCode: 980,
+      mcc: 5411,
+      description: id,
+    });
+    let releaseApril!: (v: unknown[]) => void;
+    const aprilPending = new Promise<unknown[]>((r) => {
+      releaseApril = r;
+    });
+    // Квітень у Києві стартує 2026-03-31T21:00Z, травень — 2026-04-30T21:00Z.
+    fetchAllMonoTransactions.mockImplementation((range: { from: string }) => {
+      if (range.from.startsWith("2026-03-31")) return aprilPending;
+      if (range.from.startsWith("2026-04-30")) {
+        return Promise.resolve([row("may-1", "2026-05-10T09:00:00Z")]);
+      }
+      return Promise.resolve([]);
+    });
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("success");
+    });
+
+    let aprilCall!: Promise<unknown>;
+    await act(async () => {
+      aprilCall = result.current.fetchMonth(2026, 3); // квітень, ще у польоті
+      await result.current.fetchMonth(2026, 4); // травень, відповів першим
+    });
+    expect(result.current.historyTx.map((t) => t.id)).toEqual(["may-1"]);
+
+    await act(async () => {
+      releaseApril([row("apr-1", "2026-04-10T09:00:00Z")]);
+      await aprilCall;
+    });
+    // Застаріла відповідь квітня повернулась, але список лишився травневим.
+    expect(result.current.historyTx.map((t) => t.id)).toEqual(["may-1"]);
+    expect(result.current.loadingHistory).toBe(false);
+  });
+});
+
 describe("useMonobankWebhook — syncState status mapping", () => {
   it("maps 'pending' status → loading", async () => {
     mockedSyncState.mockResolvedValue({
@@ -266,7 +319,7 @@ describe("useMonobankWebhook — syncState status mapping", () => {
     await waitFor(() => {
       expect(result.current.syncState.status).toBe("error");
     });
-    expect(result.current.syncState.lastError).toMatch(/invalid/i);
+    expect(result.current.syncState.lastError).toMatch(/недійсне/);
   });
 });
 

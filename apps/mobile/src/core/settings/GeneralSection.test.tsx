@@ -89,7 +89,7 @@ describe("GeneralSection", () => {
     expect(getAllByText("Фінік").length).toBeGreaterThanOrEqual(2);
     expect(getAllByText("Фізрук").length).toBeGreaterThanOrEqual(2);
     expect(getAllByText("Рутина").length).toBeGreaterThanOrEqual(2);
-    expect(getAllByText("Харчування").length).toBeGreaterThanOrEqual(2);
+    expect(getAllByText("Їжа").length).toBeGreaterThanOrEqual(2);
     expect(getByTestId("dashboard-reorder-down-finyk")).toBeTruthy();
     expect(getByTestId("dashboard-reorder-up-nutrition")).toBeTruthy();
     expect(getByTestId("general-active-module-finyk")).toBeTruthy();

@@ -182,7 +182,7 @@ export function WorkoutTemplatesSection({
 
   return (
     <div className="space-y-3">
-      <div className="text-style-caption text-muted leading-relaxed">
+      <div className="text-style-body text-muted leading-relaxed">
         Шаблони – лише твої: додай назву й послідовність вправ з каталогу. План
         на головній будується з цих шаблонів. Щоб стартувати тренування зі
         списку нижче, натисни «Почати» біля шаблону (відкриється журнал з
@@ -191,7 +191,9 @@ export function WorkoutTemplatesSection({
 
       {!editingId && (
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           className="w-full h-12 min-h-[44px]"
           onClick={startNew}
         >
@@ -220,7 +222,7 @@ export function WorkoutTemplatesSection({
             </SectionHeading>
             <Input
               {...searchFieldProps("template-exercise-search")}
-              placeholder="Пошук…"
+              placeholder="Пошук"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               aria-label="Пошук вправи для шаблону"
@@ -238,7 +240,7 @@ export function WorkoutTemplatesSection({
               ))}
               {pickList.length === 0 && (
                 <div className="p-3 text-style-caption text-muted text-center">
-                  Нічого не знайдено
+                  Нічого не знайшов
                 </div>
               )}
             </div>
@@ -299,7 +301,7 @@ export function WorkoutTemplatesSection({
                       setGroupSelected(new Set());
                     }}
                   >
-                    <Icon name="close" size={14} aria-hidden />
+                    <Icon name="close" size="sm" aria-hidden />
                   </button>
                 </div>
               )}
@@ -402,7 +404,9 @@ export function WorkoutTemplatesSection({
 
           <div className="flex gap-2">
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="flex-1 h-12 min-h-[44px]"
               onClick={save}
               disabled={!orderIds.length}
@@ -410,7 +414,7 @@ export function WorkoutTemplatesSection({
               Зберегти
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
                 setEditingId(null);
@@ -426,7 +430,7 @@ export function WorkoutTemplatesSection({
       )}
 
       <Card radius="lg" padding="none" className="overflow-hidden">
-        <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
+        <div className="px-4 py-3 bg-panelHi border-b border-line">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Збережені шаблони
           </SectionHeading>
@@ -435,7 +439,7 @@ export function WorkoutTemplatesSection({
           <EmptyState
             compact
             module="fizruk"
-            icon={<Icon name="dumbbell" size={20} />}
+            icon={<Icon name="dumbbell" size="lg" />}
             title="Поки немає шаблонів"
             description="Створи свій перший, кнопка вище."
           />
@@ -464,7 +468,7 @@ export function WorkoutTemplatesSection({
                 {typeof onStartTemplate === "function" && (
                   <Button
                     size="sm"
-                    className="h-10 min-h-[44px] px-3 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90"
+                    className="h-10 min-h-[44px] px-3 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90 dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90 dark:border-fizruk"
                     onClick={() => onStartTemplate(t)}
                     disabled={!(t.exerciseIds || []).length}
                   >
@@ -473,7 +477,7 @@ export function WorkoutTemplatesSection({
                 )}
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="outline"
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => startEdit(t)}
                 >
@@ -481,7 +485,8 @@ export function WorkoutTemplatesSection({
                 </Button>
                 <Button
                   size="sm"
-                  variant="danger"
+                  variant="soft"
+                  tone="danger"
                   aria-label={`Видалити шаблон ${t.name}`}
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => setConfirmDeleteId(t.id)}

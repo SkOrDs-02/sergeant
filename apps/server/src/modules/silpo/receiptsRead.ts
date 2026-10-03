@@ -30,6 +30,8 @@ export type ReceiptSummaryRow = {
   paymentHint: string | null;
   totalKop: unknown;
   transactionId: string | null;
+  pantryAutoDeclinedAt: Date | string | null;
+  pantryClaimedCount: unknown;
 };
 
 /**
@@ -113,7 +115,11 @@ export async function listReceipts(
             r.channel,
             r.payment_hint AS "paymentHint",
             r.total_kop AS "totalKop",
-            l.transaction_id AS "transactionId"
+            l.transaction_id AS "transactionId",
+            r.pantry_auto_declined_at AS "pantryAutoDeclinedAt",
+            (SELECT COUNT(*) FROM silpo_receipt_items i
+              WHERE i.user_id = r.user_id AND i.receipt_id = r.receipt_id
+                AND i.pantry_claimed_at IS NOT NULL) AS "pantryClaimedCount"
        FROM silpo_receipts r
        LEFT JOIN silpo_tx_receipt_links l
               ON l.user_id = r.user_id AND l.receipt_id = r.receipt_id
@@ -152,7 +158,9 @@ export async function getReceiptDetail(
             r.channel,
             r.payment_hint AS "paymentHint",
             r.total_kop AS "totalKop",
-            l.transaction_id AS "transactionId"
+            l.transaction_id AS "transactionId",
+            r.pantry_auto_declined_at AS "pantryAutoDeclinedAt",
+            NULL AS "pantryClaimedCount"
        FROM silpo_receipts r
        LEFT JOIN silpo_tx_receipt_links l
               ON l.user_id = r.user_id AND l.receipt_id = r.receipt_id
@@ -171,9 +179,11 @@ export async function getReceiptDetail(
     priceKop: unknown;
     categorySlug: string | null;
     barcode: string | null;
+    pantryClaimedAt: Date | string | null;
   }>(
     `SELECT id, name, qty, unit, price_kop AS "priceKop",
-            category_slug AS "categorySlug", barcode
+            category_slug AS "categorySlug", barcode,
+            pantry_claimed_at AS "pantryClaimedAt"
        FROM silpo_receipt_items
       WHERE user_id = $1 AND receipt_id = $2
       ORDER BY id ASC`,

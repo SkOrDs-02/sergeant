@@ -2,6 +2,8 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { useAccessGuard } from "../../../core/access/useCanUse";
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { nutritionApi } from "@shared/api";
@@ -27,6 +29,8 @@ export interface NutritionToast {
 export interface UseNutritionCloudBackupParams {
   toast: NutritionToast;
   setErr: Dispatch<SetStateAction<string>>;
+  /** Причина, з якої бекап НЕ запустили (A3, поставка 2). */
+  setDenial: (denial: AccessDenial) => void;
   cloudBackupBusy: boolean;
   setCloudBackupBusy: Dispatch<SetStateAction<boolean>>;
   backupPasswordDialog: BackupPasswordDialogState | null;
@@ -46,29 +50,39 @@ export interface UseNutritionCloudBackupResult {
 export function useNutritionCloudBackup({
   toast,
   setErr,
+  setDenial,
   cloudBackupBusy,
   setCloudBackupBusy,
   backupPasswordDialog,
   setBackupPasswordDialog,
   setRestoreConfirm,
 }: UseNutritionCloudBackupParams): UseNutritionCloudBackupResult {
+  // Гейт стоїть ПЕРЕД діалогом пароля, а не перед запитом. Просити
+  // придумати пароль шифрування, щоб через екран відмовити, — рівно та
+  // «запізніла заборона», з якої почався пункт A3.
+  const guard = useAccessGuard(setDenial);
+
   const uploadCloudBackup = useCallback(() => {
     if (cloudBackupBusy) return;
-    setBackupPasswordDialog({
-      mode: "upload",
-      title: "Пароль для шифрування",
-      description: "Введи пароль для шифрування бекапу (запамʼятай його):",
-    });
-  }, [cloudBackupBusy, setBackupPasswordDialog]);
+    guard("cloud-backup", () =>
+      setBackupPasswordDialog({
+        mode: "upload",
+        title: "Пароль для шифрування",
+        description: "Введи пароль для шифрування бекапу (запамʼятай його):",
+      }),
+    );
+  }, [cloudBackupBusy, guard, setBackupPasswordDialog]);
 
   const downloadCloudBackup = useCallback(() => {
     if (cloudBackupBusy) return;
-    setBackupPasswordDialog({
-      mode: "download",
-      title: "Пароль для розшифрування",
-      description: "Введи пароль для розшифрування бекапу:",
-    });
-  }, [cloudBackupBusy, setBackupPasswordDialog]);
+    guard("cloud-backup", () =>
+      setBackupPasswordDialog({
+        mode: "download",
+        title: "Пароль для розшифрування",
+        description: "Введи пароль для розшифрування бекапу:",
+      }),
+    );
+  }, [cloudBackupBusy, guard, setBackupPasswordDialog]);
 
   const uploadMutation = useMutation({
     mutationFn: async ({ pass }: { pass: string }) => {

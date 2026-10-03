@@ -19,6 +19,7 @@
 import type pg from "pg";
 import { env } from "../../env.js";
 import { logger } from "../../obs/logger.js";
+import { runWithBypassContext, runWithUserContext } from "../../dbContext.js";
 import type {
   MemoryQueryOptions,
   MemoryQueryResult,
@@ -104,10 +105,20 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
     async upsert(input: MemoryWrite[]): Promise<void> {
       if (input.length === 0) return;
 
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
+      for (const row of input) assertNonEmptyUserId(row.userId);
 
+      // RLS-контекст: батч одного користувача (звичайний випадок: джоба
+      // ingest-черги) пишемо під його `app.user_id`, щоб WITH CHECK політики
+      // відсікав чужий `user_id`. Змішаний батч не належить жодному
+      // користувачеві й іде під bypass.
+      const firstUserId = input[0]!.userId;
+      const singleUser = input.every((row) => row.userId === firstUserId);
+      const run = <T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> =>
+        singleUser
+          ? runWithUserContext(pool, firstUserId, fn)
+          : runWithBypassContext(pool, fn);
+
+      await run(async (client) => {
         // Один SQL, мульти-row INSERT через UNNEST для performance.
         // Без UNNEST — N окремих INSERT-ів, кожен з round-trip-ом.
         // На 32-batch-у це ~50 мс vs ~500 мс.
@@ -121,7 +132,6 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
         const values: unknown[] = [];
         let idx = 1;
         for (const row of input) {
-          assertNonEmptyUserId(row.userId);
           placeholders.push(
             `($${idx++}, $${idx++}, $${idx++}, $${idx++}, $${idx++}::halfvec, $${idx++}, $${idx++}, $${idx++}, $${idx++}::jsonb)`,
           );
@@ -148,27 +158,17 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
         `;
 
         await client.query(sql, values);
-        await client.query("COMMIT");
-      } catch (error) {
-        await client.query("ROLLBACK").catch(() => {
-          /* nested rollback failure — original error wins */
-        });
-        throw error;
-      } finally {
-        client.release();
-      }
+      });
     },
 
     async query(opts: MemoryQueryOptions): Promise<MemoryQueryResult[]> {
       assertNonEmptyUserId(opts.userId);
       if (opts.topK <= 0) return [];
 
-      const client = await pool.connect();
-      try {
+      return runWithUserContext(pool, opts.userId, async (client) => {
         // ef_search per-session — впливає лише на цей конект.
-        // SET LOCAL обмежує scope до транзакції; без транзакції
-        // SET LOCAL — no-op, тому BEGIN.
-        await client.query("BEGIN");
+        // SET LOCAL обмежує scope до транзакції (її відкриває
+        // `runWithUserContext`, там же ставиться `app.user_id`).
         const efSearch = opts.efSearch ?? env.AI_MEMORY_HNSW_EF_SEARCH;
         // eslint-disable-next-line no-restricted-syntax -- SET LOCAL does not accept $-params; efSearch is integer-coerced via Math.floor, source is env-validated.
         await client.query(
@@ -208,7 +208,7 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
         // embedding_model = 'X' або `hnsw.iterative_scan` — щоб планувальник
         // зміг використати HNSW-індекс для ORDER BY ... LIMIT навіть при
         // наявності додаткового WHERE-предиката. Деталі — у
-        // docs/00-start/playbooks/embedding-provider-migration.md.
+        // docs/start/instructions/embedding-provider-migration.md.
         params.push(env.VOYAGE_EMBEDDING_MODEL);
         where += ` AND embedding_model = $${params.length}`;
 
@@ -231,17 +231,8 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
         `;
 
         const result = await client.query<PgVectorRow>(sql, params);
-        await client.query("COMMIT");
-
         return result.rows.map(rowToResult);
-      } catch (error) {
-        await client.query("ROLLBACK").catch(() => {
-          /* swallow */
-        });
-        throw error;
-      } finally {
-        client.release();
-      }
+      });
     },
 
     async deleteBySource(
@@ -250,20 +241,31 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
       sourceRef: string,
     ): Promise<void> {
       assertNonEmptyUserId(userId);
-      await pool.query(
-        `DELETE FROM ai_memories
-         WHERE user_id = $1 AND source = $2 AND source_ref = $3`,
-        [userId, source, sourceRef],
+      await runWithUserContext(pool, userId, (client) =>
+        client.query(
+          `DELETE FROM ai_memories
+           WHERE user_id = $1 AND source = $2 AND source_ref = $3`,
+          [userId, source, sourceRef],
+        ),
       );
     },
 
     async deleteAllForUser(userId: string): Promise<number> {
       assertNonEmptyUserId(userId);
-      const result = await pool.query(
-        `DELETE FROM ai_memories WHERE user_id = $1`,
-        [userId],
-      );
-      return result.rowCount ?? 0;
+      return runWithUserContext(pool, userId, async (client) => {
+        const result = await client.query(
+          `DELETE FROM ai_memories WHERE user_id = $1`,
+          [userId],
+        );
+        // B11: DLQ (`ai_memory_ingest_failed`, міграція 069) тримає повний
+        // текст пам'яті в `payload_json`, а `user_id` без FK — каскад його не
+        // дістає, і replay міг би воскресити стерте. Чистимо разом.
+        await client.query(
+          `DELETE FROM ai_memory_ingest_failed WHERE user_id = $1`,
+          [userId],
+        );
+        return result.rowCount ?? 0;
+      });
     },
 
     async health(): Promise<{ ok: boolean; provider: "pgvector" }> {

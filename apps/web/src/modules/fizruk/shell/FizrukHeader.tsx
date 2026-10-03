@@ -42,8 +42,20 @@ function backLabelFor(page: FizrukPage): string {
   switch (page) {
     case "atlas":
       return "Моє тіло";
+    // PR-Z7: каталог і шаблони приєднані до `exercise`. Раніше на їх місці
+    // стояв коментар, що вони лишаються осторонь через власну стрілку
+    // `WorkoutsHeader` — але та стрілка малювалась ОДНОЧАСНО з парою
+    // «Назад»/«На хаб» із цієї ж шапки, тобто намір «не дублювати» код не
+    // виконував: на екрані було три виходи замість одного. Тепер вихід
+    // один і живе тут, а `WorkoutsHeader` свою стрілку на маршрутних
+    // екранах не малює (`section` != undefined).
     case "exercise":
+    case "catalog":
+    case "templates":
       return "Тренування";
+    case "history":
+    case "programs":
+      return "Огляд";
     case "measurements":
       // Measurements is entered exclusively from the «Прогрес» stat, so the
       // back arrow leads there (mirrors FizrukApp.contextualBackTarget for
@@ -73,7 +85,9 @@ function ContextualBackButton({
         "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
-      aria-label={`Назад до ${label}`}
+      // «Назад до Огляд» було без відмінка; двокрапка тримає видимий підпис
+      // у назві й не вимагає родового відмінка для кожної вкладки.
+      aria-label={`Назад: ${label}`}
     >
       <svg
         width="18"
@@ -129,10 +143,19 @@ export function FizrukHeader({
   onContextualBack,
   onOpenSettings,
 }: FizrukHeaderProps) {
-  const isAtlas = page === "atlas";
-  const isExercise = page === "exercise";
-  const isMeasurements = page === "measurements";
-  const showContextualBack = isAtlas || isExercise || isMeasurements;
+  // Один вихід на підсторінку, і він завжди тут. До PR-Z7 набір був
+  // вужчий (atlas / exercise / measurements), тож на `catalog`,
+  // `templates` і `history` шапка малювала пару «Назад» + «На хаб», а
+  // сторінка згори докладала власну стрілку — два-три різні виходи поруч;
+  // на `programs` при цьому не було жодного.
+  const showContextualBack =
+    page === "atlas" ||
+    page === "exercise" ||
+    page === "measurements" ||
+    page === "catalog" ||
+    page === "templates" ||
+    page === "history" ||
+    page === "programs";
 
   // Module-level settings drawer was dropped per user request — all
   // Fizruk settings (backup, reminders, data reset) now live in the
@@ -165,6 +188,9 @@ export function FizrukHeader({
       left={left}
       title={titleFor(page)}
       subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
+      subtitleShort={
+        showContextualBack ? undefined : messages.fizruk.headerSubtitleShort
+      }
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />

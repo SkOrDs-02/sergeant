@@ -12,6 +12,7 @@ import {
   previousWeekKey,
   weekLabelToMondayKey,
 } from "./helpers";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function compareWeeks(action: CompareWeeksAction): string {
   const { week_a, week_b, modules } = (action as CompareWeeksAction).input;
@@ -51,13 +52,13 @@ export function compareWeeks(action: CompareWeeksAction): string {
     const bSpent = Math.round(fb.totalSpent);
     lines.push("");
     lines.push("Фінік:");
-    lines.push(`  ${diffLine("Витрати", aSpent, bSpent, " грн")}`);
-    lines.push(`  ${diffLine("Транзакцій", fa.txCount, fb.txCount, "")}`);
+    lines.push(`  ${diffLine("Витрати", aSpent, bSpent, "\u202F₴")}`);
+    lines.push(`  ${diffLine("Операцій", fa.txCount, fb.txCount, "")}`);
     const topA = fa.topCategories[0];
     const topB = fb.topCategories[0];
     if (topA || topB) {
       lines.push(
-        `  Топ категорія: ${topA ? `${topA.name} (${Math.round(topA.amount)} грн)` : "—"} vs ${topB ? `${topB.name} (${Math.round(topB.amount)} грн)` : "—"}`,
+        `  Топ категорія: ${topA ? `${topA.name} (${formatNumberUk(Math.round(topA.amount))}\u202F₴)` : "—"} vs ${topB ? `${topB.name} (${formatNumberUk(Math.round(topB.amount))}\u202F₴)` : "—"}`,
       );
     }
   }
@@ -100,7 +101,7 @@ export function compareWeeks(action: CompareWeeksAction): string {
     const na = aggregateNutrition(aKey);
     const nb = aggregateNutrition(bKey);
     lines.push("");
-    lines.push("Харчування:");
+    lines.push("Їжа:");
     if (!na && !nb) {
       lines.push("  Немає логів їжі у обидва тижні.");
     } else {

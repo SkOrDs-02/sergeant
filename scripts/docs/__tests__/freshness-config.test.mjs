@@ -25,16 +25,16 @@ import {
 
 describe("globToRegex", () => {
   it("matches exact paths", () => {
-    const re = globToRegex("docs/00-start/playbooks/INDEX.md");
-    assert.equal(re.test("docs/00-start/playbooks/INDEX.md"), true);
-    assert.equal(re.test("docs/00-start/playbooks/INDEX.md.bak"), false);
+    const re = globToRegex("docs/start/instructions/INDEX.md");
+    assert.equal(re.test("docs/start/instructions/INDEX.md"), true);
+    assert.equal(re.test("docs/start/instructions/INDEX.md.bak"), false);
   });
 
   it("matches directory prefix with **", () => {
-    const re = globToRegex("docs/04-governance/adr/**");
-    assert.equal(re.test("docs/04-governance/adr/0001-foo.md"), true);
-    assert.equal(re.test("docs/04-governance/adr/sub/dir/file.md"), true);
-    assert.equal(re.test("docs/90-work/audits/foo.md"), false);
+    const re = globToRegex("docs/governance/adr/**");
+    assert.equal(re.test("docs/governance/adr/0001-foo.md"), true);
+    assert.equal(re.test("docs/governance/adr/sub/dir/file.md"), true);
+    assert.equal(re.test("docs/work/specs/audits/foo.md"), false);
   });
 
   it("matches **/X — leading wildcard", () => {
@@ -46,9 +46,9 @@ describe("globToRegex", () => {
 
   it("matches single * inside a segment", () => {
     const re = globToRegex("**/TEMPLATE*.md");
-    assert.equal(re.test("docs/03-operations/postmortems/TEMPLATE.md"), true);
-    assert.equal(re.test("docs/04-governance/adr/TEMPLATE-01.md"), true);
-    assert.equal(re.test("docs/03-operations/postmortems/foo.md"), false);
+    assert.equal(re.test("docs/operations/postmortems/TEMPLATE.md"), true);
+    assert.equal(re.test("docs/governance/adr/TEMPLATE-01.md"), true);
+    assert.equal(re.test("docs/operations/postmortems/foo.md"), false);
   });
 
   it("treats * as single-segment (no /)", () => {
@@ -66,10 +66,10 @@ describe("globToRegex", () => {
 
 describe("matchesAnyGlob", () => {
   it("returns true if any glob matches", () => {
-    const globs = ["docs/04-governance/adr/**", "**/TEMPLATE*.md"];
-    assert.equal(matchesAnyGlob("docs/04-governance/adr/0001.md", globs), true);
+    const globs = ["docs/governance/adr/**", "**/TEMPLATE*.md"];
+    assert.equal(matchesAnyGlob("docs/governance/adr/0001.md", globs), true);
     assert.equal(
-      matchesAnyGlob("docs/03-operations/postmortems/TEMPLATE.md", globs),
+      matchesAnyGlob("docs/operations/postmortems/TEMPLATE.md", globs),
       true,
     );
     assert.equal(matchesAnyGlob("README.md", globs), false);
@@ -121,8 +121,8 @@ describe("hasFreshnessHeader", () => {
 describe("buildTrackedList", () => {
   const config = {
     ...DEFAULT_CONFIG,
-    excludeGlobs: ["docs/04-governance/adr/**", "**/TEMPLATE*.md"],
-    cadenceOverrides: { "docs/03-operations/observability/runbook.md": 60 },
+    excludeGlobs: ["docs/governance/adr/**", "**/TEMPLATE*.md"],
+    cadenceOverrides: { "docs/operations/observability/runbook.md": 60 },
   };
 
   const headerContent =
@@ -132,7 +132,7 @@ describe("buildTrackedList", () => {
   it("auto-tracks every candidate that has a freshness header", () => {
     const candidates = [
       "README.md",
-      "docs/04-governance/governance/doc-freshness.md",
+      "docs/governance/governance/doc-freshness.md",
     ];
     const readFile = () => headerContent;
     const tracked = buildTrackedList({ candidates, config, readFile });
@@ -141,7 +141,7 @@ describe("buildTrackedList", () => {
   });
 
   it("applies cadence overrides", () => {
-    const candidates = ["docs/03-operations/observability/runbook.md"];
+    const candidates = ["docs/operations/observability/runbook.md"];
     const tracked = buildTrackedList({
       candidates,
       config,
@@ -151,7 +151,7 @@ describe("buildTrackedList", () => {
   });
 
   it("uses default cadence when no override", () => {
-    const candidates = ["docs/04-governance/governance/doc-freshness.md"];
+    const candidates = ["docs/governance/governance/doc-freshness.md"];
     const tracked = buildTrackedList({
       candidates,
       config,
@@ -162,8 +162,8 @@ describe("buildTrackedList", () => {
 
   it("skips files matching excludeGlobs", () => {
     const candidates = [
-      "docs/04-governance/adr/0001-foo.md",
-      "docs/00-start/playbooks/TEMPLATE-decision-tree.md",
+      "docs/governance/adr/0001-foo.md",
+      "docs/start/instructions/TEMPLATE-decision-tree.md",
       "README.md",
     ];
     const tracked = buildTrackedList({
@@ -258,7 +258,7 @@ describe("buildTrackedList", () => {
 describe("computeCoverageGaps", () => {
   const config = {
     ...DEFAULT_CONFIG,
-    excludeGlobs: ["docs/04-governance/adr/**", "apps/**/README.md"],
+    excludeGlobs: ["docs/governance/adr/**", "apps/**/README.md"],
     explicitExclude: ["docs/legacy.md"],
   };
   const headerContent =
@@ -269,7 +269,7 @@ describe("computeCoverageGaps", () => {
     const candidates = [
       "README.md",
       "docs/foo.md",
-      "docs/04-governance/adr/0001.md",
+      "docs/governance/adr/0001.md",
       "apps/web/README.md",
       "docs/legacy.md",
     ];
@@ -298,16 +298,16 @@ describe("cadenceForPath", () => {
   const config = {
     defaultCadenceDays: 90,
     cadenceOverrides: {
-      "docs/00-start/playbooks/rotate-secrets.md": 60,
-      "docs/02-engineering/**": 180,
-      "docs/02-engineering/notes/**": 365,
-      "docs/02-engineering/architecture/**": 90,
+      "docs/start/instructions/rotate-secrets.md": 60,
+      "docs/engineering/**": 180,
+      "docs/engineering/notes/**": 365,
+      "docs/engineering/architecture/**": 90,
     },
   };
 
   it("exact path beats every glob", () => {
     assert.equal(
-      cadenceForPath("docs/00-start/playbooks/rotate-secrets.md", config),
+      cadenceForPath("docs/start/instructions/rotate-secrets.md", config),
       60,
     );
   });
@@ -315,24 +315,18 @@ describe("cadenceForPath", () => {
   it("longest matching glob wins over a shallower one", () => {
     // Обидва патерни матчать, але `notes/**` специфічніший.
     assert.equal(
-      cadenceForPath("docs/02-engineering/notes/spikes/x.md", config),
+      cadenceForPath("docs/engineering/notes/spikes/x.md", config),
       365,
     );
     assert.equal(
-      cadenceForPath("docs/02-engineering/architecture/repo-map.md", config),
+      cadenceForPath("docs/engineering/architecture/repo-map.md", config),
       90,
     );
-    assert.equal(
-      cadenceForPath("docs/02-engineering/testing/x.md", config),
-      180,
-    );
+    assert.equal(cadenceForPath("docs/engineering/testing/x.md", config), 180);
   });
 
   it("falls back to the default when nothing matches", () => {
-    assert.equal(
-      cadenceForPath("docs/00-start/agents/onboarding.md", config),
-      90,
-    );
+    assert.equal(cadenceForPath("docs/start/agents/onboarding.md", config), 90);
   });
 });
 

@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isApiError, monoWebhookApi, type MonoSyncState } from "@shared/api";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
@@ -13,7 +14,6 @@ import { cn } from "@shared/lib/ui/cn";
 import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
 import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
 import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
-import { PaywallModal, usePlan } from "../billing";
 // V-8 (аудит Профілю/Налаштувань 2026-08-08): раніше тут був локальний
 // `ConfirmModal` із `SettingsPrimitives` — друга оболонка підтвердження з
 // власним затемненням і, головне, без `createPortal`: вона малювалась у
@@ -22,6 +22,7 @@ import { PaywallModal, usePlan } from "../billing";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
 import { MonoTokenInlineForm } from "./MonoTokenInlineForm";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 type ConfirmKind = "cache" | "disconnect" | null;
 
@@ -30,15 +31,12 @@ interface FinykWebhookServiceSectionProps {
 }
 
 const COPY = {
-  paywallTitle: "Авто-Mono sync доступний у Pro",
-  paywallDescription:
-    "Free лишається для ручного ведення фінансів. Pro підключає серверний Monobank webhook, backfill і автоматичне оновлення транзакцій.",
   clearCacheTitle: "Очистити кеш?",
   disconnectTitle: "Вийти з Monobank?",
   clearCacheBody:
-    "Буде видалено збережені транзакції в кеші. Потім дані підтягнуться з Monobank знову.",
+    "Операції, збережені на цьому пристрої, зникнуть. Потім вони підтягнуться з Monobank знову.",
   disconnectBody:
-    "Webhook-зʼєднання буде відʼєднано. Щоб відновити, введи токен заново.",
+    "Автоматичне отримання операцій з Monobank вимкнеться. Щоб відновити, введи токен заново.",
   clear: "Очистити",
   exit: "Вийти",
   accounts: "рахунків",
@@ -48,10 +46,10 @@ const COPY = {
   connect: "Підключити Monobank",
   serviceTitle: "Сервіс",
   serviceHelp:
-    "Дані Monobank приходять автоматично через webhook та оновлюються при поверненні у вкладку. Якщо потрібно примусово перепитати сервер, натисни «Оновити дані». Якщо список операцій виглядає некоректно, очисти кеш і синхронізуй знову.",
+    "Операції з Monobank приходять самі й оновлюються, коли ти повертаєшся у вкладку. Щоб перевірити просто зараз, натисни «Оновити дані». Якщо список операцій виглядає дивно, очисти збережені операції й синхронізуй знову.",
   refreshing: "Оновлення…",
   refresh: "Оновити дані",
-  clearTransactions: "Очистити кеш транзакцій",
+  clearTransactions: "Очистити кеш операцій",
   // L-15: `GET /api/mono/sync-state` може впасти через мережу/5xx —
   // окремо від чесного "ще не підключено". Раніше обидва стани малювали
   // однакову форму вводу токена, тож юзер із живим підключенням бачив
@@ -68,17 +66,27 @@ const COPY = {
   // відкликала токен у Monobank, і це нормальна дія, а не поломка.
   reconnectTitle: "Monobank втратив звʼязок",
   reconnectBody:
-    "Monobank більше не приймає збережений токен, найчастіше так буває, якщо його відкликали в застосунку банку. Транзакції не оновлюються. Встав новий токен, щоб відновити: Mono → Налаштування → Інші → API.",
+    "Monobank більше не приймає збережений токен, найчастіше так буває, якщо його відкликали в застосунку банку. Операції не оновлюються. Встав новий токен, щоб відновити: Mono → Налаштування → Інші → API.",
   reconnect: "Підключити новий токен",
 } as const;
 
+/**
+ * AI-CONTEXT: підключення Monobank і backfill — БЕЗКОШТОВНІ, і Pro-гейта тут
+ * бути не має. Канон: `docs/product/model/product-overview.md`, рядок 7 —
+ * «Ядро безкоштовне + банк-sync Free назавжди; AI — пейвол». До 2026-09-02
+ * пейволл стояв саме тут, і лише тут: другий вхід у те саме
+ * `POST /api/mono/connect` (Фінік → `NoBankBanner` → `FinykLoginScreen`)
+ * гейта не мав ніколи, тож Free-юзер підключав банк повз пейволл з одного
+ * екрана і бачив пропозицію купити Pro з іншого. Не помічали, бо тест мокає
+ * `usePlan: () => ({ isPro: true })` — гілка пейволу не виконувалась жодного
+ * разу. Знято за рішенням власника; `requirePlan` на сервер для цього
+ * маршруту НЕ додаємо — платити тут нема за що.
+ */
 export function FinykWebhookServiceSection({
   inView,
 }: FinykWebhookServiceSectionProps) {
   const queryClient = useQueryClient();
-  const { isPro } = usePlan();
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
-  const [paywallOpen, setPaywallOpen] = useState(false);
   const [webhookTokenInput, setWebhookTokenInput] = useState("");
   const [webhookConnecting, setWebhookConnecting] = useState(false);
   const [webhookError, setWebhookError] = useState("");
@@ -126,10 +134,6 @@ export function FinykWebhookServiceSection({
   });
 
   const connectWebhook = async () => {
-    if (!isPro) {
-      setPaywallOpen(true);
-      return;
-    }
     const clean = webhookTokenInput.trim();
     if (!clean) {
       setWebhookError("Введи токен");
@@ -158,11 +162,7 @@ export function FinykWebhookServiceSection({
       } else if (isApiError(error) && error.kind === "aborted") {
         setWebhookError("Monobank API не відповідає. Спробуй пізніше.");
       } else {
-        setWebhookError(
-          error instanceof Error && error.message
-            ? error.message
-            : "Помилка підключення",
-        );
+        setWebhookError(failedCopy("підключити Monobank"));
       }
     } finally {
       setWebhookConnecting(false);
@@ -188,10 +188,6 @@ export function FinykWebhookServiceSection({
   };
 
   const triggerBackfill = async () => {
-    if (!isPro) {
-      setPaywallOpen(true);
-      return;
-    }
     setWebhookError("");
     try {
       await monoWebhookApi.backfill();
@@ -201,12 +197,8 @@ export function FinykWebhookServiceSection({
           queryKey: finykKeys.monoBackfillProgress,
         }),
       ]);
-    } catch (error) {
-      setWebhookError(
-        error instanceof Error && error.message
-          ? error.message
-          : "Помилка re-sync",
-      );
+    } catch {
+      setWebhookError(failedCopy("повторити синхронізацію"));
     }
   };
 
@@ -236,13 +228,6 @@ export function FinykWebhookServiceSection({
 
   return (
     <>
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        surface="mono_auto_sync"
-        title={COPY.paywallTitle}
-        description={COPY.paywallDescription}
-      />
       <ConfirmDialog
         open={confirmKind !== null}
         title={
@@ -287,10 +272,10 @@ export function FinykWebhookServiceSection({
               <div className="flex-1 min-w-0">
                 <div className="text-style-label">
                   {webhookSyncState.status === "active"
-                    ? "Webhook активний"
+                    ? "Синхронізація активна"
                     : webhookSyncState.status === "pending"
-                      ? "Webhook очікує"
-                      : "Помилка webhook"}
+                      ? "Синхронізація очікує"
+                      : "Синхронізація не працює"}
                 </div>
                 <div className="text-style-caption text-subtle mt-0.5">
                   {webhookSyncState.accountsCount} {COPY.accounts}
@@ -314,7 +299,7 @@ export function FinykWebhookServiceSection({
             </div>
             <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 className="flex-1 h-11"
                 onClick={triggerBackfill}
                 disabled={backfillProgress?.status === "running"}
@@ -324,7 +309,8 @@ export function FinykWebhookServiceSection({
                   : "Синхронізувати історію"}
               </Button>
               <Button
-                variant="danger"
+                variant="soft"
+                tone="danger"
                 className="flex-1 h-11"
                 onClick={() => setConfirmKind("disconnect")}
               >
@@ -335,9 +321,10 @@ export function FinykWebhookServiceSection({
           </div>
         ) : webhookNeedsReconnect ? (
           <div className="space-y-3">
-            <div
-              className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/10"
+            <Banner
+              variant="warning"
               role="alert"
+              className="flex items-start gap-3"
             >
               <span
                 className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 bg-warning"
@@ -349,7 +336,7 @@ export function FinykWebhookServiceSection({
                   {COPY.reconnectBody}
                 </p>
               </div>
-            </div>
+            </Banner>
             <MonoTokenInlineForm
               value={webhookTokenInput}
               onChange={setWebhookTokenInput}
@@ -359,7 +346,8 @@ export function FinykWebhookServiceSection({
               help={null}
             />
             <Button
-              variant="danger"
+              variant="soft"
+              tone="danger"
               className="w-full h-11"
               onClick={() => setConfirmKind("disconnect")}
             >
@@ -375,12 +363,12 @@ export function FinykWebhookServiceSection({
               {COPY.checkFailed}
             </p>
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-full h-11"
               onClick={() => syncStateQuery.refetch()}
               disabled={syncStateQuery.isFetching}
             >
-              <Icon name="refresh-cw" size={16} aria-hidden />
+              <Icon name="refresh-cw" size="md" aria-hidden />
               {syncStateQuery.isFetching ? COPY.checking : COPY.retryCheck}
             </Button>
           </div>
@@ -409,20 +397,21 @@ export function FinykWebhookServiceSection({
           {COPY.serviceHelp}
         </p>
         <Button
-          variant="ghost"
+          variant="outline"
           className="w-full h-11"
           onClick={refreshAllData}
           disabled={refreshing}
         >
-          <Icon name="refresh-cw" size={16} aria-hidden />
+          <Icon name="refresh-cw" size="md" aria-hidden />
           {refreshing ? COPY.refreshing : COPY.refresh}
         </Button>
         <Button
-          variant="ghost"
+          variant="soft"
+          tone="danger"
           className="w-full h-11"
           onClick={() => setConfirmKind("cache")}
         >
-          <Icon name="trash" size={16} aria-hidden />
+          <Icon name="trash" size="md" aria-hidden />
           {COPY.clearTransactions}
         </Button>
       </SettingsSubGroup>

@@ -3,7 +3,7 @@
  * Status: Active
  *
  * `Measure` — типографіка ВИМІРУ (анти-слоп П4,
- * `docs/05-design/design/anti-slop-strategy.md` §4/П4).
+ * `docs/design/design/anti-slop-strategy.md` §4/П4).
  *
  * `Money` закрив гривні. Але Sergeant рахує не лише їх: кілокалорії та
  * грами в Їжі, кілограми в Фізруку, відсотки в Рутині. До цього компонента

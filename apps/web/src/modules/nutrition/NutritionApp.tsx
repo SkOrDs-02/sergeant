@@ -2,8 +2,10 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useCallback, useMemo, useState } from "react";
-import type { Meal } from "@sergeant/nutrition-domain";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
+import { matchFoodName, todayISODate } from "@sergeant/nutrition-domain";
+import { mealsByTypeForDay } from "./lib/nutritionStats";
 import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
 import {
   SkeletonMealCard,
@@ -13,8 +15,10 @@ import {
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
-import { NutritionBottomNav } from "./components/NutritionBottomNav";
-import { NutritionPantrySelector } from "./components/NutritionPantrySelector";
+import {
+  NutritionBottomNav,
+  NUTRITION_NAV_LABELS,
+} from "./components/NutritionBottomNav";
 import { NutritionOverlays } from "./components/NutritionOverlays";
 import { NutritionStartPage } from "./pages/NutritionStartPage";
 import { NutritionPantryPage } from "./pages/NutritionPantryPage";
@@ -32,7 +36,12 @@ import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { useQueryClient } from "@tanstack/react-query";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
-import { useNutritionPantries } from "./hooks/useNutritionPantries";
+import {
+  useNutritionPantries,
+  type PantryItemsAddedEntry,
+} from "./hooks/useNutritionPantries";
+import { useSilpoPantryAutoImport } from "./hooks/useSilpoPantryAutoImport";
+import { buildPantryAddedToastMessage } from "./lib/pantryAddedToast";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
@@ -56,8 +65,10 @@ import { useNutritionPrefsState } from "./hooks/useNutritionPrefsState";
 import { useNutritionQuickStatsWriter } from "./hooks/useNutritionQuickStatsWriter";
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
-import { todayISODate } from "./lib/nutritionFormat";
 import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { AccessDenialNotice } from "../../core/access/AccessDenialNotice";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
 
 interface NutritionAppProps {
@@ -70,7 +81,6 @@ interface NutritionAppProps {
 
 // One-shot imperative follow-ups that must run *after* a page/state change has
 // committed. Resolved by effects keyed on the relevant page/state, not timers.
-type PendingNutritionAction = { kind: "open-add-meal" } | null;
 
 export default function NutritionApp({
   onBackToHub,
@@ -83,6 +93,10 @@ export default function NutritionApp({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [statusText, setStatusText] = useState("");
+  // A3, поставка 2: причина, з якої серверну дію не СТАРТУВАЛИ. Окремо
+  // від `err` навмисно — той несе текст помилки, що вже сталась, а тут
+  // запиту не було взагалі, і подача в людини інша: пояснення і дія.
+  const [denial, setDenial] = useState<AccessDenial | null>(null);
 
   // Stage 4 PR #032 / #033: install the dual-write context and warm
   // the SQLite read cache once auth is known; both are no-ops when
@@ -132,7 +146,75 @@ export default function NutritionApp({
     setMenuSubTab,
   });
 
-  const pantry = useNutritionPantries({ setBusy, setErr, setStatusText });
+  // Рішення власника 2026-09-11 — «куди лягло» тост живе тут (page-рівень,
+  // де вже є `useToast()`), не всередині `useNutritionPantries`. Колбек
+  // мусить читати найсвіжіші `pantry.pantries`/`pantry.pantryItems`, але
+  // сам хук ще не повернув значення в момент, коли колбек передається йому
+  // ПАРАМЕТРОМ — класична курка-яйце. `pantryRef` розриває цикл: колбек
+  // читає його в МОМЕНТ виклику (після кліку користувача), а не в момент
+  // визначення, тож посилання на ще неіснуючий `pantry` тут не потрібне.
+  const pantryRef = useRef<ReturnType<typeof useNutritionPantries> | null>(
+    null,
+  );
+  const onPantryItemsAdded = useCallback(
+    (items: PantryItemsAddedEntry[]) => {
+      const p = pantryRef.current;
+      if (!p) return;
+      const msg = buildPantryAddedToastMessage(items, p.pantries);
+      if (!msg) return;
+
+      // Дія «Змінити» — лише для одиночного додавання: список одразу
+      // втратив би сенс «однієї» адреси для редагування.
+      const single = items.length === 1 ? items[0] : undefined;
+      toast.success(
+        msg,
+        undefined,
+        single
+          ? {
+              label: "Змінити",
+              onClick: () => {
+                // Адресу рахуємо ЛІНИВО, на кліку — не в момент показу
+                // toast. `setPantries` усередині хука асинхронний, тож
+                // одразу після виклику `pantryRef.current` ще вказує на
+                // стан ДО злиття, і щойно доданої позиції в ньому просто
+                // немає. До моменту фактичного кліку користувача re-render
+                // уже закомітився.
+                const cur = pantryRef.current;
+                if (!cur) return;
+                const key = matchFoodName(single.name);
+                const idx = cur.pantryItems.findIndex(
+                  (x) =>
+                    x.pantryId === single.pantryId &&
+                    matchFoodName(x.name) === key,
+                );
+                if (idx >= 0) cur.editItemAt(idx);
+              },
+            }
+          : undefined,
+      );
+    },
+    [toast],
+  );
+
+  const pantry = useNutritionPantries({
+    setBusy,
+    setErr,
+    setStatusText,
+    setDenial,
+    onItemsAdded: onPantryItemsAdded,
+  });
+  useEffect(() => {
+    pantryRef.current = pantry;
+  }, [pantry]);
+  // Автоімпорт чеків Сільпо в комору (спека
+  // docs/work/specs/silpo-pantry-auto-import.md) - ТА САМА інстанція
+  // `pantry` вище, не окремий `useNutritionPantries` (ризик «два
+  // екземпляри стану комори», спека § Ризики).
+  useSilpoPantryAutoImport({
+    pantryItems: pantry.pantryItems,
+    upsertItemForAutoImport: pantry.upsertItemForAutoImport,
+    revertReplenish: pantry.revertReplenish,
+  });
   const log = useNutritionLog();
   const ui = useNutritionUiState();
   const shopping = useShoppingList();
@@ -144,14 +226,18 @@ export default function NutritionApp({
   // clears the action — no race on cold-load / low-end devices
   // (page-audit-08 F13). The photo-picker variant is gone: photo analysis
   // is an AddMealSheet step now, so «дати фото» ніде не чекає навігації.
-  const [pendingAction, setPendingAction] =
-    useState<PendingNutritionAction>(null);
 
   // Крок, з якого відкриється AddMealSheet: "photo" для шорткатів
   // `add_meal_photo`, інакше — звичайний "source".
   const [addMealInitialStep, setAddMealInitialStep] = useState<
     "source" | "photo"
   >("source");
+  // Тип прийому, з яким відкриється аркуш. `null` — тип вгадує годинник
+  // (`mealTypeByNow`), як і було для FAB. Не `null` рівно тоді, коли
+  // людина тапнула конкретний сегмент hero: вона вже сказала, у який
+  // прийом пише, і перепитувати це годинником — втрачати її намір.
+  const [addMealInitialMealType, setAddMealInitialMealType] =
+    useState<MealTypeId | null>(null);
 
   const sqliteCacheTick = useNutritionSqliteReadTick();
   const { prefs, setPrefs, prefsStorageErr } =
@@ -194,16 +280,17 @@ export default function NutritionApp({
     setPantryScanStatus,
   } = ui;
 
+  // Комора одна на всі місця, тож і кеш рецептів один: скоуп ключа —
+  // увесь запас, а не окрема полиця (активної комори більше немає).
   const recipeCacheKey = useMemo(
     () =>
-      buildRecipeCacheKey(pantry.activePantryId, pantry.effectiveItems, {
+      buildRecipeCacheKey("all", pantry.effectiveItems, {
         goal: prefs.goal,
         servings: prefs.servings,
         timeMinutes: prefs.timeMinutes,
         exclude: prefs.exclude,
       }),
     [
-      pantry.activePantryId,
       pantry.effectiveItems,
       prefs.goal,
       prefs.servings,
@@ -223,14 +310,54 @@ export default function NutritionApp({
 
   useNutritionReminders(prefs);
 
+  // Відкритий аркуш прийому hero-стрічки: `null` — закритий. Тримаємо
+  // тип, а не самі рядки, щоб аркуш перемальовувався за журналом —
+  // видалення свайпом усередині нього має зникати з нього ж.
+  const [openMealTypeSheet, setOpenMealTypeSheet] = useState<MealTypeId | null>(
+    null,
+  );
+
   // FAB (fab-and-manual-income spec §5): єдина точка входу для «додати
   // прийом їжі», уніфікована з рештою модулів. Скидає edit-стан, щоб
   // sheet завжди відкривався у create-режимі.
   const handleOpenAddMeal = useCallback(() => {
     setEditingMeal(null);
     setAddMealInitialStep("source");
+    setAddMealInitialMealType(null);
     log.setAddMealSheetOpen(true);
   }, [log, setEditingMeal]);
+
+  // Форма додавання з уже обраним типом прийому. Той самий аркуш і той
+  // самий крок «Джерело», що й у FAB, — різниця рівно в обраному типі.
+  const handleOpenAddMealForType = useCallback(
+    (type: MealTypeId) => {
+      setEditingMeal(null);
+      setAddMealInitialStep("source");
+      setAddMealInitialMealType(type);
+      log.setAddMealSheetOpen(true);
+    },
+    [log, setEditingMeal],
+  );
+
+  // Тап по сегменту hero-стрічки (рішення власника 2026-09-15).
+  //
+  // Сегмент несе факт («Вечеря, 520 ккал»), тож тап його РОЗГОРТАЄ:
+  // відкривається `MealTypeSheet` із рядками цього прийому. Порожній
+  // прийом розгортати нічим, тож для нього лишається попередня поведінка —
+  // форма з обраним типом; інакше тап по порожньому сегменту вів би в
+  // порожній аркуш, тобто в глухий кут. Аркуш власної кнопки «Додати» не
+  // має навмисно — вхід «щось нове» в модулі один, FAB.
+  const handlePickMealSegment = useCallback(
+    (type: MealTypeId) => {
+      const meals = mealsByTypeForDay(log.nutritionLog, todayISODate())[type];
+      if (meals.length === 0) {
+        handleOpenAddMealForType(type);
+        return;
+      }
+      setOpenMealTypeSheet(type);
+    },
+    [log.nutritionLog, handleOpenAddMealForType],
+  );
 
   // «Дати фото» ззовні модуля (PWA-шорткат `add_meal_photo`, hub
   // quick-action) — той самий sheet, відкритий одразу на кроці фото.
@@ -241,6 +368,7 @@ export default function NutritionApp({
   const handleOpenMealPhoto = useCallback(() => {
     setEditingMeal(null);
     setAddMealInitialStep("photo");
+    setAddMealInitialMealType(null);
     log.setAddMealSheetOpen(true);
   }, [log, setEditingMeal]);
 
@@ -251,30 +379,6 @@ export default function NutritionApp({
     onOpenMealPhoto: handleOpenMealPhoto,
     onPwaActionConsumed,
   });
-
-  // "Додати прийом їжі" from the Start dashboard: jump to today + Log page,
-  // then open the add-meal sheet once that page has mounted. We request the
-  // follow-up here and let the effect below fire it when `activePage` becomes
-  // "log" — no timing guess (page-audit-08 F13).
-  const handleRequestAddMeal = useCallback(() => {
-    log.setSelectedDate(todayISODate());
-    setActivePageAndHash("log");
-    setPendingAction({ kind: "open-add-meal" });
-  }, [log, setActivePageAndHash]);
-
-  // Resolve "open-add-meal" deterministically once the Log page is committed.
-  const [prevPendingAddMeal, setPrevPendingAddMeal] =
-    useState<PendingNutritionAction>(null);
-  if (
-    pendingAction?.kind === "open-add-meal" &&
-    activePage === "log" &&
-    pendingAction !== prevPendingAddMeal
-  ) {
-    setPrevPendingAddMeal(pendingAction);
-    setAddMealInitialStep("source");
-    log.setAddMealSheetOpen(true);
-    setPendingAction(null);
-  }
 
   const {
     scan: handlePantryBarcodeDetected,
@@ -297,6 +401,7 @@ export default function NutritionApp({
     setBusy,
     setErr,
     setStatusText,
+    setDenial,
     pantry,
     prefs,
     recipes,
@@ -317,9 +422,12 @@ export default function NutritionApp({
   });
 
   const addCheckedItemsToPantry = useCallback(() => {
-    for (const item of shopping.checkedItems) {
-      pantry.upsertItem(item.name);
-    }
+    // Одним викликом, а не циклом по позиції: `upsertItem` тепер повідомляє
+    // «куди лягло» тостом (2026-09-11), і N окремих викликів дали б N
+    // тостів на одне натискання «У комору». Текст рядка парситься так само,
+    // як і в режимі «Списком».
+    const text = shopping.checkedItems.map((item) => item.name).join(", ");
+    if (text.trim()) pantry.upsertItem(text);
     shopping.clearChecked();
   }, [shopping, pantry]);
 
@@ -327,6 +435,7 @@ export default function NutritionApp({
     useNutritionCloudBackup({
       toast,
       setErr,
+      setDenial,
       cloudBackupBusy,
       setCloudBackupBusy,
       backupPasswordDialog,
@@ -353,6 +462,7 @@ export default function NutritionApp({
         // «Скасувати», як quick-chip нижче (бета-фідбек 2026-08-07).
         toast.success("Страву додано.", undefined, {
           label: "Скасувати",
+          kind: "undo",
           onClick: () => {
             log.handleRemoveMeal(dateForLog, meal.id);
           },
@@ -394,7 +504,7 @@ export default function NutritionApp({
 
   const handlePullRefreshError = useCallback(() => {
     // PTR-fail: provide an actionable retry path per
-    // docs/ui/toast-policy.md. The retry callback runs the same dual
+    // docs/design/ui/toast-policy.md. The retry callback runs the same dual
     // refetch (`invalidateQueries` + `requestCloudPull`) the gesture
     // triggered so the user does not need to repeat the PTR pull.
     toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
@@ -442,6 +552,7 @@ export default function NutritionApp({
           onBackToHub={onBackToHub}
           onGoToHub={onGoToHub}
           onOpenSettings={onOpenSettings}
+          subtitle={NUTRITION_NAV_LABELS[activePage]}
         />
 
         <SwipePages
@@ -456,14 +567,19 @@ export default function NutritionApp({
             enabled={!cloudPullPending}
           >
             <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full min-w-0 overflow-x-hidden">
-              <NutritionPantrySelector pantry={pantry} busy={busy} />
-
               {/* Photo analyze/refine status renders inline inside the
                 AddMealSheet photo step (`PhotoStep` owns its own busy/err
                 state), so this banner only carries the flows without an
                 in-place anchor: pantry list parsing, recipe/day-plan
                 fetches, … */}
               {statusText && <Banner className="mb-4">{statusText}</Banner>}
+              {denial && (
+                <AccessDenialNotice
+                  denial={denial}
+                  onDismiss={() => setDenial(null)}
+                  className="mb-4"
+                />
+              )}
               {err && (
                 <Banner
                   variant="danger"
@@ -475,7 +591,7 @@ export default function NutritionApp({
                     type="button"
                     onClick={() => setErr("")}
                     aria-label="Закрити повідомлення про помилку"
-                    className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   >
                     ×
                   </button>
@@ -501,7 +617,7 @@ export default function NutritionApp({
                     log={log}
                     prefs={prefs}
                     setActivePageAndHash={setActivePageAndHash}
-                    onRequestAddMeal={handleRequestAddMeal}
+                    onPickMeal={handlePickMealSegment}
                   />
                 )}
 
@@ -553,7 +669,16 @@ export default function NutritionApp({
                     dayPlanSavedAt={dayPlanSavedAt}
                     dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
                     fetchDayPlan={fetchDayPlan}
-                    addMealFromPlan={addMealFromPlan}
+                    addMealFromPlan={(meal) => {
+                      // Тост «Скасувати» живе тут, а не в дата-хуку — та сама
+                      // межа, що для «куди лягло» вище. Хук повертає, КУДИ
+                      // ліг запис, бо id він генерує сам (PR-N1).
+                      const { id, dateKey } = addMealFromPlan(meal);
+                      showUndoToast(toast, {
+                        msg: "Страву додано.",
+                        onUndo: () => log.handleRemoveMeal(dateKey, id),
+                      });
+                    }}
                     weekPlan={weekPlan}
                     weekPlanRaw={weekPlanRaw}
                     weekPlanBusy={weekPlanBusy}
@@ -610,7 +735,11 @@ export default function NutritionApp({
           setRestoreConfirm={setRestoreConfirm}
           applyRestorePayload={applyRestorePayload}
           addMealInitialStep={addMealInitialStep}
+          addMealInitialMealType={addMealInitialMealType}
           onQuickAddMeal={handleQuickAddMealFromChip}
+          openMealTypeSheet={openMealTypeSheet}
+          onCloseMealTypeSheet={() => setOpenMealTypeSheet(null)}
+          toast={toast}
         />
       </MeshBackground>
     </ModuleAccentProvider>

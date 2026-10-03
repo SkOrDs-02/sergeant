@@ -7,8 +7,10 @@ vi.mock("../../lib/llm/provider.js", () => ({
   invokeLLM: vi.fn(),
 }));
 
+import { PANTRY_CATEGORY_LABELS } from "@sergeant/shared/data/pantryCategories";
+
 import { invokeLLM as _invokeLLM } from "../../lib/llm/provider.js";
-import handler from "./shopping-list.js";
+import handler, { SYSTEM, buildShoppingListPrompt } from "./shopping-list.js";
 
 const invokeLLM = _invokeLLM as unknown as Mock;
 
@@ -61,7 +63,7 @@ describe("shopping-list handler", () => {
       text: JSON.stringify({
         categories: [
           {
-            name: "Овочі та гриби",
+            name: "Овочі",
             items: [
               { name: "Печериці", quantity: "400 г", note: "свіжі" },
               { name: " печериці ", quantity: "200 г", note: "дублікат" },
@@ -95,7 +97,7 @@ describe("shopping-list handler", () => {
     expect(res.body).toMatchObject({
       categories: [
         {
-          name: "Овочі та гриби",
+          name: "Овочі",
           items: [
             {
               id: expect.stringMatching(
@@ -147,7 +149,7 @@ describe("shopping-list handler", () => {
       text: JSON.stringify({
         categories: [
           {
-            name: "Крупи та злаки",
+            name: "Крупи та хліб",
             items: [{ name: "Рис", quantity: "500 г", note: "" }],
           },
         ],
@@ -167,7 +169,7 @@ describe("shopping-list handler", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({
-      categories: [{ name: "Крупи та злаки" }],
+      categories: [{ name: "Крупи та хліб" }],
     });
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     expect(JSON.stringify(opts["messages"])).toContain(
@@ -272,7 +274,7 @@ describe("shopping-list handler", () => {
         categories: [
           null,
           {
-            name: "Яйця",
+            name: "Молочні та яйця",
             items: [null, { name: "Яйця", quantity: "10 шт", note: "свіжі" }],
           },
           { name: "Порожня", items: [] },
@@ -293,7 +295,7 @@ describe("shopping-list handler", () => {
     expect(res.body).toMatchObject({
       categories: [
         {
-          name: "Яйця",
+          name: "Молочні та яйця",
           items: [
             expect.objectContaining({
               name: "Яйця",
@@ -313,7 +315,7 @@ describe("shopping-list handler", () => {
       text: JSON.stringify({
         categories: [
           {
-            name: "Яйця",
+            name: "Молочні та яйця",
             items: [{ name: "Яйця", quantity: "6 шт", note: "" }],
           },
         ],
@@ -334,5 +336,81 @@ describe("shopping-list handler", () => {
 
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     expect(opts["userId"]).toBe("u_shopping");
+  });
+});
+
+// Одна таксономія Харчування (рішення власника 2026-10-01, n3): промпт просить
+// у моделі категорії комори, а не власні 11 назв. Перелік береться з реєстру
+// `@sergeant/shared` (його ж бере каталог комори), копії в промпті немає.
+describe("shopping-list prompt - категорії комори", () => {
+  const labels = Object.values(PANTRY_CATEGORY_LABELS);
+
+  it("перелік у промпті - рівно мітки реєстру категорій комори, у порядку реєстру", () => {
+    const listLine = `${labels.map((label) => `"${label}"`).join(", ")}`;
+    expect(SYSTEM).toContain(listLine);
+    expect(SYSTEM).toContain('"Спреди та намазки"');
+    expect(SYSTEM).toContain('"Інше"');
+  });
+
+  it.each([
+    "Мʼясо та риба",
+    "Хлібобулочні вироби",
+    "Приправи та соуси",
+    "Овочі та гриби",
+    "Олії та жири",
+    "Крупи та злаки",
+    "Молочні продукти",
+  ])("старої назви «%s» у промпті немає", (legacy) => {
+    expect(SYSTEM).not.toContain(`"${legacy}"`);
+  });
+
+  it("кожне правило класифікації називає лише мітки з переліку", () => {
+    const ruled = [...SYSTEM.matchAll(/→ "([^"]+)"/g)].map((m) => m[1]);
+    expect(ruled.length).toBeGreaterThan(0);
+    for (const label of ruled) expect(labels).toContain(label);
+  });
+
+  it("user-частина промпту не несе перелік категорій удруге", () => {
+    const { system, user } = buildShoppingListPrompt({
+      recipes: [{ title: "Омлет", ingredients: ["яйця"] }],
+      locale: "uk-UA",
+    } as never);
+    expect(system).toBe(SYSTEM);
+    expect(user).not.toContain("Спреди та намазки");
+  });
+
+  it("форма відповіді не змінилась: назву категорії віддаємо як є", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        categories: [
+          {
+            // Стара модель чи старий кеш можуть віддати стару назву: клієнт
+            // зводить її до категорії комори за назвою позиції.
+            name: "Мʼясо та риба",
+            items: [{ name: "Лосось", quantity: "300 г", note: "" }],
+          },
+          {
+            name: "Спреди та намазки",
+            items: [{ name: "Арахісова паста", quantity: "1 шт", note: "" }],
+          },
+        ],
+      }),
+    });
+
+    const res = makeRes();
+    await handler(
+      makeReq({
+        recipes: [{ title: "Сендвіч", ingredients: ["лосось", "паста"] }],
+        locale: "uk-UA",
+      }),
+      res,
+    );
+
+    const body = res.body as { categories: Array<{ name: string }> };
+    expect(body.categories.map((c) => c.name)).toEqual([
+      "Мʼясо та риба",
+      "Спреди та намазки",
+    ]);
   });
 });

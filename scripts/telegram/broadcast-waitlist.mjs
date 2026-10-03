@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // AI-LEGACY: expires 2026-10-31 — тимчасова інфраструктура закритої бети;
-// видалити разом із docs/90-work/beta-launch/ (перелік — у README тієї теки).
+// видалити разом із docs/work/specs/beta-launch/ (перелік — у README тієї теки).
 /**
  * Розсилка інвайтів по Telegram-вейтлісту.
  *
  * ⚠️ ТИМЧАСОВИЙ ОПЕРАТОРСЬКИЙ СКРИПТ на час закритої бети.
- * Інструкція й порядок запуску: docs/90-work/beta-launch/run-beta-wave.md
- * Спека: docs/90-work/planning/specs/telegram-waitlist.md
+ * Інструкція й порядок запуску: docs/work/specs/beta-launch/run-beta-wave.md
+ * Спека: docs/work/specs/telegram-waitlist.md
  *
  * Запускається вручну, коли відкривається чергова хвиля бети — не крон і не
  * ендпоінт: рішення «час запрошувати» ухвалює людина, а не розклад.
@@ -80,7 +80,7 @@ const SEND_INTERVAL_MS = 50;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * Копірайт за `docs/01-product/copy/style-guide.uk.md`: 1-а особа однини
+ * Копірайт за `docs/product/copy/style-guide.uk.md`: 1-а особа однини
  * («відкрив»), звертання на «ти», без 1-ї множини.
  *
  * Жодного дієслова в минулому часі про адресата — інакше текст доводиться

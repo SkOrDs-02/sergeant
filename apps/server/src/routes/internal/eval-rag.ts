@@ -13,9 +13,9 @@
  *      Sentry group-by-message буде фолд-ити повторні алерти у одне issue;
  *      delta vs прошлий тиждень (через `--baseline=...` у CLI) пробрасується
  *      в `extra.delta`.
- *   4. Auto-flip kill-switch `mono_ai_memory_ingest` при `status=kill`
+ *   4. Auto-flip kill-switch `digest_ai_memory_ingest` при `status=kill`
  *      (in-memory; зберігається до process-restart). Не торкається env-у на
- *      Railway — operator має зробити permanent flip per runbook §
+ *      Coolify — operator має зробити permanent flip per runbook §
  *      «RagQualityGateKillSwitch».
  *
  * Auth: bearer-token guard у `routes/internal/index.ts` (`INTERNAL_API_KEY`).
@@ -26,7 +26,7 @@
  * сигнали в спостережуваність. Логіка `compute → record → alert` залишається
  * pure-функцією; endpoint = thin сейв-layer.
  *
- * Reaction playbook: `docs/observability/runbook.md` §
+ * Reaction playbook: `docs/operations/observability/runbook.md` §
  * «RagQualityGateDegraded» / «RagQualityGateKillSwitch».
  */
 
@@ -133,12 +133,23 @@ export function formatEventMessage(summary: RagEvalSummary): string {
 }
 
 /**
- * Чи варто авто-вимикати `mono_ai_memory_ingest`. Гард-функція для
- * idempotency-тестування — endpoint викликає це навіть якщо `status=kill`,
- * щоб у майбутньому можна було додати condition-и (наприклад, потребує
- * baseline-comparison-у з `regression=true`).
+ * Чи варто авто-вимикати `digest_ai_memory_ingest`.
+ *
+ * За замовчуванням — ніколи, і це свідома зміна поведінки. Дві причини.
+ * Перша: живий шар евалу алертить, але нічого не блокує; автоматичне
+ * гасіння модуля цьому прямо суперечить. Друга гірша — `activateKillSwitch`
+ * тримається **в памʼяті процесу**, тобто вимикач бреше про своє
+ * ввімкнення: він випаровується на наступному деплої, а звіт стверджує,
+ * що модуль вимкнено.
+ *
+ * Тіло під прапорцем збережене, щоб повернути автоматику одним рядком,
+ * коли kill-switch стане персистентним.
  */
-export function shouldAutoDisableMonoIngest(summary: RagEvalSummary): boolean {
+export function shouldAutoDisableDigestIngest(
+  summary: RagEvalSummary,
+  opts: { autoDisable?: boolean } = {},
+): boolean {
+  if (opts.autoDisable !== true) return false;
   return summary.status === "kill";
 }
 
@@ -152,6 +163,10 @@ export function createEvalRagInternalRouter({ pool }: { pool: Pool }): Router {
   r.post("/api/internal/eval/rag-weekly", async (req, res) => {
     const parsed = parseBody(SummaryBody, req);
     const summary = parsed;
+    // `SummaryBody` — passthrough, тож прапорець їде поряд зі звітом і не
+    // ламає наявних викликачів, які його не шлють.
+    const autoDisable =
+      (parsed as { autoDisable?: unknown }).autoDisable === true;
 
     // ── 1. INSERT у n8n_failure_events ──
     // `error_message` — human-friendly status (dedup-friendly).
@@ -230,9 +245,11 @@ export function createEvalRagInternalRouter({ pool }: { pool: Pool }): Router {
     }
 
     // ── 4. Auto-flip kill-switch при status=kill ──
+    // Лише коли викликач явно попросив: `autoDisable: true` у тілі. Без
+    // прапорця евал алертить і нічого не гасить (див. докстрінг гарду).
     let killSwitchActivated = false;
-    if (shouldAutoDisableMonoIngest(summary)) {
-      activateKillSwitch("mono_ai_memory_ingest", {
+    if (shouldAutoDisableDigestIngest(summary, { autoDisable })) {
+      activateKillSwitch("digest_ai_memory_ingest", {
         reason: `auto: rag-eval kill (recall@${summary.topK}=${summary.metrics.recallAtK.mean.toFixed(3)})`,
         context: {
           mode: summary.mode,

@@ -75,7 +75,7 @@ export function MultiSelectDemo() {
                           : "border-divider-strong",
                       )}
                     >
-                      {on ? <Icon name="check" size={12} /> : null}
+                      {on ? <Icon name="check" size="xs" /> : null}
                     </span>
                   ) : null}
                   <div className="min-w-0 flex-1">
@@ -99,11 +99,11 @@ export function MultiSelectDemo() {
               </span>
               <div className="ml-auto flex gap-2">
                 <Button variant="secondary" size="sm">
-                  <Icon name="tag" size={14} />
+                  <Icon name="tag" size="sm" />
                   Категорія
                 </Button>
                 <Button variant="destructive" size="sm">
-                  <Icon name="trash" size={14} />
+                  <Icon name="trash" size="sm" />
                   Видалити
                 </Button>
               </div>

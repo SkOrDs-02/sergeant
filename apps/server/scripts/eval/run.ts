@@ -68,6 +68,9 @@ export async function runOne(
     maxTokens: pipeline.maxTokens,
     endpoint: `internal/model-eval/${pipeline.key}`,
     timeoutMs: 60_000,
+    ...(candidate.reasoning
+      ? { reasoning: { effort: candidate.reasoning } }
+      : {}),
   });
   const latencyMs = Date.now() - t0;
 
@@ -112,6 +115,8 @@ export async function runOne(
     cacheReadTokens: result.usage?.cacheReadInputTokens ?? null,
     costUsd: estimateCost(candidate.model, inputTokens, outputTokens),
     text: result.text,
-    voiceFails: pipeline.checkVoice ? voiceViolations(result.text) : null,
+    voiceFails: pipeline.checkVoice
+      ? voiceViolations(result.text, pipeline.checkVoice)
+      : null,
   };
 }

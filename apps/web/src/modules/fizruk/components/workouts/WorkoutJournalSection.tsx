@@ -6,8 +6,9 @@
  * `pages/ActiveWorkout.tsx` → `pages/Workouts.tsx` in `activeOnly` mode).
  * Branches on the workout this route resolved to:
  *  - not found (deleted / bad id)      → dead-end card, no catalog tail;
- *  - found, still in flight            → editable `ActiveWorkoutPanel`
- *    (unchanged — this is the historical "journal" behaviour);
+ *  - found, still in flight            → session mode `SessionView`
+ *    (list of exercises → one exercise on its own screen, спека
+ *    `fizruk-active-session.md`);
  *  - found, `endedAt` set              → read-only `WorkoutSummaryView`
  *    (02-A — replaces the old "Активне тренування не знайдено" dead-end
  *    that used to render after «Завершити»).
@@ -20,11 +21,10 @@
 import { useRef } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
-import { ActiveWorkoutPanel } from "../workouts/ActiveWorkoutPanel";
+import { SessionView } from "../session/SessionView";
 import { WorkoutSummaryView } from "../workouts/WorkoutSummaryView";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useToast } from "@shared/hooks/useToast";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -42,6 +42,7 @@ import {
 import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
+import { recordWorkoutMoment } from "../../lib/workoutMoments";
 
 /**
  * Local view state used to drive the post-finish flash card. The shape merges
@@ -64,10 +65,17 @@ interface WorkoutJournalSectionProps {
   /** The workout this route resolved to — `null` means "not found". */
   activeWorkout: Workout | null;
   activeDuration: string | null;
+  /** `workout/<id>/<itemId>` — вправа, відкрита на весь екран. */
+  focusItemId?: string | undefined;
+  /** `null` — список, id — екран вправи (веде роут). */
+  onOpenItem: (itemId: string | null) => void;
+  /** «+ Вправа» — аркуш каталогу. */
+  onAddExercise: () => void;
+  onOpenExerciseInfo?: ((exerciseId: string) => void) | undefined;
+  onOpenExerciseStats?: ((exerciseId: string) => void) | undefined;
   /** Введений у ретро-формі, але ще не записаний кінець — див. `pendingRetroEnd`. */
   pendingRetroEnd?: string | null | undefined;
   onPendingRetroEndChange?: ((iso: string) => void) | undefined;
-  musclesUk: Record<string, string>;
   recBy: Record<string, unknown>;
   lastByExerciseId: Record<string, unknown>;
   setRestTimer: (s: RestTimerState | null) => void;
@@ -99,9 +107,13 @@ interface WorkoutJournalSectionProps {
 export function WorkoutJournalSection({
   activeWorkout,
   activeDuration,
+  focusItemId,
+  onOpenItem,
+  onAddExercise,
+  onOpenExerciseInfo,
+  onOpenExerciseStats,
   pendingRetroEnd,
   onPendingRetroEndChange,
-  musclesUk,
   recBy,
   lastByExerciseId,
   setRestTimer,
@@ -118,7 +130,6 @@ export function WorkoutJournalSection({
 }: WorkoutJournalSectionProps) {
   const toast = useToast();
   const { announce } = useAnnounce();
-  const celebration = useCelebration();
   const copy = messages.fizruk.workoutSummary;
   // Guard the finish flow against double-click re-entry — the state updates
   // inside onFinishClick are async, so React may still render the "Завершити"
@@ -133,7 +144,12 @@ export function WorkoutJournalSection({
           {copy.notFoundDescription}
         </div>
         <div className="mt-3">
-          <Button module="fizruk" className="w-full h-11" onClick={onClose}>
+          <Button
+            variant="solid"
+            tone="fizruk"
+            className="w-full h-11"
+            onClick={onClose}
+          >
             {copy.backToWorkouts}
           </Button>
         </div>
@@ -143,39 +159,39 @@ export function WorkoutJournalSection({
 
   if (activeWorkout.endedAt) {
     return (
-      <>
-        {celebration.CelebrationComponent}
-        <WorkoutSummaryView
-          workout={activeWorkout}
-          onRepeat={() => onRepeatWorkout(activeWorkout)}
-        />
-      </>
+      <WorkoutSummaryView
+        workout={activeWorkout}
+        onRepeat={() => onRepeatWorkout(activeWorkout)}
+        onClose={onClose}
+      />
     );
   }
 
   return (
     <>
-      {celebration.CelebrationComponent}
       <SectionErrorBoundary
-        title="Помилка в активному тренуванні"
+        title="Не вдалось показати активне тренування"
         resetLabel="Спробувати знову"
         onReset={() => {
           // Мінімальний безпечний reset: залишаємось на тому самому
           // тренуванні, просто перемонтовуємо панель.
         }}
       >
-        <ActiveWorkoutPanel
+        <SessionView
           activeWorkout={activeWorkout}
           activeDuration={activeDuration}
+          focusItemId={focusItemId}
           pendingRetroEnd={pendingRetroEnd}
           onPendingRetroEndChange={onPendingRetroEndChange}
           lastByExerciseId={lastByExerciseId}
-          musclesUk={musclesUk}
           recBy={recBy}
           removeItem={removeItem}
           updateItem={updateItem}
           updateWorkout={updateWorkout}
-          setRestTimer={setRestTimer}
+          onOpenItem={onOpenItem}
+          onAddExercise={onAddExercise}
+          onOpenExerciseInfo={onOpenExerciseInfo}
+          onOpenExerciseStats={onOpenExerciseStats}
           onFinishClick={() => {
             // Ignore re-entry from rapid double-clicks and from any stray
             // invocation on an already-ended workout — structurally
@@ -218,6 +234,8 @@ export function WorkoutJournalSection({
                 sum === null ? null : Math.round(sum.durationSec / 60),
               ...readSignalContext("fizruk"),
             });
+            // До `endWorkout`: кеш ще тримає стан «до» (ADR-0096, момент).
+            recordWorkoutMoment(wid, activeWorkout.startedAt);
             endWorkout(wid);
             // Confirm the action visually + with haptic so the user does
             // not have to read the modal to know the session was saved.
@@ -228,14 +246,14 @@ export function WorkoutJournalSection({
               // часу / вправ / обʼєму і кнопкою «Готово». Це і є
               // святкування — окремий трофей поверх нього зайвий.
               //
-              // AI-DANGER: НЕ піднімай тут `celebration.achievement`.
-              // `CelebrationModal` — це `fixed inset-0 z-9999` із
-              // backdrop-ом, а аркуш живе на `z-100`, тож трофей накривав
-              // крок «Самопочуття»: кнопка «Пропустити» лишалась видимою,
-              // але кліки зʼїдав backdrop. І сам собою він не зникав —
-              // focus-trap модала переводить фокус усередину, `focusin`
-              // ставить `autoCloseMs` на паузу, і той уже не стартує.
-              // Ловилось `fizruk-active-workout.spec.ts`.
+              // AI-DANGER: НЕ піднімай тут повноекранну celebration-модалку
+              // (`CelebrationModal`/`useCelebration`). Вона — `fixed
+              // inset-0 z-9999` із backdrop-ом, а аркуш живе на `z-100`,
+              // тож трофей накривав крок «Самопочуття»: кнопка
+              // «Пропустити» лишалась видимою, але кліки зʼїдав backdrop.
+              // І сам собою він не зникав — focus-trap модала переводить
+              // фокус усередину, `focusin` ставить `autoCloseMs` на паузу,
+              // і той уже не стартує. Ловилось `fizruk-active-workout.spec.ts`.
               setFinishFlash({
                 step: "wellbeing",
                 collapsed: false,
@@ -250,14 +268,16 @@ export function WorkoutJournalSection({
               announce("Тренування завершено та збережено.");
             } else if (isWorkoutWin) {
               // Підсумку немає (порожня чи шаблонна сесія), але робота
-              // була — тоді трофей нікого не перекриває й лишається
-              // єдиним визнанням. W2: краще за мовчазний тост.
-              celebration.achievement(
-                "Тренування завершено!",
-                "Відмінна робота, сесія збережена.",
-              );
-              // Модалка не має live-region — озвучуємо окремо.
-              announce("Тренування завершено та збережено.");
+              // була. Рішення власника 2026-09-11 (аудит O1): завершене
+              // тренування — часта подія, тож повноекранна
+              // celebration-модалка з конфеті знижена до тихого тосту —
+              // той самий канонічний механізм, що й у гілці нижче.
+              //
+              // Окремого `announce()` тут НЕМА свідомо: тост несе
+              // `role="status" aria-live="polite"` зі своїм текстом, і
+              // дубль означав би, що незряча людина чує про одне
+              // збереження двічі, різними словами.
+              toast.success("Тренування завершено, сесію збережено.");
             } else {
               // Empty or template-only workout: fall back to a plain toast
               // so the save is still acknowledged without a jarring modal.

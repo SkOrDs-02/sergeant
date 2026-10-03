@@ -7,7 +7,7 @@
  * native share sheet via `expo-sharing` (both `expo-file-system` and
  * `expo-sharing` are already app dependencies — see `src/lib/fileDownload.ts`).
  *
- * TODO(export): once `expo-print` is added, render this HTML to a real PDF
+ * TODO(mobile-export-pdf): 2027-03-31 — once `expo-print` is added, render this HTML to a real PDF
  * via `Print.printToFileAsync({ html })` and share the resulting `.pdf`,
  * to fully match the web PDF output.
  */

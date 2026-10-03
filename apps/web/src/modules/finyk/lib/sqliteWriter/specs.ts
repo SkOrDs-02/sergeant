@@ -234,15 +234,16 @@ const PREFS_UPSERT_SPEC: TableSpec = {
   table: "finyk_prefs",
   insertClause: `INSERT INTO finyk_prefs
        (user_id, monthly_plan_json, show_balance,
-        excluded_stat_tx_ids_json, dismissed_recurring_json,
+        excluded_stat_tx_ids_json, dismissed_recurring_json, prefs_json,
         created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   conflictTarget: ["user_id"],
   updateColumns: [
     { column: "monthly_plan_json" },
     { column: "show_balance" },
     { column: "excluded_stat_tx_ids_json" },
     { column: "dismissed_recurring_json" },
+    { column: "prefs_json" },
     { column: "updated_at" },
   ],
   upsertGuard: "strictly-newer",

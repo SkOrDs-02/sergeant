@@ -126,7 +126,7 @@ export function StoriesProgressHeader({
       <div className="mt-3 flex items-center gap-2">
         {/* icon-size, not type */}
         <div className="w-7 h-7 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-white">
-          <Icon name="bar-chart-2" size={14} aria-hidden />
+          <Icon name="bar-chart-2" size="sm" aria-hidden />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-style-label font-bold text-white truncate">
@@ -145,7 +145,7 @@ export function StoriesProgressHeader({
           aria-label="Закрити"
           className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-white/15 border border-white/20 text-white hover:bg-white/25 flex items-center justify-center transition-colors"
         >
-          <Icon name="close" size={16} strokeWidth={2.5} />
+          <Icon name="close" size="md" strokeWidth={2.5} />
         </button>
       </div>
     </div>

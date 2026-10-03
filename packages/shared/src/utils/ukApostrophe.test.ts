@@ -2,7 +2,7 @@
  * Last validated: 2026-08-26
  * Status: Active
  *
- * Канон `docs/01-product/copy/style-guide.uk.md` §1.10.
+ * Канон `docs/product/copy/style-guide.uk.md` §1.10.
  */
 import { describe, it, expect } from "vitest";
 import { UA_APOSTROPHE, foldApostrophes } from "./ukApostrophe";

@@ -1,18 +1,25 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  classifyReadiness,
   compareIsoDesc,
+  countConsecutiveEasings,
+  EASING_STREAK_THRESHOLD,
   completedWorkoutsCount,
   countCompletedInCurrentWeek,
   epley1rm,
   formatCompactKg,
   getExercisePR,
+  itemTonnageKg,
   personalRecordsExerciseCount,
   suggestNextSet,
+  targetRepRange,
   totalCompletedVolumeKg,
+  weightStepKg,
   workoutDurationSec,
   workoutTonnageKg,
   weeklyVolumeSeriesNow,
 } from "./workoutStats";
+import { computeOneRmAging } from "../domain/workouts/oneRmAging";
 
 describe("epley1rm", () => {
   it("returns 0 for nullish, zero, or negative inputs", () => {
@@ -425,35 +432,384 @@ describe("suggestNextSet", () => {
     expect(suggestNextSet({ weightKg: 60, reps: 0 })).toBeNull();
   });
 
-  it("reps ≤ 5: adds 2.5 kg, no alt", () => {
-    const s = suggestNextSet({ weightKg: 100, reps: 5 });
-    expect(s).not.toBeNull();
-    expect(s!.weightKg).toBe(102.5);
-    expect(s!.reps).toBe(5);
-    expect(s!.altWeightKg).toBeUndefined();
-  });
-
-  it("reps 6-10: adds 2.5 kg primary + same-weight +1 rep alt", () => {
+  it("grows reps inside the range before touching the weight", () => {
     const s = suggestNextSet({ weightKg: 80, reps: 8 });
     expect(s).not.toBeNull();
-    expect(s!.weightKg).toBe(82.5);
-    expect(s!.reps).toBe(8);
-    expect(s!.altWeightKg).toBe(80);
-    expect(s!.altReps).toBe(9);
+    expect(s!.weightKg).toBe(80);
+    expect(s!.reps).toBe(9);
+    expect(s!.altWeightKg).toBe(82.5);
+    expect(s!.altReps).toBe(8);
   });
 
-  it("reps > 10: adds 5% rounded to 2.5 kg, no alt", () => {
+  it("adds weight and returns to the bottom of the range at the ceiling", () => {
     const s = suggestNextSet({ weightKg: 40, reps: 12 });
     expect(s).not.toBeNull();
     expect(s!.weightKg).toBe(42.5);
+    expect(s!.reps).toBe(8);
     expect(s!.altWeightKg).toBeUndefined();
   });
 
-  it("result weightKg is always a multiple of 2.5", () => {
-    [3, 8, 15].forEach((reps) => {
-      const s = suggestNextSet({ weightKg: 67.5, reps });
-      expect(s).not.toBeNull();
-      expect(s!.weightKg % 2.5).toBeCloseTo(0);
+  it("reads the target range from the catalog entry", () => {
+    const barbell = { equipment: ["barbell"], primaryGroup: "chest" };
+    const curl = { equipment: ["dumbbell"], primaryGroup: "biceps" };
+
+    expect(targetRepRange(barbell)).toEqual({ min: 5, max: 8 });
+    expect(targetRepRange(curl)).toEqual({ min: 10, max: 15 });
+    expect(targetRepRange(null)).toEqual({ min: 8, max: 12 });
+
+    const s = suggestNextSet({ weightKg: 100, reps: 8 }, { exercise: barbell });
+    expect(s!.weightKg).toBe(102.5);
+    expect(s!.reps).toBe(5);
+  });
+
+  it("uses a 5 kg step for barbell lower-body work", () => {
+    expect(
+      weightStepKg({ equipment: ["barbell"], primaryGroup: "quadriceps" }),
+    ).toBe(5);
+    expect(
+      weightStepKg({ equipment: ["barbell"], primaryGroup: "chest" }),
+    ).toBe(2.5);
+    const s = suggestNextSet(
+      { weightKg: 100, reps: 8 },
+      { exercise: { equipment: ["barbell"], primaryGroup: "quadriceps" } },
+    );
+    expect(s!.weightKg).toBe(105);
+  });
+
+  it("never raises the weight in return mode", () => {
+    const s = suggestNextSet(
+      { weightKg: 100, reps: 12 },
+      { aging: { returnMode: true, returnReason: "layoff", reductionPct: 10 } },
+    );
+    expect(s!.weightKg).toBe(90);
+    expect(s!.reps).toBe(8);
+    expect(s!.softMode).toBe(true);
+    expect(s!.returnReason).toBe("layoff");
+  });
+
+  it("holds the weight when return mode has not reduced the anchor yet", () => {
+    const s = suggestNextSet(
+      { weightKg: 62.5, reps: 12 },
+      { aging: { returnMode: true, returnReason: "injury", reductionPct: 0 } },
+    );
+    expect(s!.weightKg).toBe(62.5);
+    expect(s!.softMode).toBe(true);
+  });
+});
+
+// Сценарій зі спеки: три сесії за програмою підряд. Перевіряємо не «функція
+// щось повернула», а що між сесіями вага рухається в очікуваний бік.
+describe("suggestNextSet — три сесії за програмою", () => {
+  const press = { equipment: ["dumbbell", "bench"], primaryGroup: "chest" };
+
+  it("reps grow, then weight steps up, then a layoff pulls it back", () => {
+    const first = suggestNextSet(
+      { weightKg: 30, reps: 8 },
+      { exercise: press },
+    );
+    expect(first).toMatchObject({ weightKg: 30, reps: 9, softMode: false });
+
+    const second = suggestNextSet(
+      { weightKg: 30, reps: 12 },
+      { exercise: press },
+    );
+    expect(second).toMatchObject({ weightKg: 32.5, reps: 8 });
+
+    const aging = computeOneRmAging({
+      // Epley не рахує понад 10 повторень (E1RM_REP_CAP), тож пік беремо
+      // з підходу, який у цю межу вкладається.
+      peak1rm: epley1rm(32.5, 8),
+      lastSessionAt: new Date(Date.now() - 40 * 86_400_000).toISOString(),
     });
+    expect(aging.returnMode).toBe(true);
+
+    const third = suggestNextSet(
+      { weightKg: 32.5, reps: 12 },
+      { exercise: press, aging },
+    );
+    expect(third!.softMode).toBe(true);
+    expect(third!.returnReason).toBe("layoff");
+    expect(third!.weightKg).toBeLessThan(second!.weightKg);
+  });
+});
+
+describe("classifyReadiness", () => {
+  it("нема відповіді — нейтрально", () => {
+    expect(classifyReadiness(null)).toBe("neutral");
+    expect(classifyReadiness(undefined)).toBe("neutral");
+    expect(classifyReadiness({})).toBe("neutral");
+  });
+
+  it("будь-яка шкала ≤2 робить готовність низькою", () => {
+    expect(classifyReadiness({ sleep: 2, soreness: 5 })).toBe("low");
+    expect(classifyReadiness({ sleep: 5, soreness: 1 })).toBe("low");
+    expect(classifyReadiness({ sleep: 1 })).toBe("low");
+  });
+
+  it("високою — лише коли ОБИДВІ ≥4", () => {
+    expect(classifyReadiness({ sleep: 4, soreness: 4 })).toBe("high");
+    expect(classifyReadiness({ sleep: 5, soreness: 3 })).toBe("neutral");
+    // Недомовка не підвищує навантаження: однієї доброї шкали замало.
+    expect(classifyReadiness({ sleep: 5 })).toBe("neutral");
+  });
+
+  it("сміття поза шкалою ігнорується, а не ламає класифікацію", () => {
+    expect(classifyReadiness({ sleep: 0, soreness: 9 })).toBe("neutral");
+    expect(classifyReadiness({ sleep: Number.NaN, soreness: 1 })).toBe("low");
+  });
+});
+
+describe("suggestNextSet + готовність", () => {
+  const press = { equipment: ["dumbbell"], primaryGroup: "chest" };
+
+  it("нейтральна чи відсутня готовність лишає результат ТИМ САМИМ", () => {
+    // Найдорожча регресія цієї фічі — зламати наявну підказку тим, хто на
+    // питання не відповідав. Тому порівняння повне, а не за полями.
+    const base = suggestNextSet({ weightKg: 80, reps: 8 });
+    expect(suggestNextSet({ weightKg: 80, reps: 8 }, {})).toEqual(base);
+    expect(
+      suggestNextSet({ weightKg: 80, reps: 8 }, { readiness: null }),
+    ).toEqual(base);
+    expect(
+      suggestNextSet({ weightKg: 80, reps: 8 }, { readiness: { sleep: 3 } }),
+    ).toEqual(base);
+    expect(base!.secondOption).toBeUndefined();
+    expect(base!.easedWeightKg).toBeUndefined();
+  });
+
+  it("низька готовність додає полегшений варіант, не чіпаючи планового", () => {
+    const plain = suggestNextSet({ weightKg: 80, reps: 8 });
+    const eased = suggestNextSet(
+      { weightKg: 80, reps: 8 },
+      { readiness: { sleep: 1, soreness: 4 } },
+    );
+    expect(eased!.weightKg).toBe(plain!.weightKg);
+    expect(eased!.reps).toBe(plain!.reps);
+    expect(eased!.secondOption).toBe("easier");
+    expect(eased!.easedWeightKg).toBe(77.5);
+    expect(eased!.easedReps).toBe(8);
+  });
+
+  it("полегшений варіант НІКОЛИ не важчий за плановий", () => {
+    const cases: Array<[number, number]> = [
+      [80, 8],
+      [40, 12],
+      [2.5, 8],
+      [5, 12],
+    ];
+    for (const [weightKg, reps] of cases) {
+      const s = suggestNextSet(
+        { weightKg, reps },
+        { readiness: { sleep: 1, soreness: 1 } },
+      );
+      expect(s!.easedWeightKg!).toBeLessThanOrEqual(s!.weightKg);
+      // І не провалюється в нуль чи мінус на легких вправах.
+      expect(s!.easedWeightKg!).toBeGreaterThan(0);
+    }
+  });
+
+  it("висока готовність відкриває вже пораховане «важче»", () => {
+    const s = suggestNextSet(
+      { weightKg: 80, reps: 8 },
+      { readiness: { sleep: 5, soreness: 4 } },
+    );
+    expect(s!.secondOption).toBe("harder");
+    expect(s!.altWeightKg).toBe(82.5);
+    expect(s!.easedWeightKg).toBeUndefined();
+  });
+
+  it("на стелі діапазону «важче» не пропонується — план і так росте", () => {
+    const s = suggestNextSet(
+      { weightKg: 40, reps: 12 },
+      { readiness: { sleep: 5, soreness: 5 } },
+    );
+    expect(s!.weightKg).toBe(42.5);
+    expect(s!.secondOption).toBeUndefined();
+  });
+
+  it("режим повернення НЕ пропонує більше навіть на добрій готовності", () => {
+    const aging = computeOneRmAging({
+      peak1rm: epley1rm(32.5, 8),
+      lastSessionAt: new Date(Date.now() - 40 * 86_400_000).toISOString(),
+    });
+    expect(aging.returnMode).toBe(true);
+    const s = suggestNextSet(
+      { weightKg: 32.5, reps: 12 },
+      { exercise: press, aging, readiness: { sleep: 5, soreness: 5 } },
+    );
+    // Сенс режиму саме в тому, щоб не піднімати вагу; добре самопочуття
+    // після паузи не є доказом, що тканина відновилась.
+    expect(s!.softMode).toBe(true);
+    expect(s!.secondOption).toBeUndefined();
+  });
+
+  it("режим повернення + низька готовність дає ще легший варіант", () => {
+    const aging = computeOneRmAging({
+      peak1rm: epley1rm(32.5, 8),
+      lastSessionAt: new Date(Date.now() - 40 * 86_400_000).toISOString(),
+    });
+    const s = suggestNextSet(
+      { weightKg: 32.5, reps: 12 },
+      { exercise: press, aging, readiness: { sleep: 1, soreness: 2 } },
+    );
+    expect(s!.secondOption).toBe("easier");
+    expect(s!.easedWeightKg!).toBeLessThan(s!.weightKg);
+  });
+});
+
+describe("countConsecutiveEasings", () => {
+  const wk = (
+    startedAt: string,
+    chosenVariant: string | undefined,
+    opts: { ended?: boolean; withExercise?: boolean } = {},
+  ) => ({
+    startedAt,
+    endedAt: opts.ended === false ? null : `${startedAt}`,
+    items:
+      opts.withExercise === false
+        ? [{ exerciseId: "other" }]
+        : [
+            {
+              exerciseId: "squat",
+              ...(chosenVariant ? { chosenVariant } : {}),
+            },
+          ],
+  });
+
+  it("рахує від найсвіжішого назад, поки йдуть полегшення", () => {
+    const workouts = [
+      wk("2026-09-01T10:00:00.000Z", "easier"),
+      wk("2026-08-30T10:00:00.000Z", "easier"),
+      wk("2026-08-28T10:00:00.000Z", "easier"),
+      wk("2026-08-26T10:00:00.000Z", "planned"),
+    ];
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(3);
+    expect(countConsecutiveEasings(workouts, "squat")).toBeGreaterThanOrEqual(
+      EASING_STREAK_THRESHOLD,
+    );
+  });
+
+  it("порядок у масиві ролі не грає — сортує сам", () => {
+    const workouts = [
+      wk("2026-08-28T10:00:00.000Z", "easier"),
+      wk("2026-09-01T10:00:00.000Z", "planned"),
+      wk("2026-08-30T10:00:00.000Z", "easier"),
+    ];
+    // Найсвіжіше — planned, тож стрічки немає взагалі.
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(0);
+  });
+
+  it("planned і harder скидають, відсутнє поле читається як planned", () => {
+    expect(
+      countConsecutiveEasings(
+        [
+          wk("2026-09-01T10:00:00.000Z", "easier"),
+          wk("2026-08-30T10:00:00.000Z", "harder"),
+          wk("2026-08-28T10:00:00.000Z", "easier"),
+        ],
+        "squat",
+      ),
+    ).toBe(1);
+    expect(
+      countConsecutiveEasings(
+        [
+          wk("2026-09-01T10:00:00.000Z", "easier"),
+          wk("2026-08-30T10:00:00.000Z", undefined),
+        ],
+        "squat",
+      ),
+    ).toBe(1);
+  });
+
+  it("пропуск вправи не скидає стрічку і не додає до неї", () => {
+    const workouts = [
+      wk("2026-09-01T10:00:00.000Z", "easier"),
+      wk("2026-08-30T10:00:00.000Z", undefined, { withExercise: false }),
+      wk("2026-08-28T10:00:00.000Z", "easier"),
+    ];
+    // Рахуються появи вправи, а не календар: тиждень без присідань стрічку
+    // не обнуляє.
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(2);
+  });
+
+  it("незавершене тренування не рахується взагалі", () => {
+    const workouts = [
+      wk("2026-09-02T10:00:00.000Z", "planned", { ended: false }),
+      wk("2026-09-01T10:00:00.000Z", "easier"),
+      wk("2026-08-30T10:00:00.000Z", "easier"),
+    ];
+    // Незавершене не скидає стрічку — інакше відкрите тренування ховало б
+    // сигнал, який уже назбирався.
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(2);
+  });
+
+  it("порожні входи дають нуль, а не виняток", () => {
+    expect(countConsecutiveEasings(null, "squat")).toBe(0);
+    expect(countConsecutiveEasings([], "squat")).toBe(0);
+    expect(
+      countConsecutiveEasings([wk("2026-09-01T10:00:00.000Z", "easier")], ""),
+    ).toBe(0);
+  });
+});
+
+/**
+ * Регресія на аудит `unification-modules.md` §1.4 (перезамір 2026-09-15).
+ *
+ * Пʼять місць рахували тоннаж по вправі власним циклом, і ТРИ з них
+ * загубили фільтр `type === "strength"`: чатова аналітика (там фільтр був
+ * по назві й мʼязу, тип не перевірявся зовсім) і обидва мобільні дашборди.
+ *
+ * Тест фіксує саме те, що губилось: вправа типу `distance`/`time` може
+ * нести `sets` — поле необовʼязкове, але НЕ звужене за `type`, — і копія
+ * без фільтра тихо додавала їх до тоннажу.
+ */
+describe("itemTonnageKg — канон тоннажу по вправі", () => {
+  it("рахує силову вправу як добуток ваги на повторення", () => {
+    expect(
+      itemTonnageKg({
+        type: "strength",
+        sets: [
+          { weightKg: 80, reps: 5 },
+          { weightKg: 60, reps: 10 },
+        ],
+      }),
+    ).toBe(80 * 5 + 60 * 10);
+  });
+
+  it("віддає 0 для не-силової вправи, навіть якщо в неї є підходи", () => {
+    for (const type of ["distance", "time"] as const) {
+      expect(itemTonnageKg({ type, sets: [{ weightKg: 80, reps: 5 }] })).toBe(
+        0,
+      );
+    }
+  });
+
+  it("коерсить рядкові числа з бази і не дає NaN", () => {
+    expect(
+      itemTonnageKg({
+        type: "strength",
+        sets: [
+          {
+            weightKg: "80" as unknown as number,
+            reps: "5" as unknown as number,
+          },
+          { weightKg: null as unknown as number, reps: 5 },
+        ],
+      }),
+    ).toBe(400);
+  });
+
+  it("тоннаж тренування = сума по вправах", () => {
+    const w = {
+      items: [
+        { type: "strength" as const, sets: [{ weightKg: 100, reps: 3 }] },
+        { type: "distance" as const, sets: [{ weightKg: 999, reps: 999 }] },
+        { type: "strength" as const, sets: [{ weightKg: 50, reps: 4 }] },
+      ],
+    };
+    expect(workoutTonnageKg(w)).toBe(300 + 200);
+    expect(workoutTonnageKg(w)).toBe(
+      w.items.reduce((s, it) => s + itemTonnageKg(it), 0),
+    );
   });
 });

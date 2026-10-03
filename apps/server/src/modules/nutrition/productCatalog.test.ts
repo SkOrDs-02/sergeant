@@ -22,6 +22,12 @@ function catalogRow(over: Record<string, unknown> = {}) {
     serving_size: null,
     serving_grams: null,
     source: "off",
+    fiber_100g: null,
+    sugars_100g: null,
+    saturated_fat_100g: null,
+    salt_100g: null,
+    alcohol_100g: null,
+    image_url: null,
     ...over,
   };
 }
@@ -47,7 +53,45 @@ describe("lookupInCatalog", () => {
       servingSize: null,
       servingGrams: null,
       source: "off",
+      imageUrl: null,
     });
+  });
+
+  // Ключ `nutrients` ставимо лише за наявності бодай одного числа: обʼєкт
+  // із пʼятьма `null` сказав би картці «джерело нутрієнти віддає, просто
+  // тут їх немає» — а рядок міг приїхати від джерела, яке їх не має.
+  it("рядок без жодного нутрієнта не отримує ключа `nutrients`", async () => {
+    queryMock.mockResolvedValue({ rows: [catalogRow()] });
+
+    const product = await lookupInCatalog("4823005203865");
+
+    expect(product).not.toBeNull();
+    expect("nutrients" in product!).toBe(false);
+  });
+
+  it("нутрієнти й фото з рядка доїжджають до контракту", async () => {
+    queryMock.mockResolvedValue({
+      rows: [
+        catalogRow({
+          fiber_100g: 2.7,
+          salt_100g: 1.2,
+          image_url: "https://images.openfoodfacts.org/f.200.jpg",
+        }),
+      ],
+    });
+
+    const product = await lookupInCatalog("4823005203865");
+
+    expect(product?.nutrients).toEqual({
+      fiber_100g: 2.7,
+      sugars_100g: null,
+      saturatedFat_100g: null,
+      salt_100g: 1.2,
+      alcohol_100g: null,
+    });
+    expect(product?.imageUrl).toBe(
+      "https://images.openfoodfacts.org/f.200.jpg",
+    );
   });
 
   it("віддає ОРИГІНАЛЬНЕ джерело, а не 'catalog'", async () => {
@@ -182,6 +226,124 @@ describe("upsertIntoCatalog", () => {
     expect(params[7]).toBeNull(); // fat_100g
     expect(params[6]).toBe(2.8); // protein лишився
     expect(params[2]).toBe("Молоко 2,6% Яготинське"); // товар не втрачено
+  });
+
+  // ─── Нутрієнти понад КБЖВ (N9) ───────────────────────────────────────
+
+  it("пише всі пʼять нутрієнтів, коли джерело їх дало", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", {
+      ...product,
+      nutrients: {
+        fiber_100g: 2.7,
+        sugars_100g: 4.4,
+        saturatedFat_100g: 0.3,
+        salt_100g: 1.2,
+        alcohol_100g: null,
+      },
+    });
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[12]).toBe(2.7); // fiber_100g
+    expect(params[13]).toBe(4.4); // sugars_100g
+    expect(params[14]).toBe(0.3); // saturated_fat_100g
+    expect(params[15]).toBe(1.2); // salt_100g
+    expect(params[16]).toBeNull(); // alcohol_100g
+  });
+
+  /**
+   * РЕГРЕСІЯ, А НЕ ФІЧА. До 2026-09-13 цей шлях не писав `alcohol_100g`
+   * взагалі, і через це ворота Атвотера в `lookupInCatalog` відсіювали
+   * КОЖЕН алкогольний напій, що приїхав від живого скану: без спирту
+   * формула дає для сухого вина 82 ккал заявлених проти 11 за макросами.
+   * Рядок лишався в таблиці, але читач його більше не віддавав — тиха
+   * втрата цілої товарної категорії. Прибереш колонку — повернеш це.
+   */
+  it("пише спирт — без нього ворота Атвотера вбивають увесь алкоголь", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4820000000017", {
+      ...product,
+      name: "Вино сухе червоне",
+      kcal_100g: 82,
+      protein_100g: 0.1,
+      fat_100g: 0,
+      carbs_100g: 2.6,
+      nutrients: {
+        fiber_100g: null,
+        sugars_100g: 0.6,
+        saturatedFat_100g: null,
+        salt_100g: null,
+        alcohol_100g: 11.5,
+      },
+    });
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    expect(sql).toContain("alcohol_100g");
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[16]).toBe(11.5);
+  });
+
+  it("джерело без нутрієнтів пише NULL-и, а не падає", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", product);
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params.slice(12, 17)).toEqual([null, null, null, null, null]);
+  });
+
+  /**
+   * Пряме `EXCLUDED.*` затерло б нутрієнти, що вже лежать у рядку від
+   * bulk-сіду, коли зверху лягає write-through від джерела без них —
+   * і разом із ними спирт, тобто одним сканом поверталася б поломка
+   * воріт вище.
+   */
+  it("на конфлікті НЕ затирає наявні нутрієнти порожнечею", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", product);
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    for (const col of [
+      "fiber_100g",
+      "sugars_100g",
+      "saturated_fat_100g",
+      "salt_100g",
+      "alcohol_100g",
+    ]) {
+      expect(sql).toContain(
+        `${col} = COALESCE(EXCLUDED.${col}, product_catalog.${col})`,
+      );
+    }
+  });
+
+  // ─── Фото продукту (U1) ──────────────────────────────────────────────
+
+  it("пише фото продукту", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", {
+      ...product,
+      imageUrl: "https://images.openfoodfacts.org/f.200.jpg",
+    });
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[17]).toBe("https://images.openfoodfacts.org/f.200.jpg");
+  });
+
+  /**
+   * Та сама форма, що з `alcohol_100g`: колонка `image_url` існує в
+   * міграції 123 з 2026-08, bulk-сід її пише, а runtime-шлях до
+   * 2026-09-13 — ні. Різниця лише в наслідку: спирт мовчки вбивав товар,
+   * фото просто ніколи не приїжджало.
+   */
+  it("на конфлікті НЕ затирає наявне фото порожнечею", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", product);
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    expect(sql).toContain(
+      "image_url = COALESCE(EXCLUDED.image_url, product_catalog.image_url)",
+    );
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[17]).toBeNull();
   });
 
   it("помилку запису ковтає — користувач уже отримав продукт", async () => {

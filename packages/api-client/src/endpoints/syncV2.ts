@@ -53,6 +53,12 @@ export interface SyncV2PushResponse {
   accepted: number;
   last_op_id: number;
   results: SyncV2OpResult[];
+  /**
+   * ISO-мітка годинника сервера в момент відповіді — для заміру зсуву
+   * годинника пристрою (`apps/web/src/core/syncEngine/clockSkew.ts`).
+   * Опційне: сервери до 2026-09-16 його не шлють.
+   */
+  server_now?: string;
 }
 
 /**

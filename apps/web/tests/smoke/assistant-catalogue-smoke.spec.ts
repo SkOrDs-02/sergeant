@@ -53,7 +53,7 @@ test("@critical assistant catalogue: search filters and recovers", async ({
   const search = page.getByRole("searchbox", { name: "Пошук можливостей" });
   await search.fill("wave3-no-results");
   await expect(
-    page.getByText("Нічого не знайдено за «wave3-no-results»"),
+    page.getByText("Нічого не знайшов за «wave3-no-results»"),
   ).toBeVisible();
   await expect(page.getByTestId("catalogue-toggle-all")).toHaveCount(0);
 

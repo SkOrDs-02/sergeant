@@ -122,9 +122,13 @@ describe("nutrition state hooks", () => {
     ).toBe(false);
   });
 
-  it("manages active pantry items and applies SQLite overlays", async () => {
+  it("shows every storage place together and applies SQLite overlays", async () => {
     const { result } = renderHook(() => useNutritionPantries());
-    expect(result.current.activePantryId).toBe("home");
+    expect(result.current.pantries.map((p) => p.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+    ]);
 
     act(() => {
       __setNutritionSqliteCacheForTests({
@@ -141,8 +145,15 @@ describe("nutrition state hooks", () => {
       notifyNutritionSqliteCacheRefresh();
     });
 
+    // Відомі місця виживають овердей теплого кешу; власне місце лишається
+    // за ними, а його позиції видно без перемикання.
     await waitFor(() => {
-      expect(result.current.activePantryId).toBe("pantry-1");
+      expect(result.current.pantries.map((p) => p.id)).toEqual([
+        "fridge",
+        "freezer",
+        "home",
+        "pantry-1",
+      ]);
     });
     expect(result.current.pantryItems).toHaveLength(1);
 
@@ -163,10 +174,9 @@ describe("nutrition state hooks", () => {
     ).toBe(false);
 
     act(() => {
-      result.current.restoreItemAt(0, removed);
+      result.current.restoreItemAt(0, removed, removed.pantryId);
       result.current.addPantry("Офіс");
     });
-    expect(result.current.activePantryId).toBe(`p_${Date.now()}`);
     expect(
       result.current.pantries.some((pantry) => pantry.name === "Офіс"),
     ).toBe(true);

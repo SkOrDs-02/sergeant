@@ -1,13 +1,18 @@
-import { INTERNAL_TRANSFER_ID } from "../constants";
+import { useMemo } from "react";
+import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
+import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { findCancelledTxIds } from "@sergeant/finyk-domain/domain/refundMatching";
 import { writeJSON } from "../lib/finykStorage";
 import { toLocalISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
+import { useFinykMerchantRules } from "./useFinykMerchantRules";
 import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
 import { useFinykMonoMirrorBoot } from "./useFinykMonoMirrorBoot";
+import { useFinykMirrorTransactions } from "./useFinykStatTransactions";
 
 // Public type re-exports — стабільний import path для зовнішніх consumer-ів
 // (`AssetsForm.tsx`, `Overview.tsx`, тощо). Декомпозиція внутрішнього коду
@@ -53,20 +58,21 @@ export function useStorage({
 } = {}) {
   const slots = useFinykStorageSlots();
   const mutations = useFinykStorageMutations(slots);
+  const merchantRulesApi = useFinykMerchantRules(slots);
   const backupSync = useFinykBackupSync(slots, toast);
 
   // Mirror every slot mutation into SQLite (best-effort). `FinykBootGate`
   // in `RootLayout` installs the same context app-wide so the hub AI
   // assistant can mirror chat-action writes even when the Finyk screen
-  // isn't mounted — but that gate is `user || isDemoActive()`, so for an
-  // anonymous visitor it renders nothing and `useFinykDualWriteSync`
+  // isn't mounted — але той гейт історично вимагав сесію, тож для
+  // анонімного відвідувача він рендерив нічого і `useFinykDualWriteSync`
   // stays a permanent no-op (`triggerFinykDualWrite` short-circuits on
   // an unregistered context). Booting here too is what Routine
   // (`useRoutineAppState`), Fizruk (`FizrukApp`) and Nutrition
   // (`NutritionApp`) already do; without it every expense an anonymous
   // visitor adds lives in the warm cache only and dies on reload —
   // measured 2026-08-06, see
-  // `docs/90-work/planning/specs/anonymous-local-first-persistence.md`.
+  // `docs/work/specs/anonymous-local-first-persistence.md`.
   // Re-registration is idempotent: both call sites build an equivalent
   // context and teardown only clears its own.
   useFinykDualWriteBoot();
@@ -115,25 +121,78 @@ export function useStorage({
     networthSnapshotRef,
   } = slots;
 
-  // Транзакції позначені як внутрішній переказ — виключаємо зі статистики
-  const transferTxIds = Object.entries(txCategories)
-    .filter(([, catId]) => catId === INTERNAL_TRANSFER_ID)
-    .map(([txId]) => txId);
+  // ID транзакцій привʼязаних до пасивів — для відстеження погашення в Assets.
+  // НЕ виключаємо зі статистики: привʼязка до боргу не змінює категорію
+  // транзакції — вона лишається в тій категорії, яку має (MCC/ключові
+  // слова/override), а "Борги та кредити" тут — це лише категорія-кандидат
+  // для MCC 6012/6051/6099 і для описів із борговими ключовими словами, не
+  // гарантований результат привʼязки (знахідка 2026-09-11, звіт власника
+  // про непорахований борг). MCC 4829 у цьому переліку стояв один день і
+  // 2026-09-12 знятий — він означає «переказ», а не «борг».
+  const debtLinkedTxIds = useMemo(
+    () =>
+      new Set<string>([
+        ...manualDebts.flatMap((d) => d.linkedTxIds || []),
+        ...Object.values(monoDebtLinkedTxIds).flat(),
+      ]),
+    [manualDebts, monoDebtLinkedTxIds],
+  );
 
-  // ID транзакцій привʼязаних до пасивів — для відстеження погашення в Assets
-  // НЕ виключаємо зі статистики, щоб вони відображались у категорії "Борги та кредити"
-  const debtLinkedTxIds = new Set<string>([
-    ...manualDebts.flatMap((d) => d.linkedTxIds || []),
-    ...Object.values(monoDebtLinkedTxIds).flat(),
-  ]);
+  // Зі статистики виключаємо: приховані, внутрішні перекази, дебіторку (щоб
+  // повернення боргу не рахувалось як дохід) та явно виключені.
+  //
+  // AI-CONTEXT: `transactions` тут — ручні/імпортовані записи, бо тільки вони
+  // несуть мітку переказу в самому записі (`category: "internal_transfer"`);
+  // банківські транзакції позначаються через мапу `txCategories`. Без цього
+  // аргументу ручний переказ рахувався витратою скрізь, крім дайджесту й коуча.
+  //
+  // Обидві множини мемоїзовані не для економії самого підрахунку: вони йдуть
+  // у залежності десятка `useMemo` Огляду й аналітики. Нова ідентичність на
+  // кожному рендері перераховувала всю статистику по всіх записах щоразу,
+  // коли будь-що перемальовувало Фінік.
+  const manualTxs = useMemo(
+    () => manualExpenses.map(manualExpenseToTransaction),
+    [manualExpenses],
+  );
+  const excludedBase = useMemo(
+    () =>
+      buildFinykExcludedTxIds({
+        hiddenTxIds,
+        txCategories,
+        receivables,
+        excludedStatTxIds,
+        transactions: manualTxs,
+      }),
+    [hiddenTxIds, txCategories, receivables, excludedStatTxIds, manualTxs],
+  );
 
-  // Зі статистики виключаємо: приховані, внутрішні перекази, дебіторку (щоб повернення боргу не рахувалось як дохід)
-  const excludedTxIds = new Set<string>([
-    ...hiddenTxIds,
-    ...transferTxIds,
-    ...receivables.flatMap((r) => r.linkedTxIds || []),
-    ...excludedStatTxIds,
-  ]);
+  // Скасовані платежі («Uklon −189» + «Скасування. Uklon +189», рішення
+  // власника 2026-10-01): обидві ноги теж виходять зі статистики. Банківські
+  // операції беремо з SQLite-дзеркала, а не з `mono`: цей хук від банку не
+  // залежить, а пара потребує обох ніг (вікно історії — те, що вже в дзеркалі).
+  //
+  // AI-CONTEXT: у залежності йде ключ-рядок, а не сам Set. Дзеркало
+  // оновлюється після кожного мережевого запиту, і нова ідентичність
+  // `excludedTxIds` на кожне оновлення перераховувала б усю статистику
+  // Огляду, хоча набір скасованих майже ніколи не змінюється.
+  const bankTxs = useFinykMirrorTransactions();
+  const cancelledKey = useMemo(
+    () =>
+      JSON.stringify(
+        [...findCancelledTxIds([...manualTxs, ...bankTxs])].sort(),
+      ),
+    [manualTxs, bankTxs],
+  );
+  const cancelledTxIds = useMemo(
+    () => new Set<string>(JSON.parse(cancelledKey) as string[]),
+    [cancelledKey],
+  );
+  const excludedTxIds = useMemo(() => {
+    if (cancelledTxIds.size === 0) return excludedBase;
+    const merged = new Set(excludedBase);
+    for (const id of cancelledTxIds) merged.add(id);
+    return merged;
+  }, [excludedBase, cancelledTxIds]);
 
   const saveNetworthSnapshot = (networth: number) => {
     const today = toLocalISODate();
@@ -146,8 +205,10 @@ export function useStorage({
     }
     networthSnapshotRef.current = { date: today, value: rounded };
     writeJSON("finyk_networth_last_snap", { date: today, value: rounded });
-    // eslint-disable-next-line no-restricted-syntax, sergeant-design/prefer-kyiv-time -- YYYY-MM key for networth history snapshot; pre-existing host-local; tracked in tech-debt
-    const key = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+    // §1.9: `today` above is already the Kyiv day key ("YYYY-MM-DD") — slice
+    // it instead of re-deriving the month from the host clock, which drifted
+    // a month at the Kyiv midnight boundary on non-Kyiv devices.
+    const key = today.slice(0, 7);
     setNetworthHistory((prev) => {
       const filtered = prev.filter((s) => s.month !== key);
       return [...filtered, { month: key, networth: rounded }]
@@ -157,6 +218,7 @@ export function useStorage({
   };
 
   return {
+    storageReady: slots.storageReady,
     hiddenAccounts,
     setHiddenAccounts,
     toggleHideAccount: mutations.toggleHideAccount,
@@ -185,6 +247,7 @@ export function useStorage({
     generateSyncLink: backupSync.generateSyncLink,
     loadFromUrl: backupSync.loadFromUrl,
     excludedTxIds,
+    cancelledTxIds,
     debtTxIds: debtLinkedTxIds, // зворотна сумісність
     txCategories,
     customCategories,
@@ -192,6 +255,14 @@ export function useStorage({
     editCustomCategory: mutations.editCustomCategory,
     removeCustomCategory: mutations.removeCustomCategory,
     overrideCategory: mutations.overrideCategory,
+    // Правила «Завжди так для цього магазину» (2026-10-01). Резолвер бере
+    // `merchantRuleIndex`; агрегатори — `withMerchantRuleOverrides`.
+    merchantRules: merchantRulesApi.merchantRules,
+    merchantRuleIndex: merchantRulesApi.merchantRuleIndex,
+    upsertMerchantRule: merchantRulesApi.upsertMerchantRule,
+    undoMerchantRule: merchantRulesApi.undoMerchantRule,
+    deleteMerchantRule: merchantRulesApi.deleteMerchantRule,
+    restoreMerchantRules: merchantRulesApi.restoreMerchantRules,
     txNotes,
     setTxNote: mutations.setTxNote,
     txSplits,

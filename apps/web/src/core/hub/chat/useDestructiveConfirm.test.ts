@@ -127,14 +127,14 @@ describe("useDestructiveConfirm", () => {
       void result.current.request([
         {
           name: "batch_categorize",
-          summary: "патерн «Сільпо», до 20 транзакцій",
+          summary: "патерн «Сільпо», до 20 операцій",
         },
       ]);
     });
     expect(result.current.pending?.items).toEqual([
       {
         name: "batch_categorize",
-        summary: "патерн «Сільпо», до 20 транзакцій",
+        summary: "патерн «Сільпо», до 20 операцій",
       },
     ]);
   });

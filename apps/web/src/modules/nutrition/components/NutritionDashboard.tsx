@@ -1,22 +1,26 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-09-01
  * Status: Active
  */
 import { useMemo, useEffect, useRef } from "react";
 import { InsightCard } from "@shared/components/ui/InsightCard";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
-import { Measure } from "@shared/components/ui/Measure";
 import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
 import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import { Card } from "@shared/components/ui/Card";
-import { ProgressRing } from "@shared/components/ui/ProgressRing";
-import { MacroRings } from "./MacroRings";
+import { MealStrip, type MealStripSegment } from "./MealStrip";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import {
+  MEAL_META,
+  MEAL_ORDER,
+  WEEK_KCAL_OVER_TOLERANCE,
+  countKcalStreakDays,
+  deviceWeekStartKey,
+  resolveKcalGoalsForDays,
   todayISODate,
+  type MealTypeId,
   type NutritionLog,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
@@ -27,63 +31,32 @@ import {
   getDaySummary,
   getMacrosForDateRange,
 } from "../lib/nutritionStorage";
+import { mealsByTypeForDay, mealTypeKcalForDay } from "../lib/nutritionStats";
+import { nextMealLabel } from "../lib/nextMealLabel";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
 import { useToast } from "@shared/hooks/useToast";
+import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneCelebration";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
+import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
+import { useAdaptiveNutritionGoal } from "../hooks/useAdaptiveNutritionGoal";
+import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 
 // ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
-// тижневому графіку) — день ПРИСТРОЮ, не Kyiv, бо журнал, з якого читаються
-// ці дані, тепер сам пишеться під ключем дня пристрою (useNutritionLog).
-//
-// НЕ ЧІПАЛОСЬ навмисно: `getKyivWeekStartKey()` нижче (вікно тижневого
-// графіка) лишається Kyiv-анкорним. Це залишкова неузгодженість — див. звіт
-// агента / "потребує рішення власника".
+// тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
+// Kyiv, бо журнал, з якого читаються ці дані, сам пишеться під ключем дня
+// пристрою (useNutritionLog). unification-modules.md #1.18.
 function todayISO(): string {
   return todayISODate();
-}
-
-/**
- * Outcome-framed sub-label for macro stats. Replaces neutral "X / Y г"
- * with gap- or surplus-aware text on the Nutrition hero. Returns only
- * the right-hand outcome portion — the macro name is rendered separately
- * by MacroRings' caption slot. Bands mirror the Phase 4.2 onboarding
- * outcome-copy heuristic but stay Nutrition-local.
- *
- * Bands:
- *  - hit window: consumed ∈ [goal, goal*1.05]  → "ціль виконано"
- *  - overshoot:  consumed > goal*1.05          → "+N г понад ціль"
- *  - on-track:   consumed >= goal*0.6          → "N г запас"
- *  - lagging:    else                           → "N г до цілі"
- *
- * Returns `undefined` when goal is not set so the primitive falls back
- * to its default "value / max" rendering.
- */
-function formatMacroOutcome(
-  consumed: number,
-  goal: number,
-): string | undefined {
-  if (goal <= 0) return undefined;
-  if (consumed >= goal && consumed <= goal * 1.05) {
-    return "ціль виконано";
-  }
-  if (consumed > goal * 1.05) {
-    return `+${Math.round(consumed - goal)} г понад ціль`;
-  }
-  const gap = goal - consumed;
-  if (consumed >= goal * 0.6) {
-    return `${Math.round(gap)} г запас`;
-  }
-  return `${Math.round(gap)} г до цілі`;
 }
 
 interface NutritionDashboardProps {
   log: NutritionLog;
   prefs: NutritionPrefs;
-  onGoToLog?: (() => void) | undefined;
+  onGoToLog?: ((dateIso?: string) => void) | undefined;
   onGoToDailyPlan?: (() => void) | undefined;
-  onAddMeal?: (() => void) | undefined;
+  /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
+  onPickMeal: (type: MealTypeId) => void;
 }
 
 export function NutritionDashboard({
@@ -91,31 +64,50 @@ export function NutritionDashboard({
   prefs,
   onGoToLog,
   onGoToDailyPlan,
-  onAddMeal,
+  onPickMeal,
 }: NutritionDashboardProps) {
   const today = todayISO();
+  const goalPeriods = useNutritionGoalPeriods();
+  const adaptiveGoal = useAdaptiveNutritionGoal(log, prefs);
 
   const macros = useMemo(() => getDayMacros(log, today), [log, today]);
   const summary = useMemo(() => getDaySummary(log, today), [log, today]);
-  // Calendar ISO week (Mon→Sun, Kyiv), not a rolling-7 window — keeps the
-  // weekly chart consistent with Routine's Monday-first week (domain
-  // invariant: week starts Monday). `getMacrosForDateRange` fills oldest→
-  // newest ending at the given day, so anchoring `endIso` on Sunday yields
-  // Mon…Sun in order.
+  // Calendar ISO week (Mon→Sun, device-local), not a rolling-7 window —
+  // keeps the weekly chart consistent with Routine's Monday-first week
+  // (domain invariant: week starts Monday). `getMacrosForDateRange` fills
+  // oldest→newest ending at the given day, so anchoring `endIso` on Sunday
+  // yields Mon…Sun in order.
   const weekRows = useMemo(() => {
-    const weekStart = getKyivWeekStartKey();
+    const weekStart = deviceWeekStartKey();
     const weekEnd = addDaysISODate(weekStart, 6);
     return getMacrosForDateRange(log, weekEnd, 7);
   }, [log]);
+
+  // Поденна ціль із append-only журналу: зміна норми сьогодні не
+  // перефарбовує попередні стовпчики, а лінія стає східчастою.
+  const weekGoals = useMemo(
+    () =>
+      resolveKcalGoalsForDays(
+        goalPeriods,
+        weekRows.map((row) => row.date),
+      ),
+    [goalPeriods, weekRows],
+  );
 
   const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
 
   // ponytail: honesty threshold for "incomplete day" (canon §5.2 — a
   // partial log must not read as a deficit). The canon's own example is
-  // "1 of 4 meals", so <3 logged meals covers both an empty day and a
+  // "1 of 4 meals", so <3 logged meal TYPES covers both an empty day and a
   // one-meal day without inventing a per-user "expected meal count"
-  // setting; 3+ meals reads as a deliberately completed log.
-  const isIncompleteDay = summary.mealCount < 3;
+  // setting; 3+ meal types reads as a deliberately completed log.
+  //
+  // `loggedMealTypesCount`, not `mealCount` (nutrition audit PR-N2,
+  // 2026-09-13): a single photo split into "суп + хліб + салат" writes 3
+  // journal ROWS of the same meal type, and `mealCount` (row count) read
+  // that as "3 прийоми їжі" — clearing the incomplete-day marker for a day
+  // that only has dinner logged.
+  const isIncompleteDay = summary.loggedMealTypesCount < 3;
 
   // Nutrition audit E-5 / founder decision 2026-08-04: share is calorie-
   // weighted (see `getDaySummary`), threshold is strictly ">50%" — exactly
@@ -129,6 +121,31 @@ export function NutritionDashboard({
   const kcalConsumed = Math.round(macros.kcal || 0);
   const kcalGoal = prefs.dailyTargetKcal || 0;
 
+  // Hero стрічка дня (спека nutrition-hero-day-strip.md) — чотири сегменти
+  // за MEAL_ORDER, не за фактичним порядком запису.
+  const kcalByType = useMemo(
+    () => mealTypeKcalForDay(log, today),
+    [log, today],
+  );
+  // Кількість записів поруч із калоріями: саме вона вирішує, порожній
+  // сегмент чи ні (див. `MealStripSegment.count`), бо запис без макросів
+  // існує, але дає нуль ккал.
+  const mealsByType = useMemo(
+    () => mealsByTypeForDay(log, today),
+    [log, today],
+  );
+  const segments: MealStripSegment[] = useMemo(
+    () =>
+      MEAL_ORDER.map((type) => ({
+        type,
+        label: MEAL_META[type].label,
+        kcal: kcalByType[type],
+        count: mealsByType[type].length,
+      })),
+    [kcalByType, mealsByType],
+  );
+  const remainingLabel = useMemo(() => nextMealLabel(kcalByType), [kcalByType]);
+
   // W4 — fire a success toast once per calendar day when consumed kcal enters
   // the 95–105% window of the daily goal. Dedupe key is stored via the typed
   // storage wrapper so it survives page reload and does NOT block any save.
@@ -138,7 +155,11 @@ export function NutritionDashboard({
   useEffect(() => {
     if (!hasGoal || kcalGoal <= 0) return;
     const ratio = kcalConsumed / kcalGoal;
-    if (ratio < 0.95 || ratio > 1.05) return;
+    if (
+      ratio < 2 - WEEK_KCAL_OVER_TOLERANCE ||
+      ratio > WEEK_KCAL_OVER_TOLERANCE
+    )
+      return;
     if (toastFiredRef.current) return;
 
     // Persist per-day dedup so it survives remounts within the same day.
@@ -147,7 +168,7 @@ export function NutritionDashboard({
 
     toastFiredRef.current = true;
     safeWriteLS(LS_KEY, today);
-    toast.success("Денну норму виконано");
+    toast.success("Денну ціль виконано");
   }, [kcalConsumed, kcalGoal, hasGoal, today, toast]);
 
   const protein = {
@@ -167,7 +188,27 @@ export function NutritionDashboard({
   // Both hooks return null when their condition is not met; InsightCard
   // additionally checks the dismissal LS key so dismissed cards stay gone.
   const proteinLowInsight = useProteinLowInsight(log, prefs);
-  const streakInsight = useStreakSevenDaysInsight(log, prefs);
+  const streakInsight = useStreakSevenDaysInsight(log, goalPeriods);
+
+  // Віха серії днів у нормі калорій — тиха плашка (O1, рішення власника
+  // 2026-09-13: святкуємо в Рутині ТА Їжі).
+  //
+  // Лічильник довелось написати: `useStreakSevenDaysInsight` вище — це
+  // перевірка РІВНО СЕМИ днів, булева, тож порогів 30 і 100 у ній немає на
+  // чому рахувати. `countKcalStreakDays` дає довжину, і 7-денний інсайт
+  // лишається окремою поверхнею зі своїм CTA — дублювання тут немає:
+  // інсайт — картка з пропозицією плану, плашка — підтвердження віхи.
+  // Дашборд монтується лише після бута читання (гейт у
+  // `NutritionStartPage`), тож нуль холодного старту сюди не доходить.
+  const kcalStreak = useMemo(
+    () => countKcalStreakDays(log, goalPeriods, todayISODate()),
+    [log, goalPeriods],
+  );
+  useStreakMilestoneCelebration(
+    "nutrition",
+    kcalStreak,
+    messages.nutrition.streakMilestone.toast,
+  );
 
   // Cap at 2 simultaneous insights. Priority: streak > protein-low so the
   // positive signal surfaces first when both conditions fire together.
@@ -177,7 +218,13 @@ export function NutritionDashboard({
   const askAiDisabled = useAskAiQuotaExhausted();
 
   return (
-    <div className="grid min-w-0 gap-3" data-testid="nutrition-dashboard">
+    <div
+      className="grid min-w-0 gap-3 pb-[calc(10rem+env(safe-area-inset-bottom,0px))]"
+      data-testid="nutrition-dashboard"
+    >
+      {/* The start screen has a fixed add-meal FAB 96px above the bottom nav.
+          Keep the last card scrollable past its 56px hit area instead of
+          leaving water controls under the button on a phone viewport. */}
       {/* ── Hero card ── */}
       {/* `min-w-0`: grid-item за дефолтом має `min-width:auto`, тобто його
           мінімальна ширина = min-content вмісту. Досить одного широкого
@@ -195,8 +242,8 @@ export function NutritionDashboard({
             <div>
               <div className="text-style-label text-hero-ink">Сьогодні</div>
               <div className="text-style-caption text-hero-ink">
-                {summary.mealCount}{" "}
-                {pluralUa(summary.mealCount, {
+                {summary.loggedMealTypesCount}{" "}
+                {pluralUa(summary.loggedMealTypesCount, {
                   one: "прийом",
                   few: "прийоми",
                   many: "прийомів",
@@ -204,106 +251,54 @@ export function NutritionDashboard({
                 їжі
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onAddMeal}
-              aria-label="Додати прийом їжі"
-              className={cn(
-                "text-style-label shrink-0 px-4 h-11 min-w-[44px] rounded-xl",
-                "bg-nutrition-strong text-white hover:bg-nutrition-hover transition-colors",
-              )}
-            >
-              + Додати
-            </button>
           </div>
 
-          {hasGoal ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col items-center justify-center gap-1.5">
-                <ProgressRing
-                  variant="nutrition"
-                  value={kcalConsumed}
-                  max={kcalGoal}
-                  size="lg"
-                  incomplete={isIncompleteDay}
-                  // Both ring groups live on the `prominence="hero"` fill —
-                  // without this the arc is lime-800 on the lime-800→-700
-                  // hero gradient (invisible in light theme).
-                  onHero
-                  aria-label={
-                    isMostlyEstimated
-                      ? `Калорії: ${kcalConsumed} з ${kcalGoal} · ${messages.nutrition.estimatedBadge.a11ySuffix}`
-                      : `Калорії: ${kcalConsumed} з ${kcalGoal}`
-                  }
-                  label={
-                    <span className="flex flex-col items-center leading-none gap-0.5">
-                      <span className="text-style-title text-hero-ink tabular-nums">
-                        {isMostlyEstimated && (
-                          <span aria-hidden="true">
-                            {messages.nutrition.estimatedBadge.label}
-                          </span>
-                        )}
-                        {kcalConsumed}
-                      </span>
-                      <span className="text-style-caption text-hero-ink">
-                        /{" "}
-                        <Measure value={kcalGoal} unit="ккал" tone="inherit" />
-                      </span>
-                    </span>
-                  }
-                />
-                {isMostlyEstimated && (
-                  <p className="text-style-caption text-hero-ink text-center text-pretty">
-                    {messages.nutrition.estimatedBadge.caption}
-                  </p>
-                )}
-              </div>
-              <MacroRings
-                aria-label={messages.nutrition.macrosToday}
-                incomplete={isIncompleteDay}
-                onHero
-                macros={[
-                  {
-                    label: "Білки",
-                    consumed: protein.consumed,
-                    goal: protein.goal,
-                    variant: "nutrition",
-                    unit: "г",
-                    outcome: formatMacroOutcome(protein.consumed, protein.goal),
-                  },
-                  {
-                    label: "Жири",
-                    consumed: fat.consumed,
-                    goal: fat.goal,
-                    variant: "warning",
-                    unit: "г",
-                    outcome: formatMacroOutcome(fat.consumed, fat.goal),
-                  },
-                  {
-                    label: "Вугл.",
-                    consumed: carbs.consumed,
-                    goal: carbs.goal,
-                    variant: "routine",
-                    unit: "г",
-                    outcome: formatMacroOutcome(carbs.consumed, carbs.goal),
-                  },
-                ]}
-              />
-            </div>
-          ) : (
-            <div className="flex justify-center py-2">
-              <button
-                type="button"
-                onClick={onGoToDailyPlan ?? onGoToLog}
-                className="text-style-caption min-h-[44px] min-w-[44px] rounded-xl px-4 text-center text-hero-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink/60"
-              >
-                Встановити денну ціль, щоб бачити прогрес
-                <span aria-hidden="true"> →</span>
-              </button>
-            </div>
-          )}
+          <div className="flex flex-col gap-2">
+            {hasGoal && isMostlyEstimated && (
+              <p className="text-style-caption text-hero-ink text-center text-pretty">
+                <span aria-hidden="true">
+                  {messages.nutrition.estimatedBadge.label}{" "}
+                </span>
+                {messages.nutrition.estimatedBadge.caption}
+              </p>
+            )}
+            <MealStrip
+              onPickMeal={onPickMeal}
+              segments={segments}
+              goalKcal={hasGoal ? kcalGoal : null}
+              remainingLabel={remainingLabel}
+              macros={[
+                {
+                  label: "Білки",
+                  consumed: protein.consumed,
+                  goal: protein.goal,
+                  unit: "г",
+                },
+                {
+                  label: "Жири",
+                  consumed: fat.consumed,
+                  goal: fat.goal,
+                  unit: "г",
+                },
+                {
+                  label: "Вугл.",
+                  consumed: carbs.consumed,
+                  goal: carbs.goal,
+                  unit: "г",
+                },
+              ]}
+              onSetGoal={onGoToDailyPlan ?? onGoToLog}
+              incompleteNote={
+                hasGoal && isIncompleteDay
+                  ? `Записано ${summary.loggedMealTypesCount} із ${MEAL_ORDER.length}`
+                  : undefined
+              }
+            />
+          </div>
         </div>
       </Card>
+
+      <AdaptiveGoalCard state={adaptiveGoal} />
 
       {/* ── Insight cards (Phase 5d) — below hero, above weekly mini-bar ── */}
       {activeInsights.map((insight) => (
@@ -335,7 +330,7 @@ export function NutritionDashboard({
 
       <WeekKcalCard
         rows={weekRows}
-        targetKcal={prefs.dailyTargetKcal || 0}
+        goalsByDay={weekGoals}
         todayIso={today}
         onGoToLog={onGoToLog}
       />

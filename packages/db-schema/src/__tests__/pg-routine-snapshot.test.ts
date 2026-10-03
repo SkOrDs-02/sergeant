@@ -7,7 +7,6 @@ import {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
   routineCompletionEvents,
@@ -174,6 +173,7 @@ describe("pg/routineHabits schema snapshot", () => {
       "reminder_times",
       "weekdays",
       "pause_intervals",
+      "weekly_target_history",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -262,19 +262,6 @@ describe("pg/routinePrefs schema snapshot", () => {
   it("has user_id as PK", () => {
     const col = config.columns.find((c) => c.name === "user_id");
     expect(col!.primary).toBe(true);
-  });
-});
-
-describe("pg/routinePushups schema snapshot", () => {
-  const config = getTableConfig(routinePushups);
-
-  it("has the canonical table name", () => {
-    expect(config.name).toBe("routine_pushups");
-  });
-
-  it("declares all expected columns", () => {
-    const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
   });
 });
 

@@ -71,6 +71,17 @@ export const APPLY_REJECT_REASONS = [
   "invalid_chest_cm",
   "invalid_hips_cm",
   "invalid_bicep_cm",
+  // Міграція 146: решта полів веб-форми заміру.
+  "invalid_body_fat_pct",
+  "invalid_neck_cm",
+  "invalid_bicep_l_cm",
+  "invalid_bicep_r_cm",
+  "invalid_forearm_l_cm",
+  "invalid_forearm_r_cm",
+  "invalid_thigh_l_cm",
+  "invalid_thigh_r_cm",
+  "invalid_calf_l_cm",
+  "invalid_calf_r_cm",
   "invalid_sleep_hours",
   "invalid_networth",
   // Field validation — nutrition
@@ -87,6 +98,7 @@ export const APPLY_REJECT_REASONS = [
   "invalid_sleep_quality",
   // Field validation — workout metrics
   "invalid_distance_m",
+  "invalid_chosen_variant",
   "invalid_duration_sec",
   "invalid_reps",
   "invalid_rpe",
@@ -151,6 +163,16 @@ export const ENGINE_REJECT_REASONS = [
   "apply_failed",
   "duplicate",
   "op_not_supported",
+  /**
+   * Сам apply пройшов (або й не потрібен був), а запис рядка в `sync_op_log`
+   * упав. Окрема причина, а не спільна з `apply_failed`: та каже «хендлер
+   * таблиці не зміг», а ця — «журнал не прийняв», і лікуються вони в різних
+   * місцях. Реальний тригер — `U+0000` у рядковому полі `row`: zod його
+   * пропускає, Postgres `jsonb` ні. Доти така помилка йшла в зовнішній catch
+   * і робила ROLLBACK УСЬОГО батча (500 на сотню рядків через один оп); тепер
+   * вона локальна — див. savepoint `op_log_write` у `syncV2.ts`.
+   */
+  "oplog_write_failed",
 ] as const;
 
 export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];

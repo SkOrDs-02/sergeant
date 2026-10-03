@@ -1,18 +1,19 @@
 // Картка продукту комори: варіанти позиції та інваріант «сума варіантів =
 // кількість позиції». Кейси нумеровані за § Верифікація спеки
-// `docs/90-work/planning/specs/pantry-generic-names.md`.
+// `docs/work/specs/pantry-generic-names.md`.
 import { describe, expect, it } from "vitest";
 
 import { mergeItems } from "./mergeItems.js";
 import {
   capSources,
   consumeFromSources,
+  latestPackGrams,
   pantrySourcesInvariantHolds,
   sourcesTotal,
   syntheticSource,
 } from "./pantrySources.js";
 import { applyConsumeToPantryItem } from "./pantryConsume.js";
-import { receiptQtyToBase } from "./units.js";
+import { receiptPackCount, receiptQtyToBase } from "./units.js";
 import { MAX_PANTRY_SOURCES, type PantryItem } from "./pantryTextParser.js";
 
 function source(
@@ -84,6 +85,38 @@ describe("receiptQtyToBase (рішення 7)", () => {
     expect(receiptQtyToBase(1, "уп")).toBeNull();
     expect(receiptQtyToBase(null, "кг")).toBeNull();
     expect(receiptQtyToBase(0, "кг")).toBeNull();
+  });
+});
+
+// Звіт власника 2026-08-31: дві банки Red Bull 0,25 л показувались у
+// розкладі позиції як одна «500 мл» — пляшка, якої людина не купувала.
+// Добуток лишається (інваріант суми), кількість штук їде поруч із ним.
+describe("receiptPackCount", () => {
+  it("2 × 0,25 л → 2, поруч із добутком 500 мл", () => {
+    expect(receiptPackCount(2, "0,25л")).toBe(2);
+    expect(receiptQtyToBase(2, "0,25л")).toEqual({ qty: 500, unit: "мл" });
+  });
+
+  it.each([
+    [1, "0,25л", "одна банка — множення не відбувалось"],
+    [0.212, "кг", "ваговий товар — одиниця виміру, не фасування"],
+    [2, "кг", "чиста одиниця виміру: 2 кг це не «2 × кг»"],
+    [null, "0,25л", "кількості немає"],
+  ])("%s + '%s' → null (%s)", (qty, unit, _why) => {
+    expect(receiptPackCount(qty as number | null, unit as string)).toBeNull();
+  });
+
+  it("надпочата покупка втрачає «× N»: 250 мл від двох банок це вже не пара", () => {
+    const source = {
+      name: "Напій енергетичний Red Bull",
+      qty: 500,
+      unit: "мл",
+      addedAt: "2026-08-31",
+      packCount: 2,
+    };
+    const after = consumeFromSources([source], 250);
+    expect(after[0]!.qty).toBe(250);
+    expect(after[0]!.packCount).toBeNull();
   });
 });
 
@@ -383,5 +416,40 @@ describe("ручне доливання до позиції з варіанта�
     expect(item.sources).toHaveLength(2);
     expect(item.sources![1]!.addedAt).toBeNull();
     expect(pantrySourcesInvariantHolds(item)).toBe(true);
+  });
+});
+
+describe("latestPackGrams", () => {
+  it("null для порожніх/відсутніх джерел", () => {
+    expect(latestPackGrams(null)).toBeNull();
+    expect(latestPackGrams([])).toBeNull();
+  });
+
+  it("null, коли жодне джерело не несе packGrams", () => {
+    expect(
+      latestPackGrams([source("Молоко", 900, "мл", "2026-08-21")]),
+    ).toBeNull();
+  });
+
+  it("бере packGrams найсвіжішого за addedAt джерела", () => {
+    const older = {
+      ...source("Молоко", 900, "мл", "2026-08-21"),
+      packGrams: 900,
+    };
+    const newer = {
+      ...source("Молоко", 330, "мл", "2026-08-28"),
+      packGrams: 330,
+    };
+    expect(latestPackGrams([older, newer])).toBe(330);
+    expect(latestPackGrams([newer, older])).toBe(330);
+  });
+
+  it("пропускає джерела без packGrams навіть якщо вони свіжіші", () => {
+    const withGrams = {
+      ...source("Молоко", 900, "мл", "2026-08-21"),
+      packGrams: 900,
+    };
+    const withoutGrams = source("Молоко", 200, "мл", "2026-08-28");
+    expect(latestPackGrams([withGrams, withoutGrams])).toBe(900);
   });
 });

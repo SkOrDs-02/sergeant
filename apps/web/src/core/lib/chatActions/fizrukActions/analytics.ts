@@ -4,12 +4,15 @@ import {
   BODY_ATLAS_MUSCLE_LABELS_UK,
   mapDomainMuscleToAtlas,
 } from "@sergeant/fizruk-domain/data/bodyAtlas";
+import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import type {
   SuggestWorkoutAction,
   CompareProgressAction,
   WeightChartAction,
   ChatActionResult,
 } from "../types";
+import { itemTonnageKg } from "@sergeant/fizruk-domain/lib/workoutStats";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
   const { focus } = action.input || {};
@@ -29,11 +32,11 @@ export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
       }
     }
   }
-  const now = Date.now();
+  const now = new Date();
   const sorted = Object.entries(muscleLastTrained)
     .map(([m, ts]) => ({
       muscle: m,
-      daysAgo: Math.round((now - ts) / 86400000),
+      daysAgo: wholeDaysSince(ts, now),
     }))
     .sort((a, b) => b.daysAgo - a.daysAgo);
   // Підпис, а не сирий доменний id: без цього в українську відповідь
@@ -114,15 +117,7 @@ export function compareProgress(
         total +
         w.items
           .filter(matchItem)
-          .reduce(
-            (s, item) =>
-              s +
-              (item.sets ?? []).reduce(
-                (ss, set) => ss + set.weightKg * set.reps,
-                0,
-              ),
-            0,
-          ),
+          .reduce((s, item) => s + itemTonnageKg(item), 0),
       0,
     );
   const calcMaxWeight = (ws: Workout[]): number =>
@@ -144,8 +139,8 @@ export function compareProgress(
   const volChange = vol1 > 0 ? Math.round(((vol2 - vol1) / vol1) * 100) : 0;
   const parts: string[] = [
     `Прогрес (${label}) за ${days} днів:`,
-    `Обʼєм (кг×повт): ${Math.round(vol1)} → ${Math.round(vol2)} (${volChange >= 0 ? "+" : ""}${volChange}%)`,
-    `Макс. вага: ${max1} → ${max2} кг`,
+    `Обʼєм (кг×повт): ${formatNumberUk(Math.round(vol1))} → ${formatNumberUk(Math.round(vol2))} (${volChange >= 0 ? "+" : ""}${formatNumberUk(volChange)}%)`,
+    `Макс. вага: ${formatNumberUk(max1)} → ${formatNumberUk(max2)} кг`,
     `Тренувань: ${firstHalf.length} → ${secondHalf.length}`,
   ];
   return parts.join("\n");
@@ -176,8 +171,8 @@ export function weightChart(action: WeightChartAction): ChatActionResult {
   const diff = last - first;
   const parts: string[] = [
     `Вага за ${days} днів (${entries.length} записів):`,
-    `Перша: ${first} кг → Остання: ${last} кг (${diff >= 0 ? "+" : ""}${diff.toFixed(1)} кг)`,
-    `Мін: ${min} кг | Макс: ${max} кг`,
+    `Перша: ${formatNumberUk(first)} кг → Остання: ${formatNumberUk(last)} кг (${diff >= 0 ? "+" : ""}${formatNumberUk(diff, { maximumFractionDigits: 1 })} кг)`,
+    `Мін: ${formatNumberUk(min)} кг | Макс: ${formatNumberUk(max)} кг`,
   ];
   const recent = entries.slice(-7);
   if (recent.length > 1) {
@@ -187,7 +182,7 @@ export function weightChart(action: WeightChartAction): ChatActionResult {
         day: "numeric",
         month: "short",
       });
-      parts.push(`  ${d}: ${e.weightKg} кг`);
+      parts.push(`  ${d}: ${formatNumberUk(Number(e.weightKg))} кг`);
     }
   }
   return parts.join("\n");

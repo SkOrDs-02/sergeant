@@ -27,7 +27,7 @@ import { resolve } from "node:path";
  * If a disabled feature is intentionally added back, move it out of
  * `REQUIRED_DISABLED_DIRECTIVES` (into `ENABLED_SELF_DIRECTIVES` when it
  * should be self-only) and document the carve-out in
- * `docs/04-governance/security/audit-exceptions.md`.
+ * `docs/governance/security/audit-exceptions.md`.
  */
 
 interface PermissionsPolicy {
@@ -100,7 +100,7 @@ const REQUIRED_DISABLED_DIRECTIVES = [
 // iframe borrow the grant). `camera` — barcode scanner (`useBarcodeScanner`
 // getUserMedia({video}) + `BarcodeScanner.tsx`); `microphone` — voice input
 // (`useGroqVoiceInput` getUserMedia({audio}) + `useSpeech` SpeechRecognition).
-// Carve-out documented in docs/04-governance/security/audit-exceptions.md.
+// Carve-out documented in docs/governance/security/audit-exceptions.md.
 const ENABLED_SELF_DIRECTIVES = ["camera", "microphone"];
 
 describe("L2: Permissions-Policy header (apps/web/vercel.json)", () => {

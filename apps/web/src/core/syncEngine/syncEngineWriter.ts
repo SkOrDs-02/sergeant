@@ -11,7 +11,8 @@ import {
 } from "@sergeant/api-client";
 import type {
   RecoverDeadLetterResult,
-  RecoverDeadLetterSelector,
+  RecoverDeadLetterTarget,
+  RejectedOutboxRow,
   SyncOpOutboxStatusCounts,
 } from "@sergeant/db-schema/sqlite";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
@@ -30,6 +31,12 @@ export interface SyncEngineWriterRuntime {
   notifyEnqueued(): void;
   getStatus(): Promise<SyncOpOutboxStatusCounts>;
   recoverAllDeadLetters(): Promise<RecoverDeadLetterResult>;
+  /**
+   * Термінально відхилені рядки для екрана стану синку (tech-debt
+   * 2026-08-25: лічильник `rejected` існував, а тіла до нього — ні).
+   * Порожній список, якщо рантайм зібрано без `listRejected`-залежності.
+   */
+  listRejected(): Promise<readonly RejectedOutboxRow[]>;
 }
 
 export interface SyncEngineWriterDeps {
@@ -38,8 +45,14 @@ export interface SyncEngineWriterDeps {
   readonly clearInterval: (handle: unknown) => void;
   readonly eventTarget: SyncEngineEventTarget;
   readonly getStatus: () => Promise<SyncOpOutboxStatusCounts>;
+  readonly listRejected?: () => Promise<readonly RejectedOutboxRow[]>;
+  /**
+   * Скоуп власника цей шар НЕ передає — він оперує чергою, а не сесією.
+   * `userId` домішує адаптер у `singleton.ts`, де є `resolveUserId`; саме
+   * тому тип тут `RecoverDeadLetterTarget`, а не `…Selector`.
+   */
   readonly recoverDeadLetter: (
-    selector: RecoverDeadLetterSelector,
+    target: RecoverDeadLetterTarget,
   ) => Promise<RecoverDeadLetterResult>;
   readonly addBreadcrumb?: (breadcrumb: SentryBreadcrumb) => void;
   readonly captureException?: (
@@ -189,6 +202,9 @@ export function createSyncEngineWriterRuntime(
     },
     getStatus(): Promise<SyncOpOutboxStatusCounts> {
       return deps.getStatus();
+    },
+    async listRejected(): Promise<readonly RejectedOutboxRow[]> {
+      return deps.listRejected ? deps.listRejected() : [];
     },
     async recoverAllDeadLetters(): Promise<RecoverDeadLetterResult> {
       const result = await deps.recoverDeadLetter({ all: true });

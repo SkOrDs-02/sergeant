@@ -1,7 +1,7 @@
 /**
  * Спільний хелпер для тестів дисклоужерів (`SettingsGroup`,
  * `CollapsibleSection`), які після L-7 фіксу (аудит Профілю і Налаштувань,
- * 2026-08-08 — `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md`)
+ * 2026-08-08 — `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md`)
  * ховають згорнутий вміст через `inert` + `aria-hidden="true"`.
  *
  * ЧОМУ це потрібно тестам: `inert`/`aria-hidden` — правильна продуктова

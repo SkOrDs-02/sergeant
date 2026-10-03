@@ -22,8 +22,16 @@ vi.mock("./authClient", () => ({
 const refreshMock = vi.fn(async () => {});
 let authStatus: "loading" | "authenticated" | "unauthenticated" =
   "authenticated";
+// Успішний прихід на цю сторінку — це редирект ПІСЛЯ серверної верифікації,
+// тож сесія вже несе `emailVerified: true` (див. докстрінг тесту про порядок
+// cookie→me нижче). Гілка `false` моделює візит без справжнього підтвердження.
+let authUser: { emailVerified: boolean } | null = { emailVerified: true };
 vi.mock("./AuthContext", () => ({
-  useAuth: () => ({ refresh: refreshMock, status: authStatus }),
+  useAuth: () => ({
+    refresh: refreshMock,
+    status: authStatus,
+    user: authUser,
+  }),
 }));
 
 const navigateMock = vi.fn();
@@ -50,11 +58,45 @@ beforeEach(() => {
   refreshMock.mockClear();
   navigateMock.mockClear();
   authStatus = "authenticated";
+  authUser = { emailVerified: true };
 });
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+});
+
+// Регресія з browser-QA 2026-09-02: сторінка вважала успіхом БУДЬ-ЯКИЙ візит
+// без `?error=`, тож закладка чи лист з обрізаними параметрами давали
+// «Email підтверджено» при непідтвердженому акаунті.
+describe("VerifyEmailPage — візит без справжнього підтвердження", () => {
+  it("не стверджує успіх, коли сесія каже, що email не підтверджено", async () => {
+    authUser = { emailVerified: false };
+    renderAt("");
+
+    expect(await screen.findByText("Email ще не підтверджено")).toBeTruthy();
+    expect(screen.queryByText("Email підтверджено")).toBeNull();
+  });
+
+  it("не відносить зі сторінки, поки підтвердження не відбулось", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    authUser = { emailVerified: false };
+    renderAt("");
+
+    await waitFor(() => expect(refreshMock).toHaveBeenCalled());
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(navigateMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("без сесії не стверджує ні успіху, ні провалу", async () => {
+    authStatus = "unauthenticated";
+    authUser = null;
+    renderAt("");
+
+    expect(await screen.findByText("Перевір статус у профілі")).toBeTruthy();
+    expect(screen.queryByText("Email підтверджено")).toBeNull();
+  });
 });
 
 describe("VerifyEmailPage — успіх", () => {

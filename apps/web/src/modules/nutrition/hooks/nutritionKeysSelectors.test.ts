@@ -21,7 +21,6 @@ describe("nutritionKeys — module namespace containment", () => {
     const keys = [
       nutritionKeys.all,
       nutritionKeys.foodSearch,
-      nutritionKeys.pushStatus,
       nutritionKeys.foodSearchLocal("гречка"),
       nutritionKeys.foodSearchOff("oats"),
       nutritionKeys.barcode("4820000000001"),

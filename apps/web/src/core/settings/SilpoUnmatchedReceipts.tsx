@@ -21,6 +21,7 @@ import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import { useSilpoReceipts } from "@finyk/hooks/useSilpoReceipts";
 import { ManualExpenseSheet } from "@finyk/components/ManualExpenseSheet";
+import { formatDateShort, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 
 export interface ManualExpenseDraft {
   id?: string;
@@ -39,11 +40,7 @@ export interface SilpoUnmatchedReceiptsProps {
 }
 
 function formatReceiptDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-    timeZone: "Europe/Kyiv",
-  });
+  return formatDateShort(new Date(iso), { timeZone: KYIV_TIME_ZONE });
 }
 
 export function SilpoUnmatchedReceipts({
@@ -68,7 +65,7 @@ export function SilpoUnmatchedReceipts({
           <span className="flex min-w-0 items-center gap-2">
             <Icon
               name="file-text"
-              size={16}
+              size="md"
               className="text-muted shrink-0"
               aria-hidden
             />
@@ -96,8 +93,9 @@ export function SilpoUnmatchedReceipts({
                 </p>
               </div>
               <Button
-                variant="secondary"
-                module="finyk"
+                variant="soft"
+                tone="finyk"
+
                 size="xs"
                 className="shrink-0"
                 onClick={() => setOpenReceiptId(receipt.receiptId)}

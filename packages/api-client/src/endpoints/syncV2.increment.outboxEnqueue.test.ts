@@ -7,7 +7,7 @@ import {
   type SyncV2IncrementPushOp,
 } from "./syncV2.increment.outboxEnqueue";
 
-// PR #042e-mapping (`docs/planning/storage-roadmap.md`).
+// PR #042e-mapping (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // This file pins the field-name mapping between the api-client envelope
 // (`SyncV2PushOp` with `op='increment'`) and the db-schema enqueue input

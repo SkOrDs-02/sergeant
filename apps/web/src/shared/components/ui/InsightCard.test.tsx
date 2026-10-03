@@ -50,7 +50,7 @@ function callsOf(eventName: string) {
 
 describe("InsightCard", () => {
   it("renders title, subtitle and the default CTA glyph", () => {
-    const { getByText } = render(
+    const { getByText, queryByText, getByLabelText } = render(
       <InsightCard
         id="finyk-coffee-limit-2026-05"
         title="Витрати на каву ↑ 34%"
@@ -60,7 +60,9 @@ describe("InsightCard", () => {
     );
     expect(getByText("Витрати на каву ↑ 34%")).toBeInTheDocument();
     expect(getByText("Встановити ліміт?")).toBeInTheDocument();
-    expect(getByText("→")).toBeInTheDocument();
+    // SLOP-1 (аудит 2026-09): дефолтний слот — іконка, не текстовий гліф.
+    expect(queryByText("→")).toBeNull();
+    expect(getByLabelText("Закрити пропозицію")).toBeInTheDocument();
   });
 
   it("renders a custom ctaLabel", () => {
@@ -104,7 +106,7 @@ describe("InsightCard", () => {
   it("does not render at all when the id is already dismissed", () => {
     localStorage.setItem(
       "sergeant.v2.insights.dismissed",
-      JSON.stringify(["already-dismissed"]),
+      JSON.stringify({ "already-dismissed": Date.now() }),
     );
     const { container } = render(
       <InsightCard
@@ -124,6 +126,17 @@ describe("InsightCard", () => {
     const group = container.querySelector('[role="group"]')!;
     const titleEl = getByText("t");
     expect(group.getAttribute("aria-labelledby")).toBe(titleEl.id);
+  });
+
+  it("у темній темі не лишається білою плиткою ink-strong", () => {
+    const { container, getByText } = render(
+      <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
+    );
+    const group = container.querySelector('[role="group"]')!;
+    expect(group.className).toContain("dark:bg-panelHi");
+    expect(group.className).toContain("dark:border-line");
+    expect(getByText("t").className).toContain("dark:text-text");
+    expect(getByText("s").className).toContain("dark:text-text");
   });
 });
 
@@ -189,11 +202,11 @@ describe("InsightCard — value-loop telemetry", () => {
   });
 
   it("НЕ емітить показ для вже відкинутої картки", () => {
-    // `useInsightDismissal` тримає dismissed-id у localStorage назавжди,
-    // тож така картка ніколи не рендериться — і не має рахуватись показом.
+    // `useInsightDismissal` тримає dismissed-id до кінця поточної доби, тож
+    // сьогодні така картка не рендериться — і не має рахуватись показом.
     localStorage.setItem(
       "sergeant.v2.insights.dismissed",
-      JSON.stringify(["nutrition-protein-low"]),
+      JSON.stringify({ "nutrition-protein-low": Date.now() }),
     );
     render(
       <InsightCard
@@ -284,7 +297,7 @@ describe("InsightCard — value-loop telemetry", () => {
   it("відкинута картка не кладе сигнал у леджер", () => {
     localStorage.setItem(
       "sergeant.v2.insights.dismissed",
-      JSON.stringify(["fizruk-rest-day-overdue"]),
+      JSON.stringify({ "fizruk-rest-day-overdue": Date.now() }),
     );
     render(
       <InsightCard
@@ -391,7 +404,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
         onAskAi={onAskAi}
       />,
     );
-    fireEvent.click(getByLabelText("Спитати AI про це"));
+    fireEvent.click(getByLabelText("Спитати Сержанта про це"));
 
     expect(onAskAi).toHaveBeenCalledTimes(1);
     const askAi = callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI);
@@ -424,7 +437,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
         askAiDisabled
       />,
     );
-    fireEvent.click(getByLabelText("Ліміт AI на сьогодні"));
+    fireEvent.click(getByLabelText("Ліміт запитів до Сержанта на сьогодні"));
 
     expect(onAskAi).not.toHaveBeenCalled();
     expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI)).toHaveLength(0);
@@ -434,7 +447,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
     const { queryByLabelText } = render(
       <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
     );
-    expect(queryByLabelText("Спитати AI про це")).toBeNull();
+    expect(queryByLabelText("Спитати Сержанта про це")).toBeNull();
   });
 
   it("НЕ емітить advice_shown / advice_dismissed без analytics-згоди, але value_signal_* лишається неушкодженим", () => {

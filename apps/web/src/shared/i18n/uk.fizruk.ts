@@ -6,27 +6,66 @@
  * module-size discipline (Hard Rule #18, `max-lines: 600`). Spread у
  * `messages.fizruk` всередині `uk.ts`, тож call-site-и й далі звертаються
  * через `messages.fizruk.<page>.<key>`. Конвенції додавання ключів —
- * див. шапку `uk.ts` та `docs/05-design/i18n/readiness.md`.
+ * див. шапку `uk.ts` та `docs/design/i18n/readiness.md`.
  */
 
 export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
+  // < sm: повний підпис не вміщається поруч із двома кнопками шапки на
+  // 390 px (VIS-1, аудит 2026-09).
+  headerSubtitleShort: "Рух і відновлення",
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
   // Only one unfinished workout may exist, so every start path funnels
   // through this prompt. Shared by the Workouts dialogs and the program
   // start flow in the module shell — same wording in both, one source.
   /**
-   * «Внести проведене заняття» — тренування заднім числом.
-   * Копія свідомо не каже «почати»: заняття вже відбулось, тут його
-   * лише записують. Обґрунтування — докблок `LogPastWorkoutSheet`.
+   * «Записати проведене» — усе, що вже відбулось: заняття за часом, вправи
+   * по підходах, швидкий запис. Копія свідомо не каже «почати»: тут лише
+   * записують. Без «заняття» з 2026-09-16, бо форма тепер тримає й
+   * швидкий запис однієї вправи. Обґрунтування — докблок `LogPastWorkoutSheet`.
    */
   logPast: {
-    cta: "Внести проведене заняття",
-    title: "Записати тренування заднім числом",
+    cta: "Записати проведене",
+    title: "Записати заняття",
     date: "Дата",
     start: "Початок",
     end: "Завершення",
+    /** Короткий шлях: заняття з каталогу плюс тривалість. */
+    activity: "Заняття",
+    /**
+     * Два режими запису показані перемикачем, а не пунктом «Без заняття» у
+     * селекті: людина має бачити до «Записати», куди потрапить.
+     */
+    modeLabel: "Як записати",
+    modeActivity: "Заняття й час",
+    modeManual: "Вправи по підходах",
+    /** Третій режим — поля з `quickLog` нижче (рішення власника 2026-09-16). */
+    modeQuick: "Швидкий запис",
+    activityNew: "+ Своє заняття",
+    /** Вкладений аркуш вибору: ~55 позицій, без пошуку їх гортали. */
+    pickerTitle: "Обери заняття",
+    pickerSearch: "Пошук (біг, йога, силове)",
+    pickerEmpty:
+      "Нічого не знайшли. Спробуй інше слово або заведи своє заняття.",
+    newActivityName: "Назва заняття",
+    newActivityNamePlaceholder: "Наприклад, TRX у моєму залі",
+    newActivityCategory: "Категорія",
+    newActivityEffort: "Наскільки важке",
+    newActivityEffortHint:
+      "Від цього залежить оцінка витрат. Спокійне - як швидка ходьба, помірне - як звичайне силове, інтенсивне - як біг.",
+    newActivitySave: "Зберегти заняття",
+    activityNoneHint:
+      "Відкриється детальний журнал, там додаси вправи, підходи й вагу.",
+    duration: "Тривалість",
+    durationUnit: "хв",
+    zone: "Що навантажив",
+    intensity: "Інтенсивність",
+    weight: "Твоя вага, кг",
+    weightHint:
+      "Вага потрібна, щоб порахувати витрати. Запис збережеться і без неї.",
+    kcalPreview: "Приблизно",
+    kcalUnit: "ккал",
     /** Підпис зʼявляється лише коли кінець переповз за північ. */
     crossesMidnight: "Завершення: наступного дня.",
     /**
@@ -42,7 +81,27 @@ export const fizrukPageMessages = {
      */
     implausiblyLong:
       "Завершення раніше за початок. Якщо сесія не тривала через північ, виправ час.",
-    submit: "Внести й додати вправи",
+    submit: "Записати",
+  },
+  /**
+   * Швидкий запис — «+20 відтискань» як справжній `Workout`
+   * (`components/workouts/QuickLogForm.tsx`, рішення власника 2026-09-15).
+   * Замінив лічильник «Легка активність» на Прогресі, який жив окремим
+   * островом поза стріком, відновленням і журналом. З 2026-09-16 — режим
+   * форми «Записати проведене» (`logPast.modeQuick`), не окремий аркуш.
+   */
+  quickLog: {
+    description:
+      "Одна вправа, одне число, і запис у журналі. Серію тренувань не рухає, але на дні видно.",
+    exercise: "Вправа",
+    reps: "Повторень",
+    repsPresetsLabel: "Швидкі значення",
+    kcalPreview: "Приблизно",
+    kcalUnit: "ккал",
+    submit: "Записати",
+    /** `{n}` — число повторень, `{exercise}` — назва вправи. */
+    savedToast: "Записано: {n} · {exercise}",
+    invalidReps: "Введи число від 1 до 1000.",
   },
   activeWorkoutConflict: {
     title: "Уже є активне тренування",
@@ -56,6 +115,102 @@ export const fizrukPageMessages = {
   // menu-item labels for that menu (the "Завершити"/"Згорнути" primary
   // action itself stays a raw literal like the rest of this
   // already-allowlisted component; see `eslint.i18n-allowlist.json`).
+  // Сесійний режим активного тренування — список вправ → екран вправи
+  // (спека `docs/work/specs/fizruk-active-session.md`).
+  session: {
+    collapse: "Згорнути",
+    finish: "Завершити",
+    finishLong: "Завершити тренування",
+    moreActions: "Ще дії з тренуванням",
+    groupIntoSuperset: "Обʼєднати в суперсет",
+    selectHint: "Обери 2–3 вправи",
+    makeSuperset: "Суперсет",
+    makeCircuit: "Коло",
+    cancelSelect: "Скасувати",
+    ungroup: "Розгрупувати",
+    addExercise: "Вправа",
+    addExerciseAria: "Додати вправу",
+    addExerciseSheetTitle: "Додати вправу",
+    addExerciseDone: "Готово",
+    // Каталог у сесії не закривається після додавання, тож рядок мусить
+    // сам показувати, що вправа вже в тренуванні — інакше успіх мовчить
+    // (звіт власника 2026-09-12).
+    addedBadge: "Додано",
+    // Дублі дозволені, тож повторний тап має бути видимим: «Додано ×2».
+    addedBadgeTimes: "×",
+    // Форми для `pluralUa` у підсумку аркуша: «1 вправа», «3 вправи»,
+    // «5 вправ».
+    exercisesOne: "вправа",
+    exercisesFew: "вправи",
+    exercisesMany: "вправ",
+    emptyTitle: "Поки без вправ",
+    emptyBody: "Додай першу, і сесія почне рахувати підходи.",
+    exerciseOf: "вправа",
+    of: "з",
+    // Форми для `pluralUa`: «1 підхід», «3 підходи», «5 підходів».
+    // `pluralSets` із `@sergeant/shared` дає «сет/сети/сетів» — інше слово,
+    // а UI Фізрука всюди каже «підхід» (браузерний прохід 2026-09-11).
+    setsOne: "підхід",
+    setsFew: "підходи",
+    setsMany: "підходів",
+    // Конструкція «X з Y …» вимагає РОДОВОГО відмінка, а не називного:
+    // «0 з 1 підходу», «3 з 3 підходів» (не «3 з 3 підходи»).
+    setsGenitiveOne: "підходу",
+    setsGenitiveMany: "підходів",
+    // Порожнє кардіо: у рядку списку має стояти ФАКТ, а не стан рядка.
+    // Раніше тут падав `stateCurrent` («поточна»), і вправа, позначена
+    // бейджем як «далі», одночасно підписувалась «поточна» — знахідка
+    // рев'ю 2026-09-11.
+    cardioNoTime: "час не записано",
+    cardioNoDistance: "дистанцію не записано",
+    nextTarget: "Наступний:",
+    stateDone: "зроблено",
+    stateCurrent: "поточна",
+    openExercise: "Відкрити вправу",
+    backToList: "Список",
+    prevExercise: "Попередня вправа",
+    nextExercise: "Наступна вправа",
+    removeFromWorkout: "Прибрати з тренування",
+    aboutExercise: "Про вправу",
+    exerciseStats: "Статистика вправи",
+    restNow: "Відпочинок",
+    restStartAria: "Почати відпочинок",
+    restNextSet: "далі підхід",
+    restNextExercise: "далі",
+    warmup: "Розминка",
+    cooldown: "Заминка",
+    note: "Нотатка",
+    time: "Час",
+    noteTitle: "Нотатки до тренування",
+    notePlaceholder: "Напр. важко на присіданнях, болить коліно",
+    noteHint: "необовʼязково",
+    warmupAdd: "Додати",
+    // Той самий родовий відмінок, що й `setsGenitive*`: «0 з 1 вправи»,
+    // «1 з 3 вправ».
+    exercisesGenitiveOne: "вправи",
+    exercisesGenitiveMany: "вправ",
+    startedAt: "з",
+    repeatGhostAria: "повторити",
+    repeatGhostAriaSuffix: "і почати відпочинок",
+    fillRepsAria: "заповни повторення",
+    columnKg: "кг",
+    columnReps: "повт",
+    lastTime: "Минулого разу",
+    deleteLastSet: "Видалити останній підхід",
+    cardioSecondsPlaceholder: "сек",
+    cardioMetersPlaceholder: "метри",
+    cardioDurationAria: "Тривалість у секундах",
+    cardioDistanceAria: "Дистанція в метрах",
+    cardioTimeHint: "Напр: планка, ізометрія",
+    cardioPace: "Темп",
+    cardioSpeed: "Швидкість",
+    durationAria: "Тривалість тренування",
+    neighboursAria: "Сусідні вправи",
+    extrasAria: "Додатково",
+    recoveringPrefix: "Відновлюються:",
+    tooEarlyPrefix: "Ще рано:",
+    injuryPrefix: "Позначено біль",
+  },
   sessionHeader: {
     moreActionsAriaLabel: "Ще дії з тренуванням",
     deleteWorkout: "Видалити тренування",
@@ -93,6 +248,39 @@ export const fizrukPageMessages = {
   lastTimeHint: {
     label: "Минулого разу",
   },
+  // Підказка наступного підходу в картці вправи
+  // (`WorkoutItemNextSetHint.tsx`): подвійна прогресія і м'який режим.
+  nextSetHint: {
+    prefix: "Наступний:",
+    kgUnit: "кг",
+    targetPrefix: "ціль",
+    targetSuffix: "повторень",
+    softPrefix: "легше",
+    softLayoff: "після паузи",
+    softInjury: "після позначки болю",
+    softFallback: "після перерви",
+    easierPrefix: "Легше:",
+    harderPrefix: "Можна більше:",
+    easierNote: "сьогодні можна легше",
+    harderNote: "сьогодні можна більше",
+  },
+  // Аркуш готовності перед стартом тренування
+  // (спека docs/work/specs/fizruk-readiness-check.md).
+  readiness: {
+    title: "Як ти сьогодні?",
+    subtitle: "Два питання, і підказка ваги врахує твій стан.",
+    sleepLabel: "Як спалось?",
+    sorenessLabel: "Як почуваються мʼязи?",
+    scaleLow: "погано",
+    scaleHigh: "добре",
+    submit: "Готово",
+    skip: "Пропустити",
+    rebaselineTitle: "Схоже, план завищений",
+    rebaselineBody:
+      "Ти третій раз поспіль береш легше на цій вправі. Перерахувати план від того, що ти реально робиш?",
+    rebaselineConfirm: "Так, перерахувати",
+    rebaselineDismiss: "Ні, лишити план",
+  },
   // Per-row "було" ghost + done/delete controls inside a strength set
   // row (`WorkoutSetRow.tsx`), redesign 2026-08 (items 1-3).
   setRow: {
@@ -106,6 +294,16 @@ export const fizrukPageMessages = {
     repsPlaceholder: "повт.",
     weightAriaLabel: "Вага в кілограмах",
     repsAriaLabel: "Кількість повторень",
+    // RPE (Borg 1..10) picker (`WorkoutSetRpeMenu.tsx`) — strictly
+    // optional per-set input, closes the drift audit item where the
+    // landing page promised "оцінка зусилля за Боргом" but the word
+    // "Борг" and the field itself did not exist anywhere in the app.
+    rpeAriaLabel: "оцінка зусилля",
+    rpeNotSetAriaLabel: "не вказано",
+    rpeTriggerTitle: "Оцінка зусилля (RPE)",
+    rpeMenuHeading: "Зусилля (RPE)",
+    rpeMenuHint: "Шкала Борга, 1–10, необовʼязково",
+    rpeClear: "Прибрати",
   },
   // "Тип" segmented control, moved out of `WorkoutItemCard` into
   // `ExerciseDetailSheet` (`WorkoutItemTypeSwitcher.tsx`), redesign
@@ -122,6 +320,27 @@ export const fizrukPageMessages = {
     distanceLabel: "Дист",
     distanceTitle: "Дистанція (метри) + час",
     distanceAriaLabel: "Дистанція: метри та час",
+  },
+  // Голосовий ввід підходу. Раніше невдалий розбір виходив мовчки: ні
+  // сету, ні помилки — людина говорила, бачила чип із текстом і не
+  // розуміла, чому нічого не сталось. Текст називає робочу форму, бо
+  // найчастіша причина — саме формулювання, а не збій.
+  voiceSet: {
+    notParsed:
+      "Не розчув вагу й повтори. Скажи, наприклад: «жим 80 кг 8 разів».",
+  },
+  // Повноекранний перегляд двох кадрів вправи
+  // (`ExercisePhotoViewer.tsx`). Кадри це фази одного руху, тому підписи
+  // говорять про рух, а не про «фото 1 / фото 2».
+  photoViewer: {
+    closeLabel: "Закрити перегляд",
+    nextFrameLabel: "Наступний кадр",
+    playLabel: "Рух",
+    stopLabel: "Стоп",
+    startAlt: "початкове положення",
+    endAlt: "кінцеве положення",
+    hint: "Тапни фото, щоб побачити наступний кадр, або натисни «Рух» для автоматичного чергування.",
+    singleFrame: "Для цієї вправи є лише один кадр.",
   },
   // Compact recovery-warning chip next to the exercise title
   // (`WorkoutItemRecoveryChip.tsx`), redesign 2026-08 (item 6).
@@ -143,17 +362,6 @@ export const fizrukPageMessages = {
     chooseTemplate: "Обрати шаблон",
     noTemplates: "Шаблонів поки немає. Створи їх у Фізруку → Тренування.",
   },
-  // Dashboard status strip (`components/dashboard/StatusStrip.tsx`) — the
-  // readiness chip's compact face value when 2+ muscle groups are
-  // fatigued (fizruk audit V-4: the full "N груп(и) втомлені" sentence
-  // doesn't fit the chip on a 390px viewport and got silently clipped by
-  // `truncate`). The full sentence still reaches the user via the chip's
-  // aria-label/title — this prefix only composes the short on-screen form
-  // ("Втомлені: 4").
-  dashboard: {
-    fatiguedCompactPrefix: "Втомлені",
-  },
-
   // Progress page (`pages/Progress.tsx`) — analytics dashboard, PR board.
   progress: {
     title: "Прогрес",
@@ -166,12 +374,12 @@ export const fizrukPageMessages = {
     emptyTitle: "Даних ще немає",
     emptyDescription: "Додай тренування або заміри, і тут зʼявиться аналітика",
     crossModuleHeading: "Активність з інших модулів",
-    lightActivityHeading: "Легка активність",
-    pushups: "Відтискання",
-    pushupsSource: "щоденний лічильник повторень",
-    pushupsQuickAddLabel: "Додати повторення",
     weight: "Вага",
     noComparison: "Немає порівняння",
+    // Точка відліку дельти: вага має різні дельти на Тілі, Прогресі й
+    // Замірах, і без підпису вони читались як суперечність.
+    deltaFromPrevious: "від попереднього",
+    deltaSincePrefix: "з",
     bodyFat: "% жиру",
     weightTrend: "Тренд ваги",
     weightMetricLabel: "вагу тіла",
@@ -182,7 +390,7 @@ export const fizrukPageMessages = {
     // The bars plot `loadPoints`, an internal score — without this line a
     // raw "0.6" reads as a broken weight value.
     muscleVolumeUnitsHint:
-      "Умовні одиниці навантаження, не кілограми: тоннаж (кг×повт) ÷ 1000 + кількість сетів × 0.15.",
+      "Умовні одиниці навантаження, не кілограми: тоннаж (кг×повт) ÷ 1000 + кількість підходів × 0,15.",
     muscleVolumeEmptyDescription: "Немає даних за останні 4 тижні.",
     // Матриця «мʼяз × тиждень». Плейсхолдери підставляються на місці
     // виклику — та сама конвенція, що в гребені Фініка: `MessageCatalog`
@@ -201,7 +409,7 @@ export const fizrukPageMessages = {
     noPrTitle: "Поки немає силових PR",
     noPrGroupTitle: "Немає PR для цієї групи мʼязів",
     noPrDescription:
-      "Заверши сети з вагою, рекорди зʼявляться тут автоматично.",
+      "Заверши підходи з вагою, рекорди зʼявляться тут автоматично.",
     noPrGroupDescription: "Спробуй іншу групу або скинь фільтр.",
   },
 
@@ -267,9 +475,9 @@ export const fizrukPageMessages = {
     guideTechniqueHeader: "Як тримати стрічку",
     records: "Записів",
     last: "Останній",
-    fields: "Полів",
+    addButton: "+ Замір",
     addHeading: "Додати замір",
-    invalidValue: "Невірне значення",
+    invalidValue: "Неправильне значення",
     submit: "Зберегти замір",
     lastEntry: "Останній замір",
     history: "Історія",
@@ -306,7 +514,7 @@ export const fizrukPageMessages = {
     energyShort: "Енергія",
     mood: "Настрій",
     note: "Нотатка",
-    notePlaceholder: "Як почуваєшся сьогодні…",
+    notePlaceholder: "Як почуваєшся сьогодні",
     trendsCollecting: "Тренди ще збираються",
     trendsCollectingDescription:
       "Додай ще один запис ваги, сну чи енергії, графіки зʼявляться після двох точок.",
@@ -362,7 +570,7 @@ export const fizrukPageMessages = {
   injuries: {
     title: "Що болить",
     description:
-      "Позначене не потрапляє у recovery-поради, доки ти вручну не знімеш позначку. Крім мʼязів можна позначити суглоб або відділ хребта.",
+      "Позначене не потрапляє в поради з відновлення, доки ти вручну не знімеш позначку. Крім мʼязів можна позначити суглоб або відділ хребта.",
     empty:
       "Нічого не позначено. Познач зону, і я перестану радити вправи, які її навантажують.",
     activeListLabel: "Активні позначки болю",
@@ -382,7 +590,7 @@ export const fizrukPageMessages = {
     yesterday: "вчора",
     finishTitle: "Щось болить?",
     finishDescription:
-      "Опційно познач одну або кілька зон: мʼяз, суглоб чи відділ хребта. Медичних порад тут немає: позначка лише прибирає позначене з recovery-порад.",
+      "Опційно познач одну або кілька зон: мʼяз, суглоб чи відділ хребта. Медичних порад тут немає: позначка лише прибирає позначене з порад з відновлення.",
     skip: "Нічого не позначати",
     clearedToast: "Позначку болю знято.",
     clearFailedToast: "Не вдалося зняти позначку. Спробуй ще раз.",
@@ -414,11 +622,22 @@ export const fizrukPageMessages = {
       "Останній запис про сон чи енергію старший за 3 дні, тож у розрахунку відновлення він більше не враховується.",
     n1Note:
       "Пороги відновлення підібрані на одному тілі, це орієнтир, а не медичний норматив. Слухай себе.",
+    // Рамка блоку, а не виноска під ним. Whoop отримав попереджувальний
+    // лист FDA (2025-07) саме за функцію, подану як медичну; ми називаємо
+    // жанр вголос ДО того, як людина прочитає «готово» чи «рано».
+    // «медична» тут несе межу компетенції: на екрані «Тіло» це єдиний
+    // рядок блоку, видимий без тапу, решта під розкривайкою.
+    observationBadge: "Спостереження, не медична порада",
+    // Межа компетенції продукту. Recovery рахується з навантаження, сну й
+    // енергії — біль у цю модель не входить взагалі, тож застосунок про
+    // нього нічого не знає і не має вдавати, що знає.
+    medicalNote:
+      "Якщо щось болить або турбує, це питання до лікаря, а не до застосунку.",
   },
   /**
    * Старіння 1RM і протокол повернення (канон `fizruk.md` §6).
    *
-   * Тон — за `docs/01-product/copy/style-guide.uk.md`: констатація без
+   * Тон — за `docs/product/copy/style-guide.uk.md`: констатація без
    * докору. Перерва не провал, а регрес не привід соромитись, тож копія
    * пояснює ЧОМУ число інше, а не оцінює людину.
    */
@@ -447,10 +666,24 @@ export const fizrukPageMessages = {
    */
   workoutSummary: {
     title: "Тренування завершено",
+    // Момент петлі винагороди (ADR-0096): один рядок під датою, лише коли
+    // завершення щось справді змінило. Плейсхолдери склеюються на місці.
+    moments: {
+      threshold:
+        "Тренувань досить для нового висновку: «{detail}». Він уже у Звітах.",
+      approach: "До висновку про найкращий день для тренувань лишилось {n}.",
+    },
     itemsLabel: "Вправ",
     setsLabel: "Підходів",
     volumeLabel: "Обʼєм",
-    kgUnit: "кг",
+    // Per-set effort rating, shown inline next to "80×8" ONLY when the set
+    // carries one — RPE stays optional end-to-end (`WorkoutSetRpeMenu`).
+    rpeLabel: "RPE",
+    // PR-Z3 (аудит 2026-09-13, хвиля 6): це `computeWorkoutTonnageKg` —
+    // сума `вага_кг × повторення`, не маса в кілограмах. Було "кг", що
+    // читалось як реальна вага; канонічний варіант — "кг×повт", уже
+    // задокументований у `Measure.tsx` і чинний у `WeeklyVolumeChart`.
+    kgUnit: "кг×повт",
     wellbeingPrefix: "Самопочуття:",
     energyLabel: "енергія",
     moodLabel: "настрій",
@@ -461,6 +694,15 @@ export const fizrukPageMessages = {
     notFoundDescription:
       "Його вже видалили, або посилання застаріле. Повернись до списку тренувань.",
     backToWorkouts: "До тренувань",
+    /**
+     * PR-Z1 (аудит 2026-09-13, хвиля 3): завершене тренування раніше не
+     * мало жодного виходу, крім «Повторити це тренування» — сесійний
+     * хром (`FizrukApp.sessionMode`) знімає шапку й нав на всьому
+     * `page === "workout"`, а ця гілка єдина лишалась без власної
+     * кнопки виходу. Той самий пункт призначення, що й `backToWorkouts`
+     * («workouts»), формулювання — як у сусіднього `workoutHistory.backAria`.
+     */
+    backAria: "Повернутись до тренувань",
   },
 
   /**
@@ -472,11 +714,19 @@ export const fizrukPageMessages = {
   workoutHistory: {
     title: "Історія тренувань",
     subtitlePrefix: "Завершено:",
-    backAria: "Повернутись до тренувань",
+    // PR-Z7: `backAria` знято разом зі стрілкою сторінки. Вихід із
+    // `/fizruk/history` тепер один і належить шапці модуля, тож рядок
+    // лишався б підписом до кнопки, якої немає.
     emptyTitle: "Поки немає тренувань",
     emptyDescription: "Заверши перше тренування, воно зʼявиться тут.",
     endedBadge: "Завершене",
     activeBadge: "Активне",
+    /**
+     * Легка активність (канон §8, 2026-09-15): запис коротший за 20 хв і
+     * менш ніж на три підходи — на дні є, серію не рухає. Позначка існує,
+     * щоб два різні стани не виглядали однаково в історії.
+     */
+    lightBadge: "легке",
     deletedToast: "Тренування видалено",
   },
 
@@ -489,6 +739,31 @@ export const fizrukPageMessages = {
     title: "Програми",
     subtitle: "Спліти з розкладом",
     activePrefix: "Активна:",
+  },
+  strongImport: {
+    title: "Імпорт Strong",
+    description:
+      "Завантаж CSV з тренуваннями Strong, звір назви вправ і підтвердь запис.",
+    open: "Імпортувати Strong",
+    rowTitle: "Імпорт Strong",
+    rowSubtitle: "CSV тренувань і ваги тіла",
+    workoutFile: "Файл тренувань",
+    weightFile: "Файл ваги тіла (опційно)",
+    weightUnit: "Одиниця ваги у файлі тренувань",
+    workouts: "Тренування",
+    workoutsShort: "трен.",
+    sets: "Підходи",
+    setsShort: "підх.",
+    restTimers: "Таймери",
+    weightRows: "Вага тіла",
+    unresolvedTitle: "Потребують звіряння",
+    autoMatchedTitle: "Зіставлено автоматично",
+    chooseExerciseAriaPrefix: "Обрати вправу для",
+    skipExercise: "Пропустити цю назву",
+    allMatched: "Усі назви вправ зіставлено автоматично.",
+    confirm: "Записати імпорт",
+    parseFailed: "Не вдалося прочитати CSV. Перевір файл і спробуй ще раз.",
+    savedPrefix: "Імпорт записано:",
   },
 } as const;
 

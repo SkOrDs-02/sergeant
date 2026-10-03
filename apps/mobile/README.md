@@ -1,7 +1,7 @@
 # @sergeant/mobile
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
-> **Mobile strategy:** Expo + RN продовжує розвиватись паралельно з Capacitor shell; обидва стеки активні — [ADR-0052](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-07.
+> **Mobile strategy:** продуктовий розвиток Expo + RN **на паузі з 2026-08-25** разом із Capacitor shell (web-first) — [ADR-0094](../../docs/governance/adr/0094-mobile-web-first-freeze.md). Пауза, не sunset: код лишається активом, `typecheck` і Jest далі гейтять `main`. Попереднє «обидва стеки активні» — [ADR-0052](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md), superseded.
 
 Нативний клієнт Sergeant (iOS/Android) на Expo + React Native. Для web-апки
 див. `apps/web` — вони живуть у тому самому монорепо і ділять пакети
@@ -12,6 +12,12 @@
 **Internal dev-client** — готово до `eas build --profile development` і
 установки на фізичний пристрій / симулятор, але ще не для store.
 
+**Розвиток заморожений з 2026-08-25** ([ADR-0094](../../docs/governance/adr/0094-mobile-web-first-freeze.md)).
+Тобто все, що нижче названо «у дорожній карті» чи «в роботі», насправді
+**не в роботі**: це інвентар непортованого на момент паузи, корисний при
+розморозці, а не план на зараз. Канонічний перелік замороженого й порядок
+розморозки — [`docs/work/specs/tech-debt/mobile.md`](../../docs/work/specs/tech-debt/mobile.md).
+
 Портовано з `apps/web` у `src/modules/`:
 
 - **ФІНІК** — pages (Overview, Transactions, Analytics, Budgets,
@@ -21,14 +27,15 @@
 - **Рутина** — pages (Habits, Heatmap), components, hooks, lib + `__tests__`.
 - **Харчування** — `NutritionApp` (4 вкладки) + **Комора** (`/nutrition/pantry`),
   `AddMealSheet` (ручний ввід + сканер), `useShoppingList` / `useNutritionPantries`,
-  MMKV + `useNutritionLog` / `useNutritionPrefs` + `__tests__`. AI-parse pantry
-  / повні рецепти / photo-AI — у дорожній карті.
+  MMKV + `useNutritionLog` / `useNutritionPrefs` + `__tests__`, рецепти
+  (`RecipeRecommender`, `RecipeDetail`, deep link `recipe/[id]`) і photo-AI
+  (`analyze-photo` / `refine-photo` в `AddMealSheet`).
 
 Інфраструктура готова:
 
 - Expo Router (tabs + (auth) модалка), `app.config.ts` з
   `bundleIdentifier` / `androidPackage` = `com.sergeant.app`;
-- Better Auth Expo-клієнт (bearer у `expo-secure-store`, `docs/02-engineering/mobile/overview.md`);
+- Better Auth Expo-клієнт (bearer у `expo-secure-store`, `docs/engineering/mobile/overview.md`);
 - `PushRegistrar` шле native APNs/FCM токен у `POST /api/v1/push/register`
   з ідемпотентним кешем у `AsyncStorage`;
 - CloudSync + MMKV-офлайн-черга + React Query warm-start (фаза 3);
@@ -37,17 +44,27 @@
 - Detox e2e конфіги для iOS і Android у CI (поки smoke-build, реальні
   сценарії треба дописати).
 
-**Ще не зроблено / в роботі:**
+**Не зроблено на момент заморозки** (не «в роботі» — див. статус вище):
 
-- **Харчування (решта Phase 7+)** — комора, список покупок, рецепти, deep link
-  `recipe/[id].tsx` все ще заглушка; photo-AI.
-- **Voice / Speech** — `expo-speech` + STT ще не підключено.
 - **Store-listing** (іконки, privacy manifest iOS, data safety Android).
 
-**Серверний push (APNs/FCM/web):** fan-out у `apps/server/src/push/send.ts`;
-у проді ще потрібні credentials — `docs/90-work/tech-debt/backend.md#push-credentials`.
+> **Тут був довший список, і він виявився застарілим** (перевірено 2026-09-14
+> на вимогу рев'ю #1188). Він називав непортованими комору, список покупок,
+> рецепти, deep link `recipe/[id].tsx` («все ще заглушка») і photo-AI — усе це
+> в репо є, з тестами: `pages/Pantry.tsx`, `pages/Shopping.tsx`,
+> `pages/RecipeDetail.tsx`, `app/(tabs)/nutrition/recipe/[id].tsx` (рендерить
+> `RecipeDetailPage`, не заглушка), `AddMealSheet` з photo-гілкою. Голос теж:
+> `components/ui/VoiceMicButton.tsx`. Канонічна матриця
+> [`platforms.md`](../../docs/engineering/architecture/platforms.md) ставить
+> усім цим рядкам ✅ для RN.
+>
+> **Звідси правило для розморозки:** обсяг непортованого бери з `platforms.md`,
+> а не з цього файлу. Список у README старіє тихо, бо ніщо його не гейтить.
 
-Повний статус-репорт по всіх трьох поверхнях — `docs/02-engineering/architecture/platforms.md`.
+**Серверний push (APNs/FCM/web):** fan-out у `apps/server/src/push/send.ts`;
+у проді ще потрібні credentials — `docs/work/specs/tech-debt/backend.md#push-credentials`.
+
+Повний статус-репорт по всіх трьох поверхнях — `docs/engineering/architecture/platforms.md`.
 
 ## Запуск
 
@@ -73,6 +90,29 @@ pnpm --filter @sergeant/mobile start
 
 > Фізичний пристрій не бачить `localhost` хост-машини — вкажи IP у
 > `.env` або прокинь тунель (ngrok / `expo start --tunnel`).
+
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/mobile <script>`.
+
+```bash
+pnpm --filter @sergeant/mobile start                # Expo dev-сервер (`i` — iOS, `a` — Android, QR — Expo Go)
+pnpm --filter @sergeant/mobile android              # Expo одразу в Android-емулятор
+pnpm --filter @sergeant/mobile ios                  # Expo одразу в iOS-симулятор
+pnpm --filter @sergeant/mobile web                  # Expo у браузері
+pnpm --filter @sergeant/mobile prebuild             # `expo prebuild` — генерація нативних проєктів
+pnpm --filter @sergeant/mobile check-build-config   # перевірка узгодженості build-конфігів (`scripts/check-build-config.ts`)
+pnpm --filter @sergeant/mobile lint                 # ESLint (`app/`, `src/`, `scripts/`)
+pnpm --filter @sergeant/mobile typecheck            # TypeScript
+pnpm --filter @sergeant/mobile test                 # Jest
+pnpm --filter @sergeant/mobile test:coverage        # Jest з покриттям
+pnpm --filter @sergeant/mobile e2e:build:ios        # Detox build (iOS simulator, debug)
+pnpm --filter @sergeant/mobile e2e:test:ios         # Detox tests (iOS simulator)
+pnpm --filter @sergeant/mobile e2e:test:ios:ci      # Detox tests iOS у headless-режимі з логами (CI)
+pnpm --filter @sergeant/mobile e2e:build:android    # Detox build (Android emulator, debug)
+pnpm --filter @sergeant/mobile e2e:test:android     # Detox tests (Android emulator)
+pnpm --filter @sergeant/mobile e2e:test:android:ci  # Detox tests Android у headless-режимі з логами (CI)
+```
 
 ## Dev Client (on-device development)
 
@@ -205,14 +245,14 @@ apps/mobile
 
 ## Deep links
 
-Схема `sergeant://`, повний перелік маршрутів — у `docs/02-engineering/mobile/overview.md`
+Схема `sergeant://`, повний перелік маршрутів — у `docs/engineering/mobile/overview.md`
 (`sergeant://workout/{id}`, `sergeant://finance/tx/{id}`, тощо). Наразі
 закомітено лише tab-роути; глибокі посилання на конкретні сутності
 зроблю разом з портом відповідних модулів.
 
 ## API
 
-Усі запити — у `/api/v1/*`, як описано в `docs/02-engineering/architecture/api-v1.md`. У
+Усі запити — у `/api/v1/*`, як описано в `docs/engineering/architecture/api-v1.md`. У
 продакшн-коді ходи у сервер через `@sergeant/api-client`:
 
 - `useApiClient()` + хуки з `@sergeant/api-client/react` (`useUser`,
@@ -255,7 +295,7 @@ pnpm --filter @sergeant/mobile start --dev-client
 # повторний запуск з тим самим токеном не шле запит
 ```
 
-Серверний контракт і приклади payload-ів — у `docs/02-engineering/mobile/overview.md`
+Серверний контракт і приклади payload-ів — у `docs/engineering/mobile/overview.md`
 (секція «Push notifications»).
 
 ## Монорепо-правила

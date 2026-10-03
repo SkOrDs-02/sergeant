@@ -31,7 +31,7 @@ describe("TransactionsBatchToolbar (branches)", () => {
 
   it("does not render the floating toolbar when selectMode=false", () => {
     render(<TransactionsBatchToolbar {...buildProps({ selectMode: false })} />);
-    expect(screen.queryByText("Обери транзакції")).toBeNull();
+    expect(screen.queryByText("Обери операції")).toBeNull();
     expect(screen.queryByText(/обрано/)).toBeNull();
   });
 
@@ -41,7 +41,7 @@ describe("TransactionsBatchToolbar (branches)", () => {
         {...buildProps({ selectMode: true, selectedSize: 0 })}
       />,
     );
-    expect(screen.queryByText("Обери транзакції")).toBeNull();
+    expect(screen.queryByText("Обери операції")).toBeNull();
     expect(screen.queryByRole("button", { name: "Категорія" })).toBeNull();
   });
 
@@ -69,9 +69,7 @@ describe("TransactionsBatchToolbar (branches)", () => {
         })}
       />,
     );
-    expect(
-      screen.getByText("Застосується до 1 транзакції"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Застосується до 1 операції")).toBeInTheDocument();
   });
 
   it("uses plural copy in the category sheet when selectedSize>1", () => {
@@ -84,9 +82,7 @@ describe("TransactionsBatchToolbar (branches)", () => {
         })}
       />,
     );
-    expect(
-      screen.getByText("Застосується до 3 транзакцій"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Застосується до 3 операцій")).toBeInTheDocument();
   });
 
   it("applies a picked category from the sheet", () => {

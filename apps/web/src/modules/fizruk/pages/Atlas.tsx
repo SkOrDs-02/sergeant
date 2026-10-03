@@ -14,9 +14,15 @@ interface AtlasProps {
   /** Перехід на «Моє тіло» — там живе єдиний пікер зон болю (див. шапку
    *  `InjurySection`). Тут секція лише читає активні позначки. */
   onOpenBody?: (() => void) | undefined;
+  /**
+   * Спека `fizruk-hero-recovery-bars.md` рішення 4 — атласна зона (або
+   * зона травми), на яку веде тап по рядку hero. Прокинуто в
+   * `<BodyAtlas>`, яка сама вирішує, чи вміє її підсвітити.
+   */
+  focusMuscleId?: string | undefined;
 }
 
-export function Atlas({ onOpenBody }: AtlasProps = {}) {
+export function Atlas({ onOpenBody, focusMuscleId }: AtlasProps = {}) {
   const rec = useRecovery();
 
   // Memoized per `rec.by` so the SVG gets identity-stable input across
@@ -55,21 +61,21 @@ export function Atlas({ onOpenBody }: AtlasProps = {}) {
               size="xs"
               variant="fizruk"
               as="p"
-              className="text-hero-ink/80"
+              className="text-hero-ink"
             >
               Атлас мʼязів
             </SectionHeading>
-            <h1 className="text-hero font-black text-hero-ink mt-2 leading-tight">
+            <h1 className="text-style-headline font-black text-hero-ink mt-2 leading-tight">
               Стан відновлення
             </h1>
-            <p className="text-style-caption text-hero-ink/75 mt-2">
+            <p className="text-style-body text-hero-ink mt-2">
               Карта втоми, давності тренувань і обʼєму по групах мʼязів.
             </p>
           </div>
         </Card>
 
         <Card radius="lg" padding="lg">
-          <BodyAtlas data={atlasData} />
+          <BodyAtlas data={atlasData} focusMuscleId={focusMuscleId} />
         </Card>
 
         <InjurySection onOpenBody={onOpenBody} />

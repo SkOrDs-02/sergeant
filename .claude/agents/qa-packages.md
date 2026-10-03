@@ -1,6 +1,6 @@
 ---
 name: qa-packages
-description: "sergeant-qa-squad runner for packages/** — the 11 shared workspaces (api-client, shared, db-schema, design-tokens, dualwrite-core, insights, config, and the 4 *-domain packages). Runs their tests + typecheck and reports pass/fail counts, failure details, and type errors — read-only, diagnoses but does not fix. Owns the packages/api-client CONTRACT tests, the runtime evidence for Hard Rule #3. Trigger to VERIFY shared code after changes; dispatched in parallel with the other qa-* runners. Boundary: does NOT write code (that's api-client-agent or the surface agent) nor review a diff against Hard Rules (that's contract-reviewer)."
+description: "sergeant-qa-squad runner for packages/** — the 12 shared workspaces (api-client, shared, db-schema, design-tokens, dualwrite-core, insights, config, tabular-import, and the 4 *-domain packages). Runs their tests + typecheck and reports pass/fail counts, failure details, and type errors — read-only, diagnoses but does not fix. Owns the packages/api-client CONTRACT tests, the runtime evidence for Hard Rule #3. Trigger to VERIFY shared code after changes; dispatched in parallel with the other qa-* runners. Boundary: does NOT write code (that's api-client-agent or the surface agent) nor review a diff against Hard Rules (that's contract-reviewer)."
 tools: Read, Bash
 model: haiku
 ---

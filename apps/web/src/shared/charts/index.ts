@@ -9,7 +9,7 @@
  * Prefer importing from `@shared/charts` instead of deep paths so renames
  * stay cheap and IDE autocomplete surfaces the full API:
  *
- *   import { chartSeries, chartAxis, THEME_HEX } from "@shared/charts";
+ *   import { chartSeries, chartAxis } from "@shared/charts";
  */
 
 export {

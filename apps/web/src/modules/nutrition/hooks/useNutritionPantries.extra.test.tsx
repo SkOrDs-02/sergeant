@@ -15,6 +15,21 @@ vi.mock("@shared/api", async () => {
   return { ...actual, nutritionApi: { parsePantry: vi.fn() } };
 });
 
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
+  };
+});
+
 import { useNutritionPantries } from "./useNutritionPantries";
 import { nutritionApi } from "@shared/api";
 import * as nutritionStorage from "../lib/nutritionStorage";
@@ -53,8 +68,9 @@ function renderHarness() {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const { result, rerender } = renderHook(
-    () => useNutritionPantries({ setBusy, setErr, setStatusText }),
+    () => useNutritionPantries({ setBusy, setErr, setStatusText, setDenial }),
     { wrapper: makeWrapper() },
   );
   return { result, rerender, setBusy, setErr, setStatusText };
@@ -125,7 +141,7 @@ describe("useNutritionPantries — persist + SQLite overlay branches", () => {
   it("overlays pantries from a warm SQLite cache when the read tick bumps", () => {
     seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
     const { result, rerender } = renderHarness();
-    expect(result.current.activePantry.name).toBe("Дім");
+    expect(result.current.pantries.some((p) => p.name === "Офіс")).toBe(false);
 
     __setNutritionSqliteCacheForTests({
       pantries: [{ id: "work", name: "Офіс", items: [], text: "" }],
@@ -135,8 +151,14 @@ describe("useNutritionPantries — persist + SQLite overlay branches", () => {
     notifyNutritionSqliteCacheRefresh();
     rerender();
 
-    expect(result.current.activePantryId).toBe("work");
-    expect(result.current.activePantry.name).toBe("Офіс");
+    // Відомі місця виживають овердей теплого кешу — інакше холодильник і
+    // морозилка зникали б з екрана до наступного перезавантаження.
+    expect(result.current.pantries.map((p) => p.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+      "work",
+    ]);
   });
 
   it("skips overlay when SQLite cache is cold (refreshedAt null)", () => {
@@ -151,8 +173,7 @@ describe("useNutritionPantries — persist + SQLite overlay branches", () => {
     notifyNutritionSqliteCacheRefresh();
     rerender();
 
-    expect(result.current.activePantryId).toBe("home");
-    expect(result.current.activePantry.name).toBe("Дім");
+    expect(result.current.pantries.some((p) => p.name === "Офіс")).toBe(false);
   });
 });
 
@@ -197,7 +218,7 @@ describe("useNutritionPantries — item + pantry helper branches", () => {
     expect(result.current.pantryItems).toHaveLength(1);
   });
 
-  it("falls back to the first pantry when activePantryId is unknown", () => {
+  it("keeps custom places after the known ones", () => {
     seed(
       [
         { id: "home", name: "Дім", items: [], text: "" },
@@ -206,7 +227,12 @@ describe("useNutritionPantries — item + pantry helper branches", () => {
       "missing",
     );
     const { result } = renderHarness();
-    expect(result.current.activePantry.name).toBe("Дім");
+    expect(result.current.pantries.map((p) => p.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+      "work",
+    ]);
   });
 
   it("ensureStructuredItems hydrates from loose text before removeItemAt", async () => {

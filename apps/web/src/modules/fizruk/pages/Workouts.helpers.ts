@@ -3,8 +3,12 @@
  * Status: Active
  */
 import type { Workout } from "@sergeant/fizruk-domain";
-import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import type {
+  ExerciseLocation,
+  RawExerciseDef,
+} from "@sergeant/fizruk-domain/data";
+import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
+import { deviceDayKey, pluralUa } from "@sergeant/shared";
 import type { LastExerciseItem } from "./Workouts.types";
 
 /**
@@ -44,11 +48,14 @@ export function buildGroupedExercises(
   list: readonly RawExerciseDef[],
   equipmentFilter: readonly string[],
   primaryGroupsUk: Record<string, string>,
+  locationFilter: ExerciseLocation | "" = "",
 ): GroupedExercises[] {
   const eqSet = equipmentFilter.length > 0 ? new Set(equipmentFilter) : null;
-  const pool = eqSet
-    ? list.filter((ex) => (ex.equipment ?? []).some((e) => eqSet.has(e)))
-    : list;
+  const pool = list.filter(
+    (ex) =>
+      (!eqSet || (ex.equipment ?? []).some((e) => eqSet.has(e))) &&
+      matchesExerciseLocation(ex, locationFilter),
+  );
   const m = new Map<string, RawExerciseDef[]>();
   for (const ex of pool) {
     const gid = ex.primaryGroup || "full_body";
@@ -128,17 +135,99 @@ export function formatActiveDuration(
 }
 
 /**
- * Default retro-workout date — today's calendar date in `YYYY-MM-DD`,
- * anchored to **Europe/Kyiv** (domain invariant) rather than the device
- * clock, so late-evening users on a non-Kyiv host don't get the wrong day
- * (page-audit-06 F11). Name kept for call-site stability.
+ * Default retro-workout date — today's calendar date in `YYYY-MM-DD` за
+ * годинником ПРИСТРОЮ (ADR-0078, рішення власника 2026-09-29). Name kept
+ * for call-site stability.
  */
 export function todayLocalDateString(): string {
-  // AI-DANGER: day boundary is Europe/Kyiv, not the device clock or UTC.
-  // Must stay routed through `getKyivDayKey()`. Swapping to
-  // `new Date().toISOString().slice(0,10)` or `toLocaleDateString` silently
-  // shifts the date for late-evening / non-Kyiv hosts and breaks streaks.
-  return getKyivDayKey();
+  // AI-DANGER: day boundary is the DEVICE clock — the same one that
+  // `defaultPastWorkoutFields` uses for time-of-day and the "in the future"
+  // check, and that `dashboardKpis` uses for the daily streak. До 2026-09-29
+  // тут стояв Europe/Kyiv; повернення до `getKyivDayKey()` знову дасть
+  // форму, що пропонує «завтра» користувачу поза Києвом. НЕ
+  // `toISOString().slice(0,10)` — це UTC, а не пристрій.
+  return deviceDayKey();
+}
+
+/** Дефолтні поля форми «Внести проведене заняття». */
+export interface PastWorkoutDefaults {
+  /** `YYYY-MM-DD`. */
+  date: string;
+  /** `HH:MM`. */
+  start: string;
+  /** `HH:MM`. */
+  end: string;
+}
+
+/** Найчастіший час тренування — вечір; його ж людина найрідше правитиме. */
+const EVENING_START = "18:00";
+const EVENING_END = "19:00";
+const EVENING_END_MIN = 19 * 60;
+/** Мінімальне вікно, щоб «година тому» ще вміщалась у сьогоднішню добу. */
+const MIN_TODAY_WINDOW_MIN = 65;
+
+function hhmm(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Дата й час, з якими форма ретро-запису відкривається.
+ *
+ * AI-DANGER: дефолт мусить бути ВАЛІДНИМ вводом. До 2026-09-03 форма
+ * підставляла «сьогодні, 18:00 → 19:00» незалежно від годинника, тож усім,
+ * хто відкривав її до сьомої вечора, кнопка «Записати» була вимкнена одразу
+ * при відкритті — `times.inFuture` спрацьовував на власних дефолтах форми
+ * (browser-QA 2026-09-02). Людина бачила заповнену форму й мертву кнопку і
+ * не мала підказки, що правити треба ЧАС, а не заняття.
+ *
+ * Три гілки, усі дають мить у минулому:
+ *
+ *   - **вечір уже настав** (≥ 19:00) → лишається 18:00 → 19:00, тобто той
+ *     самий дефолт, що й був, із тією ж мотивацією;
+ *   - **день у розпалі** → година, що щойно скінчилась: кінець — «зараз» із
+ *     округленням униз до пʼяти хвилин, початок на годину раніше;
+ *   - **глибока ніч** (до 01:05, коли годинної діри в сьогодні ще немає) →
+ *     учорашній вечір.
+ *
+ * AI-DANGER: дата й час беруться з ОДНОГО годинника — пристроєвого. Змішати
+ * їх не можна: `buildPastWorkoutTimes` парсить пару як настінний час
+ * пристрою, тож київський день-ключ поруч із пристроєвою годиною дає
+ * майбутнє для будь-якого хоста західніше Києва. Приклад із ревʼю: 18:30 у
+ * Нью-Йорку 3 вересня — у Києві вже 4-те, і форма відкривалась би з
+ * «4 вересня, 17:30 → 18:30», тобто майже на добу вперед, знову з мертвою
+ * кнопкою. Це рівно той дефект, який ця функція й лікує.
+ *
+ * Пристроєвий календар тут доречний і поза цією парою: доба тренування
+ * належить пристрою (ADR-0078), а Київ у Фізруку лишається тільки для
+ * звітів.
+ */
+export function defaultPastWorkoutTimes(
+  // eslint-disable-next-line no-restricted-syntax -- потрібен настінний годинник пристрою, тим самим читанням, що і в `buildPastWorkoutTimes`; параметр існує, щоб тест міг запнути годинник.
+  now: Date = new Date(),
+): PastWorkoutDefaults {
+  const today = deviceDayKey(now);
+  /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- беремо годину-хвилину з годинника ПРИСТРОЮ: саме з ним потім звіряється `inFuture`. */
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  if (nowMin >= EVENING_END_MIN) {
+    return { date: today, start: EVENING_START, end: EVENING_END };
+  }
+
+  if (nowMin >= MIN_TODAY_WINDOW_MIN) {
+    const endMin = Math.floor(nowMin / 5) * 5;
+    return { date: today, start: hhmm(endMin - 60), end: hhmm(endMin) };
+  }
+
+  const yesterday = new Date(now.getTime());
+  /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- відлік доби назад від миті, яку показує годинник людини; київська межа тут дала б інший день для не-київського хоста. */
+  yesterday.setDate(yesterday.getDate() - 1);
+  return {
+    date: deviceDayKey(yesterday),
+    start: EVENING_START,
+    end: EVENING_END,
+  };
 }
 
 /** Результат розбору форми «Внести проведене заняття». */
@@ -235,4 +324,85 @@ export function buildPastWorkoutTimes(
       crossesMidnight && endMs - startMs > MAX_ROLLOVER_SESSION_MS,
     inFuture: endMs > now.getTime(),
   };
+}
+
+/**
+ * Той самий результат, але з тривалості замість поля «Завершення» —
+ * короткий запис заняття питає «скільки хвилин», а не «о котрій закінчив».
+ *
+ * `crossesMidnight` тут інформаційний: кінець рахується додаванням
+ * мілісекунд до введеної миті, тож переносу через північ як окремої
+ * гілки не існує — доба перекочується сама.
+ */
+export function buildActivityWorkoutTimes(
+  dateKey: string,
+  startTime: string,
+  durationMin: number,
+  // eslint-disable-next-line no-restricted-syntax -- порівнюємо мить із миттю (кінець проти «зараз»), а не межі доби.
+  now: Date = new Date(),
+): PastWorkoutTimes | null {
+  if (!dateKey || !startTime) return null;
+  if (!Number.isFinite(durationMin) || durationMin <= 0) return null;
+  const startMs = Date.parse(`${dateKey}T${startTime}`);
+  if (Number.isNaN(startMs)) return null;
+  const endMs = startMs + durationMin * 60_000;
+  const start = new Date(startMs);
+  const end = new Date(endMs);
+  return {
+    startedAt: start.toISOString(),
+    endedAt: end.toISOString(),
+    /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078:
+       доба тренування належить ПРИСТРОЮ. Підпис «завершення наступного дня»
+       має збігатись із тим, що людина бачить на своєму годиннику; київська
+       межа дала б їй «наступний день» там, де її власний ще не скінчився. */
+    crossesMidnight: start.getDate() !== end.getDate(),
+    implausiblyLong: endMs - startMs > MAX_ROLLOVER_SESSION_MS,
+    inFuture: endMs > now.getTime(),
+  };
+}
+
+/**
+ * Скільки разів кожна вправа вже лежить в активному тренуванні.
+ *
+ * Каталог у сесії відкривається аркушем, який навмисно НЕ закривається
+ * після додавання (за один захід беруть кілька вправ). Через це успішний
+ * тап був єдиною гілкою без зворотного звʼязку: помилки тостяться, а
+ * успіх мовчав, і рядок мав лише `hover`/`active` підсвітку, яка на
+ * тачі зникає разом із пальцем — власник вирішив, що екран зламано
+ * (звіт 2026-09-12). Лічильник, а не булеве «додано», бо `addItem`
+ * дублі не блокує: повторний тап мусить бути видимим як «×2».
+ */
+export function countItemsByExerciseId(
+  items: ReadonlyArray<{ exerciseId?: string | undefined }> | null | undefined,
+): Record<string, number> {
+  const acc: Record<string, number> = {};
+  for (const item of items ?? []) {
+    const id = item?.exerciseId;
+    if (!id) continue;
+    acc[id] = (acc[id] ?? 0) + 1;
+  }
+  return acc;
+}
+
+/**
+ * Підпис кнопки «Готово» в аркуші каталогу. Поки нічого не додано —
+ * просто «Готово»; далі кнопка несе біжучий підсумок, щоб додавання
+ * було видимим навіть коли щойно доданий рядок поїхав за екран.
+ */
+export function formatAddExerciseDoneLabel(
+  total: number,
+  copy: {
+    addExerciseDone: string;
+    exercisesOne: string;
+    exercisesFew: string;
+    exercisesMany: string;
+  },
+): string {
+  if (total <= 0) return copy.addExerciseDone;
+  const word = pluralUa(total, {
+    one: copy.exercisesOne,
+    few: copy.exercisesFew,
+    many: copy.exercisesMany,
+  });
+  return `${copy.addExerciseDone} · ${total} ${word}`;
 }

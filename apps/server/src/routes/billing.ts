@@ -22,6 +22,7 @@ import {
   getEnabledProviders,
   providerRegistry,
   resolveProvider,
+  type CancelSubscriptionOutcome,
   type ProviderId,
   liqpayProvider,
   verifyStripeSignature,
@@ -30,10 +31,17 @@ import {
   ensurePlataPubkey,
   plataProvider,
 } from "../modules/billing/index.js";
+// Напряму, не через барель: знімок тягне `chat/aiQuota`, а барель імпортують
+// роути, яким цей граф не потрібен.
+import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
 import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
-import { ValidationError } from "../obs/errors.js";
+import {
+  AppError,
+  ExternalServiceError,
+  ValidationError,
+} from "../obs/errors.js";
 
 type AuthedRequest = Request & {
   user?: { id: string; email?: string | null };
@@ -79,6 +87,11 @@ function handleBillingError(err: unknown, res: Response): boolean {
   }
   return false;
 }
+
+type CancelAttempt = {
+  id: ProviderId;
+  outcome: CancelSubscriptionOutcome | "failed";
+};
 
 export function createBillingRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
@@ -153,32 +166,33 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     requireSession(),
     async (req: AuthedRequest, res: Response) => {
       const userId = req.user!.id;
-      // Founder bypass first — same `isFounderUser` check `requirePlan()`
-      // gates on, so a founder never sees a paywall the status read didn't
-      // also clear (round-2 UI audit S1: these two paths used to diverge
-      // because `getUserPlan()` had the bypass but this route read straight
-      // from `subscriptions` instead).
-      if (isFounderUser(userId)) {
-        res.json(
-          BillingStatusResponseSchema.parse({
-            subscription: {
-              id: null,
-              provider: "manual",
-              plan: "pro",
-              status: "active",
-              active: true,
-              currentPeriodEnd: null,
-            },
-          }),
-        );
-        return;
-      }
-      // Уніфіковано через subscriptions — читаємо будь-яким провайдером
-      // (усі три віддають ту саму serialize-форму з таблиці).
-      const payload = BillingStatusResponseSchema.parse(
-        await liqpayProvider.getSubscriptionStatus(pool, userId),
+      // Founder bypass — same `isFounderUser` check `requirePlan()` gates on,
+      // so a founder never sees a paywall the status read didn't also clear
+      // (round-2 UI audit S1). Інакше рядок підписки читаємо будь-яким
+      // провайдером: усі три віддають ту саму serialize-форму з таблиці.
+      const subscription = isFounderUser(userId)
+        ? {
+            id: null,
+            provider: "manual" as const,
+            plan: "pro" as const,
+            status: "active",
+            active: true,
+            currentPeriodEnd: null,
+            cancelAtPeriodEnd: false,
+          }
+        : (await liqpayProvider.getSubscriptionStatus(pool, userId))
+            .subscription;
+      // Знімок доступу рахується однаково для всіх, включно з founder-ом:
+      // `getUserPlan` усередині віддає йому синтетичний Pro.
+      const access = await buildAccessSnapshot(pool, userId);
+      // `active` дзеркалить стан доступу: сам рядок `trialing` лишається
+      // після кінця trial, і статус без дати казав би `true` вже Free-людині.
+      res.json(
+        BillingStatusResponseSchema.parse({
+          subscription: { ...subscription, active: access.state !== "free" },
+          access,
+        }),
       );
-      res.json(payload);
     },
   );
 
@@ -235,25 +249,64 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     }),
     async (req: AuthedRequest, res: Response) => {
       const userId = req.user!.id;
-      // Best-effort по всіх провайдерах (кожен — no-op без своєї підписки).
+      // Питаємо всіх провайдерів (кожен — `none` без своєї підписки).
       // Per-provider try/catch — щоб транзієнтна помилка одного провайдера
       // (LiqPay 5xx, Stripe not-configured на UA-деплої) не валила cancel,
-      // який в інших уже пройшов. Той самий патерн, що dataRights +
+      // який в іншого уже пройшов. Той самий патерн, що dataRights +
       // internal/billing (ADR-0016).
-      await Promise.all(
-        (["stripe", "liqpay", "plata"] as ProviderId[]).map(async (id) => {
-          try {
-            await providerRegistry[id].cancelSubscription(pool, userId);
-          } catch (err) {
-            logger.warn({
-              msg: "billing_cancel_provider_failed",
-              provider: id,
-              err: err instanceof Error ? err.message : String(err),
-            });
-          }
-        }),
+      //
+      // Але відповідь роблять РЕЗУЛЬТАТИ, а не відсутність винятків: раніше
+      // роут завжди віддавав `{ok:true}`, тож «Скасувати Premium» виглядало
+      // як no-op і для тих, кому скасовувати нічого (founder, `manual`), і
+      // для тих, кому провайдер відмовив.
+      const attempts = await Promise.all(
+        (["stripe", "liqpay", "plata"] as ProviderId[]).map(
+          async (id): Promise<CancelAttempt> => {
+            try {
+              return {
+                id,
+                outcome: await providerRegistry[id].cancelSubscription(
+                  pool,
+                  userId,
+                ),
+              };
+            } catch (err) {
+              logger.warn({
+                msg: "billing_cancel_provider_failed",
+                provider: id,
+                err: err instanceof Error ? err.message : String(err),
+              });
+              return { id, outcome: "failed" };
+            }
+          },
+        ),
       );
-      res.json(BillingCancelResponseSchema.parse({ ok: true }));
+
+      const accepted = attempts.find(
+        (a) => a.outcome === "canceled" || a.outcome === "already_canceling",
+      );
+      if (accepted) {
+        logger.info({
+          msg: "billing_cancel_accepted",
+          provider: accepted.id,
+          outcome: accepted.outcome,
+        });
+        res.json(BillingCancelResponseSchema.parse({ ok: true }));
+        return;
+      }
+      // Через errorHandler, а не інлайновий `res.status().json()`: так
+      // клієнт отримує ще й `requestId`, а подія — метрику й структурований
+      // лог (гейт `check-inline-error-responses`).
+      if (attempts.some((a) => a.outcome === "failed")) {
+        throw new ExternalServiceError(
+          "Payment provider did not confirm the cancellation",
+          { code: "PROVIDER_CANCEL_FAILED" },
+        );
+      }
+      throw new AppError("No active subscription to cancel", {
+        status: 409,
+        code: "NO_ACTIVE_SUBSCRIPTION",
+      });
     },
   );
 
@@ -327,37 +380,44 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     },
   );
 
-  // Plata (monopay) webhook — JSON body, `X-Sign` (ECDSA над сирим тілом).
-  r.post("/api/billing/plata-webhook", async (req: Request, res: Response) => {
-    const raw = rawBody(req).toString("utf8");
-    const header = req.headers["x-sign"];
-    const signature = Array.isArray(header) ? header[0] : header;
-    // Warm pubkey перед verify; на mismatch — рефетч (rotation) і одна повторна спроба.
-    await ensurePlataPubkey();
-    let ok =
-      typeof signature === "string" &&
-      plataProvider.verifyWebhookSignature(raw, signature);
-    if (!ok && typeof signature === "string") {
-      await ensurePlataPubkey(true);
-      ok = plataProvider.verifyWebhookSignature(raw, signature);
-    }
-    if (!ok) {
-      emitSecurityEvent({
-        event: "plata_webhook_bad_sig",
-        severity: "high",
-        details:
-          signature === undefined
-            ? "plata X-Sign missing"
-            : "plata signature mismatch",
-      });
-      billingWebhookTotal.inc({ provider: "plata", status: "bad_sig" });
-      res.status(400).json({ error: "Invalid Plata signature" });
-      return;
-    }
-    billingWebhookTotal.inc({ provider: "plata", status: "verified" });
-    await plataProvider.processWebhook(pool, raw);
-    res.json({ ok: true });
-  });
+  // Plata (monopay) webhooks — JSON body, `X-Sign` (ECDSA над сирим тілом).
+  // Два окремих роути (`chargeUrl`/`statusUrl`) роблять те саме
+  // verify-then-enqueue: жоден не пише у `subscriptions` напряму, обидва
+  // лише тригерять звірку проти `subscription/status` (arbiter стану).
+  const plataWebhookHandler =
+    () =>
+    async (req: Request, res: Response): Promise<void> => {
+      const raw = rawBody(req).toString("utf8");
+      const header = req.headers["x-sign"];
+      const signature = Array.isArray(header) ? header[0] : header;
+      // Warm pubkey перед verify; на mismatch — рефетч (rotation) і одна повторна спроба.
+      await ensurePlataPubkey();
+      let ok =
+        typeof signature === "string" &&
+        plataProvider.verifyWebhookSignature(raw, signature);
+      if (!ok && typeof signature === "string") {
+        await ensurePlataPubkey(true);
+        ok = plataProvider.verifyWebhookSignature(raw, signature);
+      }
+      if (!ok) {
+        emitSecurityEvent({
+          event: "plata_webhook_bad_sig",
+          severity: "high",
+          details:
+            signature === undefined
+              ? "plata X-Sign missing"
+              : "plata signature mismatch",
+        });
+        billingWebhookTotal.inc({ provider: "plata", status: "bad_sig" });
+        res.status(400).json({ error: "Invalid Plata signature" });
+        return;
+      }
+      billingWebhookTotal.inc({ provider: "plata", status: "verified" });
+      await plataProvider.processWebhook(pool, raw);
+      res.json({ ok: true });
+    };
+  r.post("/api/billing/plata-charge", plataWebhookHandler());
+  r.post("/api/billing/plata-status", plataWebhookHandler());
 
   return r;
 }

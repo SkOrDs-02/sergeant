@@ -6,7 +6,11 @@ import type { Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
 import { budgetCategoryIds } from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
+import { MCC_CATEGORIES } from "@sergeant/finyk-domain/constants";
 
+// Короткі підписи, які історично стояли тут. Усе, чого тут немає, береться з
+// канонічного каталогу (`MCC_CATEGORIES`) — доти «Благодійність», «Подорожі» чи
+// нова «Перекази людям» дали б у заголовку сирий id (`p2p_transfer`).
 const BUILTIN: Record<string, string> = {
   food: "Продукти",
   restaurant: "Кафе та ресторани",
@@ -35,7 +39,11 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
     if (!best) return [];
 
     const fromCustom = ctx.customCategories.find((c) => c.id === best!.id);
-    const label = fromCustom?.label || BUILTIN[best.id] || best.id;
+    const label =
+      fromCustom?.label ||
+      BUILTIN[best.id] ||
+      MCC_CATEGORIES.find((c) => c.id === best!.id)?.label ||
+      best.id;
     const thisMonthSpend = Math.round(
       ctx.canonicalMonthSpend.get(best.id) || 0,
     );
@@ -50,7 +58,7 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
         module: "finyk" as const,
         priority: 55,
         icon: "bookmark",
-        title: `"${label}" – твоя найчастіша категорія без ліміту`,
+        title: `«${label}» – твоя найчастіша категорія без ліміту`,
         body: spendHint,
         action: "finyk",
       },

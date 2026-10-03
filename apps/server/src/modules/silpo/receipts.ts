@@ -1,16 +1,33 @@
 import { z } from "zod";
-import type { PoolClient } from "pg";
 import * as Sentry from "@sentry/node";
-import { pool, query as defaultQuery } from "../../db.js";
+import { query as defaultQuery } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
   AppError,
   ExternalServiceError,
   RateLimitError,
 } from "../../obs/errors.js";
-import { callMcpTool, type McpError, type McpResult } from "./mcpClient.js";
+import {
+  callMcpTool,
+  listMcpTools,
+  type McpError,
+  type McpResult,
+} from "./mcpClient.js";
 import { resolveBranchContext } from "./branchContext.js";
+import { diffToolContract } from "./toolContract.js";
+import {
+  OFFLINE_ORDERS_LIMIT,
+  ONLINE_ORDERS_LIMIT,
+  ONLINE_ORDERS_PAGE_SIZE,
+} from "./orderLimits.js";
 import { matchAndLink } from "./receiptsMatch.js";
+import {
+  defaultWithTransaction,
+  upsertReceipt,
+  type ParsedItem,
+  type ParsedReceipt,
+  type SilpoTransactionRunner,
+} from "./receiptsUpsert.js";
 import {
   callWithFreshAccessToken,
   type QueryFn,
@@ -21,7 +38,7 @@ import {
  * Pulls Silpo order history (offline + online), normalizes it into our own
  * `silpo_receipts` / `silpo_receipt_items` snapshot, and runs the
  * deterministic matcher against the user's Mono transactions. Spec:
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` § Рішення дизайну
+ * `docs/work/specs/silpo-mcp-integration.md` § Рішення дизайну
  * ("Збагачення, а не створення витрат" / "Unmatched-чеки — першокласний стан").
  *
  * Форми звірені живим спайком §0 (2026-08-18, `serverInfo.version 1.108.0`):
@@ -93,25 +110,6 @@ const RawOrdersEnvelopeSchema = z
   .passthrough();
 
 // ─────────────────────────── Normalization (provisional) ────────────────────
-
-interface ParsedItem {
-  name: string;
-  qty: number | null;
-  unit: string | null;
-  priceKop: number;
-  categorySlug: string | null;
-  barcode: string | null;
-}
-
-interface ParsedReceipt {
-  receiptId: string;
-  purchasedAtMs: number;
-  storeId: string | null;
-  paymentHint: string | null;
-  totalKop: number;
-  items: ParsedItem[];
-  raw: unknown;
-}
 
 function firstDefined<T>(
   ...values: Array<T | undefined | null>
@@ -223,21 +221,28 @@ function normalizeRawOrder(
 
 // ─────────────────────────────── MCP fetch step ─────────────────────────────
 
-// Ліміти з живих input schemas (спайк §0): offline max 10, online max 100.
-const OFFLINE_ORDERS_LIMIT = 10;
-const ONLINE_ORDERS_LIMIT = 100;
-
 /**
- * Fetches one order list and parses it **per order**: an MCP-level failure
- * (network/auth/protocol/schema-drift on the envelope) still surfaces as
- * an `McpError`, but a single malformed *element* is dropped +
- * `logger.warn("silpo_raw_order_unparseable")` instead of failing the sync.
+ * Одна сторінка замовлень, розібрана **поелементно**: збій рівня MCP
+ * (мережа/авторизація/протокол/дрейф схеми конверта) і далі спливає як
+ * `McpError`, але окремий непарсабельний *елемент* просто відкидається з
+ * `logger.warn("silpo_raw_order_unparseable")`, не валячи синк.
+ *
+ * Повертає ДВА числа, і різниця між ними принципова: `orders` — те, що
+ * вдалось розібрати, `rawCount` — скільки елементів було в конверті. Для
+ * пагінації годиться лише другий: сторінка з одним битим рядком виглядає
+ * коротшою за запит, і по `orders.length` обхід вирішив би, що замовлення
+ * скінчились, мовчки загубивши все, що йде далі.
  */
+interface OrderPage {
+  orders: RawOrder[];
+  rawCount: number;
+}
+
 async function fetchOrderList(
   accessToken: string,
   toolName: "silpo_get_my_offline_orders" | "silpo_get_my_online_orders",
   args: Record<string, unknown>,
-): Promise<McpResult<RawOrder[]>> {
+): Promise<McpResult<OrderPage>> {
   const result = await callMcpTool({
     accessToken,
     toolName,
@@ -247,7 +252,8 @@ async function fetchOrderList(
   if (!result.ok) return result;
 
   const orders: RawOrder[] = [];
-  (result.data.orders ?? []).forEach((raw, index) => {
+  const rawOrders = result.data.orders ?? [];
+  rawOrders.forEach((raw, index) => {
     const parsed = RawOrderSchema.safeParse(raw);
     if (!parsed.success) {
       logger.warn({
@@ -264,12 +270,153 @@ async function fetchOrderList(
     orders.push(parsed.data);
   });
 
-  return { ok: true, data: orders };
+  return { ok: true, data: { orders, rawCount: rawOrders.length } };
 }
 
 interface BothOrderLists {
   offline: RawOrder[];
   online: RawOrder[];
+}
+
+/**
+/**
+ * Стеля `limit`, яку Сільпо назвав у відмові валідації, або `null`.
+ *
+ * Текст відмови несе zod-issue дослівно:
+ * `[{"origin":"number","code":"too_big","maximum":50,…,"path":["limit"],…}]`.
+ * Читаємо саме `maximum` поруч із `"too_big"` — не перше число в рядку:
+ * там же трапляються коди помилок (`-32602`) і номери шляхів.
+ */
+export function parseLimitCeilingFromRefusal(message: string): number | null {
+  if (!/too_big/i.test(message) || !/"limit"/.test(message)) return null;
+  const m = /"maximum"\s*:\s*(\d+)/.exec(message);
+  if (!m?.[1]) return null;
+  const ceiling = Number(m[1]);
+  return Number.isInteger(ceiling) && ceiling > 0 ? ceiling : null;
+}
+
+/**
+ * Онлайн-замовлення сторінками, з адаптацією до стелі `limit`.
+ *
+ * Доти запит ішов одним викликом на `ONLINE_ORDERS_LIMIT`, і коли Сільпо
+ * 2026-09-14 знизили максимум зі 100 до 50, синк просто перестав працювати.
+ * Числова константа тут ненадійна за побудовою: її значення живе на чужому
+ * сервері й може змінитись мовчки будь-коли.
+ *
+ * Тому: йдемо сторінками по `ONLINE_ORDERS_PAGE_SIZE`, а коли сторінка
+ * відмовлена через завеликий `limit` — звужуємось до стелі, яку Сільпо
+ * назвав САМ, і повторюємо цю ж сторінку. Звуження одноразове на сторінку:
+ * друга відмова поспіль — це вже не відома нам межа, і її треба показати,
+ * а не крутити цикл.
+ *
+ * Обхід зупиняється, коли набрано `ONLINE_ORDERS_LIMIT`, або коли сторінка
+ * прийшла коротшою за запит (замовлення скінчились) — інакше порожні
+ * сторінки крутились би до стелі.
+ */
+async function fetchOnlineOrders(
+  accessToken: string,
+): Promise<McpResult<RawOrder[]>> {
+  const orders: RawOrder[] = [];
+  let pageSize = ONLINE_ORDERS_PAGE_SIZE;
+  let offset = 0;
+
+  while (orders.length < ONLINE_ORDERS_LIMIT) {
+    const want = Math.min(pageSize, ONLINE_ORDERS_LIMIT - orders.length);
+    let page = await fetchOrderList(accessToken, "silpo_get_my_online_orders", {
+      limit: want,
+      offset,
+    });
+
+    if (!page.ok && page.error.kind === "tool_error") {
+      const ceiling = parseLimitCeilingFromRefusal(page.error.message);
+      if (ceiling !== null && ceiling < want) {
+        logger.warn({
+          msg: "silpo_online_limit_ceiling_lowered",
+          asked: want,
+          ceiling,
+        });
+        pageSize = ceiling;
+        page = await fetchOrderList(accessToken, "silpo_get_my_online_orders", {
+          limit: ceiling,
+          offset,
+        });
+      }
+    }
+
+    if (!page.ok) return page;
+    orders.push(...page.data.orders);
+    // Коротша сторінка = замовлення скінчились. Два уточнення, і обидва
+    // з граблів. Перше: порівнюємо з тим, що РЕАЛЬНО просили останнім
+    // запитом, а не з `want` — після звуження це різні числа, і `want`
+    // дав би нескінченний цикл на повній сторінці. Друге: міряємо
+    // `rawCount`, а не `orders.length` — один непарсабельний рядок робить
+    // повну сторінку «короткою», і обхід зупинився б, загубивши решту.
+    if (page.data.rawCount < Math.min(pageSize, want)) break;
+    offset += page.data.rawCount;
+  }
+
+  return { ok: true, data: orders.slice(0, ONLINE_ORDERS_LIMIT) };
+}
+
+/**
+ * Як часто звіряти живу специфікацію тул із тим, що шле код. Раз на добу:
+ * це один додатковий `tools/list` на всіх користувачів разом, а зміни на
+ * їхньому боці не бувають частішими за деплої.
+ */
+const CONTRACT_CHECK_INTERVAL_MS = 24 * 60 * 60_000;
+let lastContractCheckAt = 0;
+
+/** Test-only: скидає вікно звірки контракту між тестами. */
+export function __resetSilpoContractCheck(): void {
+  lastContractCheckAt = 0;
+}
+
+/**
+ * Профілактична звірка специфікації тул — щоб зміна на боці Сільпо
+ * називала себе САМА, а не через два тижні мертвого синку.
+ *
+ * 2026-09-14 вони знизили стелю `limit` зі 100 до 50, і єдиним сигналом був
+ * збій синку, який виглядав як «змінили формат відповіді». Снапшот-тест
+ * цього не бачив за побудовою (він звіряє код із записом, не з сервером).
+ *
+ * Три властивості цієї перевірки навмисні:
+ *   - **не блокує синк.** Будь-яка її помилка ковтається: діагностика не
+ *     має права зламати те, що працює;
+ *   - **раз на добу**, не на кожен синк — зайвий виклик до чужого API
+ *     коштує квоти, а специфікація так часто не міняється;
+ *   - **дзвонить у Sentry**, а не лише в лог. Рядок у лозі, якого ніхто не
+ *     читає, — це не сигнал; той самий урок, що й з дрейфом схеми.
+ */
+async function checkToolContract(accessToken: string): Promise<void> {
+  const now = Date.now();
+  if (now - lastContractCheckAt < CONTRACT_CHECK_INTERVAL_MS) return;
+  lastContractCheckAt = now;
+
+  try {
+    const tools = await listMcpTools(accessToken);
+    if (!tools.ok) return;
+
+    const drift = diffToolContract(tools.data);
+    if (drift.length === 0) return;
+
+    logger.error({ msg: "silpo_tool_contract_drift", drift });
+    try {
+      Sentry.captureException(
+        new Error(`Silpo tool contract drift: ${drift.join("; ")}`), // NOSONAR — синтетична помилка як носій алерту
+        {
+          level: "warning",
+          tags: { integration: "silpo", kind: "contract_drift" },
+        },
+      );
+    } catch {
+      /* Sentry ніколи не має ламати обробку */
+    }
+  } catch (err) {
+    logger.warn({
+      msg: "silpo_tool_contract_check_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 /**
@@ -304,129 +451,22 @@ function makeFetchBothOrderLists(
           kind: offlineResult.error.kind,
         });
       } else {
-        offline = offlineResult.data;
+        offline = offlineResult.data.orders;
       }
     } else {
       logger.warn({ msg: "silpo_offline_orders_skipped_no_branch_context" });
     }
 
-    const online = await fetchOrderList(
-      accessToken,
-      "silpo_get_my_online_orders",
-      { limit: ONLINE_ORDERS_LIMIT },
-    );
+    const online = await fetchOnlineOrders(accessToken);
     if (!online.ok) return { ok: false, error: online.error };
+
+    // Після успішного синку — профілактична звірка специфікації (раз на
+    // добу). Саме після, а не до: зайвий виклик не має стояти на шляху
+    // роботи, заради якої користувач тапнув кнопку.
+    await checkToolContract(accessToken);
+
     return { ok: true, data: { offline, online: online.data } };
   };
-}
-
-// ─────────────────────────────── DB upsert step ─────────────────────────────
-
-/**
- * Runs `fn` inside `BEGIN…COMMIT` on ONE dedicated `pool` client — mirrors
- * `modules/mono/webhook.ts` (raw `pool.connect()` +
- * `client.query("BEGIN"/"COMMIT"/"ROLLBACK")`), NOT a sequence of
- * independent `pool.query()` calls, which may each grab a different
- * physical connection and silently not be transactional at all.
- */
-export type SilpoTransactionRunner = <T>(
-  fn: (queryFn: QueryFn) => Promise<T>,
-) => Promise<T>;
-
-/** Adapts a `PoolClient` to the `QueryFn` shape this module's SQL helpers already use (`meta` is accepted + ignored — `PoolClient.query` has no such concept). */
-const clientAsQueryFn: (client: PoolClient) => QueryFn = (client) =>
-  (async (text, values) => {
-    const sql = typeof text === "string" ? text : text.text;
-    return client.query(sql, values);
-  }) satisfies QueryFn;
-
-async function defaultWithTransaction<T>(
-  fn: (queryFn: QueryFn) => Promise<T>,
-): Promise<T> {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const result = await fn(clientAsQueryFn(client));
-    await client.query("COMMIT");
-    return result;
-  } catch (err) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Best-effort — original error matters more than a rollback failure.
-    }
-    throw err;
-  } finally {
-    client.release();
-  }
-}
-
-/**
- * Inserts a receipt (+ its items, only when newly inserted — receipts are
- * immutable snapshots once stored). Both statements run inside ONE
- * transaction: before this fix they were independent, so a failed items
- * INSERT left an item-less receipt behind FOREVER (`ON CONFLICT DO
- * NOTHING` on the receipt insert blocks a retried sync from self-healing
- * it). A rolled-back receipt insert means the next sync retries cleanly.
- */
-async function upsertReceipt(
-  userId: string,
-  channel: "online" | "offline",
-  receipt: ParsedReceipt,
-  withTransaction: SilpoTransactionRunner,
-): Promise<{ inserted: boolean; itemsInserted: number }> {
-  return withTransaction(async (queryFn) => {
-    const res = await queryFn(
-      `INSERT INTO silpo_receipts
-         (user_id, receipt_id, purchased_at, store_id, channel, payment_hint, total_kop, raw)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (user_id, receipt_id) DO NOTHING`,
-      [
-        userId,
-        receipt.receiptId,
-        new Date(receipt.purchasedAtMs),
-        receipt.storeId,
-        channel,
-        receipt.paymentHint,
-        receipt.totalKop,
-        JSON.stringify(receipt.raw),
-      ],
-      { op: "silpo_receipt_upsert" },
-    );
-    const inserted = (res.rowCount ?? 0) > 0;
-    if (!inserted || receipt.items.length === 0) {
-      return { inserted, itemsInserted: 0 };
-    }
-
-    // Multi-row VALUES insert — receipt.items.length is bounded by a single
-    // Silpo order (tens, not thousands), so one round-trip is fine.
-    const values: unknown[] = [];
-    const rows: string[] = [];
-    let i = 1;
-    for (const item of receipt.items) {
-      rows.push(
-        `($${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++})`,
-      );
-      values.push(
-        userId,
-        receipt.receiptId,
-        item.name,
-        item.qty,
-        item.unit,
-        item.priceKop,
-        item.categorySlug,
-        item.barcode,
-      );
-    }
-    await queryFn(
-      `INSERT INTO silpo_receipt_items
-         (user_id, receipt_id, name, qty, unit, price_kop, category_slug, barcode)
-       VALUES ${rows.join(", ")}`,
-      values,
-      { op: "silpo_receipt_items_insert" },
-    );
-    return { inserted, itemsInserted: receipt.items.length };
-  });
 }
 
 // ────────────────────────────────── Orchestration ────────────────────────────
@@ -443,30 +483,73 @@ export interface SilpoSyncResult {
 }
 
 /**
- * Дедуп-вікно для Sentry-алерту про дрейф схеми. Дрейф — стан, не подія:
- * якщо Сільпо змінили формат, ЖОДЕН наступний виклик не пройде, і без вікна
- * кожен тап «Оновити чеки» кожного користувача став би окремою подією.
- * Одна подія на 15 хв достатня, щоб побачити проблему, і не заливає квоту.
+ * Дедуп-вікно для Sentry-алерту про збій Сільпо. Усі ці відмови — СТАНИ, а
+ * не події: якщо Сільпо змінили формат чи лежать, ЖОДЕН наступний виклик не
+ * пройде, і без вікна кожен тап «Оновити чеки» кожного користувача став би
+ * окремою подією. Одна подія на 15 хв достатня, щоб побачити проблему, і не
+ * заливає квоту.
  */
-const SCHEMA_DRIFT_ALERT_WINDOW_MS = 15 * 60_000;
-let lastSchemaDriftAlertAt = 0;
+const SILPO_ALERT_WINDOW_MS = 15 * 60_000;
 
-/** Test-only: скидає вікно дедупу між тестами. */
-export function __resetSilpoSchemaDriftAlert(): void {
-  lastSchemaDriftAlertAt = 0;
+/**
+ * Вікно ведеться ПО ВИДУ збою, а не одне спільне.
+ *
+ * AI-DANGER: спільний лічильник зробив би алерти взаємно глушними —
+ * `upstream_unavailable` (найчастіший і найменш цікавий) з'їдав би вікно, і
+ * `schema_drift`, який стається раз на місяці й вимагає правки коду, мовчав
+ * би цілих 15 хв після нього. Тобто найгучніший вид ховав би найважливіший.
+ */
+const lastAlertAt = new Map<SilpoAlertKind, number>();
+
+/** Види збою, про які ми сигналимо. Решта — очікувані стани користувача. */
+type SilpoAlertKind =
+  | "schema_drift"
+  | "tool_error"
+  | "protocol_error"
+  | "upstream_unavailable"
+  | "unknown";
+
+/** Test-only: скидає вікна дедупу між тестами. */
+export function __resetSilpoAlerts(): void {
+  lastAlertAt.clear();
 }
 
-function captureSilpoSchemaDrift(message: string): void {
-  logger.error({ msg: "silpo_schema_drift", detail: message });
+/**
+ * Сигналить у Sentry про збій інтеграції.
+ *
+ * **Чому це потрібно окремим викликом.** `errorHandler` шле в Sentry лише
+ * НЕ-operational 5xx, а все, що повертає цей мапер, — `AppError`, тобто
+ * operational. Без явного capture жоден із цих збоїв у дашборді не
+ * з'являється: `schema_drift` лишався б самим лише warn-рядком у логах, а
+ * три інші — двома полями (`last_failed_at`, `last_error_code`) у таблиці
+ * `silpo_connection`, куди ніхто не дивиться, доки чеки не перестануть
+ * приходити. Знахідка 2026-09-17: у Sentry летів РІВНО ОДИН вид із чотирьох.
+ *
+ * **`detail` передається лише там, де він НАШ.** Для `schema_drift` це опис
+ * форми відповіді, який склали ми (`mcpClient.ts`), і без нього подія
+ * марна — вона має назвати зламане поле. Для решти видів текст приходить
+ * від Сільпо і може нести поля покупки, тож у подію він НЕ потрапляє
+ * (Hard Rule #21) — там достатньо самого виду, а причина лишається в логах.
+ */
+function captureSilpoFailure(kind: SilpoAlertKind, detail?: string): void {
+  logger.error({ msg: `silpo_${kind}`, ...(detail ? { detail } : {}) });
   const now = Date.now();
-  if (now - lastSchemaDriftAlertAt < SCHEMA_DRIFT_ALERT_WINDOW_MS) return;
-  lastSchemaDriftAlertAt = now;
+  const previous = lastAlertAt.get(kind) ?? 0;
+  if (previous && now - previous < SILPO_ALERT_WINDOW_MS) return;
+  lastAlertAt.set(kind, now);
+  // Заголовок — це ключ групування Sentry, тож для `schema_drift` він
+  // лишається ДОСЛІВНО тим, що був до 2026-09-17. Інакше справжній повтор
+  // дрейфу завів би НОВУ issue замість того, щоб перевідкрити вже закриту, —
+  // і зв'язок «та сама поломка повернулась» загубився б саме тоді, коли він
+  // потрібен. Решта видів заводиться вперше, тож там формат вільний.
+  const title =
+    kind === "schema_drift" ? "Silpo MCP schema drift" : `Silpo MCP ${kind}`;
   try {
     Sentry.captureException(
-      new Error(`Silpo MCP schema drift: ${message}`), // NOSONAR — навмисно синтетична помилка як носій алерту
+      new Error(detail ? `${title}: ${detail}` : title), // NOSONAR — навмисно синтетична помилка як носій алерту
       {
         level: "warning",
-        tags: { integration: "silpo", kind: "schema_drift" },
+        tags: { integration: "silpo", kind },
       },
     );
   } catch {
@@ -496,11 +579,19 @@ export function silpoErrorToAppError(
         code: "SILPO_CONFIG_MISSING",
       });
     case "rate_limited":
-      return new RateLimitError(
-        "Забагато запитів до Сільпо, спробуйте пізніше",
-        {
-          code: "SILPO_RATE_LIMITED",
-        },
+      return new RateLimitError("Забагато запитів до Сільпо. Спробуй пізніше", {
+        code: "SILPO_RATE_LIMITED",
+      });
+    case "tool_error":
+      // Тула відпрацювала і ВІДМОВИЛА — контракт цілий, зламалось щось на
+      // боці Сільпо (ліміт, тимчасова помилка, відкликаний доступ). Текст
+      // відмови вже в логах (`silpo_mcp_tool_error`); людині він нічого не
+      // дає, тож копія лишається про стан, а не про формат — і в подію
+      // Sentry він теж не йде (може нести поля покупки, Hard Rule #21).
+      captureSilpoFailure("tool_error");
+      return new ExternalServiceError(
+        "Сільпо не віддав чеки, спробуй пізніше",
+        { code: "SILPO_TOOL_ERROR" },
       );
     case "schema_drift":
       // Єдиний детектор того, що Сільпо мовчки змінили контракт: версіонування
@@ -509,17 +600,69 @@ export function silpoErrorToAppError(
       // НЕ-operational 5xx, а це `AppError` (operational) — тож без явного
       // capture дрейф лишався б самим лише warn-рядком у логах, який ніхто
       // не читає. Звідси прямий виклик тут.
-      captureSilpoSchemaDrift(error.message);
+      captureSilpoFailure("schema_drift", error.message);
       return new ExternalServiceError(
-        "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+        "Сільпо змінили формат відповіді, оновлення тимчасово недоступне",
         { code: "SILPO_SCHEMA_DRIFT" },
       );
     case "protocol_error":
     case "upstream_unavailable":
     default:
+      // Мережа або протокол. Людині показуємо те саме «тимчасово
+      // недоступний», але в дашборді ці два види мають бути РІЗНИМИ: перший
+      // означає, що Сільпо відповів чимось, чого ми не вміємо читати
+      // (тобто підозра на ту саму зміну контракту), другий — що не
+      // відповів узагалі. Невідомий вид підписується як `unknown`, щоб
+      // нова гілка в чужому API не з'їхала мовчки в купу до мережевих.
+      captureSilpoFailure(
+        error.kind === "protocol_error" || error.kind === "upstream_unavailable"
+          ? error.kind
+          : "unknown",
+      );
       return new ExternalServiceError("Сільпо тимчасово недоступний", {
         code: "SILPO_UPSTREAM_ERROR",
       });
+  }
+}
+
+/**
+ * Лишає в `silpo_connection` слід останнього провалу синку.
+ *
+ * Це та половина, якої бракувало два тижні. `last_sync_at` торкався лише
+ * на успіху, тож «синк зламано» і «людина не ходила в магазин» виглядали
+ * в інтерфейсі однаково — поломку видно було тільки в Sentry (304 події),
+ * куди власник продукту не дивиться. Тепер провал лишає слід там же, де
+ * успіх, і застосунок може про нього сказати.
+ *
+ * Пишемо НАШ код, а не текст відмови Сільпо: чужий текст може нести поля
+ * покупки, а це друга копія чекових даних у місці, де їх ніхто не чекає
+ * (Hard Rule #21). Причина лишається в логах і в діагностиці.
+ *
+ * **Помилка запису ковтається навмисно.** Ця функція викликається на
+ * шляху, який УЖЕ падає: кинути звідси другу помилку означало б підмінити
+ * справжню причину збою технічною — тобто зламати рівно ту діагностику,
+ * заради якої все це й робиться.
+ */
+async function recordSyncFailure(
+  userId: string,
+  code: string,
+  queryFn: QueryFn,
+): Promise<void> {
+  try {
+    await queryFn(
+      `UPDATE silpo_connection
+          SET last_failed_at = NOW(),
+              last_error_code = $2,
+              updated_at = NOW()
+        WHERE user_id = $1`,
+      [userId, code],
+      { op: "silpo_connection_record_failure" },
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "silpo_record_sync_failure_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -546,7 +689,11 @@ export async function pullAndSyncReceipts(
     makeFetchBothOrderLists(userId),
     { query: queryFn },
   );
-  if (!call.ok) throw silpoErrorToAppError(call.error);
+  if (!call.ok) {
+    const appError = silpoErrorToAppError(call.error);
+    await recordSyncFailure(userId, appError.code, queryFn);
+    throw appError;
+  }
 
   const offlineParsed = call.data.offline
     .map((raw) => normalizeRawOrder(raw, "offline"))
@@ -572,9 +719,16 @@ export async function pullAndSyncReceipts(
 
   // Персистимо факт УСПІШНОГО завершення: sync без нових чеків теж оновлює
   // «Останнє оновлення» в UI (MAX(created_at) по чеках цього не вміє).
+  //
+  // Тим самим запитом ГАСИМО слід останнього провалу. Без цього плашка
+  // «синк зламано» лишалась би висіти після того, як усе полагодилось —
+  // а хибна тривога знецінює сигнал швидше, ніж його відсутність.
   await queryFn(
     `UPDATE silpo_connection
-        SET last_sync_at = NOW(), updated_at = NOW()
+        SET last_sync_at = NOW(),
+            last_failed_at = NULL,
+            last_error_code = NULL,
+            updated_at = NOW()
       WHERE user_id = $1`,
     [userId],
     { op: "silpo_connection_touch_last_sync" },
@@ -602,6 +756,15 @@ export async function pullAndSyncReceipts(
     unmatched,
   };
 }
+
+// Write path (DB upsert + transaction runner) lives in `receiptsUpsert.ts`
+// (Hard Rule #18) — re-exported so callers and existing tests keep importing
+// from `./receipts.js`.
+export {
+  defaultWithTransaction,
+  upsertReceipt,
+  type SilpoTransactionRunner,
+} from "./receiptsUpsert.js";
 
 // Read paths live in `receiptsRead.ts` (Hard Rule #18), re-exported here.
 export {

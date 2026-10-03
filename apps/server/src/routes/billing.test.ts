@@ -22,6 +22,24 @@ vi.mock("../auth.js", () => ({
   getSessionUser: getSessionUserMock,
 }));
 
+// Знімок доступу має власні тести (`modules/billing/accessSnapshot.test.ts`);
+// тут перевіряємо лише, що роут кладе його поруч із `subscription`.
+const ACCESS = {
+  state: "free",
+  trialEndsAt: null,
+  graceEndsAt: null,
+  features: { "export.pdf": false },
+  meters: {
+    aiActions: { used: 0, limit: 20, resetsAt: "2026-06-14T21:00:00.000Z" },
+    aiPhoto: { used: 0, limit: 3, resetsAt: "2026-06-14T21:00:00.000Z" },
+    finykVision: { used: 0, limit: 5, resetsAt: "2026-06-14T21:00:00.000Z" },
+  },
+};
+vi.mock("../modules/billing/accessSnapshot.js", () => ({
+  buildAccessSnapshot: vi.fn(async () => ACCESS),
+}));
+const accessIn = (state: string) => ({ ...ACCESS, state });
+
 vi.mock("../env/env.js", () => ({
   env: new Proxy(
     {},
@@ -31,6 +49,13 @@ vi.mock("../env/env.js", () => ({
       },
     },
   ),
+}));
+
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; цей тест його не мокає, тож без заглушки маршрут падав у 500.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
 }));
 
 vi.mock("../http/rateLimit.js", async () => {
@@ -60,6 +85,8 @@ import {
 } from "@sergeant/shared";
 
 import { createBillingRouter } from "./billing.js";
+import { errorHandler } from "../http/errorHandler.js";
+import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { getUserPlan } from "../modules/billing/index.js";
 
 function createQueryPool(query: ReturnType<typeof vi.fn>) {
@@ -77,6 +104,9 @@ function createTestApp(pool: ReturnType<typeof createQueryPool>) {
   const app = express();
   app.use(express.json());
   app.use(createBillingRouter({ pool: pool as never }));
+  // Відмови cancel (409/502) кидаються як AppError і стають тілом
+  // `{error, code, requestId}` лише в термінальному errorHandler.
+  app.use(errorHandler);
   return app;
 }
 
@@ -143,6 +173,9 @@ describe("billing routes", () => {
     });
     const app = createTestApp(createQueryPool(query));
 
+    vi.mocked(buildAccessSnapshot).mockResolvedValueOnce(
+      accessIn("pro") as never,
+    );
     const res = await request(app).get("/api/billing/status");
 
     expect(res.status).toBe(200);
@@ -154,7 +187,9 @@ describe("billing routes", () => {
         status: "active",
         active: true,
         currentPeriodEnd: "2026-06-01T00:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
+      access: accessIn("pro"),
     });
   });
 
@@ -172,6 +207,9 @@ describe("billing routes", () => {
     });
     const app = createTestApp(createQueryPool(query));
 
+    vi.mocked(buildAccessSnapshot).mockResolvedValueOnce(
+      accessIn("trial") as never,
+    );
     const res = await request(app).get("/api/billing/status");
 
     expect(res.status).toBe(200);
@@ -183,14 +221,67 @@ describe("billing routes", () => {
         status: "trialing",
         active: true,
         currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
       },
+      access: accessIn("trial"),
     });
+  });
+
+  it("exposes the cancel_at_period_end column as cancelAtPeriodEnd (and defaults a missing column to false)", async () => {
+    const baseRow = {
+      id: 9,
+      provider: "liqpay",
+      plan: "pro",
+      status: "active",
+      current_period_end: new Date("2026-06-01T00:00:00.000Z"),
+    };
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({
+        rows: [{ ...baseRow, cancel_at_period_end: true }],
+      })
+      .mockResolvedValueOnce({ rows: [baseRow] });
+    const app = createTestApp(createQueryPool(query));
+
+    const scheduled = await request(app).get("/api/billing/status");
+    expect(scheduled.status).toBe(200);
+    expect(scheduled.body.subscription.cancelAtPeriodEnd).toBe(true);
+
+    const legacyRow = await request(app).get("/api/billing/status");
+    expect(legacyRow.status).toBe(200);
+    expect(legacyRow.body.subscription.cancelAtPeriodEnd).toBe(false);
   });
 
   // ── Round-2 UI audit S1: founder bypass must match getUserPlan() ────
   // Root cause was this route reading `subscriptions` directly while
   // `requirePlan()` read `getUserPlan()` — a founder passed the gate but
   // still saw the paywall because this route never checked the allowlist.
+  it("GET /status reports active: false once the trial has lapsed", async () => {
+    // Рядок `trialing` лишається в таблиці після кінця trial; `active`
+    // дзеркалить стан доступу, а не сам статус рядка.
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        {
+          id: 7,
+          provider: "manual",
+          plan: "pro",
+          status: "trialing",
+          current_period_end: new Date("2026-01-01T00:00:00.000Z"),
+        },
+      ],
+    });
+    const app = createTestApp(createQueryPool(query));
+
+    const res = await request(app).get("/api/billing/status");
+
+    expect(res.status).toBe(200);
+    expect(res.body.subscription).toMatchObject({
+      status: "trialing",
+      active: false,
+    });
+    expect(res.body.access.state).toBe("free");
+  });
+
   it("GET /status grants a synthetic pro subscription to a founder id", async () => {
     setEnv("AI_QUOTA_FOUNDER_IDS", "founder_1,founder_2");
     getSessionUserMock.mockResolvedValue({
@@ -200,6 +291,9 @@ describe("billing routes", () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
     const app = createTestApp(createQueryPool(query));
 
+    vi.mocked(buildAccessSnapshot).mockResolvedValueOnce(
+      accessIn("pro") as never,
+    );
     const res = await request(app).get("/api/billing/status");
 
     expect(res.status).toBe(200);
@@ -211,7 +305,9 @@ describe("billing routes", () => {
         status: "active",
         active: true,
         currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
       },
+      access: accessIn("pro"),
     });
     // Founder never needs the DB — same short-circuit as getUserPlan().
     expect(query).not.toHaveBeenCalled();
@@ -238,7 +334,9 @@ describe("billing routes", () => {
         status: null,
         active: false,
         currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
       },
+      access: ACCESS,
     });
     expect(query).toHaveBeenCalled();
     unsetEnv("AI_QUOTA_FOUNDER_IDS");
@@ -371,14 +469,209 @@ describe("billing routes", () => {
     expect(res.body).toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
   });
 
-  it("POST /cancel is best-effort and returns ok when user has no subscription", async () => {
-    const query = vi.fn().mockResolvedValue({ rows: [] });
-    const app = createTestApp(createQueryPool(query));
+  // ── POST /api/billing/cancel ───────────────────────────────────────
+  // Регресія «Скасувати Premium нічого не робить»: роут завжди віддавав
+  // `{ok:true}`, навіть коли жоден провайдер нічого не скасував, а помилки
+  // провайдерів ковтав у `logger.warn`. Тепер «нічого скасовувати» — 409,
+  // «провайдер не підтвердив» — 502, а `cancel_at_period_end` стає видимим
+  // у `/status`.
+  describe("POST /cancel", () => {
+    interface FakeSubscriptionRow {
+      id: string;
+      provider: string;
+      plan: string;
+      status: string;
+      current_period_end: Date;
+      provider_subscription_id: string | null;
+      cancel_at_period_end: boolean;
+    }
 
-    const res = await request(app).post("/api/billing/cancel");
+    /**
+     * Пул-симулятор з однією LiqPay-підпискою: розрізняє SQL провайдерів за
+     * `provider = '…'` і справді мутує рядок, щоб `GET /status` після cancel
+     * читав те, що записав cancel (а не окремий мок).
+     */
+    function createSubscriptionPool(
+      overrides: Partial<FakeSubscriptionRow> | null,
+    ) {
+      const row: FakeSubscriptionRow | null = overrides
+        ? {
+            id: "42",
+            provider: "liqpay",
+            plan: "pro",
+            status: "active",
+            current_period_end: new Date("2099-01-01T00:00:00.000Z"),
+            provider_subscription_id: "srg_abc_1",
+            cancel_at_period_end: false,
+            ...overrides,
+          }
+        : null;
+      const query = vi.fn(async (sql: string) => {
+        const s = sql.replace(/\s+/g, " ");
+        if (s.includes("UPDATE subscriptions")) {
+          if (row && s.includes(`provider = '${row.provider}'`)) {
+            row.cancel_at_period_end = true;
+            return { rowCount: 1, rows: [] };
+          }
+          return { rowCount: 0, rows: [] };
+        }
+        if (s.includes("FROM plata_subscription")) return { rows: [] };
+        if (s.includes("FROM subscriptions")) {
+          // cancel-SELECT конкретного провайдера → лише його рядок;
+          // status-SELECT (`ORDER BY CASE …`) → останній рядок юзера.
+          const scoped = /provider = '(\w+)'/.exec(s)?.[1];
+          if (scoped && row?.provider !== scoped) return { rows: [] };
+          return { rows: row ? [row] : [] };
+        }
+        return { rows: [] };
+      });
+      return { row, query, pool: createQueryPool(query) };
+    }
 
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ ok: true });
+    function stubLiqpayEnv(): void {
+      setEnv("LIQPAY_PUBLIC_KEY", "sandbox_i123");
+      setEnv("LIQPAY_PRIVATE_KEY", "sandbox_priv");
+    }
+
+    function liqpayResponds(body: unknown, status = 200) {
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(typeof body === "string" ? body : JSON.stringify(body), {
+            status,
+          }),
+      );
+      globalThis.fetch = fetchMock as unknown as typeof fetch;
+      return fetchMock;
+    }
+
+    afterEach(() => {
+      unsetEnv("LIQPAY_PUBLIC_KEY");
+      unsetEnv("LIQPAY_PRIVATE_KEY");
+      unsetEnv("AI_QUOTA_FOUNDER_IDS");
+    });
+
+    it("returns 409 NO_ACTIVE_SUBSCRIPTION when no provider has anything to cancel", async () => {
+      const { pool } = createSubscriptionPool(null);
+      const fetchMock = vi.fn();
+      globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+      const res = await request(createTestApp(pool)).post(
+        "/api/billing/cancel",
+      );
+
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: "NO_ACTIVE_SUBSCRIPTION" });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("returns 409 for a founder: the synthetic manual Pro has no row to cancel", async () => {
+      setEnv("AI_QUOTA_FOUNDER_IDS", "user_1");
+      const { pool } = createSubscriptionPool(null);
+
+      const res = await request(createTestApp(pool)).post(
+        "/api/billing/cancel",
+      );
+
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: "NO_ACTIVE_SUBSCRIPTION" });
+    });
+
+    it("returns 409 for a manual grant (provider='manual' is nobody's to cancel)", async () => {
+      const { pool, row } = createSubscriptionPool({
+        provider: "manual",
+        provider_subscription_id: null,
+      });
+
+      const res = await request(createTestApp(pool)).post(
+        "/api/billing/cancel",
+      );
+
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: "NO_ACTIVE_SUBSCRIPTION" });
+      expect(row?.cancel_at_period_end).toBe(false);
+    });
+
+    it("returns 502 PROVIDER_CANCEL_FAILED when LiqPay reports an error with HTTP 200, and leaves the row alone", async () => {
+      stubLiqpayEnv();
+      const { pool, row } = createSubscriptionPool({});
+      liqpayResponds({
+        result: "error",
+        status: "error",
+        err_code: "order_not_found",
+        err_description: "order not found",
+      });
+
+      const res = await request(createTestApp(pool)).post(
+        "/api/billing/cancel",
+      );
+
+      expect(res.status).toBe(502);
+      expect(res.body).toMatchObject({ code: "PROVIDER_CANCEL_FAILED" });
+      // Провайдер відмовив → локально нічого не позначаємо скасованим.
+      expect(row?.cancel_at_period_end).toBe(false);
+    });
+
+    it("returns 502 PROVIDER_CANCEL_FAILED when LiqPay answers with HTTP 5xx", async () => {
+      stubLiqpayEnv();
+      const { pool, row } = createSubscriptionPool({});
+      liqpayResponds("Bad Gateway", 502);
+
+      const res = await request(createTestApp(pool)).post(
+        "/api/billing/cancel",
+      );
+
+      expect(res.status).toBe(502);
+      expect(res.body).toMatchObject({ code: "PROVIDER_CANCEL_FAILED" });
+      expect(row?.cancel_at_period_end).toBe(false);
+    });
+
+    it("cancels via LiqPay and /status then reports cancelAtPeriodEnd: true", async () => {
+      stubLiqpayEnv();
+      const { pool, row } = createSubscriptionPool({});
+      const fetchMock = liqpayResponds({
+        result: "ok",
+        status: "unsubscribed",
+      });
+      const app = createTestApp(pool);
+
+      const before = await request(app).get("/api/billing/status");
+      expect(before.body.subscription.cancelAtPeriodEnd).toBe(false);
+
+      const res = await request(app).post("/api/billing/cancel");
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(row?.cancel_at_period_end).toBe(true);
+
+      vi.mocked(buildAccessSnapshot).mockResolvedValueOnce(
+        accessIn("pro") as never,
+      );
+      const after = await request(app).get("/api/billing/status");
+      expect(after.status).toBe(200);
+      const parsed = BillingStatusResponseSchema.parse(after.body);
+      expect(parsed.subscription).toMatchObject({
+        status: "active",
+        active: true,
+        cancelAtPeriodEnd: true,
+      });
+    });
+
+    it("is idempotent: cancelling an already cancel_at_period_end subscription returns ok without calling LiqPay again", async () => {
+      stubLiqpayEnv();
+      const { pool } = createSubscriptionPool({ cancel_at_period_end: true });
+      const fetchMock = liqpayResponds({
+        result: "ok",
+        status: "unsubscribed",
+      });
+
+      const res = await request(createTestApp(pool)).post(
+        "/api/billing/cancel",
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true });
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
   });
 
   // Термін дії підписки. `getUserPlan()` — джерело істини для `requirePlan()`

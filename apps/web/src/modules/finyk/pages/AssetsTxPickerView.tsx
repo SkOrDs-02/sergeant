@@ -181,14 +181,14 @@ export function AssetsTxPickerView({
     <div className="mb-3 space-y-2">
       <Input
         type="search"
-        aria-label="Пошук транзакцій"
+        aria-label="Пошук операцій"
         {...searchFieldProps("transactions-search")}
         placeholder="Пошук за описом або сумою"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
       <select
-        aria-label="Період транзакцій"
+        aria-label="Період операцій"
         value={month}
         onChange={(event) => setMonth(event.target.value)}
         className="input-focus-finyk h-10 w-full rounded-xl border border-line bg-bg px-3 text-sm text-text"
@@ -210,7 +210,7 @@ export function AssetsTxPickerView({
       {Boolean(loadError) && sourceTransactions.length === 0 && (
         <Card variant="flat" radius="md" className="space-y-2">
           <p className="text-style-caption text-danger-strong dark:text-danger">
-            Не вдалося завантажити транзакції.
+            Не вдалося завантажити операції.
           </p>
           <Button size="sm" onClick={retry}>
             Повторити
@@ -223,8 +223,8 @@ export function AssetsTxPickerView({
           role="status"
         >
           {query.trim()
-            ? "За цим пошуком транзакцій немає."
-            : "За вибраний період транзакцій немає."}
+            ? "За цим пошуком операцій немає."
+            : "За вибраний період операцій немає."}
         </p>
       )}
     </div>
@@ -310,8 +310,8 @@ export function AssetsTxPickerView({
                 />
               </div>
             </Card>
-            <p className="text-style-caption text-subtle mb-3 px-1">
-              Тапни транзакцію щоб привʼязати як погашення. Виділені зеленим:
+            <p className="text-style-body text-subtle mb-3 px-1">
+              Тапни операцію щоб привʼязати як погашення. Виділені зеленим:
               автоматично виявлені поповнення картки.
             </p>
             {pickerControls}
@@ -395,14 +395,14 @@ export function AssetsTxPickerView({
             <Icon name="chevron-left" size="sm" />
             Назад
           </button>
-          <span className="text-style-label">Транзакція для «{sub.name}»</span>
+          <span className="text-style-label">Операція для «{sub.name}»</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
             <Card variant="flat" radius="md" className="mb-4">
-              <p className="text-style-caption text-subtle leading-relaxed">
+              <p className="text-style-body text-subtle leading-relaxed">
                 Обери списання (наприклад через Apple/Google). День місяця з
-                транзакції підставиться в «день списання»; сума піде в огляд і в
+                операції підставиться в «день списання»; сума піде в огляд і в
                 Рутину.
                 {linkedId && (
                   <button

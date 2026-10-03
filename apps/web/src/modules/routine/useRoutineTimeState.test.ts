@@ -135,15 +135,18 @@ describe("timeReducer", () => {
    * обраний (заливка) і сьогоднішній як `isToday` (кільце).
    */
   describe("dayRollover", () => {
-    const KYIV_2308 = "2026-08-17T20:59:00Z"; // 17 серпня 23:59 у Києві
-    const KYIV_0007 = "2026-08-17T21:07:00Z"; // 18 серпня 00:07 у Києві
+    // Device-local (ADR-0078, cutover 2026-09-01 — раніше пінилось за
+    // Києвом, LOG-3). Vitest пінить `TZ=UTC` (`apps/web/vitest.config.js`),
+    // тож «пристрій» тут — UTC, і межа доби — рівно опівночі UTC.
+    const DEVICE_2359 = "2026-08-17T23:59:00Z"; // 17 серпня 23:59 (пристрій)
+    const DEVICE_0007 = "2026-08-18T00:07:00Z"; // 18 серпня 00:07 (пристрій)
 
     it("зсуває selectedDay на нову добу в режимі today", () => {
-      vi.setSystemTime(new Date(KYIV_2308));
+      vi.setSystemTime(new Date(DEVICE_2359));
       const start = initialTimeState();
       expect(start.selectedDay).toBe("2026-08-17");
 
-      vi.setSystemTime(new Date(KYIV_0007));
+      vi.setSystemTime(new Date(DEVICE_0007));
       const next = timeReducer(start, {
         type: "dayRollover",
         prevTodayKey: "2026-08-17",
@@ -152,10 +155,10 @@ describe("timeReducer", () => {
     });
 
     it("зсуває selectedDay на нову добу в режимі week", () => {
-      vi.setSystemTime(new Date(KYIV_2308));
+      vi.setSystemTime(new Date(DEVICE_2359));
       const start = { ...initialTimeState(), timeMode: "week" as const };
 
-      vi.setSystemTime(new Date(KYIV_0007));
+      vi.setSystemTime(new Date(DEVICE_0007));
       const next = timeReducer(start, {
         type: "dayRollover",
         prevTodayKey: "2026-08-17",
@@ -165,14 +168,14 @@ describe("timeReducer", () => {
     });
 
     it("тримає «Завтра» на завтрашньому дні нової доби", () => {
-      vi.setSystemTime(new Date(KYIV_2308));
+      vi.setSystemTime(new Date(DEVICE_2359));
       const start = timeReducer(initialTimeState(), {
         type: "applyMode",
         mode: "tomorrow",
       });
       expect(start.selectedDay).toBe("2026-08-18");
 
-      vi.setSystemTime(new Date(KYIV_0007));
+      vi.setSystemTime(new Date(DEVICE_0007));
       const next = timeReducer(start, {
         type: "dayRollover",
         prevTodayKey: "2026-08-17",
@@ -181,13 +184,13 @@ describe("timeReducer", () => {
     });
 
     it("НЕ чіпає день, який користувач обрав явно", () => {
-      vi.setSystemTime(new Date(KYIV_2308));
+      vi.setSystemTime(new Date(DEVICE_2359));
       const start = timeReducer(initialTimeState(), {
         type: "deepLinkDay",
         selectedDay: "2026-08-21",
       });
 
-      vi.setSystemTime(new Date(KYIV_0007));
+      vi.setSystemTime(new Date(DEVICE_0007));
       const next = timeReducer(start, {
         type: "dayRollover",
         prevTodayKey: "2026-08-17",
@@ -196,14 +199,14 @@ describe("timeReducer", () => {
     });
 
     it("у режимі month рухає і selectedDay, і monthCursor через межу місяця", () => {
-      vi.setSystemTime(new Date("2026-08-31T20:59:00Z")); // 31 серпня 23:59 Київ
+      vi.setSystemTime(new Date("2026-08-31T23:59:00Z")); // 31 серпня 23:59 (пристрій)
       const start = timeReducer(initialTimeState(), {
         type: "applyMode",
         mode: "month",
       });
       expect(start.selectedDay).toBe("2026-08-31");
 
-      vi.setSystemTime(new Date("2026-08-31T21:07:00Z")); // 1 вересня 00:07 Київ
+      vi.setSystemTime(new Date("2026-09-01T00:07:00Z")); // 1 вересня 00:07 (пристрій)
       const next = timeReducer(start, {
         type: "dayRollover",
         prevTodayKey: "2026-08-31",
@@ -213,7 +216,7 @@ describe("timeReducer", () => {
     });
 
     it("no-op, якщо доба ще не змінилась", () => {
-      vi.setSystemTime(new Date(KYIV_2308));
+      vi.setSystemTime(new Date(DEVICE_2359));
       const start = initialTimeState();
       const next = timeReducer(start, {
         type: "dayRollover",
@@ -296,12 +299,14 @@ describe("useRoutineTimeState", () => {
   });
 
   it("сам наздоганяє нову добу, поки застосунок відкритий через північ", () => {
-    vi.setSystemTime(new Date("2026-08-17T20:59:00Z")); // 23:59 Київ
+    // Device-local (ADR-0078, cutover 2026-09-01); TZ=UTC у vitest, тож
+    // «пристрій» тут — UTC.
+    vi.setSystemTime(new Date("2026-08-17T23:59:00Z")); // 23:59 (пристрій)
     const { result } = renderHook(() => useRoutineTimeState());
     expect(result.current.selectedDay).toBe("2026-08-17");
 
     act(() => {
-      vi.setSystemTime(new Date("2026-08-17T21:07:00Z")); // 00:07 Київ
+      vi.setSystemTime(new Date("2026-08-18T00:07:00Z")); // 00:07 (пристрій)
       vi.advanceTimersByTime(8 * 60 * 1000);
     });
 

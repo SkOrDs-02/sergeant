@@ -9,6 +9,8 @@
 export const apiQueryKeys = {
   me: {
     current: () => ["me", "current"] as const,
+    /** Стан 30-денного вікна на скасування видалення акаунта. */
+    deletionStatus: () => ["me", "deletion-status"] as const,
   },
   coach: {
     all: ["coach"] as const,
@@ -21,11 +23,15 @@ export const apiQueryKeys = {
     byWeek: (weekKey: string) => ["weekly-digest", weekKey] as const,
     history: ["weekly-digest", "history"] as const,
   },
+  // Домен і форма кортежу — ті самі, що в канонічній web-фабриці
+  // (`apps/web/src/shared/lib/api/queryKeys.ts`, Hard Rule #2), щоб один
+  // ключ не інвалідовував/кешував паралельно з іншим (`push`/`vapid`,
+  // `nutrition`/`food-search`).
   push: {
-    vapidPublic: () => ["push", "vapid-public"] as const,
+    vapidPublic: () => ["push", "vapid"] as const,
   },
   foodSearch: {
-    query: (q: string) => ["food-search", q] as const,
+    query: (q: string) => ["nutrition", "food-search", q] as const,
   },
   barcode: {
     lookup: (barcode: string) => ["barcode", barcode] as const,

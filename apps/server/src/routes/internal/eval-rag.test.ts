@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   formatEventMessage,
-  shouldAutoDisableMonoIngest,
+  shouldAutoDisableDigestIngest,
   type RagEvalSummary,
 } from "./eval-rag.js";
 
@@ -150,7 +150,7 @@ describe("/api/internal/eval/rag-weekly", () => {
     const { app } = await makeApp();
     const { isKillSwitchActive } =
       await import("../../lib/featureFlags/runtimeKillSwitch.js");
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
 
     const summary = buildSummary({
       status: "kill",
@@ -160,23 +160,35 @@ describe("/api/internal/eval/rag-weekly", () => {
         mrr: { count: 50, mean: 0.4, min: 0, p50: 0.4 },
       },
     });
-    const res = await request(app)
+    // Без `autoDisable` навіть `status: "kill"` нічого не гасить —
+    // це і є дефолт «алертить, але не блокує».
+    const withoutFlag = await request(app)
       .post("/api/internal/eval/rag-weekly")
       .set("Authorization", "Bearer test-key")
       .send(summary);
+    expect(withoutFlag.status).toBe(200);
+    expect(withoutFlag.body.killSwitchActivated).toBe(false);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
+
+    const res = await request(app)
+      .post("/api/internal/eval/rag-weekly")
+      .set("Authorization", "Bearer test-key")
+      .send({ ...summary, autoDisable: true });
 
     expect(res.status).toBe(200);
     expect(res.body.killSwitchActivated).toBe(true);
     expect(res.body.sentryEventId).toBe("sentry-evt-test");
 
-    expect(sentryCaptureMessageMock).toHaveBeenCalledTimes(1);
-    const call = sentryCaptureMessageMock.mock.calls[0]!;
+    // Двічі — бо той самий звіт відправлено спершу без прапорця, потім із
+    // ним; Sentry-повідомлення однакове, гаситься лише другий раз.
+    expect(sentryCaptureMessageMock).toHaveBeenCalledTimes(2);
+    const call = sentryCaptureMessageMock.mock.calls.at(-1)!;
     const msg = call[0];
     const opts = call[1];
     expect(msg).toContain("RAG quality gate kill");
     expect(opts.level).toBe("error");
     expect(opts.tags["auto_disable_recommended"]).toBe("true");
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(true);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(true);
   });
 
   it("rejects malformed body (Zod 400)", async () => {
@@ -232,18 +244,27 @@ describe("eval-rag pure helpers", () => {
     expect(msg).toBe("rag-eval-weekly warn mode=mock recall@4=0.450 count=50");
   });
 
-  it("shouldAutoDisableMonoIngest only triggers on kill", () => {
-    expect(shouldAutoDisableMonoIngest(buildSummary({ status: "pass" }))).toBe(
-      false,
-    );
-    expect(shouldAutoDisableMonoIngest(buildSummary({ status: "warn" }))).toBe(
-      false,
-    );
-    expect(shouldAutoDisableMonoIngest(buildSummary({ status: "kill" }))).toBe(
-      true,
-    );
-    expect(shouldAutoDisableMonoIngest(buildSummary({ status: "error" }))).toBe(
-      false,
-    );
+  it("shouldAutoDisableDigestIngest без прапорця не гасить нічого", () => {
+    for (const status of ["pass", "warn", "kill", "error"] as const) {
+      expect(shouldAutoDisableDigestIngest(buildSummary({ status }))).toBe(
+        false,
+      );
+    }
+  });
+
+  it("shouldAutoDisableDigestIngest з autoDisable спрацьовує лише на kill", () => {
+    const opts = { autoDisable: true };
+    expect(
+      shouldAutoDisableDigestIngest(buildSummary({ status: "pass" }), opts),
+    ).toBe(false);
+    expect(
+      shouldAutoDisableDigestIngest(buildSummary({ status: "warn" }), opts),
+    ).toBe(false);
+    expect(
+      shouldAutoDisableDigestIngest(buildSummary({ status: "kill" }), opts),
+    ).toBe(true);
+    expect(
+      shouldAutoDisableDigestIngest(buildSummary({ status: "error" }), opts),
+    ).toBe(false);
   });
 });

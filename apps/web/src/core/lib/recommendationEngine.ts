@@ -11,12 +11,19 @@ import { Recommendations } from "@sergeant/insights";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
+import { resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
-import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
+import {
+  formatNumberUk,
+  pluralDays,
+  pluralHabits,
+  pluralUa,
+} from "@sergeant/shared";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import {
@@ -213,7 +220,7 @@ function buildFizrukRecs(): Rec[] {
       priority: 85,
       icon: "dumbbell",
       title: `${daysSinceWorkout} ${pluralDays(daysSinceWorkout)} без тренування`,
-      body: "Пора відновити активність! Навіть легке тренування краще, ніж нічого.",
+      body: "Навіть легке тренування краще, ніж нічого.",
       action: "fizruk",
       pwaAction: "start_workout",
     });
@@ -278,7 +285,7 @@ function buildFizrukRecs(): Rec[] {
       priority: 70,
       icon: "calendar",
       title: "Цього тижня ще немає тренувань",
-      body: "Тиждень вже в розпалі, час запланувати тренування!",
+      body: "Середина тижня. Заплануй хоча б одне тренування.",
       action: "fizruk",
       pwaAction: "start_workout",
     });
@@ -325,8 +332,8 @@ function buildRoutineRecs(): Rec[] {
       module: "routine",
       priority: 80,
       icon: "flame",
-      title: `${streak} днів поспіль! Вогонь!`,
-      body: "Неймовірна серія! Продовжуй у тому ж дусі.",
+      title: `${streak} ${pluralDays(streak)} поспіль`,
+      body: "Серія тримається. Продовжуй у тому ж темпі.",
       action: "routine",
     });
   }
@@ -339,7 +346,7 @@ function buildRoutineRecs(): Rec[] {
       module: "routine",
       priority: 65,
       icon: "check",
-      title: `${remaining} звичок ще не виконано сьогодні`,
+      title: `${remaining} ${pluralHabits(remaining)} ще не виконано сьогодні`,
       body: "Вечір, ще не пізно закрити всі звички.",
       action: "routine",
     });
@@ -353,8 +360,8 @@ function buildRoutineRecs(): Rec[] {
       module: "routine",
       priority: 95,
       icon: "alert",
-      title: `Серія ${streak} днів під загрозою!`,
-      body: `Залишилось ${remaining} ${remaining === 1 ? "звичка" : "звичок"}, не дай рекорду згоріти.`,
+      title: `Серія ${streak} ${pluralDays(streak)} може перерватись`,
+      body: `Залишилось ${remaining} ${pluralHabits(remaining)} на сьогодні.`,
       action: "routine",
     });
   }
@@ -374,8 +381,9 @@ function buildNutritionRecs(): Rec[] {
   // `nutrition_log_v1` / `nutrition_prefs_v1` are tombstoned — read the
   // canonical SQLite warm caches.
   const log = loadNutritionLog();
-  const prefs = loadNutritionPrefs();
+  const goalPeriods = loadNutritionGoalPeriods();
   const today = localDateKey();
+  const todayGoal = resolveEffectiveGoal(goalPeriods, today);
   const dayData = log[today];
   const meals = Array.isArray(dayData?.meals) ? dayData.meals : [];
 
@@ -391,8 +399,8 @@ function buildNutritionRecs(): Rec[] {
   // людині, якій сам модуль «Їжа» на сусідньому екрані пропонував ту ціль
   // спершу встановити (browser QA 2026-08-05, F-010). Сигнали, що міряють
   // прогрес відносно цілі, без цілі просто мовчать.
-  const targetKcal = positiveTarget(prefs.dailyTargetKcal);
-  const targetProtein = positiveTarget(prefs.dailyTargetProtein_g);
+  const targetKcal = positiveTarget(todayGoal.kcal);
+  const targetProtein = positiveTarget(todayGoal.proteinG);
 
   const hour = new Date().getHours();
 
@@ -461,7 +469,7 @@ function buildNutritionRecs(): Rec[] {
           module: "nutrition",
           priority: 88,
           icon: "award",
-          title: "Після тренування, час поповнити білок!",
+          title: "Після тренування час на білок",
           body: "У тебе є ~30 хвилин на протеїновий прийом для кращого відновлення.",
           action: "nutrition",
           pwaAction: "add_meal",
@@ -525,13 +533,20 @@ function buildWeeklyDigestRecs(): Rec[] {
   // про готівку. Число в цьому нагадуванні розходилось із дайджестом на тих
   // самих даних.
   //
-  // Межа вікна: `sunPrev` — остання мілісекунда перед `monThis`, а канон бере
-  // `end` ЕКСКЛЮЗИВНО, тож сюди йде `monThis`, а не `sunPrev`. Пряма підстановка
-  // `sunPrev` втратила б останню мілісекунду тижня.
+  // Межа вікна: канон бере `end` ЕКСКЛЮЗИВНО, тож кінець тижня — це початок
+  // наступного (`weekWindowByMondayKey` дає саме `[пн, наступний пн)`), а не
+  // його остання мілісекунда.
+  //
+  // Тиждень названо понеділком пристрою (той самий ключ у `weekly_digest_*`,
+  // звички й тренування вище — за годинником телефона, ADR-0078), а гроші до
+  // його семи дат відносить КИЇВСЬКИЙ день транзакції (рішення власника
+  // 2026-10-01): так само рахує тижневий дайджест, тож «витрати N ₴» тут
+  // збігається з його підсумком. Для київського пристрою вікно те саме.
   const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
+  const lastWeekMoney = weekWindowByMondayKey(localDateKey(monPrev));
   const { totalSpent: spendLastWeek } = calcFinykPeriodAggregate(txs, {
-    start: monPrev.getTime(),
-    end: monThis.getTime(),
+    start: lastWeekMoney.startMs,
+    end: lastWeekMoney.endMs,
     excludedTxIds,
     txSplits,
   });
@@ -552,7 +567,12 @@ function buildWeeklyDigestRecs(): Rec[] {
       icon: "activity",
       title: "Підсумок минулого тижня",
       body: parts.join(" · "),
-      action: "reports",
+      // «Звіт тижня» на хабі (блок «Порада й звіт тижня»), а не `"reports"`:
+      // «Відкрити» йде через `openModule`, який мовчки ігнорує все, що не є id
+      // модуля, тож колишнє значення робило кнопку мертвою. Блок тримає й
+      // тижневий дайджест, тобто саме звіт про цей тиждень (рішення власника
+      // 2026-10-01). Паритет дій — `hub/now/recActionParity.test.ts`.
+      action: Recommendations.WEEK_REPORT_ACTION,
     },
   ];
 }

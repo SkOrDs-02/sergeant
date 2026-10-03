@@ -20,6 +20,7 @@
  * опт-аут із `apps/web/src/styles/mobile.css`.
  */
 import { useMemo, useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 
 import { Card } from "@shared/components/ui/Card";
 import { messages } from "@shared/i18n/uk";
@@ -49,20 +50,35 @@ function dayLabel(dateIso: string): string {
 
 export interface WeekKcalCardProps {
   rows: MacrosRow[];
-  targetKcal: number;
+  /**
+   * Ціль на КОЖЕН день тижня, вирівняна з `rows`. Не одне число: ціль може
+   * змінитись серед тижня, і минулі дні судяться тією, що діяла тоді
+   * (ADR-0091). `null` — цілі на той день не було.
+   */
+  goalsByDay: readonly (number | null)[];
   todayIso: string;
-  onGoToLog?: (() => void) | undefined;
+  /**
+   * Відкриває журнал. Аргумент — день, на якому його відкрити; без
+   * аргументу журнал лишається на своєму поточному дні (сьогодні).
+   *
+   * AI-CONTEXT: картка має власний обраний день (тап по стовпчику), і до
+   * фіксу PR-N5 (аудит 2026-09-13) посилання «Журнал» його ігнорувало:
+   * людина тапала середу, читала її калорії в підрядку, тиснула «Журнал» —
+   * і потрапляла в сьогодні. Обраний день тут не косметика підрядка, а
+   * намір; посилання його передає.
+   */
+  onGoToLog?: ((dateIso?: string) => void) | undefined;
 }
 
 export function WeekKcalCard({
   rows,
-  targetKcal,
+  goalsByDay,
   todayIso,
   onGoToLog,
 }: WeekKcalCardProps) {
   const model = useMemo(
-    () => computeWeekKcalChart(rows, targetKcal),
-    [rows, targetKcal],
+    () => computeWeekKcalChart(rows, goalsByDay),
+    [rows, goalsByDay],
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -98,10 +114,11 @@ export function WeekKcalCard({
         <div className="text-style-label text-text">{t.heading}</div>
         <button
           type="button"
-          onClick={onGoToLog}
-          className="text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
+          onClick={() => onGoToLog?.(selectedDate ?? undefined)}
+          className="inline-flex items-center gap-0.5 rounded-md text-style-caption text-nutrition-strong dark:text-nutrition hover:underline focus-ring"
         >
           {t.logLink}
+          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       </div>
 
@@ -145,22 +162,21 @@ export function WeekKcalCard({
                   : `${label}, ${fmtKcal(bar.kcal)} ${t.kcalUnit}`
               }
               onClick={() => setSelectedDate(isSelected ? null : bar.date)}
-              className="flex-1 flex flex-col items-center gap-0.5 appearance-none bg-transparent border-0 p-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
+              className="flex-1 flex flex-col items-center gap-0.5 appearance-none bg-transparent border-0 p-0 cursor-pointer rounded-md focus-ring"
             >
               <div
                 className="relative w-full flex justify-center items-end"
                 style={{ height: `${PLOT_HEIGHT}px` }}
               >
-                {model.goalRatio !== null && (
-                  // Лінія цілі малюється в КОЖНІЙ колонці окремо, а не одним
-                  // елементом поверх плоту: так вона не залежить від висоти
-                  // рядка підписів і не потребує абсолютного позиціювання
-                  // відносно всієї картки. Пунктир і так має розриви, тож
-                  // 4px проміжки між колонками не видно.
+                {bar.goalRatio !== null && (
+                  // Лінія цілі малюється в КОЖНІЙ колонці окремо — і тепер це
+                  // не лише зручність розмітки: висота береться з ЦЬОГО дня,
+                  // тож у тижні зі зміненою ціллю лінія йде сходинкою.
+                  // Пунктир і так має розриви, тож 4px проміжки не видно.
                   <div
                     aria-hidden="true"
                     className="absolute inset-x-0 border-t border-dashed border-text/25"
-                    style={{ bottom: `${model.goalRatio * PLOT_HEIGHT}px` }}
+                    style={{ bottom: `${bar.goalRatio * PLOT_HEIGHT}px` }}
                   />
                 )}
                 {bar.isEmpty ? (

@@ -19,8 +19,11 @@ vi.mock("@shared/api", () => ({
   },
 }));
 
-const { hydrateActiveModules, pushActiveModules } =
-  await import("./activeModulesSync");
+const {
+  hydrateActiveModules,
+  pushActiveModules,
+  __resetActiveModulesSyncForTests,
+} = await import("./activeModulesSync");
 
 function serverPrefs(activeModules: string[] | null) {
   return {
@@ -39,6 +42,7 @@ beforeEach(() => {
   getPreferences.mockReset();
   updatePreferences.mockReset();
   updatePreferences.mockResolvedValue(serverPrefs([]));
+  __resetActiveModulesSyncForTests();
 });
 
 afterEach(() => {
@@ -103,5 +107,43 @@ describe("pushActiveModules", () => {
     expect(() => pushActiveModules(["finyk"])).not.toThrow();
     // Локальний KV уже оновив викликач — push лише догоняє сервер.
     await Promise.resolve();
+  });
+});
+
+/**
+ * Регресія browser-QA 2026-09-02. `pushActiveModules` — fire-and-forget
+ * PATCH, гідратація — окремий GET на буті; їхній порядок не гарантований
+ * нічим. Послідовність «бут почався → людина обрала модулі → приїхала
+ * відповідь бута зі СТАРИМ вибором» затирала свіжий вибір, і хаб на очах
+ * відкочувався.
+ */
+describe("hydrateActiveModules — гонка з вибором людини", () => {
+  it("не затирає вибір, зроблений поки запит був у польоті", async () => {
+    saveVibePicks(webKVStore, ["finyk", "nutrition"]);
+    let releaseServer: (v: unknown) => void = () => {};
+    getPreferences.mockReturnValue(
+      new Promise((resolve) => {
+        releaseServer = resolve;
+      }),
+    );
+
+    const inFlight = hydrateActiveModules();
+
+    // Людина обирає інше, поки бут ще чекає на відповідь.
+    saveVibePicks(webKVStore, ["routine"]);
+    pushActiveModules(["routine"]);
+
+    // Сервер відповідає СТАРИМ вибором — він сформував відповідь до вибору.
+    releaseServer(serverPrefs(["finyk", "nutrition"]));
+    await inFlight;
+
+    expect(getVibePicks(webKVStore)).toEqual(["routine"]);
+  });
+
+  it("без вибору в польоті серверна гілка працює як раніше", async () => {
+    saveVibePicks(webKVStore, ["routine"]);
+    getPreferences.mockResolvedValue(serverPrefs(["finyk", "nutrition"]));
+    await hydrateActiveModules();
+    expect(getVibePicks(webKVStore)).toEqual(["finyk", "nutrition"]);
   });
 });

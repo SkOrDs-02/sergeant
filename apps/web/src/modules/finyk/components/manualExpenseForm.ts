@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-29
+ * Last validated: 2026-09-24
  * Status: Active
  *
  * Pure form helpers for ManualExpenseSheet — schema, amount chips,
@@ -16,6 +16,7 @@ import {
   DATE_INVALID_MESSAGE,
 } from "@shared/lib/time/dateBounds";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { toLocalISODate } from "@sergeant/shared";
 import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
@@ -23,8 +24,7 @@ import {
 } from "@sergeant/finyk-domain/domain/personalization";
 import {
   CATEGORY_SLUGS,
-  isCategorySlug,
-  upgradeCategory,
+  resolveKnownCategory,
   type CategorySlug,
 } from "./manualExpenseCategories";
 
@@ -38,10 +38,29 @@ const DEFAULT_AMOUNTS = [50, 100, 200, 500];
 const MAX_AMOUNT_CHIPS = 6;
 const DAY_NOON_UTC = "T12:00:00.000Z";
 
-export function toExpenseInstant(dayKey: string): string {
-  // API stores an ISO instant; UTC noon preserves the selected day key
-  // without reading the host-local timezone.
+/**
+ * Мить запису для обраного дня. Сьогоднішній день зберігає реальний час
+ * (людина записує витрату, коли її зробила, і CSV показує «04:12»), минулий
+ * день часу не має: UTC-полудень тримає день-ключ незалежно від часового
+ * поясу пристрою, а `isExpenseDayPlaceholder` відрізняє його від справжньої
+ * миті (Р6 спеки аналітики v2).
+ */
+// eslint-disable-next-line no-restricted-syntax -- тут потрібна саме UTC-мить запису (як `updatedAt`), а не київська межа доби: день уже обрано в `dayKey`.
+export function toExpenseInstant(dayKey: string, now = new Date()): string {
+  if (dayKey === toLocalISODate(now)) return now.toISOString();
   return new Date(Date.parse(`${dayKey}${DAY_NOON_UTC}`)).toISOString();
+}
+
+/**
+ * Чи мітка часу (мс) є плейсхолдером «лише день», а не записаною миттю:
+ * UTC-полудень, який ставить `toExpenseInstant`, або UTC-північ старих
+ * записів із голим «YYYY-MM-DD». Стеля: справжній запис рівно об одній із
+ * цих секунд теж читається як «без часу».
+ */
+export function isExpenseDayPlaceholder(ms: number): boolean {
+  if (!Number.isFinite(ms) || ms <= 0) return true;
+  const iso = new Date(ms).toISOString();
+  return iso.endsWith(DAY_NOON_UTC) || iso.endsWith("T00:00:00.000Z");
 }
 
 export function buildAmountSuggestions(
@@ -88,6 +107,29 @@ export const expenseAmountHryvnia = amountStringToHryvnia;
 
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
+function frequentCategorySlug(cat: FrequentCategory): CategorySlug | null {
+  return cat.manualLabel
+    ? resolveKnownCategory(cat.manualLabel)
+    : cat.id
+      ? resolveKnownCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
+      : null;
+}
+
+/** Лише категорії, для яких справді є персональна статистика. */
+export function getFrequentCategorySlugs(
+  frequentCategories: FrequentCategory[] = [],
+): CategorySlug[] {
+  const seen = new Set<CategorySlug>();
+  const result: CategorySlug[] = [];
+  for (const category of frequentCategories) {
+    const slug = frequentCategorySlug(category);
+    if (!slug || !CATEGORY_SLUGS.includes(slug) || seen.has(slug)) continue;
+    seen.add(slug);
+    result.push(slug);
+  }
+  return result;
+}
+
 /**
  * Сортує доступні підписи категорій за персональною частотою, зберігаючи
  * стабільний порядок для категорій без статистики.
@@ -96,22 +138,12 @@ export function sortCategoriesByFrequency(
   frequentCategories: FrequentCategory[] = [],
 ): CategorySlug[] {
   if (!frequentCategories.length) return CATEGORY_SLUGS;
-  // Перетворюємо частотну статистику на індекс slug → rank.
-  // manualLabel може зберігати будь-яку з 3 ер — upgradeCategory нормалізує.
-  // CANONICAL_TO_MANUAL_LABEL повертає slug (F5b), тож подвійне upgradeCategory
-  // — no-op для Era 3; безпечно для Era 2/1.
-  const rank = new Map<CategorySlug, number>();
-  frequentCategories.forEach((cat, idx) => {
-    const rawLabel = cat.manualLabel
-      ? upgradeCategory(cat.manualLabel)
-      : cat.id
-        ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
-        : null;
-    const slug = rawLabel && isCategorySlug(rawLabel) ? rawLabel : null;
-    if (slug && CATEGORY_SLUGS.includes(slug) && !rank.has(slug)) {
-      rank.set(slug, idx);
-    }
-  });
+  const rank = new Map(
+    getFrequentCategorySlugs(frequentCategories).map((slug, idx) => [
+      slug,
+      idx,
+    ]),
+  );
   const withRank = CATEGORY_SLUGS.map((slug, originalIdx) => ({
     slug,
     rank: rank.has(slug) ? (rank.get(slug) ?? Infinity) : Infinity,

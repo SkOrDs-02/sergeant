@@ -30,10 +30,10 @@ export function BankActionsSheet({
     <Sheet
       open={!!tx}
       onClose={onClose}
-      title="Дії над транзакцією"
+      title="Дії над операцією"
       description={
         tx?.description
-          ? `«${tx.description}»: банківська транзакція не редагується напряму.`
+          ? `«${tx.description}»: банківська операція не редагується напряму.`
           : undefined
       }
     >

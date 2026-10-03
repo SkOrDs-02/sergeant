@@ -26,7 +26,7 @@ export interface ResolvedColumnMapping {
   /** Індекс колонки валюти рахунку — лише автопрофілі можуть її нести
    * (клієнтський custom `mapping` контракту currency-колонки не має, спека
    * Фази 2 явно не вгадує валюту для довільних CSV — див. `not_uah` нижче
-   * і `docs/90-work/initiatives/0022-import-from-external-trackers.md`
+   * і `docs/work/specs/initiatives/0022-import-from-external-trackers.md`
    * § Відкриті рішення №4). `null` — рядки цього профілю не фільтруються
    * за валютою (mono: amount-колонка вже гарантовано UAH за побудовою
    * картки, currency-check дав би ХИБНИЙ skip для закордонних покупок
@@ -63,7 +63,6 @@ export interface ResolvedColumnMapping {
  * клітинок (XLSX): там дата й сума вже канонічні (`2026-08-16`,
  * `-1234.56`), і підказка «Privat24 друкує DD.MM.YYYY і кому» зробила б із
  * валідного рядка `unparsed_date` та зіпсувала б суму в 100 разів.
- * Див. `statementFile.ts` § `StatementSourceKind`.
  */
 export function withAutodetectedFormats(
   mapping: ResolvedColumnMapping,

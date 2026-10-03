@@ -4,7 +4,7 @@
 // every forward migration in filename order.
 //
 // Why this exists (L-8, аудит Профілю/Налаштувань 2026-08-08,
-// docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md): the
+// docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md): the
 // two-phase "add a source" process documented in `types.ts`'s
 // `ALLOWED_MEMORY_SOURCES` docstring depends on these two lists never
 // drifting apart. Migration 068 already ships this exact class of drift
@@ -31,13 +31,27 @@
 // регекс проганяється лише по стейтментах з `ai_memories` усередині
 // (покриває і inline CHECK у CREATE TABLE 025, і ALTER TABLE ... ADD
 // CONSTRAINT у 028/068/118).
+//
+// Ініціатива 0024: Фаза 1 (PR-1, 2026-09-03) звузила `ALLOWED_MEMORY_SOURCES`
+// до того, що реально пишеться, лишивши CHECK широким (шість знятих значень
+// для legacy-рядків) — тому тест тимчасово звіряв SQL зі
+// `STORED_MEMORY_SOURCES` (= ALLOWED + RETIRED). Фаза 2 (PR-3, міграція 144,
+// 2026-09-19) звузила й CHECK до тих самих чотирьох значень:
+// `RETIRED_MEMORY_SOURCES` спорожнів, і `STORED_MEMORY_SOURCES` тепер
+// дорівнює `ALLOWED_MEMORY_SOURCES` — порівняння нижче знову звичайний
+// ALLOWED ↔ SQL, лише через ім'я STORED (лишене як стабільний контракт
+// на випадок майбутнього розширення).
 
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ALLOWED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
+import {
+  ALLOWED_MEMORY_SOURCES,
+  RETIRED_MEMORY_SOURCES,
+  STORED_MEMORY_SOURCES,
+} from "../../modules/ai-memory/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(__dirname, "..");
@@ -85,14 +99,14 @@ function currentSourceCheckList(): string[] {
 }
 
 describe("ai_memories.source — TS union ↔ SQL CHECK parity", () => {
-  it("ALLOWED_MEMORY_SOURCES matches the current ai_memories_source_check list", () => {
+  it("STORED_MEMORY_SOURCES (ALLOWED + RETIRED) matches the current ai_memories_source_check list", () => {
     const sqlSources = currentSourceCheckList();
 
     // Set-based comparison (order-independent — the CHECK list and the TS
     // union are not guaranteed to be written in the same order, and
     // shouldn't need to be).
     const sqlSet = new Set(sqlSources);
-    const tsSet = new Set<string>(ALLOWED_MEMORY_SOURCES);
+    const tsSet = new Set<string>(STORED_MEMORY_SOURCES);
 
     const onlyInSql = [...sqlSet].filter((s) => !tsSet.has(s));
     const onlyInTs = [...tsSet].filter((s) => !sqlSet.has(s));
@@ -100,11 +114,12 @@ describe("ai_memories.source — TS union ↔ SQL CHECK parity", () => {
     expect(
       onlyInSql,
       "source(s) present in the SQL CHECK constraint but missing from " +
-        "ALLOWED_MEMORY_SOURCES in apps/server/src/modules/ai-memory/types.ts",
+        "STORED_MEMORY_SOURCES (ALLOWED + RETIRED) in " +
+        "apps/server/src/modules/ai-memory/types.ts",
     ).toEqual([]);
     expect(
       onlyInTs,
-      "source(s) present in ALLOWED_MEMORY_SOURCES but missing from the SQL " +
+      "source(s) present in STORED_MEMORY_SOURCES but missing from the SQL " +
         "ai_memories_source_check CHECK constraint (bump the CHECK in a new " +
         "migration, per the two-phase process documented on " +
         "ALLOWED_MEMORY_SOURCES)",
@@ -117,9 +132,17 @@ describe("ai_memories.source — TS union ↔ SQL CHECK parity", () => {
       sqlSet.size,
     );
     expect(
-      ALLOWED_MEMORY_SOURCES.length,
-      "duplicate entries in ALLOWED_MEMORY_SOURCES",
+      STORED_MEMORY_SOURCES.length,
+      "duplicate entries across ALLOWED_MEMORY_SOURCES + RETIRED_MEMORY_SOURCES",
     ).toBe(tsSet.size);
+  });
+
+  it("RETIRED_MEMORY_SOURCES is disjoint from ALLOWED_MEMORY_SOURCES", () => {
+    const allowed = new Set<string>(ALLOWED_MEMORY_SOURCES);
+    expect(
+      RETIRED_MEMORY_SOURCES.filter((s) => allowed.has(s)),
+      "a source cannot be both accepted by the API and retired",
+    ).toEqual([]);
   });
 
   it("includes `profile` (migration 118, L-8 profile→ai-memory mirror, Phase 1)", () => {

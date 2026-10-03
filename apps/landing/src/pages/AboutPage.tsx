@@ -1,7 +1,10 @@
+import { THREADS_URL } from "../lib/links";
 import SiteLayout from "../components/SiteLayout";
 import TelegramCta from "../components/TelegramCta";
 import { telegramStartLink } from "../lib/links";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { AUTHOR_NAME } from "../content/author";
+import { MOBILE_CLAIM } from "../content/mobileClaim";
 
 export default function AboutPage() {
   usePageMeta({
@@ -36,22 +39,20 @@ export default function AboutPage() {
       <section className="mx-auto grid w-full max-w-6xl items-start gap-10 px-5 pb-16 sm:px-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14">
         <div className="flex max-w-2xl flex-col gap-5">
           <p className="leading-relaxed text-foreground">
-            Я роками трекав життя в чотирьох різних застосунках: банк окремо,
-            тренування окремо, звички окремо, їжа окремо. Кожен показував свої
-            цифри, і жоден не бачив картину цілком. А найцікавіше завжди
-            ховалось на стиках: чому в тижні без тренувань більшає доставки,
-            чому зірваний сніданок тягне за собою зірваний день.
+            Я роками трекав життя в чотирьох застосунках: банк, тренування,
+            звички, їжа. Кожен показував свої цифри, і жоден не бачив картину
+            цілком. Найцікавіше ховалось на стиках: чому в тижні без тренувань
+            більшає доставки, чому зірваний сніданок тягне за собою зірваний
+            день.
           </p>
           <p className="leading-relaxed text-foreground">
-            Тому я роблю Sergeant – місце, де чотири сфери нарешті бачать одна
-            одну, замість пʼятого відокремленого трекера. Користуюсь ним щодня
-            сам і викладаю процес розробки відкрито. Це інструмент, без якого
-            мені самому вже незручно жити.
+            Тому я роблю Sergeant: місце, де чотири сфери бачать одна одну.
+            Користуюсь ним щодня сам і викладаю процес розробки відкрито.
           </p>
-          <p className="font-serif italic text-subtle">– автор Sergeant</p>
+          <p className="text-subtle">– {AUTHOR_NAME}, автор Sergeant</p>
         </div>
         <figure className="paper-shadow rotate-[1.2deg] rounded-[var(--radius-card)] bg-note px-7 py-6">
-          <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
+          <blockquote className="text-lg font-medium leading-normal text-foreground sm:text-xl">
             «Трекери зазвичай або тренери-мотиватори, або бухгалтери. Мені був
             потрібен сержант: той, хто щодня поруч, тримає лад і каже як є»
           </blockquote>
@@ -59,15 +60,63 @@ export default function AboutPage() {
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
+        <div className="flex max-w-2xl flex-col gap-10">
+          <div>
+            <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl">
+              Чому саме чотири сфери
+            </h2>
+            <p className="mt-4 leading-relaxed text-foreground">
+              Сфер, які можна трекати, значно більше: сон, настрій, читання,
+              вода, робочі години. У Sergeant їх чотири, і критерій один: сфера
+              щодня лишає сліди без зусиль з твого боку і помітно тягне інші.
+            </p>
+            <p className="mt-4 leading-relaxed text-foreground">
+              Гроші лишають слід самі, бо їх записує банк. Їжа, тренування і
+              звички записуються за секунди й одразу дають матеріал для
+              порівняння. Усі чотири перетинаються: тиждень без тренувань видно
+              в доставці, зірваний сніданок у вечірній витраті. Пʼята сфера, яка
+              ні на що не впливає, зробила б продукт довшим, не кориснішим.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl">
+              Як я його роблю
+            </h2>
+            <p className="mt-4 leading-relaxed text-foreground">
+              Сам, щодня і на собі. Кожна можливість спершу мусить закрити мою
+              власну незручність, інакше вона не пишеться: у продукті без
+              команди це єдиний фільтр, який не дає розповзтись на всі боки.
+            </p>
+            <p className="mt-4 leading-relaxed text-foreground">
+              {MOBILE_CLAIM} Обіцяти два повноцінні контури одночасно не буду.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl">
+              Звідки назва
+            </h2>
+            <p className="mt-4 leading-relaxed text-foreground">
+              Сержант не мотивує промовами і не веде облік заради обліку. Він
+              щодня поруч, тримає лад і каже як є, навіть коли цифра неприємна.
+              Тому продукт не святкує дрібниць і не соромить за пропуск:
+              показує, що сталось, і мовчить, коли сказати нема чого.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
         <p className="max-w-2xl leading-relaxed text-muted">
-          Обіцянки, за які продукт відповідає, зібрані в одному місці: у{" "}
+          Обіцянки продукту зібрані у{" "}
           <a
             href="/obitsyanky"
             className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
-            розділі «Що обіцяю» на головній
+            розділі «Що обіцяю»
           </a>
-          . Що саме Sergeant бачить і де лежать твої дані – на сторінці{" "}
+          . Що Sergeant бачить і де лежать твої дані: сторінка{" "}
           <a
             href="/data"
             className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
@@ -84,12 +133,11 @@ export default function AboutPage() {
             Стеж за розробкою
           </h2>
           <p className="mt-4 max-w-lg leading-relaxed text-ink-muted">
-            Я показую процес відкрито: реальні цифри, фейли і рішення. Обирай
-            формат, який тобі зручніший.
+            Процес відкритий: реальні цифри, помилки і рішення. Обирай формат.
           </p>
           <div className="mt-8 grid max-w-3xl gap-10 sm:grid-cols-2">
             <a
-              href="https://www.threads.net/@sergeant.app"
+              href={THREADS_URL}
               target="_blank"
               rel="noreferrer"
               className="group border-t border-ink-line pt-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-text"
@@ -111,7 +159,7 @@ export default function AboutPage() {
                 </span>
               </span>
               <span className="mt-2 block text-sm leading-relaxed text-ink-muted">
-                Щоденні короткі думки й спостереження по ходу. @sergeant.app
+                Короткі думки й спостереження по ходу. @sergeant.app
               </span>
             </a>
             <a
@@ -138,7 +186,7 @@ export default function AboutPage() {
                 </span>
               </span>
               <span className="mt-2 block text-sm leading-relaxed text-ink-muted">
-                Бот бети: найшвидший шлях у чергу й апдейти хвиль.
+                Бот бети: найшвидший шлях у чергу й новини хвиль.
               </span>
             </a>
           </div>
@@ -148,11 +196,11 @@ export default function AboutPage() {
       <section className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-8 px-5 py-16 sm:px-8 lg:flex-row lg:items-center">
         <div className="flex flex-col gap-3">
           <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-balance text-foreground-strong sm:text-3xl">
-            Готовий навести порядок?
+            Черга в бету
           </h2>
           <p className="max-w-lg leading-relaxed text-pretty text-muted">
-            Бета відкривається хвилями. Стань у чергу, і я напишу одне
-            повідомлення, коли відкриється твоя.
+            Бета відкривається хвилями. Стань у чергу, і я напишу, коли
+            відкриється твоя.
           </p>
           <p className="text-sm text-subtle">
             Ядро безкоштовне назавжди · Твої дані залишаються твоїми

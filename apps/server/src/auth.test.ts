@@ -6,6 +6,16 @@ import { describe, it, expect, vi } from "vitest";
  * emailAndPassword). DB-pool мокається на рівні модуля, тож
  * `betterAuth({ database: pool })` отримує stub без мережі.
  */
+const { loggerMock } = vi.hoisted(() => ({
+  loggerMock: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    child: vi.fn(),
+  },
+}));
+
 vi.mock("./db.js", () => {
   const pool = {
     query: vi.fn(),
@@ -18,7 +28,62 @@ vi.mock("./db.js", () => {
   return { default: pool, pool, query: pool.query, ensureSchema: vi.fn() };
 });
 
+vi.mock("./obs/logger.js", () => ({ logger: loggerMock }));
+
 const { auth } = await import("./auth.js");
+
+type DeleteUserHooks = {
+  options: {
+    user?: {
+      deleteUser?: {
+        enabled?: boolean;
+        beforeDelete?: (
+          user: { id: string; email: string },
+          request?: Request,
+        ) => Promise<void>;
+      };
+    };
+  };
+};
+
+/**
+ * `POST /api/auth/delete-user` мусить лишатись ЗАКРИТИМ.
+ *
+ * До появи 30-денного вікна (спека
+ * `docs/work/specs/user-deletion-grace-window.md`) цей ендпоінт БУВ живим
+ * шляхом видалення: хук `beforeDelete` кликав `deleteUserData`, і акаунт
+ * зникав одразу. З вікном шлях переїхав у `DELETE /api/me`
+ * (`routes/me.ts`) — той лише СТАВИТЬ мітку `deletion_requested_at`, а
+ * незворотну частину через `ACCOUNT_DELETION_GRACE_DAYS` днів виконує
+ * `AccountDeletionPoller`.
+ *
+ * Пін на `enabled: false` — не «тест під код». Доки ендпоінт Better Auth
+ * відкритий, він видаляє акаунт НЕГАЙНО і повз вікно, тобто тихо скасовує
+ * всю фічу: людина, яка передумала, не мала б куди повертатись.
+ *
+ * Другий пін — що хука немає ВЗАГАЛІ. Хук тут не рятує: Better Auth після
+ * `beforeDelete` БЕЗУМОВНО виконує власний `internalAdapter.deleteUser`
+ * (`dist/api/routes/update-user.mjs`), тож єдиним способом зупинити
+ * видалення було б кинути помилку на успішному шляху. Без цього піна
+ * наступний «полагодить» вікно, повернувши хук назад.
+ *
+ * Де перевіряється те, що тримає планку ТЕПЕР (тут не дублюємо):
+ * пароль і свіжість сесії — `routes/me.delete.route.test.ts`
+ * (§ «DELETE /api/me»); мітка й скасування — `modules/me/dataRights.test.ts`;
+ * добивання після вікна — `modules/me/deletionPoller.test.ts`.
+ */
+describe("auth config — user.deleteUser закритий на користь вікна скасування", () => {
+  const hooks = () =>
+    (auth as unknown as DeleteUserHooks).options.user?.deleteUser;
+
+  it("deleteUser вимкнений, тож негайного видалення повз вікно немає", () => {
+    expect(hooks()?.enabled).toBe(false);
+  });
+
+  it("beforeDelete-хука немає — він не здатен зупинити видалення", () => {
+    expect(hooks()?.beforeDelete).toBeUndefined();
+  });
+});
 
 describe("auth config — bearer plugin інтегрований у Better Auth", () => {
   /**
@@ -515,7 +580,7 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
    * PR-48 round-2 — session policy pinned до 7-денного hard-expiry з
    * 1-денним rolling refresh. Якщо хтось випадково повернеться до 30d
    * (старе значення) — тест відстрелить.
-   * Audit-док: `docs/security/better-auth-audit-2026-05.md`. ADR-0017.
+   * Audit-док: `docs/governance/security/better-auth-audit-2026-05.md`. ADR-0017.
    */
   /**
    * `ALLOWED_ORIGINS` — comma-separated ops-override для `trustedOrigins`,

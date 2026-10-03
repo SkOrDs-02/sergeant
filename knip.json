@@ -30,12 +30,18 @@
         "vitest",
         // semver — used in scripts/check-pnpm-overrides.mjs
         "semver",
-        // pg — used in scripts/db-index-audit.mjs, scripts/migration-down-drill.mjs,
-        //      scripts/seed-strategic-goals.mjs
-        "pg"
+        // sharp — one-off ілюстрації вправ (scripts/fizruk/fetch-exercise-images.mjs),
+        // запускається вручну через npx; тягнути нативний білд у dev-deps
+        // монорепо заради разового скрипта не варто.
+        "sharp"
       ],
-      // External binary installed by the operator/CI image, not from npm.
-      "ignoreBinaries": ["gitleaks"]
+      // External binaries installed by the operator/CI image, not from npm.
+      // `jq` — ним і сам workflow деплою розбирає відповідь Coolify, і
+      // тест `ci-deploy-verify-gate` ВИКОНУЄ той самий вираз на фікстурах
+      // (рядкова перевірка вже раз проґавила парсер, який читав лише одну
+      // форму з трьох). Тобто це не зайва залежність, а той самий
+      // інструмент, що й у проді гейта.
+      "ignoreBinaries": ["gitleaks", "jq"]
     },
     "apps/web": {
       "entry": ["src/sw.ts"],
@@ -47,27 +53,14 @@
       // ганяє сирий `pnpm knip`, який про них не знає — тож файл має бути
       // і тут, і з маркером у шапці.
       "ignore": [
-        // Write-половина моделі травм (ADR-0083, #589): серверний бік і
-        // pull-шлях уже чекають на ці outbox-рядки, споживача ще нема.
-        "src/modules/fizruk/lib/injuryRepository.ts",
         "src/core/errors/index.ts",
         "src/core/profile/index.ts",
         "src/modules/finyk/index.ts",
         "src/modules/fizruk/index.ts",
-        // Не барель, а @scaffolded-модуль: локальний запис позначок травм
-        // (ADR-0083), який поки не підключений — робочий шлях іде через
-        // `useInjuries` → `triggerFizrukDualWrite`. Маркер у файлі поважає
-        // `pnpm dead-code:files`, але CI-джоба «Dead Code (Knip)» запускає
-        // сирий `knip`, тож потрібен ще й цей запис. TODO(0589-injury-repo).
-        "src/modules/fizruk/lib/injuryRepository.ts",
         "src/modules/nutrition/index.ts",
-        "src/modules/routine/index.ts",
         "src/shared/lib/insights/index.ts"
       ],
       "ignoreDependencies": [
-        "@fontsource-variable/dm-sans",
-        "@fontsource-variable/jetbrains-mono",
-        "@fontsource-variable/manrope",
         // @testing-library/user-event — used in nutrition page tests; not in web package.json
         "@testing-library/user-event",
         // @tanstack/query-persist-client-core — sub-path of @tanstack/react-query-persist-client
@@ -80,9 +73,18 @@
     "apps/landing": {
       // entry-server.tsx — SSG-вхід (`vite build --ssr`, див. package.json
       // build): Vite-плагін knip бачить лише index.html → main.tsx.
-      // middleware.ts прибрано: файл видалено разом з edge-проксі (README
-      // § «Якщо тут колись зʼявиться запит до API») — патерн без збігів.
-      "entry": ["src/entry-server.tsx", "scripts/generate-og.mjs"]
+      // middleware.ts — Vercel Edge Middleware (markdown-переговори за
+      // `Accept`): Vercel знаходить його за іменем, імпорту в коді немає.
+      // site-url.d.mts — типова декларація для site-url.mjs. Імпорту на неї
+      // немає і бути не може: TypeScript підхоплює .d.mts за іменем сусіднього
+      // .mjs, тож для knip вона виглядає файлом-сиротою. Сам резолвер лишається
+      // .mjs, бо його імпортують і Node-скрипти білда, і vite.config.ts.
+      "entry": [
+        "src/entry-server.tsx",
+        "scripts/generate-og.mjs",
+        "middleware.ts"
+      ],
+      "ignore": ["scripts/site-url.d.mts"]
     },
     "apps/server": {
       "project": ["src/**/*.{js,ts}"],
@@ -99,8 +101,22 @@
       ]
     },
     "apps/mobile": {
-      "entry": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+      // Entry — ЛИШЕ роути expo-router. Доти тут стояв ще й `src/**`, тобто
+      // КОЖЕН файл поверхні був точкою входу, і knip на мобайлі структурно
+      // не міг знайти нічого мертвого: гейт стояв, світився зеленим і не
+      // перевіряв нічого (знахідка PR-M3 наскрізного огляду 2026-09-13 —
+      // «knip це й не ловить, бо весь src/** досі entry»). Порівняй із
+      // сусідами: `apps/web` тримає entry `["src/sw.ts"]`, `apps/server` і
+      // `apps/mobile-shell` не задають його взагалі.
+      "entry": ["app/**/*.{ts,tsx}"],
       "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+      // Звуження entry оголило 15 файлів без жодного імпортера. Їх
+      // видалено 2026-09-16 рішенням власника — 1737 рядків, серед них
+      // чотири UI-примітиви з барелем, який не імпортував ніхто, мертвий
+      // кластер онбордингу (`SplashStep` + `VibeChipRow`) і `FizrukApp.tsx`,
+      // чий докстрінг борг PR-D1 два аудити поспіль вважав застарілим —
+      // файл, який ніхто не імпортує. Список у `ignore` більше не
+      // потрібен: борг закрито, а не приховано.
       "metro": false,
       "ignoreDependencies": [
         "@babel/preset-typescript",

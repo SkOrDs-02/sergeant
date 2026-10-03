@@ -216,7 +216,9 @@ describe("groupEventsForList", () => {
     ];
     const groups = groupEventsForList(events);
     const keys = groups.map(([k]) => k);
-    const indices = keys.map((k) => GROUP_ORDER.indexOf(k));
+    const indices = keys.map((k) =>
+      (GROUP_ORDER as readonly string[]).indexOf(k),
+    );
     for (let i = 1; i < indices.length; i++) {
       expect(indices[i]!, `${keys[i]} after ${keys[i - 1]}`).toBeGreaterThan(
         indices[i - 1]!,

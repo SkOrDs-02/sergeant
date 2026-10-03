@@ -42,10 +42,14 @@ const solidVariants: Record<BadgeVariant, string> = {
   warning: "bg-warning-strong text-white border-transparent",
   danger: "bg-danger-strong text-white border-transparent",
   info: "bg-info-strong text-white border-transparent",
-  finyk: "bg-finyk-strong text-white border-transparent",
-  fizruk: "bg-fizruk-strong text-white border-transparent",
-  routine: "bg-routine-strong text-white border-transparent",
-  nutrition: "bg-nutrition-strong text-white border-transparent",
+  finyk:
+    "bg-finyk-strong text-white border-transparent dark:bg-finyk dark:text-bg",
+  fizruk:
+    "bg-fizruk-strong text-white border-transparent dark:bg-fizruk dark:text-bg",
+  routine:
+    "bg-routine-strong text-white border-transparent dark:bg-routine dark:text-bg",
+  nutrition:
+    "bg-nutrition-strong text-white border-transparent dark:bg-nutrition dark:text-bg",
 };
 
 // Wave 1b: the soft-wash variants collapse onto preset-owned tokens
@@ -57,8 +61,7 @@ const solidVariants: Record<BadgeVariant, string> = {
 // a step darker — `-soft-fg` follows the surface per theme. See theme.css.
 const softVariants: Record<BadgeVariant, string> = {
   neutral: "bg-surface-muted text-fg-muted border-line",
-  accent:
-    "bg-brand-soft text-brand-strong border-brand-soft-border/60 dark:text-brand",
+  accent: "bg-brand-soft text-brand-strong border-brand-soft-border/60",
   success: "bg-success-soft text-success-soft-fg border-success/30",
   warning: "bg-warning-soft text-warning-soft-fg border-warning/30",
   danger: "bg-danger-soft text-danger-soft-fg border-danger/30",

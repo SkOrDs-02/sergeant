@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
  * Tests for WorkoutCatalogSection — the filterable exercise catalog
- * rendered inside Workouts. Covers the search input, equipment filter
- * chips, empty-state fallback, group accordion toggle, exercise list
- * rendering, recovery warnings, and the ⓘ info button.
+ * rendered inside Workouts. Covers the search input, the location
+ * segmented control, the equipment sheet, empty-state fallback, group
+ * accordion toggle, exercise list rendering, recovery warnings, and the
+ * ⓘ info button.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -58,7 +59,14 @@ function baseProps(
     setQ: vi.fn(),
     equipmentFilter: [],
     setEquipmentFilter: vi.fn(),
-    equipmentUk: { barbell: "Штанга", dumbbell: "Гантелі" },
+    locationFilter: "gym" as FizrukData.ExerciseLocation,
+    setLocationFilter: vi.fn(),
+    equipmentUk: {
+      barbell: "Штанга",
+      dumbbell: "Гантелі",
+      machine: "Тренажер",
+    },
+    equipmentCounts: { barbell: 36, dumbbell: 49, machine: 21 },
     grouped: [],
     open: {},
     setOpen: vi.fn(),
@@ -102,36 +110,104 @@ describe("WorkoutCatalogSection — search input", () => {
   });
 });
 
-describe("WorkoutCatalogSection — equipment filter", () => {
-  it("renders equipment chips from equipmentUk", () => {
+describe("WorkoutCatalogSection — location filter", () => {
+  it("renders one segment per location with gym selected by default", () => {
     render(<WorkoutCatalogSection {...baseProps()} />);
-    expect(screen.getByRole("button", { name: "Штанга" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Гантелі" })).toBeInTheDocument();
+    for (const label of ["Зал", "Дім", "Вулиця"]) {
+      expect(screen.getByRole("tab", { name: label })).toBeInTheDocument();
+    }
+    expect(screen.getByRole("tab", { name: "Зал" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
-  it("clicking a chip calls setEquipmentFilter with the toggled id", () => {
-    const setEquipmentFilter = vi.fn();
-    render(<WorkoutCatalogSection {...baseProps({ setEquipmentFilter })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Штанга" }));
-    expect(setEquipmentFilter).toHaveBeenCalledWith(["barbell"]);
+  it("selects a location on click", () => {
+    const setLocationFilter = vi.fn();
+    render(<WorkoutCatalogSection {...baseProps({ setLocationFilter })} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Дім" }));
+    expect(setLocationFilter).toHaveBeenCalledWith("home");
   });
 
-  it("shows the 'Скинути' button when a filter is active and resets on click", () => {
+  it("drops equipment the new location cannot host", () => {
     const setEquipmentFilter = vi.fn();
     render(
       <WorkoutCatalogSection
         {...baseProps({
-          equipmentFilter: ["barbell"],
+          equipmentFilter: ["barbell", "dumbbell", "machine"],
           setEquipmentFilter,
         })}
       />,
     );
-    const resetBtn = screen.getByRole("button", { name: "Скинути" });
-    fireEvent.click(resetBtn);
-    expect(setEquipmentFilter).toHaveBeenCalledWith([]);
+    fireEvent.click(screen.getByRole("tab", { name: "Вулиця" }));
+    const updater = setEquipmentFilter.mock.calls[0]?.[0] as (
+      prev: string[],
+    ) => string[];
+    expect(updater(["barbell", "dumbbell", "machine"])).toEqual(["dumbbell"]);
+  });
+});
+
+describe("WorkoutCatalogSection — equipment sheet", () => {
+  it("counts the kinds that make sense in the current location", () => {
+    render(<WorkoutCatalogSection {...baseProps()} />);
+    expect(screen.getByText("3 видів")).toBeInTheDocument();
   });
 
-  it("renders no equipment section when equipmentUk is empty", () => {
+  it("narrows the count outdoors, where the barbell has no place", () => {
+    render(
+      <WorkoutCatalogSection {...baseProps({ locationFilter: "outdoor" })} />,
+    );
+    expect(screen.getByText("1 видів")).toBeInTheDocument();
+  });
+
+  it("opens the sheet and lists equipment with its own exercise count", () => {
+    render(<WorkoutCatalogSection {...baseProps()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Обладнання/ }));
+    expect(screen.getByRole("button", { name: /Штанга/ })).toBeInTheDocument();
+    expect(screen.getByText("36", { selector: "span" })).toBeInTheDocument();
+  });
+
+  it("toggles a kind from inside the sheet", () => {
+    const setEquipmentFilter = vi.fn();
+    render(<WorkoutCatalogSection {...baseProps({ setEquipmentFilter })} />);
+    fireEvent.click(screen.getByRole("button", { name: /Обладнання/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Штанга/ }));
+    // Функціональний апдейт: перевіряємо результат, а не форму аргумента.
+    const updater = setEquipmentFilter.mock.calls[0]?.[0] as (
+      prev: string[],
+    ) => string[];
+    expect(updater([])).toEqual(["barbell"]);
+  });
+
+  it("shows the selected count instead of the kind count", () => {
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({ equipmentFilter: ["barbell"] })}
+      />,
+    );
+    expect(screen.queryByText("3 видів")).not.toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+  });
+
+  it("clears the equipment selection with the reset control", () => {
+    const setEquipmentFilter = vi.fn();
+    const setQ = vi.fn();
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({
+          q: "жим",
+          equipmentFilter: ["barbell"],
+          setEquipmentFilter,
+          setQ,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Скинути" }));
+    expect(setEquipmentFilter).toHaveBeenCalledWith([]);
+    expect(setQ).not.toHaveBeenCalled();
+  });
+
+  it("hides the equipment control when equipmentUk is empty", () => {
     render(<WorkoutCatalogSection {...baseProps({ equipmentUk: {} })} />);
     expect(screen.queryByText("Обладнання")).not.toBeInTheDocument();
   });
@@ -179,14 +255,24 @@ describe("WorkoutCatalogSection — empty state", () => {
     expect(setEquipmentFilter).toHaveBeenCalledWith([]);
   });
 
-  it("names the equipment filter when it is the only narrowing", () => {
+  it("names the filters when they are the only narrowing", () => {
     render(
       <WorkoutCatalogSection
         {...baseProps({ grouped: [], q: "", equipmentFilter: ["barbell"] })}
       />,
     );
     expect(screen.getByText("Нічого не знайшлось")).toBeInTheDocument();
-    expect(screen.getByText(/обладнання/)).toBeInTheDocument();
+    expect(screen.getByText(/фільтри/)).toBeInTheDocument();
+  });
+
+  it("treats a location filter alone as narrowing", () => {
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({ grouped: [], q: "", locationFilter: "home" })}
+      />,
+    );
+    expect(screen.getByText("Нічого не знайшлось")).toBeInTheDocument();
+    expect(screen.queryByText("Поки немає вправ")).not.toBeInTheDocument();
   });
 });
 
@@ -309,5 +395,57 @@ describe("WorkoutCatalogSection — recovery warning", () => {
     expect(
       screen.queryByTitle("Мʼязи ще відновлюються"),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("WorkoutCatalogSection — позначка «вже в тренуванні»", () => {
+  /**
+   * Аркуш каталогу навмисно не закривається після додавання, тож рядок
+   * мусить сам нести стан. До цієї позначки успіх був єдиною гілкою без
+   * зворотного звʼязку — власник вирішив, що екран зламано (2026-09-12).
+   */
+  function renderWithCounts(
+    counts: Record<string, number> | undefined,
+    mode: "log" | "catalog" = "log",
+  ) {
+    const ex = makeEx("bench", "Жим лежачи");
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({
+          mode,
+          grouped: [makeGroup("chest", [ex])],
+          open: { chest: true },
+          ...(counts ? { addedCountByExerciseId: counts } : {}),
+        })}
+      />,
+    );
+  }
+
+  it("не показує позначку, поки вправи немає в тренуванні", () => {
+    renderWithCounts({});
+    expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
+    expect(screen.queryByText(/Додано/)).not.toBeInTheDocument();
+  });
+
+  it("показує «Додано» після першого додавання", () => {
+    renderWithCounts({ bench: 1 });
+    expect(screen.getByText(/Додано/)).toBeInTheDocument();
+    expect(screen.queryByText(/×/)).not.toBeInTheDocument();
+  });
+
+  it("показує лічильник для дубля, бо повторний тап дозволений", () => {
+    renderWithCounts({ bench: 3 });
+    expect(screen.getByText(/Додано\s*×3/)).toBeInTheDocument();
+  });
+
+  it("у режимі каталогу позначки немає — там немає активного тренування", () => {
+    renderWithCounts({ bench: 2 }, "catalog");
+    expect(screen.queryByText(/Додано/)).not.toBeInTheDocument();
+  });
+
+  it("без пропа не падає", () => {
+    renderWithCounts(undefined);
+    expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
+    expect(screen.queryByText(/Додано/)).not.toBeInTheDocument();
   });
 });

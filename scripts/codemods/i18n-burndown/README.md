@@ -1,6 +1,6 @@
 # `i18n-burndown` codemod
 
-> **Last touched:** 2026-08-13 by @claude. **Next review:** 2026-11-11.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
 > **Status:** Active
 
 Migrates inline UA JSX literals (text + attribute strings) to references
@@ -94,7 +94,7 @@ node scripts/codemods/i18n-burndown/script.mjs --write   # apply
 
 When `apps/web/eslint.i18n-allowlist.json` is `[]` and the rule is
 promoted to `"error"` (see
-[`docs/05-design/i18n/readiness.md`](../../../docs/05-design/i18n/readiness.md) §
+[`docs/design/i18n/readiness.md`](../../../docs/design/i18n/readiness.md) §
 Phase 3), this codemod is no longer load-bearing. At that point:
 
 1. Mark this file `// @deprecated` like the sibling one-shots.

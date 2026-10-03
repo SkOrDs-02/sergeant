@@ -1,8 +1,8 @@
 name: Mobile Shell (Android)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Debug-APK lane for the Capacitor shell in `apps/mobile-shell/**`.
 # Runs the full mobile build pipeline end-to-end on PRs so regressions
@@ -24,20 +24,8 @@ name: Mobile Shell (Android)
 # `workflow_dispatch`. Повернути `apps/web/**` у paths, коли mobile знову
 # в обов'язковому CI-контурі.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/mobile-shell/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/mobile-shell-android.yml"
-  pull_request:
-    paths:
-      - "apps/mobile-shell/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/mobile-shell-android.yml"
   workflow_dispatch:
 
 permissions:

@@ -13,7 +13,7 @@
  *    `fizruk_rest_settings_v1` використовує web — payload рідe під
  *    тим самим cloud-sync-конвертом, нічого мігрувати не треба).
  *
- * Deferred (див. `docs/mobile/react-native-migration.md` Phase 2 / Hub-core,
+ * Deferred (див. `docs/engineering/mobile/react-native-migration.md` Phase 2 / Hub-core,
  * §2.4) — рендериться як `DeferredNotice`-карточка:
  *  - **Резервні копії та дані** (`WorkoutBackupBar` на web).
  *    Експорт / імпорт тренувань чекають реальний mobile-адаптер

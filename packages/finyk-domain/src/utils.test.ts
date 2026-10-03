@@ -15,7 +15,6 @@ import {
   getAccountLabel,
   getMonoDebt,
   isMonoDebt,
-  daysUntil,
   getMonthStart,
   getTxStatAmount,
   calcCategorySpent,
@@ -32,17 +31,24 @@ afterEach(() => {
 
 describe("getIncomeCategory", () => {
   it("повертає категорію за overrideId", () => {
-    expect(getIncomeCategory("", "in_salary").id).toBe("in_salary");
-    expect(getIncomeCategory("", "in_cashback").id).toBe("in_cashback");
+    expect(getIncomeCategory("", "in_salary").id).toBe("salary");
+    expect(getIncomeCategory("", "in_cashback").id).toBe("cashback");
   });
   it("падає назад на in_other коли опису нема та override нема", () => {
-    expect(getIncomeCategory("", null).id).toBe("in_other");
+    expect(getIncomeCategory("", null).id).toBe("other-income");
   });
   it("знаходить категорію по keywords у описі", () => {
-    expect(getIncomeCategory("Зарплата від роботодавця").id).toBe("in_salary");
+    expect(getIncomeCategory("Зарплата від роботодавця").id).toBe("salary");
   });
   it("ігнорує невалідний overrideId і падає на опис/дефолт", () => {
-    expect(getIncomeCategory("", "no_such_id").id).toBe("in_other");
+    expect(getIncomeCategory("", "no_such_id").id).toBe("other-income");
+  });
+  it("резолвить власну категорію надходження", () => {
+    expect(
+      getIncomeCategory("", "custom-rent", [
+        { id: "custom-rent", label: "Оренда", kind: "income" },
+      ]),
+    ).toMatchObject({ id: "custom-rent", label: "Оренда" });
   });
 });
 
@@ -68,7 +74,31 @@ describe("getCategory (expense)", () => {
     expect(getCategory("щось випадкове", 9999).id).toBe("other");
   });
 
-  it("бере канонічний categoryId транзакції раніше за MCC/опис", () => {
+  // Регресія 2026-09-12 (звіт власника зі скріншотом Операцій): MCC 4829
+  // сам собою НЕ робить операцію боргом — цим кодом Monobank стамплює
+  // будь-який card-to-card, тож кошик «Борги та кредити» наповнювався
+  // переказами. Боргом лишається те, що має ВЛАСНИЙ доказ — опис.
+  it("не вважає боргом переказ card-to-card (MCC 4829) без доказу в описі", () => {
+    // Після 2026-10-01 такий переказ — «Перекази людям», а не «Інше» (рішення
+    // власника «c1»): головне, що НЕ борг. Деталі — `categories.newBase.test.ts`.
+    expect(getCategory("На білу картку", 4829).id).toBe("p2p_transfer");
+    expect(getCategory("луїзка", 4829).id).toBe("p2p_transfer");
+    expect(getCategory("522119******5309", 4829).id).toBe("p2p_transfer");
+  });
+
+  it("лишає боргом платіж по кредитці за описом — незалежно від MCC", () => {
+    // Головний кейс звіту 2026-09-11: він тримається ключовим словом, а не
+    // кодом переказу, тож зняття 4829 його не регресує.
+    expect(getCategory("Погашення наступного платежу", 4829).id).toBe("debt");
+    expect(getCategory("Погашення наступного платежу", 0).id).toBe("debt");
+    expect(getCategory("Оплата кредиту", 4829).id).toBe("debt");
+    // Коди фінустанов лишаються в каталозі — їх card-to-card не стамплює.
+    expect(getCategory("", 6012).id).toBe("debt");
+    // 6010/6011 — готівка, не борг (ADR-0076): лишаються поза «debt».
+    expect(getCategory("", 6011).id).not.toBe("debt");
+  });
+
+  it("бере канонічний categoryId операції раніше за MCC/опис", () => {
     const tx = {
       description: "Розваги",
       mcc: 0,
@@ -77,6 +107,24 @@ describe("getCategory (expense)", () => {
     };
     expect(getExpenseCategoryForTransaction(tx).id).toBe("entertainment");
     expect(getExpenseCategoryForTransaction(tx, "tech").id).toBe("tech");
+  });
+
+  it("відокремлює Tech лише від початку поточного місяця", () => {
+    const category = (time: string) =>
+      getExpenseCategoryForTransaction({
+        description: "Ноутбук",
+        categoryId: "tech",
+        source: "manual",
+        time,
+      }).id;
+    expect(category("2026-08-31T20:59:59.999Z")).toBe("shopping");
+    expect(category("2026-08-31T21:00:00.000Z")).toBe("tech");
+    expect(
+      getExpenseCategoryForTransaction({
+        categoryId: "tech",
+        time: Date.parse("2026-08-31T21:00:00.000Z") / 1000,
+      }).id,
+    ).toBe("tech");
   });
 
   // Підпис ручного `food` зведено з MCC-каталогом (2026-08-13): обидва —
@@ -162,6 +210,26 @@ describe("getCategory (expense)", () => {
       }).id,
     ).toBe("gift");
   });
+
+  it("бере власну категорію ручного надходження", () => {
+    expect(
+      getIncomeCategoryForTransaction(
+        { description: "", categoryId: "custom-rent" },
+        null,
+        [{ id: "custom-rent", label: "Оренда", kind: "income" }],
+      ).id,
+    ).toBe("custom-rent");
+  });
+
+  it("не приймає legacy expense custom category як income", () => {
+    expect(
+      getIncomeCategoryForTransaction(
+        { description: "", categoryId: "custom-old" },
+        null,
+        [{ id: "custom-old", label: "Стара витрата" }],
+      ).id,
+    ).toBe("other-income");
+  });
 });
 
 describe("resolveExpenseCategoryMeta", () => {
@@ -211,17 +279,28 @@ describe("fmtDate", () => {
     expect(fmtDate(yesterdaySec)).toMatch(/^Вчора/);
   });
   it("групує за календарним днем, а не за 24-годинним інтервалом", () => {
-    // О 00:30 транзакція, зроблена вчора о 23:50 (≈40 хв тому), має бути «Вчора».
-    vi.setSystemTime(new Date("2024-06-15T00:30:00"));
+    // Моменти задаються В UTC навмисно. `fmtDate` порівнює КИЇВСЬКІ денні
+    // ключі (`toKyivISODate`), а рядок без суфікса `Z` читається як локальний
+    // час машини. На київському ноутбуці це збігалося і тест був зелений; на
+    // раннері з TZ=UTC «вчора о 23:50» ставало 02:50 наступного київського дня,
+    // і тест падав ЗАВЖДИ, а не іноді. Через нього вся джоба покриття була
+    // червона на `main`, тобто гейт покриття фактично не працював.
+    //
+    // Червень у Києві це UTC+3, тому нижче кожен момент підписаний обома
+    // годинниками.
+
+    // Зараз: 15 червня 00:30 за Києвом. Транзакція: 14 червня 23:50 за Києвом.
+    vi.setSystemTime(new Date("2024-06-14T21:30:00Z"));
     const lateYesterdayTs = Math.floor(
-      new Date("2024-06-14T23:50:00").getTime() / 1000,
+      new Date("2024-06-14T20:50:00Z").getTime() / 1000,
     );
     expect(fmtDate(lateYesterdayTs)).toMatch(/^Вчора/);
 
-    // О 23:00 транзакція о 01:00 того ж дня (≈22 год тому) — «Сьогодні».
-    vi.setSystemTime(new Date("2024-06-15T23:00:00"));
+    // Зараз: 15 червня 23:00 за Києвом. Транзакція: 15 червня 01:00 за Києвом,
+    // тобто ≈22 години тому, але той самий календарний день.
+    vi.setSystemTime(new Date("2024-06-15T20:00:00Z"));
     const earlyTodayTs = Math.floor(
-      new Date("2024-06-15T01:00:00").getTime() / 1000,
+      new Date("2024-06-14T22:00:00Z").getTime() / 1000,
     );
     expect(fmtDate(earlyTodayTs)).toMatch(/^Сьогодні/);
   });
@@ -315,20 +394,6 @@ describe("isMonoDebt", () => {
   });
 });
 
-describe("daysUntil", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2024, 5, 10, 12, 0, 0));
-  });
-  it("повертає додатну кількість днів до дати в поточному місяці", () => {
-    expect(daysUntil(20)).toBe(10);
-  });
-  it("переходить на наступний місяць коли день вже минув", () => {
-    expect(daysUntil(5)).toBeGreaterThan(20);
-    expect(daysUntil(5)).toBeLessThanOrEqual(31);
-  });
-});
-
 describe("getMonthStart", () => {
   it("повертає перший день поточного місяця", () => {
     vi.useFakeTimers();
@@ -372,7 +437,7 @@ describe("calcCategorySpent", () => {
   it("сумує витрати для food через MCC+keyword", () => {
     expect(calcCategorySpent(txs, "food")).toBe(600);
   });
-  it("сумує через override для окремої транзакції", () => {
+  it("сумує через override для окремої операції", () => {
     expect(calcCategorySpent(txs, "transport", { 4: "transport" })).toBe(300);
   });
   it("використовує спліт коли він заданий", () => {

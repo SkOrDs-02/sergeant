@@ -203,7 +203,7 @@ function recordLookup(source: string, outcome: string, ms: number): void {
  * сенс метрики, і її кардинальність. Домену ж `barcode_lookups_total`
  * джерело `catalog` потрібне — саме воно дає hit-rate по ярусах, який
  * дослідження назвало метрикою для рішення «чи потрібен платний API»
- * (docs/90-work/planning/barcode-database-research.md § 4).
+ * (docs/work/specs/planning/barcode-database-research.md § 4).
  */
 function recordCatalogLookup(outcome: "hit" | "miss" | "error"): void {
   try {
@@ -333,7 +333,7 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
 // вимикає третє джерело каскаду. До 2026-07-25 URL був захардкоджений і
 // змінити його без релізу було неможливо; тепер він в `UPCITEMDB_BASE_URL`.
 // Заміна тріалу на платний план або на інше джерело — крок 2 у
-// `docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md`.
+// `docs/work/research/2026-07-25-barcode-sources-and-moderation.md`.
 // ──────────────────────────────────────────────────────────────────────────────
 async function lookupUPCitemdb(
   barcode: string,
@@ -414,7 +414,9 @@ export default async function handler(
     "",
   );
   if (!/^\d{8,14}$/.test(barcode)) {
-    res.status(400).json({ error: "Невірний штрихкод (8–14 цифр)" });
+    res
+      .status(400)
+      .json({ error: "Неправильний штрихкод: потрібно 8–14 цифр." });
     return;
   }
 

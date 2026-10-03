@@ -14,9 +14,14 @@ import { readFileSync } from "node:fs";
 // relative path to a file that still has inline cyrillic JSX literals.
 // Migrate strings → `apps/web/src/shared/i18n/uk.ts` and remove the
 // path from the JSON. When the array is empty, promote the rule from
-// "warn" to "error". See `docs/05-design/i18n/readiness.md` § Burndown.
+// "warn" to "error". See `docs/design/i18n/readiness.md` § Burndown.
 //
-// Розмір: 283 файли (2026-08-08). Тут стояло «~30 файлів» — заниження на
+// Розмір: 300 файлів (2026-09-16; 283 на 2026-08-08). З 2026-09-16 список
+// гейтиться храповиком `scripts/check-ui-canon-ratchet.mjs` (метрика
+// `cyrillicJsxAllowlist`, стеля 300 без запасу) — рішення власника по аудиту
+// дизайн-доків: EN-локаль заморожена як фундамент, але рядки лишаються в
+// каталозі, а не в компонентах. Дописати файл сюди можна лише прибравши
+// інший. Тут стояло «~30 файлів» — заниження на
 // порядок, і саме воно робило дедлайн правдоподібним. При темпі burndown-а
 // 5–10 файлів на PR («pack»-и, `scripts/codemods/i18n-burndown/`) 283 файли
 // — це десятки PR-ів, тож попередній «TARGET DEADLINE: до 2026-09-30» тут
@@ -28,7 +33,7 @@ import { readFileSync } from "node:fs";
 // назад, а й перейменуваннями — аудит Профілю/Налаштувань (2026-08-08, §6)
 // знайшов у ньому 9 шляхів до файлів, яких у репо вже немає. Вони прибрані;
 // мертвий запис нічого не ламає, але роздуває число, за яким міряють борг.
-// Відповідальний: @Skords-01. Прогрес: docs/05-design/i18n/readiness.md § Burndown.
+// Відповідальний: @Skords-01. Прогрес: docs/design/i18n/readiness.md § Burndown.
 const i18nAllowlist = JSON.parse(
   readFileSync(
     new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
@@ -130,7 +135,7 @@ export const webBlocks = [
         "warn",
         { allowlist: i18nAllowlist },
       ],
-      // Tone-of-voice канону `docs/01-product/copy/style-guide.uk.md`:
+      // Tone-of-voice канону `docs/product/copy/style-guide.uk.md`:
       // без довгого тире (§1.9), звертання на «ти» (§1.1), без 1-ї особи
       // множини (§2). Апостроф правило НЕ гейтить: §1.10 фіксує символ,
       // але міграцію відкладено, бо ті самі слова подекуди є ключами
@@ -146,16 +151,19 @@ export const webBlocks = [
           // (англійські коментарі всередині template-літералів разом із
           // кириличним описом поруч), тож правило спрацьовує на пунктуації
           // коду, а не копії. Той самий виняток, що для stories.
-          allowlist: [
-            "src/core/DesignShowcase",
-            // Юридичні документи — окремий регістр, а не голос продукту.
-            // §2 забороняє «ми», бо воно створює дистанцію «команда проти
-            // користувача»; у політиці приватності та Умовах «ми» — це
-            // ЮРОСОБА, сторона договору («Ми не продаємо твій контент»),
-            // і 1-а однини там була б і дивною, і юридично слабшою.
-            // Виняток свідомий; решта §-правил канону тут теж не діє —
-            // формулювання узгоджуються з юридичним змістом, не з ToV.
+          allowlist: ["src/core/DesignShowcase"],
+          // Юридичні документи, розкриття даних у налаштуваннях і звернення
+          // в підтримку говорять від «ми» (канон §2): «ми» там — це
+          // ЮРОСОБА, сторона договору («Ми не продаємо твій контент») або
+          // команда («напиши нам, ми полагодимо»), і 1-а однини звучала б як
+          // обіцянка застосунку. Вимкнена лише ця перевірка: довге тире,
+          // «Ви», імператив множини й апостроф діють і в legal (рішення
+          // власника 2026-09-24, аудит копі §6.6 і §6.7).
+          allowFirstPersonPlural: [
             "src/core/legal",
+            "src/shared/i18n/uk.dataDisclosure.ts",
+            "src/core/errors/NotFoundPage.tsx",
+            "src/core/errors/ServerErrorPage.tsx",
           ],
         },
       ],
@@ -183,6 +191,22 @@ export const webBlocks = [
       // гейт червоним від народження, а «червоний завжди» = вимкнений.
       // Прецедент рівня — `prefer-kyiv-time` вище.
       "sergeant-design/no-raw-type-size": "warn",
+      // Речення в найдрібнішій ролі шкали (SLOP-3, замір
+      // `pnpm design:scan-captions`). Розбір по типах тексту й межі
+      // застосовності — `docs/design/design/density-hierarchy-spec.md`.
+      //
+      // `warn`, а не `error`, з тієї самої причини, що й `no-raw-type-size`
+      // вище, і це не обережність, а вимірювання: на дату підключення
+      // правило дає 32 спрацювання, і ЖОДНЕ з них не є боргом. Це рівно ті
+      // місця, які прохід §4 спеки лишив дрібними свідомо — підказки під
+      // контролами, дисклеймери, компактні пари в картках. `error` зробив
+      // би гейт червоним від народження, а «червоний завжди» = вимкнений.
+      //
+      // Робота гейта тут — НОВИЙ код: він спрацьовує в момент написання,
+      // коли автор дивиться на свій екран. Наявні 32 лишаються видимими
+      // навмисно: кожне з них варте коментаря `AI-NOTE` з причиною, і
+      // попередження — саме те, що змусить його врешті поставити.
+      "sergeant-design/no-sentence-in-caption": "warn",
     },
   },
   {
@@ -195,6 +219,7 @@ export const webBlocks = [
       "sergeant-design/no-raw-motion-value": "off",
       "sergeant-design/no-opacity-on-text-token": "off",
       "sergeant-design/no-raw-type-size": "off",
+      "sergeant-design/no-sentence-in-caption": "off",
     },
   },
   {
@@ -213,15 +238,16 @@ export const webBlocks = [
   //   • вимкнений / неактивний контрол — WCAG 1.4.3 їх не покриває
   //     (Programs, HabitDetailSheet, WorkoutSetRow:137);
   //   • неозначальна іконка з `aria-label` на кнопці — поріг 3:1, і
-  //     subtle/70 дає 3.05, тобто проходить (WorkoutSetRow:146);
-  //   • MonthPulseCard — збіг усередині JSDoc-прози, що ЦИТУЄ старий
-  //     поганий приклад; коду там немає.
+  //     subtle/70 дає 3.05, тобто проходить (WorkoutSetRow:146).
+  //
+  // `MonthPulseCard` виведено зі списку разом із самим файлом (спека
+  // finyk-hero-month-strip.md — картку прибрано, JSDoc-приклад, що збігався
+  // з правилом, прибрано разом із нею).
   //
   // Список закритий і може лише коротшати.
   {
     files: [
       "apps/web/src/core/profile/PersonalInfoSection.tsx",
-      "apps/web/src/modules/finyk/pages/overview/MonthPulseCard.tsx",
       "apps/web/src/modules/fizruk/components/workouts/WorkoutSetRow.tsx",
       "apps/web/src/modules/fizruk/pages/Programs.tsx",
       "apps/web/src/modules/nutrition/components/PantryManagerSheet.tsx",
@@ -253,7 +279,7 @@ export const webBlocks = [
   // `useRoutineRoute` або через injected `onNavigate` prop із module
   // shell-а. Rule піднята з `warn` (canary) до `error` — нові hash-
   // assignments у модулях ламають lint і CI, як заплановано в
-  // `docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md` §Phase 2.
+  // `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md` §Phase 2.
   {
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
@@ -304,7 +330,7 @@ export const webBlocks = [
   // Same block also bans the `@sergeant/db-schema/migrate` umbrella entry —
   // that re-exports `loadMigrationFiles` from `./files.js`, which top-level
   // imports `node:fs` / `node:path` and breaks Vite's browser bundle (white
-  // screen on boot — see audit `docs/90-work/audits/2026-05-07-app-audit.md` §1).
+  // screen on boot — see audit `docs/work/specs/audits/2026-05-07-app-audit.md` §1).
   // Browser-side callers must use one of the saner sub-segments:
   // `@sergeant/db-schema/migrate/runner` (dialect-free runner),
   // `@sergeant/db-schema/migrate/sqlite` (sqlite adapter),
@@ -326,7 +352,7 @@ export const webBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle.",
             },
           ],
         },
@@ -359,7 +385,7 @@ export const webBlocks = [
   // `getTxStatAmount` / `calcCategorySpent` у тому ж PR, усі zero-delta).
   // Тести звільнені: фікстури навмисно рахують очікування вручну, щоб
   // parity-тест мав із чим порівнювати канон.
-  // Реєстр: docs/02-engineering/architecture/metric-registry.md.
+  // Реєстр: docs/engineering/architecture/metric-registry.md.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [
@@ -370,61 +396,13 @@ export const webBlocks = [
       "sergeant-design/no-adhoc-metric-aggregation": "error",
     },
   },
-  // ── Toast recovery-action gate ────────────────────────────────────────
-  //
-  // `toast.error(...)` мусить нести `{ label, onClick }`. Правило з такою
-  // назвою вже існувало і було retired в ADR-0081 із тезою, що коректність
-  // дії залежить від сценарію й не має надійного синтаксичного сигналу.
-  // Теза правильна, висновок — ні: за пів року без гейта дію мали 3 з 37
-  // error-тостів у `apps/web`. Решта лишали користувача в глухому куті.
-  //
-  // Тому гейт повертається у формі, яка визнає ту саму тезу: він ловить
-  // лише ФАКТ відсутності дії, а «тут дії справді бути не може» — це
-  // явний запис нижче з причиною. Мовчазний глухий кут стає підписаним.
-  //
-  // Політика тону і формa `action` — docs/05-design/ui/toast-policy.md.
-  {
-    files: ["apps/web/src/**/*.{ts,tsx}"],
-    ignores: [
-      "apps/web/src/**/*.test.{ts,tsx}",
-      "apps/web/src/**/__tests__/**",
-      "apps/web/src/**/*.stories.{ts,tsx}",
-    ],
-    rules: {
-      "sergeant-design/require-toast-error-action": [
-        "error",
-        {
-          allowlist: [
-            // Rate-limit 429: копія вже несе інструкцію («Спробуй за
-            // годину»), а «Повторити» зараз гарантовано впаде знову.
-            "apps/web/src/core/pricing/WaitlistForm.tsx",
-            // Імпорт лога харчування з битого JSON. Хук не володіє
-            // файловим input-ом, тож «Обрати інший» звідси не підняти, а
-            // сама кнопка імпорту лишається на екрані — recovery-шлях
-            // видимий без тоста.
-            "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
-            // Те саме для Фініка: `importData` приймає готовий `Blob` і не
-            // знає, звідки той узявся, тож «Обрати інший» тут не підняти.
-            // (На 2026-08-05 хук ще й не має жодного UI-споживача — він
-            // висить у `useStorage` без виклику.)
-            "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
-            // `showUndoToast`: тост про ПРОВАЛЕНИЙ undo. Повторний виклик
-            // `onUndo` після часткового відкату може подвоїти запис —
-            // ретрай тут небезпечніший за його відсутність.
-            "apps/web/src/shared/lib/ui/undoToast.tsx",
-            // Docstring-приклад у JSDoc, не виконуваний код.
-            "apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts",
-          ],
-        },
-      ],
-    },
-  },
   // Module-size guardrail (initiative 0001) — `max-lines: [error, 600]`
   // for `apps/web/src/**/*.{ts,tsx}`. Enforces decomposition discipline:
   // a single TS/TSX file in the web bundle must not exceed 600 LOC
-  // (skipBlankLines + skipComments). New violations fail CI; existing
-  // monoliths are explicitly allowlisted with a deadline TODO so the
-  // queue stays visible. See `docs/90-work/initiatives/archive/_0001-module-decomposition.md`.
+  // (skipBlankLines + skipComments). Violations fail CI; the initiative-0001
+  // allowlist of grandfathered monoliths was burned down and removed, so
+  // there are no exemptions beyond tests and generated files.
+  // See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md`.
   //
   // Scope rationale:
   // - Limited to `apps/web/src/**` — the audit's red-flag table flagged
@@ -459,7 +437,7 @@ export const webBlocks = [
   // ExerciseProgressChart.tsx:57, WeeklyVolumeChart.tsx:79, WorkoutTemplatesSection.tsx:491).
   // Severity `warn` because ~96 existing production assertions remain; the
   // ones in fizruk are fixed below. Promoted to `error` when count reaches zero.
-  // Burn-down: 2026-Q3. See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
+  // Burn-down: 2026-Q3. See docs/work/specs/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [
@@ -478,7 +456,7 @@ export const webBlocks = [
   // to web-scoped `error` so the next regression fails lint loudly. Stays
   // `off` in the shared baseline because apps/mobile still carries
   // legacy violations (separate future bite). See
-  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     rules: {
@@ -502,7 +480,7 @@ export const webBlocks = [
   // `off` to web-scoped `error` so the next regression fails lint loudly. Stays
   // `off` in the shared baseline because apps/mobile still carries legacy
   // violations (separate future bite). See
-  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     rules: {
@@ -537,7 +515,7 @@ export const webBlocks = [
   // modules, and shared UI (Toast/Tooltip/PageTransition/voice). Promoted from
   // baseline `off` to web-scoped `error` so the next regression fails lint
   // loudly. Mobile cleared in the same initiative (2026-07-10). See
-  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     rules: {

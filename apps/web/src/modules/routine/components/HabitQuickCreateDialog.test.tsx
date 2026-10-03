@@ -36,14 +36,12 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
 interface HarnessProps {
   initial?: RoutineState;
   editingId?: string | null;
-  firstRunHint?: boolean;
   onClose?: () => void;
 }
 
 function Harness({
   initial = defaultRoutineState(),
   editingId = null,
-  firstRunHint = false,
   onClose = vi.fn(),
 }: HarnessProps) {
   const [routine, setRoutine] = useState(initial);
@@ -55,7 +53,6 @@ function Harness({
         setRoutine={setRoutine}
         onClose={onClose}
         editingId={editingId}
-        firstRunHint={firstRunHint}
       />
       <ToastContainer />
     </ToastProvider>
@@ -227,14 +224,5 @@ describe("HabitQuickCreateDialog", () => {
     const cancel = screen.getByRole("button", { name: "Скасувати" });
     fireEvent.click(cancel);
     expect(onClose).toHaveBeenCalled();
-  });
-
-  it("renders the first-run hint banner when firstRunHint is set (create mode)", () => {
-    render(<Harness firstRunHint />);
-    // The banner heading comes from messages.routine.firstRun.title; assert
-    // the dialog still renders the create CTA so the banner branch is covered.
-    expect(
-      screen.getByRole("button", { name: "Додати звичку" }),
-    ).toBeInTheDocument();
   });
 });

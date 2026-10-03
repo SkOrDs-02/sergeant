@@ -22,7 +22,6 @@ vi.mock("../../../core/db/kvStoreBoot", () => ({
 const useWorkouts = vi.fn();
 const useMeasurements = vi.fn();
 const useExerciseCatalog = vi.fn();
-const usePushupActivity = vi.fn();
 
 vi.mock("../hooks/useWorkouts", () => ({
   useWorkouts: () => useWorkouts(),
@@ -32,9 +31,6 @@ vi.mock("../hooks/useMeasurements", () => ({
 }));
 vi.mock("../hooks/useExerciseCatalog", () => ({
   useExerciseCatalog: () => useExerciseCatalog(),
-}));
-vi.mock("../hooks/usePushupActivity", () => ({
-  usePushupActivity: () => usePushupActivity(),
 }));
 
 vi.mock("../components/MiniLineChart", () => ({
@@ -59,7 +55,6 @@ function setHooks(opts: {
   exercises?: unknown[];
   musclesUk?: Record<string, string>;
   primaryGroupsUk?: Record<string, string>;
-  pushup?: { stats: unknown; hasData: boolean };
   /** Defaults to `true` — most tests exercise the post-cache-warm page. */
   loaded?: boolean;
 }) {
@@ -75,12 +70,6 @@ function setHooks(opts: {
     // бейдж групи читають саме її (QA 2026-08-23).
     primaryGroupsUk: opts.primaryGroupsUk ?? opts.musclesUk ?? {},
   });
-  usePushupActivity.mockReturnValue(
-    opts.pushup ?? {
-      stats: { todayCount: 0, week: 0, month: 0 },
-      hasData: false,
-    },
-  );
 }
 
 const NOW = Date.now();
@@ -159,7 +148,7 @@ describe("Progress page — charts & trends", () => {
     });
     render(<Progress onNavigate={onNavigate} />);
     // 18 − 20 = -2.0%
-    expect(screen.getByText(/-2,0%/)).toBeInTheDocument();
+    expect(screen.getByText(/−2,0%/)).toBeInTheDocument();
   });
 
   it("renders the wellbeing chart with ≥2 entries carrying energy/mood", () => {

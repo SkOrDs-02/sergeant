@@ -24,7 +24,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../../..");
-const ADR_DIR = resolve(REPO_ROOT, "docs/04-governance/adr");
+const ADR_DIR = resolve(REPO_ROOT, "docs/governance/adr");
 const README_PATH = resolve(ADR_DIR, "README.md");
 
 const sample = ({ status, supersedes, lang = "en" }) => {
@@ -190,7 +190,7 @@ test("validateGraph: complains when an ADR is missing from the README index", ()
   );
   const errors = validateGraph([a], new Set([]));
   assert.equal(errors.length, 1);
-  assert.match(errors[0], /not listed in docs\/04-governance\/adr\/README\.md/);
+  assert.match(errors[0], /not listed in docs\/governance\/adr\/README\.md/);
 });
 
 test("validateGraph: enforces bidirectional supersede (forward direction missing)", () => {
@@ -363,7 +363,7 @@ test("validateGraph: does NOT flag a whitelisted gap (0029)", () => {
 
 // ── On-disk integration ──────────────────────────────────────────────────────
 
-test("on-disk: every ADR file in docs/04-governance/adr/ parses cleanly", () => {
+test("on-disk: every ADR file in docs/governance/adr/ parses cleanly", () => {
   const files = listAdrFiles(ADR_DIR);
   assert.ok(files.length >= 27, `expected ≥27 ADRs, got ${files.length}`);
   for (const f of files) {
@@ -376,7 +376,7 @@ test("on-disk: every ADR file in docs/04-governance/adr/ parses cleanly", () => 
   }
 });
 
-test("on-disk: validateGraph passes against the real docs/04-governance/adr tree", () => {
+test("on-disk: validateGraph passes against the real docs/governance/adr tree", () => {
   const files = listAdrFiles(ADR_DIR);
   const adrs = files.map((f) => parseAdr(f, readFileSync(f, "utf8")));
   const indexed = listIndexedNumbers(readFileSync(README_PATH, "utf8"));

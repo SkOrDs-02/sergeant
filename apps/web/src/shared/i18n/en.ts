@@ -1,5 +1,6 @@
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
+import { nutritionTdeeEn } from "./en.nutritionTdee";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
@@ -17,8 +18,12 @@ export const messagesEn: Partial<{
   [K in keyof typeof ukMessages]: MessageGroupShape<(typeof ukMessages)[K]>;
 }> = {
   auth: {
+    /** Apple sign-in button label. */
+    signInWithApple: "Sign in with Apple",
+
     // Generic fallback — used when the specific cause cannot be determined.
     genericFailure: "Sign-in failed. Please try again.",
+    registerFailure: "Sign-up failed. Please try again.",
 
     // Better Auth canonical error-codes:
     invalidEmailOrPassword: "Incorrect email or password.",
@@ -45,7 +50,6 @@ export const messagesEn: Partial<{
     errorNetwork: "Sync failed, check your connection.",
     errorServerRetryable: "The server is temporarily unresponsive. Try again.",
     errorServerNonRetryable: "Sync error. Check your input.",
-    errorGeneric: "Sync error.",
     retryCta: "Try again",
 
     conflictResolved: "Conflict resolved automatically.",
@@ -56,6 +60,8 @@ export const messagesEn: Partial<{
       "Moving your data into the profile and saving it to the server…",
     anonymousMigrationFailure:
       "Could not finish the migration. The data on this device was not deleted, but it is not protected by sync yet.",
+    anonymousMigrationFailureOffline:
+      "No connection, so the data could not be moved into the profile. It stayed on this device — retry once you are back online.",
     anonymousMigrationRetry: "Retry",
     anonymousMigrationDefer: "Continue, I'll migrate later",
     anonymousMigrationDeferredToast:
@@ -68,11 +74,6 @@ export const messagesEn: Partial<{
   },
 
   validation: {
-    /**
-     * @deprecated PR-31: use `<entity>Required` keys instead.
-     * @removeBy 2026-09-01
-     */
-    fieldRequired: "This field is required.",
     emailRequired: "Enter your email",
     emailInvalid: "Invalid email format",
     emailInvalidPublic: "Invalid email address",
@@ -138,6 +139,7 @@ export const messagesEn: Partial<{
     done: "Done",
     doneLowercase: "done",
     hiddenValuePrefix: "Hidden",
+    streakPrefix: "Streak",
   },
 
   period: {
@@ -157,9 +159,10 @@ export const messagesEn: Partial<{
     fizrukOverview: "Overview",
     nutritionLog: "Journal",
     reports: "Reports",
+    settings: "Settings",
     openAssistant: "Open AI assistant",
     globalSearch: "Global search",
-    searchPlaceholder: "Search across all modules…",
+    searchPlaceholder: "Search across all modules",
     moduleSwitcher: "Module switcher",
     closeSettings: "Close settings",
     closeMenu: "Close menu",
@@ -205,6 +208,10 @@ export const messagesEn: Partial<{
       retry: "Try again",
       timeout: "Request timed out. Try again.",
       unknown: "Something went wrong. Try again.",
+      failed: "Could not {what}. {action}",
+      retryAction: "Try again.",
+      storageSaveFailed:
+        "Could not save data. Free up browser storage or save a backup.",
 
       title: "Error",
       somethingWrong: "Something went wrong",
@@ -213,6 +220,7 @@ export const messagesEn: Partial<{
         "This section crashed, but the rest of the module is working.",
       moduleFailed: "Module error",
       backToModulePicker: "Back to module picker",
+      imageFailed: "Image failed to load",
       copyRequestId: "Copy",
       copyRequestIdAria: "Copy requestId",
     },
@@ -233,27 +241,16 @@ export const messagesEn: Partial<{
       signIn: "Sign in",
       backup: "Download a copy",
     },
+    memoryOnly: {
+      title: "Entries are not being saved",
+      body: "Browser storage did not open, so new entries live in memory for now. Reload the page to keep them.",
+      bodyOtherTab:
+        "The database is open in another tab. Close extra Sergeant tabs and reload this one.",
+      reload: "Reload",
+    },
   },
 
-  dataExport: {
-    busy: "Preparing export…",
-    downloadJson: "Download JSON",
-    downloadCsv: "Download CSV",
-    formatsHint:
-      "JSON is the complete file for moving your data elsewhere. CSV is a table for simply looking at it in Excel or Google Sheets.",
-    doneJson: "Server export downloaded as JSON.",
-    doneCsv: "Server export downloaded as CSV.",
-    failed: "Could not create the server export. Check that you are signed in.",
-    sections: {
-      moduleData: "Module data",
-      monoAccounts: "Monobank accounts",
-      monoTransactions: "Monobank transactions",
-      monoConnection: "Monobank connection",
-      subscriptions: "Subscriptions",
-      pushDevices: "Notification devices",
-      aiUsage: "AI usage by day",
-      aiMemories: "AI memory",
-    },
+  dataDisclosure: {
     subprocessors: {
       title: "Where your data goes for AI",
       body: "To answer in chat, give advice and recognize photos, we send requests to Anthropic, and to Voyage AI for memory search. Before sending we strip email, phone, IBAN, card number and tax ID, and people's names from bank transfers.",
@@ -268,6 +265,28 @@ export const messagesEn: Partial<{
     },
   },
 
+  dataExport: {
+    busy: "Preparing export…",
+    downloadJson: "Download JSON",
+    downloadCsv: "Download CSV",
+    formatsHint:
+      "JSON is the complete file for moving your data elsewhere. CSV is a table for simply looking at it in Excel or Google Sheets.",
+    doneJson: "Server export downloaded as JSON.",
+    doneCsv: "Server export downloaded as CSV.",
+    failed: "Could not create the server export. Please try again.",
+    guestHint:
+      "The server export is available once you sign in. You can build a local copy above without signing in.",
+    sections: {
+      moduleData: "Module data",
+      monoAccounts: "Monobank accounts",
+      monoTransactions: "Monobank transactions",
+      monoConnection: "Monobank connection",
+      subscriptions: "Subscriptions",
+      pushDevices: "Notification devices",
+      excluded: "Not included in this file",
+    },
+  },
+
   hub: {
     destructiveConfirm: {
       title: "Confirm an irreversible action",
@@ -276,6 +295,24 @@ export const messagesEn: Partial<{
       cancel: "Cancel",
     },
     otherTips: "More tips",
+    nowPile: {
+      heading: "Now",
+      empty: "Everything is closed for today, nothing needs your attention.",
+      postponed: "Postponed",
+      showPostponed: "show",
+      more: "more",
+      doIt: "Do it",
+      open: "Open",
+      openWeekReport: "Open the week report",
+      askAiChip: "AI",
+      askAi: "Ask Sergeant about this",
+      askAiLimit: "Daily limit of Sergeant requests reached",
+      dismiss: "Dismiss tip",
+    },
+    closedPile: {
+      heading: "Closed today",
+    },
+    moduleRail: "Modules",
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
     crossModulePreviewAria: "What Sergeant will show next",
@@ -286,6 +323,9 @@ export const messagesEn: Partial<{
     chatEmptyTitle: "Ask me anything, I'm here to help",
     chatEmptyDescription:
       "Tap a suggestion, it fills the input so you can edit it before sending.",
+    chatEmptyDescriptionSignedOut: "Here is what you can ask once you sign in.",
+    chatEmptyAiDisclosure:
+      "You are talking to an AI, not a person. It can be wrong, so double-check anything important.",
     chatEmptyAriaLabel: "Chat starter suggestions",
     chatEmptySuggestionFinyk: "How much did I spend this week?",
     chatEmptySuggestionFizruk: "How are my workouts going?",
@@ -295,13 +335,19 @@ export const messagesEn: Partial<{
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+    reportPreviousToDate: "Previous, same days:",
+    reportEmptyWorkouts: "No workouts yet. Log the first one in Fizruk.",
+    reportEmptyHabits: "No habits yet. Add the first one in Routine.",
+    reportEmptyExpenses: "No expenses yet. Add the first one in Finyk.",
+    reportEmptyMeals: "No meals logged yet. Add the first one in Nutrition.",
+    reportDeltaFlat: "no change",
 
     overlayTitle: "AI assistant",
     closeChat: "Close chat",
-    chatUsageUnit: "requests",
+    chatUsageUnit: "actions, resets Monday",
     chatUsageAriaPrefix: "Used",
-    chatUsageAriaSuffix: "AI requests today",
-    chatUsageExhausted: "AI request limit reached for today. See plans",
+    chatUsageAriaSuffix: "AI actions this week, the limit resets on Monday",
+    chatUsageExhausted: "Weekly AI limit reached. See plans",
   },
 
   onboarding: {
@@ -320,10 +366,6 @@ export const messagesEn: Partial<{
     goalFirstAriaLabel: "Onboarding goals",
 
     presetSaveFailed: "Could not save. Try again.",
-    demoBadgeText: "Demo",
-    demoBadgeExit: "Exit",
-    demoBadgeLabel: "Demo data: tap to exit and create your own profile",
-    demoBadgeTitle: "Demo. Tap to exit and start from a clean slate.",
   },
 
   welcomeModulePicker: {
@@ -334,7 +376,6 @@ export const messagesEn: Partial<{
     cta: "Get started",
     emptyHint: "Select at least one module to continue.",
     lateHint: "You can add more later in settings.",
-    demoCta: "See an example",
     haveAccount: "I already have an account",
     taglines: {
       finyk: "Expenses, budgets and trends",
@@ -410,7 +451,6 @@ export const messagesEn: Partial<{
     bannerCta: "Set up",
 
     lock: {
-      sectionTitle: "Privacy",
       enableLabel: "App lock",
       enableDescription:
         "Protect your data with a PIN. The app locks when you switch away or after 5 minutes of inactivity.",
@@ -447,6 +487,10 @@ export const messagesEn: Partial<{
         "Each fact can be deleted individually. Deleted facts are gone for good.",
       loading: "Loading memory…",
       loadError: "Could not load AI memory.",
+      // Mirrors uk.privacy.ts: 401 on the list is the guest state, not a
+      // failure (audit `web-qa-pre-beta.md` § 9, 2026-09-03).
+      authRequired:
+        "AI memory lives in your account. Sign in and everything the assistant remembers about you will show up here.",
       empty:
         "The AI hasn't recorded anything about you yet. Facts appear when you mention something important in chat: an allergy, a goal, a constraint.",
       loadMore: "Show more",
@@ -459,6 +503,22 @@ export const messagesEn: Partial<{
       deleteError: "Could not delete the fact. Try again.",
       groupToggleAria: "Show facts from this source",
       expandFact: "Show in full",
+      // The `profile` group is no longer a checklist with delete buttons:
+      // it is a pointer card, since the single profile-facts editor now
+      // lives in Profile -> "Memory bank" (owner decision 2026-08-30).
+      // Mirrors uk.privacy.ts.
+      profileGroupTitle: "Profile facts",
+      profileGroupHint:
+        "This is what you told us about yourself. Edit and delete it in your profile.",
+      profileGroupAction: "Open profile",
+      clearButton: "Clear AI memory",
+      clearing: "Clearing…",
+      clearConfirmTitle: "Clear AI memory?",
+      clearConfirmBody:
+        "Every fact disappears, both local and on the server. This cannot be undone.",
+      clearConfirmButton: "Clear forever",
+      /** `{count}` — how many facts from this group are loaded so far. */
+      profileGroupCount: "Facts: {count}",
       collapseFact: "Collapse",
       technicalGroupHints: {
         product:
@@ -466,6 +526,16 @@ export const messagesEn: Partial<{
         digest:
           "Weekly reports the assistant compiled itself from your modules. This is not a fact you told it — it is its own summary.",
       },
+    },
+
+    // Mirrors uk.privacy.ts: first-launch analytics consent banner.
+    analyticsConsent: {
+      title: "Help make Sergeant better?",
+      body: "We can collect usage statistics: which screens are opened and where things break. No amounts, names or text you type.",
+      changeLater: "You can change your mind in Settings, under privacy.",
+      privacyLink: "About privacy",
+      accept: "Allow",
+      decline: "No, thanks",
     },
   },
 
@@ -493,6 +563,9 @@ export const messagesEn: Partial<{
     activityVeryActiveHint: "Physical job or 2× daily training",
     weightLabel: "Current weight (kg)",
     weightSyncHint: "Synced with the Body journal in Fizruk",
+    countWorkoutsLabel: "Count workouts in the target",
+    countWorkoutsHint:
+      "Off: the target comes from your activity level, which already accounts for training up front. On: the target starts at rest and adds what you actually burned today, and the activity level stops accounting for training.",
     save: "Save",
     saveSuccess: "Biometrics saved",
     saveError: "Could not save biometrics",
@@ -502,16 +575,7 @@ export const messagesEn: Partial<{
     ageYearsSuffix: "years",
   },
 
-  nutritionTdee: {
-    triggerLabel: "Calculate from profile",
-    triggerHint:
-      "Fill in your biometrics in your profile (sex, age, height, weight, activity level) and we'll calculate your daily calorie target automatically.",
-    profileLink: "Fill in profile",
-    goalCutting: "Cut weight (−500 kcal)",
-    goalMaintenance: "Maintenance",
-    goalBulking: "Bulk (+300 kcal)",
-    appliedToast: "Targets applied from profile",
-  },
+  nutritionTdee: nutritionTdeeEn,
 
   nutritionGoalRange: {
     kcalTooLow: "Under 800 kcal, not safe without medical supervision.",
@@ -563,22 +627,29 @@ export const messagesEn: Partial<{
   // for the "Unlock {name}" CTA composition; titles/descriptions can flow
   // longer since the modal owns its own viewport space.
   paywall: {
-    "ai-photo-analysis": {
-      name: "AI meal photo analysis",
-      title: "AI photo analysis: Premium",
+    "ai.photo": {
+      name: "Unlimited meal photos",
+      title: "Unlimited meal photos: Premium",
       description:
-        "AI estimates calories, protein, carbs and fat from a meal photo. Available on Premium.",
+        "Free covers 3 AI meal photos a week. The limit resets on Monday, and Premium removes it.",
     },
-    "multi-currency": {
-      name: "Multi-currency assets",
-      title: "Multi-currency: Premium",
+    "ai.finykVision": {
+      name: "Unlimited AI scans",
+      title: "Unlimited AI receipt scans: Premium",
       description:
-        "Hold assets in USD or EUR. I show them separately for now, I don't fold them into your UAH net worth.",
+        "Free covers 5 AI scans a week for receipts without a QR code and bank screenshots. Receipts with a QR code stay free.",
     },
-    "analytics-export-pdf": {
+    "export.pdf": {
       name: "PDF export",
       title: "PDF reports: Premium",
-      description: "Cross-module reports and PDF export, available on Premium.",
+      description:
+        "PDF export of reports is part of Premium. Reports and CSV stay free.",
+    },
+    "nutrition.weekPlan": {
+      name: "Weekly meal plan",
+      title: "Weekly meal plan: Premium",
+      description:
+        "Day plans, recipes and shopping lists stay free. A full seven-day plan comes with Premium.",
     },
   },
 

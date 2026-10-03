@@ -10,12 +10,6 @@ export const ROUTINE_THEME = {
   eyebrow: "text-routine-strong dark:text-routine",
   heroKicker: "text-routine-strong dark:text-routine",
 
-  // Cards & surfaces
-  statCard:
-    "rounded-2xl bg-panel/80 border border-routine-soft-border/60 p-3 text-center shadow-card backdrop-blur-sm",
-  statCardHighlight:
-    "rounded-2xl bg-routine-surface/80 border border-routine-ring/50 dark:border-routine-border-dark/30 p-3 text-center shadow-card",
-
   // Empty state — Wave 1b: `border-routine-soft-border` +
   // `bg-routine-soft` are preset-owned, light/dark pair lives in
   // `--c-routine-soft*` (apps/web/src/index.css).
@@ -91,4 +85,5 @@ export {
   RECURRENCE_OPTIONS,
   ROUTINE_TIME_MODES,
   WEEKDAY_LABELS,
+  WEEKLY_TARGET_CHOICES,
 } from "@sergeant/routine-domain";

@@ -1,5 +1,5 @@
 /**
- * B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — server-side
+ * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — server-side
  * allowlist + provenance checks for `tool_calls_raw` on the second
  * (`tool_results`) turn of `/api/chat`.
  *

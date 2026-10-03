@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 const getCachedFizrukSqliteState = vi.fn();
 vi.mock("@fizruk/lib/sqliteReader", () => ({
@@ -8,6 +8,11 @@ vi.mock("@fizruk/lib/sqliteReader", () => ({
 }));
 
 import FitnessCard from "./FitnessCard";
+import { messages } from "@shared/i18n/uk";
+import {
+  __resetFizrukSqliteReadGateForTests,
+  notifyFizrukSqliteCacheRefresh,
+} from "@fizruk/lib/sqliteReadGate";
 
 // A completed workout today (ISO timestamps) → count 1 for the current week.
 function cacheWithWorkout(): Record<string, unknown> {
@@ -32,13 +37,16 @@ describe("FitnessCard", () => {
     localStorage.clear();
     getCachedFizrukSqliteState.mockReturnValue(emptyWarmCache);
   });
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    __resetFizrukSqliteReadGateForTests();
+  });
 
   it("renders collapsed by default with a workout-count summary and toggles open", () => {
     getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
     render(<FitnessCard period="week" offset={0} />);
 
-    const toggle = screen.getByRole("button", { name: /Фізрук/i });
+    const toggle = screen.getByRole("button", { name: /Тренування/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getAllByText(/трен\./i).length).toBeGreaterThan(0);
 
@@ -50,8 +58,10 @@ describe("FitnessCard", () => {
   it("renders the no-data placeholder when the warm cache is empty", () => {
     getCachedFizrukSqliteState.mockReturnValue(emptyWarmCache);
     render(<FitnessCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
+    expect(
+      screen.getByText(messages.hub.reportEmptyWorkouts),
+    ).toBeInTheDocument();
   });
 
   it("treats a cold cache (refreshedAt null) as no data", () => {
@@ -60,15 +70,38 @@ describe("FitnessCard", () => {
       refreshedAt: null,
     });
     render(<FitnessCard period="month" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
+    expect(
+      screen.getByText(messages.hub.reportEmptyWorkouts),
+    ).toBeInTheDocument();
   });
 
   it("renders the bar chart with workout data", () => {
     getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
     render(<FitnessCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
     const chart = screen.getByLabelText("Графік");
     expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
+  });
+
+  it("CALC-4: recomputes once the Fizruk SQLite cache warms after mount (cold deep-link)", () => {
+    // Холодний deep-link: кеш ще порожній на першому рендері, гідрація pull
+    // приходить пізніше і бампає ТІЛЬКИ тік модуля (не hub-bump).
+    getCachedFizrukSqliteState.mockReturnValue({
+      workouts: [],
+      refreshedAt: null,
+    });
+    render(<FitnessCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
+    expect(
+      screen.getByText(messages.hub.reportEmptyWorkouts),
+    ).toBeInTheDocument();
+
+    getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
+    act(() => {
+      notifyFizrukSqliteCacheRefresh();
+    });
+    expect(screen.queryByText(messages.hub.reportEmptyWorkouts)).toBeNull();
+    expect(screen.getAllByText(/трен\./i).length).toBeGreaterThan(0);
   });
 });

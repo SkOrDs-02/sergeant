@@ -68,6 +68,31 @@ describe("GeneratorCard", () => {
     expect(onAddToLog).toHaveBeenCalled();
   });
 
+  it("підписує ккал згенерованого рецепта як «на порцію»", () => {
+    // Макроси рецепта - на ОДНУ порцію (рішення власника 2026-10-01), а
+    // «+ У журнал» на згенерованій картці пише рівно одну порцію.
+    render(
+      <GeneratorCard
+        prefs={PREFS}
+        setPrefs={vi.fn()}
+        recommendRecipes={vi.fn()}
+        recipes={[
+          {
+            id: "gen-1",
+            title: "Салат",
+            servings: 2,
+            macros: { kcal: 180, protein_g: 5, fat_g: 10, carbs_g: 20 },
+          },
+        ]}
+        fmtMacro={(v) => String(v)}
+        onSave={vi.fn()}
+        onAddToLog={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("≈ ккал / порція")).toBeInTheDocument();
+    expect(screen.getByText("180")).toBeInTheDocument();
+  });
+
   it("shows empty-state after tried with no recipes", () => {
     render(
       <GeneratorCard
@@ -194,5 +219,35 @@ describe("GeneratorCard", () => {
       screen.getByText("Показати діагностику (raw відповідь AI)"),
     ).toBeInTheDocument();
     expect(screen.getByText("raw ai payload")).toBeInTheDocument();
+  });
+
+  // Regression PR-N8 (аудит 2026-09-13): сира відповідь моделі була видима
+  // КОЖНОМУ в проді. Перевірка вище цього не ловила, бо під Vitest
+  // `import.meta.env.DEV` і так `true` — вона описувала лише dev-гілку.
+  it("ховає сиру діагностику в прод-збірці", () => {
+    vi.stubEnv("DEV", false);
+    try {
+      render(
+        <GeneratorCard
+          prefs={PREFS}
+          setPrefs={vi.fn()}
+          recommendRecipes={vi.fn()}
+          recipes={[]}
+          recipesTried
+          recipesRaw="raw ai payload"
+          fmtMacro={(v) => String(v)}
+          onSave={vi.fn()}
+          onAddToLog={vi.fn()}
+        />,
+      );
+      expect(
+        screen.queryByText("Показати діагностику (raw відповідь AI)"),
+      ).toBeNull();
+      expect(screen.queryByText("raw ai payload")).toBeNull();
+      // Сам порожній стан лишається — ховаємо діагностику, не підказку.
+      expect(screen.getByText(/Рецептів не повернулося/)).toBeInTheDocument();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

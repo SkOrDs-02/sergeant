@@ -12,6 +12,8 @@ interface RestTimerOverlayProps {
   restTimer: RestTimerState | null | undefined;
   onCancel: () => void;
   onAdjust?: (seconds: number) => void;
+  /** Ефекти озвучення працюють, візуал не рендериться (див. Connected). */
+  hidden?: boolean | undefined;
 }
 
 /**
@@ -32,6 +34,7 @@ export function RestTimerOverlay({
   restTimer,
   onCancel,
   onAdjust,
+  hidden,
 }: RestTimerOverlayProps) {
   const rt = messages.fizruk.restTimer;
   const { announce } = useAnnounce();
@@ -66,7 +69,7 @@ export function RestTimerOverlay({
     }
   }, [restTimer, announce, rt.endingSoon]);
 
-  if (!restTimer) return null;
+  if (!restTimer || hidden) return null;
 
   const pct = restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0;
   const urgent = restTimer.remaining <= 10 && restTimer.remaining > 0;

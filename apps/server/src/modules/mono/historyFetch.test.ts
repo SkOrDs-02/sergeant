@@ -4,19 +4,15 @@ import type { Mock } from "vitest";
 const harness = vi.hoisted(() => ({
   pool: { connect: vi.fn(), query: vi.fn() },
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-  enqueueMemoryIngest: vi.fn(),
   categorizeMcc: vi.fn(() => null),
   decryptAndLazyReencrypt: vi.fn(),
 }));
 
-// historyFetch.ts pulls the pg pool + queue + logger at module load; stub them
-// so the pure helpers can be imported without a database or env.
+// historyFetch.ts pulls the pg pool + logger at module load; stub them so
+// the pure helpers can be imported without a database or env.
 vi.mock("../../db.js", () => ({ pool: harness.pool }));
 vi.mock("../../obs/logger.js", () => ({
   logger: harness.logger,
-}));
-vi.mock("../ai-memory/ingestQueue.js", () => ({
-  enqueueMemoryIngest: harness.enqueueMemoryIngest,
 }));
 vi.mock("./mccCategories.js", () => ({
   categorizeMcc: harness.categorizeMcc,
@@ -35,7 +31,16 @@ import {
 
 // 2023-11-14T22:13:20Z — fixed epoch so the date slice is deterministic.
 const TS = 1_700_000_000;
-const DATE = "2023-11-14";
+/**
+ * Київська дата моменту `TS`, а не UTC-нарізка.
+ *
+ * `TS` — це `2023-11-14T22:13:20Z`, тобто вже `2023-11-15` за Києвом (EET,
+ * UTC+2 у листопаді). Доки `buildMemoryContent` різав `toISOString()`,
+ * рядок підписувався `2023-11-14` — і саме цей фікстур мовчки фіксував
+ * зсув на добу назад як «правильну» поведінку. Число змінилось разом із
+ * фіксом, і воно ж тепер стереже його.
+ */
+const DATE = "2023-11-15";
 
 function item(overrides: Record<string, unknown> = {}) {
   return BackfillItemSchema.parse({
@@ -133,6 +138,34 @@ describe("buildMemoryContent", () => {
     const out = buildMemoryContent(item({ currencyCode: 9_999 }), null);
     expect(out).not.toContain("₴");
     expect(out).not.toContain("$");
+  });
+
+  it("підписує дату київською добою на межі доби, не UTC", () => {
+    // 2026-01-09T23:30:00Z — за Києвом це вже 01:30 десятого січня.
+    // Рядок читає модель і переказує його людині, тож помилка тут звучить
+    // як «вчора» про те, що сталось сьогодні.
+    const nightPurchase = buildMemoryContent(
+      item({ time: Date.UTC(2026, 0, 9, 23, 30, 0) / 1000 }),
+      null,
+    );
+    expect(nightPurchase.endsWith("2026-01-10")).toBe(true);
+
+    // Дзеркальний бік межі: 00:30 UTC того ж дня — у Києві ще 02:30 того
+    // САМОГО дня, тобто зсуву бути не має.
+    const morningPurchase = buildMemoryContent(
+      item({ time: Date.UTC(2026, 0, 10, 0, 30, 0) / 1000 }),
+      null,
+    );
+    expect(morningPurchase.endsWith("2026-01-10")).toBe(true);
+  });
+
+  it("літній зсув (EEST, UTC+3) теж враховано", () => {
+    // У липні Київ — UTC+3, тож 21:30Z це вже 00:30 наступної доби.
+    const out = buildMemoryContent(
+      item({ time: Date.UTC(2026, 6, 15, 21, 30, 0) / 1000 }),
+      null,
+    );
+    expect(out.endsWith("2026-07-16")).toBe(true);
   });
 });
 
@@ -243,7 +276,6 @@ describe("runMonoHistoryBackfill", () => {
     expect(client.query).toHaveBeenCalledWith("BEGIN");
     expect(client.query).toHaveBeenCalledWith("COMMIT");
     expect(client.release).toHaveBeenCalledTimes(1);
-    expect(harness.enqueueMemoryIngest).not.toHaveBeenCalled();
     expect(harness.pool.query).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE mono_connection"),
       ["user_1"],

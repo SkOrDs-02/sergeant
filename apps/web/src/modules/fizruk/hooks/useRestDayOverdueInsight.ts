@@ -64,7 +64,15 @@ export function useRestDayOverdueInsight(
       module: "fizruk",
       title: `${days} ${pluralDays(days)} без тренування`,
       subtitle: "Час повернутися?",
-      askAiPrompt: `${days} ${pluralDays(days)} поспіль без дня відновлення. Наскільки це критично за моїми даними і коли найкраще поставити відпочинок?`,
+      // AI-DANGER: питання мусить казати те саме, що й заголовок. Тут стояв
+      // текст «N днів поспіль БЕЗ ДНЯ ВІДНОВЛЕННЯ» — протилежний зміст:
+      // заголовок каже «ти не тренувався», а питання питало, коли поставити
+      // відпочинок, ніби людина тренувалась без пауз. Один і той самий рядок
+      // на екрані казав дві протилежні речі (звіт власника 2026-09-02).
+      // Лишок від первісної рамки, з якої походить і назва
+      // `rest-day-overdue`: тригер рахує ДНІ ВІД ОСТАННЬОГО ТРЕНУВАННЯ, а
+      // не серію без відпочинку. Правиш заголовок — правь і це.
+      askAiPrompt: `${days} ${pluralDays(days)} без тренування. Наскільки це критично за моїми даними і як найкраще повернутися?`,
       action: { type: "navigate", path: "/fizruk/workouts" },
       // Hub surface promoted post-Phase 5e: rest-day overdue is the canonical
       // cross-module re-engagement signal — needs Hub visibility to actually

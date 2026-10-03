@@ -14,7 +14,7 @@ describe("DateField", () => {
     expect(input.parentElement?.parentElement?.parentElement).toHaveClass(
       "overflow-hidden",
       "border",
-      "border-line",
+      "border-control",
       "focus-within:border-brand-400",
     );
     expect(input).toHaveClass("border-0", "focus-visible:ring-0");
@@ -69,7 +69,7 @@ describe("DateField — межі календаря (beta-input-boundaries)", ()
       <DateField value="2019-01-01" readOnly />,
     );
     expect(
-      getByText("Незвична дата, перевір, чи не помилка в році"),
+      getByText("Незвична дата, перевір, чи не помилка в році."),
     ).toBeInTheDocument();
     expect(
       container.querySelector("input")!.getAttribute("aria-invalid"),
@@ -81,7 +81,7 @@ describe("DateField — межі календаря (beta-input-boundaries)", ()
       <DateField value="3025-01-01" readOnly />,
     );
     expect(getByRole("alert")).toHaveTextContent(
-      "Дата поза допустимим діапазоном",
+      "Дата поза допустимим діапазоном.",
     );
     expect(container.querySelector("input")!.getAttribute("aria-invalid")).toBe(
       "true",
@@ -98,7 +98,7 @@ describe("DateField — межі календаря (beta-input-boundaries)", ()
     );
     expect(getByText("Дата початку підписки")).toBeInTheDocument();
     expect(
-      queryByText("Незвична дата, перевір, чи не помилка в році"),
+      queryByText("Незвична дата, перевір, чи не помилка в році."),
     ).toBeNull();
   });
 
@@ -106,7 +106,7 @@ describe("DateField — межі календаря (beta-input-boundaries)", ()
     const { queryByText, container } = render(
       <DateField value="3025-01-01" bounded={false} readOnly />,
     );
-    expect(queryByText("Дата поза допустимим діапазоном")).toBeNull();
+    expect(queryByText("Дата поза допустимим діапазоном.")).toBeNull();
     expect(container.querySelector("input")!.getAttribute("min")).toBeNull();
   });
 

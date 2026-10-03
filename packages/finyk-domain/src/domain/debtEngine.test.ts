@@ -8,9 +8,11 @@ import {
   getDebtEffectiveTotal,
   getDebtOriginated,
   getDebtPaid,
+  getDebtSourced,
   getDebtTxRole,
   getLinkedTxRole,
   getReceivableEffectiveTotal,
+  getReceivableSourced,
   getReceivableOriginated,
   getReceivablePaid,
   getReceivableTxRole,
@@ -40,6 +42,21 @@ describe("debtEngine — борг (я винен)", () => {
     expect(calcDebtRemaining(debt, [])).toBe(1000);
   });
 
+  it("бере більшу підтверджену source-суму за базу без подвійного обліку", () => {
+    const debt = {
+      totalAmount: 721.14,
+      linkedTxIds: ["source", "increase"],
+      txLinks: {
+        source: { role: "source", amount: 1000 },
+        increase: { role: "increase", amount: 721.14 },
+      },
+    } as never;
+
+    expect(getDebtEffectiveTotal(debt, [])).toBe(1721.14);
+    expect(calcDebtRemaining(debt, [])).toBe(1721.14);
+    expect(getDebtSourced(debt, [])).toBe(1000);
+  });
+
   it("legacy-привʼязка з origin-знаком трактується як source (не роздуває пасив)", () => {
     const debt = { totalAmount: 1000, linkedTxIds: ["origin1"] } as never;
     const transactions = [{ id: "origin1", amount: 100_000 }];
@@ -54,7 +71,7 @@ describe("debtEngine — борг (я винен)", () => {
     expect(calcDebtRemaining(debt, transactions)).toBe(800);
   });
 
-  it("сума береться зі знімка привʼязки, навіть коли транзакції немає у вікні", () => {
+  it("сума береться зі знімка привʼязки, навіть коли операції немає у вікні", () => {
     const debt = {
       totalAmount: 1000,
       linkedTxIds: ["pay1"],
@@ -152,6 +169,31 @@ describe("debtEngine — дебіторка (мені винні)", () => {
     expect(getReceivableEffectiveTotal(rec, [])).toBe(600);
   });
 
+  it("source-привʼязка дебіторки не додається поверх ручної бази (як у боргу)", () => {
+    const rec = {
+      amount: 1000,
+      linkedTxIds: ["origin1"],
+      txLinks: { origin1: { role: "source", amount: 400 } },
+    } as never;
+    expect(getReceivableSourced(rec, [])).toBe(400);
+    expect(getReceivableEffectiveTotal(rec, [])).toBe(1000);
+    expect(calcReceivableRemaining(rec, [])).toBe(1000);
+  });
+
+  it("бере більшу підтверджену source-суму за базу дебіторки — дзеркало боргу", () => {
+    const rec = {
+      amount: 721.14,
+      linkedTxIds: ["source", "increase"],
+      txLinks: {
+        source: { role: "source", amount: 1000 },
+        increase: { role: "increase", amount: 721.14 },
+      },
+    } as never;
+    expect(getReceivableSourced(rec, [])).toBe(1000);
+    expect(getReceivableEffectiveTotal(rec, [])).toBe(1721.14);
+    expect(calcReceivableRemaining(rec, [])).toBe(1721.14);
+  });
+
   it("defaultReceivableTxRole: витрата → source, надходження → payment", () => {
     expect(defaultReceivableTxRole({ amount: -30 })).toBe("source");
     expect(defaultReceivableTxRole({ amount: 100 })).toBe("payment");
@@ -164,7 +206,7 @@ describe("debtEngine — дебіторка (мені винні)", () => {
 });
 
 describe("debtEngine — ролі привʼязок", () => {
-  it("getLinkedTxRole повертає null для непривʼязаної транзакції", () => {
+  it("getLinkedTxRole повертає null для непривʼязаної операції", () => {
     const debt = { linkedTxIds: ["a"] } as never;
     expect(getLinkedTxRole(debt, "b", [])).toBeNull();
   });

@@ -198,6 +198,18 @@ describe("FinykSection interactions", () => {
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Подорожі");
   });
 
+  it("adds an income category to the separate income catalog", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByRole("button", { name: "Надходження" }));
+    const input = screen.getByPlaceholderText("Напр. Підробіток");
+    fireEvent.change(input, { target: { value: "Оренда" } });
+    fireEvent.click(screen.getByText("Додати"));
+    expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Оренда", {
+      kind: "income",
+    });
+  });
+
   it("lists and removes existing custom categories", async () => {
     storageMock.customCategories = [{ id: "c1", label: "🎨 Хобі" }];
     mockedSyncState.mockResolvedValue(DISCONNECTED);
@@ -216,17 +228,19 @@ describe("FinykSection interactions", () => {
     expect(mockedConnect).not.toHaveBeenCalled();
   });
 
-  it("opens the paywall on connect when the user is not Pro", async () => {
+  // Регресія навпаки: до 2026-09-02 тут стояв пейволл, і цей тест вимагав
+  // його появи. Канон каже протилежне — «банк-sync Free назавжди»
+  // (product-overview.md, рядок 7), тож перевіряємо, що Free-юзер
+  // підключається без жодної перепони.
+  it("connects for a Free user — bank sync is not gated", async () => {
     apiState.isPro = false;
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(
-      await screen.findByText("Авто-Mono sync доступний у Pro"),
-    ).toBeInTheDocument();
-    expect(mockedConnect).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedConnect).toHaveBeenCalled());
+    expect(mockedConnect).toHaveBeenCalledWith("tok", expect.anything());
   });
 
   it("surfaces a server message when connect throws an auth error", async () => {
@@ -303,7 +317,7 @@ describe("FinykSection interactions", () => {
   it("clears the transaction cache through the confirm modal", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Очистити"));
@@ -337,9 +351,9 @@ describe("FinykSection interactions", () => {
       accountsCount: 1,
     });
     renderSection();
-    expect(await screen.findByText("Webhook очікує")).toBeInTheDocument();
+    expect(await screen.findByText("Синхронізація очікує")).toBeInTheDocument();
     const card = screen
-      .getByText("Webhook очікує")
+      .getByText("Синхронізація очікує")
       .closest("[class*='border-']");
     expect(card?.className).toContain("border-warning/30");
   });
@@ -353,9 +367,11 @@ describe("FinykSection interactions", () => {
       accountsCount: 0,
     });
     renderSection();
-    expect(await screen.findByText("Помилка webhook")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Синхронізація не працює"),
+    ).toBeInTheDocument();
     const card = screen
-      .getByText("Помилка webhook")
+      .getByText("Синхронізація не працює")
       .closest("[class*='border-']");
     expect(card?.className).toContain("border-danger/30");
   });
@@ -377,7 +393,9 @@ describe("FinykSection interactions", () => {
     );
   });
 
-  it("opens paywall when non-Pro user triggers backfill", async () => {
+  // Друга половина того самого рішення: backfill — теж частина
+  // безкоштовного банк-синку, не окрема Pro-фіча.
+  it("runs backfill for a Free user — history sync is not gated", async () => {
     apiState.isPro = false;
     mockedSyncState.mockResolvedValue({
       status: "active",
@@ -389,10 +407,7 @@ describe("FinykSection interactions", () => {
     renderSection();
     const btn = await screen.findByText("Синхронізувати історію");
     fireEvent.click(btn);
-    expect(
-      await screen.findByText("Авто-Mono sync доступний у Pro"),
-    ).toBeInTheDocument();
-    expect(mockedBackfill).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalled());
   });
 
   it("shows a backfill API error in the connected state and clears it after retry", async () => {
@@ -411,7 +426,7 @@ describe("FinykSection interactions", () => {
     fireEvent.click(btn);
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Помилка re-sync",
+      "Не вдалося повторити синхронізацію. Спробуй ще раз.",
     );
 
     fireEvent.click(screen.getByText("Синхронізувати історію"));
@@ -442,7 +457,7 @@ describe("FinykSection interactions", () => {
     );
     expect(removeQueries).not.toHaveBeenCalled();
     expect(client.getQueryData(finykKeys.monoSyncState)).toEqual(activeState);
-    expect(screen.getByText("Webhook активний")).toBeInTheDocument();
+    expect(screen.getByText("Синхронізація активна")).toBeInTheDocument();
   });
 
   it("Enter key in the webhook token input submits the form", async () => {
@@ -467,7 +482,11 @@ describe("FinykSection interactions", () => {
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(await screen.findByText("Мережева помилка")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Не вдалося підключити Monobank. Спробуй ще раз.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows lastEventAt timestamp when webhook is connected and event exists", async () => {
@@ -482,8 +501,10 @@ describe("FinykSection interactions", () => {
       accountsCount: 2,
     });
     renderSection();
-    await screen.findByText("Webhook активний");
-    const statusSection = screen.getByText("Webhook активний").parentElement;
+    await screen.findByText("Синхронізація активна");
+    const statusSection = screen.getByText(
+      "Синхронізація активна",
+    ).parentElement;
     expect(statusSection?.textContent).toContain("·");
     expect(formatDate).toHaveBeenCalledWith(
       "uk-UA",

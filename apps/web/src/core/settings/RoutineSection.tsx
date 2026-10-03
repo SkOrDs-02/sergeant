@@ -54,7 +54,7 @@ export function RoutineSection() {
 
       <SettingsSubGroup title="Теги та категорії">
         <div className="space-y-4">
-          <p className="text-style-caption text-subtle leading-snug">
+          <p className="text-style-body text-subtle leading-snug">
             Тег – вільна мітка («ранок», «робота»), категорія – сфера життя з
             власною іконкою. І те, і те призначається звичці у формі під «Більше
             опцій», а фільтрувати за ними можна на вкладці «Огляд».

@@ -23,13 +23,19 @@
 
 import {
   habitScheduledOnDate,
+  isFlexibleHabit,
   normalizeReminderTimes,
   reminderNotifyKey,
+  weekDoneCountExcludingDate,
   type Habit,
 } from "@sergeant/routine-domain";
 
-/** Модулі, які вміє нагадувати sweep. Значення їде у `data.module` пушу. */
-export type ReminderModule = "routine" | "fizruk" | "nutrition";
+/**
+ * Модулі, які вміє нагадувати sweep. Значення їде у `data.module` пушу.
+ * `sergeant` це проактивний нудж (`./nudge.ts`): він ділить з модулями
+ * спільну стелю, тож живе в тому самому плані дня (`./budget.ts`).
+ */
+export type ReminderModule = "routine" | "fizruk" | "nutrition" | "sergeant";
 
 /** Одне готове до відправки нагадування. */
 export interface DueReminder {
@@ -41,6 +47,14 @@ export interface DueReminder {
   body: string;
   /** Deep-link, який SW відкриє по тапу. */
   url: string;
+  /** Київський `HH:MM`, на який людина поставила цей привід. */
+  at: string;
+  /**
+   * Назва приводу в згорнутому сповіщенні (`collapseReminders`), коли
+   * кілька приводів ідуть одним пушем. У мінімальному режимі приватності
+   * назви звички тут немає, як і в заголовку.
+   */
+  label: string;
 }
 
 /** Рядок `routine_habits` після мапінгу в доменний тип. */
@@ -59,6 +73,17 @@ export interface RoutineDueInput {
   completedHabitIds: ReadonlySet<string>;
   /** `${habitId}` тих, кому користувач сьогодні поставив «не зміг». */
   skippedHabitIds: ReadonlySet<string>;
+  /**
+   * `habitId → dateKey[]` відміток гнучкої звички (`recurrence: "flexible"`)
+   * усередині поточного тижня `dayKey` — потрібно, щоб порахувати
+   * `weekDoneCount` для `habitScheduledOnDate`. Без нього гнучка звичка
+   * читається як щодня заплановану (`schedule.ts`: `weekDoneCount ===
+   * undefined` → безпечний дефолт `true`), тож нагадування не замовкало б
+   * після добраної тижневої норми (канон routine.md §4, рішення №7 спеки
+   * `routine-flexible-weekly-frequency.md`). Для звичайних звичок не
+   * читається взагалі.
+   */
+  weekCompletionsByHabitId?: ReadonlyMap<string, readonly string[]>;
 }
 
 /**
@@ -76,6 +101,7 @@ export function routineDueNow({
   hm,
   completedHabitIds,
   skippedHabitIds,
+  weekCompletionsByHabitId,
 }: RoutineDueInput): DueReminder[] {
   const out: DueReminder[] = [];
   for (const { userId, habit, privacyMinimal } of rows) {
@@ -85,8 +111,25 @@ export function routineDueNow({
     // (канон routine.md §5). Нагадувати після нього означає сперечатися
     // з людиною, яка вже відповіла.
     if (skippedHabitIds.has(habit.id)) continue;
+    // Гнучка звичка («N разів на тиждень») перестає бути запланованою,
+    // щойно тижневу ціль добрано — без `weekDoneCount` предикат завжди
+    // істинний (`schedule.ts`), тож звичка «3 рази на тиждень», виконана
+    // 3/3, слала б нагадування і в четвертий раз (аудит 2026-09-13, PR-R4;
+    // клас А спеки `routine-flexible-weekly-frequency.md`).
+    const weekDoneCount = isFlexibleHabit(habit)
+      ? weekDoneCountExcludingDate(
+          weekCompletionsByHabitId?.get(habit.id),
+          dayKey,
+        )
+      : undefined;
     // `pausedFrom: dayKey` — пауза діє від сьогодні вперед (ADR-0079 §3).
-    if (!habitScheduledOnDate(habit, dayKey, { pausedFrom: dayKey })) continue;
+    if (
+      !habitScheduledOnDate(habit, dayKey, {
+        pausedFrom: dayKey,
+        weekDoneCount,
+      })
+    )
+      continue;
     const times = normalizeReminderTimes(habit);
     if (!times.includes(hm)) continue;
 
@@ -101,6 +144,8 @@ export function routineDueNow({
         ? "Час для запланованої звички"
         : "Нагадування про звичку",
       url: "/?module=routine",
+      at: hm,
+      label: privacyMinimal ? "звичка" : habit.name,
     });
   }
   return out;
@@ -114,6 +159,13 @@ export interface FizrukPlanRow {
   reminderMinute: number;
   /** Чи призначено на `dayKey` тренування (є `templateId`). */
   hasWorkoutToday: boolean;
+}
+
+/** Київський `HH:MM` нагадування про тренування для рядка плану. */
+export function fizrukReminderHm(row: FizrukPlanRow): string {
+  return `${String(row.reminderHour).padStart(2, "0")}:${String(
+    row.reminderMinute,
+  ).padStart(2, "0")}`;
 }
 
 /**
@@ -131,10 +183,7 @@ export function fizrukDueNow(
   for (const row of rows) {
     if (!row.reminderEnabled) continue;
     if (!row.hasWorkoutToday) continue;
-    const target = `${String(row.reminderHour).padStart(2, "0")}:${String(
-      row.reminderMinute,
-    ).padStart(2, "0")}`;
-    if (target !== hm) continue;
+    if (fizrukReminderHm(row) !== hm) continue;
     out.push({
       userId: row.userId,
       module: "fizruk",
@@ -142,6 +191,8 @@ export function fizrukDueNow(
       title: "Фізрук: тренування",
       body: "Заплановане тренування на сьогодні.",
       url: "/?module=fizruk",
+      at: hm,
+      label: "тренування",
     });
   }
   return out;
@@ -152,6 +203,11 @@ export interface NutritionPrefsRow {
   userId: string;
   reminderEnabled: boolean;
   reminderHour: number;
+}
+
+/** Київський `HH:MM` нагадування про їжу: хвилина завжди `:00`. */
+export function nutritionReminderHm(row: NutritionPrefsRow): string {
+  return `${String(row.reminderHour).padStart(2, "0")}:00`;
 }
 
 /**
@@ -166,7 +222,7 @@ export function nutritionDueNow(
   const out: DueReminder[] = [];
   for (const row of rows) {
     if (!row.reminderEnabled) continue;
-    if (`${String(row.reminderHour).padStart(2, "0")}:00` !== hm) continue;
+    if (nutritionReminderHm(row) !== hm) continue;
     out.push({
       userId: row.userId,
       module: "nutrition",
@@ -174,6 +230,8 @@ export function nutritionDueNow(
       title: "Їжа",
       body: "Час відмітити прийом їжі.",
       url: "/?module=nutrition",
+      at: hm,
+      label: "запис їжі",
     });
   }
   return out;

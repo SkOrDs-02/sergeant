@@ -10,7 +10,7 @@ import {
   parseAgentsTableRules,
 } from "../check-governance-sync.mjs";
 
-const ADR = "docs/04-governance/adr/0099-fixture.md";
+const ADR = "docs/governance/adr/0099-fixture.md";
 
 test("isAdrExemptFromDanglingRefCheck: non-ADR paths are not exempt", () => {
   assert.equal(
@@ -98,7 +98,7 @@ test("parseAgentsTableRules: non-numeric and separator rows are ignored", () => 
   const table = [
     "| Path        | Owner       |",
     "| ----------- | ----------- |",
-    "| apps/web/** | @SkOrDs-02  |",
+    "| apps/web/** | @klas149  |",
   ].join("\n");
 
   assert.equal(parseAgentsTableRules(table).size, 0);

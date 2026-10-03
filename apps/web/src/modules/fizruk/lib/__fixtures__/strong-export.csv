@@ -1,0 +1,9 @@
+Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,RPE
+2024-03-04 07:15:00,"Evening Workout",42m,"Aerobics",1,0,0.0,0,120.0,
+2024-03-04 07:15:00,"Evening Workout",42m,"Aerobics",Rest Timer,0,0.0,0,120.0,
+2024-03-04 07:15:00,"Evening Workout",42m,"Walking",1,0,0.0,3.0,480.0,
+2024-03-05 19:02:11,"Chest and Triceps",1h 5m,"Bench Press (Barbell)",1,62.5,10.0,0,0.0,
+2024-03-05 19:02:11,"Chest and Triceps",1h 5m,"Bench Press (Barbell)",Rest Timer,0,0.0,0,180.0,
+2024-03-05 19:02:11,"Chest and Triceps",1h 5m,"Bench Press (Barbell)",2,65.0,8.0,0,0.0,8.0
+2024-03-05 19:02:11,"Chest and Triceps",1h 5m,"Lateral Raise (Dumbbell)",1,10.0,12.0,0,0.0,
+2024-03-06 18:30:00,"Evening Workout",34s,"Ball Slams",1,10.0,13.0,0,0.0,

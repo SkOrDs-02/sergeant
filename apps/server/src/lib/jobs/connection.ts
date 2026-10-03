@@ -66,10 +66,12 @@ export const BULLMQ_QUEUE_PREFIX = "sergeant";
 export const AUTH_MAIL_QUEUE_NAME = "auth-mail";
 
 /**
- * Черга async-ingestion-у AI memory (PR2 з ADR-0028). Producer-и:
- *   - hooks у `mono/webhook.ts` (finyk) та `digest/weekly-digest.ts` (digest)
- *   - публічний endpoint `POST /api/ai-memory/ingest` для клієнт-driven
- *     sources (nutrition / fizruk / journal / routine)
+ * Черга async-ingestion-у AI memory (PR2 з ADR-0028). Живі producer-и
+ * (ініціатива 0024, замір § Перезамір 2026-09-03) —
+ * `digest/weekly-digest.ts` (`source=digest`) і
+ * `ai-memory/profileMirror.ts` (`source=profile`). `mono/webhook.ts`
+ * (`finyk`) і клієнт-driven `POST /api/ai-memory/ingest` прибрані PR-1
+ * тієї ж ініціативи — жоден із них не мав продюсера в дереві.
  * Consumer — `startMemoryIngestWorker` у `modules/ai-memory/ingestQueue.ts`.
  */
 export const AI_MEMORY_INGEST_QUEUE_NAME = "ai-memory-ingest";

@@ -3,19 +3,16 @@
  * Status: Active
  */
 import { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import { ucFirst } from "@shared/lib/ui/ucFirst";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../../core/observability/analytics";
-import {
-  calcDebtRemaining,
-  calcReceivableRemaining,
-  calcFinykSpendingTotal,
-} from "../../utils";
+import { calcFinykSpendingTotal } from "../../utils";
+import { useFlowSchedule } from "./useFlowSchedule";
 import type { useStorage } from "../../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../../hooks/useUnifiedFinanceData";
 
-import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
 import {
   getLimitBudgets,
@@ -24,51 +21,24 @@ import {
   limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain/budget";
 import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
+import { dailySpendSeries } from "@sergeant/finyk-domain/lib/dailySpendSeries";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
 import {
   filterStatTransactions,
   withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
-import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import {
-  getKyivDateParts,
-  getDaysInMonth,
-  getKyivDayKey,
-} from "@shared/lib/time/kyivTime";
+import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
+import { useRecurringHistory } from "../../hooks/useRecurringHistory";
+import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
 
 // ── Pure helpers ────────────────────────────────────────────────────
-
-const parseLocalDate = (isoDate: string | null | undefined): Date => {
-  const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y ?? 0, (m || 1) - 1, d || 1);
-};
-
-const formatDaysLeft = (days: number): string => {
-  if (days === 0) return "сьогодні";
-  if (days === 1) return "завтра";
-  if (days <= 3) return `через ${days} дн`;
-  return `через ${days} дн`;
-};
-
-// `today` carries the Kyiv-anchored calendar parts of "now" (year, 0-based
-// month, day) so the billing rollover math stays on the Europe/Kyiv day
-// boundary regardless of the device timezone.
-const getNextBillingDate = (
-  billingDay: number,
-  today: { year: number; month: number; day: number },
-): Date => {
-  const { year: y, month: m, day } = today;
-  let d = new Date(y, m, Math.min(billingDay, getDaysInMonth(y, m)));
-  if (d < new Date(y, m, day))
-    d = new Date(y, m + 1, Math.min(billingDay, getDaysInMonth(y, m + 1)));
-  return d;
-};
 
 // ── Hook ────────────────────────────────────────────────────────────
 
@@ -94,6 +64,7 @@ export function useOverviewData({
     error: monoError,
     refresh: monoRefresh,
     privatTotal = 0,
+    privatDebt = 0,
     jars,
   } = mono;
   const {
@@ -106,7 +77,8 @@ export function useOverviewData({
     monthlyPlan,
     networthHistory,
     saveNetworthSnapshot,
-    txCategories,
+    txCategories: explicitTxCategories,
+    merchantRuleIndex,
     txSplits,
     manualAssets,
     customCategories,
@@ -141,6 +113,10 @@ export function useOverviewData({
   // `YYYY-MM` prefix of the current Kyiv month — the single window every
   // "цього місяця" aggregate below is clamped to.
   const kyivMonthPrefix = `${kyivYear}-${String(kyivMonth + 1).padStart(2, "0")}`;
+  // Київський день-ключ «сьогодні» — межа минуле/сьогодні/майбутнє для
+  // MonthStrip (стрічка місяця завжди Europe/Kyiv, не device-local:
+  // ADR-0078 стосується особистих сутностей, не фінансових періодів).
+  const todayKey = getKyivDayKey(nowMs);
 
   // Той самий потік, що годує місячні агрегати нижче, але БЕЗ місячного
   // clamp-у: інсайт-хуки мають власні вікна (`useCoffeeLimitInsight`
@@ -154,6 +130,34 @@ export function useOverviewData({
         excludedTxIds,
       ),
     [realTx, manualExpenses, excludedTxIds],
+  );
+  // Правила «Завжди так для цього магазину» (2026-10-01). Бюджетні агрегати
+  // й інсайти нижче читають категорію з мапи `txCategories`, тож віддаємо їм
+  // ЕФЕКТИВНУ мапу: явні override-и плюс категорії, виведені правилами. Це
+  // копія для читання, у слот вона не потрапляє. `insightTx` ширший за
+  // `statTx` (без місячного clamp-у), тож одна мапа покриває обидва.
+  const txCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        insightTx,
+        explicitTxCategories,
+        merchantRuleIndex,
+        customCategories,
+      ),
+    [insightTx, explicitTxCategories, merchantRuleIndex, customCategories],
+  );
+
+  // Інсайт «Знайшов повторення» читає дзеркало з фіксованим вікном, а не
+  // `realTx`: той після відповіді мережі лише поточний місяць, і щомісячні
+  // платежі ловились би тільки до неї (`useRecurringHistory`).
+  const recurringBank = useRecurringHistory(mono.fetchRange);
+  const recurringTx = useMemo(
+    () =>
+      filterStatTransactions(
+        withManualExpenses(recurringBank, manualExpenses),
+        excludedTxIds,
+      ),
+    [recurringBank, manualExpenses, excludedTxIds],
   );
 
   // AI-DANGER: this clamp is what makes every "цього місяця" number on Огляд
@@ -183,7 +187,6 @@ export function useOverviewData({
   );
   const income = monthlySummary.income;
   const todaySummary = useMemo(() => {
-    const todayKey = getKyivDayKey(nowMs);
     const todayTransactions = txForStats.filter((tx) => {
       const ms = txEpochMs(tx);
       return ms != null && getKyivDayKey(ms) === todayKey;
@@ -192,10 +195,13 @@ export function useOverviewData({
       excludedTxIds,
       txSplits,
     });
-  }, [txForStats, excludedTxIds, txSplits, nowMs]);
-  const projectedSpend =
-    daysPassed > 0 ? (spent / daysPassed) * daysInMonth : 0;
-
+  }, [txForStats, excludedTxIds, txSplits, todayKey]);
+  // Борг і підписку можна привʼязати й до ручного запису, тож залишки й
+  // суми рахуються з того самого набору, що й картки в Плануванні.
+  const linkableTx = useMemo(
+    () => withManualExpenses(transactions, manualExpenses),
+    [transactions, manualExpenses],
+  );
   const assetsSummary = useMemo(
     () =>
       computeAssetsSummary({
@@ -218,7 +224,7 @@ export function useOverviewData({
         })),
         manualDebts,
         receivables,
-        transactions,
+        transactions: linkableTx,
         jars,
       }),
     [
@@ -227,12 +233,15 @@ export function useOverviewData({
       manualAssets,
       manualDebts,
       receivables,
-      transactions,
+      linkableTx,
       jars,
     ],
   );
   const monoTotal = assetsSummary.monoBalance + privatTotal;
-  const totalDebt = assetsSummary.totalLiabilities;
+  // §1.3: PrivatBank overdrafts used to vanish from «Пасиви» entirely.
+  // `privatDebt` now goes through the same `getMonoTotals` creditLimit/
+  // overdraft rule as Monobank's `totalLiabilities`.
+  const totalDebt = assetsSummary.totalLiabilities + privatDebt;
   const nonUahManualAssetCount = useMemo(() => {
     const all = manualAssets || [];
     return all.filter((a) => a.currency !== "UAH").length;
@@ -244,7 +253,7 @@ export function useOverviewData({
       );
     }
   }, [nonUahManualAssetCount]);
-  const networth = assetsSummary.networth + privatTotal;
+  const networth = assetsSummary.networth + privatTotal - privatDebt;
 
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
 
@@ -254,7 +263,16 @@ export function useOverviewData({
     // break-even snapshot — a real scenario after paying off a loan that
     // exactly matches current cash. `accounts.length > 0` is the real
     // "data available" gate; zero net worth is a legitimate data point.
-    if (accounts.length > 0) {
+    // Without a bank the manual assets/debts ARE the net worth: gating on bank
+    // accounts alone meant «Динаміка капіталу» never got a point for a
+    // manual-only user and disagreed with «Капітал» on the same screen.
+    const manualOnlyData =
+      clientInfo == null &&
+      (manualAssets?.length ?? 0) +
+        (manualDebts?.length ?? 0) +
+        (receivables?.length ?? 0) >
+        0;
+    if (accounts.length > 0 || manualOnlyData) {
       saveNetworthSnapshot(networth);
     }
   }, [
@@ -262,14 +280,21 @@ export function useOverviewData({
     loadingTx,
     realTx.length,
     accounts.length,
+    clientInfo,
+    manualAssets,
+    manualDebts,
+    receivables,
     saveNetworthSnapshot,
   ]);
 
   // First-insight banner
   const hasAnyData = manualExpenses.length > 0 || realTx.length > 0;
-  const [showFirstInsight, setShowFirstInsight] = useState(
+  const [firstInsightUnseen, setShowFirstInsight] = useState(
     () => safeReadStringLS("finyk_first_insight_seen_v1", null) === null,
   );
+  // Підказка веде ставити бюджет. Людині, у якої бюджети вже є, вона лише
+  // забирає місце над першою цифрою огляду (критика екранів 2026-09-25).
+  const showFirstInsight = firstInsightUnseen && budgets.length === 0;
   const insightFiredRef = useRef(false);
   useEffect(() => {
     if (insightFiredRef.current) return;
@@ -306,112 +331,19 @@ export function useOverviewData({
     [limitBudgets, statTx, txCategories, txSplits, customCategories],
   );
 
-  // Memoize the Kyiv day-start epoch so it is a stable primitive: it only
-  // changes when the calendar day rolls over. Deriving it inline from a `new
-  // Date(...)` each render makes React Compiler treat the Date-derived value as
-  // potentially-mutable and skip memoization of every flow that depends on it;
-  // the wrapped primitive keeps the dependency arrays below simple expressions
-  // and lets the debt/subscription flow memos below preserve cleanly.
-
-  const todayStartMs = useMemo(
-    () => new Date(kyivYear, kyivMonth, kyivDay).getTime(),
-    [kyivYear, kyivMonth, kyivDay],
-  );
-
-  const subscriptionFlows = useMemo(
-    () =>
-      subscriptions.map((sub) => {
-        const { amount, currency } = getSubscriptionAmountMeta(
-          sub,
-          transactions,
-        );
-        const dueDate = getNextBillingDate(Number(sub.billingDay) || 1, {
-          year: kyivYear,
-          month: kyivMonth,
-          day: kyivDay,
-        });
-        const daysLeft = kyivCalendarDaysBetween(
-          dueDate.getTime(),
-          todayStartMs,
-        );
-        return {
-          id: `sub-${sub.id}`,
-          // AI-CONTEXT (2026-08-21): тут клеївся `sub.emoji`. Поле
-          // ЖОДНОГО разу не редагується користувачем — форма підписки
-          // не має для нього поля, тож у ньому завжди лежав засіяний
-          // дефолт «📱». Тобто це був не вибір людини, а хардкод
-          // емодзі, який малювався системним шрифтом. Рядок потоку
-          // показує назву; гліф йому не потрібен.
-          title: sub.name,
-          amount,
-          sign: "-",
-          daysLeft,
-          hint: formatDaysLeft(daysLeft),
-          currency,
-          dueDate,
-        };
-      }),
-    [subscriptions, transactions, todayStartMs, kyivYear, kyivMonth, kyivDay],
-  );
-
-  const debtOutFlows = useMemo(
-    () =>
-      manualDebts
-        .map((d) => ({ ...d, remaining: calcDebtRemaining(d, transactions) }))
-        .filter((d) => d.dueDate && d.remaining > 0)
-        .map((d) => {
-          const daysLeft = kyivCalendarDaysBetween(
-            parseLocalDate(d.dueDate).getTime(),
-            todayStartMs,
-          );
-          return {
-            id: `debt-${d.id}`,
-            title: d.name || "Борг",
-            amount: d.remaining,
-            sign: "-",
-            daysLeft,
-            hint: formatDaysLeft(daysLeft),
-            currency: "₴",
-            dueDate: parseLocalDate(d.dueDate),
-          };
-        }),
-    [manualDebts, transactions, todayStartMs],
-  );
-
-  const debtInFlows = useMemo(
-    () =>
-      receivables
-        .map((r) => ({
-          ...r,
-          remaining: calcReceivableRemaining(r, transactions),
-        }))
-        .filter((r) => r.dueDate && r.remaining > 0)
-        .map((r) => {
-          const daysLeft = kyivCalendarDaysBetween(
-            parseLocalDate(r.dueDate).getTime(),
-            todayStartMs,
-          );
-          return {
-            id: `recv-${r.id}`,
-            title: r.name || "Дебіторка",
-            amount: r.remaining,
-            sign: "+",
-            daysLeft,
-            hint: formatDaysLeft(daysLeft),
-            currency: "₴",
-            dueDate: parseLocalDate(r.dueDate),
-          };
-        }),
-    [receivables, transactions, todayStartMs],
-  );
-
-  const plannedFlows = useMemo(
-    () =>
-      [...subscriptionFlows, ...debtOutFlows, ...debtInFlows]
-        .filter((x) => x.daysLeft >= 0 && x.daysLeft <= 10)
-        .sort((a, b) => a.daysLeft - b.daysLeft),
-    [subscriptionFlows, debtOutFlows, debtInFlows],
-  );
+  // Підписки / борги / «мені винні» як один розклад — спільний хук із
+  // Плануванням («Найближчі платежі» живуть там із 2026-09-03), тут він
+  // живить рядок «регулярні» в «Місяць» і прогноз.
+  const { subscriptionFlows, debtOutFlows, debtInFlows, plannedFlows } =
+    useFlowSchedule({
+      subscriptions,
+      manualDebts,
+      receivables,
+      transactions: linkableTx,
+      kyivYear,
+      kyivMonth,
+      kyivDay,
+    });
 
   const planExpense = Number(monthlyPlan?.expense || 0);
   // "Has a plan" must reflect a real user-set monthly plan. It gates both the
@@ -447,13 +379,31 @@ export function useOverviewData({
   const unknownOutCount = monthFlows.filter(
     (f) => f.sign === "-" && f.amount === null,
   ).length;
+
+  // Прогноз v2 (Фаза 2, PR-5): лінійна екстраполяція факту плюс заплановані
+  // витрати, що ще не сталися цього місяця (`recurringOutThisMonth`, тобто
+  // майбутні підписки й борги, не перетинається з `spent`, бо той рахує
+  // тільки реальні транзакції). Стеля - наявні активи (`monoTotal`) плюс
+  // очікувані надходження (`recurringInThisMonth`): прогноз не може обіцяти
+  // витрату грошей, яких не буде звідки взяти.
+  const linearProjectedSpend =
+    daysPassed > 0 ? (spent / daysPassed) * daysInMonth : 0;
+  const projectedSpendRaw = linearProjectedSpend + recurringOutThisMonth;
+  const availableForSpend = monoTotal + recurringInThisMonth;
+  const projectedSpendCapped = projectedSpendRaw > availableForSpend;
+  const projectedSpend = projectedSpendCapped
+    ? Math.max(0, availableForSpend)
+    : projectedSpendRaw;
+
   // AI-DANGER: `dayBudget` is `null` — not a fallback number — when the user
   // has не задав місячний план. Do not resurrect a projected-spend fallback.
   //
   // AI-CONTEXT: it used to be `expenseTarget = planExpense > 0 ? planExpense
-  // : projectedSpend`, and `projectedSpend` is itself
-  // `spent / daysPassed * daysInMonth`. Substituting it makes `spent` the only
-  // real input, and the whole expression collapses to
+  // : projectedSpend`, and `projectedSpend` was itself
+  // `spent / daysPassed * daysInMonth` (now `linearProjectedSpend` above,
+  // before the recurring-flows addend and the available-funds cap PR-5
+  // introduced). Substituting it makes `spent` the only real input, and the
+  // whole expression collapses to
   //
   //     dayBudget ≈ spent · (daysInMonth − daysPassed)
   //                 ─────────────────────────────────────────
@@ -467,10 +417,80 @@ export function useOverviewData({
   // `forecastTrendPct` below: a budget needs an independent reference
   // (a user plan), and without one there is no honest number to show — the
   // hero renders a "постав план" CTA instead.
+  //
+  // AI-DANGER: знаменник рахується на витратах ДО сьогодні, а не на місячних
+  // `spent`. Причина — `remainingDays = daysInMonth − daysPassed + 1`, тобто
+  // сьогодні ВХОДИТЬ у решту днів. Якби в чисельнику стояв повний `spent`,
+  // сьогоднішня витрата вилітала б двічі: один раз амортизовано в самому
+  // `dayBudget` і вдруге в `todayRemaining = dayBudget − todaySpent`. На
+  // екрані це виглядало як «витратив 500 ₴ — залишок упав на 524 ₴»
+  // (надлишок рівно `todaySpent / remainingDays`). Тепер `dayBudget` —
+  // денна норма на початок дня: вона не смикається протягом доби, і саме
+  // тому лишається чесним спільним знаменником стрічки (ADR-0079).
+  const spentBeforeToday = spent - todaySummary.spent;
   const dayBudget = hasExpensePlan
-    ? (planExpense - spent - recurringOutThisMonth + recurringInThisMonth) /
+    ? (planExpense -
+        spentBeforeToday -
+        recurringOutThisMonth +
+        recurringInThisMonth) /
       remainingDays
     : null;
+
+  // `todayRemaining` — «Лишилось на сьогодні» (hero, рішення 2 спеки
+  // finyk-hero-month-strip). `null` РІВНО тоді, коли `dayBudget === null`
+  // (плану немає) — без цієї гілки `null − todaySpent` дав би у JS `-todaySpent`,
+  // тобто без плану hero показав би бадьоре «−495 ₴ понад бюджет дня» замість
+  // CTA «Постав план». З планом лишається живим протягом дня: зменшується з
+  // кожною витратою сьогодні, може піти у мінус.
+  const todayRemaining =
+    dayBudget === null ? null : dayBudget - todaySummary.spent;
+
+  // Стрічка місяця (`MonthStrip`) — по одному елементу на кожен день місяця,
+  // за тими самими правилами виключення, що дають `spent` вище
+  // (`filterStatTransactions`/`excludedTxIds`, не дублюємо). `ratio` — ЗАВЖДИ
+  // скінченне число 0…1+, ніколи `null`/`Infinity`/відʼємне: три режими
+  // (канон finyk.md § Журнал рішень 2026-09-01, спека
+  // finyk-hero-month-strip.md § Поверхня змін):
+  //   1. план і `dayBudget > 0` — `ratio = spent / dayBudget`, `over120` на
+  //      перевищенні 120% (акцент «перебору дня»);
+  //   2. плану немає — відносна шкала `spent / maxMonthlySpend` (нема
+  //      незалежного орієнтира для «перебору»), `over120` завжди `false`;
+  //   3. план є, але `dayBudget ≤ 0` (місячний план уже перевитрачено —
+  //      найімовірніший момент, коли на цей hero дивляться): ділити на
+  //      `dayBudget` не можна (`spent / 0` → `Infinity`, `spent / −N` →
+  //      відʼємне), тож та сама відносна шкала, а `over120 = spent > 0` —
+  //      будь-яка витрата в цьому стані вже понад бюджет дня.
+  const rawDailySpend = useMemo(
+    () =>
+      dailySpendSeries(
+        txForStats,
+        { year: kyivYear, month: kyivMonth + 1, daysInMonth },
+        { excludedTxIds, txSplits },
+      ),
+    [txForStats, kyivYear, kyivMonth, daysInMonth, excludedTxIds, txSplits],
+  );
+  const dailySpend = useMemo(() => {
+    const maxMonthlySpend = rawDailySpend.reduce(
+      (max, d) => Math.max(max, d.spent),
+      0,
+    );
+    return rawDailySpend.map((d) => {
+      if (hasExpensePlan && dayBudget !== null && dayBudget > 0) {
+        const ratio = d.spent / dayBudget;
+        return { ...d, ratio, over120: ratio > 1.2 };
+      }
+      // Без незалежного знаменника (без плану, або план перевитрачено й
+      // dayBudget ≤ 0) — відносна шкала: дні порівнюються між собою, а не
+      // проти бюджету. Порожній місяць (maxMonthlySpend === 0) дає
+      // `ratio = 0` для всіх — ділення на нуль не робимо навмисно.
+      const ratio = maxMonthlySpend > 0 ? d.spent / maxMonthlySpend : 0;
+      return {
+        ...d,
+        ratio,
+        over120: hasExpensePlan ? d.spent > 0 : false,
+      };
+    });
+  }, [rawDailySpend, hasExpensePlan, dayBudget]);
 
   const showMonthForecast = daysPassed > 0 && projectedSpend > 0;
   // No `forecastTrendPct` here on purpose. It used to be
@@ -486,11 +506,9 @@ export function useOverviewData({
   // claims "Понад 50% запланованого" with nothing planned.
   const spendPlanRatio = hasExpensePlan ? spent / planExpense : 0;
 
-  const dateLabel = new Date(nowMs).toLocaleDateString("uk-UA", {
-    timeZone: "Europe/Kyiv",
-    day: "numeric",
-    month: "long",
-  });
+  const dateLabel = ucFirst(
+    formatDayMonth(new Date(nowMs), { timeZone: KYIV_TIME_ZONE }),
+  );
 
   return {
     // Mono state
@@ -509,6 +527,9 @@ export function useOverviewData({
     daysInMonth,
     daysPassed,
     dayBudget,
+    todayRemaining,
+    dailySpend,
+    todayKey,
     hasExpensePlan,
     spendPlanRatio,
     dateLabel,
@@ -519,6 +540,7 @@ export function useOverviewData({
     dailyPlan,
     showMonthForecast,
     projectedSpend,
+    projectedSpendCapped,
     planExpense,
     recurringOutThisMonth,
     recurringInThisMonth,
@@ -528,6 +550,7 @@ export function useOverviewData({
     budgetAlerts,
     statTx,
     insightTx,
+    recurringTx,
     txCategories,
     txSplits,
     customCategories,

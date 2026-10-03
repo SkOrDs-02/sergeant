@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   dateKeyFromDate,
+  dateKeyMinusDays,
   enumerateDateKeys,
   isoWeekdayFromDateKey,
   parseDateKey,
@@ -57,5 +58,11 @@ describe("routine-domain/dateKeys", () => {
     expect(() => parseDateKey("")).toThrow(/invalid date key/);
     expect(() => parseDateKey("not-a-date")).toThrow(/invalid date key/);
     expect(() => parseDateKey("2026-13-01")).not.toThrow(); // JS Date handles overflow
+  });
+
+  it("dateKeyMinusDays shifts back by N calendar days, crossing month/year", () => {
+    expect(dateKeyMinusDays("2026-01-10", 3)).toBe("2026-01-07");
+    expect(dateKeyMinusDays("2026-03-01", 1)).toBe("2026-02-28");
+    expect(dateKeyMinusDays("2026-01-01", 1)).toBe("2025-12-31");
   });
 });

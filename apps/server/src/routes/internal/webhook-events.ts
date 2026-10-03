@@ -151,7 +151,7 @@ export function createWebhookEventsInternalRouter({
       res.status(503).json({
         error: "not_configured",
         message:
-          "N8N_WEBHOOK_BASE_URL не виставлений; execute-replay недоступний. Передайте dryRun=true для перегляду кандидатів.",
+          "N8N_WEBHOOK_BASE_URL не виставлений; execute-replay недоступний. Передай dryRun=true для перегляду кандидатів.",
       });
       return;
     }

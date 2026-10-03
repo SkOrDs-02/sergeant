@@ -1,7 +1,7 @@
 /**
  * Mobile-side test for the routine dual-write orchestrator.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. Mirrors
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors
  * the web copy at
  * `apps/web/src/modules/routine/lib/sqliteWriter/__tests__/integration.test.ts`.
  */

@@ -225,7 +225,13 @@ describe("DebtForm (extra) — voice input", () => {
     const setNewDebt = vi.fn();
     render(
       <DebtForm
-        newDebt={{ name: "", emoji: "", totalAmount: "", dueDate: "" }}
+        newDebt={{
+          name: "",
+          emoji: "",
+          totalAmount: "",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
         setNewDebt={setNewDebt}
         setManualDebts={vi.fn()}
         setShowDebtForm={vi.fn()}
@@ -263,6 +269,7 @@ describe("DebtForm (extra) — voice input", () => {
           emoji: "",
           totalAmount: "1000",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={setNewDebt}
         setManualDebts={vi.fn()}

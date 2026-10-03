@@ -7,10 +7,14 @@
 // Проблема, яку це закриває. У ніч 2026-08-29/30 `main` ламався шість
 // разів поспіль трьома різними PR — і щоразу одним і тим самим
 // механізмом: джерело змінилось, похідний артефакт не перегенеровано.
-// #935 лишив несвіжим `docs/02-engineering/api/openapi.json`, #930 і #941 —
+// #935 лишив несвіжим `docs/engineering/api/openapi.json`, #930 і #941 —
 // чотири похідні доки та `freshness-dashboard.html`. Гейти в CI на все це
 // вже були; чого не було — нічого, що заважає створити розсинхрон ЛОКАЛЬНО.
 // Автор дізнавався про нього лише коли червонів чужий відкритий PR.
+//
+// AI-NOTE: 2026-09-23..29 CI не було (Bitbucket), з 2026-09-30 знову
+// GitHub Actions (ADR-0102): похідні артефакти звіряє `pnpm lint` у джобі
+// `check`. Хук лишається ранньою перевіркою до пуша.
 //
 // AI-CONTEXT: цей скрипт не додає НОВОГО класу блокувань. Кожна перевірка
 // тут уже стоїть PR-гейтом (`api:check-openapi` — у contract-tests.yml,
@@ -18,23 +22,20 @@
 // `markdown-links`). Змінюється лише момент, коли автор про це дізнається:
 // на своїй машині до пушу замість чужого червоного PR після.
 //
-// Чому перевірка, а не автофікс. Прецедент автофіксу в цьому ж хуку є:
-// `bump-last-validated.mjs` перегенеровує freshness-dashboard і сам його
-// `git add`-ить. Він може собі це дозволити, бо дашборд — чиста функція
-// від тих самих `Last validated`, які цей же скрипт щойно й зсунув: він
-// дописує в коміт наслідок ВЛАСНОЇ правки. Решта артефактів тут інша.
-// `open-work.md`, `today.md`, `STATUS.md` і trust-badge рендеряться зі
-// стану ТРЕКЕРІВ і `pr-ledger` цілого репо, `openapi.json` — з усіх
-// zod-схем `@sergeant/shared`. Тихо перегенерувати їх означає підмішати в
-// коміт автора чужий стан, якого він не торкався і не бачив у діффі.
-// Тому тут — назвати розбіжність і точну команду, а рішення лишити людині.
+// Чому перевірка, а не автофікс. `open-work.md`, `today.md`, `STATUS.md`
+// і trust-badge рендеряться зі стану ТРЕКЕРІВ і `pr-ledger` цілого репо,
+// `openapi.json` — з усіх zod-схем `@sergeant/shared`. Тихо перегенерувати
+// їх означає підмішати в коміт автора чужий стан, якого він не торкався і
+// не бачив у діффі. Тому тут — назвати розбіжність і точну команду, а
+// рішення лишити людині.
 //
-// AI-NOTE: дашборд у таблиці нижче лишається навмисно, хоч
-// `bump-last-validated` і намагається його перегенерувати сам. Там це
-// best-effort у `try/catch` зі свідомим «як що — зловить CI» (див. його
-// коментар при `generate-freshness-dashboard`). Ця перевірка стоїть ПІСЛЯ
-// і робить те «зловить CI» локальним — тобто ловить саме той випадок,
-// коли автофікс мовчки не спрацював.
+// AI-NOTE: `freshness-dashboard.html` тут більше немає (2026-10-01). Його
+// перегенеровував `bump-last-validated.mjs` на кожному коміті з `.md`, і
+// після кожного мерджу всі відкриті PR конфліктували в ньому. Тепер дашборд
+// не комітиться взагалі (gitignored, `pnpm docs:freshness-dashboard` на
+// вимогу, CI-артефакт у docs-freshness.yml), тож звіряти нема з чим. Не
+// повертай його в GROUPS: див. doc-freshness.md § «Чому дашборд не
+// комітиться».
 //
 // Чому це не червонітиме саме по собі від плину часу. Усі `--check` тут
 // порівнюють вміст, нечутливий до штампів дат (`isStaleIgnoringDateStamp`
@@ -62,8 +63,9 @@
 //   node scripts/pre-commit-derived-artifacts.mjs --openapi  [files…]
 //
 // Opt-out: `SERGEANT_NO_DERIVED_CHECK=1 git commit …` — для проміжного
-// коміту в гілці. Хук при цьому НЕ пропускається (Hard Rule #7), і CI-гейт
-// лишається на місці.
+// коміту в гілці. Хук при цьому НЕ пропускається (Hard Rule #7); нічого
+// іншого це не перевірить (CI немає), тому пропуск лишає розсинхрон до
+// наступного запуску цього самого хука.
 
 import { spawn } from "node:child_process";
 import { appendFileSync, readFileSync } from "node:fs";
@@ -110,17 +112,11 @@ const GROUPS = {
       check: "docs:check-trust-badge",
       fix: "docs:gen-trust-badge",
     },
-    {
-      artifact: "docs/04-governance/governance/freshness-dashboard.html",
-      path: "docs/04-governance/governance/freshness-dashboard.html",
-      check: "docs:check-freshness-dashboard",
-      fix: "docs:freshness-dashboard",
-    },
   ],
   openapi: [
     {
-      artifact: "docs/02-engineering/api/openapi.json",
-      path: "docs/02-engineering/api/openapi.json",
+      artifact: "docs/engineering/api/openapi.json",
+      path: "docs/engineering/api/openapi.json",
       check: "api:check-openapi",
       fix: "api:generate-openapi",
     },
@@ -205,7 +201,7 @@ export function formatFailure(failures) {
     `    pnpm ${failures.map((f) => f.fix).join(" && pnpm ")}`,
     ...(paths.length > 0 ? [`    git add ${paths.join(" ")}`] : []),
     "",
-    "  Ці ж перевірки стоять PR-гейтом — без них червонітиме CI, а не тільки цей хук.",
+    "  Інакше впаде джоба `check` у CI.",
     "  Проміжний коміт: SERGEANT_NO_DERIVED_CHECK=1 git commit …",
     "",
   ];

@@ -6,7 +6,7 @@ import type { QueryValue } from "../types";
  * зашифровані на сервері (`privat_connection`) і резолвляться за сесією, тож
  * жоден інший виклик їх не приймає і клієнту не треба їх зберігати. До цієї
  * зміни merchant-токен лежав у `localStorage` і був видимий у DevTools —
- * спека `docs/90-work/planning/specs/beta-security-readiness.md` (F1).
+ * спека `docs/work/specs/beta-security-readiness.md` (F1).
  */
 export interface PrivatCredentials {
   merchantId: string;

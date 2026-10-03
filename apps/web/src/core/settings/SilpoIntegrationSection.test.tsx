@@ -15,6 +15,7 @@ vi.mock("@shared/api", async () => {
       wipe: vi.fn(),
       receipts: vi.fn(),
       receiptDetail: vi.fn(),
+      updateSettings: vi.fn(),
     },
     silpoConnectUrl: () => "https://example.test/api/v1/silpo/connect",
   };
@@ -43,6 +44,9 @@ const mockedSyncState = silpoApi.syncState as unknown as ReturnType<
 >;
 const mockedWipe = silpoApi.wipe as unknown as ReturnType<typeof vi.fn>;
 const mockedReceipts = silpoApi.receipts as unknown as ReturnType<typeof vi.fn>;
+const mockedUpdateSettings = silpoApi.updateSettings as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 function renderSection(addManualExpense = vi.fn()) {
   const client = new QueryClient({
@@ -167,6 +171,45 @@ describe("SilpoIntegrationSection", () => {
     expect(screen.getByText("Видалити всі дані Сільпо")).toBeInTheDocument();
   });
 
+  // Дві перевірки нижче — про те, чого бракувало два тижні: зламаний синк
+  // виглядав рівно як «людина не ходила в магазин». Обидві сторони важать
+  // однаково: без першої поломку не видно, без другої плашка висіла б і
+  // після того, як усе полагодилось, і сигнал знецінився б.
+  it("показує плашку, коли останній синк провалився", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-09-20T10:00:00.000Z",
+      lastSyncAt: "2026-08-31T09:15:00.000Z",
+      lastFailedAt: "2026-09-14T08:00:00.000Z",
+      lastErrorCode: "SILPO_TOOL_ERROR",
+      receiptsCount: 12,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Чеки не оновлюються")).toBeInTheDocument();
+    expect(screen.getByText(/SILPO_TOOL_ERROR/)).toBeInTheDocument();
+    // Копія називає дію, а не лише факт (style-guide: помилка закривається
+    // підказкою до дії).
+    expect(screen.getByText(/Натисни «Оновити чеки»/)).toBeInTheDocument();
+  });
+
+  it("не показує плашку, коли провалів немає", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-09-20T10:00:00.000Z",
+      lastSyncAt: "2026-09-14T09:15:00.000Z",
+      lastFailedAt: null,
+      lastErrorCode: null,
+      receiptsCount: 12,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Сільпо звʼязано")).toBeInTheDocument();
+    expect(screen.queryByText("Чеки не оновлюються")).not.toBeInTheDocument();
+  });
+
   it("keeps the privacy-promise text reachable via a collapsed details when connected (gate #2)", async () => {
     mockedSyncState.mockResolvedValue({
       status: "connected",
@@ -198,7 +241,7 @@ describe("SilpoIntegrationSection", () => {
     renderSection();
 
     expect(
-      await screen.findByText("Сільпо просить повторну авторизацію"),
+      await screen.findByText("Сільпо просить увійти ще раз"),
     ).toBeInTheDocument();
     expect(screen.getByText("Підключити повторно")).toBeInTheDocument();
   });
@@ -219,7 +262,7 @@ describe("SilpoIntegrationSection", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog.textContent).toContain("Видалити всі дані Сільпо?");
     // Explicit wording: splits/pantry survive, only Silpo-owned rows go.
-    expect(dialog.textContent).toContain("Підтверджені спліти категорій");
+    expect(dialog.textContent).toContain("Підтверджені розбиття категорій");
     expect(dialog.textContent).toContain("НЕ видаляються");
 
     // Wipe must not fire before the user confirms.
@@ -228,5 +271,126 @@ describe("SilpoIntegrationSection", () => {
     fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
 
     await vi.waitFor(() => expect(mockedWipe).toHaveBeenCalledTimes(1));
+  });
+
+  it("тумблер автоімпорту показує стан із pantryAutoImportSince і вмикає його PUT-ом", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-17T09:15:00.000Z",
+      receiptsCount: 5,
+      pantryAutoImportSince: null,
+    });
+    mockedUpdateSettings.mockResolvedValue({
+      pantryAutoImportSince: "2026-09-29T10:00:00.000Z",
+    });
+
+    renderSection();
+
+    const toggle = await screen.findByRole("switch", {
+      name: "Додавати продукти з чеків у комору автоматично",
+    });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(toggle);
+
+    await vi.waitFor(() =>
+      expect(mockedUpdateSettings).toHaveBeenCalledWith({
+        pantryAutoImport: true,
+      }),
+    );
+  });
+
+  describe("тумблер автоімпорту: причина відмови в тості", () => {
+    const TOGGLE_NAME = "Додавати продукти з чеків у комору автоматично";
+
+    async function clickToggleExpectingFailure(error: unknown) {
+      mockedSyncState.mockResolvedValue({
+        status: "connected",
+        accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+        lastSyncAt: "2026-08-17T09:15:00.000Z",
+        receiptsCount: 5,
+        pantryAutoImportSince: null,
+      });
+      mockedUpdateSettings.mockRejectedValue(error);
+      renderSection();
+      fireEvent.click(await screen.findByRole("switch", { name: TOGGLE_NAME }));
+      await vi.waitFor(() => expect(toastMock.error).toHaveBeenCalledTimes(1));
+      return toastMock.error.mock.calls[0] as [
+        string,
+        undefined,
+        { label: string; onClick: () => void },
+      ];
+    }
+
+    function httpError(status: number, body?: unknown) {
+      return new ApiError({
+        kind: "http",
+        message: `HTTP ${status}`,
+        status,
+        body,
+        url: "/api/silpo/settings",
+      });
+    }
+
+    it("404 (бекенд старіший за веб) каже, що сервер ще не оновлено, а не загальне «не вдалося»", async () => {
+      const [message, , action] = await clickToggleExpectingFailure(
+        httpError(404),
+      );
+      expect(message).toContain("Сервер ще не оновлено");
+      expect(message).not.toBe("Не вдалося змінити налаштування.");
+      expect(action.label).toBe("Повторити");
+    });
+
+    it("текст сервера віддається як є", async () => {
+      const [message] = await clickToggleExpectingFailure(
+        httpError(409, { error: "Спершу звʼяжи акаунт Сільпо." }),
+      );
+      expect(message).toBe("Спершу звʼяжи акаунт Сільпо.");
+    });
+
+    it("шлюзовий збій дає дію, а не голий номер", async () => {
+      const [message] = await clickToggleExpectingFailure(httpError(503));
+      expect(message).toBe("Сервер тимчасово не відповідає. Спробуй ще раз.");
+    });
+
+    it("500 без тексту сервера показує код статусу", async () => {
+      const [message] = await clickToggleExpectingFailure(httpError(500));
+      expect(message).toContain("Не вдалося змінити налаштування.");
+      expect(message).toContain("500");
+    });
+
+    it("збій мережі відрізняється від збою сервера", async () => {
+      const [message] = await clickToggleExpectingFailure(
+        new ApiError({
+          kind: "network",
+          message: "Failed to fetch",
+          url: "/api/silpo/settings",
+        }),
+      );
+      expect(message).toContain("зʼєднатися із сервером");
+      expect(message).not.toContain("Failed to fetch");
+    });
+
+    it("не-API помилка (наприклад, ZodError) не світить технічний message", async () => {
+      const [message] = await clickToggleExpectingFailure(
+        new Error('[{"code":"invalid_type","path":["pantryAutoImportSince"]}]'),
+      );
+      expect(message).toBe("Не вдалося змінити налаштування.");
+    });
+
+    it("«Повторити» повторює той самий PUT", async () => {
+      const [, , action] = await clickToggleExpectingFailure(httpError(404));
+      mockedUpdateSettings.mockClear();
+      mockedUpdateSettings.mockResolvedValue({
+        pantryAutoImportSince: "2026-10-01T10:00:00.000Z",
+      });
+      action.onClick();
+      await vi.waitFor(() =>
+        expect(mockedUpdateSettings).toHaveBeenCalledWith({
+          pantryAutoImport: true,
+        }),
+      );
+    });
   });
 });

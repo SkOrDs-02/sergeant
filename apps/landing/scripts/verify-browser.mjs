@@ -33,6 +33,9 @@ const ROUTES = [
   "/guides/foto-kalorii",
   "/guides/bank-bezpeka",
   "/guides/kilka-bankiv",
+  "/guides/pauza-i-propusk",
+  "/guides/ohlyad-dnya",
+  "/guides/tyzhnevyi-pidsumok",
   "/data",
   "/privacy",
   "/terms",
@@ -149,8 +152,15 @@ for (const [vw, tag] of [
     .getByRole("link", { name: /Доповідь про стан/ })
     .first();
   await statusLink.click();
-  await page.waitForURL("**/stan");
-  ok("beta лінк «Що вже працює» → /stan", page.url().endsWith("/stan"));
+  // Лінк веде на якір «Відомі проблеми» (/stan#vidomi-problemy), тож
+  // порівнюємо pathname, а не кінець URL.
+  await page.waitForURL((url) => url.pathname === "/stan");
+  ok(
+    "beta лінк «Що зараз зламано» → /stan#vidomi-problemy",
+    new URL(page.url()).pathname === "/stan" &&
+      new URL(page.url()).hash === "#vidomi-problemy",
+    page.url(),
+  );
 
   // TelegramCta: правильний деплінк з payload-ом
   await page.goto(BASE + "/beta", { waitUntil: "networkidle" });
@@ -180,6 +190,9 @@ for (const [vw, tag] of [
     ["/ruchna-robota", "Article"],
     ["/vyhid", "Article"],
     ["/guides/kilka-bankiv", "Article"],
+    ["/guides/pauza-i-propusk", "HowTo"],
+    ["/guides/ohlyad-dnya", "HowTo"],
+    ["/guides/tyzhnevyi-pidsumok", "HowTo"],
     ["/stan", "Article"],
     ["/about", "AboutPage"],
     ["/guides/monobank", "Article"],
@@ -235,6 +248,32 @@ for (const [vw, tag] of [
   await menuGuides.click();
   await page.waitForURL("**/guides");
   ok("mobile меню Гайди → /guides", page.url().endsWith("/guides"));
+
+  // Меню-пастка: розкривний список, з якого не вийти нічим, крім повторного
+  // тапу по бургеру. Обидві дірки знайдені живим кліком 2026-08-31.
+  await page.goto(BASE + "/", { waitUntil: "networkidle" });
+  const trapBurger = page.getByRole("button", { name: /меню/i });
+  const mobileNav = page.getByLabel("Мобільна навігація");
+
+  await trapBurger.click();
+  await page.waitForTimeout(250);
+  ok(
+    "mobile меню має заголовки груп",
+    (await mobileNav.locator("p").allInnerTexts()).length >= 2,
+  );
+
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(250);
+  ok("mobile меню закривається Escape", !(await mobileNav.isVisible()));
+
+  await trapBurger.click();
+  await page.waitForTimeout(250);
+  await page.mouse.click(200, 800);
+  await page.waitForTimeout(250);
+  ok(
+    "mobile меню закривається тапом повз нього",
+    !(await mobileNav.isVisible()),
+  );
 
   // Бургер працює і на внутрішній сторінці
   await page.getByRole("button", { name: /меню/i }).click();

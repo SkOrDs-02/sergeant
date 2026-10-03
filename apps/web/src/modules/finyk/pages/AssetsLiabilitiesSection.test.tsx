@@ -120,9 +120,10 @@ function makeState(overrides: Partial<State> = {}): State {
 }
 
 describe("AssetsLiabilitiesSection", () => {
-  it("renders the '+ Додати пасив' button when showDebtForm is false", () => {
+  it("does not render its own add button — the quick-action row owns it", () => {
     render(wrap(<AssetsLiabilitiesSection state={makeState()} />));
-    expect(screen.getByText("+ Додати пасив")).toBeInTheDocument();
+    expect(screen.queryByText("+ Додати пасив")).toBeNull();
+    expect(screen.queryByTestId("debt-form")).toBeNull();
   });
 
   it("shows the empty-state placeholder when liabilities section is empty", () => {
@@ -137,20 +138,6 @@ describe("AssetsLiabilitiesSection", () => {
     expect(screen.getAllByText(/Кредит/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Розстрочка/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Позика/).length).toBeGreaterThan(0);
-  });
-
-  it("calls setShowDebtForm(true) when '+ Додати пасив' is clicked", () => {
-    const state = makeState();
-    render(wrap(<AssetsLiabilitiesSection state={state} />));
-    fireEvent.click(screen.getByText("+ Додати пасив"));
-    expect(state.setEditingDebtId).toHaveBeenCalledWith(null);
-    expect(state.setNewDebt).toHaveBeenCalledWith({
-      name: "",
-      emoji: "",
-      totalAmount: "",
-      dueDate: "",
-    });
-    expect(state.setShowDebtForm).toHaveBeenCalledWith(true);
   });
 
   it("renders DebtForm when showDebtForm is true", () => {
@@ -221,10 +208,10 @@ describe("AssetsLiabilitiesSection", () => {
 
     render(wrap(<AssetsLiabilitiesSection state={state} />));
 
-    expect(screen.getByText(/Прив.язати транзакції \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Прив.язати операції \(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/Сплачено/)).toHaveTextContent(/1[\s\S]*250/);
 
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(1\)/));
     expect(state.setTxPicker).toHaveBeenCalledWith({
       id: "credit1",
       type: "monoDebt",
@@ -291,10 +278,11 @@ describe("AssetsLiabilitiesSection", () => {
       emoji: "💳",
       totalAmount: "10000",
       dueDate: "2026-09-01",
+      autoLinkKeyword: "",
     });
     expect(state.setShowDebtForm).toHaveBeenCalledWith(true);
 
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(1\)/));
     expect(state.setTxPicker).toHaveBeenCalledWith({ id: "d1", type: "debt" });
 
     fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));

@@ -10,7 +10,7 @@ import { Button } from "./Button";
  * + example-preview. Респектує `prefers-reduced-motion: reduce` (анімації
  * вмикаються тільки під `motion-safe:`).
  *
- * **Tier-и (див. `docs/design/empty-states.md`):**
+ * **Tier-и (див. `docs/design/design/empty-states.md`):**
  *
  * - **Tier 1** — full-screen / hero, з action-CTA, частіше через
  *   `<ModuleEmptyState>`-обгортку (curated per-module копія).
@@ -117,7 +117,7 @@ export const WithIconOnlyAction: Story = {
 export const Compact: Story = {
   args: {
     icon: <Icon name="search" />,
-    title: "Нічого не знайдено",
+    title: "Нічого не знайшов",
     description: "Спробуй інший запит.",
     compact: true,
     action: (
@@ -156,7 +156,7 @@ export const AsPageHeading: Story = {
 /**
  * **Tier 2 / compact, без action** — empty-state суто описовий, бо
  * primary-CTA уже видно на тому самому екрані (див. anti-pattern у
- * `docs/design/empty-states.md` — не дублюємо кнопку).
+ * `docs/design/design/empty-states.md` — не дублюємо кнопку).
  */
 export const CompactNoAction: Story = {
   args: {
@@ -175,7 +175,7 @@ export const CompactNoAction: Story = {
 export const ModuleFinyk: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="finyk" size={120} />,
-    title: "Жодної транзакції",
+    title: "Жодної операції",
     description: "Підключи Mono або додай витрату вручну, щоб почати облік.",
     action: (
       <Button variant="finyk" size="md">
@@ -242,7 +242,7 @@ export const ModuleNutrition: Story = {
  * **З hint + example-preview** — onboarding-сценарій, коли користувач
  * ще не знає, що саме вводити. Hint живе під CTA, example-preview —
  * у dashed-рамці імітує справжній рядок даних. Hint навмисно НЕ
- * дублює description (див. `docs/design/empty-states.md`) — це
+ * дублює description (див. `docs/design/design/empty-states.md`) — це
  * корисна побіжна нотатка, а не повтор «тут зараз порожньо».
  */
 export const WithHintAndExample: Story = {

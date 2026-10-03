@@ -2,7 +2,7 @@
  * Unit coverage for the pure `sergeant://` deep-link parser/builder.
  *
  * Each `parseSergeantUrl` case below maps onto the scheme table in
- * `docs/mobile/overview.md`; if a new scheme lands there it must grow a test
+ * `docs/engineering/mobile/overview.md`; if a new scheme lands there it must grow a test
  * here before the runtime wiring in `useDeepLinks.ts` picks it up.
  *
  * Scope: pure string → structured union. Intentionally does NOT

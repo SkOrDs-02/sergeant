@@ -17,12 +17,14 @@
  *   - sync_op_cursor  — client-only cursor for /v2/sync/pull.
  *
  * History: the inline migration shipped first as the Stage 3 routine
- * SQLite SPIKE (PR #022 of `docs/planning/storage-roadmap.md`); the
- * `ROUTINE_SPIKE_*` exports stay in place so the SPIKE library under
- * `apps/{web,mobile}/src/modules/routine/lib/sqliteSpike/` does not
- * have to be touched on the Stage 4 promotion. PR #023 introduces the
- * neutral `ROUTINE_CLIENT_MIGRATIONS` / `ROUTINE_MIGRATIONS_TABLE`
- * aliases that production (non-SPIKE) consumers should import.
+ * SQLite SPIKE (PR #022 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`); the
+ * PR #023 introduced the neutral `ROUTINE_CLIENT_MIGRATIONS` /
+ * `ROUTINE_MIGRATIONS_TABLE` names; the `ROUTINE_SPIKE_*` aliases that
+ * bridged the Stage 4 promotion were removed 2026-09-03 once their
+ * `@removeBy 2026-09-01` date passed (every consumer had already moved to
+ * the neutral names). The `001_routine_spike.sql` ledger row name is kept
+ * on purpose: renaming it would break already-migrated local SQLite
+ * states for zero functional gain.
  *
  * SQL is kept inline (not loaded via `?raw`) so the same module works
  * unchanged across the three bundlers we target — Vite, Metro, and
@@ -503,6 +505,21 @@ CREATE INDEX IF NOT EXISTS routine_habit_skips_user_active_idx_lite
 `;
 
 /**
+ * Client migration 010 — історія тижневої цілі для `recurrence='flexible'`.
+ *
+ * Дзеркалить серверну `135_routine_weekly_target_history.sql`.
+ * SQLite не має JSONB, тому поле зберігається як JSON-рядок у TEXT,
+ * за тим самим патерном, що `weekdays_json` і `pause_intervals_json`.
+ *
+ * `ALTER TABLE ... ADD COLUMN` у SQLite не має `IF NOT EXISTS`, але
+ * міграції append-only і ведуться леджером `__migrations`, тож повторного
+ * застосування не буде.
+ */
+const ROUTINE_010_WEEKLY_TARGET_HISTORY_SQL = `
+ALTER TABLE routine_habits ADD COLUMN weekly_target_history_json TEXT NOT NULL DEFAULT '[]';
+`;
+
+/**
  * Ordered list of bundled client migrations for the routine module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate/runner`.
@@ -648,6 +665,19 @@ CREATE TABLE IF NOT EXISTS anonymous_profile_migrations (
 );
 `;
 
+/**
+ * 011 — DROP `routine_pushups` (дзеркало серверної 139).
+ *
+ * Клієнт у цю таблицю не пише з Phase B переносу власності pushup-даних
+ * (2026-08-30, канон routine.md §10); її копію в `fizruk_pushups` серверна
+ * 131 зробила ще тоді, а фаза 2 (140 / fizruk `007`) конвертує ту копію в
+ * звичайні тренування. Тут лише знімаємо мертвий артефакт — копіювати
+ * нічого, інакше одна цифра мала б три джерела.
+ */
+const ROUTINE_011_DROP_PUSHUPS_SQL = `
+DROP TABLE IF EXISTS routine_pushups;
+`;
+
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
   { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
@@ -676,6 +706,14 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
     name: "009_routine_habit_skips.sql",
     sql: ROUTINE_009_HABIT_SKIPS_SQL,
   },
+  {
+    name: "010_routine_weekly_target_history.sql",
+    sql: ROUTINE_010_WEEKLY_TARGET_HISTORY_SQL,
+  },
+  {
+    name: "011_routine_drop_pushups.sql",
+    sql: ROUTINE_011_DROP_PUSHUPS_SQL,
+  },
 ] as const;
 
 /**
@@ -685,23 +723,6 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
  * `@sergeant/db-schema/migrate/runner` for the default constant.
  */
 export const ROUTINE_MIGRATIONS_TABLE = "__migrations";
-
-/**
- * @deprecated Stage-3 SPIKE alias for {@link ROUTINE_CLIENT_MIGRATIONS}.
- * Kept so the SPIKE library at
- * `apps/{web,mobile}/src/modules/routine/lib/sqliteSpike/` can carry
- * on importing the original symbol; new consumers should import
- * `ROUTINE_CLIENT_MIGRATIONS` directly.
- * @removeBy 2026-09-01
- */
-export const ROUTINE_SPIKE_CLIENT_MIGRATIONS = ROUTINE_CLIENT_MIGRATIONS;
-
-/**
- * @deprecated Stage-3 SPIKE alias for {@link ROUTINE_MIGRATIONS_TABLE}.
- * Kept for the same reason as {@link ROUTINE_SPIKE_CLIENT_MIGRATIONS}.
- * @removeBy 2026-09-01
- */
-export const ROUTINE_SPIKE_MIGRATIONS_TABLE = ROUTINE_MIGRATIONS_TABLE;
 
 // ---------------------------------------------------------------------------
 // Fizruk module — Stage 4 / PR #027
@@ -930,10 +951,10 @@ CREATE INDEX IF NOT EXISTS fizruk_injuries_user_started_at_idx_lite
 
 /**
  * Pushup counter — перенос власності routine → fizruk (канон `routine.md`
- * §10, рішення 2026-08-30). Дзеркалить `routine_pushups` за формою і
- * серверну міграцію `131_fizruk_pushups.sql`. Історичні дані клієнт не
- * копіює: серверна міграція переносить синхронізовані рядки, а pull
- * наповнює цю таблицю.
+ * §10, рішення 2026-08-30). Знята міграцією 007 (історія конвертована в
+ * `fizruk_workouts`); лишається в списку, бо реєстр append-only.
+ * Дзеркалила `routine_pushups` за формою і серверну міграцію
+ * `131_fizruk_pushups.sql`.
  */
 const FIZRUK_004_PUSHUPS_SQL = `
 CREATE TABLE IF NOT EXISTS fizruk_pushups (
@@ -943,6 +964,132 @@ CREATE TABLE IF NOT EXISTS fizruk_pushups (
   updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (user_id, date_key)
 );
+`;
+
+/**
+ * Оцінка витрат за сесію + свої заняття (дзеркало серверної 132).
+ *
+ * SQLite не має `ADD COLUMN IF NOT EXISTS`, і це тут безпечно: реєстр
+ * `__fizruk_migrations` не дає файлу виконатись двічі, а на свіжій базі
+ * `001` створює таблицю без цієї колонки, тож `ALTER` завжди має що додати.
+ */
+const FIZRUK_005_KCAL_AND_ACTIVITIES_SQL = `
+ALTER TABLE fizruk_workouts ADD COLUMN kcal_burned INTEGER;
+
+CREATE TABLE IF NOT EXISTS fizruk_custom_activities (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_custom_activities_user_idx_lite
+  ON fizruk_custom_activities (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * 006 - вибір варіанта підказки на позиції тренування.
+ *
+ * Дзеркалить серверну міграцію 134. `CHECK` тут навмисно немає: клієнтський
+ * SQLite приймає лише те, що записав власний адаптер, а валідація значення
+ * стоїть на серверному боці sync (`applySync` віддає
+ * `invalid_chosen_variant`). Дублювати обмеження в двох діалектах дорожче,
+ * ніж користі: розійтись вони можуть, а зловити розбіжність нічим.
+ */
+const FIZRUK_006_ITEM_CHOSEN_VARIANT_SQL = `
+ALTER TABLE fizruk_workout_items ADD COLUMN chosen_variant TEXT;
+`;
+
+/**
+ * 007 — історія лічильника віджимань → звичайні тренування, і DROP
+ * `fizruk_pushups` (дзеркало серверної 140; фаза 2 з 2, рішення власника
+ * 2026-09-15).
+ *
+ * Той самий перенос, що біг на буті в `pushupsToWorkouts.ts` у фазі 1, лише
+ * в SQL і за один раз: пристрій, що не бутнувся між фазами, після DROP не
+ * мав би звідки читати. Форма запису — та, що в `buildQuickLogWorkout`:
+ * один item «Віджимання від підлоги», один підхід без ваги, тривалість
+ * `clamp(reps*2, 30 с, 10 хв)`, нотатка про перенос. Id детерміновані й
+ * user-scoped (`pushups:<user>:<день>`, item `…_i1`, set `…_i1:s0`) — ті
+ * самі, що ставить сервер, тож pull після цієї міграції зустріне вже наявні
+ * рядки, а не подвоїть їх. Predicate «уже перенесено» знає й стару форму id
+ * без user_id (`pushups:<день>`), яку давав клієнтський перенос фази 1.
+ *
+ * Мить запису — UTC-полудень дня-ключа: лічильник знав лише день, а SQL
+ * не знає часового поясу пристрою; UTC-полудень лишається в тому ж
+ * календарному дні для зсувів від -11 до +11 годин і збігається з тим, що
+ * пише сервер. `INSERT OR IGNORE` — на випадок повторного прогону на базі,
+ * де ці id уже є.
+ *
+ * Порядок statement-ів: сети → позиції → тренування. Predicate у кожному
+ * дивиться на `fizruk_workouts`, тож поки тренування не вставлені, усі три
+ * бачать той самий набір днів.
+ */
+const FIZRUK_007_PUSHUPS_TO_WORKOUTS_SQL = `
+INSERT OR IGNORE INTO fizruk_workout_sets
+  (id, workout_item_id, user_id, weight_kg, reps, rpe, sort_order,
+   created_at, updated_at, deleted_at)
+SELECT
+  'pushups:' || p.user_id || ':' || p.date_key || '_i1:s0',
+  'pushups:' || p.user_id || ':' || p.date_key || '_i1',
+  p.user_id, 0, p.reps, NULL, 0,
+  p.updated_at, p.updated_at, NULL
+  FROM fizruk_pushups p
+ WHERE p.reps > 0
+   AND NOT EXISTS (
+     SELECT 1 FROM fizruk_workouts w
+      WHERE w.user_id = p.user_id
+        AND w.id IN ('pushups:' || p.date_key,
+                     'pushups:' || p.user_id || ':' || p.date_key)
+   );
+
+INSERT OR IGNORE INTO fizruk_workout_items
+  (id, workout_id, user_id, exercise_id, name_uk, primary_group,
+   muscles_primary, muscles_secondary, type, duration_sec, distance_m,
+   chosen_variant, sort_order, created_at, updated_at, deleted_at)
+SELECT
+  'pushups:' || p.user_id || ':' || p.date_key || '_i1',
+  'pushups:' || p.user_id || ':' || p.date_key,
+  p.user_id, 'pushup', 'Віджимання від підлоги', 'chest',
+  '["pectoralis_major","triceps"]',
+  '["serratus_anterior","front_deltoid"]',
+  'strength', NULL, NULL, NULL, 0,
+  p.updated_at, p.updated_at, NULL
+  FROM fizruk_pushups p
+ WHERE p.reps > 0
+   AND NOT EXISTS (
+     SELECT 1 FROM fizruk_workouts w
+      WHERE w.user_id = p.user_id
+        AND w.id IN ('pushups:' || p.date_key,
+                     'pushups:' || p.user_id || ':' || p.date_key)
+   );
+
+INSERT OR IGNORE INTO fizruk_workouts
+  (id, user_id, started_at, ended_at, note, groups_json,
+   warmup_json, cooldown_json, wellbeing_json, kcal_burned,
+   created_at, updated_at, deleted_at)
+SELECT
+  'pushups:' || p.user_id || ':' || p.date_key,
+  p.user_id,
+  strftime('%Y-%m-%dT%H:%M:%S', p.date_key || ' 12:00:00',
+           '-' || MIN(600, MAX(30, p.reps * 2)) || ' seconds') || '.000Z',
+  p.date_key || 'T12:00:00.000Z',
+  'Перенесено з лічильника відтискань',
+  '[]', NULL, NULL, NULL, NULL,
+  p.updated_at, p.updated_at, NULL
+  FROM fizruk_pushups p
+ WHERE p.reps > 0
+   AND NOT EXISTS (
+     SELECT 1 FROM fizruk_workouts w
+      WHERE w.user_id = p.user_id
+        AND w.id IN ('pushups:' || p.date_key,
+                     'pushups:' || p.user_id || ':' || p.date_key)
+   );
+
+DROP TABLE IF EXISTS fizruk_pushups;
 `;
 
 /**
@@ -961,6 +1108,34 @@ CREATE TABLE IF NOT EXISTS fizruk_pushups (
  * `003_fizruk_injuries.sql` adds the injury-mark table behind the "не можна"
  * model (ADR-0083); it mirrors server migration `097_fizruk_injuries.sql`.
  */
+/**
+ * 008 — решта полів заміру тіла (дзеркало серверної 146).
+ *
+ * `fizruk_measurements` несла вісім колонок — рівно ті, що доменний реєстр
+ * `MEASUREMENT_FIELDS` навмисно звузив для мобільного порту. Веб-форма
+ * (`MEASURE_FIELDS` у `useMeasurements.ts`) при цьому збирає чотирнадцять
+ * полів, тож жир, шия, передпліччя, стегно, литка і розділені ліва/права
+ * біцепси не мали куди писатись: користувач їх вводив, а після
+ * перезавантаження вони зникали, бо читання йде з цієї таблиці.
+ *
+ * `bicep_cm` НЕ прибираємо: це поле доменного/мобільного реєстру, і
+ * двофазний DROP (Hard Rule #4) тут не потрібен, бо нічого не зникає —
+ * лише додаються колонки. Веб пише і його (зведене значення), і пару
+ * L/R, тож старі читачі лишаються робочими.
+ */
+const FIZRUK_008_MEASUREMENT_FIELDS_SQL = `
+ALTER TABLE fizruk_measurements ADD COLUMN body_fat_pct REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN neck_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN bicep_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN bicep_r_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN forearm_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN forearm_r_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN thigh_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN thigh_r_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN calf_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN calf_r_cm REAL;
+`;
+
 export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
   {
@@ -974,6 +1149,22 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "004_fizruk_pushups.sql",
     sql: FIZRUK_004_PUSHUPS_SQL,
+  },
+  {
+    name: "005_fizruk_kcal_and_custom_activities.sql",
+    sql: FIZRUK_005_KCAL_AND_ACTIVITIES_SQL,
+  },
+  {
+    name: "006_fizruk_item_chosen_variant.sql",
+    sql: FIZRUK_006_ITEM_CHOSEN_VARIANT_SQL,
+  },
+  {
+    name: "007_fizruk_pushups_to_workouts.sql",
+    sql: FIZRUK_007_PUSHUPS_TO_WORKOUTS_SQL,
+  },
+  {
+    name: "008_fizruk_measurement_fields.sql",
+    sql: FIZRUK_008_MEASUREMENT_FIELDS_SQL,
   },
 ] as const;
 
@@ -1608,7 +1799,7 @@ export const FINYK_MIGRATIONS_TABLE = "__finyk_migrations";
 // counterpart). Schema-only at this PR — `createSqliteKVStore` +
 // warm-cache (PR #061), bootstrap + LS→kv_store one-time migration
 // (PR #062), and the `webKVStore` impl swap (PR #063) follow in
-// later PRs of `docs/planning/storage-roadmap.md` Stage 9.
+// later PRs of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 9.
 //
 // Differences from the routine/fizruk/nutrition/finyk pattern:
 //   - `updated_at` is INTEGER (Unix epoch ms) rather than TEXT ISO-8601.

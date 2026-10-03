@@ -3,12 +3,21 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
-import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  todayISODate,
+  type Meal,
+  type MealTypeId,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
+import type { useToast } from "@shared/hooks/useToast";
+import { mealsByTypeForDay } from "../lib/nutritionStats";
 import { PantryManagerSheet } from "./PantryManagerSheet";
 import { ItemEditSheet } from "./ItemEditSheet";
 import { PantryVariantChoiceSheet } from "./PantryVariantChoiceSheet";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { AddMealSheet } from "./AddMealSheet";
+import { MealTypeSheet } from "./MealTypeSheet";
 import { InputDialog } from "@shared/components/ui/InputDialog";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import type {
@@ -22,9 +31,17 @@ import {
   useNutritionQuickChips,
   type QuickChip,
 } from "../hooks/useNutritionQuickChips";
+import {
+  markComposeSaved,
+  useComposeTelemetry,
+} from "../../../core/observability/composeTelemetry";
+
+/** Стабільний ключ виміру тертя — той самий на всіх відкриттях шита. */
+const NUTRITION_MEAL_COMPOSE_KEY = "nutrition:add-meal";
 
 type PantryController = ReturnType<typeof useNutritionPantries>;
 type LogController = ReturnType<typeof useNutritionLog>;
+type Toast = ReturnType<typeof useToast>;
 
 interface NutritionOverlaysProps {
   pantry: PantryController;
@@ -51,7 +68,14 @@ interface NutritionOverlaysProps {
   applyRestorePayload: (payload: unknown) => void | Promise<void>;
   /** `"photo"` — AddMealSheet відкривається одразу на кроці аналізу фото. */
   addMealInitialStep?: "source" | "photo" | undefined;
+  /** Тип прийому, обраний тапом по сегменту hero; `null` — вгадує годинник. */
+  addMealInitialMealType?: MealTypeId | null | undefined;
   onQuickAddMeal?: (chip: QuickChip) => void;
+  /** Тип прийому, розгорнутий тапом по сегменту hero; `null` — закрито. */
+  openMealTypeSheet?: MealTypeId | null | undefined;
+  onCloseMealTypeSheet?: (() => void) | undefined;
+  /** Потрібен аркушу прийому — undo після видалення свайпом. */
+  toast: Toast;
 }
 
 export function NutritionOverlays({
@@ -73,12 +97,42 @@ export function NutritionOverlays({
   setRestoreConfirm,
   applyRestorePayload,
   addMealInitialStep,
+  addMealInitialMealType,
   onQuickAddMeal,
+  openMealTypeSheet = null,
+  onCloseMealTypeSheet,
+  toast,
 }: NutritionOverlaysProps) {
+  // Тертя запису їжі (`entry_compose_finished`, §6 контракту). Вимір
+  // висить на ЄДИНОМУ прапорці відкриття шита, а не на кнопках, які його
+  // відкривають: тих кнопок чотири (FAB, quick-chip, журнал, PWA-екшен),
+  // і телеметрія в кожній з них розійшлася б із першим же новим входом.
+  //
+  // `entry_kind` розділяє додавання і редагування: у них різний профіль
+  // тертя (в редагуванні поля вже заповнені), і схлопування їх в одне
+  // значення зробило б медіану несумісною сама з собою.
+  useComposeTelemetry({
+    key: NUTRITION_MEAL_COMPOSE_KEY,
+    open: log.addMealSheetOpen,
+    module: "nutrition",
+    entryKind: editingMeal ? "meal_edit" : "meal",
+    surface: addMealInitialStep ?? "source",
+  });
+
   const quickChips = useNutritionQuickChips(
     log.nutritionLog,
     pantry.effectiveItems,
   );
+
+  // Рядки прийому, розгорнутого тапом по сегменту hero. Читаємо журнал
+  // НАПРЯМУ, а не приймаємо пропом: видалення свайпом усередині аркуша
+  // має зникати з нього ж. День тут завжди СЬОГОДНІШНІЙ (`todayISODate` —
+  // той самий, за яким стрічку рахує `NutritionDashboard`), тож
+  // `log.selectedDate` журналу до цього аркуша не стосується.
+  const mealTypeSheetDate = todayISODate();
+  const mealTypeSheetMeals = openMealTypeSheet
+    ? mealsByTypeForDay(log.nutritionLog, mealTypeSheetDate)[openMealTypeSheet]
+    : [];
 
   return (
     <>
@@ -86,8 +140,6 @@ export function NutritionOverlays({
         open={pantry.pantryManagerOpen}
         onClose={() => pantry.setPantryManagerOpen(false)}
         pantries={pantry.pantries}
-        activePantryId={pantry.activePantryId}
-        setActivePantryId={pantry.setActivePantryId}
         pantryForm={pantry.pantryForm}
         setPantryForm={pantry.setPantryForm}
         busy={busy}
@@ -95,31 +147,22 @@ export function NutritionOverlays({
         onBeginCreate={pantry.beginCreatePantry}
         onBeginRename={pantry.beginRenamePantry}
         onBeginDelete={pantry.beginDeletePantry}
+        redistributePlan={pantry.redistributePlan}
+        onRedistribute={pantry.applyRedistribute}
       />
 
+      {/*
+        Видаляються лише ВЛАСНІ місця — три відомі лишаються завжди, бо
+        вони адреси автовизначення. Гейт стоїть у хуку
+        (`beginDeletePantry`), тут — лише підтвердження.
+      */}
       <ConfirmDialog
         open={pantry.confirmDeleteOpen}
-        title="Видалити комору?"
-        description={
-          (Array.isArray(pantry.pantries) ? pantry.pantries.length : 0) <= 1
-            ? "Не можна видалити останню комору."
-            : "Це прибере всі продукти в ньому. Дію не можна відмінити."
-        }
+        title="Видалити місце?"
+        description="Це прибере всі продукти в ньому. Дію не можна відмінити."
         confirmLabel="Видалити"
         danger
-        onConfirm={() => {
-          // Mirror the original `ConfirmDeleteSheet` guard: if only one
-          // pantry remains we swallow the confirm so deletion is a no-op.
-          // The warning description above already communicates that state.
-          const count = Array.isArray(pantry.pantries)
-            ? pantry.pantries.length
-            : 0;
-          if (count <= 1) {
-            pantry.setConfirmDeleteOpen(false);
-            return;
-          }
-          pantry.onConfirmDeletePantry();
-        }}
+        onConfirm={pantry.onConfirmDeletePantry}
         onCancel={() => pantry.setConfirmDeleteOpen(false)}
       />
 
@@ -133,6 +176,7 @@ export function NutritionOverlays({
           }))
         }
         onSave={pantry.onSaveItemEdit}
+        places={pantry.pantries}
       />
 
       <PantryVariantChoiceSheet
@@ -153,8 +197,16 @@ export function NutritionOverlays({
           log.setAddMealSheetOpen(false);
           setEditingMeal(null);
         }}
-        onSave={wrappedSaveMeal}
+        onSave={(meal, photoFile) => {
+          // Позначка ДО консюмерського шляху: подію емітить закриття шита
+          // (перехід `open` → false), і воно прилітає вже після цього
+          // виклику. Без позначки збережений запис пішов би в статистику
+          // як `abandoned`.
+          markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
+          return wrappedSaveMeal(meal, photoFile);
+        }}
         initialStep={addMealInitialStep}
+        initialMealType={addMealInitialMealType}
         initialMeal={editingMeal}
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}
@@ -164,12 +216,47 @@ export function NutritionOverlays({
         onConsumePantryItem={pantry.consumePantryItem}
       />
 
+      {/* Аркуш одного прийому hero-стрічки — див. `mealTypeSheetMeals`. */}
+      <MealTypeSheet
+        mealType={openMealTypeSheet}
+        date={mealTypeSheetDate}
+        meals={mealTypeSheetMeals}
+        onClose={() => onCloseMealTypeSheet?.()}
+        onEditMeal={(date, meal) => {
+          // Рівно те саме, що робить рядок журналу (`NutritionLogPage`):
+          // форма редагування — один аркуш на весь модуль, і відкривається
+          // він парою «сід у `editingMeal` + підняти `AddMealSheet`».
+          onCloseMealTypeSheet?.();
+          setEditingMeal({ date, ...meal });
+          log.setAddMealSheetOpen(true);
+        }}
+        onRemoveMeal={(date, meal) => {
+          if (!meal?.id) return;
+          // Останній рядок прийому — закриваємо аркуш разом із ним:
+          // порожній аркуш без кнопки додавання є глухим кутом, а сегмент
+          // hero, з якого його відкрили, стає порожнім у ту саму мить.
+          if (mealTypeSheetMeals.length <= 1) onCloseMealTypeSheet?.();
+          log.handleRemoveMeal(date, meal);
+          // Той самий undo, що й у журналі: свайп — незворотний жест, і
+          // аркуш не є приводом позбавляти його страхувальної сітки.
+          showUndoToast(toast, {
+            msg: "Запис видалено",
+            onUndo: () => log.handleRestoreMeal(date, meal),
+          });
+        }}
+      />
+
       <InputDialog
         open={!!backupPasswordDialog}
         title={backupPasswordDialog?.title || ""}
         description={backupPasswordDialog?.description || ""}
         type="password"
         placeholder="Пароль"
+        confirmLabel={
+          backupPasswordDialog?.mode === "download"
+            ? "Розшифрувати"
+            : "Зашифрувати"
+        }
         onConfirm={handleBackupPasswordConfirm}
         onCancel={() => setBackupPasswordDialog(null)}
       />

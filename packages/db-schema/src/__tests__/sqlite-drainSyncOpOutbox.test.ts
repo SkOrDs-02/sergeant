@@ -10,14 +10,14 @@ import { runMigrations } from "../migrate/runner.js";
 import { enqueueOutboxIncrement } from "../sqlite/syncOpOutboxEnqueue.js";
 import { drainSyncOpOutbox } from "../sqlite/syncOpOutboxDrain.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 import { SYNC_OP_OUTBOX_OPS } from "../sqlite/routine.js";
 
 /**
  * Integration tests for `drainSyncOpOutbox` (PR #042e-drain of
- * `docs/planning/storage-roadmap.md`). Runs the full SPIKE +
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Runs the full SPIKE +
  * PR #040 + PR #042d-prep migration stack against a fresh
  * `:memory:` engine and exercises every public branch:
  *
@@ -63,8 +63,8 @@ describe("drainSyncOpOutbox", () => {
     client = syncClient(db);
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
   });
 

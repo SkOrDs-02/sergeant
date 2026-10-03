@@ -1,8 +1,14 @@
 /**
- * Async-черга AI memory ingestion (PR2 з ADR-0028). Producer-и (mono-webhook,
- * weekly-digest, `POST /api/ai-memory/ingest`) ставлять `MemoryIngestPayload`
- * у BullMQ; worker викликає `aiMemory.remember()`, що робить Voyage embed +
- * pgvector upsert.
+ * Async-черга AI memory ingestion (PR2 з ADR-0028). Живі producer-и сьогодні
+ * (ініціатива 0024, замір § Перезамір 2026-09-03) — `weekly-digest.ts`
+ * (`source=digest`) і `profileMirror.ts` (`source=profile`); обидва ставлять
+ * `MemoryIngestPayload` у BullMQ. Клієнт-driven `POST /api/ai-memory/ingest`
+ * і mono-webhook (`source=finyk`) прибрані тією ж ініціативою (PR-1) — точки
+ * нижче про Mono-webhook лишаються як історичний rationale черги, не опис
+ * поточних producer-ів.
+ *
+ * Worker викликає `aiMemory.remember()`, що робить Voyage embed + pgvector
+ * upsert.
  *
  * Чому окрема BullMQ-черга, а не дзвінок `aiMemory.remember()` синхронно з
  * хендлера:
@@ -30,13 +36,14 @@ import type { Redis as IORedisClient } from "ioredis";
 
 import pool from "../../db.js";
 import { env } from "../../env.js";
-import { isKillSwitchActive } from "../../lib/featureFlags/runtimeKillSwitch.js";
 import {
   AI_MEMORY_INGEST_QUEUE_NAME,
   BULLMQ_QUEUE_PREFIX,
   createBullConnection,
 } from "../../lib/jobs/connection.js";
+import { isKillSwitchActive } from "../../lib/featureFlags/runtimeKillSwitch.js";
 import { logger, serializeError } from "../../obs/logger.js";
+import { toPublicErrorCode } from "../../obs/errorCode.js";
 import {
   aiMemoryIngestEnqueuedTotal,
   aiMemoryIngestProcessedTotal,
@@ -45,7 +52,7 @@ import {
 } from "../../obs/metrics.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { getAiMemory } from "./bootstrap.js";
-import { hasAiMemoryConsent } from "./consent.js";
+import { hasAiMemoryConsent, hasHealthDataConsent } from "./consent.js";
 import { recordIngestDlq } from "./dlq.js";
 import { MissingVoyageApiKeyError, VoyageHttpError } from "./embeddings.js";
 import type { AiMemoryService } from "./service.js";
@@ -88,6 +95,27 @@ export interface MemoryIngestPayload {
    * змінений — ні.
    */
   dedupeSalt?: string | undefined;
+  /**
+   * «Цей запис несе дані про здоровʼя» — тренування, вагу, самопочуття,
+   * калорії, прийоми їжі. Вмикає ДРУГИЙ гейт згоди (`health_data_consent`,
+   * GDPR Art. 9) поверх звичайного `ai_memory`.
+   *
+   * AI-CONTEXT (PR-S3, рішення founder-а 2026-09-14). Прапорець
+   * ЯВНИЙ, а не виведений із `source`, і це навмисно. `digest` несе
+   * health-дані лише коли в звіт зайшли секції fizruk/nutrition —
+   * фінансово-рутинний тиждень їх не має; `profile` — лише для фактів
+   * категорії `health`. Виводити це з джерела означало б або гейтити
+   * зайве (і мовчки викидати корисні записи), або пропускати health-дані
+   * під виглядом «джерело ж не health».
+   *
+   * НЕ персиститься в рядок `ai_memories`: `processMemoryIngestJob` бере
+   * з payload рівно пʼять полів, і цього серед них немає. Це чистий
+   * гейт-сигнал. **Але в DLQ воно мусить доїхати** — `payload_json`
+   * зберігається цілим, і replay у `routes/internal/ai-memory-dlq.ts`
+   * перебирає поля поіменно, тож пропущене там поле відкрило б обхід
+   * гейта через ретрай.
+   */
+  healthData?: boolean | undefined;
 }
 
 /**
@@ -303,22 +331,60 @@ async function enqueueMemoryIngestImpl(
     return;
   }
 
-  // Per-source kill-switch (PR-19). Поки що тільки `finyk` (Mono
-  // webhook) gate-нутий — інші source-и контролюються виключно
-  // master-flag-ом `AI_MEMORY_ENABLED`. Перевірка живе тут (а не у
-  // `webhook.ts`), щоб майбутні per-source flags для digest/chat
-  // додавались в одному місці, з тим самим metric shape
-  // (`mode="source_disabled"`).
-  //
-  // Runtime kill-switch (RAG eval automation post-PR-20): якщо weekly
-  // recall@4 < 0.4 → `POST /api/internal/eval/rag-weekly` активує
-  // in-memory kill-switch `mono_ai_memory_ingest`, який перебиває env
-  // до process-restart. Реальний permanent flip env-у на Railway —
-  // operator-task per runbook § «RagQualityGateKillSwitch».
+  // PR-S3 (рішення founder-а 2026-09-14): другий гейт згоди — саме для
+  // даних про здоровʼя і саме на ПЕРСИСТЕНТНОМУ записі. Ефемерну відповідь
+  // у чаті він не чіпає: тумблер дефолтиться у `false`, ніхто не вмикає
+  // його в онбордингу, тож гейт на читання вимкнув би AI-шар за
+  // замовчуванням для всіх. Осідання назавжди — інша річ: вимкнути тумблер
+  // постфактум і цим прибрати вже записане неможливо.
+  if (payload.healthData === true) {
+    try {
+      if (!(await hasHealthDataConsent(pool, payload.userId))) {
+        aiMemoryIngestEnqueuedTotal.inc({
+          mode: "health_consent_disabled",
+          source: sourceLabel,
+        });
+        logger.debug({
+          msg: "ai_memory_ingest_skipped_health_consent_disabled",
+          userId: payload.userId,
+          source: sourceLabel,
+        });
+        return;
+      }
+    } catch (err) {
+      aiMemoryIngestEnqueuedTotal.inc({
+        mode: "consent_check_error",
+        source: sourceLabel,
+      });
+      logger.warn({
+        msg: "ai_memory_ingest_health_consent_check_failed",
+        userId: payload.userId,
+        source: sourceLabel,
+        err: serializeError(err, { includeStack: false }),
+      });
+      // Fail-closed однаково в обох гілках: strict-виклик (DLQ-replay)
+      // отримує помилку й лишає рядок у черзі на повтор, звичайний — тихо
+      // не пише. Записати health-дані «бо перевірка згоди впала» не можна
+      // ні в якому разі.
+      if (opts.rethrowEnqueueError) throw err;
+      return;
+    }
+  }
+
+  // Per-source kill-switch (PR-19) жив тут на `payload.source === "finyk"`.
+  // `finyk` прибраний з `ALLOWED_MEMORY_SOURCES` ініціативою 0024 (PR-1,
+  // 2026-09-03) — mono-webhook уже не мав продюсера до цієї зміни (замір
+  // у `docs/work/specs/initiatives/0024-ai-memory-source-coverage.md` §
+  // Перезамір). PR-2 тієї ж ініціативи перецілює той самий механізм на
+  // `payload.source === "digest"` — джерело, що реально забиває слоти RAG
+  // полотнами тижневих звітів. Гейтить два незалежних вимикача: env-флаг
+  // `DIGEST_AI_MEMORY_INGEST_ENABLED` (permanent, Coolify) і runtime
+  // kill-switch `digest_ai_memory_ingest` (in-memory, авто-flip з
+  // `eval-rag.ts` при `status=kill`, живе до рестарту процесу).
   if (
-    payload.source === "finyk" &&
-    (!env.MONO_AI_MEMORY_INGEST_ENABLED ||
-      isKillSwitchActive("mono_ai_memory_ingest"))
+    payload.source === "digest" &&
+    (!env.DIGEST_AI_MEMORY_INGEST_ENABLED ||
+      isKillSwitchActive("digest_ai_memory_ingest"))
   ) {
     aiMemoryIngestEnqueuedTotal.inc({
       mode: "source_disabled",
@@ -327,7 +393,6 @@ async function enqueueMemoryIngestImpl(
     logger.debug({
       msg: "ai_memory_ingest_skipped_source_disabled",
       source: sourceLabel,
-      killSwitch: isKillSwitchActive("mono_ai_memory_ingest"),
     });
     return;
   }
@@ -600,9 +665,13 @@ async function sampleMemoryIngestQueueDepth(): Promise<void> {
  * Snapshot AI-memory-ingest worker/queue stats для `/health/workers`. Не
  * пише метрики, не ходить у serviceOverride. Безпечний для виклику з HTTP
  * handler-а — `getJobCounts()` йде у Redis, тож обертається у try/catch
- * і повертає `jobCounts: null` + `error` повідомлення без stack-у. Ніколи
- * не throw-ить — health-endpoint має лишатись reachable навіть у
- * Redis-incident.
+ * і повертає `jobCounts: null` + `errorCode`. Ніколи не throw-ить —
+ * health-endpoint має лишатись reachable навіть у Redis-incident.
+ *
+ * Чому код, а не текст помилки: snapshot їде в `/health/workers`, а той
+ * змонтований без auth і без rate-limit, і `ioredis` кладе у `message`
+ * приватний хост із портом (`connect ECONNREFUSED 10.0.0.12:6379`). Повний
+ * текст лишається в `logger.error` — контракт у `obs/errorCode.ts`.
  */
 export interface MemoryIngestWorkerStats {
   enabled: boolean;
@@ -616,7 +685,8 @@ export interface MemoryIngestWorkerStats {
     delayed: number;
     failed: number;
   } | null;
-  error?: string;
+  /** Клас помилки для публічної відповіді; повний текст — лише в логу. */
+  errorCode?: string;
 }
 
 export async function getMemoryIngestWorkerStats(): Promise<MemoryIngestWorkerStats> {
@@ -626,7 +696,7 @@ export async function getMemoryIngestWorkerStats(): Promise<MemoryIngestWorkerSt
   // null (Redis недоступний) — у production це degraded-стан: producer-и
   // падають у in-process direct dispatch (`runDirectDispatch`).
   const fallbackMode = enabled && !started;
-  const base: Omit<MemoryIngestWorkerStats, "jobCounts" | "error"> = {
+  const base: Omit<MemoryIngestWorkerStats, "jobCounts" | "errorCode"> = {
     enabled,
     started,
     fallbackMode,
@@ -653,10 +723,14 @@ export async function getMemoryIngestWorkerStats(): Promise<MemoryIngestWorkerSt
       },
     };
   } catch (err) {
+    logger.error({
+      msg: "ai_memory_ingest_job_counts_failed",
+      err: serializeError(err),
+    });
     return {
       ...base,
       jobCounts: null,
-      error: err instanceof Error ? err.message : String(err),
+      errorCode: toPublicErrorCode(err),
     };
   }
 }

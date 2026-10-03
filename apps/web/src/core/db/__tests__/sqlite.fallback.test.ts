@@ -19,6 +19,11 @@ import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
  */
 
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
+const handoffDone = vi.hoisted(() => ({ value: false }));
+vi.mock("../kvvfsHandoff.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../kvvfsHandoff")>()),
+  isHandoffDone: () => handoffDone.value,
+}));
 vi.mock("../../observability/sentry.js", () => ({
   addSentryBreadcrumb: vi.fn(),
   // `getSqliteDb` тегує активний VFS на всю сесію (див. AI-CONTEXT у
@@ -46,6 +51,7 @@ function makeWorkingLocalStorage(): Storage {
 
 describe("getSqliteDb — fallback when OPFS is unavailable", () => {
   beforeEach(() => {
+    handoffDone.value = false;
     __resetSqliteDbForTests();
     Object.defineProperty(globalThis, "crossOriginIsolated", {
       value: true,
@@ -79,6 +85,21 @@ describe("getSqliteDb — fallback when OPFS is unavailable", () => {
 
     const handle = await getSqliteDb();
     expect(handle.vfs).toBe("kvvfs");
+  });
+
+  // Після перелиття старе сховище лишається на пристрої як знімок на
+  // момент переїзду (`kvvfsHandoff.ts` навмисно його не чистить). Відкрити
+  // його вдруге означає показати торішні дані поруч із живою базою іншої
+  // вкладки — саме так зникали дані анонімної сесії.
+  it("refuses the stale kvvfs store once the partition has been handed off", async () => {
+    handoffDone.value = true;
+    Object.defineProperty(globalThis, "localStorage", {
+      value: makeWorkingLocalStorage(),
+      configurable: true,
+    });
+
+    const handle = await getSqliteDb();
+    expect(handle.vfs).toBe("memory");
   });
 
   it("falls back to in-memory when localStorage is unavailable too", async () => {

@@ -1,6 +1,6 @@
 /**
  * Phase 7 / PR 3 — mobile nutrition storage foundation, rewired for
- * Stage 8 PR #057n-tombstone-mobile (`docs/planning/storage-roadmap.md`).
+ * Stage 8 PR #057n-tombstone-mobile (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * The Nutrition `load*` / `save*` helpers no longer touch MMKV — every
  * slot (log / prefs / pantries / water / shopping list) now reads from
@@ -281,6 +281,35 @@ describe("mobile nutritionStore — shopping list", () => {
     expect(out.categories).toHaveLength(1);
     expect(out.categories[0]!.items).toHaveLength(1);
     expect(out.categories[0]!.items[0]!.name).toBe("Морква");
+  });
+
+  // Одна таксономія з коморою (рішення власника 2026-10-01): збережений список
+  // зі старими назвами категорій на читанні зводиться до категорій комори.
+  it("loadShoppingList мігрує старі назви категорій у категорії комори", () => {
+    const item = (id: string, name: string) => ({
+      id,
+      name,
+      quantity: "",
+      note: "",
+      checked: false,
+    });
+    __setNutritionSqliteCacheForTests({
+      shoppingList: {
+        categories: [
+          {
+            name: "Мʼясо та риба",
+            items: [item("a", "Лосось"), item("b", "Курка")],
+          },
+          { name: "Яйця", items: [item("c", "Яйця")] },
+        ],
+      },
+    });
+    const out = loadShoppingList();
+    expect(out.categories.map((c) => c.name)).toEqual([
+      "Риба та морепродукти",
+      "Мʼясо та птиця",
+      "Молочні та яйця",
+    ]);
   });
 
   it("saveShoppingList dispatches a dual-write op and never touches MMKV", () => {

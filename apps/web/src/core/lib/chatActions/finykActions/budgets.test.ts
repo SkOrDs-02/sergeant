@@ -66,7 +66,7 @@ describe("setBudgetLimit", () => {
       input: { category_id: "food", limit: 5000 },
     });
     assertUndoable(out);
-    expect(out.result).toContain("5000 грн");
+    expect(out.result).toContain("5\u00A0000\u202F₴");
     expect(finykChatWrite).toHaveBeenCalledWith(
       "finyk_budgets",
       expect.any(Array),
@@ -145,6 +145,29 @@ describe("setBudgetLimit", () => {
 
     expect(writes.get("finyk_budgets")).toEqual([]);
   });
+
+  // W2 audit: the model is untrusted input exactly like the manual form —
+  // `Number(limit)` alone let NaN/negative/oversized values through and
+  // reported success. Every case here asserts BOTH halves: a rejection
+  // string comes back AND `finyk_budgets` is never written.
+  describe("rejects an invalid amount without writing", () => {
+    it.each([
+      ["NaN", Number.NaN],
+      ["negative", -500],
+      ["zero", 0],
+      ["a non-numeric string", "п'ятсот"],
+      ["above the domain ceiling", 5_000_000_000],
+    ])("%s limit", (_label, limit) => {
+      const out = setBudgetLimit({
+        name: "set_budget_limit",
+        input: { category_id: "food", limit },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toMatch(/додатний limit|завелика/);
+      expect(finykChatWrite).not.toHaveBeenCalled();
+      expect(localStorage.getItem("finyk_budgets")).toBeNull();
+    });
+  });
 });
 
 describe("setMonthlyPlan", () => {
@@ -154,9 +177,9 @@ describe("setMonthlyPlan", () => {
       input: { income: 50000, expense: 30000, savings: 10000 },
     });
     assertUndoable(out);
-    expect(out.result).toContain("дохід 50000");
-    expect(out.result).toContain("витрати 30000");
-    expect(out.result).toContain("заощадження 10000");
+    expect(out.result).toContain("дохід 50\u00A0000");
+    expect(out.result).toContain("витрати 30\u00A0000");
+    expect(out.result).toContain("заощадження 10\u00A0000");
     const saved = writes.get("finyk_monthly_plan") as {
       income: string;
       expense: string;
@@ -179,8 +202,8 @@ describe("setMonthlyPlan", () => {
       input: { savings: 5000 },
     });
     assertUndoable(out);
-    expect(out.result).toContain("дохід 40000");
-    expect(out.result).toContain("заощадження 5000");
+    expect(out.result).toContain("дохід 40\u00A0000");
+    expect(out.result).toContain("заощадження 5\u00A0000");
     const saved = writes.get("finyk_monthly_plan") as Record<string, string>;
     expect(saved["income"]).toBe("40000");
     expect(saved["savings"]).toBe("5000");
@@ -232,6 +255,38 @@ describe("setMonthlyPlan", () => {
 
     expect(writes.get("finyk_monthly_plan")).toEqual({});
   });
+
+  // W2 audit: each field used to be `String(x)`-ed straight into storage —
+  // NaN/negative/oversized income/expense/savings all "succeeded".
+  describe("rejects an invalid amount without writing", () => {
+    it.each([
+      ["NaN", Number.NaN],
+      ["negative", -1000],
+      ["zero", 0],
+      ["a non-numeric string", "багато"],
+      ["above the domain ceiling", 5_000_000_000],
+    ])("%s income", (_label, income) => {
+      const out = setMonthlyPlan({
+        name: "set_monthly_plan",
+        input: { income },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toMatch(/додатний income|завелика/);
+      expect(finykChatWrite).not.toHaveBeenCalled();
+      expect(localStorage.getItem("finyk_monthly_plan")).toBeNull();
+    });
+
+    it("rejects the whole call when a later field is invalid, writing nothing", () => {
+      const out = setMonthlyPlan({
+        name: "set_monthly_plan",
+        input: { income: 40000, expense: -1 },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toContain("додатний expense");
+      expect(finykChatWrite).not.toHaveBeenCalled();
+      expect(localStorage.getItem("finyk_monthly_plan")).toBeNull();
+    });
+  });
 });
 
 describe("updateBudget", () => {
@@ -247,12 +302,21 @@ describe("updateBudget", () => {
     ).toContain("додатний limit");
   });
 
+  it("rejects scope='limit' with a limit above the domain ceiling", () => {
+    const out = updateBudget(
+      ub({ scope: "limit", category_id: "food", limit: 5_000_000_000 }),
+    );
+    expect(typeof out).toBe("string");
+    expect(out as string).toContain("завелика");
+    expect(localStorage.getItem("finyk_budgets")).toBeNull();
+  });
+
   it("creates a new limit under scope='limit'", () => {
     const out = updateBudget(
       ub({ scope: "limit", category_id: "transport", limit: 1500 }),
     );
     assertUndoable(out);
-    expect(out.result).toContain("1500 грн");
+    expect(out.result).toContain("1\u00A0500\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       categoryId: string;
       limit: number;
@@ -272,13 +336,26 @@ describe("updateBudget", () => {
     ).toContain("додатний target_amount");
   });
 
+  it("rejects scope='goal' with a target_amount above the domain ceiling", () => {
+    const out = updateBudget(
+      ub({
+        scope: "goal",
+        name: "Авто",
+        target_amount: 5_000_000_000,
+      }),
+    );
+    expect(typeof out).toBe("string");
+    expect(out as string).toContain("завелика");
+    expect(localStorage.getItem("finyk_budgets")).toBeNull();
+  });
+
   it("creates a goal with default saved=0 when saved_amount omitted", () => {
     const out = updateBudget(
       ub({ scope: "goal", name: "Авто", target_amount: 100000 }),
     );
     assertUndoable(out);
     expect(out.result).toContain('"Авто"');
-    expect(out.result).toContain("0/100000 грн");
+    expect(out.result).toContain("0/100\u00A0000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       type: string;
       name: string;
@@ -313,7 +390,7 @@ describe("updateBudget", () => {
       }),
     );
     assertUndoable(out);
-    expect(out.result).toContain("20000/80000 грн");
+    expect(out.result).toContain("20\u00A0000/80\u00A0000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       targetAmount: number;
       contributions: Array<{ amountUah: number; note?: string }>;
@@ -325,7 +402,7 @@ describe("updateBudget", () => {
     expect(saved[0]!.contributions).toHaveLength(1);
     expect(saved[0]!.contributions[0]).toMatchObject({
       amountUah: 20000,
-      note: "Через AI-асистента",
+      note: "Через Сержанта",
     });
   });
 

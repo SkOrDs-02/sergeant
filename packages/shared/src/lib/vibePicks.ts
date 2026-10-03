@@ -15,6 +15,7 @@
 import type { DashboardModuleId } from "./dashboard";
 import { DASHBOARD_MODULE_IDS } from "./dashboard";
 import { readJSON, type KVStore, writeJSON } from "../storage/kv";
+import { deviceDayKey } from "../utils/date";
 
 /** localStorage / MMKV keys used by the onboarding funnel. */
 export const VIBE_PICKS_KEY = "hub_onboarding_vibes_v1";
@@ -191,13 +192,11 @@ export function getTimeToValueMs(store: KVStore): number | null {
 
 /**
  * Build a calendar-day key (`YYYY-MM-DD`) in the local timezone of the
- * provided `date`. Exposed for tests.
+ * provided `date`. Exposed for tests. Delegate to canonical
+ * {@link deviceDayKey}.
  */
 export function todayKey(date: Date = new Date()): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return deviceDayKey(date);
 }
 
 /**

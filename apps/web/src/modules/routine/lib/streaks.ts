@@ -6,6 +6,7 @@
  */
 
 export {
+  calcRoutineDayProgress,
   completionRateForRange,
   habitCompletionRate,
   maxActiveStreak,
@@ -15,6 +16,8 @@ export {
   // `maxActiveStreak` лишаються експортованими для тестів і порівнянь,
   // але продуктові поверхні читають гнучкі.
   flexibleMaxActiveStreak,
+  flexibleMaxStreakAllTime,
+  flexibleMaxStreakAllTimeAcrossHabits,
   flexibleStreakBreakdown,
   flexibleStreakForHabit,
 } from "@sergeant/routine-domain";

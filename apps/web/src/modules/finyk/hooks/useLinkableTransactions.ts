@@ -9,6 +9,7 @@ import { authAwareRetry } from "@shared/lib/api/queryClient";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { fetchAllMonoTransactions } from "./monoTransactionsLoader";
+import { kyivMonthRangeIso } from "../lib/monthWindow";
 import { webhookTxToNormalized } from "./monoTxNormalize";
 
 const TX_STALE = 60_000;
@@ -34,14 +35,7 @@ export interface LinkableRange {
 
 function monthBounds(month: string): { from: string; to: string } {
   const [yearRaw, monthRaw] = month.split("-");
-  const year = Number(yearRaw);
-  const index = Number(monthRaw);
-  const nextIndex = index === 12 ? 1 : index + 1;
-  const nextYear = index === 12 ? year + 1 : year;
-  return {
-    from: `${year}-${String(index).padStart(2, "0")}-01T00:00:00+03:00`,
-    to: `${nextYear}-${String(nextIndex).padStart(2, "0")}-01T00:00:00+03:00`,
-  };
+  return kyivMonthRangeIso(Number(yearRaw), Number(monthRaw));
 }
 
 /**

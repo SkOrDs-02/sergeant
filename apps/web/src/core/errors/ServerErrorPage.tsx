@@ -46,17 +46,25 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         eyebrow="500"
         illustration={<ServerErrorIllustration size={200} />}
         title="Щось пішло не так"
+        // The empty state is the entire `/500` surface, so it has to carry
+        // the page heading — otherwise this route ships with no heading at
+        // all (same reasoning as `NotFoundPage`).
+        titleAs="h1"
         description="Сервер тимчасово не зміг обробити запит. Спробуй оновити сторінку, зазвичай це допомагає."
         primaryAction={
-          <Button type="button" variant="primary" size="lg" onClick={reload}>
-            <Icon name="refresh-cw" size={16} />
+          <Button type="button" variant="solid" size="lg" onClick={reload}>
+            <Icon name="refresh-cw" size="md" />
             Оновити сторінку
           </Button>
         }
-        // §2: «ми» тут жива команда, яка вже полагоджує збій, а не голос
-        // застосунку (той самий випадок, що в `NotFoundPage`).
-        // eslint-disable-next-line sergeant-design/ukrainian-copy -- голос команди, не продукту
-        hint="Якщо помилка повторюється, напиши нам, ми вже працюємо над цим."
+        // §2: «ми» тут жива команда, до якої людину і просять написати, а не
+        // голос застосунку (той самий випадок, що в `NotFoundPage`).
+        //
+        // Але «ми ВЖЕ ПРАЦЮЄМО над цим» звідси прибрано: це статичний рядок на
+        // будь-яку 500-ку, включно з тією, якої ніхто ще не бачив, тобто
+        // обіцянка без підстав (browser-QA 2026-09-02). Лишається те, що
+        // справді залежить від нас, і воно настає ПІСЛЯ повідомлення.
+        hint="Якщо помилка повторюється, напиши нам, і ми розберемось."
       />
     </main>
   );

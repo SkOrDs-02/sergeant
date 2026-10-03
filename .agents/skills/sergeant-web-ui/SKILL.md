@@ -1,8 +1,8 @@
 ---
 name: sergeant-web-ui
-description: Use when editing Sergeant web UI, PWA shell, React screens, Tailwind, accessibility, localStorage flows, or shared web interaction patterns; also for design tokens or theme; UA: правиш веб-UI/PWA/Tailwind.
+description: "Use when editing Sergeant web UI, PWA shell, React screens, Tailwind, accessibility, localStorage flows, or shared web interaction patterns; also for design tokens or theme; UA: правиш веб-UI/PWA/Tailwind."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Web UI у Sergeant
@@ -44,7 +44,7 @@ Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з репо
 
 ## Playbooks
 
-- `docs/00-start/playbooks/add-onboarding-step.md` — коли зміна торкається onboarding-у.
-- `docs/00-start/playbooks/add-feature-flag.md` — коли rollout gated.
-- `docs/00-start/playbooks/release.md` — canonical release-playbook (секція web + API).
-- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/add-onboarding-step.md` — коли зміна торкається onboarding-у.
+- `docs/start/instructions/add-feature-flag.md` — коли rollout gated.
+- `docs/start/instructions/release.md` — canonical release-playbook (секція web + API).
+- Каталог: `docs/start/agents/agent-skills-catalog.md`.

@@ -19,13 +19,22 @@ const WEEK: MacrosRow[] = [
   row("2026-08-16", 0),
 ];
 
+/** Ціль, незмінна весь тиждень — той самий випадок, що був до ряду цілей. */
+function flat(goal: number, rows: readonly unknown[]): (number | null)[] {
+  return rows.map(() => (goal > 0 ? goal : null));
+}
+
 const TODAY = "2026-08-12";
 
 describe("WeekKcalChart", () => {
   it("малює порожній день пласким треком, а не стовпчиком", () => {
     // Канон §5.2: пропуск — це неповні дані, а не «мало зʼїв».
     const { getByTestId, queryByTestId } = render(
-      <WeekKcalChart rows={WEEK} targetKcal={2000} todayIso={TODAY} />,
+      <WeekKcalChart
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
     );
 
     expect(getByTestId("week-kcal-empty-2026-08-10")).toBeTruthy();
@@ -35,7 +44,11 @@ describe("WeekKcalChart", () => {
 
   it("називає опору шкали ціллю, коли ціль задана", () => {
     const { getByText } = render(
-      <WeekKcalChart rows={WEEK} targetKcal={2000} todayIso={TODAY} />,
+      <WeekKcalChart
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
     );
 
     expect(getByText(/ціль\s2\s?000/)).toBeTruthy();
@@ -43,7 +56,7 @@ describe("WeekKcalChart", () => {
 
   it("називає стелю максимумом, коли цілі немає", () => {
     const { getByText, queryByText } = render(
-      <WeekKcalChart rows={WEEK} targetKcal={0} todayIso={TODAY} />,
+      <WeekKcalChart rows={WEEK} goalsByDay={flat(0, WEEK)} todayIso={TODAY} />,
     );
 
     expect(getByText(/макс\s1\s?800/)).toBeTruthy();
@@ -52,7 +65,11 @@ describe("WeekKcalChart", () => {
 
   it("показує агрегат тижня по днях із записами", () => {
     const { getByText } = render(
-      <WeekKcalChart rows={WEEK} targetKcal={2000} todayIso={TODAY} />,
+      <WeekKcalChart
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
     );
 
     expect(getByText(/3\s?000 ккал · сер\. 1\s?500\/день/)).toBeTruthy();
@@ -62,7 +79,7 @@ describe("WeekKcalChart", () => {
     const { getByText } = render(
       <WeekKcalChart
         rows={WEEK.map((r) => row(r.date, 0))}
-        targetKcal={0}
+        goalsByDay={flat(0, WEEK)}
         todayIso={TODAY}
       />,
     );

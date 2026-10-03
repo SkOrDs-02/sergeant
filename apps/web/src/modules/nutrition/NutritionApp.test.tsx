@@ -36,6 +36,19 @@ vi.mock("./hooks/useNutritionDualWriteBoot", () => ({
 }));
 vi.mock("./hooks/useNutritionSqliteReadBoot", () => ({
   useNutritionSqliteReadBoot: vi.fn(),
+  isNutritionReadCacheSettled: () => true,
+}));
+
+// A3, поставка 2: pre-gate доступу. Це дерево навмисно живе без
+// `AuthProvider` (див. докстрінг файлу), тож справжній гейт чесно
+// відповів би «немає акаунта» — і сюїта нижче перевіряла б уже не те,
+// про що вона: банер помилки після ЗДІЙСНЕНОГО запиту, а не замість
+// нього. Гейт — передумова, і покритий він окремо
+// (`core/access/featureAccess.test.ts`, `hooks/nutritionAccessGate.test.tsx`).
+vi.mock("../../core/access/useCanUse", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../core/access/useCanUse")>()),
+  useCanUse: () => () => null,
+  useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
 }));
 
 import NutritionApp from "./NutritionApp";

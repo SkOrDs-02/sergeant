@@ -94,6 +94,7 @@ function buildProps(
     limitsOpen: false,
     toggleLimits: vi.fn(),
     monthStart: MONTH_START,
+    now: new Date("2026-06-15T09:00:00Z"),
     limitBudgets: [],
     budgets: [] as Budget[],
     setBudgets: vi.fn(),
@@ -137,10 +138,48 @@ describe("BudgetsLimitsSection (branches)", () => {
       .forEach((el) => el.remove());
   });
 
+  it("згорнута шапка каже, скільки лімітів перевищено", () => {
+    const limits = [makeLimit("l1", "food"), makeLimit("l2", "cafe")];
+    const { rerender } = render(
+      <BudgetsLimitsSection
+        {...buildProps({
+          limitBudgets: limits,
+          calcSpent: (b) => (b.id === "l2" ? 5550 : 1200),
+        })}
+      />,
+    );
+    const btn = screen.getByRole("button", { name: /Ліміти/i });
+    expect(btn).toHaveTextContent("1 перевищено");
+
+    rerender(
+      <BudgetsLimitsSection
+        {...buildProps({ limitBudgets: limits, calcSpent: () => 1200 })}
+      />,
+    );
+    expect(screen.queryByText(/перевищено/)).toBeNull();
+  });
+
   it("renders collapsed header with aria-expanded=false", () => {
     render(<BudgetsLimitsSection {...buildProps()} />);
     const btn = screen.getByRole("button", { name: /Ліміти/i });
     expect(btn).toHaveAttribute("aria-expanded", "false");
+  });
+
+  // Регресія з browser-QA 2026-09-02: заголовок форматував київський інстант
+  // у таймзоні хоста, тож на пристрої західніше Києва показував ПОПЕРЕДНІЙ
+  // місяць, поки «Транзакції» й «Аналітика» показували правильний. Vitest
+  // пінить `TZ: "UTC"` (vitest.config), тобто саме той випадок.
+  it("labels the month in Europe/Kyiv, not in the host timezone", () => {
+    // Київська північ 1 вересня 2026 — це 21:00 UTC 31 серпня.
+    const kyivSeptemberStart = new Date("2026-08-31T21:00:00Z");
+    render(
+      <BudgetsLimitsSection
+        {...buildProps({ monthStart: kyivSeptemberStart })}
+      />,
+    );
+    const btn = screen.getByRole("button", { name: /Ліміти/i });
+    expect(btn.textContent).toContain("вересень");
+    expect(btn.textContent).not.toContain("серпень");
   });
 
   it("calls toggleLimits when the header is clicked", () => {

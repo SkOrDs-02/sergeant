@@ -152,6 +152,23 @@ describe("getSubscriptionAmountMeta", () => {
     expect(meta).toEqual({ amount: null, currency: "$", lastTx: null });
   });
 
+  // Р20: підписка з пропозиції знає очікувану суму ще до першого збігу.
+  it("без зіставленої tx показує expectedAmount замість «сума невідома»", () => {
+    const meta = getSubscriptionAmountMeta(
+      { keyword: "netflix", expectedAmount: 19_900 },
+      [],
+    );
+    expect(meta).toEqual({ amount: 199, currency: "₴", lastTx: null });
+  });
+
+  it("зіставлена tx важить більше за expectedAmount", () => {
+    const meta = getSubscriptionAmountMeta(
+      { keyword: "netflix", expectedAmount: 19_900 },
+      [{ id: "t", amount: -24_900, time: 1, description: "Netflix" }],
+    );
+    expect(meta.amount).toBe(249);
+  });
+
   it("обчислює amount як |tx.amount/100| коли tx знайдена", () => {
     const transactions = [
       {

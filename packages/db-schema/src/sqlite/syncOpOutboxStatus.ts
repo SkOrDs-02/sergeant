@@ -4,7 +4,7 @@ import { SYNC_OP_OUTBOX_STATUSES, type SyncOpOutboxStatus } from "./routine.js";
 
 /**
  * Read-only status reporter for the client-side `sync_op_outbox`
- * (`docs/planning/storage-roadmap.md` Stage 5 / PR #042e-status).
+ * (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 5 / PR #042e-status).
  *
  * Pairs with {@link drainSyncOpOutbox} (PR #042e-drain) and the
  * write-side lifecycle helpers (PR #042e-lifecycle). Where the drain

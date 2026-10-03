@@ -7,10 +7,11 @@
  * за GDPR Art. 28. Він мусить збігатися з реальним стеком: кожен запис тут
  * має відповідник у `apps/server/src/env/env.ts`, і навпаки — новий
  * зовнішній сервіс, що отримує дані користувача, спершу зʼявляється тут,
- * потім у `docs/04-governance/security/llm-subprocessors.md`.
+ * потім у `docs/governance/security/llm-subprocessors.md`.
  */
 
-export const LAST_UPDATED = "31 липня 2026";
+// Дата набрання чинності спільна; дата останнього оновлення тексту — у
+// кожного документа своя (`LegalDocument.lastUpdated`).
 export const EFFECTIVE_DATE = "31 липня 2026";
 export const CONTACT_EMAIL = "legal@sergeant.app";
 export const PRIVACY_EMAIL = "privacy@sergeant.app";
@@ -125,6 +126,11 @@ export const INFRA_PROCESSORS: ReadonlyArray<LegalProcessor> = [
 ] as const;
 
 export const REFERENCE_PROCESSORS: ReadonlyArray<LegalProcessor> = [
+  {
+    name: "Open Food Facts",
+    role: "Відкрита база продуктів. Отримує лише пошуковий запит або штрихкод, без даних акаунта",
+    region: "Франція",
+  },
   {
     name: "USDA FoodData Central, UPCitemdb",
     role: "Довідники продуктів і штрихкодів. Отримують лише пошуковий запит або штрихкод, без даних акаунта",

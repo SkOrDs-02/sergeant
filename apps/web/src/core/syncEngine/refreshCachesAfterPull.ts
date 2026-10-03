@@ -37,6 +37,9 @@ const FIZRUK_PULL_TABLES = new Set([
   "fizruk_workout_items",
   "fizruk_workout_sets",
   "fizruk_custom_exercises",
+  // Свої заняття (міграція 132): pull нового заняття має інвалідувати
+  // fizruk-кеш, інакше список у формі запису лишиться старим.
+  "fizruk_custom_activities",
   "fizruk_measurements",
   "fizruk_daily_log",
   "fizruk_monthly_plan",
@@ -48,10 +51,6 @@ const FIZRUK_PULL_TABLES = new Set([
   // сервера позначка травми має негайно перерахувати список вправ, інакше
   // юзер бачить як дозволену вправу, яку модель уже блокує.
   "fizruk_injuries",
-  // Перенос власності pushup-даних routine → fizruk (2026-08-30): без
-  // цього рядка pull нових повторів з іншого пристрою не оновив би
-  // сторінку Прогрес.
-  "fizruk_pushups",
 ]);
 const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",

@@ -15,8 +15,13 @@ export * from "./types";
 // беруть корпус підпаточним імпортом `@sergeant/shared/data/genericFoods`:
 // він лишається окремим модулем і не тягне за собою решту барелю.
 
+// Реєстр доступу Free / Premium: одне джерело для серверних гейтів і квот,
+// web-знімка і таблиці `/pricing` (`docs/work/specs/access-tiers.md`).
+export * from "./billing/entitlements";
+
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
+export * from "./lib/correlationStandard";
 export * from "./lib/nutritionPantryMode";
 
 // Stable per-install origin-device-id resolver used by the web and
@@ -26,12 +31,12 @@ export * from "./lib/originDeviceId";
 
 // Sensitive query-key policy for the React Query persisters
 // (web → IDB, mobile → MMKV). See PR #004 in
-// `docs/planning/storage-roadmap.md`.
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
 export * from "./lib/sensitiveQueryKeys";
 
 // PII / secret redaction policy — single source of truth for pino
 // (server), Sentry.beforeSend (server + web), and OTel attribute
-// denylist. See `docs/security/pii-handling.md` and audit
+// denylist. See `docs/governance/security/pii-handling.md` and audit
 // `2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §6.5.
 export * from "./lib/pii";
 
@@ -48,6 +53,11 @@ export * from "./lib/toolRisk";
 // docstring for rationale (audit gap #2, 2026-08).
 export * from "./hubchat/toolNames";
 
+// AI-6 рішення 3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
+// — state-mutating vs advice/read-only-з-синтезом класифікація tool-ів,
+// одне джерело істини поруч із реєстром імен вище.
+export * from "./hubchat/toolOutcomeClass";
+
 // Канонічні межі числових полів заміру тіла (Фізрук) — єдине джерело
 // правди для доменного реєстру полів і серверного sync-апплаєра.
 // Див. docstring `./fizruk/measurementBounds.ts` (аудит 2026-08-04).
@@ -58,7 +68,7 @@ export * from "./lib/metricsVersion";
 export * from "./lib/exportCsv";
 
 // Platform-agnostic key/value store contract + factories. See
-// `docs/planning/storage-roadmap.md` → PR #006.
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` → PR #006.
 //   - `createWebKVStore(localStorage, window)` on web.
 //   - `createMmkvKVStore(() => activeMmkv)` on mobile.
 //   - `createMemoryKVStore()` lives in `@sergeant/shared/test-utils`.
@@ -67,7 +77,7 @@ export * from "./storage/kv";
 // Cross-platform cloud-sync module registry. Single source of truth
 // for which `STORAGE_KEYS.*` belong to which sync module on web
 // (localStorage) and mobile (MMKV). See PR #007 in
-// `docs/planning/storage-roadmap.md`.
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
 export * from "./sync/modules";
 
 // Boot-time TTL sweep orchestration for the client-side `sync_op_outbox`
@@ -83,6 +93,8 @@ export * from "./lib/activeModules";
 
 // Defaults shared by web/mobile undo-toast helpers.
 export * from "./lib/undoToast";
+export * from "./lib/accountDeletion";
+export * from "./lib/healthConsent";
 
 // Onboarding gate helpers (first-launch detection, done flag, splash taxonomy).
 export * from "./lib/onboarding";
@@ -145,11 +157,19 @@ export * from "./lib/formatMoney";
 // Hub weekly-digest helpers — week key / storage key / digest freshness.
 export * from "./lib/weeklyDigest";
 
+// Weekly-digest / coach publication threshold — shared client↔server signal
+// count (audit §2.23: `coachSnapshotSignals` ↔ `countDigestSignalModules`).
+export * from "./lib/weeklyDigestSignals";
+
 // Shared hint/tip system (taxonomy + caps). Rendering is per-platform.
 export * from "./lib/hints";
 
 // Daily nudges & re-engagement (Phase 3 — retention).
 export * from "./lib/nudges";
+
+// Віхи стріку — централізовані набори порогів (святкові + аналітичні)
+// і спільний дедуп святкувань.
+export * from "./lib/streakMilestones";
 
 // Cross-module preview — one-shot post-first-entry promo (S6.4).
 export * from "./lib/crossModulePreview";
@@ -159,6 +179,10 @@ export * from "./lib/abTest";
 
 // Canonical analytics event names shared across platforms.
 export * from "./lib/analyticsEvents";
+export {
+  MODULE_OPEN_SOURCES,
+  type ModuleOpenSource,
+} from "./lib/analyticsEvents.hubAxis";
 
 // Landing → Telegram-bot attribution handoff. Один формат `start`-payload на
 // два боки (лендінг збирає, вебхук бота розбирає), щоб половини воронки
@@ -197,5 +221,5 @@ export * from "./shell/deepLinkChannel";
 // Origin-agnostic Sentry release tag (`sergeant@<short-sha>`) — single source
 // of truth shared across server / web / mobile SDKs so one deploy maps to one
 // Sentry release regardless of origin. See PR-25 in
-// `docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-25-two-production-origins.md`.
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-25-two-production-origins.md`.
 export * from "./observability/release";

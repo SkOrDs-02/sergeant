@@ -15,7 +15,7 @@
  * `category: "http"` — тобто при масці після усічення сирі імена контрагентів
  * та IBAN-и їхали в Sentry повз рішення founder-а #10. Sentry — теж «за
  * периметром». Маскуємо рівно один раз, до обох стоків.
- * Знахідка B2, `docs/90-work/audits/ai-pipeline-2026-08-05.md`.
+ * Знахідка B2, `docs/work/specs/audits/ai-pipeline-2026-08-05.md`.
  *
  * Тест, що це стереже, дивиться саме на breadcrumb, а не на payload
  * (`chat.redaction.test.ts`): payload лишається чистим в обох порядках, тож
@@ -32,6 +32,10 @@ import {
   type RawToolResult,
 } from "./toolResultTruncation.js";
 import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
+import {
+  isJevShadowEnabled,
+  shadowScanToolResult,
+} from "./injectionShadowJev.js";
 
 /** Готовий до відправки `tool_result`-блок Anthropic Messages API. */
 export interface ToolResultMessage {
@@ -71,7 +75,13 @@ export function prepareToolResults(
   // M8 — SYSTEM_PREFIX (v8+) інструктує модель трактувати все всередині
   // envelope як ДАНІ. Захищає від скомпрометованого upstream (Mono webhook,
   // n8n response), який підкладає "ignore previous instructions and …".
+  const jevShadow = isJevShadowEnabled();
   const wrapped = wrapAndScanToolResults(truncated, toolCallsRaw, {
+    ...(jevShadow && {
+      onScanned: ({ tool, content, matched }) => {
+        void shadowScanToolResult(tool, content, matched);
+      },
+    }),
     recordInjectionAttempt: (labels) => {
       try {
         chatPromptInjectionAttemptTotal.inc(labels);

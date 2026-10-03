@@ -8,7 +8,7 @@ const dbMocks = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("../../../db.js", () => ({ default: { query: dbMocks.query } }));
 
 import statementPreviewHandler from "./statementPreview.js";
-import { makeXlsx } from "./__fixtures__/makeXlsx.js";
+import { makeXlsx } from "@sergeant/tabular-import/__fixtures__/makeXlsx";
 
 interface TestRes {
   statusCode: number;

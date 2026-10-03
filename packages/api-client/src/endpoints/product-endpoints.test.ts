@@ -16,7 +16,6 @@ describe("nutrition endpoints", () => {
     }));
     const endpoints = createNutritionEndpoints(httpClient(post));
 
-    await endpoints.postJson("/api/nutrition/custom", null);
     await endpoints.analyzePhoto({ image: "x" });
     await endpoints.refinePhoto({ image: "x" });
     await endpoints.recommendRecipes({ pantry: [] });
@@ -28,7 +27,6 @@ describe("nutrition endpoints", () => {
     await endpoints.backupDownload();
 
     expect(post.mock.calls.map((call) => call[0])).toEqual([
-      "/api/nutrition/custom",
       "/api/nutrition/analyze-photo",
       "/api/nutrition/refine-photo",
       "/api/nutrition/recommend-recipes",
@@ -39,7 +37,7 @@ describe("nutrition endpoints", () => {
       "/api/nutrition/backup-upload",
       "/api/nutrition/backup-download",
     ]);
-    expect(post.mock.calls[0]?.[1]).toEqual({});
+    expect(post.mock.calls[0]?.[1]).toEqual({ image: "x" });
     expect(post.mock.calls.at(-1)?.[1]).toEqual({});
   });
 });

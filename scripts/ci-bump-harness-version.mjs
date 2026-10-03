@@ -2,7 +2,7 @@
 // scripts/ci-bump-harness-version.mjs
 // PR-time harness version bumper.
 // Reads .agents/harness-versions.json, detects which governance surfaces the
-// diff touches (AGENTS.md / .agents/skills/** / docs/04-governance/governance/rules/** /
+// diff touches (AGENTS.md / .agents/skills/** / docs/governance/governance/rules/** /
 // eslint-plugin-sergeant-design rules / .husky hooks), increments the patch by
 // default (typo, link, freshness), minor when adding a new skill/section,
 // and major when a Hard Rule changes. Updates the file in place.
@@ -48,7 +48,7 @@ const touched = diff.split("\n").filter(Boolean);
 
 const isSkills = (p) => p.startsWith(".agents/skills/") && p.endsWith(".md");
 const isRules = (p) =>
-  p.startsWith("docs/04-governance/governance/rules/") && p.endsWith(".md");
+  p.startsWith("docs/governance/governance/rules/") && p.endsWith(".md");
 const isAgentsMd = (p) => p === "AGENTS.md";
 const isHusky = (p) => p.startsWith(".husky/");
 const isEslintPlugin = (p) =>

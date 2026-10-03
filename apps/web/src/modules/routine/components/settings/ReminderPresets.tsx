@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
-import { Input } from "@shared/components/ui/Input";
+import { TimeField } from "@shared/components/ui/TimeField";
 import { ROUTINE_THEME as C } from "../../lib/routineConstants";
 import {
   REMINDER_PRESETS,
@@ -79,22 +79,30 @@ export function ReminderPresets({
       </div>
       {times.map((t, i) => (
         <div key={i} className="flex items-center gap-2">
-          <Input
-            type="time"
-            className="routine-touch-field flex-1"
-            value={t}
-            onChange={(e) =>
-              setHabitDraft((d) => {
-                const arr = [...(d.reminderTimes || [])];
-                arr[i] = e.target.value;
-                return {
-                  ...d,
-                  reminderTimes: arr,
-                  timeOfDay: arr[0] || "",
-                };
-              })
-            }
-          />
+          {/* `flex-1` сам по собі НЕ рятує: він ставить `flex-basis: 0`, але
+              floor `min-width: auto` лишається, і нативний time-контрол зі
+              своїм intrinsic inline-size розпирає рядок. Контракт несе
+              `TimeField`; `min-w-0 flex-1` — на обгортці, бо корінь примітива
+              вже `w-full` і власного класу ззовні не приймає.
+              Рецепт: docs/start/instructions/fix-mobile-horizontal-overflow.md */}
+          <div className="min-w-0 flex-1">
+            <TimeField
+              className="routine-touch-field"
+              aria-label={`Час нагадування ${i + 1}`}
+              value={t}
+              onChange={(e) =>
+                setHabitDraft((d) => {
+                  const arr = [...(d.reminderTimes || [])];
+                  arr[i] = e.target.value;
+                  return {
+                    ...d,
+                    reminderTimes: arr,
+                    timeOfDay: arr[0] || "",
+                  };
+                })
+              }
+            />
+          </div>
           <IconButton
             size="xs"
             variant="ghost"
@@ -111,7 +119,7 @@ export function ReminderPresets({
             }
             aria-label="Видалити час"
           >
-            <Icon name="close" size={14} aria-hidden />
+            <Icon name="close" size="sm" aria-hidden />
           </IconButton>
         </div>
       ))}

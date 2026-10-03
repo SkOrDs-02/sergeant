@@ -1,5 +1,5 @@
 import { Icon } from "@shared/components/ui/Icon";
-import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
+import { AssetsGroupCard, usePersistedGroupOpen } from "./AssetsGroupCard";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import type { JarLike } from "./useAssetsState";
@@ -31,14 +31,18 @@ export function AssetsMonoJars({
   jars?: readonly JarLike[] | undefined;
   showBalance: boolean;
 }) {
+  const [groupOpen, toggleGroup] = usePersistedGroupOpen(
+    "finyk_assets_mono_jars_open_v1",
+  );
   if (!jars || jars.length === 0) return null;
 
   return (
-    <CollapsibleSection
-      storageKey="finyk_assets_mono_jars_open_v1"
+    <AssetsGroupCard
       title={t.sectionTitle}
-      headingSize="xs"
-      collapsedIcon="piggy-bank"
+      iconName="piggy-bank"
+      iconClassName="text-muted"
+      open={groupOpen}
+      onToggle={toggleGroup}
     >
       {jars.map((j, i) => {
         const id = j.monoJarId ?? j.id ?? String(i);
@@ -51,7 +55,7 @@ export function AssetsMonoJars({
         return (
           <div
             key={id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 p-3"
+            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3"
           >
             <div className="flex items-center gap-3 min-w-0">
               <span
@@ -89,6 +93,6 @@ export function AssetsMonoJars({
           </div>
         );
       })}
-    </CollapsibleSection>
+    </AssetsGroupCard>
   );
 }

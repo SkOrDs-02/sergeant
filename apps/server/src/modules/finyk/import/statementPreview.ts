@@ -7,13 +7,10 @@ import {
   ImportStatementPreviewResponseSchema,
 } from "@sergeant/shared";
 import type { ImportSkippedRow, ImportStatementRow } from "@sergeant/shared";
+import { isBlankRow, parseCalendarDateKey } from "@sergeant/tabular-import";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
-import {
-  isBlankRow,
-  parseCalendarDateKey,
-  parseSignedAmountKopiykas,
-} from "./csvParser.js";
+import { parseSignedAmountKopiykas } from "./csvParser.js";
 import {
   detectCsvProfile,
   isUahCurrencyValue,

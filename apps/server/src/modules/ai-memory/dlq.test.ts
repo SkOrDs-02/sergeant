@@ -40,7 +40,7 @@ const captureMessageMock = _Sentry.captureMessage as unknown as ReturnType<
 
 const sample: MemoryIngestPayload = {
   userId: "u1",
-  source: "finyk",
+  source: "cofounder",
   sourceRef: "tx-42",
   content: "txn snapshot",
   metadata: { amount: 100 },
@@ -68,7 +68,7 @@ describe("recordIngestDlq", () => {
     expect(sql).toContain("DO UPDATE SET");
     expect(values).toEqual([
       "u1",
-      "finyk",
+      "cofounder",
       "tx-42",
       JSON.stringify(sample),
       "Voyage 400 Invalid input",
@@ -119,7 +119,7 @@ describe("recordIngestDlq", () => {
     expect(summary).toContain("AI memory ingest DLQ");
     expect(opts.level).toBe("warning");
     expect(opts.tags.error_signature).toBe("ai-memory-ingest-dlq");
-    expect(opts.tags.source).toBe("finyk");
+    expect(opts.tags.source).toBe("cofounder");
     expect(opts.extra.user_id).toBe("u1");
   });
 
@@ -259,7 +259,7 @@ describe("listDlqRows", () => {
         {
           id: "42", // bigint як string
           user_id: "u1",
-          source: "finyk",
+          source: "cofounder",
           source_ref: "tx-1",
           payload_json: sample,
           error_msg: "Voyage 503",
@@ -272,7 +272,7 @@ describe("listDlqRows", () => {
       rowCount: 1,
     });
 
-    const rows = await listDlqRows({ source: "finyk", limit: 100 });
+    const rows = await listDlqRows({ source: "cofounder", limit: 100 });
     expect(rows).toHaveLength(1);
     expect(rows[0]!.id).toBe(42);
     expect(typeof rows[0]!.id).toBe("number");
@@ -284,7 +284,7 @@ describe("listDlqRows", () => {
   it("default — лише active (replayed_at IS NULL)", async () => {
     queryMock.mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
-    await listDlqRows({ source: "finyk", limit: 10 });
+    await listDlqRows({ source: "cofounder", limit: 10 });
 
     const [sql] = queryMock.mock.calls[0]!;
     expect(sql).toContain("replayed_at IS NULL");
@@ -294,7 +294,11 @@ describe("listDlqRows", () => {
   it("includeReplayed=true — без WHERE replayed_at filter", async () => {
     queryMock.mockResolvedValueOnce({ rows: [], rowCount: 0 });
 
-    await listDlqRows({ source: "finyk", limit: 10, includeReplayed: true });
+    await listDlqRows({
+      source: "cofounder",
+      limit: 10,
+      includeReplayed: true,
+    });
 
     const [sql] = queryMock.mock.calls[0]!;
     expect(sql).not.toContain("replayed_at IS NULL");
@@ -305,7 +309,7 @@ describe("listDlqRows", () => {
 
     await listDlqRows({
       ids: [1, 2, 3],
-      source: "finyk",
+      source: "cofounder",
       limit: 10,
     });
 

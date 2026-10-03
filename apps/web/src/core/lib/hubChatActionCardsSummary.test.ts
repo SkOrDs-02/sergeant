@@ -157,16 +157,29 @@ describe("summaryFor", () => {
   });
 
   it("set_budget_limit / update_budget", () => {
+    // AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+    // `category_id` — канонічний id з `MCC_CATEGORIES`, картка показує
+    // людський label ("Продукти"), не сирий id ("food").
     expect(
       summaryFor("set_budget_limit", { category_id: "food", limit: 5000 }, "r"),
-    ).toBe("food · 5000 ₴");
+    ).toBe("Продукти · 5 000 ₴");
     expect(
       summaryFor(
         "update_budget",
         { category_id: "food", target_amount: 3000 },
         "r",
       ),
-    ).toBe("food · 3000 ₴");
+    ).toBe("Продукти · 3 000 ₴");
+  });
+
+  it("set_budget_limit — невідомий/custom category_id лишається як є (без резолву)", () => {
+    expect(
+      summaryFor(
+        "set_budget_limit",
+        { category_id: "my_custom_cat", limit: 100 },
+        "r",
+      ),
+    ).toBe("my_custom_cat · 100 ₴");
   });
 
   it("set_monthly_plan", () => {
@@ -181,7 +194,7 @@ describe("summaryFor", () => {
 
   it("create_debt / create_receivable", () => {
     expect(summaryFor("create_debt", { name: "Банк", amount: 1000 }, "r")).toBe(
-      "Банк · 1000 ₴",
+      "Банк · 1 000 ₴",
     );
     expect(
       summaryFor("create_receivable", { name: "Друг", amount: 500 }, "r"),
@@ -303,13 +316,29 @@ describe("summaryFor", () => {
   it("set_daily_plan", () => {
     expect(
       summaryFor("set_daily_plan", { kcal: 2000, protein_g: 150 }, "r"),
-    ).toBe("2000 ккал · 150 г білка");
+    ).toBe("2 000 ккал · 150 г білка");
   });
 
   it("suggest_meal", () => {
     expect(
       summaryFor("suggest_meal", { meal_type: "обід", focus: "білок" }, "r"),
     ).toBe("обід · білок");
+  });
+
+  it("suggest_meal — AI-6: канонічний enum перекладається, не показує сирий ключ", () => {
+    expect(
+      summaryFor("suggest_meal", { meal_type: "dinner", focus: "лишки" }, "r"),
+    ).toBe("Вечеря · лишки");
+  });
+
+  it("log_meal — AI-6: канонічний enum перекладається", () => {
+    expect(
+      summaryFor(
+        "log_meal",
+        { meal_type: "dinner", name: "Плов", calories: 500 },
+        "r",
+      ),
+    ).toBe("Вечеря · Плов · 500 ккал");
   });
 
   it("copy_meal_from_date / plan_meals_for_day", () => {
@@ -319,9 +348,9 @@ describe("summaryFor", () => {
         { source_date: "2024-01-01", target_kcal: 1800 },
         "r",
       ),
-    ).toBe("2024-01-01 · 1800 ккал");
+    ).toBe("2024-01-01 · 1 800 ккал");
     expect(summaryFor("plan_meals_for_day", { target_kcal: 1800 }, "r")).toBe(
-      "1800 ккал",
+      "1 800 ккал",
     );
   });
 

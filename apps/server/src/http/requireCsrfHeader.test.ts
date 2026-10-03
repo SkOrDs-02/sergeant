@@ -13,9 +13,9 @@ import { requireCsrfHeader } from "./requireCsrfHeader.js";
  *      повертає 200.
  *   3. Safe methods (GET/HEAD/OPTIONS) пропускаються БЕЗ header-а.
  *   4. Allowlist шляхи (`/api/auth/*`, `/api/mono/webhook`,
- *      `/api/telegram/webhook`, `/api/billing/*-webhook`,
- *      `/api/billing/liqpay-callback`, `/api/csp-report`,
- *      `/api/metrics/web-vitals`, `/api/internal/*`)
+ *      `/api/telegram/webhook`, `/api/billing/stripe-webhook`,
+ *      `/api/billing/liqpay-callback`, `/api/billing/plata-{charge,status}`,
+ *      `/api/csp-report`, `/api/metrics/web-vitals`, `/api/internal/*`)
  *      пропускаються незалежно від методу і без header-а.
  *   5. Запити з `X-Api-Secret` header-ом пропускаються (S2S cron) —
  *      але CSRF-bypass НЕ означає auth-bypass: `requireApiSecret`
@@ -55,7 +55,10 @@ function makeApp(handler: express.RequestHandler) {
   app.all("/api/billing/liqpay-callback", (_req, res) => {
     res.status(200).json({ ok: true });
   });
-  app.all("/api/billing/plata-webhook", (_req, res) => {
+  app.all("/api/billing/plata-charge", (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
+  app.all("/api/billing/plata-status", (_req, res) => {
     res.status(200).json({ ok: true });
   });
   app.all("/api/csp-report", (_req, res) => {
@@ -148,7 +151,8 @@ describe("requireCsrfHeader — exempt paths", () => {
     "/api/v1/telegram/webhook",
     "/api/billing/stripe-webhook",
     "/api/billing/liqpay-callback",
-    "/api/billing/plata-webhook",
+    "/api/billing/plata-charge",
+    "/api/billing/plata-status",
     "/api/csp-report",
     "/api/metrics/web-vitals",
     "/api/v1/metrics/web-vitals",

@@ -86,18 +86,46 @@ describe("BackfillProgressPill", () => {
     );
 
     expect(screen.getByText("Завершено")).toBeInTheDocument();
-    expect(screen.getByText("3 120 транзакцій")).toBeInTheDocument();
+    expect(screen.getByText("3 120 операцій")).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 
     rerender(
       <BackfillProgressPill {...(Failed.args as BackfillProgressPillProps)} />,
     );
 
-    expect(screen.getByText("Помилка backfill")).toBeInTheDocument();
+    expect(
+      screen.getByText("Не вдалося довантажити виписку"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Mono API: 429 Too Many Requests"),
     ).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  // Українська плюралізація — три форми (one/few/many), не бінарна
+  // англійська «N vs many». 11 і 21 ловлять класичну помилку: 11 бере
+  // "many" ("транзакцій"), 21 повертається до "one" ("транзакція").
+  it.each([
+    [1, "операція"],
+    [2, "операції"],
+    [5, "операцій"],
+    [11, "операцій"],
+    [21, "операція"],
+  ])("uses the correct plural form for N=%i (%s)", (n, form) => {
+    renderPill({
+      progress: {
+        status: "completed",
+        startedAt: "2026-05-05T08:30:00.000Z",
+        completedAt: "2026-05-05T08:34:12.000Z",
+        accountsTotal: 1,
+        accountsProcessed: 1,
+        currentAccountId: null,
+        transactionsProcessed: n,
+        lastError: null,
+      },
+    });
+
+    expect(screen.getByText(`${n} ${form}`)).toBeInTheDocument();
   });
 
   it("falls back to a generic failed detail when Mono does not return an error", () => {
@@ -114,8 +142,12 @@ describe("BackfillProgressPill", () => {
       },
     });
 
-    expect(screen.getByText("Помилка backfill")).toBeInTheDocument();
-    expect(screen.getByText("невідома помилка")).toBeInTheDocument();
+    expect(
+      screen.getByText("Не вдалося довантажити виписку"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Спробуй ще раз через «Синхронізувати історію»."),
+    ).toBeInTheDocument();
   });
 
   it("hides idle and transient completed snapshots", () => {

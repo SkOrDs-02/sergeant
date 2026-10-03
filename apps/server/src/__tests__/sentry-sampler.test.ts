@@ -33,13 +33,6 @@ describe("pickTracesSampleRate", () => {
     expect(pickTracesSampleRate("/api/auth/oauth/callback", 0.05)).toBe(1.0);
   });
 
-  it("samples /api/account/recovery at 100%", () => {
-    expect(pickTracesSampleRate("/api/account/recovery", 0.05)).toBe(1.0);
-    expect(
-      pickTracesSampleRate("/api/account/recovery/confirm?token=x", 0.05),
-    ).toBe(1.0);
-  });
-
   it("samples /api/admin/* at 100% (low volume + high blast radius)", () => {
     expect(pickTracesSampleRate("/api/admin/users", 0.05)).toBe(1.0);
     expect(pickTracesSampleRate("/api/admin/jobs/retry", 0.05)).toBe(1.0);
@@ -77,9 +70,7 @@ describe("pickTracesSampleRate", () => {
   it("жодне правило не є мертвим — кожен match трапляється в реальному шляху", async () => {
     const { SENTRY_SAMPLING_RULES } = await import("../sentry.js");
     const REAL_PATHS = [
-      "/api/internal/openclaw/write/habit",
       "/api/internal/cron/digest",
-      "/api/account/recovery",
       "/api/admin/users",
       "/api/auth/sign-in",
       "/api/chat",
@@ -108,27 +99,11 @@ describe("pickTracesSampleRate", () => {
     expect(pickTracesSampleRate("/api/v2/sync/stream", 0.05)).toBe(0.01);
   });
 
-  it("samples /api/internal/openclaw/write/* at 100% (mutations)", () => {
-    expect(
-      pickTracesSampleRate("/api/internal/openclaw/write/strategy-doc", 0.05),
-    ).toBe(1.0);
-    expect(
-      pickTracesSampleRate("/api/internal/openclaw/write/github-issue", 0.05),
-    ).toBe(1.0);
-    expect(
-      pickTracesSampleRate("/api/internal/openclaw/write/pause-workflow", 0.05),
-    ).toBe(1.0);
-  });
-
   it("samples all /api/internal/* routes at 100% (PR-07 — admin=1.0)", () => {
     // The broad /api/internal/ rule captures the entire internal namespace.
-    // Specific /api/internal/openclaw/write/ still wins first due to ordering.
     expect(pickTracesSampleRate("/api/internal/alerts/post", 0.05)).toBe(1.0);
     expect(
       pickTracesSampleRate("/api/internal/mono/webhook/rotate", 0.05),
-    ).toBe(1.0);
-    expect(
-      pickTracesSampleRate("/api/internal/openclaw/metrics/sentry", 0.05),
     ).toBe(1.0);
   });
 
@@ -195,18 +170,14 @@ describe("SENTRY_SAMPLING_RULES — table integrity", () => {
     }
   });
 
-  it("has 100% internal sampling for both OpenClaw write mutations and the broad /api/internal/ namespace (PR-07)", () => {
+  it("has 100% internal sampling for the broad /api/internal/ namespace (PR-07)", () => {
     // PR-07 (backend-perf-2026-05) added /api/internal/ at 1.0 so every
-    // internal-namespace route is fully sampled. The specific openclaw/write
-    // rule must appear first (shadowing test above enforces ordering).
+    // internal-namespace route is fully sampled.
     const fullRateInternalRules = SENTRY_SAMPLING_RULES.filter(
       (rule) => rule.match.startsWith("/api/internal/") && rule.rate === 1.0,
     ).map((rule) => rule.match);
 
-    expect(fullRateInternalRules).toEqual([
-      "/api/internal/openclaw/write/",
-      "/api/internal/",
-    ]);
+    expect(fullRateInternalRules).toEqual(["/api/internal/"]);
     expect(
       SENTRY_SAMPLING_RULES.some((rule) => rule.match === "/api/internal/"),
     ).toBe(true);

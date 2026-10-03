@@ -7,7 +7,7 @@
 // the start of a session so they can react to the current state of the
 // repo, not just its static policy.
 //
-// Spec: docs/04-governance/adr/0071-dynamic-agent-snapshot.md
+// Spec: docs/governance/adr/0071-dynamic-agent-snapshot.md
 //
 // Output: writes to .agents/snapshot.md by default (override via argv[2]).
 // Cache:  .agents/snapshot.cache.json, 15 min TTL, invalidated on `git pull`.
@@ -52,17 +52,6 @@ function sh(cmd, args, opts = {}) {
     return stderr
       ? `__ERR__:${stderr.split("\n")[0].slice(0, 200)}`
       : `__ERR__:${err.message}`;
-  }
-}
-
-function tryJson(cmd, args, opts = {}) {
-  const out = sh(cmd, args, opts);
-  if (out.startsWith("__ERR__:"))
-    return { __unavailable__: out.slice("__ERR__:".length) };
-  try {
-    return JSON.parse(out);
-  } catch {
-    return { __unavailable__: `non-JSON from ${cmd}` };
   }
 }
 
@@ -131,57 +120,12 @@ function sectionRepo() {
 }
 
 function sectionCi() {
-  const repoPathRaw = sh("git", ["config", "--get", "remote.origin.url"]);
-  const ownerSlash = repoPathRaw.startsWith("__ERR__")
-    ? "Skords-01/Sergeant"
-    : repoPathRaw
-        .replace(/^git@github\.com:/, "")
-        .replace(/^https?:\/\/github\.com\//, "")
-        .replace(/\.git$/, "");
-  const data = tryJson("gh", [
-    "api",
-    `repos/${ownerSlash}/commits/main/check-runs`,
-    "--jq",
-    ".check_runs",
-  ]);
-  if (data.__unavailable__) {
-    return [
-      "## CI last run on main",
-      `- Status: \`[unavailable: ${truncate(data.__unavailable__, 120)}]\``,
-    ].join("\n");
-  }
-  const runs = Array.isArray(data) ? data : [];
-  const passed = runs.filter((r) => r.conclusion === "success").length;
-  const failed = runs.filter((r) => r.conclusion === "failure").length;
-  const skipped = runs.filter(
-    (r) => r.conclusion === "skipped" || r.conclusion === "neutral",
-  ).length;
-  const inProgress = runs.filter(
-    (r) => r.status === "in_progress" || r.status === "queued",
-  ).length;
-  const failRuns = runs
-    .filter((r) => r.conclusion === "failure")
-    .slice(0, 5)
-    .map((r) => `    - ${r.name}`);
-
-  let status;
-  if (inProgress > 0) status = `🟡 in progress (${inProgress} pending)`;
-  else if (failed > 0) status = `🔴 red (${failed} failed)`;
-  else if (passed === 0 && skipped === 0) status = "⚪ no runs";
-  else status = "✅ green";
-
-  const lastCompleted = runs
-    .filter((r) => r.completed_at)
-    .sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))[0];
-
+  // ponytail: static pointer instead of a `gh` call on every snapshot;
+  // query live status when needed.
   return [
     "## CI last run on main",
-    `- Status: ${status}`,
-    `- Checks: ${passed} passed, ${failed} failed, ${skipped} skipped${inProgress ? `, ${inProgress} pending` : ""}`,
-    lastCompleted
-      ? `- Last completed: ${lastCompleted.name} at ${lastCompleted.completed_at}`
-      : "- Last completed: (none)",
-    ...(failRuns.length ? [`- Failures:\n${failRuns.join("\n")}`] : []),
+    "- CI: GitHub Actions (ADR-0102). Стан: `gh run list --branch main -L 5`.",
+    "- Для main↔prod drift дивись `pnpm deploy:status`.",
   ].join("\n");
 }
 
@@ -270,14 +214,11 @@ function formatKb(b) {
 }
 
 function sectionPrLedger() {
-  const ledgerPath = resolve(
-    REPO_ROOT,
-    "docs/04-governance/pr-ledger/index.json",
-  );
+  const ledgerPath = resolve(REPO_ROOT, "docs/governance/pr-ledger/index.json");
   if (!existsSync(ledgerPath)) {
     return [
       "## Recent PR-ledger entries (last 5)",
-      "- `docs/04-governance/pr-ledger/index.json` not found",
+      "- `docs/governance/pr-ledger/index.json` not found",
     ].join("\n");
   }
   let ledger;
@@ -304,9 +245,9 @@ function sectionPrLedger() {
 function sectionHardRuleDrift() {
   const regPath = resolve(
     REPO_ROOT,
-    "docs/04-governance/governance/hard-rules.json",
+    "docs/governance/governance/hard-rules.json",
   );
-  const rulesDir = resolve(REPO_ROOT, "docs/04-governance/governance/rules");
+  const rulesDir = resolve(REPO_ROOT, "docs/governance/governance/rules");
   const lines = ["## Hard-rule drift warnings"];
   if (!existsSync(regPath)) {
     lines.push("- `hard-rules.json` not found");
@@ -354,9 +295,9 @@ function sectionInitiativeDeadlines() {
       "-lE",
       "TODO\\([0-9]{4}-[a-z0-9-]+\\):\\s*20[0-9]{2}-[0-9]{2}-[0-9]{2}",
       "--",
-      "docs/90-work/initiatives",
-      "docs/04-governance/adr",
-      "docs/00-start/playbooks",
+      "docs/work/specs/initiatives",
+      "docs/governance/adr",
+      "docs/start/instructions",
     ],
     { timeoutMs: 6_000 },
   );

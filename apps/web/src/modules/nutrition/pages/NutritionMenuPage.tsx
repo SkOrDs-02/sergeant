@@ -140,7 +140,6 @@ export function NutritionMenuPage({
         ) : (
           <RecipesCard
             busy={busy}
-            activePantry={pantry.activePantry}
             prefs={prefs}
             setPrefs={setPrefs}
             recommendRecipes={recommendRecipes}

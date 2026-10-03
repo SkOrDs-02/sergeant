@@ -31,9 +31,10 @@ describe("MacroRings", () => {
   it("onHero moves the caption stack onto the hero-ink scale", () => {
     render(<MacroRings aria-label="Макроси" macros={MACROS} onHero />);
     expect(screen.getByText("Білки").className).toContain("text-hero-ink");
-    expect(screen.getByText("68 г до цілі").className).toContain(
-      "text-hero-ink/75",
-    );
+    // A9 (2026-10-01): чорнило на геро без альфи — приглушеного рівня немає.
+    const outcome = screen.getByText("68 г до цілі").className;
+    expect(outcome).toContain("text-hero-ink");
+    expect(outcome).not.toMatch(/text-hero-ink\//);
     expect(screen.getByText("82").className).toContain("text-hero-ink");
   });
 

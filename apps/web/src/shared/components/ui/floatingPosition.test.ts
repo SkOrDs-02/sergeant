@@ -40,6 +40,18 @@ describe("floatingPosition", () => {
     });
   });
 
+  it("flips a bottom panel above the trigger when there is no room below", () => {
+    expect(
+      computeFloatingPosition(
+        { top: 520, left: 200, width: 80, height: 40 },
+        panel,
+        "bottom-end",
+        8,
+        viewport,
+      ),
+    ).toMatchObject({ top: 452, left: 160, placement: "top-end" });
+  });
+
   it("clamps panels inside very small viewports", () => {
     expect(
       computeFloatingPosition(

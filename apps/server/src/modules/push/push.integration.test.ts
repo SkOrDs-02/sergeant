@@ -1,14 +1,17 @@
 /**
- * Integration tests for push subscription handlers.
+ * Integration tests for the web-push branch of the unified register/unregister
+ * handlers.
  *
  * Strategy: boot a real Postgres container, mock `web-push` / env / helper
- * modules, then call `subscribe` / `unsubscribe` handlers directly with
- * fake req/res objects so the real `push_subscriptions` table is exercised.
+ * modules, then call `register` / `unregister` handlers directly with
+ * fake req/res objects so the real `push_subscriptions` table is exercised
+ * (same `OWNERSHIP_SAFE_WEB_UPSERT` SQL a mocked-pool unit test cannot
+ * verify against the actual partial unique index).
  *
  * Tests:
- *   1. POST subscribe → row in push_subscriptions
- *   2. Re-subscribe with same endpoint → ON CONFLICT UPDATE (deleted_at cleared)
- *   3. DELETE (unsubscribe) → soft-delete (deleted_at set)
+ *   1. POST register(web) → row in push_subscriptions
+ *   2. Re-register with same endpoint → ON CONFLICT UPDATE (deleted_at cleared)
+ *   3. POST unregister(web) → soft-delete (deleted_at set)
  *   4. User-B isolation: User-B's subscription is not visible for User-A
  */
 
@@ -36,8 +39,8 @@ let harness: IntegrationHarness;
 let dockerAvailable = false;
 
 // Handlers resolved after all mocks are in place.
-let subscribeFn: (req: Request, res: Response) => Promise<void>;
-let unsubscribeFn: (req: Request, res: Response) => Promise<void>;
+let registerFn: (req: Request, res: Response) => Promise<void>;
+let unregisterFn: (req: Request, res: Response) => Promise<void>;
 
 const USER_A = "u_push_intg_a";
 const USER_B = "u_push_intg_b";
@@ -163,8 +166,8 @@ beforeAll(async () => {
   }));
 
   const mod = await import("./push.js");
-  subscribeFn = mod.subscribe;
-  unsubscribeFn = mod.unsubscribe;
+  registerFn = mod.register;
+  unregisterFn = mod.unregister;
 }, INTEGRATION_TIMEOUT_MS);
 
 afterAll(async () => {
@@ -180,14 +183,15 @@ beforeEach(async () => {
 
 describe("push — integration (real Postgres)", () => {
   it(
-    "POST subscribe → push_subscriptions row is created",
+    "POST register(web) → push_subscriptions row is created",
     async (ctx) => {
       if (!dockerAvailable) return ctx.skip();
 
       const res = makeRes();
-      await subscribeFn(
+      await registerFn(
         makeReq(USER_A, {
-          endpoint: ENDPOINT_A,
+          platform: "web",
+          token: ENDPOINT_A,
           keys: { p256dh: "p256_a", auth: "auth_a" },
         }),
         res,
@@ -213,14 +217,15 @@ describe("push — integration (real Postgres)", () => {
   );
 
   it(
-    "re-subscribe with same endpoint → ON CONFLICT UPDATE (deleted_at cleared)",
+    "re-register with same endpoint → ON CONFLICT UPDATE (deleted_at cleared)",
     async (ctx) => {
       if (!dockerAvailable) return ctx.skip();
 
-      // First subscribe.
-      await subscribeFn(
+      // First register.
+      await registerFn(
         makeReq(USER_A, {
-          endpoint: ENDPOINT_A,
+          platform: "web",
+          token: ENDPOINT_A,
           keys: { p256dh: "p256_a", auth: "auth_a" },
         }),
         makeRes(),
@@ -232,10 +237,11 @@ describe("push — integration (real Postgres)", () => {
         [ENDPOINT_A],
       );
 
-      // Re-subscribe should clear deleted_at.
-      await subscribeFn(
+      // Re-register should clear deleted_at.
+      await registerFn(
         makeReq(USER_A, {
-          endpoint: ENDPOINT_A,
+          platform: "web",
+          token: ENDPOINT_A,
           keys: { p256dh: "p256_a_new", auth: "auth_a_new" },
         }),
         makeRes(),
@@ -257,28 +263,28 @@ describe("push — integration (real Postgres)", () => {
   );
 
   it(
-    "DELETE unsubscribe → soft-delete (deleted_at is set)",
+    "POST unregister(web) → soft-delete (deleted_at is set)",
     async (ctx) => {
       if (!dockerAvailable) return ctx.skip();
 
       // Create subscription first.
-      await subscribeFn(
+      await registerFn(
         makeReq(USER_A, {
-          endpoint: ENDPOINT_A,
+          platform: "web",
+          token: ENDPOINT_A,
           keys: { p256dh: "p256_a", auth: "auth_a" },
         }),
         makeRes(),
       );
 
-      // Soft-delete via unsubscribe.
-      const deleteReq = {
-        method: "DELETE",
-        body: { endpoint: ENDPOINT_A },
-        user: { id: USER_A },
-      } as unknown as Request;
+      // Soft-delete via unregister.
+      const unregisterReq = makeReq(USER_A, {
+        platform: "web",
+        endpoint: ENDPOINT_A,
+      });
 
       const res = makeRes();
-      await unsubscribeFn(deleteReq, res);
+      await unregisterFn(unregisterReq, res);
 
       expect(res.statusCode).toBe(200);
       expect(res.body).toMatchObject({ ok: true });
@@ -298,19 +304,21 @@ describe("push — integration (real Postgres)", () => {
     async (ctx) => {
       if (!dockerAvailable) return ctx.skip();
 
-      // Subscribe User A.
-      await subscribeFn(
+      // Register User A.
+      await registerFn(
         makeReq(USER_A, {
-          endpoint: ENDPOINT_A,
+          platform: "web",
+          token: ENDPOINT_A,
           keys: { p256dh: "p256_a", auth: "auth_a" },
         }),
         makeRes(),
       );
 
-      // Subscribe User B.
-      await subscribeFn(
+      // Register User B.
+      await registerFn(
         makeReq(USER_B, {
-          endpoint: ENDPOINT_B,
+          platform: "web",
+          token: ENDPOINT_B,
           keys: { p256dh: "p256_b", auth: "auth_b" },
         }),
         makeRes(),

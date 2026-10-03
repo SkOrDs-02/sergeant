@@ -13,13 +13,10 @@ import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { Select } from "@shared/components/ui/Select";
-import {
-  HARD_MAX_DAY_KEY,
-  HARD_MIN_DAY_KEY,
-} from "@shared/lib/time/dateBounds";
 import type { ReceiptDraft } from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import {
@@ -28,6 +25,7 @@ import {
   upgradeCategoryAllowingCustom,
   type CategoryDisplay,
 } from "../manualExpenseCategories";
+import { expenseCustomCategories } from "../manualIncomeCategories";
 import {
   addBlankDraftItem,
   draftDateKey,
@@ -71,16 +69,11 @@ export function ReceiptReviewForm({
   const totalId = `${formId}-total`;
   const categoryId = `${formId}-category`;
 
-  const customIds = new Set(
-    customCategories
-      .filter(
-        (c): c is CustomCategoryInput => typeof c?.id === "string" && !!c.id,
-      )
-      .map((c) => c.id),
-  );
+  const expenseCategories = expenseCustomCategories(customCategories);
+  const customIds = new Set(expenseCategories.map((c) => c.id));
   const customDisplay: Readonly<Record<string, CategoryDisplay>> =
     Object.fromEntries(
-      customCategories
+      expenseCategories
         .filter((c) => c?.id && c.label)
         .map((c) => [c.id, { iconName: "tag" as const, label: c.label ?? "" }]),
     );
@@ -91,7 +84,7 @@ export function ReceiptReviewForm({
   const categorySlug = upgradeCategoryAllowingCustom(category, customIds);
   const categorySlugs: string[] = [
     ...CATEGORY_SLUGS,
-    ...customCategories.map((c) => c.id).filter((id) => !!id),
+    ...expenseCategories.map((c) => c.id),
   ];
 
   const handleEditItem = (index: number, patch: EditableItemPatch) =>
@@ -109,7 +102,7 @@ export function ReceiptReviewForm({
           size="sm"
           className="inline-flex items-center gap-1.5"
         >
-          <Icon name="camera" size={12} aria-hidden />
+          <Icon name="camera" size="xs" aria-hidden />
           розпізнано з фото, перевір суми
         </Badge>
       )}
@@ -130,22 +123,26 @@ export function ReceiptReviewForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="min-w-0">
           <Label htmlFor={dateId}>Дата</Label>
-          <Input
+          {/* Спільний примітив замість сирого `Input type="date"` з
+              саморобними `appearance-none min-w-0`. Нативний date-інпут iOS
+              має intrinsic-ширину від UA-стилів і не стискається під вузьку
+              grid-колонку — він налазив на сусіднє поле «Сума» (бета-фідбек
+              №2, 2026-08-18). `DateField` несе той самий контракт повністю
+              (`min-w-0` + `max-w-full` + явний `inline-size: 100%`), тож
+              локальна копія більше не розходитиметься з оригіналом.
+              Рецепт: docs/start/instructions/fix-mobile-horizontal-overflow.md */}
+          <DateField
             id={dateId}
-            type="date"
-            min={HARD_MIN_DAY_KEY}
-            max={HARD_MAX_DAY_KEY}
+            // Мітка секції — окремий `<Label>`, а `DateField` інакше назвав
+            // би поле службовим «Обери дату» (він завжди ставить собі
+            // доступне імʼя).
+            aria-label="Дата"
             value={draftDateKey(draft)}
             onChange={(e) => {
               if (e.target.value)
                 setDraft((d) => updateDraftDate(d, e.target.value));
             }}
             disabled={disabled}
-            // `appearance-none min-w-0` — нативний date-інпут iOS має
-            // intrinsic-ширину від UA-стилів і не стискається під вузьку
-            // grid-колонку, тому візуально налазив на сусіднє поле «Сума»
-            // (бета-фідбек №2, 2026-08-18).
-            className="appearance-none min-w-0"
           />
         </div>
         <div className="min-w-0">
@@ -196,7 +193,6 @@ export function ReceiptReviewForm({
           <Button
             type="button"
             variant="ghost"
-            tone="finyk"
             size="xs"
             onClick={handleAddItem}
             disabled={disabled}
@@ -206,7 +202,7 @@ export function ReceiptReviewForm({
           </Button>
         </div>
         {draft.items.length > 0 ? (
-          <ul className="mt-1 rounded-2xl border border-line bg-panelHi/40 px-3">
+          <ul className="mt-1 rounded-2xl border border-line bg-panelHi px-3">
             {draft.items.map((item, index) => (
               <ReceiptReviewItemRow
                 key={`${item.position}-${index}`}

@@ -3,7 +3,7 @@
  * the list of operations the dual-write layer must mirror to local
  * SQLite.
  *
- * Stage 4 PR #028 of `docs/planning/storage-roadmap.md`. The
+ * Stage 4 PR #028 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The
  * orchestrator in `./index.ts` calls this on every successful
  * localStorage write. Stage 8 PR #056f dropped the
  * `feature.fizruk.sqlite_v2.dual_write` gate — the SQLite mirror is
@@ -44,15 +44,20 @@
  *      has no LS key to mirror from.
  */
 
+import { diffCustomActivitiesOps } from "./customActivities";
 import { diffCustomExercisesOps } from "./customExercises";
 import { diffDailyLogOps } from "./dailyLog";
 import { diffInjuriesOps } from "./injuries";
 import { diffMeasurementsOps } from "./measurements";
 import { diffMonthlyPlanOps } from "./monthlyPlan";
-import { diffPushupOps } from "./pushups";
 import { diffWorkoutTemplatesOps } from "./workoutTemplates";
 import { diffWorkoutsOps } from "./workouts";
 
+import type {
+  CustomActivityDeleteOp,
+  CustomActivityUpsertOp,
+  FizrukCustomActivitySnapshot,
+} from "./customActivities";
 import type {
   CustomExerciseDeleteOp,
   CustomExerciseUpsertOp,
@@ -77,7 +82,6 @@ import type {
   FizrukMonthlyPlanSnapshot,
   MonthlyPlanSetOp,
 } from "./monthlyPlan";
-import type { PushupSetOp } from "./pushups";
 import type {
   FizrukWorkoutTemplateSnapshot,
   WorkoutTemplateDeleteOp,
@@ -95,10 +99,13 @@ import type {
 // Preserves the historical surface of `from "./sqliteWriter/diff"`.
 
 export type {
+  CustomActivityDeleteOp,
+  CustomActivityUpsertOp,
   CustomExerciseDeleteOp,
   CustomExerciseUpsertOp,
   DailyLogDeleteOp,
   DailyLogUpsertOp,
+  FizrukCustomActivitySnapshot,
   FizrukCustomExerciseSnapshot,
   FizrukDailyLogSnapshot,
   FizrukInjurySnapshot,
@@ -113,7 +120,6 @@ export type {
   MeasurementDeleteOp,
   MeasurementUpsertOp,
   MonthlyPlanSetOp,
-  PushupSetOp,
   WorkoutDeleteOp,
   WorkoutTemplateDeleteOp,
   WorkoutTemplateUpsertOp,
@@ -125,6 +131,8 @@ export type FizrukDualWriteOp =
   | WorkoutDeleteOp
   | CustomExerciseUpsertOp
   | CustomExerciseDeleteOp
+  | CustomActivityUpsertOp
+  | CustomActivityDeleteOp
   | MeasurementUpsertOp
   | MeasurementDeleteOp
   | DailyLogUpsertOp
@@ -133,8 +141,7 @@ export type FizrukDualWriteOp =
   | WorkoutTemplateUpsertOp
   | WorkoutTemplateDeleteOp
   | InjuryUpsertOp
-  | InjuryDeleteOp
-  | PushupSetOp;
+  | InjuryDeleteOp;
 
 // -----------------------------------------------------------------------
 // State shape
@@ -163,13 +170,11 @@ export interface FizrukDualWriteState {
    */
   readonly injuries: readonly FizrukInjurySnapshot[];
   /**
-   * Лічильник віджимань: `dateKey → reps` (device-local `YYYY-MM-DD`,
-   * ADR-0078). Перенос власності routine → fizruk (канон `routine.md`
-   * §10, рішення 2026-08-30). Опційне: старіші стани, зібрані вручну в
-   * тестах, поля не несуть — трактується як `{}` (той самий контракт, що
-   * `pantryEvents` у nutrition-диффі).
+   * Свої заняття для короткого запису. Опційне: стани, зібрані вручну в
+   * старих тестах, поля не несуть - трактується як порожній список (той
+   * самий контракт, що `pantryEvents` у nutrition-диффі).
    */
-  readonly pushups?: Readonly<Record<string, number>>;
+  readonly customActivities?: readonly FizrukCustomActivitySnapshot[];
 }
 
 // -----------------------------------------------------------------------
@@ -195,11 +200,11 @@ export function diffFizrukDualWriteOps(
   return [
     ...diffWorkoutsOps(prev.workouts, next.workouts),
     ...diffCustomExercisesOps(prev.customExercises, next.customExercises),
+    ...diffCustomActivitiesOps(prev.customActivities, next.customActivities),
     ...diffMeasurementsOps(prev.measurements, next.measurements),
     ...diffDailyLogOps(prev.dailyLog, next.dailyLog),
     ...diffMonthlyPlanOps(prev.monthlyPlan, next.monthlyPlan),
     ...diffWorkoutTemplatesOps(prev.workoutTemplates, next.workoutTemplates),
     ...diffInjuriesOps(prev.injuries, next.injuries),
-    ...diffPushupOps(prev.pushups, next.pushups),
   ];
 }

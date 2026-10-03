@@ -24,7 +24,12 @@ export interface WorkoutItemTypeSwitcherProps {
  * можна змінити (`ExerciseDetailSheet` і компактний перемикач на
  * `WorkoutItemCard`): перемикання на «силову» сідає поверх наявних
  * сетів або сіє один порожній, «час»/«дистанція» зберігають уже введені
- * значення.
+ * значення того самого типу. Поля попереднього типу (`sets` при виході
+ * із «силової», `durationSec`/`distanceM` при вході в неї) явно
+ * обнуляються: `updateItem` мержить патч поверх наявного `item`
+ * (`{ ...i, ...patch }`), тож без явного `undefined` старе значення
+ * пережило б перемикання і далі рахувалось би там, де тип не
+ * фільтрується.
  */
 export function buildTypeSwitchPatch(
   t: "strength" | "time" | "distance",
@@ -34,15 +39,18 @@ export function buildTypeSwitchPatch(
     return {
       type: t,
       sets: item.sets?.length ? item.sets : [{ weightKg: 0, reps: 0 }],
+      durationSec: undefined,
+      distanceM: undefined,
     };
   }
   if (t === "time") {
-    return { type: t, durationSec: item.durationSec ?? 0 };
+    return { type: t, durationSec: item.durationSec ?? 0, sets: undefined };
   }
   return {
     type: t,
     distanceM: item.distanceM ?? 0,
     durationSec: item.durationSec ?? 0,
+    sets: undefined,
   };
 }
 

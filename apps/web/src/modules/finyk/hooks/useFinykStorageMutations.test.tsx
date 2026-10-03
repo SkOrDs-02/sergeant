@@ -323,6 +323,77 @@ describe("toggle helpers", () => {
       txLinks: { tx1: { role: "payment", amount: 100 } },
     });
   });
+
+  it("setLinkedTxRole з meta.auto ставить auto:true на привʼязці (Level 2)", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [{ id: "d1", linkedTxIds: [] }],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", "payment", 500, {
+      auto: true,
+    });
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+    });
+  });
+
+  it("відвʼязування auto-привʼязки дописує id у autoLinkDismissedTxIds (anti-resurrection)", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+      autoLinkDismissedTxIds: ["tx1"],
+    });
+  });
+
+  it("відвʼязування РУЧНОЇ привʼязки не чіпає autoLinkDismissedTxIds", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).not.toHaveProperty(
+      "autoLinkDismissedTxIds",
+    );
+  });
+
+  it("відвʼязування auto-привʼязки receivable НЕ пише autoLinkDismissedTxIds (лише debt)", () => {
+    const { slots, state } = makeSlots({
+      receivables: [
+        {
+          id: "r1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("r1", "tx1", "receivable", null);
+    expect((state["receivables"] as never[])[0]).not.toHaveProperty(
+      "autoLinkDismissedTxIds",
+    );
+  });
 });
 
 describe("setSplitTx", () => {
@@ -402,6 +473,19 @@ describe("addSubscriptionFromRecurring", () => {
     expect(state["dismissedRecurring"]).toEqual(["spotify"]);
     expect(notifyFinykRoutineCalendarSync).toHaveBeenCalled();
   });
+
+  // Р20: сума з історії одразу, у мінорних одиницях.
+  it("stores the average charge as expectedAmount in minor units", () => {
+    const { slots } = makeSlots();
+    const { result } = renderMutations(slots);
+    const sub = result.current.addSubscriptionFromRecurring({
+      key: "netflix",
+      displayName: "Netflix",
+      avgAmount: 199,
+      billingDay: 12,
+    } as never);
+    expect(sub).toMatchObject({ expectedAmount: 19_900, billingDay: 12 });
+  });
 });
 
 describe("updateSubscription", () => {
@@ -479,6 +563,21 @@ describe("custom categories", () => {
     result.current.addCustomCategory("Food");
     result.current.addCustomCategory("food"); // case-insensitive dup
     expect(state["customCategories"]).toHaveLength(1);
+  });
+
+  it("keeps expense and income categories separate while preserving legacy expense shape", () => {
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+    result.current.addCustomCategory("Оренда");
+    result.current.addCustomCategory("Оренда", { kind: "income" });
+    result.current.addCustomCategory("оренда", { kind: "income" });
+    const categories = state["customCategories"] as Array<
+      Record<string, unknown>
+    >;
+    expect(categories).toHaveLength(2);
+    expect(categories[0]).toMatchObject({ label: "Оренда" });
+    expect(categories[0]?.["kind"]).toBeUndefined();
+    expect(categories[1]).toMatchObject({ label: "Оренда", kind: "income" });
   });
 
   it("edits an existing custom category", () => {

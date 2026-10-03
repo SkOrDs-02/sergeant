@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
+import { useModuleAccent } from "../layout/ModuleAccentProvider";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -132,10 +133,27 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // `shadow-sm` — that is the "white button on white card" regression.
   secondary:
     "bg-panel text-text border border-border-strong shadow-e1 hover:bg-panelHi hover:border-brand-200 hover:shadow-e2 active:scale-[0.98]",
+  // AI-CONTEXT: `ghost` — НЕ «стриманий secondary». Без бордера й заливки
+  // його межу мусить давати РАМКА контейнера, в якому він стоїть. Сусідство
+  // з гучною кнопкою межі не замінює — рішення власника 2026-09-15 після
+  // заміру «Скасувати» (10 із 11 уже були `secondary`): поки погляд не
+  // дійшов до сусіда, тиха кнопка читається як підпис. Кнопка на всю
+  // ширину блока рамки не має і читається як голий текст
+  // на фоні — знахідка власника 2026-09-15 («кнопки як то оновити чеки
+  // голі лежать на фоні»), десять викликів у Налаштуваннях. Для дії-блока
+  // бери `secondary`; домальовувати `border border-line` поверх `ghost` не
+  // треба — це і є `secondary`, зібраний вручну. Таблиця вибору варіанта —
+  // `docs/design/design/design-system/04-components.md` § Button; гейт на
+  // Налаштування — `core/settings/settingsActionButtonVariants.test.ts`.
   ghost:
     "bg-transparent text-muted hover:bg-panelHi hover:text-text active:bg-line/50",
+  // Темна тема: `--c-danger-soft` там суцільний red-800 (його беруть і
+  // банери помилок), тож soft-кнопка ставала насиченим червоним блоком і
+  // «Видалити» важило більше за головну дію (критика екранів, хвиля 3).
+  // Заливку ведемо тією ж конвенцією, що й soft-варіанти модулів: акцент
+  // на низькій прозорості, текст лишається `danger-soft-fg`.
   danger:
-    "bg-danger-soft text-danger-soft-fg border border-danger/30 hover:bg-danger/15 hover:border-danger/50 active:scale-[0.98]",
+    "bg-danger-soft text-danger-soft-fg border border-danger/30 hover:bg-danger/15 hover:border-danger/50 active:scale-[0.98] dark:bg-danger/15 dark:border-danger/40 dark:hover:bg-danger/25",
   destructive:
     "bg-danger-strong text-white shadow-sm hover:brightness-110 hover:shadow-[0_0_0_3px_rgba(239,68,68,0.15)] active:scale-[0.98]",
   success:
@@ -149,13 +167,13 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // elevation. Text over the accent is ink, never white (Rule #9 needs no
   // `-strong` companion here).
   finyk:
-    "bg-finyk-strong text-white shadow-sm hover:bg-teal-900 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-finyk dark:text-bg dark:shadow-glow-accent-teal",
+    "bg-finyk-strong text-white shadow-sm hover:bg-teal-900 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-finyk dark:text-bg",
   fizruk:
-    "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-glow-accent-cyan",
+    "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg",
   routine:
-    "bg-routine-strong text-white shadow-sm hover:bg-rose-800 hover:shadow-glow-rose active:bg-rose-900 active:scale-[0.98] dark:bg-routine dark:text-bg dark:shadow-glow-accent-rose",
+    "bg-routine-strong text-white shadow-sm hover:bg-rose-800 hover:shadow-glow-rose active:bg-rose-900 active:scale-[0.98] dark:bg-routine dark:text-bg",
   nutrition:
-    "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98] dark:bg-nutrition dark:text-bg dark:shadow-glow-accent-lime",
+    "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98] dark:bg-nutrition dark:text-bg",
 
   // Soft module variants (for secondary actions within modules).
   // Dark mode keeps the saturated accent at low opacity for the FILL so the
@@ -329,7 +347,12 @@ function resolveStyleKey(
   const emphasis = variant as ButtonEmphasis;
   const effectiveTone: ButtonTone =
     (!tone || tone === "neutral") && module ? module : (tone ?? "neutral");
-  return EMPHASIS_TONE_MAP[emphasis][effectiveTone] ?? "primary";
+  // Клітинки немає: скидаємо ТОН, не емфазу. `outline` усередині модуля
+  // (контекст підміняє нейтральний тон модульним) має лишатись контурним,
+  // а не ставати суцільним `primary`. Саме так неактивні фільтри Операцій
+  // Фініка виходили чорними, важчими за активний.
+  const cells = EMPHASIS_TONE_MAP[emphasis];
+  return cells[effectiveTone] ?? cells.neutral ?? "primary";
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -350,10 +373,27 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) {
+    // Акцент модуля, у якому стоїть кнопка. Явний проп `module` виграє —
+    // контекст лише закриває випадок «проп забули», який доти давав
+    // генеричний синій усередині брендованого модуля (PR-C1, рішення
+    // власника 2026-09-14; замір: 105 кнопок у модулях + до 117 спільних,
+    // коли ті рендеряться всередині модуля).
+    //
+    // AI-DANGER: жодна кнопка не має змінити ФОРМУ від цього. Тримається
+    // це на тому, що всі беспропні виклики йдуть ЛЕГАСІ-гілкою
+    // `resolveStyleKey`, де `MODULE_LEGACY_OVERRIDE` мапить лише
+    // `primary`/`secondary`, а `ghost`/`danger`/`destructive` проходять
+    // наскрізь. У канонічній гілці клітинок `outline × модуль` і
+    // `ghost × модуль` у `EMPHASIS_TONE_MAP` немає, тож `resolveStyleKey`
+    // скидає тон до нейтрального в межах тієї ж емфази. Пін:
+    // `Button.moduleContext.test.tsx`.
+    const contextAccent = useModuleAccent();
+    const effectiveModule = module ?? contextAccent ?? undefined;
+
     const isDisabled = disabled || loading;
     const hasProgress = typeof progress === "number" && progress >= 0;
     const needsCoarseMinTarget = iconOnly || size === "xs" || size === "sm";
-    const resolvedVariant = resolveStyleKey(variant, tone, module);
+    const resolvedVariant = resolveStyleKey(variant, tone, effectiveModule);
 
     return (
       <button

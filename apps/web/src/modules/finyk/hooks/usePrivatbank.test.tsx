@@ -161,7 +161,7 @@ describe("usePrivatbank", () => {
       await result.current.connect("merchant-1", "token-1");
     });
 
-    expect(result.current.error).toContain("Невірні credentials");
+    expect(result.current.error).toContain("Неправильні дані входу");
     expect(result.current.connected).toBe(false);
   });
 

@@ -60,6 +60,7 @@ describe("BiometricsSchema", () => {
       activityLevel: "moderate",
       weightKg: 75.5,
       weightUpdatedAt: "2026-01-01T08:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-01-01T08:00:00.000Z",
     };
     expect(BiometricsSchema.safeParse(valid).success).toBe(true);
@@ -303,6 +304,7 @@ describe("writeBiometricsPatch", () => {
       ...BIOMETRICS_DEFAULT,
       weightKg: 70,
       weightUpdatedAt: "2026-05-01T00:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-05-01T00:00:00.000Z",
     });
     writeBiometricsPatch(
@@ -320,6 +322,7 @@ describe("writeBiometricsPatch", () => {
       ...BIOMETRICS_DEFAULT,
       weightKg: 70,
       weightUpdatedAt: "2026-05-01T00:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-05-01T00:00:00.000Z",
     });
     writeBiometricsPatch({ weightKg: null }, "2026-06-01T00:00:00.000Z");
@@ -344,6 +347,7 @@ describe("isBiometricsCompleteForTdee", () => {
     activityLevel: "moderate",
     weightKg: 80,
     weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+    countWorkoutsInGoal: false,
     updatedAt: "2026-01-01T00:00:00.000Z",
   };
 

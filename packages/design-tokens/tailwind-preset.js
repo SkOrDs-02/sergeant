@@ -12,6 +12,7 @@
  */
 
 import {
+  accentStrongHex,
   brandColors,
   chartPalette,
   moduleColors,
@@ -123,6 +124,12 @@ const preset = {
         "fg-subtle": "rgb(var(--c-subtle) / <alpha-value>)",
         border: "rgb(var(--c-border) / <alpha-value>)",
         "border-strong": "rgb(var(--c-border-strong) / <alpha-value>)",
+        // `control` — межа/трек КОНТРОЛУ (поле вводу, непозначений чекбокс,
+        // вимкнений трек перемикача). WCAG 1.4.11: ≥3:1 проти кожної
+        // поверхні, на якій контрол стоїть; `line`/`border` (1.3-1.6:1) для
+        // цього занадто тихі. `border-control` / `bg-control`. Значення —
+        // `--c-control` у theme.css, дзеркало — `controlEdge` у tokens.js.
+        control: "rgb(var(--c-control) / <alpha-value>)",
         accent: "rgb(var(--c-accent) / <alpha-value>)",
         ring: "rgb(var(--c-accent) / <alpha-value>)",
 
@@ -180,7 +187,7 @@ const preset = {
         // fills behind `text-white`. Outside the provider both vars
         // are undefined and the utility falls back to `rgb()` with
         // empty channels (effectively transparent); only use inside a
-        // module subtree. See docs/design/module-accent.md.
+        // module subtree. See docs/design/design/module-accent.md.
         "module-accent": "rgb(var(--module-accent-rgb) / <alpha-value>)",
         "module-accent-strong":
           "rgb(var(--module-accent-strong-rgb) / <alpha-value>)",
@@ -190,7 +197,11 @@ const preset = {
         // BOTH themes (light: the new `--hero-grad-*` anchor; dark: the
         // `--hero-ink-*` near-black fill from § 2) — the surface is always
         // dark enough to need light text, so this is one flat colour with
-        // no `.dark` flip. `text-hero-ink/75` is the eyebrow/muted tier.
+        // no `.dark` flip. Always full opacity as TEXT (owner decision
+        // 2026-10-01, contrast audit A9: no `text-hero-ink/NN` — any alpha
+        // mixes the gradient into the ink and fails AA); hierarchy comes from
+        // size and weight. Alpha stays legal only for decor (`bg-`, `border-`,
+        // `stroke-hero-ink/NN`).
         "hero-ink": "#fdf9f3",
 
         // ═══════════════════════════════════════════════════════════════════
@@ -354,13 +365,36 @@ const preset = {
           // text clears WCAG AA on `bg-finyk/15` over the dark panel.
           // Backed by `--c-finyk-soft-fg` (light/dark/HC in theme.css).
           "soft-fg": "rgb(var(--c-finyk-soft-fg) / <alpha-value>)",
+          // `edge` — КОНТУР вибраного стану модуля (рішення власника
+          // 2026-10-01, аудит контрасту A4): тонований фон + цей контур.
+          // Резолвиться в `--c-{m}-ink` — рівно той щабель, що вже несе
+          // `text-{m}-strong` (світла -800, темна -400), тож ≥3:1 проти
+          // столу, зони, картки й тонованої заливки в обох темах гарантують
+          // ті самі гейти, що й для тексту (`theme.controlFocus.test.ts`).
+          // НЕ `border-{m}-strong`: `colors.{m}.strong` — статичний -800 для
+          // заливок під `text-white`, у темній темі він темний по темному.
+          // Fallback — світлий тир, щоб платформа без змінних (mobile)
+          // рендерила -800.
+          edge: `rgb(var(--c-finyk-ink, ${hexToRgbTriple(accentStrongHex.finyk)}) / <alpha-value>)`,
         },
 
         /** Фізрук — Cyan fitness tracker (v2 redesign 2026-05; was teal). */
         fizruk: {
           DEFAULT: moduleColors.fizruk.primary,
           secondary: moduleColors.fizruk.secondary,
-          surface: moduleColors.fizruk.surface,
+          // `surface` — тема-залежна тонована заливка (2026-10-02). Була
+          // статичним hex `moduleColors.fizruk.surface` (cyan-50), тож у темній
+          // темі світла заливка лишалась під світлішим текстом: вибраний чип
+          // сесії 1.39:1, лічильник 1.05:1. Тепер `--c-fizruk-surface`
+          // (світла cyan-50, темна — cyan-700 @15% над панеллю, дзеркало пари
+          // `dark:bg-fizruk-surface-dark/15`). Fallback — той самий cyan-50,
+          // щоб платформа без змінної (мобільний `global.css`) рендерила
+          // рівно те, що й раніше. ЛИШЕ fizruk: `finyk`/`routine`/`nutrition`
+          // `.surface` лишаються статичними, бо там усі живі вживання, крім hover у
+          // `DayReportSheet`, несуть ручну `dark:`-пару; у Фізруку її бракувало в 13
+          // з 15 місць, а саме такий дефект ручні пари й плодять (див.
+          // коментар до `textColor` нижче).
+          surface: `rgb(var(--c-fizruk-surface, ${hexToRgbTriple(moduleColors.fizruk.surface)}) / <alpha-value>)`,
           accent: moduleColors.fizruk.accent,
           hover: brandColors.cyan[600],
           strong: brandColors.cyan[800],
@@ -385,6 +419,8 @@ const preset = {
           // prior cyan-700 ink measured ~1.77:1). Backed by
           // `--c-fizruk-soft-fg`.
           "soft-fg": "rgb(var(--c-fizruk-soft-fg) / <alpha-value>)",
+          // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
+          edge: `rgb(var(--c-fizruk-ink, ${hexToRgbTriple(accentStrongHex.fizruk)}) / <alpha-value>)`,
           // `tile` + `tile-border` — subtle stat-tile wash on the
           // fizruk hero gradient (Wave 2a). Light=teal-800,
           // dark=white. Apply with the registered opacity scale,
@@ -432,6 +468,8 @@ const preset = {
           // clears WCAG AA on `bg-routine/15` over the dark panel. Backed by
           // `--c-routine-soft-fg`.
           "soft-fg": "rgb(var(--c-routine-soft-fg) / <alpha-value>)",
+          // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
+          edge: `rgb(var(--c-routine-ink, ${hexToRgbTriple(accentStrongHex.routine)}) / <alpha-value>)`,
         },
 
         /** Харчування — Fresh lime nutrition tracker */
@@ -452,6 +490,8 @@ const preset = {
           // clears WCAG AA on `bg-nutrition/15` over the dark panel. Backed
           // by `--c-nutrition-soft-fg`.
           "soft-fg": "rgb(var(--c-nutrition-soft-fg) / <alpha-value>)",
+          // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
+          edge: `rgb(var(--c-nutrition-ink, ${hexToRgbTriple(accentStrongHex.nutrition)}) / <alpha-value>)`,
         },
 
         // ═══════════════════════════════════════════════════════════════════
@@ -547,7 +587,7 @@ const preset = {
       // темі погано видно»): `-strong` несе ДВІ ролі — заливку під
       // `text-white` і текст на поверхні сторінки. У світлій темі одне
       // значення (тир -800) обслуговує обидві. У «Чорнилі» — ні: та сама
-      // red-800 на картці #1b1613 дає 1.9:1, тобто текст помилки форми
+      // red-800 на картці #2a231f дає 1.86:1, тобто текст помилки форми
       // практично невидимий.
       //
       // Tailwind дозволяє розвести ролі без жодної правки в call-site-ах:
@@ -571,6 +611,25 @@ const preset = {
         "warning-strong": `rgb(var(--c-warning-ink, ${hexToRgbTriple(statusStrongHex.warning)}) / <alpha-value>)`,
         "danger-strong": `rgb(var(--c-danger-ink, ${hexToRgbTriple(statusStrongHex.danger)}) / <alpha-value>)`,
         "info-strong": `rgb(var(--c-info-ink, ${hexToRgbTriple(statusStrongHex.info)}) / <alpha-value>)`,
+
+        // AI-CONTEXT (2026-09-02): бренд-модульна половина того самого
+        // дефекту. `text-{accent}-strong` резолвився в статичний тир -800 і
+        // в темній темі давав 1.11…2.74:1 — темне по темному у спільних
+        // примітивах (`Tabs`, `Badge`, `Stat`, `KeyboardAccessory`), на
+        // екрані входу й у повідомленнях чату. Розбір, заміри й пояснення,
+        // чому 33 ручні `dark:text-brand` пари довелося зняти, а не
+        // доповнити, — у `accentInkHex` (tokens.js).
+        //
+        // Тут перекривається РІВНО утиліта `text-`: `colors.{accent}.strong`
+        // лишається джерелом для `bg-{accent}-strong` / `border-…`, тож
+        // заливки під `text-white` тримають вивірений тир -800 і не
+        // рухаються. Fallback — той самий світлий тир, щоб платформа без
+        // цих змінних рендерила рівно те, що й раніше.
+        "brand-strong": `rgb(var(--c-brand-ink, ${hexToRgbTriple(accentStrongHex.brand)}) / <alpha-value>)`,
+        "finyk-strong": `rgb(var(--c-finyk-ink, ${hexToRgbTriple(accentStrongHex.finyk)}) / <alpha-value>)`,
+        "fizruk-strong": `rgb(var(--c-fizruk-ink, ${hexToRgbTriple(accentStrongHex.fizruk)}) / <alpha-value>)`,
+        "routine-strong": `rgb(var(--c-routine-ink, ${hexToRgbTriple(accentStrongHex.routine)}) / <alpha-value>)`,
+        "nutrition-strong": `rgb(var(--c-nutrition-ink, ${hexToRgbTriple(accentStrongHex.nutrition)}) / <alpha-value>)`,
       },
 
       // ═══════════════════════════════════════════════════════════════════
@@ -587,7 +646,7 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BORDER RADIUS — 3 semantic tiers (see docs/design/radius-rhythm.md)
+      // BORDER RADIUS — 3 semantic tiers (see docs/design/design/radius-rhythm.md)
       //
       //   CONTROL  (12 px, rounded-xl)   — buttons, inputs, badges, chips,
       //                                    icon-buttons, segmented controls
@@ -624,7 +683,7 @@ const preset = {
         // 14/18 px values, and its `rounded-r-*` classes shadowed
         // Tailwind's native per-corner `rounded-r-{size}` utilities. All
         // call sites were migrated onto the canonical scale above /
-        // `rounded-xl`. See docs/05-design/design/radius-rhythm.md.
+        // `rounded-xl`. See docs/design/design/radius-rhythm.md.
       },
 
       // ══════════���════════════════════════════════════════════════════════
@@ -641,7 +700,7 @@ const preset = {
       // working unchanged: `shadow-card === shadow-e1`,
       // `shadow-float === shadow-e3`, `shadow-soft === shadow-e4`.
       // New code should prefer `shadow-eN` for the explicit semantic
-      // level. See docs/design/design-system.md § 4.
+      // level. See docs/design/design/design-system.md § 4.
       // ═══════════════════════════════════════════════════════════════════
       boxShadow: {
         // Semantic elevation scale (preferred for new code).
@@ -667,32 +726,23 @@ const preset = {
         "glow-cyan": "0 0 0 3px rgba(14, 116, 144, 0.15)",
         "glow-rose": "0 0 0 3px rgba(235, 118, 145, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
-        // «Чорнило» accent glow — a luminescent tier-400 halo for solid
-        // accent controls (module Buttons, spec § 4: glow 24px/35%),
-        // replacing the drop shadow under the dark ink direction. Applied
-        // `dark:`-only so the light default keeps its shadow.
-        // `glow-accent-emerald` (the pre-teal-migration orphan) removed
-        // 2026-08 design-audit T10 — zero consumers.
-        "glow-accent-teal": "0 0 24px rgba(45, 212, 191, 0.35)", // teal-400 — finyk accent glow (2026-07)
-        "glow-accent-cyan": "0 0 24px rgba(34, 211, 238, 0.35)",
-        "glow-accent-rose": "0 0 24px rgba(246, 141, 164, 0.35)",
-        "glow-accent-lime": "0 0 24px rgba(176, 230, 54, 0.35)",
-        // «Чорнило» hero inset-glow — a luminescent tier-400 halo inside
-        // the card edge (spec § 3: depth = glow, not down-shadow). 40px
-        // blur / 8% alpha; theme-invariant (the halo colour is the module
-        // accent, it does not flip with the surface). Applied `dark:`-only
-        // by Card hero surfaces so the light default is untouched.
-        // `glow-inset-emerald` (the pre-teal-migration orphan) removed
-        // 2026-08 design-audit T10 — zero consumers.
-        "glow-inset-teal": "inset 0 0 40px rgba(45, 212, 191, 0.08)", // teal-400 — finyk hero (2026-07)
-        "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
-        "glow-inset-rose": "inset 0 0 40px rgba(246, 141, 164, 0.08)",
-        "glow-inset-lime": "inset 0 0 40px rgba(176, 230, 54, 0.08)",
+        // «Чорнило» accent glow (`glow-accent-{teal,cyan,rose,lime}`) і hero
+        // inset-glow (`glow-inset-{teal,cyan,rose,lime}`) прибрані
+        // 2026-09-12 — zero consumers. У темній темі hero-картка несе
+        // акцентний бордер + `shadow-e1` (див. коментар у `Card.test.tsx`),
+        // модульні кнопки — `shadow-glow-*` / `shadow-fab`.
+        //
+        // AI-NOTE: обидва набори пережили аудит T10, який зняв їхніх
+        // emerald-сиблінгів РІВНО за це. Причина проста: тоді сироту шукали
+        // по одному імені (`glow-accent-emerald`), а не по всій родині, тож
+        // чотири решти лишились непоміченими. Шукаєш мертвий токен — грепай
+        // префікс, не конкретне ім'я. Єдині згадки, що лишились у репо, —
+        // `not.toContain` у `Button.test.tsx` і `Card.test.tsx`.
         // «Чорнило» hero light glow (spec § 3 point 2) — a soft downward
         // colour shadow, not a halo. Colour = the light-tier
         // `--c-{module}-accent` hex baked in (box-shadow colour can't take
         // a CSS-var opacity modifier). Replaces the generic `shadow-card`
-        // on the hero surface; dark keeps its own `glow-inset-*` override.
+        // on the hero surface; dark keeps the accent border + `shadow-e1`.
         "hero-finyk": "0 8px 20px rgba(17, 94, 89, 0.22)", // teal-800 — matches --c-finyk-accent (2026-07: was emerald-700)
         "hero-fizruk": "0 8px 20px rgba(14, 116, 144, 0.22)",
         "hero-routine": "0 8px 20px rgba(194, 58, 58, 0.22)",
@@ -833,9 +883,12 @@ const preset = {
         lg: ["18px", { lineHeight: "28px" }],
         xl: ["20px", { lineHeight: "28px" }],
         "2xl": ["24px", { lineHeight: "32px" }],
-        // `hero`: hero-section H1s and hero stat numbers (slightly larger
-        // than 2xl for the page-greeting / headline-stat slot).
-        hero: ["26px", { lineHeight: "32px" }],
+        // `hero` вилучено 2026-09-02: він дублював слот
+        // `.text-style-headline` фіксованими 26px і був третьою паралельною
+        // шкалою поряд із двома, які закрило правило 5 типографіки
+        // (`docs/design/design/anti-slop-strategy.md` §4). Сім call-site-ів
+        // переведено на роль; заміри й обґрунтування —
+        // `docs/design/design/density-hierarchy-spec.md` §3.2.
         "3xl": ["30px", { lineHeight: "36px" }],
         "4xl": ["36px", { lineHeight: "40px" }],
         "5xl": ["48px", { lineHeight: "1" }],
@@ -1069,7 +1122,7 @@ const preset = {
       // matching `z-*` tier. e0/e1/e2 → `z-base`, e3 → `z-dropdown`,
       // e4 → `z-modal`, e5 → `z-toast`. Mismatched pairs are how
       // popovers slide under modals and toasts get hidden by drawers.
-      // See docs/design/design-system.md § 4 and `zTier` in tokens.js.
+      // See docs/design/design/design-system.md § 4 and `zTier` in tokens.js.
       //
       // Legacy numeric scale (`z-100`/`200`/`300`/`400` and the
       // `z-header`/`modal`/`toast`/`tooltip` aliases) is preserved so
@@ -1248,6 +1301,35 @@ const preset = {
           lineHeight: "1.4",
           fontWeight: "500",
           letterSpacing: "0.005em",
+        },
+        // Size-variant of `headline` (НЕ девʼята роль — як `label-lg` вище).
+        // 26px фіксовано = підлога плинного `headline`, та сама вага й
+        // трекінг. Дозволено ЛИШЕ компонентам, не сторінковому коду.
+        //
+        // AI-DANGER: не «спрощуй» це назад у плинний `.text-style-headline`.
+        // Призначення — число в КОНТЕЙНЕРІ ФІКСОВАНОГО РОЗМІРУ (кільце
+        // прогресу 96px). Плинна роль там переповнює контейнер на
+        // планшеті й десктопі, бо текст росте з вʼюпортом, а кільце ні.
+        // Заміряно справжнім Manrope, просвіт кільця 82px (96 − 2×7),
+        // рядок «10/12» — буденне значення, стелі на кількість звичок у
+        // коді немає:
+        //
+        //   вʼюпорт   плинний headline   фіксовані 26px
+        //   393px          74.9 ✓            73.1 ✓
+        //   768px          84.4 ✕            73.1 ✓
+        //   1280px         97.2 ✕            73.1 ✓
+        //
+        // `caption` нижче нефлюїдна з дзеркальної причини: там не мала
+        // дрейфувати ПІДЛОГА, тут — стеля.
+        //
+        // Це СТЕЛЯ, а не єдиний кегль: `DayProgressRing` під довгі значення
+        // рахує менший розмір інлайново (жодна стала не покриває і «0/3», і
+        // «1000/1000» у просвіті 82px — розбір там же).
+        ".text-style-headline-fixed": {
+          fontSize: "1.625rem",
+          lineHeight: "1.15",
+          fontWeight: "700",
+          letterSpacing: "-0.02em",
         },
         // 12px floor — Hard Rule #16. Fixed (non-fluid) so the floor
         // never drifts below readability on any viewport.

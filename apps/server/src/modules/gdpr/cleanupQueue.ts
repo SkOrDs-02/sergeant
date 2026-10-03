@@ -2,7 +2,7 @@ import type { Pool, PoolClient } from "pg";
 
 /**
  * `gdpr_cleanup_queue` writer — ADR-0016 § ADR-6.3 "External services
- * cleanup queue" (`docs/04-governance/adr/0016-user-deletion-and-pii-handling.md`).
+ * cleanup queue" (`docs/governance/adr/0016-user-deletion-and-pii-handling.md`).
  * Schema landed schema-only in migration 113; this module is the Stage 2
  * wiring the migration's header comment calls out.
  *

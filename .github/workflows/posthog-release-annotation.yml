@@ -1,6 +1,6 @@
 name: PostHog release annotation
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: джоб fail-open — без секрету або з помилкою API він зелений і
 # лише друкує причину. Якщо анотації перестали зʼявлятися на дашбордах —
 # дивись лог кроку "Post annotation" на предмет `::warning::`.
@@ -10,13 +10,11 @@ name: PostHog release annotation
 # вертикальною лінією поверх усіх дашбордів — щоб «просів DAU о 14:30»
 # одразу звʼязувалося з конкретним релізом.
 #
-# Док: docs/03-operations/observability/frontend.md § Release annotations.
+# Док: docs/operations/observability/frontend.md § Release annotations.
 # Логіка й контракт env — scripts/ci/posthog-release-annotation.mjs.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,6 +25,7 @@ on:
 # Анотації не мають накопичувати чергу: якщо в main прилетіло кілька
 # комітів підряд, важливий останній стан, але кожен реліз усе одно вартий
 # своєї лінії — тому cancel-in-progress: false.
+
 concurrency:
   group: posthog-release-annotation-${{ github.ref }}
   cancel-in-progress: false

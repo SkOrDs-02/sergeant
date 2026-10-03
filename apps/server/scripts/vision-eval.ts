@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * `pnpm eval:vision` — зоровий стенд для `analyze-photo` і `refine-photo`
- * (спека `docs/90-work/planning/specs/ai-eval-harness-v2.md` § Зорові шляхи).
+ * (спека `docs/work/specs/ai-eval-harness-v2.md` § Зорові шляхи).
  *
  * Чому окремо від `eval:models`: інший вхід (зображення), інші кандидати —
  * не кожна модель приймає картинки, тож список фільтрується за
@@ -15,7 +15,7 @@
  *   pnpm eval:vision -- --dry-run       # без мережі і без каталогу, $0
  *   pnpm eval:vision -- --pipeline=refine-photo
  *   pnpm eval:vision -- --repeat=3      # мінімум 3 у живому прогоні
- *   pnpm eval:vision -- --out=docs/90-work/planning/vision-eval-2026-08-04.md
+ *   pnpm eval:vision -- --out=docs/work/specs/planning/vision-eval-2026-08-04.md
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
  */
@@ -149,7 +149,7 @@ async function main(): Promise<void> {
   );
   const outPath =
     values.out ??
-    `docs/90-work/planning/vision-eval-${generatedAt.slice(0, 10)}.md`;
+    `docs/work/specs/planning/vision-eval-${generatedAt.slice(0, 10)}.md`;
   const absOutPath = resolve(repoRoot, outPath);
   mkdirSync(dirname(absOutPath), { recursive: true });
   writeFileSync(absOutPath, markdown, "utf-8");

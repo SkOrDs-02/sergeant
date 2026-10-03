@@ -10,7 +10,12 @@ const { hapticTap, emitHubBus, openHubModule } = vi.hoisted(() => ({
 
 vi.mock("@shared/lib/adapters/haptic", () => ({ hapticTap }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
-vi.mock("@shared/lib/modules/hubNav", () => ({ openHubModule }));
+// `openHubSettingsSection` потрібен `ModuleRail` (неактивний модуль веде в
+// налаштування); мок без нього кидає на імпорті.
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubModule,
+  openHubSettingsSection: vi.fn(),
+}));
 
 import {
   ModuleHeader,
@@ -26,6 +31,21 @@ import {
 describe("ModuleHeader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("renders a short subtitle for narrow screens next to the full one (VIS-1)", () => {
+    render(
+      <ModuleHeader
+        title="ФІЗРУК"
+        subtitle="Рух · сила · відновлення"
+        subtitleShort="Рух і відновлення"
+      />,
+    );
+    expect(screen.getByText("Рух і відновлення")).toHaveClass("sm:hidden");
+    expect(screen.getByText("Рух · сила · відновлення")).toHaveClass(
+      "hidden",
+      "sm:inline",
+    );
   });
 
   it("renders the default title stack and optional slots", () => {
@@ -64,8 +84,9 @@ describe("ModuleHeader", () => {
 
     expect(screen.getByTestId("title-slot")).toHaveTextContent("Custom title");
     expect(screen.queryByRole("tablist")).toBeNull();
+    // Шапка модуля стоїть на зоні (`--module-zone-rgb`), а не на градієнті.
     expect((container.firstElementChild as HTMLElement).className).toContain(
-      "from-finyk/5",
+      "bg-zone",
     );
   });
 
@@ -81,7 +102,13 @@ describe("ModuleHeader", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /Фінік/ }));
     expect(hapticTap).toHaveBeenCalledTimes(1);
-    expect(openHubModule).toHaveBeenCalledWith("finyk");
+    // `undefined` замість hash і `module_switcher` як джерело для
+    // `MODULE_OPENED` (базова лінія перед віссю дії хабу, P3).
+    expect(openHubModule).toHaveBeenCalledWith(
+      "finyk",
+      undefined,
+      "module_switcher",
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: "Перейти до модуля Їжа" }));
     expect(openHubModule).toHaveBeenCalledTimes(1);
@@ -102,6 +129,37 @@ describe("ModuleSwitcher", () => {
       const selected = tab.getAttribute("aria-selected") === "true";
       expect(tab.tabIndex).toBe(selected ? 0 : -1);
     }
+  });
+
+  // Друга половина патерну. Тест вище пінить roving tabindex, і саме через
+  // це відсутність стрілок довго виглядала свідомою: `tabIndex={-1}` на
+  // неактивних + жодного onKeyDown = неактивні модулі недосяжні з
+  // клавіатури взагалі (Tab пропускає, стрілки не працюють). Знахідка
+  // PR-C5, аудит 2026-09-13. Половини мусять їхати разом.
+  it("стрілки ходять по модулях і перемикають їх", () => {
+    render(<ModuleSwitcher active="finyk" />);
+    const tablist = screen.getByRole("tablist");
+    const tabs = within(tablist).getAllByRole("tab");
+    const first = tabs[0]!;
+    const second = tabs[1]!;
+
+    first.focus();
+    fireEvent.keyDown(first, { key: "ArrowRight" });
+
+    expect(document.activeElement).toBe(second);
+    expect(openHubModule).toHaveBeenCalledTimes(1);
+  });
+
+  it("Home і End доводять до країв ряду", () => {
+    render(<ModuleSwitcher active="finyk" />);
+    const tabs = within(screen.getByRole("tablist")).getAllByRole("tab");
+
+    tabs[0]!.focus();
+    fireEvent.keyDown(tabs[0]!, { key: "End" });
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]!);
+
+    fireEvent.keyDown(tabs[tabs.length - 1]!, { key: "Home" });
+    expect(document.activeElement).toBe(tabs[0]!);
   });
 });
 

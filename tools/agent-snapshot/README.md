@@ -1,11 +1,11 @@
 # tools/agent-snapshot
 
-> **Last touched:** 2026-08-30 by @Skords-01. **Next review:** 2026-12-13.
+> **Last touched:** 2026-09-23 by @claude (DG-21: CI-секція без `gh`). **Next review:** 2026-12-31.
 > **Status:** Active
 
 Single-file Node script that gathers a "dynamic context" report for Sergeant
 agents at session start. See
-[`docs/04-governance/adr/0071-dynamic-agent-snapshot.md`](../../docs/04-governance/adr/0071-dynamic-agent-snapshot.md)
+[`docs/governance/adr/0071-dynamic-agent-snapshot.md`](../../docs/governance/adr/0071-dynamic-agent-snapshot.md)
 for the full design.
 
 ## Usage
@@ -19,10 +19,10 @@ pnpm snapshot --refresh                  # bypass 15-min cache
 ## Sections (always present, gracefully degraded)
 
 1. Repo (branch, base, worktree count, dirty state)
-2. CI last run on main (via `gh api …/check-runs`)
+2. CI last run on main - статичний вказівник на GitHub Actions (ADR-0102) і команду `gh run list --branch main -L 5`, без живого запиту; main↔prod дрейф дивись через `pnpm deploy:status`
 3. Budgets (apps/web JS/CSS bundle, Lighthouse CI)
 4. Open entropy-janitor issues (via `gh issue list --label 'entropy-janitor/*'`)
-5. Recent PR-ledger entries (read from `docs/04-governance/pr-ledger/index.json`)
+5. Recent PR-ledger entries (read from `docs/governance/pr-ledger/index.json`)
 6. Hard-rule drift warnings (registry vs. per-rule file count)
 7. Active initiative deadlines (next 30 days, `TODO(NNNN-...): YYYY-MM-DD`)
 8. Agent hints (last commit metadata, AI-marker scan, branch → suggested skill)

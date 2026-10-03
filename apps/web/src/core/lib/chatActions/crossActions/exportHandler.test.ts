@@ -12,6 +12,7 @@ vi.mock("../../../../modules/nutrition/lib/nutritionStorage", () => ({
 }));
 vi.mock("../fizrukActions/shared", () => ({
   readFizrukWorkouts: vi.fn(),
+  readFizrukDailyLog: vi.fn(() => []),
 }));
 vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
   getCachedFinykMonoMirrorState: vi.fn(),
@@ -102,7 +103,7 @@ describe("exportModuleData", () => {
       name: "export_module_data",
       input: { module: "nutrition" },
     });
-    expect(result).toContain("Експорт Харчування");
+    expect(result).toContain("Експорт Їжа");
   });
 
   it("returns JSON format when requested", () => {

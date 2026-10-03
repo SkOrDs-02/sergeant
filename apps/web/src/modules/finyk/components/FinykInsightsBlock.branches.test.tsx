@@ -48,7 +48,11 @@ vi.mock("../hooks/useRecurringDetectedInsight", () => ({
 
 import { FinykInsightsBlock } from "./FinykInsightsBlock";
 
-function insight(id: string, action: Insight["action"]): Insight {
+function insight(
+  id: string,
+  action: Insight["action"],
+  showOn: Insight["showOn"] = "module",
+): Insight {
   return {
     id,
     module: "finyk",
@@ -56,7 +60,7 @@ function insight(id: string, action: Insight["action"]): Insight {
     subtitle: "Branch coverage",
     askAiPrompt: `Питання по ${id}`,
     action,
-    showOn: "module",
+    showOn,
   };
 }
 
@@ -114,5 +118,32 @@ describe("FinykInsightsBlock activation branches", () => {
     fireEvent.click(screen.getByText("Insight callback"));
     expect(fn).toHaveBeenCalledTimes(1);
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+
+  // finyk-observations spec, PR-1: BudgetAlertsList already shows every
+  // overrun category on this same Overview screen; the hub-only insight
+  // card duplicated its worst row. Regression guard for that de-dupe.
+  it("hides a hub-only insight (budget-overrun) but keeps module/both ones", () => {
+    overrunInsight = insight(
+      "overrun",
+      { type: "navigate", path: "/finyk/budgets" },
+      "hub",
+    );
+    coffeeInsight = insight(
+      "coffee",
+      { type: "navigate", path: "/finyk/analytics" },
+      "both",
+    );
+    recurringInsight = insight(
+      "recurring",
+      { type: "navigate", path: "/finyk/assets" },
+      "module",
+    );
+
+    renderBlock();
+
+    expect(screen.queryByText("Insight overrun")).not.toBeInTheDocument();
+    expect(screen.getByText("Insight coffee")).toBeInTheDocument();
+    expect(screen.getByText("Insight recurring")).toBeInTheDocument();
   });
 });

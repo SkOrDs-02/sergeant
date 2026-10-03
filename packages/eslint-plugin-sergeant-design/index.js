@@ -879,7 +879,7 @@ const noAnthropicKeyInLogs = {
 //      TSAsExpression whose typeAnnotation is TSUnknownKeyword)
 //
 // Test files are exempt via eslint.config.js `ignores`.
-// Existing violations are allowlisted (see docs/tech-debt/frontend.md).
+// Existing violations are allowlisted (see docs/work/specs/tech-debt/frontend.md).
 
 const NO_STRICT_BYPASS_MESSAGES = {
   tsExpectError:
@@ -1012,7 +1012,7 @@ const FINYK_TOKEN_KEY_VALUES = new Set([
   "finyk_token",
   "finyk_token_remembered",
   // PrivatBank merchant credentials. Added after the beta-readiness audit
-  // (`docs/90-work/planning/specs/beta-security-readiness.md`, F1) found the
+  // (`docs/work/specs/beta-security-readiness.md`, F1) found the
   // merchant token sitting in cleartext `localStorage`: the Monobank fix had
   // been locked down by this very rule, but the rule was written narrowly
   // around Monobank's key names, so PrivatBank walked straight past it.
@@ -1127,7 +1127,7 @@ const noFinykTokenInStorage = {
 // `no-cyrillic-jsx-literal` — flag inline cyrillic JSX text/attrs
 // ─────────────────────────────────────────────────────────────────────────
 //
-// docs/i18n/readiness.md describes a "lightweight foundation": every UA
+// docs/design/i18n/readiness.md describes a "lightweight foundation": every UA
 // string the user sees should live in `apps/web/src/shared/i18n/uk.ts`
 // as `messages.<group>.<key>`. The day-to-day code references that key
 // instead of inlining a literal. When/if the project adds runtime-i18n
@@ -1166,7 +1166,7 @@ const noFinykTokenInStorage = {
 const NO_CYRILLIC_JSX_LITERAL_MESSAGE =
   "JSX-літерал з кирилицею має посилатися на messages-каталог. " +
   "Винеси рядок у `apps/web/src/shared/i18n/uk.ts` (group `messages.<group>.<key>`) " +
-  "і використовуй `messages.<group>.<key>` тут. Див. `docs/i18n/readiness.md`.";
+  "і використовуй `messages.<group>.<key>` тут. Див. `docs/design/i18n/readiness.md`.";
 
 const RX_CYRILLIC = /[\u0400-\u04FF]/;
 
@@ -1488,7 +1488,7 @@ const forbidShellOnlyFeature = {
 // Звіт через `messageId: "hashRouter"` з посиланням на initiative 0006.
 
 const NO_HASH_ROUTER_MESSAGE =
-  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md.";
+  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Ініціативу 0006 закрито й заархівовано — розбір у git history.";
 
 const HASH_ROUTER_HOOK_NAMES = new Set(["useHashRouter", "useHashRoute"]);
 
@@ -1766,7 +1766,7 @@ const NO_RAW_REQ_IN_PINO_LOG_MESSAGE =
   "Не передавай raw `{{name}}` у `{{method}}()` — це ризик протекти Authorization/Cookie/password/email/session-token " +
   "у Pino-output або Sentry breadcrumbs. Зроби явний destructure: `logger.{{method}}({ field: req.url, status: res.statusCode }, 'msg')`. " +
   "Pino redact-paths у `apps/server/src/obs/logger.ts` ловлять відомі поля, але raw-обʼєкт лишає контракт неявним — " +
-  "нові sensitive-поля зʼявляються без redaction. Див. `docs/security/logging-redaction-policy.md`.";
+  "нові sensitive-поля зʼявляються без redaction. Див. `docs/governance/security/logging-redaction-policy.md`.";
 
 function isPinoLoggerReceiver(callee) {
   if (
@@ -1839,7 +1839,7 @@ const noRawReqInPinoLog = {
     type: "problem",
     docs: {
       description:
-        "Forbid passing raw `req` / `res` / `req.headers` / `req.body` (or shorthand `{ req }` / `{ res }`) to Pino logger methods. Pino redact-paths catch known fields but raw-object logging leaks newly added sensitive fields. See `docs/security/logging-redaction-policy.md`.",
+        "Forbid passing raw `req` / `res` / `req.headers` / `req.body` (or shorthand `{ req }` / `{ res }`) to Pino logger methods. Pino redact-paths catch known fields but raw-object logging leaks newly added sensitive fields. See `docs/governance/security/logging-redaction-policy.md`.",
     },
     schema: [],
     messages: { rawReq: NO_RAW_REQ_IN_PINO_LOG_MESSAGE },
@@ -1909,7 +1909,7 @@ const noRawReqInPinoLog = {
 const NO_CONSOLE_PII_REGEX = /email|phone|password|token|secret|auth/i;
 const NO_CONSOLE_PII_METHODS = new Set(["log", "error", "warn", "info"]);
 const NO_CONSOLE_PII_MESSAGE =
-  "Do not pass PII / secret-shaped values (email, phone, password, token, secret, auth) to console.{log,error,warn,info}. Sentry, DevTools, and browser extensions all tap into console output. See docs/audits/2026-05-13-security-observability-roast.md § S2.";
+  "Do not pass PII / secret-shaped values (email, phone, password, token, secret, auth) to console.{log,error,warn,info}. Sentry, DevTools, and browser extensions all tap into console output. Розбір — у git history аудиту 2026-05-13-security-observability-roast § S2.";
 
 function isConsolePiiMethodCall(callee) {
   return (
@@ -2051,7 +2051,7 @@ const noConsolePii = {
 //   - Strategy `kyivMondayISO` uses `Intl.DateTimeFormat` directly and is
 //     itself the recommended pattern.
 //
-// See docs/04-governance/governance/rules/kyiv-time-helpers.md for the full
+// See docs/governance/governance/rules/kyiv-time-helpers.md for the full
 // doctrine table, the suppress-comment contract and the audit cross-ref.
 const PREFER_KYIV_TIME_MESSAGE =
   "Host-local date part ({{name}}) — make the day-boundary doctrine explicit (ADR-0078). " +
@@ -2059,7 +2059,7 @@ const PREFER_KYIV_TIME_MESSAGE =
   "(getKyivDateParts, getKyivDayKey, isSameKyivDay). The PERSONAL day (habit tick, meal " +
   "log, daily entry, streak) belongs to the DEVICE — that is canonical, so keep the host " +
   "getters and suppress with `-- ADR-0078: <why the device owns this day>`. " +
-  "See docs/04-governance/governance/rules/kyiv-time-helpers.md.";
+  "See docs/governance/governance/rules/kyiv-time-helpers.md.";
 
 const HOST_TIME_GETTERS = new Set([
   "getFullYear",
@@ -2131,12 +2131,12 @@ const preferKyivTime = {
 //
 // Rollout: `warn` зараз → `error` через 1 sprint після підтвердження, що
 // усі callsite-и у PR-09 + PR-10 мігровані. Дивись AGENTS.md §Hard rules
-// та docs/04-governance/governance/rules/prefer-parse-body.md.
+// та docs/governance/governance/rules/prefer-parse-body.md.
 
 const PREFER_PARSE_BODY_MESSAGE =
-  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/04-governance/governance/rules/prefer-parse-body.md.";
+  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/governance/governance/rules/prefer-parse-body.md.";
 const PREFER_PARSE_QUERY_MESSAGE =
-  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/04-governance/governance/rules/prefer-parse-body.md.";
+  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/governance/governance/rules/prefer-parse-body.md.";
 
 // Paths that are allowed to import/call validateBody — the definition file
 // and its test.
@@ -2150,7 +2150,7 @@ const preferParseBodyOverValidateBody = {
       description:
         "Prefer throw-based parseBody/parseQuery over sentinel validateBody/validateQuery in Express handlers",
       recommended: false,
-      url: "docs/04-governance/governance/rules/prefer-parse-body.md",
+      url: "docs/governance/governance/rules/prefer-parse-body.md",
     },
     schema: [],
     messages: {
@@ -2286,7 +2286,7 @@ const RAW_STORAGE_HELPER_NAMES = new Set([
 const NO_RAW_STORAGE_KEY_MESSAGE =
   "Raw localStorage key literal '{{key}}' — use `STORAGE_KEYS.<NAME>` from `@sergeant/shared` instead. " +
   "Inline string literals drift from the registry when keys are renamed/deprecated. " +
-  "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 5. " +
+  "Розбір — у git history аудиту 2026-05-13-consolidated-page-audit § Theme 5. " +
   "Burn-down: 2026-Q3.";
 
 function extractStringValue(node) {
@@ -2366,7 +2366,7 @@ const noRawStorageKey = {
 
 // ─── no-adhoc-metric-aggregation ────────────────────────────────────────
 //
-// Реєстр метрик (`docs/02-engineering/architecture/metric-registry.md`),
+// Реєстр метрик (`docs/engineering/architecture/metric-registry.md`),
 // стадія 5. Аудит показав, що та сама метрика мала 4-6 незалежних
 // реалізацій і числа розходились у користувача на різних екранах в одну
 // хвилину. Cutover звів їх на канонічні функції доменних пакетів; це
@@ -2395,7 +2395,7 @@ const ADHOC_METRIC_MESSAGE =
   "Це копія `getTxStatAmount` без сплітів — число розійдеться з рештою екранів. " +
   "Використай канонічну функцію з `@sergeant/finyk-domain` " +
   "(`getTxStatAmount`, `calcCategorySpent`, `calcFinykPeriodAggregate`). " +
-  "Реєстр метрик: docs/02-engineering/architecture/metric-registry.md.";
+  "Реєстр метрик: docs/engineering/architecture/metric-registry.md.";
 
 /** `<expr>.amount / 100` — інлайн-перетворення копійок у гривні. */
 function isMinorAmountDivision(node) {
@@ -2513,7 +2513,8 @@ const noAdhocMetricAggregation = {
 // ─────────────────────────────────────────────────────────────────────────
 // ── require-toast-error-action ──────────────────────────────────────────
 //
-// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`.
+// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`
+// (на мобілці — `{ label, onPress }`, різниця лише в обробнику).
 //
 // Історія. Правило з такою ж назвою існувало до ADR-0081 і було retired
 // разом із рештою «естетичних» AST-правил — з тезою, що коректність дії
@@ -2567,7 +2568,13 @@ function hasToastAction(args) {
           ? String(key.value)
           : null;
     if (name === "label") hasLabel = true;
-    if (name === "onClick") hasClick = true;
+    // `onPress` — мобільний еквівалент. Обидві поверхні мають ОДНАКОВИЙ
+    // API тоста (`error(msg, duration?, action?)`), але різний обробник
+    // натискання: у вебі `onClick` (DOM), у React Native `onPress`.
+    // Доти правило знало лише веб-форму, тож на мобілці воно не змогло б
+    // визнати жодної коректної дії — і глоб, розширений без цієї правки,
+    // валив би навіть правильний код (знахідка при закритті PR-X3).
+    if (name === "onClick" || name === "onPress") hasClick = true;
   }
   return hasLabel && hasClick;
 }
@@ -2750,14 +2757,18 @@ const rawMotionValue = {
 
 // ─── no-opacity-on-text-token ──────────────────────────────────────────
 //
-// Анти-слоп, атрактор 9 (аудит 2026-08-08). `--c-subtle` і `--c-muted`
-// підібрані так, щоб сидіти РІВНО на порозі WCAG AA — це записано в
-// `theme.css` прямим текстом («tertiary, WCAG AA ≥4.5:1 on
-// panel/panel-hi/bg»). Наслідок арифметичний, не смаковий: будь-яка
-// прозорість нижче 100% виводить такий текст під поріг.
+// Анти-слоп, атрактор 9 (аудит 2026-08-08). `--c-subtle` і `--c-muted` —
+// третинні тири з мінімальним запасом над порогом WCAG AA. Наслідок
+// арифметичний, не смаковий: будь-яка прозорість нижче 100% виводить
+// такий текст під поріг.
 //
-//   subtle #6b645d на фоні сторінки #ecebe7:
-//     100% → 4.88   /80 → 3.32   /70 → 2.76   /60 → 2.34
+//   subtle #605a54 на фоні сторінки #ecebe7:
+//     100% → 5.70   /80 → 3.72   /70 → 3.03   /60 → 2.53
+//
+// Числа перераховано 2026-09-11 після того, як обидва тони затемнили
+// (#6b645d → #605a54, #5c665f → #535c56): на порозі рівно вони стояли до
+// того, і саме через це «стіл і зона» поклали 11 маршрутів. Запас тепер
+// є, але його вистачає рівно на непрозорий текст: /80 усе одно нижче 4.5.
 //
 // Гейт контрасту (`packages/design-tokens/contrast.test.js`) цього не
 // ловить і не може: він перевіряє ЗНАЧЕННЯ токенів, а `/70` дописують
@@ -2769,7 +2780,7 @@ const rawMotionValue = {
 // Семантичні кольори (`success`/`danger`/`warning`/`info`) тут теж є —
 // вони ще темніші за subtle і так само не мають запасу під розведення.
 const OPACITY_ON_TEXT_TOKEN_MESSAGE =
-  "Прозорість на кольоровому токені тексту. Нейтральні токени підібрані рівно на порозі WCAG AA (subtle 4.88 на фоні сторінки), тож для них навіть /80 дає 3.3; `-strong` мають трохи запасу й тримаються до /80, але вже /70 їх валить. Бери тихіший ТОКЕН або `-strong` companion замість розведення. Винятки, де правило не застосовне, — hover-стан над правильною базою, вимкнений контрол і неозначальна іконка (поріг 3:1): познач їх `eslint-disable-next-line` з причиною. Заміри — анти-слоп §3.2, атрактор 9.";
+  "Прозорість на кольоровому токені тексту. Нейтральні токени мають мінімальний запас над порогом WCAG AA (subtle 5.7 на фоні сторінки), тож для них навіть /80 дає 3.7 — нижче 4.5; `-strong` мають трохи запасу й тримаються до /80, але вже /70 їх валить. Бери тихіший ТОКЕН або `-strong` companion замість розведення. Винятки, де правило не застосовне, — hover-стан над правильною базою, вимкнений контрол і неозначальна іконка (поріг 3:1): познач їх `eslint-disable-next-line` з причиною. Заміри — анти-слоп §3.2, атрактор 9.";
 
 // Суфікси обовʼязкові. Перша версія цього регексу дивилась лише на
 // голі корені й пропускала 18 місць із 60 — `text-danger-strong/80`,
@@ -2858,7 +2869,7 @@ const noRawTypeSize = {
 // `ukrainian-copy` — гейт tone-of-voice для UA-копії
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Канон: `docs/01-product/copy/style-guide.uk.md`. До 2026-08-26 він був
+// Канон: `docs/product/copy/style-guide.uk.md`. До 2026-08-26 він був
 // лише документом, і аудит копії показав, що без механічного гейта правила
 // дрейфують саме в найновішому коді: довге тире жило в чек-скані, bulk-
 // імпорті та Сільпо — тобто в тому, що писалося останнім.
@@ -2866,9 +2877,10 @@ const noRawTypeSize = {
 // Три перевірки, усі — про рядки, які бачить людина:
 //   1. EM_DASH — довге тире «—» у копії. §1.9: воно читається як «це писала
 //      машина». Виняток — самотнє «—» як плейсхолдер порожнього значення,
-//      бо там це символ, а не текст.
-//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини («Спробуйте»).
-//      §1.1: звертання лише на «ти».
+//      бо там це символ, а не текст. Сусід літерала (інтерполяція, операнд
+//      `+`, сусідній JSX-вузол) рахується як текст.
+//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини за закінченням
+//      («Спробуйте», «Введіть»). §1.1: звертання лише на «ти».
 //   3. FIRST_PERSON_PLURAL — «ми» у голосі продукту. §2.
 //
 // Що НЕ ловить: коментарі (ESLint не віддає їх як вузли), рядки без
@@ -2906,8 +2918,58 @@ const UKRAINIAN_COPY_MESSAGES = {
 const RX_EM_DASH_IN_COPY = /\S\s*—\s*\S/;
 const RX_FORMAL_PRONOUN =
   /(^|[\s"'`>(«])(Ви|Вас|Вам|Ваш[а-яіїєґ]*)([\s,.!?»]|$)/;
+// Імператив 2-ї множини ловиться за ЗАКІНЧЕННЯМ, не за списком (аудит копії
+// вебу 2026-09-23 §2.1). Список із 21 дієслова пропускав «Вставте»,
+// «Отримайте», «Зберігайте», «привʼязуйте», «затисніть», «використайте»:
+// сім живих порушень §1.1 у вебі, і жодне не екзотика. Форма стійка:
+// приголосна (разом із «й» та «ь») + «те» («спробуйте», «перевірте»,
+// «будьте») або «іть» («введіть», «натисніть»), необовʼязково зворотне
+// «-ся/-сь» («поверніться», «хвилюйтесь»). Голосна перед «те» навмисно НЕ
+// ловиться: це дієприкметники й порядкові середнього роду («відкрите»,
+// «закрите», «пʼяте») та 2-а множини теперішнього («маєте»), яку тримає
+// гілка «Ви». Щонайменше дві літери перед закінченням, щоб «те» й «оте»
+// не ловились. 3-я особа однини безпечна сама собою: вона закінчується на
+// «-ить/-їть» («стоїть», «говорить»), не на «-іть».
 const RX_IMPERATIVE_PLURAL =
-  /(^|[\s"'`>(«])(с|С)проб(уй|ій)те|(п|П)еревірте|(в|В)ведіть|(н|Н)атисніть|(о|О)беріть|(в|В)иберіть|(д|Д)одайте|(с|С)творіть|(з|З)ачекайте|(о|О)новіть|(з|З)аповніть|(у|У)війдіть|(о|О)чистіть|(з|З)мініть|(в|В)идаліть|(з|З)бережіть|(п|П)очніть|(в|В)імкніть|(в|В)имкніть|(п|П)оверніться|(х|Х)вилюйтесь/;
+  /(^|[\s"'`>(«])([А-ЯІЇЄҐа-яіїєґ][а-яіїєґʼ’']+(?:[бвгґджзйклмнпрстфхцчшщь]те|іть)(?:ся|сь)?)(?=[\s,.!?»…:;)"'`]|$)/;
+
+// Не-імперативи з тим самим хвостом. Замір 2026-09-23 по web, landing і
+// server дав рівно два живих: «навіть» (23 рядки) і «росте» з префіксами
+// («зросте», «виросте»; 4 рядки). Решта того самого класу, якого в копії
+// ще нема, але який нею буде: прикметники й дієприкметники середнього роду
+// з приголосною перед «те» і порядкові «четверте», «шосте».
+const IMPERATIVE_PLURAL_STOPLIST = new Set([
+  "навіть",
+  "просте",
+  "чисте",
+  "пусте",
+  "густе",
+  "часте",
+  "товсте",
+  "жовте",
+  "відверте",
+  "уперте",
+  "потерте",
+  "стерте",
+  "затерте",
+  "четверте",
+  "шосте",
+]);
+const RX_IMPERATIVE_PLURAL_STOP = /^[а-яіїєґ]{0,4}росте$/;
+
+/** Перше слово в наказовій формі множини поза стоп-списком, або null. */
+function findImperativePlural(text) {
+  const re = new RegExp(RX_IMPERATIVE_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const word = m[2];
+    const key = word.replace(/[ʼ’']/g, "").toLowerCase();
+    if (IMPERATIVE_PLURAL_STOPLIST.has(key)) continue;
+    if (RX_IMPERATIVE_PLURAL_STOP.test(key)) continue;
+    return word;
+  }
+  return null;
+}
 
 // «Ми» як займенник + характерні закінчення 1-ї особи множини теперішнього
 // й майбутнього часу. Коментарі сюди не потрапляють — правило ходить лише
@@ -2922,8 +2984,73 @@ const RX_IMPERATIVE_PLURAL =
 // («'Готово'») і англійські контракції, які до §1.10 стосунку не мають.
 const RX_APOSTROPHE = /[а-яіїєґА-ЯІЇЄҐ](['’])[а-яіїєґА-ЯІЇЄҐ]/;
 
+// Закінчення: -ємо/-емо (ідемо, радимо → ні, це -имо), -имо (робимо,
+// любимо), -їмо (боїмо-сь), плюс зворотні -мось/-мося (вчимося). До
+// 2026-09-16 -емо/-имо/-мось проходили повз (аудит 2026-09-15 § 6) — тобто
+// «робимо», «вчимося», «ідемо» правило не бачило, і саме такі рядки жили в
+// копі. Дві літери перед закінченням (перша може бути великою: «Ідемо»,
+// «Вчимося») — щоб «демо» (1 літера) не ловилось.
 const RX_FIRST_PERSON_PLURAL =
-  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґ]{2}(аємо|уємо|юємо|имемо|немо|ємо)(\s|[.,!?»…:;)]|$)/;
+  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґА-ЯІЇЄҐ][а-яіїєґ](аємо|уємо|юємо|имемо|немо|ємо|емо|имо|їмо)(сь|ся)?(\s|[.,!?»…:;)]|$)/;
+
+// Слова з тими самими закінченнями, які НЕ є дієсловами 1-ї множини:
+// прислівники на -емо/-имо («окремо», «видимо») і усталене привітання
+// «ласкаво просимо». Останнє — свідомий виняток: заміна привітання на
+// «Вітаю» — рішення founder-а, а не лінтера (аудит 2026-09-15 § 6).
+const FIRST_PERSON_PLURAL_ALLOWLIST = new Set([
+  "окремо",
+  "видимо",
+  "невидимо",
+  "незримо",
+  "невловимо",
+  "терпимо",
+  "нестерпимо",
+]);
+const FIRST_PERSON_PLURAL_ALLOWED_PHRASES = [/ласкаво\s+просимо/i];
+const RX_UA_LETTER = /[а-яіїєґА-ЯІЇЄҐʼ'’]/;
+
+/**
+ * Перший збіг 1-ї особи множини, що не потрапляє в allowlist. Дієслівна
+ * гілка регулярки ловить лише хвіст слова (дві літери + закінчення), тож
+ * для звірки з allowlist збіг розширюється до цілого слова.
+ */
+function findFirstPersonPlural(text) {
+  const re = new RegExp(RX_FIRST_PERSON_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[0] === "") {
+      re.lastIndex += 1;
+      continue;
+    }
+    if (m[3] === undefined) return m; // гілка «ми …» — allowlist не стосується
+    let start = m.index;
+    while (start > 0 && RX_UA_LETTER.test(text[start - 1])) start -= 1;
+    // `m[0]` тягне ще й завершальний символ межі (група 5 — пробіл або
+    // розділовий знак), тож відлік уперед мусить починатися ПЕРЕД ним.
+    // Без цього віднімання межа-пробіл «зʼїдалась», крок уперед бачив
+    // першу літеру НАСТУПНОГО слова і склеював два слова в одне: рядок
+    // «Окремо є ручне…» давав `окремоє`, якого в allowlist немає й бути
+    // не може. Наслідок — allowlist мовчки не працював для найчастішого
+    // випадку «слово + пробіл + слово», тобто майже завжди; спрацьовував
+    // лише тоді, коли за словом ішов розділовий знак у кінці рядка.
+    // Знайдено 2026-09-19 першим живим прогоном правила на лендінгу:
+    // чотири законні «окремо» (HroshiPage, TrenuvanniaPage ×2, DataPage)
+    // репортувались як 1-а особа множини.
+    const trailingBoundary = m[5] ?? "";
+    let end = m.index + m[0].length - trailingBoundary.length;
+    while (end < text.length && RX_UA_LETTER.test(text[end])) end += 1;
+    const word = text
+      .slice(start, end)
+      .replace(/[^а-яіїєґА-ЯІЇЄҐ]/g, "")
+      .toLowerCase();
+    if (FIRST_PERSON_PLURAL_ALLOWLIST.has(word)) continue;
+    const phraseWindow = text.slice(Math.max(0, start - 12), end);
+    if (FIRST_PERSON_PLURAL_ALLOWED_PHRASES.some((rx) => rx.test(phraseWindow)))
+      continue;
+    return m;
+  }
+  return null;
+}
 
 // Непробільний сентинел на місці інтерполяції: каже «тут вираз МОЖЕ
 // віддати текст». Потрібен лише перевірці тире, яка дивиться на сусідів
@@ -2931,6 +3058,71 @@ const RX_FIRST_PERSON_PLURAL =
 // класи меж (`[\s"'`>(«]`, `[\s,.!?»…:;)]`), і чужий символ у них
 // зламав би збіг. Тому дві версії рядка, а не одна.
 const UA_EXPR_SENTINEL = "\u0001";
+
+// Той самий сентинел на КРАЯХ літерала, коли текст триває поза ним:
+// сусідній операнд `+` або сусід у JSX (аудит копії вебу 2026-09-23 §2.2).
+// `"…напишу сюди першим — " + "нічого робити не треба"`, `` `…` + ` — сервер
+// їх так і не отримав` ``, `{list}{" — витрати рахуватимуться…"}`: тире
+// стоїть на межі літерала, і `\S\s*—\s*\S` не бачить сусіда, бо той живе в
+// іншому вузлі. Ланцюжок `+` проходиться до кінця, тож `a + " — " + b` теж
+// рахується. Порожній JSXText (самі пробіли й переноси між елементами)
+// сусідом не вважається: JSX його не рендерить. Елемент масиву й аргумент
+// виклику сусідів не мають, це свідома межа: там склейка не гарантована.
+function edgeNeighbours(node) {
+  let left = false;
+  let right = false;
+  let child = node;
+  let parent = node.parent;
+  while (
+    parent &&
+    parent.type === "BinaryExpression" &&
+    parent.operator === "+"
+  ) {
+    if (parent.left === child) right = true;
+    else left = true;
+    child = parent;
+    parent = parent.parent;
+  }
+  if (parent && parent.type === "JSXExpressionContainer") {
+    child = parent;
+    parent = parent.parent;
+  }
+  if (
+    parent &&
+    (parent.type === "JSXElement" || parent.type === "JSXFragment")
+  ) {
+    const isContent = (n) => n.type !== "JSXText" || n.value.trim() !== "";
+    const i = parent.children.indexOf(child);
+    left = left || parent.children.slice(0, i).some(isContent);
+    right = right || parent.children.slice(i + 1).some(isContent);
+  }
+  return { left, right };
+}
+
+function withEdgeSentinels(node, text) {
+  const { left, right } = edgeNeighbours(node);
+  return (
+    (left ? UA_EXPR_SENTINEL : "") + text + (right ? UA_EXPR_SENTINEL : "")
+  );
+}
+
+// SQL у шаблонному літералі — не копія, і правило мусить це знати.
+//
+// Докстрінг вище обіцяє «що НЕ ловить: коментарі (ESLint не віддає їх як
+// вузли)». Для JS-коментарів це правда, а для SQL — ні: `-- Знімаємо
+// очікування…` живе ВСЕРЕДИНІ рядкового вузла, тож правило його бачить і
+// чесно рапортує 1-шу множини в тексті, який людина ніколи не побачить.
+// Знайдено заміром перед вмиканням правила на `apps/server` (2026-09-14):
+// з девʼяти влучань у копійних теках два були саме такі, обидва в
+// `waitlistBot.ts`.
+//
+// Скіпаємо ЦІЛИЙ літерал, а не вирізаємо з нього коментарі: запит — це від
+// початку до кінця машинний текст, і перевіряти в ньому тон голосу не має
+// сенсу ні в коментарі, ні поза ним. Межа вузька навмисно — літерал
+// мусить ПОЧИНАТИСЬ інструкцією SQL, тож звичайна копія, у якій випадково
+// трапилось слово `select`, під виняток не потрапляє.
+const RX_SQL_STATEMENT_START =
+  /^\s*(SELECT|INSERT|UPDATE|DELETE|WITH|CREATE|ALTER|DROP|TRUNCATE|BEGIN|COMMIT|ROLLBACK)\s/i;
 
 function ukrainianCopyViolations(text, emDashText = text) {
   if (!RX_CYRILLIC.test(text)) return [];
@@ -2943,15 +3135,14 @@ function ukrainianCopyViolations(text, emDashText = text) {
   if (pronoun) {
     out.push({ messageId: "formalVy", data: { found: pronoun[2] } });
   } else {
-    const verb = RX_IMPERATIVE_PLURAL.exec(text);
-    if (verb)
-      out.push({ messageId: "formalVy", data: { found: verb[0].trim() } });
+    const verb = findImperativePlural(text);
+    if (verb) out.push({ messageId: "formalVy", data: { found: verb } });
   }
   const apostrophe = RX_APOSTROPHE.exec(text);
   if (apostrophe) {
     out.push({ messageId: "apostrophe", data: { found: apostrophe[1] } });
   }
-  const plural = RX_FIRST_PERSON_PLURAL.exec(text);
+  const plural = findFirstPersonPlural(text);
   if (plural) {
     out.push({
       messageId: "firstPersonPlural",
@@ -2979,17 +3170,29 @@ const ukrainianCopy = {
             description:
               "Project-relative file paths (forward-slash) that are exempt.",
           },
+          allowFirstPersonPlural: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Paths (file or directory) where only the «ми» check is skipped: " +
+              "legal texts, data disclosure and support appeals speak for the team (канон §2).",
+          },
         },
         additionalProperties: false,
       },
     ],
   },
   create(context) {
-    const { allowlist = [] } = context.options[0] ?? {};
+    const { allowlist = [], allowFirstPersonPlural = [] } =
+      context.options[0] ?? {};
     const filename = (context.filename ?? context.getFilename() ?? "").replace(
       /\\/g,
       "/",
     );
+    // Запис — або конкретний файл (`endsWith`), або каталог (`.../<p>/...`).
+    // Без другої гілки виняток на теку мовчки не діяв би.
+    const matchesPath = (p) =>
+      filename.endsWith(p) || filename.includes(`${p}/`);
     if (
       /\.(test|spec)\.[jt]sx?$/.test(filename) ||
       filename.includes("/__tests__/") ||
@@ -3002,23 +3205,27 @@ const ukrainianCopy = {
       // не називаються.
       filename.includes("/tests/") ||
       /\.stories\.[jt]sx?$/.test(filename) ||
-      // Запис allowlist — або конкретний файл (`endsWith`), або каталог
-      // (`.../<p>/...`). Без другої гілки виняток на теку мовчки не діяв би.
-      allowlist.some((p) => filename.endsWith(p) || filename.includes(`${p}/`))
+      allowlist.some(matchesPath)
     ) {
       return {};
     }
+    // Legal, розкриття даних і звернення в підтримку говорять від «ми»
+    // (канон §2): там вимикається лише ця перевірка, решта діє.
+    const skipFirstPersonPlural = allowFirstPersonPlural.some(matchesPath);
     const report = (node, text, emDashText = text) => {
       for (const v of ukrainianCopyViolations(text, emDashText)) {
+        if (skipFirstPersonPlural && v.messageId === "firstPersonPlural")
+          continue;
         context.report({ node, messageId: v.messageId, data: v.data });
       }
     };
     return {
       Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
+        if (typeof node.value === "string")
+          report(node, node.value, withEdgeSentinels(node, node.value));
       },
       JSXText(node) {
-        report(node, node.value);
+        report(node, node.value, withEdgeSentinels(node, node.value));
       },
       // Літерал перевіряємо ЦІЛИМ, а не поквазі: тире часто стоїть саме
       // на межі інтерполяції, і поквазі там не збігається нічого.
@@ -3037,7 +3244,186 @@ const ukrainianCopy = {
       // Повідомляємо один раз — обидві версії йдуть в один виклик.
       TemplateLiteral(node) {
         const parts = node.quasis.map((q) => q.value.cooked ?? q.value.raw);
-        report(node, parts.join(" "), parts.join(UA_EXPR_SENTINEL));
+        if (RX_SQL_STATEMENT_START.test(parts[0] ?? "")) return;
+        report(
+          node,
+          parts.join(" "),
+          withEdgeSentinels(node, parts.join(UA_EXPR_SENTINEL)),
+        );
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// ── no-sentence-in-caption ──────────────────────────────────────────────
+//
+// `.text-style-caption` — найдрібніша роль шкали (12px), і за призначенням
+// вона несе МЕТУ: час, лічильник, одиницю, «оновлено щойно». Замір
+// 2026-09-02 (`scripts/scan-caption-sentences.mjs`) знайшов 190 місць, де
+// нею набрано речення, які людина читає, щоб зрозуміти, що робити, —
+// інструкції, порожні стани, застереження приватності. Розбір і рішення
+// по кожному типу тексту: `docs/design/design/density-hierarchy-spec.md`.
+//
+// ЧОМУ ГЕЙТ ЛЕГІТИМНИЙ, ХОЧА CODEMOD — НІ. Той самий документ (§4) тричі
+// записав, чим закінчується механічна ЗАМІНА за патерном тексту: вона не
+// бачить екрана і псує саме ті місця, де дрібний кегль правильний —
+// підказку під полем вводу, дисклеймер, компактну пару в картці. Гейт
+// нічого не замінює. Він спрацьовує в момент написання, коли автор
+// дивиться саме на цей екран і може відповісти за секунду; хибне
+// спрацювання коштує один коментар з причиною — і цей коментар сам стає
+// тим записом, якого зараз бракує.
+//
+// Поріг 60, а не 45 як у заміру, теж свідомо: замір має перелічити всіх
+// кандидатів (краще зайві), гейт має не заважати (краще пропустити).
+// Різні ціни помилки — різні числа.
+//
+// ЧОГО ПРАВИЛО НЕ ЛОВИТЬ І НЕ МАЄ: тіла зі словника (`{m.section.body}` —
+// літерала в JSX немає), склейки з інтерполяцією, довгий текст у `label`.
+// Половину заміру дає саме словник, і закрити її статичним аналізом JSX
+// неможливо — для цього є скрипт заміру.
+const CAPTION_SENTENCE_MIN = 60;
+const RX_CAPTION_CYRILLIC = /[А-Яа-яЇїІіЄєҐґ]/;
+const CAPTION_SUPPRESSION_LINES = 6;
+// Глушник — саме КАНОНІЧНИЙ маркер, той самий, що вимагає
+// `ai-marker-syntax` вище: якір на початку рядка коментаря (після `/`,
+// `*`, пробілів) плюс двокрапка з пробілом. Без якоря й двокрапки
+// глушила б будь-яка згадка — `// додати AI-NOTE колись` прибирав би
+// попередження, не давши жодної причини, тобто рівно навпаки до задуму:
+// сенс гейта в тому, що поруч ЛИШАЄТЬСЯ записана причина.
+const CAPTION_SUPPRESSION_RE = /^[\s/*]*AI-(NOTE|DANGER):\s/;
+
+/** Збирає рядкові частини `className`, включно з аргументами `cn(...)`. */
+function collectClassNameStrings(attrValue) {
+  const out = [];
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "Literal" && typeof node.value === "string") {
+      out.push(node.value);
+      return;
+    }
+    if (node.type === "TemplateLiteral") {
+      for (const q of node.quasis) out.push(q.value.cooked ?? q.value.raw);
+      for (const e of node.expressions) walk(e);
+      return;
+    }
+    if (node.type === "JSXExpressionContainer") {
+      walk(node.expression);
+      return;
+    }
+    if (node.type === "CallExpression") {
+      for (const a of node.arguments) walk(a);
+      return;
+    }
+    if (node.type === "ConditionalExpression") {
+      walk(node.consequent);
+      walk(node.alternate);
+      return;
+    }
+    if (node.type === "LogicalExpression") {
+      walk(node.left);
+      walk(node.right);
+      return;
+    }
+    if (node.type === "ArrayExpression") {
+      for (const e of node.elements) walk(e);
+      return;
+    }
+    if (node.type === "ObjectExpression") {
+      for (const p of node.properties) {
+        if (p.type === "Property" && p.key) walk(p.key);
+      }
+    }
+  };
+  walk(attrValue);
+  return out;
+}
+
+const noSentenceInCaption = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Речення в ролі `.text-style-caption` (12px) — підніми до `.text-style-body`, " +
+        "або поясни коментарем AI-NOTE / AI-DANGER, чому дрібний кегль тут правильний.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: { minLength: { type: "number" } },
+        additionalProperties: false,
+      },
+    ],
+    messages: {
+      sentence:
+        "Речення ({{len}} знаків) у ролі `text-style-caption` (12px). Це найдрібніша роль шкали, " +
+        "і вона для мети — часу, лічильника, одиниці. Текст, який читають, набирай `text-style-body` " +
+        "(вага 400 лишається, тон не змінюється). Якщо кегль тут правильний — підказка під контролом, " +
+        "дисклеймер, компактна пара в картці — постав поруч коментар AI-NOTE з причиною. " +
+        "Розбір: docs/design/design/density-hierarchy-spec.md §4.",
+    },
+  },
+  create(context) {
+    const options = context.options[0] || {};
+    const minLength = options.minLength ?? CAPTION_SENTENCE_MIN;
+    const filename = (context.filename || context.getFilename() || "").replace(
+      /\\/g,
+      "/",
+    );
+    if (
+      /\.test\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
+      /(^|\/)__tests__\//.test(filename) ||
+      /\.stories\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
+      // Внутрішня демо-сторінка дизайн-системи: там `caption` подекуди сам
+      // є предметом показу, і в прод-збірку вона не входить.
+      /(^|\/)DesignShowcase\//.test(filename)
+    ) {
+      return {};
+    }
+    const sourceCode = context.sourceCode ?? context.getSourceCode();
+
+    /** Канонічний `AI-NOTE:` / `AI-DANGER:` не далі кількох рядків над вузлом. */
+    function hasSuppression(node) {
+      const line = node.loc.start.line;
+      return sourceCode.getAllComments().some((c) => {
+        if (c.loc.end.line >= line) return false;
+        if (line - c.loc.end.line > CAPTION_SUPPRESSION_LINES) return false;
+        // Блоковий коментар — багаторядковий; маркер може стояти на
+        // будь-якому його рядку, але щоразу на ПОЧАТКУ рядка.
+        return c.value.split("\n").some((l) => CAPTION_SUPPRESSION_RE.test(l));
+      });
+    }
+
+    return {
+      JSXOpeningElement(node) {
+        const classAttr = node.attributes.find(
+          (a) =>
+            a.type === "JSXAttribute" && a.name && a.name.name === "className",
+        );
+        if (!classAttr || !classAttr.value) return;
+        const classes = collectClassNameStrings(classAttr.value).join(" ");
+        if (!classes.includes("text-style-caption")) return;
+
+        const element = node.parent;
+        if (!element || !Array.isArray(element.children)) return;
+
+        // Тільки ПРЯМІ текстові діти: вкладений вузол має власну роль,
+        // і його кегль — питання до нього, не до цього вузла.
+        const text = element.children
+          .filter((c) => c.type === "JSXText")
+          .map((c) => c.value)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text.length < minLength) return;
+        if (!RX_CAPTION_CYRILLIC.test(text)) return;
+        if (hasSuppression(node)) return;
+
+        context.report({
+          node,
+          messageId: "sentence",
+          data: { len: String(text.length) },
+        });
       },
     };
   },
@@ -3046,6 +3432,7 @@ const ukrainianCopy = {
 const plugin = {
   rules: {
     "ukrainian-copy": ukrainianCopy,
+    "no-sentence-in-caption": noSentenceInCaption,
     "no-opacity-on-text-token": noOpacityOnTextToken,
     "no-raw-type-size": noRawTypeSize,
     "no-raw-tracked-storage": noRawTrackedStorage,

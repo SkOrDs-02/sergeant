@@ -14,7 +14,10 @@ import { MemoryRouter } from "react-router-dom";
  *
  * - client-side zod валідація (порожні / невалідні поля → inline помилки)
  * - happy path login → toast "Вхід виконано"
- * - happy path register → celebration achievement
+ * - happy path register → `register()` викликається з правильними значеннями
+ *   (мертвий `useCelebration` тут прибрано аудитом O1 2026-09-11 — тригер
+ *   у `RegisterForm` рендерився в іншому інстансі хука в `AuthPage`, тож
+ *   святкування не показувалось НІКОЛИ)
  * - server-помилка через `authError` (не дублюється form.serverError)
  * - перемикач режиму (login ↔ register) скидає поля
  *
@@ -56,15 +59,6 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
-const achievementMock = vi.fn();
-vi.mock("@shared/components/ui/CelebrationModal", () => ({
-  useCelebration: () => ({
-    achievement: achievementMock,
-    CelebrationComponent: null,
-  }),
-  CelebrationModal: () => null,
-}));
-
 import { AuthPage } from "./AuthPage";
 
 beforeEach(() => {
@@ -75,7 +69,6 @@ beforeEach(() => {
   requestPasswordResetMock.mockReset();
   setAuthErrorMock.mockReset();
   toastSuccessMock.mockReset();
-  achievementMock.mockReset();
   authErrorState = null;
 });
 
@@ -151,7 +144,7 @@ describe("AuthPage — login mode", () => {
 
   it("does NOT toast success when login() returns false", async () => {
     loginMock.mockResolvedValue(false);
-    authErrorState = "Невірний пароль";
+    authErrorState = "Неправильний пароль";
     render(
       <MemoryRouter>
         <AuthPage />
@@ -175,7 +168,7 @@ describe("AuthPage — login mode", () => {
     expect(
       screen
         .getAllByRole("alert")
-        .some((el) => el.textContent?.includes("Невірний пароль")),
+        .some((el) => el.textContent?.includes("Неправильний пароль")),
     ).toBe(true);
   });
 });
@@ -230,9 +223,6 @@ describe("AuthPage — register mode", () => {
         "longenoughpw",
         "bob",
       );
-    });
-    await waitFor(() => {
-      expect(achievementMock).toHaveBeenCalled();
     });
   });
 
@@ -510,7 +500,7 @@ describe("AuthPage — прапорець соцвходу", () => {
     vi.unstubAllEnvs();
   });
 
-  it("за замовчуванням показує Google і Apple", () => {
+  it("за замовчуванням показує Google, але не пропонує неналаштований Apple", () => {
     render(
       <MemoryRouter>
         <AuthPage />
@@ -520,6 +510,18 @@ describe("AuthPage — прапорець соцвходу", () => {
     expect(
       screen.queryByRole("button", { name: /Увійти через Google/ }),
     ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Apple/ })).toBeNull();
+  });
+
+  it("показує Apple лише за явного production-прапорця", () => {
+    vi.stubEnv("VITE_APPLE_LOGIN_ENABLED", "true");
+
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
     expect(screen.queryByRole("button", { name: /Apple/ })).toBeTruthy();
   });
 

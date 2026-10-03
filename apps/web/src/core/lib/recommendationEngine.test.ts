@@ -46,7 +46,11 @@ vi.mock("../../modules/finyk/lib/monoMirrorReader", () => {
 // Route those seeds into the warm caches so the existing fixtures keep working
 // unchanged; every other key (finyk_*) stays real localStorage. Nutrition log +
 // prefs accumulate because the seeder replaces the whole cache on each call.
-let nutritionSeed: { log?: unknown; prefs?: unknown } = {};
+let nutritionSeed: {
+  log?: unknown;
+  prefs?: unknown;
+  goalPeriods?: unknown;
+} = {};
 
 function setLS(key: string, value: unknown) {
   switch (key) {
@@ -94,6 +98,27 @@ function setLS(key: string, value: unknown) {
       return;
     case "nutrition_prefs_v1":
       nutritionSeed.prefs = value;
+      nutritionSeed.goalPeriods = (() => {
+        const prefs = value as {
+          dailyTargetKcal?: number | null;
+          dailyTargetProtein_g?: number | null;
+        };
+        if (!(prefs.dailyTargetKcal || prefs.dailyTargetProtein_g)) return [];
+        return [
+          {
+            id: "test-goal",
+            effectiveFrom: "2000-01-01",
+            kcal: prefs.dailyTargetKcal ?? null,
+            proteinG: prefs.dailyTargetProtein_g ?? null,
+            fatG: null,
+            carbsG: null,
+            waterMl: null,
+            origin: "manual",
+            createdAt: "2000-01-01T00:00:00.000Z",
+            deletedAt: null,
+          },
+        ];
+      })();
       __setNutritionSqliteCacheForTests(
         nutritionSeed as unknown as Parameters<
           typeof __setNutritionSqliteCacheForTests
@@ -121,7 +146,7 @@ function clearAll() {
 // Y/M/D), so every time-gated rule — 21:00 streak-at-risk, 13:00
 // no-meals-today, the Monday 07:00–12:00 weekly digest — depends on the
 // host timezone. CI runs in `Europe/Kyiv` (the repo's domain timezone, see
-// docs/02-engineering/architecture/domain-invariants.md), where a UTC `…Z`
+// docs/engineering/architecture/domain-invariants.md), where a UTC `…Z`
 // literal lands +2/+3 h off and trips these gate boundaries (e.g. 22:00Z →
 // 01:00 Kyiv, 09:00Z → 12:00 Kyiv). Anchoring from local components keeps
 // the engine's local-time math identical in any host TZ — a UTC dev box and
@@ -793,7 +818,7 @@ describe("generateRecommendations", () => {
     const recs = generateRecommendations();
     const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
     expect(eveningRec).toBeDefined();
-    expect(eveningRec!.title).toContain("1 звичок ще не виконано");
+    expect(eveningRec!.title).toContain("1 звичка ще не виконано");
     expect(eveningRec!.priority).toBe(65);
   });
 
@@ -834,7 +859,7 @@ describe("generateRecommendations", () => {
     const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
     expect(atRisk).toBeDefined();
     expect(atRisk!.priority).toBe(95);
-    expect(atRisk!.title).toContain("під загрозою");
+    expect(atRisk!.title).toContain("може перерватись");
   });
 
   it("routine_streak_at_risk використовує правильну форму множини для 1 звички", () => {
@@ -881,9 +906,67 @@ describe("generateRecommendations", () => {
     const recs = generateRecommendations();
     const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
     expect(atRisk).toBeDefined();
-    // remaining === 3 → "звичок" (plural)
-    expect(atRisk!.body).toContain("3 звичок");
+    // remaining === 3 → "few" ("звички"), не бінарна англійська "звичок"
+    expect(atRisk!.body).toContain("3 звички");
   });
+
+  // Українська плюралізація — три форми (one/few/many), не бінарна «1 vs
+  // N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("звичок"), 21
+  // повертається до "one" ("звичка").
+  it.each([
+    [1, "звичка"],
+    [2, "звички"],
+    [5, "звичок"],
+    [11, "звичок"],
+    [21, "звичка"],
+  ])(
+    "routine_evening_reminder uses the correct plural form for N=%i (%s)",
+    (n, form) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(localClock(2026, 4, 27, 19));
+
+      const habits = Array.from({ length: n }, (_, i) => ({ id: `h${i}` }));
+      setLS("hub_routine_v1", { habits, completions: {} });
+
+      const recs = generateRecommendations();
+      const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
+      expect(eveningRec).toBeDefined();
+      expect(eveningRec!.title).toBe(`${n} ${form} ще не виконано сьогодні`);
+    },
+  );
+
+  it.each([
+    [1, "звичка"],
+    [2, "звички"],
+    [5, "звичок"],
+    [11, "звичок"],
+    [21, "звичка"],
+  ])(
+    "routine_streak_at_risk uses the correct plural form for N=%i (%s)",
+    (n, form) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(localClock(2026, 4, 27, 22));
+
+      const habits = Array.from({ length: n }, (_, i) => ({ id: `h${i}` }));
+      const completions: Record<string, string[]> = {};
+      for (const h of habits) {
+        completions[h.id] = [];
+        for (let i = 1; i <= 7; i++) {
+          const d = localClock(2026, 4, 27, 22);
+          d.setDate(d.getDate() - i);
+          const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          completions[h.id]!.push(dk);
+        }
+      }
+
+      setLS("hub_routine_v1", { habits, completions });
+
+      const recs = generateRecommendations();
+      const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
+      expect(atRisk).toBeDefined();
+      expect(atRisk!.body).toContain(`${n} ${form}`);
+    },
+  );
 
   it("НЕ генерує streak_at_risk якщо серія < 7 днів", () => {
     vi.useFakeTimers();
@@ -1263,7 +1346,7 @@ describe("generateRecommendations", () => {
     expect(Array.isArray(recs)).toBe(true);
   });
 
-  it("обробляє порожній масив транзакцій", () => {
+  it("обробляє порожній масив операцій", () => {
     setLS("finyk_tx_cache", { txs: [] });
     setLS("finyk_budgets", [
       { id: "b1", type: "limit", categoryId: "food", limit: 1000 },

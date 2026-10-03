@@ -105,14 +105,23 @@ afterEach(() => {
 
 describe("buildMemoryDeleteHandler — 400 на невалідний id", () => {
   it("не звертається до pool.connect() взагалі", async () => {
+    // Express 5 forwards a rejected async handler straight to the central
+    // `errorHandler` (no `asyncHandler` wrapper needed — see errorHandler.ts).
+    // This unit test asserts the thrown `ValidationError` shape directly; the
+    // `{ error, message, code, requestId }` wire contract that shape maps to
+    // is covered by errorHandler.test.ts.
     const client = makeClient();
     const pool = makePool(client);
     const handler = buildMemoryDeleteHandler(pool);
     const res = makeRes();
 
-    await handler(makeReq("user-1", "not-a-number"), res);
-
-    expect(res.statusCode).toBe(400);
+    await expect(
+      handler(makeReq("user-1", "not-a-number"), res),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: "VALIDATION",
+      message: "invalid_id",
+    });
     expect(pool.connect).not.toHaveBeenCalled();
   });
 });

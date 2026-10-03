@@ -1,14 +1,21 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
    Cold-cache fallback читає retired finyk-ключі
    (finyk_hidden_txs / finyk_tx_cats / finyk_recv / finyk_excluded_stat_txs /
-   finyk_tx_splits / finyk_custom_cats_v1) напряму — це і є призначення
-   модуля: дашбордні агрегатори працюють поза mounted-хуком useStorage.
-   Канонічне джерело — SQLite (див. AI-CONTEXT нижче); LS лишається лише на
-   перший кадр, поки кеш холодний. Ключі в burn-down 2026-Q3. */
+   finyk_tx_splits / finyk_custom_cats_v1 / finyk_budgets) напряму — це і є
+   призначення модуля: дашбордні агрегатори працюють поза mounted-хуком
+   useStorage. Канонічне джерело — SQLite (див. AI-CONTEXT нижче); LS
+   лишається лише на перший кадр, поки кеш холодний. Ключі в burn-down
+   2026-Q3. */
 import {
   buildFinykExcludedTxIds,
   buildFinykSpendingUniverse,
 } from "@sergeant/finyk-domain";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import {
+  buildMerchantRuleIndex,
+  type MerchantRule,
+} from "@sergeant/finyk-domain/lib/merchantRules";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader";
 import { getCachedFinykSqliteState } from "./sqliteReader";
@@ -42,6 +49,9 @@ interface FinykPrefsSources {
   excludedStatTxIds: string[];
   txSplits: Record<string, unknown>;
   customCategories: CategoryLike[];
+  budgets: Budget[];
+  /** Правила «Завжди так для цього магазину» (лише SQLite: у LS їх ніколи не було). */
+  merchantRules: MerchantRule[];
 }
 
 function asObject<T extends object>(value: unknown, fallback: T): T {
@@ -66,6 +76,8 @@ function readFinykPrefsSources(): FinykPrefsSources {
       excludedStatTxIds: cache.excludedStatTxIds ?? [],
       txSplits: cache.txSplits as Record<string, unknown>,
       customCategories: cache.customCategories as CategoryLike[],
+      budgets: cache.budgets,
+      merchantRules: cache.merchantRules ?? [],
     };
   }
   return {
@@ -87,6 +99,8 @@ function readFinykPrefsSources(): FinykPrefsSources {
     customCategories: asArray<CategoryLike>(
       safeReadLS<CategoryLike[]>("finyk_custom_cats_v1", []),
     ),
+    budgets: asArray<Budget>(safeReadLS<Budget[]>("finyk_budgets", [])),
+    merchantRules: [],
   };
 }
 
@@ -104,6 +118,9 @@ export function getFinykExcludedTxIdsFromStorage() {
     txCategories: prefs.txCategories,
     receivables: prefs.receivables,
     excludedStatTxIds: prefs.excludedStatTxIds,
+    // Банк із дзеркала: пара «списання ↔ скасування» потребує обох ніг
+    // (рішення власника 2026-10-01).
+    transactions: getVisibleFinykMonoMirrorState().transactions,
   });
 }
 
@@ -148,14 +165,17 @@ interface CategoryLike {
  * ⚠️ Це ПЕРША зміна Хвилі 1, що піднімає видиме число, — тому вона йде
  * разом із бампом `METRICS_VERSION` (3 → 4). Тренд через цю межу будувати
  * не можна: інакше коуч прочитає стрибок визначення як «ти став витрачати
- * більше». Реєстр: docs/02-engineering/architecture/metric-registry.md.
+ * більше». Реєстр: docs/engineering/architecture/metric-registry.md.
  */
 export interface FinykStatsContext {
   txs: BankTxLike[];
   excludedTxIds: Set<string>;
+  /** Лише приховані користувачем; `excludedTxIds` вже містить їх. */
+  hiddenTxIds: string[];
   txSplits: Record<string, unknown>;
   txCategories: Record<string, string>;
   customCategories: CategoryLike[];
+  budgets: Budget[];
 }
 
 export function readFinykStatsContext(): FinykStatsContext {
@@ -173,14 +193,28 @@ export function readFinykStatsContext(): FinykStatsContext {
     excludedStatTxIds: prefs.excludedStatTxIds,
   });
 
+  // Правила «Завжди так для цього магазину»: дайджест, коуч і quick-stats
+  // читають категорію з `txCategories[tx.id]`, тож віддаємо їм ЕФЕКТИВНУ мапу
+  // (явні override-и + виведене правилами). Виключення (`universe` вище) і
+  // тут рахуються з явних override-ів: правило не може зробити операцію
+  // переказом. Мапа лише для читання, у сховище не пишеться.
+  const txCategories = withMerchantRuleOverrides(
+    universe.transactions as BankTxLike[],
+    prefs.txCategories,
+    buildMerchantRuleIndex(prefs.merchantRules),
+    prefs.customCategories,
+  ) as Record<string, string>;
+
   return {
     txs: universe.transactions as BankTxLike[],
     // Excluded-set бере і мапу оверрайдів, і мітку на самій транзакції
     // (`categoryId`/`type` === переказ) — саме тому він рахується з
     // `universe`, а не окремим викликом на самих лише ключах.
     excludedTxIds: universe.excludedTxIds,
+    hiddenTxIds: prefs.hiddenTxIds,
     txSplits: prefs.txSplits,
-    txCategories: prefs.txCategories,
+    txCategories,
     customCategories: prefs.customCategories,
+    budgets: prefs.budgets,
   };
 }

@@ -26,6 +26,7 @@ import Svg, { Path, Text as SvgText } from "react-native-svg";
 
 import type { TopCategory } from "@sergeant/finyk-domain/domain";
 import { formatNumberUk } from "@sergeant/shared";
+import { categoryColors } from "@sergeant/design-tokens";
 
 export interface CategoryDonutProps {
   data: readonly TopCategory[];
@@ -136,7 +137,7 @@ function CategoryDonutComponent({ data, size = 160 }: CategoryDonutProps) {
               label: "Інше",
               spent: otherSpent,
               pct: Math.max(0, 100 - totalTopPct),
-              color: "#94a3b8",
+              color: categoryColors.other.solid,
             },
           ]
         : top;

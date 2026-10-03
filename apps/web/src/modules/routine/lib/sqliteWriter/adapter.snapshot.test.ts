@@ -47,6 +47,11 @@
  *    `ROUTINE_DAY_ANCHOR` (`../dayAnchor.ts`) — з того самого модуля, що
  *    продукує «сьогодні». У знімку `device-local` → `kyiv`; більше в
  *    ньому не змінилось нічого.
+ * 5. Semantic change 2026-09-01 — `day_anchor` cutover (LOG-3, ADR-0078).
+ *    `ROUTINE_DAY_ANCHOR` перемкнуто `kyiv` → `device-local`: `date_key`
+ *    тепер рахується за годинником пристрою, і колонка нарешті каже про
+ *    це правду для НОВИХ рядків. У знімку `kyiv` → `device-local`; більше
+ *    нічого не змінилось.
  *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.

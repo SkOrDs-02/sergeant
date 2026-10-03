@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "id": "fizruk-active-session",
+  "local": {
+    "scenario": "fizruk-active-session",
+    "fizrukWorkouts": [
+      {
+        "id": "e2e-workout-legs",
+        "daysAgo": 2,
+        "items": [
+          {
+            "id": "e2e-legs-squat",
+            "exerciseId": "squat_barbell",
+            "nameUk": "Присідання зі штангою",
+            "primaryGroup": "quadriceps",
+            "musclesPrimary": ["quadriceps", "gluteus_maximus"],
+            "musclesSecondary": [
+              "hamstrings",
+              "erector_spinae",
+              "adductors",
+              "calves"
+            ],
+            "sets": [
+              { "weightKg": 60, "reps": 8 },
+              { "weightKg": 70, "reps": 6 },
+              { "weightKg": 70, "reps": 6 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "e2e-workout-back",
+        "daysAgo": 1,
+        "items": [
+          {
+            "id": "e2e-back-row",
+            "exerciseId": "barbell_row",
+            "nameUk": "Тяга штанги в нахилі",
+            "primaryGroup": "back",
+            "musclesPrimary": ["latissimus_dorsi", "rhomboids", "upper_back"],
+            "musclesSecondary": [
+              "biceps",
+              "rear_deltoid",
+              "erector_spinae",
+              "forearms"
+            ],
+            "sets": [
+              { "weightKg": 50, "reps": 10 },
+              { "weightKg": 55, "reps": 8 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "e2e-workout-active",
+        "daysAgo": 0,
+        "active": true,
+        "items": [
+          {
+            "id": "e2e-active-bench",
+            "exerciseId": "bench_press_barbell",
+            "nameUk": "Жим штанги лежачи",
+            "primaryGroup": "chest",
+            "musclesPrimary": ["pectoralis_major"],
+            "musclesSecondary": [
+              "front_deltoid",
+              "triceps",
+              "serratus_anterior"
+            ],
+            "sets": [
+              { "weightKg": 60, "reps": 8 },
+              { "weightKg": 65, "reps": 6 }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

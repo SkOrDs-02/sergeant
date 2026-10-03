@@ -14,12 +14,18 @@ import { messages } from "@shared/i18n/uk";
 import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
+import { useAverageWorkoutKcalPerDay } from "../../../core/profile/useAverageWorkoutKcal";
 import {
   NUTRITION_GOALS,
   computeNutritionTargetsFromBiometrics,
+  resolveEffectiveWeightKg,
   type NutritionGoalId,
   type NutritionTargets,
 } from "../lib/tdee";
+import {
+  missingBiometricsFieldsForTdee,
+  type MissingBiometricsField,
+} from "../../../core/profile/biometrics";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 
 const TDEE_COPY = messages.nutritionTdee;
@@ -28,6 +34,14 @@ const TDEE_GOAL_LABELS: Record<NutritionGoalId, string> = {
   cutting: TDEE_COPY.goalCutting,
   maintenance: TDEE_COPY.goalMaintenance,
   bulking: TDEE_COPY.goalBulking,
+};
+
+const MISSING_FIELD_LABEL: Record<MissingBiometricsField, string> = {
+  heightCm: TDEE_COPY.missingHeight,
+  birthDate: TDEE_COPY.missingBirthDate,
+  sex: TDEE_COPY.missingSex,
+  activityLevel: TDEE_COPY.missingActivity,
+  weightKg: TDEE_COPY.missingWeight,
 };
 
 // Popup menu width + the gap kept from either screen edge (round-2 UI
@@ -116,6 +130,17 @@ export function DailyPlanGoalSelectors({
   // (union daily_log + measurements). `biometrics.weightKg` лишається
   // фолбеком, щоб юзер без модуля fizruk нічого не втратив.
   const fizrukWeightKg = useLatestBodyWeightKg();
+  // Має значення лише при `countWorkoutsInGoal: true`; при вимкненому
+  // тумблері `computeTdee` цього доданка не бачить узагалі.
+  //
+  // СЕРЕДНЄ, а не «сьогодні», і це не косметика. Пресет пише результат у
+  // ПОСТІЙНУ `dailyTargetKcal` (`applyTdeeTargets` нижче), тож доти
+  // людина, яка тиснула «розрахувати з профілю» після важкого
+  // тренування, лишалась із ціллю, роздутою РАЗОВИМ заняттям — назавжди,
+  // доки не змінить її руками. Разове число не має права ставати
+  // постійним. Адаптивний шлях усереднює за тим самим вікном і з тієї ж
+  // причини (`collectWorkoutKcalPerDay`).
+  const workoutKcal = useAverageWorkoutKcalPerDay();
 
   const tdeeTargets = useMemo<Record<
     NutritionGoalId,
@@ -128,12 +153,34 @@ export function DailyPlanGoalSelectors({
         goal,
         undefined,
         fizrukWeightKg,
+        workoutKcal,
       );
       if (!t) return null;
       result[goal] = t;
     }
     return result as Record<NutritionGoalId, NutritionTargets>;
-  }, [biometrics, fizrukWeightKg]);
+  }, [biometrics, fizrukWeightKg, workoutKcal]);
+
+  // Той самий fizruk-фолбек, що й у computeNutritionTargetsFromBiometrics
+  // вище, — інакше юзер із реальним fizruk-зважуванням, але порожнім
+  // полем ваги в Профілі, побачив би «вага» серед бракуючих, хоча вона
+  // фактично вже враховується.
+  const missingFields = useMemo(
+    () =>
+      tdeeTargets
+        ? []
+        : missingBiometricsFieldsForTdee(
+            biometrics,
+            resolveEffectiveWeightKg(biometrics, fizrukWeightKg),
+          ),
+    [tdeeTargets, biometrics, fizrukWeightKg],
+  );
+  const missingHint =
+    missingFields.length > 0
+      ? `${TDEE_COPY.missingPrefix} ${missingFields
+          .map((field) => MISSING_FIELD_LABEL[field])
+          .join(", ")}.`
+      : TDEE_COPY.triggerHint;
 
   const activeGoal = tdeeTargets
     ? NUTRITION_GOALS.find((goal) => {
@@ -148,12 +195,18 @@ export function DailyPlanGoalSelectors({
     : undefined;
 
   const applyTdeeTargets = (targets: NutritionTargets) => {
+    const intent = NUTRITION_GOALS.find(
+      (goal) => tdeeTargets?.[goal] === targets,
+    );
     setPrefs((p) => ({
       ...p,
       dailyTargetKcal: targets.kcal,
       dailyTargetProtein_g: targets.protein_g,
       dailyTargetFat_g: targets.fat_g,
       dailyTargetCarbs_g: targets.carbs_g,
+      adaptiveGoalEnabled: true,
+      adaptiveGoalIntent: intent ?? "maintenance",
+      adaptiveGoalLastUpdatedAt: new Date().toISOString(),
     }));
     setMenuOpen(false);
     toast.success(TDEE_COPY.appliedToast);
@@ -176,7 +229,7 @@ export function DailyPlanGoalSelectors({
           disabled={busy || dayPlanBusy}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          title={tdeeTargets ? undefined : TDEE_COPY.triggerHint}
+          title={tdeeTargets ? undefined : missingHint}
           className={cn(
             "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-style-caption",
             "border-nutrition/50 text-nutrition-strong dark:text-nutrition",
@@ -241,7 +294,7 @@ export function DailyPlanGoalSelectors({
               </>
             ) : (
               <div className="px-3 py-2 text-style-caption text-subtle border-b border-line">
-                <div className="text-text">{TDEE_COPY.triggerHint}</div>
+                <div className="text-text">{missingHint}</div>
                 <Link
                   to={PROFILE_PATH}
                   // Тач-таргет: сам текст має 16px висоти, чого мало для
@@ -265,6 +318,8 @@ export function DailyPlanGoalSelectors({
                   dailyTargetProtein_g: null,
                   dailyTargetFat_g: null,
                   dailyTargetCarbs_g: null,
+                  adaptiveGoalEnabled: false,
+                  adaptiveGoalLastUpdatedAt: null,
                 }));
                 setMenuOpen(false);
               }}

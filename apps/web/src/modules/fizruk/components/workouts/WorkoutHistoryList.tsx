@@ -16,15 +16,16 @@
  */
 import { useCallback } from "react";
 import { VirtualList } from "@shared/components/ui/VirtualList";
-import { pluralExercises } from "@sergeant/shared";
+import { deviceDayKey, pluralExercises } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { messages } from "@shared/i18n/uk";
-import type { Workout } from "@sergeant/fizruk-domain";
+import { isLightWorkout, type Workout } from "@sergeant/fizruk-domain";
 
 export interface WorkoutHistoryListProps {
   workouts: readonly Workout[];
@@ -69,15 +70,23 @@ function WorkoutRow({ w, onOpen }: WorkoutRowProps) {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="text-style-label text-text">
-          {new Date(w.startedAt).toLocaleDateString("uk-UA", {
-            month: "short",
-            day: "numeric",
+          {formatDayKeyUk(deviceDayKey(new Date(w.startedAt)), {
+            todayKey: deviceDayKey(),
+            relative: false,
           })}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-style-caption text-subtle">
             {(w.items || []).length} {pluralExercises((w.items || []).length)}
           </span>
+          {/* «легке» стоїть ПОРУЧ із «Завершене», не замість: запис і
+              завершений, і легкий — це два факти, і другий пояснює, чому
+              серія на цьому дні не зросла (канон §8, 2026-09-15). */}
+          {isEnded && isLightWorkout(w) ? (
+            <span className="text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk-strong dark:text-fizruk border border-fizruk/20">
+              {copy.lightBadge}
+            </span>
+          ) : null}
           {isEnded ? (
             <span className="text-style-caption px-2 py-0.5 rounded-full bg-panelHi text-subtle border border-line">
               {copy.endedBadge}
@@ -128,7 +137,7 @@ export function WorkoutHistoryList({
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
-      <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
+      <div className="px-4 py-3 bg-panelHi border-b border-line">
         <SectionHeading as="div" size="xs" variant="fizruk">
           {copy.title}
         </SectionHeading>

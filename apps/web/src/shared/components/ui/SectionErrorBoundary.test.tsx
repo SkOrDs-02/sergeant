@@ -27,7 +27,10 @@ describe("SectionErrorBoundary", () => {
         <Boom />
       </SectionErrorBoundary>,
     );
-    expect(getByText("Помилка")).toBeInTheDocument();
+    // Дефолтний заголовок більше не голе «Помилка» — §7 гайду копірайтингу
+    // називає його забороненою standalone-конструкцією, а всі дванадцять
+    // реальних call-site-ів давно пишуть «Не вдалось показати «X»» (PR-X3).
+    expect(getByText("Не вдалось показати цю секцію")).toBeInTheDocument();
     expect(getByText("kaboom")).toBeInTheDocument();
     expect(getByText("Відновити")).toBeInTheDocument();
     spy.mockRestore();

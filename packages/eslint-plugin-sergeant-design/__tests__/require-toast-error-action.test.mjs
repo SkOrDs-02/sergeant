@@ -123,4 +123,25 @@ describe("require-toast-error-action", () => {
       assert.equal(lint(`toast.error("Впало");`, abs(p)).length, 0, p);
     }
   });
+
+  // PR-X3: мобільна форма дії. Обробник там `onPress` (React Native), а не
+  // `onClick` (DOM) — без цього правило на мобілці валило б навіть
+  // правильний код, і розширення глоба було б непридатним.
+  it("приймає мобільну форму дії з onPress", () => {
+    const code = `toast.error("Не вдалось експортувати", undefined, { label: "Повторити", onPress: retry });`;
+    assert.equal(
+      lint(code, abs("apps/mobile/src/core/settings/GeneralSection.tsx"))
+        .length,
+      0,
+    );
+  });
+
+  it("усе одно вимагає label поруч із onPress", () => {
+    const code = `toast.error("Не вдалось", undefined, { onPress: retry });`;
+    assert.equal(
+      lint(code, abs("apps/mobile/src/core/settings/GeneralSection.tsx"))
+        .length,
+      1,
+    );
+  });
 });

@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
+import { logger } from "../../obs/logger.js";
 import {
   type StripeEvent,
   getStripeMetadata,
@@ -33,6 +34,70 @@ async function insertWebhookEvent(
     [event.id, event.type, JSON.stringify(event)],
   );
   return result.rowCount === 1;
+}
+
+/**
+ * Домен `subscriptions.status` — рівно те, що дозволяє CHECK
+ * `subscriptions_status_check` (міграція 056). Ширше писати нікуди: будь-яке
+ * інше значення дає SQLSTATE 23514, а це не «одна погана подія», а
+ * poison-pill — ROLLBACK відкочує разом із рядком `stripe_webhook_events`,
+ * тож Stripe ретраїть ту саму подію 3 доби й вона не обробиться ніколи.
+ */
+export type SubscriptionStatus =
+  "active" | "trialing" | "past_due" | "canceled" | "incomplete";
+
+/**
+ * Stripe має більший набір `subscription.status`, ніж наш CHECK: крім
+ * знайомих п'яти — ще `unpaid`, `paused` і `incomplete_expired`. Плюс сам
+ * код підставляв власний літерал `"unknown"`, коли поле відсутнє. Мапимо на
+ * межі запису, а не розширюємо CHECK, бо семантика тут наша:
+ *   - `unpaid` — Stripe вичерпав retry, але підписку ще не скасував →
+ *     `past_due` (дунінг триває, доступ за грейсом);
+ *   - `incomplete_expired` / `paused` — списань більше не буде → `canceled`;
+ *   - невідоме/відсутнє → `incomplete` (нейтральний не-ентайтлмент статус:
+ *     `getUserPlan` його не бачить, тож помилка мапи не роздає Pro).
+ */
+const STRIPE_STATUS_TO_DOMAIN: Record<string, SubscriptionStatus> = {
+  active: "active",
+  trialing: "trialing",
+  past_due: "past_due",
+  canceled: "canceled",
+  incomplete: "incomplete",
+  unpaid: "past_due",
+  incomplete_expired: "canceled",
+  paused: "canceled",
+};
+
+/**
+ * Статуси, після яких підписка мертва. Їх НЕ можна писати через
+ * `INSERT ... ON CONFLICT`: арбітр — частковий унікальний індекс
+ * `subscriptions_user_active_idx WHERE status IN ('active','trialing','past_due')`,
+ * тож рядок зі статусом поза предикатом в індекс не входить, конфлікту не
+ * дає і вставляється ДРУГИМ рядком — старий `active` лишається живим, а
+ * `getUserPlan` далі бачить Pro. Саме так «скасування» не скасовувало
+ * (відтворено на живій схемі: після `customer.subscription.deleted` у
+ * таблиці два рядки). Термінальні статуси йдуть явним UPDATE.
+ *
+ * `incomplete` тут свідомо НЕМА, хоч він теж поза предикатом. Це стан ДО
+ * активації (перший інвойс не оплачено), а не після неї, і порядок доставки
+ * Stripe не гарантований: `customer.subscription.created(incomplete)` може
+ * прийти ПІСЛЯ `checkout.session.completed`, і UPDATE відібрав би щойно
+ * виданий доступ. Доступу такий рядок не дає в жодному разі —
+ * `getUserPlan` читає лише активний набір.
+ */
+const TERMINAL_STATUSES = new Set<SubscriptionStatus>(["canceled"]);
+
+/** Мапить сирий Stripe-статус у домен; невідоме логує з фактичним значенням. */
+export function mapStripeSubscriptionStatus(
+  raw: string | null | undefined,
+): SubscriptionStatus {
+  const mapped = raw ? STRIPE_STATUS_TO_DOMAIN[raw] : undefined;
+  if (mapped) return mapped;
+  logger.warn({
+    msg: "stripe_webhook_unknown_subscription_status",
+    status: raw ?? null,
+  });
+  return "incomplete";
 }
 
 async function upsertCheckoutCompleted(
@@ -76,9 +141,29 @@ async function upsertSubscriptionEvent(
   const subscriptionId = getStripeObjectString(object, "id");
   if (!userId || !subscriptionId) return;
 
-  const subscriptionStatus =
-    getStripeObjectString(object, "status") ?? "unknown";
+  const subscriptionStatus = mapStripeSubscriptionStatus(
+    getStripeObjectString(object, "status"),
+  );
   const cancelAtPeriodEnd = object["cancel_at_period_end"] === true;
+
+  if (TERMINAL_STATUSES.has(subscriptionStatus)) {
+    // Явний UPDATE, дзеркало `liqpay.ts` і `routes/internal/billing.ts`:
+    // гасимо саме той рядок, що зараз тримає ентайтлмент. Upsert тут лишав
+    // старий `active` живим і дописував другий рядок (див. коментар до
+    // TERMINAL_STATUSES). `cancel_at_period_end = FALSE`, бо підписки більше
+    // немає — це не «скасуємо наприкінці періоду», а вже кінець.
+    await client.query(
+      `UPDATE subscriptions
+          SET status = $2,
+              cancel_at_period_end = FALSE,
+              updated_at = NOW()
+        WHERE user_id = $1
+          AND provider = 'stripe'
+          AND status IN ('active', 'trialing', 'past_due')`,
+      [userId, subscriptionStatus],
+    );
+    return;
+  }
 
   await client.query(
     `INSERT INTO subscriptions
@@ -208,7 +293,11 @@ export async function processStripeWebhook(
           // simpler signal here — status now reads 'active' and the
           // event ID hash differs — is good enough for the MRR funnel
           // because PostHog dedupes via `uuid = event.id`.
-          if (getStripeObjectString(object, "status") === "canceled") {
+          if (
+            mapStripeSubscriptionStatus(
+              getStripeObjectString(object, "status"),
+            ) === "canceled"
+          ) {
             lifecycleEmit = "canceled";
           } else {
             lifecycleEmit = "renewed";

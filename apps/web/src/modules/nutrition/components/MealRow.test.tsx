@@ -39,7 +39,7 @@ describe("MealRow", () => {
 
   it("shows an AI badge for photoAI-sourced macros", () => {
     render(<MealRow meal={{ ...baseMeal, macroSource: "photoAI" } as never} />);
-    expect(screen.getByText("AI")).toBeInTheDocument();
+    expect(screen.getByText("Сержант")).toBeInTheDocument();
   });
 
   it("shows a DB badge for productDb-sourced macros", () => {

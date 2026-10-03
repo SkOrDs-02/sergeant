@@ -10,32 +10,35 @@ import {
 } from "../components/HomeSections";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
+import { CONFIDENCE } from "../content/confidenceLevels";
+import { THREADS_URL, TELEGRAM_BOT_URL } from "../lib/links";
 
 /**
  * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
  * Дані ілюстративні (підпис у нотатці про це каже) – сенс віджета в тому,
- * щоб показати причину-наслідок, а не конкретні числа.
+ * щоб показати причину-наслідок, а не конкретні числа. Рівень впевненості
+ * один на всі три стани: це та сама закономірність, а не три різні, і
+ * підпис береться з канонічної шкали (`CONFIDENCE`), а не вигадується.
  */
 const HERO_SCENARIOS = {
   1: {
     spend: "2 260",
     pct: 90,
     note: "У тижні з одним тренуванням доставки найбільше",
-    meta: "закономірність тримається · 6 тижнів даних",
   },
   3: {
     spend: "1 840",
     pct: 74,
     note: "Три тренування, і замовлень доставки вже менше",
-    meta: "закономірність тримається · 6 тижнів даних",
   },
   5: {
     spend: "1 320",
     pct: 53,
     note: "Пʼять тренувань, і доставка падає майже вдвічі",
-    meta: "впевненість висока · 6 тижнів даних",
   },
 } as const;
+
+const HERO_META = `${CONFIDENCE.stable} · 6 тижнів даних`;
 
 type HeroTrainings = keyof typeof HERO_SCENARIOS;
 
@@ -87,7 +90,7 @@ function HeroCollage() {
             style={{ width: `${scenario.pct}%` }}
           />
         </div>
-        <p className="text-xs text-subtle">Фінік · синк із Monobank</p>
+        <p className="text-xs text-subtle">Фінік · синхронізація з Monobank</p>
       </div>
 
       <div
@@ -125,11 +128,11 @@ function HeroCollage() {
       </div>
 
       <figure className="paper-shadow-lg flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:left-3 lg:top-[268px] lg:min-h-[120px] lg:w-[400px]">
-        <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
+        <blockquote className="text-lg font-medium leading-normal text-foreground sm:text-xl">
           «{scenario.note}»
         </blockquote>
         <figcaption className="text-xs text-subtle">
-          записав Sergeant · {scenario.meta} · ілюстративний приклад
+          ілюстративний приклад · записав Сержант · {HERO_META}
         </figcaption>
       </figure>
     </div>
@@ -141,14 +144,51 @@ export default function HomePage() {
     ...ROUTE_META["/"],
     // Головна після переїзду секцій – пітч продукту. FAQPage поїхав на
     // /pytannya разом із питаннями: розмітка без видимого контенту не тримається.
+    // Вузол, який читає модель, коли її питають «що це за продукт». Тримай
+    // його багатшим за назву й ціну: без description і featureList відповідь
+    // спирається лише на applicationCategory. url і logo – відносні, бо домен
+    // знає лише білд (див. lib/jsonLd.ts).
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       name: "Sergeant",
+      url: "/",
       inLanguage: "uk",
       applicationCategory: "LifestyleApplication",
-      operatingSystem: "Web, iOS, Android",
+      // Лише веб: мобільний застосунок існує, але його публічний вихід
+      // відкладено (рішення §10.1 спеки site-ia), а схему читають без контексту.
+      operatingSystem: "Web",
+      description: ROUTE_META["/"].description,
+      featureList: [
+        "Гроші: чотири входи витрат – синхронізація Monobank, фото чека, виписка файлом, ручна форма",
+        "Тіло: щоденник тренувань, тоннаж і рекорди",
+        "Звички: серія, яку не обнуляє пропуск із причиною",
+        "Їжа: КБЖВ зі штрихкоду, фото страви та української бази продуктів",
+        "Звʼязки між сферами, підписані рівнем впевненості",
+      ],
       offers: { "@type": "Offer", price: 0, priceCurrency: "UAH" },
+      publisher: {
+        "@type": "Organization",
+        name: "Sergeant",
+        url: "/",
+        logo: "/apple-touch-icon.png",
+        // Єдиний публічний профіль поза сайтом. Без sameAs модель бачить
+        // організацію лише за назвою, і «хто це робить» лишається без опори.
+        sameAs: [THREADS_URL],
+        // Канал звʼязку машинним текстом: агент, що зважує «кому писати»,
+        // інакше не має жодної адреси, крім кнопки в футері. Пошти й
+        // телефону тут немає навмисно — їх у продукту публічно немає, а
+        // вигадані реквізити читає саме той, хто перевіряє легітимність.
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            url: TELEGRAM_BOT_URL,
+            availableLanguage: ["uk"],
+            areaServed: "UA",
+          },
+        ],
+      },
     },
   });
 
@@ -162,14 +202,21 @@ export default function HomePage() {
             без крику
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
-            Sergeant – приватний застосунок, що тримає гроші, тренування, звички
-            і їжу разом і показує, як вони тягнуть одне одного. Сержант на
-            твоєму боці: рахує, а не читає лекцій.
+            Гроші, тренування, звички і їжа в одному приватному застосунку. Він
+            помічає, як тиждень без тренувань відгукується в доставці, і
+            мовчить, поки даних замало. Рахує, а не читає лекцій.
           </p>
           <div className="flex flex-col gap-2.5">
             <TelegramCta placement="hero" label="Стати в чергу" />
             <p className="text-sm text-subtle">
-              черга живе в Telegram · ядро безкоштовне назавжди
+              безкоштовно назавжди: чотири модулі й 20 дій Сержанта щотижня ·
+              дані твої,{" "}
+              <a
+                href="/vyhid"
+                className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                забрати можна будь-коли
+              </a>
             </p>
           </div>
         </div>
@@ -179,18 +226,6 @@ export default function HomePage() {
 
       <ModulesSection />
       <ConnectionsSection />
-
-      <section className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 pb-16 sm:px-8">
-        <a
-          href="/beta"
-          className="inline-flex min-h-12 items-center bg-foreground-strong px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-        >
-          Стати в чергу
-        </a>
-        <p className="text-sm text-subtle">
-          черга живе в Telegram · одне повідомлення, коли відкриється твоя хвиля
-        </p>
-      </section>
 
       <FounderSection />
       <StatusBridge />

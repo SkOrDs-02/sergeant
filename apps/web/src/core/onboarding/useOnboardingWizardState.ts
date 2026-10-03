@@ -7,6 +7,8 @@ import {
   markFirstActionStartedAt,
   saveVibePicks,
 } from "./vibePicks";
+import { sanitizePicks } from "@sergeant/shared";
+import { pushActiveModules } from "../hub/activeModulesSync";
 import {
   isOnboardingCompletedFired,
   markOnboardingCompletedFired,
@@ -37,14 +39,6 @@ export interface UseOnboardingWizardStateArgs {
     startModuleId: string | null,
     opts?: { intent: string; picks: string[] },
   ) => void;
-  /**
-   * PR-05 — demo mode as first-class CTA. Optional handler for the
-   * "Подивитись приклад" button rendered inside the splash card. Only
-   * passed by the `/welcome` host (`fullPage` variant); modal mode
-   * leaves the secondary CTA hidden so demo seeding never happens by
-   * accident from in-app surfaces.
-   */
-  onSecondaryAction?: (() => void) | undefined;
 }
 
 export interface UseOnboardingWizardStateReturn {
@@ -63,7 +57,6 @@ export interface UseOnboardingWizardStateReturn {
    * idempotent — see {@link finish}).
    */
   submitting: boolean;
-  secondaryAction?: (() => void) | undefined;
   /**
    * Resolved PR-13 goal-first A/B variant. `control` keeps the legacy
    * module-checklist welcome; `goal_first` swaps in `GoalFirstScreen`
@@ -114,7 +107,6 @@ export interface UseOnboardingWizardStateReturn {
 // without a hard reset of the wizard state.
 export function useOnboardingWizardState({
   onDone,
-  onSecondaryAction,
 }: UseOnboardingWizardStateArgs): UseOnboardingWizardStateReturn {
   // Default-picks A/B (S6.1). Assignment is deterministic per device
   // fingerprint and persists across renders, so the user always sees
@@ -217,6 +209,16 @@ export function useOnboardingWizardState({
     // the hub instead of producing a useless dashboard.
     const chosen = hadEmptyPicks ? [...ALL_MODULES] : picks;
     saveVibePicks(chosen as never[]);
+    // Вибір треба ВІДПРАВИТИ одразу, а не покладатись на наступний бут.
+    // `useActiveModulesSync` гідратує рівно раз на `userId` за сесію, і для
+    // свіжого акаунта та гідрація вже відпрацювала ДО онбордингу, коли обидві
+    // сторони були порожні. Без цього рядка вибір лишався тільки локально, і
+    // вхід із другого пристрою до наступного буту показував дефолтні 4 з 4
+    // (browser-QA 2026-09-02). Fire-and-forget, як у `DashboardSection`.
+    //
+    // `sanitizePicks` замість касту: локальний `chosen` типизований як
+    // `string[]`, і відправляти на сервер нерозпізнаний id не варто.
+    pushActiveModules(sanitizePicks(chosen));
 
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
       picks: chosen,
@@ -278,6 +280,9 @@ export function useOnboardingWizardState({
 
       const chosen: DashboardModuleId[] = [outcome.module];
       saveVibePicks(chosen as never[]);
+      // Той самий пуш, що й у гілці вище: інакше вибір goal-first-шляху
+      // теж не доїжджає на акаунт до наступного буту.
+      pushActiveModules(chosen);
 
       trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
         picks: chosen,
@@ -364,8 +369,6 @@ export function useOnboardingWizardState({
   // S6.1: only the `none` arm disables the CTA on empty picks.
   const ctaDisabled = defaultPicksVariant === "none" && picks.length === 0;
 
-  const secondaryAction = onSecondaryAction;
-
   return {
     picks,
     togglePick,
@@ -376,7 +379,6 @@ export function useOnboardingWizardState({
     emptyPicksHint: "Обери хоч один розділ",
     finish,
     submitting,
-    secondaryAction,
     goalFirstVariant,
     pickGoal,
     skipGoalFirst,

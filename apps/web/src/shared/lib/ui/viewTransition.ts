@@ -25,8 +25,7 @@
  * transition happens.
  */
 import { flushSync } from "react-dom";
-
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+import { prefersReducedMotion } from "./motion";
 
 /**
  * Minimal structural view of the API surface we use. Declared as an
@@ -36,16 +35,6 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 type DocumentWithViewTransition = Document & {
   startViewTransition?: (callback: () => void) => { finished: Promise<void> };
 };
-
-/** Non-hook reduced-motion read for use outside React render. */
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  try {
-    return window.matchMedia(REDUCED_MOTION_QUERY).matches;
-  } catch {
-    return false;
-  }
-}
 
 /** Whether the current environment can run a native view transition. */
 export function supportsViewTransitions(): boolean {

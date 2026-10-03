@@ -180,7 +180,7 @@ function TxRowImpl({
               hidden && "line-through",
             )}
           >
-            {tx.description || "Транзакція"}
+            {tx.description || "Операція"}
           </Text>
           <View className="flex-row flex-wrap items-center mt-0.5">
             <Text className="text-xs text-fg-muted mr-1.5">{catName}</Text>
@@ -257,7 +257,7 @@ function TxRowImpl({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={
-          tx.description ? `Транзакція: ${tx.description}` : "Транзакція"
+          tx.description ? `Операція: ${tx.description}` : "Операція"
         }
         testID={testID}
       >

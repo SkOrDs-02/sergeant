@@ -11,6 +11,8 @@
  * UTC-нарізок хибний в обох ADR-0078 режимах.
  */
 
+import { toKyivISODate } from "@sergeant/shared";
+
 const KYIV_TZ = "Europe/Kyiv";
 
 export interface KyivWallClock {
@@ -153,10 +155,5 @@ export function kyivWallClockToUtc(parts: KyivWallClock): Date {
  * blob-у `date` для manual-expense fallback-у matcher-а (`save.ts`).
  */
 export function kyivDateString(at: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: KYIV_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(at);
+  return toKyivISODate(at);
 }

@@ -19,7 +19,7 @@
  * синхронізація), тому живе поруч зі smoke-лейном, а не всередині нього.
  *
  * Історія: матрицю зафіксовано браузерним аудитом 2026-08-05,
- * `docs/90-work/audits/2026-08-05-browser-profile-testing.md`.
+ * `docs/work/specs/audits/2026-08-05-browser-profile-testing.md`.
  */
 
 export type AccountState = "anonymous" | "fresh" | "returning";

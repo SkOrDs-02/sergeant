@@ -1,5 +1,7 @@
 import { useMemo, useCallback } from "react";
 import { dedupeAndSortTransactions } from "@sergeant/finyk-domain/domain/transactions";
+import { getMonoTotals } from "@sergeant/finyk-domain/lib/accounts";
+import { CURRENCY } from "@sergeant/finyk-domain/constants";
 import type { useMonobank } from "./useMonobank";
 import type { usePrivatbank } from "./usePrivatbank";
 
@@ -44,19 +46,29 @@ export function useUnifiedFinanceData({
             const accountId = t._accountId ?? t.accountId;
             return typeof accountId !== "string" || !hidden.has(accountId);
           });
-    const privatTotal = (privat.accounts || [])
-      .filter((a) => a.currency === "UAH" || a.currency === "980")
-      .reduce((s, a) => s + (a.balance || 0) / 100, 0);
-
     const monoAccounts = (mono.accounts || []).map((a) => ({
       ...a,
       _source: "monobank" as const,
     }));
+    // PrivatBank's account shape carries `currency` as a string ("UAH"),
+    // not `currencyCode`: map it onto the ISO-4217 numeric code so the
+    // account can go through the same `getMonoTotals` UAH-only-balance /
+    // creditLimit→debt rules as Monobank accounts (§1.3 finding: a bare
+    // `balance/100` sum here ignored the hidden-account toggle and paid no
+    // attention to overdrafts/credit limits).
     const privatAccounts = (privat.accounts || []).map((a) => ({
       ...a,
       _source: "privatbank" as const,
+      currencyCode:
+        a.currency === "UAH" || a.currency === "980"
+          ? (CURRENCY.UAH as number)
+          : undefined,
     }));
     const allAccounts = [...monoAccounts, ...privatAccounts];
+    const { balance: privatTotal, debt: privatDebt } = getMonoTotals(
+      privatAccounts,
+      hiddenAccountIds ?? [],
+    );
 
     const hasPrivatError = !!privat.error;
     const privatSyncBad =
@@ -73,7 +85,17 @@ export function useUnifiedFinanceData({
           ? "partial"
           : mono.syncState?.status === "loading" || privat.loadingTx
             ? "loading"
-            : mono.syncState?.status;
+            : // Успіх ПриватБанку теж піднімаємо в об'єднаний стан. Без цього
+              // рядка гілки error/partial/loading читали обидва провайдери, а
+              // успіх — лише Monobank, тож у людини з самим Приватом
+              // об'єднаний статус лишався моновським `idle`. Доки `getSyncTone`
+              // фолбечив невідоме в зелене, це виглядало правильно з хибної
+              // причини; після його фіксу (PR-F7) той самий рядок став би
+              // вічним «очікування» на успішно засинхроненому Приваті.
+              mono.syncState?.status === "success" ||
+                privat.syncState?.status === "success"
+              ? "success"
+              : mono.syncState?.status;
     const combinedSyncState = {
       ...mono.syncState,
       status: combinedSyncStatus,
@@ -89,6 +111,7 @@ export function useUnifiedFinanceData({
       accounts: allAccounts,
       totalBalance: (monoWithBalance.totalBalance || 0) + privatTotal,
       privatTotal,
+      privatDebt,
       error: combinedError,
       syncState: combinedSyncState,
       loadingTx: mono.loadingTx || privat.loadingTx,

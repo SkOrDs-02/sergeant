@@ -7,11 +7,11 @@ import type {
   WorkoutItem,
 } from "@sergeant/fizruk-domain/domain";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractWorkoutSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractWorkoutSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 import {
@@ -97,6 +97,8 @@ export function useWorkouts() {
    * pending UI reflects the change until the boot wires up the
    * context.
    */
+  const intended = useFizrukIntendedSlice<"workouts">(sqliteCacheTick);
+
   const persist = useCallback(
     (nextOrUpdater: Workout[] | ((prev: Workout[]) => Workout[])) => {
       setWorkouts((prevState) => {
@@ -105,14 +107,13 @@ export function useWorkouts() {
             ? nextOrUpdater(prevState)
             : nextOrUpdater;
 
-        const prevDualWrite =
-          peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-        const nextDualWrite = {
-          ...prevDualWrite,
-          workouts: extractWorkoutSnapshots(next),
-        };
+        const transition = fizrukDualWriteTransition(
+          "workouts",
+          intended,
+          extractWorkoutSnapshots(next),
+        );
         try {
-          triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+          triggerFizrukDualWrite(transition.prev, transition.next);
         } catch (err) {
           // The trigger is fire-and-forget — it should never throw, but
           // surface unexpected sync failures via the existing banner so
@@ -136,7 +137,7 @@ export function useWorkouts() {
         return next;
       });
     },
-    [setWorkouts],
+    [intended, setWorkouts],
   );
 
   const createWorkout = useCallback((): Workout => {

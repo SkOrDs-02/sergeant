@@ -12,6 +12,8 @@
  * прод перетворює текст моделі на екран користувача.
  */
 
+import { sumMacrosNullable } from "@sergeant/shared";
+
 import { env } from "../../src/env/env.js";
 import { extractJsonFromText } from "../../src/http/jsonSafe.js";
 import {
@@ -20,10 +22,13 @@ import {
 } from "../../src/lib/anthropic.js";
 import {
   normalizePhotoResult,
+  PHOTO_ITEMS_LIMIT,
   type NormalizedPhotoResult,
 } from "../../src/lib/nutritionResponse.js";
 import { buildAnalyzePhotoPrompt } from "../../src/modules/nutrition/analyze-photo.js";
 import { buildRefinePhotoPrompt } from "../../src/modules/nutrition/refine-photo.js";
+import { visionViaOpenRouter } from "../../src/modules/nutrition/visionTransport.js";
+import { prodRoutedCandidates } from "./candidates.js";
 import { catalogEntry, estimateCost } from "./cost.js";
 import type { Candidate, GoldenCase, Pipeline, RunResult } from "./types.js";
 import {
@@ -44,6 +49,31 @@ function photoResult(text: string): NormalizedPhotoResult | null {
     return null;
   }
   return normalizePhotoResult(parsed);
+}
+
+/**
+ * Посегментна якість розбивки (ініціатива 0023, крок 6 PR-1).
+ *
+ * На кадрі три різні страви, тож єдиний рядок — це провал, який людина
+ * побачить як занижений денний підсумок і не зможе виправити точково.
+ * Перевіряємо три речі одночасно: скільки позицій приїхало, чи тримається
+ * стеля 5, і чи підсумок дорівнює сумі позицій — розбіжність тут означає,
+ * що екран показує число, якого в рядках немає.
+ */
+function segmentationJudge(text: string): true | string {
+  const r = photoResult(text);
+  if (!r) return "не розібрався прод-парсером";
+  if (r.items.length < 2) {
+    return `позицій ${r.items.length} на кадрі з трьох страв (${r.dishName})`;
+  }
+  if (r.items.length > PHOTO_ITEMS_LIMIT) {
+    return `позицій ${r.items.length} — стеля ${PHOTO_ITEMS_LIMIT} не втрималась`;
+  }
+  const summed = sumMacrosNullable(r.items.map((i) => i.macros));
+  if (summed.kcal !== r.macros.kcal) {
+    return `підсумок ${r.macros.kcal ?? "—"} ≠ сума позицій ${summed.kcal ?? "—"}`;
+  }
+  return true;
 }
 
 /** Модель зізналася, що даних бракує: питання або низька впевненість. */
@@ -107,18 +137,10 @@ const ANALYZE_CASES: GoldenCase[] = [
   },
   {
     name: "кілька страв у кадрі",
-    trap: "НЕПРАВИЛЬНО: описати одну страву з трьох і порахувати КБЖВ лише для неї — користувач отримає занижений денний підсумок. Правильно: щонайменше два інгредієнти/компоненти або уточнююче питання, яку саме рахувати.",
+    trap: "НЕПРАВИЛЬНО: описати одну страву з трьох і порахувати КБЖВ лише для неї — користувач отримає занижений денний підсумок. Правильно: окрема позиція в `items` на кожну страву, щоб хибну можна було виправити без арифметики.",
     user: analyzePrompt.user,
     image: image(MULTI_DISH_PNG_B64),
-    judge: (text) => {
-      const r = photoResult(text);
-      if (!r) return "не розібрався прод-парсером";
-      return (
-        r.ingredients.length >= 2 ||
-        r.questions.length > 0 ||
-        `одна страва (${r.dishName}), інгредієнтів ${r.ingredients.length}, питань 0`
-      );
-    },
+    judge: segmentationJudge,
   },
   {
     name: "порожній кадр",
@@ -176,16 +198,11 @@ const REFINE_CASES: GoldenCase[] = [
 
 /** Копіюється в кожен пайплайн — див. AI-DANGER у `pipelines.nutrition.ts`. */
 const VISION_CANDIDATES: Candidate[] = [
-  {
-    provider: "anthropic",
-    model: env.NUTRITION_MODEL,
-    label: "current default (Anthropic)",
-  },
-  {
-    provider: "openrouter",
-    model: "google/gemini-2.5-flash-lite",
-    label: "OpenRouter Gemini Flash Lite",
-  },
+  ...prodRoutedCandidates(
+    visionViaOpenRouter() ? "openrouter" : "anthropic",
+    env.OPENROUTER_VISION_MODEL,
+    env.NUTRITION_MODEL,
+  ),
   {
     provider: "openrouter",
     model: "anthropic/claude-haiku-4.5",
@@ -204,7 +221,9 @@ export const VISION_PIPELINES: Pipeline[] = [
     label: "Nutrition analyze-photo (зір)",
     system: analyzePrompt.system,
     promptOrigin: "modules/nutrition/analyze-photo.ts::buildAnalyzePhotoPrompt",
-    maxTokens: 700,
+    // Дзеркалить прод (`analyze-photo.ts`): нижча стеля рвала б JSON посеред
+    // масиву позицій, і стенд міряв би власний ліміт замість якості моделі.
+    maxTokens: 1000,
     judge: (text) => photoResult(text) !== null,
     cases: ANALYZE_CASES,
     candidates: [...VISION_CANDIDATES],
@@ -214,7 +233,7 @@ export const VISION_PIPELINES: Pipeline[] = [
     label: "Nutrition refine-photo (зір)",
     system: refinePrompt.system,
     promptOrigin: "modules/nutrition/refine-photo.ts::buildRefinePhotoPrompt",
-    maxTokens: 650,
+    maxTokens: 950,
     judge: (text) => photoResult(text) !== null,
     cases: REFINE_CASES,
     candidates: [...VISION_CANDIDATES],

@@ -6,7 +6,6 @@ import { MonthOutflowComb } from "../components/MonthOutflowComb";
 import type { CombEntry } from "../lib/monthOutflowComb";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { Icon } from "@shared/components/ui/Icon";
-import { Button } from "@shared/components/ui/Button";
 import { Money } from "@shared/components/ui/Money";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
@@ -92,9 +91,9 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onClick={() => openHubModule("routine", "")}
           className="w-full text-style-caption text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
         >
-          <Icon name="calendar" size={14} aria-hidden />
+          <Icon name="calendar" size="sm" aria-hidden />
           <span>Побачити у календарі Рутини</span>
-          <Icon name="chevron-right" size={14} aria-hidden />
+          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       )}
       {subscriptions.map((sub, i) => (
@@ -129,7 +128,12 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onLinkTransactions={() => setTxPicker({ type: "sub", subId: sub.id })}
         />
       ))}
-      {showSubForm ? (
+      {/* Вхід у форму — пункт «Підписка» комбінованого пікера
+          «Запланувати» внизу сторінки Планування (`Budgets.tsx`, founder-UX
+          audit round 2, F2; до цього — окремий quick-action «+ Підписка»
+          угорі, звіт власника 2026-09-03). Власна кнопка секції дублювала
+          його й тому прибрана. */}
+      {showSubForm && (
         <SubscriptionForm
           newSub={newSub}
           setNewSub={setNewSub}
@@ -137,15 +141,6 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           setShowSubForm={setShowSubForm}
           transactions={transactions}
         />
-      ) : (
-        <Button
-          type="button"
-          variant="finyk-soft"
-          onClick={() => setShowSubForm(true)}
-          className="w-full rounded-xl shadow-soft mt-2"
-        >
-          + Додати підписку
-        </Button>
       )}
     </div>
   );

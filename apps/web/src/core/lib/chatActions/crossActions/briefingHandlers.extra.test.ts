@@ -109,6 +109,6 @@ describe("weeklySummary — habit + spending branches", () => {
       } as never,
     });
     const out = weeklySummary();
-    expect(out).toMatch(/Калорії: ~\d+ ккал\/день \(2 днів\)/);
+    expect(out).toContain("Калорії: ~1\u00A0900 ккал/день (2 днів)");
   });
 });

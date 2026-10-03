@@ -119,4 +119,51 @@ describe("Segmented", () => {
     // `text-routine-strong` hex that went sub-AA in HC. See VARIANT_SOFT.
     expect(active!.className!).toContain("text-routine-soft-fg");
   });
+
+  it("defaults to the pill layout: rounded chips on a wrapping row", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} />,
+    );
+    expect(getByRole("tablist").className).toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("rounded-xl");
+      expect(tab.className).not.toContain("flex-1");
+    }
+  });
+
+  it("layout='bar' makes one full-width track of equal segments", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} layout="bar" />,
+    );
+    const tablist = getByRole("tablist");
+    expect(tablist.className).toContain("w-full");
+    // A wrapped segment would break the single track the layout promises.
+    expect(tablist.className).not.toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("flex-1");
+      expect(tab.className).toContain("rounded-2xl");
+    }
+  });
+
+  it.each(["finyk", "fizruk", "routine", "nutrition"] as const)(
+    "style='soft' + variant='%s': вибраний піл = тонований фон + контур `-edge` (A4 аудиту контрасту)",
+    (variant) => {
+      // Тихі `{m}-ring` / `{m}-border-dark/40` давали 1.35 (світла) / 2.49
+      // (темна) проти сусіда; для СТАНУ потрібно ≥3:1 (WCAG 1.4.11).
+      const { getAllByRole } = render(
+        <Segmented
+          items={ITEMS}
+          value="day"
+          onChange={() => {}}
+          variant={variant}
+        />,
+      );
+      const [active, idle] = getAllByRole("tab");
+      expect(active!.className).toContain(`border-${variant}-edge`);
+      expect(active!.className).not.toContain(`border-${variant}-ring`);
+      expect(active!.className).not.toContain(`${variant}-border-dark`);
+      // Невибраний піл не змінився: тиха межа картки.
+      expect(idle!.className).toContain("border-line");
+    },
+  );
 });

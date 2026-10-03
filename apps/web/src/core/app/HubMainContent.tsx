@@ -19,6 +19,7 @@ import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
 import { IOSInstallBanner } from "./IOSInstallBanner";
 import { LocalOnlyDataBanner } from "../durability/LocalOnlyDataBanner";
+import { HubBannerBudgetProvider } from "../hub/bannerBudget";
 import { TrialBanner } from "../billing";
 
 /**
@@ -95,7 +96,8 @@ export interface HubMainContentProps {
     opts?: OpenModuleOptions,
   ) => void;
   iosVisible: boolean;
-  onDismissIos: () => void;
+  onDismissIosForever: () => void;
+  onSnoozeIos: () => void;
   hubView: HubView;
   user: User | null;
   onShowAuth: () => void;
@@ -105,7 +107,8 @@ export interface HubMainContentProps {
 export const HubMainContent = memo(function HubMainContent({
   onOpenModule,
   iosVisible,
-  onDismissIos,
+  onDismissIosForever,
+  onSnoozeIos,
   hubView,
   user,
   onShowAuth,
@@ -239,7 +242,12 @@ export const HubMainContent = memo(function HubMainContent({
     <>
       {!inFtuxSession && <TrialBanner />}
 
-      {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}
+      {showIos && (
+        <IOSInstallBanner
+          onDismissForever={onDismissIosForever}
+          onSnooze={onSnoozeIos}
+        />
+      )}
 
       <PullToRefresh
         as="main"
@@ -268,13 +276,22 @@ export const HubMainContent = memo(function HubMainContent({
                   Показуватись чи ні, вирішує сам банер (той самий предикат
                   `isSyncableUserId`, що вимикає запис в outbox), тому гейта
                   на `user` тут немає. Під час FTUX мовчить: перша сесія
-                  тримає рівно один сигнал на екрані — CTA першої дії. */}
-              {!inFtuxSession && <LocalOnlyDataBanner onSignIn={onShowAuth} />}
-              <HubDashboard
-                onOpenModule={onOpenModule}
-                user={user}
-                onShowAuth={onShowAuth}
-              />
+                  тримає рівно один сигнал на екрані — CTA першої дії.
+                  Стоїть ПІСЛЯ дашборда: першим, над модулями й «Зараз»,
+                  банер читався як загроза втрати даних замість наступного
+                  кроку (критика екранів 2026-09-23). */}
+              {/* Стеля на кількість підказок одночасно — див.
+                  `bannerBudget.tsx` (анти-слоп аудит 2026-09-01, F3). */}
+              <HubBannerBudgetProvider>
+                <HubDashboard
+                  onOpenModule={onOpenModule}
+                  user={user}
+                  onShowAuth={onShowAuth}
+                />
+                {!inFtuxSession && (
+                  <LocalOnlyDataBanner onSignIn={onShowAuth} />
+                )}
+              </HubBannerBudgetProvider>
             </div>
           </ErrorBoundary>
         )}
