@@ -176,6 +176,56 @@ export const chatPromptInjectionShadowTotal = new client.Counter({
   registers: [register],
 });
 
+/**
+ * Верифікація чисел у відповідях чату (ADR-0097, `chat/numberVerify/`): один
+ * приріст на звірену відповідь.
+ *   - `turn`: `first` (перший хід, текстова відповідь) | `synthesis` (тур
+ *     після tool-результатів, потоковий і ні);
+ *   - `mode`: режим, який ВИКОНАВСЯ, а не заданий. До PR3 серії це завжди
+ *     `shadow`, навіть коли `CHAT_NUMBER_VERIFY=enforce`;
+ *   - `outcome`: `ok` | `mismatch` (є число, якого немає в поданому й
+ *     якого не виведено з відповіді) | `no_scoped` (перевірюваних чисел
+ *     немає: знаменник частки розбіжностей) | `error` (звірка впала).
+ * Кардинальність 2 × 1 × 4. Метрика й лог НЕ несуть чисел і тексту (Hard Rule
+ * #21, privacy-режим ініціативи 0025).
+ *
+ * `off` не рахується взагалі: у цьому режимі робота не виконується.
+ */
+export const chatNumberVerifyTotal = new client.Counter({
+  name: "chat_number_verify_total",
+  help: "Chat answers checked by the number verifier, by turn, executed mode and outcome; metric only in shadow mode.",
+  labelNames: ["turn", "mode", "outcome"],
+  registers: [register],
+});
+
+/**
+ * Числа відповідей за видом і «поясненістю». `kind`: `money` | `mass` |
+ * `energy` (перевірювані) | `unscoped` (відсотки, малі суми, дати, лічильники:
+ * рахуються, але не звіряються). `explained`: `given` (дослівно в поданому) |
+ * `derived` (виведено з чисел відповіді) | `none` (розбіжність) | `na` (для
+ * `unscoped`). Частка `explained="none"` серед перевірюваних - основний
+ * показник якості відповідей і порогів скоупу.
+ */
+export const chatNumberTokensTotal = new client.Counter({
+  name: "chat_number_tokens_total",
+  help: "Numbers found in chat answers by kind and whether the verifier could explain them.",
+  labelNames: ["kind", "explained"],
+  registers: [register],
+});
+
+/**
+ * Скільки відповідь чекає на звірку чисел, мс. У shadow-режимі це лише час
+ * самої звірки (відповідь її не чекає в сенсі змісту, але затримку додає); у
+ * PR3 тут буде ще й повторна генерація, тож бакети сягають десятків секунд.
+ */
+export const chatNumberHoldMs = new client.Histogram({
+  name: "chat_number_hold_ms",
+  help: "Time a chat answer spends in number verification, ms",
+  labelNames: ["turn"],
+  buckets: [0.5, 1, 2, 5, 10, 25, 100, 500, 2000, 10000, 40000],
+  registers: [register],
+});
+
 export const aiQuotaBlocksTotal = new client.Counter({
   name: "ai_quota_blocks_total",
   help: "AI quota refusals",

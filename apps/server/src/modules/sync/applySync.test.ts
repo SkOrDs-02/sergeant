@@ -63,6 +63,9 @@ function op(
   } as unknown as SyncV2Op;
 }
 
+// Рядок-відповідь `guardParentOwned`: батько існує і належить користувачу.
+const PARENT_OWNED = { "?column?": 1 };
+
 function existing(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
@@ -1516,7 +1519,7 @@ describe("fizruk applySync", () => {
 
     await expect(
       applyFizrukItems(
-        makeClient([existing({ deleted_at: OLD_TS })]),
+        makeClient([existing({ deleted_at: OLD_TS })], [PARENT_OWNED]),
         op({
           id: "item-1",
           user_id: USER_ID,
@@ -1608,7 +1611,7 @@ describe("fizruk applySync", () => {
       ).resolves.toEqual({ status: "rejected", reason });
     }
 
-    const insertClient = makeClient([]);
+    const insertClient = makeClient([], [PARENT_OWNED]);
     await expect(
       applyFizrukItems(
         insertClient,
@@ -1624,9 +1627,9 @@ describe("fizruk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(insertClient)).toContain("INSERT INTO fizruk_workout_items");
+    expect(sql(insertClient, 2)).toContain("INSERT INTO fizruk_workout_items");
 
-    const client = makeClient([existing()]);
+    const client = makeClient([existing()], [PARENT_OWNED]);
     await expect(
       applyFizrukItems(
         client,
@@ -1642,7 +1645,7 @@ describe("fizruk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(client)).toContain("UPDATE fizruk_workout_items");
+    expect(sql(client, 2)).toContain("UPDATE fizruk_workout_items");
 
     const deleteClient = makeClient([existing()]);
     await expect(
@@ -1698,7 +1701,7 @@ describe("fizruk applySync", () => {
 
     await expect(
       applyFizrukSets(
-        makeClient([existing({ deleted_at: OLD_TS })]),
+        makeClient([existing({ deleted_at: OLD_TS })], [PARENT_OWNED]),
         op({ id: "set-1", user_id: USER_ID, workout_item_id: "item-1" }),
         USER_ID,
         CLIENT_TS,
@@ -1761,7 +1764,7 @@ describe("fizruk applySync", () => {
       ).resolves.toEqual({ status: "rejected", reason });
     }
 
-    const insertClient = makeClient([]);
+    const insertClient = makeClient([], [PARENT_OWNED]);
     await expect(
       applyFizrukSets(
         insertClient,
@@ -1776,7 +1779,7 @@ describe("fizruk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(insertClient)).toContain("INSERT INTO fizruk_workout_sets");
+    expect(sql(insertClient, 2)).toContain("INSERT INTO fizruk_workout_sets");
 
     const deleteClient = makeClient([existing()]);
     await expect(
@@ -1788,7 +1791,7 @@ describe("fizruk applySync", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
 
-    const updateClient = makeClient([existing()]);
+    const updateClient = makeClient([existing()], [PARENT_OWNED]);
     await expect(
       applyFizrukSets(
         updateClient,
@@ -1802,7 +1805,7 @@ describe("fizruk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(updateClient)).toContain("UPDATE fizruk_workout_sets");
+    expect(sql(updateClient, 2)).toContain("UPDATE fizruk_workout_sets");
   });
 
   it("validates custom exercises and applies writes", async () => {

@@ -23,7 +23,7 @@ import {
   FINYK_STORAGE_KEYS,
   type FinykStorageKey,
 } from "@sergeant/finyk-domain/storage-keys";
-import { BudgetsSchema, toLocalISODate } from "@sergeant/shared";
+import { BudgetsSchema, toKyivISODate } from "@sergeant/shared";
 
 // Re-export the storage keys so existing web call sites keep working
 // without updating imports. New code (and mobile) should import from
@@ -120,8 +120,8 @@ export function getBudget(): Budget[] {
         return acc;
       }, []);
 
-  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper toLocalISODate
-  const migrationDate = toLocalISODate(new Date());
+  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper toKyivISODate
+  const migrationDate = toKyivISODate(new Date());
   let migrated = false;
   const withMigratedGoals = clean.map((b) => {
     if (b.type !== "goal") return b;

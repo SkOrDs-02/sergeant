@@ -35,7 +35,7 @@ import {
 } from "@shared/components/ui/DateScrubber";
 import { DateField } from "@shared/components/ui/DateField";
 import { Label } from "@shared/components/ui/FormField";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import {
   HARD_MAX_DAY_KEY,
   HARD_MIN_DAY_KEY,
@@ -65,7 +65,7 @@ export function ManualExpenseDateSection({
   onDateChange,
   register,
 }: ManualExpenseDateSectionProps) {
-  const value = date || toLocalISODate();
+  const value = date || toKyivISODate();
   const outOfWindow = !isWithinDateScrubberWindow(value);
 
   // `null` — «людина ще не чіпала деталі», тож рішення лишається за датою.

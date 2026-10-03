@@ -135,7 +135,7 @@ export function HabitMonthCalendar({
                 done
                   ? "bg-routine-surface2 dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine border border-routine-ring/40 dark:border-routine-border-dark/30 font-bold"
                   : scheduled
-                    ? "bg-panelHi/60 text-muted border border-line/30"
+                    ? "bg-panelHi text-muted border border-line/30"
                     : // eslint-disable-next-line sergeant-design/no-opacity-on-text-token -- незапланований день: неактивна клітинка, WCAG 1.4.3 її не покриває (той самий виняток, під яким `HabitDetailSheet.tsx` стоїть в allowlist `eslint.web.js`)
                       "text-subtle/50",
                 isToday &&
@@ -156,7 +156,7 @@ export function HabitMonthCalendar({
           Виконано
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-panelHi/60 border border-line/30" />
+          <span className="inline-block w-3 h-3 rounded bg-panelHi border border-line/30" />
           Заплановано
         </span>
       </div>

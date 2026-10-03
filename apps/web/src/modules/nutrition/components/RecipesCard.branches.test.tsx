@@ -83,14 +83,6 @@ vi.mock("../lib/sqliteReader", () => ({
   }),
 }));
 
-vi.mock("@sergeant/shared", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@sergeant/shared")>();
-  return {
-    ...actual,
-    toLocalISODate: vi.fn(() => "2026-06-02"),
-  };
-});
-
 import { __resetNutritionSqliteReadGateForTests } from "../lib/sqliteReadGate";
 import { RecipesCard } from "./RecipesCard";
 import { ToastProvider } from "@shared/hooks/useToast";

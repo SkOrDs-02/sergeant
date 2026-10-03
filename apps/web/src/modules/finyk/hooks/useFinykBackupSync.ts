@@ -6,7 +6,7 @@ import {
   FINYK_BACKUP_VERSION,
   type FinykBackup,
 } from "../lib/finykBackup";
-import { downloadJson, toLocalISODate } from "@sergeant/shared";
+import { downloadJson, toKyivISODate } from "@sergeant/shared";
 import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
 import { reportSilentError } from "./useStorage.persist";
 import type {
@@ -124,7 +124,7 @@ export function useFinykBackupSync(
       dismissedRecurring,
       merchantRules,
     };
-    await downloadJson(`finyk-backup-${toLocalISODate()}.json`, data);
+    await downloadJson(`finyk-backup-${toKyivISODate()}.json`, data);
   };
 
   /** @returns {Promise<boolean>} */

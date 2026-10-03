@@ -65,9 +65,13 @@ export function TransactionDayHeader({
         // — `bg-line/40` поверх, бо власний `hover:bg-panelHi` на суцільній
         // смузі нічого б не міняв (той самий патерн у чипах хаба).
         "bg-panelHi hover:bg-line/40",
-        // Separator only when the day is expanded and rows follow beneath —
-        // a collapsed day is a self-contained card and needs no trailing line.
-        !collapsed && "border-b border-line/60",
+        // Роздільник під смугою завжди, а не лише в розгорнутому дні (було
+        // `!collapsed && border-b border-line/60`): згорнутий день — це смуга
+        // без власної межі, у світлій темі `panel`/`panelHi` дають їй лише
+        // 1.09 проти столу (`flat` за метрикою `surface`). Той самий
+        // `bg-panelHi border-b border-line`, що в смугах `WorkoutHistoryList`
+        // і `Measurements`; у темній смуга й так `ok` (1.21), лінія її не псує.
+        "border-b border-line",
       )}
     >
       <span className="flex items-center gap-2 min-w-0">

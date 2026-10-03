@@ -3,7 +3,7 @@ import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { findCancelledTxIds } from "@sergeant/finyk-domain/domain/refundMatching";
 import { writeJSON } from "../lib/finykStorage";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
@@ -195,7 +195,7 @@ export function useStorage({
   }, [excludedBase, cancelledTxIds]);
 
   const saveNetworthSnapshot = (networth: number) => {
-    const today = toLocalISODate();
+    const today = toKyivISODate();
     const rounded = Math.round(networth);
     const snap = networthSnapshotRef.current;
     if (snap.date === today && snap.value !== null) {
