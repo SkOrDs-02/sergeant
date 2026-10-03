@@ -46,9 +46,9 @@ vi.mock("./hubBackup", () => ({
 
 // Готовність і акаунт керуються тестом. Реальний хук тягнув би storage-модулі
 // чотирьох доменів, яких решта моків цього файлу свідомо уникає.
-const readyState = { value: true };
+const readyState: { value: "loading" | "sync" | null } = { value: null };
 vi.mock("./useHubRestoreReady", () => ({
-  useHubRestoreReady: () => readyState.value,
+  useHubRestoreBlock: () => readyState.value,
 }));
 const authState: { value: { user: { id: string } | null } | null } = {
   value: null,
@@ -104,7 +104,7 @@ describe("HubBackupPanel", () => {
     // передану в `vi.fn(...)` на рівні модуля, тож `isHubBackupPayloadMock`
     // і далі коректно працює між тестами без повторного озброєння тут.
     vi.clearAllMocks();
-    readyState.value = true;
+    readyState.value = null;
     authState.value = null;
   });
 
@@ -633,13 +633,24 @@ describe("HubBackupPanel", () => {
   });
 
   it("кнопка імпорту заблокована, доки dual-write не готовий, і пояснює чому", () => {
-    readyState.value = false;
+    readyState.value = "loading";
     render(<HubBackupPanel />);
 
     const importButton = screen.getByRole("button", { name: "Імпорт…" });
     expect((importButton as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("status").textContent).toContain(
       "Дані ще завантажуються",
+    );
+  });
+
+  it("кнопка імпорту заблокована, доки не відбувся перший pull з акаунта, і пояснює чому", () => {
+    readyState.value = "sync";
+    render(<HubBackupPanel />);
+
+    const importButton = screen.getByRole("button", { name: "Імпорт…" });
+    expect((importButton as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("status").textContent).toContain(
+      "Чекаю на синхронізацію з акаунтом",
     );
   });
 

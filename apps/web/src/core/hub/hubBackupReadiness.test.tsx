@@ -36,11 +36,20 @@ import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
 } from "../../modules/nutrition/lib/sqliteReader";
+import { switchSqliteUser } from "../db/sqlite";
+import { createSyncEngineReaderRuntime } from "../syncEngine/syncEngineReader";
 import {
+  hasCompletedPull,
+  markPullCompleted,
+  resetPullCompletion,
+} from "../syncEngine/pullCompletion";
+import {
+  getHubRestoreBlock,
+  getHubRestoreModuleBlock,
   isHubRestoreModuleReady,
   isHubRestoreReady,
 } from "./hubBackupReadiness";
-import { useHubRestoreReady } from "./useHubRestoreReady";
+import { useHubRestoreBlock, useHubRestoreReady } from "./useHubRestoreReady";
 
 // Справжні реєстри й кеші модулів: готовність читає саме їх, тож і тест
 // ставить стан їхніми штатними тестовими засобами, без жодного vi.mock.
@@ -156,5 +165,105 @@ describe("useHubRestoreReady", () => {
   it("одразу true, коли все вже готове", () => {
     const { result } = renderHook(() => useHubRestoreReady());
     expect(result.current).toBe(true);
+  });
+});
+
+describe("перший pull з акаунта (data-07: новий пристрій)", () => {
+  // Активна партиція SQLite визначає, чи є користувач синхронізованим: це той
+  // самий `readActiveSqliteUserId`, що й у проді (`AuthContext` -> `setSqliteUser`).
+  afterEach(async () => {
+    resetPullCompletion();
+    await switchSqliteUser(null);
+  });
+
+  it("залогінений, кеші теплі, pull ще не було: імпорт заблокований як `sync`", async () => {
+    await switchSqliteUser("u1");
+    expect(hasCompletedPull("u1")).toBe(false);
+    expect(isHubRestoreReady()).toBe(false);
+    expect(getHubRestoreBlock()).toBe("sync");
+    for (const m of MODULES) {
+      expect(isHubRestoreModuleReady(m)).toBe(false);
+      expect(getHubRestoreModuleBlock(m)).toBe("sync");
+    }
+  });
+
+  it("після повного pull імпорт відкривається", async () => {
+    await switchSqliteUser("u1");
+    markPullCompleted("u1");
+    expect(getHubRestoreBlock()).toBeNull();
+    expect(isHubRestoreReady()).toBe(true);
+  });
+
+  it("pull чужого користувача не рахується", async () => {
+    await switchSqliteUser("u1");
+    markPullCompleted("u2");
+    expect(getHubRestoreBlock()).toBe("sync");
+  });
+
+  it("холодний кеш лишається `loading`, навіть якщо pull був", async () => {
+    await switchSqliteUser("u1");
+    markPullCompleted("u1");
+    cool("finyk");
+    expect(getHubRestoreBlock()).toBe("loading");
+    expect(getHubRestoreModuleBlock("finyk")).toBe("loading");
+  });
+
+  it("анонім (`anon` партиція) pull не потребує", () => {
+    expect(getHubRestoreBlock()).toBeNull();
+  });
+
+  it("реальний reader: імпорт закритий, доки pull іде, і відкривається після його завершення", async () => {
+    await switchSqliteUser("u1");
+    let finishPull: (page: { ops: []; next_cursor: null }) => void = () => {};
+    const pull = vi.fn(
+      () =>
+        new Promise<{ ops: []; next_cursor: null }>((resolve) => {
+          finishPull = resolve;
+        }),
+    );
+    const reader = createSyncEngineReaderRuntime({
+      pull: pull as never,
+      resolveClient: async () => ({
+        all: async () => [],
+        run: async () => {},
+        exec: async () => {},
+      }),
+      resolveUserId: async () => "u1",
+      originDeviceId: "device-a",
+      setInterval: () => 0,
+      clearInterval: () => {},
+      eventTarget: {
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      },
+      intervalMs: 60_000,
+      limit: 100,
+    });
+
+    const run = reader.pullOnce();
+    await vi.waitFor(() => expect(pull).toHaveBeenCalled());
+    expect(getHubRestoreBlock()).toBe("sync");
+
+    finishPull({ ops: [], next_cursor: null });
+    await run;
+    expect(getHubRestoreBlock()).toBeNull();
+  });
+
+  it("хук: чекає на pull і відкривається, коли той завершився", async () => {
+    vi.useFakeTimers();
+    await switchSqliteUser("u1");
+    const { result } = renderHook(() => useHubRestoreBlock());
+    expect(result.current).toBe("sync");
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(result.current).toBe("sync");
+
+    markPullCompleted("u1");
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(result.current).toBeNull();
   });
 });

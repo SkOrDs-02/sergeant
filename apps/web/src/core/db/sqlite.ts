@@ -12,6 +12,7 @@ import {
 } from "../lib/chunkReload.js";
 import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
+import { resetPullCompletion } from "../syncEngine/pullCompletion.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
 import {
   noteActiveSqliteVfs,
@@ -212,6 +213,9 @@ export async function wipeSqliteDb(): Promise<void> {
   const open = currentOpen;
   const stale = resolved;
   const userIdBeingWiped = activeUserId;
+  // Локальна репліка стерта: «pull уже був» більше не правда, доки не
+  // пройде новий (гейт відновлення з файлу, data-07).
+  if (userIdBeingWiped) resetPullCompletion(userIdBeingWiped);
   resolved = null;
   resolvedKey = null;
   inFlight = null;

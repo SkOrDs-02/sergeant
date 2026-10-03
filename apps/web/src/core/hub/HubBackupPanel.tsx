@@ -14,7 +14,7 @@ import {
   isHubBackupPayload,
 } from "./hubBackup";
 import { HubRestoreModePicker } from "./HubRestoreModePicker";
-import { useHubRestoreReady } from "./useHubRestoreReady";
+import { useHubRestoreBlock } from "./useHubRestoreReady";
 
 interface HubBackupPanelProps {
   className?: string;
@@ -85,9 +85,11 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   // воно їде на сервер і на всі пристрої акаунта (аудит 2026-10-01, data-06).
   const [mode, setMode] = useState<BackupRestoreMode>("merge");
   const [busy, setBusy] = useState(false);
-  // Імпорт до реєстрації dual-write контекстів і прогріву кешів мовчки нічого
-  // не пише (data-07), тому кнопка чекає готовності.
-  const ready = useHubRestoreReady();
+  // Імпорт до реєстрації dual-write контекстів, прогріву кешів і першого pull
+  // з акаунта або нічого не пише, або перебиває новіші дані сервера (data-07),
+  // тому кнопка чекає готовності.
+  const restoreBlock = useHubRestoreBlock();
+  const ready = restoreBlock === null;
   const signedIn = Boolean(useAuthOptional()?.user);
 
   const exportJson = async () => {
@@ -252,9 +254,15 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
           onChange={runImport}
         />
       </div>
-      {!ready && (
+      {restoreBlock === "loading" && (
         <p className="text-style-body text-muted" role="status">
           Дані ще завантажуються, імпорт стане доступним за кілька секунд.
+        </p>
+      )}
+      {restoreBlock === "sync" && (
+        <p className="text-style-body text-muted" role="status">
+          Чекаю на синхронізацію з акаунтом, імпорт стане доступним після неї.
+          Для цього потрібен інтернет.
         </p>
       )}
       <ConfirmDialog

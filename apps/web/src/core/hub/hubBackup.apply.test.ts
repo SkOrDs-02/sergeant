@@ -58,8 +58,11 @@ vi.mock("../../modules/nutrition/domain/nutritionBackup", () => ({
 
 // Готовність керується тестом: за замовчуванням усе готове.
 const isHubRestoreModuleReady = vi.fn((_m: string) => true);
+let blockKind: "loading" | "sync" = "loading";
 vi.mock("./hubBackupReadiness", () => ({
   isHubRestoreModuleReady: (m: string) => isHubRestoreModuleReady(m),
+  getHubRestoreModuleBlock: (m: string) =>
+    isHubRestoreModuleReady(m) ? null : blockKind,
   isHubRestoreReady: () => true,
 }));
 
@@ -91,6 +94,7 @@ beforeEach(() => {
   persistFinykNormalizedToSqlite.mockImplementation(async () => APPLIED);
   applyFizrukFullBackupPayload.mockImplementation(async () => APPLIED);
   isHubRestoreModuleReady.mockImplementation(() => true);
+  blockKind = "loading";
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -307,6 +311,16 @@ describe("applyHubBackupPayload — режими і чесний результ�
     await expect(
       applyHubBackupPayload(validPayload({ finyk: {} })),
     ).rejects.toThrow(/ще завантажуються/);
+    expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
+  });
+
+  it("локально готово, але повного pull з акаунта ще не було: кидає про синхронізацію, нічого не пишучи", async () => {
+    isHubRestoreModuleReady.mockImplementation(() => false);
+    blockKind = "sync";
+    await expect(
+      applyHubBackupPayload(validPayload({ finyk: {} })),
+    ).rejects.toThrow(/Чекаю на синхронізацію з акаунтом/);
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
     expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
   });
 

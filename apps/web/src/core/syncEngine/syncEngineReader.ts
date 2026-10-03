@@ -2,6 +2,7 @@ import type { SyncV2PullOp, SyncV2PullResponse } from "@sergeant/api-client";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyPullOp } from "./applyPullOp.js";
+import { markPullCompleted } from "./pullCompletion.js";
 import { readPullSinceCursor, writePullSinceCursor } from "./syncOpCursor.js";
 import { refreshCachesAfterPull } from "./refreshCachesAfterPull.js";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
@@ -239,6 +240,10 @@ export function createSyncEngineReaderRuntime(
       if (applied > 0) {
         await refreshCachesAfterPull(client, userId, affectedTables);
       }
+
+      // Лише тут, після повного проходу й оновлення кешів: це сигнал гейту
+      // відновлення з файлу, що локальна репліка наздогнала акаунт.
+      markPullCompleted(userId);
 
       return {
         pulled,

@@ -31,9 +31,9 @@ vi.mock("./hubBackupReadiness", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./hubBackupReadiness")>();
   return {
     ...actual,
-    isHubRestoreModuleReady: (
-      m: Parameters<typeof actual.isHubRestoreModuleReady>[0],
-    ) => m !== "finyk" || actual.isHubRestoreModuleReady(m),
+    getHubRestoreModuleBlock: (
+      m: Parameters<typeof actual.getHubRestoreModuleBlock>[0],
+    ) => (m !== "finyk" ? null : actual.getHubRestoreModuleBlock(m)),
   };
 });
 

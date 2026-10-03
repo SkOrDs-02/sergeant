@@ -1,12 +1,13 @@
 import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
 import {
   BACKUP_RESTORE_NOT_READY_MESSAGE,
+  BACKUP_RESTORE_SYNC_PENDING_MESSAGE,
   type BackupRestoreMode,
 } from "@shared/lib/backup/restoreMode";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { isDualWriteOutcomeClean } from "../durability/dualWriteJournal";
 import {
-  isHubRestoreModuleReady,
+  getHubRestoreModuleBlock,
   type HubRestoreModule,
 } from "./hubBackupReadiness";
 import {
@@ -173,9 +174,13 @@ function assertRestoreWritten(
 }
 
 function assertModuleReady(module: HubRestoreModule): void {
-  if (!isHubRestoreModuleReady(module)) {
-    throw new Error(BACKUP_RESTORE_NOT_READY_MESSAGE);
-  }
+  const block = getHubRestoreModuleBlock(module);
+  if (block === null) return;
+  throw new Error(
+    block === "sync"
+      ? BACKUP_RESTORE_SYNC_PENDING_MESSAGE
+      : BACKUP_RESTORE_NOT_READY_MESSAGE,
+  );
 }
 
 export interface ApplyHubBackupOptions {

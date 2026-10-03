@@ -12,6 +12,7 @@ vi.mock("./refreshCachesAfterPull.js", () => ({
     refreshCachesAfterPullMock(...args),
 }));
 
+import { hasCompletedPull, resetPullCompletion } from "./pullCompletion.js";
 import { createSyncEngineReaderRuntime } from "./syncEngineReader.js";
 import { writePullSinceCursor } from "./syncOpCursor.js";
 
@@ -40,6 +41,7 @@ function makeDeps(
 }
 
 beforeEach(() => {
+  resetPullCompletion();
   applyPullOpMock.mockReset();
   applyPullOpMock.mockResolvedValue("applied");
   refreshCachesAfterPullMock.mockClear();
@@ -266,6 +268,65 @@ describe("createSyncEngineReaderRuntime", () => {
     expect(result.skipped).toBe(2);
     expect(result.lastOpId).toBe(11);
     expect(refreshCachesAfterPullMock).not.toHaveBeenCalled();
+  });
+
+  // Гейт відновлення з файлу (data-07): «pull уже був» ставиться лише коли
+  // прохід дійшов до кінця, а не на першій сторінці й не на порожньому курсорі.
+  describe("мітка завершеного pull (гейт відновлення з файлу)", () => {
+    it("ставиться після повного проходу, навіть порожнього", async () => {
+      const runtime = createSyncEngineReaderRuntime(makeDeps());
+      expect(hasCompletedPull("u1")).toBe(false);
+      await runtime.pullOnce();
+      expect(hasCompletedPull("u1")).toBe(true);
+      expect(hasCompletedPull("u2")).toBe(false);
+    });
+
+    it("не ставиться, поки пагінована догонка не дійшла до кінця", async () => {
+      let release: (value: unknown) => void = () => {};
+      const second = new Promise((resolve) => {
+        release = resolve;
+      });
+      const pull = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ops: [{ id: 4, table: "routine_entries", op: "insert", row: {} }],
+          next_cursor: 10,
+        })
+        .mockImplementationOnce(() => second);
+      const runtime = createSyncEngineReaderRuntime(makeDeps({ pull }));
+      const run = runtime.pullOnce();
+      await vi.waitFor(() => expect(pull).toHaveBeenCalledTimes(2));
+      expect(hasCompletedPull("u1")).toBe(false);
+      release({ ops: [], next_cursor: null });
+      await run;
+      expect(hasCompletedPull("u1")).toBe(true);
+    });
+
+    it("не ставиться, коли pull упав (офлайн)", async () => {
+      const pull = vi.fn().mockRejectedValue(new Error("network down"));
+      const runtime = createSyncEngineReaderRuntime(makeDeps({ pull }));
+      await expect(runtime.pullOnce()).rejects.toThrow("network down");
+      expect(hasCompletedPull("u1")).toBe(false);
+    });
+
+    it("не ставиться, коли оновлення кешів після pull упало", async () => {
+      refreshCachesAfterPullMock.mockRejectedValueOnce(new Error("boom"));
+      const pull = vi.fn().mockResolvedValue({
+        ops: [{ id: 1, table: "routine_entries", op: "insert", row: {} }],
+        next_cursor: null,
+      });
+      const runtime = createSyncEngineReaderRuntime(makeDeps({ pull }));
+      await expect(runtime.pullOnce()).rejects.toThrow("boom");
+      expect(hasCompletedPull("u1")).toBe(false);
+    });
+
+    it("без користувача нічого не ставиться", async () => {
+      const runtime = createSyncEngineReaderRuntime(
+        makeDeps({ resolveUserId: async () => null }),
+      );
+      await runtime.pullOnce();
+      expect(hasCompletedPull("u1")).toBe(false);
+    });
   });
 
   it("routes pull errors through captureException and rethrows", async () => {
