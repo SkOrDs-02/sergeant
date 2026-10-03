@@ -1202,7 +1202,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-14` [medium] /api/nutrition/refine-photo робить повний vision-аналіз довільного фото без квоти
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-14-refine-same-photo
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / nutrition
 - **Де:** apps/server/src/routes/nutrition.ts:117-130; packages/shared/src/schemas/api.ts:723-740
 - **Першопричина:** На refine-photo немає requireAiQuota('photo'): ланцюг лише rateLimit 20/хв → requireHealthConsent → requireLlmUpstream. Схема вимагає тільки image_base64, prior_result необов'язковий, і за порожнього prior_result промпт робить повний розбір КБЖВ, тож refine рівноцінний analyze-photo.
