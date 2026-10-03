@@ -1436,7 +1436,7 @@ node <scratch>/agents/verify-server-static-auth-session/v4-misc.mjs: update-user
 
 ### `sec-17` [medium] Канали для звітів про вразливості й запитів приватності не працюють: security.txt веде на мертвий репозиторій, а email-и на запаркований sergeant.app
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-17-security-contacts (лишилось: робоча скринька з MX на домені проєкту для legal@/privacy@/support@/security@, зараз sergeant.app з Null MX; увімкнення private vulnerability reporting у налаштуваннях SkOrDs-02/sergeant)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: security.txt / юридичні сторінки
 - **Де:** apps/web/public/.well-known/security.txt:1-6; apps/web/src/core/legal/legalShared.ts:15-18; scripts/check-security-txt-expiry.sh; .github/workflows/ci.yml:217-218; docs/governance/security/beta-tester-brief.md:8; apps/landing/public/.well-known/
 - **Першопричина:** Після переїздів репозиторію й доменів контакти не оновили. Contact у security.txt веде на Skords-01/Sergeant (не існує), Canonical на 2dmanager.com.ua; legal@, privacy@, security@ і support@sergeant.app живуть на домені з Null MX, запаркованому на продаж (NS afternic). SECURITY.md немає, на лендингу security.txt немає, private vulnerability reporting на SkOrDs-02/sergeant вимкнено.
