@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-09-17 by @claude (inventory: runtime-runbook-и без Trigger — у README § Runtime). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (тригери bump-dep-safely / dependency-sweeper: Renovate → Dependabot, ADR-0103). **Next review:** 2027-01-01.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -56,8 +56,8 @@ Curated table вище лишається швидким роутером для
 | [`add-onboarding-step.md`](./add-onboarding-step.md)                               | «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.                                                                                                                          |
 | [`add-push-notification.md`](./add-push-notification.md)                           | «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).                                                                                     |
 | [`add-react-query-hook.md`](./add-react-query-hook.md)                             | «Дай хук який тягне X з API» / новий useQuery або useMutation у `apps/web` / нова server-state дата.                                                                                                                        |
-| [`bump-dep-safely.md`](./bump-dep-safely.md)                                       | "Оновити X до версії Y" / Renovate PR з major-bump / security advisory на залежність.                                                                                                                                       |
-| [`dependency-sweeper.md`](./dependency-sweeper.md)                                 | запланований періодичний прогін / «що застаріло» / CVE sweep / safe bump batch поверх Renovate.                                                                                                                             |
+| [`bump-dep-safely.md`](./bump-dep-safely.md)                                       | "Оновити X до версії Y" / Dependabot PR з major-bump / security advisory на залежність.                                                                                                                                     |
+| [`dependency-sweeper.md`](./dependency-sweeper.md)                                 | запланований періодичний прогін / «що застаріло» / CVE sweep / safe bump batch поверх Dependabot.                                                                                                                           |
 | [`audit-ci-gates.md`](./audit-ci-gates.md)                                         | борг накопичився під зеленим CI / додаєш новий гейт у `.github/workflows/**` / «чому цей лінт не спрацював, він же в пайплайні» / ревізія пайплайна перед релізом.                                                          |
 | [`cleanup-dead-code.md`](./cleanup-dead-code.md)                                   | «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.                                                                                                                    |
 | [`cleanup-codex-branch-after-pr.md`](./cleanup-codex-branch-after-pr.md)           | PR merged / "онови main" / "видали гілку" / "поверни local dirty files" після Codex-гілки.                                                                                                                                  |

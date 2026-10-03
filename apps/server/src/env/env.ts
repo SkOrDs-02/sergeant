@@ -584,6 +584,16 @@ const envSchema = z.object({
 
   AI_MEMORY_ENABLED: boolFromEnv(false),
 
+  /**
+   * Рубильник `GET /api/v2/sync/stream` (SSE). Дефолт `false` → маршрут
+   * відповідає 404, поки немає клієнта-споживача (Фаза 3,
+   * `sync-client-wiring.md`); аудит 2026-10-01, sec-09. Ран-тайм читає
+   * `process.env` напряму (`modules/sync/syncV2StreamGuard.ts`,
+   * `boolFromProcessEnv`) з тією ж семантикою - це поле лише валідує й
+   * документує значення.
+   */
+  SYNC_V2_STREAM_ENABLED: boolFromEnv(false),
+
   VOYAGE_API_KEY: stringWithDefault(""),
 
   VOYAGE_EMBEDDING_MODEL: stringWithDefault("voyage-3.5-lite"),
