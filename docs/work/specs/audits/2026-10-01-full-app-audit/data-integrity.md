@@ -702,7 +702,7 @@ I could not refute the core claim. The code path is as described and I reproduce
 
 ### `data-05` [high] Журнал dual-write знімається, навіть коли SQL-запис упав: при SQLITE_IOERR/BUSY запис зникає назавжди, а користувач бачить тост «додано»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-05-dualwrite-ack-on-error (журнал не знімається при errored > 0, лічильник спроб і карантин після 5 невдач, «durable»-підтвердження Рутини не бреше, банер помилки сховища для Рутини; лишилось: загальний банер деградації сховища для Фініка/Харчування/Фізрука без тосту успіху і e2e з Storage.overrideQuotaForOrigin)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/dualwrite-core + web: sqliteWriter усіх модулів
 - **Де:** packages/dualwrite-core/src/createApplyOps.ts:84-108; apps/web/src/modules/finyk/lib/sqliteWriter/index.ts:264-300,375-383; apps/web/src/modules/routine/lib/sqliteWriter/index.ts:224,243,341; apps/web/src/modules/fizruk/lib/sqliteWriter/index.ts:221,234,316; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:229,242,367; apps/web/src/core/durability/dualWriteJournal.ts:90-99
 - **Першопричина:** createApplyOps.applyBestEffort ловить виняток кожного опа і лише рахує errored; runFinykOps, runRoutineOps, runFizrukOps і runNutritionOps безумовно повертають status 'applied', і оркестратор робить ackDualWrite. outboxCheckpoint збою не бачить, бо enqueue стоїть після client.run і взагалі не викликається.
