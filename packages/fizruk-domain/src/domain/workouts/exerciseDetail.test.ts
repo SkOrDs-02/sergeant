@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { deviceDayKey, deviceMondayStart } from "@sergeant/shared";
 
 import type { Workout, WorkoutItem } from "../types.js";
 import {
@@ -215,12 +217,32 @@ describe("computeExerciseBest", () => {
 });
 
 describe("computeExerciseWeeklyTrend", () => {
-  // Domain invariant: week buckets are Europe/Kyiv-anchored.
-  // Mon 2026-06-08 00:00 Kyiv (EEST, UTC+3) = 2026-06-07T21:00:00Z.
-  it("splits Sun 23:30 vs Mon 00:30 (Kyiv) into separate week buckets", () => {
+  // ADR-0078: тренування — персональний запис, тож тиждень (як і день) рахується
+  // за годинником ПРИСТРОЮ, а не Києва. Пояс пристрою емулюємо через
+  // `process.env["TZ"]` (той самий прийом, що в dashboardKpis/weeklyStreak тестах);
+  // за замовчуванням закріплюємо Київ, щоб файл не залежав від поясу раннера.
+  const originalTz = process.env["TZ"];
+  beforeEach(() => {
+    process.env["TZ"] = "Europe/Kyiv";
+  });
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
+  });
+
+  function trendFor(...startedAt: string[]) {
+    return computeExerciseWeeklyTrend(
+      startedAt.map((iso, i) => ({
+        workout: w(`w${i}`, iso, []),
+        item: strength(`i${i}`, "squat", [{ weightKg: 60 + i, reps: 5 }]),
+      })),
+    ).rmPoints;
+  }
+
+  it("splits Sun 23:30 vs Mon 00:30 (device = Kyiv) into separate week buckets", () => {
     const history = [
       {
-        // Mon 2026-06-08 00:30 Kyiv → bucket 2026-06-08
+        // Mon 2026-06-08 00:30 Kyiv (EEST, UTC+3) → bucket 2026-06-08
         workout: w("w_mon", "2026-06-07T21:30:00Z", []),
         item: strength("i_mon", "squat", [{ weightKg: 60, reps: 5 }]),
       },
@@ -235,14 +257,75 @@ describe("computeExerciseWeeklyTrend", () => {
       "2026-06-01",
       "2026-06-08",
     ]);
-    // The label must show the Kyiv Monday's day-of-month even for users
-    // west of Kyiv (Kyiv Mon 00:00 is still Sunday in UTC and westwards).
+    // Підпис показує день місяця понеділка тижня.
     expect(rmPoints[0]!.dateLabel).toMatch(/^1\s/);
     expect(rmPoints[1]!.dateLabel).toMatch(/^8\s/);
   });
 
+  // Регресія ADR-0078: ключ тижня був `toKyivISODate(kyivMondayStartMs(t))`, тож
+  // вебівський графік (пристрій) і мобільний (Київ) клали одне тренування у різні
+  // тижні поблизу півночі нд/пн поза Києвом.
+  describe("device clock outside Kyiv (ADR-0078)", () => {
+    it("Mexico City (UTC-6): Sun 21:00 local stays in the previous week even though Kyiv is already Monday", () => {
+      process.env["TZ"] = "America/Mexico_City";
+      // 2026-06-08T03:00Z = Sun 2026-06-07 21:00 Mexico City = Mon 06:00 Kyiv.
+      const rm = trendFor("2026-06-08T03:00:00Z");
+      expect(rm.map((p) => p.weekKey)).toEqual(["2026-06-01"]);
+      expect(rm[0]!.dateLabel).toMatch(/^1\s/);
+    });
+
+    it("Tokyo (UTC+9): Mon 01:00 local starts the new week even though Kyiv is still Sunday", () => {
+      process.env["TZ"] = "Asia/Tokyo";
+      // 2026-06-07T16:00Z = Mon 2026-06-08 01:00 Tokyo = Sun 19:00 Kyiv.
+      const rm = trendFor("2026-06-07T16:00:00Z");
+      expect(rm.map((p) => p.weekKey)).toEqual(["2026-06-08"]);
+      // Підпис — понеділок пристрою (8), а не київська доба (7).
+      expect(rm[0]!.dateLabel).toMatch(/^8\s/);
+    });
+
+    it("Tokyo: Sun 23:30 and Mon 00:30 local are two buckets (Kyiv would merge them into one)", () => {
+      process.env["TZ"] = "Asia/Tokyo";
+      // 14:30Z = Sun 23:30 Tokyo, 15:30Z = Mon 00:30 Tokyo; обидва — нд 17:30/18:30 Kyiv.
+      const rm = trendFor("2026-06-07T14:30:00Z", "2026-06-07T15:30:00Z");
+      expect(rm.map((p) => p.weekKey)).toEqual(["2026-06-01", "2026-06-08"]);
+    });
+
+    it("New York: spring-forward Sunday (2026-03-08) stays in its device week", () => {
+      process.env["TZ"] = "America/New_York";
+      // Sun 2026-03-08 20:00 EDT = 2026-03-09T00:00Z; Mon 2026-03-09 00:30 EDT = 04:30Z.
+      const rm = trendFor("2026-03-09T00:00:00Z", "2026-03-09T04:30:00Z");
+      expect(rm.map((p) => p.weekKey)).toEqual(["2026-03-02", "2026-03-09"]);
+    });
+
+    it.each([
+      "Europe/Kyiv",
+      "America/Mexico_City",
+      "Asia/Tokyo",
+      "Pacific/Auckland",
+      "UTC",
+    ])(
+      "%s: weekKey equals the shared device helpers for instants around Sun/Mon midnight",
+      (tz) => {
+        process.env["TZ"] = tz;
+        const instants = [
+          "2026-06-07T14:30:00Z",
+          "2026-06-07T21:30:00Z",
+          "2026-06-08T03:00:00Z",
+          "2026-06-08T12:00:00Z",
+          "2026-06-14T22:30:00Z",
+        ];
+        for (const iso of instants) {
+          const [point] = trendFor(iso);
+          expect(point!.weekKey).toBe(
+            deviceDayKey(deviceMondayStart(Date.parse(iso))),
+          );
+        }
+      },
+    );
+  });
+
   // DST week: Kyiv springs forward Sun 2026-03-29 03:00 EET → 04:00 EEST.
-  it("keeps the spring-forward DST Sunday inside its Kyiv week bucket", () => {
+  it("keeps the spring-forward DST Sunday inside its week bucket (device = Kyiv)", () => {
     const history = [
       {
         // Sun 2026-03-29 23:30 Kyiv (EEST) → bucket Mon 2026-03-23
@@ -254,7 +337,7 @@ describe("computeExerciseWeeklyTrend", () => {
     expect(rmPoints.map((p) => p.weekKey)).toEqual(["2026-03-23"]);
   });
 
-  it("buckets sessions by Kyiv Monday and caps at 12 weeks", () => {
+  it("buckets sessions by Monday and caps at 12 weeks", () => {
     const history = [
       {
         // Wed 2026-04-08 groups with Mon 2026-04-06

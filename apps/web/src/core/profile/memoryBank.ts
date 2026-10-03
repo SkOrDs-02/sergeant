@@ -71,6 +71,25 @@ export function readMemoryBankMeta(): MemoryBankMeta {
   );
 }
 
+/**
+ * priv-02: `true`, коли локальний банк записаний ІНШИМ залогіненим
+ * користувачем, ніж власник поточної сесії пристрою. `hub_user_profile_v1` —
+ * один плоский ключ на пристрій, тож після протухлої сесії без «Вийти»
+ * (див. AuthContext `teardownAfterSessionLoss`) там можуть лежати факти
+ * про здоровʼя попередньої людини. Такий банк не читаємо, не штампуємо
+ * новим власником і не пушимо на сервер.
+ *
+ * `ownerId: null` (легасі-значення або запис анонімної сесії) і невідомий
+ * власник сесії (`null` — ще не виставлений boot-хуком) НЕ чужі: інакше
+ * зламалася б міграція легасі-фактів, а власна пам'ять людини зникала б зі
+ * стартового рендера до спрацювання ефекту.
+ */
+export function isMemoryBankForeign(): boolean {
+  if (currentMemoryBankOwner === null) return false;
+  const storedOwner = readMemoryBankMeta().ownerId;
+  return storedOwner !== null && storedOwner !== currentMemoryBankOwner;
+}
+
 function writeMemoryBankMeta(updatedAt: string): void {
   safeWriteLSDurable(MEMORY_BANK_META_KEY, {
     updatedAt,
@@ -243,6 +262,8 @@ export function buildMemoryImportPreview(
 }
 
 export function readMemoryEntries(): MemoryEntry[] {
+  // priv-02: чужий банк для поточної сесії не існує (див. isMemoryBankForeign).
+  if (isMemoryBankForeign()) return [];
   const parsed = safeReadLSDurable<unknown[]>(PROFILE_KEY, []);
   if (!Array.isArray(parsed)) return [];
   return parsed

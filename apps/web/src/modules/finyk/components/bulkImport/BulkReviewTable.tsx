@@ -164,6 +164,7 @@ export function BulkReviewTable({
         <div className="ml-auto flex items-center gap-1.5">
           <Select
             size="sm"
+            className="bg-panel"
             aria-label="Категорія для вибраних витрат"
             value={bulkCategory}
             disabled={disabled || selectedExpenseCount === 0}

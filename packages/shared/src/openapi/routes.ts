@@ -412,7 +412,7 @@ export const paths: ZodOpenApiPathsObject = {
     get: {
       summary: "SSE-стрім op-ів (hello / op / caught_up / heartbeat)",
       description:
-        "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`.",
+        "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`. Маршрут закритий серверним прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт вимкнено → 404). Коли ввімкнено: сервер перевіряє сесію на кожному heartbeat і закриває стрім без неї, зʼєднання живе не довше 15 хв, одночасних стрімів на юзера не більше 3 (новий витісняє найстаріший); перед серверним закриттям летить `event: closed` із `reason` (`max_age` / `session_revoked` / `session_check_failed` / `evicted`).",
       tags: ["sync"],
       security: cookieOrBearer,
       requestParams: { query: namedSchemas.SyncV2PullQuery },
@@ -423,6 +423,10 @@ export const paths: ZodOpenApiPathsObject = {
         },
         "400": validationError,
         "401": unauthorized,
+        "404": {
+          description:
+            "Стрім вимкнено (`SYNC_V2_STREAM_ENABLED=false`, дефолт); віддається і без сесії.",
+        },
       },
     },
   },

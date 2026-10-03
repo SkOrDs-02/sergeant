@@ -65,6 +65,20 @@ export type BodySizeRule =
        * клієнти не стискають тіла запитів, тож для AI-роутів вимикаємо.
        */
       readonly inflate?: boolean;
+    }
+  | {
+      readonly pathPrefix: string;
+      /**
+       * `application/x-www-form-urlencoded` → `req.body` (`extended: false`,
+       * тобто плоский обʼєкт рядків/масивів без `qs`-вкладеності). Mount-иться
+       * ПОРУЧ із json-правилом на тому ж префіксі: кожен парсер реагує лише
+       * на свій `Content-Type`, тож json-тіла його не зачіпають.
+       */
+      readonly kind: "urlencoded";
+      readonly limit: string;
+      readonly reason: string;
+      /** B28/rel-04: `false` → gzip/deflate/br-тіло відхиляється з 415. */
+      readonly inflate?: boolean;
     };
 
 /**
@@ -106,6 +120,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   },
   {
     pathPrefix: "/api/nutrition/backup-upload",
+    inflate: false,
     kind: "json",
     limit: "4mb",
     reason: "Manual nutrition backup blob",
@@ -128,6 +143,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   },
   {
     pathPrefix: "/api/finyk/import/statement/preview",
+    inflate: false,
     kind: "json",
     limit: "10mb",
     reason:
@@ -135,6 +151,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   },
   {
     pathPrefix: "/api/finyk/import/commit",
+    inflate: false,
     kind: "json",
     limit: "2mb",
     reason:
@@ -146,6 +163,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     // Живий sync-push сидить на `/api/v2/sync/push` і має власне правило
     // нижче. Прибереш його — push мовчки провалиться в дефолтні 128kb.
     pathPrefix: "/api/sync",
+    inflate: false,
     kind: "json",
     limit: "6mb",
     reason:
@@ -162,6 +180,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     // SYNC_OP_MAX_ATTEMPTS=10 усі рядки ставали dead_letter. Записане
     // офлайн не доїжджало на сервер ніколи й ніде не спливало.
     pathPrefix: "/api/v2/sync",
+    inflate: false,
     kind: "json",
     limit: "6mb",
     reason:
@@ -257,7 +276,24 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     type: "audio/*",
   },
   {
+    // sec-11: Better Auth `/sign-in/email` і OAuth-колбеки приймають
+    // `application/x-www-form-urlencoded`. Без цього парсера `req.body`
+    // для form-тіла порожній, і `authAccountRateLimit` (ключ = email із
+    // `req.body`) пропускав запит повз бакет — обхід per-account ліміту
+    // зміною Content-Type. Тіло після парсингу Better Auth дістає з
+    // `req.body` (better-call повторно серіалізує його у форму), тож
+    // Apple `response_mode=form_post` на `/api/auth/callback/apple`
+    // працює без змін.
+    pathPrefix: "/api/auth",
+    inflate: false,
+    kind: "urlencoded",
+    limit: "16kb",
+    reason:
+      "Better Auth form-тіла (sign-in/sign-up, OAuth form_post callback): email мусить бути в req.body до per-account rate-limit",
+  },
+  {
     pathPrefix: "/",
+    inflate: false,
     kind: "json",
     limit: "128kb",
     reason: "Default API body cap — 99% endpoints exchange <4KB JSON",
@@ -270,6 +306,14 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
  * перевірити маппінг rule → middleware-options без mount-у в Express.
  */
 function buildMiddleware(rule: BodySizeRule): RequestHandler {
+  if (rule.kind === "urlencoded") {
+    const urlOpts: Parameters<typeof express.urlencoded>[0] = {
+      extended: false,
+      limit: rule.limit,
+    };
+    if (rule.inflate !== undefined) urlOpts.inflate = rule.inflate;
+    return express.urlencoded(urlOpts);
+  }
   if (rule.kind === "json") {
     const verify = rule.captureRawBody
       ? (req: import("express").Request, _res: unknown, buf: Buffer): void => {

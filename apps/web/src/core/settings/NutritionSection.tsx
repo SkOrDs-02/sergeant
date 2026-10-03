@@ -4,10 +4,10 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import {
   defaultNutritionPrefs,
-  loadNutritionPrefs,
-  persistNutritionPrefs,
+  patchNutritionPrefs,
   type NutritionPrefs,
 } from "../../modules/nutrition/lib/nutritionStorage";
+import { useNutritionPrefsSnapshot } from "../../modules/nutrition/hooks/useNutritionPrefsHydration";
 import {
   SettingsGroup,
   SettingsSubGroup,
@@ -31,6 +31,7 @@ interface NumberFieldProps {
   suffix: string;
   value: number | null;
   placeholder?: string;
+  disabled?: boolean;
   onCommit: (next: number | null) => void;
 }
 
@@ -39,6 +40,7 @@ function NumberField({
   suffix,
   value,
   placeholder,
+  disabled = false,
   onCommit,
 }: NumberFieldProps) {
   const [draft, setDraft] = useState<string>(() => numberOrNullToInput(value));
@@ -64,10 +66,12 @@ function NumberField({
           min={0}
           step={1}
           placeholder={placeholder}
+          disabled={disabled}
           className={cn(
             "input-focus h-10 w-24 px-2.5 text-right text-style-body",
             "bg-panelHi border border-line rounded-xl text-text",
             "placeholder:text-muted",
+            "disabled:opacity-60 disabled:cursor-not-allowed",
           )}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -83,31 +87,19 @@ function NumberField({
 
 const STORAGE_ERR_MSG = "Не вдалося зберегти налаштування Їжі.";
 
-function persistAndCaptureErr(prefs: NutritionPrefs): string {
-  return persistNutritionPrefs(prefs) ? "" : STORAGE_ERR_MSG;
-}
-
 export function NutritionSection() {
-  const [prefs, setPrefs] = useState<NutritionPrefs>(() =>
-    loadNutritionPrefs(),
-  );
-  // Persist initial prefs at mount and capture any storage error synchronously.
-  // Subsequent persists happen in the `patchPrefs` event handler to avoid
-  // calling setState in a useEffect body (react-hooks/set-state-in-effect).
-  const [storageErr, setStorageErr] = useState<string>(() =>
-    persistAndCaptureErr(loadNutritionPrefs()),
-  );
+  // data-04: prefs читаються з кешу живцем (тік), а не один раз у `useState`,
+  // а до гідратації (кеш без рядка prefs і початковий pull ще не завершено)
+  // контроли заблоковані: запис із дефолтів стер би шаблони страв, ціль і
+  // нагадування на всіх пристроях.
+  const { prefs, hydrated } = useNutritionPrefsSnapshot();
+  const [storageErr, setStorageErr] = useState<string>("");
 
-  // Persist on every change and update the error banner. Called from event
-  // handlers (not effects) so setState is safe without the microtask deferral.
-  const patchPrefs = useCallback(
-    (patch: Partial<NutritionPrefs>) => {
-      const next = { ...prefs, ...patch };
-      setPrefs(next);
-      setStorageErr(persistAndCaptureErr(next));
-    },
-    [prefs],
-  );
+  // Пишемо ЛИШЕ змінене поле: решту `patchNutritionPrefs` бере з актуального
+  // кешу в момент виклику, а не зі стану цього компонента.
+  const patchPrefs = useCallback((patch: Partial<NutritionPrefs>) => {
+    setStorageErr(patchNutritionPrefs(patch) ? "" : STORAGE_ERR_MSG);
+  }, []);
 
   const navigate = useNavigate();
 
@@ -129,6 +121,13 @@ export function NutritionSection() {
         </div>
       )}
 
+      {!hydrated && (
+        <p className="text-style-body text-subtle leading-snug">
+          Налаштування Їжі ще завантажуються з акаунта. Зміни стануть доступні
+          за кілька секунд.
+        </p>
+      )}
+
       <SettingsSubGroup title="Вода">
         <p className="text-style-body text-subtle leading-snug">
           Денна норма для трекера води в картці дня Їжі.
@@ -138,6 +137,7 @@ export function NutritionSection() {
           suffix="мл"
           value={prefs.waterGoalMl}
           placeholder="2000"
+          disabled={!hydrated}
           onCommit={(v) =>
             patchPrefs({
               waterGoalMl: v != null ? v : defaultNutritionPrefs().waterGoalMl,
@@ -151,6 +151,7 @@ export function NutritionSection() {
           label="Автокалібрування"
           description="Щотижня уточнює ціль за журналом їжі та зміною ваги. Ручна правка полів денного плану призупиняє його."
           checked={prefs.adaptiveGoalEnabled}
+          disabled={!hydrated}
           onChange={(checked) =>
             patchPrefs({
               adaptiveGoalEnabled: checked,

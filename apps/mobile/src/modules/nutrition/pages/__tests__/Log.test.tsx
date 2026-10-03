@@ -4,6 +4,11 @@ import { ApiClientProvider } from "@sergeant/api-client/react";
 
 import { ToastProvider } from "@/components/ui/Toast";
 
+import {
+  EAST_OF_KYIV,
+  installFakeDeviceZone,
+  WEST_OF_KYIV,
+} from "../../__tests__/fakeDeviceZone";
 import { Log } from "../Log";
 
 jest.mock("../../hooks/useNutritionLog", () => ({
@@ -183,4 +188,57 @@ describe("Log", () => {
       getByText("Натисни «+ Додати прийом», щоб записати їжу."),
     ).toBeTruthy();
   });
+});
+
+describe("Log — «сьогодні» за годинником пристрою (ADR-0078)", () => {
+  // `kyivDayLabel`: київський день відносно пристрою — завтра на заході
+  // (пристрій ще в попередньому дні), вчора на сході.
+  const zones = [
+    ["на захід від Києва (UTC-5)", WEST_OF_KYIV, "Завтра"],
+    ["на схід від Києва (UTC+10)", EAST_OF_KYIV, "Вчора"],
+  ] as const;
+  let restore: (() => void) | undefined;
+
+  afterEach(() => {
+    restore?.();
+    restore = undefined;
+  });
+
+  it.each(zones)(
+    "день пристрою — «Сьогодні», кнопка повертає на нього: %s",
+    (_name, zone) => {
+      restore = installFakeDeviceZone(zone);
+      mockedLog.mockReturnValue({
+        selectedDate: zone.deviceDay,
+        nutritionLog: {},
+        ...actions,
+      });
+
+      const { getByTestId, getByText, queryByText } = renderLog();
+
+      expect(getByText("Сьогодні")).toBeTruthy();
+      // На «сьогодні» під підписом немає дати-підказки.
+      expect(queryByText(zone.deviceDay)).toBeNull();
+
+      fireEvent.press(getByTestId("nutrition-log-today"));
+      expect(actions.setSelectedDate).toHaveBeenCalledWith(zone.deviceDay);
+    },
+  );
+
+  it.each(zones)(
+    "київський день рахується відносно пристрою, а не «сьогодні»: %s",
+    (_name, zone, kyivDayLabel) => {
+      restore = installFakeDeviceZone(zone);
+      mockedLog.mockReturnValue({
+        selectedDate: zone.kyivDay,
+        nutritionLog: {},
+        ...actions,
+      });
+
+      const { getByText, queryByText } = renderLog();
+
+      expect(getByText(kyivDayLabel)).toBeTruthy();
+      expect(queryByText("Сьогодні")).toBeNull();
+    },
+  );
 });

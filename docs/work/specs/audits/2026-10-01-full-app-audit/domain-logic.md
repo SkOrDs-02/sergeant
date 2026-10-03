@@ -23,7 +23,7 @@
 
 ### `logic-01` [high] Акаунт у 30-денному вікні видалення не відновити через UI: після входу немає екрана «Відновити акаунт»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-01-rel-02-auth-states
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / профіль
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:317-360; apps/web/src/core/profile/usePendingDeletion.ts:20-26; apps/web/src/core/app/RootLayout.tsx:153-187; apps/web/src/core/profile/PendingDeletionScreen.tsx:47-56; apps/server/src/routes/me.ts:302-339; apps/server/src/http/requireSession.ts:146-165
 - **Першопричина:** GET /api/me для акаунта, позначеного на видалення, повертає 403 account_pending_deletion, а AuthContext вважає будь-яку помилку me станом «не автентифікований» (user = null). usePendingDeletion увімкнений лише за Boolean(user), тому /api/me/deletion-status ніколи не викликається, і PendingDeletionScreen у RootLayout недосяжний.

@@ -73,6 +73,49 @@ export function guardUuidPkApply(
   return null;
 }
 
+const OWNED_PARENT_SQL = {
+  fizruk_workouts: `SELECT 1 FROM fizruk_workouts WHERE id = $1 AND user_id = $2`,
+  fizruk_workout_items: `SELECT 1 FROM fizruk_workout_items WHERE id = $1 AND user_id = $2`,
+} as const;
+
+/**
+ * Guard батьківського рядка для дочірніх sync-таблиць з ОДНОКОЛОНКОВИМ FK
+ * (`fizruk_workout_items.workout_id`, `fizruk_workout_sets.workout_item_id`).
+ *
+ * Чому він потрібен. PK батьківських таблиць глобальний (`id` без `user_id`),
+ * а FK `child.parent_id -> parent(id)` не знає про власника. Без цієї перевірки
+ * користувач B міг записати власний item/set під ЧУЖЕ тренування A (досить
+ * знати id): рядок несе `user_id = B`, тож apply його приймав, а каскад
+ * `ON DELETE CASCADE` пізніше стирав дані B разом із батьком A, і підходи B
+ * висіли на сутності, до якої B не має стосунку (аудит 2026-10-01, `data-01`).
+ *
+ * AI-DANGER: «батька немає» і «батько чужий» тут навмисно дають ОДНАКОВУ
+ * відповідь (`fk_violation`). Розведення причин зробило б із sync-відповіді
+ * оракул існування чужих id. Не додавай окремий reason без рішення власника.
+ *
+ * `deleted_at` батька НЕ перевіряємо: soft-deleted батько лишається ВЛАСНИМ
+ * рядком, а дитина, що доїхала після видалення батька, — звичайний LWW.
+ *
+ * Це тимчасовий шар: коли PK таблиць стане складеним `(user_id, id)` разом із
+ * складеним FK (крок 2 `data-01`, двофазна міграція), перевірка стане
+ * надлишковою, але нічого не ламатиме.
+ */
+export async function guardParentOwned(
+  client: PoolClient,
+  parentTable: keyof typeof OWNED_PARENT_SQL,
+  parentId: string,
+  userId: string,
+): Promise<AppliedStatus | null> {
+  const res = await client.query(OWNED_PARENT_SQL[parentTable], [
+    parentId,
+    userId,
+  ]);
+  if (res.rows.length === 0) {
+    return { status: "rejected", reason: "fk_violation" };
+  }
+  return null;
+}
+
 export async function queryOne<T extends Record<string, unknown>>(
   client: PoolClient,
   sql: string,

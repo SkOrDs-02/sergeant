@@ -1,9 +1,8 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, @typescript-eslint/no-non-null-assertion --
-   Chat-action executors run outside React; storage key strings are used
-   directly here. Same pattern as queryFinykActions.ts. The non-null
-   assertion is pre-existing. */
-import { ls } from "../../hubChatUtils";
+/* eslint-disable @typescript-eslint/no-non-null-assertion --
+   The non-null assertion is pre-existing. Стан читається з SQLite warm
+   cache (`warmFinykCache`), а не з kv (data-08). */
 import { finykChatWrite } from "./dualWriteBridge";
+import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import { validatePositiveAmount } from "./amountValidation";
 import { formatNumberUk } from "@sergeant/shared";
 import type {
@@ -15,12 +14,23 @@ import type {
   ChatActionResult,
 } from "../types";
 
+type ManualExpenseRow = {
+  id: string;
+  date: string;
+  description?: string;
+  amount: number;
+  category?: string;
+  type?: string;
+};
+
 export function createDebt(action: CreateDebtAction): ChatActionResult {
   const { name, amount, due_date, emoji } = action.input;
   const amountCheck = validatePositiveAmount(amount, "amount");
   if (!amountCheck.ok) return amountCheck.message;
   const amountN = amountCheck.value;
-  const debts = ls<Debt[]>("finyk_debts", []);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const debts = [...(cache.manualDebts as Debt[])];
   const newDebt: Debt = {
     id: `d_${Date.now()}`,
     name,
@@ -35,7 +45,7 @@ export function createDebt(action: CreateDebtAction): ChatActionResult {
   return {
     result: `Борг "${name}" на ${formatNumberUk(amountN)} грн створено (id:${debtId})`,
     undo: () => {
-      const cur = ls<Debt[]>("finyk_debts", []);
+      const cur = warmFinykCache()?.manualDebts ?? [];
       const next = cur.filter((d) => d.id !== debtId);
       if (next.length !== cur.length) finykChatWrite("finyk_debts", next);
     },
@@ -49,7 +59,9 @@ export function createReceivable(
   const amountCheck = validatePositiveAmount(amount, "amount");
   if (!amountCheck.ok) return amountCheck.message;
   const amountN = amountCheck.value;
-  const recv = ls<Receivable[]>("finyk_recv", []);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const recv = [...(cache.receivables as Receivable[])];
   const newRecv: Receivable = {
     id: `r_${Date.now()}`,
     name,
@@ -62,7 +74,7 @@ export function createReceivable(
   return {
     result: `Дебіторку "${name}" на ${formatNumberUk(amountN)} грн додано (id:${recvId})`,
     undo: () => {
-      const cur = ls<Receivable[]>("finyk_recv", []);
+      const cur = warmFinykCache()?.receivables ?? [];
       const next = cur.filter((r) => r.id !== recvId);
       if (next.length !== cur.length) finykChatWrite("finyk_recv", next);
     },
@@ -73,7 +85,9 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   const { debt_id, amount, note } = action.input;
   const id = String(debt_id || "").trim();
   if (!id) return "Потрібен debt_id.";
-  const debts = ls<Debt[]>("finyk_debts", []);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const debts = [...(cache.manualDebts as Debt[])];
   const idx = debts.findIndex((d) => d.id === id);
   if (idx < 0) return `Борг ${id} не знайдено.`;
 
@@ -84,16 +98,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
       : Number(debt.totalAmount) || 0;
   if (payAmount <= 0) return "Сума погашення має бути додатною.";
   const txId = `m_${crypto.randomUUID()}`;
-  const manualExpenses = ls<
-    Array<{
-      id: string;
-      date: string;
-      description?: string;
-      amount: number;
-      category?: string;
-      type?: string;
-    }>
-  >("finyk_manual_expenses_v1", []);
+  const manualExpenses: ManualExpenseRow[] = [...cache.manualExpenses];
   const payEntry = {
     id: txId,
     date: new Date().toISOString(),

@@ -103,6 +103,10 @@ vi.mock("@sergeant/db-schema/migrate/sqlite", () => ({
 }));
 
 import {
+  __resetInitialPullStateForTests,
+  hasCompletedInitialPull,
+} from "./initialPullState";
+import {
   __resetSyncEngineWriterForTests,
   bootSyncEngineReader,
   bootSyncEngineWriter,
@@ -182,6 +186,26 @@ describe("createDefaultReaderRuntime (default reader boot path)", () => {
       "sync.origin_device_id_present",
       "true",
     );
+  });
+
+  it("data-04: тимчасовий збій getSession не скидає прапор початкового pull, справжній logout скидає", async () => {
+    __resetInitialPullStateForTests();
+    const reader = await bootSyncEngineReader();
+    await reader!.pullOnce();
+    expect(hasCompletedInitialPull("user-123")).toBe(true);
+
+    // Офлайн / 5xx: `data: null` з помилкою — тік падає, прапор лишається.
+    mockGetSession.mockResolvedValueOnce({
+      data: null,
+      error: { status: 0 },
+    } as never);
+    await expect(reader!.pullOnce()).rejects.toThrow();
+    expect(hasCompletedInitialPull("user-123")).toBe(true);
+
+    // Сесії справді немає (`data: null`, `error: null`): logout.
+    mockGetSession.mockResolvedValueOnce({ data: null, error: null } as never);
+    await reader!.pullOnce();
+    expect(hasCompletedInitialPull("user-123")).toBe(false);
   });
 
   it("tags failure and reports via captureException when reader boot fails", async () => {

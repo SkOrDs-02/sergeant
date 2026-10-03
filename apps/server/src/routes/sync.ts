@@ -3,6 +3,7 @@ import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
 import { listSyncAudit } from "../modules/sync/audit.js";
 import { syncV2Pull, syncV2Push } from "../modules/sync/syncV2.js";
 import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
+import { requireSyncV2StreamEnabled } from "../modules/sync/syncV2StreamGuard.js";
 
 /**
  * `/api/sync/*` — read-only audit log лишається за авторизованою сесією.
@@ -66,6 +67,11 @@ export function createSyncRouter(): Router {
   );
   r.get("/api/sync/audit", listSyncAudit);
 
+  // sec-09: стрім закритий прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт off →
+  // 404), поки немає споживача. Стоїть ПЕРШИМ на цьому префіксі, щоб
+  // вимкнений маршрут не відрізнявся для анонімного і залогіненого клієнта
+  // (без 401 від `requireSession()` перед 404).
+  r.use("/api/v2/sync/stream", requireSyncV2StreamEnabled());
   r.use("/api/v2/sync", setModule("syncV2"));
   // Той самий трирівневий порядок (pre-auth IP → сесія → per-user), той
   // самий аргумент — див. коментарі вище. Ліміт 300/хв = 5× per-user 60/хв.

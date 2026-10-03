@@ -19,10 +19,17 @@
  * the read path never boots is a row nobody reads back. Route both
  * through this hook rather than re-deriving it per module.
  *
- * `loading` resolves to `null` deliberately. Handing out the anonymous
- * id while the session is still in flight would land an authenticated
- * user's first writes in the anonymous SQLite partition
+ * `loading` (and `pending_deletion`) resolves to `null` deliberately.
+ * Handing out the anonymous id while the session is still in flight
+ * would land an authenticated user's first writes in the anonymous SQLite partition
  * (`sergeant-anon.db`), which `setSqliteUser()` then swaps away from.
+ *
+ * Те саме під час збою `me` на пристрої залогіненого користувача
+ * (`serverUnavailable`): id невідомий, тож `null`. Щоб це не губило записи
+ * мовчки (немає dual-write контексту — `sqliteWriter` робить `if (!ctx)
+ * return`), оболонка в цьому стані не рендерить застосунок взагалі:
+ * `RootLayout` → `AuthUnavailableScreen`. Не знімай той гейт, не підмінивши
+ * тут id власника (і тоді ж перевір App Lock, який шукає PIN за `user?.id`).
  */
 
 import { useAnonymousDataMigrationReady } from "../durability/AnonymousDataMigrationProvider";
@@ -50,5 +57,9 @@ export function useLocalUserId(): string | null {
   const migrationReady = useAnonymousDataMigrationReady();
   if (user?.id) return migrationReady ? user.id : null;
   if (status === "loading") return null;
+  // Акаунт у вікні видалення: сесія жива, але `me` профілю не віддав, тож id
+  // невідомий. Анонімний id тут означав би писати дані акаунта в анонімну
+  // партицію; блокер цього екрана однаково ховає застосунок.
+  if (status === "pending_deletion") return null;
   return LOCAL_ANON_USER_ID;
 }

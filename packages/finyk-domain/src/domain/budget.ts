@@ -6,7 +6,7 @@ import {
   kyivDayEndMs,
   kyivDayStartMs,
   kyivMondayStartMs,
-  toLocalISODate,
+  toKyivISODate,
   formatNumberUk,
 } from "@sergeant/shared";
 import {
@@ -180,7 +180,7 @@ export function getLimitPeriodRange(
   // (знахідка суміжного фіксу до F-19, браузерний QA 2026-08-24).
   // Кінець доби лишає в силі початковий намір «не рахувати майбутнє»:
   // записи завтрашнім і пізнішим днем так само за межею.
-  const endMs = kyivDayEndMs(toLocalISODate(now));
+  const endMs = kyivDayEndMs(toKyivISODate(now));
   if (period === "week") {
     return { startMs: kyivMondayStartMs(now), endMs };
   }
@@ -189,11 +189,11 @@ export function getLimitPeriodRange(
     return {
       startMs: Number.isFinite(parsed)
         ? parsed
-        : kyivDayStartMs(toLocalISODate(now)),
+        : kyivDayStartMs(toKyivISODate(now)),
       endMs,
     };
   }
-  const monthKey = `${toLocalISODate(now).slice(0, 7)}-01`;
+  const monthKey = `${toKyivISODate(now).slice(0, 7)}-01`;
   return { startMs: kyivDayStartMs(monthKey), endMs };
 }
 
@@ -439,7 +439,7 @@ export function buildAtRiskKey(
   if (atRisk.length === 0) return "";
   // §1.9: Kyiv civil month, not the host clock's — matches the month key
   // every other "цього місяця" aggregate in Finyk keys off.
-  const monthKey = toLocalISODate(now).slice(0, 7);
+  const monthKey = toKyivISODate(now).slice(0, 7);
   const ids = atRisk.map((fc) => fc.categoryId).sort();
   return `${monthKey}|${ids.join(",")}`;
 }
@@ -551,9 +551,9 @@ export function getGoalMonthlyLabel(
 export function getCurrentMonthContext(now: Date = new Date()) {
   // Anchor the month window to Europe/Kyiv (domain invariant) rather than
   // host-local Date getters, so daysPassed/daysLeft don't drift off-by-one on
-  // a non-Kyiv device. `toLocalISODate` returns the Kyiv civil date as
+  // a non-Kyiv device. `toKyivISODate` returns the Kyiv civil date as
   // `YYYY-MM-DD`; `month` is 1-based here.
-  const [year = 1970, month = 1, day = 1] = toLocalISODate(now)
+  const [year = 1970, month = 1, day = 1] = toKyivISODate(now)
     .split("-")
     .map(Number);
   // §1.10: a host-local `new Date(year, month-1, 1)` here is the same class

@@ -13,6 +13,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
+import { customExerciseIdFromName } from "../../lib/customExerciseId";
 
 const EQUIPMENT_OPTIONS = [
   { id: "bodyweight", label: "Власна вага" },
@@ -45,16 +46,6 @@ type AddExerciseSheetProps = {
   musclesByPrimaryGroup: Record<string, string[]>;
   addExercise: (ex: FizrukData.RawExerciseDef) => void;
 };
-
-function slugify(s: string | null | undefined): string {
-  return (s || "")
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
 
 function toggleArr(arr: string[] | undefined, value: string): string[] {
   const a = Array.isArray(arr) ? arr : [];
@@ -282,7 +273,7 @@ export function AddExerciseSheet({
               );
               return;
             }
-            const id = `custom_${slugify(nameUk) || Date.now()}`;
+            const id = customExerciseIdFromName(nameUk);
             addExercise({
               id,
               name: { uk: nameUk, en: nameUk },

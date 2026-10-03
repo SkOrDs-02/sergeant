@@ -43,7 +43,7 @@ export interface WorkoutTimeEditorProps {
 }
 
 const INPUT_CLASS =
-  "input-focus-fizruk block w-full min-w-0 max-w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text [min-inline-size:0] [inline-size:100%]";
+  "input-focus-fizruk block w-full min-w-0 max-w-full h-11 rounded-xl border border-line bg-panel px-3 text-sm text-text [min-inline-size:0] [inline-size:100%]";
 
 /** `17:30`. */
 function formatTime(iso: string): string {

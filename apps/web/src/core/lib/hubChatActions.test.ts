@@ -6,6 +6,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../modules/finyk/lib/sqliteReader";
+import {
   clearSqliteCompletionsCache,
   clearSqliteRoutineStateCache,
 } from "../../modules/routine/lib/sqliteReader";
@@ -44,6 +48,8 @@ vi.mock("../../modules/nutrition/lib/waterStorage", async (orig) => {
     loadWaterLog: vi.fn(() => memWater.log),
     saveWaterLog: vi.fn((log: unknown) => {
       memWater.log = actual.normalizeWaterLog(log) as Record<string, number>;
+      // data-04: `false` = «Їжі ще не гідратовано»; тут запис завжди приймається.
+      return true;
     }),
   };
 });
@@ -72,11 +78,15 @@ beforeEach(() => {
   memWater.log = {};
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
+  // data-08: фінансові екзекутори пишуть лише на прогрітому кеші SQLite.
+  clearFinykSqliteCache();
+  __setFinykSqliteStateCacheForTests({});
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
 afterEach(() => {
   localStorage.clear();
+  clearFinykSqliteCache();
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   vi.useRealTimers();

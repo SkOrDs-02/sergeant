@@ -456,8 +456,9 @@ export default function NutritionApp({
         setEditingMeal(null);
         toast.success("Страву оновлено.");
       } else {
-        const dateForLog = log.selectedDate;
-        log.handleAddMeal(meal);
+        // День — той, під яким запис ЛЯГ (повертає `handleAddMeal`), а не
+        // `log.selectedDate` цього рендеру: він міг відстати від годинника.
+        const dateForLog = log.handleAddMeal(meal);
         // Додавання миттєве і без підтвердження — тост мусить нести
         // «Скасувати», як quick-chip нижче (бета-фідбек 2026-08-07).
         toast.success("Страву додано.", undefined, {
