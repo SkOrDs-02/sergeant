@@ -370,6 +370,13 @@
     --c-fizruk-soft-border: 165 243 252; /* cyan-200 */
     --c-fizruk-soft-hover: 207 250 254; /* cyan-100 */
 
+    /* `bg-fizruk-surface` — тонована заливка вибраного/поточного стану
+       (чип «Розминка», бейдж `A1`, поточний рядок сесії). Світла = cyan-50,
+       рівно `moduleColors.fizruk.surface`; темна пара — у `.dark` нижче
+       («MODULE DARK SURFACES»). Додано 2026-10-02: до того утиліта була
+       статичним hex, і темного перевизначення в неї не було. */
+    --c-fizruk-surface: 236 254 255; /* cyan-50 — parity with `moduleColors.fizruk.surface` */
+
     /* `tile` + `tile-border` — subtle stat-tile wash on the fizruk hero
        gradient (`bg-hero-cyan`). Used by `<WorkoutStatTile>` and the
        fizruk summary-sheet close button. Light=cyan-800 (so a 10% wash
@@ -908,6 +915,20 @@
     --c-finyk-border-dark: 15 118 110; /* teal-700 — mirrors moduleColors.finyk.primary (2026-07: was emerald-500) */
     --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
+    /* `bg-fizruk-surface` у темній — НЕ світла заливка. До 2026-10-02 утиліта
+       лишалась статичним cyan-50 `#ecfeff` і в темній: вибраний чип сесії
+       («Розминка 0/3», «Нотатка», «Час») мав текст `soft-fg` 1.39:1 і лічильник
+       1.05:1, бейдж суперсету `A1` 1.39:1, поточний рядок списку — назва
+       1.05:1, RPE-чип 1.74:1 (світлий текст по світлій заливці). Значення = cyan-700
+       (`--c-fizruk-surface-dark`) на 15% над `--c-panel` (`#2a231f`):
+       рівно те, що вже малює пара `dark:bg-fizruk-surface-dark/15`
+       (`Segmented`, `Tabs`, `WorkoutItemNextSetHint`), тож `bg-fizruk-surface`
+       без пари й із парою виглядають однаково. Саме тінт, а не `-soft`
+       (cyan-900): на cyan-900 `text-subtle` дає 3.53:1 і `text-muted` 3.98:1,
+       а в рядках сесії стоять обидва. Числа проти `#262f30`: `text` 12.56,
+       `muted` 5.98, `subtle` 5.30, `soft-fg` 9.46, `-ink` 7.59, `danger-ink`
+       4.96; гейт — `contrast.test.js` § `fizruk-surface`. */
+    --c-fizruk-surface: 38 47 48; /* #262f30 — cyan-700 @15% над panel */
     --c-routine-surface-dark: 235 118 145; /* rose-500 */
     --c-routine-border-dark: 235 118 145; /* rose-500 */
     --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel */
