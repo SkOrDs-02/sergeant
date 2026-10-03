@@ -51,15 +51,18 @@ afterEach(() => {
 
 /** Явний opt-out — єдиний спосіб вимкнути (default ON з 2026-08-30). */
 function disable() {
-  // safeReadLS JSON-parses, so the flag must be a JSON string literal.
+  // Прапорець переїхав у спільний мішок `hub_prefs_v1` (залишок PR-S13),
+  // тож opt-out тепер — булеве `false` у ньому, а не рядок «0» у власному
+  // ключі. Дефолт при цьому не змінився: відсутність ключа = увімкнено,
+  // і сусідній тест це й далі пінить.
   localStorage.setItem(
-    STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO,
-    JSON.stringify("0"),
+    STORAGE_KEYS.HUB_PREFS,
+    JSON.stringify({ mondayAutoDigest: false }),
   );
 }
 
 describe("useMondayAutoDigest", () => {
-  it("НЕ генерує при явному opt-out ('0')", () => {
+  it("НЕ генерує при явному opt-out у мішку", () => {
     disable();
     vi.setSystemTime(MONDAY);
     renderHook(() => useMondayAutoDigest());

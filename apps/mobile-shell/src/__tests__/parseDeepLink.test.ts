@@ -116,17 +116,16 @@ describe("parseDeepLink — розширені edge-кейси", () => {
       // fail-ить відразу і нагадує оновити AndroidManifest + AASA.
       expect(DEEP_LINK_HTTPS_HOSTS).toEqual([
         "sergeant.vercel.app",
-        "sergeant.2dmanager.com.ua",
         "app.sergeant.com.ua",
       ]);
     });
 
     it.each([
       ["https://sergeant.vercel.app/chat", "/chat"],
-      ["https://sergeant.2dmanager.com.ua/chat", "/chat"],
+      ["https://app.sergeant.com.ua/chat", "/chat"],
       ["https://sergeant.vercel.app/nutrition/scan", "/nutrition/scan"],
       [
-        "https://sergeant.2dmanager.com.ua/finyk/transactions/123",
+        "https://app.sergeant.com.ua/finyk/transactions/123",
         "/finyk/transactions/123",
       ],
     ])("витягає path з %s → %s", (url, expected) => {
@@ -155,9 +154,9 @@ describe("parseDeepLink — розширені edge-кейси", () => {
     });
 
     it("зберігає fragment у HTTPS варіанті", () => {
-      expect(
-        parseDeepLink("https://sergeant.2dmanager.com.ua/routine#habits"),
-      ).toBe("/routine#habits");
+      expect(parseDeepLink("https://app.sergeant.com.ua/routine#habits")).toBe(
+        "/routine#habits",
+      );
     });
 
     it("приймає host у різному регістрі (case-insensitive)", () => {
@@ -184,7 +183,7 @@ describe("parseDeepLink — розширені edge-кейси", () => {
 
     it("відхиляє http:// навіть для нашого host (ніяких cleartext deep link-ів)", () => {
       expect(parseDeepLink("http://sergeant.vercel.app/chat")).toBeNull();
-      expect(parseDeepLink("http://sergeant.2dmanager.com.ua/chat")).toBeNull();
+      expect(parseDeepLink("http://app.sergeant.com.ua/chat")).toBeNull();
     });
 
     it("відхиляє суб-домени нашого домена як fail-closed", () => {

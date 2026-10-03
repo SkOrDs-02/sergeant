@@ -15,8 +15,19 @@ import { useLocation } from "react-router-dom";
 
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
-import { messages } from "@shared/i18n";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+// AI-DANGER: `@shared/i18n` (index) тягне uk-каталог І en-копію — а це
+// eager-поверхня. Беремо вузьке ядро; гейт — `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
+import {
+  safeReadStringLSDurable,
+  safeWriteStringLSDurable,
+} from "@shared/lib/storage/storage";
+
+import { captureException } from "../observability/sentry";
+import {
+  classifyTickError,
+  readOnlineStatus,
+} from "../syncEngine/tickErrorReport";
 
 import {
   LEGAL_COOKIES_PATH,
@@ -61,7 +72,7 @@ const successToastUsers = new Set<string>();
  * час розвідки активна партиція перемкнута на анонімну, і читання модулів у
  * цю мить бачило б чужі дані.
  */
-const PROBE_GRACE_MS = 500;
+export const PROBE_GRACE_MS = 500;
 
 /**
  * Маршрути, які не читають і не пишуть дані профілю. Юридичні тексти й
@@ -81,13 +92,57 @@ const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
 /**
  * Рішення «перенесу пізніше» переживає перезавантаження — інакше кожен старт
  * застосунку знову замикав би користувача тим самим екраном.
+ *
+ * AI-DANGER: саме `*LSDurable`, не `safeWriteLS`. Звичайний шлях після
+ * `bootstrapKvStore()` резолвиться у SQLite-кеш, а запис назад у базу —
+ * fire-and-forget; людина, яка тисне «перенесу пізніше» і одразу йде далі,
+ * перезавантажує сторінку швидше, ніж той upsert долітає. Прод 2026-09-21:
+ * рішення не переживало жодного переходу, і користувач із впалим переносом
+ * упирався в блокуючий екран знову й знову — тобто НЕ МІГ користуватись
+ * застосунком, щойно залогінившись. Durable-пара синхронно дзеркалить
+ * значення в localStorage, звідки бут його й перечитує.
  */
 function deferralKey(userId: string): string {
   return `hub_anon_migration_deferred_v1:${userId}`;
 }
 
+/**
+ * Короткий технічний код збою для екрана: крок + причина без даних рядків.
+ *
+ * Перевірка структурна, а не `instanceof`: помилку кидає модуль, який
+ * приїжджає окремим чанком, а тести підміняють його цілком — на такій межі
+ * порівняння конструкторів ламається тихо й віддає `null` там, де діагноз
+ * якраз і потрібен. Повний `message` (крок + `[vfs=… disk=…]`) від цього не
+ * страждає: він їде в Sentry незалежно.
+ */
+function migrationFailureDetail(error: unknown): string {
+  const shape =
+    typeof error === "object" && error !== null
+      ? (error as { name?: unknown; detail?: unknown; step?: unknown })
+      : null;
+  const name =
+    typeof shape?.name === "string" && shape.name.length > 0
+      ? shape.name
+      : error instanceof Error
+        ? error.name
+        : "";
+  if (name !== "AnonymousMigrationStepError") {
+    return `unknown: ${name || typeof error}`;
+  }
+  const { detail, step } = shape ?? {};
+  const safeStep =
+    typeof step === "string" && step.trim().length > 0
+      ? step.trim()
+      : "unknown";
+  const safeDetail =
+    typeof detail === "string" && detail.trim().length > 0
+      ? detail.trim()
+      : "unknown";
+  return `${safeStep}: ${safeDetail}`.slice(0, 240);
+}
+
 function readDeferred(userId: string): boolean {
-  return safeReadStringLS(deferralKey(userId)) === "1";
+  return safeReadStringLSDurable(deferralKey(userId)) === "1";
 }
 
 /**
@@ -197,6 +252,27 @@ function AuthenticatedMigrationGate({
 }) {
   const { success, warning } = useToast();
   const [state, setState] = useState<"running" | "ready" | "failed">("running");
+  /**
+   * `offline` — браузер сам сказав, що інтерфейсу немає, і текст помилки
+   * транспортний. Це не той самий випадок, що «перенос зламався»: користувач
+   * на LTE у метро отримував тривожну плашку про незахищені дані там, де
+   * чесна відповідь — «немає звʼязку, повторю пізніше».
+   */
+  const [failureKind, setFailureKind] = useState<"offline" | "generic">(
+    "generic",
+  );
+  /**
+   * Технічний код збою — прямо на екрані, дрібним.
+   *
+   * AI-CONTEXT: звіт власника 2026-09-13 прийшов трьома скріншотами ОДНОГО
+   * й того самого тексту. Sentry тут не заміна: людина фотографує екран і
+   * шле фото, а не лізе в дашборд, тож діагноз має бути в кадрі. Сюди йде
+   * `detail` — сама причина, без службового префікса кроку й без
+   * `[vfs=… disk=…]`: те й те адресоване нам, не людині, і в Sentry їде
+   * повним `message` (звіт власника 2026-09-21). Ані вмісту рядків, ані
+   * ідентифікаторів користувача тут немає й не має бути.
+   */
+  const [failureCode, setFailureCode] = useState<string | null>(null);
   const [deferred, setDeferred] = useState(() => readDeferred(userId));
   const [transferring, setTransferring] = useState(false);
   const [probeGraceElapsed, setProbeGraceElapsed] = useState(false);
@@ -214,7 +290,26 @@ function AuthenticatedMigrationGate({
           success(messages.sync.anonymousMigrationSuccess);
         }
       })
-      .catch(() => setState("failed"))
+      .catch((error: unknown) => {
+        // AI-CONTEXT: до 2026-09-13 тут стояв голий `.catch(() => …)` —
+        // провал переносу не їхав ні в Sentry, ні в консоль, тож звіт
+        // власника «проблема з перенесенням якась» неможливо було
+        // діагностувати: у нас нема жодного поля про те, на якому кроці і
+        // з чим саме воно впало. Класифікацію беремо ту саму, що й
+        // sync-тіки (`tickErrorReport`), щоб офлайн-шум не залив issue.
+        const online = readOnlineStatus();
+        const verdict = classifyTickError(
+          error,
+          "anonymous-profile-migration",
+          online,
+        );
+        setFailureKind(verdict.report ? "generic" : "offline");
+        setFailureCode(migrationFailureDetail(error));
+        if (verdict.report) {
+          captureException(error, { extra: verdict.context });
+        }
+        setState("failed");
+      })
       // Синк піднімаємо в `finally`, а не в success-гілці: він потрібен і
       // після провалу переносу (юзер лишається в акаунті й натисне
       // «Перенести пізніше»), і на чистому пристрої, де переносити нічого.
@@ -239,11 +334,13 @@ function AuthenticatedMigrationGate({
 
   const retry = useCallback(() => {
     setState("running");
+    setFailureKind("generic");
+    setFailureCode(null);
     kickoff();
   }, [kickoff]);
 
   const defer = useCallback(() => {
-    safeWriteLS(deferralKey(userId), "1");
+    safeWriteStringLSDurable(deferralKey(userId), "1");
     setDeferred(true);
     warning(messages.sync.anonymousMigrationDeferredToast);
   }, [userId, warning]);
@@ -288,13 +385,20 @@ function AuthenticatedMigrationGate({
                   className="mb-5 text-style-body leading-relaxed text-muted"
                   role="alert"
                 >
-                  {messages.sync.anonymousMigrationFailure}
+                  {failureKind === "offline"
+                    ? messages.sync.anonymousMigrationFailureOffline
+                    : messages.sync.anonymousMigrationFailure}
                 </p>
+                {failureCode !== null && (
+                  <p className="mb-5 break-all text-style-caption text-muted">
+                    {failureCode}
+                  </p>
+                )}
                 <div className="flex flex-col gap-2">
                   <Button onClick={retry}>
                     {messages.sync.anonymousMigrationRetry}
                   </Button>
-                  <Button variant="secondary" onClick={defer}>
+                  <Button variant="outline" onClick={defer}>
                     {messages.sync.anonymousMigrationDefer}
                   </Button>
                 </div>
@@ -314,12 +418,39 @@ function AuthenticatedMigrationGate({
     );
   }
 
+  if (!showDeferredNotice) {
+    return (
+      <MigrationGateContext.Provider value={value}>
+        {children}
+      </MigrationGateContext.Provider>
+    );
+  }
+
   return (
     <MigrationGateContext.Provider value={value}>
-      {showDeferredNotice && (
+      {/*
+        AI-DANGER: плашка мусить жити у flex-колонці, а не просто «перед
+        дітьми». `#root` має `height: 100dvh` (у standalone — `100vh`) і
+        `overflow: hidden` (`styles/base.css`), а shell застосунку —
+        `h-app-dvh`, тобто `height: 100%` ВІД цього ж рута. Простий сусід
+        зверху зсовував shell рівно на свою висоту, і нижній навбар
+        виїжджав за обрізаний край рута: юзер бачив плашку і застосунок без
+        навігації (звіт власника 2026-09-13, скріншот PWA). Тут `flex-1
+        min-h-0` віддає shell рівно залишок висоти, а `shrink-0` не дає
+        плашці стиснутись у нечитабельний рядок.
+
+        Інсет верху дописаний у `pt-[calc(...)]`, а не окремою утилітою
+        `safe-area-pt`: обидві пишуть `padding-top` в одному шарі, і хто
+        переможе, вирішував би порядок правил у згенерованому CSS, а не
+        намір. Це друга половина того самого звіту: рут починається
+        під статус-баром, тож текст плашки заїжджав під динамічний острів.
+        Падінг (а не `top`) тягне фон `bg-warning-soft` у смугу інсету, і
+        під островом лишається колір плашки, а не порожнеча.
+      */}
+      <div className="flex h-full flex-col overflow-hidden">
         <div
           role="status"
-          className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 py-2 text-center text-style-body text-warning-soft-fg"
+          className="shrink-0 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] text-center text-style-body text-warning-soft-fg"
         >
           <span>{messages.sync.anonymousMigrationDeferredNotice}</span>
           <button
@@ -330,8 +461,8 @@ function AuthenticatedMigrationGate({
             {messages.sync.anonymousMigrationDeferredRetry}
           </button>
         </div>
-      )}
-      {children}
+        <div className="min-h-0 flex-1">{children}</div>
+      </div>
     </MigrationGateContext.Provider>
   );
 }

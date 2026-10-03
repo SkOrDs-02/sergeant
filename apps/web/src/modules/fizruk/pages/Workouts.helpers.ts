@@ -8,8 +8,7 @@ import type {
   RawExerciseDef,
 } from "@sergeant/fizruk-domain/data";
 import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
-import { deviceDayKey } from "@sergeant/shared";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { deviceDayKey, pluralUa } from "@sergeant/shared";
 import type { LastExerciseItem } from "./Workouts.types";
 
 /**
@@ -136,17 +135,18 @@ export function formatActiveDuration(
 }
 
 /**
- * Default retro-workout date — today's calendar date in `YYYY-MM-DD`,
- * anchored to **Europe/Kyiv** (domain invariant) rather than the device
- * clock, so late-evening users on a non-Kyiv host don't get the wrong day
- * (page-audit-06 F11). Name kept for call-site stability.
+ * Default retro-workout date — today's calendar date in `YYYY-MM-DD` за
+ * годинником ПРИСТРОЮ (ADR-0078, рішення власника 2026-09-29). Name kept
+ * for call-site stability.
  */
 export function todayLocalDateString(): string {
-  // AI-DANGER: day boundary is Europe/Kyiv, not the device clock or UTC.
-  // Must stay routed through `getKyivDayKey()`. Swapping to
-  // `new Date().toISOString().slice(0,10)` or `toLocaleDateString` silently
-  // shifts the date for late-evening / non-Kyiv hosts and breaks streaks.
-  return getKyivDayKey();
+  // AI-DANGER: day boundary is the DEVICE clock — the same one that
+  // `defaultPastWorkoutFields` uses for time-of-day and the "in the future"
+  // check, and that `dashboardKpis` uses for the daily streak. До 2026-09-29
+  // тут стояв Europe/Kyiv; повернення до `getKyivDayKey()` знову дасть
+  // форму, що пропонує «завтра» користувачу поза Києвом. НЕ
+  // `toISOString().slice(0,10)` — це UTC, а не пристрій.
+  return deviceDayKey();
 }
 
 /** Дефолтні поля форми «Внести проведене заняття». */
@@ -359,4 +359,50 @@ export function buildActivityWorkoutTimes(
     implausiblyLong: endMs - startMs > MAX_ROLLOVER_SESSION_MS,
     inFuture: endMs > now.getTime(),
   };
+}
+
+/**
+ * Скільки разів кожна вправа вже лежить в активному тренуванні.
+ *
+ * Каталог у сесії відкривається аркушем, який навмисно НЕ закривається
+ * після додавання (за один захід беруть кілька вправ). Через це успішний
+ * тап був єдиною гілкою без зворотного звʼязку: помилки тостяться, а
+ * успіх мовчав, і рядок мав лише `hover`/`active` підсвітку, яка на
+ * тачі зникає разом із пальцем — власник вирішив, що екран зламано
+ * (звіт 2026-09-12). Лічильник, а не булеве «додано», бо `addItem`
+ * дублі не блокує: повторний тап мусить бути видимим як «×2».
+ */
+export function countItemsByExerciseId(
+  items: ReadonlyArray<{ exerciseId?: string | undefined }> | null | undefined,
+): Record<string, number> {
+  const acc: Record<string, number> = {};
+  for (const item of items ?? []) {
+    const id = item?.exerciseId;
+    if (!id) continue;
+    acc[id] = (acc[id] ?? 0) + 1;
+  }
+  return acc;
+}
+
+/**
+ * Підпис кнопки «Готово» в аркуші каталогу. Поки нічого не додано —
+ * просто «Готово»; далі кнопка несе біжучий підсумок, щоб додавання
+ * було видимим навіть коли щойно доданий рядок поїхав за екран.
+ */
+export function formatAddExerciseDoneLabel(
+  total: number,
+  copy: {
+    addExerciseDone: string;
+    exercisesOne: string;
+    exercisesFew: string;
+    exercisesMany: string;
+  },
+): string {
+  if (total <= 0) return copy.addExerciseDone;
+  const word = pluralUa(total, {
+    one: copy.exercisesOne,
+    few: copy.exercisesFew,
+    many: copy.exercisesMany,
+  });
+  return `${copy.addExerciseDone} · ${total} ${word}`;
 }

@@ -24,8 +24,10 @@ type AuthUser = ReturnType<typeof useAuth>["user"];
 // to the Hub. Per-test overrides via `mockShouldShowOnboarding.mockReturnValueOnce`
 // flip the gate for the fresh-visitor branch.
 const mockShouldShowOnboarding = vi.fn<() => boolean>(() => false);
+const mockMarkOnboardingDone = vi.fn();
 vi.mock("../onboarding/onboardingGate", () => ({
   shouldShowOnboarding: () => mockShouldShowOnboarding(),
+  markOnboardingDone: () => mockMarkOnboardingDone(),
 }));
 
 const noop = () => {};
@@ -230,12 +232,23 @@ describe("renderStandaloneRoute() — /sign-in", () => {
     expect(callRouteArgs({ pathname: SIGN_IN_PATH })).not.toBeNull();
   });
 
-  it("returns a redirect for an already-authenticated user", () => {
+  it("returns a redirect for an already-authenticated user and closes the onboarding gate", () => {
+    mockMarkOnboardingDone.mockClear();
     const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
     // Non-null because it returns <RedirectTo> not the auth page
     expect(
       callRouteArgs({ pathname: SIGN_IN_PATH, user: authedUser }),
     ).not.toBeNull();
+    // PR-H7 (design-audit 2026-09-13): the gate closes exactly here — once
+    // a session is confirmed — not the instant "У мене вже є акаунт" is
+    // tapped on `/welcome` (see `WelcomeScreen.tsx`'s `handleOpenAuth`).
+    expect(mockMarkOnboardingDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT close the onboarding gate for an unauthenticated visitor", () => {
+    mockMarkOnboardingDone.mockClear();
+    callRouteArgs({ pathname: SIGN_IN_PATH });
+    expect(mockMarkOnboardingDone).not.toHaveBeenCalled();
   });
 
   it("returns non-null during auth loading (shows AuthPage, not redirect)", () => {

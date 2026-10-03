@@ -35,7 +35,7 @@ vi.mock("../billing", () => ({
     requireAccess: () => true,
     paywallOpen: false,
     closePaywall: () => undefined,
-    paywallSurface: "analytics-export-pdf",
+    paywallSurface: "csv_export",
   }),
 }));
 

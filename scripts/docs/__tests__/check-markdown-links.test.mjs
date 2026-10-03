@@ -5,7 +5,13 @@
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  writeFileSync,
+  readFileSync,
+  mkdirSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 
@@ -19,6 +25,11 @@ import {
   saveCache,
   loadAllowlist,
   isAllowlisted,
+  headingSlug,
+  renderHeadingText,
+  collectAnchors,
+  nearestAnchor,
+  splitAnchor,
 } from "../check-markdown-links.mjs";
 
 describe("extractLinks", () => {
@@ -315,5 +326,203 @@ describe("external-link allowlist", () => {
 
   it("isAllowlisted with empty allowlist returns false", () => {
     assert.equal(isAllowlisted("https://x.example/", []), false);
+  });
+});
+
+// ── Anchor verification (added 2026-09-11) ──────────────────────────────────
+//
+// A one-off sweep found 55 broken anchors that the file-existence check could
+// never see. Each `headingSlug` case below is one of the four edges that made
+// the class invisible; break any of them and the gate either goes silent or
+// starts crying wolf on links that work.
+
+describe("headingSlug", () => {
+  it("keeps `_` inside a code span — it is not emphasis there", () => {
+    // `## 12. Vite / фронтенд (`VITE_*`)` → the live anchor really does end
+    // in `_`. Stripping backticks before emphasis-handling ate it and marked
+    // a working link broken.
+    assert.equal(
+      headingSlug("12. Vite / фронтенд (`VITE_*`)"),
+      "12-vite--фронтенд-vite_",
+    );
+    assert.equal(
+      headingSlug("`METRICS_TOKEN` _(optional)_"),
+      "metrics_token-optional",
+    );
+  });
+
+  it("strips `_` used as an emphasis delimiter", () => {
+    assert.equal(headingSlug("_Draft_ notes"), "draft-notes");
+  });
+
+  it("leaves a leading hyphen for an emoji-prefixed heading", () => {
+    // GitHub drops the emoji but keeps the space after it, so the slug starts
+    // with `-`. Four live links in the repo depend on this exact behaviour.
+    assert.equal(
+      headingSlug("\u{1F310} 1. Web / PWA — `apps/web`"),
+      "-1-web--pwa--appsweb",
+    );
+  });
+
+  it("collapses a dropped character into a double hyphen, not a single one", () => {
+    assert.equal(headingSlug("Web / PWA"), "web--pwa");
+  });
+
+  it("drops U+2019 but keeps U+02BC — the two apostrophes are not the same", () => {
+    // The heading in 04-launch-readiness.md uses U+2019 (punctuation, dropped);
+    // five links pointed at it with U+02BC (a modifier LETTER, kept). That one
+    // codepoint was the whole bug.
+    assert.equal(
+      headingSlug("1.1 Обов’язкові документи"),
+      "11-обовязкові-документи",
+    );
+    assert.equal(
+      headingSlug("1.1 Обовʼязкові документи"),
+      "11-обовʼязкові-документи",
+    );
+  });
+
+  it("tracks the number when a section is renumbered", () => {
+    // `#9-повна-monthly-cost-projection` kept resolving as a file link long
+    // after the target became §6 under a new title.
+    assert.equal(
+      headingSlug("6. Прогноз місячних витрат"),
+      "6-прогноз-місячних-витрат",
+    );
+    assert.notEqual(
+      headingSlug("6. Прогноз місячних витрат"),
+      headingSlug("9. Повна monthly cost projection"),
+    );
+  });
+
+  it("does not mistake a bare number in a heading for a code-span placeholder", () => {
+    assert.equal(headingSlug("Крок 3 — далі"), "крок-3--далі");
+    assert.equal(headingSlug("Крок `3` — далі"), "крок-3--далі");
+  });
+
+  it("unwraps links and drops images", () => {
+    assert.equal(
+      headingSlug("See [the plan](./plan.md) now"),
+      "see-the-plan-now",
+    );
+    // An image is removed from the markdown *source*, so the space it left
+    // behind is trimmed away — no leading hyphen. An emoji is still a real
+    // character at trim time and only disappears in the character filter
+    // afterwards, which is exactly why it *does* leave one. Same-looking
+    // inputs, opposite slugs; both shapes exist in the tree.
+    assert.equal(headingSlug("![logo](./l.png) Title"), "title");
+    assert.equal(headingSlug("\u{1F310} Title"), "-title");
+  });
+
+  it("renderHeadingText leaves code-span content verbatim", () => {
+    assert.equal(renderHeadingText("a `B_c*d` e"), "a B_c*d e");
+  });
+});
+
+describe("collectAnchors", () => {
+  it("suffixes repeated headings the way GitHub does", () => {
+    const anchors = collectAnchors("# Notes\n## Notes\n### Notes\n").map(
+      (a) => a.anchor,
+    );
+    assert.deepEqual(anchors, ["notes", "notes-1", "notes-2"]);
+  });
+
+  it("ignores `#` lines inside fenced code blocks", () => {
+    const md = [
+      "# Real",
+      "```bash",
+      "# not a heading",
+      "```",
+      "## Also real",
+    ].join("\n");
+    assert.deepEqual(
+      collectAnchors(md).map((a) => a.anchor),
+      ["real", "also-real"],
+    );
+  });
+
+  it("picks up explicit <a id> / <a name> anchors", () => {
+    const md = '# T\n\n<a id="Manual-Target"></a>\n<a name="second"></a>\n';
+    const anchors = collectAnchors(md).map((a) => a.anchor);
+    assert.ok(anchors.includes("manual-target"));
+    assert.ok(anchors.includes("second"));
+  });
+
+  it("keeps the raw heading so an error message can quote it", () => {
+    const [entry] = collectAnchors("## 4. Метрики готовності\n");
+    assert.equal(entry.anchor, "4-метрики-готовності");
+    assert.equal(entry.heading, "4. Метрики готовності");
+  });
+});
+
+describe("splitAnchor", () => {
+  it("splits path and anchor, lowercasing the anchor", () => {
+    assert.deepEqual(splitAnchor("./a.md#Section-One"), {
+      path: "./a.md",
+      anchor: "section-one",
+    });
+  });
+
+  it("percent-decodes so an encoded Cyrillic anchor compares equal", () => {
+    assert.equal(splitAnchor("./a.md#%D1%81%D1%82%D0%B0%D0%BD").anchor, "стан");
+  });
+
+  it("returns a null anchor for a bare path or an empty fragment", () => {
+    assert.equal(splitAnchor("./a.md").anchor, null);
+    assert.equal(splitAnchor("./a.md#").anchor, null);
+    assert.equal(splitAnchor("./a.md#").path, "./a.md");
+  });
+
+  it("survives a malformed percent escape instead of throwing", () => {
+    assert.equal(splitAnchor("./a.md#%zz").anchor, "%zz");
+  });
+});
+
+describe("nearestAnchor", () => {
+  const anchors = collectAnchors(
+    "## 4. Metrics readiness\n## Something else entirely\n",
+  );
+
+  it("names the near miss so the reader does not have to hunt", () => {
+    const hit = nearestAnchor("4-metrics-success", anchors);
+    assert.equal(hit.anchor, "4-metrics-readiness");
+    assert.equal(hit.heading, "4. Metrics readiness");
+  });
+
+  it("returns null when nothing is close — a wrong hint costs more than none", () => {
+    assert.equal(nearestAnchor("totally-absent", anchors), null);
+  });
+
+  it("returns null against an empty heading list", () => {
+    assert.equal(nearestAnchor("anything", []), null);
+  });
+});
+
+describe("anchor verification end-to-end", () => {
+  it("accepts a live anchor and rejects a stale one in the same file", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mdlinks-anchor-"));
+    try {
+      writeFileSync(
+        join(dir, "target.md"),
+        "# T\n\n## 🌐 1. Web / PWA — `apps/web`\n\n## 4. Метрики готовності\n",
+      );
+      const source = [
+        "# S",
+        "",
+        "[ok](./target.md#-1-web--pwa--appsweb)",
+        "[ok2](./target.md#4-метрики-готовності)",
+        "[stale](./target.md#4-метрики-успіху)",
+      ].join("\n");
+      const anchors = collectAnchors(
+        readFileSync(join(dir, "target.md"), "utf8"),
+      );
+      const verdicts = extractLinks(source).map((link) => {
+        const { anchor } = splitAnchor(link.target);
+        return anchors.some((e) => e.anchor === anchor);
+      });
+      assert.deepEqual(verdicts, [true, true, false]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

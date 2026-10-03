@@ -25,7 +25,7 @@
  * this component stays pure/presentational so it can be storybooked and
  * unit-tested in isolation.
  *
- * Спека `docs/90-work/planning/specs/fizruk-hero-recovery-bars.md` added a
+ * Спека `docs/work/specs/fizruk-hero-recovery-bars.md` added a
  * fifth cross-cutting concern in `today` / `upcoming` / `empty` (never
  * `active` — рішення 2): up to six "стан тіла" rows under the kicker
  * (`HeroRecoveryBars.tsx`), and folded the streak/week readout that used to
@@ -128,6 +128,12 @@ export interface HeroCardProps {
   /** Invoked for the empty state's secondary "Програми" CTA. */
   readonly onOpenPrograms: () => void;
   /**
+   * Порожній стан: почати тренування просто зараз. Опційний — за
+   * відсутності hero лишається старою парою «шаблон / програми», тож
+   * споживачі поза `Dashboard` (Storybook, тести) не ламаються.
+   */
+  readonly onQuickStart?: (() => void) | undefined;
+  /**
    * Optional top-right slot — Phase 6.7 mounts the persistent PR badge
    * here. Positioned by the slot itself (`absolute top-3 right-3`); the
    * shell only provides the relative wrapper. Pass `null` to keep the
@@ -192,6 +198,7 @@ export function HeroCard(props: HeroCardProps) {
           body={body}
           onOpenTemplates={props.onOpenTemplates}
           onOpenPrograms={props.onOpenPrograms}
+          {...(props.onQuickStart ? { onQuickStart: props.onQuickStart } : {})}
           cornerSlot={cornerSlot}
         />
       );

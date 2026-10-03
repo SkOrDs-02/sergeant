@@ -22,6 +22,12 @@ vi.mock("./useFinykMonoMirrorBoot", () => ({
 }));
 
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../lib/monoMirrorReader";
+import { notifyFinykMonoMirrorRefresh } from "../lib/monoMirrorGate";
 import { useStorage } from "./useStorage";
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -38,6 +44,7 @@ function wrapper({ children }: { children: ReactNode }) {
 beforeEach(() => {
   localStorage.clear();
   dualWriteBootSpy.mockClear();
+  clearFinykMonoMirrorCache();
 });
 
 describe("useStorage composition root", () => {
@@ -50,6 +57,16 @@ describe("useStorage composition root", () => {
     // Fizruk and Nutrition all boot from their own shell too.
     renderHook(() => useStorage(), { wrapper });
     expect(dualWriteBootSpy).toHaveBeenCalled();
+  });
+
+  it("тримає множини виключених і привʼязаних операцій стабільними між рендерами", () => {
+    // Вони в залежностях мемо Огляду: нова ідентичність на кожному рендері
+    // змушувала перераховувати всю статистику Фініка щоразу.
+    const { result, rerender } = renderHook(() => useStorage(), { wrapper });
+    const first = result.current;
+    rerender();
+    expect(result.current.excludedTxIds).toBe(first.excludedTxIds);
+    expect(result.current.debtTxIds).toBe(first.debtTxIds);
   });
 
   it("exposes the flat public contract", () => {
@@ -106,6 +123,83 @@ describe("useStorage composition root", () => {
     });
     expect(result.current.debtLinkedTxIds.has("debt-tx-1")).toBe(true);
     expect(result.current.excludedTxIds.has("debt-tx-1")).toBe(false);
+  });
+
+  // Рішення власника 2026-10-01 (варіант А): «Uklon −189» і «Скасування.
+  // Uklon +189» не є ні витратою, ні доходом. Правило живе в excluded-set,
+  // тож Огляд, Аналітика й Операції успадковують його без власної арифметики.
+  describe("скасовані платежі", () => {
+    const T0 = 1_760_000_000;
+    const bankTx = (
+      id: string,
+      amount: number,
+      time: number,
+      description: string,
+    ) =>
+      ({
+        id,
+        amount,
+        time,
+        description,
+        accountId: "black",
+        _accountId: "black",
+      }) as unknown as Transaction;
+    const uklonPair = [
+      bankTx("uklon-out", -18_900, T0, "Uklon"),
+      bankTx("uklon-in", 18_900, T0 + 7_200, "Скасування. Uklon"),
+    ];
+
+    it("обидві ноги пари з дзеркала виходять зі статистики й видимі як cancelledTxIds", () => {
+      __setFinykMonoMirrorCacheForTests({
+        transactions: [...uklonPair, bankTx("coffee", -9_500, T0, "Кава")],
+      });
+      const { result } = renderHook(() => useStorage(), { wrapper });
+
+      expect([...result.current.cancelledTxIds].sort()).toEqual([
+        "uklon-in",
+        "uklon-out",
+      ]);
+      expect(result.current.excludedTxIds.has("uklon-out")).toBe(true);
+      expect(result.current.excludedTxIds.has("uklon-in")).toBe(true);
+      expect(result.current.excludedTxIds.has("coffee")).toBe(false);
+    });
+
+    it("без другої ноги нічого не виключається", () => {
+      __setFinykMonoMirrorCacheForTests({ transactions: [uklonPair[0]!] });
+      const { result } = renderHook(() => useStorage(), { wrapper });
+      expect(result.current.cancelledTxIds.size).toBe(0);
+      expect(result.current.excludedTxIds.has("uklon-out")).toBe(false);
+    });
+
+    it("пара зʼявляється, щойно дзеркало отримує другу ногу", () => {
+      __setFinykMonoMirrorCacheForTests({ transactions: [uklonPair[0]!] });
+      const { result } = renderHook(() => useStorage(), { wrapper });
+      expect(result.current.cancelledTxIds.size).toBe(0);
+
+      act(() => {
+        __setFinykMonoMirrorCacheForTests({ transactions: uklonPair });
+        notifyFinykMonoMirrorRefresh();
+      });
+
+      expect(result.current.excludedTxIds.has("uklon-out")).toBe(true);
+      expect(result.current.excludedTxIds.has("uklon-in")).toBe(true);
+    });
+
+    it("оновлення дзеркала без зміни пар лишає ідентичність множин (мемо Огляду)", () => {
+      __setFinykMonoMirrorCacheForTests({ transactions: uklonPair });
+      const { result } = renderHook(() => useStorage(), { wrapper });
+      const before = result.current;
+
+      act(() => {
+        __setFinykMonoMirrorCacheForTests({
+          transactions: [...uklonPair, bankTx("coffee", -9_500, T0, "Кава")],
+        });
+        notifyFinykMonoMirrorRefresh();
+      });
+
+      expect(result.current.cancelledTxIds).toBe(before.cancelledTxIds);
+      expect(result.current.excludedTxIds).toBe(before.excludedTxIds);
+    });
   });
 
   it("saveNetworthSnapshot appends a month entry to networthHistory", () => {

@@ -21,7 +21,8 @@ import {
  * `HubBottomNav`) so the whole app reads under one navigation pattern.
  *
  * Canonical shape:
- * - Height 60 px (64 px on coarse-pointer devices).
+ * - Min height 60 px (64 px on coarse-pointer devices); the track grows with
+ *   scaled text (low-vision, 200% root) instead of clipping the active label.
  * - Docked edge-to-edge in both browser and PWA standalone via
  *   `bottom-nav-shell` — no horizontal margins, flat bottom, rounded only
  *   at the top. The panel background fills the safe-area strip
@@ -45,7 +46,7 @@ import {
  *   of the nav's stacking context and keeps its own rose gradient
  *   per Routine identity.
  *
- * On-screen keyboard (spec `docs/90-work/planning/specs/keyboard-and-scroll.md`
+ * On-screen keyboard (spec `docs/work/specs/keyboard-and-scroll.md`
  * § design decision 2): while the visual-keyboard inset is active the
  * nav slides down out of view (nothing sits below it during text
  * entry, and it was the fixed element that turned iOS's keyboard
@@ -67,6 +68,21 @@ export type ModuleNavColor = "finyk" | "fizruk" | "routine" | "nutrition";
 export interface ModuleBottomNavItem {
   id: string;
   label: string;
+  /**
+   * Коротша копія ВИДИМОГО підпису, коли повний не влазить у колонку.
+   * Дзеркалить механізм `HubBottomNav` («Налаштування» → «Опції»).
+   *
+   * AI-DANGER: коротшає ЛИШЕ видимий підпис. Доступна назва лишається
+   * повною — її дає `<span className="sr-only">{label}</span>`, і тести
+   * навбарів шукають таб саме по ній. Не зводь ці два поля в одне:
+   * «План» як accessible name робить таб невідрізненним від будь-якого
+   * іншого планувальника в скрінрідері.
+   *
+   * Перш ніж додавати сюди значення — ЗАМІРЯЙ. Доступна підпису ширина
+   * рахується як `(W − 8 контейнерних − 4×(N−1) gap) / N − 8 пілюльних`;
+   * гейт `nav-label-fit.spec.ts` міряє це рендером на 320 і 393px.
+   */
+  visibleLabel?: string;
   icon: ReactNode;
   /** Show a small unread/attention dot on the icon. */
   badge?: boolean;
@@ -105,7 +121,9 @@ type ColorTokens = {
 const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
     fillLight: "bg-finyk-strong",
-    fillDark: "dark:bg-brand-400",
+    // `brand` став нейтральним кам'яним тоном хаба (design-audit M1), тож
+    // brand-400 давав Фініку сіру плашку. Tier-400 модуля, як у решти трьох.
+    fillDark: "dark:bg-teal-400",
     badge: "bg-finyk",
   },
   fizruk: {
@@ -231,9 +249,14 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
         className,
       )}
     >
+      {/* AI-DANGER: висота треку — МІНІМУМ, не фіксована; пояснення — у
+          `HubBottomNav` (там той самий трек). */}
       <div
         ref={tablistRef}
-        className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
+        className="relative grid min-h-[60px] pointer-coarse:min-h-[64px] gap-1 px-1"
+        style={{
+          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        }}
         role={isTablist ? "tablist" : undefined}
         onKeyDown={isTablist ? handleTablistKeyDown : undefined}
       >
@@ -258,15 +281,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               onPointerDown={onPrefetch ? () => onPrefetch(item.id) : undefined}
               onClick={() => handleSelect(item.id)}
               className={cn(
-                // AI-DANGER: активна вкладка НЕ `flex-1`. Рівні частки на 320px
-                // дають кожній ~60px, тоді як активна «пігулка» (іконка + підпис
-                // до 88px + px-3) потребує ~140px: вона вивалювалась за комірку,
-                // а остання вкладка — за правий край екрана («Активи» зрізано,
-                // браузерний аудит 2026-08-26), і підпис активної різало
-                // («Головна» 49→42px). `flex-initial` = розмір за вмістом із
-                // правом стиснутись; неактивні ділять залишок.
                 "relative flex items-center justify-center min-h-touch-target min-w-0",
-                active ? "flex-initial" : "flex-1",
                 "my-1.5 rounded-xl border border-transparent",
                 "transition-[color,transform,border-color] duration-base",
                 "active:scale-95",
@@ -276,11 +291,32 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
             >
               <span
                 className={cn(
-                  "relative flex items-center justify-center gap-1.5 rounded-2xl py-1.5",
-                  "transition-[background-color,padding,color] duration-base",
+                  // Пілюля має ОДНАКОВИЙ горизонтальний бокс в активному й
+                  // неактивному стані (`h-full w-full`, по центру grid-
+                  // колонки) — інакше зазор між сусідніми пілюлями стрибає
+                  // залежно від того, який таб активний (founder-аудит R1,
+                  // 2026-09-11). Раніше активна пілюля розпирала бокс до
+                  // `w-full`, а неактивна лишалась вузькою (`px-2`, ≈38px):
+                  // grid-колонки вже рівні, а видимі краї пілюль — ні.
+                  // Підпис активного лишається у власному рядку під
+                  // іконкою (`flex-col`) — він стискається/обривається
+                  // всередині вже наявного боксу, а не розпирає його.
+                  // `py-0.5`, не `py-1`: трек тепер `min-h`, тож вертикальний
+                  // відступ пілюлі входить у ВНУТРІШНЮ висоту рядка. Із
+                  // `py-1` вміст (іконка + підпис + відступи + `my-1.5`
+                  // кнопки) на 16px-корені та fine-pointer давав 61px проти
+                  // мінімуму 60 — нав став би на 1px вищим уже на 100%
+                  // тексту. Пілюля все одно розтягується на весь трек
+                  // (`h-full`) і центрує вміст, тож видимо нічого не міняється.
+                  "relative flex h-full w-full min-w-0 items-center justify-center rounded-xl px-1 py-0.5",
+                  "transition-[background-color,color] duration-base",
                   active
-                    ? cn("px-3 text-bg", tokens.fillLight, tokens.fillDark)
-                    : "px-2 text-text",
+                    ? cn(
+                        "flex-col gap-0.5 text-bg",
+                        tokens.fillLight,
+                        tokens.fillDark,
+                      )
+                    : "text-text",
                 )}
                 aria-hidden
               >
@@ -307,25 +343,33 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                   половина ховається зараз чи ховатиметься після редизайну.
                 */}
                 {/*
-                  `text-ellipsis`: стеля `max-w-[88px]` — реальна межа, і
-                  підпис, що в неї не вліз, раніше різало посеред слова
-                  («Прогрес і замір» — знахідка QA-аудиту 2026-08-04, скарга
-                  власника 2026-08-08). Багатослівний підпис у нижній
-                  навігації — сам собою помилка (і його вкорочують у
-                  відповідному `*Nav`-файлі), але обрив із трьома крапками
-                  читається як навмисне скорочення, а не як зламана верстка.
+                  `text-ellipsis`: реальна межа — ширина grid-колонки мінус
+                  `px-1` пілюлі, і підпис, що в неї не вліз, раніше різало
+                  посеред слова («Прогрес і замір» — знахідка QA-аудиту
+                  2026-08-04, скарга власника 2026-08-08). Багатослівний
+                  підпис у нижній навігації — сам собою помилка (і його
+                  вкорочують через `visibleLabel` у відповідному
+                  `*Nav`-файлі), але обрив із трьома крапками читається як
+                  навмисне скорочення, а не як зламана верстка.
+
+                  Попередня редакція цього коментаря називала межею стелю
+                  `max-w-[88px]`. Її в коді немає — активний підпис стоїть
+                  на `max-w-full`, тобто межу задає колонка. Хто читав
+                  коментар замість класів, рахував запас проти числа, якого
+                  не існує (знахідка R1, 2026-09-13).
                 */}
                 <span
                   aria-hidden
+                  data-nav-label
                   className={cn(
-                    "text-style-caption font-semibold leading-none overflow-hidden text-ellipsis whitespace-nowrap",
+                    "text-style-caption font-semibold leading-tight overflow-hidden text-ellipsis whitespace-nowrap",
                     "transition-[max-width,opacity] duration-base motion-reduce:transition-none",
                     active
-                      ? "max-w-[88px] opacity-100"
+                      ? "max-w-full opacity-100"
                       : "max-w-0 opacity-0 pointer-events-none",
                   )}
                 >
-                  {item.label}
+                  {item.visibleLabel ?? item.label}
                 </span>
               </span>
               <span className="sr-only">{item.label}</span>

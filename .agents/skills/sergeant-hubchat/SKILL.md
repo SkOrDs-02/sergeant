@@ -1,8 +1,8 @@
 ---
 name: sergeant-hubchat
-description: DEPRECATED — merged into sergeant-module-ai; load .agents/skills/sergeant-module-ai/SKILL.md for HubChat tools, executors, prompt cache, action cards; UA: HubChat тепер у sergeant-module-ai.
+description: "DEPRECATED — merged into sergeant-module-ai; load .agents/skills/sergeant-module-ai/SKILL.md for HubChat tools, executors, prompt cache, action cards; UA: HubChat тепер у sergeant-module-ai."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # HubChat → sergeant-module-ai

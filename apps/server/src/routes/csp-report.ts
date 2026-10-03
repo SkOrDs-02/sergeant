@@ -7,7 +7,7 @@ import cspReportHandler from "../modules/observability/csp-report.js";
  * `Content-Security-Policy-Report-Only` header (set in root `vercel.json`).
  *
  * Closes Phase 1 of hardening card C2
- * (`docs/security/hardening/C2-frontend-csp.md`): the policy was already
+ * (`docs/work/specs/security-hardening/C2-frontend-csp.md`): the policy was already
  * shipping but `report-uri` pointed at a placeholder URL, so violations
  * were being dropped on the floor instead of feeding the
  * `csp_violation_total` time series.

@@ -51,12 +51,19 @@ export function GeneratorCard({
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Рецепти</div>
+      {/* AI-NOTE: `text-style-caption` тут правильний — це підказка ПІД
+          контролом (named-виняток правила `no-sentence-in-caption`), а не
+          текст, який читають підряд. Анотацію додано при мержі `main` у
+          гілку #1188: `lint-staged` ганяє eslint із `--max-warnings=0` по
+          всіх файлах, які мерж заносить у стейдж, тож попередження, що на
+          `main` живе тихо (CI лінт warning-и пропускає), блокує будь-який
+          мерж-коміт у довгоживучу гілку. Сам текст не змінювався. */}
       <div className="text-style-caption text-muted mt-0.5">
         Рекомендації на базі продуктів з комори. Можна вказати час, порції та
         &quot;не хочу&quot;.
         {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
           <span className="ml-1 text-nutrition-strong dark:text-nutrition">
-            (є кеш сеансу, натисни «Запропонувати» для оновлення)
+            (є кеш сеансу, натисни «Запропонувати рецепти» для оновлення)
           </span>
         )}
       </div>
@@ -161,7 +168,7 @@ export function GeneratorCard({
           disabled={busy}
           className={cn(
             "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50",
+            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
           )}
         >
           Запропонувати рецепти
@@ -187,7 +194,7 @@ export function GeneratorCard({
                   {r.macros?.kcal != null && (
                     <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption text-muted">
                       <div className="text-style-caption text-muted">
-                        ≈ ккал
+                        ≈ ккал / порція
                       </div>
                       <div className="text-style-label text-text">
                         {fmtMacro(r.macros.kcal)}
@@ -197,7 +204,7 @@ export function GeneratorCard({
                   <div className="flex gap-2 flex-wrap basis-full sm:basis-auto">
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() => onSave(r)}
                       disabled={busy}
@@ -206,7 +213,7 @@ export function GeneratorCard({
                     </Button>
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() =>
                         onAddToLog(r, r.id || r.title || String(idx))
@@ -261,7 +268,16 @@ export function GeneratorCard({
           <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted">
             Рецептів не повернулося. Спробуй натиснути &quot;Розібрати&quot; або
             додати 2–3 базові продукти (яйця/крупа/овочі).
-            {recipesRaw && (
+            {/* AI-DANGER: сира відповідь моделі — DEV-ONLY.
+                Це діагностика для розробника: неформатований текст від
+                LLM, який у продакшн-UI не пояснює людині нічого, зате
+                показує їй внутрішню кухню (знахідка PR-N8, аудит
+                2026-09-13). `import.meta.env.DEV` статично `false` у
+                прод-збірці, тож Vite вирізає гілку цілком — це той самий
+                гейт, що в `StandaloneRoutes` для внутрішнього стайлгайду.
+                Повертаєш це людям — роби через прапорець і у вигляді,
+                який можна прочитати, а не `<pre>{raw}</pre>`. */}
+            {import.meta.env.DEV && recipesRaw && (
               <details className="mt-3">
                 <summary className="cursor-pointer text-style-caption text-muted hover:text-text">
                   Показати діагностику (raw відповідь AI)

@@ -77,7 +77,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
             {label}
           </label>
         ) : null}
-        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border border-line bg-panelHi focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-focus/30">
+        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border border-control bg-panelHi focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-focus/30">
           <Input
             {...(bounded
               ? { min: HARD_MIN_DAY_KEY, max: HARD_MAX_DAY_KEY }

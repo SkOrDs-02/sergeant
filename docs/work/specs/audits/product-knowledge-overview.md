@@ -7,7 +7,7 @@
 > «founder ↔ документація ↔ код» для **Sergeant як одного продукту** (не модуля).
 > Предмет: ідентичність, конституція крос-модульних правил, деградаційні
 > контракти. Канон, який цей звіт супроводжує —
-> [`docs/product/modules/product-overview.md`](../../../product/model/product-overview.md).
+> [`docs/product/model/product-overview.md`](../../../product/model/product-overview.md).
 > Спека прогону — [`product-knowledge-audit-overview.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/specs/product-knowledge-audit-overview.md).
 >
 > **Метод.** 23 питання банку (§3 спеки) поставлено трьом незалежним колонкам:
@@ -216,3 +216,18 @@ random): дні стресу, зривів, хаосу — саме ті, кол
 | 7   | Нуль кодових змін                                            | ✅                                                    |
 | 8   | Канон створено після завершення обох агентів                 | ✅ (DOCS + CODE завершені до написання канону)        |
 | 9   | П'ять модульних канонів отримали посилання на парасольку     | ✅ (внизу «Як користуватись» кожного)                 |
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket                                           | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

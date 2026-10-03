@@ -1,6 +1,6 @@
 # Encryption key rotation — runbook
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-09.
+> **Last touched:** 2026-09-17 by @claude (`pnpm db:psql` → `psql "$DATABASE_URL"`). **Next review:** 2026-12-16.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -158,7 +158,7 @@ sum(rate(auth_token_lazy_reencrypt_total{row_version="1"}[5m])) by (field)
 плато і не почне спадати (старі рядки гасяться, або з re-encrypt, або з
 revoke / user delete).
 
-Прогнати `pnpm db:psql` з production connection string:
+Прогнати `psql "$DATABASE_URL"` з production connection string (скрипта `pnpm db:psql` у репо немає — 2026-09-17):
 
 ```sql
 SELECT
@@ -283,7 +283,7 @@ Deploy. Тепер read-у row-а під v1 буде throw-ити з `keyRing` �
 
 | PR                                                     | Title                                                 | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

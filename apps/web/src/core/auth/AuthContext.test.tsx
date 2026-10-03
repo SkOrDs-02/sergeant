@@ -641,10 +641,10 @@ describe("translateAuthError", () => {
     expect(translateAuthError("", "Помилка входу")).toBe("Помилка входу");
   });
 
-  it("мапить Better Auth INVALID_EMAIL_OR_PASSWORD у одне повідомлення про невірні credentials", () => {
+  it("мапить Better Auth INVALID_EMAIL_OR_PASSWORD у одне повідомлення про неправильні credentials", () => {
     // Регресія: до фіксу `/invalid email/i` фальш-метчив підрядок
     // `"Invalid email"` усередині `"Invalid email or password"` → юзер з
-    // неправильним паролем бачив «Невірний формат email.» (хоча email був
+    // неправильним паролем бачив «Неправильний формат email.» (хоча email був
     // OK). Тепер мапимо за `code`, тож точне повідомлення стабільне.
     expect(
       translateAuthError(
@@ -655,7 +655,7 @@ describe("translateAuthError", () => {
         },
         "Помилка входу",
       ),
-    ).toBe("Невірний email або пароль.");
+    ).toBe("Неправильний email або пароль.");
   });
 
   it("мапить рядок `Invalid email or password` без коду через message-fallback", () => {
@@ -664,7 +664,7 @@ describe("translateAuthError", () => {
     // вузької гілки `/^invalid email\\b/i`.
     expect(
       translateAuthError("Invalid email or password", "Помилка входу"),
-    ).toBe("Невірний email або пароль.");
+    ).toBe("Неправильний email або пароль.");
   });
 
   it("мапить 429 (status або code=RATE_LIMIT) у людське повідомлення", () => {

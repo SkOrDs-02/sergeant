@@ -24,10 +24,10 @@ export function createChatRouter(): Router {
     // публічний proxy (той самий аргумент, що в `transcribe.ts`). Без сесії
     // квота падала на `ip:<addr>`, а IPv6-клієнт має під підпискою цілу /64 —
     // денний ліміт переставав бути лімітом. Знахідка A1,
-    // `docs/90-work/audits/ai-abuse-2026-08-05.md`.
+    // `docs/work/specs/audits/ai-abuse-2026-08-05.md`.
     //
     // requireSession() йде ПЕРЕД rateLimitExpress навмисно (знахідка B31,
-    // `docs/90-work/audits/ai-testing-2026-08-25.md`): `rateLimitSubject`
+    // `docs/work/specs/audits/ai-testing-2026-08-25.md`): `rateLimitSubject`
     // (`http/rateLimit.ts`) читає `req.user.id` і фолбечиться на
     // `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
     // requireSession, `req.user` завжди unset у момент перевірки — кожен
@@ -47,7 +47,7 @@ export function createChatRouter(): Router {
     // rationale. This is now genuinely a per-user bucket (`u:<id>`), not
     // per-IP — see the ordering note above.
     //
-    // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
     // the burst bucket ALONE forced a choice between "generous enough for a
     // quick back-and-forth" and "tight enough over several minutes": at
     // 6/min flat, a normal conversation (question, follow-up, action, undo)

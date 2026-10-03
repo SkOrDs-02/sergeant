@@ -17,12 +17,16 @@ export type Subscription = {
   billingDay: number;
   currency: string;
   linkedTxId?: string | undefined;
+  /** Очікувана сума, мінорні одиниці (Р20); поки немає зіставленої транзакції. */
+  expectedAmount?: number | undefined;
   [extra: string]: unknown;
 };
 
 export type RecurringCandidate = {
   key: string;
   displayName?: string;
+  /** Середня сума списання з історії, у гривнях (`detectRecurring`). */
+  avgAmount?: number;
   billingDay?: number;
   currency?: string;
   sampleTxIds?: string[];
@@ -54,6 +58,8 @@ export type CustomCategory = {
   color?: string | undefined;
   icon?: string | undefined;
   parentId?: string | undefined;
+  /** Відсутнє у старих записах означає категорію витрати. */
+  kind?: "expense" | "income" | undefined;
 };
 
 export type TxCategoriesMap = Record<string, string | undefined>;

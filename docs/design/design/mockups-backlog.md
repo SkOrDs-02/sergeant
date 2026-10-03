@@ -1,8 +1,8 @@
 # Mockups · Backlog
 
-> **Last validated:** 2026-08-16 by @claude (звірено з деревом `mockups/` — усі 4 «заплановані» поверхні й уся міграція структури виявились закритими; цифри кластерів за 2026-05-18 лишаю як історичний зріз, живий стан — портал).
+> **Last validated:** 2026-09-16 by @claude (дерева `mockups/` у цьому репозиторії **немає**: root-коміт 2026-09-14 імпортовано без нього, `git ls-files | grep mockups` дає лише цей файл; усі шляхи нижче — історія, а не адреси).
 > **Next review:** 2027-04-01.
-> **Status:** Active.
+> **Status:** Reference — знімок стану візуальної бібліотеки на 2026-08-16. Мокапи доступні лише через immutable-снапшот попереднього репозиторію (наприклад [`mockups/product/kickers.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/kickers.html)); рішення власника, ухвалені на них, уже перенесені в токени (`tailwind-preset.js` § типографіка) і в [`tech-debt/frontend.md`](../../work/specs/tech-debt/frontend.md).
 > **Maintainer:** founder + Claude (designer-assistant).
 
 Що зроблено у `/mockups/` і що ще потрібно — щоб можна було повернутись і

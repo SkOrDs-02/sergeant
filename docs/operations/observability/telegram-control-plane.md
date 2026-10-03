@@ -1,7 +1,7 @@
 # Telegram як control plane для Sergeant Ops
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-02.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Status → Reference: n8n-механіка історична). **Next review:** 2026-12-16.
+> **Status:** Reference — architectural review 2026-05; висновок і структура каналів (ADR-0030) чинні, механіка доставки описана на n8n-епоху
 
 > ⚠️ **n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md), 2026-09-02).** Висновки про Telegram як control plane і структуру каналів (ADR-0030) чинні; згадки n8n-механізмів (WF-98, `n8n_errors`, reporting-матриця) — історичні, файли — у permalink-снапшоті.
 
@@ -26,8 +26,12 @@ mapping живе у [`../../ops/n8n-workflows/REPORTING-MATRIX.md`](https://gith
 3. **Action surface** — людина може щось зробити у відповідь
    (acknowledge, mute, restart, dispatch, run a script).
 
-Telegram + n8n сьогодні закривають перші два пункти повністю, а третій —
-частково (через inline ack-кнопки WF-104, де вони реалізовані). Двостороннього
+Telegram + n8n на момент review (2026-05) закривали перші два пункти повністю,
+а третій — частково (через inline ack-кнопки WF-104, де вони реалізовані);
+після ADR-0090 доставку в Telegram ведуть серверний digest-таймер
+([ADR-0089](../../governance/adr/0089-job-substrates-outbox-broker-timer.md))
+і Grafana Cloud managed alerting (contact point `telegram-ops`,
+[`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-07-26)). Двостороннього
 мосту «відповідь у Telegram → застосунок» немає: HubChat — це in-app чат
 (`apps/server/src/modules/chat`), а Telegram-командний рантайм пішов разом з
 OpenClaw ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).

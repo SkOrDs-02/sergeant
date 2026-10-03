@@ -219,7 +219,7 @@ describe("AssistantCataloguePage — group collapsing", () => {
     ]);
   });
 
-  it("renders the legend explaining Чіп / Ризик / Новинка badges", () => {
+  it("renders only badge types currently present in the catalogue", () => {
     render(<AssistantCataloguePage onClose={() => {}} />);
     const legend = screen.getByTestId("catalogue-legend");
     // BadgeChip renders sentence-case labels ("Чіп", "Ризик", "Новинка");
@@ -230,17 +230,14 @@ describe("AssistantCataloguePage — group collapsing", () => {
     expect(legend.textContent).toMatch(/швидкий сценарій/);
     expect(legend.textContent).toMatch(/Ризик/);
     expect(legend.textContent).toMatch(/критична дія/);
-    expect(legend.textContent).toMatch(/Новинка/);
-    expect(legend.textContent).toMatch(/нещодавно додано/);
+    expect(legend.textContent).not.toMatch(/Новинка/);
+    expect(legend.textContent).not.toMatch(/нещодавно додано/);
   });
 
-  it("renders the Новинка badge on capabilities flagged with isNew", () => {
+  it("does not mark established capabilities as new", () => {
     render(<AssistantCataloguePage onClose={() => {}} />);
-    // compare_weeks is flagged isNew in the registry; its row renders the
-    // badge alongside the label.
     const row = screen.getByTestId("catalogue-capability-compare_weeks");
-    expect(row.textContent).toMatch(/Новинка/);
-    // Non-new capability has no Новинка text.
+    expect(row.textContent).not.toMatch(/Новинка/);
     const plainRow = screen.getByTestId(
       "catalogue-capability-create_transaction",
     );

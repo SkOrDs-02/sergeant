@@ -25,7 +25,8 @@ import { messages } from "@shared/i18n/uk";
  * `ModuleBottomNav` so the whole app reads under one navigation pattern.
  *
  * Canonical shape:
- * - 60 px height (64 px on coarse-pointer devices).
+ * - Мінімальна висота треку 60 px (64 px on coarse-pointer devices); при
+ *   збільшеному тексті (low-vision, 200% root) трек росте разом із підписом.
  * - Docked edge-to-edge against the screen bottom in both browser and PWA
  *   standalone via `bottom-nav-shell` — no horizontal margins, flat bottom,
  *   rounded only at the top. The panel background fills the safe-area strip
@@ -45,7 +46,14 @@ import { messages } from "@shared/i18n/uk";
  * Layout contract:
  * - Rendered at the bottom of the hub `<div h-dvh flex-col>` shell, so
  *   `ActiveWorkoutBanner` and other floating chrome must offset
- *   their `bottom:` by 60 px + safe-area-inset-bottom to sit above it.
+ *   their `bottom:` by the nav's real height to sit above it: at least
+ *   60 px + safe-area-inset-bottom, more when the text is scaled — read the
+ *   measured `--sgt-bottom-nav-inset` instead of hardcoding the 60 px.
+ * - Tab strip is a CSS grid with `repeat(N, minmax(0, 1fr))` columns and a
+ *   fixed-width pill (`h-full w-full`) per tab, identical to
+ *   `ModuleBottomNav` — до фіксу R1 (founder-аудит 2026-09-11) тут стояв
+ *   `flex` із `flex-initial`/`flex-1`, тобто інший алгоритм при однаковій
+ *   візуальній оболонці; тепер обидва наві рахують ширину табу однаково.
  *
  * The reports-tab reveal behavior (a single bounce-in animation when
  * the tab first appears) is preserved from the old `HubTabs` — see
@@ -73,7 +81,7 @@ interface HubBottomNavTabProps {
    * Слот рендериться у DOM, але приховується від користувача й AT.
    * Використовується для збереження геометрії tab-strip-у в момент,
    * коли «Звіти» ще не розблоковані (FTUX без жодного запису). Без цього
-   * перехід `showReports: false → true` спричиняє reflow усього `flex`-grid-а
+   * перехід `showReports: false → true` спричиняє reflow усього grid-а
    * і CLS під час першого реального запису (UX-roast 2026-Q2 §7.2 / PR-23).
    */
   hiddenSlot?: boolean | undefined;
@@ -154,16 +162,14 @@ function HubBottomNavTab({
       {...prefetchProps}
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        // AI-DANGER: активний таб — НЕ `flex-1`. Рівні слоти дають на 320-390px
-        // ~65-89px, тоді як активний піл (іконка + підпис до 96px + px-3)
-        // потребує ~146px. Раніше це лікували `max-w-full` на пілі — піл
-        // переставав вилазити, але ПІДПИС починав різатись («Налаштування»
-        // 87→42px, «Головна» 49→42px; браузерний аудит 2026-08-26).
-        // `flex-initial` = розмір за вмістом із правом стиснутись: активний
-        // бере скільки треба, неактивні ділять залишок. Той самий фікс, що в
-        // `ModuleBottomNav`.
+        // Контейнер розкладає таби через CSS grid із рівними колонками
+        // (`repeat(N, minmax(0,1fr))` — той самий алгоритм, що в
+        // `ModuleBottomNav`), тож таб більше не рахує собі ширину сам —
+        // ні `flex-initial`, ні `flex-1` тут більше не потрібні (founder-
+        // аудит R1, 2026-09-11: два нижні наві виглядали однаково, але
+        // розкладались різними алгоритмами, і саме звідси бралась
+        // нерівність між центрами іконок).
         "relative flex items-center justify-center min-w-0",
-        active ? "flex-initial" : "flex-1",
         "min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-[0.96]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
@@ -172,36 +178,54 @@ function HubBottomNavTab({
         className,
       )}
     >
-      {/* Inner pill — carries the brand fill and grows to fit icon + label */}
+      {/*
+        Inner pill — ОДНАКОВИЙ горизонтальний бокс (`h-full w-full`) в
+        активному й неактивному стані, по центру grid-колонки. Раніше
+        активний піл ріс за вмістом (`flex-initial`) і потребував власного
+        `max-w-full`-запобіжника, щоб не вилізти за межі слота — а підпис
+        при цьому різало до нечитабельних 42px («Налаштування» 87→42px,
+        браузерний аудит 2026-08-26). Тепер підпис лежить ПІД іконкою
+        (`flex-col`), а не поруч із нею: колонка вже рівна для всіх табів,
+        і підпису дістається вся її ширина, а не залишок після іконки —
+        той самий прийом, що в `ModuleBottomNav`.
+      */}
       <span
         aria-hidden
         className={cn(
-          // `max-w-full` тримає піл усередині свого `flex-1`-слота. Без нього
-          // піл росте під `icon + gap + max-w-[96px] label + px-3` ≈ 146px,
-          // а слот на 375px-екрані — ≈89px: активний піл вилазив за межі
-          // кнопки, у крайнього таба — за край екрана (user report).
-          "flex items-center justify-center gap-1.5 rounded-2xl max-w-full",
+          // AI-DANGER: підпис активного табу мусить лишатись ПІД іконкою
+          // (`flex-col`). Не повертай його в один рядок з іконкою — ні
+          // `flex-row`, ні `gap` між ними по горизонталі. Рівні grid-колонки
+          // вище тримаються саме на цьому: у рядку іконка й підпис ділять
+          // ширину колонки, і підпису лишається залишок (~42px на 4-табовому
+          // наві при 390px — «Налаштування» різало 87→42px, браузерний аудит
+          // 2026-08-26, через що рівні колонки тоді й відкотили). У стовпчику
+          // підпис отримує ВСЮ ширину колонки (~84.5px), і саме тому рівні
+          // колонки тут знову припустимі. Тобто це не дві незалежні правки, а
+          // одна: `grid` рівних колонок діє лише в парі з `flex-col`. Зміниш
+          // одне — перевір ширини 320-390px, інакше повернеш дефект 2026-08-26.
+          "flex h-full w-full min-w-0 items-center justify-center rounded-2xl px-1 py-1",
           "duration-base ease-standard",
           active
-            ? "bg-brand-strong dark:bg-brand-400 text-bg px-3 py-1.5"
-            : "bg-transparent text-text px-2 py-1.5",
-          !reduceMotion && "transition-[background-color,padding,color]",
+            ? "flex-col gap-0.5 bg-brand-strong dark:bg-brand-400 text-bg"
+            : "bg-transparent text-text",
+          !reduceMotion && "transition-[background-color,color]",
         )}
       >
         <Icon
           name={iconName}
-          size={20}
+          size="lg"
           strokeWidth={active ? 2.5 : 2}
           className="shrink-0"
         />
         {/* Label: visible only for active tab, slides in/out */}
         <span
+          data-nav-label
           className={cn(
-            "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap text-ellipsis",
+            "text-style-caption font-semibold leading-tight overflow-hidden whitespace-nowrap text-ellipsis",
             transition,
             "duration-base ease-standard",
             active
-              ? "max-w-[96px] opacity-100"
+              ? "max-w-full opacity-100"
               : "max-w-0 opacity-0 pointer-events-none",
           )}
         >
@@ -392,7 +416,27 @@ export function HubBottomNav({
     iconName: "settings",
     prefetchPage: "settings",
     label: "Налаштування",
+    // Рішення власника 2026-09-12 (founder-ux-review round 2, R1). «Налаштування»
+    // — 12 символів проти 5-7 у сусідів («Головна», «Звіти», «Профіль»), і на
+    // ≤375px воно не влазило в свою колонку: text-ellipsis давав
+    // «Налаштува…». Розглядались два інші варіанти й обидва відкинуті: два
+    // рядки лишали 2px запасу у 60px-наві (тобто ламались би від будь-якої
+    // зміни шрифта, і ламались би тихо), а прийняте обрізання лишало
+    // видимий дефект на найпоширенішій ширині.
+    //
+    // AI-DANGER: коротшає лише ВИДИМИЙ підпис. Доступна назва мусить
+    // лишатись повною — її дає `<span className="sr-only">{label}</span>`,
+    // і всі тести навбара шукають таб саме по `name: /Налаштування/`.
+    // Не зводь ці два поля в одне: «Опції» як accessible name зробить таб
+    // невідрізненним від будь-якого меню опцій у скрінрідері.
+    visibleLabel: "Опції",
   });
+
+  // Grid-колонки, не flex: усі таби (включно з action-табом «Увійти», який
+  // рендериться поза `tabs`-масивом) мають бути РІВНОЇ ширини (тим самим
+  // алгоритмом, що в `ModuleBottomNav`), інакше центр іконки в кожному
+  // табі сидить у своїй унікальній точці замість центру колонки.
+  const columnCount = tabs.length + (authAction ? 1 : 0);
 
   return (
     <nav
@@ -406,7 +450,22 @@ export function HubBottomNav({
         kbHidden && "translate-y-full pointer-events-none",
       )}
     >
-      <div className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1">
+      {/*
+        AI-DANGER: висота треку — МІНІМУМ (`min-h-*`), не фіксована. Фіксована
+        `h-[60px]` зрізала підпис активного таба до 0-20px при 200% кореневого
+        тексту (low-vision, `tests/a11y/low-vision.spec.ts`): текст росте з
+        rem, а трек — ні. На 100% тексту вміст нижчий за мінімум, тож нав
+        виглядає як раніше (60px, 64px на coarse pointer). Усе, що рахує
+        «скільки зайнято знизу», бере ВИМІРЯНЕ `--sgt-bottom-nav-inset`
+        (`useBottomInsetVar`), а не цифри 60/64 — інакше нав росте, а контент
+        заїжджає під нього.
+      */}
+      <div
+        className="relative grid min-h-[60px] pointer-coarse:min-h-[64px] gap-1 px-1"
+        style={{
+          gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+        }}
+      >
         <div role="tablist" ref={tablistRef} className="contents">
           {tabs.map((tab) => (
             <HubBottomNavTab

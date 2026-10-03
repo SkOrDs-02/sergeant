@@ -35,7 +35,7 @@ const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
   },
   {
     keys: ["Cmd", "/"],
-    description: "Відкрити AI-асистента",
+    description: "Відкрити Сержанта",
     category: "Загальні",
   },
 
@@ -54,14 +54,20 @@ const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
     category: "Навігація",
   },
 
-  // Actions
+  // Actions — обробники в `useHubKeyboardShortcuts` + `RootLayout`. До
+  // 2026-09-16 `N` і `Cmd+Z` тут стояли без обробників (фантоми аудиту
+  // дизайн-доків); тепер обидва живі, і модалка каже рівно те, що робить.
   {
     keys: ["N"],
-    description: "Нова запис (в контексті модуля)",
+    description: "Новий запис у поточному модулі, на хабі: швидке додавання",
     category: "Дії",
   },
-  { keys: ["Cmd", "S"], description: "Зберегти", category: "Дії" },
-  { keys: ["Cmd", "Z"], description: "Скасувати дію", category: "Дії" },
+  { keys: ["Cmd", "S"], description: "Зберегти форму", category: "Дії" },
+  {
+    keys: ["Cmd", "Z"],
+    description: "Повернути щойно видалене, поки видно тост",
+    category: "Дії",
+  },
 ];
 
 interface KeyboardShortcutsModalProps {
@@ -154,7 +160,7 @@ export function KeyboardShortcutsModal({
             className="p-2 rounded-xl text-muted hover:text-text hover:bg-surface transition-colors"
             aria-label="Закрити"
           >
-            <Icon name="x" size={20} />
+            <Icon name="close" size="lg" />
           </button>
         </div>
 
@@ -193,7 +199,7 @@ export function KeyboardShortcutsModal({
         {/* Footer hint */}
         <div className="p-4 border-t border-line text-center">
           <p className="text-style-caption text-muted">
-            Натисни <KeyBadge>?</KeyBadge> будь-де щоб відкрити цю довідку
+            Натисни <KeyBadge>?</KeyBadge> будь-де, щоб відкрити цю довідку.
           </p>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-17 by @claude (F1: врізка про закриття 2026-09-03 біля застарілого «лишаються відкритими»). **Next review:** 2026-12-16.
 > **Status:** Active — рішення власника ухвалено 2026-09-01 (§4а); Q3/F6 закрито для всіх трьох модулів: Їжа — PR #1014, Фізрук — PR #1021 (F1 частково — стрічка тайлів `StatusStrip`), Фінік — **PR #1025** (F1 частково — `TodaySummaryCard`/`MonthPulseCard`). Усі три рішення Q3 закриті; F1 закрито повністю 2026-09-03 (`BentoCard`, `LogCardAnalytics`, `RoutineStatsPanel` — hero-число плюс текстові рядки без боксів); відкритим лишається F7 (mobile) як окремий PR.
 
 - **Дата:** 01.09.2026, один цикл: зовнішнє дослідження → код-аудит → живий прохід → звіт.
@@ -99,7 +99,7 @@ Demo-режим (`/?demo=1`), 393×852, light і dark. Артефакт dev-зб
 - **Де:** `core/hub/dashboard/BentoCard.tsx:152-362` (тайл хабу: іконка в тонованому колі → назва → підпис → число → прогрес → тренд-чип); `modules/fizruk/components/dashboard/StatusStrip.tsx:208` (три рівні тайли); `modules/finyk/pages/overview/TodaySummaryCard.tsx:63` (три колонки «Витрати / Надходження / Денний план») + картка дня нижче; `modules/nutrition/components/LogCardAnalytics.tsx:59-82` «Аналітика (тренди)» 2×2; `modules/routine/components/RoutineStatsPanel.tsx:113-129` «Виконано / Серія / Макс. серія».
 - **Чому погано:** це T5 і T11 із зовнішньої матриці одночасно, і атрактор 5 стратегії («однорідна густина»). На `/finyk` одне й те саме число `495 ₴` стоїть тричі у трьох різних контейнерах на одному екрані — hero, «Сьогодні», картка дня. Ієрархія густини відсутня не тому, що бракує токенів, а тому, що кожен показник отримав однаковий контейнер.
 - **Фікс:** П4 стратегії, застосований не до типографіки, а до **кількості контейнерів**: один показник на екран є hero (display-роль), решта — рядки тексту з `text-style-label` + `tabular-nums`, без власного бокса. Перший PR-крок: `/finyk` — прибрати картку дня (дублює hero і «Сьогодні»), «Сьогодні» перевести з трьох колонок у два рядки тексту під hero. Другий: `StatusStrip` Фізрука — три тайли → один рядок `Втомлені: 4 · серія 1 з 2 · 1 тренування` з акцентом лише на «Втомлені» (єдине число зі станом).
-- **Фінік — закрито PR #1025** (спека [`finyk-hero-month-strip.md`](../finyk-hero-month-strip.md)): `TodaySummaryCard` (три колонки) і картка дня (`MonthPulseCard`) прибрані; hero тепер стрічка місяця з головним числом «Лишилось на сьогодні», решта — два текстові рядки під hero без власного бокса. Число `495 ₴` більше не дублюється у трьох контейнерах. Фізрук (`StatusStrip`) закрито окремо PR #1021; `BentoCard`, `LogCardAnalytics`, `RoutineStatsPanel` лишаються відкритими.
+- **Фінік — закрито PR #1025** (спека [`finyk-hero-month-strip.md`](../finyk-hero-month-strip.md)): `TodaySummaryCard` (три колонки) і картка дня (`MonthPulseCard`) прибрані; hero тепер стрічка місяця з головним числом «Лишилось на сьогодні», решта — два текстові рядки під hero без власного бокса. Число `495 ₴` більше не дублюється у трьох контейнерах. Фізрук (`StatusStrip`) закрито окремо PR #1021; `BentoCard`, `LogCardAnalytics`, `RoutineStatsPanel` лишаються відкритими. ✅ закрито 2026-09-03 — усі три перероблені на hero-число плюс текстові рядки без боксів (шапка і § 4а, рядок F1).
 
 **F2 · Іскра як гліф AI — чужа ідентичність на головному диференціаторі.**
 
@@ -240,7 +240,7 @@ Demo-режим (`/?demo=1`), 393×852, light і dark. Артефакт dev-зб
 
 - [AI Design Slop: 16 Patterns That Out Your App as Vibe-Coded — Developers Digest](https://www.developersdigest.tech/blog/ai-design-slop-and-how-to-spot-it) — 16 tell-ів; «colored left border = em-dash дизайну».
 - [The "Built with AI" Tell: 12 Signals That Drop Trust — Utsubo](https://www.utsubo.com/blog/built-with-ai-trust-signals-2026) — сигнали довіри, копія й метадані.
-- [AI Slop Design: Why AI-Generated UI Looks Generic — VibeCodeKit](https://vibecodekit.dev/ai-slop-design) — чек-лист із 6 правил, APCA, «dark mode as reflex».
+- «AI Slop Design: Why AI-Generated UI Looks Generic» — VibeCodeKit, `vibecodekit.dev/ai-slop-design` — чек-лист із 6 правил, APCA, «dark mode as reflex». Без лінка: станом на 2026-09-11 хост мертвий (спершу 503, далі `fetch failed` із CI-раннера). На відміну від Medium нижче, це **не** 403-для-бота, тож allowlist тут означав би не «не перевіряти», а «замовчати мертве посилання» — теза лишається в тексті аудиту, джерело історичне.
 - [7 Signs a UI Has Been Vibe Coded — The Fountain Institute](https://www.thefountaininstitute.com/blog/signs-vibe-coded-ui) — card-in-card, meaningless status dots, multicolored side tabs.
 - [Why Your Vibe-Coded App Looks Like Every Other AI App — The Crit](https://thecrit.co/resources/vibe-coding-design-guide) — Lucide/Heroicons як уніформа, spacing-ієрархія.
 - [AI Slop Fonts and Gradients — 925 Studios](https://www.925studios.co/blog/ai-slop-design-tells) — «AI fingerprint» як кластер, а не окремі ознаки.

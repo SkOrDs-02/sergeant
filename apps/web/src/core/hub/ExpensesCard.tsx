@@ -11,14 +11,14 @@ import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { toKyivISODate } from "@sergeant/shared";
 import { readFinykStatsContext } from "@finyk/utils";
+import { compareAmounts } from "@sergeant/finyk-domain/domain/selectors";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
 import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
-  getPeriodRange,
-  datesInRange,
-  localDateKey,
+  reportWindows,
   type Period,
   type SpendingInputs,
 } from "./hubReports.aggregation";
@@ -91,7 +91,8 @@ function BarChart({
           >
             {vals.map((v, i) => {
               const pct = Math.max(0, Math.min(100, (v / max) * 100));
-              const isToday = dates[i] === localDateKey();
+              // «Сьогодні» для грошей — київське (f6), як і межа доби в агрегаті.
+              const isToday = dates[i] === toKyivISODate();
               const isSelected = selected === i;
               return (
                 <button
@@ -143,6 +144,26 @@ function BarChart({
   );
 }
 
+/**
+ * Чип зміни витрат до попереднього періоду за правилом Р4 (канон finyk,
+ * журнал 2026-09-24): відсоток лише коли попередня сума є базою
+ * (`compareAmounts`: ≥ 10 % поточної), інакше абсолютна дельта в гривнях.
+ * Без цього «+946 %» проти минулого періоду з однією витратою на 75 ₴
+ * читалось як дефект. Агрегат картки — цілі гривні (`calcFinykSpendingByDate`
+ * округлює по днях), тож копійки тут `× 100`: точніших значень картка не має.
+ */
+function SpendingDelta({ cur, prev }: { cur: number; prev: number }) {
+  const { pct } = compareAmounts(Math.round(cur * 100), Math.round(prev * 100));
+  return (
+    <DeltaChip
+      cur={cur}
+      prev={prev}
+      higherIsBetter={false}
+      {...(pct === null ? { absoluteUnit: "₴" } : {})}
+    />
+  );
+}
+
 // ── Main card ─────────────────────────────────────────────────────────
 
 interface ExpensesCardProps {
@@ -174,7 +195,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // warmed the same module-level cache before this card ever mounted.
   const sqliteCacheTick = useFinykSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates, partial } = useMemo(() => {
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
     void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
@@ -191,16 +212,20 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       txSplits: txSplits as Record<string, unknown[]>,
     };
 
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    // Гроші ріжуться за Києвом (f6): вікна «до сьогодні» — `w.money`, не
+    // `w.cur`, а день транзакції `aggregateSpending` бере київський.
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateSpending(inputs, curDates),
-      prev: aggregateSpending(inputs, prevDates),
-      dates: curDates,
+      cur: aggregateSpending(inputs, w.money.cur),
+      prev: aggregateSpending(inputs, w.money.prev),
+      prevAny: aggregateSpending(inputs, w.prevAll).total > 0,
+      dates: w.dates,
+      partial: w.money.partial,
     };
   }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
+
+  // Нуль в обох вікнах: витрат ще не записували, «0 ₴» тут не результат.
+  const empty = cur.total === 0 && !prevAny;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -228,15 +253,17 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <Money
-              amount={cur.total}
-              className="text-style-body font-bold text-text"
-            />
-            <DeltaChip
-              cur={cur.total}
-              prev={prev.total}
-              higherIsBetter={false}
-            />
+            {empty ? (
+              <span className="text-style-body font-bold text-text">–</span>
+            ) : (
+              <>
+                <Money
+                  amount={cur.total}
+                  className="text-style-body font-bold text-text"
+                />
+                <SpendingDelta cur={cur.total} prev={prev.total} />
+              </>
+            )}
           </span>
         )}
         <svg
@@ -257,21 +284,25 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyExpenses}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <Money
               amount={cur.total}
               className="text-style-headline text-text"
             />
-            <DeltaChip
-              cur={cur.total}
-              prev={prev.total}
-              higherIsBetter={false}
-            />
+            <SpendingDelta cur={cur.total} prev={prev.total} />
           </div>
           <p className="text-style-caption text-muted">
-            {messages.hub.reportPrevious} <Money amount={prev.total} />
+            {partial
+              ? messages.hub.reportPreviousToDate
+              : messages.hub.reportPrevious}{" "}
+            <Money amount={prev.total} />
           </p>
           <BarChart
             key={`${period}-${offset}`}

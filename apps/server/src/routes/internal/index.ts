@@ -1,6 +1,9 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { env } from "../../env.js";
+import { rateLimitExpress } from "../../http/rateLimit.js";
+import { requireInternalIp } from "../../http/requireInternalIp.js";
+import { logger } from "../../obs/logger.js";
 import { safeStringEqual } from "../../http/safeCompare.js";
 import { verifyWebhookSignature } from "../../http/verifyWebhookSignature.js";
 import { createBillingInternalRouter } from "./billing.js";
@@ -33,18 +36,52 @@ import { createGdprInternalRouter } from "./gdpr.js";
  *
  *   2. `verifyWebhookSignature()` — runs ONLY when
  *      `WEBHOOK_HMAC_SECRET` is set. Checks `X-Signature` (HMAC-SHA256
- *      hex) and `X-Timestamp` (UNIX-seconds, 5-min replay window). Grace
- *      mode (`WEBHOOK_HMAC_REQUIRED=false`, the default) warn-logs
- *      mismatches but passes through, so n8n workflows can roll out one
- *      at a time; flip `WEBHOOK_HMAC_REQUIRED=true` after every wired
- *      workflow signs (`manifest.json: hmac_signed: true`). See
- *      `docs/observability/security.md` for the rollout playbook.
+ *      hex) and `X-Timestamp` (UNIX-seconds, 5-min replay window).
+ *      `WEBHOOK_HMAC_REQUIRED` defaults to `true` since 2026-09-16, so a
+ *      missing or invalid signature is a 401; set it to `false` only as a
+ *      deliberate, temporary opt-out while a new internal caller learns to
+ *      sign. Note the layer is skipped entirely when the secret is empty —
+ *      `assertStartupEnv` warns about that combination at boot. See
+ *      `docs/governance/security/api-internal-hmac.md`.
+ *
+ * Перед обома шарами (аудит ai-pipeline B27):
+ *
+ *   0a. `requireInternalIp` — лише коли задано `INTERNAL_ALLOWED_IPS`.
+ *       Порожній список = шар не монтується навіть у production, бо
+ *       fail-closed 503 зламав би всіх легітимних викликачів (n8n / Coolify-
+ *       крони, `scripts/replay-*.mjs`), чиї адреси ще не інвентаризовані.
+ *   0b. Rate-limit `api:internal` (per-IP, 120/хв) — стеля для brute-force
+ *       ключа та для витоку ключа → безкоштовні LLM-виклики. Рахує й 401.
  *
  * These routes are intentionally NOT session-auth — they are machine-to-machine.
  * They must NEVER be exposed to end-users or third-party services.
  */
+/** Щедро: bulk-реплеї/крони легітимні, але не безмежні. */
+const INTERNAL_RATE_LIMIT_PER_MIN = 120;
+
 export function createInternalRouter({ pool }: { pool: Pool }): Router {
   const router = Router();
+
+  if (env.INTERNAL_ALLOWED_IPS.trim() !== "") {
+    router.use(
+      "/api/internal",
+      requireInternalIp({
+        entries: env.INTERNAL_ALLOWED_IPS,
+        onReject: ({ ip, path }) => {
+          logger.warn({ msg: "internal_ip_rejected", callerIp: ip, path });
+        },
+      }),
+    );
+  }
+
+  router.use(
+    "/api/internal",
+    rateLimitExpress({
+      key: "api:internal",
+      limit: INTERNAL_RATE_LIMIT_PER_MIN,
+      windowMs: 60_000,
+    }),
+  );
 
   router.use("/api/internal", (req, res, next) => {
     const internalKey = env.INTERNAL_API_KEY;

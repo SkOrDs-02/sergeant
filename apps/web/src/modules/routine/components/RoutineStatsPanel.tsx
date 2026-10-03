@@ -117,23 +117,47 @@ export function RoutineStatsPanel({
             несли ще й `statCardHighlight` зі світлою заливкою, яка в
             «Чорнилі» читалась як витік світлої теми (браузерна перевірка
             2026-08-17) — боксів нема, нема й проблеми. */}
+        {/* Відсотка від нуля не буває: коли в зрізі нічого не заплановано,
+            «0%» при «0/0» читався б як провал. */}
         <Stat
           label="Виконано"
           value={
-            <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
+            summary.rate.scheduled > 0 ? (
+              <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
+            ) : (
+              "–"
+            )
           }
-          sublabel={`${summary.rate.completed}/${summary.rate.scheduled}`}
+          sublabel={
+            summary.rate.scheduled > 0
+              ? `${summary.rate.completed}/${summary.rate.scheduled}`
+              : undefined
+          }
           size="md"
         />
+        {/* Обидва числа — крос-звичкові МАКСИМУМИ, не «тримаю все N днів»:
+            `currentStreak` приходить як `streakMax` (`flexibleMaxActiveStreak`
+            по всіх звичках), `maxAllTime` — `flexibleMaxStreakAllTimeAcrossHabits`.
+            Доти підписи казали «Серія сьогодні» й «Макс. серія», тобто людина
+            читала агрегат як власну суцільну серію (знахідка PR-R10).
+
+            AI-DANGER: це ДРУГА поверхня тієї ж знахідки. Першу
+            (`RoutineCalendarHero.tsx:170-178`) виправили раніше — там підпис
+            уже каже «найкраща серія», і там же стоїть пояснення з посиланням
+            на PR-R10. Воно не вберегло цей файл: коментар у файлі А не боронить
+            файл Б. Слово «найкраща» тут узяте звідти навмисно, щоб дві
+            поверхні називали одну величину однаково; міняєш формулювання —
+            міняй в обох. */}
         <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 text-style-label text-muted">
-          <span>Серія сьогодні</span>
+          <span>Найкраща серія:</span>
+          <span>сьогодні</span>
           <span className="font-semibold text-text tabular-nums">
             {currentStreak}
           </span>
           <span aria-hidden className="text-subtle">
             ·
           </span>
-          <span>Макс. серія</span>
+          <span>за весь час</span>
           <span className="font-semibold text-text tabular-nums">
             {summary.maxAllTime}
           </span>
@@ -157,6 +181,7 @@ export function RoutineStatsPanel({
           key={range.id}
           habits={routine.habits}
           completions={routine.completions}
+          skips={routine.skips}
           historyWeeks={range.heatmapWeeks ?? 53}
           futureWeeks={range.heatmapFutureWeeks ?? 4}
           historyLabel={range.heatmapHistoryLabel ?? "рік"}

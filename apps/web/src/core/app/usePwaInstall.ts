@@ -3,9 +3,23 @@ import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { isIOS, isStandalonePWA } from "@shared/lib/platform/iosStandalone";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { trackEvent } from "../observability/analytics";
+import {
+  isInstallBannerSnoozed,
+  readInstallBannerSnooze,
+  snoozeInstallBanner,
+} from "./installBannerSnooze";
 
 const PWA_SESSIONS_KEY = "pwa_session_count";
+/**
+ * @deprecated Founder-ux-review round 2 (O2) — the "×" close now writes
+ * `PWA_SNOOZE_KEY` (30-day TTL, max 3 shows). This flag is kept as a
+ * **read-only** legacy check so users who already dismissed forever under
+ * the old permanent-flag scheme stay dismissed; new dismissals never write
+ * it again.
+ */
 const PWA_DISMISSED_KEY = "pwa_install_dismissed";
+/** Temporary defer — the "×" close in the notification-bell install row. */
+const PWA_SNOOZE_KEY = "pwa_install_snooze_v1";
 /**
  * Прапорець «успішну інсталяцію вже зараховано». Живе в storage самого
  * standalone-контексту, тож переживає перезапуски застосунку і не дає
@@ -14,6 +28,15 @@ const PWA_DISMISSED_KEY = "pwa_install_dismissed";
 const PWA_INSTALL_REPORTED_KEY = "pwa_install_reported";
 const INSTALL_DELAY_MS = 30000;
 const MIN_SESSIONS = 2;
+
+/**
+ * `true` when the install banner must stay suppressed: either the legacy
+ * permanent flag from before the O2 fix, or an active/exhausted snooze.
+ */
+function isPwaInstallSuppressed(): boolean {
+  if (safeReadStringLS(PWA_DISMISSED_KEY) === "1") return true;
+  return isInstallBannerSnoozed(readInstallBannerSnooze(PWA_SNOOZE_KEY));
+}
 
 /**
  * `BeforeInstallPromptEvent` ще не у lib.dom.d.ts — оголошуємо локально.
@@ -79,6 +102,12 @@ export function usePwaInstall() {
 
     const handler = (e: Event) => {
       e.preventDefault();
+      // Explicit standalone gate (founder-ux-review round 2, O2): Chromium
+      // is not documented to fire `beforeinstallprompt` once the app is
+      // already installed, but that's implicit browser behaviour, not a
+      // contract — make "already installed → never prompt" true by code,
+      // not by luck.
+      if (isStandalonePWA()) return;
       const evt = e as BeforeInstallPromptEvent;
       deferredRef.current = evt;
       setPrompt(evt);
@@ -108,7 +137,7 @@ export function usePwaInstall() {
 
   useEffect(() => {
     if (!prompt) return undefined;
-    if (safeReadStringLS(PWA_DISMISSED_KEY) === "1") return undefined;
+    if (isPwaInstallSuppressed()) return undefined;
 
     const sessions = parseInt(safeReadStringLS(PWA_SESSIONS_KEY) || "1", 10);
 
@@ -150,8 +179,17 @@ export function usePwaInstall() {
     }
   }, []);
 
+  /**
+   * "×" close on the notification-bell install row. Founder-ux-review
+   * round 2 (O2): used to persist `PWA_DISMISSED_KEY` forever — one
+   * accidental tap and the invite never returned. Now defers 30 days, up
+   * to `INSTALL_BANNER_MAX_SNOOZES` times (`installBannerSnooze.ts`).
+   */
   const dismiss = useCallback(() => {
-    safeWriteLS(PWA_DISMISSED_KEY, "1");
+    snoozeInstallBanner(
+      PWA_SNOOZE_KEY,
+      readInstallBannerSnooze(PWA_SNOOZE_KEY),
+    );
     trackEvent(ANALYTICS_EVENTS.PWA_INSTALL_DISMISSED, {
       surface: "android",
       via: "banner",

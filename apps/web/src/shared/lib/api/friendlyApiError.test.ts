@@ -1,7 +1,17 @@
 import { describe, it, expect } from "vitest";
+import { HEALTH_CONSENT_REQUIRED_MESSAGE } from "@sergeant/shared";
 import { friendlyApiError } from "./friendlyApiError";
 
 describe("friendlyApiError (shared)", () => {
+  it("403 з текстом про згоду на дані про здоровʼя віддає його як є, а не «недоступна для акаунта»", () => {
+    expect(friendlyApiError(403, HEALTH_CONSENT_REQUIRED_MESSAGE)).toBe(
+      HEALTH_CONSENT_REQUIRED_MESSAGE,
+    );
+    expect(friendlyApiError(403, "Forbidden")).toBe(
+      "Ця дія недоступна для поточного акаунта.",
+    );
+  });
+
   it("для 429 віддає серверне повідомлення (AI-3: конкретний час очікування)", () => {
     // Сервер (`rateLimitExpress`) тепер сам називає, скільки чекати —
     // «Забагато запитів. Спробуй через 12 секунд.» — а не голе «пізніше».
@@ -19,9 +29,14 @@ describe("friendlyApiError (shared)", () => {
     );
   });
 
-  it("повертає фіксований текст для 401/403", () => {
-    expect(friendlyApiError(401)).toBe("Доступ заборонено.");
-    expect(friendlyApiError(403, "Forbidden")).toBe("Доступ заборонено.");
+  // 401 і 403 розведені навмисно (поставка 2026-09-06): «не увійшов» і «не
+  // той акаунт/план» — різні стани, і людині від них потрібні різні дії.
+  // Спільне «Доступ заборонено.» не казало ні що сталось, ні що робити.
+  it("повертає різні фіксовані тексти для 401 і 403", () => {
+    expect(friendlyApiError(401)).toBe("Увійди в акаунт, щоб продовжити.");
+    expect(friendlyApiError(403, "Forbidden")).toBe(
+      "Ця дія недоступна для поточного акаунта.",
+    );
   });
 
   it("віддає серверне повідомлення, якщо воно є", () => {

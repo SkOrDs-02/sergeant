@@ -18,14 +18,14 @@ import {
 } from "./reportChartLabels";
 import {
   aggregateWorkouts,
-  getPeriodRange,
-  datesInRange,
+  reportWindows,
   localDateKey,
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
 import { useFizrukSqliteReadTick } from "../../modules/fizruk/lib/sqliteReadGate";
 import { formatNumberUk } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 // ── Local sub-components (shared pattern, duplicated per card to keep
 //    each card's chunk self-contained — no cross-card coupling) ───────
@@ -158,7 +158,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   // запису у сховище (та сама діра, що в ExpensesCard).
   const sqliteTick = useFizrukSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates } = useMemo(() => {
     void bump; // storage-write tick
     void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling getCached* inside deps
     // Canonical workouts live in the SQLite warm cache — `fizruk_workouts_v1`
@@ -175,19 +175,19 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
               endedAt: w.endedAt ? Date.parse(w.endedAt) : null,
             })),
           );
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateWorkouts(rawWorkouts, curDates),
-      prev: aggregateWorkouts(rawWorkouts, prevDates),
-      dates: curDates,
+      cur: aggregateWorkouts(rawWorkouts, w.cur),
+      prev: aggregateWorkouts(rawWorkouts, w.prev),
+      prevAny: aggregateWorkouts(rawWorkouts, w.prevAll).count > 0,
+      dates: w.dates,
     };
   }, [period, offset, bump, sqliteTick]);
 
   const formattedCurrent = formatNumberUk(cur.count);
   const formattedPrev = formatNumberUk(prev.count);
+  // Нуль тренувань зараз і за весь попередній період: предмета звіту ще немає.
+  const empty = cur.count === 0 && !prevAny;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -216,13 +216,15 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             <span className="text-style-body font-bold text-text">
-              {formattedCurrent} трен.
+              {empty ? "–" : `${formattedCurrent} трен.`}
             </span>
-            <DeltaChip
-              cur={cur.count}
-              prev={prev.count}
-              higherIsBetter={true}
-            />
+            {!empty && (
+              <DeltaChip
+                cur={cur.count}
+                prev={prev.count}
+                higherIsBetter={true}
+              />
+            )}
           </span>
         )}
         <svg
@@ -243,7 +245,12 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyWorkouts}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-style-headline text-text">

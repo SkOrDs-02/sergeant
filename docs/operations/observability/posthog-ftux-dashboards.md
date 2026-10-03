@@ -1,6 +1,6 @@
 # PostHog FTUX dashboards — runbook
 
-> **Last touched:** 2026-07-19 by Codex. **Next review:** 2026-10-26.
+> **Last touched:** 2026-09-17 by @claude (alerts → Telegram, не Slack; `plan` union з `identifyTraits.ts`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Operational runbook for PostHog (Cloud EU) dashboards that monitor the
@@ -95,7 +95,7 @@ Every insight in §3 reads from a subset of these canonical events.
 [`apps/web/src/core/observability/identifyTraits.ts`](../../../apps/web/src/core/observability/identifyTraits.ts)):
 
 - `vibe: string[]` — module picks
-- `plan: "free" | "plus" | "pro"`
+- `plan: "free" | "pro"` — union per `IdentifyTraits.plan` in `identifyTraits.ts` (no `"plus"` tier; `currentPlan()` returns `"free"` until subscriptions land)
 - `locale: string`
 - `signup_date: ISO8601`
 
@@ -285,7 +285,10 @@ the umbrella dashboard during morning standup.
 
 ## 5. Alert thresholds
 
-PostHog → **Alerts** (subscriptions, Slack `#sergeant-ftux-alerts`):
+PostHog → **Alerts** (subscriptions; delivery channel is Telegram, not Slack — ops
+topics per [ADR-0030](../../governance/adr/0030-telegram-reporting-channel-structure.md),
+mirrored through the server-side digest timer, [ADR-0089](../../governance/adr/0089-job-substrates-outbox-broker-timer.md);
+same wiring as [`posthog-founder-pulse.md § 5`](./posthog-founder-pulse.md#5-alert-thresholds)):
 
 | Alert                     | Source           | Condition                                            | Severity                                                                        |
 | ------------------------- | ---------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- |

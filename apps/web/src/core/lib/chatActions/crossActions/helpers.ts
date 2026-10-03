@@ -1,6 +1,7 @@
 import { getWeekKey } from "../../../insights/useWeeklyDigest";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * Convert an ISO-8601 week label `YYYY-Www` (e.g. `2026-W17`) to the
@@ -81,5 +82,5 @@ export function diffLine(
 ): string {
   const delta = a - b;
   const sign = delta > 0 ? "+" : "";
-  return `${label}: ${a}${unit} vs ${b}${unit} (${sign}${delta}${unit})`;
+  return `${label}: ${formatNumberUk(a)}${unit} vs ${formatNumberUk(b)}${unit} (${sign}${formatNumberUk(delta)}${unit})`;
 }

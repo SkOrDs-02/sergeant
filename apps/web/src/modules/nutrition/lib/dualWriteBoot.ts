@@ -3,7 +3,7 @@
  * Status: Active
  * Boot wiring for the Nutrition dual-write context.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Mirror of
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirror of
  * `apps/web/src/modules/fizruk/lib/dualWriteBoot.ts`.
  */
 

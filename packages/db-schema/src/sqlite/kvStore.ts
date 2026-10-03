@@ -3,7 +3,7 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 /**
  * SQLite schema for the per-device `kv_store` table.
  *
- * Stage 9 / PR #060 of `docs/planning/storage-roadmap.md`. Hosts the
+ * Stage 9 / PR #060 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Hosts the
  * SQLite-backed replacement for the LocalStorage-backed `webKVStore`
  * primitive that today serves typedStore (`hub_flags_v1`, hidden-account
  * blobs, etc.) on web, and the `react-native-mmkv`-backed mobile

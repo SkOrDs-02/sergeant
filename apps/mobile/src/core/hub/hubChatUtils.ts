@@ -44,9 +44,6 @@ export interface ChatMessage {
   [key: string]: unknown;
 }
 
-const INTRO_TEXT =
-  "Привіт! Я Сержант. Запитуй про фінанси (Фінік), тренування (Фізрук), звички (Рутина) або харчування. На мобільному поки що працює текстовий чат, голос і tool-actions в роботі.";
-
 export function newMsgId(): string {
   const rnd = globalThis.crypto?.randomUUID?.();
   return rnd ?? `m_${Date.now()}_${crypto.randomUUID()}`;
@@ -60,10 +57,20 @@ export function makeUserMsg(text: string): ChatMessage {
   return { id: newMsgId(), role: "user", text };
 }
 
+/**
+ * AI-DANGER: НЕ підставляй сюди дефолтне повідомлення для порожнього
+ * масиву. Саме це й робило `ChatEmpty` (чотири suggestion-чіпи по модулях)
+ * недосяжним НАЗАВЖДИ: усі чотири шляхи до `messages` ідуть через цю
+ * функцію, тож `messages.length === 0` у `HubChatBody` не наставало
+ * ніколи. Той самий дефект виправлено у вебі знахідкою PR-A7; тут він
+ * дожив довше, бо копія логіки не отримує виправлень оригіналу (PR-X5).
+ *
+ * Непорожні масиви мапляться як раніше — збережені сесії з давнім
+ * привітанням лишаються недоторканими, воно просто стає звичайним
+ * повідомленням. Регресію стережуть тести поруч.
+ */
 export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return [makeAssistantMsg(INTRO_TEXT)];
-  }
+  if (!Array.isArray(raw)) return [];
   return raw.map(
     (m: Partial<ChatMessage> & Record<string, unknown>, i): ChatMessage => ({
       role: "assistant" as ChatRole,

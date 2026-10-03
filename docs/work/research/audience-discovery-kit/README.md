@@ -1,7 +1,7 @@
 # Audience Discovery Kit — готові інструменти дослідження ЦА
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Active → Draft: набір шаблонів, дослідження не запущене). **Next review:** 2026-12-16.
+> **Status:** Draft — шаблони готові, прогін дослідження не розпочато
 
 > Робочий набір під дизайн із [`../2026-06-28-audience-discovery-trackers.md`](../2026-06-28-audience-discovery-trackers.md).
 > Тут — не теорія, а файли, якими працюєш: форма, гайди, трекери, scoreboard.

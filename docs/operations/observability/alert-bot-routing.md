@@ -2,7 +2,7 @@
 
 > ⚠️ **n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side частина (`tg_alert_acks`, `/api/internal/alerts/*`, escalation ladder) чинна; n8n-специфічні кроки (workflow-ID, manifest `requiredEnv`, validator) — історичні, workflow-JSON — у permalink-снапшоті.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-17 by @claude (таблиця wired workflows: розклеєно WF-08/WF-16, лічильник 17 → 16). **Next review:** 2026-12-16.
 > **Status:** Active. **Owner:** ops.
 > **Spec:** [`docs/governance/adr/0038-tg-alert-acks-and-escalation.md`](../../governance/adr/0038-tg-alert-acks-and-escalation.md)
 > §3.2; reporting matrix footnote 5 in
@@ -51,27 +51,28 @@ Validator gates (історичний `pnpm ops:n8n:validate`, прибрано 
 
 ## Wired workflows
 
-The 17 broadcast workflows currently emitting ack rows. Cross-reference with
+The 16 broadcast workflows that emitted ack rows at n8n retirement (ADR-0090; count = rows in the table below — WF-15 was removed earlier, see notes). Cross-reference with
 [`REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md) for
 cadence + owner. PR column links the wave that wired the ack pattern.
 
-| WF | Workflow | Topic | Severity | `alertId` shape | PR |
-| ----- | ------------------------------------- | ----------------- | ---------------------- | -------------------------------------- | ----------------------- | --- | ----- | ------------------------------- | -------- | --- | ------------------------------- | ------------------ |
-| WF-01 | `01-billing-pipeline.json` | `incidents` | P0 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-02 | `02-failed-payment-recovery.json` | `incidents` | P0 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-03 | `03-sentry-alert-routing.json` | `incidents`/`ops` | P0 (fatal) / P1 (warn) | `<wfId>:<execId>:<branch>` | W3 PR-3 batch 1 (#1503) |
-| WF-04 | `04-daily-backup-verification.json` | `incidents` | P1 | `<wfId>:<execId>` | W3 PR-2 (#1480) |
-| WF-05 | `05-renovate-pr-auto-handler.json` | `engineering` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-06 | `06-mono-webhook-enrichment.json` | `ops` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-08 | `08-weekly-financial-digest.json` | `digest` | P2 | `<wfId>:<execId>:weekly-digest` | W3 PR-4 (O9 batch) | | WF-16 | `16-posthog-daily-metrics.json` | `growth` | P2 | `<wfId>:<execId>:posthog-daily` | W3 PR-4 (O9 batch) |
-| WF-17 | `17-github-pr-stale-alert.json` | `engineering` | P2 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-18 | `18-nightly-security-audit.json` | `incidents` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 1 (#1503) |
-| WF-19 | `19-db-health-report.json` | `ops` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-30 | `30-ai-memory-daily-digest.json` | `digest` | P2 | `<wfId>:<execId>:ai-memory-digest` | W3 PR-4 (O9 batch) |
-| WF-60 | `60-growth-funnel-snapshot.json` | `growth` | P2 | `<wfId>:<execId>:growth-funnel` | W3 PR-4 (O9 batch) |
-| WF-63 | `63-growth-acquisition-snapshot.json` | `growth` | P2 | `<wfId>:<execId>:growth-acquisition` | W3 PR-4 (O9 batch) |
-| WF-98 | `98-error-handler.json` | `meta` | P0 | `wf98:<failed_wfId>:<error_signature>` | W3 PR-4 (O9 batch) |
-| WF-99 | `99-heartbeat.json` | `meta` | P3 | `<wfId>:<execId>:heartbeat` | W3 PR-4 (O9 batch) |
+| WF    | Workflow                              | Topic             | Severity               | `alertId` shape                        | PR                      |
+| ----- | ------------------------------------- | ----------------- | ---------------------- | -------------------------------------- | ----------------------- |
+| WF-01 | `01-billing-pipeline.json`            | `incidents`       | P0                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-02 | `02-failed-payment-recovery.json`     | `incidents`       | P0                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-03 | `03-sentry-alert-routing.json`        | `incidents`/`ops` | P0 (fatal) / P1 (warn) | `<wfId>:<execId>:<branch>`             | W3 PR-3 batch 1 (#1503) |
+| WF-04 | `04-daily-backup-verification.json`   | `incidents`       | P1                     | `<wfId>:<execId>`                      | W3 PR-2 (#1480)         |
+| WF-05 | `05-renovate-pr-auto-handler.json`    | `engineering`     | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-06 | `06-mono-webhook-enrichment.json`     | `ops`             | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-08 | `08-weekly-financial-digest.json`     | `digest`          | P2                     | `<wfId>:<execId>:weekly-digest`        | W3 PR-4 (O9 batch)      |
+| WF-16 | `16-posthog-daily-metrics.json`       | `growth`          | P2                     | `<wfId>:<execId>:posthog-daily`        | W3 PR-4 (O9 batch)      |
+| WF-17 | `17-github-pr-stale-alert.json`       | `engineering`     | P2                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-18 | `18-nightly-security-audit.json`      | `incidents`       | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 1 (#1503) |
+| WF-19 | `19-db-health-report.json`            | `ops`             | P1                     | `<wfId>:<execId>`                      | W3 PR-3 batch 2         |
+| WF-30 | `30-ai-memory-daily-digest.json`      | `digest`          | P2                     | `<wfId>:<execId>:ai-memory-digest`     | W3 PR-4 (O9 batch)      |
+| WF-60 | `60-growth-funnel-snapshot.json`      | `growth`          | P2                     | `<wfId>:<execId>:growth-funnel`        | W3 PR-4 (O9 batch)      |
+| WF-63 | `63-growth-acquisition-snapshot.json` | `growth`          | P2                     | `<wfId>:<execId>:growth-acquisition`   | W3 PR-4 (O9 batch)      |
+| WF-98 | `98-error-handler.json`               | `meta`            | P0                     | `wf98:<failed_wfId>:<error_signature>` | W3 PR-4 (O9 batch)      |
+| WF-99 | `99-heartbeat.json`                   | `meta`            | P3                     | `<wfId>:<execId>:heartbeat`            | W3 PR-4 (O9 batch)      |
 
 ### Notes per row
 
@@ -86,7 +87,7 @@ cadence + owner. PR column links the wave that wired the ack pattern.
   loop back here.
 - **WF-99** is a silent heartbeat. Telegram message keeps
   `disable_notification: true`; the ack-row is informational and exists so
-  `/alerts pending` and WF-103 see a uniform paper-trail across all 17
+  `/alerts pending` and WF-103 see a uniform paper-trail across all 16
   workflows. Operators can dismiss the row by tapping ✅ Прочитав, same as
   any other alert.
 

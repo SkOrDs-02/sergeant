@@ -101,7 +101,7 @@ Edge middleware на Vercel ([`apps/web/middleware.ts`](../../../apps/web/middle
 
 - `outputDirectory: "../server/dist"` — нестандартний шлях, задокументований у
   [`apps/web/vercel.json`](../../../apps/web/vercel.json) і
-  [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#1-web--pwa--appsweb). Vite бандл
+  [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#-1-web--pwa--appsweb). Vite бандл
   навмисно кладеться у server-пакет, щоб Capacitor-shell і Railway-бекенд
   читали з одного місця.
 
@@ -353,3 +353,14 @@ n/a (operational rule).
 | Pre-deploy `db:migrate` на Railway                                                            | live   |
 | `SERVER_MODE=railway` autodetect                                                              | live   |
 | Multi-instance / shared session store                                                         | TBD    |
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                  | Merged     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
+| [#1098](https://github.com/SkOrDs-02/sergeant/pull/1098) | fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника | 2026-09-11 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

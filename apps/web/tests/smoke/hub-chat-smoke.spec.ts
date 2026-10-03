@@ -22,15 +22,22 @@ test("@critical hub-chat: cold-load mounts the /chat assistant surface", async (
     .getByRole("region")
     .filter({ has: page.locator("#hub-chat-title") });
   await expect(chatRegion).toBeVisible({ timeout: 10_000 });
-  await expect(page.locator("#hub-chat-title")).toHaveText("Асистент");
+  await expect(page.locator("#hub-chat-title")).toHaveText("Сержант");
 
-  const input = page.getByLabel("Повідомлення асистенту");
+  const input = page.getByLabel("Повідомлення Сержанту");
   await expect(input).toBeVisible();
   await expect(input).toHaveValue("");
 
-  // Fresh sessions seed an intro assistant message via
-  // `normalizeStoredMessages`, so `<ChatEmpty>` never renders on cold load.
-  // Exercise the composer prefill path through a quick-action chip instead.
+  // PR-A7 (audit `2026-09-13-product-full-review.md`): fresh sessions used
+  // to seed an intro assistant message via `normalizeStoredMessages`, which
+  // made `<ChatEmpty>` (the 4-suggestion empty state) unreachable on cold
+  // load. That substitution is gone — a brand-new session starts with zero
+  // messages, so `<ChatEmpty>` renders here.
+  await expect(page.getByTestId("chat-empty")).toBeVisible();
+
+  // Exercise the composer prefill path through a quick-action chip
+  // (unrelated to `<ChatEmpty>`'s own suggestion chips — this one lives in
+  // the composer and stays rendered regardless of the empty state).
   await page.getByTestId("chat-quick-action-create_transaction").click();
   await expect(input).toHaveValue("Додай витрату: ");
 
@@ -50,7 +57,7 @@ test("@critical hub-chat: chat API failure renders a retryable assistant message
     .filter({ has: page.locator("#hub-chat-title") });
   await expect(chatRegion).toBeVisible({ timeout: 10_000 });
 
-  const input = page.getByLabel("Повідомлення асистенту");
+  const input = page.getByLabel("Повідомлення Сержанту");
   await input.fill("Production readiness degraded-chat smoke ping.");
 
   const chatResponse = page.waitForResponse(

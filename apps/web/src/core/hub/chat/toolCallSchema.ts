@@ -155,9 +155,12 @@ const StartWorkoutInputSchema = z.object({
 });
 
 // cross mutators
+// Дзеркало серверного `save_note` (`toolDefs/utility.ts`) і `SaveNoteAction`:
+// `{ text, tag? }`. Раніше схема вимагала `{ content, title }` — форму, якої
+// ніхто не слав, тож кожен справжній `save_note` валив усю пачку tool_calls.
 const SaveNoteInputSchema = z.object({
-  content: z.string().min(1),
-  title: z.string().optional(),
+  text: z.string().min(1),
+  tag: z.string().optional(),
 });
 
 /**
@@ -265,6 +268,7 @@ export const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set([
   "detect_anomalies",
   "compare_weeks",
   "convert_units",
+  "get_daily_series",
   "save_note",
   "list_notes",
   "export_module_data",

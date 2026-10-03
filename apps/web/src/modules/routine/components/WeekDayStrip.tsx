@@ -5,12 +5,14 @@
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { IconButton } from "@shared/components/ui/IconButton";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 import {
   addDays,
   dateKeyFromDate,
   parseDateKey,
   startOfIsoWeek,
 } from "../lib/weekUtils";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
 
 function weekKeysFromAnchor(anchorKey: string): string[] {
   const s = startOfIsoWeek(parseDateKey(anchorKey));
@@ -78,7 +80,7 @@ export function WeekDayStrip({
               key={k}
               type="button"
               aria-pressed={isSel}
-              aria-label={`${full[i]}, ${k}${isToday ? " (сьогодні)" : ""}`}
+              aria-label={`${full[i]}, ${formatDayMonth(parseDateKey(k))}${isToday ? " (сьогодні)" : ""}`}
               onClick={() => onSelectDay(k)}
               className={cn(
                 // Розміру шрифта на кнопці НЕМАЄ навмисно: обидва вкладені
@@ -90,9 +92,25 @@ export function WeekDayStrip({
                 // grid-а, а не flex-елемент, тож тягнеться на всю колонку.
                 // `min-w-[44px]` лишається як floor на найвужчих екранах.
                 "focus-ring flex min-h-[44px] w-full min-w-[44px] flex-col items-center justify-center rounded-xl border py-1 font-semibold",
+                // Вибраний день — тонований фон + контур `routine-edge` (≥3:1
+                // проти сусідів в обох темах). Тихий `routine-ring` давав
+                // 1.63 (світла) / 2.41 (темна), а м'яке кільце `ring-1` лише
+                // розмивало край — A4, рішення власника 2026-10-01.
+                //
+                // Невибраний — тонкий контур `border-line` без заливки (хвиля
+                // 5 аудиту контрасту; було `border-transparent bg-panelHi/50`,
+                // S 1.05 світла / 1.09 темна, тобто зливався з карткою).
+                // Заміряно три варіанти на невибраних днях: суцільна заливка
+                // `bg-panelHi` дає 1.09 `flat` у світлій (це сама пара токенів
+                // `panel`/`panelHi`) і 1.21 у темній; контур `border-line` —
+                // 1.57 / 1.56 в обох; заливка + контур теж 1.57 / 1.56, але
+                // важча. Обрано контур: `ok` в обох темах і найтихіший, а
+                // вибраний (тон + `routine-edge`, 6.9) лишається помітно
+                // гучнішим. Усі клітинки мають `border`, тож висота не
+                // стрибає при зміні вибору.
                 isSel
-                  ? "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm ring-1 ring-routine-line/50 dark:ring-routine-border-dark/30"
-                  : "border-transparent bg-panelHi/50 text-muted hover:bg-panelHi hover:text-text",
+                  ? "border-routine-edge bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm"
+                  : "border-line text-muted hover:bg-panelHi hover:text-text",
                 isToday && !isSel && "ring-1 ring-routine/40",
               )}
             >
@@ -130,7 +148,7 @@ export function WeekShiftControls({ onShiftWeek }: WeekShiftControlsProps) {
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
+        className={cn("shrink-0", ROUTINE_OUTLINE_ICON_BUTTON)}
         onClick={() => onShiftWeek(-1)}
         aria-label="Попередній тиждень"
       >
@@ -139,7 +157,7 @@ export function WeekShiftControls({ onShiftWeek }: WeekShiftControlsProps) {
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
+        className={cn("shrink-0", ROUTINE_OUTLINE_ICON_BUTTON)}
         onClick={() => onShiftWeek(1)}
         aria-label="Наступний тиждень"
       >

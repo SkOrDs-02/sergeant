@@ -15,7 +15,7 @@
  * Status: Active
  * Last validated: 2026-08-22
  */
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -23,9 +23,15 @@ import { WheelPicker } from "@shared/components/ui/WheelPicker";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
-import { MacroChip } from "./MacroChip";
+import { ProductNutrientsRow } from "./ProductNutrientsRow";
+import { ProductThumb } from "./ProductThumb";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
-import { MAX_PORTION_GRAMS, type MealFormState } from "./mealFormUtils";
+import {
+  MAX_PORTION_GRAMS,
+  macroToFieldString,
+  type MealFormState,
+} from "./mealFormUtils";
+import { useWheelGrams } from "./useWheelGrams";
 import type { PickedFood } from "./FoodPickerSection";
 
 /** Ідентичність «цей продукт під цією вагою» для гарда перерахунку. */
@@ -34,7 +40,8 @@ function rescaleKey(food: PickedFood, grams: string): string {
 }
 
 interface PickedFoodCardProps {
-  form: MealFormState;
+  // Картка у форму лише ПИШЕ (перерахунок під вагу). Читала її рівно
+  // прибрана звідси плашкова стрічка КБЖВ — див. коментар у розмітці.
   setForm: Dispatch<SetStateAction<MealFormState>>;
   pickedFood: PickedFood;
   pickedGrams: string;
@@ -57,7 +64,6 @@ interface PickedFoodCardProps {
 }
 
 export function PickedFoodCard({
-  form,
   setForm,
   pickedFood,
   pickedGrams,
@@ -75,27 +81,10 @@ export function PickedFoodCard({
   const gramsDraft = useDecimalDraft(pickedGrams, MAX_PORTION_GRAMS, (value) =>
     setPickedGrams(value == null ? "" : String(value)),
   );
-  const gramValues = useMemo(() => {
-    const base: number[] = [];
-    for (let g = 5; g <= 1000; g += 5) base.push(g);
-    // Вище 1000 г крок навмисно грубішає. На coarse pointer колесо
-    // ПІДМІНЯЄ текстове поле, тож із кроком 5 до самої стелі вага
-    // 1005–9995 г була недосяжна взагалі; а рівний крок 5 до 10 кг дав
-    // би ~2000 позицій. Реальні порції живуть нижче 1 кг, тому дрібний
-    // крок лишається там, а хвіст існує, щоб межа була досяжна.
-    for (let g = 1050; g <= MAX_PORTION_GRAMS; g += 50) base.push(g);
-    // Keep an adopted free-form value (e.g. 33 g from a barcode) exactly
-    // representable so the wheel highlights it without silently snapping.
-    // БЕЗ `Math.round`: крок «з упаковки» приймає дробові грами, і 12.5
-    // округлювалось у колесі до 13, поки макроси рахувались із 12.5 —
-    // тобто екран показував не ту вагу, за якою рахував.
-    const cur = Number(pickedGrams);
-    if (Number.isFinite(cur) && cur > 0 && !base.includes(cur)) {
-      base.push(cur);
-      base.sort((a, b) => a - b);
-    }
-    return base;
-  }, [pickedGrams]);
+  // Сталий список значень колеса + число, на якому воно стоїть. Обидва —
+  // у `useWheelGrams`; там же розбір, чому виведення списку з самого
+  // значення змушувало колесо стрибати після кожного коміту.
+  const wheel = useWheelGrams(pickedGrams);
 
   const applyPickedFood = useCallback(
     (p: PickedFood, gramsRaw: string | number) => {
@@ -113,10 +102,10 @@ export function PickedFoodCard({
         // (`продукт || s.name`) затирав уже перейменовану людиною страву
         // щоразу, коли вона крутила порцію.
         name: s.name || [p.name, p.brand].filter(Boolean).join(" ").trim(),
-        kcal: String(Math.round(Number(mac.kcal) || 0)),
-        protein_g: String(Math.round(Number(mac.protein_g) || 0)),
-        fat_g: String(Math.round(Number(mac.fat_g) || 0)),
-        carbs_g: String(Math.round(Number(mac.carbs_g) || 0)),
+        kcal: macroToFieldString(Number(mac.kcal) || 0),
+        protein_g: macroToFieldString(Number(mac.protein_g) || 0),
+        fat_g: macroToFieldString(Number(mac.fat_g) || 0),
+        carbs_g: macroToFieldString(Number(mac.carbs_g) || 0),
         err: "",
       }));
     },
@@ -149,7 +138,11 @@ export function PickedFoodCard({
     <div className="mb-4 rounded-2xl border border-nutrition/30 bg-nutrition/5 overflow-hidden">
       {/* Назва + зміна продукту */}
       <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
-        <div className="min-w-0">
+        <ProductThumb
+          name={pickedFood.name ?? ""}
+          imageUrl={pickedFood.imageUrl}
+        />
+        <div className="min-w-0 flex-1">
           <div className="text-style-label text-text truncate">
             {[pickedFood.name, pickedFood.brand].filter(Boolean).join(" · ")}
             {pickedFood.source === "off" && (
@@ -190,9 +183,14 @@ export function PickedFoodCard({
           className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors"
           aria-label="Обрати інший продукт"
         >
-          <Icon name="close" size={16} aria-hidden />
+          <Icon name="close" size="md" aria-hidden />
         </button>
       </div>
+
+      {/* Нутрієнти понад КБЖВ — лише перегляд, лише коли джерело їх дало */}
+      {pickedFood.nutrients && (
+        <ProductNutrientsRow nutrients={pickedFood.nutrients} />
+      )}
 
       {/* Порція з кроками */}
       <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
@@ -201,8 +199,8 @@ export function PickedFoodCard({
         </div>
         {coarsePointer ? (
           <WheelPicker
-            values={gramValues}
-            value={Number(pickedGrams) || 100}
+            values={wheel.values}
+            value={wheel.value}
             onChange={(g) => setPickedGrams(String(g))}
             aria-label="Грами"
             formatValue={(g) => `${g} г`}
@@ -274,7 +272,7 @@ export function PickedFoodCard({
                 // контролом картки. 44×44 тут не опційні.
                 "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
                 Number(pickedGrams) === g
-                  ? "bg-nutrition-strong text-white border-nutrition"
+                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                   : "bg-panelHi text-subtle border-line hover:border-nutrition/40",
               )}
             >
@@ -284,30 +282,25 @@ export function PickedFoodCard({
         </div>
       </div>
 
-      {/* Live КБЖВ плашки */}
-      <div className="grid grid-cols-4 border-t border-line/20 divide-x divide-line/20">
-        <MacroChip
-          label="Ккал"
-          value={form.kcal !== "" ? Number(form.kcal) : null}
-          unit="ккал"
-          color="bg-nutrition/8 text-nutrition-strong dark:text-nutrition"
-        />
-        <MacroChip
-          label="Білки"
-          value={form.protein_g !== "" ? Number(form.protein_g) : null}
-          color="bg-panel text-text"
-        />
-        <MacroChip
-          label="Жири"
-          value={form.fat_g !== "" ? Number(form.fat_g) : null}
-          color="bg-panel text-text"
-        />
-        <MacroChip
-          label="Вуглев."
-          value={form.carbs_g !== "" ? Number(form.carbs_g) : null}
-          color="bg-panel text-text"
-        />
-      </div>
+      {/*
+        Рядка «Live КБЖВ плашки» тут БІЛЬШЕ НЕМАЄ — не забули, прибрали
+        свідомо (звіт власника 2026-09-15: «дубль значень КБЖВ при
+        підстановці»).
+
+        AI-CONTEXT. Чотири плашки читали `form.kcal/protein_g/fat_g/carbs_g`,
+        а `MacrosEditor` рендерить чотири ПОЛЯ з тим самим `form` рівно під
+        карткою — тобто ті самі чотири числа стояли одне під одним двічі, і
+        мінялись синхронно. Дубль не був задуманий: картка жила на кроці
+        «source», всередині `FoodPickerSection`, і плашки були там єдиним
+        показом перерахунку. 2026-08-22 картку перенесли на крок «fill»
+        (див. AI-CONTEXT у шапці файлу), де вже стояв редактор, — плашки
+        приїхали разом і з того дня дублювали його.
+
+        Лишились поля, а не плашки: поля показують ті самі числа, живо
+        оновлюються тим самим ефектом перерахунку і при цьому їх можна
+        правити. Плашка правитись не вміла, тож із двох поверхонь вона
+        була строго біднішою.
+      */}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import { Spinner } from "@shared/components/ui/Spinner";
 import { Money } from "@shared/components/ui/Money";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { CATEGORY_DISPLAY, CATEGORY_SLUGS } from "../manualExpenseCategories";
+import { expenseCustomCategories } from "../manualIncomeCategories";
 import { draftLooksUnrecognized } from "../receiptDraftEdit";
 import type {
   BatchReceiptItem,
@@ -64,12 +65,14 @@ function ItemRow({
   onSetCategory,
   onToggleIncluded,
   onEditItem,
+  customCategories,
   disabled,
 }: {
   item: BatchReceiptItem;
   onSetCategory: (id: string, category: string) => void;
   onToggleIncluded: (id: string) => void;
   onEditItem?: ((id: string) => void) | undefined;
+  customCategories: readonly CustomCategoryInput[];
   disabled: boolean;
 }) {
   const canEdit = item.status === "drafted";
@@ -77,6 +80,20 @@ function ItemRow({
     canEdit && item.draft ? draftLooksUnrecognized(item.draft) : false;
   const isDone = item.status === "saved" || item.status === "already-exists";
   const isError = item.status === "fetch-error" || item.status === "save-error";
+  const expenseCategories = expenseCustomCategories(customCategories);
+  const categoryDisplay: Readonly<Record<string, { label: string }>> = {
+    ...CATEGORY_DISPLAY,
+    ...Object.fromEntries(
+      expenseCategories.map((category) => [
+        category.id,
+        { label: category.label ?? category.id },
+      ]),
+    ),
+  };
+  const categorySlugs = [
+    ...CATEGORY_SLUGS,
+    ...expenseCategories.map((category) => category.id),
+  ];
 
   return (
     <li className="p-2.5">
@@ -103,14 +120,14 @@ function ItemRow({
             ) : isDone ? (
               <Icon
                 name="check-circle"
-                size={16}
+                size="md"
                 className="text-success-strong dark:text-success"
                 aria-hidden
               />
             ) : isError ? (
               <Icon
                 name="x-circle"
-                size={16}
+                size="md"
                 className="text-danger-strong dark:text-danger"
                 aria-hidden
               />
@@ -134,9 +151,9 @@ function ItemRow({
                 onChange={(e) => onSetCategory(item.id, e.target.value)}
                 className="max-w-[10rem]"
               >
-                {CATEGORY_SLUGS.map((slug) => (
+                {categorySlugs.map((slug) => (
                   <option key={slug} value={slug}>
-                    {CATEGORY_DISPLAY[slug]?.label ?? slug}
+                    {categoryDisplay[slug]?.label ?? slug}
                   </option>
                 ))}
               </Select>
@@ -155,7 +172,6 @@ function ItemRow({
                 <Button
                   type="button"
                   variant="ghost"
-                  tone="finyk"
                   size="xs"
                   disabled={disabled}
                   onClick={() => onEditItem(item.id)}
@@ -189,6 +205,7 @@ export function BulkReceiptsProgress({
   onToggleIncluded,
   onEditItem,
   onSaveAll,
+  customCategories = [],
 }: BulkReceiptsProgressProps) {
   const readyCount = items.filter(
     (i) => i.status === "drafted" && i.included,
@@ -214,6 +231,7 @@ export function BulkReceiptsProgress({
             onSetCategory={onSetCategory}
             onToggleIncluded={onToggleIncluded}
             onEditItem={onEditItem}
+            customCategories={customCategories}
             disabled={isProcessing || isSaving}
           />
         ))}
@@ -221,8 +239,10 @@ export function BulkReceiptsProgress({
 
       {!allSettled ? (
         <Button
+          variant="solid"
+          tone="finyk"
           className="w-full"
-          module="finyk"
+
           loading={isSaving}
           disabled={isProcessing || readyCount === 0}
           onClick={onSaveAll}

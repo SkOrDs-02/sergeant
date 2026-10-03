@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 
 vi.mock("../../../core/observability/analytics", () => ({
   trackEvent: vi.fn(),
@@ -122,7 +123,7 @@ describe("BankTransactionDetailsSheet", () => {
     expect(
       screen.queryByRole("tablist", { name: "Тип запису" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Нотатка до транзакції")).toBeInTheDocument();
+    expect(screen.getByLabelText("Нотатка до операції")).toBeInTheDocument();
     expect(
       screen.getByRole("switch", { name: /Не враховувати у статистиці/ }),
     ).toBeInTheDocument();
@@ -134,13 +135,14 @@ describe("BankTransactionDetailsSheet", () => {
   it("wires category, note and visibility edits to transaction overlays", () => {
     const handlers = renderSheet();
 
+    fireEvent.click(screen.getByRole("button", { name: "Продукти" }));
     fireEvent.click(screen.getByRole("button", { name: "Транспорт" }));
     expect(handlers.onCategoryChange).toHaveBeenCalledWith(
       "bank-1",
       "transport",
     );
 
-    const note = screen.getByLabelText("Нотатка до транзакції");
+    const note = screen.getByLabelText("Нотатка до операції");
     fireEvent.change(note, { target: { value: "Оплата за друга" } });
     fireEvent.blur(note);
     expect(handlers.onNoteChange).toHaveBeenCalledWith(
@@ -185,6 +187,24 @@ describe("BankTransactionDetailsSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
     expect(handlers.onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("offers only income custom categories for an income transaction", () => {
+    const handlers = renderSheet({
+      transaction: INCOME_TRANSACTION,
+      customCategories: [
+        { id: "custom-rent", label: "Оренда", kind: "income" },
+        { id: "custom-hobby", label: "Хобі" },
+      ],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Зарплата" }));
+    expect(screen.queryByRole("button", { name: "Хобі" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Оренда" }));
+    expect(handlers.onCategoryChange).toHaveBeenCalledWith(
+      INCOME_TRANSACTION.id,
+      "custom-rent",
+    );
+  });
+
   describe("категорія «Борг» у надходженнях (PR-3)", () => {
     it("створює пасив без перенабору суми, привʼязаний роллю source", () => {
       const setManualDebts = vi.fn();
@@ -198,7 +218,7 @@ describe("BankTransactionDetailsSheet", () => {
         screen.getByRole("button", { name: "Створити новий пасив" }),
       );
       fireEvent.change(
-        screen.getByPlaceholderText("Назва пасиву (кредит, борг…)"),
+        screen.getByPlaceholderText("Назва пасиву (кредит, борг)"),
         { target: { value: "Позика в Олі" } },
       );
       fireEvent.click(screen.getByRole("button", { name: "Створити" }));
@@ -247,6 +267,234 @@ describe("BankTransactionDetailsSheet", () => {
       expect(
         screen.queryByRole("button", { name: "Створити новий пасив" }),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("категорія «Борг» у витраті (рішення власника 2026-09-11)", () => {
+    it("привʼязує платіж роллю payment до наявного пасиву", () => {
+      const setLinkedTxRole = vi.fn();
+      renderSheet({
+        overrideCatId: "debt",
+        setLinkedTxRole,
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [],
+            txLinks: {},
+          },
+        ],
+      });
+
+      // Кнопка «Створити новий пасив» для платежу НЕ пропонується — борг,
+      // що народжується вже сплаченим, нонсенс (§ докблок DebtTxLinkSection).
+      expect(
+        screen.queryByRole("button", { name: "Створити новий пасив" }),
+      ).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Обрати пасив" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Кредитка ПриватБанк/ }),
+      );
+
+      expect(setLinkedTxRole).toHaveBeenCalledWith(
+        "debt-1",
+        TRANSACTION.id,
+        "debt",
+        "payment",
+        250,
+      );
+    });
+
+    it("розділена операція привʼязує лише debt-частку спліту, не повну суму (CodeRabbit finding #1)", () => {
+      const setLinkedTxRole = vi.fn();
+      renderSheet({
+        overrideCatId: "debt",
+        setLinkedTxRole,
+        // TRANSACTION.amount = -25000 (250 ₴) розбита на 100 ₴ «Борг» +
+        // 150 ₴ інша категорія — лише 100 ₴ мають привʼязатись як платіж.
+        txSplits: {
+          [TRANSACTION.id]: [
+            { categoryId: "debt", amount: 100 },
+            { categoryId: "food", amount: 150 },
+          ],
+        },
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [],
+            txLinks: {},
+          },
+        ],
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Обрати пасив" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Кредитка ПриватБанк/ }),
+      );
+
+      expect(setLinkedTxRole).toHaveBeenCalledWith(
+        "debt-1",
+        TRANSACTION.id,
+        "debt",
+        "payment",
+        100,
+      );
+    });
+
+    it("розділена операція БЕЗ debt-частки не пропонує привʼязку взагалі", () => {
+      // Категорія верхнього рівня лишається «Борг» (override/MCC не знають
+      // про спліти), але людина розписала всю суму на інші категорії —
+      // до боргу не пішло нічого. Привʼязка на 0 ₴ була б хибним числом,
+      // тож секції немає зовсім.
+      renderSheet({
+        overrideCatId: "debt",
+        txSplits: {
+          [TRANSACTION.id]: [
+            { categoryId: "food", amount: 150 },
+            { categoryId: "transport", amount: 100 },
+          ],
+        },
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [],
+            txLinks: {},
+          },
+        ],
+      });
+
+      expect(
+        screen.queryByRole("button", { name: "Обрати пасив" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("без жодного наявного пасиву показує підказку замість мертвої кнопки", () => {
+      renderSheet({ overrideCatId: "debt", manualDebts: [] });
+
+      expect(
+        screen.getByText("Спершу створи пасив в Активах."),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Обрати пасив" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Створити новий пасив" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("уже привʼязаний платіж показує «Зараховано як сплату по»", () => {
+      renderSheet({
+        overrideCatId: "debt",
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [TRANSACTION.id],
+            txLinks: { [TRANSACTION.id]: { role: "payment", amount: 250 } },
+          },
+        ],
+      });
+
+      expect(
+        screen.getByText(/Зараховано як сплату по «Кредитка ПриватБанк»/),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe("правила «Завжди так для цього магазину» (рішення власника 2026-10-01)", () => {
+    const RULE: MerchantRule = {
+      id: "mr_1",
+      kind: "expense",
+      merchantKey: "сільпо",
+      categoryId: "transport",
+      label: "Сільпо",
+      createdAt: "2026-10-01T10:00:00.000Z",
+      updatedAt: "2026-10-01T10:00:00.000Z",
+    };
+
+    it("після явної зміни категорії пропонує правило й передає операцію та категорію", () => {
+      const onCreateMerchantRule = vi.fn();
+      renderSheet({ overrideCatId: "transport", onCreateMerchantRule });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Завжди так для «Сільпо»" }),
+      );
+      expect(onCreateMerchantRule).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "bank-1" }),
+        "transport",
+      );
+    });
+
+    it("поки категорія автоматична, нічого не пропонує", () => {
+      renderSheet({ onCreateMerchantRule: vi.fn() });
+      expect(
+        screen.queryByRole("button", { name: /Завжди так для/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("категорію без override-а дає правило: вона обрана в пікері, а блок дозволяє його прибрати", () => {
+      const onRemoveMerchantRule = vi.fn();
+      renderSheet({
+        merchantRules: new Map([["expense:сільпо", RULE]]),
+        onRemoveMerchantRule,
+      });
+
+      // Пікер показує категорію правила («Транспорт»), а не серверний слаг.
+      expect(
+        screen.getByRole("button", { name: "Транспорт" }),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Прибрати правило" }));
+      expect(onRemoveMerchantRule).toHaveBeenCalledWith(RULE);
+    });
+
+    it("явний override сильніший за правило: пікер показує override і пропонує оновити правило", () => {
+      renderSheet({
+        merchantRules: new Map([["expense:сільпо", RULE]]),
+        overrideCatId: "food",
+        onCreateMerchantRule: vi.fn(),
+        onRemoveMerchantRule: vi.fn(),
+      });
+      expect(
+        screen.getByRole("button", { name: "Продукти" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Оновити правило для/ }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Прибрати правило" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("не пропонує правило на «Внутрішній переказ»", () => {
+      renderSheet({
+        overrideCatId: "internal_transfer",
+        onCreateMerchantRule: vi.fn(),
+      });
+      expect(
+        screen.queryByRole("button", { name: /Завжди так для/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("для надходження правило береться з боку «income»", () => {
+      renderSheet({
+        transaction: INCOME_TRANSACTION,
+        overrideCatId: "freelance",
+        onCreateMerchantRule: vi.fn(),
+      });
+      expect(
+        screen.getByRole("button", { name: "Завжди так для «Зарахування»" }),
+      ).toBeInTheDocument();
     });
   });
 });

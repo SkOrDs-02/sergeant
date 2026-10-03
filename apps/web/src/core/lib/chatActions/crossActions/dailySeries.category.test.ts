@@ -18,6 +18,7 @@ const { mockCachedFinyk, mockCachedFinykMonoMirror } = vi.hoisted(() => ({
     manualExpenses: [] as unknown[],
     txCategories: {} as Record<string, string>,
     customCategories: [] as unknown[],
+    txSplits: {} as Record<string, unknown>,
   })),
   mockCachedFinykMonoMirror: vi.fn(() => ({
     transactions: [] as unknown[],
@@ -40,6 +41,15 @@ const DAY = "2026-04-22";
 /** Полудень Києва того дня — щоб денний ключ не зʼїхав через межу доби. */
 const NOON_SEC = Math.floor(Date.parse(`${DAY}T09:00:00Z`) / 1000);
 
+/**
+ * Спліти чека лежать у SQLite-кеші (`txSplits`), а не в `finyk_tx_splits`:
+ * той LS-ключ tombstoned і чиститься на буті, тож читач, що брав спліти звідти,
+ * не бачив розбивки взагалі (2026-10-01, `readFinykStatsContext`).
+ */
+function seedSplits(txSplits: Record<string, unknown>) {
+  mockCachedFinyk.mockReturnValue({ ...mockCachedFinyk(), txSplits });
+}
+
 function seedTx(id: string, amountUah: number) {
   mockCachedFinykMonoMirror.mockReturnValue({
     transactions: [{ id, amount: -amountUah * 100, time: NOON_SEC }],
@@ -56,21 +66,19 @@ describe("alcohol_spending — денні витрати за категоріє
       manualExpenses: [],
       txCategories: {},
       customCategories: [],
+      txSplits: {},
     });
   });
 
   it("бере частку спліту, а не всю суму покупки", () => {
     seedTx("tx-1", 1000);
     // Один похід у супермаркет, розбитий за чеком: 300 алкоголь, 700 їжа.
-    localStorage.setItem(
-      "finyk_tx_splits",
-      JSON.stringify({
-        "tx-1": [
-          { categoryId: "alcohol", amount: 300 },
-          { categoryId: "groceries", amount: 700 },
-        ],
-      }),
-    );
+    seedSplits({
+      "tx-1": [
+        { categoryId: "alcohol", amount: 300 },
+        { categoryId: "groceries", amount: 700 },
+      ],
+    });
 
     const s = buildDailySeries(["alcohol_spending"], { from: DAY, to: DAY });
     expect(s.raw["alcohol_spending"]![0]).toBe(300);
@@ -90,14 +98,11 @@ describe("alcohol_spending — денні витрати за категоріє
       accounts: [],
       refreshedAt: new Date().toISOString(),
     });
-    localStorage.setItem(
-      "finyk_tx_splits",
-      JSON.stringify({
-        "tx-a": [{ categoryId: "alcohol", amount: 300 }],
-        "tx-b": [{ categoryId: "groceries", amount: 500 }],
-        "tx-c": [{ categoryId: "alcohol", amount: 200 }],
-      }),
-    );
+    seedSplits({
+      "tx-a": [{ categoryId: "alcohol", amount: 300 }],
+      "tx-b": [{ categoryId: "groceries", amount: 500 }],
+      "tx-c": [{ categoryId: "alcohol", amount: 200 }],
+    });
 
     const s = buildDailySeries(["alcohol_spending"], {
       from: DAY,
@@ -106,7 +111,7 @@ describe("alcohol_spending — денні витрати за категоріє
     expect(s.raw["alcohol_spending"]).toEqual([300, 0, 200]);
   });
 
-  it("прихована транзакція не потрапляє в метрику", () => {
+  it("прихована операція не потрапляє в метрику", () => {
     mockCachedFinykMonoMirror.mockReturnValue({
       transactions: [
         { id: "tx-visible", amount: -1000 * 100, time: NOON_SEC },
@@ -116,19 +121,16 @@ describe("alcohol_spending — денні витрати за категоріє
       accounts: [],
       refreshedAt: new Date().toISOString(),
     });
-    localStorage.setItem(
-      "finyk_tx_splits",
-      JSON.stringify({
-        "tx-visible": [{ categoryId: "alcohol", amount: 300 }],
-        "tx-hidden": [{ categoryId: "alcohol", amount: 400 }],
-        "tx-later": [{ categoryId: "alcohol", amount: 200 }],
-      }),
-    );
     mockCachedFinyk.mockReturnValue({
       hiddenTransactions: ["tx-hidden"],
       manualExpenses: [],
       txCategories: {},
       customCategories: [],
+      txSplits: {
+        "tx-visible": [{ categoryId: "alcohol", amount: 300 }],
+        "tx-hidden": [{ categoryId: "alcohol", amount: 400 }],
+        "tx-later": [{ categoryId: "alcohol", amount: 200 }],
+      },
     });
 
     const s = buildDailySeries(["alcohol_spending"], {
@@ -154,20 +156,18 @@ describe("smoking_spending — денні витрати на цигарки", (
       manualExpenses: [],
       txCategories: {},
       customCategories: [],
+      txSplits: {},
     });
   });
 
   it("бере частку спліту цигарок, а не всю суму покупки", () => {
     seedTx("tx-smoke", 900);
-    localStorage.setItem(
-      "finyk_tx_splits",
-      JSON.stringify({
-        "tx-smoke": [
-          { categoryId: "smoking", amount: 250 },
-          { categoryId: "groceries", amount: 650 },
-        ],
-      }),
-    );
+    seedSplits({
+      "tx-smoke": [
+        { categoryId: "smoking", amount: 250 },
+        { categoryId: "groceries", amount: 650 },
+      ],
+    });
 
     const s = buildDailySeries(["smoking_spending"], { from: DAY, to: DAY });
     expect(s.raw["smoking_spending"]![0]).toBe(250);
@@ -175,16 +175,13 @@ describe("smoking_spending — денні витрати на цигарки", (
 
   it("не плутає категорії: алкоголь у той самий день не тече в тютюн", () => {
     seedTx("tx-both", 1000);
-    localStorage.setItem(
-      "finyk_tx_splits",
-      JSON.stringify({
-        "tx-both": [
-          { categoryId: "smoking", amount: 200 },
-          { categoryId: "alcohol", amount: 300 },
-          { categoryId: "groceries", amount: 500 },
-        ],
-      }),
-    );
+    seedSplits({
+      "tx-both": [
+        { categoryId: "smoking", amount: 200 },
+        { categoryId: "alcohol", amount: 300 },
+        { categoryId: "groceries", amount: 500 },
+      ],
+    });
 
     const s = buildDailySeries(["smoking_spending", "alcohol_spending"], {
       from: DAY,

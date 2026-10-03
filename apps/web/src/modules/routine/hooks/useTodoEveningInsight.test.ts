@@ -77,7 +77,7 @@ describe("useTodoEveningInsight", () => {
     expect(result.current).toEqual({
       id: "routine-todo-evening",
       module: "routine",
-      title: "3 звичок чекають",
+      title: "3 звички чекають",
       subtitle: "Закрити сьогоднішнє?",
       askAiPrompt:
         "Вечір, а зі звичок сьогодні не відмічені: Вода, Вода, Вода. Допоможи вирішити, що з цього ще реально зробити, а що чесно перенести.",
@@ -94,7 +94,7 @@ describe("useTodoEveningInsight", () => {
       makeHabit({ id: "c", archived: true }),
     ]);
     const { result } = renderHook(() => useTodoEveningInsight(state));
-    expect(result.current?.title).toBe("2 звичок чекають");
+    expect(result.current?.title).toBe("2 звички чекають");
   });
 
   it("excludes habits already completed today", () => {
@@ -104,7 +104,7 @@ describe("useTodoEveningInsight", () => {
       { a: [TODAY] },
     );
     const { result } = renderHook(() => useTodoEveningInsight(state));
-    expect(result.current?.title).toBe("2 звичок чекають");
+    expect(result.current?.title).toBe("2 звички чекають");
   });
 
   it("excludes habits not scheduled today (e.g. a one-off completed on a different date)", () => {
@@ -116,6 +116,65 @@ describe("useTodoEveningInsight", () => {
     ]);
     const { result } = renderHook(() => useTodoEveningInsight(state));
     // "a" is a one-off scheduled for a past date, so only b+c count.
-    expect(result.current?.title).toBe("2 звичок чекають");
+    expect(result.current?.title).toBe("2 звички чекають");
+  });
+
+  /**
+   * PR-R4 follow-up (аудит 2026-09-13, coordinator доробка): без
+   * `weekDoneCount` гнучка звичка вважалась запланованою завжди, тож
+   * вечірня підказка рахувала її «незробленою», навіть коли тижневу ціль
+   * уже добрано. TODAY = 2026-07-19 (нд), тиждень Пн 2026-07-13..Нд
+   * 2026-07-19 — три відмітки пн/вт/ср добирають дефолтну ціль (3).
+   */
+  it("excludes a flexible habit whose weekly target is already met", () => {
+    setDeviceHour(21);
+    const state = makeState(
+      [
+        makeHabit({ id: "a", recurrence: "flexible" }),
+        makeHabit({ id: "b" }),
+        makeHabit({ id: "c" }),
+      ],
+      { a: ["2026-07-13", "2026-07-14", "2026-07-15"] },
+    );
+    const { result } = renderHook(() => useTodoEveningInsight(state));
+    // "a" already met its weekly target → only b+c are pending.
+    expect(result.current?.title).toBe("2 звички чекають");
+  });
+
+  /**
+   * Guard проти надто агресивного фіксу вище: гнучка звичка, що ЩЕ не
+   * добрала тижневу ціль, і далі рахується «незробленою» ввечері.
+   */
+  it("still counts a flexible habit as pending before the weekly target is met", () => {
+    setDeviceHour(21);
+    const state = makeState(
+      [
+        makeHabit({ id: "a", recurrence: "flexible" }),
+        makeHabit({ id: "b" }),
+        makeHabit({ id: "c" }),
+      ],
+      { a: ["2026-07-13"] }, // 1 з 3 цього тижня
+    );
+    const { result } = renderHook(() => useTodoEveningInsight(state));
+    expect(result.current?.title).toBe("3 звички чекають");
+  });
+
+  // Українська плюралізація — три форми (one/few/many), не бінарна «N vs
+  // N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("звичок"), 21
+  // повертається до "one" ("звичка"). N=1 тут недосяжний — хук повертає
+  // `null`, коли `pendingNames.length < 2`.
+  it.each([
+    [2, "звички"],
+    [5, "звичок"],
+    [11, "звичок"],
+    [21, "звичка"],
+  ])("uses the correct plural form for N=%i (%s)", (n, form) => {
+    setDeviceHour(21);
+    const habits = Array.from({ length: n }, (_, i) =>
+      makeHabit({ id: `h${i}` }),
+    );
+    const state = makeState(habits);
+    const { result } = renderHook(() => useTodoEveningInsight(state));
+    expect(result.current?.title).toBe(`${n} ${form} чекають`);
   });
 });

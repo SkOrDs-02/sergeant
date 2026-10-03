@@ -1,6 +1,6 @@
 # SPEC: Beta security readiness
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-11.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-17.
 > **Status:** Active — код F1–F4 реалізовано 2026-07-31; лишились кроки, які не можна виконати з репозиторію (див. § Стан виконання).
 
 ## Стан виконання

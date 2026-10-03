@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import { useTransactionFilters } from "./useTransactionFilters";
 import type { TxAccount } from "./Transactions";
 
@@ -208,6 +209,17 @@ describe("useTransactionFilters", () => {
       );
       expect(result.current.catSpends.some((c) => c.id === "food")).toBe(false);
       expect(result.current.activeCategoryLabel).toBe("Продукти");
+    });
+
+    // Регресія: підпис із кількох слів різався до першого пробілу, і чип
+    // та тренд категорії казали «та ресторани».
+    it("keeps multi-word category labels whole", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({ categoryFilter: "restaurant" }),
+        ),
+      );
+      expect(result.current.activeCategoryLabel).toBe("Кафе та ресторани");
     });
 
     it("has no category label for the base pills", () => {
@@ -543,7 +555,7 @@ describe("useTransactionFilters", () => {
       expect(result.current.flatItems.map((t) => t.id)).toEqual(["manual_m1"]);
     });
 
-    it("розгортає день самої транзакції, а не сьогоднішній", () => {
+    it("розгортає день самої операції, а не сьогоднішній", () => {
       // Сьогодні (fake timers) — 2025-06-04; запис датований 2-м червня
       // через «Не сьогодні? Змінити дату».
       const today = mkTx("bank-today", -100, {
@@ -622,6 +634,100 @@ describe("useTransactionFilters", () => {
       );
       expect(typeof result.current.monthLabel).toBe("string");
       expect(result.current.monthLabel.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("межі місяця — Київ, а не пристрій (ADR-0078, фінансові періоди)", () => {
+    it("банківська й ручна витрата о 00:30 за Києвом 1 травня потрапляють у травень", () => {
+      // 2025-05-01T00:30+03:00 = 2025-04-30T21:30Z: для пристрою в UTC/Нью-Йорку
+      // це ще квітень, для Києва (і Аналітики) — вже травень.
+      const instantSec = Date.parse("2025-05-01T00:30:00+03:00") / 1000;
+      const bank = mkTx("bank-edge", -10000, { time: instantSec });
+      const manual = mkManual("m-edge", 200, "2025-05-01T00:30:00+03:00");
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            historyTx: [bank],
+            manualExpenses: [manual],
+          }),
+        ),
+      );
+      act(() => result.current.goMonth(-1)); // червень → травень
+      const ids = result.current.activeTx.map((t) => t.id);
+      expect(ids).toContain("bank-edge");
+      expect(ids).toContain("manual_m-edge");
+    });
+  });
+
+  describe("правила «Завжди так для цього магазину» (2026-10-01)", () => {
+    const RULES = buildMerchantRuleIndex([
+      {
+        id: "mr_1",
+        kind: "expense",
+        merchantKey: "сільпо",
+        categoryId: "transport",
+        label: "Сільпо",
+        createdAt: "2026-10-01T10:00:00.000Z",
+        updatedAt: "2026-10-01T10:00:00.000Z",
+      },
+    ]);
+    const silpo = (id: string, amount = -10_000): Transaction => ({
+      ...mkTx(id, amount),
+      description: "Сільпо №5",
+    });
+
+    it("підсумки по категоріях рахують операції мерчанта в категорії правила", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [silpo("s1"), silpo("s2", -20_000)],
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      const transport = result.current.catSpends.find(
+        (c) => c.id === "transport",
+      );
+      expect(transport?.spent).toBe(300);
+    });
+
+    it("фільтр за категорією показує операції, чию категорію дає правило", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [
+              silpo("s1"),
+              { ...mkTx("x1", -5_000), description: "АТБ" },
+            ],
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      act(() => result.current.setFilter("transport"));
+      expect(result.current.filtered.map((t) => t.id)).toEqual(["s1"]);
+    });
+
+    it("явний override операції сильніший за правило", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [silpo("s1"), silpo("s2")],
+            txCategories: { s2: "food" },
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      act(() => result.current.setFilter("transport"));
+      expect(result.current.filtered.map((t) => t.id)).toEqual(["s1"]);
+    });
+
+    it("без правил категорія лишається за MCC: транспорту в підсумках нема", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(buildDefaultParams({ realTx: [silpo("s1")] })),
+      );
+      expect(
+        result.current.catSpends.find((c) => c.id === "transport"),
+      ).toBeUndefined();
     });
   });
 });

@@ -1,4 +1,28 @@
-import { safeRemoveLS } from "@shared/lib/storage/storage";
+/**
+ * Last validated: 2026-09-13
+ * Status: Active
+ *
+ * Чат-дія «оновити Монобанк за період».
+ *
+ * **Тут був цикл чищення кешу, і він нічого не чистив.** Він знімав ключі
+ * виду `finyk_tx_cache_<рік>_<місяць0>`, але такої форми ключа не пише
+ * НІХТО: єдиним її автором у репо був тест, який сам їх і засівав, щоб
+ * перевірити, що цикл їх зніме. Базовий `finyk_tx_cache` до того ж
+ * tombstone-нутий — читання давно живуть у дзеркалі Моно
+ * (`monoMirrorReader`). При цьому відповідь людині стверджувала «Очищено
+ * кеш за N міс.», тобто повідомляла про роботу, якої не було. Знахідка
+ * PR-T7, аудит 2026-09-13.
+ *
+ * Справжня робота цієї дії — подія `hub:finyk-mono-import-range`; саме її
+ * слухає Фінік і робить імпорт.
+ *
+ * **Побічно це знімає сім warning-ів `prefer-kyiv-time`.** Аудит пропонував
+ * перевести їх на `getKyivDateParts`, і це було б помилкою: рядок
+ * `YYYY-MM-DD` парсився в локальну дату й локальними ж геттерами читався
+ * назад, тобто пояс скорочувався. Київські частини того самого моменту дали
+ * б інший місяць на краю доби — тобто «виправлення» внесло б баг там, де
+ * його не було.
+ */
 import type { ImportMonobankRangeAction, ChatActionResult } from "../types";
 
 export function importMonobankRange(
@@ -19,18 +43,6 @@ export function importMonobankRange(
   ) {
     return "Некоректний діапазон дат.";
   }
-  const clearedMonths: string[] = [];
-  const cur = new Date(fromD.getFullYear(), fromD.getMonth(), 1);
-  const end = new Date(toD.getFullYear(), toD.getMonth(), 1);
-  while (cur <= end) {
-    const y = cur.getFullYear();
-    const m0 = cur.getMonth();
-    try {
-      safeRemoveLS(`finyk_tx_cache_${y}_${m0}`);
-    } catch {}
-    clearedMonths.push(`${y}-${String(m0 + 1).padStart(2, "0")}`);
-    cur.setMonth(cur.getMonth() + 1);
-  }
   try {
     if (typeof window !== "undefined" && typeof CustomEvent === "function") {
       window.dispatchEvent(
@@ -40,5 +52,5 @@ export function importMonobankRange(
       );
     }
   } catch {}
-  return `Запит на оновлення Монобанку з ${fromStr} до ${toStr} прийнято. Очищено кеш за ${clearedMonths.length} міс. (${clearedMonths.join(", ")}). Оновиться при відкритті Фініка.`;
+  return `Запит на оновлення Монобанку з ${fromStr} до ${toStr} прийнято. Оновиться при відкритті Фініка.`;
 }

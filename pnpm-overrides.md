@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-01-03.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -149,7 +149,7 @@ pull `protobufjs@8.0.0`. The selector-form override bumps only the vulnerable 8.
 **Drop when:** All transitive consumers declare `protobufjs >=8.0.2` in their own `package.json`,
 or the advisory is retracted.
 
-**Owner:** @Skords-01
+**Owner:** @klas149
 
 **Last reviewed:** 2026-06-05
 
@@ -210,12 +210,13 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 | `js-yaml@>=3.0.0 <3.15.0`        | `3.15.0`          | — (борг)              |
 | `js-yaml@>=4.0.0 <4.3.0`         | `4.3.0`           | — (борг)              |
 | `qs@>=6.11.1 <6.15.2`            | `6.15.2`          | — (борг)              |
-| `axios@>=1.15.2 <1.18.0`         | `>=1.18.0`        | — (борг)              |
+| `axios@>=1.15.2 <1.20.0`         | `>=1.20.0`        | — (борг)              |
+| `@grpc/grpc-js@>=1.14.0 <1.14.5` | `>=1.14.5`        | — (борг)              |
 | `fast-uri`                       | `^3.1.6`          | ✅ так                |
 | `ip-address@<10.3.1`             | `>=10.3.1`        | — (борг)              |
 | `browserslist@<4.28.7`           | `>=4.28.7`        | ✅ так                |
 
-Всього: **33** override-ів. Борг на дописування обґрунтувань трекається політикою
+Всього: **34** override-ів. Борг на дописування обґрунтувань трекається політикою
 [`pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md) § Правила п.1.
 
 ---

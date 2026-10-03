@@ -7,9 +7,24 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
+import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
 import { RECURRENCE_OPTIONS } from "../../lib/routineConstants";
 import type { Habit } from "../../lib/types";
 import { HabitGlyph } from "../HabitGlyph";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "../routineIconButton";
+import { formatDateShort } from "@shared/lib/time/formatDate";
+import { parseDateKey } from "../../lib/weekUtils";
+
+/** «28 лип.» замість сирого «2026-07-28»; рік лише коли він не поточний. */
+function dayKeyShort(key: string): string {
+  const date = parseDateKey(key);
+  // ADR-0078: день-ключ звички належить пристрою, тож і «поточний рік» теж.
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time, no-restricted-syntax -- ADR-0078: особистий день звички device-local
+  const thisYear = new Date().getFullYear();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: той самий device-local рік
+  const withYear = date.getFullYear() !== thisYear;
+  return formatDateShort(date, { withYear }) || key;
+}
 
 export interface HabitListItemProps {
   habit: Habit;
@@ -28,9 +43,11 @@ export interface HabitListItemProps {
 }
 
 /**
- * Єдиний рядок у списку активних звичок: перетягування, кнопки ↑↓,
- * «Деталі», «Змінити», «В архів», «Видалити». Мемоізовано, щоб редагування
- * іншої звички не спричиняло re-render усіх рядків.
+ * Єдиний рядок у списку активних звичок: на виду лише «Змінити» і меню «⋯»,
+ * щоб на телефоні рядок не загортався в кілька поверхів. «Деталі», «Вище»,
+ * «Нижче», «В архів» і «Видалити» живуть у меню «⋯», щоб деструктивна дія не займала цілий вертикальний ряд на
+ * екрані з десятком звичок. Мемоізовано, щоб редагування іншої звички не
+ * спричиняло re-render усіх рядків.
  */
 export const HabitListItem = memo(function HabitListItem({
   habit: h,
@@ -75,67 +92,72 @@ export const HabitListItem = memo(function HabitListItem({
           <p className="text-style-caption text-subtle mt-0.5">
             {recLabel}
             {h.timeOfDay ? ` · ${h.timeOfDay}` : ""}
-            {h.startDate ? ` · з ${h.startDate}` : ""}
-            {h.endDate ? ` до ${h.endDate}` : ""}
+            {h.startDate ? ` · з ${dayKeyShort(h.startDate)}` : ""}
+            {h.endDate ? ` до ${dayKeyShort(h.endDate)}` : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5 justify-end shrink-0 max-w-[min(100%,12rem)] sm:max-w-none">
-          <div className="flex gap-1">
-            <IconButton
-              size="sm"
-              variant="ghost"
-              className="rounded-xl border border-line text-muted"
-              onClick={onMoveUp}
-              aria-label="Вгору в списку"
-            >
-              <Icon name="arrow-up" size="sm" aria-hidden />
-            </IconButton>
-            <IconButton
-              size="sm"
-              variant="ghost"
-              className="rounded-xl border border-line text-muted"
-              onClick={onMoveDown}
-              aria-label="Вниз в списку"
-            >
-              <Icon name="arrow-down" size="sm" aria-hidden />
-            </IconButton>
-          </div>
           <Button
             type="button"
-            variant="secondary"
-            size="sm"
-            className="h-9! px-3! text-xs! bg-routine-surface/40 dark:bg-routine-surface-dark/10"
-            onClick={onOpenDetails}
-          >
-            Деталі
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             className="h-9! px-3! text-xs!"
             onClick={onStartEdit}
           >
             Змінити
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="h-9! px-3! text-xs!"
-            onClick={onArchive}
-          >
-            В архів
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="h-9! px-3! text-xs! text-danger-strong dark:text-danger"
-            onClick={onRequestDelete}
-          >
-            Видалити
-          </Button>
+          <DropdownMenu
+            ariaLabel={`Ще дії зі звичкою ${h.name}`}
+            placement="bottom-end"
+            trigger={
+              <IconButton
+                size="sm"
+                variant="ghost"
+                className={ROUTINE_OUTLINE_ICON_BUTTON}
+                aria-label={`Ще дії зі звичкою ${h.name}`}
+              >
+                <Icon name="more-horizontal" size="sm" aria-hidden />
+              </IconButton>
+            }
+            items={[
+              {
+                type: "item",
+                id: "details",
+                label: "Деталі",
+                onSelect: onOpenDetails,
+              },
+              { type: "separator" },
+              {
+                type: "item",
+                id: "move-up",
+                label: "Вище",
+                icon: <Icon name="arrow-up" size="md" aria-hidden />,
+                onSelect: onMoveUp,
+              },
+              {
+                type: "item",
+                id: "move-down",
+                label: "Нижче",
+                icon: <Icon name="arrow-down" size="md" aria-hidden />,
+                onSelect: onMoveDown,
+              },
+              { type: "separator" },
+              {
+                type: "item",
+                id: "archive",
+                label: "В архів",
+                onSelect: onArchive,
+              },
+              {
+                type: "item",
+                id: "delete",
+                label: "Видалити",
+                icon: <Icon name="trash" size="md" aria-hidden />,
+                destructive: true,
+                onSelect: onRequestDelete,
+              },
+            ]}
+          />
         </div>
       </div>
     </li>

@@ -19,6 +19,21 @@ vi.mock("@shared/api", async () => {
     },
   };
 });
+
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
+  };
+});
 vi.mock("../lib/recipeCache.js", () => ({
   writeRecipeCache: vi.fn(),
 }));
@@ -57,6 +72,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const setRecipes = vi.fn();
   const setRecipesRaw = vi.fn();
   const setRecipesTried = vi.fn();
@@ -72,6 +88,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setBusy,
     setErr,
     setStatusText,
+    setDenial,
     pantry: {
       effectiveItems: [{ name: "яйця", qty: 10, unit: "шт", notes: null }],
     },
@@ -312,7 +329,7 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          "AI повернув порожній план харчування. Спробуй згенерувати ще раз.",
+          "Сержант повернув порожній план харчування. Спробуй згенерувати ще раз.",
         ),
       );
     });
@@ -332,7 +349,7 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          "AI не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори.",
+          "Сержант не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори.",
         ),
       );
     });
@@ -535,6 +552,50 @@ describe("useNutritionRemoteActions", () => {
       expect(apiFetchShoppingList).not.toHaveBeenCalled();
     });
 
+    // Одна таксономія з коморою (рішення власника 2026-10-01): відповідь моделі
+    // зводиться до категорій комори до того, як потрапить у список.
+    it("зводить старі й невідомі назви категорій відповіді до категорій комори", async () => {
+      apiFetchShoppingList.mockResolvedValueOnce({
+        categories: [
+          {
+            name: "Мʼясо та риба",
+            items: [
+              { name: "Лосось", quantity: "300 г", note: "" },
+              { name: "Куряче філе", quantity: "500 г", note: "" },
+            ],
+          },
+          {
+            name: "Спреди та намазки",
+            items: [{ name: "Паста арахісова", quantity: "1 шт", note: "" }],
+          },
+          {
+            name: "Щось своє",
+            items: [{ name: "Кефір", quantity: "1 л", note: "" }],
+          },
+        ],
+      });
+      const { result, spies } = makeHarness({
+        recipes: [{ id: "r1", name: "Сендвіч" }],
+      });
+      act(() => {
+        result.current.generateShoppingList("recipes");
+      });
+      await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+
+      const generated = spies.setGeneratedList.mock.calls[0]?.[0] as Array<{
+        name: string;
+        items: Array<{ name: string }>;
+      }>;
+      expect(
+        generated.map((c) => [c.name, c.items.map((i) => i.name)]),
+      ).toEqual([
+        ["Риба та морепродукти", ["Лосось"]],
+        ["Мʼясо та птиця", ["Куряче філе"]],
+        ["Спреди та намазки", ["Паста арахісова"]],
+        ["Молочні та яйця", ["Кефір"]],
+      ]);
+    });
+
     it("posts recipes when source fallback and feeds categories to shopping", async () => {
       apiFetchShoppingList.mockResolvedValueOnce({
         categories: [
@@ -566,6 +627,98 @@ describe("useNutritionRemoteActions", () => {
       );
     });
 
+    describe("вибір рецептів (збережені + згенеровані)", () => {
+      const OK = {
+        categories: [
+          {
+            name: "Овочі",
+            items: [{ name: "Помідори", quantity: "2 шт", note: "" }],
+          },
+        ],
+      };
+
+      it("шле на сервер лише позначені рецепти, а не все, що в памʼяті", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const { result, spies } = makeHarness({
+          // Згенеровані в памʼяті - їх у запиті бути не має.
+          recipes: [{ id: "g-all", title: "Лишній", ingredients: ["сіль"] }],
+        });
+        act(() => {
+          result.current.generateShoppingList("recipes", [
+            // Збережений рецепт із кроками й макросами: серверу для списку
+            // покупок потрібні лише назва та інгредієнти.
+            {
+              id: "s1",
+              title: "Борщ",
+              ingredients: ["буряк"],
+              steps: ["Зварити"],
+              macros: { kcal: 300 },
+            },
+            { id: "g1", title: "Омлет", ingredients: ["яйця"] },
+          ]);
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        const body = apiFetchShoppingList.mock.calls[0]![0] as {
+          recipes: unknown[];
+          weekPlan?: unknown;
+        };
+        expect(body.recipes).toEqual([
+          { title: "Борщ", ingredients: ["буряк"] },
+          { title: "Омлет", ingredients: ["яйця"] },
+        ]);
+        expect(body.weekPlan).toBeUndefined();
+      });
+
+      it("вкладає запит у стелі схеми: ≤20 рецептів, ≤50 інгредієнтів по ≤200", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const { result, spies } = makeHarness();
+        const many = Array.from({ length: 25 }, (_, i) => ({
+          id: `s${i}`,
+          title: `Рецепт ${i}`,
+          ingredients: Array.from({ length: 70 }, () => "і".repeat(250)),
+        }));
+        act(() => {
+          result.current.generateShoppingList("recipes", many);
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        const body = apiFetchShoppingList.mock.calls[0]![0] as {
+          recipes: Array<{ ingredients: string[] }>;
+        };
+        expect(body.recipes).toHaveLength(20);
+        expect(body.recipes[0]!.ingredients).toHaveLength(50);
+        expect(body.recipes[0]!.ingredients[0]).toHaveLength(200);
+      });
+
+      it("порожній вибір - помилка, а не мовчазний запит із усіма рецептами", async () => {
+        const { result, spies } = makeHarness({
+          recipes: [{ id: "g-all", title: "Лишній" }],
+        });
+        act(() => {
+          result.current.generateShoppingList("recipes", []);
+        });
+        await waitFor(() =>
+          expect(spies.setErr).toHaveBeenCalledWith(
+            "Немає рецептів чи тижневого плану для генерації.",
+          ),
+        );
+        expect(apiFetchShoppingList).not.toHaveBeenCalled();
+      });
+
+      it("без вибору (старі виклики) бере всі рецепти з памʼяті, як і раніше", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const recipes = [{ id: "g1", title: "Омлет", ingredients: ["яйця"] }];
+        const { result, spies } = makeHarness({ recipes });
+        act(() => {
+          result.current.generateShoppingList("recipes");
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        expect(
+          (apiFetchShoppingList.mock.calls[0]![0] as { recipes: unknown[] })
+            .recipes,
+        ).toEqual(recipes);
+      });
+    });
+
     it("shows an actionable error instead of silently accepting an empty list", async () => {
       apiFetchShoppingList.mockResolvedValueOnce({ categories: [] });
       const { result, spies } = makeHarness({
@@ -576,7 +729,7 @@ describe("useNutritionRemoteActions", () => {
 
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          expect.stringContaining("AI не повернув жодної покупки"),
+          expect.stringContaining("Сержант не повернув жодної покупки"),
         ),
       );
       expect(spies.setGeneratedList).not.toHaveBeenCalled();

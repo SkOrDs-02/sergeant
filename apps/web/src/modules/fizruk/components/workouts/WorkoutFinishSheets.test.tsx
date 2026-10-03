@@ -342,7 +342,10 @@ describe("WorkoutFinishSheets — summary step expanded", () => {
     expect(screen.getByText("Вправ")).toBeInTheDocument();
     expect(screen.getByText("Обʼєм")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
-    expect(screen.getByText(flatMatch("1 000 кг"))).toBeInTheDocument();
+    // PR-Z3 (аудит 2026-09-13, хвиля 6): "кг" читалось як маса тіла, хоча
+    // це `вага_кг × повторення` — канонічний підпис "кг×повт" (уніфіковано
+    // з `WorkoutSummaryView` / `RecentWorkoutsSection`).
+    expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
   });
 
   it("clicking 'Закрити' calls setFinishFlash(null)", () => {

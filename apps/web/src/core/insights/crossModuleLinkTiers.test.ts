@@ -12,6 +12,12 @@ import {
   STABLE_N,
   STRONG_R,
 } from "./crossModuleLinkTiers";
+import { REQUIRED_CONSECUTIVE_CHECKS } from "./crossModuleLinkHistory";
+
+// Серія перевірок, достатня, щоб драбина розблокувала другий і третій
+// ступені. Наявні кейси нижче міряють СИЛУ, тож серію їм треба дати явно -
+// інакше вони міряли б уже не те, для чого написані.
+const REPEATED = REQUIRED_CONSECUTIVE_CHECKS;
 
 describe("gradeCrossModuleLink", () => {
   it("mirrors digestCorrelations.ts thresholds (MIN_N=10, NOTABLE_R=0.4)", () => {
@@ -33,17 +39,21 @@ describe("gradeCrossModuleLink", () => {
   });
 
   it("tier 1 — сила щойно за порогом помітності", () => {
-    expect(gradeCrossModuleLink(MIN_N, NOTABLE_R)).toBe(1);
-    expect(gradeCrossModuleLink(STABLE_N * 2, REPEATING_R - 0.01)).toBe(1);
+    expect(gradeCrossModuleLink(MIN_N, NOTABLE_R, REPEATED)).toBe(1);
+    expect(
+      gradeCrossModuleLink(STABLE_N * 2, REPEATING_R - 0.01, REPEATED),
+    ).toBe(1);
   });
 
   it("tier 2 — сила помітно вища за поріг, але ще не сильна", () => {
-    expect(gradeCrossModuleLink(MIN_N, REPEATING_R)).toBe(2);
-    expect(gradeCrossModuleLink(STABLE_N * 2, STRONG_R - 0.01)).toBe(2);
+    expect(gradeCrossModuleLink(MIN_N, REPEATING_R, REPEATED)).toBe(2);
+    expect(gradeCrossModuleLink(STABLE_N * 2, STRONG_R - 0.01, REPEATED)).toBe(
+      2,
+    );
   });
 
   it("tier 3 — потрібні ОБИДВІ умови: сила ≥ STRONG_R і днів ≥ STABLE_N", () => {
-    expect(gradeCrossModuleLink(STABLE_N, STRONG_R)).toBe(3);
+    expect(gradeCrossModuleLink(STABLE_N, STRONG_R, REPEATED)).toBe(3);
   });
 
   /**
@@ -55,19 +65,21 @@ describe("gradeCrossModuleLink", () => {
    * на межовій кореляції — слово впевненості переставало щось означати.
    */
   it("багато днів САМІ ПО СОБІ третього ступеня не дають", () => {
-    expect(gradeCrossModuleLink(STABLE_N * 2, NOTABLE_R + 0.01)).toBe(1);
-    expect(gradeCrossModuleLink(59, 0.41)).toBe(1);
-    expect(gradeCrossModuleLink(59, 0.6)).toBe(2);
+    expect(gradeCrossModuleLink(STABLE_N * 2, NOTABLE_R + 0.01, REPEATED)).toBe(
+      1,
+    );
+    expect(gradeCrossModuleLink(59, 0.41, REPEATED)).toBe(1);
+    expect(gradeCrossModuleLink(59, 0.6, REPEATED)).toBe(2);
   });
 
   it("сильна кореляція САМА ПО СОБІ третього ступеня не дає", () => {
-    expect(gradeCrossModuleLink(MIN_N, 0.95)).toBe(2);
-    expect(gradeCrossModuleLink(STABLE_N - 1, STRONG_R)).toBe(2);
+    expect(gradeCrossModuleLink(MIN_N, 0.95, REPEATED)).toBe(2);
+    expect(gradeCrossModuleLink(STABLE_N - 1, STRONG_R, REPEATED)).toBe(2);
   });
 
   it("negative correlations grade on |r|, not sign", () => {
-    expect(gradeCrossModuleLink(STABLE_N, -0.9)).toBe(3);
-    expect(gradeCrossModuleLink(MIN_N, -NOTABLE_R)).toBe(1);
+    expect(gradeCrossModuleLink(STABLE_N, -0.9, REPEATED)).toBe(3);
+    expect(gradeCrossModuleLink(MIN_N, -NOTABLE_R, REPEATED)).toBe(1);
   });
 });
 
@@ -147,5 +159,30 @@ describe("uk-UA pluralisation (style-guide.uk.md §8)", () => {
     expect(formatObservationsUk(3)).toBe("3 спостереження");
     expect(formatObservationsUk(5)).toBe("5 спостережень");
     expect(formatObservationsUk(23)).toBe("23 спостереження");
+  });
+});
+
+describe("повторюваність як умова ступеня (ADR-0097)", () => {
+  it("одне спрацювання не дає другого ступеня, хоч би якою була сила", () => {
+    expect(gradeCrossModuleLink(STABLE_N, STRONG_R, 1)).toBe(1);
+    expect(gradeCrossModuleLink(STABLE_N, 0.99, 1)).toBe(1);
+  });
+
+  it("дві перевірки поспіль піднімають ступінь", () => {
+    expect(gradeCrossModuleLink(STABLE_N, STRONG_R, 2)).toBe(3);
+    expect(gradeCrossModuleLink(MIN_N, REPEATING_R, 2)).toBe(2);
+  });
+
+  it("обірвана серія (нуль перевірок) деградує до першого ступеня, не до помилки", () => {
+    expect(gradeCrossModuleLink(STABLE_N, STRONG_R, 0)).toBe(1);
+  });
+
+  it("викликач без історії отримує перший ступінь, а не завищене слово", () => {
+    expect(gradeCrossModuleLink(STABLE_N, STRONG_R)).toBe(1);
+  });
+
+  it("повторюваність не рятує пару, що не перетнула поріг мовчання", () => {
+    expect(gradeCrossModuleLink(MIN_N - 1, 0.9, 5)).toBeNull();
+    expect(gradeCrossModuleLink(STABLE_N, NOTABLE_R - 0.01, 5)).toBeNull();
   });
 });

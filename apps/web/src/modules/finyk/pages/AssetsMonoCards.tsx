@@ -96,7 +96,7 @@ export function AssetsMonoCards({
             onClick={() => setOpenId(id)}
             aria-label={`${visual.name}: ${t.settingsAriaSuffix}`}
             className={cn(
-              "touch-target flex w-full flex-col gap-1 rounded-xl border border-line bg-panel/60 p-3 text-left transition-colors",
+              "touch-target flex w-full flex-col gap-1 rounded-xl border border-line bg-panel p-3 text-left transition-colors",
               "hover:bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               !included && "opacity-50",
             )}

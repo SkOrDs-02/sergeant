@@ -44,12 +44,27 @@ import type { RememberInput } from "./service.js";
 
 const warnMock = logger.warn as unknown as ReturnType<typeof vi.fn>;
 
-/** Fake `Pool` — лише `query()` потрібен для `mirrorProfileMemoryEntries`. */
+/**
+ * Fake `Pool` для `mirrorProfileMemoryEntries`. SELECT іде через
+ * `connect()` (RLS-контекст, `dbContext.ts`), тож клієнт відрізняє службові
+ * BEGIN/COMMIT/set_config від справжнього запиту; `pool.query` — лише SELECT
+ * по `ai_memories`, як і раніше бачили тести.
+ */
 function makeFakePool(
   existingRows: Array<{ source_ref: string | null; content: string }>,
 ) {
   const query = vi.fn().mockResolvedValue({ rows: existingRows });
-  return { query } as unknown as import("pg").Pool;
+  const client = {
+    query: (sql: string, params?: unknown[]) =>
+      /^\s*(BEGIN|COMMIT|ROLLBACK)\b|set_config\(/i.test(sql)
+        ? Promise.resolve({ rows: [] })
+        : query(sql, params),
+    release: vi.fn(),
+  };
+  return {
+    query,
+    connect: vi.fn().mockResolvedValue(client),
+  } as unknown as import("pg").Pool;
 }
 
 const savedAiMemoryEnabled = env.AI_MEMORY_ENABLED;

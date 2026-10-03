@@ -62,7 +62,7 @@ export function isFizrukFullBackupShape(
 
 export function assertFizrukBackupShape(value: unknown): FizrukBackupPayload {
   if (!isFizrukBackupShape(value)) {
-    throw new Error("Невірний формат файлу");
+    throw new Error("Неправильний формат файлу");
   }
   return value;
 }

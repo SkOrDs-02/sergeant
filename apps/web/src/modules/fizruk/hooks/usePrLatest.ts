@@ -20,14 +20,14 @@
  * a small dedicated derivation reads better than overloading the
  * insight hook.
  *
- * Uses Kyiv-local day boundaries via `getKyivDayKey` so "сьогодні / 2
- * дні тому" matches the user's calendar even on a phone roaming
- * abroad with the wrong system timezone.
+ * Uses DEVICE day boundaries (ADR-0078) via `deviceDayKey` so "сьогодні / 2
+ * дні тому" matches the calendar the user sees on their phone, also
+ * abroad.
  */
 
 import { useMemo } from "react";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { deviceDayKey } from "@sergeant/shared";
 
 /**
  * Cap the lookback window so a 6-month-old PR doesn't sit on the hero
@@ -43,17 +43,17 @@ export interface PrLatest {
   readonly exerciseName: string;
   /** Raw weight in kilograms — already validated finite and > 0. */
   readonly weightKg: number;
-  /** Whole days between the PR's Kyiv-local day and today (Kyiv). */
+  /** Whole days between the PR's device-local day and today (device). */
   readonly daysAgo: number;
 }
 
 /**
- * Difference in whole days between two `YYYY-MM-DD` Kyiv day keys.
+ * Difference in whole days between two `YYYY-MM-DD` day keys.
  * Returns `0` when both keys are the same day, positive when `b` is
  * older. Falls back to `Number.POSITIVE_INFINITY` on malformed input so
  * the caller's window check still filters the entry out.
  */
-function diffDaysKyiv(today: string, past: string): number {
+function diffDaysKeys(today: string, past: string): number {
   // `YYYY-MM-DD` parses safely at noon UTC to dodge DST edge cases; we
   // only care about whole-day deltas so the small UTC drift never
   // crosses a day boundary.
@@ -96,7 +96,7 @@ function collectPrSets(workouts: readonly Workout[]): PrCandidate[] {
   for (const w of sorted) {
     const endedAtMs = Date.parse(w.endedAt ?? "");
     if (!Number.isFinite(endedAtMs)) continue;
-    const dayKey = getKyivDayKey(new Date(endedAtMs));
+    const dayKey = deviceDayKey(new Date(endedAtMs));
     for (const item of w.items ?? []) {
       if (item.type !== "strength" || !item.exerciseId) continue;
       const nameUk =
@@ -143,11 +143,11 @@ export function usePrLatest({
   workouts,
   loaded,
 }: UsePrLatestOptions): PrLatest | null {
-  // Read the current Kyiv day key outside the memo: it is an impure
+  // Read the current device day key outside the memo: it is an impure
   // wall-clock read, so keeping it inside would give the memo a hidden
   // dependency the React Compiler cannot preserve. As an explicit
   // dependency the memo also correctly re-evaluates when the day rolls over.
-  const today = getKyivDayKey();
+  const today = deviceDayKey();
   // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React Compiler inlines this thin derivation hook and elects not to re-memoize the result ("memoized in source but not in compilation output"); the memo body is pure and its deps are exhaustive. Compiler is not enabled at runtime, so this useMemo genuinely caches an O(workouts) scan on every Dashboard render — removing it is a real perf regression.
   return useMemo(() => {
     if (!loaded) return null;
@@ -164,7 +164,7 @@ export function usePrLatest({
     });
 
     for (const c of candidates) {
-      const daysAgo = diffDaysKyiv(today, c.dayKey);
+      const daysAgo = diffDaysKeys(today, c.dayKey);
       if (daysAgo < 0) continue; // future-dated session → clock skew, skip
       if (daysAgo > PR_WINDOW_DAYS) continue;
       return {

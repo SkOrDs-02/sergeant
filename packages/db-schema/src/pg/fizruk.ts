@@ -14,7 +14,7 @@ import { sql } from "drizzle-orm";
  * Postgres schema for `fizruk_workouts` table.
  * Mirrors migration 029_fizruk_tables.sql.
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md` — normalized
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — normalized
  * per-session workout rows. Nested display-only data (groups, warmup,
  * cooldown, wellbeing) stored as JSONB.
  */
@@ -200,9 +200,12 @@ export const fizrukCustomActivities = pgTable(
 
 /**
  * Postgres schema for `fizruk_measurements` table.
- * Mirrors migration 029_fizruk_tables.sql.
+ * Mirrors migrations 029_fizruk_tables.sql + 146_fizruk_measurement_fields.sql.
  *
  * Body measurements and wellbeing scores. One row per measurement session.
+ * 146 додала решту полів веб-форми (жир, шия, передпліччя, стегно, литка,
+ * розділені біцепси); `bicepCm` лишається як зведене значення доменного /
+ * мобільного реєстру.
  */
 export const fizrukMeasurements = pgTable(
   "fizruk_measurements",
@@ -217,6 +220,16 @@ export const fizrukMeasurements = pgTable(
     chestCm: real("chest_cm"),
     hipsCm: real("hips_cm"),
     bicepCm: real("bicep_cm"),
+    bodyFatPct: real("body_fat_pct"),
+    neckCm: real("neck_cm"),
+    bicepLCm: real("bicep_l_cm"),
+    bicepRCm: real("bicep_r_cm"),
+    forearmLCm: real("forearm_l_cm"),
+    forearmRCm: real("forearm_r_cm"),
+    thighLCm: real("thigh_l_cm"),
+    thighRCm: real("thigh_r_cm"),
+    calfLCm: real("calf_l_cm"),
+    calfRCm: real("calf_r_cm"),
     sleepHours: real("sleep_hours"),
     energyLevel: integer("energy_level"),
     mood: integer(),
@@ -242,7 +255,7 @@ export const fizrukMeasurements = pgTable(
  * Mirrors `apps/server/src/migrations/052_fizruk_full_state.sql` and
  * the SQLite client schema in `packages/db-schema/src/sqlite/fizruk.ts`.
  *
- * Stage 12 / PR #070f-schema of `docs/planning/storage-roadmap.md`.
+ * Stage 12 / PR #070f-schema of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Per-row diary entries (weight, sleep, energy, mood, note); the
  * SQLite mirror omits the FK to `"user"(id)` because the client has
  * no auth schema.
@@ -434,28 +447,4 @@ export const fizrukInjuries = pgTable(
       .on(table.userId, sql`${table.startedAt} DESC`)
       .where(sql`${table.deletedAt} IS NULL`),
   ],
-);
-
-/**
- * Postgres schema for `fizruk_pushups`.
- *
- * Перенос власності pushup-даних routine → fizruk (канон `routine.md` §10,
- * рішення founder-а 2026-08-30: «фізактивність належить fizruk»). Форма
- * 1:1 успадкована від `routine_pushups` (`pg/routine.ts`): один рядок на
- * (user, day) з лічильником повторів; day key — device-local `YYYY-MM-DD`
- * (ADR-0078). Дані копіюються серверною міграцією `131_fizruk_pushups.sql`
- * зі збереженням `updated_at`, тож LWW-конфлікти девайсів вирішуються так
- * само, як і до переносу.
- */
-export const fizrukPushups = pgTable(
-  "fizruk_pushups",
-  {
-    userId: text("user_id").notNull(),
-    dateKey: text("date_key").notNull(),
-    reps: integer().notNull().default(0),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
 );

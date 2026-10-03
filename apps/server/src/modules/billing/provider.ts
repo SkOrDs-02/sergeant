@@ -17,7 +17,7 @@ import type {
   BillingCheckoutResponse,
   BillingPlan,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 
@@ -81,7 +81,7 @@ export interface BillingProvider {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse>;
+  ): Promise<BillingSubscriptionStatus>;
   /** Верифікує підпис вхідного webhook-запиту (provider-specific). */
   verifyWebhookSignature(rawBody: string, signature: string): boolean;
   /** Обробляє верифікований webhook → upsert у `subscriptions`. */
@@ -89,12 +89,62 @@ export interface BillingProvider {
   /**
    * Скасовує активну підписку користувача. Жоден UA-provider не має
    * Customer Portal (як Stripe), тож скасування йде через власну кнопку в
-   * застосунку: LiqPay → `action:unsubscribe`; Plata → stop-scheduler +
-   * видалення card-token. Idempotent (повторний виклик на вже скасованій —
-   * no-op). Best-effort: провайдер-помилка не мусить валити deletion юзера
-   * (ADR-0016) — caller логує й продовжує.
+   * застосунку: LiqPay → `action:unsubscribe`; Plata → `subscription/edit`
+   * (`action:cancel`). Idempotent: повторний виклик на вже скасованій
+   * (`cancel_at_period_end`) підписці провайдера не смикає і повертає
+   * `already_canceling`.
+   *
+   * Результат каже викликачеві, що сталось насправді — без нього роут
+   * відповідав `ok` навіть тоді, коли скасовувати було нічого
+   * ({@link CancelSubscriptionOutcome}). Провайдер-помилка = `throw`; caller
+   * логує й вирішує сам: deletion юзера й admin-downgrade продовжують
+   * (ADR-0016), користувацький `/api/billing/cancel` віддає 502.
    */
-  cancelSubscription(pool: Pool, userId: string): Promise<void>;
+  cancelSubscription(
+    pool: Pool,
+    userId: string,
+  ): Promise<CancelSubscriptionOutcome>;
+}
+
+/**
+ * Що зробив {@link BillingProvider.cancelSubscription}:
+ *  - `canceled` — провайдеру наказано зупинити списання, `cancel_at_period_end`
+ *    виставлено;
+ *  - `already_canceling` — підписка вже скасована до кінця періоду, провайдера
+ *    не чіпали;
+ *  - `none` — у цього провайдера в користувача немає активної підписки.
+ */
+export type CancelSubscriptionOutcome =
+  "canceled" | "already_canceling" | "none";
+
+/**
+ * Чи білінг узагалі увімкнено — тобто чи приймає гроші бодай один провайдер.
+ *
+ * Навмисно НЕ прив'язано до жодного конкретного прапорця. Гейт платних
+ * поверхонь (`requirePlan`) раніше читав лише `STRIPE_ENABLED`, а в проді
+ * Stripe dormant (гроші йдуть через LiqPay і Plata) — тож усі чотири
+ * Pro-роути (`ai-memory`, `transcribe`, `nutrition` x2) віддавались
+ * безкоштовно кожному залогіненому користувачу. Прапорець одного провайдера
+ * ніколи не є відповіддю на питання «чи ми продаємо Pro».
+ *
+ * Усі три вимкнені = білінг ще не запущено (локально / preview) → гейт
+ * пропускає, як і раніше.
+ */
+export interface BillingEnforcementOptions {
+  /** Override `env.STRIPE_ENABLED` (для тестів). */
+  stripeEnabled?: boolean;
+  /** Override `env.LIQPAY_ENABLED`. */
+  liqpayEnabled?: boolean;
+  /** Override `env.PLATA_ENABLED`. */
+  plataEnabled?: boolean;
+}
+
+export function isBillingEnforced({
+  stripeEnabled = env.STRIPE_ENABLED,
+  liqpayEnabled = env.LIQPAY_ENABLED,
+  plataEnabled = env.PLATA_ENABLED,
+}: BillingEnforcementOptions = {}): boolean {
+  return stripeEnabled || liqpayEnabled || plataEnabled;
 }
 
 export interface EnabledProvidersOptions {

@@ -10,8 +10,13 @@ import { HubChatBody } from "./chat/HubChatBody";
 import { HubChatComposer } from "./chat/HubChatComposer";
 import { ChatAuthGate } from "./chat/ChatAuthGate";
 import { useAuthOptional } from "../auth/AuthContext";
+// Аліас навмисно: локальне `messages` у цьому файлі — це ходи чату,
+// не каталог копі.
+import { messages as catalog } from "@shared/i18n/uk";
 import { PaywallModal } from "../billing/PaywallModal";
 import { DestructiveConfirmModal } from "./chat/DestructiveConfirmModal";
+
+const PAYWALL_COPY = catalog.paywallModal;
 
 interface HubChatProps {
   onClose: () => void;
@@ -164,13 +169,17 @@ function HubChat({
         loading={loading}
         onSpeak={() => setSpeaking(true)}
         onCancel={cancelInFlight}
-        onPickSuggestion={(text) => {
-          setInput(text);
-          // Затримка, щоб React встиг змонтувати оновлений value у
-          // input перед тим, як ми поставимо focus — той самий
-          // pattern, що в `<ChatQuickActions onPrefill>`.
-          setTimeout(() => focusInputRef.current?.(), 0);
-        }}
+        onPickSuggestion={
+          signedOut
+            ? undefined
+            : (text) => {
+                setInput(text);
+                // Затримка, щоб React встиг змонтувати оновлений value у
+                // input перед тим, як ми поставимо focus. Той самий
+                // pattern, що в `<ChatQuickActions onPrefill>`.
+                setTimeout(() => focusInputRef.current?.(), 0);
+              }
+        }
       />
 
       {signedOut ? (
@@ -211,23 +220,20 @@ function HubChat({
         onCancel={confirmDestructive.reject}
       />
 
-      {/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing PaywallModal copy; i18n catalog migration tracked separately. */}
       <PaywallModal
         open={paywallOpen}
         onClose={closePaywall}
         surface="ai_chat_limit"
-        title="Безлімітний AI-чат у Premium"
+        title={PAYWALL_COPY.aiChatTitle}
         description={
-          // AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
-          // — round-trip-квиток зробив кожен хід (навіть із дією) рівно
-          // одним запитом, тож застереження «може коштувати кілька» більше
-          // не правда.
           usageLimit != null
-            ? `Free-тариф має ${usageLimit} запитів до AI на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.`
-            : "Free-тариф має денний ліміт запитів до AI, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync."
+            ? PAYWALL_COPY.aiChatDescription.replace(
+                "{limit}",
+                String(usageLimit),
+              )
+            : PAYWALL_COPY.aiChatDescriptionUnknownLimit
         }
       />
-      {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
     </div>
   );
 }

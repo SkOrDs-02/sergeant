@@ -11,6 +11,7 @@ import {
   type NutritionLog,
 } from "./nutritionStorage";
 import { isMealTypeId, mealTypeFromLabel, type MealTypeId } from "./mealTypes";
+import type { Meal } from "@sergeant/nutrition-domain";
 
 export function getRowsForRange(
   log: NutritionLog,
@@ -118,12 +119,44 @@ export function mealTypeBreakdown(
  * Калорії за типами прийомів для ОДНОГО дня — на відміну від
  * `mealTypeBreakdown`, який агрегує count+kcal по діапазону днів. Потрібно
  * для hero-стрічки дня дашборду (`MealStrip`, спека
- * `docs/90-work/planning/specs/nutrition-hero-day-strip.md`).
+ * `docs/work/specs/nutrition-hero-day-strip.md`).
  *
  * Тип прийому береться з `m.mealType`, той самий фолбек `mealTypeFromLabel`
  * (за `m.label`), що й у `mealTypeBreakdown` — легасі-записи без валідного
  * `mealType` розпізнаються за текстом підпису.
  */
+/**
+ * Записи одного дня, розкладені за типом прийому — той самий розклад, що й
+ * `mealTypeKcalForDay`, але з самими рядками, а не сумою їхніх калорій.
+ *
+ * Потрібно двом місцям hero-стрічки: сегмент має знати, чи є що ПОКАЗАТИ
+ * (кількість записів — не сума ккал: запис без макросів дає нуль калорій,
+ * але існує), а аркуш прийому — самі рядки.
+ *
+ * Фолбек типу той самий, що й усюди в цьому файлі: `m.mealType`, а для
+ * легасі-записів без валідного значення — розпізнавання за `m.label`.
+ */
+export function mealsByTypeForDay(
+  log: NutritionLog | null | undefined,
+  dayIso: string,
+): Record<MealTypeId, Meal[]> {
+  const out: Record<MealTypeId, Meal[]> = {
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snack: [],
+  };
+  const day = log?.[dayIso];
+  const meals = Array.isArray(day?.meals) ? day.meals : [];
+  for (const m of meals) {
+    const type = isMealTypeId(m?.mealType)
+      ? m.mealType
+      : mealTypeFromLabel(m?.label);
+    out[type].push(m);
+  }
+  return out;
+}
+
 export function mealTypeKcalForDay(
   log: NutritionLog | null | undefined,
   dayIso: string,

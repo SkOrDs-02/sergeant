@@ -1,6 +1,6 @@
 # AI quota kill-switch policy
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-13.
+> **Last touched:** 2026-09-17 by @claude (VRT workflow removed from the e2e list — ADR-0082; stack-pulse PR-15 path → permalink). **Next review:** 2026-12-16.
 > **Status:** Active
 
 ## TL;DR
@@ -15,7 +15,8 @@ without burning real user quota.
 ## Why a kill-switch exists
 
 Nightly Playwright e2e suites (`.github/workflows/extended-e2e.yml`,
-`visual-regression.yml`, `ci.yml`) talk to the real Anthropic API to
+`ci.yml`; `visual-regression.yml` was on this list until it was removed by
+[ADR-0082](../adr/0082-private-storage-repo-posture.md)) talk to the real Anthropic API to
 exercise the full chat / coach / nutrition flows end-to-end. Counting
 those calls against the per-user daily limit would either:
 
@@ -60,8 +61,9 @@ of the dozens of legitimate "X is not configured" warnings during
 production boot, and nobody saw it on staging when it shipped. Replacing
 the advisory log with a startup throw means a misconfigured deploy
 **refuses to boot** rather than silently leaking budget — the misconfig
-is caught by the Railway crash-loop alert instead of by the next billing
-cycle.
+is caught by the failed Coolify healthcheck (the new container never turns
+healthy, Coolify rolls back, `deploy-api.yml` fails the job) instead of by
+the next billing cycle.
 
 ## Where the hard-block lives
 
@@ -141,8 +143,11 @@ disable the quota subsystem in production while you fix it:
 
 ### What to monitor
 
-- Railway boot crash-loop alerts (`Error: AI_QUOTA_DISABLED MUST NOT be
-set in production`) — fires the moment the misconfig hits.
+- The deploy itself: `Error: AI_QUOTA_DISABLED MUST NOT be set in production`
+  in the new container's stdout, healthcheck never passes, Coolify rolls back
+  and the `Verify Coolify actually deployed` step of `deploy-api.yml` fails the
+  job — fires on the deploy that carries the misconfig (Railway crash-loop
+  alerts до ADR-0074).
 - Anthropic billing dashboard daily spend — secondary signal if the
   hard-block is somehow bypassed.
 - `ai_quota_blocks_total` (Prometheus counter) — sustained zero in
@@ -196,7 +201,7 @@ set in production`) — fires the moment the misconfig hits.
 ### Як тюнити в проді
 
 1. Щоб подорожчати ВСІ tool-и одразу — підняти `AI_QUOTA_TOOL_COST`
-   (Railway secret). Зачіпає всі `tool:*`-bucket-и.
+   (env-змінна в Coolify). Зачіпає всі `tool:*`-bucket-и.
 2. Щоб обмежити конкретний дорогий tool — додати/змінити ключ у
    `AI_QUOTA_TOOL_LIMITS` JSON-мапі (значення — в ОДИНИЦЯХ КВОТИ, не у
    викликах: щоб дозволити N викликів, постав `N * AI_QUOTA_TOOL_COST`).
@@ -313,5 +318,5 @@ Pro-юзер preset-відра взагалі не торкається, а не
   fail-closed pattern for bcrypt 72-byte cap).
 - `docs/governance/security/rate-limit-failure-mode.md` — same fail-closed mental
   model for `/api/auth/*`.
-- `docs/work/specs/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md`
-  — original plan record.
+- [`pr-15-ai-quota-disabled-hardblock.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-15-ai-quota-disabled-hardblock.md)
+  — original plan record (permalink — file removed from checkout per Rule #23).

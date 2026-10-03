@@ -74,7 +74,9 @@ describe("HabitStreakCanvas", () => {
     expect(cell.className).toContain("bg-transparent");
   });
 
-  it("рендерить мовчазний пропуск, прощений заморозкою, як half-fill", () => {
+  // F-3 (спека reward-loop-and-reminders): мовчазний пропуск без власного
+  // кольору, тим самим нейтральним сірим, що й «не виконано» в сітці.
+  it("рендерить мовчазний пропуск нейтрально, без акценту модуля", () => {
     render(
       <HabitStreakCanvas
         habit={HABIT}
@@ -83,12 +85,10 @@ describe("HabitStreakCanvas", () => {
         todayKey={TODAY}
       />,
     );
-    const cell = screen.getByLabelText(
-      "28 лип.: мовчазний пропуск, прощений заморозкою",
-    );
-    expect(cell).toBeInTheDocument();
-    // Half-fill markup: внутрішній absolute-шар на нижній половині.
-    expect(cell.querySelector(".h-1\\/2")).not.toBeNull();
+    const cell = screen.getByLabelText("28 лип.: без відмітки");
+    expect(cell.className).toContain("bg-line/30");
+    expect(cell.className).not.toMatch(/routine/);
+    expect(cell.children).toHaveLength(0);
   });
 
   it("рендерить плановану паузу штрихуванням, не акцентом модуля", () => {
@@ -175,9 +175,7 @@ describe("HabitStreakCanvas", () => {
     );
     expect(screen.getByText("Виконано")).toBeInTheDocument();
     expect(screen.getByText("Не зміг, із причиною")).toBeInTheDocument();
-    expect(
-      screen.getByText("Мовчазний пропуск, прощений заморозкою"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Без відмітки")).toBeInTheDocument();
     expect(screen.getByText("Планована пауза")).toBeInTheDocument();
     expect(screen.getByText("Не за розкладом")).toBeInTheDocument();
   });

@@ -120,6 +120,36 @@ describe("GoalBudgetCard", () => {
     expect(screen.queryByText(/з банки/)).not.toBeInTheDocument();
   });
 
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): the card never
+  // accepted `showBalance`, so a hidden goal's saved/target amounts, its
+  // jar/manual breakdown, and its contribution history stayed visible.
+  it("masks saved/target, breakdown, and contribution history when showBalance=false", () => {
+    render(
+      <GoalBudgetCard
+        budget={baseBudget}
+        saved={4000}
+        pct={40}
+        daysLeft={120}
+        fromJar={3000}
+        fromContributions={1000}
+        linkedJarLabel="На відпустку"
+        contributions={[
+          { id: "c1", amountUah: 1000, date: "2026-07-01", note: "Аванс" },
+        ]}
+        isEditing={false}
+        showBalance={false}
+        onBeginEdit={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/4\s?000/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/10\s?000/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Історія (1)"));
+    expect(screen.queryByText(/1\s?000/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(3);
+  });
+
   it("fires onBeginEdit when the edit pencil is clicked", () => {
     const onBeginEdit = vi.fn();
     render(
@@ -275,8 +305,8 @@ describe("GoalBudgetCard", () => {
         onDelete={vi.fn()}
       />,
     );
-    // The celebration modal renders its "Ціль досягнуто!" description.
-    expect(screen.getByText(/Ціль досягнуто/)).toBeInTheDocument();
+    // The celebration modal renders its "Ціль закрито" description.
+    expect(screen.getByText(/Ціль закрито/)).toBeInTheDocument();
   });
 
   it("does not repeat a completed-goal celebration after the card remounts", () => {
@@ -292,10 +322,10 @@ describe("GoalBudgetCard", () => {
     };
     const firstRender = render(<GoalBudgetCard {...props} />);
 
-    expect(screen.getByText(/Ціль досягнуто/)).toBeInTheDocument();
+    expect(screen.getByText(/Ціль закрито/)).toBeInTheDocument();
     firstRender.unmount();
     render(<GoalBudgetCard {...props} />);
 
-    expect(screen.queryByText(/Ціль досягнуто/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ціль закрито/)).not.toBeInTheDocument();
   });
 });

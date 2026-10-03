@@ -5,6 +5,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { TxRow, type TxRowTx } from "./TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 
 interface TxListItemProps {
@@ -13,7 +14,13 @@ interface TxListItemProps {
   selectMode: boolean;
   selected: boolean;
   hidden: boolean;
+  /** «Не враховувати у статистиці» (PR-F4) — threaded straight to `TxRow`. */
+  isExcludedFromStats?: boolean | undefined;
+  /** Нога скасованого платежу — threaded straight to `TxRow`. */
+  isCancelled?: boolean | undefined;
   overrideCatId?: string | null | undefined;
+  /** Правила мерчантів — threaded straight to `TxRow`. */
+  merchantRules?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation for this transaction. */
   note?: string | undefined;
@@ -35,7 +42,10 @@ function TxListItemImpl({
   selectMode,
   selected,
   hidden,
+  isExcludedFromStats = false,
+  isCancelled = false,
   overrideCatId,
+  merchantRules,
   txSplits,
   note,
   accounts,
@@ -114,7 +124,10 @@ function TxListItemImpl({
             tx={tx}
             onClick={onOpenDetails ? () => onOpenDetails(tx) : undefined}
             hidden={hidden}
+            isExcludedFromStats={isExcludedFromStats}
+            isCancelled={isCancelled}
             overrideCatId={overrideCatId}
+            merchantRules={merchantRules}
             accounts={accounts}
             hideAmount={hideAmount}
             txSplits={txSplits}

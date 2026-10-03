@@ -4,7 +4,9 @@ import { logger } from "@shared/lib";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { captureException } from "../../../core/observability/sentry";
 import { readRaw, removeItem, readJSON, writeJSON } from "../lib/finykStorage";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 // Сирий рядок із PrivatBank Statements API. PrivatBank віддає скорочений
 // payload із багатьма опційними полями, тому всі поля мітимо optional, а
@@ -136,7 +138,7 @@ function normalizePrivatTransaction(
   const amountKopecks = Math.round(amountRaw * 100);
   const ts = toTimestamp(row.TRANDATE ?? "", row.TRANTIME ?? "");
   const description =
-    row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Транзакція";
+    row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Операція";
   const sourceId =
     row.REF || row.REFN || row.DOC_NUMBER || `${ts}_${amountKopecks}`;
 
@@ -163,6 +165,10 @@ function normalizeAccount(raw: Record<string, unknown>): PrivatAccount {
     currency?: string;
     alias?: string;
   };
+  // Друга половина боргу: конверт упізнано, але поля `balance` у записі
+  // немає, тож `|| 0` нижче тихо дає 0 ₴. Без цього сигналу замір бачив би
+  // лише промах конверта.
+  if (r.balance === undefined) reportPrivatShape("balance-record", raw);
   return {
     id: r.acc || r.id || r.AUT_MY_ACC || "",
     balance: Math.round((parseFloat(String(r.balance ?? "")) || 0) * 100),
@@ -180,6 +186,85 @@ type PrivatApiResponse = {
   StatementsResponse?: { data?: unknown[] };
   data?: unknown[];
 } & Record<string, unknown>;
+
+/**
+ * AI-DANGER: конверт відповіді Привата НЕ підтверджений живим заміром.
+ *
+ * Оголошені типи (`packages/api-client/src/endpoints/privat.ts`) кажуть
+ * `{ balances }` і `{ transactions }`, а цей хук читає
+ * `StatementsResponse.data` / `data`. Ані `balances`, ані `transactions` не
+ * читаються ЖОДНОГО разу. Сервер (`apps/server/src/modules/mono/privat.ts`)
+ * — прозорий passthrough, тобто форму диктує Приват, а не ми, тож який із
+ * двох артефактів правий, визначає лише жива відповідь. Борг і розбір —
+ * `docs/work/specs/tech-debt/frontend.md` § «Privat24: баланси рахунків
+ * завжди 0».
+ *
+ * Поки замір не зроблено, цей хелпер робить рівно одне, чого бракувало:
+ * **відрізняє «конверт упізнано, всередині порожньо» від «жоден конверт не
+ * підійшов»**. Різниця не косметична — вона й ховала поломку. Ланцюг
+ * `a || b || []` цього не бачив: порожній масив у JS ІСТИННИЙ, тож
+ * `{ StatementsResponse: { data: [] } }` коротко замикається на першій
+ * гілці й дає `[]` законно. А коли відповідь має форму `{ balances: [...] }`,
+ * промахуються всі три гілки — і фінальний `[]` виглядає точно так само.
+ * Інтеграція мовчки віддавала порожнечу: без помилки, без `syncState:
+ * "error"`, з нулями в загальному капіталі.
+ *
+ * Тому тут НЕ вгадується правильний конверт (це закріпило б баг у типах) —
+ * тільки повертається `matched`, за яким caller вирішує, що робити з
+ * підозрілою порожнечею.
+ */
+function readPrivatEnvelope(data: PrivatApiResponse | undefined): {
+  rows: unknown[];
+  /** `true` — конверт упізнано (навіть якщо всередині нуль записів). */
+  matched: boolean;
+} {
+  const nested = data?.StatementsResponse?.data;
+  if (Array.isArray(nested)) return { rows: nested, matched: true };
+  if (Array.isArray(data?.data)) return { rows: data.data, matched: true };
+  if (Array.isArray(data)) return { rows: data as unknown[], matched: true };
+  return { rows: [], matched: false };
+}
+
+/**
+ * Каже вголос, що відповідь непорожня, але жоден відомий конверт не підійшов.
+ * Ключі логуються, значення — ні (Hard Rule #21: у відповіді банку лежать
+ * поля рахунку й операцій). Самих ключів досить, щоб назвати справжню форму
+ * і закрити борг одним заміром.
+ */
+function warnOnUnknownEnvelope(
+  scope: string,
+  data: PrivatApiResponse | undefined,
+): void {
+  const keys = data && typeof data === "object" ? Object.keys(data) : [];
+  if (keys.length === 0) return;
+  logger.warn(
+    `[privat] ${scope}: відповідь непорожня, але жоден відомий конверт не підійшов – ` +
+      `віддаю порожній список. Ключі верхнього рівня: ${keys.join(", ")}. ` +
+      `Розбір: docs/work/specs/tech-debt/frontend.md § Privat24.`,
+  );
+  reportPrivatShape(scope, data);
+}
+
+const reportedPrivatShapes = new Set<string>();
+
+/**
+ * Окрема Sentry-подія, а не лише `logger.warn`: у проді warn лишає тільки
+ * breadcrumb, а breadcrumb видно хіба що всередині чужої помилки тієї ж
+ * сесії, тож замір, на який чекає борг, фактично не доходив. Ключі — так,
+ * значення — ні (у відповіді банку лежать поля рахунку й операцій).
+ */
+function reportPrivatShape(scope: string, data: object | undefined): void {
+  const keys = data ? Object.keys(data) : [];
+  const shape = `${scope}:${keys.join(",")}`;
+  if (reportedPrivatShapes.has(shape)) return;
+  reportedPrivatShapes.add(shape);
+  captureException(new Error(`privat_unrecognized_shape: ${scope}`), {
+    level: "warning",
+    tags: { privat_shape_scope: scope },
+    extra: { keys },
+    fingerprint: ["privat_unrecognized_shape", scope],
+  });
+}
 
 /**
  * Креденшелів у сигнатурі більше немає: сервер бере їх із
@@ -248,10 +333,9 @@ export function usePrivatbank(enabled = true) {
             limit: "500",
           });
 
-          const rows: unknown[] =
-            data?.StatementsResponse?.data ||
-            data?.data ||
-            (Array.isArray(data) ? (data as unknown[]) : []);
+          const envelope = readPrivatEnvelope(data);
+          if (!envelope.matched) warnOnUnknownEnvelope("transactions", data);
+          const rows: unknown[] = envelope.rows;
 
           const normalized = rows.map((r) =>
             normalizePrivatTransaction(
@@ -286,7 +370,7 @@ export function usePrivatbank(enabled = true) {
       const err = e as { name?: string; message?: string };
       if (err.name === "AuthError") {
         setError(
-          "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
+          "Неправильні дані входу PrivatBank. Перевір Merchant ID і токен.",
         );
         setSyncState((s) => ({
           ...s,
@@ -313,7 +397,7 @@ export function usePrivatbank(enabled = true) {
           lastError: err.message ?? "",
         }));
       }
-      setError(err.message || "Помилка завантаження транзакцій PrivatBank");
+      setError(failedCopy("завантажити операції PrivatBank"));
     } finally {
       setLoadingTx(false);
     }
@@ -328,14 +412,17 @@ export function usePrivatbank(enabled = true) {
       country: "UA",
       showRest: "true",
     });
-    const rawAccs: unknown[] =
-      data?.StatementsResponse?.data ||
-      data?.data ||
-      (Array.isArray(data) ? (data as unknown[]) : []);
-    const accs = rawAccs.map((r) =>
+    const envelope = readPrivatEnvelope(data);
+    if (!envelope.matched) warnOnUnknownEnvelope("balance/final", data);
+    const accs = envelope.rows.map((r) =>
       normalizeAccount(r as Record<string, unknown>),
     );
-    saveBalanceCache(accs);
+    // Підозрілу порожнечу НЕ кешуємо. Інакше один промах конверта робить
+    // стан липким: `loadBalanceCache` віддає `[]` наступним разам, і людина
+    // бачить порожній список рахунків навіть тоді, коли Приват відповідає
+    // нормально. Законна порожнеча (конверт упізнано, рахунків нуль)
+    // кешується як і раніше.
+    if (envelope.matched) saveBalanceCache(accs);
     return accs;
   };
 
@@ -386,16 +473,16 @@ export function usePrivatbank(enabled = true) {
       const err = e as { name?: string; message?: string };
       if (err.name === "AuthError") {
         setError(
-          "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
+          "Неправильні дані входу PrivatBank. Перевір Merchant ID і токен.",
         );
       } else if (isApiError(e) && e.kind === "http") {
         setError(
           e.status === 401 || e.status === 403
-            ? "Невірні credentials PrivatBank. Перевір Merchant ID та токен."
-            : e.serverMessage || `Помилка ${e.status}`,
+            ? "Неправильні дані входу PrivatBank. Перевір Merchant ID і токен."
+            : e.serverMessage || failedCopy("підключити PrivatBank"),
         );
       } else {
-        setError(err.message || "Помилка підключення до PrivatBank");
+        setError(failedCopy("підключити PrivatBank"));
       }
     } finally {
       setConnecting(false);
@@ -409,9 +496,8 @@ export function usePrivatbank(enabled = true) {
       const accs = await loadAccounts();
       setAccounts(accs);
       await fetchTransactions(accs);
-    } catch (e) {
-      const err = e as { message?: string };
-      setError(err.message || "Помилка оновлення PrivatBank");
+    } catch {
+      setError(failedCopy("оновити дані PrivatBank"));
     }
   };
 

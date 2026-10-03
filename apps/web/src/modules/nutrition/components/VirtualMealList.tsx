@@ -75,7 +75,7 @@ export function VirtualMealList({
             <div className="flex items-center gap-2 pt-2 pb-1">
               <Icon
                 name={meta.iconName as IconName}
-                size={16}
+                size="md"
                 className="text-nutrition"
                 aria-hidden
               />

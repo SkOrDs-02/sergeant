@@ -1,6 +1,6 @@
 # 04 · Governance — правила, рішення, безпека
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-27.
 > **Status:** Active
 >
 > **Update 2026-07-10:** pricing canon — [ADR-0068](./adr/0068-pricing-v4-uah-reverse-trial.md) (supersedes ADR-0051). ADR index table нижче синхронізовано з тілами файлів.

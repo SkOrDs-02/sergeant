@@ -1,6 +1,6 @@
 name: Detox (iOS)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -33,12 +33,21 @@ name: Detox (iOS)
 # Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
 # merge до `main`. Ручний прогін: `workflow_dispatch`. PR-тригер лише на
 # прямі зміни mobile-shell.
+#
+# ⛔ PR-ТРИГЕР ЗНЯТО 2026-09-14 (рішення founder-а, знахідка PR-M1).
+# Доти лейн запускався на кожен PR, що чіпає mobile-поверхні, і завжди
+# завершувався зеленим — причому тут гірше, ніж на Android: крок «Run Detox
+# iOS suite» СЬЮТУ НЕ ЗАПУСКАВ ВЗАГАЛІ, він друкував warning і робив
+# `exit 0`. Тобто назва кроку стверджувала те, чого крок не робив, а в
+# списку перевірок PR-а стояла зелена галочка «Detox (iOS)». Мобільні стеки
+# на паузі з 2026-08-25 (ADR-0094), тож чесний стан під час паузи —
+# ВІДСУТНІЙ гейт, а не гейт, який завжди зелений.
+#
+# Лишається `workflow_dispatch`: прогін руками можливий і тепер справді
+# ганяє сьют. Сьюти в `apps/mobile/e2e/` НЕ видалені — вони актив на момент
+# розморозки, яка поверне `pull_request:`-блок разом із рештою мобільного
+# лейну (`docs/work/specs/tech-debt/mobile.md`).
 on:
-  pull_request:
-    paths:
-      - "apps/mobile/**"
-      - "apps/mobile-shell/**"
-      - ".github/workflows/detox-ios.yml"
   workflow_dispatch:
 
 permissions:
@@ -140,9 +149,12 @@ jobs:
 
       - name: Run Detox iOS suite
         working-directory: apps/mobile
-        run: |
-          echo "::warning::Detox iOS runtime suite is temporarily disabled until the instrumentation busy-loop issue is fixed. This lane still builds the Detox iOS app."
-          exit 0
+        # PR-M1: доти цей крок друкував warning і робив `exit 0` — тобто
+        # «Run Detox iOS suite» нічого не запускав. Ручний прогін
+        # (`workflow_dispatch`) тепер справді ганяє сьют і справді падає,
+        # якщо той падає. Відомий busy-loop інструментації нікуди не зник —
+        # але побачити його можна лише запустивши, а не сховавши за зеленим.
+        run: pnpm e2e:test:ios:ci
 
       - name: Upload Detox artefacts on failure
         if: always()

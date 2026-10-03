@@ -131,7 +131,7 @@ describe("usePwaInstall — install / dismiss telemetry", () => {
     });
   });
 
-  it("dismiss() (натиск на X у банері) → pwa_install_dismissed з via=banner + persist", async () => {
+  it("dismiss() (натиск на X у банері) → pwa_install_dismissed з via=banner + snooze persist", async () => {
     const hook = await readyHook();
     act(() => {
       window.dispatchEvent(makePromptEvent("accepted"));
@@ -146,7 +146,83 @@ describe("usePwaInstall — install / dismiss telemetry", () => {
       surface: "android",
       via: "banner",
     });
-    expect(window.localStorage.getItem("pwa_install_dismissed")).toBe("1");
+    // Founder-ux-review round 2 (O2): dismiss() no longer writes the
+    // permanent flag — it defers via the shared snooze record instead.
+    expect(window.localStorage.getItem("pwa_install_dismissed")).toBeNull();
+    const snoozed = JSON.parse(
+      window.localStorage.getItem("pwa_install_snooze_v1") ?? "null",
+    );
+    expect(snoozed).toEqual({ until: expect.any(Number), count: 1 });
+  });
+});
+
+describe("usePwaInstall — snooze TTL (founder-ux-review round 2, O2)", () => {
+  async function readyHook() {
+    window.localStorage.setItem("pwa_session_count", "1");
+    return renderHook(() => usePwaInstall());
+  }
+
+  it("не показує канінстал знову одразу після dismiss(), навіть з новим prompt-подіями", async () => {
+    const hook = await readyHook();
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    act(() => {
+      hook.result.current.dismiss();
+    });
+    expect(hook.result.current.canInstall).toBe(false);
+
+    // A fresh `beforeinstallprompt` right after dismiss — the snooze gate
+    // must keep `ready` from flipping back to true.
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(hook.result.current.canInstall).toBe(false);
+  });
+
+  it("показує канінстал знову після 30 днів снузу", async () => {
+    const hook = await readyHook();
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    act(() => {
+      hook.result.current.dismiss();
+    });
+
+    // Fake timers mock `Date` too — advance past the 30-day snooze window.
+    act(() => {
+      vi.advanceTimersByTime(30 * 24 * 60 * 60 * 1000 + 1000);
+    });
+
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(hook.result.current.canInstall).toBe(true);
+  });
+
+  it("стара постійна відмітка (pwa_install_dismissed=1) і далі ховає банер (backward-compat)", async () => {
+    window.localStorage.setItem("pwa_session_count", "1");
+    window.localStorage.setItem("pwa_install_dismissed", "1");
+    const { result } = renderHook(() => usePwaInstall());
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(result.current.canInstall).toBe(false);
   });
 });
 
@@ -221,6 +297,23 @@ describe("usePwaInstall — standalone detection (iOS success arm)", () => {
     expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
       "pwa_installed",
     );
+  });
+
+  // Founder-ux-review round 2 (O2): explicit code-level gate, не implicit
+  // browser behaviour — `beforeinstallprompt` не мусить вести до
+  // `canInstall` у standalone, навіть якщо його якимось шляхом усе одно
+  // диспатчнули.
+  it("ігнорує beforeinstallprompt у standalone-режимі (явний isStandalonePWA-гейт)", () => {
+    window.localStorage.setItem("pwa_session_count", "1");
+    stubStandalone(true);
+    const { result } = renderHook(() => usePwaInstall());
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(result.current.canInstall).toBe(false);
   });
 
   it("зараховує інсталяцію на першому запуску в standalone", () => {

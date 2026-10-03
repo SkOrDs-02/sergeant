@@ -105,12 +105,12 @@ describe("Measure", () => {
     expect(container.firstElementChild?.className).toContain("tabular-nums");
   });
 
-  it("тон inherit гасить тири прозорістю, а не власним кольором", () => {
+  it("тон inherit не має власного кольору і не гасить тири прозорістю", () => {
     const { container } = render(
       <Measure value={-9} unit="кг" tone="inherit" />,
     );
     const sign = container.querySelector(".text-\\[0\\.78em\\]");
-    expect(sign?.className).toContain("opacity-65");
+    expect(sign?.className).not.toMatch(/opacity-/);
     expect(sign?.className).not.toContain("text-muted");
   });
 });

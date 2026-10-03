@@ -1,6 +1,6 @@
 # CSP monitoring
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-17 by @claude (host `api.sergeant.com.ua`; runbook-URL; alert-правила — design-only, Grafana-managed). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Операційний playbook для моніторингу Content-Security-Policy
@@ -79,8 +79,9 @@ Content-Type: application/reports+json
 ```
 
 `report-to csp-endpoint` resolves through the `Reporting-Endpoints:
-csp-endpoint="https://api.sergeant.app/api/csp-report"` header set in
-`apps/web/vercel.json`. Chrome ≥96 and Firefox ≥118 prefer this path;
+csp-endpoint="https://api.sergeant.com.ua/api/csp-report"` header set in
+`apps/web/vercel.json` (host is whatever that file declares — do not
+copy it from here). Chrome ≥96 and Firefox ≥118 prefer this path;
 older Safari falls back to `report-uri`. Both ship in parallel so we
 never lose violations during the browser transition window.
 
@@ -120,8 +121,13 @@ to the set rather than letting the cardinality leak.
 
 ## Alerts
 
-Two Alertmanager rules (suggested thresholds — tune after one full
-baseline week of traffic on the new modern Reporting API path):
+Two alert rules, **design-only**: neither is in
+[`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml) yet, and when
+they land they go into Grafana Cloud managed alerting (contact point
+`telegram-ops`, see [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-07-26)),
+not the Deprecated self-hosted [`alertmanager.yml`](./alertmanager.yml).
+Suggested thresholds — tune after one full baseline week of traffic on the
+modern Reporting API path:
 
 ```yaml
 groups:
@@ -137,7 +143,7 @@ groups:
           owner: frontend
         annotations:
           summary: "CSP violations spiking 10× baseline on {{ $labels.directive }}"
-          runbook: "https://github.com/Skords-01/Sergeant/blob/main/docs/03-operations/observability/csp-monitoring.md#response"
+          runbook: "https://github.com/Skords-01/Sergeant/blob/main/docs/operations/observability/csp-monitoring.md#response"
 
       - alert: CspEnforceViolations
         expr: |
@@ -148,7 +154,7 @@ groups:
           owner: frontend
         annotations:
           summary: "CSP enforce-mode violations on {{ $labels.directive }} — real user impact"
-          runbook: "https://github.com/Skords-01/Sergeant/blob/main/docs/03-operations/observability/csp-monitoring.md#response"
+          runbook: "https://github.com/Skords-01/Sergeant/blob/main/docs/operations/observability/csp-monitoring.md#response"
 ```
 
 `CspEnforceViolations` is the real-user-impact alert for enforced policies.

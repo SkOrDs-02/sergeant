@@ -32,7 +32,6 @@ describe("createApiClient", () => {
       "finyk",
       "weeklyDigest",
       "transcribe",
-      "webVitals",
     ];
     for (const key of moduleKeys) {
       expect(client[key]).toBeDefined();

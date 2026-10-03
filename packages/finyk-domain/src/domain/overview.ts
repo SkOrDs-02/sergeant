@@ -12,6 +12,8 @@
  * clock and so the same selector can power server-rendered digests later.
  */
 
+import { toLocalISODate } from "@sergeant/shared";
+
 import type { Transaction } from "./types.js";
 import {
   calcDebtRemaining,
@@ -40,7 +42,7 @@ export type ReceivableLike = EngineReceivable & {
 
 /**
  * Canonical Sergeant status hexes used by planned-flow rows. Inlined here
- * (rather than importing `@shared/lib/themeHex`) to keep the package
+ * (rather than importing from the web app) to keep the package
  * workspace-agnostic and DOM-free.
  */
 export const OVERVIEW_FLOW_COLOR = {
@@ -75,15 +77,33 @@ export function formatDaysLeft(days: number): string {
 }
 
 /**
+ * Календарний день «зараз» за Києвом (ADR-0078: фінансові періоди — за
+ * Києвом, не за пристроєм), у формі host-local півночі — тій самій, що й
+ * `parseLocalDate` для due-дат, тож арифметика днів лишається в одній
+ * системі координат.
+ *
+ * AI-CONTEXT: до 2026-09-16 усі будівники нижче читали `now.getFullYear()`
+ * / `getMonth()` / `getDate()` — годинник ПРИСТРОЮ. Веб мігрував на Київ
+ * ще 2026-09-03 у власному `useFlowSchedule`, а мобільний «Огляд» годував
+ * ці функції host-local `now`: на межі місяця підписка, борг чи надходження
+ * показувались у різних місяцях на двох екранах одного продукту (аудит
+ * 2026-09-15 § 3).
+ */
+function kyivCalendarDate(now: Date): Date {
+  return parseLocalDate(toLocalISODate(now));
+}
+
+/**
  * Compute the next occurrence of a monthly billing day (1..31) relative
  * to `now`. Clamps to the last day of each month so that billingDay=31 in
  * February still resolves to Feb 28/29.
  */
 export function getNextBillingDate(billingDay: number, now: Date): Date {
-  const y = now.getFullYear();
-  const m = now.getMonth();
+  const today = kyivCalendarDate(now);
+  const y = today.getFullYear();
+  const m = today.getMonth();
   let d = new Date(y, m, Math.min(billingDay, new Date(y, m + 1, 0).getDate()));
-  if (d < new Date(y, m, now.getDate())) {
+  if (d < today) {
     d = new Date(
       y,
       m + 1,
@@ -131,7 +151,7 @@ export function buildSubscriptionFlows(
   transactions: Transaction[],
   now: Date,
 ): PlannedFlow[] {
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = kyivCalendarDate(now);
   return subscriptions.map((sub) => {
     const { amount, currency } = getSubscriptionAmountMeta(
       sub,
@@ -165,7 +185,7 @@ export function buildDebtOutFlows(
   transactions: Transaction[],
   now: Date,
 ): PlannedFlow[] {
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = kyivCalendarDate(now);
   return debts
     .map((d) => ({ ...d, remaining: calcDebtRemaining(d, transactions) }))
     .filter((d) => d.dueDate && d.remaining > 0)
@@ -196,7 +216,7 @@ export function buildReceivableInFlows(
   transactions: Transaction[],
   now: Date,
 ): PlannedFlow[] {
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = kyivCalendarDate(now);
   return receivables
     .map((r) => ({
       ...r,
@@ -249,8 +269,9 @@ export function aggregateMonthFlows(
   unknownOutCount: number;
   monthFlows: PlannedFlow[];
 } {
-  const y = now.getFullYear();
-  const m = now.getMonth();
+  const today = kyivCalendarDate(now);
+  const y = today.getFullYear();
+  const m = today.getMonth();
   const monthEnd = new Date(y, m + 1, 0);
   const monthFlows = flows.filter(
     (f) => f.daysLeft >= 0 && f.dueDate && f.dueDate <= monthEnd,

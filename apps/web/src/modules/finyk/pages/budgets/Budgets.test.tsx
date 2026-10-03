@@ -105,22 +105,37 @@ describe("Budgets page", () => {
     expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
   });
 
-  it("renders the loaded page with the add-limit/goal CTA", () => {
+  it("renders the loaded page with the combined «Запланувати» picker", () => {
     renderBudgets();
-    // CTA button to open the add-budget form
-    expect(
-      screen.getByRole("button", { name: /Додати ліміт або ціль/ }),
-    ).toBeInTheDocument();
+    // Founder-UX audit round 2 (F2): one combined trigger replaces the old
+    // standalone "Додати ліміт або ціль" CTA.
+    const trigger = screen.getByRole("button", { name: /Запланувати/ });
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
   });
 
-  it("opens the add-budget form on CTA click", () => {
+  it("opens the add-budget form on «Ліміт» pick", () => {
     renderBudgets();
-    const cta = screen.getByRole("button", { name: /Додати ліміт або ціль/ });
+    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
     act(() => {
-      fireEvent.click(cta);
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Ліміт/ }));
     });
     // form select for category appears
     expect(screen.getByDisplayValue("Обери категорію")).toBeInTheDocument();
+  });
+
+  it("delegates the «Підписка» pick to onAddSubscription", () => {
+    const onAddSubscription = vi.fn();
+    renderBudgets({ onAddSubscription });
+    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
+    act(() => {
+      fireEvent.click(screen.getByRole("menuitem", { name: /Підписка/ }));
+    });
+    expect(onAddSubscription).toHaveBeenCalledTimes(1);
+    // Picking «Підписка» must NOT also open the limit/goal form.
+    expect(
+      screen.queryByDisplayValue("Обери категорію"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders existing limit budgets in the section", () => {
@@ -140,10 +155,9 @@ describe("Budgets page", () => {
   it("adds a limit budget via the form submit", async () => {
     const setBudgets = vi.fn();
     renderBudgets({ storage: buildStorage({ setBudgets }) });
+    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
     act(() => {
-      fireEvent.click(
-        screen.getByRole("button", { name: /Додати ліміт або ціль/ }),
-      );
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Ліміт/ }));
     });
     // pick category
     fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
@@ -265,7 +279,7 @@ describe("Budgets page", () => {
     });
     // The Plan/Fact table (with the "Дохід" row) only renders once the
     // collapsed "Фінплан на місяць" card is expanded.
-    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
     // `\s` already covers U+00A0 (non-breaking space) per the JS spec.
     const flatText = (container.textContent ?? "").replace(/\s/g, "");
     expect(flatText).toContain("4321");
@@ -314,6 +328,61 @@ describe("Budgets page", () => {
       });
     });
     expect(screen.getByText(/2\s?600\s*\/\s*2\s?000/)).toBeInTheDocument();
+  });
+
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): `showBalance`
+  // reached `Budgets` but the page never destructured it, so «Приховати
+  // суми» on Overview left every money figure on Планування visible one
+  // swipe away. Regression-guards the full thread: MonthlyPlanCard's
+  // Plan/Fact/Δ grid AND LimitBudgetCard's «витрачено / ліміт» line.
+  it("masks Планування money (plan grid + limit card) when showBalance=false", () => {
+    const budgets: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        limit: 5000,
+      } as unknown as Budget,
+    ];
+    const { container } = renderBudgets({
+      showBalance: false,
+      storage: buildStorage({ budgets }),
+      focusLimitCategoryId: "food",
+    });
+    // Expand the monthly-plan card to reach its Plan/Fact/Δ grid.
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
+
+    const flatText = (container.textContent ?? "").replace(/\s/g, "");
+    // Default `monthlyPlan` from `buildStorage` — income 30000 / expense
+    // 20000 / savings 5000 — must not leak as formatted numbers anywhere
+    // on the page, and the limit's own "0 / 5000" must not either.
+    expect(flatText).not.toContain("30000");
+    expect(flatText).not.toContain("20000");
+    expect(flatText).not.toMatch(/0\/5000/);
+    // Both the plan grid and the limit card fall back to the mask glyph.
+    expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(2);
+  });
+
+  // Same page with showBalance defaulted to `true` (the pre-fix behaviour)
+  // must keep showing real numbers — guards against a mask that always
+  // fires regardless of the prop.
+  it("shows real money on Планування when showBalance=true (default)", () => {
+    const budgets: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        limit: 5000,
+      } as unknown as Budget,
+    ];
+    const { container } = renderBudgets({
+      storage: buildStorage({ budgets }),
+      focusLimitCategoryId: "food",
+    });
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
+    const flatText = (container.textContent ?? "").replace(/\s/g, "");
+    expect(flatText).toContain("30000");
+    expect(screen.queryByText("••••")).not.toBeInTheDocument();
   });
 
   it("counts a manual `cafe` expense against a «Кафе та ресторани» limit", () => {

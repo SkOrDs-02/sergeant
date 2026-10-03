@@ -1,8 +1,8 @@
 ---
 name: sergeant-qa-squad
-description: Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web (incl. landing), qa-mobile, qa-packages in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces.
+description: "Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web (incl. landing), qa-mobile, qa-packages in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # QA squad для повного coverage
@@ -18,7 +18,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 Завантажуй коли:
 - Перед великим release — потрібен детальний звіт по кожній surface, а не лише агрегований pass/fail
 - Після великого рефактора — потрібно знати яка surface зламалась і чому
-- CI зеленіє, але потрібен детальний аналіз по surfaces
+- `pnpm check` зелений, але потрібен детальний аналіз по surfaces
 - Після merge кількох PR-ів паралельно — чи не поламали вони одне одного?
 
 **Для звичайного pre-PR check** — `pnpm check` достатньо. QA squad для ситуацій де потрібна per-surface видимість.
@@ -74,7 +74,7 @@ Run all 4 in parallel as subagents (Claude Code: via the Agent tool). Collect al
 ## Червоні прапорці
 
 - «Тільки web зачеплена — навіщо перевіряти server» → ізольовані failures на незачеплених surfaces — це корисна інформація; QA squad недорогий
-- «CI green = QA done» → CI дає агрегований pass/fail; squad дає per-surface аналіз і failure деталі
+- «`pnpm check` зелений = QA done» → це агрегований pass/fail; squad дає per-surface аналіз і failure деталі
 - «Detox E2E не запустився — mobile failed» → qa-mobile запускає unit tests, не detox; E2E потребує device і є окремим процесом
 - «Synthesis перед тим як qa-mobile відповів» → неповний звіт, mobile failures будуть пропущені
 - «packages не чіпали — пропустимо `qa-packages`» → саме там живуть contract-тести Hard Rule #3; вони ловлять дрейф, спричинений змінами в server/web, а не в самому пакеті

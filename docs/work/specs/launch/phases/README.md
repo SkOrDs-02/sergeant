@@ -1,7 +1,9 @@
 # Sergeant — Launch phases plan-guide
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-17 by @claude (виконавець tech-задач і платіжний провайдер звірені з кодом). **Next review:** 2026-12-16.
 > **Status:** Active — draft master plan-guide for sequencing launch with real users.
+>
+> **Update 2026-09-17:** виконавець tech-задач у блокерах — **агент (Claude Code / Codex)**, Devin retired ([ADR-0088](../../../../governance/adr/0088-devin-kilo-harness-retirement.md)). Платіжний провайдер для UA — **LiqPay / Plata** (live), Stripe — dormant за флагом (`apps/server/src/modules/billing/provider.ts`); згадки «Stripe billing» у week-by-week плані та open questions нижче — історичний контекст.
 >
 > **Update 2026-07-29:** in-app landing і standalone `apps/landing` shipped у коді; marketing landing має Telegram-конверсію, OG, cookieless PostHog і окремий Vercel config. Зовнішні `sergeant.com.ua` DNS/production-deploy треба підтвердити в Vercel. Public launch далі блокується legal/live payment env/cookie consent/store readiness.
 
@@ -12,7 +14,7 @@
 > критичний шлях через усі фази, лендінг-рішення, консолідовані блокери та open questions.
 >
 > **Це не нова стратегія**, а зшивання вже існуючих документів (`business/`, `product-os/`,
-> ADRs, initiatives, playbooks) у послідовний execution-план для solo-founder + Devin-агентів.
+> ADRs, initiatives, playbooks) у послідовний execution-план для solo-founder + агентів (Claude Code / Codex; історично — Devin, retired [ADR-0088](../../../../governance/adr/0088-devin-kilo-harness-retirement.md)).
 
 ---
 
@@ -39,8 +41,8 @@ Sergeant фактично **технічно деплоїться у прод**:
 Android і scaffold для iOS, native Expo (`apps/mobile`) — internal dev-client. **In-app landing**
 (`LandingPage` на `/` + waitlist) і **billing scaffold** (`/api/billing/*`, `PaywallModal`,
 `PricingPage`, `usePlan()`) уже shipped. **Public launch заблокований не кодом, а
-legal-/config-/store-шарами**: legal pages потребують publish/review, live Stripe production
-keys + ФОП, Apple Developer Program не куплений. Код окремого marketing-сайту вже є в
+legal-/config-/store-шарами**: legal pages потребують publish/review, live LiqPay/Plata production
+keys (Stripe dormant) + ФОП, Apple Developer Program не куплений. Код окремого marketing-сайту вже є в
 `apps/landing`; production-домен і Vercel deployment треба підтвердити поза репо. Apple/Google SSO — UI + server wiring shipped, production env
 може бути не налаштований.
 
@@ -67,17 +69,17 @@ keys + ФОП, Apple Developer Program не куплений. Код окрем�
 
 ## 2. Як читати цей файл
 
-| Питання                                                             | Документ                                                                                               |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Що готово, а що блокує запуск (з фактичних cross-refs у код)?       | [00 — Readiness audit](./00-readiness-audit.md)                                                        |
-| Як саме запустити web з реальними юзерами (W-4 .. W+12)?            | [01 — Web launch with users](./01-web-launch-with-users.md)                                            |
-| Як підключати реальних бета-тестерів через TestFlight / Play?       | [02 — Capacitor launch](./02-capacitor-launch.md)                                                      |
-| Чи варто взагалі запускати окремо `apps/mobile` (Native Expo)?      | [§ Phase 3 нижче](#phase-3--native-expo--conditional) (decision gate W+16, per ADR-0052)               |
-| Чи треба окремий лендінг (sergeant.com.ua) чи можна без нього?      | [§ 5 нижче](#5-рішення-про-лендінг) + [01 — Web § 2](./01-web-launch-with-users.md#2-лендінг-decision) |
-| Які фази launch-у і що робити на кожній (high-level GTM, без коду)? | [02 — GTM](../business/02-go-to-market.md)                                                             |
-| Що треба юридично / по readiness checklist?                         | [04 — Launch readiness](../business/04-launch-readiness.md)                                            |
-| Який стан FTUX-онбордингу (PR registry, відкриті проблеми)?         | [FTUX master tracker](../product-os/ftux-master-tracker.md)                                            |
-| Архітектурний контекст: web ↔ shell ↔ RN feature parity?            | [architecture/platforms.md](../../../../engineering/architecture/platforms.md)                         |
+| Питання                                                             | Документ                                                                                                          |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Що готово, а що блокує запуск (з фактичних cross-refs у код)?       | [00 — Readiness audit](./00-readiness-audit.md)                                                                   |
+| Як саме запустити web з реальними юзерами (W-4 .. W+12)?            | [01 — Web launch with users](./01-web-launch-with-users.md)                                                       |
+| Як підключати реальних бета-тестерів через TestFlight / Play?       | [02 — Capacitor launch](./02-capacitor-launch.md)                                                                 |
+| Чи варто взагалі запускати окремо `apps/mobile` (Native Expo)?      | [§ Phase 3 нижче](#phase-3--native-expo--conditional) (decision gate W+16, per ADR-0052)                          |
+| Чи треба окремий лендінг (sergeant.com.ua) чи можна без нього?      | [§ 5 нижче](#5-рішення-про-лендінг) + [01 — Web § 2](./01-web-launch-with-users.md#2-лендінг--стан-і-що-лишилось) |
+| Які фази launch-у і що робити на кожній (high-level GTM, без коду)? | [02 — GTM](../business/02-go-to-market.md)                                                                        |
+| Що треба юридично / по readiness checklist?                         | [04 — Launch readiness](../business/04-launch-readiness.md)                                                       |
+| Який стан FTUX-онбордингу (PR registry, відкриті проблеми)?         | [FTUX master tracker](../product-os/ftux-master-tracker.md)                                                       |
+| Архітектурний контекст: web ↔ shell ↔ RN feature parity?            | [architecture/platforms.md](../../../../engineering/architecture/platforms.md)                                    |
 
 > **Конвенція цього піддерева:** `00-..03-` — це **fixed sequence** (audit → web → Capacitor → native).
 > Інакше ніж у `business/01-..06-`, де milestones, тут — **execution phases** з вхідними/вихідними
@@ -99,7 +101,7 @@ keys + ФОП, Apple Developer Program не куплений. Код окрем�
 
 **Ключові ADRs / initiatives:**
 
-- [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
+- [ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md) — обидва мобільні стеки на паузі з 2026-08-25, web-first (Accepted 2026-09-13; supersedes [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) «Capacitor PRIMARY до Expo parity»)
 - [ADR-0068](../../../../governance/adr/0068-pricing-v4-uah-reverse-trial.md) — Free + Pro ₴199/міс / ₴1490/рік, reverse trial 7 днів (Supersedes ADR-0051)
 - [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
 - [Initiative 0002](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
@@ -141,7 +143,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 Vite/React лендінгом. До public launch лишається підтвердити Vercel production deployment,
 прив'язати домен і пройти CTA/OG smoke-check; `/welcome` у `apps/web` лишається product entry.
 
-**Три опції (детально у [Phase 1 § 2](./01-web-launch-with-users.md#2-лендінг-decision)):**
+**Три опції (детально у [Phase 1 § 2](./01-web-launch-with-users.md#2-лендінг--стан-і-що-лишилось)):**
 
 | Опція                           | Що це                                                                                  | Час до live      | Ризик                   | Маркетинг-flex              |
 | ------------------------------- | -------------------------------------------------------------------------------------- | ---------------- | ----------------------- | --------------------------- |
@@ -180,28 +182,43 @@ Vite/React лендінгом. До public launch лишається підтв�
 | W+8    | **Capacitor handoff trigger**        | Web stable, paywall live (Stripe Checkout + Customer Portal), >2K MAU                                        | → Phase 2 entry criteria met                             |
 | W+9–12 | Stable + Capacitor parallel work     | Web FTUX optimizations, Capacitor enrollment + signing finalization                                          | Phase 2 ready for internal alpha                         |
 
-### Phase 2 — Capacitor (W+8 .. W+16)
+### Phase 2 — Capacitor (W+8 .. W+16) — НЕ стартує, контур заморожений
 
-> Стартує **paralelно** з Phase 1 W+8 (як тільки Apple Dev enrollment пройшов D-U-N-S).
-> Детально: [02 — Capacitor launch](./02-capacitor-launch.md).
+> **Фаза на паузі з 2026-08-25** ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md), web-first).
+> Розклад нижче лишається як **готовий план на момент розморозки**, а не як
+> вказівка починати: поки пауза чинна, тижні W+8…W+16 не відлічуються від
+> жодної дати, і жоден із гейтів не є зобовʼязанням. Розморозка — рішення
+> власника, не наслідок проходження Phase 1.
+>
+> Стартувала б **паралельно** з Phase 1 W+8 (як тільки Apple Dev enrollment
+> пройшов D-U-N-S). Детально: [02 — Capacitor launch](./02-capacitor-launch.md).
 
-| Wk      | Фокус                                       | Що робимо                                                                        | Gate                                                                       |
-| ------- | ------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| W+8     | Enrollment finalize + secrets               | Apple ASC API key, provisioning profile, Android keystore у CI                   | All CI secrets green; signed build artefact passes smoke                   |
-| W+9     | Store metadata draft                        | Іконки, screenshots, demo-video, App Privacy / Data Safety форми                 | Listing draft submitted (not yet live)                                     |
-| W+10    | Internal alpha — TestFlight + Play Internal | 5–10 internal testers (founder + 5 friends), nightly builds, crash-free baseline | < 2 crashes / 100 sessions; P0 bugs = 0                                    |
-| W+11    | Closed Beta — 50–150 testers                | TestFlight external + Play Closed Testing track, Telegram beta group             | NPS ≥ 35 для mobile cohort; retention D7 ≥ 25%                             |
-| W+12–13 | Polish + UX-divergence chemicals            | Status bar, splash, keyboard, back-button regression на real devices             | UX-checklist pass (від Phase 2 § 7)                                        |
-| W+14    | Staged production rollout — 1% Play         | Staged rollout 1% → 10% → 50% Android, TestFlight → App Store Review submission  | App Store review approved; Play 50% with crash-free ≥ 99%                  |
-| W+15    | Production GA — Android 100% + iOS approved | Full GA, marketing push, ASO start, monitor reviews                              | Crash-free 7-day ≥ 99% iOS / ≥ 98.5% Android                               |
-| W+16    | **Native decision gate**                    | Зібрати дані Capacitor у проді 4-6 тижнів, оцінити gap to native                 | Decision: Phase 3 Сценарій A (sunset) / B (premium) / C (next-gen replace) |
+| Wk      | Фокус                                       | Що робимо                                                                        | Gate                                                                                                                                                            |
+| ------- | ------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W+8     | Enrollment finalize + secrets               | Apple ASC API key, provisioning profile, Android keystore у CI                   | All CI secrets green; signed build artefact passes smoke                                                                                                        |
+| W+9     | Store metadata draft                        | Іконки, screenshots, demo-video, App Privacy / Data Safety форми                 | Listing draft submitted (not yet live)                                                                                                                          |
+| W+10    | Internal alpha — TestFlight + Play Internal | 5–10 internal testers (founder + 5 friends), nightly builds, crash-free baseline | < 2 crashes / 100 sessions; P0 bugs = 0                                                                                                                         |
+| W+11    | Closed Beta — 50–150 testers                | TestFlight external + Play Closed Testing track, Telegram beta group             | NPS ≥ 35 для mobile cohort; retention D7 ≥ 25%                                                                                                                  |
+| W+12–13 | Polish + UX-divergence chemicals            | Status bar, splash, keyboard, back-button regression на real devices             | UX-checklist pass (від Phase 2 § 7)                                                                                                                             |
+| W+14    | Staged production rollout — 1% Play         | Staged rollout 1% → 10% → 50% Android, TestFlight → App Store Review submission  | App Store review approved; Play 50% with crash-free ≥ 99%                                                                                                       |
+| W+15    | Production GA — Android 100% + iOS approved | Full GA, marketing push, ASO start, monitor reviews                              | Crash-free 7-day ≥ 99% iOS / ≥ 98.5% Android                                                                                                                    |
+| W+16    | **Native decision gate**                    | Зібрати дані Capacitor у проді 4-6 тижнів, оцінити gap to native                 | Decision: Phase 3 Сценарій A (sunset) / B (premium) / C (next-gen replace). **Під паузою предмета не має:** дані з проду не збираються, бо rollout не стартував |
 
 ### Phase 3 — Native (Expo) — conditional
 
-> **За поточними даними рекомендація — НЕ запускати окремо у цьому циклі.**
-> Decision gate у W+16 після Capacitor production rollout. Рішення зафіксоване
-> у [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) («Capacitor primary»);
-> сценарії A/B/C нижче лишаються як conditional-гілки для W+16-перегляду.
+> **Фаза не запускається: мобільний контур на паузі з 2026-08-25**
+> ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md), web-first).
+> Тобто відповідь тут уже не «не в цьому циклі за поточними даними», а
+> «не раніше, ніж web доведе, що продукт потрібен» — і це рішення власника,
+> не наслідок метрик нижче. Decision gate W+16 після Capacitor production
+> rollout втратив предмет разом із самим rollout-ом.
+>
+> Сценарії A/B/C нижче лишаються як conditional-гілки **на момент
+> розморозки**, але жоден із них не є чинним планом. Зокрема сценарій A
+> (sunset `apps/mobile`) під паузою НЕ активується: ADR-0094 прямо розводить
+> «на паузі» і «в sunset» — код обох стеків лишається активом. Попереднє
+> рішення «Capacitor primary» — історія в
+> [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 | Сценарій                  | Trigger                                                                                                              | Дія                                                                 | Effort        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------- |
@@ -216,18 +233,18 @@ Vite/React лендінгом. До public launch лишається підтв�
 Консолідовано з 4 паралельних аналізів. Owner — `@Skords-01` за замовчуванням,
 де явно не вказано інакше.
 
-| #   | Блокер                                                                                                                                                                                                                                | Owner / Surface           | Estimate   | Phase                        |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------- | ---------------------------- |
-| 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                                                       | Founder + (юрист consult) | 1-2 тижні  | Web public + Capacitor       |
-| 2   | **Stripe billing pipeline** (scaffold shipped; prod env + ФОП pending) — [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) | Devin + founder           | 1–2 тижні  | Web public (paywall live)    |
-| 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                                                         | Founder                   | 2-3 тижні  | Capacitor iOS                |
-| 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                                                           | Founder                   | 1-2 дні    | Capacitor Android            |
-| 5   | **ФОП реєстрація + банк-рахунок для UA-Stripe** (UAH support)                                                                                                                                                                         | Founder                   | 2-4 тижні  | Web paywall live             |
-| 6   | **Apple + Google Sign-in** (UI shipped; prod OAuth env pending) — [0010 phase 4.3](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)         | Devin                     | 1–2 тижні  | Web public (signup friction) |
-| 7   | **Standalone landing production check** (`apps/landing` shipped; підтвердити Vercel project, `sergeant.com.ua`, CTA/OG)                                                                                                               | Founder + Devin           | 0.5–1 день | Web public SEO               |
-| 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                                                           | Founder + designer        | 1 тиждень  | Capacitor                    |
-| 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                                                                | Devin                     | 1-2 дні    | Web public                   |
-| 10  | **DB backups end-to-end verified** ([04 § 7 item 20](../business/04-launch-readiness.md#7-pre-launch-чеклист) + [playbooks/test-backup-restore.md](../../../../start/instructions/test-backup-restore.md))                            | Devin                     | 1 день     | Web closed beta              |
+| #   | Блокер                                                                                                                                                                                                                                                                                 | Owner / Surface           | Estimate   | Phase                        |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------- | ---------------------------- |
+| 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                                                                                                        | Founder + (юрист consult) | 1-2 тижні  | Web public + Capacitor       |
+| 2   | **Billing pipeline — LiqPay/Plata live, Stripe dormant** (scaffold shipped; prod env + ФОП pending) — [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) писалась під Stripe | Агент + founder           | 1–2 тижні  | Web public (paywall live)    |
+| 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                                                                                                          | Founder                   | 2-3 тижні  | Capacitor iOS                |
+| 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                                                                                                            | Founder                   | 1-2 дні    | Capacitor Android            |
+| 5   | **ФОП реєстрація + банк-рахунок для UA-платежів** (LiqPay/Plata; Stripe dormant)                                                                                                                                                                                                       | Founder                   | 2-4 тижні  | Web paywall live             |
+| 6   | **Apple + Google Sign-in** (UI shipped; prod OAuth env pending) — [0010 phase 4.3](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)                                                          | Агент                     | 1–2 тижні  | Web public (signup friction) |
+| 7   | **Standalone landing production check** (`apps/landing` shipped; підтвердити Vercel project, `sergeant.com.ua`, CTA/OG)                                                                                                                                                                | Founder + агент           | 0.5–1 день | Web public SEO               |
+| 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                                                                                                            | Founder + designer        | 1 тиждень  | Capacitor                    |
+| 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                                                                                                                 | Агент                     | 1-2 дні    | Web public                   |
+| 10  | **DB backups end-to-end verified** ([04 § 7 item 20](../business/04-launch-readiness.md#7-pre-launch-чеклист) + [playbooks/test-backup-restore.md](../../../../start/instructions/test-backup-restore.md))                                                                             | Агент                     | 1 день     | Web closed beta              |
 
 **Сумарний critical path:** W-4 .. W+8 для всіх Web блокерів; W+2 .. W+11 для Capacitor блокерів.
 
@@ -249,8 +266,8 @@ Vite/React лендінгом. До public launch лишається підтв�
 ### Тактичні
 
 7. **Чи готовий founder вкладати ~5-10 годин/тиждень у custdev-інтервʼю** протягом closed beta (W-3 .. W+3)?
-8. **Legal pages — founder сам, юрист-консультант, чи Devin draft + owner review?**
-9. **Чи приймається рекомендація Path C** ([01 — Web § 2](./01-web-launch-with-users.md#2-лендінг-decision)): defer paywall до post-Phase 2?
+8. **Legal pages — founder сам, юрист-консультант, чи агентський draft + owner review?**
+9. **Чи приймається рекомендація Path C** ([01 — Web § 2](./01-web-launch-with-users.md#2-лендінг--стан-і-що-лишилось)): defer paywall до post-Phase 2?
 10. **Чи `sergeant.com.ua` вже зареєстрований** і вказує на Vercel — чи ще треба купити домен у W-4?
 
 ### Native-specific (W+16 decision gate)
@@ -276,7 +293,7 @@ Vite/React лендінгом. До public launch лишається підтв�
 | ------------------------------------------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Apple Dev D-U-N-S delay блокує Phase 2** (потрібно ≥ 2 тижні, починати у W+2) | Medium     | High   | Стартувати enrollment одразу у W+2; паралельно довести Android lane (швидша)                                                                      |
 | **Stripe ФОП delay блокує public launch з paywall** (2-4 тижні)                 | High       | High   | Path C з [01 — Web](./01-web-launch-with-users.md#5-технічні-передумови): запуск free, paywall post-Phase 2                                       |
-| **Solo founder burnout у W-3 .. W+8** (custdev + dev + ops одночасно)           | High       | High   | Daily triage caps, weekly digest замість ad-hoc reply, Devin для tech-tasks, no-features-Fridays                                                  |
+| **Solo founder burnout у W-3 .. W+8** (custdev + dev + ops одночасно)           | High       | High   | Daily triage caps, weekly digest замість ad-hoc reply, агент для tech-tasks, no-features-Fridays                                                  |
 | **P0 production incident у W0..W+1**                                            | Medium     | High   | [hotfix-prod-regression.md](../../../../start/instructions/hotfix-prod-regression.md), Vercel/Coolify rollback, status page live, on-call founder |
 | **NPS < 20 на closed beta** → no PMF signal                                     | Medium     | High   | Stop the line, custdev deep-dive, можливо pivot scope (smaller initial module set)                                                                |
 | **Apple Store reject Phase 2** (App Review Guideline issues для health/fin)     | Medium     | Medium | Pre-submit checklist у [02 — Capacitor § 7](./02-capacitor-launch.md), Apple-friendly category, Sign in with Apple якщо Google OAuth активний     |

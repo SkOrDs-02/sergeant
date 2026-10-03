@@ -33,8 +33,9 @@ const copy = messages.finyk.debtTxLink;
 
 /**
  * Пояснення ролей у пікері. Ключова відмінність, заради якої вибір узагалі
- * зʼявився: `source` **не змінює** суму запису — транзакція лише показує,
- * звідки борг узявся. До 2026-08 роль виводилася зі знаку, і будь-яка
+ * зʼявився: `source` підтверджує базу без додавання поверх неї й водночас
+ * не дозволяє показати базу, меншу за суму джерел. До 2026-08 роль
+ * виводилася зі знаку, і будь-яка
  * origin-транзакція мовчки додавалася поверх уже введеної вручну суми.
  */
 const ROLE_HINT: Record<LinkedTxRole, Record<"debt" | "receivable", string>> = {
@@ -244,7 +245,7 @@ export function AssetsDebtTxPicker({
                   редагувати. Тобто хардкод емодзі, а не вибір людини. */}
               <Icon
                 name={isDebt ? "credit-card" : "user"}
-                size={14}
+                size="sm"
                 aria-hidden
               />
               {item.name}
@@ -277,6 +278,7 @@ export function AssetsDebtTxPicker({
           {transactions.map((t, i) => {
             const isLinked = linked.includes(t.id);
             const role = isLinked ? roleOf(t) : null;
+            const isAuto = isLinked && item.txLinks?.[t.id]?.auto === true;
             return (
               <div key={t.id || i}>
                 {isLinked && role && (
@@ -287,6 +289,9 @@ export function AssetsDebtTxPicker({
                     )}
                   >
                     {describeLinkedTxRole(role, kind).label}
+                    {isAuto && (
+                      <span className="text-subtle"> · {copy.autoLabel}</span>
+                    )}
                   </div>
                 )}
                 <TxRow

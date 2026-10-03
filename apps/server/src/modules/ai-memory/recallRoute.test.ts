@@ -54,17 +54,20 @@ beforeEach(() => {
 });
 
 describe("recallMemoryHandler", () => {
-  it("returns 503 when AI memory is disabled", async () => {
+  it("throws 503 AI_MEMORY_DISABLED when AI memory is disabled", async () => {
+    // Express 5 forwards a rejected async handler straight to the central
+    // `errorHandler` (no `asyncHandler` wrapper needed — see errorHandler.ts).
+    // This unit test asserts the thrown `AppError` shape directly; the
+    // `{ error, message, code, requestId }` wire contract that shape maps to
+    // is covered by errorHandler.test.ts.
     envMock.AI_MEMORY_ENABLED = false;
     const req = makeReq({ query: "coffee spend" });
     const res = makeRes();
 
-    await recallMemoryHandler(req, res);
-
-    expect(res.statusCode).toBe(503);
-    expect(res.body).toEqual({
-      error: "AI memory вимкнено на сервері",
+    await expect(recallMemoryHandler(req, res)).rejects.toMatchObject({
+      status: 503,
       code: "AI_MEMORY_DISABLED",
+      message: "AI memory вимкнено на сервері",
     });
     expect(recallMock).not.toHaveBeenCalled();
   });
@@ -125,33 +128,29 @@ describe("recallMemoryHandler", () => {
     ["VoyageContractError", new VoyageContractError("bad shape")],
     ["CircuitOpenError", new CircuitOpenError("voyage", 5000)],
   ])(
-    "returns 503 EMBEDDING_PROVIDER_UNAVAILABLE when recall throws %s",
+    "throws 503 EMBEDDING_PROVIDER_UNAVAILABLE when recall throws %s",
     async (_label, err) => {
       recallMock.mockRejectedValue(err);
       const req = makeReq({ query: "coffee spend" });
       const res = makeRes();
 
-      await recallMemoryHandler(req, res);
-
-      expect(res.statusCode).toBe(503);
-      expect(res.body).toEqual({
-        error: "Провайдер ембеддингів тимчасово недоступний",
+      await expect(recallMemoryHandler(req, res)).rejects.toMatchObject({
+        status: 503,
         code: "EMBEDDING_PROVIDER_UNAVAILABLE",
+        message: "Провайдер ембеддингів тимчасово недоступний",
       });
     },
   );
 
-  it("returns 500 RECALL_FAILED on an unexpected error", async () => {
+  it("throws 500 RECALL_FAILED on an unexpected error", async () => {
     recallMock.mockRejectedValue(new Error("pgvector connection drop"));
     const req = makeReq({ query: "coffee spend" });
     const res = makeRes();
 
-    await recallMemoryHandler(req, res);
-
-    expect(res.statusCode).toBe(500);
-    expect(res.body).toEqual({
-      error: "Не вдалося виконати recall",
+    await expect(recallMemoryHandler(req, res)).rejects.toMatchObject({
+      status: 500,
       code: "RECALL_FAILED",
+      message: "Не вдалося виконати recall",
     });
   });
 

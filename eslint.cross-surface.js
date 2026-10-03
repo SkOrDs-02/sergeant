@@ -151,13 +151,13 @@ export const crossSurfaceBlocks = [
           selector:
             "CallExpression[callee.property.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/M11-eslint-plugin-security.md.",
+            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/README.md — картка M11.",
         },
         {
           selector:
             "CallExpression[callee.type='Identifier'][callee.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/M11-eslint-plugin-security.md.",
+            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/README.md — картка M11.",
         },
       ],
     },
@@ -503,7 +503,8 @@ export const crossSurfaceBlocks = [
             "boundaries stay anchored to Europe/Kyiv. If you genuinely need a " +
             "UTC-anchored wall-clock instant (e.g. `updatedAt` timestamp), add " +
             "an `eslint-disable-next-line no-restricted-syntax` with a WHY comment. " +
-            "See docs/work/specs/audits/2026-05-13-consolidated-page-audit.md § Theme 1.",
+            "Розбір, чому це правило існує, — у git history аудиту\n" +
+            "2026-05-13-consolidated-page-audit § Theme 1.",
         },
         // Inherit the legacy palette selectors from the top-level block so this
         // scoped override doesn't accidentally drop them — flat-config merges
@@ -519,6 +520,90 @@ export const crossSurfaceBlocks = [
             "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
           message:
             "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+      ],
+    },
+  },
+  // ── Toast recovery-action gate (web + mobile) ─────────────────────────
+  //
+  // `toast.error(...)` мусить нести recovery-дію: `{ label, onClick }` у
+  // вебі, `{ label, onPress }` на мобілці. Правило з такою назвою вже
+  // існувало і було retired в ADR-0081 із тезою, що коректність дії
+  // залежить від сценарію й не має надійного синтаксичного сигналу. Теза
+  // правильна, висновок — ні: за пів року без гейта дію мали 3 з 37
+  // error-тостів у `apps/web`. Решта лишали користувача в глухому куті.
+  //
+  // Тому гейт повертається у формі, яка визнає ту саму тезу: він ловить
+  // лише ФАКТ відсутності дії, а «тут дії справді бути не може» — це
+  // явний запис нижче з причиною. Мовчазний глухий кут стає підписаним.
+  //
+  // Чому блок живе тут, а не в `eslint.web.js`. Доти правило було
+  // ввімкнене лише для `apps/web/src/**`, і рівно це лишалось чинним
+  // залишком PR-X3 наскрізного огляду 2026-09-13: механізм закрито, але
+  // гейт не покривав другу поверхню з ідентичним API тоста
+  // (`error(msg, duration?, action?)` в обох). Сама реалізація правила
+  // мобільну форму вже знала — `hasToastAction` приймає `onPress` поряд
+  // з `onClick`, — тобто бракувало саме глоба. Блок, що охоплює 2+
+  // поверхні, за домовленістю файлу живе в cross-surface.
+  //
+  // Політика тону і формa `action` — docs/design/ui/toast-policy.md.
+  {
+    files: [
+      "apps/web/src/**/*.{ts,tsx}",
+      "apps/mobile/src/**/*.{ts,tsx}",
+      // Роутовий шар expo-router. Власних `toast.error` тут сьогодні
+      // нуль (екрани — тонкі обгортки над `src/`), але глоб включено
+      // навмисно: без нього гейт резолвленого конфіга
+      // (`pnpm lint:eslint-config-diff`) мобільну половину правила НЕ
+      // бачить — його фікстура вказує саме сюди
+      // (`apps/mobile/app/(tabs)/index.tsx`). Тобто правило було б
+      // ввімкнене, а снапшот-гейт лишався б сліпим до його зняття —
+      // рівно та форма «гейт не покриває поверхню», через яку PR-X3 і
+      // прожив відкритим.
+      "apps/mobile/app/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.stories.{ts,tsx}",
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/src/**/*.stories.{ts,tsx}",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/require-toast-error-action": [
+        "error",
+        {
+          allowlist: [
+            // Rate-limit 429: копія вже несе інструкцію («Спробуй за
+            // годину»), а «Повторити» зараз гарантовано впаде знову.
+            "apps/web/src/core/pricing/WaitlistForm.tsx",
+            // Імпорт лога харчування з битого JSON. Хук не володіє
+            // файловим input-ом, тож «Обрати інший» звідси не підняти, а
+            // сама кнопка імпорту лишається на екрані — recovery-шлях
+            // видимий без тоста.
+            "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
+            // Те саме для Фініка: `importData` приймає готовий `Blob` і не
+            // знає, звідки той узявся, тож «Обрати інший» тут не підняти.
+            // (На 2026-08-05 хук ще й не має жодного UI-споживача — він
+            // висить у `useStorage` без виклику.)
+            "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
+            // `showUndoToast`: тост про ПРОВАЛЕНИЙ undo. Повторний виклик
+            // `onUndo` після часткового відкату може подвоїти запис —
+            // ретрай тут небезпечніший за його відсутність.
+            "apps/web/src/shared/lib/ui/undoToast.tsx",
+            // Мобільне дзеркало того самого хелпера (`showUndoToast.ts`
+            // сам називає себе портом `undoToast.tsx`). Причина тотожна:
+            // `onUndo` — синхронний відкат локального стану, і повторний
+            // виклик після часткового відкату так само може подвоїти
+            // запис. Виняток мусить бути дзеркальним, інакше дві
+            // поверхні розійдуться саме там, де код навмисно спільний.
+            "apps/mobile/src/lib/showUndoToast.ts",
+            // Docstring-приклад у JSDoc, не виконуваний код.
+            "apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts",
+          ],
         },
       ],
     },

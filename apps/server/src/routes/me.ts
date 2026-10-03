@@ -1,8 +1,11 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import {
+  MeDeleteBodySchema,
   MeDeleteResponseSchema,
+  MeDeletionStatusResponseSchema,
   MeExportResponseSchema,
+  MeRestoreResponseSchema,
   MeResponseSchema,
   UserPreferencesPatchSchema,
   UserPreferencesSchema,
@@ -18,13 +21,17 @@ import {
   setModule,
 } from "../http/index.js";
 import { pool } from "../db.js";
+import { AppError } from "../obs/errors.js";
 import {
   buildMeExport,
-  deleteUserData,
+  getAccountDeletionStatus,
   getUserPreferences,
+  requestAccountDeletion,
+  restoreAccount,
   upsertUserPreferences,
 } from "../modules/me/dataRights.js";
 import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
+import { verifyAccountPassword } from "../modules/me/verifyAccountPassword.js";
 import { mirrorProfileMemoryEntries } from "../modules/ai-memory/profileMirror.js";
 
 type AuthedUser = {
@@ -65,6 +72,13 @@ function toIsoOrNull(value: Date | string | undefined): string | null {
  * але обрізаний до публічних полів — не повертаємо internal timestamps
  * чи id сесії.
  */
+/**
+ * `user.id` тих, чий експорт зараз збирається. Живе на модулі, а не в
+ * замиканні роутера: роутер створюється один раз на процес, тож різниці
+ * в поведінці немає, зате стан видно тестам.
+ */
+const exportsInFlight = new Set<string>();
+
 export function createMeRouter(): Router {
   const r = Router();
   r.use("/api/me", setModule("me"));
@@ -77,14 +91,59 @@ export function createMeRouter(): Router {
   r.get(
     "/api/me/export",
     requireFreshSession(),
+    // Найважчий запит у застосунку — і єдиний дорогий, що лишався зовсім
+    // без лімітера. `buildMeExport` пускає девʼять паралельних запитів,
+    // два з них `LIMIT 5000` (`mono_transaction` з `ORDER BY time DESC`,
+    // `ai_memories`), а `requireFreshSession()` зверху додає окремий
+    // лукап сесії в обхід cookie-кешу на КОЖЕН виклик. Тобто цикл із
+    // однією валідною сесією бив по базі сильніше, ніж будь-який
+    // AI-роут, які всі лімітовані.
+    //
+    // Порядок навмисний — лімітер ПІСЛЯ сесії, щоб `rateLimitSubject`
+    // дав `u:<id>`, а не `ip:<addr>` (та сама конвенція, що в
+    // `PUT /api/me/profile` нижче, і її стереже
+    // `scripts/check-auth-before-rate-limit.mjs`).
+    //
+    // 5/год на людину: експорт — дія «раз на кілька місяців», навіть
+    // найактивніша легітимна поведінка (перевірити, перезавантажити,
+    // повторити) у стелю не впирається. `ipLimit` — вторинний бакет під
+    // спільний NAT.
+    rateLimitExpress({
+      key: "api:me:export",
+      limit: 5,
+      windowMs: 60 * 60_000,
+      ipLimit: 20,
+    }),
     async (req: Request, res: Response) => {
       const user = serializeMeUser(
         (req as Request & { user: AuthedUser }).user,
       );
-      const payload = MeExportResponseSchema.parse(
-        await buildMeExport(pool, user),
-      );
-      res.json(payload);
+      // Один активний експорт на людину, поверх годинного лімітера вище.
+      // Відколи файл віддає всі таблиці чотирьох модулів без `LIMIT`, два
+      // паралельні виклики того самого акаунта тримають два повні набори
+      // рядків у памʼяті процесу одночасно — а це найважчий запит у
+      // застосунку.
+      //
+      // ponytail: замок у памʼяті процесу, тобто на один інстанс. Якщо
+      // бекенд колись поїде в кілька реплік, це місце міняється на
+      // `pg_try_advisory_lock` по `user.id` — семантика та сама.
+      if (exportsInFlight.has(user.id)) {
+        res.status(409).json({
+          error: "export_in_flight",
+          message: "Твій експорт уже готується. Дочекайся файлу і спробуй ще.",
+          requestId: (req as Request & { requestId?: string }).requestId,
+        });
+        return;
+      }
+      exportsInFlight.add(user.id);
+      try {
+        const payload = MeExportResponseSchema.parse(
+          await buildMeExport(pool, user),
+        );
+        res.json(payload);
+      } finally {
+        exportsInFlight.delete(user.id);
+      }
     },
   );
 
@@ -187,23 +246,92 @@ export function createMeRouter(): Router {
       // не кидає (Voyage down / circuit open / AI_MEMORY_ENABLED=false /
       // вимкнений консент усі no-op-ляться всередині), тож профіль уже
       // збережено і відповідь 200 не залежить від результату дзеркалення.
-      await mirrorProfileMemoryEntries(pool, user.id, body.profile);
+      //
+      // `payload.profile` - ЗБЕРЕЖЕНИЙ (можливо, LWW-мерджений
+      // `upsertUserProfile`) стан, НЕ `body.profile`. Рішення власника
+      // 2026-09-23: коли памʼятковий LWW-guard лишає збережену секцію
+      // `memoryBank` замість застарілого тіла запиту, дзеркалення мусить
+      // бачити те саме, що щойно збережено в `user_profile`, інакше
+      // застарілий пристрій, чий пуш сервер відхилив, усе одно
+      // воскрешав би вже видалений факт у `ai_memories`.
+      await mirrorProfileMemoryEntries(pool, user.id, payload.profile);
       res.json(payload);
     },
   );
 
-  // Живий веб-шлях видалення — `POST /api/auth/delete-user` (Better Auth,
-  // `DangerZoneSection.tsx`), який через `user.deleteUser.beforeDelete` у
-  // `auth.ts` кличе той самий `deleteUserData`. Цей роут — API-контракт
-  // для клієнтів без Better Auth SDK; обидва шляхи виконують одну функцію.
+  // Прохання видалити акаунт. НЕ видаляє: ставить мітку, гасить сесії,
+  // зупиняє списання; незворотну частину через
+  // `ACCOUNT_DELETION_GRACE_DAYS` днів виконує `AccountDeletionPoller`
+  // (спека docs/work/specs/user-deletion-grace-window.md).
+  //
+  // Це ЄДИНИЙ живий шлях видалення. `POST /api/auth/delete-user` (Better
+  // Auth) вимкнений — `user.deleteUser.enabled: false` в `auth.ts`, бо на
+  // його хуку вікно нездійсненне; пін на це стоїть у `auth.test.ts`. Гварди
+  // цього роуту (пароль + свіжа сесія) закріплені в
+  // `routes/me.delete.route.test.ts`.
   r.delete(
     "/api/me",
     requireFreshSession(),
     async (req: Request, res: Response) => {
       const user = (req as Request & { user: AuthedUser }).user;
+
+      // Пароль звіряємо ТУТ, бо живий шлях переїхав сюди з вимкненого
+      // `POST /api/auth/delete-user` (див. `user.deleteUser` в `auth.ts`).
+      // Без цього кроку планка впала б зі «знає пароль» до «має живу
+      // сесію», і вкрадена сесія могла б запустити 30-денний відлік.
+      const body = MeDeleteBodySchema.parse(req.body ?? {});
+      const check = await verifyAccountPassword(user.id, body.password);
+      if (!check.ok) {
+        throw new AppError("Неправильний пароль", {
+          status: 400,
+          code: "INVALID_PASSWORD",
+        });
+      }
+
       const payload = MeDeleteResponseSchema.parse(
-        await deleteUserData(pool, user.id),
+        await requestAccountDeletion(pool, user.id),
       );
+      res.json(payload);
+    },
+  );
+
+  // Два роути нижче свідомо проходять повз гейт вікна: інакше вони
+  // заблокували б самі себе, і людина у вікні не змогла б ані побачити
+  // дату, ані скасувати видалення (рішення 4 спеки).
+  r.get(
+    "/api/me/deletion-status",
+    requireSession({ allowPendingDeletion: true }),
+    async (req: Request, res: Response) => {
+      const user = (req as Request & { user: AuthedUser }).user;
+      const payload = MeDeletionStatusResponseSchema.parse(
+        await getAccountDeletionStatus(pool, user.id),
+      );
+      res.json(payload);
+    },
+  );
+
+  // `requireFreshSession`, а не звичайна: скасування видалення — це та сама
+  // висока планка, що й саме видалення, і сесія мусить бути перевірена в
+  // БД, а не взята з 5-хвилинного cookie-кешу.
+  r.post(
+    "/api/me/restore",
+    requireFreshSession({ allowPendingDeletion: true }),
+    async (req: Request, res: Response) => {
+      const user = (req as Request & { user: AuthedUser }).user;
+      const restored = await restoreAccount(pool, user.id);
+      if (!restored) {
+        // Скасовувати не було чого. 404, а не 200: «відновив активний
+        // акаунт» не є успіхом, і клієнт має відрізнити це від реального
+        // скасування.
+        throw new AppError("Немає активного прохання видалити акаунт", {
+          status: 404,
+          code: "NO_PENDING_DELETION",
+        });
+      }
+      const payload = MeRestoreResponseSchema.parse({
+        ok: true as const,
+        restoredAt: new Date().toISOString(),
+      });
       res.json(payload);
     },
   );

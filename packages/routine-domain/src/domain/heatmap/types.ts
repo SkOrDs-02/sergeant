@@ -78,6 +78,26 @@ export interface HeatmapCell {
    * de-duplicated per habit, so `scheduledCnt <= scheduledTotal` always.
    */
   scheduledCnt: number;
+  /**
+   * Scheduled, not completed, but marked "не зміг" (`RoutineState.skips`) —
+   * canon §5, an acknowledged skip is not a failure.
+   *
+   * **NOT additive — the pair leaves the denominator.** `buildHeatmapGrid`
+   * `continue`s before `scheduledTotal += 1`, so a declared skip moves
+   * `ratio` and `intensity` too. This docstring claimed the opposite until
+   * 2026-09-14: the "purely additive" contract was real, then deliberately
+   * inverted under `METRICS_VERSION` 14 (the bump that moving a
+   * user-visible number requires, ADR-0079 §3-§4) — and the comment was
+   * left behind. Pinned by `grid.test.ts` → "бере заявлений пропуск ЗІ
+   * ЗНАМЕННИКА, лишаючи його в skippedCnt"; that test was green the whole
+   * time this text said otherwise.
+   *
+   * `skippedCnt` survives the change so presentation can still tell a skip
+   * day from a silent miss — the same distinction `HabitRangeGrid` draws
+   * for short ranges. `0` when `opts.skips` was not passed (historical
+   * behaviour, no skip awareness).
+   */
+  skippedCnt: number;
   /** Pre-selected intensity bucket — use this for colour selection. */
   intensity: HeatmapIntensity;
 }

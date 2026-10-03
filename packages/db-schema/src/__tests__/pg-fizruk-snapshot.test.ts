@@ -12,7 +12,6 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
-  fizrukPushups,
 } from "../pg/fizruk.js";
 
 /**
@@ -20,7 +19,7 @@ import {
  * locking down the column ordering, types, nullability, indexes, and
  * defaults that mirror migration 029_fizruk_tables.sql.
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 
 describe("pg/fizrukWorkouts schema snapshot", () => {
@@ -218,6 +217,16 @@ describe("pg/fizrukMeasurements schema snapshot", () => {
       "chest_cm",
       "hips_cm",
       "bicep_cm",
+      "body_fat_pct",
+      "neck_cm",
+      "bicep_l_cm",
+      "bicep_r_cm",
+      "forearm_l_cm",
+      "forearm_r_cm",
+      "thigh_l_cm",
+      "thigh_r_cm",
+      "calf_l_cm",
+      "calf_r_cm",
       "sleep_hours",
       "energy_level",
       "mood",
@@ -483,31 +492,5 @@ describe("pg/fizrukWorkoutTemplates schema snapshot", () => {
   it("declares the partial user index", () => {
     const indexNames = config.indexes.map((i) => i.config.name);
     expect(indexNames).toContain("fizruk_workout_templates_user_idx");
-  });
-});
-
-describe("pg/fizrukPushups schema snapshot", () => {
-  const config = getTableConfig(fizrukPushups);
-
-  it("has the canonical table name", () => {
-    expect(config.name).toBe("fizruk_pushups");
-  });
-
-  it("declares all expected columns (mirror of routine_pushups)", () => {
-    const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
-  });
-
-  it("declares column types matching migration 131", () => {
-    const columnMap = Object.fromEntries(
-      config.columns.map((c) => [c.name, c]),
-    );
-    expect(columnMap["user_id"]!.notNull).toBe(true);
-    expect(columnMap["date_key"]!.notNull).toBe(true);
-    expect(columnMap["reps"]!.columnType).toBe("PgInteger");
-    expect(columnMap["reps"]!.notNull).toBe(true);
-    expect(columnMap["reps"]!.hasDefault).toBe(true);
-    expect(columnMap["updated_at"]!.columnType).toBe("PgTimestamp");
-    expect(columnMap["updated_at"]!.notNull).toBe(true);
   });
 });

@@ -15,3 +15,4 @@ export * from "./catalog.js";
 export * from "./activeSet.js";
 export * from "./exerciseDetail.js";
 export * from "./oneRmAging.js";
+export * from "./activityWeight.js";

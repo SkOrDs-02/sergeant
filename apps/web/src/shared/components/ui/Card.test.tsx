@@ -110,7 +110,10 @@ describe("Card", () => {
       // 2026-07: inset-glow token followed the emerald→teal rebrand of the
       // finyk accent (assertion was stale, code was already correct).
       expect(cls).toContain("dark:border-brand-400/25");
-      expect(cls).toContain("dark:shadow-glow-inset-teal");
+      // `glow-inset-*` більше не на картках: у темній темі hero несе
+      // акцентний бордер + `shadow-e1`, а самі токени `glow-accent-*` /
+      // `glow-inset-*` лишились у preset-і без жодного call-site.
+      expect(cls).toContain("dark:shadow-e1");
     });
 
     it("variant='finyk-soft' maps to module='finyk' prominence='soft'", () => {

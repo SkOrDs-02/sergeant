@@ -73,7 +73,7 @@ streak-record-карточки туди НЕ пише: вона рендерит
 (streakDays > 0)`, а полумʼя живе на тому ж екрані, що й чекбокси — «бачив
 полумʼя vs ні» порівнює когорти, а не стимул. Читати лише з розрізом по
 `surface`, ніколи не схлопувати в один булеан. Деталі й правила знаменника —
-[`posthog-founder-pulse.md § 8`](../docs/03-operations/observability/posthog-founder-pulse.md).
+[`posthog-founder-pulse.md § 8`](../docs/operations/observability/posthog-founder-pulse.md).
 
 **Оновлено 2026-07-25 — callsite-и на вебі.** Три `value_signal_*` мають єдиного
 писаря — спільний шов
@@ -91,7 +91,7 @@ kind-ів + longest-prefix, а не «зріж останній сегмент»
 майбутніх action-подій —
 [`valueSignalAttribution.ts`](../apps/web/src/core/observability/valueSignalAttribution.ts).
 Два обмеження знаменника задокументовані в
-[`docs/90-work/planning/product-knowledge-backlog.md`](../docs/90-work/planning/product-knowledge-backlog.md)
+[`docs/work/specs/planning/product-knowledge-backlog.md`](../docs/work/specs/planning/product-knowledge-backlog.md)
 § Хвиля 2: когорта до дати релізу = `unknown`, а не `false`; накопичені
 dismissals (localStorage, назавжди) занижують кількість показів.
 

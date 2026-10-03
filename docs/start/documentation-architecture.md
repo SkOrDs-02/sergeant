@@ -1,6 +1,6 @@
 # Архітектура документації Sergeant
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-10-06.
+> **Last touched:** 2026-10-01 by @claude (інвентар без лічильників і графа посилань, граф — `--inbound` на вимогу); 2026-09-17 by @claude (додано `docs/assets/`; `Last validated` → `Last touched`; superpowers-стаб). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ задає чинну архітектуру документації: призначення жанрів, джерело
@@ -19,6 +19,7 @@
 | `docs/design/`      | Як виглядає та звучить продукт                      | tokens, UI-патерни, i18n            |
 | `docs/governance/`  | Які правила й рішення є чинними                     | ADR, hard rules, security, ledger   |
 | `docs/work/`        | Що зараз змінюємо                                   | спеки, блокери, докази, дослідження |
+| `docs/assets/`      | Бінарні й статичні вкладення, на які лінкують доки  | діаграми, скриншоти, схеми          |
 
 Модульна документація живе у `docs/product/modules/<module>.md` і містить лише
 продуктовий канон та посилання на спільні engineering-контракти. Дані, API й
@@ -44,8 +45,10 @@
   правила.
 - Внутрішні документи пишуться українською, коротко й предметно: призначення,
   чинна поведінка, причина обмежень, дії або перевірка.
-- Шапка кожного документа має `Status`, `Last validated` і `Next review`, якщо
-  документ має cadence. Дата валідації змінюється тільки після перевірки змісту.
+- Шапка кожного документа має `Status`, `Last touched` і `Next review`, якщо
+  документ має cadence (`check-freshness.mjs` приймає і legacy-лейбл
+  `Last validated`, але канонічний — `Last touched`). Дата змінюється тільки
+  після перевірки змісту.
 - Автоматично згенеровані файли починаються з `<!-- AUTO-GENERATED -->` і
   редагуються через генератор.
 - Посилання на поточні шляхи перевіряються `pnpm docs:check-links`; генератори
@@ -56,7 +59,9 @@
 1. Інвентаризація `docs/` зафіксувала жанр, канонічне джерело, споживачів і
    дію `keep`, `merge`, `move` або `remove` для кожного baseline-файла.
 2. Нумеровані top-level каталоги перенесені до семантичних домівок без
-   compatibility redirects.
+   compatibility redirects. Єдиний свідомий стаб —
+   [`docs/work/specs/superpowers/README.md`](../work/specs/superpowers/README.md)
+   (legacy compatibility-вхід для high-leverage планів; станом на 2026-09-17).
 3. Активні `initiatives`, `planning`, `audits`, `tech-debt`, launch і
    `superpowers` зведені під один lifecycle-root `docs/work/specs/`.
 4. Playbook і runtime runbook зведені в `docs/start/instructions/` з явним
@@ -69,7 +74,12 @@
 Машинний baseline для першого кроку —
 [`documentation-inventory.json`](../work/specs/data/documentation-inventory.json).
 Оновлюй його через `pnpm docs:gen-inventory`; ручні правки до JSON не
-приймаються.
+приймаються. Лічильників і графа вхідних посилань у файлі немає з 2026-10-01:
+git зливав ці агрегати з двох PR без конфлікту, але в хибні числа, і
+`pnpm docs:check-inventory` червонів на `main` після кожної пачки мерджів.
+Граф рахується на вимогу:
+`node scripts/docs/generate-documentation-inventory.mjs --inbound` друкує ту
+саму матрицю з `inbound_count` і `inbound_sources` у stdout і нічого не пише.
 
 ## Критерій завершення
 
@@ -83,8 +93,8 @@
 Фізичний move групи дозволений лише коли всі чотири умови виконані для цієї
 групи:
 
-1. У `documentation-inventory.json` є запис для кожного файла групи з дією,
-   цільовим шляхом і `inbound_count`.
+1. У `documentation-inventory.json` є запис для кожного файла групи з дією і
+   цільовим шляхом, а прогін з `--inbound` дає для нього `inbound_count`.
 2. Для кожного `remove` немає inbound-посилань або всі вони вже переведені на
    перевірений permalink/канон.
 3. Для кожного `move` немає невирішеного `target_collisions`; merge-пари

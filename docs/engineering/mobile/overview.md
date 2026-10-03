@@ -1,7 +1,9 @@
 # Mobile client — API contract
 
-> **Last validated:** 2026-05-13 by @SkOrDs-02 / Devin.
+> **Last touched:** 2026-09-17 by @claude (шапка нормалізована; мобільний контур на паузі — ADR-0094). **Next review:** 2026-12-16.
 > **Status:** Active
+
+> **Мобільний контур на паузі з 2026-08-25** — [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md) (web-first). Контракт нижче лишається чинним для баг-фіксів; продуктовий розвиток `apps/mobile` не планується без рішення власника.
 
 Референс для Expo/React Native клієнта Sergeant (`apps/mobile`). Сервер і bearer-auth контракт готові; мобільний застосунок — internal dev-client з 4 модулями, Detox E2E і Universal Links (див. [`react-native-migration.md`](./react-native-migration.md)).
 
@@ -61,7 +63,7 @@ chooser-діалогу.
 | `https://sergeant.vercel.app/settings`                         | `sergeant://settings`                                |
 | `https://sergeant.vercel.app/auth/callback?token=…`            | `sergeant://auth/callback?token=…`                   |
 
-Те саме працює на `https://sergeant.2dmanager.com.ua/…` — обидва hosts
+Те саме працює на `https://app.sergeant.com.ua/…` — обидва hosts
 перераховані в єдиному allow-list-і `UNIVERSAL_LINK_HOSTS` (lock-step
 у п'ятьох файлах):
 
@@ -233,7 +235,7 @@ Production сервер читає `ALLOWED_ORIGINS` (comma-separated) і
 `ALLOWED_ORIGIN_REGEX` з env. Hardcoded defaults:
 
 - `http://localhost:5173/4173/5000/8081` — dev
-- `https://sergeant.vercel.app`, `https://sergeant.2dmanager.com.ua` — prod
+- `https://sergeant.vercel.app`, `https://app.sergeant.com.ua` — prod
 
 Нативні клієнти (Expo native build) Origin не шлють, тому CORS на них не
 спрацьовує — але Expo web (`http://localhost:8081`) вже в allow-list.

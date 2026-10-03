@@ -3,7 +3,7 @@
  * the list of operations the dual-write layer must mirror to local
  * SQLite.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. The
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The
  * orchestrator in `./index.ts` calls this on every successful
  * localStorage write. Stage 8 PR #056n dropped the
  * `feature.nutrition.sqlite_v2.dual_write` gate — the SQLite mirror is
@@ -35,7 +35,7 @@
  *
  *   5. **Water log** — `Record<dateKey, volume_ml>` persisted under
  *      `WATER_LOG_KEY`. One row per (user, dateKey) in
- *      `nutrition_water_log`; mirrors the `fizruk_pushups` shape.
+ *      `nutrition_water_log`; a per-(user, date) integer counter.
  *      Stage 11 / PR #070n-dualwrite.
  *
  *   6. **Shopping list** — singleton `ShoppingList` blob persisted under
@@ -182,7 +182,8 @@ export interface RecipeDeleteOp {
 
 /**
  * Stage 11 / PR #070n-dualwrite — water-log per-(user, dateKey) row.
- * Mirrors `fizruk_pushups`: a row stores a single integer counter
+ * A row stores a single integer counter (the shape the retired pushup
+ * counter used to have)
  * keyed by date. There is no soft-delete — `volume_ml = 0` is a valid
  * "reset for that day" state and the diff still emits the op so
  * cross-device LWW resolution converges.
@@ -222,6 +223,7 @@ export interface ShoppingListSetOp {
 export interface GoalPeriodInsertOp {
   readonly kind: "goal-period-insert";
   readonly goal: NutritionGoalSnapshot;
+  readonly origin: "manual" | "preset" | "tdee";
 }
 
 export type NutritionDualWriteOp =
@@ -262,6 +264,8 @@ export interface NutritionDualWriteState {
    * стани, зібрані вручну в тестах, не несуть цього поля — трактується як
    * `[]` (`diffPantryEventOps` уже робить `?? []`). */
   readonly pantryEvents?: readonly NutritionPantryEventSnapshot[];
+  /** Походження зміни цілі лише для поточного переходу. */
+  readonly goalOrigin?: "manual" | "preset" | "tdee";
 }
 
 /**
@@ -381,6 +385,19 @@ function diffWaterLogOps(
 // Stage 11 — shopping list diff
 // -----------------------------------------------------------------------
 
+function isEmptyShoppingListJson(sl: { dataJson: string }): boolean {
+  try {
+    const parsed = JSON.parse(sl.dataJson) as { categories?: unknown };
+    return (
+      !parsed ||
+      !Array.isArray(parsed.categories) ||
+      parsed.categories.length === 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 function diffShoppingListOps(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
@@ -388,6 +405,11 @@ function diffShoppingListOps(
 ): void {
   if (!shoppingListChanged(prev.shoppingList, next.shoppingList)) return;
   if (!next.shoppingList) return;
+  // data-03: «рядка немає → порожній дефолт» не є зміною. Інакше холодний
+  // маунт (новий пристрій) емітить shopping-list-set зі свіжим client_ts,
+  // і whole-row LWW затирає реальний список на сервері.
+  if (prev.shoppingList === null && isEmptyShoppingListJson(next.shoppingList))
+    return;
   ops.push({ kind: "shopping-list-set", shoppingList: next.shoppingList });
 }
 
@@ -422,7 +444,11 @@ function diffGoalPeriodOps(
   if (prevGoal !== null && !goalChanged(prevGoal, nextGoal)) return;
   if (prevGoal === null && isEmptyGoal(nextGoal)) return;
 
-  ops.push({ kind: "goal-period-insert", goal: nextGoal });
+  ops.push({
+    kind: "goal-period-insert",
+    goal: nextGoal,
+    origin: next.goalOrigin ?? "manual",
+  });
 }
 
 /** `null` тільки коли `prefsJson` взагалі не парситься. */

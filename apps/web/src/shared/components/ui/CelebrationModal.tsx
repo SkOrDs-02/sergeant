@@ -112,7 +112,7 @@ export const CelebrationModal = memo(function CelebrationModal({
   icon,
   progress,
   rewards,
-  actionLabel = "Чудово!",
+  actionLabel = messages.actions.done,
   onAction,
   autoCloseMs,
   confettiIntensity = "medium",
@@ -321,7 +321,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     return (
       <div className="w-full max-w-[200px] mx-auto">
-        <div className="h-3 bg-panel-hi rounded-full overflow-hidden">
+        <div className="h-3 bg-panelHi rounded-full overflow-hidden">
           <div
             className={cn(
               "h-full rounded-full transition-all duration-slowest ease-standard",
@@ -351,7 +351,7 @@ export const CelebrationModal = memo(function CelebrationModal({
             key={idx}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-              "bg-panel-hi border border-line",
+              "bg-panelHi border border-line",
               "animate-module-card",
             )}
             style={{ animationDelay: `${idx * 100 + 200}ms` }}
@@ -458,7 +458,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
           {/* Action button */}
           <Button
-            variant="primary"
+            variant="solid"
             size="lg"
             onClick={handleAction}
             className={cn(
@@ -529,7 +529,7 @@ export function useCelebration() {
         value,
         unit,
         theme,
-        description: "Ціль досягнуто!",
+        description: messages.celebration.goalReached,
         autoCloseMs: 5500,
       });
     },
@@ -544,8 +544,7 @@ export function useCelebration() {
     ) => {
       celebrate({
         type: "levelUp",
-        title: `Рівень ${level}!`,
-        description: "Ти стаєш сильнішим!",
+        title: messages.celebration.levelUp,
         value: level,
         unit: "рівень",
         progress,
@@ -560,10 +559,9 @@ export function useCelebration() {
     (days: number, message?: string) => {
       celebrate({
         type: "streak",
-        title: message || `${days} днів поспіль!`,
+        title: message || messages.celebration.streakDays,
         value: days,
         unit: "днів",
-        description: days >= 30 ? "Ти справжня легенда!" : "Так тримати!",
         autoCloseMs: 5000,
       });
     },
@@ -619,7 +617,7 @@ export interface MiniSuccessProps {
 
 export const MiniSuccess = memo(function MiniSuccess({
   show,
-  message = "Готово!",
+  message = messages.actions.done,
   onComplete,
   duration = 2000,
 }: MiniSuccessProps) {
@@ -665,7 +663,7 @@ export const MiniSuccess = memo(function MiniSuccess({
         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/20 animate-success-ring">
           <Icon
             name="check"
-            size={12}
+            size="xs"
             strokeWidth={3}
             className="animate-check-draw"
           />

@@ -280,6 +280,44 @@ describe("useRoutineDerivedData", () => {
       expect(result.current.canBulkMark).toBe(false);
     });
 
+    /**
+     * PR-R3 (рішення власника 2026-09-14): домен не позначає майбутній
+     * день, тож кнопка на зрізі «Завтра» була б мертвою — натиснув, і
+     * нічого. Рівно той дефект, який цей же аудит ловив у Фініку (PR-F1),
+     * тож гейт мусить стояти і в UI, а не лише в домені.
+     */
+    it("«Завтра» → false: домен майбутнє не позначає, мертвої кнопки не лишаємо", () => {
+      const routine = mkRoutine({
+        habits: [{ id: "h1", name: "Daily", recurrence: "daily" }],
+      });
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "tomorrow" }),
+          }),
+        ),
+      );
+      expect(result.current.canBulkMark).toBe(false);
+    });
+
+    it("сьогодні → true: гейт не зʼїв робочий день", () => {
+      // Парний до попереднього. Гейт на `>=` замість `>` зробив би кнопку
+      // мертвою в ЄДИНИЙ день, коли вона потрібна.
+      const routine = mkRoutine({
+        habits: [{ id: "h1", name: "Daily", recurrence: "daily" }],
+      });
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "today" }),
+          }),
+        ),
+      );
+      expect(result.current.canBulkMark).toBe(true);
+    });
+
     it("is false in week/month mode (multi-day range)", () => {
       const routine = mkRoutine({
         habits: [{ id: "h1", name: "Daily", recurrence: "daily" }],
@@ -297,6 +335,49 @@ describe("useRoutineDerivedData", () => {
       );
       // Week is a multi-day range → canBulkMark = false
       expect(result.current.canBulkMark).toBe(false);
+    });
+
+    /**
+     * PR-R4 (аудит 2026-09): `habitScheduledOnDate` для `flexible` без
+     * `weekDoneCount` завжди істинний, тож «Відмітити всі» лишалась би
+     * активною для звички, що вже добрала тижневу ціль (нема чого
+     * добирати). 2026-06-04 (четвер) належить тижню Пн 2026-06-01..Нд
+     * 2026-06-07 — три відмітки пн/вт/ср добирають дефолтну ціль (3).
+     */
+    it("flexible: тижневу ціль уже добрано → false (нема чого відмічати)", () => {
+      const routine = mkRoutine({
+        habits: [{ id: "h1", name: "Спорт", recurrence: "flexible" }],
+        completions: { h1: ["2026-06-01", "2026-06-02", "2026-06-03"] },
+      });
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "today" }),
+          }),
+        ),
+      );
+      expect(result.current.canBulkMark).toBe(false);
+    });
+
+    /**
+     * Guard проти надто агресивного фіксу вище: гнучка звичка, що ЩЕ не
+     * добрала тижневу ціль, лишається доступною для масової відмітки.
+     */
+    it("flexible: тижневу ціль ще НЕ добрано → true, як і раніше", () => {
+      const routine = mkRoutine({
+        habits: [{ id: "h1", name: "Спорт", recurrence: "flexible" }],
+        completions: { h1: ["2026-06-01"] }, // 1 з 3 цього тижня
+      });
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "today" }),
+          }),
+        ),
+      );
+      expect(result.current.canBulkMark).toBe(true);
     });
   });
 
@@ -419,6 +500,7 @@ describe("useRoutineDerivedData", () => {
         completed: 1,
         scheduled: 1,
       });
+      expect(result.current.progressDayKey).toBe("2026-06-04");
     });
 
     it("tomorrow: 0 з 2 — цифри завтрашнього дня, не сьогоднішнього", () => {
@@ -435,6 +517,9 @@ describe("useRoutineDerivedData", () => {
         completed: 0,
         scheduled: 2,
       });
+      // PR-R6: `progressDayKey` мусить бути завтрашнім днем, а не
+      // сьогоднішнім — саме це число веде денний звіт до правильного дня.
+      expect(result.current.progressDayKey).toBe("2026-06-05");
     });
 
     it("day: слідує за довільним обраним днем", () => {
@@ -453,6 +538,7 @@ describe("useRoutineDerivedData", () => {
         completed: 0,
         scheduled: 2,
       });
+      expect(result.current.progressDayKey).toBe("2026-06-05");
     });
 
     it("week: діапазон не однодневний → лишається сьогодні", () => {
@@ -468,6 +554,7 @@ describe("useRoutineDerivedData", () => {
         completed: 1,
         scheduled: 1,
       });
+      expect(result.current.progressDayKey).toBe("2026-06-04");
     });
   });
 

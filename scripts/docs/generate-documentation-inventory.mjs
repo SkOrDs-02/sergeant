@@ -1,11 +1,47 @@
 #!/usr/bin/env node
 
-/** Build the auditable old-path → final-path matrix for the docs migration. */
+/**
+ * Build the auditable old-path → final-path matrix for the docs migration.
+ *
+ * @status Active
+ *
+ * **Чому артефакт не несе часу.** До 2026-09-19 сюди писалось
+ * `baseline_revision: git rev-parse HEAD` і `baseline_files`, а `--check`
+ * вимагав побайтової рівності. Це робило гейт нездійсненним за побудовою:
+ * щойно щойно згенерований файл потрапляв у коміт, HEAD змінювався — і
+ * артефакт ставав «застарілим» тією самою дією, яка його зберігала. `--amend`
+ * цього не лікував, бо міняв HEAD ще раз. Друга половина тієї ж пастки:
+ * `baseline_files` рахував `git ls-tree HEAD`, тож коміт із новим доком
+ * зсував і його.
+ *
+ * Саме тому гейт і не був підключений ні до `pnpm lint`, ні до жодного
+ * воркфлоу — підключений він валив би все. А непідключений мовчав, і файл
+ * стояв простроченим до звірки 2026-09-19.
+ *
+ * Тепер в артефакті лишається тільки те, що описує САМУ матрицю (`entries`
+ * і `target_collisions`). Ревізія і момент зняття йдуть у лог прогону, не у
+ * файл. Розбір — `docs/work/specs/docs-code-drift-2026-09-19.md`, PR-9.
+ *
+ * **Чому в артефакті немає лічильників і графа посилань (2026-10-01).** Доти
+ * файл ніс `tracked_files`, `total_entries` і в кожному записі
+ * `inbound_count`/`inbound_sources`. Це агрегати по всьому дереву, і git
+ * зливав їх без конфлікту, але хибно: два PR, кожен із перегенерованим
+ * інвентарем, додають посилання на той самий док або по новому доку, і після
+ * мерджу обох число не дорівнює жодному з реальних станів. `--check` на
+ * `main` червонів після кожної пачки мерджів, а через merge-ref і на всіх
+ * відкритих PR, доки хтось не перегенерує (рішення власника 2026-10-01).
+ * Записи без агрегатів зливаються правильно: новий док це новий блок у
+ * сортованому списку, і дрейф лишається лише там, де його й треба бачити, при
+ * додаванні, видаленні чи перенесенні доку. Граф посилань для планування
+ * перенесень (`docs/start/documentation-architecture.md` § «Умови майбутнього
+ * структурного перенесення») рахує `--inbound` на вимогу і друкує в stdout.
+ */
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { format } from "prettier";
+import { readIdentity } from "./repo-identity.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const OUTPUT = resolve(
@@ -13,10 +49,22 @@ const OUTPUT = resolve(
   "docs/work/specs/data/documentation-inventory.json",
 );
 const CHECK = process.argv.includes("--check");
+const WITH_INBOUND = process.argv.includes("--inbound");
+if (CHECK && WITH_INBOUND) {
+  console.error(
+    "--check і --inbound не поєднуються: граф посилань не комітиться.",
+  );
+  process.exit(2);
+}
 const SHA = execFileSync("git", ["rev-parse", "HEAD"], {
   cwd: ROOT,
   encoding: "utf8",
 }).trim();
+// Слуг для permalink-ів на видалені доки — із реєстру домівок, не зашитий.
+// Доти тут стояв `SkOrDs-01/Sergeant` (ще й у третьому написанні власника),
+// тобто четверта незалежна копія величини, яку PR-1 звів до однієї.
+const LEGACY_BLOB_BASE = `https://github.com/${readIdentity().legacyPrSlug}/blob`;
+
 const TEXT_EXTENSIONS =
   /\.(?:md|json|mjs|js|ts|tsx|yml|yaml|toml|hbs|css|html|alloy)$/u;
 
@@ -31,6 +79,34 @@ function repoPath(path) {
   return relative(ROOT, path).replaceAll("\\", "/");
 }
 
+/**
+ * Відкидає gitignored-шляхи з дискового обходу.
+ *
+ * AI-CONTEXT: обхід `walk()` бачить ВЕСЬ диск, а в CI диск = чистий
+ * чекаут. Gitignored-файл під `docs/` (з 2026-10-01 це локально згенерований
+ * `freshness-dashboard.html`) робив матрицю залежною від того, чи автор
+ * запускав генератор: локальний `--check` червонів, CI був зелений, або
+ * навпаки. Дашборд іще й містить шляхи всіх ~500 відстежуваних доків, тож
+ * додавав себе в `inbound_sources` кожного з них.
+ */
+function dropIgnored(paths) {
+  if (paths.length === 0) return paths;
+  let out = "";
+  try {
+    out = execFileSync("git", ["check-ignore", "--stdin"], {
+      cwd: ROOT,
+      input: paths.join("\n"),
+      encoding: "utf8",
+    });
+  } catch (error) {
+    // `git check-ignore` виходить з 1, коли жоден шлях не ігнорується.
+    if (error?.status === 1) return paths;
+    throw error;
+  }
+  const ignored = new Set(out.split(/\r?\n/u).filter(Boolean));
+  return paths.filter((path) => !ignored.has(path));
+}
+
 const baseline = execFileSync(
   "git",
   ["ls-tree", "-r", "--name-only", "HEAD", "docs"],
@@ -42,7 +118,7 @@ const baseline = execFileSync(
   .split(/\r?\n/u)
   .filter(Boolean)
   .sort();
-const current = walk(resolve(ROOT, "docs")).map(repoPath).sort();
+const current = dropIgnored(walk(resolve(ROOT, "docs")).map(repoPath)).sort();
 const currentSet = new Set(current);
 
 function finalPathFor(oldPath) {
@@ -104,7 +180,10 @@ function addInbound(target, source) {
 }
 
 for (const sourcePath of current.filter(
-  (path) => TEXT_EXTENSIONS.test(path) && resolve(ROOT, path) !== OUTPUT,
+  (path) =>
+    WITH_INBOUND &&
+    TEXT_EXTENSIONS.test(path) &&
+    resolve(ROOT, path) !== OUTPUT,
 )) {
   const source = readFileSync(resolve(ROOT, sourcePath), "utf8");
   const withoutUrls = source.replace(/https?:\/\/\S+/gu, "");
@@ -128,14 +207,60 @@ for (const sourcePath of current.filter(
   }
 }
 
+/**
+ * Ревізія, на яку безпечно пінити permalink видаленого доку: останній коміт,
+ * у якому файл ІСНУВАВ.
+ *
+ * Чому не `HEAD`. По-перше, це та сама пастка, що й `baseline_revision`:
+ * пін на HEAD робить артефакт нестабільним від самого факту коміту. По-друге,
+ * для ВИДАЛЕНОГО файла permalink на HEAD просто неправильний — на HEAD його
+ * нема, посилання віддає 404. Останній коміт, що торкався шляху, може бути
+ * саме комітом видалення, тому за потреби відступаємо на його батька.
+ *
+ * Зараз таких записів нуль (міграція доків завершена), але без цієї правки
+ * перший же видалений док повернув би самопожирання артефакту.
+ */
+/** Поля графа посилань — лише для `--inbound`, у закомічений файл не йдуть. */
+function inboundFields(path) {
+  if (!WITH_INBOUND) return {};
+  const sources = [...(inbound.get(path) ?? [])].sort();
+  return { inbound_count: sources.length, inbound_sources: sources };
+}
+
+const permalinkRevCache = new Map();
+function permalinkRevFor(path) {
+  if (permalinkRevCache.has(path)) return permalinkRevCache.get(path);
+  let rev;
+  try {
+    rev = execFileSync("git", ["rev-list", "-1", "HEAD", "--", path], {
+      cwd: ROOT,
+      encoding: "utf8",
+    }).trim();
+    if (rev) {
+      try {
+        execFileSync("git", ["cat-file", "-e", `${rev}:${path}`], {
+          cwd: ROOT,
+          stdio: "ignore",
+        });
+      } catch {
+        rev = `${rev}^`; // цей коміт файл і видалив — беремо батька
+      }
+    }
+  } catch {
+    rev = "";
+  }
+  const out = rev || SHA;
+  permalinkRevCache.set(path, out);
+  return out;
+}
+
 const entries = baseline.map((oldPath) => {
   const proposed = finalPathFor(oldPath);
   const exists = currentSet.has(proposed);
   const removed = !exists || proposed.includes("/archive/");
   const newPath = removed
-    ? `https://github.com/SkOrDs-01/Sergeant/blob/${SHA}/${oldPath}`
+    ? `${LEGACY_BLOB_BASE}/${permalinkRevFor(oldPath)}/${oldPath}`
     : proposed;
-  const sources = [...(inbound.get(exists ? proposed : oldPath) ?? [])].sort();
   const mergedReadme =
     oldPath === "docs/start/playbooks/README.md" ||
     oldPath === "docs/operations/runbooks/README.md";
@@ -151,8 +276,7 @@ const entries = baseline.map((oldPath) => {
           : "move",
     genre: genreFor(proposed),
     canonical_owner: newPath,
-    inbound_count: sources.length,
-    inbound_sources: sources,
+    ...inboundFields(exists ? proposed : oldPath),
   };
 });
 
@@ -160,15 +284,13 @@ const baselineSet = new Set(baseline);
 for (const path of current) {
   if (baselineSet.has(path)) continue;
   if (entries.some((entry) => entry.new_path === path)) continue;
-  const sources = [...(inbound.get(path) ?? [])].sort();
   entries.push({
     old_path: null,
     new_path: path,
     action: "keep",
     genre: genreFor(path),
     canonical_owner: path,
-    inbound_count: sources.length,
-    inbound_sources: sources,
+    ...inboundFields(path),
   });
 }
 entries.sort((a, b) =>
@@ -191,15 +313,19 @@ const targetCollisions = [...targets.entries()]
   })
   .map(([new_path, old_paths]) => ({ new_path, old_paths }));
 
+// Розмір ОБ'ЄДНАННЯ закоміченого й дискового стану — лише для логу прогону.
+// У файл не пишеться: див. «Чому в артефакті немає лічильників» у шапці.
+const trackedFiles = new Set([...baseline, ...current]).size;
+
 const output = await format(
   JSON.stringify(
     {
       _generated: true,
       generated_by: "scripts/docs/generate-documentation-inventory.mjs",
-      baseline_revision: SHA,
-      baseline_files: baseline.length,
-      current_files: current.length,
-      total_entries: entries.length,
+      // `baseline_revision`, `baseline_files`, `tracked_files`,
+      // `total_entries` і поля графа посилань тут НЕ пишуться навмисно — див.
+      // коментарі «Чому артефакт не несе часу» і «Чому в артефакті немає
+      // лічильників» у шапці файла.
       target_collisions: targetCollisions,
       entries,
     },
@@ -209,7 +335,9 @@ const output = await format(
   { parser: "json" },
 );
 
-if (CHECK) {
+if (WITH_INBOUND) {
+  process.stdout.write(output);
+} else if (CHECK) {
   let existing = "";
   try {
     existing = readFileSync(OUTPUT, "utf8");
@@ -223,7 +351,8 @@ if (CHECK) {
     process.exitCode = 1;
   } else {
     console.log(
-      `Documentation inventory is current (${entries.length} entries).`,
+      `Documentation inventory is current (${entries.length} entries, ` +
+        `${trackedFiles} tracked files @ ${SHA.slice(0, 8)}).`,
     );
   }
 } else {

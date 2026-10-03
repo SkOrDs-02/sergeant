@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+// Last validated: 2026-09-26
+// Status: Active
 //
 // audit-08 F12 — NutritionPantryPage page-level test coverage.
 //
@@ -9,8 +11,8 @@
 //   • wires undo-toast on removeItemAtOrByName
 //   • exposes scan-status text when pantryScanStatus is non-empty
 //   • opens the scanner on onScanBarcode
-import type { Dispatch, SetStateAction } from "react";
-import { describe, expect, it, vi, afterEach } from "vitest";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -26,11 +28,14 @@ vi.mock("../components/PantryCard", () => ({
   PantryCard: ({
     removeItemAtOrByName,
     onScanBarcode,
+    placeSelector,
   }: {
     removeItemAtOrByName: (idx: number, name?: string) => void;
     onScanBarcode: () => void;
+    placeSelector?: ReactNode;
   }) => (
     <div data-testid="pantry-card">
+      {placeSelector}
       <button onClick={() => removeItemAtOrByName(0, "Молоко")}>
         Видалити Молоко
       </button>
@@ -39,18 +44,23 @@ vi.mock("../components/PantryCard", () => ({
   ),
 }));
 
-vi.mock("../components/ShoppingListCard", () => ({
-  ShoppingListCard: () => <div data-testid="shopping-list-card">Shopping</div>,
+const { shoppingCardProps, useSavedRecipesMock } = vi.hoisted(() => ({
+  shoppingCardProps: {
+    current: undefined as Record<string, unknown> | undefined,
+  },
+  useSavedRecipesMock: vi.fn(),
 }));
 
-// SilpoPantryReplenishEntry pulls in `useSilpoSyncState` (React Query) —
-// out of scope for this page-wiring test (no QueryClientProvider here),
-// and its own coverage lives in SilpoPantryReplenishEntry.test.tsx /
-// useSilpoPantryReplenish.test.tsx.
-vi.mock("../components/SilpoPantryReplenishEntry", () => ({
-  SilpoPantryReplenishEntry: () => (
-    <div data-testid="silpo-pantry-replenish-entry" />
-  ),
+vi.mock("../components/ShoppingListCard", () => ({
+  ShoppingListCard: (props: Record<string, unknown>) => {
+    shoppingCardProps.current = props;
+    return <div data-testid="shopping-list-card">Shopping</div>;
+  },
+}));
+
+// Збережені рецепти читаються з IndexedDB - у тесті сторінки це зайве.
+vi.mock("../hooks/useSavedRecipes", () => ({
+  useSavedRecipes: (enabled: boolean) => useSavedRecipesMock(enabled),
 }));
 
 // SubTabs is small enough to keep real — it only renders buttons.
@@ -72,6 +82,8 @@ function makePantry(
     setNewItemName: vi.fn(),
     pantryManagerOpen: false,
     setPantryManagerOpen: vi.fn(),
+    placeFilter: null,
+    setPlaceFilter: vi.fn(),
     pantryForm: { mode: "idle", name: "", err: "" },
     setPantryForm: vi.fn(),
     confirmDeleteOpen: false,
@@ -109,6 +121,7 @@ function makeShopping(
     clearChecked: vi.fn(),
     clearAll: vi.fn(),
     setGeneratedList: vi.fn(),
+    addItem: vi.fn(),
     checkedItems: [],
     ...override,
   } as ReturnType<typeof useShoppingList>;
@@ -194,9 +207,38 @@ function renderPantryPage(
   };
 }
 
+beforeEach(() => {
+  shoppingCardProps.current = undefined;
+  useSavedRecipesMock.mockReset();
+  useSavedRecipesMock.mockReturnValue({ saved: [], busy: false, error: false });
+});
+
 afterEach(() => cleanup());
 
 describe("NutritionPantryPage", () => {
+  it("збережені рецепти читаються лише на вкладці «Покупки»", () => {
+    renderPantryPage({ pantrySubTab: "items" });
+    expect(useSavedRecipesMock).toHaveBeenLastCalledWith(false);
+    cleanup();
+    renderPantryPage({ pantrySubTab: "shopping" });
+    expect(useSavedRecipesMock).toHaveBeenLastCalledWith(true);
+  });
+
+  it("віддає ShoppingListCard збережені рецепти й стан їх читання", () => {
+    const savedRecipes = [{ id: "s1", title: "Борщ" }];
+    useSavedRecipesMock.mockReturnValue({
+      saved: savedRecipes,
+      busy: true,
+      error: true,
+    });
+    renderPantryPage({ pantrySubTab: "shopping" });
+    expect(shoppingCardProps.current).toMatchObject({
+      savedRecipes,
+      savedRecipesBusy: true,
+      savedRecipesError: true,
+    });
+  });
+
   it("renders without crashing — shows SubTabs with Комора and Покупки", () => {
     renderPantryPage();
     expect(screen.getByRole("tab", { name: "Комора" })).toBeTruthy();
@@ -205,8 +247,24 @@ describe("NutritionPantryPage", () => {
 
   it("shows PantryCard when pantrySubTab is 'items'", () => {
     renderPantryPage({ pantrySubTab: "items" });
+    expect(screen.getByLabelText("Місце зберігання")).toBeTruthy();
     expect(screen.getByTestId("pantry-card")).toBeTruthy();
     expect(screen.queryByTestId("shopping-list-card")).toBeNull();
+  });
+
+  it("наповнена комора несе вибір місця в шапці списку, без окремої картки", () => {
+    renderPantryPage({ pantrySubTab: "items" });
+    expect(screen.getByTestId("pantry-card")).toContainElement(
+      screen.getByLabelText("Місце зберігання"),
+    );
+    expect(screen.queryByText("Місце перегляду")).toBeNull();
+  });
+
+  it("порожня комора лишає вибір місця окремою карткою над формою", () => {
+    renderPantryPage({ pantrySubTab: "items", pantry: { effectiveItems: [] } });
+    // Компактний варіант у шапці списку порожня `PantryCard` не рендерить
+    // (тут вона замокана), тож перевіряється лише окрема картка.
+    expect(screen.getByText("Місце перегляду")).toBeTruthy();
   });
 
   it("shows ShoppingListCard when pantrySubTab is 'shopping'", () => {

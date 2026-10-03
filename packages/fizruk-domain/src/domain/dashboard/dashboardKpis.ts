@@ -17,13 +17,14 @@
  *    window (default 30 days).
  */
 
-import { finiteOrNull, kyivMondayStartMs } from "@sergeant/shared";
+import { deviceMondayStart, finiteOrNull } from "@sergeant/shared";
 
 import {
   workoutDurationSec as canonWorkoutDurationSec,
   workoutTonnageKg,
 } from "../../lib/workoutStats.js";
 
+import { isFullWorkout } from "../workouts/activityWeight.js";
 import { computeWeeklyStreakBreakdown } from "./weeklyStreak.js";
 
 import type {
@@ -83,6 +84,9 @@ export function computeStreakDays(
   const daysWithWorkouts = new Set<string>();
   for (const w of list) {
     if (!isCompletedWorkout(w)) continue;
+    // Одиниця серії — повноцінне тренування (канон §8), як і в тижневому
+    // стріку: легкий запис на дні є, але день ним не «закритий».
+    if (!isFullWorkout(w)) continue;
     const ms = Date.parse(w.endedAt);
     if (!Number.isFinite(ms)) continue;
     daysWithWorkouts.add(localYmdKey(ms));
@@ -112,7 +116,7 @@ export function computeStreakDays(
 
 /**
  * Current Mon-first-week counts (completed workouts + volume).
- * Week boundaries are anchored to Europe/Kyiv (domain invariant).
+ * Межі тижня — за годинником ПРИСТРОЮ (ADR-0078, рішення власника 2026-09-29).
  */
 export function computeWeeklyTotals(
   workouts: readonly DashboardWorkoutInput[] | null | undefined,
@@ -121,11 +125,11 @@ export function computeWeeklyTotals(
   const list = Array.isArray(workouts) ? workouts : [];
   if (list.length === 0) return { count: 0, volumeKg: 0 };
 
-  const weekStart = kyivMondayStartMs(now.getTime());
+  const weekStart = deviceMondayStart(now.getTime());
   // Не `weekStart + 7×24h`: DST-тиждень триває 167/169 год. Середина
   // наступного понеділка (±1h DST-люфт не виводить за межі дня) → його
-  // київський старт.
-  const weekEnd = kyivMondayStartMs(
+  // старт за годинником пристрою.
+  const weekEnd = deviceMondayStart(
     weekStart + 7 * MS_PER_DAY + MS_PER_DAY / 2,
   );
 

@@ -36,6 +36,15 @@ afterEach(() => {
   cleanup();
 });
 
+function categoryDialog() {
+  fireEvent.click(screen.getByLabelText("Категорія"));
+  return within(screen.getByRole("dialog", { name: "Категорія" }));
+}
+
+function chooseCategory(label: string) {
+  fireEvent.click(categoryDialog().getByRole("button", { name: label }));
+}
+
 const merchants: FrequentMerchant[] = [
   {
     key: "silpo",
@@ -57,9 +66,9 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
     fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
     expect(
-      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток…"),
+      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток"),
     ).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("Кава, продукти, таксі…")).toBeNull();
+    expect(screen.queryByPlaceholderText("Кава, продукти, таксі")).toBeNull();
   });
 
   it("renders the amount hero preview when an amount is set", () => {
@@ -111,7 +120,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     fireEvent.click(within(hints).getByText("Сільпо"));
     // description set + AI badge surfaces the auto-applied "food" category
     expect(screen.getByPlaceholderText(/Кава, продукти/)).toHaveValue("Сільпо");
-    expect(screen.getByText(/AI ·/)).toBeInTheDocument();
+    expect(screen.getByText(/Сержант ·/)).toBeInTheDocument();
   });
 
   it("dismisses the AI-applied category badge", () => {
@@ -125,25 +134,25 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     );
     const hints = screen.getByRole("group", { name: "Нещодавні продавці" });
     fireEvent.click(within(hints).getByText("Сільпо"));
-    fireEvent.click(screen.getByLabelText("Сховати AI-підказку"));
-    expect(screen.queryByText(/AI ·/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Сховати підказку Сержанта"));
+    expect(screen.queryByText(/Сержант ·/)).not.toBeInTheDocument();
   });
 
-  it("selects a category from the dropdown", () => {
+  it("selects a category from the shared picker", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "transport" } });
-    expect(select).toHaveValue("transport");
+    chooseCategory("Транспорт");
+    expect(screen.getByLabelText("Категорія")).toHaveTextContent("Транспорт");
   });
 
-  it("lists every expense category in the dropdown (no collapsed row)", () => {
+  it("lists every expense category in the shared picker", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    const dialog = categoryDialog();
+    const allSection = dialog.getByText("Усі категорії").closest("section");
+    expect(allSection).not.toBeNull();
+    const optionLabels = within(allSection!)
+      .getAllByRole("button")
+      .map((button) => button.textContent?.trim());
     expect(optionLabels).toEqual([
-      // Disabled placeholder — required so switching Витрата ↔ Надходження can
-      // blank the field and force an explicit pick from the new taxonomy.
-      "Обери категорію",
       // 2026-08-13: «Їжа» (`food`) і «Продукти» (`groceries`) були двома
       // чипами на ОДИН канонічний кошик `food`, який MCC-каталог зве
       // «Продукти». Лишився один — `food` під канонічним підписом;
@@ -164,14 +173,42 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       "Підписки",
       "Навчання",
       "Подорожі",
+      "Спорт",
+      "Краса",
+      "Борги та кредити",
+      "Благодійність",
+      // 2026-10-01 (рішення власника «c1»): пʼять базових категорій, яких
+      // не вистачало даним власника («lifecell» падав в «Інше», переказ
+      // людині — більша частина самого «Інше»).
+      "Звʼязок та інтернет",
+      "Дім і ремонт",
+      "Тварини",
+      "Подарунки",
+      "Перекази людям",
       "Інше",
     ]);
   });
 
-  it("reveals the date field via 'Не сьогодні'", () => {
+  // Дата — один дефолт: стрічка днів видима одразу, без кроку «Не сьогодні?».
+  it("показує стрічку днів і фолбек «Інша дата» без додаткового кроку", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    fireEvent.click(screen.getByText(/Не сьогодні/));
+    expect(
+      screen.getByRole("radiogroup", { name: "Дата запису" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Інша дата")).toBeInTheDocument();
     expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+  });
+
+  it("тримає поле дати в межах аркуша — жодного intrinsic-розпирання", () => {
+    // Той самий клас багів, що й у `LogPastWorkoutSheet`: нативний
+    // `input[type=date]` має власний intrinsic inline-size, і поле ставало
+    // ширшим за екран. Пін на спільний примітив `DateField`, який цей
+    // контракт несе; сирий `<Input type="date">` його НЕ дає.
+    // Рецепт — docs/start/instructions/fix-mobile-horizontal-overflow.md.
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
+    expect(screen.getByLabelText("Дата").className).toContain(
+      "[min-inline-size:0]",
+    );
   });
 
   it("orders categories by frequency for frequent-category stats", () => {
@@ -190,11 +227,11 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт has the highest frequency rank → first real <option> in the
-    // dropdown, right after the disabled "Обери категорію" placeholder.
-    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    expect(select.options[0]?.textContent).toBe("Обери категорію");
-    expect(select.options[1]?.textContent).toBe("Транспорт");
+    const dialog = categoryDialog();
+    const frequentSection = dialog.getByText("Часті").closest("section");
+    expect(frequentSection).not.toBeNull();
+    expect(within(frequentSection!).getAllByRole("button")).toHaveLength(1);
+    expect(within(frequentSection!).getByText("Транспорт")).toBeInTheDocument();
   });
 
   describe("edit mode", () => {
@@ -220,8 +257,12 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       expect(
         screen.getByRole("button", { name: "Зберегти" }),
       ).toBeInTheDocument();
-      // edited entry has a non-today date → the date field is visible
+      // Дата запису (2026-05-20) лежить поза вікном стрічки, тож фолбек
+      // «Інша дата» розкритий одразу — інакше стрічка стояла б без вибору.
       expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+      expect(screen.getByText("Інша дата").closest("details")).toHaveAttribute(
+        "open",
+      );
     });
 
     it("deletes immediately via onDelete + closes (undo lives in the toast)", async () => {

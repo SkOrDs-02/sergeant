@@ -1,8 +1,8 @@
 import type { IconName } from "@shared/components/ui/Icon";
 
 // Tolerant shape: `useUnifiedFinanceData` merges mono/privat sync
-// states, where `status` is an open string — the tone helper only
-// pattern-matches known values and falls back to "ok" styling.
+// states, where `status` is an open string — the tone helper
+// pattern-matches known values і віддає нейтральний тон на решту.
 export interface SyncState {
   status?: string | undefined;
 }
@@ -16,7 +16,7 @@ export interface SyncTone {
   icon: IconName;
   /**
    * `true` для станів, які вимагають уваги (не підключено / помилка /
-   * частково / оновлення). Здоровий «ок» — `false`.
+   * частково / оновлення / очікування). Здоровий «ок» — `false`.
    *
    * AI-CONTEXT: хедер модуля має фіксовану ширину і на телефоні всі
    * `shrink-0` кнопки (Назад + Хаб + око + асистент + налаштування) уже
@@ -33,6 +33,16 @@ export interface SyncTone {
  *
  * Pass `connected: false` when no bank account is linked yet — this prevents
  * the pill from claiming "ок" before any sync has ever occurred.
+ *
+ * AI-DANGER: зелений «ок» віддається ЛИШЕ на `status === "success"`. Раніше
+ * тут стояв протилежний дефолт — усе невідоме падало в гілку успіху, тож
+ * `idle` (вебхук Monobank `disconnected`, або стан ще не приїхав) малювався
+ * зеленою галочкою «ок». Два сусіди по тому самому енуму так не роблять:
+ * `SyncStatusBadge` дає на `idle` «Очікування» з сірою крапкою, а
+ * `TransactionSyncPill` ховає рядок цілком — зеленим був лише хедер модуля,
+ * тобто єдине місце, де людина дивиться на стан мигцем (знахідка PR-F7,
+ * аудит 2026-09-13). Додаєш новий статус — додавай явну гілку; мовчазний
+ * фолбек тепер нейтральний, і це навмисно: зелене треба заслужити.
  */
 export function getSyncTone(
   syncState?: SyncState | null,
@@ -50,8 +60,8 @@ export function getSyncTone(
   if (syncState?.status === "error") {
     return {
       dot: "bg-danger",
-      text: "помилка",
-      pill: "bg-danger-soft  text-danger-strong dark:text-danger  border-danger/20",
+      text: "не синхронізовано",
+      pill: "bg-danger-soft  text-danger-soft-fg  border-danger/20",
       icon: "alert-circle",
       needsAttention: true,
     };
@@ -74,12 +84,21 @@ export function getSyncTone(
       needsAttention: true,
     };
   }
+  if (syncState?.status === "success") {
+    return {
+      dot: "bg-success",
+      text: "ок",
+      pill: "bg-success/10  text-success-strong dark:text-success border-success/20",
+      icon: "check-circle",
+      needsAttention: false,
+    };
+  }
   return {
-    dot: "bg-success",
-    text: "ок",
-    pill: "bg-success/10  text-success-strong dark:text-success border-success/20",
-    icon: "check-circle",
-    needsAttention: false,
+    dot: "bg-subtle/40",
+    text: "очікування",
+    pill: "bg-panelHi     text-muted   border-line",
+    icon: "pause-circle",
+    needsAttention: true,
   };
 }
 

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "id": "routine-streaks",
+  "local": {
+    "scenario": "routine-streaks",
+    "routineHabits": [
+      { "id": "habit-water", "name": "Вода зранку", "streakDays": 7 },
+      { "id": "habit-walk", "name": "Прогулянка", "streakDays": 14 },
+      { "id": "habit-read", "name": "Читання перед сном", "streakDays": 30 },
+      {
+        "id": "habit-stretch",
+        "name": "Розтяжка",
+        "streakDays": 0,
+        "missedYesterday": true
+      }
+    ]
+  }
+}

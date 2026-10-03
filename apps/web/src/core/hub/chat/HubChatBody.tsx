@@ -23,9 +23,10 @@ export interface HubChatBodyProps {
   /**
    * PR-26: викликається при тапі на suggestion-chip у `<ChatEmpty>`.
    * Parent (HubChat) пробрасує `setInput` + setTimeout-focus, як це
-   * робить `<ChatQuickActions onPrefill>` у composer-і.
+   * робить `<ChatQuickActions onPrefill>` у composer-і. Гостю не
+   * передається: поля для вставки в нього немає.
    */
-  onPickSuggestion: (text: string) => void;
+  onPickSuggestion?: ((text: string) => void) | undefined;
 }
 
 /**
@@ -89,14 +90,22 @@ export function HubChatBody({
       // scrollable element for the chat — `-contain` alone still let the
       // browser paint its own rubber-band glow at this element's edge
       // (round-2 UI audit X2).
-      className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-4 py-3 space-y-3 min-h-0"
+      // `tabIndex={0}`: прокручувана стрічка мусить бути досяжна з
+      // клавіатури (axe `scrollable-region-focusable`, WCAG 2.1.1), інакше
+      // без миші історію чату не прогорнути, коли в ній немає фокусованих
+      // елементів (порожній чат або лише текстові відповіді). Правило
+      // jsx-a11y нижче цього випадку не розрізняє: прокручуваний контейнер
+      // з tabIndex — рекомендований axe спосіб, не інтерактивний «фейк».
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+      className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-4 py-3 space-y-3 min-h-0 focus-ring"
       aria-busy={loading}
     >
       {/* Visually-hidden live region for streaming status — announced to
           screen readers without disrupting the message list region above.
 
           AI-DANGER: тут оголошується і САМА ВІДПОВІДЬ, не лише статус. Доти
-          область казала тільки «Асистент відповідає…», а стрічка повідомлень
+          область казала тільки «Сержант відповідає…», а стрічка повідомлень
           лежить у статичному `role="region"` (`HubChat.tsx`), тож незрячий
           користувач чув, що асистент відповідає, і не чув ЩО (browser-QA
           2026-09-02).
@@ -111,7 +120,7 @@ export function HubChatBody({
         aria-atomic="true"
         className="sr-only"
       >
-        {loading ? "Асистент відповідає…" : announcedReply}
+        {loading ? "Сержант відповідає…" : announcedReply}
       </span>
       {/*
         AI-DANGER: розкриття «це AI» (EU AI Act ст. 50(1), чинна з 2026-08-02)
@@ -119,14 +128,21 @@ export function HubChatBody({
 
         Доти воно жило в порожньому стані, і припущення було, що порожній стан
         видно до першої репліки. Насправді `normalizeStoredMessages`
-        (`core/lib/hubChatUtils.ts`) ПІДСТАВЛЯЄ привітальну репліку щоразу, коли
-        збережений масив порожній, тож `messages.length === 0` недосяжне за
-        побудовою, `ChatEmpty` не рендериться ніколи, і обовʼязкове розкриття не
-        показувалось жодного разу (browser-QA 2026-09-02).
+        (`core/lib/hubChatUtils.ts`) ПІДСТАВЛЯЛА привітальну репліку щоразу,
+        коли збережений масив порожній, тож `messages.length === 0` було
+        недосяжне за побудовою, `ChatEmpty` не рендерився ніколи, і
+        обовʼязкове розкриття не показувалось жодного разу (browser-QA
+        2026-09-02).
 
-        Тому воно більше не залежить від наявності повідомлень: рядок стоїть над
-        стрічкою і видно його з першого кадру. Прибираєш звідси або знову
-        вішаєш на умову — повертаєш порушення.
+        PR-A7 (`2026-09-13-product-full-review.md`) прибрав цю підстановку:
+        порожній стан тепер ДОСЯЖНИЙ (нова сесія, очищена сесія,
+        відновлення після пошкодженого сховища), і `ChatEmpty` рендериться.
+        Рядок нижче лишається БЕЗУМОВНИМ навмисно, а не тому, що знову
+        покладаємось на `isEmpty`: він стоїть над стрічкою і видно його з
+        першого кадру незалежно від того, чи є повідомлення, — так
+        розкриття не залежить від жодної майбутньої зміни в
+        `normalizeStoredMessages`. Прибираєш звідси або знову вішаєш на
+        умову — повертаєш порушення.
       */}
       <p className="text-style-caption text-subtle leading-snug text-pretty text-center px-2">
         {uiCopy.hub.chatEmptyAiDisclosure}
@@ -145,7 +161,7 @@ export function HubChatBody({
               className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-full bg-panelHi hover:bg-line/40 text-muted hover:text-text text-style-caption font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               aria-label="Скасувати поточний запит"
             >
-              <Icon name="close" size={12} />
+              <Icon name="close" size="xs" />
               Скасувати
             </button>
           </Tooltip>

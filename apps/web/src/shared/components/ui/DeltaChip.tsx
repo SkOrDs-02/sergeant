@@ -2,6 +2,7 @@
  * Last validated: 2026-09-01
  * Status: Active
  */
+import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 
@@ -12,6 +13,13 @@ export interface DeltaChipProps {
   prev: number;
   /** Чи більше = краще (витрати — `false`). Керує лише кольором. */
   higherIsBetter?: boolean;
+  /**
+   * Одиниця абсолютної дельти. Коли задана, замість відсотка чип показує
+   * різницю в цих одиницях («+480 ₴»). Викликач вирішує, коли відсоток не
+   * має бази: для грошей Фініка це `compareAmounts` (Р4 — відсоток лише коли
+   * попередня сума ≥ 10 % поточної). Без неї поведінка незмінна.
+   */
+  absoluteUnit?: string;
   className?: string;
 }
 
@@ -30,11 +38,15 @@ export interface DeltaChipProps {
  * - `prev === 0` → «—» (ріст від нуля не має відсотка);
  * - `cur === prev` → «без змін» нейтральним кольором, без стрілки;
  * - інакше → стрілка + знак + відсоток; колір за `higherIsBetter`.
+ *
+ * `absoluteUnit` замінює відсоток абсолютною різницею («+480 ₴»), решта
+ * станів ті самі.
  */
 export function DeltaChip({
   cur,
   prev,
   higherIsBetter = true,
+  absoluteUnit,
   className,
 }: DeltaChipProps) {
   if (prev === 0 && cur === 0) return null;
@@ -56,6 +68,9 @@ export function DeltaChip({
   const pct = Math.round((diff / prev) * 100);
   const positive = higherIsBetter ? diff > 0 : diff < 0;
   const trendingUp = diff > 0;
+  const label = absoluteUnit
+    ? `${trendingUp ? "+" : "\u2212"}${formatNumberUk(Math.abs(Math.round(diff)))}${NARROW_NBSP}${absoluteUnit}`
+    : `${trendingUp ? "+" : ""}${pct}%`;
   return (
     <span
       className={cn(
@@ -81,8 +96,7 @@ export function DeltaChip({
       >
         {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
       </svg>
-      {trendingUp ? "+" : ""}
-      {pct}%
+      {label}
     </span>
   );
 }

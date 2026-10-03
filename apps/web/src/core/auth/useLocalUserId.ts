@@ -3,16 +3,17 @@
  * Status: Active
  *
  * Single resolver for the id every local-first storage boot reads and
- * writes under — authenticated, demo, or anonymous.
+ * writes under — authenticated or anonymous.
  *
  * AI-CONTEXT: the per-module SQLite boot hooks each resolved this
  * inline, and drifted into three different answers: read-boot fell back
- * to a synthetic demo id, write-boot fell back to `null` (which
- * disables the dual-write context entirely), and Finyk's read-boot had
- * no fallback at all. The consequence was that an anonymous visitor's
+ * to a synthetic demo id (демо-режим знято 2026-09-17), write-boot fell
+ * back to `null` (which disables the dual-write context entirely), and
+ * Finyk's read-boot had no fallback at all. The consequence was that an
+ * anonymous visitor's
  * first habit/expense reached the warm cache but never SQLite, so it
  * vanished on reload — silently. See
- * `docs/90-work/planning/specs/anonymous-local-first-persistence.md`.
+ * `docs/work/specs/anonymous-local-first-persistence.md`.
  *
  * Read- and write-boot MUST resolve the same id: a write under an id
  * the read path never boots is a row nobody reads back. Route both
@@ -24,7 +25,6 @@
  * (`sergeant-anon.db`), which `setSqliteUser()` then swaps away from.
  */
 
-import { DEMO_LOCAL_USER_ID, isDemoActive } from "../onboarding/onboardingGate";
 import { useAnonymousDataMigrationReady } from "../durability/AnonymousDataMigrationProvider";
 import { useAuth } from "./AuthContext";
 import { LOCAL_ANON_USER_ID } from "./localIdentity";
@@ -50,5 +50,5 @@ export function useLocalUserId(): string | null {
   const migrationReady = useAnonymousDataMigrationReady();
   if (user?.id) return migrationReady ? user.id : null;
   if (status === "loading") return null;
-  return isDemoActive() ? DEMO_LOCAL_USER_ID : LOCAL_ANON_USER_ID;
+  return LOCAL_ANON_USER_ID;
 }

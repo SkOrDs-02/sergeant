@@ -1,9 +1,9 @@
 # Відстеження свіжості документації
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-10-01 by @claude (дашборд свіжості більше не комітиться, рішення власника; раніше того ж дня — `docs-daily-brief.yml` лише вручну, § «Чому `docs/today.md` виключено»). **Next review:** 2026-12-16.
 > **Status:** Active
 
-Ця система гарантує, що критична документація лишається актуальною — у документах вшиваються freshness-заголовки, а `docs-freshness.yml` (ручний `workflow_dispatch`, нічного cron-у немає) відкриває GitHub-issue для протермінованих файлів. **Список відстежуваних файлів автоматично виводиться з самого репо** — нічого додавати в JSON-allowlist не треба.
+Ця система гарантує, що критична документація лишається актуальною — у документах вшиваються freshness-заголовки, а `docs-freshness.yml` (щопонеділка і вручну, [ADR-0102](../adr/0102-github-actions-ci-and-autodeploy.md)) відкриває GitHub-issue для протермінованих файлів. **Список відстежуваних файлів автоматично виводиться з самого репо** — нічого додавати в JSON-allowlist не треба.
 
 ---
 
@@ -32,7 +32,7 @@
    }
    ```
 
-4. **Workflow** — `.github/workflows/docs-freshness.yml` запускає `scripts/docs/check-freshness.mjs` на кожному PR, що торкається `**/*.md` чи `scripts/docs/**`, і вручну через `workflow_dispatch`. Нічного cron-у немає (прибраний разом зі скороченням автоматизації); для кожного файлу з простроченим **Next review** скрипт відкриває GitHub-issue з лейблами `documentation` і `freshness-overdue`.
+4. **Workflow** — `.github/workflows/docs-freshness.yml` запускає `scripts/docs/check-freshness.mjs` щопонеділка і вручну через `workflow_dispatch` (на PR не біжить з 2026-09-30, [ADR-0102](../adr/0102-github-actions-ci-and-autodeploy.md)). Для кожного файлу з простроченим **Next review** скрипт відкриває GitHub-issue з лейблами `documentation` і `freshness-overdue`. Той самий прогін збирає HTML-дашборд і вивантажує його артефактом `docs-freshness-dashboard` (див. [§ Дашборд](#дашборд)).
 
 5. **Coverage-gate** — `node scripts/docs/check-freshness.mjs --check-coverage` фейлиться, якщо в репо знайдено `.md` без freshness-заголовка, який при цьому не виключено через `excludeGlobs` / `explicitExclude`. Запускається в pre-merge CI, щоб новий док не пройшов без header-а.
 
@@ -97,7 +97,7 @@
 
    ```bash
    pnpm docs:freshness-dashboard
-   open dist/freshness-dashboard.html
+   open docs/governance/governance/freshness-dashboard.html   # gitignored, не комітити
    ```
 
 ---
@@ -139,14 +139,15 @@
 
 ### Як змінити каденцію документа
 
-Поправте `scripts/docs/freshness-config.json` → `cadenceOverrides`, далі перерахуйте дати:
+Поправте `scripts/docs/freshness-config.json` → `cadenceOverrides`. Дати перегляду далі
+проставляє pre-commit-хук `scripts/docs/bump-last-validated.mjs` при наступному дотику
+до файлу.
 
-```bash
-node scripts/docs/restamp-next-review.mjs --dry-run   # показати, що зміниться
-node scripts/docs/restamp-next-review.mjs             # застосувати
-```
-
-`restamp-next-review.mjs` навмисно **не чіпає `Last touched` і автора** — він переписує лише похідну дату перегляду. Це і є його межа: скрипт ніколи не стверджує «переглянуто», він стверджує «за новим правилом переглянути треба тоді-то». Пересувати `Last touched` без реального перегляду — означає записати в документ факт, якого не було.
+Пакетного re-stamp більше немає: `scripts/docs/restamp-next-review.mjs` <!-- removed --> прибрано
+2026-09-19 як ручний скрипт, який після появи хука не запускали жодного разу. Межа,
+яку він тримав, лишається чинною і для хука: `Last touched` і автора переписувати не
+можна - пересунути їх без реального перегляду означає записати в документ факт, якого
+не було.
 
 ---
 
@@ -165,7 +166,7 @@ node scripts/docs/restamp-next-review.mjs             # застосувати
 
 ### Чому `docs/today.md` виключено (2026-08-23)
 
-`today.md` штампує сам генератор, ставлячи `Next review` рівно **+7 днів**. Доти, доки `docs-daily-brief.yml` крутився за розкладом, це працювало. Розклад прибрали 2026-07-09 (`dca267eeb`, економія Actions-хвилин для solo-maintainer-а), лишивши тільки `workflow_dispatch` — і файл почав протухати через тиждень після кожного ручного прогону. Через дев'ять днів, 2026-07-18, freshness-чекер завів issue #305.
+`today.md` штампує сам генератор, ставлячи `Next review` рівно **+7 днів**. Доти, доки `docs-daily-brief.yml` крутився за розкладом, це працювало. Розклад прибрали 2026-07-09 (`dca267eeb`, економія Actions-хвилин для solo-maintainer-а), лишивши тільки `workflow_dispatch` — і файл почав протухати через тиждень після кожного ручного прогону. Через дев'ять днів, 2026-07-18, freshness-чекер завів issue #305. **Розклад повернуто 2026-09-16** (рішення власника) — уже не заради `today.md`, а тому що ті самі артефакти звіряють два PR-гейти в `docs-automation.yml`, і без щоденної регенерації вони червоніють на `main` після кожної пачки злиттів. **2026-10-01 розклад знято вдруге** (рішення власника): бот-PR через `GITHUB_TOKEN` не запускає обовʼязкових чеків, тож кожен тижневий прогін лишав PR, який доводилось землити руками. Воркфлоу лишився з `workflow_dispatch`. Розбіжність цих артефактів ловить pre-commit (`pre-commit-derived-artifacts.mjs` у кожному коміті з `.md`) і називає команду регенерації.
 
 Виправляти це «оновленням заголовка» безглуздо: у людини там нема чого валідувати, а наступний прогін генератора все одно перепише файл. Тому `today.md` поїхав туди ж, де вже лежали його два брати з того самого пайплайну.
 
@@ -183,6 +184,31 @@ ADR-и **навмисно виключені**. ADR фіксує контекс�
 
 ---
 
+## Дашборд
+
+`pnpm docs:freshness-dashboard` (`scripts/docs/generate-freshness-dashboard.mjs`) рендерить HTML-таблицю всіх відстежуваних доків: статус, `Last touched`, `Next review`, днів до прострочки, власник, каденція. Це **звіт, а не гейт** і не джерело даних: trust badge, `today.md` і гейти свіжості рахують усе прямо з шапок доків.
+
+Де взяти:
+
+- локально: `pnpm docs:freshness-dashboard` пише `docs/governance/governance/freshness-dashboard.html` (файл у `.gitignore`);
+- з CI: артефакт `docs-freshness-dashboard` щопонеділкового прогону `docs-freshness.yml` (зберігається 30 днів).
+
+### Чому дашборд не комітиться (2026-10-01)
+
+Рішення власника 2026-10-01. До того дашборд лежав у репо, і pre-commit-хук `bump-last-validated.mjs` перегенеровував і стейджив його на **кожному** коміті з `.md` (дати в шапках зсуваються, отже, змінюється і дашборд). Наслідок: після кожного мерджу в `main` усі відкриті PR конфліктували в цьому файлі без жодного змістовного перетину. 2026-10-01 так двічі за день зачепило по 6-7 PR одночасно; за два дні до рішення дашборд змінювали 35 із 72 комітів, що торкались `.md`.
+
+Розглянуті варіанти й чому їх відкинуто:
+
+- **Перегенеровувати на `main` після мерджу ботом.** Пуш у `main` через `GITHUB_TOKEN` блокує branch protection (обовʼязкові статус-чеки для не-адмінів). Обхід адмінським токеном лишає в секретах Actions токен, що обходить гейти. До того ж будь-який бот-коміт у `main` ламає автодеплой бекенду: `deploy-api.yml` пропускає деплой, якщо `main` пішов далі за коміт прогону ([ADR-0102](../adr/0102-github-actions-ci-and-autodeploy.md)), а коміт із `[skip ci]` власного CI не запускає.
+- **Бот-PR, як у `docs-daily-brief.yml`.** PR, відкритий через `GITHUB_TOKEN`, не запускає `pull_request`-воркфлоу, тож обовʼязкові чеки не приходять і auto-merge висить. Кожен такий PR довелося б мерджити вручну.
+- **Не комітити (обрано).** GitHub однаково показує закомічений `.html` як сирець, а не сторінку, і жоден скрипт файл не читав. Нуль ботів, нуль секретів, нуль впливу на деплой.
+
+Що змінилось разом із рішенням: файл у `.gitignore`; регенерацію і `git add` прибрано з `bump-last-validated.mjs`, звірку з `pre-commit-derived-artifacts.mjs`, крок `--check` з `docs-automation.yml`, дашборд з `docs:gen-daily` і `REFRESH_PATHS` у `docs-daily-brief.yml`; режим `--check` і скрипт `docs:check-freshness-dashboard` видалено; `docs-freshness.yml` пише в `OUTPUT=dist/freshness-dashboard.html`, тож артефакт більше не порожній (доти генератор писав в одне місце, а крок вивантаження шукав файл в іншому).
+
+**Не повертай дашборд у репо** без нового рішення власника. Ті самі конфлікти дає `docs/open-work.md`, але рідше, і він Markdown, тож GitHub його рендерить; його це рішення не зачіпає.
+
+---
+
 ## Локальний запуск
 
 ```bash
@@ -195,16 +221,18 @@ node scripts/docs/check-freshness.mjs --check-coverage
 # Реальний запуск (потрібен GITHUB_TOKEN з issues:write)
 GITHUB_TOKEN=ghp_... node scripts/docs/check-freshness.mjs
 
-# HTML-дашборд із усіма відстежуваними файлами
+# HTML-дашборд із усіма відстежуваними файлами (gitignored, не комітити)
 pnpm docs:freshness-dashboard
-open dist/freshness-dashboard.html
+open docs/governance/governance/freshness-dashboard.html
+# або в інше місце:
+OUTPUT=dist/freshness-dashboard.html pnpm docs:freshness-dashboard
 ```
 
 ---
 
 ## Legacy: `freshness-allowlist.json`
 
-`scripts/docs/freshness-allowlist.json` тепер порожній (`[]`) і існує лише як backward-compat fallback. Усі 83 попередні записи мігровані: 14 із них живуть у `cadenceOverrides` (інші cadence-и), решта 69 авто-виявляються через сам канонічний заголовок. Файл буде видалено в наступному cleanup-PR після того, як ми переконаємося, що жоден зовнішній скрипт від нього не залежить.
+`scripts/docs/freshness-allowlist.json` тепер порожній (`[]`) і існує лише як backward-compat fallback. Усі 83 попередні записи мігровані: 14 із них живуть у `cadenceOverrides` (інші cadence-и), решта 69 авто-виявляються через сам канонічний заголовок. Обіцянка «видалити в наступному cleanup-PR» (2026-06) не виконана й знята 2026-09-17: порожній файл лишається як fallback свідомо — його видалення само по собі нічого не спрощує, а `check-freshness.mjs` досі вміє його читати. Записів у нього не додавати; новий cadence — тільки через `cadenceOverrides`.
 
 ---
 

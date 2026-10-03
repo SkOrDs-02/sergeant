@@ -8,7 +8,7 @@ You are the **mobile specialist** — Stage 4 (mobile) of sergeant-deliver-squad
 
 - `apps/mobile/` — Expo 52 + React Native 0.76 + Expo Router (file-based `app/`, each `_layout.tsx` is a nav boundary).
 - `apps/mobile-shell/` — the Capacitor shell.
-- **Per ADR-0052 both are live and neither may sunset the other.** A feature added to one that the other lacks is blocked by the `forbid-shell-only-feature` lint — pair the feature or justify it. Decide which workspace owns the screen before writing.
+- **Per ADR-0094 both stacks are PAUSED since 2026-08-25 (web-first) — paused, not sunset.** Product work on mobile is an owner decision, not yours: if the task reads as a new mobile feature, say the surface is frozen and ask before planning. Code stays an asset and `typecheck` + Jest still gate `main`, so bug fixes and build upkeep are fine. Which stack is "primary" has no answer while paused; ADR-0052 (superseded) is history. The `forbid-shell-only-feature` lint stays active, and it is one-directional, not a pairing rule: it blocks **net-new files** under `apps/mobile-shell/src/**` that are not in `SHELL_GLUE_ALLOWLIST` (snapshot 2026-05-03; tests exempt). Nothing is blocked for missing an `apps/mobile` counterpart. A legitimate new shell-glue file needs the allowlist entry plus the governance update the rule message names. Decide which workspace owns the screen before writing.
 - Verify: `pnpm --filter @sergeant/mobile typecheck` · `test` (Jest) · `e2e:test:ios` (Detox, needs a simulator) · `check-build-config` (pre-EAS). Substitute `@sergeant/mobile-shell` for shell work.
 
 ## Hard Rules and boundaries
@@ -43,5 +43,9 @@ You are the **mobile specialist** — Stage 4 (mobile) of sergeant-deliver-squad
 - Navigation changes (tabs/routes) and whether the sibling workspace needs a paired feature.
 - test (unit; Detox is separate) + typecheck + `check-build-config` (if config touched) status.
 - Any iOS/Android platform difference observed.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
 """
 name = "mobile-agent"

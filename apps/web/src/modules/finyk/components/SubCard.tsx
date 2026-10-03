@@ -3,9 +3,10 @@
  * Status: Active
  */
 import { memo, useState } from "react";
-import { pluralDays } from "@sergeant/shared";
+import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
 import { Money } from "@shared/components/ui/Money";
-import { daysUntil, fmtDate } from "../utils";
+import { fmtDate } from "../utils";
+import { getSubscriptionDueDate } from "../lib/upcomingSchedule";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
@@ -67,7 +68,15 @@ function SubCardComponent({
   const { amount, currency } = getSubscriptionAmountMeta(sub, [
     ...transactions,
   ]);
-  const days = daysUntil(Number(sub.billingDay) || 1);
+  const [now] = useState(Date.now);
+  const days = kyivCalendarDaysBetween(
+    getSubscriptionDueDate(
+      Number(sub.billingDay) || 1,
+      new Date(now),
+      lastTx?.time,
+    ).getTime(),
+    now,
+  );
   const veryClose = days <= 1;
   const soon = days <= 3;
 
@@ -106,15 +115,15 @@ function SubCardComponent({
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <Input
-          placeholder="Ключове слово з транзакції (якщо без ручної привʼязки)"
+          placeholder="Ключове слово з операції (якщо без ручної привʼязки)"
           value={form.keyword}
           onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
         />
         {/* AI-NOTE: caption навмисно — це підказка під полем «Ключове
             слово», а не текст для читання (density-hierarchy-spec §4). */}
         <p className="text-style-caption text-subtle">
-          Якщо немає ручної привʼязки, для суми підписки знайдемо найновішу
-          витратну транзакцію, опис якої містить це слово.
+          Якщо немає ручної привʼязки, для суми підписки знайду найновішу
+          витратну операцію, опис якої містить це слово.
         </p>
         <div className="flex gap-2">
           <div className="flex-1">
@@ -150,7 +159,6 @@ function SubCardComponent({
         ) : null}
         <div className="flex gap-2">
           <Button
-            variant="finyk-soft"
             size="md"
             className="flex-1"
             onClick={saveEdit}
@@ -159,7 +167,7 @@ function SubCardComponent({
             Зберегти
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             size="md"
             className="flex-1"
             onClick={() => {
@@ -197,7 +205,7 @@ function SubCardComponent({
       <div className="flex items-start gap-3">
         <Icon
           name="refresh-cw"
-          size={20}
+          size="lg"
           className="mt-0.5 shrink-0 text-finyk"
           aria-hidden
         />
@@ -218,16 +226,16 @@ function SubCardComponent({
               size={13}
               aria-hidden
             />{" "}
-            {veryClose
-              ? "Завтра"
-              : soon
-                ? `Через ${days} дні`
+            {days === 0
+              ? "Сьогодні"
+              : days === 1
+                ? "Завтра"
                 : `Через ${days} ${pluralDays(days)}`}{" "}
             · {sub.billingDay}-го
           </div>
           {sub.linkedTxId && lastTx && (
             <div className="text-style-caption text-finyk mt-0.5">
-              Привʼязано до транзакції · оновлює суму та дату
+              Привʼязано до операції · оновлює суму та дату
             </div>
           )}
           {lastTx && lastTx.time != null ? (
@@ -268,7 +276,7 @@ function SubCardComponent({
             className="px-1.5 h-auto py-0.5 text-xs text-primary hover:bg-transparent hover:underline hover:text-primary"
             onClick={onLinkTransactions}
           >
-            {sub.linkedTxId ? "Змінити транзакцію" : "Привʼязати транзакцію"}
+            {sub.linkedTxId ? "Змінити операцію" : "Привʼязати операцію"}
           </Button>
         )}
         {onEdit && (
@@ -280,7 +288,7 @@ function SubCardComponent({
             onClick={() => setEditing(true)}
             className="text-subtle hover:text-primary"
           >
-            <Icon name="edit" size={16} aria-hidden />
+            <Icon name="edit" size="md" aria-hidden />
           </Button>
         )}
         <Button
@@ -291,7 +299,7 @@ function SubCardComponent({
           onClick={onDelete}
           className="text-subtle hover:text-danger"
         >
-          <Icon name="trash" size={16} aria-hidden />
+          <Icon name="trash" size="md" aria-hidden />
         </Button>
       </div>
     </Card>

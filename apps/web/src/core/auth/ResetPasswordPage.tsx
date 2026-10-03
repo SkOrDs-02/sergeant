@@ -20,7 +20,7 @@ import { resetPassword } from "./authClient";
 /**
  * Зод-схема — локальна, як у `AuthPage`. Меседжі — з
  * `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`), див.
- * `docs/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
+ * `docs/design/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
  * після парсу — стандартний react-hook-form pattern для cross-field
  * перевірок.
  */
@@ -162,7 +162,7 @@ export function ResetPasswordPage() {
               </p>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="md"
                 className="w-full"
                 onClick={() => navigate("/sign-in", { replace: true })}
@@ -249,7 +249,7 @@ export function ResetPasswordPage() {
 
               <Button
                 type="submit"
-                variant="primary"
+                variant="solid"
                 size="lg"
                 loading={status === "sending"}
                 className="w-full"

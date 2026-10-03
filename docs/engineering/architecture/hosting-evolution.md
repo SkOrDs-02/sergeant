@@ -1,6 +1,6 @@
 # Еволюція хостингу — що де хоститься і коли мігрувати
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-03.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-20.
 > **Status:** Deprecated — рішення «коли мігрувати з Railway» вже прийняте й виконане.
 >
 > **⚠️ Superseded by [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Документ зберігається як історичний контекст рішення; секції «поточний стан» нижче описують доміграційний Railway-стек і НЕ актуальні. Актуальна топологія — ADR-0074 + [`platforms.md`](./platforms.md).
@@ -236,7 +236,7 @@ Self-host технічно дешевший, але setup/maintenance з'їст�
 ## Посилання
 
 - Повний каталог сервісів + ціни: [`docs/work/specs/launch/business/03-services-and-toolstack.md`](../../work/specs/launch/business/03-services-and-toolstack.md).
-- Monthly cost projection по фазах: [`03 §9`](../../work/specs/launch/business/03-services-and-toolstack.md#9-повна-monthly-cost-projection).
-- Pre-launch чеклист (де observability — requirement): [`docs/work/specs/launch/business/04-launch-readiness.md#3-моніторинг-та-алерти`](../../work/specs/launch/business/04-launch-readiness.md#3-моніторинг-та-алерти).
+- Monthly cost projection по фазах: [`03 §9`](../../work/specs/launch/business/03-services-and-toolstack.md#6-прогноз-місячних-витрат).
+- Pre-launch чеклист (де observability — requirement): [`docs/work/specs/launch/business/04-launch-readiness.md#3-моніторинг-та-алерти`](../../work/specs/launch/business/04-launch-readiness.md#32-monitoring-та-alerting-для-платного-продукту).
 - Як налаштований поточний Railway + Vercel: [`docs/engineering/integrations/railway-vercel.md`](../integrations/railway-vercel.md).
 - Observability reference: [`docs/operations/observability/`](../../operations/observability) (SLO, metrics, runbook, logging).

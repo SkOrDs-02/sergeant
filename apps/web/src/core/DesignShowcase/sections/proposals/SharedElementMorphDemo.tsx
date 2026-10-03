@@ -34,7 +34,7 @@ export function SharedElementMorphDemo() {
                   color,
                 }}
               >
-                <Icon name="pie-chart" size={16} />
+                <Icon name="pie-chart" size="md" />
               </span>
               <span className="text-style-caption text-text">Їжа</span>
             </div>

@@ -34,7 +34,7 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "grid",
   },
   plan: {
-    description: "Тариф, оплата, портал підписки",
+    description: "План, оплата, портал підписки",
     icon: "wallet",
   },
   notifications: {
@@ -46,7 +46,7 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "sergeant",
   },
   capabilities: {
-    description: "Каталог AI-можливостей, онбординг",
+    description: "Каталог можливостей Сержанта, онбординг",
     icon: "compass",
   },
   feedback: {
@@ -70,7 +70,12 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "utensils",
   },
   privacy: {
-    description: "PIN-код, блокування, безпека",
+    // PR-S6 (аудит 2026-09-13 хвиля 5): PIN-блокування переїхало в
+    // Профіль → «Безпека» 2026-09-04 (`ProfilePage.tsx`), і видалення
+    // акаунта поїхало разом з ним (`DangerZoneSection`) — ця секція
+    // Налаштувань лишає собі тільки згоди й юрдокументи
+    // (`PrivacySection.tsx`: аналітика, AI-памʼять, памʼять про здоровʼя).
+    description: "Згоди на аналітику й AI-памʼять, юридичні документи",
     icon: "lock",
   },
   pwa: {
@@ -158,7 +163,7 @@ export function searchAssistantTools(tokens: string[]): Hit[] {
       {
         id: `assistant_${cap.id}`,
         module: "assistant",
-        moduleLabel: "AI-можливості",
+        moduleLabel: "Можливості Сержанта",
         title: cap.label,
         // Subtitle містить опис + keywords + назву модуля — токени з
         // `keywords` беруть участь у scoring, але після сортування ми

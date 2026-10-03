@@ -1,6 +1,6 @@
 # Post-deploy smoke tests — runbook
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-09-17 by @claude (застереження: `deployment_status` не спрацьовує для Coolify-деплою API). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) закомічений — `deployment_status` + cron 06:30 UTC + `workflow_dispatch`. Локально — CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json).
@@ -29,7 +29,7 @@ Sister-сторінки:
 - Файл: [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) (§ Workflow YAML — дзеркало).
 - Тригери:
   - `workflow_dispatch` з `base_url` / `tier` / `strict` inputs (ad-hoc прогон з UI Actions).
-  - `deployment_status` — стартує одразу після успішного GitHub deployment-у (e.g. Vercel preview). `if: deployment_status.state == 'success'`.
+  - `deployment_status` — стартує одразу після успішного GitHub deployment-у (e.g. Vercel preview). `if: deployment_status.state == 'success'`. **Застереження (2026-09-17):** для бекенду цей тригер де-факто мертвий — Coolify не створює GitHub deployment і не шле `deployment_status` (див. [`apps/server/AGENTS.md § Health`](../../../apps/server/AGENTS.md)); API-деплой покривають лише cron і `workflow_dispatch`.
   - `schedule: "30 6 * * *"` — 06:30 UTC щодня, на 30 хв пізніше за `pact-drift` (06:00 UTC), щоб триaге-лейн не coalesce-ився.
 - Скрипт: [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) — параметри: `--base-url`, `--report`, `--json`, `--config`, `--tier`, `--only`, `--skip`, `--strict`, `--dry-run`, `--concurrency`.
 - Конфіг: [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json) — JSON-список тестів.
@@ -163,7 +163,7 @@ node scripts/post-deploy-smoke.mjs --tier all --strict
 | Critical/optional split | Один tier (всі mutations skipped by default).              | Two tiers: `critical` (rollback-кандидат) + `extended` (информаційний).     |
 | Action on fail          | Issue `contract-drift` + tech-debt.                        | Issue `smoke-test-fail` + tech-debt. Можна rollback-нути у deploy provider. |
 
-Обидва running side-by-side — schema drift не блокує deploy (бо ловиться щодня), liveness drift блокує deploy (бо ловить regression миттєво після rollout).
+Обидва running side-by-side — schema drift не блокує deploy (бо ловиться щодня); liveness drift ловиться миттєво після rollout лише там, де приходить `deployment_status` (Vercel). Для API на Coolify події немає, тож «блокує deploy» тут не діє — регресію бекенду побачить ранковий cron або ручний `workflow_dispatch` одразу після деплою.
 
 ## Майбутні розширення
 
@@ -179,7 +179,7 @@ Workflow YAML (дзеркало [`.github/workflows/post-deploy-smoke.yml`](../.
 ```yaml
 name: Post-deploy smoke
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: if this job fails, an issue tagged `smoke-test-fail` is auto-opened
 #         (idempotent — same pattern as pact-drift / db-backup-verify). Runbook:
 #         `docs/engineering/testing/smoke-tests.md`.

@@ -17,19 +17,11 @@ vi.mock("./context", () => ({
 
 import {
   useBarcodeLookup,
-  useChatMutation,
-  useCoachInsightMutation,
-  useCoachMemory,
   useFoodSearch,
-  usePrivatBalanceFinal,
   usePushRegister,
   usePushTest,
   usePushUnregister,
-  useSubscribePushMutation,
-  useUnsubscribePushMutation,
   useUser,
-  useVapidPublicKey,
-  useWeeklyDigestMutation,
 } from "./hooks";
 
 interface QuerySnapshot {
@@ -56,23 +48,13 @@ function lastMutation(): MutationSnapshot {
 function createApiMock() {
   return {
     barcode: { lookup: vi.fn().mockResolvedValue({ product: null }) },
-    chat: { send: vi.fn().mockResolvedValue({ message: "ok" }) },
-    coach: {
-      getMemory: vi.fn().mockResolvedValue({ memory: [] }),
-      postInsight: vi.fn().mockResolvedValue({ insight: "focus" }),
-    },
     foodSearch: { search: vi.fn().mockResolvedValue({ items: [] }) },
     me: { get: vi.fn().mockResolvedValue({ user: null }) },
-    privat: { balanceFinal: vi.fn().mockResolvedValue({ balances: [] }) },
     push: {
-      getVapidPublic: vi.fn().mockResolvedValue({ publicKey: "vapid" }),
       register: vi.fn().mockResolvedValue({ ok: true }),
-      subscribe: vi.fn().mockResolvedValue({ ok: true }),
       test: vi.fn().mockResolvedValue({ ok: true }),
       unregister: vi.fn().mockResolvedValue({ ok: true }),
-      unsubscribe: vi.fn().mockResolvedValue({ ok: true }),
     },
-    weeklyDigest: { generate: vi.fn().mockResolvedValue({ ok: true }) },
   };
 }
 
@@ -94,16 +76,6 @@ describe("api-client react hooks", () => {
       { signal },
     );
 
-    useCoachMemory();
-    const coach = lastQuery();
-    expect(coach.queryKey).toEqual(["coach", "memory"]);
-    await coach.queryFn?.({ signal });
-
-    useVapidPublicKey();
-    const vapid = lastQuery();
-    expect(vapid.queryKey).toEqual(["push", "vapid"]);
-    await vapid.queryFn?.({ signal });
-
     useFoodSearch("a");
     const food = lastQuery();
     expect(food.enabled).toBe(false);
@@ -116,37 +88,9 @@ describe("api-client react hooks", () => {
     const barcode = lastQuery();
     expect(barcode.enabled).toBe(false);
     await barcode.queryFn?.({ signal });
-
-    usePrivatBalanceFinal(null);
-    const privatDisabled = lastQuery();
-    expect(privatDisabled.enabled).toBe(false);
-    expect(privatDisabled.queryKey).toEqual(["privat", "balance-final", ""]);
-
-    usePrivatBalanceFinal("mid");
-    const privat = lastQuery();
-    expect(privat.enabled).toBe(true);
-    await privat.queryFn?.({ signal });
-    // Жодних креденшелів у виклику — лише signal (спека F1).
-    expect(
-      useApiClientMock.mock.results.at(-1)?.value.privat.balanceFinal,
-    ).toHaveBeenCalledWith({ signal });
   });
 
   it("builds mutation hooks with client-backed mutation functions", async () => {
-    useCoachInsightMutation();
-    await lastMutation().mutationFn({ text: "focus" });
-
-    useChatMutation({ retry: false });
-    const chat = lastMutation();
-    expect(chat.retry).toBe(false);
-    await chat.mutationFn({ message: "hi" });
-
-    useSubscribePushMutation();
-    await lastMutation().mutationFn({ endpoint: "https://push.example" });
-
-    useUnsubscribePushMutation();
-    await lastMutation().mutationFn("https://push.example");
-
     usePushRegister();
     const register = lastMutation();
     expect(register.mutationKey).toEqual(["push", "register"]);
@@ -162,13 +106,6 @@ describe("api-client react hooks", () => {
     expect(unregister.mutationKey).toEqual(["push", "unregister"]);
     await unregister.mutationFn({ platform: "web", endpoint: "endpoint" });
 
-    useWeeklyDigestMutation();
-    await lastMutation().mutationFn({ userId: "user-1" });
-
-    const lastApi = useApiClientMock.mock.results.at(-1)?.value;
-    expect(lastApi.weeklyDigest.generate).toHaveBeenCalledWith({
-      userId: "user-1",
-    });
-    expect(useMutationMock).toHaveBeenCalledTimes(8);
+    expect(useMutationMock).toHaveBeenCalledTimes(3);
   });
 });

@@ -100,7 +100,7 @@ export function MenusSection() {
           trigger={
             <Button variant="secondary" size="sm">
               Меню
-              <Icon name="chevron-down" size={14} />
+              <Icon name="chevron-down" size="sm" />
             </Button>
           }
         />
@@ -110,7 +110,7 @@ export function MenusSection() {
           trigger={
             <Button variant="secondary" size="sm">
               Налаштування
-              <Icon name="chevron-down" size={14} />
+              <Icon name="chevron-down" size="sm" />
             </Button>
           }
         />
@@ -123,7 +123,7 @@ export function MenusSection() {
           trigger={
             <Button variant="secondary" size="sm">
               Сортувати
-              <Icon name="chevron-down" size={14} />
+              <Icon name="chevron-down" size="sm" />
             </Button>
           }
         />
@@ -133,7 +133,7 @@ export function MenusSection() {
           placement="bottom-end"
           trigger={
             <Button variant="ghost" size="sm" iconOnly aria-label="Більше дій">
-              <Icon name="more-horizontal" size={16} />
+              <Icon name="more-horizontal" size="md" />
             </Button>
           }
         />

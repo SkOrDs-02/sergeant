@@ -1,6 +1,6 @@
 name: Pact contract drift (daily cron)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created `contract-drift` issue
 #         з коментарем; reopen якщо повторюється > 2x за тиждень. Full runbook:
 #         `docs/engineering/testing/pact-drift-runbook.md`.
@@ -13,12 +13,8 @@ name: Pact contract drift (daily cron)
 #         within ~24h of introduction, well before the next prod deploy. Sister
 #         job to `db-backup-verify.yml` — same idempotent-issue pattern.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  schedule:
-    # 06:00 UTC daily — ~09:00 Kyiv. After nightly audit (`nightly-audit.yml`
-    # at 02:00 UTC) and `db-backup-verify.yml` (Sundays 04:00 UTC); keeps the
-    # alert lane separate so cron-noise does not coalesce.
-    - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
       base_url:
@@ -35,6 +31,8 @@ on:
         required: false
         type: boolean
         default: false
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read

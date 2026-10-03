@@ -30,6 +30,25 @@ describe("resolveDeployEnvironment", () => {
     expect(resolveDeployEnvironment("sergeant.vercel.app")).toBe("production");
   });
 
+  // Регресія 2026-09-17. Прод переїхав на власний домен, а allowlist лишився
+  // на `*.vercel.app` — і 94% подій веба (248 із 264 за 30 днів) поїхали як
+  // `preview`, включно з `SQLITE_IOERR` на 38 користувачів. Помилки класифікації
+  // тут не видно з коду: обидві гілки виглядають правильними, бреше лише
+  // список. Тому хости закріплені поіменно, а не «якийсь канонічний».
+  it.each(["app.sergeant.com.ua"])(
+    "бойовий домен %s дає production, а не preview",
+    (host) => {
+      expect(resolveDeployEnvironment(host)).toBe("production");
+      expect(resolveSentryEnvironment(host)).toBe("production");
+    },
+  );
+
+  it("регістр хоста не впливає на класифікацію", () => {
+    // `window.location.hostname` віддає нижній регістр, але резолвер приймає
+    // хост і параметром (тести, воркери) — там регістр довільний.
+    expect(resolveDeployEnvironment("App.Sergeant.com.ua")).toBe("production");
+  });
+
   it("поважає явний VITE_APP_ENV на канонічному хості", () => {
     stubEnv({ VITE_APP_ENV: "beta" });
     expect(resolveDeployEnvironment("beta-tau-gilt.vercel.app")).toBe("beta");

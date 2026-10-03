@@ -82,11 +82,17 @@ describe("WorkoutHistory page", () => {
     expect(screen.queryByText(/^Шаблони$/)).not.toBeInTheDocument();
   });
 
-  it("navigates back to the workouts home via the header back button", () => {
-    const onNavigate = vi.fn();
-    renderWithToast(<WorkoutHistory onNavigate={onNavigate} />);
-    fireEvent.click(screen.getByLabelText(/повернутись до тренувань/i));
-    expect(onNavigate).toHaveBeenCalledWith("workouts");
+  it("НЕ малює власної стрілки назад — вихід один і належить шапці модуля", () => {
+    // Перевернуто 2026-09-14 (PR-Z7). Раніше тут стверджувалось, що
+    // сторінка має власну стрілку — і це була правда, але поруч із нею
+    // шапка модуля малювала ще пару «Назад» + «На хаб»: три виходи на
+    // одному екрані, кожен зі своєю обіцянкою. Тепер вихід один
+    // (`FizrukHeader` контекстний back для `history` → Огляд), а ця
+    // сторінка своєї стрілки не має.
+    renderWithToast(<WorkoutHistory onNavigate={vi.fn()} />);
+    expect(
+      screen.queryByLabelText(/повернутись до тренувань/i),
+    ).not.toBeInTheDocument();
   });
 
   it("navigates to the routed single-workout view when a row is tapped", () => {

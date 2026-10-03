@@ -112,7 +112,11 @@ describe("ManualExpenseAmountSection", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Сказати голосом" }));
-    expect(setValue).toHaveBeenCalledWith("description", "Кава гривень", {
+    // Було «Кава гривень» — тест закріплював баг як очікуване. Одиниця
+    // валюти лишалась в описі, бо зачистка стояла на `\b`, а в JS ця межа
+    // визначена через ASCII-`\w` і поруч із кирилицею не спрацьовує ніколи
+    // (розбір — `NOT_WORD_CHAR` у `packages/shared/src/utils/speechParsers.ts`).
+    expect(setValue).toHaveBeenCalledWith("description", "Кава", {
       shouldDirty: true,
     });
     expect(setValue).toHaveBeenCalledWith("amount", "60", {

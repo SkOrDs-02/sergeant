@@ -1,8 +1,8 @@
 ---
 name: sergeant-backend-architecture
-description: Use when designing a new Sergeant server module, choosing sync-vs-queue, adding a background job, or judging a proposal to add a service/CQRS layer; UA: архітектура бекенду, новий модуль, фонова черга.
+description: "Use when designing a new Sergeant server module, choosing sync-vs-queue, adding a background job, or judging a proposal to add a service/CQRS layer; UA: архітектура бекенду, новий модуль, фонова черга."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Backend architecture у Sergeant

@@ -27,7 +27,7 @@ const OVERWRITE_LABELS: Record<string, string> = {
   // опційна історія чату), але цей список про неї мовчав — бекап лише з
   // `hub` (наприклад окремий експорт із `includeChat: true`) показував
   // порожнє попередження замість переліку того, що реально буде перетерто.
-  hub: "Hub: останній відкритий розділ і історія чату асистента",
+  hub: "Hub: останній відкритий розділ і історія чату із Сержантом",
 };
 
 // Adversarial review (backup group) #2 (HIGH): раніше цей список був
@@ -147,12 +147,14 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
     r.readAsText(f);
   };
 
-  const confirmImport = () => {
+  const confirmImport = async () => {
     if (!pendingImport) return;
     const { data } = pendingImport;
     setPendingImport(null);
     try {
-      applyHubBackupPayload(data);
+      // await — не косметика: Фінік пише в SQLite асинхронно, а reload
+      // нижче обірве fire-and-forget запис на півдорозі.
+      await applyHubBackupPayload(data);
       window.location.reload();
     } catch (err) {
       showParseError(err);
@@ -167,7 +169,7 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-line bg-panelHi/40 px-3 py-2.5 flex flex-col gap-3 text-style-body text-subtle",
+        "rounded-2xl border border-line bg-panelHi px-3 py-2.5 flex flex-col gap-3 text-style-body text-subtle",
         className,
       )}
     >
@@ -175,8 +177,8 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         Резервна копія всього Hub (Фінік, Фізрук, Рутина, Їжа) у JSON-файл.
       </p>
       <p className="leading-relaxed text-style-body">
-        Токен Monobank і кеш транзакцій не входять у файл, після імпорту
-        підключи рахунок знову в Фініку.
+        Токен Monobank і кеш операцій не входять у файл, після імпорту підключи
+        рахунок знову в Фініку.
       </p>
       <p className="leading-relaxed text-style-body">
         Ідентифікатори акаунта прибираю автоматично, але файл усе одно містить
@@ -250,7 +252,7 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         confirmLabel="Перезаписати"
         cancelLabel="Скасувати"
         danger
-        onConfirm={confirmImport}
+        onConfirm={() => void confirmImport()}
         onCancel={cancelImport}
       />
     </div>

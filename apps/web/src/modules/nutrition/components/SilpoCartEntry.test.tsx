@@ -2,7 +2,7 @@
 /**
  * `SilpoCartEntry` — entry gating + end-to-end «У кошик Сільпо» flow через
  * реальний `SilpoCartSheet`/`useSilpoCart` (Silpo integration трек G,
- * спека `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * спека `docs/work/specs/silpo-mcp-integration.md` §
  * «Cart (MCP write path)»). `useSilpoSyncState` мокнутий на межі
  * `@finyk/hooks/*` (гейт-стан — не предмет цього тесту), `silpoApi` —
  * на межі `@shared/api` (той самий патерн, що `useBarcodeProductLookup.test.tsx`).
@@ -342,5 +342,27 @@ describe("SilpoCartEntry", () => {
       ).toBeInTheDocument(),
     );
     expect(cartPreviewMock).toHaveBeenCalledTimes(2);
+  });
+
+  // Знахідка аудиту PR-C7: варіанти в `<option>` друкувались через
+  // `.toFixed(2)`, тобто з КРАПКОЮ — повз `formatMoney`, який усюди в
+  // продукті дає українську кому. Одна поверхня з іншим форматом суми
+  // виглядає не як дрібниця, а як чужий екран.
+  //
+  // Тест дивиться саме на `<option>`, бо решта аркуша рендерить `<Money>`,
+  // а тут його використати не можна: `<option>` приймає лише текст.
+  it("друкує ціни варіантів українським форматом, а не крапкою", async () => {
+    const user = userEvent.setup();
+    syncStateMock.mockReturnValue({ status: "connected" });
+    cartPreviewMock.mockResolvedValue(previewResponse());
+
+    renderWithClient(<SilpoCartEntry shoppingList={SHOPPING_LIST} />);
+    await user.click(screen.getByRole("button", { name: /У кошик Сільпо/i }));
+
+    const option = await screen.findByRole("option", {
+      name: /Молоко Яготинське/i,
+    });
+    expect(option).toHaveTextContent("45,00");
+    expect(option.textContent).not.toMatch(/45\.00/);
   });
 });

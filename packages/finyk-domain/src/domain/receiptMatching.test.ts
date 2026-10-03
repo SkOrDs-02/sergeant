@@ -82,7 +82,7 @@ describe("matchReceiptsToTransactions", () => {
     );
   });
 
-  it("дві транзакції-кандидати на один чек → амбігуїті", () => {
+  it("дві операції-кандидати на один чек → амбігуїті", () => {
     const result = matchReceiptsToTransactions(
       [receipt()],
       [tx({ id: "tx-1" }), tx({ id: "tx-2" })],
@@ -116,7 +116,7 @@ describe("matchReceiptsToTransactions", () => {
     expect(result.unmatchedReceiptIds).toEqual(["r-1"]);
   });
 
-  it("чек без транзакції — першокласний unmatched, без force-match", () => {
+  it("чек без операції — першокласний unmatched, без force-match", () => {
     const result = matchReceiptsToTransactions([receipt()], []);
     expect(result.matches).toEqual([]);
     expect(result.unmatchedReceiptIds).toEqual(["r-1"]);

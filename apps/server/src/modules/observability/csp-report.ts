@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
+import { redactSensitiveQueryParams, scrubPIIString } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
+import { redactSensitiveUrl } from "../../obs/sensitiveUrl.js";
 import { cspViolationTotal } from "../../obs/metrics.js";
 
 /**
@@ -8,7 +10,7 @@ import { cspViolationTotal } from "../../obs/metrics.js";
  * Receives Content-Security-Policy violation reports from browsers. The
  * frontend ships CSP via Vercel headers (see root `vercel.json`); this
  * endpoint is the `report-uri` sink referenced from that policy. Closing
- * hardening card C2 (`docs/security/hardening/C2-frontend-csp.md`)
+ * hardening card C2 (`docs/work/specs/security-hardening/C2-frontend-csp.md`)
  * required wiring a real sink so the Phase-1 Report-Only canary can
  * actually surface violations instead of dropping them on the floor.
  *
@@ -101,6 +103,45 @@ function normalizeDisposition(raw: unknown): "report" | "enforce" | "unknown" {
   return "unknown";
 }
 
+/**
+ * Стеля довжини для кожного URL-поля, що йде в лог.
+ *
+ * Тіло CSP-репорту приймається до 16 KB, і всі три URL-поля
+ * (`document-uri`, `blocked-uri`, `source-file`) — атакер-контрольовані:
+ * браузер шле те, що стоїть у сторінці, а POST можна підробити руками. Без
+ * стелі один запит кладе 16 KB сміття в ОДИН лог-рядок, і це вже не
+ * телеметрія, а дешевий спосіб забити квоту сховища.
+ */
+const MAX_LOGGED_URI_LENGTH = 512;
+
+/**
+ * Чому URL-поля CSP-репорту не можна логувати сирими.
+ *
+ * `document-uri` — це адреса сторінки, на якій стріляє політика, тобто
+ * БУДЬ-ЯКОЇ сторінки застосунку разом із її query-string. Сторінка скидання
+ * пароля відкривається за `/reset-password?token=<живий токен>`
+ * (`apps/web/src/core/auth/ResetPasswordPage.tsx`), а Report-Only CSP
+ * активна всюди — досить одного розширення браузера, що інжектить стиль, щоб
+ * браузер сам відправив сюди репорт із НЕВИКОРИСТАНИМ токеном усередині.
+ *
+ * Pino-редакція тут не рятує принципово: вона матчить ІМЕНА ключів, а секрет
+ * лежить усередині рядкового ЗНАЧЕННЯ поля `documentUri`.
+ *
+ * Ланцюжок той самий, що для Sentry-payload-ів у `sentry.ts#redactUrlForSink`,
+ * і порядок у ньому важить: секрет у path-і (mono-webhook, Telegram bot-token)
+ * → чутливі query-ключі (`token`, `code`, `state`, …) → pattern-скраб решти
+ * (email / JWT / AWS-key), що могла приїхати з чужого origin-у.
+ */
+function sanitizeReportUri(raw: unknown): string | null {
+  if (typeof raw !== "string" || raw === "") return null;
+  const redacted = scrubPIIString(
+    redactSensitiveQueryParams(redactSensitiveUrl(raw)),
+  );
+  return redacted.length > MAX_LOGGED_URI_LENGTH
+    ? `${redacted.slice(0, MAX_LOGGED_URI_LENGTH)}…[truncated]`
+    : redacted;
+}
+
 function recordViolation(
   body: Record<string, unknown> | undefined,
   fallbackDisposition?: string,
@@ -136,18 +177,14 @@ function recordViolation(
       msg: "csp_violation",
       directive,
       disposition,
-      blockedUri:
-        (body["blocked-uri"] as string | undefined) ??
-        (body["blockedURL"] as string | undefined) ??
-        null,
-      documentUri:
-        (body["document-uri"] as string | undefined) ??
-        (body["documentURL"] as string | undefined) ??
-        null,
-      sourceFile:
-        (body["source-file"] as string | undefined) ??
-        (body["sourceFile"] as string | undefined) ??
-        null,
+      // Усі три поля йдуть через `sanitizeReportUri` — див. його doc-string:
+      // без редакції сюди приїжджає повний URL сторінки разом із токеном
+      // скидання пароля, а без стелі — 16 KB атакер-контрольованого сміття.
+      blockedUri: sanitizeReportUri(body["blocked-uri"] ?? body["blockedURL"]),
+      documentUri: sanitizeReportUri(
+        body["document-uri"] ?? body["documentURL"],
+      ),
+      sourceFile: sanitizeReportUri(body["source-file"] ?? body["sourceFile"]),
       lineNumber:
         (body["line-number"] as number | undefined) ??
         (body["lineNumber"] as number | undefined) ??

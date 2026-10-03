@@ -2,11 +2,11 @@ import { useCallback, useMemo } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { recordBodyWeight } from "../../../core/profile/recordBodyWeight";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractMeasurementSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractMeasurementSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -100,22 +100,23 @@ export function useMeasurements() {
     },
   );
 
+  const intended = useFizrukIntendedSlice<"measurements">(sqliteCacheTick);
+
   const persist = useCallback(
     (next: MeasurementEntry[]) => {
       setEntries(next);
-      const prevDualWrite =
-        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      const nextDualWrite = {
-        ...prevDualWrite,
-        measurements: extractMeasurementSnapshots(next),
-      };
+      const transition = fizrukDualWriteTransition(
+        "measurements",
+        intended,
+        extractMeasurementSnapshots(next),
+      );
       try {
-        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        triggerFizrukDualWrite(transition.prev, transition.next);
       } catch {
         /* trigger is fire-and-forget — never propagate */
       }
     },
-    [setEntries],
+    [intended, setEntries],
   );
 
   const addEntry = useCallback(

@@ -4,6 +4,13 @@ import { env } from "../../env/env.js";
 import { query } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
+  AppError,
+  ExternalServiceError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../obs/errors.js";
+import {
   MonoConnectResponseSchema,
   MonoDisconnectResponseSchema,
   MonoSyncStateSchema,
@@ -37,19 +44,16 @@ interface AuthedRequest extends Request {
   user?: { id: string };
 }
 
-function assertWebhookEnabled(res: Response): boolean {
+function assertWebhookEnabled(): void {
   if (!env.MONO_WEBHOOK_ENABLED) {
-    res.status(404).json({ error: "Monobank webhook integration is disabled" });
-    return false;
+    throw new NotFoundError("Monobank webhook integration is disabled");
   }
-  return true;
 }
 
-function getUserId(req: AuthedRequest, res: Response): string | null {
+function getUserId(req: AuthedRequest): string {
   const userId = req.user?.id;
   if (!userId) {
-    res.status(401).json({ error: "Потрібна автентифікація" });
-    return null;
+    throw new UnauthorizedError("Потрібна автентифікація");
   }
   return userId;
 }
@@ -76,22 +80,20 @@ export async function connectHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!assertWebhookEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
+  assertWebhookEnabled();
+  const userId = getUserId(req as AuthedRequest);
 
   const { token } = req.body as { token?: string };
   if (!token || typeof token !== "string" || token.length < 10) {
-    res.status(400).json({ error: "Invalid or missing token" });
-    return;
+    throw new ValidationError("Invalid or missing token");
   }
 
   const ring = monoKeyRing();
   if (!ring) {
-    res
-      .status(500)
-      .json({ error: "Server misconfigured: missing encryption key" });
-    return;
+    throw new AppError("Server misconfigured: missing encryption key", {
+      status: 500,
+      code: "MONO_MISCONFIGURED",
+    });
   }
 
   let clientInfoRes: globalThis.Response;
@@ -109,10 +111,13 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       err: err instanceof Error ? err.message : String(err),
     });
-    res
-      .status(504)
-      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
-    return;
+    throw new AppError(
+      "Monobank API не відповідає. Спробуй за кілька хвилин.",
+      {
+        status: 504,
+        code: "MONO_TIMEOUT",
+      },
+    );
   }
   if (!clientInfoRes.ok) {
     // Upstream body може містити внутрішні деталі Monobank (стек/чужі
@@ -126,17 +131,18 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       upstreamBody: body.slice(0, 200),
     });
-    res.status(clientInfoRes.status === 401 ? 401 : 502).json({
-      error:
-        clientInfoRes.status === 401
-          ? "Invalid Monobank token"
-          : "Failed to reach Monobank API",
-      code:
-        clientInfoRes.status === 401
-          ? "MONO_TOKEN_INVALID"
-          : "MONO_UPSTREAM_ERROR",
-    });
-    return;
+    throw new AppError(
+      clientInfoRes.status === 401
+        ? "Invalid Monobank token"
+        : "Failed to reach Monobank API",
+      {
+        status: clientInfoRes.status === 401 ? 401 : 502,
+        code:
+          clientInfoRes.status === 401
+            ? "MONO_TOKEN_INVALID"
+            : "MONO_UPSTREAM_ERROR",
+      },
+    );
   }
 
   const clientInfo: MonoClientInfoResponse =
@@ -163,10 +169,13 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       err: err instanceof Error ? err.message : String(err),
     });
-    res
-      .status(504)
-      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
-    return;
+    throw new AppError(
+      "Monobank API не відповідає. Спробуй за кілька хвилин.",
+      {
+        status: 504,
+        code: "MONO_TIMEOUT",
+      },
+    );
   }
 
   if (!registerRes.ok) {
@@ -177,11 +186,9 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       upstreamBody: body.slice(0, 200),
     });
-    res.status(502).json({
-      error: "Failed to register webhook with Monobank",
+    throw new ExternalServiceError("Failed to register webhook with Monobank", {
       code: "MONO_UPSTREAM_ERROR",
     });
-    return;
   }
 
   const encrypted = encryptTokenWithRing(token, ring);
@@ -255,7 +262,7 @@ export async function connectHandler(
 
   // Jars ("банки") come back on the same client-info call as accounts —
   // persist them now instead of dropping `clientInfo.jars` on the floor, so
-  // goal-progress auto-sync (docs/90-work/planning/specs/goal-progress-auto.md)
+  // goal-progress auto-sync (docs/work/specs/goal-progress-auto.md)
   // has a linkable balance from the moment of connect.
   await upsertJars(userId, clientInfo.jars ?? []);
 
@@ -288,9 +295,8 @@ export async function disconnectHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!assertWebhookEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
+  assertWebhookEnabled();
+  const userId = getUserId(req as AuthedRequest);
 
   const ring = monoKeyRing();
 
@@ -411,9 +417,8 @@ export async function syncStateHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!assertWebhookEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
+  assertWebhookEnabled();
+  const userId = getUserId(req as AuthedRequest);
 
   // `token_check_due` рахується в SQL, а не в Node, з двох причин: це той
   // самий годинник, що й у колонок (сервер і база можуть розʼїхатись), і

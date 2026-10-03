@@ -144,8 +144,10 @@ export function ColumnMapper({
       </div>
 
       <Button
+        variant="solid"
+        tone="finyk"
         className="w-full"
-        module="finyk"
+
         disabled={!canSubmit}
         loading={isSubmitting}
         onClick={() =>

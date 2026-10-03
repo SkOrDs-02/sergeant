@@ -1,12 +1,25 @@
 /**
  * Append-only журнал цілей КБЖВ і чистий резолвер ефективної цілі дня.
  *
- * W1-KBJU-APPEND, СТАДІЯ 2. Тут ЛИШЕ типи і чисті функції — споживачів
- * поки НЕМАЄ за задумом: `NutritionPrefs.dailyTarget*` лишається єдиним
- * джерелом цілі для всіх 9 ретроспективних читачів (тижневий дайджест,
- * coach-снапшот, тижневий графік, рекомендації, stories + три mobile-
- * дзеркала). Cutover — стадія 3, і вона гейтиться відповіддю founder-а на
- * openQuestion «чи має редагування цілі перефарбовувати минуле».
+ * W1-KBJU-APPEND. Тут ЛИШЕ типи і чисті функції; DOM-free (див. нижче).
+ *
+ * СТАН: cutover (стадія 3) ЗАВЕРШЕНО 2026-09-06, `METRICS_VERSION` 12 → 13.
+ * Усі девʼять ретроспективних читачів беруть ціль звідси, а не з
+ * `NutritionPrefs.dailyTarget*`: тижневий дайджест і coach-снапшот
+ * (`averageKcalGoalForDays`), рекомендації (`resolveEffectiveGoal`),
+ * тижневий графік і стрік (`resolveKcalGoalsForDays`), stories — через
+ * агрегат дайджесту, плюс три mobile-дзеркала. Питання founder-а «чи має
+ * редагування цілі перефарбовувати минуле» закрите ADR-0091 (ні), маркер
+ * реконструкції знято зі скоупу ADR-0092.
+ *
+ * AI-DANGER: `prefs.dailyTarget*` після cutover-у НЕ є залишком і не
+ * підлягає «дочищенню». Він лишається джерелом цілі на СЬОГОДНІ — hero-
+ * кільце, денний план, пресети, чат-дії. Розподіл рівно такий: минуле
+ * судиться журналом, сьогодні редагується в prefs, а запис у prefs
+ * породжує сходинку журналу через `diffGoalPeriodOps`. Перевівши
+ * сьогоднішніх читачів сюди, ти зламаєш редагування цілі: резолвер —
+ * чиста функція над уже записаною історією, він не знає про незбережений
+ * стан форми.
  *
  * DOM-free: жодного `window`/`localStorage`/React і жодного `new Date()` —
  * споживають і `apps/web`, і `apps/mobile`, і потенційно сервер.
@@ -26,7 +39,7 @@
  *    назад у часі — це та сама ретроактивна брехня, від якої лікує вся
  *    задача, лише переставлена з кінця історії на її початок.
  * 2. **`origin` доїжджає до консюмера незміненим — зокрема `'backfill'`.**
- *    Стадія 3 мусить МОГТИ відрізнити реконструкцію (міграція 087
+ *    Споживач мусить МОГТИ відрізнити реконструкцію (міграція 087
  *    припустила сьогоднішню ціль) від факту. Якщо резолвер «нормалізує»
  *    origin у 'manual', ця можливість зникає назавжди, і вибір founder-а
  *    між (a) малювати як звичайні / (b) з позначкою / (c) без відсотка
@@ -44,8 +57,8 @@
  * SQL з `ORDER BY`, і зберігати його порядок чесніше, ніж вигадувати
  * власний.
  *
- * Канон: docs/01-product/model/nutrition.md §4 / §12
- * Аудит: docs/90-work/audits/product-knowledge-nutrition.md § E-1 / H2
+ * Канон: docs/product/modules/nutrition.md §4 / §12
+ * Аудит: docs/work/specs/audits/product-knowledge-nutrition.md § E-1 / H2
  */
 
 /**
@@ -234,6 +247,49 @@ export function resolveEffectiveGoalsForRange(
     out.set(dateKey, current === null ? UNKNOWN_GOAL : toEffective(current));
   }
   return out;
+}
+
+/**
+ * Resolve the kcal target aligned with an ordered list of day keys.
+ *
+ * Consumers keep their own window order while this helper performs one
+ * range resolution. Unknown history stays `null`; it is never replaced with
+ * today's mutable preference.
+ */
+export function resolveKcalGoalsForDays(
+  periods: readonly GoalPeriod[],
+  dayKeys: readonly string[],
+): Array<number | null> {
+  if (dayKeys.length === 0) return [];
+  const valid = dayKeys
+    .filter((key) => DAY_KEY_RE.test(key))
+    .slice()
+    .sort();
+  if (valid.length === 0) return dayKeys.map(() => null);
+  const goals = resolveEffectiveGoalsForRange(
+    periods,
+    valid[0]!,
+    valid[valid.length - 1]!,
+  );
+  return dayKeys.map((key) => goals.get(key)?.kcal ?? null);
+}
+
+/** Mean known kcal target for a window, or `null` when any day is unknown. */
+export function averageKcalGoalForDays(
+  periods: readonly GoalPeriod[],
+  dayKeys: readonly string[],
+): number | null {
+  const targets = resolveKcalGoalsForDays(periods, dayKeys);
+  if (
+    targets.length === 0 ||
+    targets.some((value) => value == null || value <= 0)
+  ) {
+    return null;
+  }
+  return Math.round(
+    targets.reduce<number>((sum, value) => sum + (value ?? 0), 0) /
+      targets.length,
+  );
 }
 
 /**

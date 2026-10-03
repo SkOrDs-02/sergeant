@@ -15,39 +15,38 @@ import {
   safeWriteLS,
 } from "@shared/lib/storage/storage";
 import { loadDigest as sharedLoadDigest } from "@shared/lib/storage/weeklyDigestStorage";
-import { buildDigestCorrelations } from "./digestCorrelations";
+import {
+  buildCrossModuleSeries,
+  correlationsFromPairs,
+  notablePairsFromSeries,
+} from "./digestCorrelations";
+import { recordWeeklyChecks } from "./crossModuleLinkHistory";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
-import {
-  getCategory,
-  resolveExpenseCategoryMeta,
-} from "@sergeant/finyk-domain/lib/categories";
-import { canonicalManualCategoryId } from "@sergeant/finyk-domain/lib/manualTaxonomy";
+import { finykExpenseCategoryLabel } from "./finykCategoryLabel";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
-import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
-import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import {
+  averageKcalGoalForDays,
+  calcNutritionPeriodAverages,
+} from "@sergeant/nutrition-domain";
+import { itemTonnageKg, workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
-
-interface Category {
-  id?: string;
-  label?: string;
-  name?: string;
-  mccs?: number[];
-}
 
 // Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
 // з `@sergeant/routine-domain` замість колишньої інлайн-копії.
@@ -128,8 +127,14 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
   const { txs, excludedTxIds, txSplits, txCategories, customCategories } =
     readFinykStatsContext();
 
-  const monday = weekKeyToDeviceMondayMs(weekKey);
-  const sunday = monday + 7 * 86_400_000;
+  // Тиждень дайджесту названо ключем-понеділком ПРИСТРОЮ (він спільний зі
+  // звичками, їжею й тренуваннями, які пишуться за годинником телефона,
+  // ADR-0078), а гроші до цих семи дат відносить КИЇВСЬКИЙ день транзакції:
+  // пн–нд за Києвом, вікно `[пн 00:00, наступний пн 00:00)` (рішення власника
+  // 2026-10-01, `METRICS_VERSION` 17). Для київського пристрою це те саме
+  // вікно, що було; поза Києвом біля опівночі транзакція лягає в той самий
+  // тиждень, що й у Звітах і Аналітиці Фініка, а не в сусідній.
+  const { startMs: monday, endMs: sunday } = weekWindowByMondayKey(weekKey);
 
   // AI-NOTE: Раніше aggregateFinyk парсив `finyk_tx_cache`/`finyk_hidden_txs`/
   // `finyk_tx_cats` напряму і виключав лише hidden + internal_transfer. Тепер
@@ -143,48 +148,10 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
     end: sunday,
     excludedTxIds,
     txSplits,
-    categoryKey: (tx) => {
-      // W1-CANON-AGG стадія 2d: ручний запис не має ані рядка в
-      // `finyk_tx_cats` (там ключі банківських id), ані MCC — його
-      // категорія приїжджає полем `categoryId` з
-      // `manualExpenseToTransaction`. Без цієї гілки вся готівка осідала б
-      // у «Інше», і топ-категорії брехали б рівно на суму ручного світу.
-      // Гілка навмисно звужена до `manual`: банківські рядки теж несуть
-      // `categoryId`, і зчитувати його тут означало б тихо перекроїти вже
-      // показану користувачу розбивку банківських витрат.
-      const manualTx = tx as typeof tx & {
-        manual?: boolean;
-        categoryId?: string;
-      };
-      const manualCategory =
-        manualTx.manual && manualTx.categoryId ? manualTx.categoryId : null;
-      const override = txCategories[tx.id] ?? manualCategory ?? null;
-      // AI-CONTEXT (bug 2026-08-09): резолвимо КАНОНІЧНОЮ `getCategory` —
-      // тією самою, що друкує підпис у стрічці транзакцій і в Звітах.
-      // Власний резолвер дайджесту не знав ані keyword-матчингу, ані
-      // фолбеку «Інше»: невідомий MCC витікав користувачеві сирим рядком
-      // `MCC 4829` (це «переказ коштів»), і той самий рядок ішов у промпт
-      // моделі, яка потім пояснювала людині її ж «категорію MCC 4829».
-      const resolved = getCategory(
-        tx.description ?? "",
-        tx.mcc ?? 0,
-        override,
-        customCategories as Category[],
-      );
-      // Ключ — підпис КАНОНІЧНОЇ категорії. Детальні слаги ручної форми
-      // (`cafe`, `tech`, `groceries`) не мають запису в MCC-каталозі, тож
-      // без цього зведення `cafe` давав рядок «☕ Кафе та ресторани»
-      // ПОРУЧ із банківським «🍔 Кафе та ресторани» — дві позиції з
-      // однаковою назвою і різним емодзі, бо ключування за label-ом
-      // мерджить лише те, що вже має однаковий підпис. Кастомні id
-      // проходять недоторканими.
-      const canonicalId = canonicalManualCategoryId(resolved.id);
-      if (canonicalId === resolved.id) return resolved.label;
-      return (
-        resolveExpenseCategoryMeta(canonicalId, customCategories as Category[])
-          ?.label ?? resolved.label
-      );
-    },
+    // Резолв підпису — спільний із коучем (`finykExpenseCategoryLabel`):
+    // оверрайд → категорія ручного запису → MCC / ключові слова → «Інше».
+    categoryKey: (tx) =>
+      finykExpenseCategoryLabel(tx, txCategories, customCategories),
   });
 
   const topCategories = Object.entries(aggregate.byCategory)
@@ -261,11 +228,12 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
 
   for (const w of weekWorkouts) {
     for (const item of w.items) {
+      // Гейт саме по ТИПУ, не по нулю: силова вправа без підходів має
+      // лишити запис із нулем, як було до зведення на канон. `vol === 0`
+      // тут виглядав рівнозначним, але мовчки викидав такий запис із
+      // `exerciseVolumes`, а отже й із топ-3 дайджесту.
       if (item.type !== "strength") continue;
-      const vol = (item.sets ?? []).reduce(
-        (s, set) => s + set.weightKg * set.reps,
-        0,
-      );
+      const vol = itemTonnageKg(item);
       if (item.nameUk) {
         exerciseVolumes[item.nameUk] =
           (exerciseVolumes[item.nameUk] ?? 0) + vol;
@@ -321,11 +289,9 @@ export interface NutritionAggregate {
 }
 
 export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
-  // Canonical log + prefs — SQLite warm cache (`nutrition_log_v1` /
-  // `nutrition_prefs_v1` tombstoned).
+  // Canonical log + append-only goal history from the SQLite warm cache.
   const log = loadNutritionLog();
-  const prefs = loadNutritionPrefs();
-  const targetKcal = prefs.dailyTargetKcal ?? 2000;
+  const goalPeriods = loadNutritionGoalPeriods();
 
   const monday = new Date(`${weekKey}T00:00:00`);
   const weekDays: string[] = [];
@@ -335,6 +301,7 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
     d.setDate(monday.getDate() + i);
     weekDays.push(localDateKey(d));
   }
+  const targetKcal = averageKcalGoalForDays(goalPeriods, weekDays) ?? 0;
 
   // AI-CONTEXT: W1-CANON-AGG стадія 4 — числа не рухаються (дайджест уже
   // рахував за канонічною семантикою «дні з ≥1 прийомом»), рухається лише
@@ -543,7 +510,14 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
       try {
         // Кореляції рахуються кодом (не LLM) з локальних даних усіх модулів —
         // коуч отримує «помічені звʼязки» без окремого виклику моделі (WP3).
-        const correlations = buildDigestCorrelations();
+        const series = buildCrossModuleSeries();
+        const pairs = notablePairsFromSeries(series);
+        // Генерація звіту - теж тижнева перевірка пар. Без цього рядка
+        // серію накопичував би лише візит на `/insights`, і той, кому звіт
+        // приходить автоматом по понеділках, ніколи не дійшов би до
+        // другого ступеня (`crossModuleLinkHistory.ts`).
+        recordWeeklyChecks(pairs);
+        const correlations = correlationsFromPairs(pairs);
         coachApi
           .postMemory({
             weeklyDigest: {
@@ -605,7 +579,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     error:
       mutation.error && !insufficientData
         ? formatApiError(mutation.error, {
-            fallback: "Помилка генерації звіту",
+            fallback: failedCopy("скласти звіт"),
           })
         : null,
     insufficientData,

@@ -16,14 +16,18 @@ import {
 } from "@shared/hooks/useToast";
 import {
   BOTTOM_NAV_INSET_VAR,
+  SHEET_FOOTER_INSET_VAR,
   WORKOUT_BANNER_INSET_VAR,
 } from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
-import { messages } from "@shared/i18n/uk";
+// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
+// каталог тягне з собою десять модульних файлів плюс en-копію
+// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 
 // «Чорнило» v3.1 § 5 — hybrid toast, not a full saturated fill. Base is the
-// same `surface-hi` (#221c18 dark / #f6f5f2 light) + `text-ink` for every
+// same `surface-hi` (#3a302b dark / #f6f5f2 light) + `text-ink` for every
 // type; only the left stripe, icon, and Undo-action carry the semantic
 // colour. Error additionally gets a full-perimeter `danger/35` border
 // instead of the neutral `line/8` hairline. Colour-coding reads from the
@@ -238,8 +242,8 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     <div
       className={cn(
         // Elevation e5 — toast tier. Toasts are the top-most
-        // ephemeral surface; pairing with `z-toast` (300) keeps them
-        // above modals/sheets even when both stacks are visible.
+        // ephemeral surface; the tray sits on `z-toast` (300), above
+        // modals/sheets (200) even when both stacks are visible.
         "text-style-label pointer-events-auto w-full pl-5 pr-4 py-3 rounded-2xl shadow-e5 relative overflow-hidden",
         "flex items-center gap-2.5 outline-none",
         "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
@@ -283,7 +287,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
       >
         <Icon
           name={ICON_NAME[toast.type]}
-          size={16}
+          size="md"
           strokeWidth={2.5}
           aria-hidden
         />
@@ -347,7 +351,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
           )}
           aria-label={messages.actions.close}
         >
-          <Icon name="close" size={14} strokeWidth={2.5} aria-hidden />
+          <Icon name="close" size="sm" strokeWidth={2.5} aria-hidden />
         </button>
       )}
       {!isLeaving && toast.duration !== null && (
@@ -381,6 +385,9 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
  * Bottom-anchored toast tray. Positioned above the bottom-nav, optional
  * `ActiveWorkoutBanner`, and iOS safe-area inset; never overlaps with
  * those layers even when several toasts stack up on a 375 px viewport.
+ * While a `Sheet` with a `footer` is open the tray lifts above that footer
+ * (`--sgt-sheet-footer-inset`, published by the sheet itself) instead of
+ * sitting on its CTA — see the AI-CONTEXT inside the component.
  *
  * Тримає щонайбільше `MAX_VISIBLE_TOASTS` аркушів; решта чекає у черзі
  * провайдера й піднімається, щойно звільниться слот. Порожній трей
@@ -405,29 +412,34 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
  */
 export function ToastContainer() {
   const { toasts, dismiss, pause, resume } = useToast();
+  // AI-CONTEXT: трей завжди внизу, але над футером відкритого аркуша.
+  // Внизу він стояв рівно там, де футер bottom-sheet-а з його CTA, а
+  // наведення ставить авто-закриття на паузу — тож на десктопі тост під
+  // курсором, що завмер після кліку по «Почати», не зникав ніколи, і
+  // «Пропустити» в аркуші готовності лишалось недосяжним (E2E
+  // fizruk-active-workout, PR #64). #73 лікував це переносом трею вгору
+  // на час будь-якого модального діалогу; власник 2026-09-16 обрав інше:
+  // трей лишається внизу (звичне місце, «Повернути» під великим пальцем)
+  // і піднімається на висоту футера, яку `Sheet` публікує у
+  // `--sgt-sheet-footer-inset` тим самим `useBottomInsetVar`, що й
+  // навігація. Аркуш без футера змінну не ставить — CTA має жити у
+  // слоті `footer`, це і є контракт аркуша.
 
   // Показуємо лише видиме вікно — решта чекає у черзі в провайдері й
   // навіть не має запущеного таймера (див. `MAX_VISIBLE_TOASTS`).
-  // `leaving`-аркуші лишаємо у рендері, інакше exit-анімація не встигне
-  // програтись, але слота вони вже не займають.
-  const visible: ToastItem[] = [];
-  let slots = 0;
-  for (const t of toasts) {
-    if (t.leaving) {
-      visible.push(t);
-      continue;
-    }
-    if (slots >= MAX_VISIBLE_TOASTS) break;
-    slots += 1;
-    visible.push(t);
-  }
+  // `leaving`-аркуш тримає свій слот до кінця exit-анімації: коли слот
+  // звільнявся одразу, наступний із черги вʼїжджав поруч, і трей на
+  // 200 мс ставав чотирирядковим, а потім знову трирядковим — четвертий
+  // тост блимав.
+  const visible = toasts.slice(0, MAX_VISIBLE_TOASTS);
 
   const tray = (
     <div
       // Bottom-anchored above the bottom-nav, the optional
-      // `ActiveWorkoutBanner` and the iOS home-indicator safe-area.
+      // `ActiveWorkoutBanner`, the footer of an open `Sheet` and the iOS
+      // home-indicator safe-area.
       //
-      // AI-DANGER: обидві змінні ставляться на `<html>` хуком
+      // AI-DANGER: усі три змінні ставляться на `<html>` хуком
       // `useBottomInsetVar` і НЕ мають локальних аналогів у цій гілці
       // дерева. Попередня версія читала `--bottom-nav-height`, яку
       // виставляє утиліта `bottom-nav-height-var` на корені модуля —
@@ -443,16 +455,18 @@ export function ToastContainer() {
       // навігації (auth, onboarding).
       //
       // The tray is portalled to <body> below, so this tier is global rather
-      // than trapped inside an app-shell stacking context.
+      // than trapped inside an app-shell stacking context. `z-toast` (300)
+      // is the canonical top ephemeral tier — Sheet/Modal live on 200.
       className={cn(
-        "fixed left-1/2 -translate-x-1/2 z-9999",
+        "fixed left-1/2 -translate-x-1/2 z-toast",
         "flex flex-col items-center gap-2 pointer-events-none",
         "w-[min(92vw,24rem)]",
       )}
       style={{
-        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px)) + 0.75rem)`,
+        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px)) + 0.75rem)`,
       }}
       data-testid="toast-tray"
+      data-anchor="bottom"
       // Modal focus-management makes the rest of the page inert. A toast is
       // a live, top-most status surface and may contain an Undo action, so it
       // must remain hit-testable while a dialog is open.

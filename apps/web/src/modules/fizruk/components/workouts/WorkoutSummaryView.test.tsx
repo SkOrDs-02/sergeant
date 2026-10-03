@@ -6,6 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
+import { flatMatch } from "@shared/testing/numberText";
 import { WorkoutSummaryView } from "./WorkoutSummaryView";
 
 function makeWorkout(override: Partial<Workout> = {}): Workout {
@@ -24,11 +25,45 @@ function makeWorkout(override: Partial<Workout> = {}): Workout {
 
 describe("WorkoutSummaryView", () => {
   it("shows the finished-workout title, duration and the three stat tiles", () => {
-    render(<WorkoutSummaryView workout={makeWorkout()} onRepeat={vi.fn()} />);
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Тренування завершено")).toBeInTheDocument();
     expect(screen.getByText("Вправ")).toBeInTheDocument();
     expect(screen.getByText("Підходів")).toBeInTheDocument();
     expect(screen.getByText("Обʼєм")).toBeInTheDocument();
+  });
+
+  // PR-Z3 (аудит 2026-09-13, хвиля 6): "Обʼєм" тут — `вага_кг × повторення`
+  // (`computeWorkoutTonnageKg`), не маса. Канонічний підпис "кг×повт",
+  // уніфікований з `WorkoutFinishSheets` і `RecentWorkoutsSection`.
+  it("labels the volume stat 'кг×повт', not bare 'кг' — the value is weight × reps, not mass", () => {
+    const workout = makeWorkout({
+      items: [
+        {
+          id: "i1",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [{ weightKg: 100, reps: 10 }],
+        },
+      ],
+    });
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
   });
 
   it("renders the exercise list with per-item set details", () => {
@@ -49,14 +84,55 @@ describe("WorkoutSummaryView", () => {
         },
       ],
     });
-    render(<WorkoutSummaryView workout={workout} onRepeat={vi.fn()} />);
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
     expect(screen.getByText("40×8, 45×6")).toBeInTheDocument();
   });
 
+  // RPE is optional end-to-end (`WorkoutSetRpeMenu`) — a set without it
+  // must read as a plain "80×8", never "RPE 0" or any other synthesized
+  // value (canon `fizruk.md` §3: "опц. `rpe` (Borg 1..10)").
+  it("shows RPE next to a set only when it was recorded, omitting it otherwise", () => {
+    const workout = makeWorkout({
+      items: [
+        {
+          id: "i1",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [
+            { weightKg: 80, reps: 8, rpe: 7 },
+            { weightKg: 80, reps: 6 },
+          ],
+        },
+      ],
+    });
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("80×8 · RPE 7, 80×6")).toBeInTheDocument();
+  });
+
   it("shows the wellbeing row only when energy or mood was recorded", () => {
     const { rerender } = render(
-      <WorkoutSummaryView workout={makeWorkout()} onRepeat={vi.fn()} />,
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
     );
     expect(screen.queryByText(/Самопочуття/)).not.toBeInTheDocument();
 
@@ -64,6 +140,7 @@ describe("WorkoutSummaryView", () => {
       <WorkoutSummaryView
         workout={makeWorkout({ wellbeing: { energy: 4, mood: 5 } })}
         onRepeat={vi.fn()}
+        onClose={vi.fn()}
       />,
     );
     expect(screen.getByText(/Самопочуття/)).toBeInTheDocument();
@@ -73,7 +150,11 @@ describe("WorkoutSummaryView", () => {
 
   it("shows the note only when present", () => {
     const { rerender } = render(
-      <WorkoutSummaryView workout={makeWorkout()} onRepeat={vi.fn()} />,
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
     );
     expect(screen.queryByText("Нотатка")).not.toBeInTheDocument();
 
@@ -81,6 +162,7 @@ describe("WorkoutSummaryView", () => {
       <WorkoutSummaryView
         workout={makeWorkout({ note: "Важко на присіданнях" })}
         onRepeat={vi.fn()}
+        onClose={vi.fn()}
       />,
     );
     expect(screen.getByText("Нотатка")).toBeInTheDocument();
@@ -89,8 +171,31 @@ describe("WorkoutSummaryView", () => {
 
   it("calls onRepeat from the Повторити CTA", () => {
     const onRepeat = vi.fn();
-    render(<WorkoutSummaryView workout={makeWorkout()} onRepeat={onRepeat} />);
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={onRepeat}
+        onClose={vi.fn()}
+      />,
+    );
     screen.getByRole("button", { name: /повторити це тренування/i }).click();
     expect(onRepeat).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onClose from the back button — PR-Z1: the only exit that does not start a new workout", () => {
+    // Session chrome (header + bottom nav) is off for the whole `workout`
+    // route (`FizrukApp.sessionMode`); before this, the finished-workout
+    // summary had no way out except «Повторити це тренування», which
+    // starts a brand-new session instead of leaving.
+    const onClose = vi.fn();
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+    screen.getByRole("button", { name: "Повернутись до тренувань" }).click();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

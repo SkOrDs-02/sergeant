@@ -54,18 +54,20 @@ vi.mock("../components/NutritionDashboard", () => ({
   NutritionDashboard: ({
     onGoToLog,
     onGoToDailyPlan,
-    onAddMeal,
   }: {
     onGoToLog: () => void;
     onGoToDailyPlan: () => void;
-    onAddMeal: () => void;
   }) => (
     <div data-testid="nutrition-dashboard">
       <button onClick={onGoToLog}>До щоденника</button>
       <button onClick={onGoToDailyPlan}>До плану</button>
-      <button onClick={onAddMeal}>Додати прийом їжі</button>
     </div>
   ),
+}));
+
+const boot = vi.hoisted(() => ({ settled: true }));
+vi.mock("../hooks/useNutritionSqliteReadBoot", () => ({
+  isNutritionReadCacheSettled: () => boot.settled,
 }));
 
 // ---------------------------------------------------------------------------
@@ -100,37 +102,45 @@ function renderStartPage(
   overrides: {
     log?: Partial<ReturnType<typeof useNutritionLog>>;
     setActivePageAndHash?: (page: string) => void;
-    onRequestAddMeal?: () => void;
   } = {},
 ) {
   const log = makeLog(overrides.log);
   const setActivePageAndHash = overrides.setActivePageAndHash ?? vi.fn();
-  const onRequestAddMeal = overrides.onRequestAddMeal ?? vi.fn();
 
   render(
     <NutritionStartPage
       log={log}
       prefs={EMPTY_PREFS}
+      onPickMeal={vi.fn()}
       setActivePageAndHash={
         setActivePageAndHash as (
           page: import("../lib/nutritionRouter").NutritionPage,
         ) => void
       }
-      onRequestAddMeal={onRequestAddMeal}
     />,
   );
 
-  return { log, setActivePageAndHash, onRequestAddMeal };
+  return { log, setActivePageAndHash };
 }
 
 afterEach(() => {
   cleanup();
+  boot.settled = true;
 });
 
 describe("NutritionStartPage", () => {
   it("renders without crashing — shows NutritionDashboard", () => {
     renderStartPage();
     expect(screen.getByTestId("nutrition-dashboard")).toBeTruthy();
+  });
+
+  it("показує скелетон, поки кеш читання не готовий", () => {
+    boot.settled = false;
+    renderStartPage();
+    expect(
+      screen.getByRole("status", { name: messages.loaders.loadingSection }),
+    ).toBeTruthy();
+    expect(screen.queryByTestId("nutrition-dashboard")).toBeNull();
   });
 
   it("'До щоденника' button calls setActivePageAndHash('log')", async () => {
@@ -147,21 +157,6 @@ describe("NutritionStartPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "До плану" }));
     expect(setActivePageAndHash).toHaveBeenCalledWith("menu");
-  });
-
-  it("'Додати прийом їжі' delegates to onRequestAddMeal (parent owns navigate + sheet-open)", async () => {
-    // F13: the page no longer owns the date-set / navigate / setTimeout
-    // sheet-open dance. It just requests the action; NutritionApp drives the
-    // deterministic, effect-based follow-up once the Log page has mounted.
-    const onRequestAddMeal = vi.fn();
-
-    renderStartPage({ onRequestAddMeal });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Додати прийом їжі" }),
-    );
-
-    expect(onRequestAddMeal).toHaveBeenCalledTimes(1);
   });
 
   it("не тримає власного входу у фотоаналіз — він лишається джерелом у AddMealSheet", () => {

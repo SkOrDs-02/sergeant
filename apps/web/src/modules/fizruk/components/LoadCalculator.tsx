@@ -7,6 +7,7 @@ import { fmtLoose } from "../lib/numberFmt";
 import { Measure } from "@shared/components/ui/Measure";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { messages } from "@shared/i18n/uk";
 import {
   buildLoadCalculatorZones,
   type LoadCalculatorZone,
@@ -37,8 +38,16 @@ const TONE_CLASSES: Record<
 /**
  * `reduced` — калькулятор рахує від ЗНИЖЕНОГО орієнтира, а не від піка
  * (канон `fizruk.md` §6, `oneRmAging.ts`). Підпис має це визнавати вголос:
- * інакше користувач бачить менше число під тим самим словом «1RM» і читає
- * це як баг, а не як навмисну обережність.
+ * інакше користувач бачить менше число під тим самим словом, і читає це як
+ * баг, а не як навмисну обережність.
+ *
+ * Обидві половини підпису беремо з `messages.fizruk.oneRmAging`, і це не
+ * косметика. Доти тут стояли два літерали — «орієнтир» і «1RM», — тож ПОЛОВИНА
+ * підпису була українською, а половина лишалась голим акронімом. Ніде більше
+ * в модулі «1RM» користувачу не показують: каталог послідовно каже «рекорд»
+ * (`peakLabel`) і «орієнтир» (`referenceLabel`), і `ReturnProtocolNotice`
+ * підписує ТЕ САМЕ число саме цими словами. Тобто людина бачила одну величину
+ * під двома різними іменами залежно від екрана.
  */
 export function LoadCalculator({
   oneRM,
@@ -47,6 +56,7 @@ export function LoadCalculator({
   oneRM: number;
   reduced?: boolean;
 }) {
+  const t = messages.fizruk.oneRmAging;
   const zones = buildLoadCalculatorZones(oneRM);
   if (zones.length === 0) return null;
 
@@ -57,7 +67,8 @@ export function LoadCalculator({
           Калькулятор навантаження
         </SectionHeading>
         <div className="text-style-caption text-subtle">
-          {reduced ? "орієнтир" : "1RM"} = <Measure value={oneRM} unit="кг" />
+          {reduced ? t.referenceLabel : t.peakLabel} ={" "}
+          <Measure value={oneRM} unit={t.kgUnit} />
         </div>
       </div>
       <div className="space-y-3">
@@ -87,7 +98,12 @@ export function LoadCalculator({
               {zone.entries.map((entry) => (
                 <div
                   key={entry.percent}
-                  className="text-center bg-panel/60 rounded-xl py-1.5 px-1"
+                  // Білий осередок на тонованій зоні: сама заливка дає
+                  // S 1.10-1.14 (flat/weak), тож відмінність несе контур
+                  // `border-line` (як картки в плані дня). Межа додає 1px з
+                  // кожного боку, тому `py-[5px]` замість `py-1.5` тримає
+                  // висоту осередка (і зон) тією самою.
+                  className="text-center bg-panel border border-line rounded-xl py-[5px] px-1"
                 >
                   <div className="text-style-caption text-subtle leading-none mb-0.5">
                     {entry.percent}%
@@ -107,7 +123,7 @@ export function LoadCalculator({
         ))}
       </div>
       <p className="text-style-caption text-muted mt-2 text-center">
-        Ваги округлені до найближчих 2,5 кг
+        Ваги округлені до найближчих 2,5{"\u202F"}кг
       </p>
     </Card>
   );

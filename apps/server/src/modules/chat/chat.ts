@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { randomUUID } from "node:crypto";
 import { env } from "../../env.js";
 import { chatViaOpenRouter } from "../../env/chatModels.js";
 import { parseBody } from "../../http/validate.js";
@@ -25,7 +26,16 @@ import {
   buildToolsPayload,
   toolNamesFromRawCalls,
 } from "./promptCache.js";
-import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
+import {
+  recordToolProposals,
+  recordToolExecutions,
+  buildToolUseIdToNameMap,
+} from "./toolMetrics.js";
+import {
+  markToolTurnIssued,
+  takeToolTurnLatencyMs,
+} from "./chatToolSpanTiming.js";
+import { captureAiSpan } from "../../lib/posthogAi.js";
 import {
   buildChatCacheKey,
   getCachedChatResponse,
@@ -40,22 +50,51 @@ import {
   chatToolIterationCapHitTotal,
 } from "../../obs/metrics.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
-import { getSessionUser } from "../../auth.js";
 import { getCounterpartyNames } from "../../lib/counterpartyNames.js";
 import { maskMachineText, maskUserText } from "../../lib/llmRedaction.js";
+import { replaceLongDash } from "../../lib/modelText.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 import { getCoachCorrelationsBlock } from "./coach.js";
 import { getUserPreferences } from "../me/dataRights.js";
+import { resolveHealthConsent } from "../../lib/healthConsent.js";
+import {
+  redactHealthToolCalls,
+  redactHealthToolResults,
+  stripHealthContext,
+} from "./healthGate.js";
 import { pool } from "../../db.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
 /**
- * Timeout budget for Anthropic chat tool-result + chat completion calls.
- * Aligned with the longest expected tool-aided round-trip; covers both the
- * `chat-tool-result` continuation and the main `chat` endpoint.
+ * Бюджет ОДНІЄЇ спроби upstream-виклику чату. Покриває і `chat` (перший хід),
+ * і `chat-tool-result` (синтез після інструментів).
+ *
+ * AI-CONTEXT: до 2026-09-19 тут стояло 30 000 без ретраю, і це давало найгіршу
+ * з можливих поведінок — людина чекала повні 30 с і отримувала помилку, бо на
+ * таймаут `anthropic.ts` нічого не пробував (ні другої спроби, ні іншого
+ * транспорту), хоча бюджет `maxTotalMs` лишався невитраченим.
+ *
+ * Прод-замір (PostHog `$ai_generation`, 2026-09-17) показав бімодальність:
+ * успіхи `gemini-3.7-flash` 5.2-8.0 с, збої — рівно 30.0 с з нулем токенів і
+ * без HTTP-статусу, тобто зависання зʼєднання, а не повільна модель. Стенд
+ * `eval:tools` дає тій самій моделі медіану 3.8-4.1 с і максимум 8.5 с.
+ *
+ * Звідси 12 с: ~40% запасу над спостережуваним максимумом успіху, і при цьому
+ * достатньо низько, щоб зависання коштувало одну спробу, а не все очікування.
+ * Стеля на весь логічний виклик лишається 30 с, тобто для людини гірше не
+ * стало: у найгіршому разі це ті самі 30 с, але з двома спробами замість
+ * однієї. Синтез (`glm-5.2`) у тому ж замірі — 0.7-2.6 с, тож 12 с вистачає
+ * обом шляхам.
  */
-const CHAT_TOOL_TIMEOUT_MS = 30_000;
+const CHAT_ATTEMPT_TIMEOUT_MS = 12_000;
+
+/**
+ * Стеля на ОДИН логічний виклик чату разом зі сном між спробами — те саме
+ * число, що раніше було таймаутом однієї спроби. Задається явно, бо дефолт
+ * `timeoutMs * 2` дав би 24 с і мовчки звузив наявний бюджет.
+ */
+const CHAT_TOTAL_TIMEOUT_MS = 30_000;
 
 // Anthropic prompt-caching хелпери (buildSystem / buildToolsPayload /
 // applyMessagesCacheBreakpoint) винесені в `./promptCache.ts` — три cache
@@ -137,6 +176,12 @@ async function callAnthropicWithContinuation(
     signal?: AbortSignal;
     promptVersion?: string;
     userId?: string;
+    /** `$ai_trace_id` — ініціатива 0025, Фаза 2 (`AnthropicCallOptions.traceId`). */
+    traceId?: string;
+    /** Стеля на весь логічний виклик — див. `AnthropicCallOptions.maxTotalMs`. */
+    maxTotalMs?: number;
+    /** Один ретрай після таймауту — див. `AnthropicCallOptions.retryOnTimeout`. */
+    retryOnTimeout?: boolean;
   },
 ): Promise<{
   response: FetchResponse | null;
@@ -253,6 +298,25 @@ function buildMergedContent(
 }
 
 /**
+ * Квиток, який ми видали, — завжди `randomUUID()` (`chatRoundTripTicket.ts`).
+ * Схема ж пропускає будь-який рядок до 200 символів
+ * (`round_trip_ticket: z.string().max(200)` у `packages/shared`), і
+ * `assertAiQuota` невалідний квиток просто не зараховує — запит іде далі.
+ * Без цієї перевірки такий рядок ставав би значенням `$ai_trace_id`, тобто
+ * клієнт визначав би вміст телеметрійного поля і міг би зшити свій хід із
+ * чужим деревом. Формат не збігся — беремо свіжий id, як для клієнта
+ * взагалі без квитка.
+ */
+function isUuidV4(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
+}
+
+/**
  * AI-5 рішення 1 — приклеює `round_trip_ticket` до першого-турового
  * `tool_calls`-response, ЯКЩО (а) юзер відомий (`ledgerUserId`; анонім сюди
  * не доходить — `requireSession()`) і (б) відповідь дійсно несе непорожній
@@ -264,9 +328,19 @@ function buildMergedContent(
  * повторний cache-hit того самого запиту видає СВІЖИЙ одноразовий квиток
  * замість повторного використання/replay уже спожитого.
  */
+/**
+ * `traceId` (ініціатива 0025, Фаза 2) — той самий `$ai_trace_id`, під яким
+ * пішла подія `$ai_generation` першого туру (live-виклик) чи котрий
+ * згенеровано щойно для cache-hit-шляху (де генерації взагалі не було).
+ * Стає значенням `round_trip_ticket`, тож клієнт, echo-ячи його в другому
+ * запиті, заразом віддає нам стабільний trace id для tool-спанів і
+ * tool-result-генерації того самого ходу — див. `chatRoundTripTicket.ts`
+ * docstring і `chatToolSpanTiming.ts`.
+ */
 function attachRoundTripTicket(
   body: unknown,
   ledgerUserId: string | undefined,
+  traceId: string,
 ): unknown {
   if (!ledgerUserId) return body;
   if (
@@ -277,9 +351,13 @@ function attachRoundTripTicket(
   ) {
     return body;
   }
+  markToolTurnIssued(traceId);
   return {
     ...(body as Record<string, unknown>),
-    round_trip_ticket: issueRoundTripTicket({ userId: ledgerUserId }),
+    round_trip_ticket: issueRoundTripTicket({
+      userId: ledgerUserId,
+      id: traceId,
+    }),
   };
 }
 
@@ -287,6 +365,9 @@ function attachRoundTripTicket(
  * POST /api/chat — основний чат з AI-асистентом з tool-calling та SSE-стрімом.
  * Middleware-и роутера гарантують ключ у `req.anthropicKey` і валідну квоту.
  */
+/** `req.user` ставить `requireSession()` (`http/requireSession.ts`). */
+type AuthedRequest = Request & { user?: { id: string } };
+
 export default async function handler(
   req: Request,
   res: Response,
@@ -296,8 +377,8 @@ export default async function handler(
   // AI-2 — з чого складається очікування людини на першому ході.
   //
   // Фази накопичуємо в мапу і віддаємо в метрику ОДНИМ спалахом пізніше, а
-  // не по місцю заміру. Причина: `getSessionUser` і `getCounterpartyNames`
-  // нижче платить і тур синтезу теж, а змішані серії не відповіли б на
+  // не по місцю заміру. Причина: `getCounterpartyNames` нижче платить і
+  // тур синтезу теж, а змішані серії не відповіли б на
   // питання знахідки — вони описували б «середній хід», якого не існує.
   // Спалах стоїть там, де вже точно відомо, що хід перший.
   const handlerStartedAt = Date.now();
@@ -335,7 +416,7 @@ export default async function handler(
     });
   }
 
-  // AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // AI-5 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // `assertAiQuota` (router middleware, `requireAiQuota()`) consumes a
   // daily-quota ticket BEFORE this handler runs. Everything from here down
   // to the first upstream `callAnthropicWithContinuation` /
@@ -344,7 +425,13 @@ export default async function handler(
   // already paid. `refundQuotaOnUpstreamFailure` used to fire only around
   // the upstream calls themselves; every early-reject path below now
   // refunds too, so a 400/422 issued before upstream never burns quota.
-  let context, messages, tool_results, tool_calls_raw, stream, preset;
+  let context,
+    messages,
+    tool_results,
+    tool_calls_raw,
+    stream,
+    preset,
+    round_trip_ticket;
   try {
     ({
       context = "",
@@ -353,6 +440,7 @@ export default async function handler(
       tool_calls_raw,
       stream,
       preset,
+      round_trip_ticket,
     } = parseBody(ChatRequestSchema, req));
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
@@ -380,13 +468,32 @@ export default async function handler(
     );
   }
 
-  // Резолвимо сесію один раз — для RAG-injection (перший тур) і для per-user
-  // cost-ledger (`ai_usage_daily` рядок `u:<id>` поряд із global aggregate).
-  // anon / lookup-error → null: cost тоді пишеться лише глобально.
-  const sessionUser = await timePhase("session", () =>
-    getSessionUser(req).catch(() => null),
-  );
+  // Сесію вже розвʼязав `requireSession()` на маршруті (`routes/chat.ts`) і
+  // поклав у `req.user`; після ADR-0086 анонімних викликів тут немає. Вона
+  // потрібна для RAG-injection (перший тур) і per-user cost-ledger
+  // (`ai_usage_daily` рядок `u:<id>` поряд із global aggregate).
+  //
+  // AI-DANGER: до 2026-09-16 тут стояв ДРУГИЙ, незалежний
+  // `getSessionUser(req).catch(() => null)`. Збій саме цього зайвого запиту
+  // (cookie-cache, БД) мовчки робив хід «анонімним», і ламалось усе одразу:
+  // квота списувалась двічі за тур тулів (round-trip-ticket вимагає truthy
+  // `ledgerUserId`), ключ кешу відповіді падав у спільний бакет `"anon"` —
+  // рівно та крос-юзерна ізоляція, яку обіцяє `chatResponseCache` — і
+  // RAG-контекст зникав із ходу. Без логу й без метрики (аудит 2026-09-15
+  // § 1). Джерело істини — одне: те, що поклав middleware.
+  const sessionUser = (req as AuthedRequest).user ?? null;
   const ledgerUserId = sessionUser?.id ?? undefined;
+
+  // Гейт «дані про здоровʼя → модель» (GDPR Art. 9, рішення власника
+  // 2026-09-29). Джерело правди — збережена `healthDataConsent`, читається
+  // ТУТ, на сервері; клієнтський стан нічого не вирішує. Fail-closed:
+  // збій БД = «згоди немає». Стоїть ДО response-cache: `system` без health-
+  // частини дає інший ключ, тож закешована відповідь «зі згодою» не віддасться
+  // тому, хто її не давав.
+  const healthConsent = await timePhase("health_consent", () =>
+    resolveHealthConsent(ledgerUserId),
+  );
+  const clientContext = healthConsent ? context : stripHealthContext(context);
 
   // Маскування перед відправкою за периметр (рішення founder-а #10).
   //
@@ -412,6 +519,15 @@ export default async function handler(
 
   // Другий крок: клієнт виконав tool calls і повертає результати
   if (tool_results && tool_calls_raw) {
+    // Ініціатива 0025, Фаза 2 — `$ai_trace_id` цього ходу. `round_trip_ticket`
+    // — те саме значення, яке ми самі видали клієнту наприкінці першого туру
+    // (`attachRoundTripTicket`); echo підтверджує, що це продовження ТОГО
+    // САМОГО ходу. Відсутній/невалідний/старий клієнт без квитка — усе одно
+    // не ламається: спани й tool-result-генерація йдуть під свіжим
+    // випадковим trace id (той самий fallback, що Фаза 1 має для generation).
+    const toolTraceId = isUuidV4(round_trip_ticket)
+      ? round_trip_ticket
+      : randomUUID();
     // M7 — hard cap на кількість tool_use-блоків з клієнтського
     // боку. Schema допускає до 20 (`ToolResult.max(20)`), але семантично
     // легітимний потік ніколи не перевищує MAX_TOOL_ITERATIONS у одному
@@ -446,6 +562,28 @@ export default async function handler(
       throw e;
     }
     recordToolExecutions(tool_results, tool_calls_raw);
+    // `$ai_span` на кожен виконаний tool (ініціатива 0025, Фаза 2). Один
+    // спан на `tool_result` — той самий перелік, що щойно інкрементнув
+    // `chat_tool_invocations_total`, тож і мапа імен, і `isError` (не
+    // змапилось на відомий tool → провенанс-помилка) уже пораховані тим
+    // самим `toolMetrics.ts`-хелпером. `latencyMs` — ОДНА оцінка на весь
+    // round-trip (сервер не бачить окремих tool-викликів, `chatToolSpanTiming.ts`),
+    // тож усі спани цього ходу несуть однакове число — задокументований
+    // компроміс, не помилка виміру.
+    {
+      const toolLatencyMs = takeToolTurnLatencyMs(toolTraceId);
+      const toolUseIdToName = buildToolUseIdToNameMap(tool_calls_raw);
+      for (const r of tool_results) {
+        const spanName = toolUseIdToName.get(r.tool_use_id);
+        captureAiSpan({
+          userId: ledgerUserId,
+          traceId: toolTraceId,
+          spanName: spanName ?? "unknown",
+          isError: !spanName,
+          latencyMs: toolLatencyMs,
+        });
+      }
+    }
     // Великі `tool_result`-блоби (брифінги, місячні digest-и) зʼїдають
     // бюджет вхідних токенів і зривають continuation. Truncate на сервері,
     // повний blob — у Sentry breadcrumb для debug-у.
@@ -454,7 +592,9 @@ export default async function handler(
     // те кладе повний оригінал у Sentry-breadcrumb); тому всі три живуть
     // одним конвеєром у `prepareToolResults`, а не тут поодинці.
     const toolResultMessages = prepareToolResults(
-      tool_results,
+      healthConsent
+        ? tool_results
+        : redactHealthToolResults(tool_results, tool_calls_raw),
       tool_calls_raw,
       {
         knownValues,
@@ -476,7 +616,12 @@ export default async function handler(
 
     const fullMessages = [
       ...(lastUserMsg ? [{ role: "user", content: lastUserMsg.content }] : []),
-      { role: "assistant", content: tool_calls_raw },
+      {
+        role: "assistant",
+        content: healthConsent
+          ? tool_calls_raw
+          : redactHealthToolCalls(tool_calls_raw),
+      },
       { role: "user", content: toolResultMessages },
     ];
 
@@ -501,7 +646,11 @@ export default async function handler(
       // Preset іде і в tool-result тур: інструкція інтервʼю має діяти й на
       // синтезі після `remember`, інакше модель «забуває» ліміт у 4
       // повідомлення рівно там, де підбиває підсумок.
-      system: buildSystem(maskMachineText(context, knownValues), preset),
+      system: buildSystem(
+        maskMachineText(clientContext, knownValues),
+        preset,
+        healthConsent,
+      ),
       // Tools для ЦІЄЇ моделі: Pro-деградація може підмінити Sonnet на
       // Haiku, а ops — на будь-що через `AI_PRO_*_CHAT_MODEL`. Tool search
       // підтримують не всі моделі, тож payload будується під фактичну.
@@ -528,6 +677,7 @@ export default async function handler(
         clientAbort.signal,
         SYSTEM_PROMPT_VERSION,
         ledgerUserId,
+        toolTraceId,
       );
       return;
     }
@@ -538,10 +688,13 @@ export default async function handler(
         apiKey,
         payload,
         {
-          timeoutMs: CHAT_TOOL_TIMEOUT_MS,
+          timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+          maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
+          retryOnTimeout: true,
           endpoint: "chat-tool-result",
           signal: clientAbort.signal,
           promptVersion: SYSTEM_PROMPT_VERSION,
+          traceId: toolTraceId,
           ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
         },
       ));
@@ -558,7 +711,7 @@ export default async function handler(
       });
     }
 
-    const text = extractAnthropicText(data);
+    const text = replaceLongDash(extractAnthropicText(data));
     res.status(200).json({ text: text || "Готово." });
     return;
   }
@@ -577,14 +730,16 @@ export default async function handler(
   // context **тільки на першому турі**, тим самим шляхом що й RAG нижче.
   // Дешевий point-lookup (<1мс) — на відміну від RAG не ходить у Voyage,
   // тож fail-safe і без помітної затримки.
-  const correlationsBlock = sessionUser?.id
-    ? await timePhase("correlations", () =>
-        getCoachCorrelationsBlock(sessionUser.id),
-      )
-    : "";
+  // Кореляції зшивають Фізрук/Харчування з рештою — без згоди їх немає.
+  const correlationsBlock =
+    sessionUser?.id && healthConsent
+      ? await timePhase("correlations", () =>
+          getCoachCorrelationsBlock(sessionUser.id),
+        )
+      : "";
   const contextWithCorrelations = correlationsBlock
-    ? `${context}\n${correlationsBlock}`
-    : context;
+    ? `${clientContext}\n${correlationsBlock}`
+    : clientContext;
 
   // RAG-injection: підмішуємо top-K схожих ai_memories у system context
   // **тільки на першому турі** (тут), не на tool-result-турі вище. Sync
@@ -601,7 +756,14 @@ export default async function handler(
     knownValues,
   );
 
-  const firstTurnSystem = buildSystem(augmentedContext, preset);
+  const firstTurnSystem = buildSystem(augmentedContext, preset, healthConsent);
+
+  // Ініціатива 0025, Фаза 2 — `$ai_trace_id` першого туру. Генеруємо тут
+  // (ДО live-виклику і ДО cache-check), а не всередині `attachRoundTripTicket`,
+  // бо той самий id мусить піти і в `$ai_generation` live-виклику нижче, і
+  // в квиток, що клієнт отримає навіть на cache-hit-шляху (де генерації
+  // взагалі не було — див. коментар `attachRoundTripTicket`).
+  const chatTraceId = randomUUID();
 
   // Response-cache (перший тур): ключ від фактичного system+messages. `system`
   // несе живий фінансовий снапшот + RAG + coach-кореляції, тож будь-яка зміна
@@ -624,7 +786,7 @@ export default async function handler(
     flushFirstTurnPhases();
     res
       .status(cached.status)
-      .json(attachRoundTripTicket(cached.body, ledgerUserId));
+      .json(attachRoundTripTicket(cached.body, ledgerUserId, chatTraceId));
     return;
   }
 
@@ -668,16 +830,23 @@ export default async function handler(
         model: env.CHAT_MODEL_FIRST_TURN,
         max_tokens: 1500,
         system: firstTurnSystem,
-        tools: buildToolsPayload(env.CHAT_MODEL_FIRST_TURN, activeModules),
+        tools: buildToolsPayload(
+          env.CHAT_MODEL_FIRST_TURN,
+          activeModules,
+          healthConsent,
+        ),
         // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
         // тур читав попередні повідомлення з кешу замість повного re-білінгу.
         messages: applyMessagesCacheBreakpoint(cleaned),
       },
       {
-        timeoutMs: CHAT_TOOL_TIMEOUT_MS,
+        timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+        maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
+        retryOnTimeout: true,
         endpoint: "chat",
         signal: clientAbort.signal,
         promptVersion: SYSTEM_PROMPT_VERSION,
+        traceId: chatTraceId,
         ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
       },
     ));
@@ -686,7 +855,7 @@ export default async function handler(
     throw e;
   } finally {
     // `finally`, а не рядок після виклику: провал upstream — це найдовше
-    // очікування, яке людина взагалі бачить (таймаут `CHAT_TOOL_TIMEOUT_MS`),
+    // очікування, яке людина взагалі бачить (стеля `CHAT_TOTAL_TIMEOUT_MS`),
     // і викинути саме його з розподілу означало б міряти лише щасливий шлях.
     phaseMs.set("upstream", Date.now() - upstreamStartedAt);
     flushFirstTurnPhases();
@@ -702,10 +871,12 @@ export default async function handler(
 
   const content: AnthropicContentBlock[] = data?.content || [];
   const toolUses = content.filter((b) => b.type === "tool_use");
-  const textParts = content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text ?? "")
-    .join("\n");
+  const textParts = replaceLongDash(
+    content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("\n"),
+  );
 
   // M7 — model-side cap. Anthropic може повернути довгий ланцюг tool-call-ів
   // без тексту: malicious / malfunctioning prompt здатен розкрутити
@@ -737,7 +908,9 @@ export default async function handler(
     // `attachRoundTripTicket` видає свіжий на кожен send, кеш зберігає лише
     // канонічне тіло без нього.
     setCachedChatResponse(cacheKey, { status: 200, body });
-    res.status(200).json(attachRoundTripTicket(body, ledgerUserId));
+    res
+      .status(200)
+      .json(attachRoundTripTicket(body, ledgerUserId, chatTraceId));
     return;
   }
 

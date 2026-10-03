@@ -8,7 +8,10 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
-import { BOTTOM_NAV_INSET_VAR } from "../../hooks/useBottomInsetVar";
+import {
+  SHEET_FOOTER_INSET_VAR,
+  useBottomInsetVar,
+} from "../../hooks/useBottomInsetVar";
 import { useKeyboardAwareOverlay } from "../../hooks/useKeyboardAwareOverlay";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useHistoryDismiss } from "../../hooks/useHistoryDismiss";
@@ -33,9 +36,10 @@ import { useVisualKeyboardInset } from "@sergeant/shared";
  *   - 44×44 close button (WCAG tap target) with <Button variant="ghost" iconOnly>
  *   - focus trap + Escape via useDialogFocusTrap
  *   - overlay-click dismiss
- *   - animated slide-up with safe-area + bottom-nav margin so the
- *     panel always clears the module bottom tab bar (see ModuleShell's
- *     `--bottom-nav-height` CSS variable) and the iOS home indicator
+ *   - animated slide-up with a safe-area inset so the panel always clears
+ *     the iOS home indicator (the module bottom tab bar sits under the
+ *     sheet's own scrim, so no space is reserved for it — see the
+ *     `paddingBottom` note below)
  *   - keyboard-inset-aware margin through the shared platform adapter
  *
  * Callers are still responsible for their own form state, validation,
@@ -126,7 +130,14 @@ export function Sheet({
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  // Публікує смугу футера на `<html>`, щоб трей тостів (сестра у
+  // `Providers`, до якої локальні змінні не доходять) став над CTA аркуша,
+  // а не на ньому. Виміряно, не пораховано: `innerHeight - rect.top` уже
+  // включає клавіатурний `marginBottom` панелі, тож тост підіймається і над
+  // клавіатурою. Без футера змінна знімається (`active = false`).
+  useBottomInsetVar(footerRef, SHEET_FOOTER_INSET_VAR, open && Boolean(footer));
   const detectedKbInsetPx = useVisualKeyboardInset(open);
   const resolvedKbInsetPx = kbInsetPx ?? detectedKbInsetPx;
   useDialogFocusTrap(open, panelRef, {
@@ -175,16 +186,9 @@ export function Sheet({
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
-  // Lift the panel above the bottom nav plus the iOS home-indicator inset.
-  // Джерело — `--sgt-bottom-nav-inset` на `<html>` (`useBottomInsetVar`,
-  // виміряна смуга реальної навігації разом із її safe-area). Аркуш
-  // портується в `<body>`, тож `--bottom-nav-height`, що ставиться на
-  // корінь модуля всередині дерева, до нього не доходить і завжди давав
-  // `0px`: футер «Готово» аркуша готовності ховався під навбар (звіт
-  // 2026-09-03). Старий calc лишається fallback-ом для навігацій, які ще
-  // не публікують змінну. The resolved keyboard inset overrides the offset
-  // when the soft keyboard is visible — we want the sheet to hug the
-  // keyboard, not float above where the nav would be.
+  // Геометрія панелі. The resolved keyboard inset overrides the bottom
+  // padding when the soft keyboard is visible — we want the sheet to hug
+  // the keyboard, not float above where the nav would be.
   const baseStyle: CSSProperties =
     resolvedKbInsetPx > 0
       ? {
@@ -219,14 +223,25 @@ export function Sheet({
             paddingBottom: "env(safe-area-inset-bottom, 0px)",
           }
         : {
-            // `paddingBottom`, а не `marginBottom`: відступ під навбар іде
-            // ВСЕРЕДИНУ панелі, тож її фон дотягується до нижнього краю
-            // екрана, а вміст і футер лишаються над навбаром. З марджином
-            // панель зависала над навігацією з видимим ребром і смугою
-            // затемненої сторінки під ним — «аркуш обрізаний знизу» (звіт
-            // власника 2026-09-03). Під клавіатурою марджин лишається:
-            // клавіатура непрозора, і панель має саме прилягати до неї.
-            paddingBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
+            // Знизу резервуємо РІВНО safe-area, не висоту навігації.
+            //
+            // AI-CONTEXT (звіт власника 2026-09-15: «білий мертвий простір»
+            // під кнопкою аркуша). Тут стояв
+            // `max(--sgt-bottom-nav-inset, --bottom-nav-height + safe-area)`,
+            // тобто ~70-105 px порожнього `bg-panel` під футером кожного
+            // аркуша модуля. Відступ був даниною формі «аркуш плаває НАД
+            // навбаром»; але навбар живе на `z-30`/`z-40`, а оверлей — на
+            // `z-50` зі суцільним скримом `inset-0`, і фокус-трап додатково
+            // робить фон `inert`. Тобто навігація під аркушем і не видима, і
+            // недосяжна — місце під неї резервувалось ні для чого, і воно ж
+            // зʼїдало ті самі пікселі зі стелі `max-h-[90dvh]`.
+            //
+            // Що НЕ змінилось і чому: відступ і далі всередині панелі, а не
+            // `marginBottom`. Марджин відривав панель від низу, під нею
+            // проглядала світла сторінка, і форма візуально скролилась у цей
+            // чужий простір (регресія 2026-09-08) — ця причина нікуди не
+            // поділась, змінилась лише величина.
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
           };
   // Запас прокрутки під останніми полями, поки клавіатура відкрита
   // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє
@@ -361,7 +376,7 @@ export function Sheet({
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 )}
               >
-                <Icon name="close" size={16} aria-hidden />
+                <Icon name="close" size="md" aria-hidden />
               </button>
             </div>
           </div>
@@ -382,7 +397,11 @@ export function Sheet({
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 px-5 pt-3 pb-4 border-t border-line bg-panel">
+          <div
+            ref={footerRef}
+            data-sheet-footer
+            className="shrink-0 px-5 pt-3 pb-4 border-t border-line bg-panel"
+          >
             {footer}
           </div>
         )}

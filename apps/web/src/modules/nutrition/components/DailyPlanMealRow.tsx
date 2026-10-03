@@ -54,7 +54,7 @@ export function DailyPlanMealRow({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-2xl border border-line bg-bg/40 p-3">
+    <div className="rounded-2xl border border-line bg-panel p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">
@@ -93,7 +93,7 @@ export function DailyPlanMealRow({
         <div className="flex flex-col gap-1 shrink-0 items-end">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={() => onAddToLog(meal)}
             disabled={busy}
@@ -102,7 +102,7 @@ export function DailyPlanMealRow({
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={() => onRegen(String(meal.type ?? ""))}
             disabled={busy}

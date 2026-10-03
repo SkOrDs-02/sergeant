@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-09-26
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
@@ -10,13 +10,14 @@ import { PantryCard } from "../components/PantryCard";
 import { ShoppingListCard } from "../components/ShoppingListCard";
 import { SubTabs } from "../components/SubTabs";
 import { BarcodeLookupNotice } from "../components/BarcodeLookupNotice";
-import { SilpoPantryReplenishEntry } from "../components/SilpoPantryReplenishEntry";
+import { NutritionPantrySelector } from "../components/NutritionPantrySelector";
 import type {
   NutritionRecipe,
   NutritionWeekPlan,
 } from "../hooks/useNutritionUiState";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 import type { useShoppingList } from "../hooks/useShoppingList";
+import { useSavedRecipes } from "../hooks/useSavedRecipes";
 import type { PantryBarcodeNotice } from "../hooks/usePantryBarcodeScan";
 import type { PantrySubTab } from "../lib/nutritionRouter";
 
@@ -40,7 +41,10 @@ interface NutritionPantryPageProps {
   onRetryPantryBarcode?: (() => void) | undefined;
   onDismissPantryBarcodeNotice?: (() => void) | undefined;
   toast: Toast;
-  generateShoppingList: (source: string) => void | Promise<void>;
+  generateShoppingList: (
+    source: string,
+    recipes?: unknown[],
+  ) => void | Promise<void>;
   addCheckedItemsToPantry: () => void;
 }
 
@@ -63,6 +67,13 @@ export function NutritionPantryPage({
   generateShoppingList,
   addCheckedItemsToPantry,
 }: NutritionPantryPageProps) {
+  // «Мої рецепти» читаємо лише на вкладці «Покупки»: це джерело списку
+  // покупок поруч зі згенерованими `recipes`.
+  const {
+    saved: savedRecipes,
+    busy: savedRecipesBusy,
+    error: savedRecipesError,
+  } = useSavedRecipes(pantrySubTab === "shopping");
   return (
     <SectionErrorBoundary
       key="page-pantry"
@@ -81,19 +92,18 @@ export function NutritionPantryPage({
         />
         {pantrySubTab === "items" ? (
           <>
-            <div className="flex justify-end">
-              <SilpoPantryReplenishEntry
-                pantryItems={pantry.pantryItems}
-                upsertItem={pantry.upsertItem}
-                busy={busy}
-              />
-            </div>
+            {/* Порожня комора лишає вибір місця окремою карткою над формою;
+                наповнена переносить його в шапку списку. */}
+            {pantry.effectiveItems.length === 0 && (
+              <NutritionPantrySelector pantry={pantry} busy={busy} />
+            )}
             <PantryCard
               busy={busy}
               parsePantry={pantry.parsePantry}
               newItemName={pantry.newItemName}
               setNewItemName={pantry.setNewItemName}
               upsertItem={pantry.upsertItem}
+              pantryItems={pantry.pantryItems}
               pantryText={pantry.pantryText}
               setPantryText={pantry.setPantryText}
               effectiveItems={pantry.effectiveItems}
@@ -126,6 +136,9 @@ export function NutritionPantryPage({
                 setPantryScannerOpen(true);
               }}
               placeFilter={pantry.placeFilter}
+              placeSelector={
+                <NutritionPantrySelector pantry={pantry} busy={busy} compact />
+              }
             />
             {pantryScanStatus && !pantryBarcodeNotice && (
               <div className="text-style-caption text-subtle px-1">
@@ -143,6 +156,9 @@ export function NutritionPantryPage({
         ) : (
           <ShoppingListCard
             recipes={recipes}
+            savedRecipes={savedRecipes}
+            savedRecipesBusy={savedRecipesBusy}
+            savedRecipesError={savedRecipesError}
             weekPlan={weekPlan}
             pantryItems={pantry.effectiveItems}
             shoppingList={shopping.shoppingList}
@@ -152,6 +168,7 @@ export function NutritionPantryPage({
             onClearChecked={shopping.clearChecked}
             onClearAll={shopping.clearAll}
             onAddCheckedToPantry={addCheckedItemsToPantry}
+            onAddItem={shopping.addItem}
             checkedItems={shopping.checkedItems}
           />
         )}

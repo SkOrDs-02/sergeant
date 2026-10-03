@@ -1,8 +1,8 @@
 ---
 name: sergeant-feature-delivery
-description: Use when building a new Sergeant feature, screen, endpoint, workflow, or behavior change needing design, planning, tests, docs, and verification — even if scope looks small; UA: робиш нову фічу/екран/endpoint.
+description: "Use when building a new Sergeant feature, screen, endpoint, workflow, or behavior change needing design, planning, tests, docs, and verification — even if scope looks small; UA: робиш нову фічу/екран/endpoint."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Доставка фіч у Sergeant
@@ -33,7 +33,9 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 - Web/PWA: `sergeant-web-ui`
 - Server/API: `sergeant-server-api`
 - БД/міграції: `sergeant-data-and-migrations`
-- Mobile/Expo: `sergeant-mobile-expo`
+- Mobile/Expo: `sergeant-mobile-expo` — **але спершу стоп, контур заморожений.** Продуктовий розвиток `apps/mobile` і `apps/mobile-shell` на паузі з 2026-08-25 ([ADR-0094](../../../docs/governance/adr/0094-mobile-web-first-freeze.md), web-first). Задача схожа на нову мобільну фічу чи новий екран — скажи, що контур на паузі, і спитай власника; не заходь у Flow вище мовчки. Пауза, **не** sunset: баг-фікси й підтримка збірки дозволені, `typecheck` і Jest далі гейтять `main`.
+
+  Це застереження стоїть саме тут, бо роутинг за формулюванням «нова фіча / новий екран» веде в ЦЕЙ скіл, а не в мобільний — тобто без цього рядка цілий клас задач обходив би паузу (знахідка рев'ю #1188).
 - HubChat / AI-шар: `sergeant-module-ai`
 - Auth: `better-auth-best-practices`
 

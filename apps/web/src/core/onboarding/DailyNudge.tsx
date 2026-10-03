@@ -87,7 +87,7 @@ export function DailyNudge({
           </p>
           <div className="flex items-center gap-2 mt-2.5">
             {onAction && (
-              <Button variant="primary" size="xs" onClick={handlePrimary}>
+              <Button variant="solid" size="xs" onClick={handlePrimary}>
                 Спробувати
               </Button>
             )}
@@ -99,13 +99,13 @@ export function DailyNudge({
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   aria-label="Інші дії"
                 >
-                  <Icon name="more-horizontal" size={16} />
+                  <Icon name="more-horizontal" size="md" />
                 </button>
               }
               className="min-w-[200px]"
             >
               <PopoverItem
-                icon={<Icon name="clock" size={14} />}
+                icon={<Icon name="clock" size="sm" />}
                 onClick={handleSnooze}
               >
                 Нагадай за тиждень
@@ -121,7 +121,7 @@ export function DailyNudge({
           aria-label="Закрити"
           className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
-          <Icon name="close" size={14} />
+          <Icon name="close" size="sm" />
         </Button>
       </div>
     </section>

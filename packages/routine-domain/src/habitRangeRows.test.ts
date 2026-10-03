@@ -127,6 +127,38 @@ describe("routine-domain/habitRangeRows", () => {
     expect(row?.cells.at(-1)?.state).toBe("unscheduled");
   });
 
+  it("гнучка звичка випадає з розкладу на дні понад добрану тижневу норму", () => {
+    // Клас Б спеки routine-flexible-weekly-frequency.md: без `weekDoneCount`
+    // предикат вважав би гнучку звичку запланованою щодня, і дні понад ціль
+    // малювались би «Пропущено», хоча ціль уже виконана.
+    const habit = dailyHabit("a", { recurrence: "flexible" });
+    const rows = buildHabitRangeRows(
+      [habit],
+      // Ціль за замовчуванням — 3; пн/вт/ср (05-07) її добирають.
+      { a: ["2026-01-05", "2026-01-06", "2026-01-07"] },
+      TODAY,
+      7,
+    );
+
+    const row = rows[0];
+    expect(row).toBeDefined();
+    const byKey = new Map(row!.cells.map((c) => [c.dateKey, c.state]));
+    expect(byKey.get("2026-01-05")).toBe("done");
+    expect(byKey.get("2026-01-06")).toBe("done");
+    expect(byKey.get("2026-01-07")).toBe("done");
+    // чт/пт/сб (08-10) того самого тижня — норма вже добрана, тож день
+    // випадає з розкладу, а не читається як мовчазний провал.
+    expect(byKey.get("2026-01-08")).toBe("unscheduled");
+    expect(byKey.get("2026-01-09")).toBe("unscheduled");
+    expect(byKey.get("2026-01-10")).toBe("unscheduled");
+    // нд 04 належить попередньому тижню — лічильник там ще 0, день
+    // лишається запланованим (і мовчки пропущеним, бо відмітки нема).
+    expect(byKey.get("2026-01-04")).toBe("missed");
+
+    expect(row?.scheduled).toBe(4);
+    expect(row?.completed).toBe(3);
+  });
+
   it("marks weekday index Monday-first for axis labels", () => {
     const [row] = buildHabitRangeRows([dailyHabit("a")], {}, TODAY, 7);
     // Вікно 2026-01-04 (нд) … 2026-01-10 (сб).

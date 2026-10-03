@@ -65,7 +65,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
   );
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/40 px-3 py-3 space-y-3">
+    <div className="rounded-2xl border border-line bg-panel px-3 py-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <SectionHeading as="div" size="xs" variant="nutrition">
           Аналітика (тренди)
@@ -92,14 +92,14 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
       {statsAvg.daysLogged === 0 ? (
         // UX-2 (аудит 2026-09-01): чотири плитки з нулями «0 на 0 активн.
         // днів» і плаский графік замінені на один Tier-2 `<EmptyState>`
-        // (docs/05-design/design/empty-states.md). Без окремого CTA-
+        // (docs/design/design/empty-states.md). Без окремого CTA-
         // ґудзика: «+ Додати прийом їжі» вже видно нижче на цій самій
         // сторінці `LogCard` — дублювати дію в компактній картці означало
         // б саме той анти-патерн, який документ empty-states забороняє.
         <EmptyState
           compact
           module="nutrition"
-          icon={<Icon name="trending-up" size={20} />}
+          icon={<Icon name="trending-up" size="lg" />}
           title="Ще немає трендів"
           description="Залогуй кілька прийомів їжі, і тут зʼявляться середні калорії, макро та графік за днями."
         />
@@ -237,7 +237,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                           {MEAL_META[t] && (
                             <Icon
                               name={MEAL_META[t].iconName as IconName}
-                              size={14}
+                              size="sm"
                               className="text-muted"
                               aria-hidden
                             />

@@ -1,6 +1,6 @@
 # Database connection pooling — runbook (PR #046)
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-22 by @Skords-01. **Next review:** 2026-12-31.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -69,10 +69,12 @@ HTTP request ────┤
   як старт виключеної транзакції — та сама backend-сесія тримається до `COMMIT` /
   `ROLLBACK`. Жодних cross-transaction `SET session_var = …` ми не робимо.
 - Migrations і advisory locks залишаються на direct `DATABASE_URL` через
-  `MIGRATE_DATABASE_URL` fallback в `apps/server/migrate.mjs` (Coolify
-  `pre_deployment_command`, окремо від runtime pool). На Coolify це те саме
-  значення, що й `DATABASE_URL` — внутрішнє імʼя контейнера бази, публічного
-  порту в неї немає ([`apps/server/AGENTS.md § Health & deploy`](../../../apps/server/AGENTS.md#health--deploy)).
+  `MIGRATE_DATABASE_URL` fallback в `apps/server/migrate.mjs` (ENTRYPOINT
+  образу, окремий процес від runtime pool — саме тому `delete DATABASE_URL_POOL`
+  там обовʼязковий: через transaction-pooled pgBouncer `pg_advisory_lock` не
+  тримається між запитами). На Coolify це те саме значення, що й
+  `DATABASE_URL` — внутрішнє імʼя контейнера бази, публічного порту в неї
+  немає ([`apps/server/AGENTS.md § Health & deploy`](../../../apps/server/AGENTS.md#health--deploy)).
 
 ## Історичний Railway deploy shape (не виконувати)
 
@@ -175,7 +177,7 @@ HTTP request ────┤
 
 | PR                                                     | Title                                                 | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

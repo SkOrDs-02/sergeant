@@ -1,6 +1,6 @@
 name: Mobile Shell (iOS Release)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -30,10 +30,14 @@ name: Mobile Shell (iOS Release)
 #   the PR-time workflow does. This lets the workflow itself merge
 #   and live in `main` before secrets are provisioned in the repo.
 
+# Store-реліз заморожений (ADR-0094, web-first pause - пауза, не sunset):
+# тег-тригер звужено на власний префікс, щоб платний macOS-ранер (xcodebuild
+# archive + TestFlight upload) не стартував на кожному `v*`-тезі репозиторію.
+# Ручний запуск лишається.
 on:
   push:
     tags:
-      - "v*"
+      - "mobile-shell-v*"
   workflow_dispatch:
     inputs:
       upload_testflight:

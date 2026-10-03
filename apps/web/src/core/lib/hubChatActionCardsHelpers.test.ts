@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// AI-4 / AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+// AI-4 / AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
 // `habitNameFor` reads `loadRoutineState()`, which touches `localStorage` /
 // the SQLite warm-cache — hence `jsdom`, mirroring
 // `chatActions/routineActions.test.ts`.
@@ -208,7 +208,7 @@ describe("iconFor", () => {
 describe("titleFor", () => {
   it("returns completed titles", () => {
     expect(titleFor("create_transaction", "completed")).toBe(
-      "Транзакцію записано",
+      "Операцію записано",
     );
     expect(titleFor("log_water", "completed")).toBe("Воду залоговано");
     expect(titleFor("start_workout", "completed")).toBe(
@@ -220,7 +220,7 @@ describe("titleFor", () => {
 
   it("appends failed suffix", () => {
     expect(titleFor("create_transaction", "failed")).toBe(
-      "Транзакцію записано, не вийшло",
+      "Операцію записано, не вийшло",
     );
     expect(titleFor("log_set", "failed")).toBe("Підхід записано, не вийшло");
   });
@@ -231,7 +231,7 @@ describe("titleFor", () => {
     expect(titleFor("calculate_1rm", "completed")).toBe("1RM розраховано");
     expect(titleFor("remember", "completed")).toBe("Памʼять оновлено");
     expect(titleFor("query_transactions", "completed")).toBe(
-      "Транзакції за запитом",
+      "Операції за запитом",
     );
     expect(titleFor("nutrition_averages", "completed")).toBe(
       "Середнє харчування",
@@ -329,7 +329,7 @@ describe("titleFor", () => {
   });
 });
 
-// AI-4 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — card
+// AI-4 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — card
 // subtitles must show the habit's name, not the raw `hab_<uuid>` id.
 describe("habitNameFor", () => {
   beforeEach(() => {

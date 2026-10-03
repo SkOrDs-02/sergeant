@@ -25,7 +25,12 @@ import { useEffect, useRef } from "react";
 import { meApi } from "@shared/api";
 import { logger } from "@shared/lib";
 import { useAuth } from "../auth/AuthContext";
-import { setAnalyticsConsent } from "./analyticsConsent";
+import {
+  getPendingAnalyticsSync,
+  hydrateAnalyticsConsent,
+  markAnalyticsDecisionSynced,
+  markAnalyticsServerHydrated,
+} from "./analyticsConsent";
 
 export function useAnalyticsConsentBoot(): void {
   const { user } = useAuth();
@@ -38,20 +43,57 @@ export function useAnalyticsConsentBoot(): void {
       // different account on a shared device) hydrates again instead of
       // keeping the previous user's cached consent value.
       hydratedForUserRef.current = null;
+      markAnalyticsServerHydrated(false);
       return;
     }
     if (hydratedForUserRef.current === userId) return;
     hydratedForUserRef.current = userId;
 
     let cancelled = false;
+
+    // Гість відповів на крок згоди (чи банер) і щойно увійшов: його вибір
+    // свіжіший за серверний дефолт `analytics: false`, тож віддаємо його на
+    // сервер, а не читаємо звідти. Без цього «Дозволити» гостя після
+    // реєстрації мовчки ставало «Ні». Свідомий компроміс: якщо акаунт уже
+    // мав явну відмову з іншого пристрою, перемагає останній явний вибір.
+    const pending = getPendingAnalyticsSync();
+    if (pending !== null) {
+      const granted = pending === "granted";
+      meApi
+        .updatePreferences({ analytics: granted })
+        .then(() => {
+          if (cancelled) return;
+          // Поки запит летів, людина могла змінити вибір (тумблер у
+          // Налаштуваннях знімає позначку синку). Новіше рішення не чіпаємо.
+          if (getPendingAnalyticsSync() !== pending) {
+            markAnalyticsServerHydrated(true);
+            return;
+          }
+          markAnalyticsDecisionSynced();
+          hydrateAnalyticsConsent(granted);
+        })
+        .catch((err: unknown) => {
+          logger.warn("[analyticsConsent] guest decision sync failed", err);
+          // Прапорець лишається — спробуємо при наступному вході. На цьому
+          // пристрої діє локальне рішення.
+          if (!cancelled) markAnalyticsServerHydrated(true);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     meApi
       .getPreferences()
       .then((prefs) => {
         if (cancelled) return;
-        setAnalyticsConsent(prefs.analytics);
+        hydrateAnalyticsConsent(prefs.analytics);
       })
       .catch((err: unknown) => {
         logger.warn("[analyticsConsent] boot hydrate failed", err);
+        // Без відповіді сервера не тримаємо банер вічно прихованим:
+        // покладаємось на локальне рішення пристрою.
+        if (!cancelled) markAnalyticsServerHydrated(true);
       });
     return () => {
       cancelled = true;

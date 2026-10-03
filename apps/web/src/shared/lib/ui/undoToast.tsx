@@ -71,6 +71,8 @@ export function showUndoToast(
   // наявність вікна скасування з відліком.
   return toast.show(msg, "success", duration, {
     label: undoLabel,
+    // Мітка для глобального `Cmd/Ctrl+Z` — див. `ToastAction.kind`.
+    kind: "undo",
     onClick: () => {
       hapticTap();
       try {

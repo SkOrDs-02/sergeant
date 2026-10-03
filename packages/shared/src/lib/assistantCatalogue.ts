@@ -2,7 +2,7 @@
 // user-facing capabilities. Drives the catalogue UI, in-chat quick-action
 // chips, and (post follow-up PR) the system prompt's tool list.
 //
-// Spec: docs/05-design/design/specs/2026-04-25-assistant-capability-catalogue-design.md
+// Spec: docs/design/design/specs/2026-04-25-assistant-capability-catalogue-design.md
 //
 // Invariants (enforced by assistantCatalogue.test.ts):
 //   - all `id` values are unique;
@@ -16,6 +16,7 @@
 // Without an entry the capability is invisible to the user and absent
 // from /help, even though the model can still call it.
 
+import { kyivCalendarDaysBetween } from "../utils/date";
 import { foldApostrophes } from "../utils/ukApostrophe";
 
 export type CapabilityModule =
@@ -58,11 +59,18 @@ export interface AssistantCapability {
   /** Destructive — shown with a warning badge. */
   risky?: boolean;
   /**
-   * Recently added — shown with a "Новинка" badge in the catalogue.
-   * Set to `true` for capabilities introduced in the last few releases;
-   * flip back to `undefined` once the feature is no longer notable.
+   * Дата (`YYYY-MM-DD`, календарна — той самий Kyiv-режим, що й
+   * `WhatsNewRelease.date` у `core/whatsNew/releases.ts`), відколи
+   * можливість додана. `isRecentCapability()` рахує «Новинка» як
+   * «`since` молодше {@link ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS} днів» —
+   * бейдж знімається сам, руками нічого прибирати не треба.
+   *
+   * Замінює колишній `isNew: boolean` (founder-ux-review round 2, O3):
+   * той знімався тільки руками, і чіп на `compare_weeks` провисів ≈4,5
+   * місяця від специфікації каталогу (2026-04-25) до 2026-09-11, поки
+   * його не спіймав тест легенди.
    */
-  isNew?: boolean;
+  since?: string;
   /** Surfaced as a chip below the chat input. */
   isQuickAction?: boolean;
   /** Lower number sorts higher among quick-action chips. */
@@ -136,22 +144,24 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Додай витрату: ",
     requiresInput: true,
+    // Пише на сервер без undo; чат питає згоду перед виконанням (B21).
+    risky: true,
     isQuickAction: true,
     quickActionPriority: 10,
     requiresOnline: true,
-    keywords: ["expense", "транзакція", "income"],
+    keywords: ["expense", "транзакція", "операція", "income"],
   },
   {
     id: "change_category",
     module: "finyk",
     label: "Змінити категорію",
     icon: "tag",
-    description: "Перенести існуючу транзакцію в іншу категорію.",
+    description: "Перенести існуючу операцію в іншу категорію.",
     examples: [
-      "перенеси останню транзакцію в їжу",
+      "перенеси останню операцію в їжу",
       "зміни категорію m_42 на транспорт",
     ],
-    prompt: "Зміни категорію транзакції: ",
+    prompt: "Зміни категорію операції: ",
     requiresInput: true,
     // Перезаписує категорію без підтвердження (рішення founder-а #8: режим
     // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
@@ -162,16 +172,16 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "find_transaction",
     module: "finyk",
-    label: "Знайти транзакцію",
+    label: "Знайти операцію",
     icon: "search",
     description:
-      "Пошук транзакції за описом, мерчантом, сумою або датою. Не змінює дані.",
+      "Пошук операції за описом, мерчантом, сумою або датою. Не змінює дані.",
     examples: [
       "знайди покупку в АТБ",
-      "транзакція на 450 грн позавчора",
+      "операція на 450 грн позавчора",
       "що було в Сільпо за тиждень",
     ],
-    prompt: "Знайди транзакцію: ",
+    prompt: "Знайди операцію: ",
     requiresInput: true,
     requiresOnline: true,
     keywords: ["search", "пошук", "merchant"],
@@ -182,7 +192,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     label: "Категоризувати масово",
     icon: "tags",
     description:
-      "Перенести багато транзакцій в одну категорію за патерном. Спочатку показує preview (dry_run), застосовує лише після підтвердження.",
+      "Перенести багато операцій в одну категорію за патерном. Спочатку показує preview (dry_run), застосовує лише після підтвердження.",
     examples: [
       "віднеси все Сільпо в продукти",
       "категоризуй всі АЗС на транспорт",
@@ -200,11 +210,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "hide_transaction",
     module: "finyk",
-    label: "Приховати транзакцію",
+    label: "Приховати операцію",
     icon: "eye-off",
-    description: "Прибрати транзакцію зі статистики (без видалення).",
-    examples: ["сховай транзакцію m_42 зі звіту"],
-    prompt: "Сховай транзакцію: ",
+    description: "Прибрати операцію зі статистики (без видалення).",
+    examples: ["сховай операцію m_42 зі звіту"],
+    prompt: "Сховай операцію: ",
     requiresInput: true,
     risky: true,
     requiresOnline: true,
@@ -212,12 +222,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "delete_transaction",
     module: "finyk",
-    label: "Видалити транзакцію",
+    label: "Видалити операцію",
     icon: "trash",
-    description:
-      "Видалити ручну транзакцію (m_*). Авто-транзакції не видаляються.",
-    examples: ["видали останню транзакцію", "прибери m_42"],
-    prompt: "Видали транзакцію: ",
+    description: "Видалити ручну операцію (m_*). Авто-операції не видаляються.",
+    examples: ["видали останню операцію", "прибери m_42"],
+    prompt: "Видали операцію: ",
     requiresInput: true,
     risky: true,
     requiresOnline: true,
@@ -340,8 +349,8 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     module: "finyk",
     label: "Імпорт Monobank",
     icon: "download",
-    description: "Завантажити транзакції Monobank за діапазон дат.",
-    examples: ["завантаж транзакції за квітень", "імпорт з 1 по 15 травня"],
+    description: "Завантажити операції Monobank за діапазон дат.",
+    examples: ["завантаж операції за квітень", "імпорт з 1 по 15 травня"],
     prompt: "Імпортуй Monobank за період: ",
     requiresInput: true,
     risky: true,
@@ -350,11 +359,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "split_transaction",
     module: "finyk",
-    label: "Розділити транзакцію",
+    label: "Розділити операцію",
     icon: "scissors",
     description: "Розбити одну покупку на кілька категорій.",
     examples: ["розділи покупку: 200 їжа, 100 побут"],
-    prompt: "Розділи транзакцію: ",
+    prompt: "Розділи операцію: ",
     requiresInput: true,
     requiresOnline: true,
   },
@@ -383,21 +392,21 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "query_transactions",
     module: "finyk",
-    label: "Запит по транзакціях",
+    label: "Запит по операціях",
     shortLabel: "Запит",
     icon: "search",
     description:
-      "Вибірка транзакцій за текстом, категорією, сумою, типом чи датою з підсумком. Read-only, нічого не змінює.",
+      "Вибірка операцій за текстом, категорією, сумою, типом чи датою з підсумком. Read-only, нічого не змінює.",
     examples: [
       "покажи всі покупки в АТБ більше 200 грн",
-      "скільки транзакцій на каву за квітень",
+      "скільки операцій на каву за квітень",
       "усі доходи за травень",
     ],
-    prompt: "Знайди по транзакціях: ",
+    prompt: "Знайди по операціях: ",
     requiresInput: true,
     requiresOnline: true,
     aiHint: "read-only вибірка",
-    keywords: ["query", "запит", "вибірка", "data", "транзакції"],
+    keywords: ["query", "запит", "вибірка", "data", "транзакції", "операції"],
   },
   {
     id: "aggregate_spending",
@@ -425,7 +434,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Періоди",
     icon: "bar-chart",
     description:
-      "Порівняти два довільні періоди за витратами, доходом або кількістю транзакцій, з абсолютною і відсотковою різницею.",
+      "Порівняти два довільні періоди за витратами, доходом або кількістю операцій, з абсолютною і відсотковою різницею.",
     examples: [
       "порівняй витрати березня і квітня",
       "наскільки більше я витратив цього місяця",
@@ -700,7 +709,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Постав розклад звички: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "примусово weekly",
     keywords: ["weekday", "schedule", "weekly", "розклад", "дні"],
   },
@@ -720,7 +728,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Постав звичку на паузу: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "ідемпотентно",
     keywords: ["pause", "resume", "unpause", "пауза", "відновити"],
   },
@@ -827,7 +834,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Харчування (11) ────────────────────────────────────────────────
+  // ───── Харчування (12) ────────────────────────────────────────────────
   {
     id: "log_meal",
     module: "nutrition",
@@ -1046,7 +1053,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresInput: false,
     isQuickAction: true,
     quickActionPriority: 40,
-    isNew: true,
     requiresOnline: true,
     keywords: ["тиждень", "порівняння", "аналіз"],
     aiHint: "YYYY-Www; default цей+минулий",
@@ -1066,7 +1072,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Аналітика (5) — окрема UI-група, фізично у crossModule.ts ──────
+  // ───── Аналітика (6) — окрема UI-група, фізично у crossModule.ts ──────
   {
     id: "spending_trend",
     module: "analytics",
@@ -1140,7 +1146,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Проаналізуй звʼязок між: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "1-6 метрик, кореляція кодом",
   },
 
@@ -1198,6 +1203,8 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     examples: ["експортуй дані Фініка в csv", "вивантаж тренування в json"],
     prompt: "Експортуй дані: ",
     requiresInput: true,
+    // Віддає сирий JSON модуля в чат: чат питає згоду (B21/B23).
+    risky: true,
     requiresOnline: true,
   },
 
@@ -1215,6 +1222,8 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Запамʼятай: ",
     requiresInput: true,
+    // Memory Bank підмішується в промпт назад: чат питає згоду (B21/B22).
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -1256,10 +1265,39 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Знайди в памʼяті: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     keywords: ["recall", "search", "memory", "семантичний"],
   },
 ];
+
+/**
+ * «Новинка»-вікно (у днях) для {@link isRecentCapability}. Той самий
+ * порядок величини, що й `WhatsNewModal`, з тим самим обґрунтуванням —
+ * достатньо, щоб рядок помітили, замало, щоб бейдж набриднув.
+ */
+export const ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS = 30;
+
+/**
+ * `true`, якщо `since` (календарна `YYYY-MM-DD`, Kyiv-режим — це дата
+ * релізу можливості, спільна для всіх користувачів, а не персональна доба
+ * за ADR-0078) молодша за {@link ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS} днів
+ * від `now`.
+ *
+ * Замінює колишній ручний `isNew: boolean`: той не мав TTL і знімався
+ * тільки руками (founder-ux-review round 2, O3). Порожній/некоректний
+ * `since` = "ніколи не новинка", а не "завжди новинка" — щоб забутий
+ * запис мовчки не висів вічно.
+ */
+export function isRecentCapability(
+  since: string | undefined,
+  now: Date | number = Date.now(),
+): boolean {
+  if (!since) return false;
+  const sinceMs = Date.parse(since);
+  if (Number.isNaN(sinceMs)) return false;
+  const nowMs = typeof now === "number" ? now : now.getTime();
+  const daysSince = kyivCalendarDaysBetween(nowMs, sinceMs);
+  return daysSince >= 0 && daysSince < ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS;
+}
 
 /**
  * Resolve the server tool name for a capability.

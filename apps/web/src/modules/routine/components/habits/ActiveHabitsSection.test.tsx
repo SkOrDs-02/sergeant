@@ -138,11 +138,48 @@ describe("ActiveHabitsSection", () => {
     expect(screen.queryByText(hasText("Біг"))).not.toBeInTheDocument();
   });
 
-  it("wires the Деталі button to onOpenDetails", () => {
+  // Знахідка PR-R13: порожній РЕЗУЛЬТАТ ПОШУКУ — не те саме, що порожній
+  // список. Тест вище пінує, що нерелевантні рядки зникають; він же був
+  // зеленим і тоді, коли після них не лишалось нічого — ані пояснення, ані
+  // виходу. Тому тут перевіряються обидві половини: і що стан зʼявився, і
+  // що кнопка справді повертає список.
+  it("shows a no-results state when the query matches nothing, and its CTA restores the list", () => {
+    const routine = makeRoutine([
+      makeHabit("h1", "Вода", 0),
+      makeHabit("h2", "Біг", 1),
+    ]);
+    render(<Harness initial={routine} />);
+
+    fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
+      target: { value: "зззз" },
+    });
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
+    expect(screen.getByText(/«зззз»/)).toBeInTheDocument();
+    expect(screen.queryByText(hasText("Вода"))).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Скинути пошук" }));
+    expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
+    expect(screen.getByText(hasText("Вода"))).toBeInTheDocument();
+    expect(screen.getByText(hasText("Біг"))).toBeInTheDocument();
+  });
+
+  // Порожній список і порожній пошук не мають накладатись: коли активних
+  // звичок немає взагалі, працює `EmptyState` «Поки порожньо», а не цей.
+  it("keeps the no-habits empty state when the list is empty and a query is typed", () => {
+    render(<Harness initial={makeRoutine([])} />);
+    fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
+      target: { value: "будь-що" },
+    });
+    expect(screen.getByText("Поки порожньо")).toBeInTheDocument();
+    expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
+  });
+
+  it("wires the Деталі menu item to onOpenDetails", () => {
     const onOpenDetails = vi.fn();
     const routine = makeRoutine([makeHabit("h1", "Вода", 0)]);
     render(<Harness initial={routine} onOpenDetails={onOpenDetails} />);
-    fireEvent.click(screen.getByRole("button", { name: "Деталі" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Ще дії зі звичкою/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Деталі" }));
     expect(onOpenDetails).toHaveBeenCalledWith("h1");
   });
 
@@ -155,11 +192,24 @@ describe("ActiveHabitsSection", () => {
     expect(onEdit.mock.calls[0]![0]).toMatchObject({ id: "h1" });
   });
 
+  // Перестановка ↑↓, «В архів» і «Видалити» живуть у меню «⋯» рядка
+  // (design-critique: сім видимих «Видалити» на екрані), тож тести спершу
+  // відкривають меню тим самим тригером і лише потім клікають пункт.
+  function openRowMenu(row: HTMLElement) {
+    fireEvent.click(
+      within(row).getByRole("button", { name: /^Ще дії зі звичкою/ }),
+    );
+  }
+
   it("wires Видалити to onRequestDelete with a pending payload", () => {
     const onRequestDelete = vi.fn();
     const routine = makeRoutine([makeHabit("h1", "Вода", 0)]);
     render(<Harness initial={routine} onRequestDelete={onRequestDelete} />);
-    fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
+    const waterRow = screen
+      .getByText(hasText("Вода"))
+      .closest("li") as HTMLElement;
+    openRowMenu(waterRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Видалити" }));
     expect(onRequestDelete).toHaveBeenCalledWith({
       id: "h1",
       name: "Вода",
@@ -177,7 +227,8 @@ describe("ActiveHabitsSection", () => {
     const waterRow = screen
       .getByText(hasText("Вода"))
       .closest("li") as HTMLElement;
-    fireEvent.click(within(waterRow).getByRole("button", { name: "В архів" }));
+    openRowMenu(waterRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "В архів" }));
     await waitFor(() => {
       expect(screen.queryByText(hasText("Вода"))).not.toBeInTheDocument();
     });
@@ -185,7 +236,7 @@ describe("ActiveHabitsSection", () => {
     expect(screen.getByText(hasText("Біг"))).toBeInTheDocument();
   });
 
-  it("reorders habits with the move-up button", async () => {
+  it("reorders habits with the move-up menu item", async () => {
     const routine = makeRoutine([
       makeHabit("h1", "Вода", 0),
       makeHabit("h2", "Біг", 1),
@@ -197,9 +248,8 @@ describe("ActiveHabitsSection", () => {
     const bigRow = screen
       .getByText(hasText("Біг"))
       .closest("li") as HTMLElement;
-    fireEvent.click(
-      within(bigRow).getByRole("button", { name: "Вгору в списку" }),
-    );
+    openRowMenu(bigRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Вище" }));
 
     await waitFor(() => {
       expect(
@@ -208,7 +258,7 @@ describe("ActiveHabitsSection", () => {
     });
   });
 
-  it("reorders habits with the move-down button", async () => {
+  it("reorders habits with the move-down menu item", async () => {
     const routine = makeRoutine([
       makeHabit("h1", "Вода", 0),
       makeHabit("h2", "Біг", 1),
@@ -217,9 +267,8 @@ describe("ActiveHabitsSection", () => {
     const waterRow = screen
       .getByText(hasText("Вода"))
       .closest("li") as HTMLElement;
-    fireEvent.click(
-      within(waterRow).getByRole("button", { name: "Вниз в списку" }),
-    );
+    openRowMenu(waterRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Нижче" }));
     await waitFor(() => {
       expect(
         within(screen.getAllByRole("listitem")[0]!).getByText(hasText("Біг")),

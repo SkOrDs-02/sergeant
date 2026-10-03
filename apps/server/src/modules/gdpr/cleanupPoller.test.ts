@@ -198,15 +198,28 @@ describe("getGdprCleanupWorkerStatus", () => {
       completed: 10,
       total: 14,
     });
-    expect(status.error).toBeUndefined();
+    expect(status.errorCode).toBeUndefined();
   });
 
-  it("returns queueDepth=null + error when the SQL fails, without throwing", async () => {
+  it("returns queueDepth=null + errorCode when the SQL fails, without throwing", async () => {
     const pool = {
-      query: vi.fn().mockRejectedValue(new Error("ECONNREFUSED")),
+      query: vi
+        .fn()
+        .mockRejectedValue(
+          Object.assign(
+            new Error(
+              'password authentication failed for user "sergeant_app" at 10.0.0.12:5432',
+            ),
+            { code: "28P01" },
+          ),
+        ),
     } as unknown as Pool;
     const status = await getGdprCleanupWorkerStatus(pool);
     expect(status.queueDepth).toBeNull();
-    expect(status.error).toMatch(/ECONNREFUSED/);
+    // Назовні — лише SQLSTATE-клас. Ані імʼя DB-користувача, ані внутрішній
+    // хост не мають лишитись у відповіді анонімного `/health/workers`.
+    expect(status.errorCode).toBe("28P01");
+    expect(JSON.stringify(status)).not.toContain("sergeant_app");
+    expect(JSON.stringify(status)).not.toContain("10.0.0.12");
   });
 });

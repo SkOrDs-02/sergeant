@@ -62,7 +62,7 @@ export function EmptyStatesSection() {
                 size="md"
                 variant={v}
                 eyebrow={v.toUpperCase()}
-                icon={<Icon name="alert-circle" size={20} />}
+                icon={<Icon name="alert-circle" size="lg" />}
                 title={`variant="${v}"`}
                 description="Контекстне повідомлення з потрібним тоном."
                 primaryAction={
@@ -122,7 +122,7 @@ export function EmptyStatesSection() {
               description="Здається, ця адреса вже не існує."
               primaryAction={
                 <Button variant="primary" size="lg" disabled>
-                  <Icon name="home" size={16} />
+                  <Icon name="home" size="md" />
                   На головну
                 </Button>
               }
@@ -138,7 +138,7 @@ export function EmptyStatesSection() {
               description="Сервер тимчасово не зміг обробити запит."
               primaryAction={
                 <Button variant="primary" size="lg" disabled>
-                  <Icon name="refresh-cw" size={16} />
+                  <Icon name="refresh-cw" size="md" />
                   Оновити сторінку
                 </Button>
               }
@@ -154,7 +154,7 @@ export function EmptyStatesSection() {
               description="Дані збережуться локально і синхронізуються, коли зʼєднання повернеться."
               primaryAction={
                 <Button variant="primary" size="lg" disabled>
-                  <Icon name="refresh-cw" size={16} />
+                  <Icon name="refresh-cw" size="md" />
                   Спробувати ще
                 </Button>
               }

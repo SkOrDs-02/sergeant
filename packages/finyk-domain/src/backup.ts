@@ -35,6 +35,8 @@ export interface FinykBackup {
   version?: number;
   budgets?: unknown[];
   subscriptions?: unknown[];
+  /** Ручні операції. Див. `FINYK_BACKUP_STORAGE_KEYS.manualExpenses`. */
+  manualExpenses?: unknown[];
   manualAssets?: unknown[];
   manualDebts?: unknown[];
   receivables?: unknown[];
@@ -48,6 +50,12 @@ export interface FinykBackup {
   networthHistory?: unknown[];
   customCategories?: unknown[];
   dismissedRecurring?: unknown[];
+  /**
+   * Правила «Завжди так для цього магазину» (`MerchantRule[]`, 2026-10-01).
+   * Необовʼязкове поле: старі файли його не мають і лишають правила на
+   * пристрої як є.
+   */
+  merchantRules?: unknown[];
 }
 
 /**
@@ -96,12 +104,14 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   const ARRAY_FIELDS = [
     "budgets",
     "subscriptions",
+    "manualExpenses",
     "manualAssets",
     "manualDebts",
     "receivables",
     "hiddenAccounts",
     "hiddenTxIds",
     "excludedStatTxIds",
+    "merchantRules",
   ] as const;
   for (const field of ARRAY_FIELDS) {
     const v = needArr(obj[field], field);
@@ -194,6 +204,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
     has("version") ||
     has("budgets") ||
     has("subscriptions") ||
+    has("manualExpenses") ||
     has("manualAssets") ||
     has("manualDebts") ||
     has("receivables") ||
@@ -233,6 +244,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
   if (has("nh")) full.networthHistory = d["nh"] as unknown[];
   if (has("cc")) full.customCategories = d["cc"] as unknown[];
   if (has("dr")) full.dismissedRecurring = d["dr"] as unknown[];
+  if (has("me")) full.manualExpenses = d["me"] as unknown[];
 
   return normalizeFinykBackup(full);
 }

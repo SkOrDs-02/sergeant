@@ -1,6 +1,6 @@
 # Incident Severity Policy
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-25.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-17.
 > **Status:** Active
 
 Use this policy to decide when a production symptom becomes an incident and what level of response Sergeant requires.

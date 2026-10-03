@@ -1,7 +1,7 @@
 # Playbook: Sync client wiring — виконання фаз 0–4
 
 > **Status:** Active
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-17 by @claude (Railway → Coolify у load-test Фази 3, ADR-0074). **Next review:** 2026-12-16.
 > **Trigger:** Потрібно wire-ити client pull + outbox enqueue після SQLite cut-over ([`sync-client-wiring.md`](./sync-client-wiring.md)). Цей playbook — **операційна інструкція** для кожної фази: дизайн роботи, правила, метрики, підтвердження, перепровірки, розподіл між агентами.
 
 **Governing skills:** [`sergeant-feature-delivery`](../../../../.agents/skills/sergeant-feature-delivery/SKILL.md) (координація) + [`sergeant-deliver-squad`](../../../../.agents/skills/sergeant-deliver-squad/SKILL.md) (коли PR торкається ≥2 surfaces з contract deps).
@@ -321,7 +321,7 @@ pnpm check
 **Підтвердження**
 
 - SSE reconnect with backoff; fallback to periodic pull unchanged.
-- Load test: 2 Railway instances receive NOTIFY (after ADR-0065).
+- Load test: 2 Coolify instances receive NOTIFY (after ADR-0065; Railway виведено з експлуатації — ADR-0074, Hetzner/Coolify).
 
 **Gate Phase 3:** SSE optional flag; pull-only path still passes E2E.
 

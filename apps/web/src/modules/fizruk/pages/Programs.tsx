@@ -68,7 +68,7 @@ export function Programs({
           </div>
           {activeProgram && (
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={deactivateProgram}
               className="text-style-caption text-subtle hover:text-text"
@@ -95,7 +95,7 @@ export function Programs({
                 key={prog.id}
                 className={cn(
                   "bg-panel border rounded-2xl shadow-card overflow-hidden transition-[background-color,border-color,box-shadow,opacity]",
-                  isActive ? "border-success/60" : "border-line",
+                  isActive ? "border-fizruk/60" : "border-line",
                 )}
               >
                 <div className="p-4">
@@ -106,7 +106,7 @@ export function Programs({
                           {prog.name}
                         </h2>
                         {isActive && (
-                          <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-success/15 text-success-strong dark:text-success border border-success/25">
+                          <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/15 text-fizruk-strong dark:text-fizruk border border-fizruk/30">
                             {messages.fizruk.programs.active}
                           </span>
                         )}
@@ -146,9 +146,17 @@ export function Programs({
                             "flex-1 text-center rounded-xl py-1 text-style-caption font-bold transition-colors",
                             hasSession
                               ? isToday && isActive
-                                ? "bg-success-strong text-white"
-                                : "bg-success/15 text-success-strong dark:text-success"
-                              : "bg-line/30 text-subtle/40",
+                                ? "bg-fizruk-strong text-white"
+                                : "bg-fizruk/15 text-fizruk-strong dark:text-fizruk"
+                              : // Без `/40`: розведений `text-subtle` давав
+                                // 1.83:1 на світлій темі (#bab8b4 на #f6f6f4)
+                                // при 12px bold — axe `color-contrast`,
+                                // serious, замір свіпу 2026-09-16. Повна
+                                // сила токена дає ≥4.5:1 і не знімає
+                                // де-акцент: дні БЕЗ тренування і так
+                                // відрізняються від `bg-fizruk/15` фоном
+                                // і відтінком, а не лише блідістю.
+                                "bg-line/30 text-subtle",
                           )}
                         >
                           {DAY_LABELS[i]}
@@ -161,7 +169,7 @@ export function Programs({
                     {!isActive ? (
                       <button
                         type="button"
-                        className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
+                        className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                         onClick={() => activateProgram(prog.id)}
                       >
                         {messages.fizruk.programs.activate}
@@ -171,7 +179,7 @@ export function Programs({
                         {todaySession && onStartWorkout && (
                           <button
                             type="button"
-                            className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
+                            className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                             onClick={() => {
                               const session =
                                 prog.sessions[todaySession.sessionKey];
@@ -257,7 +265,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
   return (
     <div
       id={id}
-      className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50"
+      className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-panel"
     >
       <SectionHeading as="div" size="xs" variant="fizruk">
         {messages.fizruk.programs.scheduleHeading}
@@ -273,7 +281,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
         return (
           <div
             key={`${schedEntry.day}_${schedEntry.sessionKey}`}
-            className="rounded-xl bg-panel border border-line/40 p-3"
+            className="rounded-xl bg-panel border border-line p-3"
           >
             <div className="flex items-center gap-2 mb-2">
               {/* Fizruk module accent throughout — was mixing the cyan

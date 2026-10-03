@@ -71,8 +71,10 @@ test("@critical fizruk: заняття з каталогу пишеться од
   await expect(sheet).toHaveCount(0);
 
   const recent = page.getByRole("region", { name: "Останні тренування" });
-  await expect(recent.getByText(/45 хв/)).toBeVisible({ timeout: 10_000 });
-  await expect(recent.getByText(/270 ккал/)).toBeVisible();
+  // Одиниці з 2278bbcd3 пишуться через вузький нерозривний пробіл (U+202F),
+  // тож у регексі \s, а не літерний пробіл.
+  await expect(recent.getByText(/45\sхв/)).toBeVisible({ timeout: 10_000 });
+  await expect(recent.getByText(/270\sккал/)).toBeVisible();
   // Запис завершений - «Чернетки» тут бути не має.
   await expect(recent.getByText("Чернетка")).toHaveCount(0);
 

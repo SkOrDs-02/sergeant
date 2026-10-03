@@ -178,7 +178,7 @@ export function HabitDetailSheet({
     <div className="flex flex-col gap-2 sm:flex-row">
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
         className="flex-1"
         onClick={() => setEditOpen(true)}
       >
@@ -186,7 +186,7 @@ export function HabitDetailSheet({
       </Button>
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
         className="flex-1"
         onClick={handleToggleArchived}
       >
@@ -196,7 +196,8 @@ export function HabitDetailSheet({
       </Button>
       <Button
         type="button"
-        variant="danger"
+        variant="soft"
+        tone="danger"
         className="flex-1"
         onClick={() => setConfirmDelete(true)}
       >
@@ -325,7 +326,7 @@ export function HabitDetailSheet({
               {notes.map((n) => (
                 <li
                   key={n.date}
-                  className="text-style-caption bg-panelHi/50 border border-line/40 rounded-xl px-3 py-2"
+                  className="text-style-caption bg-panelHi border border-line rounded-xl px-3 py-2"
                 >
                   <span className="text-subtle">{n.date}:</span>{" "}
                   <span className="text-text">{n.text}</span>

@@ -4,7 +4,6 @@
 // сам `syncableUserId.ts` цих імпортів не має — він сидить на write-path.
 import { describe, expect, it } from "vitest";
 
-import { DEMO_LOCAL_USER_ID } from "../onboarding/onboardingGate";
 import { LOCAL_ANON_USER_ID } from "../auth/useLocalUserId";
 
 import { isSyncableUserId, NON_SYNCABLE_USER_IDS } from "./syncableUserId.js";
@@ -16,13 +15,13 @@ describe("isSyncableUserId", () => {
     // тож єдине, що тримає списки в синхроні, — цей асерт. Порівнюємо
     // МНОЖИНИ, а не довжини: збіг довжин нічого не доводить.
     expect(new Set(NON_SYNCABLE_USER_IDS)).toEqual(
-      new Set([LOCAL_ANON_USER_ID, DEMO_LOCAL_USER_ID]),
+      new Set([LOCAL_ANON_USER_ID, "demo-local"]),
     );
   });
 
   it("відсікає анонімний і демо id", () => {
     expect(isSyncableUserId(LOCAL_ANON_USER_ID)).toBe(false);
-    expect(isSyncableUserId(DEMO_LOCAL_USER_ID)).toBe(false);
+    expect(isSyncableUserId("demo-local")).toBe(false);
   });
 
   it("відсікає порожній id", () => {

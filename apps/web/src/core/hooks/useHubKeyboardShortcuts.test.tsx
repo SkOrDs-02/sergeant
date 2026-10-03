@@ -119,6 +119,26 @@ describe("useHubKeyboardShortcuts", () => {
     ).not.toThrow();
   });
 
+  it("on the /chat page Cmd+/ focuses the chat input instead of opening the overlay", () => {
+    const onOpenAssistant = vi.fn();
+    const input = document.createElement("input");
+    input.setAttribute("aria-label", "Повідомлення Сержанту");
+    document.body.appendChild(input);
+    renderHook(() =>
+      useHubKeyboardShortcuts({
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onOpenAssistant,
+        assistantPageActive: true,
+      }),
+    );
+
+    fireEvent.keyDown(window, { key: "/", metaKey: true });
+
+    expect(onOpenAssistant).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(input);
+  });
+
   // ── Cmd+S — context-aware save (R6) ────────────────────────────────────────
 
   it("Cmd+S calls requestSubmit on nearest form when focus is inside a form", () => {
@@ -342,5 +362,109 @@ describe("useHubKeyboardShortcuts", () => {
       fireEvent.keyDown(window, { key: "g" });
       fireEvent.keyDown(window, { key: "h" });
     }).not.toThrow();
+  });
+
+  // ── N — «створити» в поточному контексті (рішення власника 2026-09-16) ──
+
+  it("N calls onCreate and swallows the key", () => {
+    const onCreate = vi.fn();
+    renderHook(() =>
+      useHubKeyboardShortcuts({
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onCreate,
+      }),
+    );
+    const event = new KeyboardEvent("keydown", {
+      key: "n",
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(event);
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("N does not fire from an editable field nor with Cmd/Alt held", () => {
+    const onCreate = vi.fn();
+    const input = document.createElement("input");
+    document.body.append(input);
+    renderHook(() =>
+      useHubKeyboardShortcuts({
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onCreate,
+      }),
+    );
+    fireEvent.keyDown(input, { key: "n" });
+    fireEvent.keyDown(window, { key: "n", metaKey: true });
+    fireEvent.keyDown(window, { key: "n", altKey: true });
+    expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it("G N stays a navigation chord — onCreate is not called for the second key", () => {
+    const onCreate = vi.fn();
+    const onNavigate = vi.fn();
+    renderHook(() =>
+      useHubKeyboardShortcuts({
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onNavigate,
+        onCreate,
+      }),
+    );
+    fireEvent.keyDown(window, { key: "g" });
+    fireEvent.keyDown(window, { key: "n" });
+    expect(onNavigate).toHaveBeenCalledWith("nutrition");
+    expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  // ── Cmd/Ctrl+Z — «Повернути» з видимого undo-тоста ────────────────────────
+
+  it("Cmd+Z calls onUndo and prevents the browser default only when something was undone", () => {
+    const onUndo = vi.fn<() => boolean>().mockReturnValueOnce(true);
+    onUndo.mockReturnValueOnce(false);
+    renderHook(() =>
+      useHubKeyboardShortcuts({
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onUndo,
+      }),
+    );
+    const first = new KeyboardEvent("keydown", {
+      key: "z",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(first);
+    expect(onUndo).toHaveBeenCalledTimes(1);
+    expect(first.defaultPrevented).toBe(true);
+
+    const second = new KeyboardEvent("keydown", {
+      key: "z",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(second);
+    expect(onUndo).toHaveBeenCalledTimes(2);
+    expect(second.defaultPrevented).toBe(false);
+  });
+
+  it("Cmd+Z leaves text fields and Cmd+Shift+Z (redo) to the browser", () => {
+    const onUndo = vi.fn<() => boolean>().mockReturnValue(true);
+    const textarea = document.createElement("textarea");
+    document.body.append(textarea);
+    renderHook(() =>
+      useHubKeyboardShortcuts({
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onUndo,
+      }),
+    );
+    fireEvent.keyDown(textarea, { key: "z", metaKey: true });
+    fireEvent.keyDown(window, { key: "z", metaKey: true, shiftKey: true });
+    expect(onUndo).not.toHaveBeenCalled();
   });
 });

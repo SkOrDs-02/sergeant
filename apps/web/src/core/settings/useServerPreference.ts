@@ -1,37 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { meApi, type UserPreferences } from "@shared/api";
+import {
+  classifyPreferenceLoadFailure,
+  PREFERENCE_LOAD_FAILURE_COPY,
+} from "./preferenceLoadFailure";
 
 /**
- * Один булевий прапорець із `/api/me/preferences` з оптимістичним записом.
+ * Одне скалярне налаштування з `/api/me/preferences` (прапорець чи число)
+ * з оптимістичним записом.
  *
- * Чому серверне сховище, а не localStorage: цей прапорець читає СЕРВЕРНИЙ
- * прохід (`apps/server/src/lib/reminders/nudge.ts`), який працює тоді, коли
- * жодного клієнта немає. Прапорець у браузері він би не побачив.
+ * Чому серверне сховище, а не localStorage: ці значення читає СЕРВЕРНИЙ
+ * прохід нагадувань (`apps/server/src/lib/reminders/sweep.ts`), який
+ * працює тоді, коли жодного клієнта немає. Значення в браузері він би не
+ * побачив.
  *
  * ponytail: `PrivacySection` містить свою копію цього циклу — вона старша за
  * цей хук і має власний набір тестів на ту копію. Зводити їх в одне варто,
  * але окремим PR-ом, а не всередині фічі.
  */
 
-type BooleanPreferenceKey = {
-  [K in keyof UserPreferences]: UserPreferences[K] extends boolean ? K : never;
+type ScalarPreferenceKey = {
+  [K in keyof UserPreferences]: UserPreferences[K] extends boolean | number
+    ? K
+    : never;
 }[keyof UserPreferences];
 
-export interface ServerPreferenceState {
-  value: boolean;
+export interface ServerPreferenceState<V> {
+  /** До відповіді сервера тут `initial`. */
+  value: V;
   /** `false`, поки сервер не відповів або відповів помилкою. */
   loaded: boolean;
   /** Непорожній рядок = показати користувачу, що збереження не відбулось. */
   error: string | null;
   saving: boolean;
-  set: (next: boolean) => Promise<void>;
+  set: (next: V) => Promise<void>;
 }
 
-export function useServerPreference(
-  key: BooleanPreferenceKey,
+export function useServerPreference<K extends ScalarPreferenceKey>(
+  key: K,
   copy: { saveError: string; authRequired: string },
-): ServerPreferenceState {
-  const [value, setValue] = useState(false);
+  initial: UserPreferences[K],
+): ServerPreferenceState<UserPreferences[K]> {
+  const [value, setValue] = useState<UserPreferences[K]>(initial);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -87,15 +97,25 @@ export function useServerPreference(
         // другим випадком.
         if (requestId <= appliedRequestIdRef.current) return;
         appliedRequestIdRef.current = requestId;
-        setValue(prefs[key] === true);
+        setValue(prefs[key]);
         setLoaded(true);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
-        // Гість або збій мережі. Не помилка збереження — тумблер просто
-        // нема куди писати, і копія має пояснити саме це.
+        // Не помилка ЗБЕРЕЖЕННЯ: тумблер просто нема куди писати, і копія
+        // має пояснити саме це. Але раніше тут стояло беззастережне
+        // `copy.authRequired`, тобто «гість АБО збій мережі» злипались в
+        // одне твердження «ти не залогінений» — і залогінена людина в
+        // метро йшла перелогінюватись (знахідка PR-S2). Тепер причину
+        // розрізняємо; чому саме так, а не через `useOnlineStatus`, —
+        // у `preferenceLoadFailure.ts`.
+        const failure = classifyPreferenceLoadFailure(err);
         setLoaded(false);
-        setError(copy.authRequired);
+        setError(
+          failure === "auth"
+            ? copy.authRequired
+            : PREFERENCE_LOAD_FAILURE_COPY[failure],
+        );
       });
     return () => {
       cancelled = true;
@@ -103,7 +123,7 @@ export function useServerPreference(
   }, [key, copy.authRequired]);
 
   const set = useCallback(
-    async (next: boolean) => {
+    async (next: UserPreferences[K]) => {
       const requestId = ++requestIdRef.current;
       const appliedAtStart = appliedRequestIdRef.current;
       inFlightSavesRef.current += 1;
@@ -117,7 +137,7 @@ export function useServerPreference(
         // летів, вона авторитетна; застосовувати цю (застарілу) не можна.
         if (requestId <= appliedRequestIdRef.current) return;
         appliedRequestIdRef.current = requestId;
-        setValue(saved[key] === true);
+        setValue(saved[key]);
         setLoaded(true);
       } catch {
         // F3: відкочувати до `previous` можна лише якщо НІЧОГО новішого

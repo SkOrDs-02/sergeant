@@ -8,7 +8,7 @@
  * that can be activated / deactivated / toggled.
  *
  * Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 of
- * `docs/planning/storage-roadmap.md`. The active-program id is now
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The active-program id is now
  * read from the SQLite warm cache (`getCachedFizrukSqliteState`) and
  * persisted exclusively through the dual-write pipeline
  * (`triggerFizrukDualWrite`). The legacy MMKV slot

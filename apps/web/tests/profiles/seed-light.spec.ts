@@ -14,7 +14,7 @@ import {
 
 /**
  * Bootstrap тимчасових акаунтів продуктового аудиту 2026-09
- * (`docs/90-work/audits/2026-09-01-product-audit/accounts.md`): Q1 порожній,
+ * (`docs/work/specs/audits/2026-09-01-product-audit/accounts.md`): Q1 порожній,
  * Q2/Q5/Q8 — «light» (кілька витрат у різних категоріях, три звички з
  * відмітками, продукти в коморі), Q4 — порожній під edge-кейси руками.
  * Насичений Q3 живе в `seed-rich.spec.ts`. Реєстрація — тільки через UI

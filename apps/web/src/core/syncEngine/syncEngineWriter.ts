@@ -11,7 +11,7 @@ import {
 } from "@sergeant/api-client";
 import type {
   RecoverDeadLetterResult,
-  RecoverDeadLetterSelector,
+  RecoverDeadLetterTarget,
   RejectedOutboxRow,
   SyncOpOutboxStatusCounts,
 } from "@sergeant/db-schema/sqlite";
@@ -46,8 +46,13 @@ export interface SyncEngineWriterDeps {
   readonly eventTarget: SyncEngineEventTarget;
   readonly getStatus: () => Promise<SyncOpOutboxStatusCounts>;
   readonly listRejected?: () => Promise<readonly RejectedOutboxRow[]>;
+  /**
+   * Скоуп власника цей шар НЕ передає — він оперує чергою, а не сесією.
+   * `userId` домішує адаптер у `singleton.ts`, де є `resolveUserId`; саме
+   * тому тип тут `RecoverDeadLetterTarget`, а не `…Selector`.
+   */
   readonly recoverDeadLetter: (
-    selector: RecoverDeadLetterSelector,
+    target: RecoverDeadLetterTarget,
   ) => Promise<RecoverDeadLetterResult>;
   readonly addBreadcrumb?: (breadcrumb: SentryBreadcrumb) => void;
   readonly captureException?: (

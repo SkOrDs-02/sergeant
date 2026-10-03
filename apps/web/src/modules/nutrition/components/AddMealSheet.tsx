@@ -36,6 +36,7 @@ import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import type {
   Meal,
   MealTemplate,
+  MealTypeId,
   NutritionPrefs,
   PantryItem,
 } from "@sergeant/nutrition-domain";
@@ -48,6 +49,8 @@ import {
   buildMealsForSave,
   currentTime,
   emptyForm,
+  gramsOrDefault,
+  macrosToFormFields,
   upsertMealTemplate,
   type MealFormState,
   type MealSaveTemplate,
@@ -56,9 +59,10 @@ import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
-import { useReceiptAutoPick } from "./meal-sheet/useReceiptAutoPick";
+import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
+import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
 import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
 import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
@@ -106,11 +110,6 @@ function macrosAreAllEmpty(macros: {
  * потрапляла НЕ та вага без жодного натяку користувачу. Тиха підміна даних
  * гірша за помилку, тому парсинг тут спільний із КБЖВ.
  */
-function gramsOrDefault(raw: string): number {
-  const parsed = parseDecimalInput(raw);
-  return parsed.ok && parsed.value > 0 ? parsed.value : 100;
-}
-
 interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
@@ -118,6 +117,13 @@ interface AddMealSheetProps {
   onSave: (meal: Meal, photoFile?: File | null) => void;
   /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
   initialStep?: "source" | "photo" | undefined;
+  /**
+   * Тип прийому для НОВОГО запису. Порожньо — тип вгадує годинник
+   * (`mealTypeByNow`), як для FAB. Заповнено рівно тоді, коли людина
+   * тапнула конкретний сегмент hero-стрічки. На редагування не впливає:
+   * там тип уже є в самому записі.
+   */
+  initialMealType?: MealTypeId | null | undefined;
   initialMeal?: Partial<Meal> | null | undefined;
   mealTemplates?: MealTemplate[] | undefined;
   setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
@@ -145,6 +151,7 @@ export function AddMealSheet({
   onClose,
   onSave,
   initialStep,
+  initialMealType,
   initialMeal,
   mealTemplates = [],
   setPrefs,
@@ -172,11 +179,12 @@ export function AddMealSheet({
 
   const search = useFoodSearch(foodQuery);
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
-  const onReceiptItemPicked = useReceiptAutoPick<PickedFood>({
+  const sourcePick = useMealSourcePick({
     foodQuery,
     search,
     setFoodQuery,
     setPickedFood,
+    setPickedGrams,
   });
 
   const {
@@ -241,15 +249,11 @@ export function AddMealSheet({
         name: String(initialMeal.name || ""),
         mealType: initialMeal.mealType || "breakfast",
         time: initialMeal.time || currentTime(),
-        kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
-        protein_g:
-          mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
-        fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
-        carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
+        ...macrosToFormFields(mac),
         err: "",
       });
     } else {
-      setForm(emptyForm(null));
+      setForm(emptyForm(null, initialMealType));
     }
     setFoodQuery("");
     setPickedFood(null);
@@ -353,7 +357,10 @@ export function AddMealSheet({
       ["kcal", "protein_g", "fat_g", "carbs_g"] as const
     ).map((key) => (form[key] === "" ? null : parseDecimalInput(form[key])));
     if (macroInputs.some((m) => m != null && !m.ok)) {
-      setForm((s) => ({ ...s, err: "Некоректне значення КБЖВ." }));
+      setForm((s) => ({
+        ...s,
+        err: "Некоректне значення КБЖВ. Впиши число, наприклад 12,5.",
+      }));
       return;
     }
     const [kcal, protein_g, fat_g, carbs_g] = macroInputs.map((m) =>
@@ -362,7 +369,7 @@ export function AddMealSheet({
     if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
       setForm((s) => ({
         ...s,
-        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
       }));
       return;
     }
@@ -371,7 +378,7 @@ export function AddMealSheet({
     ) {
       setForm((s) => ({
         ...s,
-        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом. Зменш значення.`,
       }));
       return;
     }
@@ -382,7 +389,8 @@ export function AddMealSheet({
     // Раніше при простому редагуванні страви з продуктом звʼязок з foodDb втрачався, бо pickedFood
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
-    const hasAmount = pickedFood || initialMeal?.amount_g != null;
+    const hasAmount =
+      pickedFood || fromPantryItem || initialMeal?.amount_g != null;
     // Нульова (чи стерта) вага при обраному продукті — не «не вказано», а
     // мовчазна розсинхронізація: `gramsOrDefault` підставив би 100, тоді як
     // у полях КБЖВ лишились числа, пораховані під попередню вагу. Ефект у
@@ -572,6 +580,10 @@ export function AddMealSheet({
     // походження даних (канон: «скільки логів через AI» має лишатись
     // чесним питанням).
     dropSeededMacros();
+    // Відкладений автопідбір мусить згаснути разом із джерелом: інакше
+    // пошук, що відповість уже після виходу, поверне аркуш на
+    // «Заповнення» з продуктом, від якого людина щойно відмовилась.
+    sourcePick.cancelAutoPick();
     setStep("source");
   }
 
@@ -626,11 +638,7 @@ export function AddMealSheet({
                   onQuickAddMeal={onQuickAddMeal}
                   onQuickAdded={onClose}
                   pantryItems={pantryItems}
-                  // Редагування наявного прийому їжі й вхід одразу на
-                  // «fill» (PWA-шорткат, фото) чека не потребують — і не
-                  // мають будити мережу заради рядка, який там не потрібен.
-                  receiptRowEnabled={step === "source"}
-                  onReceiptItemPicked={onReceiptItemPicked}
+                  sourcePick={sourcePick}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{
@@ -706,13 +714,17 @@ export function AddMealSheet({
 
             {pickedFood ? (
               <PickedFoodCard
-                form={form}
                 setForm={setForm}
                 pickedFood={pickedFood}
                 pickedGrams={pickedGrams}
                 setPickedGrams={setPickedGrams}
                 onChangeProduct={handleChangeProduct}
                 skipInitialRescale={editedFood.rehydrated}
+              />
+            ) : fromPantryItem ? (
+              <PantryPortionField
+                value={pickedGrams}
+                onChange={setPickedGrams}
               />
             ) : (
               // Редагування наявного прийому джерела не обирає, тож
@@ -783,14 +795,14 @@ export function AddMealSheet({
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 type="button"
-                className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
+                className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
                 onClick={handleSave}
               >
                 {initialMeal?.id ? "Зберегти зміни" : "Додати прийом"}
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 className="h-12 min-h-[44px]"
                 onClick={onClose}
               >

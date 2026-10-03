@@ -80,7 +80,7 @@ export type CardProminence =
  *
  * Термін перенесено 2026-09-03 з 2026-09-01: на дату замір дав ~68
  * call-site-ів `<Card variant="…">` у `apps/web/src` — це окремий
- * механічний codemod-PR, не хвіст. Реєстр: `docs/90-work/tech-debt/frontend.md`
+ * механічний codemod-PR, не хвіст. Реєстр: `docs/work/specs/tech-debt/frontend.md`
  * § «Прострочені `@removeBy` 2026-09-01».
  * @removeBy 2026-12-01
  */
@@ -95,7 +95,7 @@ export type CardVariant =
 
 export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
 
-// Canonical 3-tier radius rhythm — see docs/05-design/design/radius-rhythm.md.
+// Canonical 3-tier radius rhythm — see docs/design/design/radius-rhythm.md.
 // 2026-07 design-audit: the parallel v2 namespace (`r-lg`/`r-xl`/`r-2xl`,
 // 14/18/24 px) was collapsed into this single scale. Its keys mapped onto
 // `md`/`lg`/`xl` (r-lg,r-xl → CARD; r-2xl → HERO) so all call sites now use
@@ -230,25 +230,25 @@ const MODULE_PROMINENCE: Record<
     // `bg-*-soft` — візуальний no-op і зайвий GPU-шар на кожну модульну
     // картку (анти-слоп аудит 2026-09-01, F8). Blur лишається лише в
     // `glass` і в overlay-ах, де під ним справді є що розмивати.
-    hero: "border shadow-hero-finyk bg-hero-grad-finyk border-white/20 dark:bg-hero-ink-finyk dark:border-brand-400/25 dark:shadow-glow-inset-teal",
+    hero: "border shadow-hero-finyk bg-hero-grad-finyk border-white/20 dark:bg-hero-ink-finyk dark:border-brand-400/25 dark:shadow-e1",
     soft: "border bg-finyk-soft border-finyk-soft-border",
     tinted:
       "bg-panel border border-finyk-soft-border shadow-card dark:bg-brand-400/10 dark:border-brand-400/35 dark:shadow-none",
   },
   fizruk: {
-    hero: "border shadow-hero-fizruk bg-hero-grad-fizruk border-white/20 dark:bg-hero-ink-fizruk dark:border-cyan-400/25 dark:shadow-glow-inset-cyan",
+    hero: "border shadow-hero-fizruk bg-hero-grad-fizruk border-white/20 dark:bg-hero-ink-fizruk dark:border-cyan-400/25 dark:shadow-e1",
     soft: "border bg-fizruk-soft border-fizruk-soft-border",
     tinted:
       "bg-panel border border-fizruk-soft-border shadow-card dark:bg-cyan-400/10 dark:border-cyan-400/35 dark:shadow-none",
   },
   routine: {
-    hero: "border shadow-hero-routine bg-hero-grad-routine border-white/20 dark:bg-hero-ink-routine dark:border-rose-400/25 dark:shadow-glow-inset-rose",
+    hero: "border shadow-hero-routine bg-hero-grad-routine border-white/20 dark:bg-hero-ink-routine dark:border-rose-400/25 dark:shadow-e1",
     soft: "border bg-routine-soft border-routine-soft-border",
     tinted:
       "bg-panel border border-routine-soft-border shadow-card dark:bg-rose-400/10 dark:border-rose-400/35 dark:shadow-none",
   },
   nutrition: {
-    hero: "border shadow-hero-nutrition bg-hero-grad-nutrition border-white/20 dark:bg-hero-ink-nutrition dark:border-lime-400/25 dark:shadow-glow-inset-lime",
+    hero: "border shadow-hero-nutrition bg-hero-grad-nutrition border-white/20 dark:bg-hero-ink-nutrition dark:border-lime-400/25 dark:shadow-e1",
     soft: "border bg-nutrition-soft border-nutrition-soft-border",
     tinted:
       "bg-panel border border-nutrition-soft-border shadow-card dark:bg-lime-400/10 dark:border-lime-400/35 dark:shadow-none",

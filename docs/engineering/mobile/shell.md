@@ -1,13 +1,15 @@
 # Mobile-білди — команди для локальної розробки
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
-> **Status:** Active. Capacitor shell is the primary mobile product per [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md); the old ADR-0010 sunset schedule below is historical reference only.
+> **Last touched:** 2026-09-17 by @claude (банер ADR-0094 — мобільний контур на паузі). **Next review:** 2026-12-16.
+> **Status:** Active. Команди нижче чинні для баг-фіксів і збірок; «primary mobile product per ADR-0052» — історичний статус, superseded [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md); the old ADR-0010 sunset schedule below is historical reference only.
+
+> **⚠️ Мобільний контур на паузі з 2026-08-25 — [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md)** (web-first, обидва стеки). Shell — актив, не sunset: typecheck/тести гейтять `main`, баг-фікси і store-збірки дозволені; продуктовий розвиток не планується без рішення власника.
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../../apps/mobile/README.md) і [`overview.md`](./overview.md).
 
 ## Historical sunset note
 
-> **Historical only.** ADR-0010 captured a previous shell-sunset plan, but [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md) replaced the active strategy: `apps/mobile-shell` remains the primary mobile product until Expo/RN has product parity and a new accepted ADR sets a replacement timeline. Do not use the T0/T1/T2 dates below as active commitments.
+> **Historical only.** ADR-0010 captured a previous shell-sunset plan, but [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md) replaced the active strategy: `apps/mobile-shell` remained the primary mobile product until 2026-08-25, when [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md) paused both mobile stacks (web-first). Do not use the T0/T1/T2 dates below as active commitments.
 
 | Маркер | Дата       | Що робить мейнтейнер shell-у                                                                                                                                                            |
 | ------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

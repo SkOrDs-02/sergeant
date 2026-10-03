@@ -4,7 +4,7 @@
  * @addedIn 1d443ac1 (feat(web): add UI/UX improvements and new components)
  * @nextStep Wire into Finyk/Fizruk/Routine/Nutrition module pages so
  *           PWA users get a native-like refresh gesture. See
- *           docs/design/design-system.md § PullToRefreshIndicator for
+ *           docs/design/design/design-system.md § PullToRefreshIndicator for
  *           the integration recipe.
  *
  * Scaffolded but not yet imported by any consumer. Do NOT delete as part of

@@ -8,7 +8,7 @@
  * {@link "./adapters/pg"} and {@link "./adapters/sqlite"} and are imported
  * lazily by callers — the runner itself never references either dialect.
  *
- * Implements PR #019 of `docs/planning/storage-roadmap.md`.
+ * Implements PR #019 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 
 /**

@@ -5,7 +5,7 @@
  * every save and read wholesale on login. See the module comment in
  * `./biometrics.ts` for why biometrics had no server leg at all until this
  * landed; memory bank's own server leg is L-8
- * (`docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md`) — the
+ * (`docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md`) — the
  * bank had zero server presence and did not survive logout.
  *
  * L-8's central trap: the row is wholesale-upserted, so a push that carries

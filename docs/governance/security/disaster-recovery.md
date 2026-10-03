@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-> **Last touched:** 2026-05-13 by Codex. **Next review:** 2027-07-09.
+> **Last touched:** 2026-09-23 by @claude (додано примітку: щотижнева автоперевірка бекапу зупинилась із GitHub). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Disaster recovery defines how Sergeant recovers from catastrophic runtime or data loss events. This document keeps the expectations lightweight but explicit for a Founder+1 operating model.
@@ -15,12 +15,12 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 
 ## Recovery targets
 
-| Surface                       | Target RPO   | Target RTO | Notes                                                                               |
-| ----------------------------- | ------------ | ---------- | ----------------------------------------------------------------------------------- |
-| PostgreSQL system of record   | <= 24h       | <= 4h      | Recovery depends on Coolify/VPS backup availability and restore rehearsal freshness |
-| Web / API runtime             | <= 1 deploy  | <= 1h      | Prefer redeploy or rollback before infrastructure rebuild                           |
-| Mobile distribution lanes     | <= 1 release | <= 24h     | Store propagation can dominate recovery time                                        |
-| Console / automation surfaces | <= 24h       | <= 4h      | Secrets and workflow manifests must remain reconstructable                          |
+| Surface                                                                                                                                  | Target RPO   | Target RTO | Notes                                                                                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL system of record                                                                                                              | <= 24h       | <= 4h      | Recovery depends on Coolify/VPS backup availability and restore rehearsal freshness                                                                                                                                                                                                          |
+| Web / API runtime                                                                                                                        | <= 1 deploy  | <= 1h      | Prefer redeploy or rollback before infrastructure rebuild                                                                                                                                                                                                                                    |
+| Mobile distribution lanes                                                                                                                | <= 1 release | <= 24h     | Store propagation can dominate recovery time                                                                                                                                                                                                                                                 |
+| Background jobs / scheduled automation (BullMQ, Postgres outbox, timers — [ADR-0089](../adr/0089-job-substrates-outbox-broker-timer.md)) | <= 24h       | <= 4h      | Run inside the API container on Coolify; Redis/Postgres state must remain reconstructable. _Historical row "Console / automation surfaces" (OpenClaw console, n8n) retired with [ADR-0075](../adr/0075-openclaw-gateway-decommissioned.md) / [ADR-0090](../adr/0090-n8n-decommissioned.md)._ |
 
 ## Minimum controls
 
@@ -28,6 +28,8 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 - One documented rollback path for each runtime in [service-catalog.md](../../engineering/architecture/service-catalog.md).
 - Secret rotation procedure ready for auth and provider keys.
 - Backup restore drill performed on a regular cadence, not only after incidents.
+
+> **2026-09-30:** the weekly automated restore verification (`.github/workflows/db-backup-verify.yml`, Sunday 04:00 UTC) is scheduled on GitHub Actions again ([ADR-0102](../adr/0102-github-actions-ci-and-autodeploy.md)); it did not run 2026-09-23..29. Whether its secrets are configured on `SkOrDs-02/sergeant` is not verified yet, so until its first green run the manual drill in [test-backup-restore.md](../../start/instructions/test-backup-restore.md) stays the freshness signal.
 
 ## Recovery ownership
 

@@ -76,7 +76,7 @@ export function HeroValueLine({
         <div className="text-style-display text-hero-ink tabular-nums">
           {metric}
         </div>
-        <div className="text-style-label text-hero-ink/70">{narrative}</div>
+        <div className="text-style-label text-hero-ink">{narrative}</div>
       </div>
     </div>
   );

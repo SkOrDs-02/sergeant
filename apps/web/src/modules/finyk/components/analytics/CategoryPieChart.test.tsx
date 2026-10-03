@@ -41,6 +41,36 @@ describe("CategoryPieChart", () => {
     expect(screen.getByText("FUN")).toBeInTheDocument();
   });
 
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): `Analytics`
+  // never threaded `showBalance` to the chart, so the donut's centre sum,
+  // legend amounts, and sr-only summary stayed visible even with «Приховати
+  // суми» on. Percent shares and the ring geometry stay visible on purpose —
+  // they are not a sum.
+  it("masks the centre total and legend amounts when showBalance=false", () => {
+    render(
+      <CategoryPieChart
+        data={[slice("food", 6000), slice("fun", 4000)]}
+        total={10000}
+        showBalance={false}
+      />,
+    );
+    expect(screen.queryByText(/10\D?000\s*₴/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(2);
+    // Percent shares are not a sum — they stay visible.
+    expect(screen.getByText("60%")).toBeInTheDocument();
+    expect(screen.getByText("40%")).toBeInTheDocument();
+  });
+
+  it("shows the real centre total and legend amounts when showBalance=true (default)", () => {
+    render(
+      <CategoryPieChart
+        data={[slice("food", 6000), slice("fun", 4000)]}
+        total={10000}
+      />,
+    );
+    expect(screen.queryByText("••••")).not.toBeInTheDocument();
+  });
+
   it("renders a valid full-ring sector for a single category", () => {
     render(<CategoryPieChart data={[slice("food", 5000)]} />);
 

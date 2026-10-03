@@ -29,7 +29,6 @@ import {
   MEASUREMENT_DELETE_SQL,
   MEASUREMENT_UPSERT_SQL,
   setMonthlyPlan,
-  setPushups,
   softDeleteDailyLog,
   softDeleteRemovedChildren,
   softDeleteInjury,
@@ -210,24 +209,6 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
           cleared_at: i.clearedAt ?? null,
           note: i.note ?? "",
           created_at: rt.clientTs,
-        },
-      });
-      return "applied";
-    },
-    // Перенос власності pushup-даних routine → fizruk (2026-08-30).
-    // Row keys збігаються з колонками SQLite/PG, тож generic pull-apply на
-    // іншому пристрої обходиться без мапера.
-    "pushup-set": async (client, op, rt) => {
-      await setPushups(client, op.dateKey, op.reps, rt);
-      fireSyncOutboxUpsert(client, {
-        userId: rt.userId,
-        table: "fizruk_pushups",
-        op: "insert",
-        clientTs: rt.clientTs,
-        row: {
-          user_id: rt.userId,
-          date_key: op.dateKey,
-          reps: op.reps,
         },
       });
       return "applied";
@@ -615,6 +596,18 @@ async function upsertMeasurement(
     toRealOrNull(m["chestCm"]),
     toRealOrNull(m["hipsCm"]),
     toRealOrNull(m["bicepCm"]),
+    // Решта полів веб-форми. До міграції 008 колонок під них не було, і
+    // введене користувачем зникало після перезавантаження.
+    toRealOrNull(m["bodyFatPct"]),
+    toRealOrNull(m["neckCm"]),
+    toRealOrNull(m["bicepLCm"]),
+    toRealOrNull(m["bicepRCm"]),
+    toRealOrNull(m["forearmLCm"]),
+    toRealOrNull(m["forearmRCm"]),
+    toRealOrNull(m["thighLCm"]),
+    toRealOrNull(m["thighRCm"]),
+    toRealOrNull(m["calfLCm"]),
+    toRealOrNull(m["calfRCm"]),
     toRealOrNull(m["sleepHours"]),
     toIntOrNull(m["energyLevel"]),
     toIntOrNull(m["mood"]),
@@ -634,6 +627,16 @@ async function upsertMeasurement(
       chest_cm: toRealOrNull(m["chestCm"]),
       hips_cm: toRealOrNull(m["hipsCm"]),
       bicep_cm: toRealOrNull(m["bicepCm"]),
+      body_fat_pct: toRealOrNull(m["bodyFatPct"]),
+      neck_cm: toRealOrNull(m["neckCm"]),
+      bicep_l_cm: toRealOrNull(m["bicepLCm"]),
+      bicep_r_cm: toRealOrNull(m["bicepRCm"]),
+      forearm_l_cm: toRealOrNull(m["forearmLCm"]),
+      forearm_r_cm: toRealOrNull(m["forearmRCm"]),
+      thigh_l_cm: toRealOrNull(m["thighLCm"]),
+      thigh_r_cm: toRealOrNull(m["thighRCm"]),
+      calf_l_cm: toRealOrNull(m["calfLCm"]),
+      calf_r_cm: toRealOrNull(m["calfRCm"]),
       sleep_hours: toRealOrNull(m["sleepHours"]),
       energy_level: toIntOrNull(m["energyLevel"]),
       mood: toIntOrNull(m["mood"]),

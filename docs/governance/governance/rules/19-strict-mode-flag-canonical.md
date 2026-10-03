@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-09-17 by @claude (мертвий `archive/`-шлях → permalink). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #19. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -16,7 +16,7 @@
 
 - **ci** — node tools/tsconfig-guard/check.mjs (run by pnpm lint)
 - **convention** — tools/tsconfig-guard/allowlist.json — every override of a GUARDED strict-family flag MUST have an entry with path/option/value/reason/expires/owner
-- **doc** — docs/work/specs/initiatives/archive/\_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)
+- **doc** — [initiative 0012 — perfect strictness rollout](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0012-perfect-strictness-rollout.md) (rollout plan, baselines, criteria DONE; permalink — файл знято з чекауту за Rule #23)
 
 ## Why / What is enforced
 
@@ -29,7 +29,7 @@
 
 CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint`). Будь-який неавторизований override ламає білд. Allowlist-entries без активної ініціативи — скоро `expires`, після чого CI знов падає.
 
-**Coverage tracking.** [`scripts/strict-coverage.mjs`](../../../../scripts/strict-coverage.mjs) пише markdown-таблицю в `$GITHUB_STEP_SUMMARY` з per-flag-coverage статистикою (12 / 12 = 100% — мета). Status: усі 10 strict-family прапорів = 12 / 12 = 100% (residual `apps/web` для `exactOptionalPropertyTypes` / `noPropertyAccessFromIndexSignature` знятий; `allowlist.json` = `[]`).
+**Coverage tracking.** Окремого скрипта більше немає: `scripts/strict-coverage.mjs` <!-- removed --> прибрано 2026-09-19 разом із CI-джобою, яка його друкувала, - вона зникла раніше, і скрипт лишався ручним звітом, який ніхто не запускав. Покриття тепер стереже сам `tsconfig-guard` (падає на неавторизованому override), а не звіт поруч із ним. Status: усі 10 strict-family прапорів = 12 / 12 = 100% (residual `apps/web` для `exactOptionalPropertyTypes` / `noPropertyAccessFromIndexSignature` знятий; `allowlist.json` = `[]`).
 
 **Що блокує:**
 
@@ -46,6 +46,6 @@ Tracked у [Initiative 0012 — Perfect TS strictness rollout](https://github.co
 
 ## Related
 
-- **doc** — docs/work/specs/initiatives/archive/\_0012-perfect-strictness-rollout.md
+- **doc** — [initiative 0012 — perfect strictness rollout](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0012-perfect-strictness-rollout.md) (permalink — файл знято з чекауту)
 - **doc** — docs/work/specs/tech-debt/frontend.md
 - **agents** — #19

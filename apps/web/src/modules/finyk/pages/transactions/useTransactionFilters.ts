@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ucFirst } from "@shared/lib/ui/ucFirst";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
 import type {
@@ -9,10 +9,14 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { filterToKyivMonth } from "../../lib/monthWindow";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
+import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import {
   calcCategorySpent,
   getExpenseCategoryForTransaction,
@@ -55,10 +59,18 @@ export interface UseTransactionFiltersParams {
   excludedTxIds: Set<string>;
   txSplits: TxSplitsMap;
   txCategories: TxCategoriesMap;
+  /**
+   * Правила «Завжди так для цього магазину» (2026-10-01). Діють на категорію
+   * банківських операцій без явного override-а — у фільтрі, підсумках по
+   * категоріях і CSV, тобто там, де список і цифри мусять збігатися з рядком.
+   */
+  merchantRules?: MerchantRuleIndex | undefined;
   customCategories: Category[] | undefined;
   fetchMonth: (year: number, month: number) => Promise<unknown>;
   /** External-driven category filter (e.g. tap on a category card). */
   categoryFilter: string | null | undefined;
+  /** Місяць дрил-дауну разом із `categoryFilter` (`month` 1-based, як в Аналітиці). */
+  categoryMonth?: { year: number; month: number } | null | undefined;
   onClearCategoryFilter?: (() => void) | undefined;
   /**
    * URL-driven calendar shortcut (`?date=...`): `"today"` from Overview's
@@ -95,9 +107,11 @@ export function useTransactionFilters({
   excludedTxIds,
   txSplits,
   txCategories,
+  merchantRules,
   customCategories,
   fetchMonth,
   categoryFilter,
+  categoryMonth,
   onClearCategoryFilter,
   dayFilter,
 }: UseTransactionFiltersParams) {
@@ -132,13 +146,33 @@ export function useTransactionFilters({
   );
   if (incomingCategory !== seenCategoryFilter) {
     setSeenCategoryFilter(incomingCategory);
-    if (incomingCategory) setFilter(incomingCategory);
+    if (incomingCategory) {
+      setFilter(incomingCategory);
+      // Дрил-даун несе місяць Аналітики: без цього список стартував би на
+      // поточному й категорія за минулий місяць показувала б порожньо.
+      if (categoryMonth) {
+        setSelMonth({
+          year: categoryMonth.year,
+          month: categoryMonth.month - 1,
+        });
+      }
+    }
   }
 
   // Гасимо одноразовий проп у власника, щоб він не «прилипав» до сторінки.
   useEffect(() => {
-    if (categoryFilter) onClearCategoryFilter?.();
-  }, [categoryFilter, onClearCategoryFilter]);
+    if (!categoryFilter) return;
+    if (categoryMonth) {
+      const now = kyivNowMonth();
+      if (!(
+        categoryMonth.year === now.year && categoryMonth.month - 1 === now.month
+      )) {
+        // Fire-and-forget, як у `goMonth`: відмова моно лишає порожній стан.
+        fetchMonth(categoryMonth.year, categoryMonth.month - 1).catch(() => {});
+      }
+    }
+    onClearCategoryFilter?.();
+  }, [categoryFilter, categoryMonth, fetchMonth, onClearCategoryFilter]);
 
   // Єдине джерело правди — власний стан. Після підхоплення вище проп уже
   // нічого не перекриває.
@@ -148,33 +182,30 @@ export function useTransactionFilters({
   const isCurrentMonth =
     selMonth.year === kyivNowY && selMonth.month === kyivNowM;
 
-  const manualExpenseTxs = useMemo(() => {
-    const monthStart = new Date(selMonth.year, selMonth.month, 1).getTime();
-    const monthEnd = new Date(selMonth.year, selMonth.month + 1, 1).getTime();
-    return (manualExpenses || [])
-      .filter((e) => {
-        const ts = new Date(e.date).getTime();
-        return ts >= monthStart && ts < monthEnd;
-      })
-      .map((e) => manualExpenseToTransaction(e));
-  }, [manualExpenses, selMonth]);
+  // AI-CONTEXT: межі місяця — Київ (ADR-0078: фінансові періоди рахуються за
+  // Kyiv, як в Аналітиці й у `fetchMonth`), для банку і ручних витрат разом.
+  // Особистий день-ключ запису лишається device-local, але ПРИНАЛЕЖНІСТЬ до
+  // місяця — це період, а не доба.
+  const monthKey = `${selMonth.year}-${String(selMonth.month + 1).padStart(2, "0")}`;
+
+  const manualExpenseTxs = useMemo(
+    () =>
+      filterToKyivMonth(
+        (manualExpenses || []).map((e) => manualExpenseToTransaction(e)),
+        monthKey,
+      ),
+    [manualExpenses, monthKey],
+  );
 
   // The bank-side slice can carry rows outside `selMonth`: the read-overlay
   // in `useMonobankWebhook` falls back to the full SQLite mirror on a cold
   // start, and `historyTx` keeps the last fetched month while a new fetch is
   // in flight. Clamp to the selected month so the rendered rows always match
   // `monthLabel` instead of leaking adjacent-month groups under the header.
-  const monthBankTxs = useMemo(() => {
-    const monthStartSec =
-      new Date(selMonth.year, selMonth.month, 1).getTime() / 1000;
-    const monthEndSec =
-      new Date(selMonth.year, selMonth.month + 1, 1).getTime() / 1000;
-    const source = isCurrentMonth ? realTx : historyTx;
-    return source.filter((t) => {
-      const ts = t.time ?? 0;
-      return ts >= monthStartSec && ts < monthEndSec;
-    });
-  }, [isCurrentMonth, realTx, historyTx, selMonth]);
+  const monthBankTxs = useMemo(
+    () => filterToKyivMonth(isCurrentMonth ? realTx : historyTx, monthKey),
+    [isCurrentMonth, realTx, historyTx, monthKey],
+  );
 
   const activeTx = useMemo(
     () => [...monthBankTxs, ...manualExpenseTxs],
@@ -226,11 +257,9 @@ export function useTransactionFilters({
 
   // TXT-7 (аудит 2026-09): велика літера в коді, не CSS `capitalize` —
   // інакше «р.» стає «Р.».
-  const monthLabel = ucFirst(
-    new Date(selMonth.year, selMonth.month, 1).toLocaleDateString("uk-UA", {
-      month: "long",
-      year: "numeric",
-    }),
+  const monthLabel = formatMonthYear(
+    new Date(selMonth.year, selMonth.month, 1),
+    { capitalize: true },
   );
 
   const creditAccIds = useMemo(() => {
@@ -248,16 +277,29 @@ export function useTransactionFilters({
     [hiddenTxIds],
   );
 
+  // Явні override-и + виведене правилами. ЛИШЕ для читання (фільтр, підсумки
+  // по категоріях, CSV): у запис ця мапа не йде, див. `merchantRuleOverrides`.
+  const effectiveTxCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        activeTx,
+        txCategories,
+        merchantRules,
+        customCategories ?? [],
+      ),
+    [activeTx, txCategories, merchantRules, customCategories],
+  );
+
   const getEffectiveCat = useCallback(
     (t: Transaction) =>
       t.amount > 0
-        ? getIncomeCategoryForTransaction(t, txCategories[t.id])
+        ? getIncomeCategoryForTransaction(t, effectiveTxCategories[t.id])
         : getExpenseCategoryForTransaction(
             t,
-            txCategories[t.id],
+            effectiveTxCategories[t.id],
             customCategories,
           ),
-    [txCategories, customCategories],
+    [effectiveTxCategories, customCategories],
   );
 
   const statTx = useMemo(
@@ -273,14 +315,14 @@ export function useTransactionFilters({
           spent: calcCategorySpent(
             statTx,
             cat.id,
-            txCategories,
+            effectiveTxCategories,
             txSplits,
             customCategories,
           ),
         }))
         .filter((c) => c.spent > 0)
         .sort((a, b) => b.spent - a.spent),
-    [statTx, txSplits, txCategories, customCategories],
+    [statTx, txSplits, effectiveTxCategories, customCategories],
   );
 
   /**
@@ -298,10 +340,10 @@ export function useTransactionFilters({
       (c) => c.id === effectiveFilter,
     );
     if (!cat) return null;
-    // Емодзі на початку підпису прибираємо — те саме правило, що діяло
-    // для чипів категорій до їх зняття.
-    const space = cat.label.indexOf(" ");
-    return space > 0 ? cat.label.slice(space + 1) : cat.label;
+    // Прибираємо лише емодзі на початку: вбудовані підписи чисті від нього
+    // з 2026-08-21, і різання до першого пробілу робило з «Кафе та
+    // ресторани» «та ресторани».
+    return stripLeadingEmoji(cat.label);
   }, [effectiveFilter, customCategories]);
 
   const txsToShow = useMemo(

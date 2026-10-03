@@ -66,4 +66,63 @@ describe("useShoppingList", () => {
     act(() => result.current.clearAll());
     expect(result.current.shoppingList.categories).toEqual([]);
   });
+
+  it("adds a manual item into the default category", () => {
+    const { result } = renderHook(() => useShoppingList());
+    act(() => result.current.addItem({ name: "Хліб" }));
+    const items = result.current.shoppingList.categories.flatMap(
+      (c) => c.items,
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ name: "Хліб", source: "manual" });
+  });
+
+  it("ignores an empty/whitespace-only manual item name", () => {
+    const { result } = renderHook(() => useShoppingList());
+    act(() => result.current.addItem({ name: "   " }));
+    expect(result.current.shoppingList.categories).toEqual([]);
+  });
+
+  it("keeps a manually added item across AI list regeneration", () => {
+    const { result } = renderHook(() => useShoppingList());
+    act(() => result.current.addItem({ name: "Ручний хліб" }));
+    act(() => result.current.setGeneratedList(CATEGORIES));
+
+    const names = result.current.shoppingList.categories.flatMap((c) =>
+      c.items.map((i) => i.name),
+    );
+    expect(names).toContain("Ручний хліб");
+    expect(names).toContain("Молоко");
+    expect(names).toContain("Сир");
+  });
+
+  it("a second regeneration still keeps the manual item, but replaces the prior AI batch", () => {
+    const { result } = renderHook(() => useShoppingList());
+    act(() => result.current.addItem({ name: "Ручний хліб" }));
+    act(() => result.current.setGeneratedList(CATEGORIES));
+    act(() =>
+      result.current.setGeneratedList([
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "v1",
+              name: "Морква",
+              quantity: "",
+              note: "",
+              checked: false,
+            },
+          ],
+        },
+      ]),
+    );
+
+    const names = result.current.shoppingList.categories.flatMap((c) =>
+      c.items.map((i) => i.name),
+    );
+    expect(names).toContain("Ручний хліб");
+    expect(names).toContain("Морква");
+    expect(names).not.toContain("Молоко");
+    expect(names).not.toContain("Сир");
+  });
 });

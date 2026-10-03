@@ -1,7 +1,7 @@
 # SPEC: RLS на таблицях AI-шару + гейт крос-юзер ізоляції
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-20.
-> **Status:** Scaffolded
+> **Last touched:** 2026-10-01 by @claude (хвости Стадії 1: гейт покриває 50 роутів, у `TODO_UNCOVERED` лишились лише ті, що б'ють у зовнішній сервіс). **Next review:** 2027-05-14.
+> **Status:** In progress (Стадії 1-3 з 4)
 
 <!-- Спека самодостатня: виконавець у свіжій сесії реалізує зміну, читаючи лише
 цей файл, AGENTS.md і названий тут код. Контексту попередньої сесії немає. -->
@@ -231,6 +231,31 @@ allowlist із коментарем-причиною.
 і `stripeWebhook.integration.test.ts`), і запускаються звичайним
 `pnpm --filter @sergeant/server test`. Нового CI-джоба ця спека не заводить.
 
+## Статус виконання
+
+| Стадія                         | Стан                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Гейт ізоляції (Б1-Б3)       | **Виконано, крім роутів із зовнішнім викликом.** [`apps/server/src/http/crossUserIsolation.test.ts`](../../../apps/server/src/http/crossUserIsolation.test.ts): перевірка повноти списку роутів (без БД) + 50 ізоляційних кейсів на живому Postgres (AI-шар, `me/*`, Finyk, Mono, Privat, Silpo, nutrition-бекапи, billing status, push, sync). У `TODO_UNCOVERED` лишилось 34 роути, кожен із причиною в коментарі (LLM, банк, ДПС, MCP Сільпо, платіжні провайдери, SSE). Список лише скорочується. |
+| 2. A5 helper `withUserContext` | **Виконано** (гілка `claude/rls-ai-stage-2-3`). [`dbContext.ts`](../../../apps/server/src/dbContext.ts) (`runWith{User,Bypass,Subject}Context` над будь-яким пулом) + обгортки `withUserContext` / `withBypassContext` / `withSubjectContext` у `db.ts`. Переписано: ai-memory (`vectorStore`, `listRoute`, `profileMirror`), `coach.ts`, ledger `ai_usage_daily` (`aiQuota`, `aiQuotaWeekly`, `usdCap`, `anthropicUsageStore`), `purgeUserData`.                                                     |
+| 3. A4 bypass у поллерах        | **Виконано** (та сама гілка). Bypass рівно у трьох місцях: `selectNudgeCandidates` у `sweep.ts` (reminder-sweep), `/api/internal/ai-usage` (обидва handler-и), `readSpendFromLedger` (бюджет-гард). Ledger-рядки без `u:` (`ip:`, `provider:anthropic`, `n8n:`) ідуть під bypass через `withSubjectContext`.                                                                                                                                                                                          |
+| 4. A1-A3 міграція з політиками | Не почато (потребує рішення власника)                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+Перевірка Стадій 2-3 на живому Postgres (2026-10-01, Testcontainers `pgvector/pgvector:pg17`): серверний `vitest run` 5802 passed / 5 skipped, інтеграційний лейн 171/171. Верифікація №2 виконана: з `WHERE user_id = $1` у `listRoute.ts`, заміненим на `WHERE $1::text IS NOT NULL`, гейт падає рівно на `GET /api/ai-memory/list` («відповідь для А містить дані Б»), після відкату 16/16. Інтеграційний прогін знайшов один застарілий тест: `vectorStore.integration` рахував `SELECT set_config(...)` як пошуковий запит, виправлено.
+
+Нотатки Стадій 2-3 (розбіжності зі спекою, звірені grep-ом):
+
+- **Чат-таблиць на сервері немає** (рядок `chat_` у A1): міграції з `chat_` лише `tg_*` і nutrition, сервер чат-історії не зберігає. Стадія 4 їх не охоплює, рядок A1 знімається.
+- **`apps/server/src/lib/strategicGoals.ts` таблиць із A1 не торкається** (`strategic_goals` не в списку), тож не переписувався.
+- **Поза переліком A5 теж торкаються таблиць A1**: `usdCap.ts`, `anthropicUsageStore.ts`, `aiQuotaWeekly.ts`, `routes/internal/ai-usage.ts`, `obs/anthropicBudgetGuard.ts`, `purgeUserData` у `me/dataRights.ts`. Без них Стадія 4 дала б порожні/впалі відповіді (fail-closed), тож їх переписано тут.
+- **Реплік-пул (A6)**: `dbReplica.ts` використовує лише `index.ts`; жодного запиту до таблиць A1 через нього немає, код не ускладнено.
+- **Міграційний runner (A4.1)**: DML над цими таблицями в `db.ts::runPendingSqlMigrations` немає; bypass не ставиться.
+- **Ingest-черга ai-memory** пише через `vectorStore.upsert`: батч одного користувача іде під `app.user_id`, змішаний - під bypass.
+- **Тестові стенди** з прямим SQL по цих таблицях без контексту (сід/перевірка): `transcribe-usd-cap.e2e.test.ts`, `vectorStore.integration.test.ts`, `dataRights.integration.test.ts`, `coach.integration.test.ts`, `migrations/__tests__/054-ai-memories-persona-topic.test.ts`, `crossUserIsolation.test.ts`. На Стадії 4 їм потрібен `app.bypass` (або `set_config` у сіді); тут вони не чіпались, бо без політик нічого не змінюється, а Docker у цій сесії недоступний.
+
+Хвости Стадії 1 закрито 2026-10-01 (гілка `claude/rls-isolation-coverage`): покрито `POST /api/ai-memory/recall`, `GET /api/chat/usage` (`ai_usage_daily`), `DELETE /api/me`, `POST /api/me/restore` і DB-частини Finyk, Mono, Privat, Silpo, Nutrition (бекапи), Billing (`status`), Push (`register`/`unregister`), Sync (`audit`, `pull`, `push`). Стан Б сідиться в усіх відповідних таблицях, а знімок Б (`B_SNAPSHOT_QUERIES`, 26 запитів із `to_jsonb`) ловить зміну будь-якої колонки. Для recall замінено лише ембеддинг (константний вектор), стор і consent справжні; `verifyAccountPassword` замокано як «акаунт без пароля», бо пул Better Auth у цьому стенді не піднімається.
+
+Лишилось у `TODO_UNCOVERED` (34 роути), причини в коментарях до записів: LLM-виклики (`/api/chat`, `coach/insight`, `weekly-digest`, 7 nutrition-роутів, vision-аналізи Finyk), зовнішні банки й ДПС (`mono/connect`, `privat/connect`, `_ALL /api/privat`, `receipts/lookup`), MCP Сільпо (`connect`, `callback`, `sync`, `diag`, `cart*`), платіжні провайдери (5 billing-роутів), `push/send` (internal за IP-allowlist, `userId` у тілі за задумом), `push/test`, SSE `v2/sync/stream`, `transcribe`, `mono/backfill-progress` (стан лише в пам'яті процесу). Для них потрібен мок мережі або окремий стенд; це окрема робота, а не хвіст гейта. Реальний `userId` у `POST /api/push/send` береться з тіла і не звіряється з сесією: це дизайн внутрішнього роута, але саме він перший кандидат на окрему перевірку, коли з'явиться мок webpush.
+
 ## Порядок робіт
 
 Стадії окремими комітами, бажано окремими PR-ами.
@@ -244,7 +269,7 @@ allowlist із коментарем-причиною.
    можна злити окремо.
 3. **A4 bypass у фонових задачах і внутрішніх роутах.** Теж no-op без політик.
 4. **A1-A3 міграція з політиками.** Наступний вільний номер після
-   `134_fizruk_item_chosen_variant.sql` - перевір `ls apps/server/src/migrations/`
+   `144_ai_memories_prune_dead_sources.sql` - перевір `ls apps/server/src/migrations/`
    на момент роботи. Обов'язковий парний `.down.sql`, який знімає політики й
    вимикає RLS (Hard Rule #4).
 

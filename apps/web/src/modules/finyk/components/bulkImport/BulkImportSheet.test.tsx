@@ -64,7 +64,11 @@ function makeStorage(): ManualExpenseWriteThroughStorage & {
   };
 }
 
-function renderSheet() {
+function renderSheet(
+  customCategories: Parameters<
+    typeof BulkImportSheet
+  >[0]["customCategories"] = [],
+) {
   const storage = makeStorage();
   const onClose = vi.fn();
   const client = new QueryClient({
@@ -72,7 +76,12 @@ function renderSheet() {
   });
   render(
     <QueryClientProvider client={client}>
-      <BulkImportSheet open onClose={onClose} storage={storage} />
+      <BulkImportSheet
+        open
+        onClose={onClose}
+        storage={storage}
+        customCategories={customCategories}
+      />
     </QueryClientProvider>,
   );
   return { storage, onClose };
@@ -148,6 +157,48 @@ describe("BulkImportSheet — screenshot path", () => {
     ).toBeInTheDocument();
   });
 
+  it("preserves a known custom income category in bulk-review", async () => {
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "mono",
+        rows: [
+          {
+            date: "2026-09-01",
+            amountKopiykas: 300000,
+            direction: "income",
+            description: "Оренда",
+            categoryHint: "custom-rent",
+            confidence: 0.9,
+          },
+        ],
+      },
+    });
+    renderSheet([
+      { id: "custom-rent", label: "Оренда", kind: "income" },
+      { id: "custom-hobby", label: "Хобі" },
+    ]);
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
+          ],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Імпортувати" }),
+      ).toBeInTheDocument(),
+    );
+    const categoryPicker = screen.getByLabelText("Категорія");
+    expect(categoryPicker).toHaveValue("custom-rent");
+    expect(categoryPicker).not.toHaveValue("custom-hobby");
+  });
+
   it("показує живий статус розпізнавання, поки vision у польоті", async () => {
     // Бета-фідбек №5 (2026-08-18): до цього аркуш усі 5–20 секунд стояв
     // на кнопках вибору файлу, і пауза читалась як завислий екран.
@@ -181,9 +232,7 @@ describe("BulkImportSheet — screenshot path", () => {
 
     // Друга фаза настає рівно тоді, коли фото пішло на сервер.
     await waitFor(() => expect(analyzeImportScreenshotMock).toHaveBeenCalled());
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Розпізнаю транзакції…",
-    );
+    expect(screen.getByRole("status")).toHaveTextContent("Розпізнаю операції…");
 
     await act(async () => {
       resolveAnalyze({
@@ -292,7 +341,7 @@ describe("BulkImportSheet — screenshot path", () => {
     );
   });
 
-  it("не-гривневі рядки пояснюються валютою, а не «не бачу транзакцій»", async () => {
+  it("не-гривневі рядки пояснюються валютою, а не «не бачу операцій»", async () => {
     analyzeImportScreenshotMock.mockResolvedValue({
       draft: {
         docType: "bank_screenshot",

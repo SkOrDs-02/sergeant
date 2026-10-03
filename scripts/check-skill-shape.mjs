@@ -62,9 +62,16 @@ function parseFrontmatter(text) {
   if (end === -1) return null;
   const block = text.slice(4, end);
   const out = {};
+  out.unquotedColon = [];
   for (const line of block.split(/\r?\n/)) {
     const m = line.match(/^([A-Za-z][\w-]*):\s*(.*)$/);
-    if (m) out[m[1]] = m[2].trim().replace(/^['"]|['"]$/g, "");
+    if (!m) continue;
+    // Strict YAML (Codex) rejects the whole frontmatter on an unquoted ": " or
+    // " #" inside a plain scalar and silently skips the skill.
+    if (!/^["'[{|>]/.test(m[2]) && /: |\s#|:$/.test(m[2])) {
+      out.unquotedColon.push(m[1]);
+    }
+    out[m[1]] = m[2].trim().replace(/^['"]|['"]$/g, "");
   }
   return out;
 }
@@ -89,6 +96,11 @@ function lintSkill(slug) {
   if (!fm) {
     errors.push(`${slug}: missing or malformed YAML frontmatter (--- … ---)`);
     return errors;
+  }
+  for (const key of fm.unquotedColon) {
+    errors.push(
+      `${slug}: frontmatter \`${key}\` contains ": " or " #" unquoted; wrap the value in double quotes (strict YAML parsers drop the skill)`,
+    );
   }
   if (!fm.name) {
     errors.push(`${slug}: frontmatter missing required \`name\` key`);

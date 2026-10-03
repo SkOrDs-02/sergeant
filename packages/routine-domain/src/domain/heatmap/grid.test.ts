@@ -369,6 +369,144 @@ describe("buildHeatmapGrid — denominator: 'scheduled'", () => {
   });
 });
 
+describe("buildHeatmapGrid — skips (PR-R8, аудит 2026-09)", () => {
+  function byKey(grid: ReturnType<typeof buildHeatmapGrid>) {
+    return new Map(grid.weeks.flat().map((c) => [c.dateKey, c]));
+  }
+
+  it("defaults skippedCnt to 0 when opts.skips is not passed (legacy behaviour)", () => {
+    const habits = [habit({ id: "a", name: "A", startDate: "2025-01-01" })];
+    const grid = buildHeatmapGrid(habits, {}, TODAY, 4, {
+      denominator: "scheduled",
+    });
+    expect(byKey(grid).get("2025-01-15")?.skippedCnt).toBe(0);
+  });
+
+  // METRICS_VERSION 14 (аудит 2026-09-13, PR-R8 стадія 2). Хвиля 6 свідомо
+  // зробила `skippedCnt` ЧИСТО додатковим: рухати `scheduledTotal`/`ratio`
+  // без бампу версії метрик заборонено, і той тест фіксував саме цю
+  // обіцянку. Тепер бамп зроблено, тож контракт інвертовано: заявлений
+  // пропуск виходить зі знаменника — так само, як він уже виходить у
+  // `completionRateForRange`. Heatmap був останнім конвеєром, де людина
+  // казала «хворів», а сітка малювала це провалом.
+  it("бере заявлений пропуск ЗІ ЗНАМЕННИКА, лишаючи його в skippedCnt", () => {
+    const habits = [habit({ id: "a", name: "A", startDate: "2025-01-01" })];
+    const skips = {
+      a: {
+        "2025-01-15": {
+          reason: "sick" as const,
+          at: "2025-01-15T08:00:00.000Z",
+        },
+      },
+    };
+    const withoutSkips = byKey(
+      buildHeatmapGrid(habits, {}, TODAY, 4, { denominator: "scheduled" }),
+    ).get("2025-01-15");
+    const withSkips = byKey(
+      buildHeatmapGrid(habits, {}, TODAY, 4, {
+        denominator: "scheduled",
+        skips,
+      }),
+    ).get("2025-01-15");
+
+    // Без пропуску: одна запланована звичка, не виконана → 0/1, сітка бліда.
+    expect(withoutSkips?.scheduledTotal).toBe(1);
+    expect(withoutSkips?.scheduledCnt).toBe(0);
+    expect(withoutSkips?.ratio).toBe(0);
+    expect(withoutSkips?.skippedCnt).toBe(0);
+
+    // З пропуском: день узагалі виходить зі знаменника. Це НЕ «зарахували
+    // як виконане» — це «не рахуємо ні туди, ні сюди», рівно як у rate.
+    expect(withSkips?.scheduledTotal).toBe(0);
+    expect(withSkips?.scheduledCnt).toBe(0);
+    expect(withSkips?.skippedCnt).toBe(1);
+    // `ratio` при нульовому знаменнику — 0 за визначенням (`total > 0`),
+    // тож клітинка не фарбується як провал і не вдає виконання.
+    expect(withSkips?.ratio).toBe(0);
+  });
+
+  // Guard на протилежну помилку: пропуск не має підіймати відсоток дня.
+  // Дві звички, одна виконана, друга заявлена як пропуск → 1/1, а не 1/2
+  // і не 2/2.
+  it("guard: пропуск не вдає виконання — інша звичка того дня дає 1/1", () => {
+    const habits = [
+      habit({ id: "a", name: "A", startDate: "2025-01-01" }),
+      habit({ id: "b", name: "B", startDate: "2025-01-01" }),
+    ];
+    const completions = { a: ["2025-01-15"] };
+    const skips = {
+      b: {
+        "2025-01-15": {
+          reason: "sick" as const,
+          at: "2025-01-15T08:00:00.000Z",
+        },
+      },
+    };
+    const cell = byKey(
+      buildHeatmapGrid(habits, completions, TODAY, 4, {
+        denominator: "scheduled",
+        skips,
+      }),
+    ).get("2025-01-15");
+
+    expect(cell?.scheduledTotal).toBe(1);
+    expect(cell?.scheduledCnt).toBe(1);
+    expect(cell?.skippedCnt).toBe(1);
+    expect(cell?.ratio).toBe(1);
+  });
+
+  it("does not count a completed habit in skippedCnt even if it also carries a stray skip entry", () => {
+    const habits = [habit({ id: "a", name: "A", startDate: "2025-01-01" })];
+    const completions = { a: ["2025-01-15"] };
+    const skips = {
+      a: {
+        "2025-01-15": {
+          reason: "sick" as const,
+          at: "2025-01-15T08:00:00.000Z",
+        },
+      },
+    };
+    const cell = byKey(
+      buildHeatmapGrid(habits, completions, TODAY, 4, {
+        denominator: "scheduled",
+        skips,
+      }),
+    ).get("2025-01-15");
+    expect(cell?.scheduledCnt).toBe(1);
+    expect(cell?.skippedCnt).toBe(0);
+  });
+
+  it("ignores a skip entry for a day the habit is not scheduled on", () => {
+    const habits = [
+      habit({
+        id: "a",
+        name: "A",
+        recurrence: "weekly",
+        weekdays: [0], // Monday only
+        startDate: "2025-01-01",
+      }),
+    ];
+    // 2025-01-15 is a Wednesday — not scheduled — so a skip entry here must
+    // not leak into any cell's skippedCnt.
+    const skips = {
+      a: {
+        "2025-01-15": {
+          reason: "sick" as const,
+          at: "2025-01-15T08:00:00.000Z",
+        },
+      },
+    };
+    const cell = byKey(
+      buildHeatmapGrid(habits, {}, TODAY, 4, {
+        denominator: "scheduled",
+        skips,
+      }),
+    ).get("2025-01-15");
+    expect(cell?.scheduledTotal).toBe(0);
+    expect(cell?.skippedCnt).toBe(0);
+  });
+});
+
 describe("grid aggregates", () => {
   const habits = [habit({ id: "a", name: "A" }), habit({ id: "b", name: "B" })];
   const completions = {

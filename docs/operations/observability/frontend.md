@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-25.
+> **Last touched:** 2026-09-17 by @claude (web-vitals 50/min; шлях емітера `subscription_started`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -107,7 +107,7 @@ blockAllMedia: true   — медіа заблоковані (PII/розмір)
 
 `POST /api/metrics/web-vitals` (`apps/server/src/routes/web-vitals.ts`):
 
-- **Rate limit**: 60 req/min/IP.
+- **Rate limit**: 50 req/min/IP (знижено з 60 у M12 — коментар у `routes/web-vitals.ts`).
 - **Відповідь**: завжди `204 No Content` (sendBeacon ігнорує body).
 - **Валідація**: Zod (`apps/server/src/modules/observability/web-vitals.ts:36–49`):
   timing — `0..120_000 ms`, CLS — `0..10`.
@@ -307,7 +307,7 @@ events (наступний PR з 48-плану).
 **Server-side `subscription_started`** (поточний shipping payload):
 
 ```ts
-// apps/server/src/modules/billing/stripe.ts → emitSubscriptionStarted
+// apps/server/src/modules/billing/stripeLifecycle.ts → emitSubscriptionStarted (виклик із stripeWebhook.ts)
 {
   event: ANALYTICS_EVENTS.SUBSCRIPTION_STARTED, // "subscription_started"
   distinctId: userId,                            // Better Auth opaque string

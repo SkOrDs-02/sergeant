@@ -144,4 +144,26 @@ describe("Segmented", () => {
       expect(tab.className).toContain("rounded-2xl");
     }
   });
+
+  it.each(["finyk", "fizruk", "routine", "nutrition"] as const)(
+    "style='soft' + variant='%s': вибраний піл = тонований фон + контур `-edge` (A4 аудиту контрасту)",
+    (variant) => {
+      // Тихі `{m}-ring` / `{m}-border-dark/40` давали 1.35 (світла) / 2.49
+      // (темна) проти сусіда; для СТАНУ потрібно ≥3:1 (WCAG 1.4.11).
+      const { getAllByRole } = render(
+        <Segmented
+          items={ITEMS}
+          value="day"
+          onChange={() => {}}
+          variant={variant}
+        />,
+      );
+      const [active, idle] = getAllByRole("tab");
+      expect(active!.className).toContain(`border-${variant}-edge`);
+      expect(active!.className).not.toContain(`border-${variant}-ring`);
+      expect(active!.className).not.toContain(`${variant}-border-dark`);
+      // Невибраний піл не змінився: тиха межа картки.
+      expect(idle!.className).toContain("border-line");
+    },
+  );
 });

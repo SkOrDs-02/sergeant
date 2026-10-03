@@ -21,9 +21,10 @@
 import { useMemo } from "react";
 import {
   WEEK_KCAL_OVER_TOLERANCE,
+  resolveKcalGoalsForDays,
   todayISODate,
+  type GoalPeriod,
   type NutritionLog,
-  type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
 import { getDayMacros, addDaysISODate } from "../lib/nutritionStorage";
 import type { Insight } from "@shared/lib/insights/types";
@@ -67,19 +68,23 @@ const STREAK_DAYS = 7;
 
 export function useStreakSevenDaysInsight(
   log: NutritionLog,
-  prefs: NutritionPrefs,
+  goalPeriods: readonly GoalPeriod[],
 ): Insight | null {
   return useMemo(() => {
-    const goal = prefs.dailyTargetKcal ?? 0;
-    if (goal <= 0) return null;
-
     // ADR-0078: walk back from the day the log is actually keyed under —
     // device, not Kyiv.
     const today = todayISODate();
+    const days = Array.from({ length: STREAK_DAYS }, (_, i) =>
+      addDaysISODate(today, -i),
+    );
+    const goals = resolveKcalGoalsForDays(goalPeriods, days);
+    if (goals.some((goal) => goal == null || goal <= 0)) return null;
 
     // Full window scan — iterate all 7 days, bail early on first miss.
     for (let i = 0; i < STREAK_DAYS; i++) {
-      const dateKey = addDaysISODate(today, -i);
+      const dateKey = days[i];
+      const goal = goals[i];
+      if (!dateKey || goal == null) return null;
       const macros = getDayMacros(log, dateKey);
       const kcal = macros.kcal ?? 0;
       const ratio = kcal / goal;
@@ -97,12 +102,12 @@ export function useStreakSevenDaysInsight(
       module: "nutrition",
       title: `7 днів у нормі калорій`,
       subtitle: `Хочеш план на наступний тиждень?`,
-      askAiPrompt: `Тиждень тримаю калорії в цілі (${goal} ± 5%). Що з цього закріпити, а де я можливо недоїдаю по макросах?`,
+      askAiPrompt: `Тиждень тримаю калорії в межах своїх поденних цілей (± 5%). Що з цього закріпити, а де я можливо недоїдаю по макросах?`,
       action: { type: "navigate", path: "/nutrition/menu" },
       // Hub surface promoted post-Phase 5e: 7-day streak achievement +
       // next-week-plan upsell is cross-module relevant — celebration belongs
       // on the Hub where it can co-occur with other module progress signals.
       showOn: "both",
     } satisfies Insight;
-  }, [log, prefs]);
+  }, [goalPeriods, log]);
 }

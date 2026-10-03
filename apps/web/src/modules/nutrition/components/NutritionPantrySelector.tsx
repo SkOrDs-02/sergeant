@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-02
+ * Last validated: 2026-09-08
  * Status: Active
  *
  * Фільтр місць зберігання. Саме фільтр, а не вкладки: вкладки роблять
@@ -16,6 +16,8 @@
  * позбулись.
  */
 import type { Pantry } from "@sergeant/nutrition-domain";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { cn } from "@shared/lib/ui/cn";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 
 type PantryController = ReturnType<typeof useNutritionPantries>;
@@ -26,29 +28,36 @@ const ALL = "";
 interface NutritionPantrySelectorProps {
   pantry: PantryController;
   busy?: boolean;
+  /** Лише селект і «⋯» без картки: рядок у шапці списку наповненої комори. */
+  compact?: boolean;
 }
 
 export function NutritionPantrySelector({
   pantry,
   busy,
+  compact = false,
 }: NutritionPantrySelectorProps) {
   const pantries: Pantry[] = Array.isArray(pantry.pantries)
     ? pantry.pantries
     : [];
   const { placeFilter, setPlaceFilter } = pantry;
+  const selectedPlace = pantries.find((place) => place.id === placeFilter);
 
-  return (
-    <div className="rounded-2xl bg-nutrition/10 border border-nutrition/20 px-3 py-1.5 mb-4 flex items-center gap-2">
+  const controls = (
+    <>
       <select
         value={placeFilter ?? ALL}
         onChange={(e) => setPlaceFilter(e.target.value || null)}
         disabled={busy}
         aria-label="Місце зберігання"
-        className="input-focus-nutrition min-w-0 flex-1 min-h-[44px] rounded-xl bg-transparent border-0 px-1 text-style-label text-text truncate"
+        className={cn(
+          "input-focus-nutrition min-h-[44px] min-w-0 rounded-xl border border-control bg-panel px-3 text-style-caption text-text truncate",
+          compact ? "flex-1" : "max-w-[42%]",
+        )}
       >
         {/* Без чисел у підписах. «Усі місця (6)» читалось як «шість
-            місць», хоча шість — це продукти (звіт власника 2026-09-02).
-            Скільки позицій показано, каже заголовок картки нижче. */}
+          місць», хоча шість: це продукти (звіт власника 2026-09-02).
+          Скільки позицій показано, каже заголовок списку. */}
         <option value={ALL}>Усі місця</option>
         {pantries.map((p) => (
           <option key={p.id} value={p.id}>
@@ -60,7 +69,7 @@ export function NutritionPantrySelector({
         type="button"
         onClick={() => pantry.setPantryManagerOpen(true)}
         disabled={busy}
-        className="shrink-0 w-9 h-9 touch-target flex items-center justify-center rounded-xl text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition hover:bg-nutrition/10 transition-colors"
+        className="touch-target flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-nutrition/20 text-nutrition-strong/90 transition-colors hover:bg-nutrition/10 hover:text-nutrition-strong dark:text-nutrition/70 dark:hover:text-nutrition"
         aria-label="Керування місцями зберігання"
         title="Місця"
       >
@@ -80,6 +89,29 @@ export function NutritionPantrySelector({
           <circle cx="19" cy="12" r="1.5" />
         </svg>
       </button>
+    </>
+  );
+
+  if (compact) {
+    return <div className="mt-2 flex items-center gap-2">{controls}</div>;
+  }
+
+  return (
+    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-nutrition/20 bg-nutrition/10 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <SectionHeading
+          as="div"
+          size="xs"
+          variant="nutrition"
+          className="mb-0.5"
+        >
+          Місце перегляду
+        </SectionHeading>
+        <div className="truncate text-style-label font-extrabold text-text">
+          {selectedPlace?.name || "Усі місця"}
+        </div>
+      </div>
+      {controls}
     </div>
   );
 }

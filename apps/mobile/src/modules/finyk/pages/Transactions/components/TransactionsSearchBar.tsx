@@ -23,10 +23,10 @@ export function TransactionsSearchBar({
       <TextInput
         value={value}
         onChangeText={onChange}
-        placeholder="Пошук по транзакціях…"
+        placeholder="Пошук по операціях"
         placeholderTextColor="#a8a29e"
         className="flex-1 py-2.5 text-sm text-fg"
-        accessibilityLabel="Пошук транзакцій"
+        accessibilityLabel="Пошук операцій"
         testID={`${testID}-search`}
       />
       {value.length > 0 && (

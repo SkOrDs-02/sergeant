@@ -1,6 +1,6 @@
 # Capacitor deep links — App Links (Android) + Universal Links (iOS)
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-08.
+> **Last touched:** 2026-10-02 by @claude. **Next review:** 2027-05-16.
 > **Status:** Active
 
 Цей документ описує HTTPS-варіант deep-лінків для Capacitor-shell-а
@@ -26,7 +26,7 @@ using…» (Android) і без зупинки у Safari (iOS).
 Поточні hosts (див. `docs/engineering/mobile/overview.md` секція CORS — «prod»):
 
 - `sergeant.vercel.app` — Vercel дефолт;
-- `sergeant.2dmanager.com.ua` — кастомний prod-домен.
+- `app.sergeant.com.ua` — цільовий prod-домен.
 
 ## Статичні файли
 
@@ -134,7 +134,7 @@ chooser-а тоді й тільки тоді, коли `pm get-app-links` пок
 
    ```
    applinks:sergeant.vercel.app
-   applinks:sergeant.2dmanager.com.ua
+   applinks:app.sergeant.com.ua
    ```
 
    Це додає `com.apple.developer.associated-domains` у

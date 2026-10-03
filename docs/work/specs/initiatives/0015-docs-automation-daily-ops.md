@@ -1,7 +1,7 @@
 # 0015 — Docs automation for daily ops
 
 > **Last validated:** 2026-07-29 by Codex (agent-queue reconcile). **Next review:** 2027-02-15.
-> **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01. **Cron removed on purpose** 2026-07-09 (`dca267eeb` — Actions-minutes hygiene; workflow лишився `workflow_dispatch`-only). Це пояснює відсутність schedule-runs після 07-09 — не broken cron. Stays In progress until self-report closes.
+> **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01. Cron знімали навмисно 2026-07-09 (`dca267eeb` — Actions-minutes hygiene), що пояснює відсутність schedule-runs між 07-09 і 09-16; **повернуто 2026-09-16** рішенням власника, бо ручний режим лишав `main` із двома червоними docs-гейтами після кожної пачки злиттів. Stays In progress until self-report closes.
 > **Agent-ready:** blocked — залишилось лише maintainer-only самоспостереження за 5/7 днями використання `today.md`; окремої агентської задачі немає.
 
 ## TL;DR
@@ -65,6 +65,8 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 | 🟡 warning  | ≤3 stale OR 1 violation         |
 | 🔴 critical | >3 stale OR >1 violation        |
 
+Третій сигнал, хвіст падінь scheduled-воркфлоу через `gh run list` (додано 2026-05-31), знято 2026-10-01 рішенням власника. Через нього закомічений бейдж залежав від середовища: з авторизованим `gh` виходило WARNING, без нього HEALTHY, і pre-commit червонів на незміненому дереві. Обґрунтування — у шапці `scripts/docs/generate-trust-badge.mjs`.
+
 **Priority rule для today.md:** items з `Phase X next` маркером у Status header — top 3 за recency mention.
 
 ### Phase 2 — Bundle Beta — shipped (плановий ETA був 2026-06-30)
@@ -110,7 +112,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 
 ## Власник / ETA
 
-- **Owner:** @Skords-01
+- **Owner:** @klas149
 - **Implementation agent:** Claude Code (current session)
 - **ETA Phase 1:** 2026-05-31 (≈ 2 тижні після старту)
 - **ETA Phase 2:** 2026-06-30 (після 2 тижнів daily-usage feedback)
@@ -150,7 +152,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 - Phase 0 cleanup audit з якого виросла ця ініціатива: commits `92e5ffda`, `46d73386`, `921fd992` на `chore/repo-cleanup`
 - [`docs/open-work.md`](../../../open-work.md) — source-of-truth для daily brief генератора
 - [`scripts/docs/generate-open-work.mjs`](../../../../scripts/docs/generate-open-work.mjs) — pattern reference для нових generators
-- [`docs/governance/governance/freshness-dashboard.html`](../../../governance/governance/freshness-dashboard.html) — джерело для trust badge stale-count
+- `pnpm docs:freshness-dashboard` — HTML-огляд свіжості; з 2026-10-01 не комітиться ([doc-freshness.md](../../../governance/governance/doc-freshness.md#чому-дашборд-не-комітиться-2026-10-01)). Trust badge рахує stale-count прямо з шапок доків, не з дашборда
 - Rule #10 [`lifecycle-markers.md`](../../../governance/governance/rules/10-lifecycle-markers.md) — Status header semantics
 - Rule #25 [`auto-generated-marker.md`](../../../governance/governance/rules/25-auto-generated-marker.md) — обовʼязковий marker на нових generated файлах
 
@@ -160,8 +162,9 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 
 | PR                                                       | Title                                                                               | Merged     |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                               | 2026-07-29 |
+| [#91](https://github.com/zaebal-beep/sergeant/pull/91)   | ci(ci): restore the daily cron on the docs brief workflow                           | 2026-09-16 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                               | 2026-07-29 |
 | [#3551](https://github.com/Skords-01/Sergeant/pull/3551) | fix(ci): finish CI-on-main heal — regenerate SBOM + refresh overdue freshness stamp | 2026-06-13 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

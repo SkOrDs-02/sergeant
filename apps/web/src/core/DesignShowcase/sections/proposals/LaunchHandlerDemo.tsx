@@ -53,7 +53,7 @@ function Stage({ children }: { children: React.ReactNode }) {
 function ShortcutTap() {
   return (
     <div className="flex items-center gap-1.5 text-style-caption text-muted">
-      <Icon name="plus" size={12} className="text-accent" />
+      <Icon name="plus" size="xs" className="text-accent" />
       Тап на shortcut «Додати»
     </div>
   );
@@ -76,7 +76,7 @@ export function LaunchHandlerDemo() {
             />
           </div>
           <span className="inline-flex items-center gap-1 text-style-caption text-warning">
-            <Icon name="x" size={12} />
+            <Icon name="close" size="xs" />
             Другий інстанс
           </span>
         </Stage>
@@ -94,7 +94,7 @@ export function LaunchHandlerDemo() {
             />
           </div>
           <span className="inline-flex items-center gap-1 text-style-caption text-success">
-            <Icon name="check-circle" size={12} />
+            <Icon name="check-circle" size="xs" />
             Фокус наявного вікна
           </span>
         </Stage>

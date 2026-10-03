@@ -2,61 +2,62 @@
  * Last validated: 2026-08-18
  * Status: Active
  */
-import { useState } from "react";
-import { pluralDays } from "@sergeant/shared";
+import { useMemo, useState } from "react";
+import { pluralDays, pluralUa } from "@sergeant/shared";
 import type {
   AtHomeShoppingItem,
   ShoppingItemWithCalc,
 } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { messages } from "@shared/i18n/uk";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { getTotalCount } from "../lib/shoppingListStorage";
+import {
+  SHOPPING_RECIPES_MAX,
+  buildRecipeOptions,
+  pickSelectedRecipes,
+} from "../lib/shoppingRecipes";
+import type { SavedRecipe } from "../lib/recipeBook";
 import { useShoppingListPantryMath } from "../hooks/useShoppingListPantryMath";
 import { SilpoCartEntry } from "./SilpoCartEntry";
+import { ShoppingRecipePicker } from "./ShoppingRecipePicker";
 import type {
+  AddShoppingItemInput,
   PantryItem,
   ShoppingItem,
   ShoppingList,
 } from "@sergeant/nutrition-domain";
 import type { NutritionWeekPlan } from "../hooks/useNutritionUiState";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { foldApostrophes } from "@sergeant/shared";
+import {
+  LOW_STOCK_CATEGORY_NAME,
+  findShoppingCategory,
+} from "@sergeant/nutrition-domain";
 
-// Іконка групи в списку покупок. До 2026-08-03 тут лежали emoji, які
-// малювалися системним шрифтом: «🫒» на Windows деградувало в порожній
-// прямокутник, а «🥦» на старому Android — у чорно-білий гліф.
-const CATEGORY_ICONS: Record<string, IconName> = {
-  "Мʼясо та риба": "utensils",
-  "Молочні продукти": "droplet",
-  Овочі: "leaf",
-  "Овочі та гриби": "leaf",
-  Фрукти: "leaf",
-  "Крупи та злаки": "package",
-  "Хлібобулочні вироби": "package",
-  Яйця: "egg",
-  "Олії та жири": "droplet",
-  "Приправи та соуси": "utensils",
-  Напої: "coffee",
-  Інше: "shopping-cart",
-  "Закінчується вдома": "trending-down",
-};
-
+// Іконка групи в списку покупок - це гліф категорії комори (одна таксономія
+// Харчування, рішення власника 2026-10-01): список більше не має власного
+// переліку категорій і власної мапи іконок. До 2026-08-03 тут лежали emoji,
+// які малювалися системним шрифтом («🫒» на Windows деградувало в порожній
+// прямокутник), а до 2026-10-01 - мапа з 11 назв, яких комора не знала.
+//
+// Назву віддає модель за промптом сервера (`shopping-list.ts`), тож апостроф і
+// регістр у ній не гарантовані; `findShoppingCategory` порівнює згорнутими
+// формами. «Закінчується вдома» - не категорія комори, а підсумкова група
+// вдоповнених low-stock позицій, тож гліф у неї власний.
 function getCategoryIcon(name: string): IconName {
-  // Назву категорії віддає модель за промптом сервера
-  // (`shopping-list.ts`), тобто апостроф у ній не гарантований. Ключі тут
-  // канонічні (§1.10), тож звіряємо згорнутими формами — інакше
-  // «М'ясо та риба» з ASCII-апострофом мовчки падає у дефолтний кошик.
-  const folded = foldApostrophes(name);
-  const key = Object.keys(CATEGORY_ICONS).find(
-    (k) => foldApostrophes(k) === folded,
-  );
-  return (key && CATEGORY_ICONS[key]) || "shopping-cart";
+  if (name === LOW_STOCK_CATEGORY_NAME) return "trending-down";
+  const category = findShoppingCategory(name);
+  return (category?.iconName as IconName | undefined) ?? "shopping-cart";
 }
 
 const pm = messages.nutrition.shoppingListPantryMath;
+const ma = messages.nutrition.shoppingListManualAdd;
+const pk = messages.nutrition.shoppingRecipePicker;
 
 interface ShoppingItemRowProps {
   item: ShoppingItemWithCalc;
@@ -82,7 +83,7 @@ function ShoppingItemRow({
         <div className="min-w-0 flex-1">
           <span className="text-style-label text-subtle">{item.name}</span>
           <span className="ml-1.5 inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning">
-            <Icon name="trending-down" size={12} aria-hidden />
+            <Icon name="trending-down" size="xs" aria-hidden />
             {pm.lowStockBadge}
           </span>
         </div>
@@ -91,8 +92,15 @@ function ShoppingItemRow({
   }
 
   return (
+    // `aria-pressed` — стан «куплено». Доти він жив ЛИШЕ у візуалі:
+    // коло-індикатор нижче має `aria-hidden`, а `opacity-50` і
+    // `line-through` скрінрідер не озвучує, тож куплений і некуплений
+    // пункт звучали однаково (аудит 2026-09-16, WF-17). `aria-pressed`
+    // на кнопці, а не `role="checkbox"`: роль лишається тією самою, тож
+    // наявні локатори тестів не зсуваються.
     <button
       type="button"
+      aria-pressed={item.checked}
       onClick={() => onToggleItem(categoryName, item.id)}
       className={cn(
         "w-full px-3 py-2.5 flex items-start gap-3 text-left transition-colors min-h-[44px]",
@@ -157,11 +165,11 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-line bg-bg/30 overflow-hidden">
+    <div className="rounded-2xl border border-line bg-panel overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-3 py-2 min-h-[44px] flex items-center gap-1.5 border-b border-line/40 bg-panel/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="w-full px-3 py-2 min-h-[44px] flex items-center gap-1.5 border-b border-line bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         aria-expanded={open}
       >
         <Icon
@@ -199,7 +207,7 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
               >
                 <Icon
                   name="check-circle"
-                  size={12}
+                  size="xs"
                   className="text-nutrition"
                   aria-hidden
                 />
@@ -221,21 +229,36 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
 }
 
 interface ShoppingListCardProps {
+  /** Згенеровані рецепти поточного сеансу. */
   recipes?: unknown[];
+  /** Збережені («Мої рецепти»): разом зі згенерованими складають джерело «Рецепти». */
+  savedRecipes?: SavedRecipe[];
+  /** Збережені ще читаються з книги. */
+  savedRecipesBusy?: boolean;
+  /** Книгу збережених не вдалося прочитати. */
+  savedRecipesError?: boolean;
   weekPlan?: NutritionWeekPlan | null;
   pantryItems?: PantryItem[];
   shoppingList: ShoppingList | null;
   shoppingBusy?: boolean;
-  onGenerate: (source: string) => void | Promise<void>;
+  /**
+   * `recipes` - позначені в переліку рецепти (лише для джерела «recipes»);
+   * без нього хук бере всі згенеровані, як було до вибору.
+   */
+  onGenerate: (source: string, recipes?: unknown[]) => void | Promise<void>;
   onToggleItem: (categoryName: string, itemId: string) => void;
   onClearChecked: () => void;
   onClearAll: () => void;
   onAddCheckedToPantry: () => void | Promise<void>;
+  onAddItem: (input: AddShoppingItemInput) => void;
   checkedItems: ShoppingItem[];
 }
 
 export function ShoppingListCard({
   recipes,
+  savedRecipes,
+  savedRecipesBusy,
+  savedRecipesError,
   weekPlan,
   pantryItems,
   shoppingList,
@@ -245,9 +268,17 @@ export function ShoppingListCard({
   onClearChecked,
   onClearAll,
   onAddCheckedToPantry,
+  onAddItem,
   checkedItems,
 }: ShoppingListCardProps) {
   const [source, setSource] = useState("recipes");
+  const [manualItemName, setManualItemName] = useState("");
+  const trimmedManualName = manualItemName.trim();
+  const handleAddManualItem = () => {
+    if (!trimmedManualName) return;
+    onAddItem({ name: manualItemName });
+    setManualItemName("");
+  };
   const { total, checked } = getTotalCount(shoppingList);
   const pantryMath = useShoppingListPantryMath(shoppingList, pantryItems);
   const { calculated } = pantryMath;
@@ -255,23 +286,93 @@ export function ShoppingListCard({
     calculated.categories.reduce((n, c) => n + c.items.length, 0) +
     calculated.athome.length;
   const hasItems = total > 0 || calculatedCount > 0;
+  // `calculatedCount` залежить від самого тумблера: вимкнув на порожньому
+  // сирому списку → довлиті «Закінчується» зникли → `hasItems` став `false`.
+  // Тумблер у стані «вимкнено» мусить лишатись видимим незалежно від цього,
+  // інакше стан, збережений у LS, не повернути. Увімкнений тумблер без
+  // списку нічого не міняє, тож його ховаємо, як і раніше.
+  const showPantryToggle =
+    pantryMath.available && (hasItems || !pantryMath.enabled);
 
-  const hasRecipes = Array.isArray(recipes) && recipes.length > 0;
+  // Джерело «Рецепти» - збережені («Мої рецепти») і згенеровані разом;
+  // список складається з усіх ПОЗНАЧЕНИХ. Раніше картка бачила лише
+  // згенеровані в памʼяті й казала «немає рецептів» при повній книзі.
+  const recipeOptions = useMemo(
+    () => buildRecipeOptions(savedRecipes ?? [], recipes ?? []),
+    [savedRecipes, recipes],
+  );
+  const allRecipeOptions = useMemo(
+    () => [...recipeOptions.saved, ...recipeOptions.generated],
+    [recipeOptions],
+  );
+  const [selectedKeys, setSelectedKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const selectedRecipes = pickSelectedRecipes(allRecipeOptions, selectedKeys);
+  const toggleRecipe = (key: string) =>
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else if (
+        pickSelectedRecipes(allRecipeOptions, prev).length <
+        SHOPPING_RECIPES_MAX
+      )
+        next.add(key);
+      return next;
+    });
+  const hasRecipes = allRecipeOptions.length > 0;
   const hasWeekPlan = (weekPlan?.days?.length ?? 0) > 0;
 
   const canGenerate =
-    (source === "recipes" && hasRecipes) ||
+    (source === "recipes" && selectedRecipes.length > 0) ||
     (source === "weekplan" && hasWeekPlan);
+  const generateHint =
+    source === "weekplan"
+      ? "Спершу згенеруй тижневий план у Меню → Тижневий план"
+      : hasRecipes
+        ? pk.pickHint
+        : null;
 
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Список покупок</div>
+      {/* AI-NOTE: caption тут навмисно — це підзаголовок у парі з
+          заголовком картки, а не текст, який читають окремо. */}
       <div className="text-style-caption text-muted mt-0.5">
         AI складає список з рецептів або тижневого плану, автоматично виключаючи
         продукти з комори.
       </div>
 
       <div className="mt-4 space-y-3">
+        <div className="flex gap-2 items-center">
+          <Input
+            value={manualItemName}
+            onChange={(e) => setManualItemName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && trimmedManualName) {
+                handleAddManualItem();
+              }
+            }}
+            placeholder={ma.placeholder}
+            aria-label={ma.inputLabel}
+            maxLength={NAME_MAX_LEN}
+          />
+          <button
+            type="button"
+            onClick={handleAddManualItem}
+            disabled={!trimmedManualName}
+            className={cn(
+              // `h-11` = 2.75rem; на 320px корінний шрифт 15px дає ~41.25px і
+              // провалює 44px-флор, тож pointer-coarse-варіант тримає його
+              // явно — той самий патерн, що й «Додати» у `PantryCard`.
+              "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
+            )}
+          >
+            {ma.addCta}
+          </button>
+        </div>
+
         <div>
           <div className="text-style-caption text-muted mb-2">
             Джерело для списку
@@ -284,13 +385,18 @@ export function ShoppingListCard({
               className={cn(
                 "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                 source === "recipes"
-                  ? "bg-nutrition-strong text-white border-nutrition"
+                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                   : "border-line text-text hover:border-nutrition/50",
               )}
             >
               <div>Рецепти</div>
-              <div className="text-style-caption opacity-70 mt-0.5">
-                {hasRecipes ? `${recipes.length} рецептів` : "немає рецептів"}
+              <div className="text-style-caption opacity-80 mt-0.5">
+                {hasRecipes
+                  ? `${allRecipeOptions.length} ${pluralUa(
+                      allRecipeOptions.length,
+                      { one: "рецепт", few: "рецепти", many: "рецептів" },
+                    )}`
+                  : "немає рецептів"}
               </div>
             </button>
             <button
@@ -300,12 +406,12 @@ export function ShoppingListCard({
               className={cn(
                 "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                 source === "weekplan"
-                  ? "bg-nutrition-strong text-white border-nutrition"
+                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                   : "border-line text-text hover:border-nutrition/50",
               )}
             >
               <div>Тижневий план</div>
-              <div className="text-style-caption opacity-70 mt-0.5">
+              <div className="text-style-caption opacity-80 mt-0.5">
                 {hasWeekPlan
                   ? `${weekPlan?.days?.length ?? 0} ${pluralDays(
                       weekPlan?.days?.length ?? 0,
@@ -315,22 +421,51 @@ export function ShoppingListCard({
             </button>
           </div>
 
-          {!canGenerate && (
+          {source === "recipes" && (
+            <div className="mt-2">
+              <ShoppingRecipePicker
+                saved={recipeOptions.saved}
+                generated={recipeOptions.generated}
+                savedBusy={savedRecipesBusy}
+                savedError={savedRecipesError}
+                selectedKeys={selectedKeys}
+                onToggle={toggleRecipe}
+                onSelectAll={() =>
+                  setSelectedKeys(
+                    new Set(
+                      allRecipeOptions
+                        .slice(0, SHOPPING_RECIPES_MAX)
+                        .map((o) => o.key),
+                    ),
+                  )
+                }
+                onClear={() => setSelectedKeys(new Set())}
+                disabled={shoppingBusy}
+              />
+            </div>
+          )}
+
+          {!canGenerate && generateHint && (
             <div className="mt-2 text-style-caption text-muted text-center">
-              {source === "recipes"
-                ? "Спершу згенеруй рецепти у Меню → Рецепти"
-                : "Спершу згенеруй тижневий план у Меню → Тижневий план"}
+              {generateHint}
             </div>
           )}
         </div>
 
         <button
           type="button"
-          onClick={() => onGenerate(source)}
+          onClick={() =>
+            source === "recipes"
+              ? onGenerate(
+                  source,
+                  selectedRecipes.map((o) => o.source),
+                )
+              : onGenerate(source)
+          }
           disabled={shoppingBusy || !canGenerate}
           className={cn(
             "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
           )}
         >
           {shoppingBusy ? "Генерую список…" : "Згенерувати список покупок"}
@@ -347,7 +482,7 @@ export function ShoppingListCard({
                 {checkedItems.length > 0 && (
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={onAddCheckedToPantry}
                   >
@@ -357,7 +492,7 @@ export function ShoppingListCard({
                 {checked > 0 && (
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={onClearChecked}
                   >
@@ -366,7 +501,7 @@ export function ShoppingListCard({
                 )}
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={onClearAll}
                 >
@@ -383,46 +518,52 @@ export function ShoppingListCard({
                 />
               </div>
             )}
+          </>
+        )}
 
-            {pantryMath.available && (
-              <button
-                type="button"
-                onClick={() => pantryMath.setEnabled(!pantryMath.enabled)}
-                aria-pressed={pantryMath.enabled}
-                className={cn(
-                  "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
-                  "flex items-center justify-between gap-2 transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-                  pantryMath.enabled
-                    ? "bg-nutrition/10 border-nutrition/40 text-nutrition-strong dark:text-nutrition"
-                    : "border-line text-muted",
-                )}
-              >
-                <span>{pm.toggleLabel}</span>
-                <span
-                  className={cn(
-                    "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
-                    pantryMath.enabled ? "bg-nutrition-strong" : "bg-line",
-                  )}
-                  aria-hidden
-                >
-                  <span
-                    className={cn(
-                      "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
-                      pantryMath.enabled ? "translate-x-4" : "translate-x-0.5",
-                    )}
-                  />
-                </span>
-              </button>
+        {showPantryToggle && (
+          <button
+            type="button"
+            onClick={() => pantryMath.setEnabled(!pantryMath.enabled)}
+            aria-pressed={pantryMath.enabled}
+            className={cn(
+              "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
+              "flex items-center justify-between gap-2 transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              // Увімкнено: тонований фон + контур `nutrition-edge` (≥3:1 проти
+              // картки, A4 2026-10-01; `border-nutrition/40` давав 2.14).
+              pantryMath.enabled
+                ? "bg-nutrition/10 border-nutrition-edge text-nutrition-strong dark:text-nutrition"
+                : "border-line text-muted",
             )}
+          >
+            <span>{pm.toggleLabel}</span>
+            <span
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
+                pantryMath.enabled ? "bg-nutrition-strong" : "bg-control",
+              )}
+              aria-hidden
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
+                  pantryMath.enabled ? "translate-x-4" : "translate-x-0.5",
+                )}
+              />
+            </span>
+          </button>
+        )}
 
+        {hasItems && (
+          <>
             <div className="space-y-3">
               {calculated.categories.map((cat) => (
                 <div
                   key={cat.name}
-                  className="rounded-2xl border border-line bg-bg/30 overflow-hidden"
+                  className="rounded-2xl border border-line bg-panel overflow-hidden"
                 >
-                  <div className="px-3 py-2 border-b border-line/40 bg-panel/40">
+                  <div className="px-3 py-2 border-b border-line bg-panelHi">
                     <div className="flex items-center gap-1.5">
                       <Icon
                         name={getCategoryIcon(cat.name)}
@@ -458,9 +599,13 @@ export function ShoppingListCard({
         )}
 
         {!hasItems && !shoppingBusy && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted text-center">
-            Список покупок порожній. Вибери джерело і натисни кнопку генерації.
-          </div>
+          <EmptyState
+            compact
+            module="nutrition"
+            icon={<Icon name="shopping-cart" size="lg" />}
+            title="Список покупок порожній"
+            description="Вибери джерело і натисни кнопку генерації."
+          />
         )}
 
         <button

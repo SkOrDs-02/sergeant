@@ -16,17 +16,18 @@
  * Секрети (`LIQPAY_PRIVATE_KEY`) ніколи не логуються (Hard Rule #21).
  */
 import crypto from "node:crypto";
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 import type {
   BillingCheckoutResponse,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
 import {
   BillingConfigurationError,
   type BillingProvider,
+  type CancelSubscriptionOutcome,
   type ProviderCheckoutInput,
   type ProviderPortalInput,
 } from "./provider.js";
@@ -39,8 +40,15 @@ const LIQPAY_API_VERSION = 3;
 const SIGNATURE_ALGO = "sha1" as const;
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
-/** LiqPay `status`-и, що означають успішне списання/підписку. */
-const SUCCESS_STATUSES = new Set(["success", "subscribed", "sandbox"]);
+/**
+ * LiqPay `status`-и, що означають успішне списання/підписку.
+ *
+ * `sandbox` тут навмисно НЕМА: це статус тестового платежу, за яким не
+ * стоїть жодної гривні. Доки він лежав у цьому наборі, будь-який callback зі
+ * `status:"sandbox"` на бойових ключах видавав місяць Pro безкоштовно.
+ * Приймаємо його лише під sandbox-ключем — див. {@link sandboxPaymentsAccepted}.
+ */
+const SUCCESS_STATUSES = new Set(["success", "subscribed"]);
 /** Проміжний 3DS-стан — фінального рішення ще нема, підписку не чіпаємо. */
 const PENDING_STATUSES = new Set(["wait_secure", "wait_accept", "processing"]);
 
@@ -72,6 +80,16 @@ function getAppBaseUrl(): string {
 /** Sandbox-ключі LiqPay мають префікс `sandbox_` у public_key. */
 function modeFromPublicKey(publicKey: string): "test" | "live" {
   return publicKey.startsWith("sandbox_") ? "test" : "live";
+}
+
+/**
+ * Чи можна довіряти `status:"sandbox"` як оплаті. Так — тільки коли ми самі
+ * працюємо на sandbox-ключі. Ключів немає → відповідь «ні»: безпечний бік
+ * помилки тут — не видати Pro, а не видати його задарма.
+ */
+function sandboxPaymentsAccepted(): boolean {
+  const publicKey = env.LIQPAY_PUBLIC_KEY;
+  return publicKey ? modeFromPublicKey(publicKey) === "test" : false;
 }
 
 /**
@@ -145,19 +163,23 @@ interface BillingRow {
   plan: string | null;
   status: string;
   current_period_end: Date | string | null;
+  cancel_at_period_end: boolean;
 }
 
-function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
+function serializeBillingRow(
+  row: BillingRow | null,
+): BillingSubscriptionStatus {
   return {
     subscription: row
       ? {
           id: Number(row.id),
           provider:
-            row.provider as BillingStatusResponse["subscription"]["provider"],
-          plan: row.plan as BillingStatusResponse["subscription"]["plan"],
+            row.provider as BillingSubscriptionStatus["subscription"]["provider"],
+          plan: row.plan as BillingSubscriptionStatus["subscription"]["plan"],
           status: row.status,
           active: ACTIVE_STATUSES.has(row.status),
           currentPeriodEnd: isoOrNull(row.current_period_end),
+          cancelAtPeriodEnd: row.cancel_at_period_end === true,
         }
       : {
           id: null,
@@ -166,8 +188,60 @@ function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
           status: null,
           active: false,
           currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
         },
   };
+}
+
+/**
+ * Відповідь `POST /api/request` — звичайний JSON (на відміну від callback-ів,
+ * де він загорнутий у base64 `data`). Нас цікавлять лише `result`/`status` і
+ * `err_code`; `err_description` і решту тіла навмисно не читаємо й не логуємо
+ * (Hard Rule #21: чужий текст відповіді може нести поля платежу).
+ */
+interface LiqPayApiResult {
+  result?: unknown;
+  status?: unknown;
+  err_code?: unknown;
+}
+
+async function readLiqPayApiResult(
+  response: Response,
+): Promise<LiqPayApiResult | null> {
+  try {
+    const parsed: unknown = await response.json();
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as LiqPayApiResult)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeToken(value: unknown): string {
+  return typeof value === "string" || typeof value === "number"
+    ? String(value).slice(0, 64)
+    : "-";
+}
+
+/**
+ * `unsubscribe` прийнято лише за явного підтвердження: `result:"ok"` або
+ * `status:"unsubscribed"`. Помилка, нерозпізнане тіло й не-JSON — відмова:
+ * «не знаю» тут гірше за «ні», бо людині скажуть «скасовано», а списання
+ * триватимуть.
+ */
+function assertUnsubscribeAccepted(body: LiqPayApiResult | null): void {
+  const accepted =
+    body !== null &&
+    body.result !== "error" &&
+    body.status !== "error" &&
+    body.status !== "failure" &&
+    (body.result === "ok" || body.status === "unsubscribed");
+  if (accepted) return;
+  throw new Error(
+    `LiqPay unsubscribe rejected: result=${safeToken(body?.result)} ` +
+      `status=${safeToken(body?.status)} err_code=${safeToken(body?.err_code)}`,
+  );
 }
 
 async function readLatestSubscription(
@@ -175,7 +249,7 @@ async function readLatestSubscription(
   userId: string,
 ): Promise<BillingRow | null> {
   const { rows } = await pool.query<BillingRow>(
-    `SELECT id, provider, plan, status, current_period_end
+    `SELECT id, provider, plan, status, current_period_end, cancel_at_period_end
        FROM subscriptions
       WHERE user_id = $1
       ORDER BY
@@ -198,6 +272,108 @@ function proAmountUah(): number {
 /** `YYYY-MM-DD HH:MM:SS` у UTC — формат LiqPay `subscribe_date_start`. */
 function liqpayDateStart(now: Date): string {
   return now.toISOString().slice(0, 19).replace("T", " ");
+}
+
+interface LiqPayCallbackContext {
+  userId: string;
+  orderId: string;
+  status: string;
+  action: string;
+}
+
+/**
+ * Чи приходив уже для ЦЬОГО `order_id` callback скасування
+ * (`status:reversed` або `action:unsubscribe`).
+ *
+ * Потрібно тому, що порядок доставки LiqPay не гарантований, а гілка
+ * скасування — це `UPDATE ... WHERE status IN (активні)`: якщо активного
+ * рядка ще нема, вона тихий no-op без жодного сліду в `subscriptions`. Далі
+ * приходив `success` і спокійно вставляв місяць Pro за скасований платіж.
+ * Дедуп по `payment_id` тут не рятує — це РІЗНІ події, і кожна легітимно
+ * своя. Слід лишається лише в `billing_webhook_events`, тож питаємо її.
+ */
+async function hasCancellationEvent(
+  client: PoolClient,
+  orderId: string,
+): Promise<boolean> {
+  const { rows } = await client.query(
+    `SELECT 1
+       FROM billing_webhook_events
+      WHERE provider = 'liqpay'
+        AND (event_type LIKE 'unsubscribe:%' OR event_type LIKE '%:reversed')
+        AND payload->>'order_id' = $1
+      LIMIT 1`,
+    [orderId],
+  );
+  return rows.length > 0;
+}
+
+/** Обробка одного верифікованого callback-у. Виконується всередині транзакції. */
+async function applyLiqPayCallback(
+  client: PoolClient,
+  { userId, orderId, status, action }: LiqPayCallbackContext,
+): Promise<void> {
+  const isCancel = action === "unsubscribe" || status === "reversed";
+  if (isCancel) {
+    await client.query(
+      `UPDATE subscriptions
+          SET status = 'canceled', updated_at = NOW()
+        WHERE user_id = $1 AND provider = 'liqpay'
+          AND status IN ('active', 'trialing', 'past_due')`,
+      [userId],
+    );
+    return;
+  }
+
+  if (PENDING_STATUSES.has(status)) {
+    // 3DS-очікування — фінальний callback прийде окремо.
+    return;
+  }
+
+  if (status === "sandbox" && !sandboxPaymentsAccepted()) {
+    // Тестовий платіж на бойових ключах — не оплата. Нічого не міняємо:
+    // провалити його в гілку `past_due` нижче означало б збити живу підписку.
+    logger.warn({ msg: "liqpay_sandbox_status_on_live_keys", orderId });
+    return;
+  }
+
+  if (SUCCESS_STATUSES.has(status) || status === "sandbox") {
+    if (await hasCancellationEvent(client, orderId)) {
+      logger.warn({
+        msg: "liqpay_success_after_cancellation_ignored",
+        orderId,
+        status,
+      });
+      return;
+    }
+    // Наступне списання LiqPay робить сам через місяць (action:regular).
+    const periodEnd = new Date();
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+    await client.query(
+      `INSERT INTO subscriptions
+         (user_id, provider, plan, status, provider_subscription_id, current_period_end)
+       VALUES ($1, 'liqpay', 'pro', 'active', $2, $3)
+       ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
+         plan = EXCLUDED.plan,
+         status = 'active',
+         provider = 'liqpay',
+         provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
+         current_period_end = EXCLUDED.current_period_end,
+         updated_at = NOW()`,
+      [userId, orderId, periodEnd],
+    );
+    return;
+  }
+
+  // Решта (`failure`, `error`) — невдале списання. Якщо це рекурентка на
+  // активній підписці → past_due (dunning); інакше ігноруємо (перший
+  // checkout просто не створює рядок).
+  await client.query(
+    `UPDATE subscriptions
+        SET status = 'past_due', updated_at = NOW()
+      WHERE user_id = $1 AND provider = 'liqpay' AND status = 'active'`,
+    [userId],
+  );
 }
 
 export const liqpayProvider: BillingProvider = {
@@ -253,7 +429,7 @@ export const liqpayProvider: BillingProvider = {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse> {
+  ): Promise<BillingSubscriptionStatus> {
     return readLatestSubscription(pool, userId).then(serializeBillingRow);
   },
 
@@ -281,71 +457,52 @@ export const liqpayProvider: BillingProvider = {
     const eventId = String(
       cb.payment_id ?? cb.transaction_id ?? `${orderId}:${status}:${action}`,
     );
-    const inserted = await pool.query(
-      `INSERT INTO billing_webhook_events (provider, provider_event_id, event_type, payload)
-       VALUES ('liqpay', $1, $2, $3)
-       ON CONFLICT (provider, provider_event_id) DO NOTHING
-       RETURNING id`,
-      [eventId, `${action}:${status}`, JSON.stringify(cb)],
-    );
-    if (inserted.rowCount === 0) {
-      // Повторна доставка — вже оброблено.
-      return;
-    }
 
-    const isCancel = action === "unsubscribe" || status === "reversed";
-    if (isCancel) {
-      await pool.query(
-        `UPDATE subscriptions
-            SET status = 'canceled', updated_at = NOW()
-          WHERE user_id = $1 AND provider = 'liqpay'
-            AND status IN ('active', 'trialing', 'past_due')`,
-        [userId],
+    // Дедуп-рядок І вся обробка — в ОДНІЙ транзакції (дзеркало
+    // `processStripeWebhook`). Доти дедуп-INSERT ішов окремим автокоміт-ним
+    // `pool.query` ДО обробки: падіння після нього залишало «вже оброблено»
+    // назавжди, LiqPay на ретраї отримував 200, підписка не активувалась
+    // ніколи — а гроші вже списані. ROLLBACK знімає і дедуп-рядок, тож
+    // ретрай провайдера справді повторює роботу.
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const inserted = await client.query(
+        `INSERT INTO billing_webhook_events (provider, provider_event_id, event_type, payload)
+         VALUES ('liqpay', $1, $2, $3)
+         ON CONFLICT (provider, provider_event_id) DO NOTHING
+         RETURNING id`,
+        [eventId, `${action}:${status}`, JSON.stringify(cb)],
       );
-      return;
-    }
+      if (inserted.rowCount === 0) {
+        // Повторна доставка — вже оброблено.
+        await client.query("COMMIT");
+        return;
+      }
 
-    if (PENDING_STATUSES.has(status)) {
-      // 3DS-очікування — фінальний callback прийде окремо.
-      return;
+      await applyLiqPayCallback(client, { userId, orderId, status, action });
+      await client.query("COMMIT");
+    } catch (err) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {
+        /* ignore rollback error */
+      }
+      throw err;
+    } finally {
+      client.release();
     }
-
-    if (SUCCESS_STATUSES.has(status)) {
-      // Наступне списання LiqPay робить сам через місяць (action:regular).
-      const periodEnd = new Date();
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-      await pool.query(
-        `INSERT INTO subscriptions
-           (user_id, provider, plan, status, provider_subscription_id, current_period_end)
-         VALUES ($1, 'liqpay', 'pro', 'active', $2, $3)
-         ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
-           plan = EXCLUDED.plan,
-           status = 'active',
-           provider = 'liqpay',
-           provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
-           current_period_end = EXCLUDED.current_period_end,
-           updated_at = NOW()`,
-        [userId, orderId, periodEnd],
-      );
-      return;
-    }
-
-    // Решта (`failure`, `error`) — невдале списання. Якщо це рекурентка на
-    // активній підписці → past_due (dunning); інакше ігноруємо (перший
-    // checkout просто не створює рядок).
-    await pool.query(
-      `UPDATE subscriptions
-          SET status = 'past_due', updated_at = NOW()
-        WHERE user_id = $1 AND provider = 'liqpay' AND status = 'active'`,
-      [userId],
-    );
   },
 
-  async cancelSubscription(pool: Pool, userId: string): Promise<void> {
+  async cancelSubscription(
+    pool: Pool,
+    userId: string,
+  ): Promise<CancelSubscriptionOutcome> {
     const { rows } = await pool.query<{
       provider_subscription_id: string | null;
+      cancel_at_period_end: boolean;
     }>(
-      `SELECT provider_subscription_id
+      `SELECT provider_subscription_id, cancel_at_period_end
          FROM subscriptions
         WHERE user_id = $1 AND provider = 'liqpay'
           AND status IN ('active', 'trialing', 'past_due')
@@ -353,8 +510,14 @@ export const liqpayProvider: BillingProvider = {
         LIMIT 1`,
       [userId],
     );
-    const orderId = rows[0]?.provider_subscription_id;
-    if (!orderId) return; // нема активної LiqPay-підписки — no-op
+    const row = rows[0];
+    if (!row) return "none"; // нема активної LiqPay-підписки
+    // Уже скасовано до кінця періоду — LiqPay вдруге не смикаємо: що він
+    // відповість на повторний `unsubscribe`, нам не гарантовано, а скасування
+    // без того підтверджене.
+    if (row.cancel_at_period_end === true) return "already_canceling";
+    const orderId = row.provider_subscription_id;
+    if (!orderId) return "none"; // без order_id провайдеру нічого не наказати
 
     const { privateKey, publicKey } = getKeys();
     const payload = {
@@ -374,6 +537,11 @@ export const liqpayProvider: BillingProvider = {
     if (!response.ok) {
       throw new Error(`LiqPay unsubscribe failed: HTTP ${response.status}`);
     }
+    // LiqPay віддає помилки бізнес-рівня з HTTP 200 і `result:"error"` у JSON,
+    // тож `response.ok` нічого не доводить. Без цієї перевірки відмова
+    // провайдера читалась як успіх, а підписку позначали скасованою, хоча
+    // LiqPay далі списував гроші.
+    assertUnsubscribeAccepted(await readLiqPayApiResult(response));
 
     // Доступ лишається до кінця оплаченого періоду (ADR-1.11 семантика).
     await pool.query(
@@ -383,5 +551,6 @@ export const liqpayProvider: BillingProvider = {
           AND status IN ('active', 'trialing', 'past_due')`,
       [userId],
     );
+    return "canceled";
   },
 };

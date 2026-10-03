@@ -87,16 +87,21 @@ describe("fizrukStorage – backup builders", () => {
   });
 
   describe("buildFizrukFullBackupPayload", () => {
-    it("snapshots every full-backup key (null when absent)", () => {
+    it("бере зрізи з кеша SQLite, а не з localStorage", () => {
+      // Значення в LS — приманка: до 2026-09-22 саме воно й потрапляло в
+      // файл, хоча жоден екран Фізрука цих ключів не читає.
       localStorage.setItem(
         WORKOUTS_STORAGE_KEY,
-        JSON.stringify({ schemaVersion: 1, workouts: [] }),
+        JSON.stringify({ schemaVersion: 1, workouts: [{ id: "ls-only" }] }),
       );
       const payload = buildFizrukFullBackupPayload();
       expect(payload.kind).toBe("fizruk-full-backup");
-      expect(payload.data[WORKOUTS_STORAGE_KEY]).not.toBeNull();
-      // a key with no stored value snapshots as null
-      expect(payload.data[CUSTOM_EXERCISES_KEY]).toBeNull();
+      expect(
+        parseWorkoutsFromStorage(payload.data[WORKOUTS_STORAGE_KEY]),
+      ).toEqual([]);
+      expect(
+        parseCustomExercisesFromStorage(payload.data[CUSTOM_EXERCISES_KEY]),
+      ).toEqual([]);
     });
   });
 

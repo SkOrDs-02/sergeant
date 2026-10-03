@@ -85,6 +85,14 @@ describe("токени лендінга не розходяться з @sergeant
     expect(tokenHex("ink-surface")).toBe(
       canonical(inkTheme.surface.surface, "ink.surface"),
     );
+    // AI-DANGER: 2026-09-12 — `ink-hi` тут не було, і саме тому він дрейфнув —
+    // лендінг тримав `#221c18` (поверхня «Чорнила» до 2026-09-06), поки `inkTheme`
+    // уже оголошував `#2a231f`. Токен, який цей тест не називає, синхронним
+    // не є, хоч і стоїть у тому ж блоці під тим самим коментарем про
+    // синхронність. Додаєш `--color-ink-*` у index.css — додавай рядок сюди.
+    expect(tokenHex("ink-hi")).toBe(
+      canonical(inkTheme.surface.surfaceHi, "ink.surfaceHi"),
+    );
     expect(tokenHex("ink-text")).toBe(
       canonical(inkTheme.text.strong, "ink.text.strong"),
     );

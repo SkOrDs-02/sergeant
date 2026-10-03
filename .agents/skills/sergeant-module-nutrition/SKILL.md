@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-nutrition
-description: Use when the task touches the Nutrition module — food log, meals, calories, pantry, recipes — on any surface; UA: задача про nutrition/їжу/калорії/комору/страви.
+description: "Use when the task touches the Nutrition module — food log, meals, calories, pantry, recipes — on any surface; UA: задача про nutrition/їжу/калорії/комору/страви."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Nutrition — власник модуля

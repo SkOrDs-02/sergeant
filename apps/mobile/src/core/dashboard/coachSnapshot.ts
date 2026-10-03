@@ -14,6 +14,7 @@ import { getCachedFinykSqliteState } from "@/modules/finyk/lib/sqliteReader";
 import { getCachedFinykMonoMirrorState } from "@/modules/finyk/lib/monoMirrorReader";
 import { getCachedFizrukSqliteState } from "@/modules/fizruk/lib/sqliteReader";
 import { getCachedNutritionSqliteState } from "@/modules/nutrition/lib/sqliteReader";
+import { averageKcalGoalForDays } from "@sergeant/nutrition-domain";
 import {
   getCachedSqliteCompletions,
   getCachedSqliteRoutineState,
@@ -168,14 +169,15 @@ export function aggregateCurrentSnapshot(): CoachSnapshot {
     // Only compute when the cache has been warmed at least once.
     if (nutritionCache.refreshedAt !== null) {
       const log = nutritionCache.log;
-      const prefs = nutritionCache.prefs;
       let totalKcal = 0;
       let totalProtein = 0;
       let daysLogged = 0;
+      const weekDays: string[] = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
         d.setDate(weekStart.getDate() + i);
         const dk = localDateKey(d);
+        weekDays.push(dk);
         const meals = log[dk]?.meals ?? [];
         if (meals.length > 0) {
           daysLogged++;
@@ -189,7 +191,8 @@ export function aggregateCurrentSnapshot(): CoachSnapshot {
         nutrition = {
           avgKcal: Math.round(totalKcal / daysLogged),
           avgProtein: Math.round(totalProtein / daysLogged),
-          targetKcal: prefs?.dailyTargetKcal ?? 2000,
+          targetKcal:
+            averageKcalGoalForDays(nutritionCache.goalPeriods, weekDays) ?? 0,
           daysLogged,
         };
       }

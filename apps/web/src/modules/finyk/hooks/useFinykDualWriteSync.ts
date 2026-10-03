@@ -3,7 +3,7 @@
  * `triggerFinykDualWrite(prev, next)` after every React-state change
  * (which is exactly when `usePersist` schedules a debounced LS write).
  *
- * Stage 4 PR #036 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 PR #036 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Why a single watcher hook instead of inline triggers:
  *  - Finyk's storage layer is generic (`usePersist<T>`), reused for 14
@@ -35,7 +35,7 @@
  * pulled row got immediately re-enqueued as if it were a fresh local
  * mutation. Multiply that by N devices pulling each other's echoes and
  * the outbox never drains (measured: 3 357 ops / 60 manual expenses
- * across 3 devices, `docs/90-work/audits/2026-09-01-product-audit/findings.md`
+ * across 3 devices, `docs/work/specs/audits/2026-09-01-product-audit/findings.md`
  * § SYNC-3).
  *
  * Fix: track the read-tick alongside the state snapshot. A render whose
@@ -98,6 +98,18 @@ export function useFinykDualWriteSync(slots: FinykStorageSlots): void {
     // settled write) — resync the baseline but do not re-push it.
     if (sqliteCacheTick !== prevTickRef.current) {
       prevTickRef.current = sqliteCacheTick;
+      prevRef.current = next;
+      return;
+    }
+    // Поки SQLite-кеш не прогрітий, слоти, яких немає в LS (правила
+    // мерчантів у `prefs_json`), тримають порожнє значення за
+    // замовчуванням. Зміна будь-якого pref у цей момент (напр. тумблер
+    // `showBalance`) дала б `prefs-upsert` з `merchantRules: []` і стерла
+    // збережені правила — локально й на сервері (LWW цілим рядком). Тому до
+    // прогріву лише тримаємо базу; перший overlay після прогріву змінює
+    // read-tick і стає новою базою (гілка вище). Локальна зміна до прогріву
+    // однаково не виживає: overlay перезапише слот значенням із кешу.
+    if (slots.storageReady === false) {
       prevRef.current = next;
       return;
     }

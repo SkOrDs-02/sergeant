@@ -19,7 +19,7 @@ import { cn } from "../../lib/ui/cn";
  * default to <h3>.
  *
  * **Кікер — це смужка й колір, а не капс** (правило 4 типографіки тексту,
- * `docs/05-design/design/anti-slop-strategy.md`; рішення власника
+ * `docs/design/design/anti-slop-strategy.md`; рішення власника
  * 2026-08-06 на `mockups/product/kickers.html`). Кікер `xs` більше не
  * робить `uppercase` і не розріджує трекінг — деталі й причина в
  * AI-CONTEXT біля `sizeTokens` нижче.
@@ -255,10 +255,3 @@ export function SectionHeading({
     </Component>
   );
 }
-
-/**
- * Alias exported so that consumers can import `SectionHeader` alongside
- * `Card` / `Badge` / `Tabs` / etc. Both names resolve to the same
- * component — prefer `SectionHeader` in new code.
- */
-export const SectionHeader = SectionHeading;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { isApiError } from "@sergeant/api-client";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -24,6 +25,12 @@ import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
  *     для legacy `provider === "stripe"` — «Керувати підпискою»
  *     (→ `/api/billing/portal` → Stripe Customer Portal);
  *     для LiqPay/Plata — «Скасувати Premium» (власний cancel, порталу нема).
+ *   • Після скасування рядок лишається `active`, а доступ діє до кінця
+ *     періоду: це видно лише з `subscription.cancelAtPeriodEnd` — тоді
+ *     замість кнопки «Скасувати» показуємо «Підписку скасовано. … діє до …».
+ *   • Premium без платіжного провайдера (founder-байпас, `provider: "manual"`,
+ *     у тому числі reverse trial) скасовувати нема чого: кнопки немає, є
+ *     пояснення. Сервер на `POST /api/billing/cancel` віддав би їм 409.
  *
  * Portal redirect робимо тільки після успішного POST `/api/billing/portal`:
  * endpoint не має GET-форми, тож прямий `location.assign("/api/...")` ламає
@@ -34,6 +41,38 @@ const BILLING_PORTAL_UNAVAILABLE =
   "Портал підписки тимчасово недоступний. Спробуй ще раз за хвилину.";
 const BILLING_CANCEL_FAILED =
   "Не вдалося скасувати. Спробуй ще раз за хвилину.";
+// 409 NO_ACTIVE_SUBSCRIPTION: стан у кеші застарів, активної підписки вже нема.
+const BILLING_CANCEL_NOTHING = "Активної підписки, яку можна скасувати, немає.";
+// 502 PROVIDER_CANCEL_FAILED: платіжний сервіс відмовив, підписка лишилась.
+const BILLING_CANCEL_PROVIDER_FAILED =
+  "Платіжний сервіс не підтвердив скасування. Підписка лишається активною, спробуй ще раз за хвилину.";
+
+/** Текст помилки скасування за статусом відповіді сервера (`POST /api/billing/cancel`). */
+function cancelErrorMessage(err: unknown): string {
+  if (isApiError(err)) {
+    if (err.status === 409) return BILLING_CANCEL_NOTHING;
+    if (err.status === 502) return BILLING_CANCEL_PROVIDER_FAILED;
+  }
+  return BILLING_CANCEL_FAILED;
+}
+
+function cancelScheduledText(
+  premiumName: string,
+  periodEnd: string | null,
+): string {
+  return `Підписку скасовано. ${premiumName} діє ${
+    periodEnd ? `до ${periodEnd}` : "до кінця оплаченого періоду"
+  }.`;
+}
+
+function manualGrantText(
+  premiumName: string,
+  periodEnd: string | null,
+): string {
+  return `${premiumName} надано без підписки, тож скасовувати нічого.${
+    periodEnd ? ` Діє до ${periodEnd}.` : ""
+  }`;
+}
 
 export function PlanSection() {
   const navigate = useNavigate();
@@ -49,12 +88,32 @@ export function PlanSection() {
 
   const status = subscription?.status ?? null;
   const periodEnd = formatKyivLongDate(subscription?.currentPeriodEnd);
+  // Premium без платіжного провайдера: founder-байпас (`id: null`), ручні
+  // гранти і reverse trial (`provider: "manual"`). Підписки, яку можна
+  // скасувати, тут нема, тож і кнопки нема: раніше вона була, а сервер
+  // відповідав `ok` без жодної дії.
+  const isManualGrant =
+    isPro && (subscription?.provider === "manual" || subscription?.id === null);
+  // Скасовано, але доступ діє до кінця періоду: статус рядка лишається
+  // `active`, тож відрізнити це від «діє» можна лише за прапорцем.
+  const cancelScheduled =
+    isPro &&
+    !isManualGrant &&
+    status !== "canceled" &&
+    subscription?.cancelAtPeriodEnd === true;
   // Серверний id тарифу — `pro`, але для людини він зветься «Premium»
   // (рішення D3, див. `core/PricingPage.tsx`). Беремо канонічну назву з
   // i18n, а не хардкодимо: на `/pricing` тариф називався «Premium», а тут
   // і в чаті «Pro», тобто один продукт мав дві назви (browser-QA 2026-09-02).
   const premiumName = messages.pricing.tiers.premiumName;
-  const planLabel = isPro ? premiumName : "Free";
+  // `usePlan` віддає `plan: "free"` як дефолт, ПОКИ запит у польоті — це
+  // прямо задокументовано в його типі. Тобто до відповіді сервера платний
+  // користувач бачив бейдж «Free», абзац «Ти на безкоштовному тарифі…» і
+  // кнопку «Перейти на Premium», яка вела його на /pricing (аудит
+  // 2026-09-16, WF-19). `isLoading` у цьому файлі вже читався — але лише
+  // задля підпису «Завантаження…» поруч; самі твердження його ігнорували.
+  // Плейсхолдер замість назви тарифу — бо «ще не знаю» це не «Free».
+  const planLabel = isLoading ? "—" : isPro ? premiumName : "Free";
 
   async function handleManage() {
     setRedirecting(true);
@@ -79,8 +138,14 @@ export function PlanSection() {
       await billingApi.cancel();
       setConfirmingCancel(false);
       await queryClient.invalidateQueries({ queryKey: billingKeys.status });
-    } catch {
-      setCancelError(BILLING_CANCEL_FAILED);
+    } catch (err) {
+      setCancelError(cancelErrorMessage(err));
+      if (isApiError(err) && err.status === 409) {
+        // Скасовувати вже нема чого: закриваємо підтвердження й підтягуємо
+        // свіжий стан, щоб кнопка не лишалась.
+        setConfirmingCancel(false);
+        void queryClient.invalidateQueries({ queryKey: billingKeys.status });
+      }
     } finally {
       setCanceling(false);
     }
@@ -98,8 +163,8 @@ export function PlanSection() {
           data-testid="plan-section-header"
         >
           <Badge
-            variant={isPro ? "accent" : "neutral"}
-            tone={isPro ? "solid" : "soft"}
+            variant={isPro && !isLoading ? "accent" : "neutral"}
+            tone={isPro && !isLoading ? "solid" : "soft"}
             size="md"
             data-testid="plan-badge"
           >
@@ -112,22 +177,48 @@ export function PlanSection() {
           )}
         </div>
 
-        {isPro && status === "trialing" && periodEnd && (
-          <div data-testid="plan-trial-info" className="space-y-1">
-            <span className="text-style-label block">Пробний період</span>
-            <p className="text-style-body text-text leading-snug">
-              Закінчується {periodEnd}. Після цього підписка стане платною за
-              тарифом з чекауту, скасуй до цієї дати, якщо передумаєш.
+        {isPro &&
+          status === "trialing" &&
+          periodEnd &&
+          !cancelScheduled &&
+          !isManualGrant && (
+            <div data-testid="plan-trial-info" className="space-y-1">
+              <span className="text-style-label block">Пробний період</span>
+              <p className="text-style-body text-text leading-snug">
+                Закінчується {periodEnd}. Після цього підписка стане платною за
+                планом з чекауту, скасуй до цієї дати, якщо передумаєш.
+              </p>
+            </div>
+          )}
+
+        {isPro &&
+          status === "active" &&
+          periodEnd &&
+          !cancelScheduled &&
+          !isManualGrant && (
+            <p
+              data-testid="plan-active-info"
+              className="text-style-body text-subtle leading-snug"
+            >
+              Наступне списання: {periodEnd}.
             </p>
-          </div>
+          )}
+
+        {cancelScheduled && (
+          <p
+            data-testid="plan-cancel-scheduled-info"
+            className="text-style-body text-warning-strong leading-snug"
+          >
+            {cancelScheduledText(premiumName, periodEnd)}
+          </p>
         )}
 
-        {isPro && status === "active" && periodEnd && (
+        {isManualGrant && (
           <p
-            data-testid="plan-active-info"
+            data-testid="plan-manual-info"
             className="text-style-body text-subtle leading-snug"
           >
-            Наступне списання: {periodEnd}.
+            {manualGrantText(premiumName, periodEnd)}
           </p>
         )}
 
@@ -143,7 +234,7 @@ export function PlanSection() {
           </p>
         )}
 
-        {isPro && status === "past_due" && (
+        {isPro && status === "past_due" && !cancelScheduled && (
           <p
             data-testid="plan-past-due-info"
             className="text-style-body text-danger-strong leading-snug"
@@ -154,10 +245,11 @@ export function PlanSection() {
           </p>
         )}
 
-        {!isPro && status !== "canceled" && (
+        {!isPro && !isLoading && status !== "canceled" && (
           <p className="text-style-body text-subtle leading-snug">
-            Ти на безкоштовному тарифі. {premiumName} відкриває безлімітний
-            AI-чат, CloudSync між пристроями, авто-Mono sync і експорт CSV/PDF.
+            Ти на безкоштовному плані. {premiumName} відкриває безлімітний чат
+            із Сержантом, CloudSync між пристроями, авто-Mono sync і експорт
+            CSV/PDF.
           </p>
         )}
 
@@ -175,26 +267,31 @@ export function PlanSection() {
         <div className="flex flex-col sm:flex-row gap-2">
           {isPro ? (
             <>
-              {/* Customer Portal є лише у Stripe. Для liqpay/plata/manual
-                  керування = кнопка «Скасувати Premium» нижче (порталу нема). */}
+              {/* Customer Portal є лише у Stripe. Для liqpay/plata керування =
+                  кнопка «Скасувати Premium» нижче (порталу нема). Для manual і
+                  вже скасованої підписки кнопки немає (див. isManualGrant /
+                  cancelScheduled). */}
               {subscription?.provider === "stripe" && (
                 <Button
-                  variant="primary"
+                  variant="solid"
                   size="md"
                   onClick={handleManage}
                   disabled={redirecting}
                   data-testid="plan-manage-button"
                   className="gap-2"
                 >
-                  <Icon name="credit-card" size={16} />
+                  <Icon name="credit-card" size="md" />
                   Керувати підпискою
                 </Button>
               )}
               {status !== "canceled" &&
+                !cancelScheduled &&
+                !isManualGrant &&
                 (confirmingCancel ? (
                   <div className="flex gap-2">
                     <Button
-                      variant="danger"
+                      variant="soft"
+                      tone="danger"
                       size="md"
                       onClick={handleCancel}
                       disabled={canceling}
@@ -203,7 +300,7 @@ export function PlanSection() {
                       {canceling ? "Скасовую…" : "Точно скасувати?"}
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="md"
                       onClick={() => setConfirmingCancel(false)}
                       disabled={canceling}
@@ -213,7 +310,7 @@ export function PlanSection() {
                   </div>
                 ) : (
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="md"
                     onClick={() => setConfirmingCancel(true)}
                     data-testid="plan-cancel-button"
@@ -222,15 +319,15 @@ export function PlanSection() {
                   </Button>
                 ))}
             </>
-          ) : (
+          ) : isLoading ? null : (
             <Button
-              variant="primary"
+              variant="solid"
               size="md"
               onClick={handleUpgrade}
               data-testid="plan-upgrade-button"
               className="gap-2"
             >
-              <Icon name="sergeant" size={16} />
+              <Icon name="sergeant" size="md" />
               Перейти на Premium
             </Button>
           )}
@@ -257,5 +354,3 @@ export function PlanSection() {
     </SettingsGroup>
   );
 }
-
-export const __PLAN_SECTION_PORTAL_UNAVAILABLE = BILLING_PORTAL_UNAVAILABLE;

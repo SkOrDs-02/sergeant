@@ -7,9 +7,9 @@ generated_by: council-v4 (5 ролей)
 
 # Redesign v2 — Alignment Audit, 2026-05-18
 
-> **Last validated:** 2026-05-18 by council-v4 (orchestrator + 4 sonnet specialists + opus critic).
-> **Next review:** після P1 (план-корекції) — очікувано до 2026-05-25.
-> **Status:** Active.
+> **Last validated:** 2026-09-16 by @claude (статус вирівняно з кластером: redesign-v2 закрито 2026-05-21; аудит виконав council-v4 2026-05-18).
+> **Next review:** не планується — історичний документ.
+> **Status:** Reference — аудит вирівнювання плану з кодом; історія, не живий to-do.
 > **Companion docs:** [`execution-plan.md`](./execution-plan.md) · [`execution-status.md`](./execution-status.md) · [`backlog.md`](./backlog.md) · [`handoff.md`](./handoff.md).
 
 ## Meta

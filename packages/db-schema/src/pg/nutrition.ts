@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
  * Postgres schema for `nutrition_meals` table.
  * Mirrors migration 035_nutrition_tables.sql.
  *
- * Stage 4 / PR #031 of `docs/planning/storage-roadmap.md` — normalized
+ * Stage 4 / PR #031 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — normalized
  * per-meal rows. Macros are split into columns so cheap aggregates
  * (`SUM(kcal) GROUP BY DATE(eaten_at)`) don't have to JSON-decode.
  * Denormalized `foodId` (TEXT, not FK) preserved so historical meals
@@ -171,7 +171,7 @@ export const nutritionPantryItems = pgTable(
  * на відміну від сусідньої `nutritionPantryItems`. Це свідомо: клієнт
  * генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`, `<pantryId>::<idx>::<name>`),
  * тож `uuid` тут дав би `22P02` на реальному push-і — той самий баг, що
- * задокументований у `docs/90-work/tech-debt/backend.md` § «Routine: PK-тип».
+ * задокументований у `docs/work/specs/tech-debt/backend.md` § «Routine: PK-тип».
  * НЕ «вирівнюй» тип під pantryItems.
  *
  * `deletedAt` — ретракція помилкової події (згортка її пропускає), а не
@@ -358,8 +358,8 @@ export const nutritionRecipes = pgTable(
 /**
  * Postgres schema for `nutrition_water_log` table.
  *
- * Один рядок на (user, date) — мілілітри води за день. Дзеркалить
- * `fizruk_pushups` за формою (per-(user, date) лічильник). Day key —
+ * Один рядок на (user, date) — мілілітри води за день (per-(user, date)
+ * лічильник; таку ж форму мав знятий лічильник віджимань). Day key —
  * `YYYY-MM-DD` у локальному часовому поясі користувача (як уже працює
  * `WaterLog` blob у `packages/nutrition-domain/src/waterLog.ts`).
  *

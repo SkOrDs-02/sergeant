@@ -45,22 +45,42 @@ export interface MeasurementBound {
 }
 
 /**
- * Вісім полів, що збігаються один-в-один з числовими колонками таблиці
- * `fizruk_measurements` (міграція 029): `weight_kg`, `waist_cm`,
- * `chest_cm`, `hips_cm`, `bicep_cm`, `sleep_hours`, `energy_level`,
- * `mood`. Ключі — camelCase-ідентифікатори доменних полів; серверний
- * апплаєр звертається до них явно по імені (`MEASUREMENT_BOUNDS.weightKg`),
- * тож окрема мапа column→field не потрібна.
+ * Числові поля заміру, що збігаються один-в-один з колонками таблиці
+ * `fizruk_measurements`. Ключі — camelCase-ідентифікатори доменних полів;
+ * серверний апплаєр звертається до них явно по імені
+ * (`MEASUREMENT_BOUNDS.weightKg`), тож окрема мапа column→field не потрібна.
  *
  * Додаєш нове числове поле заміру — додай межі СЮДИ першими, далі
  * колонку в міграції, далі парсер у `applyMisc.ts`.
+ *
+ * AI-CONTEXT (2026-09-22): спершу тут було вісім полів — рівно ті, що
+ * `MEASUREMENT_FIELDS` у `@sergeant/fizruk-domain` навмисно звузив до
+ * «високосигнальних» для мобільного порту (Phase 6). Веб-форма при цьому
+ * лишилась ширшою: `MEASURE_FIELDS` у
+ * `apps/web/src/modules/fizruk/hooks/useMeasurements.ts` збирає чотирнадцять
+ * полів, і шість із них (жир, шия, передпліччя, стегно, литка) плюс
+ * розділені ліва/права біцепси не мали КУДИ писатись — колонки просто не
+ * було. Користувач їх вводив, а після перезавантаження вони зникали:
+ * читання йде з SQLite, а там їх ніколи не було. Тепер межі й колонки
+ * покривають усі чотирнадцять; `bicepCm` лишається як єдина величина для
+ * доменного/мобільного реєстру, `bicepLCm`/`bicepRCm` — для веб-форми.
  */
 export const MEASUREMENT_BOUNDS = {
   weightKg: { min: 20, max: 400 },
+  bodyFatPct: { min: 1, max: 80 },
+  neckCm: { min: 15, max: 100 },
   waistCm: { min: 30, max: 300 },
   chestCm: { min: 30, max: 300 },
   hipsCm: { min: 30, max: 300 },
   bicepCm: { min: 10, max: 100 },
+  bicepLCm: { min: 10, max: 100 },
+  bicepRCm: { min: 10, max: 100 },
+  forearmLCm: { min: 10, max: 80 },
+  forearmRCm: { min: 10, max: 80 },
+  thighLCm: { min: 20, max: 150 },
+  thighRCm: { min: 20, max: 150 },
+  calfLCm: { min: 10, max: 100 },
+  calfRCm: { min: 10, max: 100 },
   sleepHours: { min: 0, max: 24 },
   energyLevel: { min: 1, max: 5, integer: true },
   mood: { min: 1, max: 5, integer: true },

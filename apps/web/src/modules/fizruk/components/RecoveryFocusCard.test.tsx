@@ -70,4 +70,24 @@ describe("RecoveryFocusCard", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { expanded: true })).toBeInTheDocument();
   });
+
+  it("показує силует і легенду раніше за межі поради, а межі згорнуті", () => {
+    const { container } = render(<RecoveryFocusCard />);
+    const sideToggle = screen.getByRole("button", { name: "Ззаду" });
+    const legend = screen.getByText("готово");
+    const notes = container.querySelector("details")!;
+    expect(notes.open).toBe(false);
+    expect(
+      sideToggle.compareDocumentPosition(legend) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      legend.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("без сесії (анонім) не показує ноту про синхронізацію", () => {
+    render(<RecoveryFocusCard />);
+    expect(screen.queryByText(/Порада з неповних даних/)).toBeNull();
+  });
 });

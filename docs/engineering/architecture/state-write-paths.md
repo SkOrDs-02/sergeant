@@ -1,6 +1,6 @@
 # State write-paths — `apps/web`
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-03.
+> **Last touched:** 2026-09-17 by @claude (шляхи chatActions узгоджено з деревом; «Sync v2 (`syncEngine`)» → Sync v2 / `syncEngine`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Як, де і чому web-додаток мутить state. Дві writer-доріжки (`useMutation` vs HubChat tool-call), коли яку обирати, і де живуть инваріанти. Закриває §2.1 з [`docs/work/specs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/02-architecture-and-state.md) (parallel-write paths require explicit doc).
@@ -19,7 +19,7 @@ Cross-refs:
 Web-додаток має **дві канонічні writer-доріжки**:
 
 1. **UI mutation path** (`useMutation` → API). Користувач натискає кнопку / submit form → React-компонент викликає мутацію → `apiClient.<module>.<action>(...)` → on success: інвалідація RQ-ключів того ж модуля → optimistic-state synchronizes.
-2. **AI tool-call path** (`chatActions/<module>Actions.ts` → API → tool_result). LLM emit-ає `tool_use` block з `name` і `input` → клієнтський dispatcher у [`apps/web/src/core/lib/hubChatActions.ts`](../../../apps/web/src/core/lib/hubChatActions.ts) знаходить handler → handler виконує точно ту саму API-мутацію → повертає `string` для `tool_result` → клієнт шле `POST /api/chat` із `tool_result` → LLM продовжує stream і узагальнює зміну.
+2. **AI tool-call path** (`chatActions/<module>Actions.ts` → API → tool_result; handler-файл плоский, а helper-и великих доменів — у підтеці `chatActions/<module>Actions/`, напр. `finykActions/transactions.ts`). LLM emit-ає `tool_use` block з `name` і `input` → клієнтський dispatcher у [`apps/web/src/core/lib/hubChatActions.ts`](../../../apps/web/src/core/lib/hubChatActions.ts) знаходить handler → handler виконує точно ту саму API-мутацію → повертає `string` для `tool_result` → клієнт шле `POST /api/chat` із `tool_result` → LLM продовжує stream і узагальнює зміну.
 
 Обидві доріжки повинні **закінчуватися на тому самому API endpoint** (через `apiClient`), щоб серверні invariants (валідація, права, миграція даних) фає рівно одне місце. Локальний кеш — RQ — invalidate-иться через `apiQueryKeys` / `<module>Keys` з [`queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts).
 
@@ -88,14 +88,14 @@ LLM continues stream → final assistant message
 
 ## Decision matrix — який канал коли
 
-| Сценарій                                                                   | Канал                                     | Чому                                                                                                                                                                                       |
-| -------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Натискання кнопки / submit form у UI                                       | **Канал 1** (`useMutation`)               | Прямий feedback (loading/error states), focus-management, optimistic-update — все живе у React.                                                                                            |
-| LLM генерує `tool_use` у відповідь на чат-промпт                           | **Канал 2** (`chatActions` handler)       | Це **тільки** механізм продовження діалогу — sync write з відповіддю-рядком для `tool_result`. UI-state оновлюється через RQ-invalidate всередині handler-а.                               |
-| Auto-sync background task (sw, online-resume, schedule)                    | **Канал 1**, обгорнутий у sync engine     | Background writes завжди йдуть через CloudSync v2 writer runtime (`getSyncEngineWriter()`) → той сам api endpoint під капотом. Жодного «прямого» localStorage-shadow-write повз API.       |
-| Імпорт CSV / Mono webhook → багато транзакцій разом                        | **Канал 1**, з batch-endpoint             | Якщо API має `bulkCreate`/`bulkUpsert` — викликай його (один `useMutation`). Без batch-endpoint — fold-ай у `mutationFn` через `Promise.all`, але всередині handler-а, не у компоненті.    |
-| HubChat має `quickAction`, який має дзеркалити поведінку UI-кнопки         | **Канал 2** делегує у **Канал 1**         | `quickAction` емітить `tool_use` у локальний dispatcher → handler викликає той самий `apiClient.<module>.<action>`, який слухає UI-кнопка. Жодного шорткатного `localStorage.setItem` тут. |
-| Migration / data-fix that runs once per user (legacy LS → SQLite kv_store) | One-shot at bootstrap, **не writer path** | Йде через `bootstrapKvStore()` у `main.tsx`, не через RQ-mutation. Має свій own `addSentryBreadcrumb` контракт.                                                                            |
+| Сценарій                                                                   | Канал                                     | Чому                                                                                                                                                                                           |
+| -------------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Натискання кнопки / submit form у UI                                       | **Канал 1** (`useMutation`)               | Прямий feedback (loading/error states), focus-management, optimistic-update — все живе у React.                                                                                                |
+| LLM генерує `tool_use` у відповідь на чат-промпт                           | **Канал 2** (`chatActions` handler)       | Це **тільки** механізм продовження діалогу — sync write з відповіддю-рядком для `tool_result`. UI-state оновлюється через RQ-invalidate всередині handler-а.                                   |
+| Auto-sync background task (sw, online-resume, schedule)                    | **Канал 1**, обгорнутий у sync engine     | Background writes завжди йдуть через Sync v2 (`syncEngine`) writer runtime (`getSyncEngineWriter()`) → той сам api endpoint під капотом. Жодного «прямого» localStorage-shadow-write повз API. |
+| Імпорт CSV / Mono webhook → багато транзакцій разом                        | **Канал 1**, з batch-endpoint             | Якщо API має `bulkCreate`/`bulkUpsert` — викликай його (один `useMutation`). Без batch-endpoint — fold-ай у `mutationFn` через `Promise.all`, але всередині handler-а, не у компоненті.        |
+| HubChat має `quickAction`, який має дзеркалити поведінку UI-кнопки         | **Канал 2** делегує у **Канал 1**         | `quickAction` емітить `tool_use` у локальний dispatcher → handler викликає той самий `apiClient.<module>.<action>`, який слухає UI-кнопка. Жодного шорткатного `localStorage.setItem` тут.     |
+| Migration / data-fix that runs once per user (legacy LS → SQLite kv_store) | One-shot at bootstrap, **не writer path** | Йде через `bootstrapKvStore()` у `main.tsx`, не через RQ-mutation. Має свій own `addSentryBreadcrumb` контракт.                                                                                |
 
 ## Інваріанти, які CI перевіряє
 
@@ -117,7 +117,7 @@ LLM continues stream → final assistant message
 1. Завести endpoint у `apps/server/src/modules/<module>/` (якщо ще нема). Update `@sergeant/api-client` types — `bigint → number` через [Rule #1](../../governance/governance/rules/01-db-types-coerce-bigint-to-number.md).
 2. Завести RQ-ключ у [`queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts).
 3. **Канал 1** — додати `useXxxMutation()` у `apps/web/src/modules/<module>/hooks/`. `mutationFn` → `apiClient.<module>.<action>`. `onSuccess` → invalidate RQ-keys.
-4. **Канал 2** — якщо action потрібен у HubChat: додати tool-def у `apps/server/src/modules/chat/toolDefs/<module>.ts` + handler у `apps/web/src/core/lib/chatActions/<module>Actions/<action>.ts`, який викликає ту саму mutation і повертає `string` для `tool_result`.
+4. **Канал 2** — якщо action потрібен у HubChat: додати tool-def у `apps/server/src/modules/chat/toolDefs/<module>.ts` + handler у `apps/web/src/core/lib/chatActions/<module>Actions.ts` (логіку — у `chatActions/<module>Actions/<action>.ts`, якщо підтека для домену вже є: finyk/fizruk/cross), який викликає ту саму mutation і повертає `string` для `tool_result`.
 5. Тести: вибір canonical happy+error для handler-а. UI-mutation покривається `Vitest + MSW + RTL` згідно [`module-ownership.md`](./module-ownership.md).
 
 ## FAQ
@@ -126,13 +126,13 @@ LLM continues stream → final assistant message
 Бо `tool_result.content` у Anthropic API — це або `string`, або масив `text`-блоків. Клієнтський dispatcher шле саме `string`, який LLM сприймає як «next observation». Якщо тобі треба structured payload — JSON-сериалізуй і обгорни в природне речення: `Транзакція збережена: ${JSON.stringify(data)}`. LLM розпарсить.
 
 **Q. Чи можна оминути `apiClient` і написати у локальний кеш напряму, бо «це швидше»?**
-Ні. Швидкість досягається через RQ optimistic-update (Канал 1) або через CloudSync warm-cache (background channel). Прямий write — це shadow-state, який розійдеться з сервером і колись зашкодить юзеру.
+Ні. Швидкість досягається через RQ optimistic-update (Канал 1) або через Sync v2 warm-cache (background channel). Прямий write — це shadow-state, який розійдеться з сервером і колись зашкодить юзеру.
 
 **Q. Як я зрозумію, що мій новий handler «правильний»?**
 Тест має містити: (1) successful path → mocked `apiClient.<module>.<action>` повертає payload → handler повертає очікуваний string + правильний `<module>Keys` invalidate-нутий; (2) error path → mocked client throw-ить → handler повертає рядок з error message, не re-throw. Точно ті ж очікування, що `chatActions/<module>Actions.test.ts` уже використовує.
 
 **Q. Що з offline writes?**
-CloudSync v2 op-log writer runtime (`getSyncEngineWriter()`) ловить writes, що не дійшли до серверу, у dead-letter queue → user бачить `OfflineBanner` pill з лічильником через `useSyncStatus()`. Канал 1 — той самий API endpoint — це і є вхід у sync engine; offline-кейс прозорий для writer-сайту.
+Sync v2 (`syncEngine`) op-log writer runtime (`getSyncEngineWriter()`) ловить writes, що не дійшли до серверу, у dead-letter queue → user бачить `OfflineBanner` pill з лічильником через `useSyncStatus()`. Канал 1 — той самий API endpoint — це і є вхід у sync engine; offline-кейс прозорий для writer-сайту.
 
 **Q. Що з migration-writes (Stage 9 SQLite kv_store)?**
 Не writer-доріжка. One-shot, виконується у `bootstrapKvStore()` під час старту програми (`main.tsx`). Логи через `addSentryBreadcrumb`, фейли тихі, fallback ladder у `resolveStore()` — у `apps/web/src/shared/lib/storage/storage.ts`.

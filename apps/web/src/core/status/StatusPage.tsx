@@ -32,6 +32,47 @@ type FetchState =
   | { kind: "error"; message: string }
   | { kind: "ready"; data: StatusResponse };
 
+/**
+ * Чи має тіло відповіді ту форму, яку рендерить `ReadyView`.
+ *
+ * Раніше тут стояв голий `as StatusResponse`, і будь-яка 200-ка з іншою
+ * формою (проксі-заглушка, CDN-інтерстишал, зміна контракту сервера)
+ * валила сторінку незловленим `TypeError: Cannot read properties of
+ * undefined (reading 'map')` на `data.components.map` — білий екран
+ * замість картки помилки, яка тут і так є. Знайдено браузерним свіпом
+ * 2026-09-16 на `/status`.
+ *
+ * Це найгірший можливий режим відмови саме для цієї сторінки: її
+ * відкривають, щоб дізнатись, чи застосунок працює. Тож перевіряємо рівно
+ * те, чого торкається рендер, і за розбіжності показуємо `errorFallback`
+ * з кнопкою «Спробувати ще».
+ */
+function isStatusResponse(value: unknown): value is StatusResponse {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  if (typeof v["status"] !== "string") return false;
+  if (typeof v["timestamp"] !== "string") return false;
+  if (!Array.isArray(v["components"])) return false;
+  for (const raw of v["components"]) {
+    if (typeof raw !== "object" || raw === null) return false;
+    const c = raw as Record<string, unknown>;
+    if (typeof c["id"] !== "string") return false;
+    if (typeof c["label"] !== "string") return false;
+    if (typeof c["status"] !== "string") return false;
+  }
+  // `lastIncident` рендериться через `if (!lastIncident)`, тож `null`,
+  // `undefined` і відсутність ключа однаково безпечні — перевіряємо лише
+  // непорожній обʼєкт, чиї поля читає `LastIncidentRow`.
+  const incident = v["lastIncident"];
+  if (incident !== null && incident !== undefined) {
+    if (typeof incident !== "object") return false;
+    const i = incident as Record<string, unknown>;
+    if (typeof i["at"] !== "string") return false;
+    if (typeof i["component"] !== "string") return false;
+  }
+  return true;
+}
+
 export function StatusPage(): JSX.Element {
   const [state, setState] = useState<FetchState>({ kind: "loading" });
 
@@ -50,7 +91,15 @@ export function StatusPage(): JSX.Element {
         });
         return;
       }
-      const data = (await res.json()) as StatusResponse;
+      const data: unknown = await res.json();
+      if (!isStatusResponse(data)) {
+        logger.warn("[StatusPage] /api/status returned an unexpected shape");
+        setState({
+          kind: "error",
+          message: messages.publicStatus.errorFallback,
+        });
+        return;
+      }
       setState({ kind: "ready", data });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -156,10 +205,13 @@ function OverallBanner({
     <Banner variant={variant} data-testid="status-overall">
       <div className="flex items-center justify-between gap-3">
         <span className="font-semibold">{headline}</span>
-        <span
-          className="text-style-caption opacity-80"
-          data-testid="status-timestamp"
-        >
+        {/* No raw `opacity-80` here: axe flagged this span at 3.96:1 on
+            `/status` (the danger variant renders `text-danger-soft-fg` —
+            already ≥4.5:1 on `bg-danger-soft` on its own — and diluting it
+            with element opacity blends it toward the background, dropping
+            below AA). Full-strength `-soft-fg` token stays compliant across
+            all variants. */}
+        <span className="text-style-caption" data-testid="status-timestamp">
           {messages.publicStatus.timestampPrefix} {formatRelativeUk(timestamp)}
         </span>
       </div>
@@ -263,7 +315,9 @@ function ErrorCard({
         <span className="font-semibold">
           {messages.publicStatus.errorTitle}
         </span>
-        <span className="text-style-body opacity-80">{message}</span>
+        {/* See rationale on `status-timestamp` above — same `opacity-80`
+            dilution of `text-danger-soft-fg` dropped this line to 3.96:1. */}
+        <span className="text-style-body">{message}</span>
         <button
           type="button"
           onClick={onRetry}
@@ -293,9 +347,9 @@ const PILL_LABEL: Record<ComponentStatus, string> = {
 // `dark:text-{status}` — той самий патерн, що вже стоїть у `HabitForm`,
 // `HabitListItem` і `RoutineTimeline`.
 const PILL_CLASSES: Record<ComponentStatus, string> = {
-  operational: "bg-success-soft text-success-strong dark:text-success",
-  degraded: "bg-warning-soft text-warning-strong dark:text-warning",
-  down: "bg-danger-soft text-danger-strong dark:text-danger",
+  operational: "bg-success-soft text-success-soft-fg",
+  degraded: "bg-warning-soft text-warning-soft-fg",
+  down: "bg-danger-soft text-danger-soft-fg",
 };
 
 const DOT_CLASSES: Record<ComponentStatus, string> = {

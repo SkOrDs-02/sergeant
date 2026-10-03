@@ -62,6 +62,8 @@ function row(receiptId: string, purchasedAt: string): ReceiptSummaryRow {
     paymentHint: null,
     totalKop: 12345,
     transactionId: null,
+    pantryAutoDeclinedAt: null,
+    pantryClaimedCount: "0",
   };
 }
 

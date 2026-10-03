@@ -83,15 +83,20 @@ const VARIANT_SOLID: Record<SegmentedVariant, string> = {
 // the fixed `-strong` hex went sub-AA once HC bumped the `-soft` surface a
 // step darker. Module variants keep their dark surface/border tint.
 const VARIANT_SOFT: Record<SegmentedVariant, string> = {
-  brand: "border-brand-soft-border bg-brand-soft text-brand-soft-fg shadow-sm",
+  // `border-control` (а не тихий `brand-soft-border` 1.1-1.5:1): вибраний стан
+  // мусить відрізнятись від сусіда ≥3:1 (WCAG 1.4.11, аудит 2026-10-01, A4).
+  brand: "border-control bg-brand-soft text-brand-soft-fg shadow-sm",
+  // Модульні варіанти (A4, рішення власника 2026-10-01): тонований фон модуля
+  // + контур `{m}-edge` (світла -800, темна -400, ≥3:1 проти сусіда). Тихі
+  // `{m}-ring` / `{m}-border-dark/40` давали 1.35 (світла) / 2.49 (темна).
   fizruk:
-    "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15",
+    "border-fizruk-edge bg-fizruk-surface text-fizruk-soft-fg shadow-sm dark:bg-fizruk-surface-dark/15",
   routine:
-    "border-routine-ring bg-routine-surface text-routine-soft-fg shadow-sm dark:border-routine-border-dark/40 dark:bg-routine-surface-dark/15",
+    "border-routine-edge bg-routine-surface text-routine-soft-fg shadow-sm dark:bg-routine-surface-dark/15",
   nutrition:
-    "border-nutrition-ring bg-nutrition-surface text-nutrition-soft-fg shadow-sm dark:border-nutrition-border-dark/40 dark:bg-nutrition-surface-dark/15",
+    "border-nutrition-edge bg-nutrition-surface text-nutrition-soft-fg shadow-sm dark:bg-nutrition-surface-dark/15",
   finyk:
-    "border-finyk-ring bg-finyk-surface text-finyk-soft-fg shadow-sm dark:border-finyk-border-dark/40 dark:bg-finyk-surface-dark/15",
+    "border-finyk-edge bg-finyk-surface text-finyk-soft-fg shadow-sm dark:bg-finyk-surface-dark/15",
 };
 
 const INACTIVE =

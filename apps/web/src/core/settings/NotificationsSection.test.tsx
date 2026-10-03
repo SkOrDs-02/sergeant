@@ -5,16 +5,15 @@ import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 const {
   toastWarningMock,
-  requestPermMock,
   routineState,
   updateRoutinePrefMock,
   monthlyPlanState,
   loadNutritionPrefsMock,
   persistNutritionPrefsMock,
   pushState,
+  meApiMock,
 } = vi.hoisted(() => ({
   toastWarningMock: vi.fn(),
-  requestPermMock: vi.fn(),
   routineState: {
     routine: { prefs: { routineRemindersEnabled: false } },
   },
@@ -33,14 +32,24 @@ const {
   ),
   persistNutritionPrefsMock: vi.fn(),
   pushState: { subscribed: false },
+  meApiMock: {
+    getPreferences: vi.fn(async () => ({
+      sergeantNudges: false,
+      pushDailyCap: 2,
+    })),
+    updatePreferences: vi.fn(async (patch: { pushDailyCap?: number }) => ({
+      sergeantNudges: false,
+      pushDailyCap: patch.pushDailyCap ?? 2,
+    })),
+  },
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({ warning: toastWarningMock }),
 }));
-vi.mock("@shared/hooks/useModuleReminder", () => ({
-  requestNotificationPermission: requestPermMock,
-}));
+// `requestNotificationPermission` не мокаємо (бюджет vi.mock) — вона тонко
+// делегує до глобального `Notification.requestPermission()`, який тест
+// уже стабить через `stubNotification`.
 vi.mock("../../modules/routine/hooks/useRoutineState", () => ({
   useRoutineState: () => ({
     routine: routineState.routine,
@@ -62,6 +71,12 @@ vi.mock("../components/PushNotificationToggle", () => ({
 // застосунку тим, у кого пуш не увімкнено.
 vi.mock("@shared/hooks/usePushNotifications", () => ({
   usePushNotifications: () => pushState,
+}));
+// Серверні налаштування (Сержант і стеля нагадувань) читаються з
+// `/api/me/preferences`; решта `@shared/api` лишається справжньою.
+vi.mock("@shared/api", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  meApi: meApiMock,
 }));
 
 import { NotificationsSection } from "./NotificationsSection";
@@ -141,7 +156,6 @@ describe("NotificationsSection", () => {
 
   it("enables the routine reminder pref once permission is granted", async () => {
     stubNotification("granted");
-    requestPermMock.mockResolvedValue("granted");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("routine");
     await waitFor(() =>
@@ -153,11 +167,11 @@ describe("NotificationsSection", () => {
   });
 
   it("does not enable routine reminders when permission is refused", async () => {
-    stubNotification("default");
-    requestPermMock.mockResolvedValue("denied");
+    const reqFn = stubNotification("default");
+    reqFn.mockResolvedValue("denied");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("routine");
-    await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
+    await waitFor(() => expect(reqFn).toHaveBeenCalled());
     expect(updateRoutinePrefMock).not.toHaveBeenCalled();
     expect(toastWarningMock).toHaveBeenCalled();
   });
@@ -185,6 +199,21 @@ describe("NotificationsSection", () => {
     expect(monthlyPlanState.setReminder).toHaveBeenCalledWith(10, 15);
   });
 
+  // Пін на контракт ширини нативного контрола. `[min-inline-size:0]` дає
+  // лише спільний примітив (`TimeField`); сирий `<input type="time">` у
+  // flex-рядку його НЕ мав, і нативний intrinsic inline-size розпирав
+  // рядок. Chromium цього не відтворює (заміряно 2026-09-15), тож юніт —
+  // єдиний гейт: docs/start/instructions/fix-mobile-horizontal-overflow.md
+  it("тримає поле часу в межах рядка — жодного intrinsic-розпирання", () => {
+    stubNotification("granted");
+    monthlyPlanState.reminderEnabled = true;
+    renderSettingsSection(<NotificationsSection />);
+    const timeInput = document.querySelector(
+      'input[type="time"]',
+    ) as HTMLInputElement;
+    expect(timeInput.className).toContain("[min-inline-size:0]");
+  });
+
   it("persists nutrition reminder pref on toggle", async () => {
     stubNotification("granted");
     renderSettingsSection(<NotificationsSection />);
@@ -198,21 +227,21 @@ describe("NotificationsSection", () => {
   });
 
   it("does not enable the fizruk reminder when permission is refused", async () => {
-    stubNotification("default");
-    requestPermMock.mockResolvedValue("denied");
+    const reqFn = stubNotification("default");
+    reqFn.mockResolvedValue("denied");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("fizruk");
-    await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
+    await waitFor(() => expect(reqFn).toHaveBeenCalled());
     expect(monthlyPlanState.setReminderEnabled).not.toHaveBeenCalled();
     expect(toastWarningMock).toHaveBeenCalled();
   });
 
   it("does not persist the nutrition reminder when permission is refused", async () => {
-    stubNotification("default");
-    requestPermMock.mockResolvedValue("denied");
+    const reqFn = stubNotification("default");
+    reqFn.mockResolvedValue("denied");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("nutrition");
-    await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
+    await waitFor(() => expect(reqFn).toHaveBeenCalled());
     expect(persistNutritionPrefsMock).not.toHaveBeenCalled();
     expect(toastWarningMock).toHaveBeenCalled();
   });
@@ -262,6 +291,38 @@ describe("NotificationsSection", () => {
   // і це була неправда, бо нагадування вів локальний таймер, який помирав
   // разом із вкладкою. Тепер їх шле сервер, але тільки за наявності живої
   // push-підписки, тож обіцянка стала умовною.
+  it("зберігає стелю нагадувань на сервері", async () => {
+    stubNotification("granted");
+    renderSettingsSection(<NotificationsSection />);
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "2" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      ),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "1" }));
+    await waitFor(() =>
+      expect(meApiMock.updatePreferences).toHaveBeenCalledWith({
+        pushDailyCap: 1,
+      }),
+    );
+    expect(screen.getByRole("tab", { name: "1" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("на нулі прямо каже, що нагадувань не буде", async () => {
+    stubNotification("granted");
+    // Два хуки секції (Сержант і стеля) читають налаштування окремо.
+    const zero = { sergeantNudges: false, pushDailyCap: 0 };
+    meApiMock.getPreferences
+      .mockResolvedValueOnce(zero)
+      .mockResolvedValueOnce(zero);
+    renderSettingsSection(<NotificationsSection />);
+    expect(await screen.findByText(/Нагадування вимкнені/)).toBeInTheDocument();
+  });
+
   it("не обіцяє фонову доставку без push-підписки", () => {
     renderSettingsSection(<NotificationsSection />);
     expect(

@@ -10,6 +10,9 @@ import { cn } from "@shared/lib/ui/cn";
 import { getMacrosForDateRange } from "../lib/nutritionStorage";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
 
+/** Сталий id керованого регіону для `aria-controls` тогла. */
+const WEEK_TABLE_ID = "nutrition-week-log-table";
+
 interface LogCardWeeklyTableProps {
   log: NutritionLog;
   selectedDate: string;
@@ -27,18 +30,24 @@ export function LogCardWeeklyTable({
   );
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/40 px-3 py-2">
+    <div className="rounded-2xl border border-line bg-panel px-3 py-2">
       <SectionHeading
         as="button"
         size="xs"
         variant="nutrition"
         type="button"
         onClick={() => setWeekOpen((v) => !v)}
+        // Тогл керує таблицею нижче, але не повідомляв про це:
+        // шеврон — єдиний натяк, і він декоративний (аудит 2026-09-16,
+        // WF-13). `SectionHeading` типізований через `HTMLAttributes`
+        // і розкладає `...props` на елемент, тож пропси доходять.
+        aria-expanded={weekOpen}
+        aria-controls={WEEK_TABLE_ID}
         className="flex items-center gap-2 w-full text-left py-1"
       >
         <Icon
           name="chevron-right"
-          size={12}
+          size="xs"
           strokeWidth={2.5}
           className={cn(
             "transition-transform shrink-0",
@@ -49,7 +58,7 @@ export function LogCardWeeklyTable({
       </SectionHeading>
 
       {weekOpen && (
-        <div className="overflow-x-auto mt-2">
+        <div id={WEEK_TABLE_ID} className="overflow-x-auto mt-2">
           <table className="w-full text-style-caption text-left">
             <thead>
               <tr className="text-subtle">

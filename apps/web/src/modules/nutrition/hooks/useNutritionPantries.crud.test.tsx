@@ -47,8 +47,9 @@ function renderHarness() {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const { result, unmount } = renderHook(
-    () => useNutritionPantries({ setBusy, setErr, setStatusText }),
+    () => useNutritionPantries({ setBusy, setErr, setStatusText, setDenial }),
     { wrapper: makeWrapper() },
   );
   return { result, unmount };

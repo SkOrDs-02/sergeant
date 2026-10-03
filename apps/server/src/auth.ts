@@ -14,7 +14,13 @@ import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { parseKeyRing } from "./lib/keyRing.js";
 import { db } from "./drizzle.js";
+import pool from "./db.js";
+import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
+import {
+  hardenSessionBefore,
+  stripSessionTokenAfter,
+} from "./auth/sessionHardeningHooks.js";
 import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import {
@@ -283,58 +289,26 @@ export const auth = betterAuth({
   basePath: "/api/auth",
   user: {
     deleteUser: {
-      enabled: true,
       /**
-       * Живий шлях видалення акаунта — `POST /api/auth/delete-user` з
-       * `DangerZoneSection.tsx`. До цього хука Better Auth робив лише
-       * `DELETE FROM "user"` (каскад прибирав доменні дані), а все, що
-       * живе в `modules/me/dataRights.ts::deleteUserData`, — best-effort
-       * скасування підписки у Stripe / LiqPay / Plata, `subscriptions →
-       * canceled`, purge `ai_usage_daily` (без FK, каскад не дістає),
-       * enqueue у `gdpr_cleanup_queue` — на живому шляху **не виконувалось
-       * ніколи**: воно висіло тільки на `DELETE /api/me`, який ніхто не
-       * викликає. Наслідок — видалений акаунт продовжував оплачуватись
-       * (аудит `docs/90-work/audits/2026-08-05-orphaned-code-audit.md`
-       * § 3, п. 1).
+       * ВИМКНЕНО свідомо, і це не відкат безпеки, а перенесення шляху.
        *
-       * Тому хук виконує САМ `deleteUserData` — один шлях для обох входів,
-       * і контракт-тест на `DELETE /api/me` знов покриває реальність.
-       * `deleteUserData` завершується `DELETE FROM "user"` у транзакції,
-       * після чого власний `internalAdapter.deleteUser` Better Auth стає
-       * no-op (0 рядків — Drizzle не кидає). Провайдер-помилка всередині —
-       * warn-лог `delete_user_provider_cancel_failed` і продовження (ADR-0016
-       * best-effort; Stripe-ретрай іде через `gdpr_cleanup_queue`).
+       * З появою 30-денного вікна на скасування (спека
+       * docs/work/specs/user-deletion-grace-window.md, ADR-0098)
+       * видалення перестало бути одномоментним: `DELETE /api/me` лише
+       * ПОЗНАЧАЄ акаунт, а незворотну частину через місяць виконує
+       * `modules/me/deletionPoller.ts`. На цьому ж хуку вікно нездійсненне:
+       * Better Auth після `beforeDelete` БЕЗУМОВНО виконує власний
+       * `internalAdapter.deleteUser` (`dist/api/routes/update-user.mjs`),
+       * тож єдиним способом його зупинити було б кинути помилку на
+       * успішному шляху.
        *
-       * Fail-safe: якщо `deleteUserData` кинув (БД недоступна), транзакція
-       * відкочена, акаунт лишається **цілим**, а не напіввидаленим — ми
-       * логуємо error і пробросуємо `APIError`, щоб Better Auth не дійшов до
-       * власного DELETE і клієнт побачив помилку замість «Акаунт видалено».
-       *
-       * Динамічний import — щоб `auth.ts` (його тягне кожен роутер через
-       * `requireSession`) не тягнув billing-реєстр у свій статичний граф.
+       * Планка, яку цей ендпоінт тримав, не загублена: перевірку пароля
+       * переніс на себе `DELETE /api/me` через
+       * `modules/me/verifyAccountPassword.ts` (та сама механіка, що в
+       * `checkPassword` самого Better Auth), а свіжість сесії там тримає
+       * `requireFreshSession()`.
        */
-      beforeDelete: async (user) => {
-        const [{ deleteUserData }, { pool }] = await Promise.all([
-          import("./modules/me/dataRights.js"),
-          import("./db.js"),
-        ]);
-        try {
-          await deleteUserData(pool, user.id);
-        } catch (err) {
-          logger.error(
-            {
-              event: "auth.user.delete.before_hook_failed",
-              user_id_hash: hashUserId(user.id),
-              err: err instanceof Error ? err.message : String(err),
-            },
-            "deleteUserData threw in user.deleteUser.beforeDelete — account left intact",
-          );
-          throw new APIError("INTERNAL_SERVER_ERROR", {
-            code: "ACCOUNT_DELETE_FAILED",
-            message: "Не вдалося видалити акаунт. Спробуй ще раз.",
-          });
-        }
-      },
+      enabled: false,
     },
     /**
      * Зміна email із профілю. До цього блоку `POST /api/auth/change-email`
@@ -352,7 +326,7 @@ export const auth = betterAuth({
      *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
      *     адресу; лише після кліку летить верифікація на нову. Це захист
      *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
-     *     який описує H6 (`docs/04-governance/security/hardening/archive/
+     *     який описує H6 (`docs/work/specs/security-hardening/archive/
      *     H6-email-verification.md`).
      *
      * Обидва листи йдуть у ту саму durable-чергу `auth-mail`, що й
@@ -446,7 +420,7 @@ export const auth = betterAuth({
    * Вибір 7d (а не 30/90 typical для consumer SaaS) — security trade-off
    * для daily-habit app: ризик украденого cookie обмежений тижнем, а
    * active-user UX не страждає завдяки rolling refresh. Деталі —
-   * ADR-0017 і `docs/security/better-auth-audit-2026-05.md`.
+   * ADR-0017 і `docs/governance/security/better-auth-audit-2026-05.md`.
    *
    * `cookieCache.maxAge` 5 хв — підписана JWT-style cookie кеш, який
    * `requireSession` валідує без DB-look-up. 30× швидший за SELECT.
@@ -480,7 +454,8 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (data) => {
-          // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу.
+          // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу;
+          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
           // Стоїть саме тут, а не на формі реєстрації: `user.create`
           // спрацьовує однаково для email+пароля, Google і Apple, тож
           // соцвхід не обходить гейт створенням користувача в колбеку.
@@ -534,6 +509,9 @@ export const auth = betterAuth({
           ) {
             return;
           }
+          // Reverse trial (за прапорцем); сам ловить свої помилки, тож
+          // реєстрацію не валить навіть при збої вставки.
+          await grantReverseTrial(pool, user.id);
           try {
             queueFtuxDripForNewUser({ userId: user.id, email: user.email });
           } catch (err) {
@@ -584,7 +562,8 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (data) => {
-          // AI-LEGACY: expires 2026-11-30 — друга половина рубильника.
+          // AI-LEGACY: expires 2026-11-30 — друга половина рубильника;
+          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
           // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
           // і той, хто зареєструвався під час бети. Перевірка тут ловить
           // кожен логін незалежно від провайдера. Уже видані сесії живуть
@@ -621,11 +600,18 @@ export const auth = betterAuth({
    */
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // sec-02 / sec-05: `/update-user` лише з живою сесією в БД,
+      // `/revoke-session` за `{ id }` — див. auth/sessionHardeningHooks.ts.
+      await hardenSessionBefore(ctx);
       if (ctx.path !== "/change-password") return;
       const body = ctx.body;
       if (body && typeof body === "object" && !Array.isArray(body)) {
         (body as Record<string, unknown>)["revokeOtherSessions"] = true;
       }
+    }),
+    // sec-05: сирий session token не віддаємо в get-session / list-sessions.
+    after: createAuthMiddleware(async (ctx) => {
+      stripSessionTokenAfter(ctx);
     }),
   },
   trustedOrigins: getTrustedOrigins(),
@@ -778,7 +764,7 @@ export async function getSessionUser(
           logger.warn(
             {
               event: "auth.session.ua_drift",
-              session_id: stored.id,
+              session_id_hash: hashUserId(stored.id),
               user_id: user.id,
               ua_changed: drift.ua,
               ip_changed: drift.ip,

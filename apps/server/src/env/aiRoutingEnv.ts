@@ -59,7 +59,7 @@ export const aiRoutingEnvShape = {
 
   /**
    * `POST /api/finyk/receipts/analyze` (чек-скан v1, vision-fallback без
-   * QR — `docs/90-work/planning/specs/receipt-scan.md`). Той самий
+   * QR — `docs/work/specs/receipt-scan.md`). Той самий
    * Flash-Lite, що вже дефолт для nutrition/mono — 10/10 на пастках
    * зорового стенду за копійки/чек (спека § Вартість).
    */

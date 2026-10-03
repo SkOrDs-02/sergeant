@@ -108,7 +108,11 @@ describe("FoodPickerSection — search mode", () => {
         })}
       />,
     );
-    expect(screen.getByText(/Open Food Facts/)).toBeInTheDocument();
+    // Той самий текст несе й посилання атрибуції OFF під списком (#1247),
+    // тож роздільник шукаємо саме як рядок списку.
+    expect(
+      screen.getByText("Open Food Facts", { selector: "li" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("hit:Lays")).toBeInTheDocument();
   });
 

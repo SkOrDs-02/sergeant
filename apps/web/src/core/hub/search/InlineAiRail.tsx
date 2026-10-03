@@ -24,10 +24,10 @@ export interface InlineAiRailProps {
 
 const STATUS_LABEL: Record<InlineAiState["status"], string> = {
   idle: "",
-  loading: "AI шукає відповідь",
-  success: "Відповідь асистента",
+  loading: "Сержант шукає відповідь",
+  success: "Відповідь Сержанта",
   aborted: "Запит скасовано",
-  error: "Помилка асистента",
+  error: "Сержант не відповів",
 };
 
 /**
@@ -91,7 +91,7 @@ export function InlineAiRail({
     <div
       className="px-3 sm:px-4 pt-2"
       role="region"
-      aria-label="Inline-відповідь асистента"
+      aria-label="Швидка відповідь Сержанта"
       onFocusCapture={() => {
         focusWithinRef.current = true;
       }}
@@ -120,14 +120,14 @@ export function InlineAiRail({
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
                 state.status === "error"
-                  ? "bg-danger-soft text-danger-strong"
+                  ? "bg-danger-soft text-danger-soft-fg"
                   : "bg-brand-soft text-brand-strong dark:text-brand-300",
               )}
               aria-hidden="true"
             >
               <Icon
                 name={state.status === "error" ? "alert-circle" : "sergeant"}
-                size={16}
+                size="md"
                 strokeWidth={2.2}
               />
             </span>
@@ -144,9 +144,9 @@ export function InlineAiRail({
             type="button"
             onClick={onDismiss}
             aria-label="Закрити відповідь"
-            className="shrink-0 -m-1 p-1 rounded-md text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className="shrink-0 -m-1 p-1 rounded-md text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
-            <Icon name="close" size={16} strokeWidth={2.2} />
+            <Icon name="close" size="md" strokeWidth={2.2} />
           </button>
         </div>
 
@@ -165,7 +165,7 @@ export function InlineAiRail({
             <button
               type="button"
               onClick={onCancel}
-              className="text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+              className="text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
             >
               Скасувати
             </button>
@@ -185,10 +185,10 @@ export function InlineAiRail({
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="sergeant" size={14} strokeWidth={2.2} />
+                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
               {state.hasToolCalls && (
@@ -204,7 +204,7 @@ export function InlineAiRail({
               <button
                 type="button"
                 onClick={() => onRetry(state.question)}
-                className="ml-auto text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+                className="ml-auto text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
               >
                 Спробувати ще раз
               </button>
@@ -220,7 +220,7 @@ export function InlineAiRail({
             <button
               type="button"
               onClick={() => onRetry(state.question)}
-              className="text-style-label text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+              className="text-style-label text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
             >
               Запитати знову
             </button>
@@ -239,10 +239,10 @@ export function InlineAiRail({
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-panel border border-line text-text hover:bg-panelHi",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="refresh-cw" size={14} strokeWidth={2.2} />
+                <Icon name="refresh-cw" size="sm" strokeWidth={2.2} />
                 Повторити
               </button>
               <button
@@ -252,10 +252,10 @@ export function InlineAiRail({
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="sergeant" size={14} strokeWidth={2.2} />
+                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
             </div>

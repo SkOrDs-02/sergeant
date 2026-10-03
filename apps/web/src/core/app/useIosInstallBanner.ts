@@ -4,8 +4,16 @@ import { isIOS, isStandalonePWA } from "@shared/lib/platform/iosStandalone";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { PROMO_BANNER_REVEAL_MS } from "@shared/lib/ui/timeouts";
 import { trackEvent } from "../observability/analytics";
+import {
+  isInstallBannerSnoozed,
+  readInstallBannerSnooze,
+  snoozeInstallBanner,
+} from "./installBannerSnooze";
 
+/** Permanent opt-out — "Уже встановлено або не нагадувати" text link. */
 const IOS_BANNER_DISMISSED_KEY = "ios_install_banner_dismissed";
+/** Temporary defer — the icon-only "×" close (founder-ux-review round 2, O2). */
+const IOS_BANNER_SNOOZE_KEY = "ios_install_banner_snooze_v1";
 
 /**
  * iOS-Safari arm of the PWA-install funnel (Wave-1 PR-07). Safari does not
@@ -26,6 +34,8 @@ export function useIosInstallBanner() {
 
   useEffect(() => {
     if (safeReadStringLS(IOS_BANNER_DISMISSED_KEY) === "1") return undefined;
+    if (isInstallBannerSnoozed(readInstallBannerSnooze(IOS_BANNER_SNOOZE_KEY)))
+      return undefined;
 
     // Канонічна iOS + standalone детекція — спільний helper
     // (`@shared/lib/platform/iosStandalone`), переюзаний voice-стеком.
@@ -42,7 +52,11 @@ export function useIosInstallBanner() {
     trackEvent(ANALYTICS_EVENTS.PWA_INSTALL_PROMPTED, { surface: "ios" });
   }, [visible]);
 
-  const dismiss = useCallback(() => {
+  /**
+   * Explicit, permanent opt-out ("Уже встановлено або не нагадувати").
+   * A deliberate choice — stays a forever-flag, unlike {@link snooze}.
+   */
+  const dismissForever = useCallback(() => {
     safeWriteLS(IOS_BANNER_DISMISSED_KEY, "1");
     trackEvent(ANALYTICS_EVENTS.PWA_INSTALL_DISMISSED, {
       surface: "ios",
@@ -51,5 +65,23 @@ export function useIosInstallBanner() {
     setVisible(false);
   }, []);
 
-  return { visible, dismiss };
+  /**
+   * Plain "×" close — defers the banner 30 days, up to
+   * `INSTALL_BANNER_MAX_SNOOZES` times, instead of hiding it forever
+   * (founder-ux-review round 2, O2: one accidental tap used to hide the
+   * install invite for good).
+   */
+  const snooze = useCallback(() => {
+    snoozeInstallBanner(
+      IOS_BANNER_SNOOZE_KEY,
+      readInstallBannerSnooze(IOS_BANNER_SNOOZE_KEY),
+    );
+    trackEvent(ANALYTICS_EVENTS.PWA_INSTALL_DISMISSED, {
+      surface: "ios",
+      via: "banner_snooze",
+    });
+    setVisible(false);
+  }, []);
+
+  return { visible, dismissForever, snooze };
 }

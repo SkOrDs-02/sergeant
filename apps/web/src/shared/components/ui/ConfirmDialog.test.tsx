@@ -18,6 +18,7 @@ describe("ConfirmDialog", () => {
   it("exposes an alertdialog role for assistive tech", () => {
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open
         title="Видалити звичку?"
         description="Відмітки по днях теж зникнуть."
@@ -36,8 +37,9 @@ describe("ConfirmDialog", () => {
   it("describes the dialog with the warning text so screen readers announce it", () => {
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open
-        title="Видалити транзакцію?"
+        title="Видалити операцію?"
         description="Без можливості відновлення."
         onConfirm={() => {}}
         onCancel={() => {}}
@@ -54,6 +56,7 @@ describe("ConfirmDialog", () => {
   it("omits aria-describedby when there is no description", () => {
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open
         title="Підтвердити?"
         onConfirm={() => {}}
@@ -69,6 +72,7 @@ describe("ConfirmDialog", () => {
   it("does not render when closed", () => {
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open={false}
         title="Hidden"
         onConfirm={() => {}}
@@ -104,6 +108,7 @@ describe("ConfirmDialog", () => {
   it("portals to document.body with Sheet/Modal-aligned black scrim", () => {
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open
         title="Portal?"
         cancelLabel="Скасувати"
@@ -122,6 +127,7 @@ describe("ConfirmDialog", () => {
     const onCancel = vi.fn();
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open
         title="Cancel?"
         cancelLabel="Скасувати"
@@ -148,6 +154,7 @@ describe("ConfirmDialog", () => {
 
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open
         title="Замінити дані з файлу?"
         description={
@@ -210,6 +217,7 @@ describe("ConfirmDialog — доступні імена скрима і кноп
   it("кнопка скасування має унікальне імʼя — скрим не дублює його", () => {
     render(
       <ConfirmDialog
+        confirmLabel="Видалити"
         open
         title="Видалити?"
         cancelLabel="Скасувати"

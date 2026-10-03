@@ -13,7 +13,7 @@
  * який бачить клієнт, camelCase (`ImportScreenshotDraftSchema`,
  * `@sergeant/shared`) — мапінг у `screenshotAnalyze.ts#normalizeImportScreenshotResult`.
  *
- * Спека (`docs/90-work/planning/specs/receipt-scan.md` § «Фаза 2» →
+ * Спека (`docs/work/specs/receipt-scan.md` § «Фаза 2» →
  * «Рішення дизайну Фази 2» → «Скрін банкінгу — це транзакції без позицій,
  * НЕ чек») зобовʼязує промпт:
  *   - ігнорувати рядки балансу/«Доступно»/лімітів;
@@ -43,7 +43,7 @@ export const IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT = `Ти розпізнаєш
 }
 
 Визначення "doc_type":
-- "bank_screenshot" — це скрін списку транзакцій банк-апки АБО одне push-повідомлення про операцію. Заповни "rows".
+- "bank_screenshot" — це скрін списку операцій банк-апки АБО одне push-повідомлення про операцію. Заповни "rows".
 - "receipt" — це фото товарного чека з каси магазину (не банк-апка) — "rows" лиши порожнім масивом.
 - "other" — щось інше (не банківський скрін і не чек) — "rows" лиши порожнім масивом.
 

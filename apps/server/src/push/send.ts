@@ -1,5 +1,6 @@
 import apn from "@parse/node-apn";
 import pool from "../db.js";
+import { env } from "../env/env.js";
 import { sendWebPush } from "../lib/webpushSend.js";
 import { sleep } from "../lib/timing.js";
 import { logger } from "../obs/logger.js";
@@ -26,11 +27,37 @@ export type { PushPayload, SendToUserResult } from "./types.js";
 
 // ─────────────────────────── Retry policy ───────────────────────────
 // Exponential backoff: 3 total attempts, delays between them 200 ms / 1 s / 3 s.
-// Без значної jitter-и — native push-сервіси мають стабільний QPS ліміт і
-// перевантаження тут — рідкість; 200/1000/3000 — стандартна послідовність
-// що дає ~4.2 с worst-case на один токен до повернення failed.
+// 200/1000/3000 — стандартна послідовність, що дає ~4.2 с worst-case на один
+// токен до повернення failed.
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS: readonly number[] = [200, 1000, 3000];
+
+/**
+ * Розкид ретраю — частка базової затримки, що додається зверху випадково.
+ *
+ * AI-CONTEXT: до 2026-09-16 тут стояв коментар «без значної jitter-и, бо
+ * перевантаження — рідкість». Це вірно для одиночного пуша й невірно для
+ * нашого головного профілю навантаження: нагадування йдуть СЛОТАМИ
+ * (09:00 / 12:00 / 20:00), тобто сотні токенів стартують у ту саму секунду.
+ * Без розкиду всі їхні перші ретраї б'ють апстрім рівно через 200 мс, другі —
+ * рівно через 1 с, і ми самі робимо собі синхронний сплеск саме тоді, коли
+ * апстрім уже показав, що йому важко.
+ *
+ * 0.5 дає 200-300 / 1000-1500 / 3000-4500 мс — достатньо, щоб розмазати
+ * хвилю, і замало, щоб помітно подовжити worst-case. Той самий прийом, що
+ * в `lib/webpushSend.ts` (`jitteredDelay`), лише пропорційний, а не
+ * фіксовані +100 мс: тут бази різняться в 15 разів.
+ */
+const RETRY_JITTER_RATIO = 0.5;
+
+/**
+ * Затримка перед спробою `attempt` (1-based серед ретраїв) із розкидом.
+ * Exported for unit testing.
+ */
+export function retryDelayMs(retryIndex: number): number {
+  const base = RETRY_DELAYS_MS[retryIndex] ?? 1000;
+  return base + Math.floor(Math.random() * base * RETRY_JITTER_RATIO);
+}
 
 // ─────────────────────────── Metrics ───────────────────────────────
 /**
@@ -195,7 +222,7 @@ export async function sendAPNs(
   let lastStatus: number | undefined = undefined;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    if (attempt > 0) await sleep(RETRY_DELAYS_MS[attempt - 1] ?? 1000);
+    if (attempt > 0) await sleep(retryDelayMs(attempt - 1));
 
     let result: apn.Responses<apn.ResponseSent, apn.ResponseFailure>;
     try {
@@ -356,7 +383,7 @@ export async function sendFCM(
   let lastStatus: number | undefined = undefined;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    if (attempt > 0) await sleep(RETRY_DELAYS_MS[attempt - 1] ?? 1000);
+    if (attempt > 0) await sleep(retryDelayMs(attempt - 1));
 
     let accessToken: string | null;
     try {
@@ -385,6 +412,12 @@ export async function sendFCM(
           "content-type": "application/json",
         },
         body: JSON.stringify(body),
+        // AI-DANGER: без `signal` undici бере власний `headersTimeout` у
+        // 300 с. Помножити на `MAX_ATTEMPTS = 3` — і ОДИН пуш висить до
+        // 15 хвилин, тримаючи сокет, пам'ять і місце у fan-out-і. У слот
+        // нагадувань такі зависання накопичуються паралельно й кладуть
+        // 4 ГБ VPS. Стеля береться з env — див. `PUSH_FCM_TIMEOUT_MS`.
+        signal: AbortSignal.timeout(env.PUSH_FCM_TIMEOUT_MS),
       });
     } catch (e) {
       lastReason = e instanceof Error ? e.message : String(e);

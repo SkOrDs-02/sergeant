@@ -8,20 +8,13 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigationType } from "react-router-dom";
+import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { expandAllCollapsedSections } from "../../test/helpers/collapsibleSection";
 import { messages } from "@shared/i18n/uk";
+import { meApi } from "@shared/api";
 
 // ── Mocks ────────────────────────────────────────────────────
-
-const navigateMock = vi.fn();
-vi.mock("react-router-dom", async () => {
-  const actual =
-    await vi.importActual<typeof import("react-router-dom")>(
-      "react-router-dom",
-    );
-  return { ...actual, useNavigate: () => navigateMock };
-});
 
 const updateUserMock =
   vi.fn<
@@ -30,7 +23,14 @@ const updateUserMock =
 const changePasswordMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
 const listSessionsMock = vi.fn<() => Promise<{ data: unknown[] }>>();
 const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
-const deleteUserMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
+// DangerZoneSection тепер видаляє акаунт через `DELETE /api/me`
+// (`meApi.deleteAccount`), а не через Better Auth: лише власний роут уміє
+// 30-денне вікно на скасування.
+//
+// `vi.spyOn` замість `vi.mock("@shared/api", …)` (бюджет vi.mock на файл) —
+// решта `@shared/api` лишається СПРАВЖНЬОЮ без ризику затерти сусідні
+// api-групи, якими користується решта профілю.
+const deleteAccountMock = vi.spyOn(meApi, "deleteAccount");
 const signOutMock = vi.fn<() => Promise<void>>();
 const sendVerificationEmailMock =
   vi.fn<(d: unknown) => Promise<{ error: null }>>();
@@ -40,7 +40,11 @@ updateUserMock.mockResolvedValue({ error: null });
 changePasswordMock.mockResolvedValue({ error: null });
 listSessionsMock.mockResolvedValue({ data: [] });
 revokeSessionMock.mockResolvedValue({ error: null });
-deleteUserMock.mockResolvedValue({ error: null });
+deleteAccountMock.mockResolvedValue({
+  ok: true,
+  deletedAt: "2026-09-20T10:00:00.000Z",
+  scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+});
 signOutMock.mockResolvedValue(undefined);
 sendVerificationEmailMock.mockResolvedValue({ error: null });
 changeEmailMock.mockResolvedValue({ error: null });
@@ -50,7 +54,6 @@ vi.mock("../auth/authClient.js", () => ({
   changePassword: (data: unknown) => changePasswordMock(data),
   listSessions: () => listSessionsMock(),
   revokeSession: (data: unknown) => revokeSessionMock(data),
-  deleteUser: (data: unknown) => deleteUserMock(data),
   signOut: () => signOutMock(),
   sendVerificationEmail: (data: unknown) => sendVerificationEmailMock(data),
   changeEmail: (data: unknown) => changeEmailMock(data),
@@ -59,17 +62,6 @@ vi.mock("../auth/authClient.js", () => ({
 const useOnlineStatusMock = vi.fn(() => true);
 vi.mock("@shared/hooks/useOnlineStatus", () => ({
   useOnlineStatus: () => useOnlineStatusMock(),
-}));
-
-const toastSuccessMock = vi.fn();
-const toastErrorMock = vi.fn();
-const toastShowMock = vi.fn();
-vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({
-    success: toastSuccessMock,
-    error: toastErrorMock,
-    show: toastShowMock,
-  }),
 }));
 
 const mockUser = {
@@ -98,14 +90,63 @@ vi.mock("../auth/AuthContext.jsx", () => ({
   useAuthOptional: () => mockAuthValue,
 }));
 
+// Огляд 2026-09-04: серверна памʼять і PIN-блокування рендеряться в
+// Профілі, але тягнуть React Query і AppLockProvider — власні тести в
+// `AiMemorySection.test.tsx` / `security/AppLockSettings.test.tsx`.
+vi.mock("./AiMemorySection", () => ({
+  AiMemorySection: () => <div data-testid="ai-memory-section" />,
+}));
+vi.mock("../security/AppLockSettings", () => ({
+  AppLockSettings: () => <div data-testid="app-lock-settings" />,
+}));
+
 import { ProfilePage } from "./ProfilePage";
+
+// Замість моків `useNavigate` і `useToast` (vi.mock-кап 5 на файл) —
+// справжні `MemoryRouter` + `ToastProvider` і зонд, що виводить у DOM
+// поточний шлях, тип навігації (REPLACE для `navigate(..., { replace })`)
+// та живі тости з їхніми action-кнопками.
+function Probe() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const { toasts } = useToast();
+  return (
+    <div
+      data-testid="probe"
+      data-path={location.pathname}
+      data-nav={navigationType}
+    >
+      {toasts.map((t) => (
+        <div key={t.id} data-testid={`toast-${t.type}`}>
+          {t.msg}
+          {t.action ? <span>{t.action.label}</span> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function renderPage() {
   return render(
     <MemoryRouter>
-      <ProfilePage />
+      <ToastProvider>
+        <ProfilePage />
+        <Probe />
+      </ToastProvider>
     </MemoryRouter>,
   );
+}
+
+async function expectRedirectedToSignIn() {
+  // `waitFor`, а не синхронна перевірка: тост і `navigate()` стоять поруч
+  // у `handleLogout`, але React 18 батчить оновлення — поява тосту НЕ
+  // означає, що зонд уже перемалювався з новим шляхом. Синхронний варіант
+  // читав старий `/` і падав рівно тому, що встигав першим.
+  await waitFor(() => {
+    const probe = screen.getByTestId("probe");
+    expect(probe).toHaveAttribute("data-path", "/sign-in");
+    expect(probe).toHaveAttribute("data-nav", "REPLACE");
+  });
 }
 
 // ── Tests ────────────────────────────────────────────────────
@@ -119,7 +160,11 @@ describe("ProfilePage", () => {
     changePasswordMock.mockResolvedValue({ error: null });
     listSessionsMock.mockResolvedValue({ data: [] });
     revokeSessionMock.mockResolvedValue({ error: null });
-    deleteUserMock.mockResolvedValue({ error: null });
+    deleteAccountMock.mockResolvedValue({
+      ok: true,
+      deletedAt: "2026-09-20T10:00:00.000Z",
+      scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+    });
     signOutMock.mockResolvedValue(undefined);
     sendVerificationEmailMock.mockResolvedValue({ error: null });
     changeEmailMock.mockResolvedValue({ error: null });
@@ -225,7 +270,9 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(false);
       renderPage();
       expect(
-        screen.getByText("Офлайн, редагування профілю тимчасово недоступне"),
+        screen.getByText(
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+        ),
       ).toBeInTheDocument();
     });
 
@@ -233,7 +280,9 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(true);
       renderPage();
       expect(
-        screen.queryByText("Офлайн, редагування профілю тимчасово недоступне"),
+        screen.queryByText(
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+        ),
       ).not.toBeInTheDocument();
     });
 
@@ -329,7 +378,7 @@ describe("ProfilePage", () => {
       await waitFor(() =>
         expect(screen.getByText("Не вдалося оновити імʼя")).toBeInTheDocument(),
       );
-      expect(toastErrorMock).not.toHaveBeenCalled();
+      expect(screen.queryByTestId("toast-error")).not.toBeInTheDocument();
       expect(saveBtn).not.toBeDisabled();
     });
   });
@@ -343,15 +392,31 @@ describe("ProfilePage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
 
       const dialog = screen.getByRole("dialog", {
-        name: "Видалити акаунт назавжди?",
+        name: "Видалити акаунт?",
       });
       expect(dialog).toHaveAttribute("aria-modal", "true");
-      expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();
+      expect(
+        within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      ).toBeInTheDocument();
 
       fireEvent.keyDown(document, { key: "Escape" });
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
+
+  /**
+   * Вихід тепер за два кроки: тап по «Вийти» відкриває підтвердження, і лише
+   * його кнопка «Вийти» запускає `logout()`. Тести нижче ходять цим самим
+   * шляхом, а не смикають `handleLogout` в обхід — інакше вони перевіряли б
+   * код, якого користувач не бачить.
+   */
+  async function tapLogoutAndConfirm() {
+    fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+    const gate = await screen.findByRole("alertdialog", {
+      name: "Вийти з акаунта?",
+    });
+    fireEvent.click(within(gate).getByRole("button", { name: "Вийти" }));
+  }
 
   describe("logout", () => {
     it("renders Вийти button at bottom of profile", () => {
@@ -360,29 +425,59 @@ describe("ProfilePage", () => {
       expect(logoutBtn).toBeInTheDocument();
     });
 
+    // Звіт власника 2026-09-13: один тап стирав локальну БД, SW-кеші й
+    // сесію без жодного кроку назад. Діалог «є незбережені записи» нижче
+    // цього не закривав — він спрацьовує лише за недоставленої черги, тож
+    // чистий вихід не питав нічого взагалі.
+    it("не виходить з першого тапу — спершу питає підтвердження", async () => {
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const gate = await screen.findByRole("alertdialog", {
+        name: "Вийти з акаунта?",
+      });
+      expect(logoutMock).not.toHaveBeenCalled();
+
+      fireEvent.click(within(gate).getByRole("button", { name: "Залишитись" }));
+      await waitFor(() =>
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+      );
+      expect(logoutMock).not.toHaveBeenCalled();
+      expect(screen.queryByText("Ти вийшов з акаунта")).not.toBeInTheDocument();
+    });
+
+    // Офлайн вихід не «зворотний із наступним входом»: вхід потребує
+    // мережі, якої немає, а локальна копія стирається одразу. Це інша за
+    // вагою дія, тож і текст інший.
+    it("офлайн попереджає, що ввійти назад не вийде", async () => {
+      useOnlineStatusMock.mockReturnValue(false);
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const gate = await screen.findByRole("alertdialog", {
+        name: "Вийти з акаунта?",
+      });
+      expect(
+        within(gate).getByText(/увійти назад не вийде/),
+      ).toBeInTheDocument();
+    });
+
     it("calls logout, shows toast and redirects to /sign-in on click", async () => {
       renderPage();
-      const logoutBtn = screen.getByRole("button", { name: "Вийти" });
-      fireEvent.click(logoutBtn);
+      await tapLogoutAndConfirm();
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
-      await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
-      );
+      await screen.findByText("Ти вийшов з акаунта");
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
-      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
+      await expectRedirectedToSignIn();
     });
 
     it("shows error toast when logout throws", async () => {
       logoutMock.mockRejectedValueOnce(new Error("network"));
       renderPage();
-      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
-      await waitFor(() =>
-        expect(toastErrorMock).toHaveBeenCalledWith(
-          "Не вдалося вийти",
-          undefined,
-          expect.objectContaining({ label: "Повторити" }),
-        ),
-      );
+      await tapLogoutAndConfirm();
+      const errorToast = await screen.findByTestId("toast-error");
+      expect(errorToast).toHaveTextContent("Не вдалося вийти");
+      expect(within(errorToast).getByText("Повторити")).toBeInTheDocument();
     });
   });
 
@@ -407,32 +502,31 @@ describe("ProfilePage", () => {
     it('"Все одно вийти": proceeds with logout — toast + redirect fire, exactly like a clean exit', async () => {
       mockLogoutAsksForConfirmation(3);
       renderPage();
-      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+      await tapLogoutAndConfirm();
 
       const dialog = await screen.findByRole("alertdialog", {
         name: "Є незбережені записи",
       });
       // `^`-анкор — щоб `pending=3` не міг випадково збігтися з рядком, де
-      // "3" є суфіксом іншого числа (напр. "13 записів").
+      // "3" є суфіксом іншого числа (напр. "13 записів"). pending=3 бере
+      // форму "few" ("записи"), не бінарну англійську "записів".
       expect(
-        within(dialog).getByText(/^3 записів ще не збережено на сервері\./),
+        within(dialog).getByText(/^3 записи ще не збережено на сервері\./),
       ).toBeInTheDocument();
 
       fireEvent.click(
         within(dialog).getByRole("button", { name: "Все одно вийти" }),
       );
 
-      await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
-      );
-      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
+      await screen.findByText("Ти вийшов з акаунта");
+      await expectRedirectedToSignIn();
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     });
 
     it('"Залишитись": cancels logout — session stays alive, so no toast and no redirect', async () => {
       mockLogoutAsksForConfirmation(1);
       renderPage();
-      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+      await tapLogoutAndConfirm();
 
       const dialog = await screen.findByRole("alertdialog", {
         name: "Є незбережені записи",
@@ -456,13 +550,35 @@ describe("ProfilePage", () => {
       // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
       // редиректу на екран входу. Це саме те, що мало б зламатись, якби
       // `cancelled` ігнорувався після `await logout(...)`.
-      expect(toastSuccessMock).not.toHaveBeenCalledWith("Вихід виконано");
-      expect(navigateMock).not.toHaveBeenCalledWith("/sign-in", {
-        replace: true,
-      });
+      expect(screen.queryByText("Ти вийшов з акаунта")).not.toBeInTheDocument();
+      expect(screen.getByTestId("probe")).toHaveAttribute("data-path", "/");
       // Кнопка "Вийти" повертається в звичайний стан — не залипає у
       // loading, ніби вихід досі триває.
       expect(screen.getByRole("button", { name: "Вийти" })).not.toBeDisabled();
+    });
+
+    // Українська плюралізація — три форми (one/few/many), не бінарна
+    // «1 vs N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("записів"),
+    // 21 повертається до "one" ("запис").
+    it.each([
+      [1, "запис"],
+      [2, "записи"],
+      [5, "записів"],
+      [11, "записів"],
+      [21, "запис"],
+    ])("uses the correct plural form for N=%i (%s)", async (n, form) => {
+      mockLogoutAsksForConfirmation(n);
+      renderPage();
+      await tapLogoutAndConfirm();
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      expect(
+        within(dialog).getByText(
+          new RegExp(`^${n} ${form} ще не збережено на сервері\\.`),
+        ),
+      ).toBeInTheDocument();
     });
   });
 
@@ -494,7 +610,7 @@ describe("ProfilePage", () => {
       expect(screen.getAllByText("Пароль")).toHaveLength(1);
       // MemoryBankSection мала близький, а не дослівний дублікат —
       // «Памʼять ШІ» замість «Памʼять» — цей текст мав зникнути повністю.
-      expect(screen.queryByText("Памʼять ШІ")).not.toBeInTheDocument();
+      expect(screen.queryByText("Памʼять AI")).not.toBeInTheDocument();
     });
 
     it("raises the outer section heading to text-style-label so it is never smaller than its inner card header (V-4)", () => {

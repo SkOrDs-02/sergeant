@@ -1,7 +1,7 @@
 # ADR-0052: Mobile strategy — Capacitor primary, Expo parallel (no deprecation)
 
-- **Status:** Accepted
-- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
+- **Status:** Superseded by [ADR-0094](./0094-mobile-web-first-freeze.md)
+- **Last validated:** 2026-09-13 by @claude (supersede — рішення про web-first паузу від 2026-08-25 формалізовано в ADR-0094). **Next review:** —
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
 - **Supersedes:** ADR-0010
@@ -10,6 +10,13 @@
   - [`docs/work/specs/initiatives/0010-revenue-first-launch.md`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)
   - [`docs/work/specs/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md)
   - [ADR-0010 Mobile dual-track](./0010-mobile-dual-track-capacitor-expo.md)
+
+> **⛔ Superseded 2026-09-13 — [ADR-0094](./0094-mobile-web-first-freeze.md).**
+> Цей запис лишається як історія: він пояснює, чому Capacitor не вимкнули за
+> розкладом T₀/T₁/T₂ з ініціативи 0002. Але твердження нижче «обидва стеки
+> активні, отримують підтримку, deprecation не активується» **більше не
+> описує факт**: з 2026-08-25 обидва стеки на паузі за рішенням власника
+> (web-first). Читай ADR-0094 для чинного стану.
 
 ---
 
@@ -83,3 +90,14 @@
 - [ADR-0010](./0010-mobile-dual-track-capacitor-expo.md) — dual-track original decision
 - [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md) — feature-parity матриця (Exit dashboard)
 - [`docs/work/specs/initiatives/0010-revenue-first-launch.md` § Phase 1.2](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                            | Merged     |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#1134](https://github.com/SkOrDs-02/sergeant/pull/1134) | ci(root): повернути apps/mobile у CI і формалізувати web-first паузу окремим ADR | 2026-09-13 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -43,12 +43,10 @@ describe("SubscriptionForm", () => {
       />,
     );
     expect(
-      screen.getByLabelText("Пошук транзакції за описом"),
+      screen.getByLabelText("Пошук операції за описом"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /знайдемо найновішу витрату, опис якої містить цей текст/,
-      ),
+      screen.getByText(/знайду найновішу витрату, опис якої містить цей текст/),
     ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("День списання (1-31)"),
@@ -450,7 +448,13 @@ describe("DebtForm", () => {
   it("renders the debt form title and inputs", () => {
     render(
       <DebtForm
-        newDebt={{ name: "", emoji: "", totalAmount: "", dueDate: "" }}
+        newDebt={{
+          name: "",
+          emoji: "",
+          totalAmount: "",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
         setNewDebt={vi.fn()}
         setManualDebts={vi.fn()}
         setShowDebtForm={vi.fn()}
@@ -459,7 +463,7 @@ describe("DebtForm", () => {
       />,
     );
     expect(screen.getByText("Новий пасив")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Загальна сума ₴")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Початкова сума ₴")).toBeInTheDocument();
     const dueDate = screen.getByLabelText("Дата погашення");
     expect(dueDate).toHaveClass("w-full");
     expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
@@ -472,7 +476,13 @@ describe("DebtForm", () => {
     const onCancel = vi.fn();
     const { container } = render(
       <DebtForm
-        newDebt={{ name: "", emoji: "", totalAmount: "", dueDate: "" }}
+        newDebt={{
+          name: "",
+          emoji: "",
+          totalAmount: "",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
         setNewDebt={vi.fn()}
         setManualDebts={vi.fn()}
         setShowDebtForm={onCancel}
@@ -496,6 +506,7 @@ describe("DebtForm", () => {
           emoji: "",
           totalAmount: "1000",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={setNewDebt}
         setManualDebts={vi.fn()}
@@ -505,10 +516,10 @@ describe("DebtForm", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг…)"), {
+    fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг)"), {
       target: { value: "Розстрочка" },
     });
-    fireEvent.change(screen.getByLabelText("Загальна сума у гривнях"), {
+    fireEvent.change(screen.getByLabelText("Початкова сума боргу у гривнях"), {
       target: { value: "25000" },
     });
     fireEvent.change(screen.getByLabelText("Дата погашення"), {
@@ -554,6 +565,7 @@ describe("DebtForm", () => {
           emoji: "\u{1F4B8}",
           totalAmount: "50000",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={vi.fn()}
         setManualDebts={setManualDebts}
@@ -581,6 +593,7 @@ describe("DebtForm", () => {
           emoji: "\u{1F4B8}",
           totalAmount: "50000",
           dueDate: "2026-10-01",
+          autoLinkKeyword: "",
         }}
         setNewDebt={vi.fn()}
         setManualDebts={setManualDebts}
@@ -609,6 +622,41 @@ describe("DebtForm", () => {
     expect(setManualDebts).not.toHaveBeenCalled();
   });
 
+  it("пояснює суму пасиву з source та increase без подвійного обліку", () => {
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "Сашка",
+          emoji: "",
+          totalAmount: "721.14",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={vi.fn()}
+        setShowDebtForm={vi.fn()}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+        editingId="debt-1"
+        editingDebt={{
+          id: "debt-1",
+          amount: 721.14,
+          totalAmount: 721.14,
+          linkedTxIds: ["source", "increase"],
+          txLinks: {
+            source: { role: "source", amount: 1000 },
+            increase: { role: "increase", amount: 721.14 },
+          },
+        }}
+      />,
+    );
+
+    expect(container).toHaveTextContent("Виникнення за операціями");
+    expect(container).toHaveTextContent("Збільшення боргу");
+    expect(container).toHaveTextContent(/1[\s\u202f]?721,14/);
+    expect(container).toHaveTextContent(/операції виникнення більші/);
+  });
+
   it("does not commit a debt when name is empty", () => {
     const setManualDebts = vi.fn();
     const { container } = render(
@@ -618,6 +666,7 @@ describe("DebtForm", () => {
           emoji: "\u{1F4B8}",
           totalAmount: "50000",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={vi.fn()}
         setManualDebts={setManualDebts}

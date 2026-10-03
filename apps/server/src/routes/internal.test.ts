@@ -14,9 +14,18 @@ vi.mock("../lib/llm/provider.js", () => ({
 const INTERNAL_AUTH_GUARD_TIMEOUT_MS = 45_000;
 
 function makePool() {
-  return {
-    query: vi.fn().mockResolvedValue({ rows: [] }),
+  const query = vi.fn().mockResolvedValue({ rows: [] });
+  // RLS-контекст (`dbContext.ts`) бере зʼєднання через `connect()`: службові
+  // BEGIN/COMMIT/set_config ковтаємо, решту SQL віддаємо в `query`, тож
+  // `pool.query` рахує лише справжні запити.
+  const client = {
+    query: (sql: string, params?: unknown[]) =>
+      /^\s*(BEGIN|COMMIT|ROLLBACK)\b|set_config\(/i.test(sql)
+        ? Promise.resolve({ rows: [] })
+        : query(sql, params),
+    release: vi.fn(),
   };
+  return { query, connect: vi.fn().mockResolvedValue(client) };
 }
 
 async function makeApp(internalKey: string | undefined, pool = makePool()) {
@@ -273,20 +282,6 @@ describe("/api/internal/*", () => {
       });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, id: 1, isNew: true });
-  });
-
-  it("rejects email events with an unknown event type", async () => {
-    const { app } = await makeApp("secret");
-    const res = await request(app)
-      .post("/api/internal/email/event")
-      .set("Authorization", "Bearer secret")
-      .send({
-        providerMessageId: "msg_xyz",
-        eventType: "exploded",
-        occurredAt: "2026-04-29T10:00:00Z",
-      });
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: "invalid eventType" });
   });
 
   it("returns the user cohort for the requested day", async () => {

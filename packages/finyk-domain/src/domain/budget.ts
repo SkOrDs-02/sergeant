@@ -9,7 +9,14 @@ import {
   toLocalISODate,
   formatNumberUk,
 } from "@sergeant/shared";
-import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
+import {
+  getTxStatAmount,
+  calcMonthlyNeeded,
+  type SpendingTxLike,
+  type TxCategoriesLike,
+  type TxSplitsLike,
+} from "../utils";
+import { calcLimitCategorySpent } from "../lib/limitCategorySpend.js";
 import type {
   Budget,
   GoalBudget,
@@ -48,7 +55,10 @@ export type LimitPeriod = "month" | "week" | "one_time";
  * напряму, а не тримає власну копію (§2.28 audit finding).
  */
 export function limitBudgetCategoryIds(
-  budget: Pick<LimitBudget, "categoryId" | "categoryIds">,
+  budget: Pick<
+    LimitBudget,
+    "categoryId" | "categoryIds" | "categoryTaxonomyVersion"
+  >,
 ): string[] {
   const raw =
     Array.isArray(budget.categoryIds) && budget.categoryIds.length > 0
@@ -57,6 +67,15 @@ export function limitBudgetCategoryIds(
   const out: string[] = [];
   for (const id of raw) {
     if (typeof id === "string" && id && !out.includes(id)) out.push(id);
+  }
+  // Чинний ліміт «Покупки» історично включав ручну «Техніку».
+  // На read-time зберігаємо його охоплення; нові ліміти мають version=2.
+  if (
+    budget.categoryTaxonomyVersion !== 2 &&
+    out.includes("shopping") &&
+    !out.includes("tech")
+  ) {
+    out.push("tech");
   }
   return out;
 }
@@ -179,7 +198,7 @@ export function getLimitPeriodRange(
 }
 
 export function filterTransactionsForLimitPeriod<
-  T extends { time?: number; date?: string },
+  T extends { time?: number | undefined; date?: string | undefined },
 >(
   transactions: readonly T[],
   budget: Pick<LimitBudget, "period" | "createdAt">,
@@ -241,6 +260,128 @@ export function calculateLimitUsage(
     overLimit,
     warnLimit,
   };
+}
+
+export type LimitUsage = ReturnType<typeof calculateLimitUsage>;
+
+/**
+ * З якого дня місяця прогноз за темпом показується (Р8 спеки аналітики v2):
+ * на 1-2 день темп із однієї-двох витрат дає шум, а не прогноз, тож до
+ * третього дня людина бачить лише денну норму.
+ */
+export const MIN_FORECAST_DAY = 3;
+
+/**
+ * Прогноз витрат на кінець місяця за поточним темпом: витрачено за минулі
+ * дні (включно з сьогодні) / кількість цих днів × днів у місяці. Рахує з
+ * точної суми, округлює лише показ. `null` до `minDay`-го дня. Одна формула
+ * для картки ліміту, картки плану, хаб-попередження і `calcForecast`.
+ */
+export function projectMonthEndSpend(
+  spent: number,
+  daysPassed: number,
+  daysInMonth: number,
+  minDay: number = MIN_FORECAST_DAY,
+): number | null {
+  if (daysPassed < Math.max(1, minDay) || daysInMonth <= 0) return null;
+  return (spent / daysPassed) * daysInMonth;
+}
+
+export interface LimitPace {
+  /** Прогноз на кінець місяця, грн без округлення; `null` — прогнозу нема. */
+  forecast: number | null;
+  /** Прогноз вищий за ліміт, а факт ще ні: час попередити (Р9). */
+  forecastOverLimit: boolean;
+  /** Через скільки днів за поточним темпом факт перейде ліміт. */
+  daysUntilOver: number | null;
+}
+
+const NO_PACE: LimitPace = {
+  forecast: null,
+  forecastOverLimit: false,
+  daysUntilOver: null,
+};
+
+/**
+ * Темп ліміту в поточному місяці. Лише для місячного періоду: тижневий і
+ * разовий ліміти мають власне вікно, а спека v1 тримає місяць базою (Р3).
+ */
+export function calcLimitPace(
+  budget: { limit?: number | undefined; period?: LimitPeriod | undefined },
+  spent: number,
+  now: Date = new Date(),
+): LimitPace {
+  if ((budget?.period ?? "month") !== "month") return NO_PACE;
+  const limit = Number(budget?.limit) || 0;
+  const { daysPassed, daysInMonth } = getCurrentMonthContext(now);
+  const forecast = projectMonthEndSpend(spent, daysPassed, daysInMonth);
+  if (forecast === null) return NO_PACE;
+  const forecastOverLimit =
+    limit > 0 && spent > 0 && spent < limit && forecast > limit;
+  return {
+    forecast,
+    forecastOverLimit,
+    daysUntilOver: forecastOverLimit
+      ? Math.ceil((limit - spent) / (spent / daysPassed))
+      : null,
+  };
+}
+
+export interface LimitUsageEntry extends LimitUsage, LimitPace {
+  budget: LimitBudget;
+  categoryIds: string[];
+  /** Набір категорій через `+`, як в id рекомендації `budget_over_<key>`. */
+  key: string;
+}
+
+export interface LimitUsagesOptions {
+  txCategories?: TxCategoriesLike | undefined;
+  txSplits?: TxSplitsLike | undefined;
+  customCategories?: readonly unknown[] | undefined;
+  now?: Date | undefined;
+}
+
+/**
+ * Стан кожного ліміту з одного проходу: вікно періоду, кошики категорій
+ * і відсоток рахуються тут і лише тут. Картка ліміту в Плануванні,
+ * хаб-картка перевищення і рекомендація `budget_over_*` читають цей
+ * результат, тож «162 %» і «перевищень немає» не можуть стояти поруч
+ * (Р5 спеки аналітики v2). `transactions` вже без прихованих і виключених
+ * зі статистики; вікно періоду накладається тут, тож передавай історію
+ * цілком, а не місячний зріз (тижневий і разовий ліміт мають власне вікно).
+ */
+export function calcLimitUsages<
+  T extends SpendingTxLike & {
+    time?: number | undefined;
+    date?: string | undefined;
+  },
+>(
+  budgets: readonly Budget[] | null | undefined,
+  transactions: readonly T[],
+  opts: LimitUsagesOptions = {},
+): LimitUsageEntry[] {
+  const { txCategories = {}, txSplits = {}, customCategories = [], now } = opts;
+  const at = now ?? new Date();
+  const out: LimitUsageEntry[] = [];
+  for (const budget of getLimitBudgets(budgets)) {
+    const categoryIds = limitBudgetCategoryIds(budget);
+    if (categoryIds.length === 0 || !(Number(budget.limit) > 0)) continue;
+    const spent = calcLimitCategorySpent(
+      filterTransactionsForLimitPeriod(transactions, budget, at),
+      categoryIds,
+      txCategories,
+      txSplits,
+      customCategories,
+    );
+    out.push({
+      ...calculateLimitUsage(budget, spent),
+      ...calcLimitPace(budget, spent, at),
+      budget,
+      categoryIds,
+      key: categoryIds.join("+"),
+    });
+  }
+  return out;
 }
 
 // Правило для блоку Overview «бюджети під загрозою» — саме воно визначає,

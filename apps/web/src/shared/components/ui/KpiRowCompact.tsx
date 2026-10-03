@@ -66,8 +66,8 @@ export function KpiRowCompact({
   if (items.length === 0) return null;
   const sepClass = separatorClass[module ?? "neutral"];
   const isHero = tone === "hero-ink";
-  const iconClass = isHero ? "text-hero-ink/60" : "text-subtle";
-  const labelClass = isHero ? "text-hero-ink/60" : "text-subtle";
+  const iconClass = isHero ? "text-hero-ink" : "text-subtle";
+  const labelClass = isHero ? "text-hero-ink" : "text-subtle";
   const valueClass = isHero ? "text-hero-ink" : "text-text";
 
   return (

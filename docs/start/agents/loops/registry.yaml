@@ -251,7 +251,7 @@ loops:
         sergeant-mobile-expo,
         sergeant-data-and-migrations,
       ]
-    goal: Per-surface test + typecheck across all 3 surfaces before synthesis; full QA fan-out
+    goal: Per-surface test + typecheck across all 4 surfaces (server, web, mobile, packages) before synthesis; full QA fan-out
     cadence: per-pr
     risk: low
     tools: [claude-code]

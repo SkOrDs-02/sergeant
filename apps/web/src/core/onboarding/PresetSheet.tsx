@@ -53,44 +53,54 @@ type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
  * entry: tapping one writes straight to the module's storage, no form,
  * no wizard. The custom-entry row at the bottom of the sheet keeps the
  * escape hatch for users whose first instinct doesn't fit the list.
+ *
+ * Копі — з каталогу (`messages.presets.*`, 2026-09-16, борг
+ * дизайн-контракту онбордингу). Тут лишається лише те, що НЕ копі:
+ * гліфи `Icon`, класи акценту модуля, PWA-екшени і слаги категорій
+ * Фініка. Формулювання правиться в `uk.ts`, не тут.
  */
+const COPY = messages.presets;
+
 const PRESETS: PresetCatalog = {
   routine: {
-    title: "З якої звички почати?",
-    desc: "Одне натискання, і вона у твоєму списку сьогодні.",
+    ...COPY.routine,
     accent: "text-routine-soft-fg bg-routine-soft",
     moduleIcon: "check",
-    fallback: { action: "add_habit", label: "Своя звичка", icon: "plus" },
+    fallback: {
+      action: "add_habit",
+      label: COPY.routine.fallbackLabel,
+      icon: "plus",
+    },
     items: [
       {
         id: "water",
         icon: "droplet",
-        title: "Випити воду",
-        desc: "Щодня, будь-коли",
-        data: { name: "Випити воду", emoji: "droplet" },
+        ...COPY.routine.items.water,
+        data: { name: COPY.routine.items.water.name, emoji: "droplet" },
       },
       {
         id: "walk",
         icon: "run",
-        title: "Пройти 10 хв",
-        desc: "Короткий вихід після обіду",
-        data: { name: "Пройти 10 хв", emoji: "run" },
+        ...COPY.routine.items.walk,
+        data: { name: COPY.routine.items.walk.name, emoji: "run" },
       },
       {
         id: "read",
         icon: "book-open",
-        title: "Прочитати 10 сторінок",
-        desc: "Вечірня звичка",
-        data: { name: "Прочитати 10 сторінок", emoji: "book-open" },
+        ...COPY.routine.items.read,
+        data: { name: COPY.routine.items.read.name, emoji: "book-open" },
       },
     ],
   },
   finyk: {
-    title: "На що витратив?",
-    desc: "Тицяй, відкриється форма з назвою. Суму введеш сам.",
+    ...COPY.finyk,
     accent: "text-finyk-soft-fg bg-finyk-soft",
     moduleIcon: "credit-card",
-    fallback: { action: "add_expense", label: "Своя витрата", icon: "plus" },
+    fallback: {
+      action: "add_expense",
+      label: COPY.finyk.fallbackLabel,
+      icon: "plus",
+    },
     // Presets тут — лише заготовки назви/категорії. Реальну суму
     // вводить користувач у формі модуля. Було: «кава 95 ₴» писалася
     // прямо у ledger, що топило довіру з першої секунди.
@@ -104,36 +114,39 @@ const PRESETS: PresetCatalog = {
       {
         id: "coffee",
         icon: "coffee",
-        title: "Кава",
-        desc: "ранкова звичка, введи свою суму",
+        ...COPY.finyk.items.coffee,
         // `cafe` («Кафе та ресторани»), не «їжа»: остання — Era-1 legacy-мітка,
         // яку `legacyManualCategoryId()` зводить до слага `food` («Продукти»),
         // тож ранкова кава падала в продуктовий кошик і не рахувалась проти
         // ліміту на кафе (репорт finyk-агента 2026-08-23).
-        data: { description: "Кава", category: "cafe" },
+        data: { description: COPY.finyk.items.coffee.name, category: "cafe" },
       },
       {
         id: "ride",
         icon: "truck",
-        title: "Таксі",
-        desc: "дорога на роботу чи додому",
-        data: { description: "Таксі", category: "транспорт" },
+        ...COPY.finyk.items.ride,
+        data: {
+          description: COPY.finyk.items.ride.name,
+          category: "транспорт",
+        },
       },
       {
         id: "lunch",
         icon: "utensils",
-        title: "Обід",
-        desc: "що зʼїв, і за скільки",
-        data: { description: "Обід", category: "їжа" },
+        ...COPY.finyk.items.lunch,
+        data: { description: COPY.finyk.items.lunch.name, category: "їжа" },
       },
     ],
   },
   nutrition: {
-    title: "Що зʼїв зараз?",
-    desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
+    ...COPY.nutrition,
     accent: "text-nutrition-soft-fg bg-nutrition-soft",
     moduleIcon: "utensils",
-    fallback: { action: "add_meal", label: "Додати страву", icon: "plus" },
+    fallback: {
+      action: "add_meal",
+      label: COPY.nutrition.fallbackLabel,
+      icon: "plus",
+    },
     // Три плитки (Омлет / Салат / Яблуко) свого часу давали
     // різні дані — але без каналу прокидування `item.data` у
     // `AddMealSheet` усі три тапи відкривали один і той самий порожній
@@ -144,13 +157,12 @@ const PRESETS: PresetCatalog = {
     items: [],
   },
   fizruk: {
-    title: "Швидкий старт",
-    desc: "Відкрию старт тренування, тривалість вкажеш на фініші.",
+    ...COPY.fizruk,
     accent: "text-fizruk-soft-fg bg-fizruk-soft",
     moduleIcon: "dumbbell",
     fallback: {
       action: "start_workout",
-      label: "Почати тренування",
+      label: COPY.fizruk.fallbackLabel,
       icon: "plus",
     },
     // Те ж саме, що й у nutrition: fizruk не має prefill-каналу для
@@ -308,7 +320,7 @@ export function PresetSheet({
                 )}
                 aria-hidden
               >
-                <Icon name={item.icon} size={20} />
+                <Icon name={item.icon} size="lg" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-style-title text-text truncate">
@@ -320,7 +332,7 @@ export function PresetSheet({
               </div>
               <Icon
                 name="chevron-right"
-                size={16}
+                size="md"
                 className="text-muted shrink-0"
               />
             </div>
@@ -338,7 +350,7 @@ export function PresetSheet({
           )}
         >
           <div className="flex items-center justify-center gap-1.5">
-            <Icon name={fallbackIconName} size={14} />
+            <Icon name={fallbackIconName} size="sm" />
             <span>{config.fallback.label}</span>
           </div>
         </button>

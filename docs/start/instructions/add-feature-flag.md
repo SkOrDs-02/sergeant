@@ -1,6 +1,6 @@
 # Playbook: Додати feature flag
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-11.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -51,7 +51,7 @@ function MyComponent() {
 
 ### 3. Задокументуй прапорець
 
-Створи або онови `docs/governance/governance/feature-flags.md` із записом:
+Додай рядок у таблицю відповідної системи в [`docs/engineering/architecture/feature-flags.md`](../../engineering/architecture/feature-flags.md) (канонічний реєстр; governance-копію знято 2026-09-16). Мінімум, який має нести запис:
 
 | Flag             | Owner   | Default | Expires    | Rollout plan                         |
 | ---------------- | ------- | ------- | ---------- | ------------------------------------ |
@@ -100,3 +100,14 @@ it("hides new feature when flag is off", () => {
 - Система прапорців — client-only (`localStorage` через `typedStore`). Server-side прапорців поки немає.
 - Прапорці автоматично синхронізуються між вкладками браузера через підписку `typedStore`.
 - При випуску прапорця (видаленні), йди за плейбуком [cleanup-dead-code](./cleanup-dead-code.md) для запису прапорця і всіх `useFlag` / `getFlag` call sites.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                              | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------- |
+| [#61](https://github.com/zaebal-beep/sergeant/pull/61) | docs(docs): governance — прибрати застаріле з ADR-індексу, governance/ і security/ | 2026-09-16 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

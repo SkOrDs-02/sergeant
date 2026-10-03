@@ -1,7 +1,7 @@
 # Модуль Finyk (server)
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-03.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 
-Продуктовий контекст: `Read .agents/skills/sergeant-module-finyk/SKILL.md` → канон `docs/01-product/model/finyk.md` (§ Журнал рішень).
+Продуктовий контекст: `Read .agents/skills/sergeant-module-finyk/SKILL.md` → канон `docs/product/modules/finyk.md` (§ Журнал рішень).
 Ключові інваріанти: `bigint` → `Number()` у серіалізаторах (Hard Rule #1); фінансові періоди — Europe/Kyiv, особиста доба — device-local (ADR-0078); минуле заморожене (ADR-0079).

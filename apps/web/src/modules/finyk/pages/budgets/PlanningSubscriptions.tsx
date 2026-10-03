@@ -1,12 +1,15 @@
 /**
- * Last validated: 2026-09-03
+ * Last validated: 2026-09-11
  * Status: Active
  */
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { pluralUa } from "@sergeant/shared";
+import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { messages } from "@shared/i18n/uk";
 import { RecurringSuggestions } from "../../components/RecurringSuggestions";
-import { QuickActionButton, SectionBar } from "../AssetsBars";
+import { useRecurringHistory } from "../../hooks/useRecurringHistory";
+import { SectionBar } from "../AssetsBars";
 import { AssetsSubscriptionsSection } from "../AssetsSubscriptionsSection";
 import { AssetsTxPickerView } from "../AssetsTxPickerView";
 import { useAssetsState, type AssetsProps } from "../useAssetsState";
@@ -34,12 +37,31 @@ export function PlanningSubscriptions({
   storage,
   showBalance = true,
   initialOpen = false,
+  initialOpenRecurring = false,
+  openSubscriptionSignal,
 }: {
   mono: AssetsProps["mono"];
   storage: AssetsProps["storage"];
   showBalance?: boolean;
   /** `?section=subscriptions` — розгорнути список одразу. */
   initialOpen?: boolean;
+  /**
+   * `?section=recurring` — розгорнути блок «Можливі підписки». Саме сюди
+   * веде хаб-інсайт «Знайшов повторення»: він тільки вказує, а деталі
+   * кандидата (сума, періодичність, впевненість) і кнопка «+ Підписка»
+   * живуть тут. Згорнутий блок робив би тап по інсайту беззмістовним.
+   */
+  initialOpenRecurring?: boolean;
+  /**
+   * Founder-UX audit round 2 (F2): триггер відкриття форми підписки з
+   * комбінованого пікера «Запланувати», який тепер живе в `Budgets.tsx` —
+   * фізично іншому React-піддереві з власним `useAssetsState`-інстансом, а
+   * не тим, який тримає ЦЕЙ компонент. Пряме посилання на
+   * `openSubscriptionForm` іншого інстансу неможливе, тож `FinykApp`
+   * інкрементує лічильник при виборі пункту «Підписка» — кожна зміна
+   * значення (не саме монтування) відкриває форму тут.
+   */
+  openSubscriptionSignal?: number;
 }) {
   const state = useAssetsState({
     mono,
@@ -60,6 +82,30 @@ export function PlanningSubscriptions({
     manualDebts,
     receivables,
   } = state;
+
+  // Підказки «схоже на підписку» читають дзеркало з фіксованим вікном, а не
+  // `transactions` (див. `useRecurringHistory`: воно міняло зміст разом зі
+  // станом завантаження, і кандидати зʼявлялись хвилями). Ручні витрати
+  // домішуються так само, як в Огляді (`useOverviewData`), інакше
+  // регулярна готівкова чи імпортована витрата зникала б з «Можливих
+  // підписок», а інсайт Огляду на неї вказував би далі.
+  const recurringBank = useRecurringHistory(mono.fetchRange);
+  const recurringTx = useMemo(
+    () => withManualExpenses(recurringBank, storage.manualExpenses),
+    [recurringBank, storage.manualExpenses],
+  );
+
+  const prevSubscriptionSignal = useRef(openSubscriptionSignal);
+  useEffect(() => {
+    if (
+      openSubscriptionSignal !== undefined &&
+      openSubscriptionSignal !== prevSubscriptionSignal.current
+    ) {
+      openSubscriptionForm();
+    }
+    prevSubscriptionSignal.current = openSubscriptionSignal;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `openSubscriptionForm` closes over stable setters from useAssetsState; re-running on its identity change would refire the signal spuriously.
+  }, [openSubscriptionSignal]);
 
   // Київські частини «сьогодні» — раз на монтування, як в `useOverviewData`.
   const [kyivToday] = useState(() => getKyivDateParts(Date.now()));
@@ -101,12 +147,13 @@ export function PlanningSubscriptions({
       <PlannedFlowsCard plannedFlows={plannedFlows} showBalance={showBalance} />
 
       <RecurringSuggestions
-        transactions={transactions}
+        transactions={recurringTx}
         subscriptions={subscriptions}
         dismissedRecurring={dismissedRecurring}
         excludedTxIds={excludedTxIds}
         onAdd={(candidate) => addSubscriptionFromRecurring?.(candidate)}
         onDismiss={(key) => dismissRecurring?.(key)}
+        defaultOpen={initialOpenRecurring}
       />
 
       <div>
@@ -114,9 +161,11 @@ export function PlanningSubscriptions({
           title={t.subscriptionsTitle}
           iconName="refresh-cw"
           iconTone="finyk"
-          summary={`${subscriptions.length} ${
-            subscriptions.length === 1 ? t.activeOne : t.activeMany
-          }`}
+          summary={`${subscriptions.length} ${pluralUa(subscriptions.length, {
+            one: t.activeOne,
+            few: t.activeFew,
+            many: t.activeMany,
+          })}`}
           open={open.subscriptions}
           onToggle={() =>
             setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))
@@ -124,12 +173,6 @@ export function PlanningSubscriptions({
         />
         {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
       </div>
-
-      <QuickActionButton
-        label={t.addSubscription}
-        tone="finyk"
-        onClick={openSubscriptionForm}
-      />
     </div>
   );
 }

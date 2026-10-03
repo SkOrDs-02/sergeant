@@ -7,7 +7,7 @@ import { z } from "zod";
  * its wire types from the same `z.infer<>` (added in the api-client-agent
  * follow-up stage of this squad run).
  *
- * Spec: `docs/90-work/planning/specs/silpo-mcp-integration.md`. This is the
+ * Spec: `docs/work/specs/silpo-mcp-integration.md`. This is the
  * **walking-skeleton experiment** (§ Експеримент, 2026-08-17) — the live
  * MCP endpoint has not been exercised yet (spike §0 pending), so the DTOs
  * below describe our OWN normalized storage shape (`silpo_receipts` /
@@ -41,15 +41,120 @@ export const SilpoSyncStateSchema = z.object({
   /** `silpo_connection.access_token_expires_at`, ISO-8601 or null. */
   accessTokenExpiresAt: z.string().nullable(),
   /**
-   * `MAX(silpo_receipts.created_at)` for the user — best-effort "last
-   * synced" signal since `silpo_connection` has no dedicated timestamp
-   * column (no webhooks in this integration, sync is on-demand/polling —
-   * see spec § Ізоляція збою). `null` when nothing has been pulled yet.
+   * `silpo_connection.last_sync_at` — момент останнього УСПІШНОГО
+   * `pullAndSyncReceipts`. Не `MAX(created_at)` по чеках: синк, який не
+   * привіз нових чеків, теж є оновленням. `null`, поки жодного успіху не
+   * було.
    */
   lastSyncAt: z.string().nullable(),
+  /**
+   * Момент останнього НЕВДАЛОГО синку, або `null`, якщо зараз усе гаразд
+   * (успіх гасить це поле).
+   *
+   * Існує тому, що без нього поломку не було видно взагалі: `lastSyncAt`
+   * просто переставав рухатись, а це виглядає точно так само, як «людина
+   * не ходила в магазин». Саме так синк простояв два тижні мертвим при
+   * 304 подіях у Sentry (2026-09-14).
+   */
+  /**
+   * `.default(null)`, а не просто `.nullable()` — web і server деплояться
+   * ОКРЕМО, тож клієнт нової версії цілком може питати сервер старої. Без
+   * дефолту `parse` кинув би на відповіді без цих полів, і зламалась би вся
+   * картка налаштувань — через поле, яке лише повідомляє про поломку.
+   * Відсутнє поле читається як «провалів не записано», і це чесно: старий
+   * сервер їх справді не записував.
+   */
+  lastFailedAt: z.string().nullable().default(null),
+  /**
+   * НАШ код помилки останнього провалу (`SILPO_TOOL_ERROR`,
+   * `SILPO_SCHEMA_DRIFT`, `SILPO_REAUTH_REQUIRED`, …) — не текст відповіді
+   * Сільпо: чужий текст може нести поля покупки (Hard Rule #21). Клієнту
+   * потрібен саме код: за ним обирається копія плашки.
+   */
+  lastErrorCode: z.string().nullable().default(null),
   receiptsCount: z.number().int().nonnegative(),
+  /**
+   * `silpo_connection.pantry_auto_import_since` - момент увімкнення
+   * тумблера «Додавати продукти з чеків у комору автоматично»
+   * (`PUT /api/silpo/settings`, migration 151). `null` = тумблер
+   * вимкнений. `.default(null)` з тієї ж деплой-причини, що й
+   * `lastFailedAt` вище - старий сервер це поле ще не надсилає.
+   */
+  pantryAutoImportSince: z.string().nullable().default(null),
 });
 export type SilpoSyncState = z.infer<typeof SilpoSyncStateSchema>;
+
+/**
+ * Body of `PUT /api/silpo/settings` - тумблер автоімпорту в комору (спека
+ * `docs/work/specs/silpo-pantry-auto-import.md` § Рішення дизайну). Один
+ * рядок налаштувань на весь Сільпо-контур (наразі лише цей тумблер), тож
+ * форма body лишає місце для майбутніх полів без ламання контракту.
+ */
+export const SilpoSettingsRequestSchema = z.object({
+  pantryAutoImport: z.boolean(),
+});
+export type SilpoSettingsRequest = z.infer<typeof SilpoSettingsRequestSchema>;
+
+export const SilpoSettingsResponseSchema = z.object({
+  pantryAutoImportSince: z.string().nullable(),
+});
+export type SilpoSettingsResponse = z.infer<typeof SilpoSettingsResponseSchema>;
+
+/**
+ * Body of `POST /api/silpo/receipts/:id/pantry-claim` - атомарне
+ * бронювання позицій чека ПЕРЕД записом у комору (спека § «Позначка живе
+ * на сервері, з атомарним бронюванням»). `mode: "auto"` бронює лише
+ * незаброньовані позиції невідхиленого чека, не старішого за
+ * `pantry_auto_import_since`; `mode: "manual"` бронює повторно (ручний
+ * потік завжди дозволяє «додати ще раз»).
+ */
+export const SilpoPantryClaimModeSchema = z.enum(["auto", "manual"]);
+export type SilpoPantryClaimMode = z.infer<typeof SilpoPantryClaimModeSchema>;
+
+export const SilpoPantryClaimRequestSchema = z.object({
+  itemIds: z.array(z.number().int().positive()).min(1).max(200),
+  mode: SilpoPantryClaimModeSchema,
+});
+export type SilpoPantryClaimRequest = z.infer<
+  typeof SilpoPantryClaimRequestSchema
+>;
+
+/**
+ * Відповідь `pantry-claim` - лише ті `itemIds`, що сервер РЕАЛЬНО
+ * заброньював (`UPDATE ... WHERE pantry_claimed_at IS NULL ... RETURNING
+ * id`). Клієнт пише в комору рівно цей підмножина, не весь запит: другий
+ * пристрій, що прийшов пізніше, отримує тут порожній масив.
+ */
+export const SilpoPantryClaimResponseSchema = z.object({
+  claimedItemIds: z.array(z.number().int().nonnegative()),
+});
+export type SilpoPantryClaimResponse = z.infer<
+  typeof SilpoPantryClaimResponseSchema
+>;
+
+/**
+ * Body of `POST /api/silpo/receipts/:id/pantry-release` - знімає
+ * бронювання. `decline: true` - «Повернути» в тості автоімпорту: додатково
+ * ставить `silpo_receipts.pantry_auto_declined_at`, тож найближчий
+ * автоімпорт цей чек більше не чіпає (ручний лишається доступним).
+ * `decline: false` - сервер кинув помилку між `pantry-claim` і записом у
+ * комору (спека § «Позначка живе на сервері…», порядок кроків): бронювання
+ * знімається без відхилення чека.
+ */
+export const SilpoPantryReleaseRequestSchema = z.object({
+  itemIds: z.array(z.number().int().positive()).min(1).max(200),
+  decline: z.boolean(),
+});
+export type SilpoPantryReleaseRequest = z.infer<
+  typeof SilpoPantryReleaseRequestSchema
+>;
+
+export const SilpoPantryReleaseResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type SilpoPantryReleaseResponse = z.infer<
+  typeof SilpoPantryReleaseResponseSchema
+>;
 
 /**
  * Response of `POST /api/silpo/disconnect`. Mono-pattern: deletes only
@@ -140,6 +245,13 @@ export const SilpoReceiptItemDtoSchema = z.object({
   priceKop: z.number().int(),
   categorySlug: z.string().nullable(),
   barcode: z.string().nullable(),
+  /**
+   * `silpo_receipt_items.pantry_claimed_at` (migration 151), ISO-8601 або
+   * `null`. Не `null` - позицію вже взяли в комору (вручну чи автоматично):
+   * аркуш «З чека» показує «вже в коморі» і за замовчуванням не ставить
+   * галочку.
+   */
+  pantryClaimedAt: z.string().nullable().default(null),
 });
 export type SilpoReceiptItemDto = z.infer<typeof SilpoReceiptItemDtoSchema>;
 
@@ -162,6 +274,21 @@ export const SilpoReceiptSummaryDtoSchema = z.object({
   paymentHint: z.string().nullable(),
   totalKop: z.number().int(),
   transactionId: z.string().nullable(),
+  /**
+   * Скільки позицій цього чека вже заброньовано в коморі
+   * (`COUNT(pantry_claimed_at IS NOT NULL)`, migration 151). `0` - чек ще
+   * ніхто не імпортував. Список чеків показує чип «в коморі» при
+   * `> 0` - розрізнення «частково / повністю» v1 не робить (спека § Поза
+   * скоупом): для нього потрібна категоризація позицій, якої сервер не
+   * знає.
+   */
+  pantryClaimedCount: z.number().int().nonnegative().default(0),
+  /**
+   * `silpo_receipts.pantry_auto_declined_at IS NOT NULL` - людина
+   * натиснула «Повернути» в тості автоімпорту саме для цього чека.
+   * Автоімпорт більше не чіпає його; ручний імпорт лишається доступним.
+   */
+  pantryAutoDeclined: z.boolean().default(false),
 });
 export type SilpoReceiptSummaryDto = z.infer<
   typeof SilpoReceiptSummaryDtoSchema

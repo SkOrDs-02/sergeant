@@ -149,7 +149,7 @@ export function PhotoAnalyzeCard({
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
           <div className="text-style-caption text-muted">
-            ШІ визначить КБЖВ і запропонує уточнення
+            AI визначить КБЖВ і запропонує уточнення
           </div>
         </div>
         {analyzeLabel !== null && (
@@ -159,7 +159,7 @@ export function PhotoAnalyzeCard({
             disabled={busy}
             className={cn(
               "text-style-label shrink-0 px-5 h-10 rounded-xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
             )}
           >
             {busy ? "…" : analyzeLabel}
@@ -286,7 +286,7 @@ export function PhotoAnalyzeCard({
                 value: `${fmtMacro(photoResult.macros?.fat_g)} г`,
               },
               {
-                label: "Вуглев.",
+                label: "Вугл",
                 value: `${fmtMacro(photoResult.macros?.carbs_g)} г`,
               },
             ].map((m) => (
@@ -341,7 +341,7 @@ export function PhotoAnalyzeCard({
                 disabled={busy}
                 className={cn(
                   "text-style-label inline-flex w-full items-center justify-center gap-2 h-12 rounded-2xl shadow-soft",
-                  "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                  "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 )}
               >
@@ -416,7 +416,7 @@ export function PhotoAnalyzeCard({
                     onChange={(e) =>
                       setAnswers((a) => ({ ...a, [q]: e.target.value }))
                     }
-                    placeholder="твоя відповідь…"
+                    placeholder="Твоя відповідь"
                     disabled={busy}
                   />
                 </div>

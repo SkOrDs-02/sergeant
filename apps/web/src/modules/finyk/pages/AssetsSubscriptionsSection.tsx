@@ -91,9 +91,9 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onClick={() => openHubModule("routine", "")}
           className="w-full text-style-caption text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
         >
-          <Icon name="calendar" size={14} aria-hidden />
+          <Icon name="calendar" size="sm" aria-hidden />
           <span>Побачити у календарі Рутини</span>
-          <Icon name="chevron-right" size={14} aria-hidden />
+          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       )}
       {subscriptions.map((sub, i) => (
@@ -128,8 +128,11 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onLinkTransactions={() => setTxPicker({ type: "sub", subId: sub.id })}
         />
       ))}
-      {/* Вхід у форму — quick-action «+ Підписка» угорі сторінки; власна
-          кнопка секції дублювала його (звіт власника 2026-09-03). */}
+      {/* Вхід у форму — пункт «Підписка» комбінованого пікера
+          «Запланувати» внизу сторінки Планування (`Budgets.tsx`, founder-UX
+          audit round 2, F2; до цього — окремий quick-action «+ Підписка»
+          угорі, звіт власника 2026-09-03). Власна кнопка секції дублювала
+          його й тому прибрана. */}
       {showSubForm && (
         <SubscriptionForm
           newSub={newSub}

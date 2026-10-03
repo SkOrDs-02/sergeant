@@ -29,6 +29,51 @@ export function defaultNutritionPrefs(): NutritionPrefs {
     reminderEnabled: false,
     reminderHour: 12,
     waterGoalMl: 2000,
+    adaptiveGoalEnabled: true,
+    adaptiveGoalIntent: "maintenance",
+    adaptiveGoalLastUpdatedAt: null,
+    adaptiveGoalLastReason: null,
+  };
+}
+
+/**
+ * Знімок підстави перерахунку. Усі чотири поля мусять бути СПРАВЖНІМИ
+ * числами — половина знімка гірша за його відсутність: картка показала б
+ * «витрата ≈NaN» замість того, щоб просто змовчати.
+ *
+ * AI-DANGER: перевірка йде на `typeof`, а не через `Number(...)`. Коерція
+ * тут пробивала саме те правило, заради якого функція й існує:
+ * `Number(null)`, `Number("")`, `Number(false)` і `Number([])` — усе це 0,
+ * тож знімок із суцільних `null` ставав валідною «нульовою підставою», а
+ * булеві давали ще й `weightDeltaKg: 1`, тобто вигаданий тренд «+1,0 кг».
+ * Людині показали б упевнене пояснення зміни її цілі, зіткане з нічого.
+ *
+ * Рядки-числа («2180») теж відкидаємо: цей знімок пише наш власний код
+ * через `JSON.stringify`, тож рядок на цьому місці означає не «інший
+ * формат», а пошкоджені дані.
+ */
+function normalizeGoalReason(
+  v: unknown,
+): NutritionPrefs["adaptiveGoalLastReason"] {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const raw = v as Record<string, unknown>;
+  const nums = [
+    "averageIntakeKcal",
+    "weightDeltaKg",
+    "tdeeKcal",
+    "goalKcal",
+  ] as const;
+  const parsed: Record<string, number> = {};
+  for (const key of nums) {
+    const n = raw[key];
+    if (typeof n !== "number" || !Number.isFinite(n)) return null;
+    parsed[key] = n;
+  }
+  return {
+    averageIntakeKcal: parsed["averageIntakeKcal"] as number,
+    weightDeltaKg: parsed["weightDeltaKg"] as number,
+    tdeeKcal: parsed["tdeeKcal"] as number,
+    goalKcal: parsed["goalKcal"] as number,
   };
 }
 
@@ -82,6 +127,22 @@ export function normalizeNutritionPrefs(p: unknown): NutritionPrefs {
           ? Math.min(23, Math.max(0, Math.floor(Number(raw["reminderHour"]))))
           : 12,
       waterGoalMl: waterGoalMl != null ? waterGoalMl : defaults.waterGoalMl,
+      adaptiveGoalEnabled:
+        raw["adaptiveGoalEnabled"] == null
+          ? optionalPositiveNumber(raw["dailyTargetKcal"]) == null
+          : Boolean(raw["adaptiveGoalEnabled"]),
+      adaptiveGoalIntent:
+        raw["adaptiveGoalIntent"] === "cutting" ||
+        raw["adaptiveGoalIntent"] === "bulking"
+          ? raw["adaptiveGoalIntent"]
+          : "maintenance",
+      adaptiveGoalLastUpdatedAt:
+        typeof raw["adaptiveGoalLastUpdatedAt"] === "string"
+          ? raw["adaptiveGoalLastUpdatedAt"]
+          : null,
+      adaptiveGoalLastReason: normalizeGoalReason(
+        raw["adaptiveGoalLastReason"],
+      ),
     };
   } catch {
     return defaultNutritionPrefs();

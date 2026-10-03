@@ -4,9 +4,10 @@
 // title/description/og/canonical (на Vercel статичні файли мають пріоритет
 // над catch-all rewrite) і dist/sitemap.xml. Джерело мети одне з рантаймом:
 // src/lib/routeMeta.json. Запуск: частина `pnpm build`.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveSiteUrl } from "./site-url.mjs";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DIST = path.join(ROOT, "dist");
@@ -15,12 +16,7 @@ const routes = JSON.parse(
   readFileSync(path.join(ROOT, "src/lib/routeMeta.json"), "utf8"),
 );
 
-const site = (
-  process.env.SITE_URL?.trim() ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
-    : "https://sergeant.com.ua")
-).replace(/\/$/, "");
+const site = resolveSiteUrl();
 
 const base = readFileSync(path.join(DIST, "index.html"), "utf8");
 
@@ -39,6 +35,43 @@ const tag = (marker) =>
   new RegExp(
     `<(?:meta|link)(?:(?!/?>)[\\s\\S])*?${marker}(?:(?!/?>)[\\s\\S])*?/?>`,
   );
+
+/**
+ * Preload двох шрифтів першого екрана.
+ *
+ * Навіщо: шрифти імпортуються всередині бандла, тож браузер дізнається про
+ * них лише розібравши JS – замір на проді 2026-09-21 дав старт завантаження
+ * на 1.7 с при повному завантаженні сторінки за 2.5 с. Preload піднімає їх
+ * у початок черги, і текст перестає перемальовуватись системним шрифтом.
+ *
+ * Рівно два файли, не всі девʼять: `manrope-cyrillic` несе основний текст,
+ * `unbounded-cyrillic-800` – заголовок першого екрана. Решта підмножин
+ * (латиниця, латиниця-розширена під ₴) доїжджають своєю чергою і чекати на
+ * них перший кадр не мусить.
+ */
+function preloadLinks() {
+  const dir = path.join(DIST, "assets");
+  const files = readdirSync(dir);
+  const pick = (needle) =>
+    files.find((f) => f.startsWith(needle) && f.endsWith(".woff2"));
+  const critical = [
+    pick("manrope-cyrillic-wght-normal"),
+    pick("unbounded-cyrillic-800-normal"),
+  ].filter(Boolean);
+  if (critical.length !== 2) {
+    throw new Error(
+      `postbuild-seo: не знайдено критичних шрифтів у dist/assets (знайдено ${critical.length} із 2)`,
+    );
+  }
+  return critical
+    .map(
+      (file) =>
+        `<link rel="preload" href="/assets/${file}" as="font" type="font/woff2" crossorigin />`,
+    )
+    .join("\n    ");
+}
+
+const PRELOAD = preloadLinks();
 
 function pageHtml(route, meta) {
   const url = `${site}${route === "/" ? "/" : route}`;
@@ -88,6 +121,15 @@ function pageHtml(route, meta) {
       html = html.replace("</head>", `  ${ogImage}\n    ${twImage}\n  </head>`);
     }
   }
+
+  // На початок `<head>`, а не перед `</head>`: у кінці preload опиняється
+  // після тегів JS і CSS, і шрифт стає в чергу за ними. Замір на проді
+  // 2026-09-21 показав старт на 1170 мс саме через це.
+  html = html.replace(
+    "<head>",
+    `<head>
+    ${PRELOAD}`,
+  );
 
   if (meta.noindex) {
     html = html.replace(

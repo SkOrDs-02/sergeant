@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   envState: {
     SILPO_ENABLED: true,
     PUBLIC_API_BASE_URL: "https://api.example.com",
+    // Читає РЕАЛЬНИЙ `getWebAppOrigin()` — див. коментар біля його імпорту.
+    WEB_APP_URL: "https://app.example.com",
   },
   buildAuthorizationUrl: vi.fn(),
   consumeAuthorizationState: vi.fn(),
@@ -25,11 +27,11 @@ const mocks = vi.hoisted(() => ({
   persistTokens: vi.fn(),
   silpoKeyRing: vi.fn(),
   pullAndSyncReceipts: vi.fn(),
+  diagnoseSilpo: vi.fn(),
   listReceipts: vi.fn(),
   getReceiptDetail: vi.fn(),
   unlinkReceiptFromTransaction: vi.fn(),
   relinkReceiptToTransaction: vi.fn(),
-  getWebAppOrigin: vi.fn(),
   previewCart: vi.fn(),
   applyCart: vi.fn(),
   getCart: vi.fn(),
@@ -44,8 +46,15 @@ vi.mock("../db.js", () => ({ query: mocks.queryMock }));
 
 vi.mock("../env/env.js", () => ({ env: mocks.envState }));
 
-vi.mock("../auth/verificationMail.js", () => ({
-  getWebAppOrigin: mocks.getWebAppOrigin,
+// `../auth/verificationMail.js` НЕ мокаємо навмисно. Він імпортує рівно
+// один модуль — `env/env.js`, уже застабаний вище, — а `getWebAppOrigin()`
+// зводиться до читання `WEB_APP_URL`. Стаб тут нічого не ізолював би, зате
+// ховав би резолв origin-а, на який спирається редирект OAuth-колбека.
+// Знято ще й тому, що гейт `check-vi-mock-cap` ходить лише вниз: щоб
+// додати потрібний мок `diagnose.js`, треба зняти зайвий.
+
+vi.mock("../modules/silpo/diagnose.js", () => ({
+  diagnoseSilpo: mocks.diagnoseSilpo,
 }));
 
 vi.mock("../modules/silpo/oauth.js", () => ({
@@ -105,6 +114,7 @@ vi.mock("../http/index.js", () => ({
 }));
 
 import { createSilpoRouter } from "./silpo.js";
+import { AppError, ExternalServiceError } from "../obs/errors.js";
 
 function appWith(): express.Express {
   const app = express();
@@ -132,7 +142,6 @@ beforeEach(() => {
   mocks.envState.SILPO_ENABLED = true;
   mocks.envState.PUBLIC_API_BASE_URL = "https://api.example.com";
   mocks.queryMock.mockResolvedValue({ rows: [], rowCount: 0 });
-  mocks.getWebAppOrigin.mockReturnValue("https://app.example.com");
 });
 
 afterEach(() => {
@@ -419,7 +428,10 @@ describe("GET /api/silpo/sync-state", () => {
       status: "disconnected",
       accessTokenExpiresAt: null,
       lastSyncAt: null,
+      lastFailedAt: null,
+      lastErrorCode: null,
       receiptsCount: 0,
+      pantryAutoImportSince: null,
     });
   });
 
@@ -431,6 +443,8 @@ describe("GET /api/silpo/sync-state", () => {
             status: "connected",
             access_token_expires_at: "2026-08-17T10:00:00.000Z",
             last_sync_at: "2026-08-17T09:00:00.000Z",
+            last_failed_at: null,
+            last_error_code: null,
           },
         ],
         rowCount: 1,
@@ -449,7 +463,42 @@ describe("GET /api/silpo/sync-state", () => {
       status: "connected",
       accessTokenExpiresAt: "2026-08-17T10:00:00.000Z",
       lastSyncAt: "2026-08-17T09:00:00.000Z",
+      lastFailedAt: null,
+      lastErrorCode: null,
       receiptsCount: 5,
+      pantryAutoImportSince: null,
+    });
+  });
+
+  // Головний кейс усієї правки: доти сервер не мав ЧИМ розповісти про
+  // поломку, і зламаний синк був на вигляд не відрізнити від «нових чеків
+  // не було». Тепер провал приїжджає окремими полями.
+  it("віддає слід останнього провалу, коли синк зламаний", async () => {
+    mocks.queryMock
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            status: "connected",
+            access_token_expires_at: "2026-09-14T10:00:00.000Z",
+            last_sync_at: "2026-08-31T09:00:00.000Z",
+            last_failed_at: "2026-09-14T08:00:00.000Z",
+            last_error_code: "SILPO_TOOL_ERROR",
+          },
+        ],
+        rowCount: 1,
+      })
+      .mockResolvedValueOnce({ rows: [{ count: "12" }], rowCount: 1 });
+
+    const res = await request(appWith())
+      .get("/api/silpo/sync-state")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      status: "connected",
+      lastSyncAt: "2026-08-31T09:00:00.000Z",
+      lastFailedAt: "2026-09-14T08:00:00.000Z",
+      lastErrorCode: "SILPO_TOOL_ERROR",
     });
   });
 });
@@ -478,7 +527,7 @@ describe("POST /api/silpo/sync", () => {
 
   it("propagates a thrown AppError's status/code to the client", async () => {
     mocks.pullAndSyncReceipts.mockRejectedValue(
-      Object.assign(new Error("Сільпо не підключено"), {
+      new AppError("Сільпо не підключено", {
         status: 409,
         code: "SILPO_NOT_CONNECTED",
       }),
@@ -505,6 +554,8 @@ describe("GET /api/silpo/receipts", () => {
           paymentHint: null,
           totalKop: 12345,
           transactionId: null,
+          pantryClaimedCount: 0,
+          pantryAutoDeclined: false,
         },
       ],
       nextCursor: null,
@@ -667,6 +718,8 @@ describe("GET /api/silpo/receipts/:id", () => {
       paymentHint: null,
       totalKop: 500,
       transactionId: "tx-1",
+      pantryClaimedCount: 0,
+      pantryAutoDeclined: false,
       items: [
         {
           id: 1,
@@ -676,6 +729,7 @@ describe("GET /api/silpo/receipts/:id", () => {
           priceKop: 500,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ],
     });
@@ -891,4 +945,126 @@ describe("GET /api/silpo/cart", () => {
     expect(res.status).toBe(502);
     expect(res.body).toMatchObject({ code: "SILPO_UPSTREAM_ERROR" });
   });
+});
+
+/**
+ * Звіт власника 2026-09-13: «пише все одно, що змінили формат». Копія
+ * описує симптом, причина лишалась у лозі. Тепер синк доганяє діагноз і
+ * дописує його в ту саму плашку, яку людина вже бачить.
+ */
+describe("POST /api/silpo/sync — причина в тексті помилки", () => {
+  // Саме `ExternalServiceError`, а не Object.assign-підробка: гард у
+  // `withSyncDiagnosis` перевіряє `instanceof AppError`, і тест мусить
+  // ходити тим самим типом, яким кидає `silpoErrorToAppError`.
+  function driftError(): ExternalServiceError {
+    return new ExternalServiceError(
+      "Сільпо змінили формат відповіді, оновлення тимчасово недоступне",
+      { code: "SILPO_SCHEMA_DRIFT" },
+    );
+  }
+
+  it("дописує вердикт діагностики до помилки дрейфу", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+    mocks.diagnoseSilpo.mockResolvedValue({
+      verdict:
+        "Сільпо прибрали або перейменували тули: silpo_get_my_online_orders.",
+    });
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(502);
+    expect(res.body.code).toBe("SILPO_SCHEMA_DRIFT");
+    expect(res.body.error).toContain("перейменували тули");
+    // Стара загальна копія на діагностованому шляху НЕ зʼявляється: доки
+    // вердикт дописувався до неї, «спрацювало» й «не спрацювало» читались
+    // однаково (звіт власника 2026-09-13).
+    expect(res.body.error).not.toContain("Сільпо змінили формат відповіді");
+  });
+
+  it("не ходить по діагноз, коли синк пройшов", async () => {
+    mocks.pullAndSyncReceipts.mockResolvedValue({
+      status: "connected",
+      offlinePulled: 0,
+      onlinePulled: 0,
+      receiptsInserted: 0,
+      itemsInserted: 0,
+      matched: 0,
+      ambiguous: 0,
+      unmatched: 0,
+    });
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(200);
+    expect(mocks.diagnoseSilpo).not.toHaveBeenCalled();
+  });
+
+  it("не чіпає помилки, які й так пояснюють себе", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(
+      Object.assign(new Error("Сільпо не підключено"), {
+        status: 409,
+        code: "SILPO_NOT_CONNECTED",
+      }),
+    );
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.body.error).toBe("Сільпо не підключено");
+    expect(mocks.diagnoseSilpo).not.toHaveBeenCalled();
+  });
+
+  it("провал діагностики видно в тексті, а не мовчки", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+    mocks.diagnoseSilpo.mockRejectedValue(new Error("boom"));
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(502);
+    expect(res.body.error).toContain("Діагностика впала: boom");
+  });
+
+  it("стан без підключення теж має власний текст", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+    mocks.diagnoseSilpo.mockResolvedValue({ unavailable: "not_connected" });
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.body.error).toContain(
+      "Причину дізнатись не вдалось: not_connected",
+    );
+  });
+
+  // Головне твердження цієї групи: ГОЛА стара копія лишається можливою
+  // рівно в одному випадку — коли цей код не виконався взагалі. Тому
+  // жоден діагностований шлях не має права її віддати.
+  it.each([
+    ["вердикт", { verdict: "Все справне." }, undefined],
+    ["unavailable", { unavailable: "not_connected" }, undefined],
+    ["падіння", undefined, new Error("boom")],
+  ])(
+    "жоден шлях (%s) не віддає голу стару копію",
+    async (_case, resolved, rejected) => {
+      mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+      if (rejected) mocks.diagnoseSilpo.mockRejectedValue(rejected);
+      else mocks.diagnoseSilpo.mockResolvedValue(resolved);
+
+      const res = await request(appWith())
+        .post("/api/silpo/sync")
+        .set("x-test-user-id", "user-1");
+
+      expect(res.body.error).not.toBe(
+        "Сільпо змінили формат відповіді, оновлення тимчасово недоступне",
+      );
+    },
+  );
 });

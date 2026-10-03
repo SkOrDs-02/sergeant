@@ -18,7 +18,7 @@
  * Цей модуль **не перемикає** жоден із тих call-site-ів (W1-CANON-AGG,
  * стадія 1 — additive). Він лише дає канонічну реалізацію, на яку стадія 2
  * буде переводити читачів по одному. Реєстр розбіжностей і статус кожного
- * конвеєра: `docs/02-engineering/architecture/metric-registry.md`.
+ * конвеєра: `docs/engineering/architecture/metric-registry.md`.
  *
  * DOM-free: функції приймають ВЖЕ ПРОЧИТАНІ структури (масиви/мапи) і нічого
  * не читають із `localStorage` / MMKV / SQLite. Читання лишається в
@@ -26,6 +26,7 @@
  */
 
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { findCancelledTxIds } from "../domain/refundMatching.js";
 import {
   manualExpenseToTransaction,
   type ManualExpenseEntry,
@@ -43,6 +44,10 @@ export interface FinykUniverseTx extends SpendingTxLike {
   time?: number;
   categoryId?: string | undefined;
   type?: string | undefined;
+  /** Рахунок і валюта — для парування скасувань (`refundMatching.ts`). */
+  accountId?: string | null | undefined;
+  _accountId?: string | null | undefined;
+  currencyCode?: number | undefined;
 }
 
 /** Запис отримуваного боргу; важливі лише привʼязані транзакції. */
@@ -70,6 +75,11 @@ export interface FinykExcludedTxIdsInput {
    * (`domain/transferMatching.ts`) уже читає всі три джерела. Без цього
    * поля excluded-set бачив лише мапу, тож ручний запис або імпорт із
    * переказною категорією рахувався витратою.
+   *
+   * Із цього ж списку ловляться пари «списання ↔ скасування»
+   * (`findCancellationPairs`, рішення власника 2026-10-01): обидві ноги
+   * пари теж виходять зі статистики. Тому викликач, який хоче правило, має
+   * передавати сюди й БАНКІВСЬКІ транзакції, а не лише ручні.
    */
   transactions?: readonly (FinykUniverseTx | null | undefined)[] | null;
 }
@@ -81,12 +91,13 @@ function isTxLevelTransfer(tx: FinykUniverseTx): boolean {
 
 /**
  * Канонічний excluded-set Фініка: `hidden` + внутрішні перекази +
- * привʼязані до receivables транзакції + явно виключені зі статистики.
+ * привʼязані до receivables транзакції + явно виключені зі статистики +
+ * обидві ноги скасованих платежів («Скасування. …», `refundMatching.ts`).
  *
  * Це та сама четвірка, що її збирає web-адаптер
  * `getFinykExcludedTxIdsFromStorage` (`apps/web/.../lib/lsStats.ts`) — але
  * без читання сховища, тож правило можна перевикористати на mobile і в
- * тестах. Канон: `docs/01-product/model/finyk.md` §5 і §139-149.
+ * тестах. Канон: `docs/product/modules/finyk.md` §5 і §139-149.
  */
 export function buildFinykExcludedTxIds(
   input: FinykExcludedTxIdsInput = {},
@@ -107,6 +118,10 @@ export function buildFinykExcludedTxIds(
   for (const tx of input.transactions ?? []) {
     if (tx?.id && isTxLevelTransfer(tx)) out.add(String(tx.id));
   }
+
+  // «Uklon −189» і «Скасування. Uklon +189» — обидві ноги: ні витрата, ні
+  // дохід. Рішення власника 2026-10-01; правила пари — `refundMatching.ts`.
+  for (const id of findCancelledTxIds(input.transactions)) out.add(id);
 
   for (const r of input.receivables ?? []) {
     for (const id of r?.linkedTxIds ?? []) {

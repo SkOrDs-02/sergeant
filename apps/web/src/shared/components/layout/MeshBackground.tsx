@@ -2,7 +2,7 @@
  * Sergeant Design System — `MeshBackground`
  *
  * @lifecycle experimental (introduced 2026-05 у PR-5; promote to active after PR-8)
- * @see docs/design/redesign-v2/governance.md § Mesh background
+ * @see docs/design/design/redesign-v2/governance.md § Mesh background
  *
  * Base layout layer that renders the page «стіл»: a solid
  * `--module-desk-rgb` (theme.css), the page background shifted into the

@@ -4,7 +4,7 @@ import { ValidationError } from "../../obs/errors.js";
 import { TOOL_SEARCH_TOOL } from "./toolSearch.js";
 
 /**
- * B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — the two runtime
+ * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — the two runtime
  * checks that can't live in the shared Zod schema (server-only `TOOLS`
  * registry + cross-referencing `tool_results`). Structural validation
  * (`.strict()`, discriminated union) is covered separately in

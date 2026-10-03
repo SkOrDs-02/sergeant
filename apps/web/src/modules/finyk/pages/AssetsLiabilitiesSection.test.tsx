@@ -208,10 +208,10 @@ describe("AssetsLiabilitiesSection", () => {
 
     render(wrap(<AssetsLiabilitiesSection state={state} />));
 
-    expect(screen.getByText(/Прив.язати транзакції \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Прив.язати операції \(1\)/)).toBeInTheDocument();
     expect(screen.getByText(/Сплачено/)).toHaveTextContent(/1[\s\S]*250/);
 
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(1\)/));
     expect(state.setTxPicker).toHaveBeenCalledWith({
       id: "credit1",
       type: "monoDebt",
@@ -278,10 +278,11 @@ describe("AssetsLiabilitiesSection", () => {
       emoji: "💳",
       totalAmount: "10000",
       dueDate: "2026-09-01",
+      autoLinkKeyword: "",
     });
     expect(state.setShowDebtForm).toHaveBeenCalledWith(true);
 
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(1\)/));
     expect(state.setTxPicker).toHaveBeenCalledWith({ id: "d1", type: "debt" });
 
     fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));

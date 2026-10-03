@@ -70,7 +70,7 @@ export const mobileBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/work/specs/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`.",
             },
           ],
         },
@@ -217,6 +217,52 @@ export const mobileBlocks = [
     ],
     rules: {
       "react-hooks/set-state-in-effect": "error",
+    },
+  },
+  // Тости помилок мусять нести дію — те саме правило, що вже стоїть на
+  // вебі (`eslint.web.js`), тепер і на мобілці.
+  //
+  // Чому це окремий блок, а не розширення веб-глоба: конфіги розбиті по
+  // поверхнях навмисно (PR-31 phase 2), і allowlist у них РІЗНІ — веб
+  // виправдовує свої винятки веб-причинами (файловий input, який хук не
+  // тримає), мобільні причини свої.
+  //
+  // Дірку знайшов огляд 2026-09-13 (PR-X3): правило жило під
+  // `files: ["apps/web/src/**"]`, тож чотири мобільні `toast.error` не
+  // гейтились нічим. API тостів на обох поверхнях однаковий
+  // (`error(msg, duration?, action?)`), тож ніякої мобільної специфіки
+  // тут немає — була просто незакрита поверхня. Той самий клас, що M1.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/require-toast-error-action": [
+        "error",
+        {
+          allowlist: [
+            // `showUndoToast`: тост про ПРОВАЛЕНИЙ undo. Причина дослівно
+            // та сама, що у веб-дзеркала (`eslint.web.js`, запис для
+            // `apps/web/src/shared/lib/ui/undoToast.tsx`): повторний
+            // виклик `onUndo` після часткового відкату може подвоїти
+            // запис, тож ретрай тут небезпечніший за його відсутність.
+            // Тримати пару синхронною важливо саме тут — розсинхрон цієї
+            // пари огляд уже ловив окремою знахідкою.
+            "apps/mobile/src/lib/showUndoToast.ts",
+            // Помилка голосового вводу. `handleVoiceError` отримує лише
+            // готовий рядок і не володіє мікрофоном, тож «Повторити»
+            // звідси не підняти без проведення колбека крізь компонент —
+            // а кнопка мікрофона й так лишається на екрані, тобто
+            // recovery-шлях видимий без тоста. Та сама логіка, що у
+            // веб-записах про імпорт (`useNutritionLog.ts`).
+            "apps/mobile/src/core/hub/HubChat.tsx",
+          ],
+        },
+      ],
     },
   },
 ];

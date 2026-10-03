@@ -75,6 +75,8 @@ export interface LimitBudget {
    * як `[categoryId]` на read-time, без міграції даних.
    */
   categoryIds?: string[];
+  /** Каталог, у якому створено ліміт. Відсутнє = legacy до розділення tech. */
+  categoryTaxonomyVersion?: 2;
   limit: number;
   /** Calendar window used to reset/aggregate the limit. Legacy records omit it. */
   period?: "month" | "week" | "one_time";
@@ -164,7 +166,9 @@ export interface SelectorOptions {
  * Агрегат витрат/доходів за місяць — основний результат analytics-селекторів.
  */
 export interface AnalyticsResult {
+  /** Гривні, округлені для показу. Похідні числа рахуй з `spentMinor`. */
   spent: number;
+  /** Гривні, округлені для показу. Похідні числа рахуй з `incomeMinor`. */
   income: number;
   balance: number;
   txCount: number;
@@ -172,6 +176,16 @@ export interface AnalyticsResult {
   totalExpense: number;
   /** Публічна назва `income` (контракт селекторів). */
   totalIncome: number;
+  /** Точна сума витрат у копійках, без округлення. */
+  spentMinor: number;
+  /** Точна сума надходжень у копійках, без округлення. */
+  incomeMinor: number;
+}
+
+/** Дельта двох сум у копійках; `pct` лише коли попередня сума є базою. */
+export interface AmountDelta {
+  diffMinor: number;
+  pct: number | null;
 }
 
 /** Alias: результат getMonthlySummary. */
@@ -197,11 +211,14 @@ export interface TrendComparison {
   currentSpent: number;
   prevSpent: number;
   diff: number;
+  /** Відсоток з точних сум, не округлений; `null` за правилом `compareAmounts`. */
   diffPct: number | null;
   currentIncome: number;
   prevIncome: number;
   incomeDiff: number;
   incomeDiffPct: number | null;
+  /** 0 = попереднього місяця немає зовсім, порівнювати нема з чим. */
+  prevTxCount: number;
 }
 
 /**
@@ -216,7 +233,14 @@ export interface PeriodComparison extends TrendComparison {
 
 /** Елемент топу мерчантів. */
 export interface MerchantStat {
+  /** Ключ мерчанта (`normalizeMerchantKey`), за ним зводиться дельта. */
+  key: string;
   name: string;
   count: number;
+  /** Гривні, округлені для показу. */
   total: number;
+  /** Точна сума, копійки. */
+  totalMinor: number;
+  /** Дельта до минулого місяця (Р17); `null`, коли порівнювати нема з чим. */
+  delta?: AmountDelta | null;
 }

@@ -1,9 +1,11 @@
 # Release Policy
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-23 by @claude (note: CI absent since 2026-09-23, "required checks" = local `AGENTS.md § Verification before PR` commands). **Next review:** 2026-12-24.
 > **Status:** Active
 
 Canonical release policy for Sergeant. This document defines when a normal merge is enough and when a change must be treated as an explicit release event with extra coordination.
+
+> **2026-09-30:** CI runs again on GitHub Actions ([ADR-0102](../adr/0102-github-actions-ci-and-autodeploy.md)); 2026-09-23..29 it did not run at all. "Required checks" below are the branch-protection checks on `main` (`check`, `Critical-flow E2E (Playwright)`; `Lighthouse CI` там ще значиться, але з 2026-09-30 біжить лише щотижня, тож його треба зняти з required). The backend deploys automatically after green `check`, critical-flow and both migration jobs.
 
 ## Release classes
 

@@ -32,9 +32,9 @@ const meta: Meta<typeof CelebrationModal> = {
   tags: ["autodocs"],
   render: (args) => <ControlledDemo {...args} />,
   args: {
-    title: "Вітаємо!",
-    description: "Ти зробив щось чудове сьогодні.",
-    actionLabel: "Чудово!",
+    title: "Готово",
+    description: "Прогрес за сьогодні збережено.",
+    actionLabel: "Готово",
     open: false,
     onClose: () => {},
   },
@@ -46,7 +46,7 @@ type Story = StoryObj<typeof CelebrationModal>;
 export const Success: Story = {
   args: {
     type: "success",
-    title: "Транзакцію збережено",
+    title: "Операцію збережено",
     description: "Витрату успішно додано до бюджету.",
   },
 };
@@ -54,12 +54,12 @@ export const Success: Story = {
 export const Achievement: Story = {
   args: {
     type: "achievement",
-    title: "Нове досягнення!",
+    title: "Нове досягнення",
     description: "Ти витрачаєш менше, ніж заробляєш 3 місяці поспіль.",
     theme: "finyk",
     rewards: [
-      { icon: <Icon name="zap" size={20} />, label: "+50 XP" },
-      { icon: <Icon name="award" size={20} />, label: "Бейдж «Ощадливець»" },
+      { icon: <Icon name="zap" size="lg" />, label: "+50 XP" },
+      { icon: <Icon name="award" size="lg" />, label: "Бейдж «Ощадливець»" },
     ],
   },
 };
@@ -67,10 +67,9 @@ export const Achievement: Story = {
 export const Streak: Story = {
   args: {
     type: "streak",
-    title: "14 днів поспіль!",
+    title: "14 днів поспіль",
     value: 14,
     unit: "днів",
-    description: "Так тримати! Продовжуй свою серію.",
     theme: "routine",
   },
 };
@@ -78,23 +77,22 @@ export const Streak: Story = {
 export const LevelUp: Story = {
   args: {
     type: "levelUp",
-    title: "Рівень 5!",
+    title: "Рівень 5",
     value: 5,
     unit: "рівень",
-    description: "Ти стаєш сильнішим!",
     progress: { current: 120, max: 200 },
     theme: "fizruk",
-    rewards: [{ icon: <Icon name="zap" size={20} />, label: "+100 XP" }],
+    rewards: [{ icon: <Icon name="zap" size="lg" />, label: "+100 XP" }],
   },
 };
 
 export const Goal: Story = {
   args: {
     type: "goal",
-    title: "Ціль досягнуто!",
+    title: "Ціль закрито",
     value: "10 000",
     unit: "грн",
-    description: "Ти накопичив на відпустку!",
+    description: "Накопичено на відпустку.",
     theme: "finyk",
   },
 };
@@ -102,8 +100,8 @@ export const Goal: Story = {
 export const Confetti: Story = {
   args: {
     type: "confetti",
-    title: "Грандіозна перемога! 🎉",
-    description: "Закінчив 30-денний челендж без пропусків.",
+    title: "30-денний челендж закрито",
+    description: "Жодного пропуску за весь час.",
     confettiIntensity: "high",
     theme: "nutrition",
   },

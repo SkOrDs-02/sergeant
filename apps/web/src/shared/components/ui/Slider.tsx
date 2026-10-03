@@ -10,7 +10,6 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { clampToDomain } from "@shared/charts/chartMath";
@@ -425,7 +424,10 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
           onPointerUp={onTrackPointerUp}
           onPointerCancel={onTrackPointerUp}
           className={cn(
-            "relative rounded-full bg-line",
+            // Незаповнений трек — `bg-control` (≥3:1, WCAG 1.4.11), як вимкнений
+            // трек `Switch` і межа полів; `bg-line` давав 1.32 / 1.56 (аудит
+            // 2026-10-01, A3; рішення власника: у тому ж follow-up).
+            "relative rounded-full bg-control",
             isVertical
               ? cn(trackThicknessVertical[size], "h-full mx-auto")
               : cn(trackThickness[size], "w-full my-3"),
@@ -452,7 +454,10 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
                   <span
                     key={t}
                     className={cn(
-                      "absolute block rounded-full bg-muted/60",
+                      // Мітки на темнішому `bg-control`: `bg-muted/60` зливався б
+                      // із треком, непрозорий `bg-panel` читається і на ньому,
+                      // і на заливці.
+                      "absolute block rounded-full bg-panel",
                       isVertical
                         ? "w-1 h-1 left-1/2 -translate-x-1/2"
                         : "w-1 h-1 top-1/2 -translate-y-1/2",
@@ -476,9 +481,3 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 );
 
 Slider.displayName = "Slider";
-
-export function SliderTicks({ children }: { children?: ReactNode }) {
-  // Reserved for future composition: a `<SliderTicks>` slot that
-  // consumers can render below the track for custom tick labels.
-  return <>{children}</>;
-}

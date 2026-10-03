@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { PATH_BASED_MODULE_IDS, isPathBasedModulePath } from "./appPaths";
+import {
+  PATH_BASED_MODULE_IDS,
+  isOnboardingPath,
+  isPathBasedModulePath,
+} from "./appPaths";
 
 // Note: tests that cross-check `KNOWN_PATHS` ↔ `isPathBasedModulePath`
 // live in `StandaloneRoutes.test.tsx` (which already imports the full
@@ -65,5 +69,25 @@ describe("isPathBasedModulePath()", () => {
     // is always a string, but the function is defensive about it.
     expect(isPathBasedModulePath(null as unknown as string)).toBe(false);
     expect(isPathBasedModulePath(undefined as unknown as string)).toBe(false);
+  });
+});
+
+describe("isOnboardingPath()", () => {
+  it("впізнає екрани онбордингу: /welcome і /onboarding(/...)", () => {
+    expect(isOnboardingPath("/welcome")).toBe(true);
+    expect(isOnboardingPath("/welcome/")).toBe(true);
+    expect(isOnboardingPath("/onboarding")).toBe(true);
+    expect(isOnboardingPath("/onboarding/")).toBe(true);
+    expect(isOnboardingPath("/onboarding/modules")).toBe(true);
+  });
+
+  it("не чіпає хаб, модулі, вхід і схожі за префіксом шляхи", () => {
+    expect(isOnboardingPath("/")).toBe(false);
+    expect(isOnboardingPath("")).toBe(false);
+    expect(isOnboardingPath("/finyk")).toBe(false);
+    expect(isOnboardingPath("/sign-in")).toBe(false);
+    expect(isOnboardingPath("/welcomes")).toBe(false);
+    expect(isOnboardingPath("/onboarding-x")).toBe(false);
+    expect(isOnboardingPath("/legal/privacy")).toBe(false);
   });
 });

@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import request from "supertest";
 
 // Cold dynamic imports of the full Express app are slow on Windows when this
@@ -88,6 +96,14 @@ vi.mock("./../http/rateLimit.js", async () => {
   };
 });
 
+// Холодний імпорт усього застосунку на слабкій машині триває десятки
+// секунд. Без прогріву перший тест файлу впирався у свої 60 с, а його
+// недороблений імпорт добігав уже під час наступного тесту і з'їдав його
+// `mockResolvedValueOnce`: звідси каскад «випадкових» падінь.
+beforeAll(async () => {
+  await import("./../app.js");
+}, 300_000);
+
 async function loadCreateApp(): Promise<
   (typeof import("./../app.js"))["createApp"]
 > {
@@ -128,7 +144,7 @@ afterEach(() => {
 });
 
 describe("weekly-digest route — auth guard", () => {
-  // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`) — роут витрачає
+  // Знахідка A1 (`docs/work/specs/audits/ai-abuse-2026-08-05.md`) — роут витрачає
   // Anthropic-ключ власника і будує звіт про особисті дані, тож сесія
   // обовʼязкова і перевіряється до ключа.
   it("POST /api/weekly-digest → 401 без сесії", async () => {

@@ -4,7 +4,7 @@
  *
  * «Поповнити комору з покупок Сільпо» — екран підтвердження (Silpo
  * integration трек C, спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * `docs/work/specs/silpo-mcp-integration.md` §
  * «Комора — через готовий ledger»).
  *
  * Флоу: список останніх чеків (дефолт — найсвіжіший) → позиції обраного
@@ -17,16 +17,18 @@
 import { useState } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
+import { failedCopy } from "@shared/i18n/failedCopy";
+import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
-import {
-  useSilpoPantryReplenish,
-  type SilpoReplenishRow,
-} from "../hooks/useSilpoPantryReplenish";
+import { formatDateNumeric, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
+import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
+import { useSilpoPantryReplenish } from "../hooks/useSilpoPantryReplenish";
+import type { SilpoReplenishRow } from "../lib/silpoReplenish";
 import type { PantryItem } from "../lib/pantryTextParser";
 
 export interface SilpoPantryReplenishSheetProps {
@@ -55,7 +57,13 @@ function CollapseHint({
 }) {
   if (!row.genericName) return null;
   return (
-    <div className="flex items-center gap-2 pl-[38px] pr-1 pb-1">
+    // Відступ тримає підказку під назвою позиції, а не під чекбоксом, тож
+    // він СУМУЄ провідні елементи рядка: `px-1` (4) + чекбокс `w-5` (20)
+    // + `gap-2.5` (10) + іконка `size={16}` (16) + той самий gap (10) =
+    // 60px. Міняєш склад або розміри провідних елементів у
+    // `ReceiptItemRow` — перерахуй тут; звʼязок структурний, але
+    // виражений числом, і мовчить, коли розходиться.
+    <div className="flex items-center gap-2 pl-[60px] pr-1 pb-1">
       <span className="min-w-0 text-style-caption text-subtle truncate">
         {row.keepFull ? (
           COPY.keepFullActive
@@ -94,12 +102,34 @@ function ReceiptItemRow({
     <li>
       {/* Native label+checkbox — той самий touch-target-патерн, що вже
           несе `PantryParsePreview` (input min 20px усередині 44px label). */}
-      <label className="flex items-center gap-2.5 px-1 touch-target rounded-xl hover:bg-panelHi/50 transition-colors cursor-pointer">
+      <label
+        className={cn(
+          "flex items-center gap-2.5 px-1 touch-target rounded-xl transition-colors",
+          row.locked ? "cursor-default" : "hover:bg-panelHi/50 cursor-pointer",
+        )}
+      >
         <input
           type="checkbox"
           checked={row.checked}
+          disabled={row.locked}
           onChange={() => onToggle(row.item.id)}
           className="shrink-0 w-5 h-5 accent-nutrition"
+        />
+        {/* Іконка харчової категорії. Тут вона несе інформацію, а не
+            прикрашає: чек — навмисно різнорідний кошик, і сусідні рядки
+            майже завжди з різних категорій. Саме тому її НЕ варто
+            додавати в результати пошуку («молоко» дає двадцять рядків
+            однієї категорії) — там двадцять однакових іконок були б
+            декоративним полем, а не якорем.
+
+            `aria-hidden`: категорія — це здогадка по назві, і озвучувати
+            її скрінрідеру поруч зі справжньою назвою товару означало б
+            видати здогад за факт. */}
+        <Icon
+          name={row.foodIconName as IconName}
+          size="md"
+          className={cn("shrink-0 text-subtle", !row.checked && "opacity-50")}
+          aria-hidden
         />
         {/* `min-w-0` потрібен і на СОБІ, і на кожній дитині: у grid трек
             за замовчуванням `min-width: auto`, тож дитина не стискається
@@ -116,9 +146,13 @@ function ReceiptItemRow({
             {row.item.name}
           </span>
           <span className="min-w-0 text-style-caption text-subtle truncate">
-            {row.matchedName
-              ? `${COPY.matchedPrefix} ${row.matchedName}`
-              : COPY.newPosition}
+            {/* «Вже в коморі» переважає над «Уже є»/«Нова позиція», поки
+                взятий із чека продукт лежить у коморі (`row.locked`). */}
+            {row.locked
+              ? COPY.alreadyInPantry
+              : row.matchedName
+                ? `${COPY.matchedPrefix} ${row.matchedName}`
+                : COPY.newPosition}
           </span>
         </span>
         {qtyLabel && (
@@ -139,6 +173,7 @@ export function SilpoPantryReplenishSheet({
   upsertItem,
   busy,
 }: SilpoPantryReplenishSheetProps) {
+  const toast = useToast();
   const {
     receipts,
     receiptsLoading,
@@ -150,8 +185,13 @@ export function SilpoPantryReplenishSheet({
     toggleItem,
     toggleKeepFull,
     confirm,
+    confirmPending,
     reset,
   } = useSilpoPantryReplenish({ enabled: open, pantryItems, upsertItem });
+  // Підказка про тумблер - лише поки він вимкнений (спека § Рішення
+  // дизайну, «Тумблер»). `enabled: open` - той самий гейт, що й решта
+  // запитів цього аркуша, кеш спільний із `PantrySourceTabs`.
+  const { data: syncState } = useSilpoSyncState({ enabled: open });
 
   // Sheet закрився → локальний вибір скидається, наступне відкриття
   // стартує з чистого стану (той самий render-phase-reset idiom, що
@@ -164,9 +204,18 @@ export function SilpoPantryReplenishSheet({
     setPrevOpen(true);
   }
 
-  function handleConfirm() {
-    const added = confirm();
-    if (added > 0) onClose();
+  async function handleConfirm() {
+    // Бронювання йде на сервер до запису в комору: без мережі воно падає, і
+    // без тосту аркуш просто мовчав би.
+    try {
+      const added = await confirm();
+      if (added > 0) onClose();
+    } catch {
+      toast.error(failedCopy("додати продукти з чека"), undefined, {
+        label: "Повторити",
+        onClick: () => void handleConfirm(),
+      });
+    }
   }
 
   return (
@@ -181,19 +230,20 @@ export function SilpoPantryReplenishSheet({
         <div className="flex gap-2 p-4">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             className="flex-1 h-12"
             onClick={onClose}
-            disabled={busy}
+            disabled={busy || confirmPending}
           >
             {COPY.cancelCta}
           </Button>
           <Button
             type="button"
-            variant="nutrition"
+            variant="solid"
+            tone="nutrition"
             className="flex-1 h-12 shadow-none hover:shadow-none dark:shadow-none"
-            disabled={busy || checkedCount === 0}
-            onClick={handleConfirm}
+            disabled={busy || confirmPending || checkedCount === 0}
+            onClick={() => void handleConfirm()}
           >
             {COPY.confirmCta}
             {checkedCount > 0 ? ` (${checkedCount})` : ""}
@@ -202,6 +252,11 @@ export function SilpoPantryReplenishSheet({
       }
     >
       <div className="grid gap-4">
+        {syncState?.pantryAutoImportSince == null && (
+          <p className="text-style-caption text-subtle">
+            {COPY.autoImportOffHint}
+          </p>
+        )}
         <section>
           <h3 className="text-style-caption text-subtle mb-2">
             {COPY.receiptsHeading}
@@ -212,7 +267,7 @@ export function SilpoPantryReplenishSheet({
             <EmptyState
               size="sm"
               module="nutrition"
-              icon={<Icon name="shopping-cart" size={20} />}
+              icon={<Icon name="shopping-cart" size="lg" />}
               title={COPY.receiptsEmptyTitle}
               description={COPY.receiptsEmptyHint}
             />
@@ -231,12 +286,19 @@ export function SilpoPantryReplenishSheet({
                     )}
                     aria-pressed={active}
                   >
-                    <span className="min-w-0 text-style-label text-text truncate">
+                    <span className="min-w-0 flex items-center gap-2">
                       {/* Фінансовий запис → Kyiv-час (domain invariants):
                           день чека не має плавати за TZ пристрою. */}
-                      {new Date(r.purchasedAt).toLocaleDateString("uk-UA", {
-                        timeZone: "Europe/Kyiv",
-                      })}
+                      <span className="min-w-0 text-style-label text-text truncate">
+                        {formatDateNumeric(new Date(r.purchasedAt), {
+                          timeZone: KYIV_TIME_ZONE,
+                        })}
+                      </span>
+                      {r.pantryClaimedCount > 0 && (
+                        <span className="shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition bg-nutrition/10 rounded-full px-2 py-0.5">
+                          {COPY.inPantryChip}
+                        </span>
+                      )}
                     </span>
                     <span className="shrink-0 tabular-nums text-style-caption text-subtle">
                       <Money amount={r.totalKop / 100} kopecks />

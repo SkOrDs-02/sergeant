@@ -154,6 +154,28 @@ function sourceKey(s: PantryItemSource): string {
 }
 
 /**
+ * Вага одного фасування для прификсовування порції в прийомі їжі —
+ * з НАЙСВІЖІШОГО (за `addedAt`) варіанта, що її знає.
+ *
+ * `packGrams` є лише в покупках, довезених через чек Сільпо
+ * (`useSilpoPantryReplenish.ts`): ручний ввід і синтетичний варіант
+ * наявного залишку (`syntheticSource`) його не несуть. `addedAt: null`
+ * рахується як найстаріший запис — так само, як порядок варіантів у
+ * `mergeSources` (наявні спершу, нові в кінець).
+ */
+export function latestPackGrams(
+  sources: readonly PantryItemSource[] | null | undefined,
+): number | null {
+  if (!Array.isArray(sources) || sources.length === 0) return null;
+  let best: PantryItemSource | null = null;
+  for (const s of sources) {
+    if (s.packGrams == null) continue;
+    if (!best || (s.addedAt ?? "") >= (best.addedAt ?? "")) best = s;
+  }
+  return best?.packGrams ?? null;
+}
+
+/**
  * Списує `deductBase` (у базовій одиниці) з обраного варіанта.
  *
  * `preferredName` — назва варіанта, який обрала людина; `null` означає

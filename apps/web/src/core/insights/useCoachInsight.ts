@@ -6,14 +6,11 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
-import {
-  INCOME_CATEGORIES,
-  MCC_CATEGORIES,
-} from "@sergeant/finyk-domain/constants";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
@@ -23,7 +20,10 @@ import {
   MIN_SIGNAL_MODULES,
 } from "@sergeant/shared";
 import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { averageKcalGoalForDays } from "@sergeant/nutrition-domain";
 import { newAdviceId } from "../observability/adviceTelemetry";
+import { failedCopy } from "@shared/i18n/failedCopy";
+import { finykExpenseCategoryLabel } from "./finykCategoryLabel";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
    prefer-kyiv-time: the "today" / week-window math intentionally reads
@@ -47,39 +47,18 @@ interface CategoryAmount {
 }
 
 /**
- * Ключ бакета категорії → людська назва для коуча.
- *
- * Бакетимо транзакції за `txCategories[id] || String(mcc)`, тобто ключем може
- * бути domain-slug (`food`), сирий MCC (`5411`) або `other`. Сервер
- * (`modules/chat/coach.ts`) друкує `name` у промпт ЯК Є і назв не розкриває,
- * тож без цієї мапи коуч писав користувачу «5411 — 800 грн» замість
- * «Продукти — 800 грн» (user report). Емодзі з лейбла зрізаємо: він іде в
+ * Підпис категорії для коуча: емодзі з лейбла зрізаємо, бо він іде в
  * прозовий текст поради, а не в чип UI.
+ *
+ * Сам підпис дає `finykExpenseCategoryLabel` — той самий резолвер, що й у
+ * тижневого дайджесту. Сервер (`modules/chat/coach.ts`) друкує `name` у
+ * промпт ЯК Є і назв не розкриває, тож ключем бакета мусить бути вже людська
+ * назва, а не `String(mcc)`: на сирому MCC ручні витрати (`mcc: 0`) і банківські
+ * рядки з невідомим MCC, але впізнаваним описом, осідали в «Інше», а
+ * користувацька категорія їхала в промпт слагом.
  */
-const CATEGORY_LABEL_BY_KEY: ReadonlyMap<string, string> = (() => {
-  const map = new Map<string, string>();
-  const clean = (label: string): string =>
-    label.replace(/^[^\p{L}\p{N}]+/u, "").trim() || label;
-  for (const cat of [...MCC_CATEGORIES, ...INCOME_CATEGORIES]) {
-    const label = clean(cat.label);
-    map.set(cat.id, label);
-    for (const mcc of ("mccs" in cat ? cat.mccs : []) as readonly number[]) {
-      map.set(String(mcc), label);
-    }
-  }
-  return map;
-})();
-
-function resolveCategoryLabel(key: string): string {
-  const known = CATEGORY_LABEL_BY_KEY.get(key);
-  if (known) return known;
-  // Невідомий MCC (їх ~50 покритих зі значно більшого ISO-18245 списку) —
-  // цифри користувачу нічого не кажуть, тож зводимо до «Інше». Нечислові
-  // ключі — це користувацькі категорії: їхня назва нам тут недоступна, але
-  // сам slug принаймні писав користувач.
-  if (key === "other" || /^\d+$/.test(key)) return "Інше";
-  return key;
-}
+const cleanCategoryLabel = (label: string): string =>
+  label.replace(/^[^\p{L}\p{N}]+/u, "").trim() || label;
 
 interface FinykSnapshot {
   totalSpent: number;
@@ -158,7 +137,7 @@ function buildDateContext(
 }
 
 function aggregateCurrentSnapshot(): CoachSnapshot {
-  const { txs, excludedTxIds, txSplits, txCategories } =
+  const { txs, excludedTxIds, txSplits, txCategories, customCategories } =
     readFinykStatsContext();
 
   const now = new Date();
@@ -168,24 +147,30 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
   // AI-NOTE: Делегуємо у `calcFinykPeriodAggregate` (`@sergeant/finyk-domain`)
   // замість власного парсингу `finyk_tx_cache`/`finyk_hidden_txs`/
   // `finyk_tx_cats`. Excluded-set єдиний з Overview/Reports
-  // (`getFinykExcludedTxIdsFromStorage`). Категорії бакетимо за raw
-  // `txCategories[id] || mcc`, а назви розкриваємо тут-таки нижче —
-  // coach API їх НЕ розкриває, друкує `name` у промпт як є.
+  // (`getFinykExcludedTxIdsFromStorage`). Категорії бакетимо одразу за
+  // ЛЮДСЬКИМ підписом (спільний з дайджестом `finykExpenseCategoryLabel`) —
+  // coach API назв не розкриває, друкує `name` у промпт як є. Ключ-підпис
+  // сам зливає різні id в одну позицію, окремого кроку злиття не треба.
+  //
+  // Межі тижня для ГРОШЕЙ — київські (рішення власника 2026-10-01,
+  // `METRICS_VERSION` 17): тиждень названо понеділком пристрою (він спільний
+  // зі звичками, їжею й тренуваннями нижче, ADR-0078), а транзакція лягає в
+  // нього за своїм КИЇВСЬКИМ днем — так само, як у дайджесті й «Звітах».
+  // Для київського пристрою це те саме вікно; `end` тепер явний кінець
+  // тижня, а не «усе від понеділка».
+  const moneyWeek = weekWindowByMondayKey(localDateKey(weekStart));
   const aggregate = calcFinykPeriodAggregate(txs, {
-    start: weekStart.getTime(),
+    start: moneyWeek.startMs,
+    end: moneyWeek.endMs,
     excludedTxIds,
     txSplits,
-    categoryKey: (tx) => txCategories[tx.id] || String(tx.mcc ?? "other"),
+    categoryKey: (tx) =>
+      cleanCategoryLabel(
+        finykExpenseCategoryLabel(tx, txCategories, customCategories),
+      ),
   });
 
-  // Спершу розкриваємо назви, ПОТІМ додаємо: різні невідомі MCC схлопуються
-  // в один «Інше», і без цього злиття коуч бачив би кілька однойменних рядків.
-  const byLabel = new Map<string, number>();
-  for (const [key, amount] of Object.entries(aggregate.byCategory)) {
-    const label = resolveCategoryLabel(key);
-    byLabel.set(label, (byLabel.get(label) ?? 0) + amount);
-  }
-  const topCategories = [...byLabel]
+  const topCategories = Object.entries(aggregate.byCategory)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
     .map(([name, amount]) => ({ name, amount }));
@@ -238,17 +223,18 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let nutrition: NutritionSnapshot | null = null;
   try {
-    // Канонічні лог + prefs — SQLite warm cache (`nutrition_log_v1` /
-    // `nutrition_prefs_v1` tombstoned).
+    // Канонічні лог + append-only журнал цілей із SQLite warm cache.
     const log = loadNutritionLog();
-    const prefs = loadNutritionPrefs();
+    const goalPeriods = loadNutritionGoalPeriods();
     let totalKcal = 0,
       totalProtein = 0,
       daysLogged = 0;
+    const weekDays: string[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const dk = localDateKey(d);
+      weekDays.push(dk);
       const meals = Array.isArray(log[dk]?.meals) ? log[dk].meals : [];
       if (meals.length > 0) {
         daysLogged++;
@@ -262,7 +248,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
       nutrition = {
         avgKcal: Math.round(totalKcal / daysLogged),
         avgProtein: Math.round(totalProtein / daysLogged),
-        targetKcal: prefs.dailyTargetKcal ?? 2000,
+        targetKcal: averageKcalGoalForDays(goalPeriods, weekDays) ?? 0,
         daysLogged,
       };
     }
@@ -415,7 +401,26 @@ interface UseCoachInsightResult {
   refresh: () => Promise<unknown>;
 }
 
-export function useCoachInsight(): UseCoachInsightResult {
+export interface UseCoachInsightOptions {
+  /**
+   * Чи дозволено робити мережевий запит/фактично генерувати пораду.
+   *
+   * `false`, коли UI, що показує пораду, не рендериться (Чистий режим,
+   * вимкнена секція «Інсайти» в налаштуваннях-дашборда, ще немає першого
+   * реального запису) — саме так «Чистий режим» перестає мовчки палити
+   * денну AI-квоту (аудит PR-A1, канон hub-coach §6.2). За замовчуванням
+   * `true` — існуючі виклики без опцій поведінки не міняють.
+   *
+   * Стандартна семантика React Query `enabled`: перехід `false → true`
+   * (блок став видимим) сам тригерить фетч, окремого коду не треба.
+   */
+  enabled?: boolean;
+}
+
+export function useCoachInsight(
+  options?: UseCoachInsightOptions,
+): UseCoachInsightResult {
+  const enabled = options?.enabled ?? true;
   const queryClient = useQueryClient();
   const todayKey = localDateKey();
   const queryKey = coachInsightQueryKey(todayKey);
@@ -423,6 +428,7 @@ export function useCoachInsight(): UseCoachInsightResult {
   const query = useQuery({
     queryKey,
     queryFn: fetchCoachInsight,
+    enabled,
     // Не ретраїмо 429: ліміт (`api:coach` rate-limit + денна AI-квота)
     // має годинне/добове вікно, тож негайний повтор гарантовано впаде
     // знову, спалить ще один хіт у спільному `api:coach` бакеті й затягне
@@ -521,8 +527,8 @@ export function useCoachInsight(): UseCoachInsightResult {
     loading: query.isPending || query.isFetching,
     error: query.error
       ? isApiError(query.error) && query.error.kind === "http"
-        ? query.error.serverMessage || "Помилка генерації інсайту"
-        : (query.error as Error).message || "Помилка завантаження"
+        ? query.error.serverMessage || failedCopy("скласти пораду")
+        : failedCopy("завантажити пораду")
       : null,
     refresh,
   };

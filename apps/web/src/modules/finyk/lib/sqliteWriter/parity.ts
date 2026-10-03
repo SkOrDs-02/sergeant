@@ -5,7 +5,7 @@ import type { FinykDualWriteState } from "./diff.js";
 /**
  * Parity probe for the Finyk SQLite dual-write layer.
  *
- * Stage 8 §3 of `docs/planning/storage-roadmap.md` defines a
+ * Stage 8 §3 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` defines a
  * `<module>.sqlite.dualwrite.parity` decision-gate metric: whenever
  * the LS-derived state and the SQLite-derived state should be
  * identical (which is the steady-state invariant once the dual-write

@@ -57,7 +57,7 @@ export function StatTile({
     <>
       <div className="flex items-center gap-2 text-style-caption text-muted">
         <span className={cn("inline-flex", toneClass(iconTone))} aria-hidden>
-          <Icon name={iconName} size={14} />
+          <Icon name={iconName} size="sm" />
         </span>
         <span className="truncate">{label}</span>
       </div>

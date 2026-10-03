@@ -209,3 +209,15 @@ describe("multi-category limits", () => {
     ]);
   });
 });
+
+// Р7 спеки аналітики v2: факт лишається точним, округлює лише показ, тож
+// картка може сказати «Перевищено на 307,50 ₴», а не 308.
+describe("точність факту", () => {
+  it("не округлює копійки: 247,50 + 560 = 807,50", () => {
+    const txs = [manual("m1", 247.5, "groceries"), manual("m2", 560, "food")];
+    expect(calcLimitCategorySpent(txs, "food")).toBe(807.5);
+    expect(calcLimitCategoryBreakdown(txs, ["food"])).toEqual([
+      { categoryId: "food", spent: 807.5 },
+    ]);
+  });
+});

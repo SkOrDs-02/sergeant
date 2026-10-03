@@ -79,6 +79,7 @@ vi.mock("../../modules/finyk/utils", () => ({
 }));
 
 import { billingApi, monoWebhookApi, silpoApi } from "@shared/api";
+import { accessFixture } from "../../test/helpers/billingAccess";
 import { FinykSection } from "./FinykSection";
 
 const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
@@ -119,6 +120,7 @@ describe("FinykSection", () => {
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
       },
+      access: accessFixture("pro"),
     });
     mockedSilpoSyncState.mockResolvedValue({
       status: "disconnected",
@@ -166,7 +168,7 @@ describe("FinykSection", () => {
     renderWithProviders();
 
     await waitFor(() => {
-      expect(screen.getByText("Webhook активний")).toBeTruthy();
+      expect(screen.getByText("Синхронізація активна")).toBeTruthy();
     });
     expect(screen.getByText(/3 рахунків/)).toBeTruthy();
     expect(screen.getByText("Синхронізувати історію")).toBeTruthy();
@@ -237,7 +239,7 @@ describe("FinykSection", () => {
   // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
   // без `module="finyk"` іконка секції рендериться нейтрально-сірою.
   // Перевіряємо, що бейдж іконки несе саме finyk-акцент.
-  it("renders the section icon badge with the finyk module accent", async () => {
+  it("renders the section glyph with the finyk module accent (без тонованого квадрата, огляд 2026-09-04)", async () => {
     mockedSyncState.mockResolvedValue({
       status: "disconnected",
       webhookActive: false,
@@ -249,10 +251,25 @@ describe("FinykSection", () => {
     await waitFor(() => {
       expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
     });
-    const badge = container.querySelector("svg")?.closest("span");
+    const badge = container.querySelector(`.text-${"finyk"}`);
     expect(badge).not.toBeNull();
-    expect(badge?.className).toContain("bg-finyk-soft");
-    expect(badge?.className).toContain("border-finyk-soft-border");
-    expect(badge?.className).toContain("text-finyk");
+  });
+
+  // Правила «Завжди так для цього магазину» (рішення власника 2026-10-01):
+  // керування живе тут, у Налаштуваннях → Фінік.
+  it("показує підрозділ «Правила категорій» з порожнім станом, поки правил нема", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    renderWithProviders();
+    expect(screen.getByText("Правила категорій")).toBeInTheDocument();
+    expect(screen.getByText("Правил поки немає")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+    });
   });
 });

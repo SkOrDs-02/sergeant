@@ -1,6 +1,6 @@
 # PR Ledger — canonical reverse PR ↔ doc index
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-17 by @claude (whitelist synced with `update-pr-backlinks.mjs` — audits added 2026-09-15). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Bidirectional companion to [`docs/open-work.md`](../../open-work.md). Open-work scans canonical docs for `#NNNN` mentions (forward link: doc → PR). This ledger goes the other way: merged PRs → docs they touched.
@@ -17,7 +17,7 @@ Bidirectional companion to [`docs/open-work.md`](../../open-work.md). Open-work 
 
 See [ADR-0061](../adr/0061-pr-backlink-storage.md) for the full rationale.
 
-Short version: the JSON ledger is canonical (machine-readable, drives the Phase 1 knowledge graph's `touched-by` edges). The in-doc block is a UX affordance — readers of a single ADR or initiative see recent touches without leaving the doc.
+Short version: the JSON ledger is canonical (machine-readable; historically it also drove the Phase 1 knowledge graph's `touched-by` edges — that graph was retired with [ADR-0081](../adr/0081-repository-simplification.md), the ledger stays as the reverse index and feeds `pnpm snapshot`). The in-doc block is a UX affordance — readers of a single ADR or initiative see recent touches without leaving the doc.
 
 ## Canonical doc whitelist
 
@@ -27,14 +27,17 @@ Only these path patterns get backlinks:
 - `docs/work/specs/initiatives/*.md` (excluding `archive/`, `follow-ups.md`, `README.md`)
 - `docs/start/instructions/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
 - `docs/governance/governance/rules/*.md` (excluding `README.md`)
+- `docs/work/specs/audits/*.md` (excluding `README.md`) — added 2026-09-15; rationale in [Rule #26 § Чому аудити повернули в скоуп](../governance/rules/26-pr-ledger-update-on-merge.md)
 
-Other doc directories (`docs/work/specs/audits/`, `docs/engineering/architecture/`, `docs/work/specs/launch/`, etc.) intentionally don't receive backlinks — they're either snapshot-natured (audits) or already covered by drift-detectors (auto-generated).
+The list above mirrors `CANONICAL_DOC_ROOTS` in [`scripts/ci/update-pr-backlinks.mjs`](../../../scripts/ci/update-pr-backlinks.mjs) — the script is the source of truth; when it changes, update this list and Rule #26 in the same PR.
+
+Other doc directories (`docs/engineering/architecture/`, `docs/work/specs/launch/`, etc.) intentionally don't receive backlinks — they're already covered by drift-detectors (auto-generated). Audits were excluded on the same "snapshot-natured" argument until 2026-09-15; practice disproved it.
 
 ## CI gate
 
 `pnpm docs:check-pr-ledger` validates:
 
-- `index.json` matches the JSON schema at [`docs/governance/governance/schemas/pr-ledger.schema.json`](../governance/schemas/pr-ledger.schema.json).
+- `index.json` has the shape described by [`docs/governance/governance/schemas/pr-ledger.schema.json`](../governance/schemas/pr-ledger.schema.json) — checked by the script's own `validateLedger()` (`version`, `generated_at`, `prs[].number/title/merged_at/author/touchedDocs`), not by `ajv` against the schema file; the schema is documentation, and the two can drift.
 - Every in-doc `PR-BACKLINKS-START / END` block reflects the latest 5 entries in `index.json` that touch that doc.
 - No canonical doc has an orphan block (block exists but ledger has no matching entries).
 

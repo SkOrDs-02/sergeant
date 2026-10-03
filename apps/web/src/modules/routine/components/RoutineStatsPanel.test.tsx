@@ -19,8 +19,18 @@ const FIXED_NOW = new Date("2026-07-10T09:00:00Z");
 // Stub heavy children to lightweight markers. The range-grid stub echoes its
 // window so the tests can assert which slice the panel asked for.
 vi.mock("./HabitHeatmap", () => ({
-  HabitHeatmap: ({ historyWeeks }: { historyWeeks?: number }) => (
-    <div data-testid="habit-heatmap" data-history-weeks={historyWeeks} />
+  HabitHeatmap: ({
+    historyWeeks,
+    skips,
+  }: {
+    historyWeeks?: number;
+    skips?: Record<string, unknown>;
+  }) => (
+    <div
+      data-testid="habit-heatmap"
+      data-history-weeks={historyWeeks}
+      data-skip-keys={Object.keys(skips || {}).join(",")}
+    />
   ),
 }));
 vi.mock("./HabitRangeGrid", () => ({
@@ -75,16 +85,44 @@ describe("RoutineStatsPanel", () => {
     expect(panel).toHaveAttribute("aria-labelledby", "routine-tab-stats");
   });
 
-  it("shows the current streak value", () => {
-    render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={7} />);
-    // The Stat renders "7" as a string in a cell labelled "Серія сьогодні"
-    expect(screen.getByText("7")).toBeInTheDocument();
-    expect(screen.getByText("Серія сьогодні")).toBeInTheDocument();
+  // Знахідка PR-R10: обидва числа тут — крос-звичкові МАКСИМУМИ, а підписи
+  // казали «Серія сьогодні» й «Макс. серія», тобто людина читала агрегат як
+  // власну суцільну серію. Ці ж два тести її й закріплювали: вони пінували
+  // рівно ті підписи, що вводили в оману.
+  //
+  // Слово «найкраща» взяте з `RoutineCalendarHero`, де ту саму величину вже
+  // виправили раніше — дві поверхні мусять називати її однаково.
+  it("показує тире замість «0%» і «0/0», коли в зрізі нічого не заплановано", () => {
+    // Відсотка від нуля не буває: «0%» при «0/0» подає порожній зріз як
+    // провал (критика екранів 2026-09-23).
+    completionRateForRange.mockReturnValue({
+      completed: 0,
+      scheduled: 0,
+      rate: 0,
+    });
+    try {
+      render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={0} />);
+      expect(screen.queryByText("0/0")).toBeNull();
+      expect(screen.queryByText(/^0\s*%$/)).toBeNull();
+      expect(screen.getByText("–")).toBeInTheDocument();
+    } finally {
+      completionRateForRange.mockReturnValue({
+        completed: 3,
+        scheduled: 7,
+        rate: 0.43,
+      });
+    }
   });
 
-  it("renders the max-streak stat label", () => {
-    render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={0} />);
-    expect(screen.getByText("Макс. серія")).toBeInTheDocument();
+  it("labels the streak row as a best-across-habits aggregate, not a personal run", () => {
+    render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={7} />);
+    expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByText("Найкраща серія:")).toBeInTheDocument();
+    expect(screen.getByText("сьогодні")).toBeInTheDocument();
+    expect(screen.getByText("за весь час")).toBeInTheDocument();
+    // Старі підписи не повертаються непоміченими.
+    expect(screen.queryByText("Серія сьогодні")).not.toBeInTheDocument();
+    expect(screen.queryByText("Макс. серія")).not.toBeInTheDocument();
   });
 
   it("renders every range chip and defaults to Місяць", () => {
@@ -142,6 +180,24 @@ describe("RoutineStatsPanel", () => {
     expect(screen.getByTestId("habit-heatmap")).toHaveAttribute(
       "data-history-weeks",
       "53",
+    );
+  });
+
+  /**
+   * PR-R8 (аудит 2026-09): `HabitHeatmap` не отримував `routine.skips`
+   * узагалі, тож перемикання Місяць → Квартал безшумно втрачало розрізнення
+   * «не зміг» від мовчазного провалу, яке `HabitRangeGrid` уже показує.
+   */
+  it("wires routine.skips into HabitHeatmap on long ranges", () => {
+    const routine = makeRoutine({
+      skips: { h1: { "2026-07-01": { reason: "sick", at: "2026-07-01" } } },
+    });
+    render(<RoutineStatsPanel routine={routine} currentStreak={0} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Квартал" }));
+    expect(screen.getByTestId("habit-heatmap")).toHaveAttribute(
+      "data-skip-keys",
+      "h1",
     );
   });
 

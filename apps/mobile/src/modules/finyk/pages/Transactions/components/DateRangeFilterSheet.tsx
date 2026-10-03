@@ -35,7 +35,7 @@ export function DateRangeFilterSheet({
       open={open}
       onClose={onClose}
       title="Період"
-      description="YYYY-MM-DD. Залиште поле порожнім, щоб не обмежувати."
+      description="YYYY-MM-DD. Залиш поле порожнім, щоб не обмежувати."
       footer={
         <View className="flex-row gap-3">
           <Pressable

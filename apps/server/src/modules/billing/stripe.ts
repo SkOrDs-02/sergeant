@@ -3,7 +3,7 @@ import type {
   BillingCheckoutResponse,
   BillingPlan,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { BillingConfigurationError } from "./provider.js";
@@ -59,6 +59,7 @@ interface BillingRow {
   plan: BillingPlan;
   status: string;
   current_period_end: Date | string | null;
+  cancel_at_period_end: boolean;
 }
 
 /**
@@ -108,7 +109,9 @@ function getStripeMode(secretKey: string): "test" | "live" {
   return secretKey.startsWith("sk_live_") ? "live" : "test";
 }
 
-function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
+function serializeBillingRow(
+  row: BillingRow | null,
+): BillingSubscriptionStatus {
   return {
     subscription: row
       ? {
@@ -118,6 +121,7 @@ function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
           status: row.status,
           active: ACTIVE_STATUSES.has(row.status),
           currentPeriodEnd: isoOrNull(row.current_period_end),
+          cancelAtPeriodEnd: row.cancel_at_period_end === true,
         }
       : {
           id: null,
@@ -126,6 +130,7 @@ function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
           status: null,
           active: false,
           currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
         },
   };
 }
@@ -276,9 +281,9 @@ export async function createCustomerPortalSession({
 export async function getSubscriptionStatus(
   pool: Pool,
   userId: string,
-): Promise<BillingStatusResponse> {
+): Promise<BillingSubscriptionStatus> {
   const { rows } = await pool.query<BillingRow>(
-    `SELECT id, provider, plan, status, current_period_end
+    `SELECT id, provider, plan, status, current_period_end, cancel_at_period_end
        FROM subscriptions
       WHERE user_id = $1
       ORDER BY

@@ -16,6 +16,18 @@ vi.mock("@shared/api", () => ({
   transcribeApi: { send: (...args: unknown[]) => send(...args) },
 }));
 
+// A3, поставка 2: ця сюїта про конвеєр запис → вивантаження → розбір
+// відповіді, і живе без `AuthProvider`. Справжній pre-gate чесно
+// відповів би «немає акаунта» і запис не почався б узагалі. Сам гейт
+// покрито окремо — `useGroqVoiceInput.accessGate.test.ts`.
+vi.mock("../../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../../core/access/useCanUse")
+  >("../../../../core/access/useCanUse");
+  return { ...actual, useCanUse: () => () => null };
+});
+
+import { HEALTH_CONSENT_REQUIRED_MESSAGE } from "@sergeant/shared";
 import { useGroqVoiceInput } from "./useGroqVoiceInput";
 
 let clock = 1_000_000;
@@ -124,7 +136,12 @@ describe("useGroqVoiceInput", () => {
     );
   });
 
-  it("maps provider_unavailable to a fallback callback + error", async () => {
+  // Раніше хук робив ОБИДВА: кликав хендлер І сам писав «перемикаюсь на
+  // браузерне розпізнавання». Формулювати за викликача він не може — на
+  // iOS standalone-PWA перемикатись нема на що, і та фраза була неправдою
+  // (розбір — у `VoiceMicButton.providerFallback.test.tsx`). Тепер текст
+  // належить тому, хто знає про наявність фолбека.
+  it("provider_unavailable віддає рішення викликачу, не озвучуючи його сам", async () => {
     send.mockResolvedValue({ outcome: "provider_unavailable" });
     const onProviderUnavailable = vi.fn();
     const onError = vi.fn();
@@ -133,7 +150,18 @@ describe("useGroqVoiceInput", () => {
     );
     await recordAndStop(result);
     await waitFor(() => expect(onProviderUnavailable).toHaveBeenCalled());
-    expect(onError).toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  // Але мовчки ковтнути 503 теж не можна: хто хендлера не дав, мусить
+  // отримати причину — інакше тап по мікрофону нічим не закінчується.
+  it("без хендлера сам пояснює 503 — і нічого не обіцяє", async () => {
+    send.mockResolvedValue({ outcome: "provider_unavailable" });
+    const onError = vi.fn();
+    const { result } = renderHook(() => useGroqVoiceInput({ onError }));
+    await recordAndStop(result);
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(String(onError.mock.calls[0]?.[0] ?? "")).not.toMatch(/перемикаю/i);
   });
 
   it("maps rate_limited / payload_too_large / unauthorized outcomes to errors", async () => {
@@ -153,6 +181,42 @@ describe("useGroqVoiceInput", () => {
       onError.mockClear();
       unmount();
     }
+  });
+
+  it("передає module у query транскрипції", async () => {
+    send.mockResolvedValue({ outcome: "ok", data: { text: "гречка" } });
+    const { result } = renderHook(() =>
+      useGroqVoiceInput({ module: "nutrition", onResult: vi.fn() }),
+    );
+    await recordAndStop(result);
+    await waitFor(() => expect(send).toHaveBeenCalled());
+    expect(send.mock.calls[0]?.[1]).toMatchObject({ module: "nutrition" });
+  });
+
+  it("без module тег у query не йде (старий контракт)", async () => {
+    send.mockResolvedValue({ outcome: "ok", data: { text: "x" } });
+    const { result } = renderHook(() =>
+      useGroqVoiceInput({ onResult: vi.fn() }),
+    );
+    await recordAndStop(result);
+    await waitFor(() => expect(send).toHaveBeenCalled());
+    expect(send.mock.calls[0]?.[1]).not.toHaveProperty("module");
+  });
+
+  it("health_consent_required показує текст-дію про згоду", async () => {
+    send.mockResolvedValue({
+      outcome: "health_consent_required",
+      status: 403,
+      message: HEALTH_CONSENT_REQUIRED_MESSAGE,
+    });
+    const onError = vi.fn();
+    const { result } = renderHook(() =>
+      useGroqVoiceInput({ module: "fizruk", onError }),
+    );
+    await recordAndStop(result);
+    await waitFor(() =>
+      expect(onError).toHaveBeenCalledWith(HEALTH_CONSENT_REQUIRED_MESSAGE),
+    );
   });
 
   it("rejects a too-short recording before uploading", async () => {

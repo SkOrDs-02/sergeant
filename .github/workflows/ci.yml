@@ -1,6 +1,6 @@
 name: CI
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -10,10 +10,20 @@ name: CI
 # Actions minutes and queue latency for a solo maintainer. PR branches
 # now run only via pull_request (merge-ref, what actually lands); pushes
 # build only on main.
+# З 2026-09-30 (ADR-0102) на PR і push у main біжать лише джоби, потрібні
+# для мержу й автодеплою: commitlint, check, critical-flow, migration-lint,
+# migration-down-drill, secret-scan і deploy-api. Решта (бюджети, покриття,
+# a11y, mobile UI audit, лендінг, Knip, аудит залежностей, інтеграційні й
+# eval-тести, actionlint, TODO freshness) - щопонеділка за розкладом і
+# вручну (workflow_dispatch). Причина - черга GitHub Actions: повний набір
+# на кожен push забивав ліміт паралельних джоб.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
 
 permissions:
   contents: read
@@ -30,7 +40,9 @@ permissions:
 # кроком ПІСЛЯ «Format, lint, test, build»: при червоному попередньому кроці
 # він просто не виконувався (див. AGENTS.md § Performance budgets, ратчет
 # 2026-08-18). Урок спільний: гейт, який не добігає до кінця, не є гейтом,
-# і мовчить він саме тоді, коли борг росте.
+# і мовчить він саме тоді, коли борг росте. Той перший випадок повторився
+# 2026-09-11 і лікований структурно — обидва бандл-гейти живуть тепер у
+# власній джобі `bundle-budgets` (див. коментар там).
 #
 # Ціна — послідовні прогони на `main` замість витіснення. Для solo-мейнтейнера
 # це прийнятно: мержі в `main` рідші за пуші в PR-гілки, а економія хвилин,
@@ -124,6 +136,62 @@ jobs:
         # scripts/__tests__/ci-dedupe-gate.test.mjs.
         run: node --test scripts/__tests__/ci-dedupe-gate.test.mjs
 
+      - name: CI bundle-budget gate shape regression test
+        # Той самий прийом, що й рядком вище, але для бандл-гейтів. Вони
+        # мовчали двічі (серпень і 2026-09-11) через ОДНУ причину — стояли
+        # кроками в `check` після «Format, lint, test, build». Тест стереже
+        # саме цю властивість: гейти в окремій джобі, eager має `always()`,
+        # жоден не fail-open. Живе в `check`, а не в `bundle-budgets`,
+        # навмисно: він парсить YAML і не потребує білда.
+        run: node --test scripts/__tests__/ci-bundle-budget-gates.test.mjs
+
+      - name: CI TODO-freshness gate shape regression test
+        # Третій випадок того самого класу (2026-09-16): гейт свіжості TODO
+        # стояв кроком у `check` після «Format, lint, test, build» і мовчав,
+        # поки той був червоний. Тест стереже: гейт у власній джобі без
+        # `needs:`, не fail-open, і не повернувся в `check`.
+        run: node --test scripts/__tests__/ci-todo-freshness-gate.test.mjs
+
+      - name: Script unit tests (whole glob, not a hand-kept list)
+        # ГЛОБ, а не перелік — і це вся суть кроку.
+        #
+        # Досі CI викликав тести `scripts/**` адресно, файл за файлом, тож
+        # тест, якого немає в жодному переліку, не виконував НІХТО. Аудит
+        # осиротілого коду вже називав це «написані й покинуті тести, що
+        # створюють ілюзію покриття» (2026-08-05, ~30 файлів). Перший
+        # прогін усього глоба (2026-09-17) дав п'ять падінь на чистому
+        # `main`, і жодне з них не було свіжим:
+        #   - `ai-memory-backfill.test.mjs` імпортував скрипт, видалений
+        #     PR #928 ще 2026-08-29 — тест-сирота;
+        #   - два в `check-harness-version-freshness` писали фікстуру в
+        #     `docs/work/planning/`, хоча скрипт давно читає
+        #     `docs/work/specs/planning/` — тобто перевіряли неіснуючий файл;
+        #   - `check-kvstore-deep-imports` вимагав виклику через
+        #     `pnpm lint:…`, хоча ланцюжок свідомо перевели на прямий
+        #     `node …` заради 22 с;
+        #   - `eval-rag-recall` чекав англомовну заглушку «not implemented»,
+        #     якої немає відколи живий режим переїхав у TypeScript.
+        #
+        # Тобто всі п'ять — тести, що відстали від коду на тижні й місяці,
+        # і мовчали рівно тому, що їх не запускали. Перелік замість глоба
+        # і є тим самим «мовчазним гейтом», яким у цьому файлі вже двічі
+        # обґрунтовано виніс бандл-бюджетів в окрему джобу.
+        #
+        # Підкаталоги (`scripts/ci/`, `scripts/docs/`, `scripts/posthog/`,
+        # `scripts/verification/`) лишаються на своїх адресних викликах у
+        # ланцюжку `pnpm lint` — цей крок закриває саме кореневий
+        # `scripts/__tests__`, де діра й була.
+        run: node --test "scripts/__tests__/*.test.mjs"
+
+      - name: Deploy-verification gate shape regression test
+        # Той самий прийом для автодеплою (`deploy-api.yml` + джоба
+        # `deploy-api` нижче). Стереже дві речі: деплой стоїть ПІСЛЯ
+        # обовʼязкових джоб, і крок перевірки дочікується РЕЗУЛЬТАТУ та
+        # звіряє коміт. Coolify відповідає 2xx на «прийнято», а потім може
+        # тихо відкотитись на старий контейнер (2026-09-14). Живе тут, бо
+        # тест парсить YAML і не потребує секретів, тож біжить на кожному PR.
+        run: node --test scripts/__tests__/ci-deploy-verify-gate.test.mjs
+
       - name: Governance sync (Hard Rules + Status badges + dangling refs)
         run: pnpm lint:governance-sync
 
@@ -208,13 +276,20 @@ jobs:
         # file as void.
         run: bash scripts/check-security-txt-expiry.sh
 
-      - name: Lifecycle marker coverage (Hard Rule #10 — non-blocking)
-        # Theme 4 (consolidated audit 2026-05-13): checks that apps/web/src/**/*.{ts,tsx}
-        # files carry a lifecycle marker (/** @status Active */ or equivalent).
-        # Non-blocking during burn-down (exits 0 even with violations); promoted
-        # to --fail-on-violations once coverage reaches 100%.
-        # See docs/work/specs/audits/archive/2026-05-13-consolidated-page-audit.md § Theme 4 and
-        # docs/governance/governance/rules/10-lifecycle-markers.md.
+      - name: Lifecycle marker coverage (Hard Rule #10 — інформаційно)
+        # Рахує, скільки файлів `apps/web/src/**/*.{ts,tsx}` несуть ЯВНИЙ
+        # lifecycle-маркер. Це спостереження, не список порушень: правило #10
+        # прямо каже, що файл без маркера вважається `Active`, тобто це
+        # дозволений стан; маркер обов'язковий лише для НЕ-Active статусів.
+        #
+        # Звірка 2026-09-19 (PR-3 спеки docs-code-drift-2026-09-19): тут доти
+        # стояло «promoted to --fail-on-violations once coverage reaches 100%»,
+        # а скрипт друкував «Burn-down target: 2026-Q3». Ані ціль, ані дата не
+        # значились у жодному канонічному документі — ні в правилі, ні в
+        # hard-rules.json. Промоутити гейт можна лише ПІСЛЯ зміни самого
+        # правила, інакше він валитиме код, який правилу відповідає.
+        #
+        # Канон: docs/governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
 
@@ -222,8 +297,15 @@ jobs:
         # Tee full output so the node-import gate below can grep Vite
         # browser-externalization warnings from the @sergeant/web build
         # phase without a duplicate `web-build-smoke` job (audit §11.1).
-        # `check:ci` skips @sergeant/mobile jest — web-focus phase; mobile
-        # tests still run locally via `pnpm check`.
+        # `check:ci` покриває ВСІ воркспейси, `@sergeant/mobile` включно
+        # (PR-M1, аудит 2026-09-13). Раніше він фільтрував мобайл як
+        # «web-focus phase», покладаючись на те, що «тести все одно бігають
+        # локально через `pnpm check`» — і саме це не спрацювало: 2026-08-07
+        # `main` був червоний через три mobile-тести, яких ніхто не бачив.
+        # Гейт, який покладається на дисципліну замість прогону, не є гейтом.
+        # Ціна повернення нульова: на дату зняття фільтра mobile typecheck
+        # чистий, а jest дає 185 сюїт / 1294 тести за ~103 с.
+        # Форму цієї умови стереже `scripts/__tests__/ci-mobile-gate.test.mjs`.
         run: |
           set -o pipefail
           pnpm check:ci 2>&1 | tee /tmp/check-build.log
@@ -249,14 +331,6 @@ jobs:
           fi
           echo "OK: no Node-only imports detected in apps/web bundle."
 
-      - name: TODO freshness gate
-        # Fails CI if any TODO/FIXME/HACK/XXX comments have expired deadlines
-        # or are missing deadlines for tech-debt items. Format example
-        # (keep the sample date ≥ today so this comment itself is not gated):
-        # TODO(T5-feature): 2099-01-01 — description
-        # See scripts/check-todo-freshness.mjs for implementation details.
-        run: pnpm lint:todo-freshness
-
       - name: PWA precache 1st-party gate (PR-38 / L11)
         # Reads `apps/server/dist/sw.js` (produced by the build step
         # above) and fails CI if any non-1st-party URL ended up in the
@@ -266,18 +340,119 @@ jobs:
         # see https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
         run: pnpm lint:pwa-precache
 
+  todo-freshness:
+    name: TODO freshness gate
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    # Винесено з `check` 2026-09-16 — той самий клас, що й `bundle-budgets`
+    # нижче (див. коментар там): крок стояв ПІСЛЯ «Format, lint, test,
+    # build», тож щойно той червонів, гейт не виконувався взагалі — і в
+    # логах це тиша, а не «прострочено». Так чотири прострочені цитати
+    # `TODO(0589-…)` (#69) спливли лише тоді, коли `check` знову позеленів,
+    # і одразу на трьох непричетних PR-ах. Це чистий статичний лінт без
+    # артефактів білда, тож окрема джоба коштує кілька секунд на прогін.
+    # Без `needs:` — з тієї ж причини, що й `critical-flow`: залежність від
+    # `check` повернула б рівно те мовчання, заради зняття якого джоба існує.
+    # Форму стереже `scripts/__tests__/ci-todo-freshness-gate.test.mjs`.
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+
+      - name: TODO freshness gate
+        # Fails CI if any TODO/FIXME/HACK/XXX comments have expired deadlines
+        # or are missing deadlines for tech-debt items. Format example
+        # (keep the sample date ≥ today so this comment itself is not gated):
+        # TODO(T5-feature): 2099-01-01 — description
+        # Скрипт — лише node built-ins, тому без `pnpm install`; те саме, що
+        # `pnpm lint:todo-freshness`, але без обгортки (див. AGENTS.md
+        # § Verification before PR про ціну `pnpm`-виклику).
+        run: node scripts/check-todo-freshness.mjs
+
+  bundle-budgets:
+    name: Bundle budgets (size-limit + eager)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    # Винесено з `check` в окрему джобу 2026-09-11, і це вже ТРЕТІЙ випадок
+    # того самого класу після `security-audit` нижче. Обидва бандл-гейти
+    # стояли кроками ПІСЛЯ «Format, lint, test, build»: коли той крок падав,
+    # GitHub Actions пропускав усі наступні, і гейт не виконувався взагалі —
+    # у логах це виглядає не як «бюджет перевищено», а як тиша. Так борг ріс
+    # непоміченим двічі: у серпні (див. AGENTS.md § Performance budgets,
+    # ратчет 2026-08-18) і тиждень до 2026-09-11, поки три застарілі тести
+    # тримали `check` червоним. Гірше того, гейти ховали ще й один одного:
+    # `size-limit` падав — і eager, що стояв кроком нижче, ставав `skipped`,
+    # тож критичний шлях не міряли жодного разу.
+    #
+    # Ціна окремої джоби — власний прод-білд (~5 хв, дублює білд усередині
+    # `check`). Плата за те, щоб бюджети мали число на КОЖНОМУ прогоні
+    # незалежно від стану тестів і лінту. Два гейти всередині джоби навмисно
+    # розведені через `if: always()`, щоб червоний `size-limit` більше не
+    # ховав eager.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Потрібне кроку «Bundle size PR comment» — він переїхав сюди разом
+      # із гейтами; у `check` цей дозвіл лишається для інших кроків.
+      pull-requests: write
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # Ця джоба має `pull-requests: write` і при цьому виконує код із
+          # PR-а: `pnpm install` (postinstall-скрипти залежностей) і прод-білд.
+          # `actions/checkout` за замовчуванням лишає токен у git-оточенні
+          # кроку, тож скомпрометована залежність або білд-скрипт дістали б
+          # креденшел із правом писати в PR. Тут git після чекауту не
+          # потрібен, а кроку «Bundle size PR comment» токен приходить окремо
+          # через `github-token:`, тож персистити нема чого.
+          persist-credentials: false
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build @sergeant/db-schema
+        run: pnpm --filter @sergeant/db-schema build
+
+      - name: Build web app
+        # Без `VERCEL=1` Vite кладе вихід у `apps/server/dist/` — саме туди
+        # дивляться обидва гейти нижче (`size-limit` через `"path"` у
+        # apps/web/package.json, eager — через `apps/server/dist/index.html`).
+        run: pnpm --filter @sergeant/web build
+
       - name: Bundle size guard (size-limit)
+        id: size_limit
         run: pnpm --filter @sergeant/web exec size-limit
 
       # Критичний шлях, а не сума всіх чанків: `size-limit` рахує 300+ файлів,
       # включно з тими, які більшість людей ніколи не завантажить. Цей гейт
       # міряє рівно те, що тягнеться до першого екрана — і його треба рухати
       # вниз. Деталі й число — у самому скрипті.
+      #
+      # `always()` тут не косметика: доки крок був звичайним, червоний
+      # `size-limit` робив його `skipped`, і 2026-09-11 з'ясувалось, що
+      # критичний шлях не міряли жодного разу за весь час мовчання гейта.
       - name: Eager bundle guard (критичний шлях)
+        if: always() && steps.size_limit.conclusion != 'skipped'
         run: node scripts/ci/check-eager-bundle.mjs
 
       - name: Bundle size PR comment
+        # `always()` з тієї ж причини: коментар із числами найпотрібніший
+        # саме тоді, коли бюджет пробито.
         if: >-
+          always() &&
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.repository
         # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
@@ -331,6 +506,7 @@ jobs:
 
   security-audit:
     name: Dependency audit (ledger-gated)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     # Винесено з `check` в окрему джобу 2026-09-01. `pnpm audit --json` на
     # цьому монорепо (17 workspaces) виявився здатен зжерти ~4 ГБ heap і
     # впасти FATAL ERROR OOM усередині власного процесу pnpm — ДО того, як
@@ -393,6 +569,7 @@ jobs:
 
   knip-scan:
     name: Dead Code (Knip)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
@@ -419,6 +596,7 @@ jobs:
 
   coverage:
     name: Test coverage (vitest)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       # contents: write — потрібен КРОКУ «Push coverage-ratchet baseline bump»,
@@ -445,7 +623,16 @@ jobs:
         # their vitest.config files (~2pp below baseline). A drop below the
         # floor fails this job. Domain packages are already near 100%, so
         # they don't carry explicit floors yet.
-        # `test:coverage:ci` skips @sergeant/mobile jest — web-focus phase.
+        # MOBILE_COVERAGE_BASELINE_MISSING — `test:coverage:ci` досі
+        # пропускає @sergeant/mobile, свідомо і окремо від PR-M1. Мобайл
+        # повернено у `check:ci` (typecheck + jest), але покриття потребує
+        # власного baseline-числа у `coverage-thresholds.json` і рядка в
+        # `coverage-ratchet.mjs` (`FLOOR_SKIPPED_WORKSPACES`); підняти поріг
+        # наосліп означало б або червоний ратчет, або фіктивну підлогу.
+        # Окреме рішення власника. Токен вище — те, що стереже
+        # `scripts/__tests__/ci-mobile-gate.test.mjs`: він унікальний для
+        # цього пояснення, тож видалити пояснення й лишити тест зеленим
+        # не вийде.
         # `--concurrency=2` у скрипті: без ліміту turbo фанаутить до 10
         # coverage-pipeline-ів на 4-vCPU ранері (import-фаза vitest сягала
         # 193s), server-тести ловили 30s testTimeout посеред хендлера, а
@@ -464,8 +651,10 @@ jobs:
         # НАЯВНІ summary-файли і `continue`-ив відсутні — workspace, що
         # переставав емітити coverage, тихо випадав з гейта. Тепер гейт живе у
         # scripts/ci/coverage-ratchet.mjs (--floors): кожен workspace зі списку
-        # coverage-thresholds.json (крім apps/mobile — web-focus skip) МУСИТЬ
-        # мати summary, інакше job червоний (fail-closed). Незалистовані
+        # coverage-thresholds.json МУСИТЬ мати summary, інакше job червоний
+        # (fail-closed). Виняток один — apps/mobile, і причина в нього не
+        # «web-focus», а MOBILE_COVERAGE_BASELINE_MISSING (див. коментар
+        # кроку «Run vitest with coverage» вище). Незалистовані
         # workspace-и з summary досі гейтяться за `default`.
         run: node scripts/ci/coverage-ratchet.mjs --floors
 
@@ -552,8 +741,18 @@ jobs:
 
   a11y:
     name: Accessibility (axe-core)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    needs: check
+    # No `needs:` — та сама причина, що в `critical-flow`, `mobile-ui-audit`
+    # і `server-integration`, просто знайдена пізніше: ця джоба лишалась
+    # останньою з `needs: check`, і через це її вердикту не було пʼять
+    # прогонів поспіль. Розбір лежить в аудиті власника за 2026-09-11
+    # (`docs/work/specs/audits/`). `needs:` глушить джобу ДВІЧІ:
+    # `check` червоний — залежна не стартує; `check` скасовано новим пушем —
+    # теж не стартує. У звіті тривалостей обидва випадки виглядають як `0s`,
+    # тобто так само невинно, як пропущений крок. А платити за це нічим:
+    # лейн збирає застосунок сам (`webServer` у `apps/web/playwright.config.ts`
+    # робить `npm run build && npm run preview`) і з `check` не бере нічого.
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -720,6 +919,7 @@ jobs:
 
   mobile-ui-audit:
     name: Mobile UI audit (44px touch targets)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # No `needs:` — same rationale as critical-flow: a lint/test failure in
     # `check` must not skip this gate.
@@ -802,8 +1002,70 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  landing-quality:
+    name: Landing quality (axe + Lighthouse)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # Лендінг до 2026-09-15 не покривав ЖОДЕН гейт якості: `test:a11y` і
+    # Lighthouse ганялись лише по `apps/web`. Для сайту, чий єдиний канал —
+    # пошук, це найдорожча дірка: зламана семантика б'є одночасно по читачу
+    # з екранним диктором і по краулеру, який читає ту саму розмітку.
+    #
+    # Без `needs:` — з тієї ж причини, що й у `critical-flow` та
+    # `mobile-ui-audit`: залежність від `check` глушить джобу і коли той
+    # червоний, і коли його скасував новий пуш, а в звіті обидва випадки
+    # виглядають як невинний `0s`. Лейн збирає лендінг сам.
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @sergeant/landing exec playwright install --with-deps chromium
+
+      - name: Axe over every landing route
+        # webServer у apps/landing/playwright.config.ts сам робить
+        # `pnpm run build && vite preview --port 4174`, тож окремого
+        # білд-кроку тут нема. Скануються всі маршрути з routeMeta.json.
+        run: pnpm --filter @sergeant/landing test:a11y
+        env:
+          CI: "true"
+
+      - name: Lighthouse budgets
+        # `always()` — урок бандл-гейтів (див. AGENTS.md § Performance
+        # budgets): крок, що стоїть після потенційно червоного, не є гейтом.
+        # Падіння axe не має ховати число Lighthouse.
+        if: always()
+        run: |
+          pnpm --filter @sergeant/landing build
+          pnpm --filter @sergeant/landing lighthouse
+
+      - name: Upload reports
+        if: always()
+        # actions/upload-artifact v7.0.0 (SHA-pinned)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: landing-quality-reports
+          path: |
+            apps/landing/playwright-report
+            apps/landing/.lighthouseci
+          if-no-files-found: ignore
+          retention-days: 7
+
   server-integration:
     name: Server integration tests (Testcontainers)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # No `needs:` — runs in parallel with other jobs (same rationale as
     # critical-flow). Audit 2026-06-11 ws-04: this tier — the syncV2
@@ -842,6 +1104,7 @@ jobs:
 
   rag-eval:
     name: RAG eval gate (cached embeddings)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Окрема джоба, а не крок у `check` — свідомо. `size-limit` колись
     # стояв кроком ПІСЛЯ «Format, lint, test, build», і коли той червонів,
@@ -881,6 +1144,7 @@ jobs:
 
   tool-eval:
     name: Tool eval gate (recorded cassette)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Окрема джоба з тієї самої причини, що й rag-eval: гейт, який стоїть
     # кроком після потенційно червоного кроку, не є гейтом — він просто не
@@ -917,7 +1181,10 @@ jobs:
   # ENOENT on every push to main.
 
   migration-lint:
-    name: Migration lint (AGENTS rule #4)
+    # Лапки обовʼязкові: без них YAML читає ` #4)` як коментар, і GitHub
+    # отримував назву «Migration lint (AGENTS rule», яку доводилось
+    # прописувати в required-чеки `main` саме в такому обрізаному вигляді.
+    name: "Migration lint (AGENTS rule #4)"
     runs-on: ubuntu-latest
     # Свідомо БЕЗ `if: github.event_name == 'pull_request'` (на відміну від
     # решти PR-only джоб): дубль 091 у 2026-07-31 проліз саме тому, що обидва
@@ -945,7 +1212,7 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
 
   migration-down-drill:
-    name: Migration down drill (AGENTS rule #4)
+    name: "Migration down drill (AGENTS rule #4)"
     # PR-32 (`docs/work/specs/planning/archive/pr-plan-2026-05.md`). Static lint above guarantees
     # sequential numbering + two-phase DROP, but down-migrations themselves
     # are not validated by the linter — they could `DROP COLUMN` a column
@@ -1010,6 +1277,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # `pull-requests: read` — БЕЗ нього джоба падає на кожному PR, і падає
+      # не знахідкою, а крахом: на `pull_request` gitleaks-action просить
+      # `GET /repos/{owner}/{repo}/pulls/{n}/commits`, щоб знати, які коміти
+      # сканувати, дістає 403 «Resource not accessible by integration» і
+      # вивалюється необробленим винятком ДО того, як щось просканує.
+      #
+      # Чому це не бачили раніше: на `push` у `main` цей виклик не робиться,
+      # тож на головній гілці джоба зелена (звірка 2026-09-19: run на
+      # `9dea9af` — success), а червона рівно там, де сканувати й треба —
+      # на PR. Тобто секрет-гейт був фактично вимкнений на всіх PR-ах,
+      # показуючи при цьому впевнений зелений на `main`.
+      pull-requests: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -1024,6 +1303,7 @@ jobs:
 
   actionlint:
     name: Workflow lint (actionlint)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1058,15 +1338,40 @@ jobs:
           actionlint -color \
             -ignore 'shellcheck reported issue in this script: SC[0-9]+:(info|style):'
 
+  deploy-api:
+    name: Deploy API (after green CI)
+    # Автодеплой бекенду лише з `main` і лише після обовʼязкових джоб
+    # (ADR-0102). Міграції БД їдуть в ENTRYPOINT образу, тож деплой без
+    # цього гейта застосовував би неперевірену схему на живій базі.
+    # `critical-flow` тут тому, що він єдиний ганяє справжній API-сервер
+    # із міграціями проти браузера; `migration-*` - бо саме міграції
+    # виконає прод при старті. Червона будь-яка з них = деплою немає.
+    # Форму стереже `scripts/__tests__/ci-deploy-verify-gate.test.mjs`.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, critical-flow, migration-lint, migration-down-drill]
+    uses: ./.github/workflows/deploy-api.yml
+    secrets: inherit
+
   pipeline-duration-summary:
     name: Pipeline duration (p95 trend)
     runs-on: ubuntu-latest
     # Run after all main jobs; report even when some fail.
-    needs: [check, coverage, a11y, critical-flow, mobile-ui-audit]
-    if: always()
+    needs:
+      [check, bundle-budgets, coverage, a11y, critical-flow, mobile-ui-audit]
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
       pull-requests: write
+      # `actions: read` — той самий дефект, що й у `secret-scan` вище, тільки
+      # на іншому ендпоінті. `pipeline-duration-p95.mjs` читає історію
+      # прогонів (`GET /repos/{owner}/{repo}/actions/workflows/{id}/runs`,
+      # `…/actions/runs/{id}/jobs`), а це скоуп `actions`, якого в блоці не
+      # було: API віддавав `403 Forbidden`, скрипт кидав виняток і джоба
+      # червоніла на КОЖНОМУ прогоні, нічого не змірявши.
+      #
+      # Знайдено звіркою 2026-09-19 одразу після фіксу gitleaks — третій
+      # випадок класу «джоба кличе GitHub API, якого їй не дозволили».
+      actions: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd

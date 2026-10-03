@@ -23,6 +23,17 @@ import request from "supertest";
  * 3. `/healthz` must remain reachable from openclaw `get_server_stats`
  *    and external monitoring without a session — a regression that
  *    demands auth here would silently break Phase-2 monitoring.
+ * 4. Жодна health-відповідь не несе сирого ТЕКСТУ помилки підсистеми.
+ *    `pg` і `ioredis` кладуть у `message` внутрішній хост, порт і імʼя
+ *    DB-користувача (`password authentication failed for user
+ *    "sergeant_app"`, `connect ECONNREFUSED 10.0.0.12:6379`), а роути
+ *    анонімні й без rate-limit — тобто це була карта інфраструктури за
+ *    один GET. Назовні дозволено лише КЛАС помилки (`errorCode`,
+ *    `obs/errorCode.ts`), повний текст іде в `logger.error`. Тому `error`
+ *    стоїть у `FORBIDDEN_KEYS` нижче.
+ * 5. `/healthz` не перелічує імена незастосованих міграцій — лише
+ *    `pendingCount`. Список імен — це карта стану схеми прода й точне
+ *    вікно неузгодженості; кількості вистачає і дашборду, і алерту.
  */
 const { mockPool, queryMock } = vi.hoisted(() => {
   const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
@@ -84,6 +95,9 @@ const FORBIDDEN_KEYS = [
   "buildSha",
   "gitSha",
   "release",
+  // Інваріант 4 — сирий текст помилки підсистеми. Дозволений спадкоємець
+  // — `errorCode` (лише клас), тож саме голе імʼя `error` тут і блокується.
+  "error",
 ];
 
 function collectKeysDeep(value: unknown, acc: Set<string>): void {
@@ -183,6 +197,75 @@ describe("L7: /healthz JSON body excludes build identifiers", () => {
     const res = await request(app).get("/healthz");
     // Public probe — no 401/403 even with zero auth headers.
     expect([200, 503]).toContain(res.status);
+  });
+});
+
+describe("L7: health responses carry no raw subsystem error text", () => {
+  it("GET /healthz → БД недоступна: назовні errorCode, не текст помилки", async () => {
+    // `pg`-помилка у тій самій формі, у якій вона приходить у проді:
+    // повідомлення з іменем DB-користувача й внутрішнім хостом + SQLSTATE.
+    queryMock.mockRejectedValue(
+      Object.assign(
+        new Error(
+          'password authentication failed for user "sergeant_app" at 10.0.0.12:5432',
+        ),
+        { code: "28P01" },
+      ),
+    );
+
+    const app = createApp();
+    const res = await request(app).get("/healthz");
+
+    expect([200, 503]).toContain(res.status);
+    const raw = JSON.stringify(res.body);
+    expect(raw).not.toContain("sergeant_app");
+    expect(raw).not.toContain("10.0.0.12");
+    expect(raw).not.toContain("password authentication failed");
+    // Клас помилки лишається — дашборд має відрізняти «БД недоступна» від
+    // «БД відмовила в автентифікації».
+    expect(res.body?.checks?.database?.details?.errorCode).toBe("28P01");
+  });
+
+  it("GET /health/workers → воркер-фейл не виносить текст помилки назовні", async () => {
+    queryMock.mockRejectedValue(
+      Object.assign(new Error("connect ECONNREFUSED 10.0.0.12:6379"), {
+        code: "ECONNREFUSED",
+      }),
+    );
+
+    const app = createApp();
+    const res = await request(app).get("/health/workers");
+
+    expect([200, 503]).toContain(res.status);
+    const seen = new Set<string>();
+    collectKeysDeep(res.body, seen);
+    for (const k of FORBIDDEN_KEYS) {
+      expect(
+        seen.has(k),
+        `unexpected leaky key '${k}' in /health/workers body`,
+      ).toBe(false);
+    }
+    expect(JSON.stringify(res.body)).not.toContain("10.0.0.12");
+  });
+});
+
+describe("L7: /healthz reports pending migrations as a count, not a list", () => {
+  it("не віддає імен незастосованих міграцій у жодному вигляді", async () => {
+    const app = createApp();
+    const res = await request(app).get("/healthz");
+
+    const schemaDetails = res.body?.checks?.schema?.details as
+      Record<string, unknown> | undefined;
+    if (schemaDetails && "pendingCount" in schemaDetails) {
+      expect(typeof schemaDetails["pendingCount"]).toBe("number");
+    }
+    // Ключ зі списком імен не має існувати на жодній глибині.
+    const seen = new Set<string>();
+    collectKeysDeep(res.body, seen);
+    expect(seen.has("pending")).toBe(false);
+    // Імена міграцій у репо мають форму `NNN_*.sql` — жодного такого рядка
+    // у публічній відповіді бути не може.
+    expect(JSON.stringify(res.body)).not.toMatch(/\d{3}_[a-z0-9_]+\.sql/i);
   });
 });
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -78,6 +78,7 @@ export function AssistantAdviceCard({
   sectionOpen = true,
 }: AssistantAdviceCardProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const bodyId = useId();
   const aiTier = useAiTier();
   const { isPro } = usePlan();
   const degradedLabel =
@@ -131,11 +132,13 @@ export function AssistantAdviceCard({
         "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
       )}
     >
-      <div className="rounded-2xl bg-surface-glass backdrop-blur-md overflow-hidden">
+      <div className="rounded-2xl bg-panel overflow-hidden">
         <button
           type="button"
           onClick={toggle}
-          className="flex items-center justify-between w-full px-4 py-3 text-left"
+          aria-expanded={!collapsed}
+          aria-controls={bodyId}
+          className="flex items-center justify-between w-full px-4 py-3 text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         >
           <div className="flex items-center gap-2">
             <span
@@ -164,31 +167,37 @@ export function AssistantAdviceCard({
           </div>
           <Icon
             name={collapsed ? "chevron-down" : "chevron-up"}
-            size={14}
+            size="sm"
             className="text-muted"
           />
         </button>
 
         {!collapsed && (
-          <div className="px-4 pb-3.5 -mt-0.5">
+          <div id={bodyId} className="px-4 pb-3.5 -mt-0.5">
             {loading && !insight ? (
               // Skeleton stand-in matches three lines of body copy at
               // the real text size — keeps the card height stable so
               // the swap to real content does not nudge the dashboard
-              // grid below (CLS budget). Pulse here is the only
-              // AMBIENT animation on screen during initial load; the
-              // refresh-button spin is hidden until an insight is
-              // cached so we stay within Hard Rule #17 (≤1 AMBIENT).
+              // grid below (CLS budget).
+              //
+              // AI-DANGER: pulse живе на КОНТЕЙНЕРІ, а рядки йдуть із
+              // `pulse={false}`. Доти тут стояло три `SkeletonText` зі
+              // своїм pulse кожен — тобто ТРИ Animation-обʼєкти, — а
+              // коментар поруч стверджував протилежне: «the only AMBIENT
+              // animation… within Hard Rule #17 (≤1 AMBIENT)». Неправду
+              // зловив не рев'ю, а smoke `reduced-motion.spec.ts`, який
+              // назвав усі три поіменно. Той самий урок уже записано в
+              // `PageLoader` (design-audit F8) — сюди він не доїхав.
               <div
                 role="status"
                 aria-live="polite"
                 aria-label={messages.sergeant.adviceLoadingAria}
-                className="space-y-2 py-0.5"
+                className="space-y-2 py-0.5 motion-safe:animate-pulse"
               >
                 <span className="sr-only">Готую пораду…</span>
-                <SkeletonText className="h-3.5 w-full" />
-                <SkeletonText className="h-3.5 w-11/12" />
-                <SkeletonText className="h-3.5 w-4/5" />
+                <SkeletonText className="h-3.5 w-full" pulse={false} />
+                <SkeletonText className="h-3.5 w-11/12" pulse={false} />
+                <SkeletonText className="h-3.5 w-4/5" pulse={false} />
               </div>
             ) : null}
 
@@ -201,11 +210,23 @@ export function AssistantAdviceCard({
               </p>
             )}
 
+            {/* Розкриття авторства — під ТІЛОМ поради і лише коли тіло є, та
+                сама форма, що в `WeeklyDigestCard`: підписувати скелетон або
+                порожній стан нема чого, там немає згенерованого тексту.
+                Бейдж «Припущення» у шапці цього не замінює — він про ступінь
+                впевненості й однаково стоятиме над текстом, який написала
+                людина (знахідка PR-A10). */}
+            {insight && (
+              <p className="mt-1.5 text-style-caption text-subtle leading-snug">
+                {messages.sergeant.adviceAiSignature}
+              </p>
+            )}
+
             {!(loading && !insight) && (
               <div className="mt-2.5 flex items-center gap-2">
                 {/* Actionable insight (UX-пропозиція 2026-07): порада була
                     суто текстовою — тепер із неї можна одразу перейти в
-                    дію. «Запитати AI про це» відкриває асистента із
+                    дію. «Запитати Сержанта про це» відкриває його із
                     засіяним контекстом поради (autoSend: false, щоб юзер
                     міг відредагувати питання перед відправкою). */}
                 {insight && (
@@ -240,7 +261,7 @@ export function AssistantAdviceCard({
                       strokeWidth={2}
                       aria-hidden
                     />
-                    Запитати AI про це
+                    Запитати Сержанта про це
                   </button>
                 )}
                 <button
@@ -253,12 +274,13 @@ export function AssistantAdviceCard({
                   disabled={loading}
                   aria-label="Оновити пораду"
                   className={cn(
+                    "inline-flex items-center justify-center",
                     "p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
                     loading &&
                       "opacity-40 cursor-not-allowed motion-safe:animate-spin",
                   )}
                 >
-                  <Icon name="refresh-cw" size={14} />
+                  <Icon name="refresh-cw" size="sm" />
                 </button>
                 {/* Оцінка — праворуч, окремо від дій над порадою: «зроби
                     щось із цим» і «чи це взагалі було варте показу» — різні

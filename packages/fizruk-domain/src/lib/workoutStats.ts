@@ -8,7 +8,7 @@ interface StatsSet {
   [key: string]: unknown;
 }
 
-interface StatsItem {
+export interface StatsItem {
   exerciseId?: string | null | undefined;
   type?: string | null | undefined;
   sets?: StatsSet[] | null | undefined;
@@ -403,14 +403,51 @@ export function compareIsoDesc(
   return bt - at;
 }
 
+/**
+ * Тоннаж ОДНІЄЇ вправи, кг.
+ *
+ * Винесено з `workoutTonnageKg` (аудит `unification-modules.md` §1.4,
+ * перезамір 2026-09-15). Канон рахував тоннаж лише по тренуванню цілком,
+ * тож усі, кому був потрібен розріз ПО ВПРАВІ — чат, тижневий дайджест,
+ * мобільний дашборд — писали внутрішній цикл своєю рукою. Пʼять копій, і
+ * три з них загубили `type === "strength"`:
+ * `chatActions/fizrukActions/analytics.ts` (там фільтр був по назві й
+ * мʼязу, тип не перевірявся зовсім) і обидві мобільні
+ * (`coachSnapshot.ts`, `weeklyDigestAggregates.ts`).
+ *
+ * Чому фільтр обовʼязковий: `WorkoutItem.sets` — поле необовʼязкове, але
+ * НЕ звужене за `type`, тож вправа типу `distance` чи `time` може нести
+ * підходи так само, як силова. Копія без фільтра додасть їх до тоннажу, і
+ * розбіжність буде тиха — число просто більше за те, що показує екран
+ * Вправи.
+ *
+ * AI-DANGER: фільтр СТРОГИЙ — вправа без `type` дає 0, а не тоннаж. На
+ * вебі це безпечно, бо `WorkoutItem.type` там обовʼязковий. На МОБІЛЬНОМУ
+ * це не так: `apps/mobile/src/modules/fizruk/hooks/useFizrukWorkouts.ts:42`
+ * оголошує `type?:` необовʼязковим, і дві мобільні копії тоннажу
+ * (`coachSnapshot.ts`, `weeklyDigestAggregates.ts`) навмисно НЕ переведені
+ * сюди: спроба 2026-09-15 повалила два їхні тести, бо фікстури не несуть
+ * `type` зовсім, і обʼєм тижня став нулем. Перш ніж зводити мобілку на цей
+ * канон, треба переконатись на РЕАЛЬНИХ даних, що `type` там заповнений —
+ * інакше фікс уніфікації обнулить людям тижневий обʼєм. Розбір — у
+ * `docs/work/specs/audits/unification-modules.md` §1.4.
+ *
+ * Коерція `Number(x) || 0` лишається тут, а не на call-site-ах: дані
+ * приходять із SQLite і з сервера, де числове поле може приїхати рядком.
+ */
+export function itemTonnageKg(item: StatsItem | null | undefined): number {
+  if (!item || item.type !== "strength") return 0;
+  let t = 0;
+  for (const s of item.sets || []) {
+    t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
+  }
+  return t;
+}
+
 export function workoutTonnageKg(w: StatsWorkout | null | undefined): number {
   let t = 0;
   for (const it of w?.items || []) {
-    if (it.type === "strength") {
-      for (const s of it.sets || []) {
-        t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
-      }
-    }
+    t += itemTonnageKg(it);
   }
   return t;
 }
@@ -418,7 +455,7 @@ export function workoutTonnageKg(w: StatsWorkout | null | undefined): number {
 /**
  * @param nowMs Тестовий шов для незавершеного тренування (`endedAt` ще
  * немає), дефолт `Date.now()`. Канон для двох байт-майже-ідентичних копій
- * (`docs/90-work/audits/unification-modules.md` §2.20).
+ * (`docs/work/specs/audits/unification-modules.md` §2.20).
  */
 export function workoutDurationSec(
   w: StatsWorkout | null | undefined,

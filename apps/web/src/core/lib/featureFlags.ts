@@ -38,8 +38,11 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     id: "app-lock-enabled",
     label: "Блокування додатку (PIN)",
+    // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+    // «Конфіденційність» у Профіль → «Безпека» → «Блокування застосунку»
+    // 2026-09-04 (`ProfilePage.tsx`); опис досі називав старе місце.
     description:
-      "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у розділі «Конфіденційність → Блокування».",
+      "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у Профілі → «Безпека» → «Блокування застосунку».",
     defaultValue: false,
   },
   // `finyk_subscriptions_category` прибрано: флаг рендерився тумблером у
@@ -69,6 +72,10 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  // `hub_action_axis_v1` retired 2026-09-29 (спека `hub-action-axis.md`
+  // PR 3): вісь дії стала єдиною головною, стару сітку прибрано. Збережене
+  // у `hub_flags_v1` значення не читається — `getFlag` для невідомого id
+  // віддає `false`, а `getAllFlags`/UI перебирають лише `FLAG_REGISTRY`.
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
   // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.
@@ -89,6 +96,11 @@ const flagsStore = createTypedStore<FlagValues>({
   schema: FlagValuesSchema,
   defaultValue: {},
 });
+
+// Кеш снапшоту всіх флагів. `useSyncExternalStore` вимагає реф-стабільний
+// результат від `getSnapshot` між оновленнями store'а — інакше React
+// вважає, що state змінився, і ганяє ре-рендери/лупить у concurrent mode.
+let cachedAllFlagsSnapshot: Record<string, boolean> | null = null;
 
 function defaults(): FlagValues {
   const out: FlagValues = {};
@@ -122,10 +134,6 @@ export function resetFlags(): void {
   flagsStore.reset();
 }
 
-// Кеш снапшоту всіх флагів. `useSyncExternalStore` вимагає реф-стабільний
-// результат від `getSnapshot` між оновленнями store'а — інакше React
-// вважає, що state змінився, і ганяє ре-рендери/лупить у concurrent mode.
-let cachedAllFlagsSnapshot: Record<string, boolean> | null = null;
 flagsStore.subscribe(() => {
   cachedAllFlagsSnapshot = null;
 });

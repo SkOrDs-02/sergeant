@@ -15,7 +15,6 @@ import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
@@ -46,6 +45,7 @@ import {
 } from "../lib/pendingRetroEnd";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
 import type { LogPastWorkoutActivity } from "../components/workouts/LogPastWorkoutSheet";
+import { useQuickLog } from "./useQuickLog";
 import {
   trackFizrukWorkoutDiscarded,
   trackFizrukWorkoutStarted,
@@ -79,7 +79,6 @@ export function useWorkoutsOrchestrator(
     addExercise,
     removeExercise,
   } = useExerciseCatalog();
-  const rec = useRecovery();
   const {
     workouts,
     loaded: workoutsLoaded,
@@ -130,6 +129,8 @@ export function useWorkoutsOrchestrator(
   const [addOpen, setAddOpen] = useState(false);
   /** Форма «Внести проведене заняття» — див. `submitPastWorkout` нижче. */
   const [logPastOpen, setLogPastOpen] = useState(false);
+  /** Сабміт «Швидкого запису» — окремий хук, див. `useQuickLog`. */
+  const quickLog = useQuickLog({ restoreWorkout, toast });
   // Pulled out of `options` so the start callbacks can depend on the function
   // itself rather than on the whole options object, which is a fresh literal
   // on every render of the host page.
@@ -140,6 +141,9 @@ export function useWorkoutsOrchestrator(
   const [activeWorkoutId, setActiveWorkoutId] = useState(
     () => options.requestedWorkoutId ?? safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
+  // Виклик стоїть ПІСЛЯ `activeWorkoutId` навмисно: поточна сесія
+  // виключається з історії відновлення (див. `UseRecoveryOptions`).
+  const rec = useRecovery({ excludeWorkoutId: activeWorkoutId });
   const [finishFlash, setFinishFlash] = useState<FinishFlashState | null>(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] =
@@ -257,7 +261,6 @@ export function useWorkoutsOrchestrator(
     setActiveWorkoutId,
     { routeOwnsWorkoutId: Boolean(options.requestedWorkoutId) },
   );
-  useWorkoutsViewFromSession(setView, !options.requestedWorkoutId);
 
   useLiveWorkoutTick(activeWorkout, setNow);
 
@@ -288,7 +291,7 @@ export function useWorkoutsOrchestrator(
       }
       if (!activeWorkoutId) {
         toast.warning(
-          "Спочатку натисни «+ Нове» у блоці нижче, щоб зʼявилось активне тренування.",
+          "Спочатку натисни «Почати тренування», щоб зʼявилось активне тренування.",
         );
         return;
       }
@@ -301,7 +304,7 @@ export function useWorkoutsOrchestrator(
       const conflicts = recoveryConflictsForExercise(ex, rec.by);
       if (conflicts.injury.blocked) {
         toast.warning(
-          "Ти позначив біль у цій групі. Навантажувати її не раджу.",
+          "Ти позначив біль у цій групі. Вправу додав, але навантажувати не раджу.",
         );
       }
       addExerciseToActive(ex);
@@ -357,7 +360,8 @@ export function useWorkoutsOrchestrator(
       }
       if (tpl?.id) templateApi.markTemplateUsed(tpl.id);
       setActiveWorkoutId(w.id);
-      trackFizrukWorkoutStarted(w.id, "template");
+      // Без id — разовий набір з аркуша «Почати тренування», не шаблон.
+      trackFizrukWorkoutStarted(w.id, tpl?.id ? "template" : "quick_start");
       if (onWorkoutStarted) onWorkoutStarted(w.id);
       else setView("log");
     },
@@ -663,6 +667,7 @@ export function useWorkoutsOrchestrator(
     logPastOpen,
     setLogPastOpen,
     submitPastWorkout,
+    ...quickLog,
     handleDeleteExerciseConfirm,
     handleRiskyTemplateConfirm,
     summarizeWorkoutForFinish,

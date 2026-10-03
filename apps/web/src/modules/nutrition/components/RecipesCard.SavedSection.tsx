@@ -14,12 +14,20 @@ import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
-import type { SavedRecipe } from "../lib/recipeBook";
+import { scaleMacros, type SavedRecipe } from "../lib/recipeBook";
 import { ChevronIcon } from "./RecipesCard.ChevronIcon";
+import { parsePortionFactor } from "./RecipesCard.helpers";
+
+/** «2» → «2», «1.5» → «1,5»: десяткова кома, як усюди в інтерфейсі. */
+function formatFactor(factor: number): string {
+  return String(factor).replace(".", ",");
+}
 
 interface SavedSectionProps {
   saved: SavedRecipe[];
   savedBusy: boolean;
+  savedError?: boolean;
+  onRetry?: () => void;
   savedOpen: boolean;
   setSavedOpen: Dispatch<SetStateAction<boolean>>;
   openSavedId: string | null;
@@ -34,6 +42,8 @@ interface SavedSectionProps {
 export function SavedSection({
   saved,
   savedBusy,
+  savedError = false,
+  onRetry,
   savedOpen,
   setSavedOpen,
   openSavedId,
@@ -68,7 +78,16 @@ export function SavedSection({
 
       {savedOpen && (
         <div className="mt-3">
-          {saved.length === 0 ? (
+          {saved.length === 0 && savedError ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-style-body text-danger-strong" role="alert">
+                Не вдалося прочитати збережені рецепти.
+              </p>
+              <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
+                Спробувати ще раз
+              </Button>
+            </div>
+          ) : saved.length === 0 ? (
             <div className="text-style-body text-muted">
               Тут зʼявляться збережені рецепти. Згенеруй рецепти нижче й натисни
               &quot;Зберегти&quot;.
@@ -77,12 +96,19 @@ export function SavedSection({
             <div className="grid gap-2">
               {saved.slice(0, 8).map((r) => {
                 const key = r.id;
-                const factor = portionById[key] ?? "1";
+                const factorRaw = portionById[key] ?? "1";
+                // `r.macros` — КБЖВ на ОДНУ порцію (рішення власника
+                // 2026-10-01), тож підрядок і «На порцію» показують їх як є,
+                // а множник — це скільки порцій зʼїдено: підсумок
+                // рахується тим самим множником, що піде в журнал
+                // (`addRecipeAsMeal` бере той самий `parsePortionFactor`).
+                const factor = parsePortionFactor(factorRaw);
+                const scaled = scaleMacros(r.macros, factor);
                 const isOpen = openSavedId === r.id;
                 return (
                   <div
                     key={r.id}
-                    className="rounded-2xl border border-line bg-bg/40 p-3 overflow-hidden"
+                    className="rounded-2xl border border-line bg-panel p-3 overflow-hidden"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <button
@@ -102,7 +128,7 @@ export function SavedSection({
                             {r.timeMinutes ? `${r.timeMinutes} хв` : "—"} ·{" "}
                             {r.servings ? `${r.servings} порц.` : "—"}
                             {r.macros?.kcal != null
-                              ? ` · ≈ ${fmtMacro(r.macros.kcal)} ккал`
+                              ? ` · ≈ ${fmtMacro(r.macros.kcal)} ккал / порція`
                               : ""}
                           </span>
                         </span>
@@ -110,29 +136,30 @@ export function SavedSection({
                       <div className="flex gap-2 shrink-0 flex-wrap">
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="outline"
                           size="sm"
                           onClick={() => onAddToLog(r, key)}
                         >
                           + У журнал
+                          {factor !== 1 && ` ×${formatFactor(factor)}`}
                         </Button>
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="soft"
+                          tone="danger"
                           size="sm"
-                          className="text-danger-strong dark:text-danger"
                           onClick={() => onDeleteClick(r)}
                         >
                           Видалити
                         </Button>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="text-style-caption text-muted">
-                        Порції (множник):
+                        Скільки порцій:
                       </span>
                       <Input
-                        value={String(factor)}
+                        value={factorRaw}
                         onChange={(e) =>
                           setPortionById((m) => ({
                             ...m,
@@ -140,11 +167,14 @@ export function SavedSection({
                           }))
                         }
                         inputMode="decimal"
+                        aria-label={`Скільки порцій: ${r.title}`}
                         className="w-20"
                       />
-                      <span className="text-style-caption text-muted">
-                        × макроси рецепту
-                      </span>
+                      {r.macros?.kcal != null && factor !== 1 && (
+                        <span className="text-style-caption text-muted">
+                          → усього ≈ {fmtMacro(scaled.kcal)} ккал
+                        </span>
+                      )}
                     </div>
 
                     {isOpen && (
@@ -186,10 +216,20 @@ export function SavedSection({
                           (r.macros.protein_g != null ||
                             r.macros.fat_g != null ||
                             r.macros.carbs_g != null) && (
-                            <div className="text-style-caption text-muted">
-                              Б: {fmtMacro(r.macros.protein_g)} г · Ж:{" "}
-                              {fmtMacro(r.macros.fat_g)} г · В:{" "}
-                              {fmtMacro(r.macros.carbs_g)} г
+                            <div className="text-style-caption text-muted space-y-0.5">
+                              <div>
+                                На порцію: Б: {fmtMacro(r.macros.protein_g)} г ·
+                                Ж: {fmtMacro(r.macros.fat_g)} г · В:{" "}
+                                {fmtMacro(r.macros.carbs_g)} г
+                              </div>
+                              {factor !== 1 && (
+                                <div>
+                                  Разом ×{formatFactor(factor)}: Б:{" "}
+                                  {fmtMacro(scaled.protein_g)} г · Ж:{" "}
+                                  {fmtMacro(scaled.fat_g)} г · В:{" "}
+                                  {fmtMacro(scaled.carbs_g)} г
+                                </div>
+                              )}
                             </div>
                           )}
                         {!Array.isArray(r.ingredients) &&

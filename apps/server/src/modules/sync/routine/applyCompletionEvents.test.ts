@@ -18,13 +18,27 @@ interface RecordedQuery {
 
 class FakeClient {
   readonly queries: RecordedQuery[] = [];
+  /**
+   * `rowCount` INSERT-а керує owner-guard-ом: `0` означає, що спрацював
+   * `ON CONFLICT DO NOTHING`, і апплаєр іде дочитувати власника рядка.
+   * За замовчуванням — успішна вставка.
+   */
+  insertRowCount = 1;
+  /** Що віддасть owner-guard-івський SELECT. */
+  ownerRows: Array<{ user_id: string }> = [];
 
   async query<T = Record<string, unknown>>(
     sql: string,
     params: unknown[] = [],
-  ): Promise<{ rows: T[] }> {
+  ): Promise<{ rows: T[]; rowCount: number }> {
     this.queries.push({ sql, params });
-    return { rows: [] };
+    if (/^\s*SELECT/i.test(sql)) {
+      return {
+        rows: this.ownerRows as unknown as T[],
+        rowCount: this.ownerRows.length,
+      };
+    }
+    return { rows: [], rowCount: this.insertRowCount };
   }
 }
 
@@ -197,6 +211,93 @@ describe("applyRoutineCompletionEvents", () => {
     expect(params[7]).toBe("unknown");
     expect(params[8]).toBe("ui");
     expect(params[9]).toBeNull(); // device_id: не рядок → null
+  });
+
+  it("відхиляє tz_offset_min поза реальним діапазоном UTC-офсетів", async () => {
+    // Колонка в міграції 085 без CHECK, а сире `Number.isInteger` пускало
+    // `999999` у журнал, який існує саме для майбутнього перерахунку
+    // день-ключа. Межі — ті самі, що в `parseOptionalTzOffsetMin`.
+    const fake = new FakeClient();
+    for (const bad of [999_999, -999_999, 841, -841]) {
+      expect(
+        await applyRoutineCompletionEvents(
+          asClient(fake),
+          op(validRow({ tz_offset_min: bad })),
+          USER,
+          CLIENT_TS,
+        ),
+      ).toEqual({ status: "rejected", reason: "invalid_tz_offset_min" });
+    }
+    expect(fake.queries).toHaveLength(0);
+  });
+
+  it("пускає крайні валідні tz_offset_min (±840) і відсутнє значення", async () => {
+    for (const ok of [840, -840, 0]) {
+      const fake = new FakeClient();
+      expect(
+        await applyRoutineCompletionEvents(
+          asClient(fake),
+          op(validRow({ tz_offset_min: ok })),
+          USER,
+          CLIENT_TS,
+        ),
+      ).toEqual({ status: "applied" });
+      expect(fake.queries[0]!.params[6]).toBe(ok);
+    }
+  });
+
+  it("на конфлікті id звіряє власника: чужий рядок → fk_violation", async () => {
+    // `ON CONFLICT (id) DO NOTHING` без звірки власника мовчки no-op-ив подію
+    // з підібраним чужим `id` і рапортував `applied` — тобто відмітка не
+    // доїжджала, а виглядало це як успіх.
+    const fake = new FakeClient();
+    fake.insertRowCount = 0;
+    fake.ownerRows = [{ user_id: "someone-else" }];
+
+    const result = await applyRoutineCompletionEvents(
+      asClient(fake),
+      op(validRow()),
+      USER,
+      CLIENT_TS,
+    );
+
+    expect(result).toEqual({ status: "rejected", reason: "fk_violation" });
+    expect(fake.queries).toHaveLength(2);
+    expect(fake.queries[1]!.sql).toMatch(
+      /SELECT user_id FROM routine_completion_events/,
+    );
+  });
+
+  it("на конфлікті id зі СВОЇМ рядком лишається ідемпотентним applied", async () => {
+    const fake = new FakeClient();
+    fake.insertRowCount = 0;
+    fake.ownerRows = [{ user_id: USER }];
+
+    expect(
+      await applyRoutineCompletionEvents(
+        asClient(fake),
+        op(validRow()),
+        USER,
+        CLIENT_TS,
+      ),
+    ).toEqual({ status: "applied" });
+  });
+
+  it("на конфлікті id без рядка в таблиці — fk_violation, не мовчазний applied", async () => {
+    // Append-only-таблиця рядків не втрачає, тож «конфлікт був, а рядка нема»
+    // означає стан, якого не має бути; ковтати його як успіх не можна.
+    const fake = new FakeClient();
+    fake.insertRowCount = 0;
+    fake.ownerRows = [];
+
+    expect(
+      await applyRoutineCompletionEvents(
+        asClient(fake),
+        op(validRow()),
+        USER,
+        CLIENT_TS,
+      ),
+    ).toEqual({ status: "rejected", reason: "fk_violation" });
   });
 
   it("падає назад на clientTs, коли занадто короткий payload без таймстемпів", async () => {

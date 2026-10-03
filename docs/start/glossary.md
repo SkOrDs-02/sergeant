@@ -1,6 +1,6 @@
 # Глосарій — доменні й платформні терміни Sergeant
 
-> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит C5: уточнено, що баланси finyk — похідні від mono\_\*). **Next review:** 2026-10-22.
+> **Last touched:** 2026-09-17 by @claude (label `playbooks/` → `instructions/`; lifecycle marker → `Last touched`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Один екран, щоб новачок (людина чи агент) розшифрував жаргон, який
@@ -59,9 +59,9 @@
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Hard Rule**        | Незмінне правило з категорією в `hard-rules.json` (blocker-invariant / lint-enforced / active-initiative). Реєстр — у [`AGENTS.md`](../../AGENTS.md). |
 | **ADR**              | Architecture Decision Record — фіксує рішення з контекстом і альтернативами («чому», не «як»).                                                        |
-| **Playbook**         | Канонічний покроковий рецепт для повторюваної задачі. Каталог — [`playbooks/`](./instructions/README.md).                                             |
+| **Playbook**         | Канонічний покроковий рецепт для повторюваної задачі. Каталог — [`instructions/`](./instructions/README.md).                                          |
 | **Skill**            | `SKILL.md` під поверхню зміни в `.agents/skills/`. Старт — `sergeant-start-here`.                                                                     |
 | **Initiative**       | Нумерована multi-PR програма з acceptance-критеріями і 90-денним вікном стабілізації.                                                                 |
 | **Roast / Audit**    | Тематична прожарка/перевірка зрізу системи з P0/P1/P2-розбивкою. Каталог — `docs/work/specs/audits/`.                                                 |
 | **Trust badge**      | Авто-генерований індикатор свіжості доків у `docs/README.md` (`docs:gen-trust-badge`).                                                                |
-| **Lifecycle marker** | `> **Status:**` + `Last validated` / `Next review` на кожному файлі/доку (Hard Rule #10).                                                             |
+| **Lifecycle marker** | `> **Status:**` + `Last touched` / `Next review` на кожному файлі/доку (Hard Rule #10). Legacy-лейбл `Last validated` гейт ще приймає, але не канон.  |

@@ -1,7 +1,7 @@
 /**
  * `useMeasurements` — mobile hook for the Fizruk Measurements screen.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Reads from the SQLite warm cache and persists exclusively through
  * the dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV
  * slot `STORAGE_KEYS.FIZRUK_MEASUREMENTS` is drained on first boot

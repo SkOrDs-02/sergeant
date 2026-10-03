@@ -45,11 +45,11 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * UUID — на відміну від `nutrition_pantry_items`. Клієнт генерує НЕ-UUID
  * id (`home`, `p_<ms>_<idx>`, `<pantryId>::<idx>::<name>`), тож UUID-колонка
  * дала б `22P02` → `apply_failed` на кожному реальному push-і (той самий
- * клас багу, що в `docs/90-work/tech-debt/backend.md` § «Routine: PK-тип»).
+ * клас багу, що в `docs/work/specs/tech-debt/backend.md` § «Routine: PK-тип»).
  * НЕ «наводь симетрію» з сусідньою таблицею — симетрія тут і є баг.
  *
- * Канон: docs/01-product/model/nutrition.md §9
- * ADR:   docs/04-governance/adr/0077-pantry-append-only-ledger.md
+ * Канон: docs/product/modules/nutrition.md §9
+ * ADR:   docs/governance/adr/0077-pantry-append-only-ledger.md
  */
 
 /** Закритий enum `kind`. Дзеркалить CHECK у міграції 086. */
@@ -186,7 +186,7 @@ export async function applyNutritionPantryEvents(
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
 
-  await client.query(
+  const res = await client.query(
     `INSERT INTO nutrition_pantry_events
        (id, user_id, pantry_id, item_id, item_key, kind, delta_qty, abs_qty,
         unit, source, meal_id, occurred_at, tz_offset_min, created_at,
@@ -212,5 +212,24 @@ export async function applyNutritionPantryEvents(
       deletedAt ?? null,
     ],
   );
+
+  // `DO NOTHING` мовчазний за визначенням і сам по собі не розрізняє «мій
+  // повтор» від «чужий рядок із таким самим id». Перевірка `row.user_id`
+  // вище цього не закриває: вона звіряє payload із сесією, а не з тим, ХТО
+  // вже володіє рядком у таблиці. `id` тут TEXT і будується клієнтом
+  // детерміновано, тобто вгадуваний — тож підібраний id давав no-op і
+  // чесний `applied`: подія комори мовчки не доїжджала, а виглядало це як
+  // успіх. Той самий guard, що в `routine/applyCompletionEvents.ts`.
+  if (res.rowCount === 0) {
+    const existing = await client.query<{ user_id: string }>(
+      `SELECT user_id FROM nutrition_pantry_events WHERE id = $1`,
+      [id],
+    );
+    // Рядок зник між INSERT-ом і SELECT-ом — таблиця append-only, тож
+    // штатно це неможливо; трактуємо як не-наш рядок, а не як успіх.
+    if (existing.rows.length === 0 || existing.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+  }
   return { status: "applied" };
 }

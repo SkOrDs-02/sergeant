@@ -4,12 +4,12 @@
 #     -f Dockerfile.api -t hub-api .
 #
 # `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening
-# card L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`). Hetzner/Coolify
+# card L13 — `docs/work/specs/security-hardening/L13-docker-platform-pin.md`). Hetzner/Coolify
 # runtime це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
 # зібрала б arm64-image, який локально проходить smoke, але на сервері
 # падає з "exec format error".
 #
-# Stage map (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
+# Stage map (PR-30 — `docs/work/specs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
 #
 #   1. `builder`  — node:alpine + full dev deps + `pnpm build` (esbuild
 #      бандл у `dist-server/index.js` + копія `migrations/*.sql`).
@@ -59,15 +59,16 @@
 # external HTTP-probe». Railway виведено з експлуатації (ADR-0074), а
 # Coolify влаштований інакше — перевірка внутрішня, не зовнішня.
 #
-# Pre-deploy міграції: Coolify виконує `pre_deployment_command`
-# (`node dist-server/migrate.js`; те саме робив Railway `preDeployCommand`)
-# через `/bin/sh -c "<cmd>"` всередині того ж runtime-образу. Distroless
-# шела не має, тому pre-deploy мовчки фейлиться (deploy-логи порожні,
-# контейнер не встигає нічого написати). Щоб не ламати release-stage
-# міграцій, у runtime-стейдж
-# нижче запікаємо `busybox` (~800 KB) з official `busybox:stable-musl`
-# (static-pie ELF, без жодних .so-залежностей) як `/bin/sh`, і додаємо
-# `/nodejs/bin` у PATH, щоб `sh -c "node ..."` міг його зарезолвити.
+# Міграції: виконуються ENTRYPOINT-ом образу (`migrate.js && exec index.js`,
+# див. примітку внизу), а НЕ Coolify `pre_deployment_command` — той крутиться
+# у старому контейнері й бачить старі `.sql`. Через це runtime-стейдж
+# потребує shell: distroless його не має, тож нижче запікаємо `busybox`
+# (~800 KB) з official `busybox:stable-musl` (static-pie ELF, без жодних
+# .so-залежностей) як `/bin/sh`, і додаємо `/nodejs/bin` у PATH, щоб
+# `sh -c "node ..."` міг його зарезолвити.
+#
+# Другий споживач того самого бінарника — health check Coolify (`/bin/wget`,
+# див. окрему примітку нижче), тож busybox лишається потрібним двічі.
 #
 # Чому НЕ alpine-busybox: у alpine `/bin/busybox` dynamically linked
 # проти musl-libc (`/lib/ld-musl-x86_64.so.1`), якої немає у
@@ -180,6 +181,10 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
 #     CRITICAL/HIGH через bundle Go-stdlib `esbuild`.
 #   - `esbuild` / `@esbuild+*` / `tsx` — самі Go-binary артефакти.
 #   - `rollup` / `@rollup+*` — peer Vite-у, аналогічна логіка.
+#   - `image-size` — транзитив `metro` (бандлер React Native). Доїжджає сюди
+#     через auto-install peers: `@better-auth/expo` → drizzle-orm → expo-sqlite
+#     → expo → react-native → metro. Сервер metro не виконує, а Trivy фейлить
+#     HIGH (CVE-2025-71329/71330, фікс лише в мажорі 2.0.3).
 #
 # Distroless runtime НЕ виконує жодного з цих бінарів (немає shell-у), але
 # Trivy все одно scan-ить файли і фейлить, тому позбавляємось їх.
@@ -192,7 +197,8 @@ RUN find node_modules -maxdepth 3 -type d \
          -o -path 'node_modules/.pnpm/@esbuild+*' \
          -o -path 'node_modules/.pnpm/tsx@*' \
          -o -path 'node_modules/.pnpm/rollup@*' \
-         -o -path 'node_modules/.pnpm/@rollup+*' \) \
+         -o -path 'node_modules/.pnpm/@rollup+*' \
+         -o -path 'node_modules/.pnpm/image-size@*' \) \
       -prune -exec rm -rf {} +
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -200,10 +206,10 @@ RUN find node_modules -maxdepth 3 -type d \
 # `corepack` / `npm` / `pnpm` / `yarn`. Entrypoint = `/nodejs/bin/node`.
 #
 # Єдиний shell-binary — busybox з `busybox:stable-musl` (static-pie,
-# self-contained ~800 KB). Потрібен виключно тому, що Coolify виконує
-# `pre_deployment_command` через `/bin/sh -c "..."`; без нього release-stage
-# міграцій падає мовчки ще до того, як `node dist-server/migrate.js`
-# встигне щось вивести.
+# self-contained ~800 KB). Потрібен двічі: ENTRYPOINT образу обгорнутий у
+# `/bin/sh -c "migrate && exec index"`, і health check Coolify виконується
+# всередині контейнера як `curl || wget`. Без нього міграції не запускаються
+# взагалі, а healthcheck завалює КОЖЕН деплой.
 FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13:nonroot AS runtime
 WORKDIR /app
 
@@ -230,13 +236,11 @@ COPY --from=busybox:stable-musl /bin/busybox /bin/sh
 # цілком справним. Саме так і сталося 2026-08-06.
 COPY --from=busybox:stable-musl /bin/busybox /bin/wget
 
-# Coolify виконує `pre_deployment_command` через `/bin/sh -c "<cmd>"`. Default
+# ENTRYPOINT образу обгорнутий у `/bin/sh -c "node … && exec node …"`. Default
 # PATH у distroless — `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
 # `node` живе у `/nodejs/bin/node` і у цьому списку відсутній. Без
-# наступного override-у sh не знаходить `node` і pre-deploy валиться
-# на 127 (`node: not found`). Runtime entrypoint (`/nodejs/bin/node …
-# dist-server/index.js`) PATH-lookup не використовує — отже зміна
-# впливає виключно на shell-обгорнуті команди.
+# наступного override-у sh не знаходить `node`, і контейнер падає на 127
+# (`node: not found`) ще до першої міграції.
 ENV PATH="/nodejs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 ENV NODE_ENV=production
@@ -252,7 +256,7 @@ ENV GIT_SHA=${GIT_SHA}
 # ЗАЛИШОК OpenClaw (ADR-0075): рантайм `read_strategy_docs` видалено, цей
 # ENV і COPY docs нижче ніщо не читає. Лишаються навмисно: зняття — non-comment
 # зміна deploy-конфігу, яка вимагає лейбла `verified-on-staging` за
-# `docs/00-start/playbooks/deploy-config-change.md` (§3, Coolify prod-деплой).
+# `docs/start/instructions/deploy-config-change.md` (§3, Coolify prod-деплой).
 # Зняти окремим PR після спостереження одного деплой-циклу.
 ENV OPENCLAW_REPO_ROOT=/app
 
@@ -275,15 +279,43 @@ COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/ap
 
 # ЗАЛИШОК OpenClaw (ADR-0075) — див. примітку біля `OPENCLAW_REPO_ROOT` вище:
 # ці COPY ніщо не читає, зняти окремим deploy-config PR.
-COPY --chown=nonroot:nonroot docs/04-governance/adr /app/docs/04-governance/adr
-COPY --chown=nonroot:nonroot docs/01-product/launch /app/docs/01-product/launch
-COPY --chown=nonroot:nonroot docs/02-engineering/integrations /app/docs/02-engineering/integrations
-COPY --chown=nonroot:nonroot docs/04-governance/governance /app/docs/04-governance/governance
+COPY --chown=nonroot:nonroot docs/governance/adr /app/docs/governance/adr
+COPY --chown=nonroot:nonroot docs/work/specs/launch /app/docs/work/specs/launch
+COPY --chown=nonroot:nonroot docs/engineering/integrations /app/docs/engineering/integrations
+COPY --chown=nonroot:nonroot docs/governance/governance /app/docs/governance/governance
 
 WORKDIR /app/apps/server
 
 EXPOSE 3000
 
-# Distroless entrypoint = `/nodejs/bin/node`. CMD = args only. NO
-# HEALTHCHECK у самому образі — Coolify додає власний (див. примітку вище).
-CMD ["dist-server/index.js"]
+# Міграції їдуть ТУТ, у власному процесі, перед стартом веб-сервера.
+#
+# Чому не `pre_deployment_command` (як було до 2026-09-21): Coolify виконує
+# його через `docker exec` у контейнері, що ЩЕ ПРАЦЮЄ на попередньому
+# образі, тобто `migrate.js` читає старі `.sql` і чесно рапортує
+# `migrate_ok`, не побачивши нової міграції. Наслідок — кожна міграція
+# застосовувалась рівно на один деплой пізніше за код, який на неї
+# розраховує. На Railway та сама модель була справною: `preDeployCommand`
+# піднімав свіжий контейнер з нового образу.
+#
+# Чому не `ensureSchema()` у бут веб-процесу: три причини з doc-string
+# `migrate.mjs` лишаються чинними, і головна з них — release-stage потребує
+# `statement_timeout = 0`, `lock_timeout = 10s` і прямого URL в обхід
+# pgBouncer, а runtime-пул потребує рівно протилежного. Окремий процес дає
+# обидва набори, спільний — жодного.
+#
+# `exec` обовʼязковий: без нього PID 1 лишається за `sh`, який не
+# ретранслює SIGTERM, і graceful shutdown у `index.ts` не спрацьовує —
+# контейнер помирає по таймауту з обірваними зʼєднаннями.
+#
+# `&&` робить крок fail-closed: `migrate.js` виходить з кодом 1 на будь-якій
+# помилці, веб-сервер тоді не стартує, healthcheck не проходить, Coolify
+# відкочується на старий контейнер. Це бажана поведінка: краще лишитись на
+# попередній версії, ніж піднятись із розбіжною схемою.
+#
+# Ціна: міграції проганяються на КОЖНОМУ старті контейнера, не лише на
+# деплої. Вони ідемпотентні (`schema_migrations` + `pg_advisory_lock`), а
+# порожній прогін коштує ~350 мс.
+#
+# NO HEALTHCHECK у самому образі — Coolify додає власний (див. примітку вище).
+ENTRYPOINT ["/bin/sh", "-c", "node dist-server/migrate.js && exec node dist-server/index.js"]

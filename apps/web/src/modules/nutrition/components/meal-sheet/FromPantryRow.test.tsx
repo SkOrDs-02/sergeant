@@ -23,6 +23,8 @@ describe("FromPantryRow", () => {
         setFromPantryItem={vi.fn()}
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
+        onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     expect(container.firstChild).toBeNull();
@@ -32,6 +34,7 @@ describe("FromPantryRow", () => {
     const setFromPantryItem = vi.fn();
     const setForm = vi.fn();
     const setFoodQuery = vi.fn();
+    const onPicked = vi.fn();
     render(
       <FromPantryRow
         pantryItems={items}
@@ -39,12 +42,41 @@ describe("FromPantryRow", () => {
         setFromPantryItem={setFromPantryItem}
         setForm={setForm}
         setFoodQuery={setFoodQuery}
+        onPicked={onPicked}
+        onCleared={vi.fn()}
       />,
     );
     fireEvent.click(screen.getByText("Молоко"));
     expect(setFromPantryItem).toHaveBeenCalledWith("Молоко");
     expect(setFoodQuery).toHaveBeenCalledWith("Молоко");
     expect(setForm).toHaveBeenCalled();
+    // N1: без цього виклику пошук за назвою стартував, але його результат
+    // нікуди не йшов — `pickedFood` лишався `null`, і прийом із комори
+    // зберігався БЕЗ КБЖУ.
+    // Другим аргументом іде вага фасування: у цієї позиції її немає, тож
+    // автопідбір вільний підставити типову порцію каталогу.
+    expect(onPicked).toHaveBeenCalledWith("Молоко", null);
+  });
+
+  it("не запускає автопідбір, коли позицію знімають — і гасить відкладений", () => {
+    const onPicked = vi.fn();
+    const onCleared = vi.fn();
+    render(
+      <FromPantryRow
+        pantryItems={items}
+        fromPantryItem="Молоко"
+        setFromPantryItem={vi.fn()}
+        setForm={vi.fn()}
+        setFoodQuery={vi.fn()}
+        onPicked={onPicked}
+        onCleared={onCleared}
+      />,
+    );
+    fireEvent.click(screen.getByText("Молоко"));
+    expect(onPicked).not.toHaveBeenCalled();
+    // Пошук, запущений попереднім тапом, міг ще не відповісти: без цього
+    // він повернув би продукт, від якого людина щойно відмовилась.
+    expect(onCleared).toHaveBeenCalled();
   });
 
   // Реальні позиції з чека Сільпо: `unit` там — фасування, не одиниця
@@ -63,6 +95,8 @@ describe("FromPantryRow", () => {
         setFromPantryItem={vi.fn()}
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
+        onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     expect(screen.getByText("2 × 0,25 л")).toBeTruthy();
@@ -106,6 +140,8 @@ describe("FromPantryRow", () => {
         setFromPantryItem={vi.fn()}
         setForm={vi.fn()}
         setFoodQuery={setFoodQuery}
+        onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     // Чіп показує родову назву; назви покупок у ряд «З комори» не течуть.
@@ -114,16 +150,10 @@ describe("FromPantryRow", () => {
     expect(setFoodQuery).toHaveBeenCalledWith("Молоко");
   });
 
-  // CI-7 (аудит 2026-09-01): секція «З комори» згорнута за замовчуванням
-  // (`defaultOpen={false}` у `FromPantryRow`) і `useInertWhileCollapsed`
-  // ставить `inert`/`aria-hidden` на контейнер чипів, поки вона закрита —
-  // чипи в DOM є, але не клікабельні й недоступні для a11y-дерева. Смоук
-  // (`nutrition-pantry-generic-names.spec.ts`) клікав чіп одразу, без
-  // розгортання — це не регресія компонента, а застарілий тест, писаний
-  // до переробки кроку «Джерело» на акордеон (12.08). Тест нижче пінить
-  // саме цю поведінку, щоб наступна зміна дефолту чи хука впала тут, а не
-  // мовчки в e2e.
-  it("keeps the pantry chips collapsed and inert until the section is expanded", () => {
+  // Regression 2026-09-07: «пікер комори зник». Секція комори не може
+  // стартувати згорнутою в AddMeal flow: це основний шлях логування з
+  // наявних продуктів, а не допоміжна підказка.
+  it("keeps the pantry chips visible immediately", () => {
     render(
       <FromPantryRow
         pantryItems={items}
@@ -131,21 +161,61 @@ describe("FromPantryRow", () => {
         setFromPantryItem={vi.fn()}
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
+        onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
 
     const toggle = screen.getByRole("button", { name: /З комори/ });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
 
     const chip = screen.getAllByTestId("from-pantry-chip")[0]!;
-    const collapsedGrid = chip.closest("[aria-hidden]");
-    expect(collapsedGrid).not.toBeNull();
-    expect(collapsedGrid).toHaveAttribute("inert", "");
-
-    fireEvent.click(toggle);
-
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(chip.closest("[aria-hidden]")).toBeNull();
+  });
+
+  // 2026-09-11: замінило окремий рядок «З чека» — вага фасування з чека
+  // Сільпо (`packGrams`) тепер підставляється прямо з чіпа комори.
+  it("prefills the picked portion weight from the freshest source's packGrams", () => {
+    const setPickedGrams = vi.fn();
+    render(
+      <FromPantryRow
+        onPicked={vi.fn()}
+        onCleared={vi.fn()}
+        pantryItems={
+          [
+            {
+              name: "Йогурт",
+              qty: 660,
+              unit: "г",
+              sources: [
+                {
+                  name: "Йогурт Активіа полуниця",
+                  qty: 330,
+                  unit: "г",
+                  addedAt: "2026-08-21",
+                  packGrams: 330,
+                },
+                {
+                  name: "Йогурт Активіа полуниця",
+                  qty: 330,
+                  unit: "г",
+                  addedAt: "2026-09-05",
+                  packGrams: 330,
+                },
+              ],
+            },
+          ] as never[]
+        }
+        fromPantryItem={null}
+        setFromPantryItem={vi.fn()}
+        setForm={vi.fn()}
+        setFoodQuery={vi.fn()}
+        setPickedGrams={setPickedGrams}
+      />,
+    );
+    expect(screen.getByText("330 г")).toBeTruthy();
+    fireEvent.click(screen.getByText("Йогурт"));
+    expect(setPickedGrams).toHaveBeenCalledWith("330");
   });
 
   it("deselects the active item on a second tap", () => {
@@ -157,6 +227,8 @@ describe("FromPantryRow", () => {
         setFromPantryItem={setFromPantryItem}
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
+        onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     // Не `getByText`: активна позиція тепер видно ДВІЧІ — у чіпі й у

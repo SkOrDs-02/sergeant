@@ -1,6 +1,6 @@
 -- 042: Range-partition `module_data` by `client_updated_at` (monthly).
 --
--- Stage 6 / PR #050 з `docs/planning/storage-roadmap.md`.
+-- Stage 6 / PR #050 з `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
 --
 -- ─── Context ──────────────────────────────────────────────────────────────
 --

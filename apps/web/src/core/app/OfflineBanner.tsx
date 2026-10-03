@@ -6,17 +6,26 @@ import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useSyncStatus } from "../cloudSync";
 import { pluralUa } from "@sergeant/shared";
 import { SyncStatusSheet } from "./SyncStatusSheet";
+import { useOutboxPurgeNotice } from "../syncEngine/outboxPurgeNotice";
 
 /**
  * Стриманий індикатор зʼєднання та синхронізації — невелика плаваюча плашка
  * під хедером застосунку. Для офлайн-first PWA відсутність мережі не є
  * критичною помилкою, тому індикатор лишається компактним.
  *
- * Three visible states (idle → renders `null`):
+ * Visible states (idle → renders `null`):
  *   - **online + queue/dirty > 0:** "Синхронізація · N в черзі" with an
  *     animated `refresh` icon.
  *   - **offline:** "Офлайн" or "Офлайн · N в черзі" with the wifi-off icon.
  *   - **blocked (dead-letter > 0):** sync errors that need a retry.
+ *   - **rejected (server-rejected rows > 0):** records the server will
+ *     never accept.
+ *   - **purged (lowest priority, PR-T2):** the boot-time TTL sweep
+ *     removed old rejected/dead-letter rows (`outboxPurgeNotice.ts`).
+ *     Without this state the pill can disappear entirely right after a
+ *     purge — the very counts that made it visible just got deleted —
+ *     leaving no entry point into `SyncStatusSheet` to see what was
+ *     lost.
  *
  * The pill is a button — tapping it opens {@link SyncStatusSheet} with the
  * full state (connection, queue, errors + retry). The safe-area inset is
@@ -27,9 +36,9 @@ import { SyncStatusSheet } from "./SyncStatusSheet";
 // Плашка виняткового стану розміщується під 68px-хедером і не перекриває
 // його назву та дії. У нормальному стані індикатор не показується.
 const PILL_CLS =
-  "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-type BannerState = "blocked" | "offline" | "syncing" | "rejected";
+type BannerState = "blocked" | "offline" | "syncing" | "rejected" | "purged";
 
 const queueLabel = (count: number) =>
   `${count} ${pluralUa(count, {
@@ -53,6 +62,7 @@ export function OfflineBanner() {
     retrySyncV2DeadLetters,
   } = useSyncStatus();
   const pending = syncV2PendingCount;
+  const purgeNotice = useOutboxPurgeNotice();
 
   useEffect(() => {
     if (headerSlot || typeof MutationObserver === "undefined") return;
@@ -82,10 +92,22 @@ export function OfflineBanner() {
           ? "syncing"
           : syncV2RejectedCount > 0
             ? "rejected"
-            : null;
+            : purgeNotice
+              ? "purged"
+              : null;
 
-  // Online and nothing waiting — the happy path needs no chrome.
-  if (state === null) return null;
+  // Живий регіон стоїть у DOM завжди, і коли банера немає: регіон, що
+  // зʼявляється разом зі своїм текстом, скрінрідери не озвучують, тож
+  // перехід в офлайн мовчав. Оголошуємо стан, а не лічильник черги:
+  // «Синхронізація · N» перечитувався б на кожен запис у черзі.
+  const statusRegion = (text: string) => (
+    <span role="status" className="sr-only">
+      {text}
+    </span>
+  );
+
+  // Online and nothing waiting: the happy path needs no chrome.
+  if (state === null) return <>{statusRegion("")}</>;
 
   const view =
     state === "blocked"
@@ -114,17 +136,33 @@ export function OfflineBanner() {
                 many: "записів не прийнято",
               })}`,
             }
-          : {
-              icon: "refresh-cw" as const,
-              iconClass: "motion-safe:animate-spin-slow",
-              label: `Синхронізація · ${queueLabel(pending)}`,
-            };
+          : state === "purged" && purgeNotice
+            ? {
+                icon: "info" as const,
+                iconClass: undefined,
+                label: `${purgeNotice.purged} ${pluralUa(purgeNotice.purged, {
+                  one: "старий запис прибрано",
+                  few: "старі записи прибрано",
+                  many: "старих записів прибрано",
+                })}`,
+              }
+            : {
+                icon: "refresh-cw" as const,
+                iconClass: "motion-safe:animate-spin-slow",
+                label: `Синхронізація · ${queueLabel(pending)}`,
+              };
+
+  const announcement =
+    state === "offline"
+      ? "Офлайн"
+      : state === "syncing"
+        ? "Синхронізація"
+        : view.label;
 
   const content = (
     <>
       <button
         type="button"
-        aria-live="polite"
         data-testid="offline-banner"
         data-state={state}
         onClick={() => setSheetOpen(true)}
@@ -133,7 +171,7 @@ export function OfflineBanner() {
       >
         <Icon
           name={view.icon}
-          size={12}
+          size="xs"
           strokeWidth={2.5}
           aria-hidden
           className={cn(view.iconClass)}
@@ -152,6 +190,12 @@ export function OfflineBanner() {
     </>
   );
 
-  if (headerSlot === undefined) return null;
-  return headerSlot ? createPortal(content, headerSlot) : content;
+  // Той самий Fragment зі статусом першим, що й у гілці без банера: React
+  // оновлює наявний вузол регіону, а не монтує новий.
+  return (
+    <>
+      {statusRegion(announcement)}
+      {headerSlot ? createPortal(content, headerSlot) : content}
+    </>
+  );
 }

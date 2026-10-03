@@ -1,6 +1,6 @@
 # Repo assets — hero, screenshots, GIFs
 
-> **Last touched:** 2026-09-01 by @claude (Devin retired — ADR-0088; assets ще не викапчено). **Next review:** 2027-09-24.
+> **Last touched:** 2026-09-17 by @claude (власник `module-*.png` звірений із FTUX-трекером; assets ще не викапчено). **Next review:** 2027-09-24.
 > **Status:** Scaffolded — жоден із описаних нижче файлів ще не існує в теці; README тримає capture-інструкції, README.md кореня посилається сюди як на pending hero.
 
 > Static assets, що використовуються в `README.md`, `docs/`, або в social-meta-картинках. Не плутати з `apps/web/public/` (runtime web assets) і `apps/mobile/assets/` (mobile bundle).
@@ -57,8 +57,8 @@
 
 > Цей track повинен бути порожнім після завершення asset-capture-PR-у (PR-02b з [`docs/work/specs/launch/product-os/ftux-master-tracker.md`](../work/specs/launch/product-os/ftux-master-tracker.md) §3).
 
-| Asset               | Reason missing        | Owner / Tracker                       |
-| ------------------- | --------------------- | ------------------------------------- |
-| `sergeant-hero.png` | Asset capture pending | PR-02b (after PR-02 structural lands) |
-| `ftux-flow.gif`     | Asset capture pending | PR-02b                                |
-| `module-*.png` (×4) | Lower priority        | PR-22 (post-Wave-1)                   |
+| Asset               | Reason missing        | Owner / Tracker                                                  |
+| ------------------- | --------------------- | ---------------------------------------------------------------- |
+| `sergeant-hero.png` | Asset capture pending | PR-02b (after PR-02 structural lands)                            |
+| `ftux-flow.gif`     | Asset capture pending | PR-02b                                                           |
+| `module-*.png` (×4) | Lower priority        | без власника (у трекері PR-22 — це TOC для AGENTS.md, не assets) |

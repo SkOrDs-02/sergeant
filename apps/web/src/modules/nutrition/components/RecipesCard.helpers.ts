@@ -30,3 +30,15 @@ export interface RecipeLike {
 export function guessMealTypeIdNow(): MealTypeId {
   return mealTypeByNow();
 }
+
+/**
+ * Множник порцій із текстового поля збереженого рецепта. Порожнє,
+ * некоректне чи ≤ 0 → 1; кома як десятковий роздільник приймається.
+ * Один парсер на показ («≈ N ккал» у картці) і на запис у журнал, щоб
+ * число на екрані й число в журналі не могли розійтись.
+ */
+export function parsePortionFactor(raw: string | null | undefined): number {
+  if (raw == null || raw === "") return 1;
+  const n = Number(String(raw).replace(",", "."));
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}

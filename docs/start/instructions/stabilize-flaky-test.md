@@ -1,10 +1,10 @@
 # Playbook: Stabilize Flaky Test
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-15.
+> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-16. _(Flaky-list живе тут, не в AGENTS.md.)_
 > **Status:** Active
 > **Runtime-specific:** no
 
-**Trigger:** «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.
+**Trigger:** «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** (§ Контекст цього playbook-а).
 
 ## Owner surface
 
@@ -87,13 +87,13 @@ flowchart TD
 
 ### Контекст
 
-Sergeant має 3 відомі flaky тести у `apps/mobile` (зафіксовано в AGENTS.md):
+Sergeant має 3 відомі flaky тести у `apps/mobile` (список карантину живе тут; секції «Pre-existing flaky tests» в `AGENTS.md` більше немає — 2026-09-17):
 
 - `apps/mobile/src/core/OnboardingWizard.test.tsx`
 - `apps/mobile/src/core/dashboard/WeeklyDigestFooter.test.tsx`
 - `apps/mobile/src/core/settings/HubSettingsPage.test.tsx`
 
-Вони падають у CI на `main`, але не блокують merge — це by design, поки їх не стабілізували. Якщо береш flaky — мета **видалити з AGENTS.md flaky-list**, а не тимчасово приховати.
+Вони падають у CI на `main`, але не блокують merge — це by design, поки їх не стабілізували. Якщо береш flaky — мета **видалити зі списку вище**, а не тимчасово приховати.
 
 ### 1. Підтверди flakiness емпірично
 
@@ -223,7 +223,7 @@ done | grep FAIL | wc -l
 
 ### 5. Видали з flaky-list
 
-Після того, як 50/50 — оновлення в `AGENTS.md`:
+Після того, як 50/50 — оновлення списку в § Контекст цього playbook-а (до 2026-09 список жив в `AGENTS.md`):
 
 ```diff
  ## Pre-existing flaky tests (do not block merge)
@@ -254,7 +254,7 @@ Fix:
 - assert relative time delta, not absolute timestamp
 - add cleanup hook for DOM (was missing)
 
-Verified: 50/50 runs locally pass; AGENTS.md flaky-list trimmed.
+Verified: 50/50 runs locally pass; flaky-list in stabilize-flaky-test.md trimmed.
 ```
 
 ---
@@ -265,7 +265,7 @@ Verified: 50/50 runs locally pass; AGENTS.md flaky-list trimmed.
 - [ ] Знайдено root cause (одна з 5 категорій з кроку 2).
 - [ ] Застосовано відповідний fix-pattern (`fakeTimers`, `findByX`, `cleanup`, etc.).
 - [ ] **50 з 50** локальних ранів зелені після фіксу.
-- [ ] AGENTS.md flaky-list оновлений (тест видалено).
+- [ ] Flaky-list у § Контекст цього playbook-а оновлений (тест видалено).
 - [ ] CI: 3 послідовних зелених `Test coverage (vitest)` runs.
 - [ ] `pnpm lint` + `pnpm typecheck` — green.
 
@@ -281,6 +281,6 @@ Verified: 50/50 runs locally pass; AGENTS.md flaky-list trimmed.
 
 ## See also
 
-- [AGENTS.md](../../../AGENTS.md) — секція «Pre-existing flaky tests»
+- [AGENTS.md](../../../AGENTS.md) — repo policy (секції «Pre-existing flaky tests» там більше немає; список карантину — § Контекст вище)
 - [#743](https://github.com/Skords-01/Sergeant/pull/743) — приклад DOM-cleanup fix у `ChatQuickActions.test.tsx`
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md) — якщо це не flaky, а справжня регресія

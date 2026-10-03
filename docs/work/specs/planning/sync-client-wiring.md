@@ -1,8 +1,8 @@
 # Sync client wiring — multi-device op-log після SQLite cut-over
 
 > **Status:** Active
-> **Last touched:** 2026-07-20 by @cursor (docs-drift: Phase 1/2 code shipped; gap section refreshed). **Next review:** 2027-09-28.
-> Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md) (Stage 5 sync v2 server-side). **Фаза 1 (enqueue + pull) і Phase 2 registry expansion (27→42) — shipped у коді.** Залишок: локальна/CI verification (Testcontainers, dual-device E2E), потім Phase 3 SSE/ops.
+> **Last touched:** 2026-09-17 by @claude (лічильник таблиць реєстру → вказівник на `syncV2.ts`; ADR-0065 Accepted; Phase 3/4 досі відкриті — SSE-consumer на клієнті відсутній). **Next review:** 2026-12-16.
+> Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md) (Stage 5 sync v2 server-side). **Фаза 1 (enqueue + pull) і Phase 2 registry expansion (27→42 на момент 2026-07-20; чинний склад реєстру — ключі `OP_LOG_TABLE_REGISTRY` в `apps/server/src/modules/sync/syncV2.ts`, число тут не дублюється) — shipped у коді.** Залишок: локальна/CI verification (Testcontainers, dual-device E2E), потім Phase 3 SSE/ops. Звірка 2026-09-17: Phase 3 і 4 досі відкриті — `EventSource`-consumer у `apps/web/src` відсутній; ADR-0065 має статус Accepted, але реалізація (retention + NOTIFY fan-out) не завезена.
 
 ---
 
@@ -10,24 +10,24 @@
 
 ### Що вже зроблено (baseline 2026-07-10)
 
-| Шар                                                    | Стан                                                                              |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) | ✅ SoT для finyk / fizruk / nutrition / routine                                   |
-| **`sqliteWriter/`** (колишній dualWrite)               | ✅ Усі production-мутації модульних даних                                         |
-| **Server sync v2 API**                                 | ✅ `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream`   |
-| **`OP_LOG_TABLE_REGISTRY`**                            | ✅ **42** таблиць з apply-функціями на сервері (Phase 2 expansion)                |
-| **Push scheduler**                                     | ✅ Boot на web (`main.tsx`) і mobile (`_layout.tsx`)                              |
-| **Client pull loop**                                   | ✅ `syncEngineReader` / `pullOnce` (web + mobile)                                 |
-| **Outbox enqueue**                                     | ✅ sqliteWriter adapters enqueue для registry tables                              |
-| **CloudSync v1**                                       | ✅ Видалено (`module_data` dropped; sunset routes removed — Initiative 0003 #326) |
+| Шар                                                    | Стан                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) | ✅ SoT для finyk / fizruk / nutrition / routine                                       |
+| **`sqliteWriter/`** (колишній dualWrite)               | ✅ Усі production-мутації модульних даних                                             |
+| **Server sync v2 API**                                 | ✅ `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream`       |
+| **`OP_LOG_TABLE_REGISTRY`**                            | ✅ Таблиці з apply-функціями на сервері — чинний перелік: ключі реєстру в `syncV2.ts` |
+| **Push scheduler**                                     | ✅ Boot на web (`main.tsx`) і mobile (`_layout.tsx`)                                  |
+| **Client pull loop**                                   | ✅ `syncEngineReader` / `pullOnce` (web + mobile)                                     |
+| **Outbox enqueue**                                     | ✅ sqliteWriter adapters enqueue для registry tables                                  |
+| **CloudSync v1**                                       | ✅ Видалено (`module_data` dropped; sunset routes removed — Initiative 0003 #326)     |
 
 ### Що не зроблено (gap — post Phase 1/2)
 
-| Gap                           | Наслідок                                                                            |
-| ----------------------------- | ----------------------------------------------------------------------------------- |
-| **Local/CI dual-device E2E**  | Немає повного acceptance-доказу multi-device на Testcontainers / двох профілях      |
-| **SSE consumer відсутній**    | Real-time push від сервера — design-only на клієнті (Phase 3)                       |
-| **Деякі SQLite-only таблиці** | Поза registry лишаються локальні таблиці без sync (документовано в Phase 2 handoff) |
+| Gap                           | Наслідок                                                                                                                                                                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Local/CI dual-device E2E**  | Немає повного acceptance-доказу multi-device на Testcontainers / двох профілях                                                                                                                                                   |
+| **SSE consumer відсутній**    | Real-time push від сервера — design-only на клієнті (Phase 3). Живий кадр мусить бути сигналом «зроби pull», а не курсором через `Last-Event-ID`: він іде в порядку коміту й без серверних оп-ів (AI-DANGER у `syncV2Stream.ts`) |
+| **Деякі SQLite-only таблиці** | Поза registry лишаються локальні таблиці без sync (документовано в Phase 2 handoff)                                                                                                                                              |
 
 **Мета ініціативи:** зробити **end-to-end multi-device sync** для продуктового модульного стану: мутація на device A → Postgres op-log → pull на device B → SQLite apply → UI overlay.
 
@@ -85,9 +85,9 @@
                               │
 ┌──────────── SERVER ────────────────────────────────────────────────┐
 │  syncV2Push / syncV2Pull / syncV2Stream ✅                         │
-│  OP_LOG_TABLE_REGISTRY — 42 tables (Phase 2 expansion)              │
+│  OP_LOG_TABLE_REGISTRY — N tables (див. syncV2.ts; Phase 2 expansion)│
 │  SSE: in-process EventEmitter (Coolify/Hetzner; ADR-0074)            │
-│  sync_op_log retention: ADR-0065 Proposed                          │
+│  sync_op_log retention: ADR-0065 Accepted, not implemented         │
 └────────────────────────────────────────────────────────────────────┘
 ```
 

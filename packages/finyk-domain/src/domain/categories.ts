@@ -82,6 +82,7 @@ const CATEGORY_COLOR_ALIASES: Readonly<Record<string, string>> =
     ...LEGACY_INCOME_IDS.filter((id) => id !== "income").map(
       (id) => [id, "income"] as const,
     ),
+    ["tech", "shopping"],
   ]);
 
 /**

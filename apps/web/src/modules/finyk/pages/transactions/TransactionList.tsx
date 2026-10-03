@@ -8,7 +8,7 @@ import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
@@ -19,14 +19,13 @@ import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { cn } from "@shared/lib/ui/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
-import { getOnboardingGoals } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage/storage";
 import type {
   Transaction,
   TxCategoriesMap,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { TxAccount } from "./Transactions";
 
 /** Typical rendered height of one `TxListItem` row, in px. */
@@ -86,7 +85,7 @@ function DayCardShell({
 
           Утиліти РОЗДІЛЕНІ саме заради цього місця. Група дня — це
           стос із кількох `DayCardShell`; якби лінійка й перфорація
-          були одним класом, кожна транзакція отримала б обидві, і
+          були одним класом, кожна операція отримала б обидві, і
           матеріал став би візерунком.
 
           AI-DANGER: `overflow-hidden` тут більше НЕ ставиться на
@@ -94,7 +93,7 @@ function DayCardShell({
           Замість нього обрізанням займається сама маска.
 
           Підйому (`edge-lift`) тут навмисно немає — `edge-no-lift`.
-          Чек дня ЛЕЖИТЬ на папері, а не висить над ним: стос транзакцій
+          Чек дня ЛЕЖИТЬ на папері, а не висить над ним: стос операцій
           читають як один аркуш, і тінь під кожним днем зробила б із
           нього купку карток — рівно те, від чого матеріал і відводить.
           Тінь беруть окремі документи поза стосом (шторка операції,
@@ -167,7 +166,24 @@ export interface TransactionListProps {
   selectMode: boolean;
   selectedIds: Set<string>;
   hiddenTxIdSet: Set<string>;
+  /**
+   * «Не враховувати у статистиці» (`finyk_excluded_stat_txs`, PR-F4
+   * founder-UX audit 2026-09-13) — окремо від `hiddenTxIdSet`, бо
+   * виключена зі статистики транзакція лишається у звичайному списку,
+   * на відміну від прихованої. Рядок несе видимий маркер через
+   * `TxRowMetaChips`, інакше пакетна дія міняє підсумки Огляду й
+   * Аналітики без жодного сліду в самому списку.
+   */
+  excludedStatTxIdSet: Set<string>;
+  /**
+   * Ноги скасованих платежів («Скасування. …»): рядок несе слово
+   * «скасовано» замість «не в статистиці» (`TxRowMetaChips`).
+   */
+  cancelledTxIdSet?: ReadonlySet<string> | undefined;
+  /** Явні override-и користувача (НЕ ефективна мапа з правилами). */
   txCategories: TxCategoriesMap;
+  /** Правила «Завжди так для цього магазину» — рядок малює їхню категорію. */
+  merchantRules?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation per bank transaction. */
   txNotes?: Record<string, string | undefined> | undefined;
@@ -226,7 +242,10 @@ export function TransactionList({
   selectMode,
   selectedIds,
   hiddenTxIdSet,
+  excludedStatTxIdSet,
+  cancelledTxIdSet,
   txCategories,
+  merchantRules,
   txSplits,
   txNotes = {},
   accounts,
@@ -244,7 +263,6 @@ export function TransactionList({
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const cloudPullPending = useCloudPullPending();
   // Read onboarding goals once per render — stable across the session.
-  const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
 
   // Build a flat render list of alternating headers + item rows.
   // groupCounts[i] is 0 when the day is collapsed (set by the parent), so
@@ -320,11 +338,16 @@ export function TransactionList({
 
   // Three empty surfaces share the same DataState slot:
   //   • no-data-at-all (`activeTx` empty AND nothing in any other month) →
-  //     tier-1 hero with the module-tuned copy/illustration via
-  //     `ModuleEmptyState`. No inline action — the global "+ Додати витрату"
-  //     FAB on `FinykApp` is the primary CTA and duplicating it inside the
-  //     empty-state would be the anti-pattern called out in
-  //     `docs/design/empty-states.md`.
+  //     a list-scoped state, NOT the Overview tier-1 hero. Founder-UX audit
+  //     round 2 (F1) flagged that Overview and Transactions rendered the
+  //     exact same `ModuleEmptyState module="finyk"` hero back to back when
+  //     a brand-new user tapped both tabs — same title, same illustration,
+  //     same "Куди йдуть твої гроші?" pitch twice in a row. Overview answers
+  //     "what does finyk do" (goal-aware hero, kept there); Transactions
+  //     answers "why is this list empty" — short, list-appropriate copy, no
+  //     inline action (the global "+ Додати витрату" FAB on `FinykApp` is
+  //     the primary CTA; duplicating it here is the anti-pattern called out
+  //     in `docs/design/design/empty-states.md`).
   //   • month-empty (`activeTx` empty but the user HAS transactions in other
   //     months) → month-scoped state. The first-run hero here read as data
   //     loss: on 1 серпня, with Monobank connected and a full July history,
@@ -351,7 +374,7 @@ export function TransactionList({
           module="finyk"
           action={
             onGoPreviousMonth ? (
-              <Button variant="secondary" onClick={onGoPreviousMonth}>
+              <Button variant="outline" onClick={onGoPreviousMonth}>
                 Попередній місяць
               </Button>
             ) : undefined
@@ -359,12 +382,19 @@ export function TransactionList({
         />
       </div>
     ) : activeTx.length === 0 ? (
-      <ModuleEmptyState module="finyk" goalContext={onboardingGoals} />
+      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+        <EmptyState
+          illustration={<FinykEmptyIllustration size={80} />}
+          title="Операцій ще немає"
+          description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+          module="finyk"
+        />
+      </div>
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
           illustration={<FinykEmptyIllustration size={80} />}
-          title="Немає транзакцій"
+          title="Немає операцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
           module="finyk"
         />
@@ -447,7 +477,10 @@ export function TransactionList({
                       selectMode={selectMode}
                       selected={selectMode && selectedIds.has(t.id)}
                       hidden={hiddenTxIdSet.has(t.id)}
+                      isExcludedFromStats={excludedStatTxIdSet.has(t.id)}
+                      isCancelled={cancelledTxIdSet?.has(t.id) ?? false}
                       overrideCatId={txCategories[t.id]}
+                      merchantRules={merchantRules}
                       txSplits={txSplits}
                       note={txNotes[t.id]}
                       accounts={accounts ?? []}

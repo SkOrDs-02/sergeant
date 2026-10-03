@@ -1,8 +1,8 @@
 ---
 name: sergeant-feature-flags
-description: Use when adding, changing, or removing a feature flag — build-time VITE_*, server env flags, user FLAG_REGISTRY, kill-switch; UA: додаєш, міняєш чи знімаєш фіче-прапорець.
+description: "Use when adding, changing, or removing a feature flag — build-time VITE_*, server env flags, user FLAG_REGISTRY, kill-switch; UA: додаєш, міняєш чи знімаєш фіче-прапорець."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Feature flags у Sergeant

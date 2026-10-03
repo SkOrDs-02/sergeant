@@ -198,6 +198,18 @@ describe("FinykSection interactions", () => {
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Подорожі");
   });
 
+  it("adds an income category to the separate income catalog", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByRole("button", { name: "Надходження" }));
+    const input = screen.getByPlaceholderText("Напр. Підробіток");
+    fireEvent.change(input, { target: { value: "Оренда" } });
+    fireEvent.click(screen.getByText("Додати"));
+    expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Оренда", {
+      kind: "income",
+    });
+  });
+
   it("lists and removes existing custom categories", async () => {
     storageMock.customCategories = [{ id: "c1", label: "🎨 Хобі" }];
     mockedSyncState.mockResolvedValue(DISCONNECTED);
@@ -305,7 +317,7 @@ describe("FinykSection interactions", () => {
   it("clears the transaction cache through the confirm modal", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Очистити"));
@@ -339,9 +351,9 @@ describe("FinykSection interactions", () => {
       accountsCount: 1,
     });
     renderSection();
-    expect(await screen.findByText("Webhook очікує")).toBeInTheDocument();
+    expect(await screen.findByText("Синхронізація очікує")).toBeInTheDocument();
     const card = screen
-      .getByText("Webhook очікує")
+      .getByText("Синхронізація очікує")
       .closest("[class*='border-']");
     expect(card?.className).toContain("border-warning/30");
   });
@@ -355,9 +367,11 @@ describe("FinykSection interactions", () => {
       accountsCount: 0,
     });
     renderSection();
-    expect(await screen.findByText("Помилка webhook")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Синхронізація не працює"),
+    ).toBeInTheDocument();
     const card = screen
-      .getByText("Помилка webhook")
+      .getByText("Синхронізація не працює")
       .closest("[class*='border-']");
     expect(card?.className).toContain("border-danger/30");
   });
@@ -412,7 +426,7 @@ describe("FinykSection interactions", () => {
     fireEvent.click(btn);
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Помилка re-sync",
+      "Не вдалося повторити синхронізацію. Спробуй ще раз.",
     );
 
     fireEvent.click(screen.getByText("Синхронізувати історію"));
@@ -443,7 +457,7 @@ describe("FinykSection interactions", () => {
     );
     expect(removeQueries).not.toHaveBeenCalled();
     expect(client.getQueryData(finykKeys.monoSyncState)).toEqual(activeState);
-    expect(screen.getByText("Webhook активний")).toBeInTheDocument();
+    expect(screen.getByText("Синхронізація активна")).toBeInTheDocument();
   });
 
   it("Enter key in the webhook token input submits the form", async () => {
@@ -468,7 +482,11 @@ describe("FinykSection interactions", () => {
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(await screen.findByText("Мережева помилка")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Не вдалося підключити Monobank. Спробуй ще раз.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows lastEventAt timestamp when webhook is connected and event exists", async () => {
@@ -483,8 +501,10 @@ describe("FinykSection interactions", () => {
       accountsCount: 2,
     });
     renderSection();
-    await screen.findByText("Webhook активний");
-    const statusSection = screen.getByText("Webhook активний").parentElement;
+    await screen.findByText("Синхронізація активна");
+    const statusSection = screen.getByText(
+      "Синхронізація активна",
+    ).parentElement;
     expect(statusSection?.textContent).toContain("·");
     expect(formatDate).toHaveBeenCalledWith(
       "uk-UA",

@@ -44,7 +44,7 @@ import {
 
 /**
  * `POST /api/telegram/webhook` — апдейти бота вейтліста бети.
- * Спека: `docs/90-work/planning/specs/telegram-waitlist.md`.
+ * Спека: `docs/work/specs/telegram-waitlist.md`.
  *
  * **Шлях реєструється БЕЗ `/v1`, хоч зовні викликається як
  * `/api/v1/telegram/webhook`.** `apiVersionRewrite` в `app.ts` переписує

@@ -44,6 +44,8 @@ export interface GoalContributionLike {
 
 interface GoalBudgetCardProps {
   budget: GoalBudgetInput;
+  /** «Приховати суми» (PR-F3) — маскує прогрес/розбивку/історію поповнень. */
+  showBalance?: boolean;
   /** Прогрес = баланс привʼязаної банки + сума ручних поповнень. */
   saved: number;
   pct: number;
@@ -76,6 +78,7 @@ interface GoalBudgetCardProps {
 // перераховувати розмітку при перерендерах сторінки Budgets.
 function GoalBudgetCardComponent({
   budget,
+  showBalance = true,
   saved,
   pct,
   daysLeft,
@@ -119,7 +122,7 @@ function GoalBudgetCardComponent({
     const celebrationId = `finyk:goal-completed:${budget.id}`;
     if (isNudgeDismissed(webKVStore, celebrationId)) return;
     dismissNudge(webKVStore, celebrationId);
-    goalCompleted(budget.name ?? "Ціль досягнута!", saved, "₴", "finyk");
+    goalCompleted(budget.name ?? "Ціль закрито", saved, "₴", "finyk");
   }, [pct, budget.id, budget.name, saved, goalCompleted]);
 
   const contribAmountNum = Number(contribAmount);
@@ -192,7 +195,8 @@ function GoalBudgetCardComponent({
               <Button
                 className="flex-1"
                 size="sm"
-                variant="danger"
+                variant="soft"
+                tone="danger"
                 onClick={onDelete}
               >
                 Видалити
@@ -203,12 +207,18 @@ function GoalBudgetCardComponent({
           <>
             <div className="flex justify-between items-center mb-2">
               <span className="text-style-label">
-                <Icon name="target" size={16} aria-hidden /> {budget.name}
+                <Icon name="target" size="md" aria-hidden /> {budget.name}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-style-caption text-muted">
-                  <Money amount={saved} /> /{" "}
-                  <Money amount={budget.targetAmount} />
+                  {showBalance ? (
+                    <>
+                      <Money amount={saved} /> /{" "}
+                      <Money amount={budget.targetAmount} />
+                    </>
+                  ) : (
+                    "••••"
+                  )}
                 </span>
                 <button
                   type="button"
@@ -216,7 +226,7 @@ function GoalBudgetCardComponent({
                   className="text-subtle hover:text-text transition-colors"
                   aria-label="Редагувати ціль"
                 >
-                  <Icon name="edit" size={16} aria-hidden />
+                  <Icon name="edit" size="md" aria-hidden />
                 </button>
               </div>
             </div>
@@ -241,15 +251,21 @@ function GoalBudgetCardComponent({
             </div>
             {hasBreakdown && (
               <div className="text-style-caption text-subtle mt-0.5">
-                з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
-                <Money amount={fromJar} /> · вручну{" "}
-                <Money amount={fromContributions} />
+                {showBalance ? (
+                  <>
+                    з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
+                    <Money amount={fromJar} /> · вручну{" "}
+                    <Money amount={fromContributions} />
+                  </>
+                ) : (
+                  "••••"
+                )}
               </div>
             )}
             <div className="mt-3 flex items-center gap-3">
               <Button
                 size="sm"
-                variant="secondary"
+                variant="outline"
                 onClick={() => setAddingContribution((v) => !v)}
               >
                 + Поповнити
@@ -264,7 +280,7 @@ function GoalBudgetCardComponent({
                   Історія ({contributions.length})
                   <Icon
                     name="chevron-down"
-                    size={12}
+                    size="xs"
                     aria-hidden
                     className={cn(
                       "transition-transform",
@@ -310,7 +326,7 @@ function GoalBudgetCardComponent({
                   <Button
                     className="flex-1"
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => setAddingContribution(false)}
                   >
                     Скасувати
@@ -330,14 +346,14 @@ function GoalBudgetCardComponent({
                       {c.note ? ` · ${c.note}` : ""}
                     </span>
                     <span className="flex items-center gap-2">
-                      <Money amount={c.amountUah} />
+                      {showBalance ? <Money amount={c.amountUah} /> : "••••"}
                       <button
                         type="button"
                         onClick={() => onDeleteContribution?.(c.id)}
                         aria-label={`Видалити поповнення ${formatMoney(c.amountUah)} від ${c.date}`}
                         className="text-subtle hover:text-danger-strong dark:hover:text-danger transition-colors"
                       >
-                        <Icon name="trash" size={14} aria-hidden />
+                        <Icon name="trash" size="sm" aria-hidden />
                       </button>
                     </span>
                   </li>

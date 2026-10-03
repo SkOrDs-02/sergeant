@@ -1,6 +1,6 @@
 # Module structure (`apps/{web,mobile}/src/modules/<domain>/`)
 
-> **Last validated:** 2026-07-22 by @Skords-01 (finyk-аудит: mobile/finyk рядок узгоджено з `platforms.md`). **Next review:** 2026-10-29.
+> **Last touched:** 2026-09-17 by @claude (мертвий лінк на initiative 0006 → permalink архіву). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Канонічна структура продуктового модуля в `apps/web` та `apps/mobile` плюс пояснення наявних розбіжностей. Цей doc — це **explainer**, а не enforced-стандарт: межа `apps/*` ↔ `packages/*` enforced через [ADR-0024](../../governance/adr/0024-monorepo-apps-packages-split.md), а внутрішня форма модуля еволюціонує під його потреби. Він тут, щоб новий контриб'ютор не намагався вгадати, чому в одному модулі є `pages/`, а в іншому — `domain/`.
@@ -19,7 +19,7 @@ apps/<web|mobile>/src/modules/<domain>/
 ├── components/              # UI компоненти модуля. Презентаційні + контейнерні разом — поки модуль маленький
 ├── hooks/                   # React Query хуки + module-local stateful hooks
 ├── lib/                     # Pure utils без React (storage adapters, validators, parsers)
-├── pages/                   # Top-level screens / routes (web — react-router @7 path-routes для мігрованих модулів (`nutrition`, `finyk`) / hash-router для решти до завершення [initiative 0006](../../work/initiatives/0006-frontend-routing-and-code-split.md) Phase 2; mobile — Expo router screens)
+├── pages/                   # Top-level screens / routes (web — react-router @7 path-routes для мігрованих модулів (`nutrition`, `finyk`) / hash-router для решти до завершення [initiative 0006](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md) Phase 2 (ініціатива withdrawn, архівний permalink); mobile — Expo router screens)
 ├── index.ts                 # Public API модуля (re-exports тільки те, що мають бачити інші модулі)
 └── constants.ts             # (опційно) Module-local константи; не share-аться між модулями
 ```

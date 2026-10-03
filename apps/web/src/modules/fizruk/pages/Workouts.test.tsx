@@ -77,7 +77,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
   WorkoutsHome: ({
     onOpenSession,
     onOpenCatalog,
-    onOpenTemplates,
     onOpenJournal,
     onOpenPrograms,
     onRequestStart,
@@ -85,7 +84,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
   }: {
     onOpenSession: () => void;
     onOpenCatalog: () => void;
-    onOpenTemplates: () => void;
     onOpenJournal: () => void;
     onOpenPrograms: () => void;
     onRequestStart: () => void;
@@ -97,13 +95,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
       </button>
       <button type="button" onClick={onOpenCatalog} data-testid="open-catalog">
         Каталог
-      </button>
-      <button
-        type="button"
-        onClick={onOpenTemplates}
-        data-testid="open-templates"
-      >
-        Шаблони
       </button>
       <button type="button" onClick={onOpenJournal} data-testid="open-journal">
         Історія
@@ -436,24 +427,24 @@ describe("Workouts page — log view", () => {
   // used to stretch the set-input fields to ~230px and "+ Підхід" to
   // ~800px on a 1280px viewport. The active-workout panel (a vertical
   // list of short numeric fields) now gets its own narrower `max-w-xl`.
-  it("wraps the active-workout panel in a narrower max-w for desktop", () => {
+  it("renders the journal section in log view", () => {
     renderWorkouts();
-    const journal = screen.getByTestId("workout-journal-section");
-    expect(journal.closest(".max-w-xl")).not.toBeNull();
+    expect(screen.getByTestId("workout-journal-section")).toBeInTheDocument();
   });
 
-  // Minimal fix per audit §4.4: the catalog is a browsable list, not a
-  // form, so it must NOT be pulled into the narrower wrapper — it stays
-  // at the outer `max-w-4xl` container width.
-  it("does not narrow the exercise catalog — it stays at the outer container width", () => {
+  // Сесійний режим (спека `fizruk-active-session.md`, рішення 4): каталог
+  // більше не хвіст сторінки під активним тренуванням — він живе в
+  // аркуші «+ Вправа», який відкривається з `SessionView`.
+  it("does not render the catalog tail in log view even with an in-flight workout", () => {
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("log", {
         activeWorkout: { id: "w1", endedAt: null },
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
     renderWorkouts();
-    const catalog = screen.getByTestId("workout-catalog-section");
-    expect(catalog.closest(".max-w-xl")).toBeNull();
+    expect(
+      screen.queryByTestId("workout-catalog-section"),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render WorkoutsHome in log view", () => {
@@ -481,16 +472,6 @@ describe("Workouts page — log view", () => {
     expect(
       screen.queryByTestId("workout-catalog-section"),
     ).not.toBeInTheDocument();
-  });
-
-  it("renders the catalog only while there is a real in-flight workout", () => {
-    mockedOrchestrator.mockReturnValue(
-      makeOrchestrator("log", {
-        activeWorkout: { id: "w1", endedAt: null },
-      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
-    );
-    renderWorkouts();
-    expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
   });
 });
 
@@ -600,18 +581,6 @@ describe("Workouts page — home action wiring", () => {
     expect(setView).not.toHaveBeenCalled();
   });
 
-  it("'open-templates' button navigates to the templates route", () => {
-    const onNavigate = vi.fn();
-    mockedOrchestrator.mockReturnValue(
-      makeOrchestrator("home") as unknown as ReturnType<
-        typeof useWorkoutsOrchestrator
-      >,
-    );
-    renderWorkouts({ onNavigate });
-    fireEvent.click(screen.getByTestId("open-templates"));
-    expect(onNavigate).toHaveBeenCalledWith("templates");
-  });
-
   it("back from a routed section returns to the workouts hub", () => {
     const setView = vi.fn();
     const onNavigate = vi.fn();
@@ -640,7 +609,10 @@ describe("Workouts page — home action wiring", () => {
     expect(onOpenRoutine).toHaveBeenCalledTimes(1);
   });
 
-  it("starts an empty workout directly from Quick Start", () => {
+  it("«Почати тренування» відкриває аркуш вибору, а не порожню сесію", () => {
+    // Рішення власника 2026-09-16: спосіб старту обирають усередині аркуша
+    // (шаблон / підбір вправ / програма), тож кнопка більше не створює
+    // порожнє тренування напряму.
     const handleQuickStart = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home", {
@@ -651,7 +623,23 @@ describe("Workouts page — home action wiring", () => {
     renderWorkouts();
     fireEvent.click(screen.getByTestId("request-start"));
 
-    expect(handleQuickStart).toHaveBeenCalledTimes(1);
+    expect(handleQuickStart).not.toHaveBeenCalled();
+    expect(screen.getByTestId("quick-start-sheet")).toBeInTheDocument();
+  });
+
+  it("плитка «За шаблоном» в аркуші веде на адресу шаблонів", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    const onNavigate = vi.fn();
+
+    renderWorkouts({ onNavigate });
+    fireEvent.click(screen.getByTestId("request-start"));
+    fireEvent.click(screen.getByTestId("pick-template"));
+
+    expect(onNavigate).toHaveBeenCalledWith("templates");
   });
 
   // 03-A — "Всі →" must own its own URL instead of flipping `view` to

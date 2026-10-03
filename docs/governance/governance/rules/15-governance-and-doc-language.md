@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-06 by Codex. **Next review:** 2027-03-06.
+> **Last touched:** 2026-09-23 by @claude (enforced_by: governance-sync і hard-rules-registry тепер у `pnpm lint`; docs:check-freshness-coverage позначено SUSPENDED). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #15. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -13,10 +13,10 @@
 
 ## Enforced by
 
-- **ci** — pnpm lint:governance-sync (errors on dangling apps/packages/scripts refs in non-aspirational docs)
-- **ci** — pnpm docs:check-freshness-coverage
-- **ci** — pnpm lint:hard-rules-registry (this rule's own enforcer)
-- **pr-template** — .github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes)
+- **ci** - `pnpm lint` (крок `node scripts/check-governance-sync.mjs`, з 2026-09-23; errors on dangling apps/packages/scripts refs in non-aspirational docs)
+- **ci** - SUSPENDED з 2026-09-23 (у `.github/workflows/` кроку досі немає, не в `pnpm lint`/`pnpm check`, перевірено 2026-09-29): pnpm docs:check-freshness-coverage
+- **ci** - `pnpm lint` (крок `node scripts/check-hard-rules-registry.mjs`, з 2026-09-23; enforcer цього ж правила)
+- **pr-template** - .github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes) - GitHub підставляє його в нові PR; `PR body validator` у `docs-automation.yml` з 2026-09-30 на PR не запускається (ADR-0101)
 
 ## Why / What is enforced
 
@@ -48,11 +48,11 @@ Documentation is part of the change set, not a follow-up. Treat any of the follo
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | New / changed JSON response shape                 | `packages/api-client/**` types **+** the matching contract test (Hard Rule #3). If the response is documented in `docs/engineering/api/*.md`, update there too.                                           |
 | New SQL migration                                 | `docs/engineering/architecture/data-exchange-storage-audit.md` (DB-level invariants), and any ER-diagram in `docs/engineering/architecture/`.                                                             |
-| New / removed npm script                          | `CONTRIBUTING.md § Everyday Commands`, `CLAUDE.md § Quick commands`.                                                                                                                                      |
+| New / removed npm script                          | `AGENTS.md § Quick commands`, `CONTRIBUTING.md § Щоденний цикл` (and the surface `apps/*/AGENTS.md § Quick commands` if the script is surface-scoped).                                                    |
 | New Hard Rule, lint rule, or convention           | `AGENTS.md` § Hard Rules (the canonical entry) **+** mirror summary in `CONTRIBUTING.md § Hard rules`. PR template's "AGENTS.md updated?" checkbox **must** be ticked.                                    |
 | New design token, palette, or component           | `docs/design/design/design-system.md`, `docs/design/design/brandbook.md`, and the relevant audit (`docs/work/specs/audits/*-audit-*.md`) if it changes status.                                            |
 | Deprecating a behaviour                           | Add `@deprecated` JSDoc with `@removeBy YYYY-MM-DD` (Hard Rule #10) **+** update the consuming doc to mark the section `> **Status:** Deprecated`.                                                        |
-| New playbook trigger or HubChat tool              | `docs/start/instructions/<name>.md` (or update the existing playbook). Cross-link from `CLAUDE.md § Before you write code` if it's a frequent trigger.                                                    |
+| New playbook trigger or HubChat tool              | `docs/start/instructions/<name>.md` (or update the existing playbook). Cross-link from `docs/start/instructions/playbook-catalog.md` / `AGENTS.md § Agent operating system` if it's a frequent trigger.   |
 | Anything that invalidates an existing doc's claim | Update the doc in the same PR. If it is a completed frozen snapshot, record Outcome and merge evidence, remove it from checkout, and replace required inbound references with an immutable Git permalink. |
 
 In every doc you touch, also bump the freshness header:
@@ -103,3 +103,18 @@ If a reviewer sees a new prose paragraph or table cell in English in a doc that'
 ## Related
 
 - **agents** — #15
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#1233](https://github.com/SkOrDs-02/sergeant/pull/1233)        | ci(ci): GitHub Actions CI and backend autodeploy after green CI                                                   | 2026-10-01 |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

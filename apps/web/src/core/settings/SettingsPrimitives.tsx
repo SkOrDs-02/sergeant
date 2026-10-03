@@ -23,7 +23,7 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
   return (
     <Icon
       name="chevron-right"
-      size={16}
+      size="md"
       className={cn(
         "transition-transform duration-base shrink-0",
         expanded && "rotate-90",
@@ -35,21 +35,20 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
 /** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
 type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
 
-/** Scoped bg-class for the icon badge — avoids global accent-rgb emission.
- *  Each module has a registered `-soft` / `-soft-border` pair in the design
- *  token contract.
+/** Module accent for the header glyph (text colour only — the tinted
+ *  badge is gone, see the comment at the render site).
  *
  *  Раніше тут стояло «Hard Rule #12» — правило retired
- *  [ADR-0081](../../../../../docs/04-governance/adr/0081-repository-simplification.md):
+ *  [ADR-0081](../../../../../docs/governance/adr/0081-repository-simplification.md):
  *  module-accent containment лишається чинною конвенцією, але тримається
  *  design tokens і ревʼю, а не ESLint-гейтом. Посилання на неіснуючий номер
  *  правила прибрано (§6 боргу, аудит Профілю/Налаштувань 2026-08-08) — саме
  *  той клас коментаря, що пережив свій механізм. */
 const MODULE_ICON_BG: Record<SettingsModule, string> = {
-  finyk: "bg-finyk-soft border-finyk-soft-border text-finyk",
-  fizruk: "bg-fizruk-soft border-fizruk-soft-border text-fizruk",
-  routine: "bg-routine-soft border-routine-soft-border text-routine",
-  nutrition: "bg-nutrition-soft border-nutrition-soft-border text-nutrition",
+  finyk: "text-finyk",
+  fizruk: "text-fizruk",
+  routine: "text-routine",
+  nutrition: "text-nutrition",
 };
 
 export interface SettingsGroupProps {
@@ -78,29 +77,33 @@ function matchesHash(anchorId: string | undefined): boolean {
 
 /**
  * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
- * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
- * прибрали другий рівень акордеона, і замість нього перша секція активної
- * вкладки Налаштувань відкривається за замовчуванням — це закриває
- * порожнечу внизу стартового екрана без вкладеного акордеона.
+ * `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * прибрали другий рівень акордеона. Рішенням власника 2026-09-11
+ * forced-first-of-tab (перша секція активної вкладки, що відкривалась за
+ * замовчуванням) СКАСОВАНО — на холодному завантаженні жодна секція не
+ * відкривається автоматично лише через свою позицію в списку.
  *
  * `HubSettingsPage` не рендерить `<SettingsGroup>` напряму (кожна секція
- * рендерить його всередині себе), і лише 3 з 14 секцій мають `anchorId`,
- * тож привʼязатись до хеша не можна. Контекст — єдиний спосіб сторінці
- * сказати "ти перша видима секція" секції, не знаючи наперед, яка секція
- * що рендерить. Дефолт `{ defaultOpen: false }`: без провайдера (наприклад,
- * юніт-тест, що монтує секцію окремо від `HubSettingsPage`) поведінка не
- * міняється.
+ * рендерить його всередині себе). Контекст — єдиний спосіб сторінці
+ * сказати секції, чи відкрити її за замовчуванням, не знаючи наперед, яка
+ * секція що рендерить: `HubSettingsPage` обчислює `defaultOpen` для
+ * кожної секції з двох сигналів — ціль хеш-діп-лінка/query-return
+ * (`hashSectionId`) або явний вибір юзера (`sectionOpenOverrides`), see
+ * `HubSettingsPage.tsx`. Дефолт `{ defaultOpen: false }`: без провайдера
+ * (наприклад, юніт-тест, що монтує секцію окремо від `HubSettingsPage`)
+ * поведінка не міняється.
  *
- * Адверсарне ревʼю 2026-08-08 (дефект №3): голий `boolean` памʼятав лише
- * "чи форсити відкриття", але не давав секції способу сказати сторінці
- * "юзер сам мене згорнув — не форси мене знову". Без цього перемикання
- * вкладки (яке РЕМАУНТИТЬ секцію — вона зникає з `visible`, коли вкладка
- * неактивна) скидало явний вибір юзера й перевідкривало форсовано-відкриту
- * секцію, тоді як пошук (де та сама React-інстанція лишається змонтованою,
- * доки збігається запит) той самий вибір випадково зберігав — одна дія
- * юзера, дві різні поведінки. `onUserToggle` — зворотний виклик, яким
- * секція повідомляє власника контексту про явний (не hash-, не дефолт-,
- * не mount-) клік по заголовку.
+ * Адверсарне ревʼю 2026-08-08 (дефект №3, лишається чинним і після зняття
+ * forced-first): голий `boolean` памʼятав лише "чи форсити відкриття", але
+ * не давав секції способу сказати сторінці "юзер сам мене згорнув — не
+ * форси мене знову". Без цього перемикання вкладки (яке РЕМАУНТИТЬ
+ * секцію — вона зникає з `visible`, коли вкладка неактивна) скидало явний
+ * вибір юзера й перевідкривало секцію в дефолтний стан, тоді як пошук (де
+ * та сама React-інстанція лишається змонтованою, доки збігається запит)
+ * той самий вибір випадково зберігав — одна дія юзера, дві різні
+ * поведінки. `onUserToggle` — зворотний виклик, яким секція повідомляє
+ * власника контексту про явний (не hash-, не дефолт-, не mount-) клік по
+ * заголовку.
  */
 export interface SettingsGroupDefaultOpenState {
   /** Чи секція відкривається за замовчуванням при монтуванні. */
@@ -158,14 +161,35 @@ export function SettingsGroup({
   const [open, setOpen] = useState<boolean>(
     () => defaultOpen || contextDefaultOpen || matchesHash(anchorId),
   );
+  // PR-S1 (аудит 2026-09-13 хвиля 5): `contextDefaultOpen` раніше читався
+  // ЛИШЕ в ініціалізаторі `useState` вище — коректно на холодному
+  // монтуванні (нова вкладка, новий hash при першому рендері), але
+  // мовчазно ігнорував ЗМІНУ контексту для секції, яка вже змонтована в
+  // активній вкладці. Це давало асиметрію «4 з 14»: `dashboard`/`plan`/
+  // `privacy`/`finyk` (єдині з `anchorId`) мали ОКРЕМИЙ слухач
+  // `window.hashchange`, що й розкривав їх постфактум; решта 10 секцій
+  // такого слухача не мали і не реагували на диплінк із ⌘K/пошуку, коли
+  // «Загальні» вже були відкриті (перехід у «Сповіщення» чи «Сержант»
+  // скролив до згорнутої шапки). Один ефект на сам контекст працює для
+  // всіх 14 однаково — `HubSettingsPage` уже оновлює `defaultOpen` на
+  // будь-який діп-лінк (hash, billing-return, silpo-return), синтетичний
+  // чи природний `hashchange` тут більше не потрібен.
+  //
+  // Ефект лише РОЗКРИВАЄ, ніколи не згортає: диплінк в ІНШУ секцію (де
+  // `contextDefaultOpen` для цієї секції став `false`) не повинен ховати
+  // те, що юзер сам залишив відкритим — той самий односторонній контракт,
+  // що мав старий `hashchange`-слухач.
+  //
+  // `queueMicrotask` — той самий обхід, що вже стоїть у
+  // `HubSettingsPage.tsx` для того ж класу ефектів: синхронний `setState`
+  // у ТІЛІ ефекту ловить `react-hooks/set-state-in-effect` (React Compiler
+  // бачить лише прямі інструкції функції, не вкладені колбеки), а зайвий
+  // каскадний рендер тут і справді не потрібен — ефект реагує на щойно
+  // застосовану зміну контексту, не на подію, яку не можна відкласти.
   useEffect(() => {
-    if (!anchorId) return;
-    const onHashChange = () => {
-      if (matchesHash(anchorId)) setOpen(true);
-    };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, [anchorId]);
+    if (!contextDefaultOpen) return;
+    queueMicrotask(() => setOpen(true));
+  }, [contextDefaultOpen]);
 
   // Scoped module bg class — uses registered token pair, never raw RGB
   // (конвенція module-accent containment, ex-Hard Rule #12, retired
@@ -238,16 +262,18 @@ export function SettingsGroup({
           )}
         >
           <div className="flex items-center gap-3 min-w-0">
+            {/* Гліф у рядку назви, без тонованого квадрата (огляд 2026-09-04,
+                той самий хід, що `BentoCard` 2026-09-03): icon-in-tinted-
+                square — T5 з анти-слоп аудиту, і 14 таких квадратів поспіль
+                робили сторінку стосом однакових плиток. Модульний акцент
+                лишається на самому гліфі. */}
             {icon && (
-              <span
-                className={cn(
-                  "rounded-xl p-1.5 border flex items-center justify-center shrink-0",
-                  moduleBg ||
-                    "bg-surface-soft-glass border-surface-line text-muted-v2",
-                )}
-              >
-                <Icon name={icon} size={18} />
-              </span>
+              <Icon
+                name={icon}
+                size="lg"
+                className={cn("shrink-0", moduleBg || "text-muted")}
+                aria-hidden
+              />
             )}
             <span className="text-style-title text-text">{title}</span>
           </div>
@@ -278,7 +304,7 @@ export interface SettingsSubGroupProps {
 
 /**
  * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
- * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
  * підрозділ більше не другий рівень акордеона. Раніше тут стояв власний
  * `<button>` з `aria-expanded`, шевроном зліва (на відміну від
  * `SettingsGroup` вище, де шеврон справа) і власною рамкою-коробкою — два
@@ -292,7 +318,12 @@ export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
   return (
     <div className="space-y-3">
       <h3 className="text-style-overline text-text">{title}</h3>
-      <div className="space-y-3">{children}</div>
+      {/* Сусідні рядки (`data-row`, див. `ToggleRow`) стоять впритул на
+          спільній hairline — проміжок лишається лише між рядком і
+          абзацом/кнопкою. */}
+      <div className="flex flex-col gap-3 [&>[data-row]+[data-row]]:-mt-3">
+        {children}
+      </div>
     </div>
   );
 }
@@ -302,6 +333,20 @@ export interface ToggleRowProps {
   description?: ReactNode;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  /**
+   * Вимикає САМ контрол, а не малює його вимкненим.
+   *
+   * Доти цієї пропи не було, і єдиний споживач із заблокованими тумблерами
+   * (`ExperimentalSection`) обходився `aria-disabled` на КОНТЕЙНЕРІ плюс
+   * `opacity` плюс no-op в `onChange`. Візуально це читалось як
+   * заблоковане, а для клавіатури й скрінрідера тумблер лишався звичайним
+   * активним switch-ем: його можна сфокусувати, натиснути, почути
+   * підтвердження — і нічого не станеться. Знахідка PR-S11.
+   *
+   * `Switch` вимкнений стан має повний (`disabled` на контролі,
+   * `opacity-60`, `cursor-not-allowed`) — бракувало лише шляху до нього.
+   */
+  disabled?: boolean;
 }
 
 /**
@@ -331,15 +376,23 @@ export function ToggleRow({
   description,
   checked,
   onChange,
+  disabled = false,
 }: ToggleRowProps) {
   const labelId = useId();
   return (
     <label
+      data-row
       className={cn(
-        "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
-        "p-3 rounded-2xl border border-line/60 bg-surface-soft-glass shadow-soft",
-        "hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass",
-        "transition-[background-color,border-color]",
+        "flex items-center justify-between gap-4 group min-h-[44px]",
+        // Курсор і hover теж мусять піти: рядок, який підсвічується під
+        // мишею, обіцяє дію, якої не буде.
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
+        // Рядок списку на hairline, а не картка в картці (огляд 2026-09-04,
+        // П2 анти-слоп стратегії: контекст під заголовком — щільний список
+        // без карток). Тап лишається на всю ширину рядка.
+        "py-3 -mx-2 px-2 rounded-lg border-b border-line/60 last:border-b-0",
+        !disabled && "hover:bg-panelHi active:bg-panelHi",
+        "transition-[background-color]",
       )}
     >
       <div className="flex-1 min-w-0">
@@ -368,6 +421,7 @@ export function ToggleRow({
         <Switch
           checked={checked}
           onChange={onChange}
+          disabled={disabled}
           aria-labelledby={labelId}
         />
       </div>
@@ -390,14 +444,16 @@ export interface SectionSkeletonProps {
   /**
    * Minimum height in pixels. Matches the real section's footprint AS IT
    * FIRST PAINTS — the closed-header height for a section that mounts
-   * collapsed, or the full expanded-content height for a section that
-   * Варіант A force-opens by default because it's the first section of
-   * the active Налаштування tab (see `SettingsGroupDefaultOpenContext`
-   * above). This is no longer "header + collapsed SubGroups" (adversarial
-   * review 2026-08-08, дефект №4): Варіант A removed `SettingsSubGroup`'s
-   * own collapse state entirely — its content is always visible now — so
-   * there's no in-between middle-height state left to match; it's either
-   * the closed header or the section's true rendered height.
+   * collapsed (the common case since forced-first-of-tab was retired by
+   * owner decision 2026-09-11), or the full expanded-content height for a
+   * section whose `defaultOpen` resolves `true` from a hash-deep-link
+   * target or a remembered user override (see
+   * `SettingsGroupDefaultOpenContext` above). This is no longer "header +
+   * collapsed SubGroups" (adversarial review 2026-08-08, дефект №4):
+   * Варіант A removed `SettingsSubGroup`'s own collapse state entirely —
+   * its content is always visible now — so there's no in-between
+   * middle-height state left to match; it's either the closed header or
+   * the section's true rendered height.
    *
    * Per-section values are owned by the caller — each `<Suspense>`
    * boundary in `HubSettingsPage` passes the height it knows for its

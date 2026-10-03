@@ -1,7 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { seedFTUX } from "../utils/seedFTUX";
-import { collectPageErrors, waitForInitialSqliteRefresh } from "./smokeHelpers";
+import {
+  collectPageErrors,
+  settleToasts,
+  startWorkoutWithFirstExercise,
+  waitForInitialSqliteRefresh,
+} from "./smokeHelpers";
 
 /**
  * Ключ дзеркала подій аналітики у `sessionStorage`.
@@ -75,7 +80,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
 
   await page.goto("/fizruk/workouts", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "fizruk");
-  await page.getByRole("button", { name: "Швидкий старт" }).click();
+  await startWorkoutWithFirstExercise(page);
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
   // Аркуш готовності (спека `fizruk-readiness-check`) зʼявляється один раз на
@@ -85,10 +90,18 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // поводиться рівно так, як до появи фічі.
   const readiness = page.getByRole("dialog", { name: "Як ти сьогодні?" });
   await expect(readiness).toBeVisible();
+  // «Пропустити» — у футері аркуша, рівно там, де стоїть трей тостів; див.
+  // `settleToasts` про те, чому тост під курсором не зникає сам.
+  await settleToasts(page);
   await readiness.getByRole("button", { name: "Пропустити" }).click();
   await expect(readiness).toBeHidden();
 
-  await page
+  // Сесійний режим (спека `fizruk-active-session.md`): каталог більше не
+  // хвіст сторінки, а аркуш із «+ Вправа» — спершу відкриваємо його.
+  await page.getByRole("button", { name: "Додати вправу" }).first().click();
+  const catalog = page.getByRole("dialog", { name: "Додати вправу" });
+  await expect(catalog).toBeVisible();
+  await catalog
     .getByPlaceholder("Пошук (жим, підтягування, спина…)")
     .fill("Жим штанги лежачи");
   // Локатор навмисно привʼязаний до `aria-controls="catalog-panel-*"`, а не
@@ -103,14 +116,28 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // `aria-controls` тут — стабільний гачок: його ставить сам
   // `WorkoutCatalogSection` рівно на перемикачі групи, і жоден інший
   // контрол сторінки на нього не схожий.
-  await page
+  await catalog
     .locator('button[aria-controls^="catalog-panel-"][aria-expanded="false"]')
     .first()
     .click();
-  await page
+  await catalog
     .getByRole("button", { name: /Жим штанги лежачи/ })
     .first()
     .click();
+  await catalog.getByRole("button", { name: "Готово" }).click();
+  await expect(catalog).toBeHidden();
+
+  // Список → вправа: підходи живуть на власному екрані вправи
+  // (`workout/<id>/<itemId>`), тап по рядку списку відкриває його.
+  // `.last()`, бо після 2026-09-16 тренування вже не порожнє: хелпер старту
+  // бере ПЕРШУ вправу каталогу, і це той самий жим лежачи, тож у списку їх
+  // дві — і strict-mode локатор без `.last()` падав на «resolved to 2
+  // elements». Далі сценарій працює з тим записом, який щойно додав сам.
+  await page
+    .getByRole("button", { name: /Відкрити вправу: Жим штанги лежачи/ })
+    .last()
+    .click();
+  await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+\/[^/]+$/);
 
   // Вага — `textbox`, а не `spinbutton`: поле перейшло на `type="text"` +
   // `inputMode="decimal"`, щоб приймати кому (під `type="number"` браузер
@@ -123,18 +150,20 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // по ✓ «підхід зроблено». Саме та стара магія й плодила порожні 0×0-сети,
   // тож цей крок описував поведінку, яку ми свідомо прибрали.
   await page.getByRole("button", { name: /Підхід 1: зроблено/ }).click();
+  // У сесії відлік малює докована панель (`SessionDock`), і саме вона несе
+  // `data-testid="rest-timer"`, поки триває відпочинок.
   await expect(page.getByTestId("rest-timer")).toBeVisible();
-  // Скоуп саме на пігулку таймера, а не на `role="timer"`: цей role
-  // описує лише циферблат із цифрами (кнопки ±15/±30 і «Пропустити» —
-  // його сусіди), і ще один `role="timer"` живе в `HeroCard`. Скоуп на
-  // роль тут падав по таймауту, скоуп без нього був би неоднозначним
-  // після відкриття аркуша завершення з власною «Пропустити».
+  // Скоуп саме на панель таймера, а не на `role="timer"`: цей role описує
+  // лише циферблат із цифрами, а ще один `role="timer"` — тривалість у
+  // верхній смузі сесії. Скоуп без нього був би неоднозначним після
+  // відкриття аркуша завершення з власною «Пропустити».
   await page
     .getByTestId("rest-timer")
     .getByRole("button", { name: "Пропустити" })
     .click();
   await page.waitForTimeout(2_500);
 
+  // F5 повертає той самий екран вправи: id вправи живе в URL.
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "fizruk");
   // Пропуск теж пишеться (`sleep: null, soreness: null`), тож після

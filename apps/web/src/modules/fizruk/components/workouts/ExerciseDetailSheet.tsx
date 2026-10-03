@@ -263,7 +263,8 @@ export function ExerciseDetailSheet({
       {isCustom && (
         <div className="mt-4">
           <Button
-            variant="danger"
+            variant="soft"
+            tone="danger"
             className="w-full h-12"
             onClick={onDeleteRequest}
           >
@@ -287,10 +288,10 @@ export function ExerciseDetailSheet({
       {mode === "log" && (
         <Button
           type="button"
-          className="w-full h-12 mt-5 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90"
+          className="w-full h-12 mt-5 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90 dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90 dark:border-fizruk"
           onClick={() => {
             if (!activeWorkoutId) {
-              toast?.warning?.("Спочатку натисни «+ Нове» у блоці вище.");
+              toast?.warning?.("Спочатку натисни «Почати тренування».");
               return;
             }
             if (activeWorkout?.endedAt) {
@@ -301,7 +302,7 @@ export function ExerciseDetailSheet({
             }
             if (cf.injury.blocked) {
               toast?.warning?.(
-                "Ти позначив біль у цій групі. Навантажувати її не раджу.",
+                "Ти позначив біль у цій групі. Вправу додав, але навантажувати не раджу.",
               );
             }
             addExerciseToActive(selected);
@@ -315,12 +316,12 @@ export function ExerciseDetailSheet({
       <div
         className={`mt-5 grid gap-2 ${onNavigate ? "grid-cols-2" : "grid-cols-1"}`}
       >
-        <Button variant="secondary" className="h-12" onClick={onClose}>
+        <Button variant="outline" className="h-12" onClick={onClose}>
           Закрити
         </Button>
         {onNavigate && (
           <Button
-            variant="secondary"
+            variant="outline"
             className="h-12"
             onClick={() => {
               onNavigate(`exercise/${selected.id}`);

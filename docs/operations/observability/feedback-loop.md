@@ -1,6 +1,6 @@
 # Feedback loop — in-app widget + NPS через PostHog Surveys
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-11.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-06.
 > **Status:** Active
 
 Операційна довідка feedback-loop-у з GTM § 3.2

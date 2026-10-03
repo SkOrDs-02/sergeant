@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { applyScenario } from "../utils/scenario";
+import { settleAnimations } from "../utils/settleAnimations";
 
 /**
  * Pre-seed localStorage so the SPA can land directly on targeted hub
@@ -7,6 +9,8 @@ import AxeBuilder from "@axe-core/playwright";
  */
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_first_real_entry_done_v1: "1",
   hub_onboarding_vibes_v1: JSON.stringify([
@@ -26,6 +30,8 @@ const SEEDED_LS: Record<string, string> = {
 
 const PRE_FTUX_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_pending_v1: "1",
   hub_first_action_started_at_v1: String(Date.now()),
   hub_onboarding_vibes_v1: JSON.stringify([
@@ -96,6 +102,7 @@ function isNavigationRace(error: unknown) {
 }
 
 async function analyzeA11y(page: Page) {
+  await settleAnimations(page);
   try {
     return await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
   } catch (error) {
@@ -106,6 +113,8 @@ async function analyzeA11y(page: Page) {
     await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
       /* allow-through: some surfaces keep long-polling connections open */
     });
+    // Навігація перезапустила entry-анімації — дочекатись їх ще раз.
+    await settleAnimations(page);
     return await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
   }
 }
@@ -219,6 +228,37 @@ for (const { name, path, seed } of SURFACES) {
       });
     }
 
+    // `incomplete` — не «все гаразд», а «axe не зміг вирішити». Для
+    // `color-contrast` це рівно випадок градієнтного фону: правило не
+    // вміє визначити колір тла під текстом і мовчки здається, а фільтр
+    // вище дивиться ЛИШЕ на `violations`. Саме так провалений контраст
+    // `text-hero-ink/70` на геро-градієнті Premium проїхав повз цей
+    // лейн непоміченим (аудит шуму 2026-09-16, WF-23).
+    //
+    // Не робимо блокуючим навмисно: `incomplete` за визначенням не є
+    // доказом порушення, і перевести його в red означало б зачервонити
+    // кожен градієнт у продукті. Але воно перестає бути НЕВИДИМИМ —
+    // тепер його видно в звіті з назвою поверхні й кількістю вузлів,
+    // тобто є з чого почати ручний замір. Числову перевірку альфи на
+    // геро-чорнилі несе `packages/design-tokens/contrast.test.js`, а
+    // лічильник call-site-ів — метрика `heroInkAlpha` у храповику.
+    const undecidedContrast = results.incomplete.filter(
+      (r) => r.id === "color-contrast",
+    );
+    if (undecidedContrast.length > 0) {
+      const nodes = undecidedContrast.reduce(
+        (sum, r) => sum + r.nodes.length,
+        0,
+      );
+      test.info().annotations.push({
+        type: "axe-contrast-undecided",
+        description:
+          `${nodes} вузл(ів) на ${path}, де axe НЕ ЗМІГ порахувати контраст ` +
+          `(типово — текст на градієнті). Це не порушення і не гарантія: ` +
+          `міряй вручну, якщо поверхня геройська.`,
+      });
+    }
+
     expect(
       consoleErrors.filter(
         (e) =>
@@ -228,6 +268,33 @@ for (const { name, path, seed } of SURFACES) {
       ),
       `console errors on ${path}:\n${consoleErrors.join("\n")}`,
     ).toEqual([]);
+  });
+}
+
+const SCENARIO_SURFACES = [
+  {
+    name: "pantry-receipt-names",
+    id: "pantry-receipt-names",
+    path: "/nutrition/pantry",
+  },
+  { name: "finyk-month", id: "finyk-month", path: "/finyk" },
+  { name: "routine-streaks", id: "routine-streaks", path: "/routine" },
+  {
+    name: "fizruk-active-session",
+    id: "fizruk-active-session",
+    path: "/fizruk/workouts",
+  },
+] as const;
+
+for (const { name, id, path } of SCENARIO_SURFACES) {
+  test(`a11y: ${name} world has no serious/critical violations`, async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, SEEDED_LS);
+    await applyScenario(page, id, path);
+    const results = await analyzeA11y(page);
+    const blocking = results.violations.filter(isBlockingViolation);
+    expect(blocking, `axe violations on ${path}`).toEqual([]);
   });
 }
 
@@ -250,6 +317,11 @@ const THEMED_SURFACES: Array<{
     { name: "design-showcase", path: "/design" },
     { name: "fizruk-dashboard", path: "/?module=fizruk" },
     { name: "settings", path: "/settings" },
+    // `/pricing` доданий 2026-09-17: Premium-картка рендериться
+    // `prominence="hero"`, тобто несе саме той градієнт, на якому
+    // провалився контраст (WF-23), а темна й HC-теми мають ВЛАСНІ
+    // геро-токени (`--hero-ink-*`), тож світлого прогону для них замало.
+    { name: "pricing", path: "/pricing" },
   ] as const
 ).flatMap(({ name, path }) =>
   (["dark", "hc"] as const).map((theme) => ({

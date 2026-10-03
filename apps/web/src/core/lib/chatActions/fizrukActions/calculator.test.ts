@@ -56,7 +56,7 @@ describe("calculate1rm", () => {
     const result = calculate1rm(makeAction(100, 5));
     expect(result).toContain("1RM");
     // Epley (workoutStats.ts, canon): 100 * (1 + 5/30) = 116.7
-    expect(result).toContain("116.7");
+    expect(result).toContain("116,7");
     expect(result).toContain("Таблиця відсотків");
   });
 

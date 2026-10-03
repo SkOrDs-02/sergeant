@@ -2,7 +2,7 @@
 /**
  * Картка продукту в коморі — вибір варіанта при списанні і скидання
  * варіантів при ручній зміні кількості (спека
- * `docs/90-work/planning/specs/pantry-generic-names.md`, рішення 11 і
+ * `docs/work/specs/pantry-generic-names.md`, рішення 11 і
  * § Ризики).
  *
  * Гарячий шлях тут — саме той, що всередині збереження прийому їжі: діалог
@@ -65,6 +65,7 @@ function renderHarness() {
         setBusy: vi.fn(),
         setErr: vi.fn(),
         setStatusText: vi.fn(),
+        setDenial: vi.fn(),
       }),
     { wrapper: makeWrapper() },
   );

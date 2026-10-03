@@ -4,7 +4,7 @@ import type { Request, Response } from "express";
 
 /**
  * F2 — per-account бакет на credential-флоу
- * (`docs/90-work/planning/specs/beta-security-readiness.md`).
+ * (`docs/work/specs/beta-security-readiness.md`).
  *
  * Тест перевіряє саме те, що ламається тихо: **на чому ключується бакет**.
  * Якщо `subject` колись зникне, ліміт мовчки відкотиться на per-IP і знову

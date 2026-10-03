@@ -13,9 +13,9 @@
  *      Sentry group-by-message буде фолд-ити повторні алерти у одне issue;
  *      delta vs прошлий тиждень (через `--baseline=...` у CLI) пробрасується
  *      в `extra.delta`.
- *   4. Auto-flip kill-switch `mono_ai_memory_ingest` при `status=kill`
+ *   4. Auto-flip kill-switch `digest_ai_memory_ingest` при `status=kill`
  *      (in-memory; зберігається до process-restart). Не торкається env-у на
- *      Railway — operator має зробити permanent flip per runbook §
+ *      Coolify — operator має зробити permanent flip per runbook §
  *      «RagQualityGateKillSwitch».
  *
  * Auth: bearer-token guard у `routes/internal/index.ts` (`INTERNAL_API_KEY`).
@@ -26,7 +26,7 @@
  * сигнали в спостережуваність. Логіка `compute → record → alert` залишається
  * pure-функцією; endpoint = thin сейв-layer.
  *
- * Reaction playbook: `docs/observability/runbook.md` §
+ * Reaction playbook: `docs/operations/observability/runbook.md` §
  * «RagQualityGateDegraded» / «RagQualityGateKillSwitch».
  */
 
@@ -133,7 +133,7 @@ export function formatEventMessage(summary: RagEvalSummary): string {
 }
 
 /**
- * Чи варто авто-вимикати `mono_ai_memory_ingest`.
+ * Чи варто авто-вимикати `digest_ai_memory_ingest`.
  *
  * За замовчуванням — ніколи, і це свідома зміна поведінки. Дві причини.
  * Перша: живий шар евалу алертить, але нічого не блокує; автоматичне
@@ -145,7 +145,7 @@ export function formatEventMessage(summary: RagEvalSummary): string {
  * Тіло під прапорцем збережене, щоб повернути автоматику одним рядком,
  * коли kill-switch стане персистентним.
  */
-export function shouldAutoDisableMonoIngest(
+export function shouldAutoDisableDigestIngest(
   summary: RagEvalSummary,
   opts: { autoDisable?: boolean } = {},
 ): boolean {
@@ -248,8 +248,8 @@ export function createEvalRagInternalRouter({ pool }: { pool: Pool }): Router {
     // Лише коли викликач явно попросив: `autoDisable: true` у тілі. Без
     // прапорця евал алертить і нічого не гасить (див. докстрінг гарду).
     let killSwitchActivated = false;
-    if (shouldAutoDisableMonoIngest(summary, { autoDisable })) {
-      activateKillSwitch("mono_ai_memory_ingest", {
+    if (shouldAutoDisableDigestIngest(summary, { autoDisable })) {
+      activateKillSwitch("digest_ai_memory_ingest", {
         reason: `auto: rag-eval kill (recall@${summary.topK}=${summary.metrics.recallAtK.mean.toFixed(3)})`,
         context: {
           mode: summary.mode,

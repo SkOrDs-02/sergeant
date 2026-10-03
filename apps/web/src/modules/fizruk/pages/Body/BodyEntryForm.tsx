@@ -433,7 +433,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             // modules), not a module accent.
             submitSuccess
               ? "bg-success-strong text-white"
-              : "bg-fizruk-strong text-white hover:bg-fizruk-hover active:scale-[0.98]",
+              : "bg-fizruk-strong text-white hover:bg-fizruk-hover active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90",
             (isSubmitting || isEntryEmpty) && "opacity-60",
           )}
         >

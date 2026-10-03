@@ -68,7 +68,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
       <button
         type="button"
         onClick={onOpenToday}
-        className="focus-ring flex w-full items-center justify-between gap-3 rounded-lg text-left"
+        className="focus-ring flex w-full items-center justify-between gap-3 rounded-xl text-left"
         aria-label={messages.finyk.todaySummary.openAria}
       >
         <div className="min-w-0">
@@ -105,9 +105,11 @@ const OverviewTextRowsImpl = function OverviewTextRows({
             <button
               type="button"
               aria-label={messages.finyk.monthRow.currencyInfoAria}
-              className="inline-flex items-center justify-center text-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/60 rounded-full"
+              // 24px на fine-pointer (WCAG 2.5.8): голий 16px-гліф був
+              // нижче мінімуму; coarse підхоплює глобальна сітка 44px.
+              className="inline-flex min-h-6 min-w-6 items-center justify-center text-muted hover:text-text focus-ring rounded-full"
             >
-              <Icon name="info" size={14} />
+              <Icon name="info" size="sm" />
             </button>
           </Tooltip>
         </div>

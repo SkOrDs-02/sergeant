@@ -7,11 +7,11 @@ import {
 } from "@sergeant/fizruk-domain/data";
 
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractInjurySnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractInjurySnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import {
   getCachedFizrukSqliteState,
   type CachedInjury,
@@ -78,22 +78,23 @@ export function useInjuries(): UseInjuriesResult {
     },
   );
 
+  const intended = useFizrukIntendedSlice<"injuries">(sqliteCacheTick);
+
   const persist = useCallback(
     (next: CachedInjury[]) => {
       setRows(next);
-      const prevDualWrite =
-        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      const nextDualWrite = {
-        ...prevDualWrite,
-        injuries: extractInjurySnapshots(next),
-      };
+      const transition = fizrukDualWriteTransition(
+        "injuries",
+        intended,
+        extractInjurySnapshots(next),
+      );
       try {
-        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        triggerFizrukDualWrite(transition.prev, transition.next);
       } catch {
         /* trigger is fire-and-forget — never propagate */
       }
     },
-    [setRows],
+    [intended, setRows],
   );
 
   const all = useMemo(() => rows.map(toMark), [rows]);

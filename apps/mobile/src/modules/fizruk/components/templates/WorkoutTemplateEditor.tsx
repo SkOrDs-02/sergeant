@@ -14,7 +14,7 @@
  * hook already round-trips the `groups` field unchanged, so an existing
  * template's groups survive an edit even though the mobile UI does not
  * yet expose group authoring (tracked in
- * `docs/mobile/react-native-migration.md` § 5.3 — a Phase 6 follow-up).
+ * `docs/engineering/mobile/react-native-migration.md` § 5.3 — a Phase 6 follow-up).
  */
 import { exerciseDisplayName } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
@@ -132,7 +132,7 @@ export function WorkoutTemplateEditor({
       <View className="gap-2">
         <SectionHeading size="xs">Додати вправу з каталогу</SectionHeading>
         <Input
-          placeholder="Пошук вправи…"
+          placeholder="Пошук вправи"
           value={query}
           onChangeText={setQuery}
           accessibilityLabel="Пошук вправи для шаблону"
@@ -146,7 +146,7 @@ export function WorkoutTemplateEditor({
           >
             {pickList.length === 0 ? (
               <Text className="text-xs text-fg-muted text-center py-4">
-                Нічого не знайдено
+                Нічого не знайшов
               </Text>
             ) : (
               pickList.map((ex) => (

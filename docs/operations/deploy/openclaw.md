@@ -5,7 +5,7 @@
 > ⚠️ **Історичний зріз 2026-06-08:** тоді grammy-бот було видалено, а successor-ом став gateway. Gateway згодом теж повністю декомісовано 2026-07-20 (ADR-0075); твердження про «живу surface» нижче описують лише проміжний стан і не є операторською інструкцією.
 
 > **Status:** Archived (grammy bot removed 2026-06-08)
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-03.
 > **Власник:** `sergeant-openclaw` skill (OpenClaw governance).
 > **Railway service:** `sergeant-openclaw` (раніше `sergeant-hubchat`, перейменовано у PR-47 per ADR-0032 / Pain P10 — див. §«Railway service rename runbook» нижче).
 > **Webhook delivery (ADR-0041):** ✅ live in production з 2026-05-03 21:26 UTC. URL `https://sergeant-openclaw-production.up.railway.app/webhook/openclaw` (раніше `sergeant-hubchat-production…`), secret set, healthcheck `GET /healthz`. Backout — unset `OPENCLAW_USE_WEBHOOK` + redeploy.

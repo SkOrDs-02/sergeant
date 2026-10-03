@@ -7,7 +7,11 @@ import {
   requireSession,
   setModule,
 } from "../http/index.js";
-import { requirePlan } from "../modules/billing/index.js";
+import { requireFeature } from "../modules/billing/index.js";
+import {
+  requireHealthConsent,
+  scrubGoalWithoutHealthConsent,
+} from "../lib/healthConsent.js";
 import analyzePhoto from "../modules/nutrition/analyze-photo.js";
 import parsePantry from "../modules/nutrition/parse-pantry.js";
 import refinePhoto from "../modules/nutrition/refine-photo.js";
@@ -21,29 +25,53 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
 /**
  * Усі `/api/nutrition/*` endpoint-и мають спільний set guard-ів:
  *   - `setModule("nutrition")` — для логера/метрик
- *   - broad rate-limit ("api:nutrition") — гасить shotgun-атаки
+ *   - pre-auth IP-лімітер ("api:nutrition:ip") — стоїть ПЕРЕД
+ *     `requireSession()`. `requireSession()` на невдачі шле 401 і не кличе
+ *     `next()`, тож без цього гейта безсесійний флуд (відсутня/підроблена
+ *     кука) взагалі не діставався б до per-user бакета нижче, а
+ *     `getSessionUser` усе одно робить lookup у session-store на кожен
+ *     такий запит. Окремий `key` (суфікс `:ip`), ліміт 600/хв = 5×
+ *     per-user 120/хв.
  *   - `requireSession()` — лише авторизовані користувачі (cookie або Bearer)
+ *   - broad rate-limit ("api:nutrition") — гасить shotgun-атаки, per-user
+ *     (`requireSession()` стоїть ПЕРЕД лімітером, щоб `rateLimitSubject`
+ *     бачив `req.user.id`, а не фолбечився на IP — PR-A3)
  *
  * Per-endpoint rate-limit + AI-guards навішуємо нижче: backup-endpoint-и не
  * ходять у Anthropic і не мають тратити квоту, тому `requireAnthropicKey` /
  * `requireAiQuota` до них не застосовуємо.
  *
- * Vision-endpoint-и (`analyze-photo` / `refine-photo`) додатково гейтяться за
- * Pro-планом: вони йдуть через Sonnet 4.6 Vision (cost=3) — найдорожчий
- * AI-шлях. Решта nutrition-AI лишається метрованою (free отримує
- * `effectiveLimits.aiRequestsPerDay`), що збігається з клієнтським
- * `useFeatureGate("ai-photo-analysis")` та ADR-0051. `requirePlan` стоїть
- * ПЕРЕД `requireAnthropicKey`/`requireAiQuota`, щоб free-юзер отримав 402 до
- * витрати денної квоти; при `STRIPE_ENABLED=false` middleware — no-op.
+ * Пакетування за реєстром доступу (`docs/work/specs/access-tiers.md`):
+ *   - `analyze-photo` списує 1 з окремого тижневого відра фото (`week:photo`,
+ *     Free 3 на тиждень) і не чіпає спільні дії. `refine-photo` того самого
+ *     знімка нічого не списує: це продовження тієї самої дії.
+ *   - `week-plan` тільки для Premium (`requireFeature("nutrition.weekPlan")`),
+ *     гейт стоїть ПЕРЕД квотою, щоб Free отримав 402 до списання.
+ *   - Решта nutrition-AI (денний план, рецепти, покупки, комора) коштує 1 дію
+ *     з тижневих `ai.actions`.
  */
 export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
   r.use("/api/nutrition", setModule("nutrition"));
   r.use(
     "/api/nutrition",
+    rateLimitExpress({
+      key: "api:nutrition:ip",
+      limit: 600,
+      windowMs: 60_000,
+    }),
+  );
+  // requireSession() йде ПЕРЕД per-user rateLimitExpress навмисно (рецидив
+  // знахідки B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP. Див. еталон у `chat.ts`.
+  r.use("/api/nutrition", requireSession());
+  r.use(
+    "/api/nutrition",
     rateLimitExpress({ key: "api:nutrition", limit: 120, windowMs: 60_000 }),
   );
-  r.use("/api/nutrition", requireSession());
 
   // Два різні гейти, бо два різні транспорти — і це не косметика.
   //
@@ -55,7 +83,6 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   // помилки. Спільний `requireAnthropicKey()` не описував ЖОДЕН із двох
   // випадків: питав про ключ, який під дефолтним шлюзом не використовується.
   // Докстрінг `requireLlmUpstream`, знахідка B31 у решті роутів.
-  const aiVision = [requireLlmUpstream("vision"), requireAiQuota()];
   const aiText = [requireLlmUpstream("nutrition"), requireAiQuota()];
 
   // Vision API call (~5–10s upstream, ~10–20KB image upload). Cost 3 makes
@@ -69,8 +96,11 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
-    requirePlan(pool, "pro"),
-    ...aiVision,
+    // Фото страв — дані про здоровʼя (GDPR Art. 9, `privacyDocument.ts`). Гейт
+    // стоїть ПЕРЕД квотою: людина, якій треба дати згоду, не платить за це.
+    requireHealthConsent(),
+    requireLlmUpstream("vision"),
+    requireAiQuota("photo"),
     analyzePhoto,
   );
   r.post(
@@ -92,8 +122,10 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
-    requirePlan(pool, "pro"),
-    ...aiVision,
+    // ponytail: refine не має власної квоти, стелю тримає лише rate limit
+    // 20/хв; окреме відро, якщо refine почнуть ганяти без analyze.
+    requireHealthConsent(),
+    requireLlmUpstream("vision"),
     refinePhoto,
   );
   // Anthropic text generation — medium-weight (~5–8s, smaller payloads
@@ -106,6 +138,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 2,
     }),
+    scrubGoalWithoutHealthConsent(),
     ...aiText,
     recommendRecipes,
   );
@@ -119,6 +152,8 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
+    requireFeature(pool, "nutrition.weekPlan"),
+    scrubGoalWithoutHealthConsent(),
     ...aiText,
     weekPlan,
   );
@@ -131,6 +166,8 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 2,
     }),
+    // День-план будується від КБЖВ-цілей: це калорії, тобто дані про здоровʼя.
+    requireHealthConsent(),
     ...aiText,
     dayPlan,
   );

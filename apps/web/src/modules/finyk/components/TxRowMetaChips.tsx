@@ -27,6 +27,12 @@ interface TxRowMetaChipsProps {
   catName: string;
   isIncome: boolean;
   overrideCatId?: string | null | undefined;
+  /**
+   * Категорію дало правило «Завжди так для цього магазину», а не здогадка за
+   * MCC. Статус «за правилом» чесніше за позначку «визначив Сержант» (яку
+   * тоді ховаємо): це рішення людини, яке вона ухвалила один раз.
+   */
+  fromMerchantRule?: boolean | undefined;
   existingSplitsCount: number;
   isCreditCard: boolean;
   account: MonoAccount | undefined;
@@ -40,6 +46,22 @@ interface TxRowMetaChipsProps {
   showAccount?: boolean | undefined;
   /** Власні категорії — джерело стабільного відтінку для кастомних чипів. */
   customCategories?: readonly { id: string }[] | undefined;
+  /**
+   * Явне «Не враховувати у статистиці» (`finyk_excluded_stat_txs`,
+   * PR-F4 founder-UX audit 2026-09-13) — окремо від `isTransfer`, який
+   * уже виключений неявно (перекази ніколи не рахуються витратою/доходом).
+   * Доти маркер «не в статистиці» ставився ЛИШЕ для переказів, тож
+   * пакетна дія «Не враховувати» міняла підсумки Огляду й Аналітики без
+   * жодного видимого сліду в самому рядку.
+   */
+  isExcludedFromStats?: boolean | undefined;
+  /**
+   * Нога скасованого платежу («Uklon −189» + «Скасування. Uklon +189»,
+   * `findCancellationPairs`, рішення власника 2026-10-01). Обидві ноги вже
+   * виключені зі статистики, тому слово «скасовано» замінює загальне «не в
+   * статистиці»: людина бачить причину, а не лише наслідок.
+   */
+  isCancelled?: boolean | undefined;
   /** Чи знає ЦЕЙ пристрій про чек, привʼязаний до цієї транзакції
    * (`useFinykReceiptLinks`, device-local — див. `lib/receiptLinks.ts`).
    * Розгортка позицій живе в `BankTransactionDetailsSheet`/
@@ -55,6 +77,7 @@ export function TxRowMetaChips({
   catName,
   isIncome,
   overrideCatId,
+  fromMerchantRule = false,
   existingSplitsCount,
   isCreditCard,
   account,
@@ -63,19 +86,28 @@ export function TxRowMetaChips({
   hasReceipt = false,
   note,
   customCategories = [],
+  isExcludedFromStats = false,
+  isCancelled = false,
 }: TxRowMetaChipsProps) {
   const isTransfer = catId === INTERNAL_TRANSFER_ID;
   // Порядок фіксований: рахунок → переказ → «змін.» → П24 → спліт.
   const statuses: string[] = [];
-  if (isTransfer) statuses.push("не в статистиці");
+  // Переказ виключений НЕЯВНО (доменне правило), явне виключення —
+  // окремою дією людини; обидва шляхи ведуть до того самого видимого
+  // маркера, бо для людини наслідок однаковий: рядок не рахується в
+  // підсумках.
+  if (isCancelled) statuses.push("скасовано");
+  else if (isTransfer || isExcludedFromStats) statuses.push("не в статистиці");
   if (overrideCatId && !isTransfer) statuses.push("змін.");
+  if (fromMerchantRule && !isTransfer) statuses.push("за правилом");
   if (tx._source === "privatbank") statuses.push("П24");
-  if (existingSplitsCount > 0) statuses.push("спліт");
+  if (existingSplitsCount > 0) statuses.push("розбито");
 
   const showAccountName = showAccount && account && accountName;
   const showAiMark =
     !tx._manual &&
     !overrideCatId &&
+    !fromMerchantRule &&
     !isIncome &&
     !isTransfer &&
     catId !== "other";
@@ -109,11 +141,11 @@ export function TxRowMetaChips({
           {showAiMark && (
             <span
               className="inline-flex items-center"
-              title="Категорію визначив Сержант за описом і MCC"
+              title="Категорію визначив Сержант за описом і типом магазину"
             >
-              <Icon name="sergeant" size={12} aria-hidden />
+              <Icon name="sergeant" size="xs" aria-hidden />
               <span className="sr-only">
-                Категорію визначив Сержант за описом і MCC
+                Категорію визначив Сержант за описом і типом магазину
               </span>
             </span>
           )}
@@ -123,7 +155,7 @@ export function TxRowMetaChips({
               {/* §2: рахунок завжди нейтральний — «кредитна» позначає
                   іконка, не колір. Червоне лишається боргам/активам. */}
               {isCreditCard && (
-                <Icon name="credit-card" size={12} aria-hidden />
+                <Icon name="credit-card" size="xs" aria-hidden />
               )}
               {accountName}
             </span>
@@ -141,12 +173,12 @@ export function TxRowMetaChips({
       {hasReceipt && (
         <span
           className="shrink-0 inline-flex items-center text-muted"
-          title="Є прикріплений чек, відкрий транзакцію, щоб побачити позиції"
+          title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
         >
           <Icon
             name="file-text"
-            size={12}
-            title="Є прикріплений чек, відкрий транзакцію, щоб побачити позиції"
+            size="xs"
+            title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
           />
         </span>
       )}

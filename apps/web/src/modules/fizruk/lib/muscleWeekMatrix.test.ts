@@ -4,8 +4,8 @@
  * Що тут охороняється — саме те, заради чого вид існує: щоб матриця
  * доїжджала до екрана цілою, а не згорталась назад у один тиждень.
  */
-import { describe, expect, it } from "vitest";
-import { kyivMondayStartMs } from "@sergeant/shared";
+import { afterEach, describe, expect, it } from "vitest";
+import { deviceMondayStart } from "@sergeant/shared";
 import {
   MATRIX_WEEKS,
   MIN_WEEKS_WITH_DATA,
@@ -29,7 +29,28 @@ function strengthWorkout(atMs: number, muscle: string, kg: number) {
   };
 }
 
+const originalTz = process.env["TZ"];
+
 describe("buildMuscleWeekMatrix", () => {
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
+  });
+
+  it("Токіо: тренування о 00:30 понеділка за пристроєм — у поточному тижні", () => {
+    process.env["TZ"] = "Asia/Tokyo"; // UTC+9
+    // Пн 2026-08-03 00:30 JST = 2026-08-02T15:30Z (за Києвом ще неділя).
+    const at = Date.parse("2026-08-02T15:30:00.000Z");
+    const m = buildMuscleWeekMatrix(
+      [strengthWorkout(at, "chest", 100)],
+      null,
+      Date.parse("2026-08-05T03:00:00.000Z"),
+    );
+    const chest = m.rows.find((r) => r.id === "chest");
+    expect(chest?.weekly[MATRIX_WEEKS - 1]).toBeGreaterThan(0);
+    expect(chest?.weekly[MATRIX_WEEKS - 2]).toBe(0);
+  });
+
   it("тримає всі чотири тижні, а не лише останній", () => {
     const m = buildMuscleWeekMatrix(
       [
@@ -108,9 +129,9 @@ describe("buildMuscleWeekMatrix", () => {
     expect(two.weeksWithData).toBe(MIN_WEEKS_WITH_DATA);
   });
 
-  it("вікно вирівняне по київських понеділках", () => {
+  it("вікно вирівняне по понеділках пристрою (ADR-0078)", () => {
     const m = buildMuscleWeekMatrix([], null, NOW);
-    expect(m.weekStarts[MATRIX_WEEKS - 1]).toBe(kyivMondayStartMs(NOW));
+    expect(m.weekStarts[MATRIX_WEEKS - 1]).toBe(deviceMondayStart(NOW));
     for (let i = 1; i < MATRIX_WEEKS; i += 1) {
       const prev = m.weekStarts[i - 1] ?? 0;
       const cur = m.weekStarts[i] ?? 0;

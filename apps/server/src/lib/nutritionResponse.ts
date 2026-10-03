@@ -95,6 +95,11 @@ export interface PantryItem {
   notes: string | null;
 }
 
+/**
+ * КБЖВ рецепта на ОДНУ порцію, а не на весь рецепт (рішення власника
+ * 2026-10-01). `servings` - окреме поле: скільки порцій виходить. Клієнт
+ * множить макроси на кількість зʼїдених порцій при записі в журнал.
+ */
 export type RecipeMacros = PhotoMacros;
 
 export interface NormalizedRecipe {

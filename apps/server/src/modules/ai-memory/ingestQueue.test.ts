@@ -110,17 +110,26 @@ vi.mock("./dlq.js", () => ({
   })),
 }));
 
-const { hasAiMemoryConsentMock } = vi.hoisted(() => ({
+const { hasAiMemoryConsentMock, hasHealthDataConsentMock } = vi.hoisted(() => ({
   hasAiMemoryConsentMock: vi.fn().mockResolvedValue(true),
+  hasHealthDataConsentMock: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock("./consent.js", () => ({
   hasAiMemoryConsent: hasAiMemoryConsentMock,
+  hasHealthDataConsent: hasHealthDataConsentMock,
 }));
 
 beforeEach(() => {
   hasAiMemoryConsentMock.mockReset();
   hasAiMemoryConsentMock.mockResolvedValue(true);
+  // PR-S3: дефолт мока — `false`, дзеркалячи і колонку
+  // (`NOT NULL DEFAULT FALSE`, міграція 111), і застосунок
+  // (`dataRights.ts`). Тест, який хоче побачити запис health-payload-у,
+  // мусить згоду поставити ЯВНО — інакше зелений тест описував би стан, у
+  // якому насправді не перебуває майже ніхто.
+  hasHealthDataConsentMock.mockReset();
+  hasHealthDataConsentMock.mockResolvedValue(false);
 });
 
 import {
@@ -481,6 +490,126 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
     });
   });
 
+  // ── PR-S3: другий гейт згоди, саме на персистентному записі ──────────────
+  //
+  // Рішення founder-а 2026-09-14. Ефемерна відповідь у чаті лишається всім
+  // (гейт на читання вимкнув би AI-шар за замовчуванням — тумблер
+  // дефолтиться у `false`), а от осідання назавжди потребує згоди: вимкнути
+  // тумблер постфактум і цим прибрати вже записане неможливо.
+  //
+  // Break-test прогнано (обовʼязковий за `sergeant-bugfix-and-regression`):
+  // прибери гілку `payload.healthData === true` в `enqueueMemoryIngestImpl`
+  // — падають ТРИ з пʼяти, «3 failed | 27 passed». Падають перший, другий і
+  // пʼятий (fail-closed) — саме вони і є знахідкою.
+  //
+  // Третій (payload без прапорця) і четвертий (згода є) на зламаному коді
+  // проходять, і лишаються свідомо: вони стережуть, щоб гейт не забрав
+  // зайвого разом із потрібним. Тобто це піни на інваріант, а не докази
+  // дефекту, і читати їх як докази не треба.
+  describe("PR-S3: health-payload під окремою згодою", () => {
+    const healthPayload: MemoryIngestPayload = {
+      ...samplePayload,
+      source: "digest",
+      healthData: true,
+    };
+
+    it("не пише health-payload без згоди «Дані про здоровʼя»", async () => {
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(false);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).not.toHaveBeenCalled();
+      const { aiMemoryIngestEnqueuedTotal } =
+        await import("../../obs/metrics.js");
+      expect(
+        (
+          aiMemoryIngestEnqueuedTotal as unknown as {
+            inc: ReturnType<typeof vi.fn>;
+          }
+        ).inc,
+      ).toHaveBeenCalledWith({
+        mode: "health_consent_disabled",
+        source: "digest",
+      });
+    });
+
+    it("загальної згоди на памʼять НЕ досить — потрібні обидві", async () => {
+      // Найлегша помилка при читанні цього коду — вирішити, що `aiMemory:
+      // true` покриває все. Саме тому тут згода на памʼять УВІМКНЕНА.
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(false);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(hasAiMemoryConsentMock).toHaveBeenCalled();
+      expect(remember).not.toHaveBeenCalled();
+    });
+
+    it("не чіпає payload без прапорця — гейт не ширший за знахідку", async () => {
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(false);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(samplePayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).toHaveBeenCalled();
+      // Дорогий запит до БД не має робитись там, де він не потрібен.
+      expect(hasHealthDataConsentMock).not.toHaveBeenCalled();
+    });
+
+    it("зі згодою health-payload проходить", async () => {
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(true);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).toHaveBeenCalled();
+    });
+
+    it("падіння перевірки згоди не пускає запис (fail-closed)", async () => {
+      // Асиметрія навмисна й протилежна до `hasAiMemoryConsent`: там
+      // відсутній рядок означає продуктовий дефолт «увімкнено», тут —
+      // «згоди не давали». Помилитись у бік «не записали» дешево,
+      // у бік «записали дані про здоровʼя без згоди» — ні.
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockRejectedValue(new Error("db down"));
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).not.toHaveBeenCalled();
+    });
+  });
+
   it("invalid source: НЕ throw, інкрементує enqueue_error", async () => {
     const badPayload = {
       ...samplePayload,
@@ -525,15 +654,99 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
   });
 });
 
-// PR-19 per-source kill-switch `MONO_AI_MEMORY_INGEST_ENABLED` жив тут на
-// `payload.source === "finyk"`. Гілку прибрано ініціативою 0024 (PR-1,
-// 2026-09-03) — `finyk` ніколи не мав продюсера в дереві (mono-webhook не
-// enqueue-ив). Разом з нею прибрано й цей describe-блок: тести перевіряли
-// саме ту гілку, а не generic-поведінку. `master AI_MEMORY_ENABLED=false`
-// gate лишається і покритий вище (`enqueueMemoryIngest — fallback path`,
-// тест «AI_MEMORY_ENABLED=false: skip без виклику remember»). PR-2 тієї ж
-// ініціативи перецілює механізм на `payload.source === "digest"` і
-// повертає еквівалентне покриття під новою назвою.
+// PR-19 per-source kill-switch (стара назва флага — див. ініціативу 0024,
+// § План змін, PR-2) жив тут на `payload.source === "finyk"`. Гілку
+// прибрано ініціативою 0024 (PR-1, 2026-09-03) — `finyk` ніколи не мав
+// продюсера в дереві (mono-webhook не enqueue-ив). `master
+// AI_MEMORY_ENABLED=false` gate лишається і покритий вище
+// (`enqueueMemoryIngest — fallback path`, тест «AI_MEMORY_ENABLED=false:
+// skip без виклику remember»). PR-2 тієї ж ініціативи перецілює механізм на
+// `payload.source === "digest"` під новою назвою флага/kill-switch-а —
+// покриття нижче.
+describe("digest per-source kill-switch (ініціатива 0024, PR-2)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetBullmqMocks();
+    __resetMemoryIngestQueueForTesting();
+    process.env["AI_MEMORY_ENABLED"] = "true";
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "true";
+  });
+
+  afterEach(() => {
+    __resetMemoryIngestQueueForTesting();
+    delete process.env["AI_MEMORY_ENABLED"];
+    delete process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"];
+  });
+
+  const digestPayload: MemoryIngestPayload = {
+    ...samplePayload,
+    source: "digest",
+    sourceRef: "2026-W18",
+  };
+
+  it("DIGEST_AI_MEMORY_INGEST_ENABLED=false: digest не інджеститься, mode=source_disabled", async () => {
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "false";
+    const fresh = await loadFreshMemoryIngestModule();
+
+    await fresh.mod.enqueueMemoryIngest(digestPayload);
+
+    expect(bullmqMocks.queueAdd).not.toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "source_disabled",
+      source: "digest",
+    });
+  });
+
+  it("DIGEST_AI_MEMORY_INGEST_ENABLED=false: інші джерела (cofounder) проходять як звичайно", async () => {
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "false";
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue({
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+    });
+    bullmqMocks.queueAdd.mockResolvedValue({ id: "job-1" });
+
+    await fresh.mod.enqueueMemoryIngest(samplePayload);
+
+    expect(bullmqMocks.queueAdd).toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "queued",
+      source: "cofounder",
+    });
+  });
+
+  it("DIGEST_AI_MEMORY_INGEST_ENABLED=true (default): digest інджеститься як звичайно", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue({
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+    });
+    bullmqMocks.queueAdd.mockResolvedValue({ id: "job-1" });
+
+    await fresh.mod.enqueueMemoryIngest(digestPayload);
+
+    expect(bullmqMocks.queueAdd).toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "queued",
+      source: "digest",
+    });
+  });
+
+  it("runtime kill-switch digest_ai_memory_ingest форсує OFF навіть при env=true", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    const { activateKillSwitch } =
+      await import("../../lib/featureFlags/runtimeKillSwitch.js");
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "test" });
+
+    await fresh.mod.enqueueMemoryIngest(digestPayload);
+
+    expect(bullmqMocks.queueAdd).not.toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "source_disabled",
+      source: "digest",
+    });
+  });
+});
 
 describe("memory ingest BullMQ lifecycle and stats", () => {
   beforeEach(() => {
@@ -541,13 +754,13 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
     resetBullmqMocks();
     __resetMemoryIngestQueueForTesting();
     process.env["AI_MEMORY_ENABLED"] = "true";
-    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "true";
   });
 
   afterEach(() => {
     __resetMemoryIngestQueueForTesting();
     delete process.env["AI_MEMORY_ENABLED"];
-    delete process.env["MONO_AI_MEMORY_INGEST_ENABLED"];
+    delete process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"];
   });
 
   it("queues via BullMQ with a stable jobId when Redis is available", async () => {
@@ -628,15 +841,20 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
       },
     );
 
+    // Назовні (`/health/workers` — анонімний роут) їде лише КЛАС помилки:
+    // `ioredis` кладе у `message` приватний хост і порт, і саме це раніше
+    // отримував будь-який перехожий.
     bullmqMocks.queueGetJobCounts.mockRejectedValueOnce(
-      new Error("redis unavailable"),
+      Object.assign(new Error("connect ECONNREFUSED 10.0.0.12:6379"), {
+        code: "ECONNREFUSED",
+      }),
     );
-    await expect(fresh.mod.getMemoryIngestWorkerStats()).resolves.toMatchObject(
-      {
-        jobCounts: null,
-        error: "redis unavailable",
-      },
-    );
+    const failed = await fresh.mod.getMemoryIngestWorkerStats();
+    expect(failed).toMatchObject({
+      jobCounts: null,
+      errorCode: "ECONNREFUSED",
+    });
+    expect(JSON.stringify(failed)).not.toContain("10.0.0.12");
   });
 
   it("starts, reuses, and closes the worker without leaking connections", async () => {

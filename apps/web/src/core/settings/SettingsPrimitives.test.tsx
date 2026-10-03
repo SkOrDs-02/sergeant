@@ -3,9 +3,15 @@
 // PR-A v2-polish-redesign — SettingsPrimitives icon prop + glass surface.
 // Covers: SettingsGroup renders the design-system <Icon>; module badge applies
 // the correct scoped surface class.
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 import {
   SettingsGroup,
@@ -16,11 +22,39 @@ import {
 } from "./SettingsPrimitives";
 
 // Icon is a thin wrapper; stub it so tests don't need an SVG sprite.
-vi.mock("@shared/components/ui/Icon", () => ({
-  Icon: ({ name, size }: { name: string; size?: number }) => (
-    <span data-testid="icon" data-name={name} data-size={size} />
-  ),
-}));
+//
+// Мок РОЗВʼЯЗУЄ токен у піксель через справжній `ICON_SIZES`, а не віддає
+// сирий проп. До 2026-09-15 він приймав лише `size?: number` і писав його в
+// `data-size` як є — це було вірно рівно доти, доки всі виклики сиділи на
+// числах. Щойно `SettingsGroup` перейшов на `size="lg"`, мок віддав рядок
+// «lg» там, де тест чекав «20», і падіння виглядало як регресія, хоча
+// компонент рендерив ті самі 20px.
+//
+// Тягнемо шкалу з оригіналу, а не дублюємо її тут: мок, який має ВЛАСНУ
+// копію канону, розходиться з ним тихо — а це рівно те, що цей тест і
+// мав би ловити.
+vi.mock("@shared/components/ui/Icon", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/components/ui/Icon")>();
+  return {
+    Icon: ({
+      name,
+      size = "lg",
+      className,
+    }: {
+      name: string;
+      size?: import("@shared/components/ui/Icon").IconSize;
+      className?: string;
+    }) => (
+      <span
+        data-testid="icon"
+        data-name={name}
+        data-size={typeof size === "number" ? size : actual.ICON_SIZES[size]}
+        className={className}
+      />
+    ),
+  };
+});
 
 afterEach(() => {
   cleanup();
@@ -39,30 +73,32 @@ describe("SettingsGroup — icon prop", () => {
     // First icon belongs to the icon badge; second is the ChevronIcon.
     const badgeIcon = icons.find((el) => el.dataset["name"] === "user");
     expect(badgeIcon).toBeTruthy();
-    expect(badgeIcon?.dataset["size"]).toBe("18");
+    expect(badgeIcon?.dataset["size"]).toBe("20");
   });
 
-  it("applies module soft-surface class on the icon badge span", () => {
+  it("colours the header glyph with the module accent, without a tinted badge (огляд 2026-09-04)", () => {
     render(
       <SettingsGroup title="Фінанси" icon="wallet" module="finyk">
         <div>child</div>
       </SettingsGroup>,
     );
 
-    // The badge span wrapping the Icon should carry the finyk soft bg class.
-    const badge = document.querySelector("span.bg-finyk-soft");
-    expect(badge).toBeTruthy();
+    const glyph = document.querySelector('[data-name="wallet"]');
+    expect(glyph).toBeTruthy();
+    expect(glyph?.className).toContain("text-finyk");
+    expect(document.querySelector("span.bg-finyk-soft")).toBeNull();
   });
 
-  it("uses neutral surface class when no module is given", () => {
+  it("uses the muted glyph colour when no module is given", () => {
     render(
       <SettingsGroup title="Загальне" icon="settings">
         <div>child</div>
       </SettingsGroup>,
     );
 
-    const badge = document.querySelector("span.bg-surface-soft-glass");
-    expect(badge).toBeTruthy();
+    const glyph = document.querySelector('[data-name="settings"]');
+    expect(glyph?.className).toContain("text-muted");
+    expect(document.querySelector("span.bg-surface-soft-glass")).toBeNull();
   });
 
   it("expands children on button click", () => {
@@ -126,7 +162,7 @@ describe("SettingsGroup — icon prop", () => {
 });
 
 // Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
-// `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+// `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
 // `SettingsSubGroup` більше не другий рівень акордеона — немає кнопки,
 // `aria-expanded`, стану розкриття чи `inert`-логіки. Це підписана група:
 // заголовок + завжди видимий вміст.
@@ -186,6 +222,84 @@ describe("SettingsGroupDefaultOpenContext", () => {
       name: /Секція без провайдера/,
     });
     expect(btn).toHaveAttribute("aria-expanded", "false");
+  });
+
+  // PR-S1 (аудит 2026-09-13 хвиля 5): диплінк у секцію, що вже змонтована
+  // в активній вкладці (⌘K/пошук → «Сповіщення» чи «Сержант», коли
+  // «Загальні» вже відкриті), мусить розкрити її БЕЗ ремаунту. Раніше
+  // контекстний `defaultOpen` читався лише в ініціалізаторі `useState`,
+  // тож зміна значення провайдера постфактум нічого не робила для 10 із
+  // 14 секцій (усі без `anchorId`) — цей тест ловить рівно ту регресію на
+  // одному примітиві, без потреби піднімати всю `HubSettingsPage`.
+  it("розкриває секцію, коли контекстний defaultOpen змінюється на true ПІСЛЯ монтування, без ремаунту", async () => {
+    function Harness() {
+      const [open, setOpenCtx] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpenCtx(true)}>
+            simulate deep-link
+          </button>
+          <SettingsGroupDefaultOpenContext.Provider
+            value={{ defaultOpen: open }}
+          >
+            <SettingsGroup title="Сповіщення" icon="bell">
+              <p>вміст</p>
+            </SettingsGroup>
+          </SettingsGroupDefaultOpenContext.Provider>
+        </>
+      );
+    }
+    render(<Harness />);
+
+    const toggle = screen.getByRole("button", { name: /Сповіщення/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(screen.getByText("simulate deep-link"));
+
+    // Ефект розкриття відкладений через `queueMicrotask` (обхід
+    // `react-hooks/set-state-in-effect`, той самий ідіом, що в
+    // `HubSettingsPage.tsx`) — потрібен `waitFor`, а не синхронний assert.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Сповіщення/ }),
+      ).toHaveAttribute("aria-expanded", "true"),
+    );
+  });
+
+  // Дзеркальна перевірка: контекст, що стає `false` (диплінк в ІНШУ
+  // секцію), не повинен згортати те, що вже відкрито — той самий
+  // односторонній контракт, що мав старий `hashchange`-слухач.
+  it("не згортає вже відкриту секцію, коли контекстний defaultOpen стає false", () => {
+    function Harness() {
+      const [open, setOpenCtx] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOpenCtx(false)}>
+            simulate deep-link elsewhere
+          </button>
+          <SettingsGroupDefaultOpenContext.Provider
+            value={{ defaultOpen: open }}
+          >
+            <SettingsGroup title="Сержант" icon="sparkles">
+              <p>вміст</p>
+            </SettingsGroup>
+          </SettingsGroupDefaultOpenContext.Provider>
+        </>
+      );
+    }
+    render(<Harness />);
+
+    expect(screen.getByRole("button", { name: /Сержант/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+
+    fireEvent.click(screen.getByText("simulate deep-link elsewhere"));
+
+    expect(screen.getByRole("button", { name: /Сержант/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
   });
 
   // Дефект №3 (адверсарне ревʼю 2026-08-08): без цього зворотного виклику

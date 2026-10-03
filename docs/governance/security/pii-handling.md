@@ -1,11 +1,11 @@
 # PII handling — single source of truth
 
-> **Last touched:** 2026-05-13 by Devin (child session, PII roast §P0-S1. **Next review:** 2027-08-18.
+> **Last touched:** 2026-09-17 by @claude (перевалідовано після Devin 2026-05-13: OTel-denylist і Railway — історія, інциденти → постмортеми, прибрано дубльований `pii-keys` блок). **Next review:** 2026-12-16.
 > **Status:** Active.
-> **Не тут:** дані, що виходять до сторонніх AI-обробників (Anthropic,
-> Voyage) — [`llm-subprocessors.md`](./llm-subprocessors.md).
+> **Не тут:** дані, що виходять до сторонніх AI-обробників (OpenRouter і
+> вендори за ним, Anthropic, Groq, Voyage) — [`llm-subprocessors.md`](./llm-subprocessors.md).
 >
-> **Scope:** Server logs (Pino), Sentry payloads (server, web, **mobile**, **OpenClaw**),
+> **Scope:** Server logs (Pino), Sentry payloads (server, web, **mobile**; OpenClaw-поверхню знято — [ADR-0075](../adr/0075-openclaw-gateway-decommissioned.md)),
 > Loki/Grafana retention, in-process error captures. Mobile/web log buffers — see
 > [`docs/operations/observability/frontend.md`](../../operations/observability/frontend.md).
 >
@@ -17,8 +17,11 @@
 > `SENSITIVE_QUERY_PARAM_NAMES` + `redactSensitiveQueryParams` (URL
 > query-string scrubber). All four live in one DOM-free shared module
 > consumed by Pino (server logs), `Sentry.beforeSend` on every surface
-> (server / web / mobile / OpenClaw) and the OTel attribute denylist.
-> Adding a new redacted field means editing **one** file. Audit
+> (server / web / mobile; OpenClaw — до ADR-0075). Історично був ще четвертий
+> споживач — OTel attribute denylist; трейсинг відкочено разом з
+> [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) (deprecated),
+> тож `obs/tracing.ts` більше немає, а паритет списку тримає `obs/tracing.test.ts`
+> (див. jsdoc у `pii.ts`). Adding a new redacted field means editing **one** file. Audit
 > [`docs/work/specs/audits/2026-05-13-security-observability-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-security-observability-roast.md) §P0-S1..S5
 > captures the rationale.
 
@@ -58,6 +61,13 @@ lint:pii-handling-drift`): if a key is added/removed in shared but not
 - `x-openclaw-webhook-secret`
 - `x-api-secret`
 - `x-internal-token`
+- `x-telegram-bot-api-secret-token`
+- `access_token`
+- `refresh_token`
+- `id_token`
+- `client_secret`
+- `api_key`
+- `code_verifier`
 - `x-signature`
 - `x-webhook-signature`
 - `x-hmac-signature`
@@ -73,6 +83,7 @@ lint:pii-handling-drift`): if a key is added/removed in shared but not
 - `groqKey`
 - `anthropicKey`
 - `voyageKey`
+- `openrouterKey`
 - `silpoToken`
 - `tool_calls_raw`
 - `tool_results`
@@ -86,7 +97,7 @@ lint:pii-handling-drift`): if a key is added/removed in shared but not
 ## Чому цей документ існує
 
 GDPR / DSAR — це **legal liability**, не «nice-to-have». PII у логах =
-sub-processor data sharing з Sentry/Loki/Railway, який не обумовлений
+sub-processor data sharing з Sentry/Loki/Coolify-host (до [ADR-0074](../adr/0074-hosting-hetzner-coolify.md) — Railway), який не обумовлений
 у DPA. Кожне поле, яке з'являється у production-логах, потенційно
 залишається там 14 днів (Loki retention) і 90 днів (Sentry retention),
 тож і одного помилкового `logger.info({ user })` достатньо, щоб тримач
@@ -176,13 +187,10 @@ Sergeant поки **не збирає** `dob`, `address`, `geolocation` — як
 
 ## Машино-читабельний дзеркальний список (auto-checked)
 
-<!-- pii-keys-start -->
-<!-- AUTO-CHECKED: цей блок має точно дзеркалити `REDACT_KEY_NAMES` із `packages/shared/src/lib/pii.ts`.
-     Дрейф ловить `pnpm lint:pii-handling-drift` (scripts/lint-pii-handling-drift.mjs). Оновлюй разом із source-списком. -->
-
-`password`, `newPassword`, `currentPassword`, `token`, `accessToken`, `refreshToken`, `idToken`, `sessionToken`, `apiKey`, `secret`, `clientSecret`, `privateKey`, `signature`, `dsn`, `connectionString`, `authorization`, `cookie`, `set-cookie`, `x-api-key`, `x-token`, `x-csrf-token`, `x-mono-webhook-secret`, `x-openclaw-webhook-secret`, `x-api-secret`, `x-internal-token`, `x-signature`, `x-webhook-signature`, `x-hmac-signature`, `otp`, `otpCode`, `verificationCode`, `verifyCode`, `magicLink`, `magicLinkToken`, `resetToken`, `passwordResetToken`, `pin`, `groqKey`, `anthropicKey`, `voyageKey`, `silpoToken`, `tool_calls_raw`, `tool_results`, `email`, `phone`, `loyaltyCard`, `loyaltyCardNumber`
-
-<!-- pii-keys-end -->
+Єдиний auto-checked блок — той, що на початку документа (між `pii-keys-start` /
+`pii-keys-end`). До 2026-09-17 тут стояла друга копія того самого списку; скрипт
+`lint-pii-handling-drift.mjs` читає лише **перший** блок (`indexOf`), тож копія
+не перевірялась і могла тихо розійтись — її прибрано.
 
 ## Як редакція влаштована
 
@@ -194,7 +202,7 @@ Sergeant поки **не збирає** `dob`, `address`, `geolocation` — як
 │  Pino redact (path-based) ─── apps/server/src/obs/logger.ts     │
 │            │                                                    │
 │            ▼ JSON to stdout                                     │
-│  Railway / Loki / Grafana — retention 14 days                   │
+│  Coolify / Loki / Grafana — retention 14 days                   │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
@@ -290,8 +298,8 @@ curl -X POST https://staging.sergeant.app/api/v1/auth/sign-in \
      -H "Content-Type: application/json" \
      -d '{"email":"leak@example.com","password":"leak"}'
 
-# 2. Tail Railway logs and confirm `[redacted]`
-railway logs --service sergeant-api | grep '"email"\|"password"'
+# 2. Tail the API container logs on the Coolify host and confirm `[redacted]`
+docker logs --since 5m <sergeant-api-container> 2>&1 | grep '"email"\|"password"'
 # expected:  ..."email":"[redacted]","password":"[redacted]"...
 # regression: ..."email":"leak@example.com",...
 ```
@@ -306,7 +314,7 @@ railway logs --service sergeant-api | grep '"email"\|"password"'
 Якщо ти знайшов PII у production-логах:
 
 1. **Не лінкуй** конкретний log-line у Slack публічно — тільки у `#security`.
-2. Створи `docs/governance/security/incidents/YYYY-MM-DD-<topic>.md` з timeline + impact + fix.
+2. Заведи постмортем за [`write-postmortem.md`](../../start/instructions/write-postmortem.md) (канон — [`docs/operations/postmortems/INDEX.md`](../../operations/postmortems/INDEX.md)) з timeline + impact + fix; окремого каталогу `security/incidents/` немає.
 3. Розглянь rotation секретів, якщо випливли Class-A поля.
 4. Додай regression-test у `logger.test.ts` (table-driven case з тим самим shape, що засвітився).
 5. Розклади fix у hardening sprint, якщо потрібно більше ніж точкова правка `redactPaths`.

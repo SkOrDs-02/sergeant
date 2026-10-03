@@ -616,7 +616,7 @@ describe("rateLimitExpress — Redis path", () => {
     // реального rate-limit повідомлення. Тому тримаємо обидва поля
     // синхронізованими.
     //
-    // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
     // копія тепер називає конкретний час очікування (`retryAfterSec` +
     // `pluralSeconds`), а не голе «пізніше»; для fresh 1-req/60s bucket-а
     // блокований запит бачить повне вікно — 60 секунд.
@@ -1227,7 +1227,7 @@ describe("secondary IP bucket (M9)", () => {
   });
 });
 
-// AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — burst
+// AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — burst
 // window (`limit`/`windowMs`) plus a stricter same-subject sustained window.
 describe("sustained same-subject bucket (AI-3)", () => {
   // In-memory path (Redis=null, Postgres rejects) — same setup as the M9

@@ -107,9 +107,20 @@ export function HubChat({
     [sendRef, stopSpeaking],
   );
 
+  // Дія тут не «Повторити»: помилку кидає сам STT-рушій (дозвіл на
+  // мікрофон, відсутність розпізнавання на пристрої, обрив), і повторний
+  // тап по мікрофону впаде так само. Наступний крок, який людина може
+  // зробити ПРЯМО ЗАРАЗ (§3 style-guide.uk.md), — той самий запит
+  // текстом: композер лишається змонтованим під тостом, тож фокус у поле
+  // і є recovery-шляхом. Мікрофон при цьому нікуди не дівається — хто
+  // хоче спробувати голосом ще раз, тапне його без підказки.
   const handleVoiceError = useCallback(
     (message: string) => {
-      if (message) toast.error(message);
+      if (!message) return;
+      toast.error(message, undefined, {
+        label: "Ввести текстом",
+        onPress: () => inputRef.current?.focus(),
+      });
     },
     [toast],
   );

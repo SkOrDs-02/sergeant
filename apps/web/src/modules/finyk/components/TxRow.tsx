@@ -6,7 +6,9 @@ import { memo, useMemo } from "react";
 import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
+  getMerchantRuleCategoryId,
 } from "../utils";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
@@ -26,7 +28,17 @@ interface TxRowProps {
   onClick?: ((() => void) | null) | undefined;
   highlighted?: boolean | undefined;
   hidden?: boolean | undefined;
+  /** «Не враховувати у статистиці» (PR-F4) — рендерить маркер у мета-рядку. */
+  isExcludedFromStats?: boolean | undefined;
+  /** Нога скасованого платежу — маркер «скасовано» в мета-рядку. */
+  isCancelled?: boolean | undefined;
   overrideCatId?: string | null | undefined;
+  /**
+   * Правила «Завжди так для цього магазину»: категорія банківської операції
+   * без явного override-а береться з правила, а рядок несе мітку «за
+   * правилом» замість мітки «визначив Сержант».
+   */
+  merchantRules?: MerchantRuleIndex | undefined;
   /** User's own free-text annotation for this transaction. */
   note?: string | undefined;
   accounts?: readonly MonoAccount[] | undefined;
@@ -50,7 +62,10 @@ function TxRowImpl({
   onClick,
   highlighted,
   hidden,
+  isExcludedFromStats = false,
+  isCancelled = false,
   overrideCatId,
+  merchantRules,
   note,
   accounts,
   hideAmount = false,
@@ -61,12 +76,28 @@ function TxRowImpl({
 }: TxRowProps) {
   const isIncome = tx.amount > 0;
   const cat = isIncome
-    ? getIncomeCategoryForTransaction(tx, overrideCatId)
+    ? getIncomeCategoryForTransaction(
+        tx,
+        overrideCatId,
+        customCategories as readonly unknown[],
+        merchantRules,
+      )
     : getExpenseCategoryForTransaction(
         tx,
         overrideCatId,
         customCategories as readonly unknown[],
+        merchantRules,
       );
+  // Рядок діє «за правилом», лише коли явного override-а немає: явний вибір
+  // сильніший, і тоді мітка лишається «змін.».
+  const fromMerchantRule =
+    !overrideCatId &&
+    getMerchantRuleCategoryId(
+      tx,
+      merchantRules,
+      isIncome ? "income" : "expense",
+      customCategories as readonly unknown[],
+    ) !== null;
   const catName = cat.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
   const rawDescription = tx.description?.trim() ?? "";
   // До 2026-08-13 форма підставляла підпис вибраної категорії в порожню
@@ -98,7 +129,7 @@ function TxRowImpl({
     <>
       {highlighted ? (
         <span className="text-success shrink-0">
-          <Icon name="check-circle" size={22} title="Вибрана транзакція" />
+          <Icon name="check-circle" size={22} title="Вибрана операція" />
         </span>
       ) : (
         // Спільний чип — та сама іконка й той самий відтінок, що в
@@ -120,7 +151,7 @@ function TxRowImpl({
               ? isIncome
                 ? "Ручне надходження"
                 : "Ручна витрата"
-              : "Транзакція")}
+              : "Операція")}
         </div>
         <TxRowMetaChips
           tx={tx}
@@ -129,10 +160,13 @@ function TxRowImpl({
           customCategories={customCategories}
           isIncome={isIncome}
           overrideCatId={overrideCatId}
+          fromMerchantRule={fromMerchantRule}
           existingSplitsCount={existingSplits.length}
           isCreditCard={isCreditCard}
           account={account}
           accountName={accountName}
+          isExcludedFromStats={isExcludedFromStats}
+          isCancelled={isCancelled}
           showAccount={(accounts?.length ?? 0) > 1}
           hasReceipt={hasReceipt}
           note={note}

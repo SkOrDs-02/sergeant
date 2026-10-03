@@ -1,3 +1,4 @@
+import type { ModuleOpenSource } from "@sergeant/shared";
 import { useEffect } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { onHubBus } from "@shared/lib/modules/hubBus";
@@ -10,6 +11,7 @@ import {
   emitCloudPullComplete,
 } from "@shared/lib/modules/cloudPullRequest";
 import { safeWriteLS } from "@shared/lib/storage/storage";
+import { bootSyncEngineReader } from "../syncEngine/singleton";
 import { PWA_ACTION_KEY } from "./pwaAction";
 import type { PwaAction } from "../hooks/usePwaActions";
 import type { HubUIState } from "../hooks/useHubUIState";
@@ -113,7 +115,7 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.data?.type === "OPEN_MODULE") {
-        openModule(event.data.module);
+        openModule(event.data.module, { source: "pwa_shortcut" });
       }
     };
     if ("serviceWorker" in navigator) {
@@ -124,12 +126,35 @@ export function useAppEffects(deps: AppEffectsDeps): void {
     return undefined;
   }, [openModule]);
 
-  // Legacy module-level pull-to-refresh gestures used to call CloudSync
-  // v1 pullAll. v1 is gone; settle the historical event so older module
-  // refresh controls do not hang while they migrate to v2-aware refresh.
+  // PR-H3 (2026-09-13 product review, "Тиха втрата даних"): module-level
+  // pull-to-refresh gestures dispatch this event (e.g.
+  // `NutritionApp.tsx` via `requestCloudPull`), but until this fix the
+  // only listener settled it immediately without doing any work — the
+  // gesture was alive, the pull behind it was not. Real sync v2
+  // ingestion otherwise only ran on the 60s reader interval and
+  // `visibilitychange` (`syncEngineReader.ts`), so a manual pull-down
+  // never actually fetched fresh data.
+  //
+  // `bootSyncEngineReader()` resolves the already-booted singleton (or
+  // boots it) and `pullOnce()` is its public "tick now" entry point —
+  // the same one `onTickComplete` in `singleton.ts` already calls after
+  // a successful push. `emitCloudPullComplete()` fires only once the
+  // tick has settled (success or failure) so the pull-to-refresh
+  // spinner reflects real completion instead of an instant no-op; the
+  // 4s timeout in `requestCloudPull()` remains the ultimate fallback if
+  // the tick hangs.
   useEffect(() => {
     const handler = () => {
-      emitCloudPullComplete();
+      void bootSyncEngineReader()
+        .then((reader) => reader?.pullOnce())
+        .catch(() => {
+          // Errors are already classified/reported inside
+          // `syncEngineReader.ts` (`captureException`); the gesture
+          // itself must still settle so the spinner does not hang.
+        })
+        .finally(() => {
+          emitCloudPullComplete();
+        });
     };
     window.addEventListener(REQUEST_PULL_EVENT, handler);
     return () => window.removeEventListener(REQUEST_PULL_EVENT, handler);
@@ -155,17 +180,6 @@ export function useAppEffects(deps: AppEffectsDeps): void {
     [openChat],
   );
 
-  // Global signal to open HubSearch from any surface (used by hint
-  // toasts). Mirrors the typed `openChat` contract on the same bus.
-  const setSearchOpenStable = ui.setSearchOpen;
-  useEffect(
-    () =>
-      onHubBus("openSearch", () => {
-        setSearchOpenStable(true);
-      }),
-    [setSearchOpenStable],
-  );
-
   useEffect(() => {
     const onHubOpen = (ev: Event) => {
       const detail =
@@ -174,14 +188,18 @@ export function useAppEffects(deps: AppEffectsDeps): void {
             module?: string;
             hash?: string;
             action?: PwaAction;
+            source?: ModuleOpenSource;
           }>
         ).detail || {};
-      const { module, hash, action } = detail;
+      const { module, hash, action, source } = detail;
       if (action && validActions.has(action)) {
         safeWriteLS(PWA_ACTION_KEY, action);
         setPwaAction(action);
       }
-      openModule(module, hash ? { hash } : undefined);
+      openModule(module, {
+        ...(hash ? { hash } : {}),
+        source: source ?? "other",
+      });
     };
     window.addEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
     return () => window.removeEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);

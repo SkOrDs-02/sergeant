@@ -168,6 +168,51 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
     expect(res.writableEnded).toBe(true);
   });
 
+  it("replaces the long dash in every streamed delta", async () => {
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "Витрати — 540 грн" },
+        },
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: " —" },
+        },
+        { type: "message_delta", delta: { stop_reason: "end_turn" } },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const res = makeSseRes();
+    await streamAnthropicToSse(makeReq(), res, "sk-test", PAYLOAD);
+
+    expect(dataPayloads(res.writes)).toEqual([
+      JSON.stringify({ t: "Витрати – 540 грн" }),
+      JSON.stringify({ t: " –" }),
+      "[DONE]",
+    ]);
+  });
+
+  it("clean end with zero text → generic err before [DONE], refunds quota", async () => {
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        { type: "message_delta", delta: { stop_reason: "end_turn" } },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+    const refund = vi.fn().mockResolvedValue(undefined);
+    const res = makeSseRes();
+
+    await streamAnthropicToSse(makeReq(refund), res, "sk-test", PAYLOAD);
+
+    expect(dataPayloads(res.writes)).toEqual([
+      JSON.stringify({ err: "Асистент тимчасово недоступний" }),
+      "[DONE]",
+    ]);
+    expect(refund).toHaveBeenCalledTimes(1);
+  });
+
   it("calls recordStreamEnd(outcome) once per upstream iteration", async () => {
     const recordStreamEnd = vi.fn();
     anthropicMessagesStream.mockResolvedValueOnce({
@@ -506,7 +551,10 @@ describe("streamAnthropicToSse — auto-continuation", () => {
     await streamAnthropicToSse(makeReq(), res, "sk-test", PAYLOAD);
 
     expect(anthropicMessagesStream).toHaveBeenCalledTimes(1);
-    expect(dataPayloads(res.writes)).toEqual(["[DONE]"]);
+    expect(dataPayloads(res.writes)).toEqual([
+      JSON.stringify({ err: "Асистент тимчасово недоступний" }),
+      "[DONE]",
+    ]);
   });
 });
 
@@ -623,7 +671,7 @@ describe("streamAnthropicToSse — heartbeat", () => {
 });
 
 /**
- * B46 — in-stream `error` event (`docs/90-work/audits/ai-testing-2026-08-25.md`).
+ * B46 — in-stream `error` event (`docs/work/specs/audits/ai-testing-2026-08-25.md`).
  *
  * Провайдер відкриває тіло 200-кою і аж потім шле
  * `{"type":"error","error":{...}}`. HTTP-статус про це вже нічого не скаже,

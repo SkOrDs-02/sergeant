@@ -1,6 +1,6 @@
 # AI-PR Checklist та guard workflow
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-24.
 > **Status:** Deprecated (механізм прибрано — ADR-0082)
 
 Цей документ пояснює **навіщо** в Sergeant існує AI-Generation Signals секція

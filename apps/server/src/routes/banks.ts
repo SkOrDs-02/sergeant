@@ -20,7 +20,7 @@ import {
  * `bankProxyFetch()` is still used by `backfill.ts` and Privatbank.
  *
  * `requireSession` тепер накриває ВЕСЬ `/api/privat` (спека
- * `docs/90-work/planning/specs/beta-security-readiness.md`, F1/F3). Раніше
+ * `docs/work/specs/beta-security-readiness.md`, F1/F3). Раніше
  * проксі був навмисно анонімним, бо upstream-credentials приходили в
  * заголовках і сесія для них була не потрібна. Наслідків було два: клієнт
  * мусив тримати merchant-токен у `localStorage`, а сторонні могли ганяти

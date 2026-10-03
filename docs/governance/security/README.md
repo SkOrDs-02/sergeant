@@ -1,35 +1,36 @@
 # Security
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-17 by @claude (pre-commit gitleaks у шарі 3; distroless-док позначено як історичний запис). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.
 
-| Document                                                         | Purpose                                                      |
-| ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| [`access-policy.md`](./access-policy.md)                         | Privileged access policy for Founder+1 operations            |
-| [`access-matrix.md`](./access-matrix.md)                         | Canonical inventory of privileged surfaces                   |
-| [`secret-ownership-register.md`](./secret-ownership-register.md) | Ownership, cadence, and blast radius for secret groups       |
-| [`audit-exceptions.md`](./audit-exceptions.md)                   | Approved exceptions from automated security findings         |
-| [`container-scan.md`](./container-scan.md)                       | Trivy scanning for active runtime container images           |
-| [`codeql.md`](./codeql.md)                                       | CodeQL SAST taint-flow analysis for TypeScript               |
-| [`nightly-audit.md`](./nightly-audit.md)                         | Nightly dependency and audit triage                          |
-| [`threat-model.md`](./threat-model.md)                           | STRIDE threat model per module + cross-cutting controls      |
-| [`disaster-recovery.md`](./disaster-recovery.md)                 | Disaster classes, RPO/RTO targets, restore discipline        |
-| [`vulnerability-sla.md`](./vulnerability-sla.md)                 | Response and remediation SLA                                 |
-| [`hardening/`](../../work/specs/security-hardening/README.md)    | Living security hardening backlog (per-finding cards)        |
-| [`ai-quota-kill-switch.md`](./ai-quota-kill-switch.md)           | Політика kill-switch для AI-квот при перевищенні ліміту      |
-| [`api-internal-hmac.md`](./api-internal-hmac.md)                 | Плейбук впровадження HMAC-підпису для `/api/internal/*`      |
-| [`better-auth-audit-2026-05.md`](./better-auth-audit-2026-05.md) | Аудит безпеки Better Auth — раунд 2 (2026-05)                |
-| [`better-auth-crypto-review.md`](./better-auth-crypto-review.md) | Криптографічне ревью Better Auth (PR-48 / stack-pulse PR-10) |
-| [`distroless-upgrade-plan.md`](./distroless-upgrade-plan.md)     | План оновлення distroless-образу — кластер CVE libssl3       |
-| [`internal-api-keys.md`](./internal-api-keys.md)                 | Ротація, аудит та відкликання `INTERNAL_API_KEY`             |
-| [`logging-redaction-policy.md`](./logging-redaction-policy.md)   | Політика редакції Pino-логів (Hard Rule #21)                 |
-| [`llm-subprocessors.md`](./llm-subprocessors.md)                 | Куди виходять дані до AI-обробників і що замасковано         |
-| [`pii-handling.md`](./pii-handling.md)                           | Єдине джерело правди щодо обробки PII у всіх шарах           |
-| [`rate-limit-failure-mode.md`](./rate-limit-failure-mode.md)     | Поведінка системи при відмові rate-limit підсистеми          |
-| [`secret-rotation.md`](./secret-rotation.md)                     | Процедура ротації production-секретів (P0)                   |
-| [`pen-tests/`](./pen-tests/2026-05-hardening-sweep.md)           | Пен-тест hardening sweep 2026-05 (H5/H6/H8/H9)               |
+| Document                                                         | Purpose                                                                                                                                               |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`access-policy.md`](./access-policy.md)                         | Privileged access policy for Founder+1 operations                                                                                                     |
+| [`access-matrix.md`](./access-matrix.md)                         | Canonical inventory of privileged surfaces                                                                                                            |
+| [`secret-ownership-register.md`](./secret-ownership-register.md) | Ownership, cadence, and blast radius for secret groups                                                                                                |
+| [`audit-exceptions.md`](./audit-exceptions.md)                   | Approved exceptions from automated security findings                                                                                                  |
+| [`container-scan.md`](./container-scan.md)                       | Trivy scanning for active runtime container images                                                                                                    |
+| [`codeql.md`](./codeql.md)                                       | CodeQL SAST taint-flow analysis for TypeScript                                                                                                        |
+| [`nightly-audit.md`](./nightly-audit.md)                         | Nightly dependency and audit triage                                                                                                                   |
+| [`threat-model.md`](./threat-model.md)                           | STRIDE threat model per module + cross-cutting controls                                                                                               |
+| [`disaster-recovery.md`](./disaster-recovery.md)                 | Disaster classes, RPO/RTO targets, restore discipline                                                                                                 |
+| [`vulnerability-sla.md`](./vulnerability-sla.md)                 | Response and remediation SLA                                                                                                                          |
+| [`hardening/`](../../work/specs/security-hardening/README.md)    | Living security hardening backlog (per-finding cards)                                                                                                 |
+| [`ai-quota-kill-switch.md`](./ai-quota-kill-switch.md)           | Політика kill-switch для AI-квот при перевищенні ліміту                                                                                               |
+| [`api-internal-hmac.md`](./api-internal-hmac.md)                 | Плейбук впровадження HMAC-підпису для `/api/internal/*`                                                                                               |
+| [`better-auth-audit-2026-05.md`](./better-auth-audit-2026-05.md) | Аудит безпеки Better Auth — раунд 2 (2026-05)                                                                                                         |
+| [`better-auth-crypto-review.md`](./better-auth-crypto-review.md) | Криптографічне ревью Better Auth (PR-48 / stack-pulse PR-10)                                                                                          |
+| [`distroless-upgrade-plan.md`](./distroless-upgrade-plan.md)     | Історичний запис (Deprecated, виконано 2026-06): міграція на `nodejs22-debian13` через кластер CVE libssl3; чинна політика — `docker-image-policy.md` |
+| [`internal-api-keys.md`](./internal-api-keys.md)                 | Ротація, аудит та відкликання `INTERNAL_API_KEY`                                                                                                      |
+| [`logging-redaction-policy.md`](./logging-redaction-policy.md)   | Політика редакції Pino-логів (Hard Rule #21)                                                                                                          |
+| [`llm-subprocessors.md`](./llm-subprocessors.md)                 | Куди виходять дані до AI-обробників і що замасковано                                                                                                  |
+| [`pii-handling.md`](./pii-handling.md)                           | Єдине джерело правди щодо обробки PII у всіх шарах                                                                                                    |
+| [`rate-limit-failure-mode.md`](./rate-limit-failure-mode.md)     | Поведінка системи при відмові rate-limit підсистеми                                                                                                   |
+| [`secret-rotation.md`](./secret-rotation.md)                     | Звіт аудиту секретів 2026-06 і vendor-кроки на ту дату (Reference); процедура — [`rotate-secrets.md`](../../start/instructions/rotate-secrets.md)     |
+| [`pen-tests/`](./pen-tests/2026-05-hardening-sweep.md)           | Пен-тест hardening sweep 2026-05 (H5/H6/H8/H9)                                                                                                        |
+| [`beta-tester-brief.md`](./beta-tester-brief.md)                 | Бриф для бета-тестерів: відомі й прийняті рішення безпеки                                                                                             |
 
 ## Static analysis pipeline
 
@@ -60,15 +61,19 @@ Repo має **тришаровий** захист від випадкового 
    `gitleaks/gitleaks-action` SHA-pinned). Блокує merge у `main`, якщо
    gitleaks знаходить додаткові патерни (наприклад, `BETTER_AUTH_SECRET`,
    `*_TOKEN_ENC_KEY`), яких нема у GitHub native list.
-3. **Pre-commit hook** (Husky + `lint-staged`, див. `.husky/pre-commit`) —
-   ESLint + Prettier на staged файлах. Покриває локальні merge-конфлікт-маркери
-   та accidental console.log; secret-detection — на push-stage (push protection).
+3. **Pre-commit hook** (Husky, див. `.husky/pre-commit`) — два кроки під
+   `set -e`: `pre-commit-timing.mjs` (lint-staged: ESLint + Prettier + staged
+   typecheck) і **`pre-commit-gitleaks.mjs`** — локальний gitleaks по staged
+   файлах, тобто secret-detection спрацьовує ще ДО push-stage (hardening
+   card I5 закрита; налаштування — [`CONTRIBUTING.md § Локальний secret-scan`](../../../CONTRIBUTING.md)).
+   До 2026-09-16 хук без `set -e` пропускав коміт, коли червоний lint-staged
+   перекривався зеленим gitleaks — Hard Rule #7 вимагає, щоб хук гейтив.
 
 **Що робити, якщо `git push` заблокований push-protection-ом:**
 
 - **Якщо секрет потрапив реально** — видали з історії (rebase + force-push на
-  feature-branch, або `git filter-repo`), згенеруй новий, ротує у production
-  (Railway/Vercel env-vars), запиши у [`secret-ownership-register.md`](./secret-ownership-register.md).
+  feature-branch, або `git filter-repo`), згенеруй новий, ротуй у production
+  (Coolify/Vercel env-vars), запиши у [`secret-ownership-register.md`](./secret-ownership-register.md).
 - **Якщо це false-positive** — задокументуй у [`audit-exceptions.md`](./audit-exceptions.md)
   у секції `Secret-scanning false positives`, потім використай GitHub UI
   ("Bypass" + reason) для одноразового override-у. Контрибутор + founder
@@ -78,7 +83,7 @@ Repo має **тришаровий** захист від випадкового 
 
 **Що робити, якщо секрет уже у remote (GitHub-native catch не спрацював):**
 
-1. **Ротуй секрет негайно** у production (Railway/Vercel UI) — секрет вважається
+1. **Ротуй секрет негайно** у production (Coolify/Vercel UI) — секрет вважається
    compromised навіть якщо PR не merged.
 2. Видали з історії через `git filter-repo --invert-paths --path <file>` або
    `git filter-branch`, force-push.

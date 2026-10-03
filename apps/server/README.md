@@ -48,12 +48,14 @@ pnpm --filter @sergeant/server mutation:normalizers  # Stryker mutation-тест
 pnpm --filter @sergeant/server db:migrate            # SQL-міграції зі збірки (`dist-server/migrate.js`) — так само в pre-deploy Coolify
 pnpm --filter @sergeant/server db:migrate:dev        # SQL-міграції з сорсів через `tsx` (локально)
 pnpm --filter @sergeant/server reencrypt:tokens      # ротація ключа шифрування токенів (`scripts/token-reencrypt-rollover.ts`)
+pnpm --filter @sergeant/server backfill:health-text  # разовий бекфіл шифрування `fizruk_injuries.note` (`src/scripts/healthTextBackfill.ts`; за замовчуванням `--dry-run`)
 pnpm --filter @sergeant/server eval:models           # оцінка моделей (`scripts/model-eval.ts`)
 pnpm --filter @sergeant/server eval:tools            # eval вибору tool-ів на корпусі
 pnpm --filter @sergeant/server eval:stream           # перевірка стрімінгу відповідей чату
 pnpm --filter @sergeant/server eval:vision           # eval розпізнавання фото (vision)
 pnpm --filter @sergeant/server rag-eval:embed        # побудова ембедингів для RAG-eval корпусу
 pnpm --filter @sergeant/server eval:tools:judge      # LLM-judge поверх результатів `eval:tools`
+pnpm --filter @sergeant/server eval:tools:jev        # замір Jev на розмітці стенду вибору інструментів (нічого не гейтить)
 pnpm --filter @sergeant/server rag-eval:live         # RAG-eval проти живого API
 ```
 

@@ -17,9 +17,9 @@
  *   заради якого детермінізм узагалі існує: той самий CSV, імпортований на
  *   телефоні й ноуті, дедуплікується — обидва пристрої дадуть один id.
  *
- * - **Анонімна або демо-сесія** → id пристрою (`resolveOriginDeviceId`),
- *   бо `LOCAL_ANON_USER_ID` і `DEMO_LOCAL_USER_ID` — СПІЛЬНІ константи для
- *   всіх таких сесій. Через них двоє незнайомих людей, що імпортували той
+ * - **Анонімна сесія** → id пристрою (`resolveOriginDeviceId`), бо
+ *   `LOCAL_ANON_USER_ID` — СПІЛЬНА константа для
+ *   всіх таких сесій. Через неї двоє незнайомих людей, що імпортували той
  *   самий експорт зі Strong анонімно, отримали б однакові id; і оскільки
  *   `core/durability/anonymousDataMigration.ts` переносить рядки в акаунт,
  *   НЕ перегенеровуючи id, колізія дожила б до сервера після реєстрації.
@@ -35,12 +35,15 @@
 import { resolveOriginDeviceId } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { LOCAL_ANON_USER_ID } from "../../../core/auth/localIdentity";
-import { DEMO_LOCAL_USER_ID } from "../../../core/onboarding/onboardingGate";
 
 /** Ідентичності, спільні для багатьох інсталяцій — на них солити не можна. */
 const SHARED_LOCAL_IDENTITIES: ReadonlySet<string> = new Set([
   LOCAL_ANON_USER_ID,
-  DEMO_LOCAL_USER_ID,
+  // Демо-режим знято 2026-09-17, нових рядків під цим id більше не
+  // зʼявиться. Літерал лишається навмисно: на пристроях, що встигли
+  // побувати в демо, рядки під ним є, і вони так само спільні для всіх
+  // інсталяцій — солити на них не можна було й не можна тепер.
+  "demo-local",
 ]);
 
 export interface StrongIdNamespaceDeps {

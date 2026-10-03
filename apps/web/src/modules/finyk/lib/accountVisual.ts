@@ -1,5 +1,5 @@
+import { getAccountLabel } from "../utils";
 import type { IconName } from "@shared/components/ui/Icon";
-import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 
 /**
  * Derive the visual treatment for a Monobank account: an icon glyph, a tone
@@ -21,12 +21,7 @@ export interface AccountVisual {
   iconName: IconName;
   /** Tailwind classes for the chip surface + icon colour. Uses design tokens only. */
   tone: string;
-  /**
-   * Підпис рахунку. Дублює `getAccountLabel` із `@sergeant/finyk-domain`,
-   * який до 2026-08-21 ніс емодзі-префікс і тому був непридатний тут;
-   * тепер обидві таблиці чисті, тож дубль лишився без причини — зведення
-   * в одну винесено окремим боргом (див. `docs/90-work/audits/icons-and-emoji.md`).
-   */
+  /** Підпис рахунку — з `getAccountLabel` домену (єдине джерело тексту). */
   name: string;
 }
 
@@ -45,68 +40,28 @@ const TONE_FOP =
 const TONE_EAID =
   "bg-info-soft text-info-strong dark:bg-info/15 dark:text-info";
 
-const LABEL_BY_TYPE = {
-  eAid: "Єпідтримка",
-  black: "Чорна картка",
-  white: "Біла картка",
-  platinum: "Платинова",
-  iron: "Залізна",
-  fop: "ФОП",
-} as const;
-
 export function getAccountVisual(acc: AccountLike): AccountVisual {
+  const name = getAccountLabel(acc);
   const isCredit = (acc.creditLimit ?? 0) > 0;
 
   if (acc.type === "eAid") {
-    return { iconName: "hand-coins", tone: TONE_EAID, name: "Єпідтримка" };
-  }
-  if (isCredit && acc.type === "black") {
-    return {
-      iconName: "credit-card",
-      tone: TONE_CREDIT,
-      name: "Кредитна картка",
-    };
+    return { iconName: "hand-coins", tone: TONE_EAID, name };
   }
   if (isCredit) {
-    return { iconName: "credit-card", tone: TONE_CREDIT, name: "Кредит" };
-  }
-  if (acc.type === "black") {
-    return {
-      iconName: "credit-card",
-      tone: TONE_BLACK,
-      name: LABEL_BY_TYPE.black,
-    };
-  }
-  if (acc.type === "white") {
-    return {
-      iconName: "credit-card",
-      tone: TONE_WHITE,
-      name: LABEL_BY_TYPE.white,
-    };
-  }
-  if (acc.type === "platinum") {
-    return {
-      iconName: "credit-card",
-      tone: TONE_PLATINUM,
-      name: LABEL_BY_TYPE.platinum,
-    };
-  }
-  if (acc.type === "iron") {
-    return {
-      iconName: "credit-card",
-      tone: TONE_IRON,
-      name: LABEL_BY_TYPE.iron,
-    };
+    return { iconName: "credit-card", tone: TONE_CREDIT, name };
   }
   if (acc.type === "fop") {
-    return { iconName: "archive", tone: TONE_FOP, name: LABEL_BY_TYPE.fop };
+    return { iconName: "archive", tone: TONE_FOP, name };
   }
-  return { iconName: "credit-card", tone: TONE_NEUTRAL, name: "Картка" };
+  const tone =
+    acc.type === "black"
+      ? TONE_BLACK
+      : acc.type === "white"
+        ? TONE_WHITE
+        : acc.type === "platinum"
+          ? TONE_PLATINUM
+          : acc.type === "iron"
+            ? TONE_IRON
+            : TONE_NEUTRAL;
+  return { iconName: "credit-card", tone, name };
 }
-
-/**
- * `MonoAccount` is the canonical type used by callers; re-export the narrow
- * surface we actually touch so the helper can be called with a bare `type` +
- * `creditLimit` pair in tests without requiring the full shape.
- */
-export type AccountVisualInput = Pick<MonoAccount, "type" | "creditLimit">;

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-24
  * Status: Active
  */
 import {
@@ -18,17 +18,28 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Money, Delta } from "@shared/components/ui/Money";
+import { cn } from "@shared/lib/ui/cn";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-import { filterToKyivMonth } from "../lib/monthWindow";
+import { filterToKyivFirstDays, filterToKyivMonth } from "../lib/monthWindow";
 import { isMonoNotConnectedError } from "../lib/monoBankErrors";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
+import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
+import { CategoryDeltaTable } from "../components/analytics/CategoryDeltaTable";
+import { useMonthlyTrend, type FetchBankRange } from "../hooks/useMonthlyTrend";
 import { getTrendComparison } from "@sergeant/finyk-domain/domain/selectors";
+import {
+  getCategoryDeltas,
+  getSavingsRate,
+} from "@sergeant/finyk-domain/domain/trends";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type {
+  Category,
   Transaction,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
@@ -36,7 +47,9 @@ import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
-import { ucFirst } from "@shared/lib/ui/ucFirst";
+import { markFinykAnalyticsViewed } from "../../../core/onboarding/useChecklistSignals";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
+import { NARROW_NBSP } from "@sergeant/shared";
 
 interface SectionProps {
   title: string;
@@ -53,8 +66,12 @@ interface MonthNavProps {
 interface ComparisonRowProps {
   label: string;
   current: number;
-  prev: number;
+  /** Абсолютна дельта в гривнях, з домену. */
+  diff: number;
+  /** Відсоток з точних сум або `null`, коли попередній місяць не база (Р4). */
+  pct: number | null;
   kind?: "expense" | "income";
+  showBalance?: boolean;
 }
 
 export interface AnalyticsProps {
@@ -62,18 +79,35 @@ export interface AnalyticsProps {
     realTx?: Transaction[];
     loadingTx?: boolean;
     fetchMonth: (year: number, month0Based: number) => Promise<Transaction[]>;
+    /** Діапазон у дзеркало для тренду (Р11); без банку відсутній. */
+    fetchRange?: FetchBankRange;
   };
   storage: {
     excludedTxIds: Set<string> | Iterable<string>;
     txSplits: TxSplitsMap;
     manualExpenses?: ManualExpense[];
+    txCategories?: Record<string, string | undefined>;
+    /** Правила «Завжди так для цього магазину»: категорії тут мусять збігатися зі списком. */
+    merchantRuleIndex?: MerchantRuleIndex;
+    customCategories?: Category[];
+    /** Фінплан: план накопичень ставиться поруч із фактом (Р15). */
+    monthlyPlan?: { savings?: string | number };
   };
   /**
    * Дрил-даун із кільця категорій у список операцій. Саме він робить
    * Аналітику не глухим кутом: доти вона казала «скільки», але дійти від
    * числа до самих операцій було ніяк.
    */
-  onSelectCategory?: (categoryId: string) => void;
+  onSelectCategory?: (
+    categoryId: string,
+    period: { year: number; month: number },
+  ) => void;
+  /**
+   * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти сторінка
+   * не приймала цей проп узагалі, тож перемикач з Огляду не діяв тут —
+   * маскує підсумок місяця, порівняння, кільце категорій і топ продавців.
+   */
+  showBalance?: boolean;
 }
 
 // Презентаційний контейнер-секція. memo, бо приймає лише `title/className/children`
@@ -103,12 +137,9 @@ const MonthNav = memo(function MonthNav({
   // Use Kyiv-local year/month so "current month" matches Europe/Kyiv day boundaries.
   const nowKyiv = getKyivDateParts();
   const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
-  const label = ucFirst(
-    new Date(year, month - 1, 1).toLocaleDateString("uk-UA", {
-      month: "long",
-      year: "numeric",
-    }),
-  );
+  const label = formatMonthYear(new Date(year, month - 1, 1), {
+    capitalize: true,
+  });
 
   const go = (delta: number) => {
     let m = month + delta;
@@ -151,28 +182,34 @@ const MonthNav = memo(function MonthNav({
 // Рядок порівняння метрики з попереднім місяцем. Чиста функція від пропсів —
 // memo знімає перерендер при оновленнях сусідніх секцій Analytics.
 // `kind` визначає семантику знаку: для "expense" зростання — погано
-// (червоне), для "income" — добре (зелене).
+// (червоне), для "income" — добре (зелене). Формули тут немає: дельту й
+// відсоток дає `getTrendComparison` з точних копійок (Р4 спеки аналітики
+// v2); коли відсоток не має бази, показуємо абсолютну дельту в гривнях.
 const ComparisonRow = memo(function ComparisonRow({
   label,
   current,
-  prev,
+  diff,
+  pct,
   kind = "expense",
+  showBalance = true,
 }: ComparisonRowProps) {
-  const diff = current - prev;
-  const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
-
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted">{label}</span>
       <div className="flex items-center gap-2">
-        <Money amount={current} className="text-text font-medium" />
-        {prev > 0 && pct !== null && (
+        {showBalance ? (
+          <Money amount={current} className="text-text font-medium" />
+        ) : (
+          <span className="text-text font-medium">••••</span>
+        )}
+        {showBalance && (pct !== null || diff !== 0) && (
           /* Полярність задає `kind`, а не знак: зростання доходу — добре,
              зростання витрат — ні. Рівно те розділення, заради якого
-             `Delta` бере `polarity` окремим пропом. */
+             `Delta` бере `polarity` окремим пропом. Нуль проти нуля (дохід
+             у двох місяцях без записів) дельти не має, рядок мовчить. */
           <Delta
-            value={pct}
-            symbol="%"
+            value={pct === null ? diff : Math.round(pct)}
+            symbol={pct === null ? "₴" : "%"}
             polarity={kind === "income" ? "positive" : "negative"}
             className="text-style-caption font-normal"
           />
@@ -182,7 +219,12 @@ const ComparisonRow = memo(function ComparisonRow({
   );
 });
 
-export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
+export function Analytics({
+  mono,
+  storage,
+  onSelectCategory,
+  showBalance = true,
+}: AnalyticsProps) {
   // Use Kyiv-local year/month so "current month" tracks Europe/Kyiv day boundaries.
   const nowKyiv = getKyivDateParts();
   const [year, setYear] = useState(nowKyiv.year);
@@ -190,8 +232,22 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
 
   // Fire-and-forget: record that the analytics view was opened. Intentionally
   // runs once on mount (no month dep) so re-selecting months doesn't spam.
+  //
+  // AI-DANGER: `markFinykAnalyticsViewed` latches the «Переглянути
+  // аналітику» крок чекліста НАЗАВЖДИ, тож ставити його можна рівно
+  // там, де екран справді відкрився — тобто тут. Спершу він стояв у
+  // `HubHeroBlock` перед диспатчем навігації, і це було хибно: подія
+  // веде в `useAppEffects`, який передає далі лише `module`, а не
+  // `action`, тож Фінік відкривався на ДЕФОЛТНІЙ сторінці (огляд), і
+  // `FinykApp` споживає з усіх дій саму `add_expense`. Відмітка
+  // ставилась, аналітика не відкривалась — чекліст брехав знову, тільки
+  // іншими дверима (знахідка рев'ю до PR #1106). Звідси ж випливає
+  // побічна користь: сигнал тепер чесний для БУДЬ-ЯКОГО шляху сюди —
+  // нижній нав, пряме посилання, чекліст, — а не лише для одного
+  // викликача.
   useEffect(() => {
     trackEvent(ANALYTICS_EVENTS.ANALYTICS_OPENED, { module: "finyk" });
+    markFinykAnalyticsViewed();
   }, []);
 
   const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
@@ -270,7 +326,7 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
           // чесний «0 ₴».
           setFetchErrors((prev) => ({
             ...prev,
-            [key]: "Не вдалось завантажити транзакції",
+            [key]: "Не вдалось завантажити операції",
           }));
         })
         .finally(() => {
@@ -357,30 +413,63 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
   // Клампимо й `monthCache`-гілку: вона приходить із місяцевого fetch-у, але
   // його межі анкорені на фіксований `+03:00`, а `filterToKyivMonth` — на
   // справжній київський зсув, тож взимку краї місяця розходяться на годину.
+  // Банківський зріз ОКРЕМО від обʼєднаного: на ньому — і тільки на ньому —
+  // гейтиться банер помилки завантаження нижче. Доти гейт стояв на
+  // обʼєднаному `activeTx`, тож ОДНА ручна витрата в місяці ховала збій
+  // читання банку разом із єдиною кнопкою «Повторити» — а `ensureMonth`
+  // навмисно не перезапускає впалий місяць сам, тож стан лишався
+  // невідновним до перемикання місяця чи релоаду (аудит 2026-09-16, WF-6).
+  const bankTx = useMemo(
+    () =>
+      filterToKyivMonth(
+        isCurrentMonth ? mono.realTx || [] : monthCache[monthKey] || [],
+        monthKey,
+      ),
+    [isCurrentMonth, mono.realTx, monthCache, monthKey],
+  );
+
   const activeTx = useMemo(() => {
-    const bankTx = filterToKyivMonth(
-      isCurrentMonth ? mono.realTx || [] : monthCache[monthKey] || [],
-      monthKey,
-    );
     if (manualExpenseTxs.length === 0) return bankTx;
     return [...bankTx, ...manualExpenseTxs];
-  }, [isCurrentMonth, mono.realTx, monthCache, monthKey, manualExpenseTxs]);
+  }, [bankTx, manualExpenseTxs]);
 
+  // Незавершений місяць міряємо тими ж днями попереднього, а не всім ним:
+  // 27 днів вересня проти 31 дня серпня давали «−33 %» при незмінному темпі,
+  // тоді як картка звітів хаба (#52) на тих самих даних казала «−23 %».
   const prevTx = useMemo(() => {
     const bankTx = filterToKyivMonth(monthCache[prevKey] || [], prevKey);
-    if (prevManualExpenseTxs.length === 0) return bankTx;
-    return [...bankTx, ...prevManualExpenseTxs];
-  }, [monthCache, prevKey, prevManualExpenseTxs]);
+    const all =
+      prevManualExpenseTxs.length === 0
+        ? bankTx
+        : [...bankTx, ...prevManualExpenseTxs];
+    return isCurrentMonth ? filterToKyivFirstDays(all, nowKyiv.day) : all;
+  }, [monthCache, prevKey, prevManualExpenseTxs, isCurrentMonth, nowKyiv.day]);
 
   const analyticsMono = useMemo(
     () => ({ ...mono, realTx: activeTx, loadingTx: mono.loadingTx || loading }),
     [mono, activeTx, loading],
   );
 
+  // Явні override-и + виведене правилами мерчантів: кільце категорій і дельти
+  // рахуються тією самою категорією, що намальована в списку. Лише читання.
+  const analyticsStorage = useMemo(
+    () => ({
+      ...storage,
+      txCategories: withMerchantRuleOverrides(
+        prevKey in monthCache ? [...activeTx, ...prevTx] : activeTx,
+        storage.txCategories ?? {},
+        storage.merchantRuleIndex,
+        storage.customCategories ?? [],
+      ),
+    }),
+    [storage, activeTx, prevTx, prevKey, monthCache],
+  );
+
   const { summary, distribution, distributionTotal, topMerchants } =
     useAnalytics({
       mono: analyticsMono,
-      storage,
+      storage: analyticsStorage,
+      prevTx: prevKey in monthCache ? prevTx : null,
     });
 
   const comparison = useMemo(() => {
@@ -389,12 +478,9 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
       excludedTxIds: storage.excludedTxIds,
       txSplits: storage.txSplits,
     });
-    if (
-      c.currentSpent === 0 &&
-      c.prevSpent === 0 &&
-      c.currentIncome === 0 &&
-      c.prevIncome === 0
-    ) {
+    // Обидва місяці порожні: порівнювати нема що і нема з чим. Коли записи
+    // є лише в поточному, секція каже «Немає з чим порівняти» (Р4).
+    if (c.prevTxCount === 0 && c.currentSpent === 0 && c.currentIncome === 0) {
       return null;
     }
     return c;
@@ -406,6 +492,36 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
     storage.excludedTxIds,
     storage.txSplits,
   ]);
+
+  const trend = useMonthlyTrend(
+    { ...storage, merchantRules: storage.merchantRuleIndex },
+    null,
+    mono.fetchRange,
+  );
+
+  const categoryDeltas = useMemo(
+    () =>
+      comparison && comparison.prevTxCount > 0
+        ? getCategoryDeltas(activeTx, prevTx, {
+            excludedTxIds: storage.excludedTxIds,
+            txSplits: storage.txSplits,
+            txCategories: analyticsStorage.txCategories,
+            customCategories: storage.customCategories ?? [],
+          })
+        : [],
+    [
+      comparison,
+      activeTx,
+      prevTx,
+      storage.excludedTxIds,
+      storage.txSplits,
+      analyticsStorage.txCategories,
+      storage.customCategories,
+    ],
+  );
+
+  const savingsRate = getSavingsRate(summary.incomeMinor, summary.spentMinor);
+  const plannedSavings = Number(storage.monthlyPlan?.savings) || 0;
 
   const pageLoading =
     (isCurrentMonth ? mono.loadingTx : loading) && activeTx.length === 0;
@@ -423,7 +539,7 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <MonthNav year={year} month={month} onChange={handleMonthChange} />
 
-        {fetchError && activeTx.length === 0 && (
+        {fetchError && bankTx.length === 0 && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger-strong dark:text-danger">
             <span>{fetchError}</span>
             <button
@@ -450,19 +566,44 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
                 <div className="text-style-caption text-subtle mb-1">
                   Витрати
                 </div>
-                <Money
-                  amount={summary.spent}
-                  tone="inherit"
-                  className="block text-style-label text-danger-strong dark:text-danger"
-                />
+                {/* Нуль не є ні витратою, ні доходом: статус-колір лише на
+                    справжній сумі, інакше порожній місяць читається як
+                    результат. */}
+                {showBalance ? (
+                  <Money
+                    amount={summary.spent}
+                    tone="inherit"
+                    className={cn(
+                      "block text-style-label",
+                      summary.spent === 0
+                        ? "text-text"
+                        : "text-danger-strong dark:text-danger",
+                    )}
+                  />
+                ) : (
+                  <span className="block text-style-label text-danger-strong dark:text-danger">
+                    ••••
+                  </span>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-style-caption text-subtle mb-1">Дохід</div>
-                <Money
-                  amount={summary.income}
-                  tone="inherit"
-                  className="block text-style-label text-success-strong dark:text-success"
-                />
+                {showBalance ? (
+                  <Money
+                    amount={summary.income}
+                    tone="inherit"
+                    className={cn(
+                      "block text-style-label",
+                      summary.income === 0
+                        ? "text-text"
+                        : "text-success-strong dark:text-success",
+                    )}
+                  />
+                ) : (
+                  <span className="block text-style-label text-success-strong dark:text-success">
+                    ••••
+                  </span>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-style-caption text-subtle mb-1">
@@ -471,32 +612,70 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
                 {/* Баланс — підписана дельта, тож `Delta`, а не `Money`:
                     вона й знак ставить сама, і колір бере з того самого
                     `signedDeltaClass`, який тут стояв вручну. */}
-                <Delta
-                  value={summary.balance}
-                  polarity="positive"
-                  className="block text-style-label"
-                />
+                {showBalance ? (
+                  <Delta
+                    value={summary.balance}
+                    polarity="positive"
+                    className="block text-style-label"
+                  />
+                ) : (
+                  <span className="block text-style-label">••••</span>
+                )}
               </div>
+            </div>
+          )}
+          {/* Р15: при доході 0 рядка немає зовсім, «0 %» було б неправдою. */}
+          {!pageLoading && savingsRate !== null && (
+            <div className="mt-4 pt-3 border-t border-line text-sm text-muted space-y-0.5">
+              <p>
+                {savingsRate >= 0
+                  ? `Відкладено ${Math.round(savingsRate)}${NARROW_NBSP}% доходу`
+                  : `Витрати перевищили дохід на ${Math.round(-savingsRate)}${NARROW_NBSP}%`}
+              </p>
+              {/* План фінплану діє лише на поточний місяць: для минулих
+                  місяців його тоді ще не було. */}
+              {isCurrentMonth && plannedSavings > 0 && showBalance && (
+                <p>
+                  План відкласти <Money amount={plannedSavings} />, вийшло{" "}
+                  <Money
+                    amount={(summary.incomeMinor - summary.spentMinor) / 100}
+                  />
+                </p>
+              )}
             </div>
           )}
         </Section>
 
         {/* Comparison */}
         {comparison && (
-          <Section title="Порівняння з попереднім місяцем">
-            <div className="space-y-2">
-              <ComparisonRow
-                label="Витрати"
-                current={comparison.currentSpent}
-                prev={comparison.prevSpent}
-              />
-              <ComparisonRow
-                label="Дохід"
-                current={comparison.currentIncome}
-                prev={comparison.prevIncome}
-                kind="income"
-              />
-            </div>
+          <Section
+            title={
+              isCurrentMonth
+                ? "Порівняння з попереднім місяцем за ті ж дні"
+                : "Порівняння з попереднім місяцем"
+            }
+          >
+            {comparison.prevTxCount === 0 ? (
+              <p className="text-sm text-muted">Немає з чим порівняти</p>
+            ) : (
+              <div className="space-y-2">
+                <ComparisonRow
+                  label="Витрати"
+                  current={comparison.currentSpent}
+                  diff={comparison.diff}
+                  pct={comparison.diffPct}
+                  showBalance={showBalance}
+                />
+                <ComparisonRow
+                  label="Дохід"
+                  current={comparison.currentIncome}
+                  diff={comparison.incomeDiff}
+                  pct={comparison.incomeDiffPct}
+                  kind="income"
+                  showBalance={showBalance}
+                />
+              </div>
+            )}
           </Section>
         )}
 
@@ -509,7 +688,7 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
               compact
               module="finyk"
               title="Поки немає витрат"
-              description="За цей місяць транзакцій не знайдено, обери інший період зверху."
+              description="Цього місяця витрат ще немає. Додай першу або підключи Monobank."
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>
@@ -517,14 +696,54 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
                 data={distribution}
                 total={distributionTotal}
                 className=""
-                {...(onSelectCategory ? { onSelectCategory } : {})}
+                showBalance={showBalance}
+                {...(onSelectCategory
+                  ? {
+                      // Несемо вибраний місяць Аналітики (month 1-based),
+                      // інакше Операції відкриються на поточному (PR-F6).
+                      onSelectCategory: (categoryId: string) =>
+                        onSelectCategory(categoryId, { year, month }),
+                    }
+                  : {})}
               />
             </Suspense>
           )}
         </Section>
 
+        {trend.points.length > 0 && (
+          <Section title="Витрати за місяцями">
+            <MonthlyTrendBars
+              points={trend.points}
+              averageMinor={trend.averageMinor}
+              perDayMinor={trend.perDayMinor}
+              showBalance={showBalance}
+            />
+          </Section>
+        )}
+
+        {categoryDeltas.length > 0 && (
+          <Section
+            title={
+              isCurrentMonth
+                ? "Категорії проти минулого місяця за ті ж дні"
+                : "Категорії проти минулого місяця"
+            }
+          >
+            <CategoryDeltaTable
+              rows={categoryDeltas}
+              showBalance={showBalance}
+            />
+          </Section>
+        )}
+
         {/* Merchants */}
-        <Section title="Топ продавці">
+        {/* Дельти продавців рахуються з того ж `prevTx`, що й порівняння
+            вище, тож у незавершеному місяці це теж «ті ж дні». */}
+        <Section
+          title={
+            isCurrentMonth ? "Топ продавці: зміна за ті ж дні" : "Топ продавці"
+          }
+        >
           {pageLoading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
@@ -539,7 +758,11 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
               description="Витрат за цей місяць ще не записано."
             />
           ) : (
-            <MerchantList merchants={topMerchants} className="" />
+            <MerchantList
+              merchants={topMerchants}
+              showBalance={showBalance}
+              className=""
+            />
           )}
         </Section>
       </div>

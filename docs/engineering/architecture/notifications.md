@@ -1,6 +1,6 @@
 # Сповіщення і пуші
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-07.
 > **Status:** Active
 
 > Канонічний опис того, як сповіщення доходять до користувача на всіх поверхнях. Рецепт «додати новий тип пушу» — у [`add-push-notification.md`](../../start/instructions/add-push-notification.md); тут — сама архітектура і межі, за які виходити не можна.

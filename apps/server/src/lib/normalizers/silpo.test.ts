@@ -32,6 +32,7 @@ describe("normalizeSilpoReceiptItem", () => {
       priceKop: 3000,
       categorySlug: "bakery",
       barcode: "4820000000017",
+      pantryClaimedAt: null,
     });
     expect(typeof normalized.id).toBe("number");
     expect(typeof normalized.priceKop).toBe("number");
@@ -71,6 +72,8 @@ describe("normalizeSilpoReceiptSummary", () => {
       paymentHint: null,
       totalKop: 12345,
       transactionId: "tx-1",
+      pantryClaimedCount: 0,
+      pantryAutoDeclined: false,
     });
     expect(typeof normalized.totalKop).toBe("number");
   });
@@ -110,6 +113,7 @@ describe("normalizeSilpoReceiptDetail", () => {
           priceKop: "3000",
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: "2026-09-25T10:00:00.000Z",
         },
         {
           id: "2",
@@ -127,5 +131,9 @@ describe("normalizeSilpoReceiptDetail", () => {
     expect(detail.items).toHaveLength(2);
     expect(detail.items[0]).toMatchObject({ id: 1, priceKop: 3000 });
     expect(detail.items[1]).toMatchObject({ id: 2, priceKop: 2000 });
+    // Точний рахунок з itemRows - рівно одна позиція вже заброньована.
+    expect(detail.pantryClaimedCount).toBe(1);
+    expect(detail.items[0]?.pantryClaimedAt).toBe("2026-09-25T10:00:00.000Z");
+    expect(detail.items[1]?.pantryClaimedAt).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 # SPEC: повторювані комплекти верифікації
 
 > **Last validated:** 2026-09-05 by Codex. **Next review:** 2026-12-05.
-> **Status:** Active
+> **Status:** Active - CLI реалізовано (`scripts/verification/cli.mjs`); лишився живий наскрізний пілот і повтор (приймання, див. § Верифікація п. 4-5).
 
 ## Проблема
 

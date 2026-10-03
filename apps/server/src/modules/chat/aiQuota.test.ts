@@ -7,7 +7,10 @@ vi.mock("../../auth.js", () => ({
 
 vi.mock("../../db.js", () => {
   const pool = { connect: vi.fn(), query: vi.fn() };
-  return { default: pool, pool };
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  const withSubjectContext = (_subject: string, fn: (db: unknown) => unknown) =>
+    fn(pool);
+  return { default: pool, pool, withSubjectContext };
 });
 
 import { getSessionUser as _getSessionUser } from "../../auth.js";
@@ -71,7 +74,6 @@ function makeReq(
 
 const ENV_VARS = [
   "AI_QUOTA_DISABLED",
-  "AI_DAILY_USER_LIMIT",
   "AI_QUOTA_TOOL_COST",
   "AI_QUOTA_TOOL_LIMITS",
   "AI_QUOTA_TOOL_DEFAULT_LIMIT",
@@ -231,9 +233,9 @@ describe("assertAiQuota (default bucket)", () => {
     const res = makeRes();
     const ok = await assertAiQuota(makeReq(), res);
     expect(ok).toBe(true);
-    // Ліміт, переданий в UPSERT — саме FREE_LIMITS.aiRequestsPerDay (5).
+    // Ліміт, переданий в UPSERT: тижневі 20 дій Free з реєстру доступу.
     const [, values] = pool.query.mock.calls[0]!;
-    expect((values as unknown[])[5]).toBe(5);
+    expect((values as unknown[])[5]).toBe(20);
     // Плану не питали: без userId `getUserPlan` немає до чого звертатись.
     expect(pool.query).toHaveBeenCalledOnce();
   });
@@ -249,13 +251,10 @@ describe("assertAiQuota (default bucket)", () => {
     expect(res.statusCode).toBe(429);
     const body = res.body as { code?: string; error?: string } | undefined;
     expect(body?.code).toBe("AI_QUOTA");
-    expect(body?.error).toMatch(/завтра/);
-    // Копія називає ОДИНИЦЮ, яку насправді метрять: запит, не повідомлення.
-    // Один чат-меседж із tool-раундом коштує кілька запитів (наступний POST
-    // із tool_results проходить ту саму квоту), і копія «5 повідомлень»
-    // давала 429 після чотирьох відповідей.
-    expect(body?.error).toMatch(/запит/i);
-    expect(body?.error).not.toMatch(/^Денний ліміт AI вичерпано/);
+    // Відро тижневе: «спробуй завтра» було б неправдою.
+    expect(body?.error).toMatch(/Тижневий/);
+    expect(body?.error).toMatch(/понеділ/);
+    expect(body?.error).not.toMatch(/завтра/);
   });
 
   it("returns true and sets remaining header on success", async () => {
@@ -267,7 +266,7 @@ describe("assertAiQuota (default bucket)", () => {
     const ok = await assertAiQuota(makeReq(), res);
     expect(ok).toBe(true);
     expect(res.statusCode).toBe(200);
-    expect(res.headers["X-AI-Quota-Remaining"]).toBe("1"); // 5 - 4
+    expect(res.headers["X-AI-Quota-Remaining"]).toBe("16"); // 20 - 4
     // Перевіряємо, що це ATOMIC UPSERT, а не BEGIN/SELECT FOR UPDATE/UPDATE/COMMIT.
     expect(pool.query).toHaveBeenCalledOnce();
     const [sql, values] = pool.query.mock.calls[0]!;
@@ -276,10 +275,10 @@ describe("assertAiQuota (default bucket)", () => {
       /ON CONFLICT \(subject_key, usage_day, bucket, endpoint\)/,
     );
     expect(sql).toMatch(/DO UPDATE/);
-    expect(values[2]).toBe("default");
+    expect(values[2]).toBe("week:ai");
     expect(values[3]).toBe(__aiQuotaTestHooks.AI_QUOTA_ENDPOINT);
     expect(values[4]).toBe(1); // cost for plain chat
-    expect(values[5]).toBe(5); // limit — FREE_LIMITS.aiRequestsPerDay
+    expect(values[5]).toBe(20); // limit: тижневі дії Free з реєстру
   });
 
   it("fails closed with 503 when the quota circuit breaker is open", async () => {
@@ -319,19 +318,18 @@ describe("assertAiQuota (default bucket)", () => {
     expect(pool.query.mock.calls[1]![1]).toEqual([
       "ip:unknown",
       expect.any(String),
-      __aiQuotaTestHooks.DEFAULT_BUCKET,
+      __aiQuotaTestHooks.WEEKLY_METERS.ai.bucket,
       1,
       __aiQuotaTestHooks.AI_QUOTA_ENDPOINT,
     ]);
   });
 
-  it("keys the daily bucket on the Europe/Kyiv civil day at the UTC→Kyiv boundary", async () => {
-    // 2026-05-15T21:30:00Z = 2026-05-16 00:30 Kyiv (summer, UTC+3). The user's
-    // Kyiv day has already rolled to the 16th, so the quota bucket must be
-    // keyed `2026-05-16`, not the UTC-day `2026-05-15`. Otherwise "Спробуй
-    // завтра" would open a new quota window at half past midnight Kyiv.
+  it("keys the weekly bucket on the Europe/Kyiv Monday at the UTC→Kyiv boundary", async () => {
+    // 2026-05-17T21:30:00Z = понеділок 2026-05-18 00:30 Kyiv (літо, UTC+3).
+    // За UTC ще неділя, але київський тиждень уже новий, тож ключ відра
+    // `2026-05-18`, а не понеділок попереднього тижня `2026-05-11`.
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-05-15T21:30:00Z"));
+    vi.setSystemTime(new Date("2026-05-17T21:30:00Z"));
     try {
       process.env["DATABASE_URL"] = "postgres://ignored";
       process.env["AI_QUOTA_DISABLED"] = "0";
@@ -345,7 +343,7 @@ describe("assertAiQuota (default bucket)", () => {
 
       expect(ok).toBe(true);
       const [, values] = pool.query.mock.calls[0]!;
-      expect(values[1]).toBe("2026-05-16");
+      expect(values[1]).toBe("2026-05-18");
     } finally {
       vi.useRealTimers();
     }
@@ -382,7 +380,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     process.env["AI_QUOTA_DISABLED"] = "0";
   });
 
-  it("caps an authenticated FREE user at 5/day (billing FREE_LIMITS)", async () => {
+  it("caps an authenticated FREE user at 20/week (access registry)", async () => {
     getSessionUser.mockResolvedValue({ id: "u-free" });
     pool.query.mockImplementation(async (sql: string) => {
       // No subscription row → getUserPlan() returns synthetic free plan.
@@ -392,10 +390,10 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     const res = makeRes();
     const ok = await assertAiQuota(makeReq(), res);
     expect(ok).toBe(true);
-    expect(res.headers["X-AI-Quota-Remaining"]).toBe("4"); // 5 - 1
+    expect(res.headers["X-AI-Quota-Remaining"]).toBe("19"); // 20 - 1
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[5]).toBe(5); // limit passed to UPSERT
+    expect((upsert![1] as unknown[])[5]).toBe(20); // limit passed to UPSERT
   });
 
   it("leaves an authenticated PRO user unlimited (no quota row written)", async () => {
@@ -446,7 +444,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(ok).toBe(true);
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[5]).toBe(5); // free cap still enforced
+    expect((upsert![1] as unknown[])[5]).toBe(20); // free cap still enforced
   });
 
   it("falls back to the FREE cap when the plan lookup throws", async () => {
@@ -460,14 +458,45 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(ok).toBe(true);
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[5]).toBe(5); // free cap enforced despite error
+    expect((upsert![1] as unknown[])[5]).toBe(20); // free cap enforced despite error
   });
 });
 
-describe("consumeToolQuota (tool buckets)", () => {
+const PRO_ROW = {
+  plan: "pro",
+  status: "active",
+  current_period_end: null,
+  cancel_at_period_end: false,
+  provider: "stripe",
+};
+
+/** Pro-юзер: план із `subscriptions`, решта запитів: `upsert`. */
+function mockProUser(upsert: { rows: unknown[]; rowCount: number }) {
+  getSessionUser.mockResolvedValue({ id: "u-pro" });
+  pool.query.mockImplementation(async (sql: string) =>
+    /FROM subscriptions/i.test(sql) ? { rows: [PRO_ROW], rowCount: 1 } : upsert,
+  );
+}
+
+const toolUpsert = () =>
+  pool.query.mock.calls.find((c) =>
+    /INSERT INTO ai_usage_daily/.test(c[0] as string),
+  );
+
+describe("consumeToolQuota (tool buckets, Pro only)", () => {
   beforeEach(() => {
     process.env["DATABASE_URL"] = "postgres://ignored";
     process.env["AI_QUOTA_DISABLED"] = "0";
+  });
+
+  it("Free: денний tool-бакет не діє, хід коштує 1 дію з тижневих", async () => {
+    process.env["AI_QUOTA_TOOL_LIMITS"] = JSON.stringify({ create_debt: 3 });
+    getSessionUser.mockResolvedValue({ id: "u-free" });
+    pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+    const r = await consumeToolQuota(makeReq(), "create_debt");
+    expect(r.ok).toBe(true);
+    expect(r.limit).toBeNull();
+    expect(toolUpsert()).toBeUndefined();
   });
 
   it("returns ok + unlimited when AI_QUOTA_TOOL_LIMITS is not set", async () => {
@@ -483,13 +512,11 @@ describe("consumeToolQuota (tool buckets)", () => {
     delete process.env["AI_QUOTA_TOOL_LIMITS"];
     process.env["AI_QUOTA_TOOL_DEFAULT_LIMIT"] = "12";
     process.env["AI_QUOTA_TOOL_COST"] = "3";
-    getSessionUser.mockResolvedValue(null);
-    pool.query.mockResolvedValue({ rows: [{ request_count: 3 }], rowCount: 1 });
+    mockProUser({ rows: [{ request_count: 3 }], rowCount: 1 });
     const r = await consumeToolQuota(makeReq(), "change_category");
     expect(r.ok).toBe(true);
     expect(r.limit).toBe(12);
-    expect(pool.query).toHaveBeenCalledOnce();
-    const [, values] = pool.query.mock.calls[0]!;
+    const [, values] = toolUpsert()!;
     expect(values![2]).toBe("tool:change_category");
     expect(values![3]).toBe(__aiQuotaTestHooks.AI_QUOTA_ENDPOINT);
     expect(values![4]).toBe(3); // cost
@@ -502,11 +529,10 @@ describe("consumeToolQuota (tool buckets)", () => {
       create_debt: 5,
     });
     process.env["AI_QUOTA_TOOL_COST"] = "3";
-    getSessionUser.mockResolvedValue(null);
-    pool.query.mockResolvedValue({ rows: [{ request_count: 3 }], rowCount: 1 });
+    mockProUser({ rows: [{ request_count: 3 }], rowCount: 1 });
 
     await consumeToolQuota(makeReq(), "create_debt");
-    const [, values] = pool.query.mock.calls[0]!;
+    const [, values] = toolUpsert()!;
     expect(values![5]).toBe(5);
     expect(values![2]).toBe("tool:create_debt");
   });
@@ -514,8 +540,7 @@ describe("consumeToolQuota (tool buckets)", () => {
   it("blocks with reason=limit when tool-bucket is exhausted", async () => {
     process.env["AI_QUOTA_TOOL_LIMITS"] = JSON.stringify({ create_debt: 3 });
     process.env["AI_QUOTA_TOOL_COST"] = "3";
-    getSessionUser.mockResolvedValue(null);
-    pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+    mockProUser({ rows: [], rowCount: 0 });
 
     const r = await consumeToolQuota(makeReq(), "create_debt");
     expect(r.ok).toBe(false);
@@ -537,11 +562,10 @@ describe("consumeToolQuota (tool buckets)", () => {
       change_category: 30,
     });
     process.env["AI_QUOTA_TOOL_COST"] = "3";
-    getSessionUser.mockResolvedValue(null);
-    pool.query.mockResolvedValue({ rows: [{ request_count: 3 }], rowCount: 1 });
+    mockProUser({ rows: [{ request_count: 3 }], rowCount: 1 });
     await consumeToolQuota(makeReq(), "change_category");
-    const [, values] = pool.query.mock.calls[0]!;
-    expect(values![2]).not.toBe("default");
+    const [, values] = toolUpsert()!;
+    expect(values![2]).not.toBe("week:ai");
     expect(values![2]).toBe("tool:change_category");
   });
 });
@@ -630,7 +654,7 @@ describe("atomic consumeQuota — concurrent increments", () => {
   });
 });
 
-// AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+// AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
 // — «хід з дією коштує ОДИН запит». `chat.ts` видає `round_trip_ticket`
 // лише коли перший тур повертає `tool_calls`; тут перевіряється сама
 // перевірка квитка всередині `assertAiQuota`, незалежно від HTTP-шару.
@@ -705,15 +729,15 @@ describe("assertAiQuota — AI-5 round-trip ticket bypass", () => {
     expect(pool.query).toHaveBeenCalledTimes(2);
   });
 
-  it("5 дій поспіль (перший запит + безкоштовний continuation) проходять на Free; 6-та впирається в 429", async () => {
+  it("20 дій поспіль (перший запит + безкоштовний continuation) проходять на Free; 21-ша впирається в 429", async () => {
     process.env["DATABASE_URL"] = "postgres://ignored";
     process.env["AI_QUOTA_DISABLED"] = "0";
     getSessionUser.mockResolvedValue({ id: "u-free" });
     const { query } = makeAtomicPoolMock();
     pool.query = query;
 
-    for (let i = 0; i < 5; i += 1) {
-      // Перший запит ходу — списує один квиток із денних 5.
+    for (let i = 0; i < 20; i += 1) {
+      // Перший запит ходу списує одну дію з тижневих 20.
       const firstOk = await assertAiQuota(makeReq(), makeRes());
       expect(firstOk).toBe(true);
 
@@ -727,11 +751,93 @@ describe("assertAiQuota — AI-5 round-trip ticket bypass", () => {
       expect(contOk).toBe(true);
     }
 
-    // 6-та дія: перший запит нового ходу впирається в вичерпаний денний ліміт.
+    // 21-ша дія: перший запит нового ходу впирається у вичерпаний тижневий ліміт.
     const sixthRes = makeRes();
     const sixthOk = await assertAiQuota(makeReq(), sixthRes);
     expect(sixthOk).toBe(false);
     expect(sixthRes.statusCode).toBe(429);
     expect((sixthRes.body as { code?: string }).code).toBe("AI_QUOTA");
+  });
+});
+
+// Спека `docs/work/specs/access-tiers.md` § Верифікація п.2: окремі тижневі
+// відра Free і `resetsAt` = наступний понеділок 00:00 Kyiv.
+describe("assertAiQuota: тижневі відра Free (access-tiers)", () => {
+  beforeEach(() => {
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+    getSessionUser.mockResolvedValue({ id: "u-free" });
+    vi.useFakeTimers();
+    // Середа 2026-06-10 15:00 Kyiv.
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const key = (bucket: string) =>
+    `u:u-free|2026-06-08|${bucket}|${__aiQuotaTestHooks.AI_QUOTA_ENDPOINT}`;
+
+  it("21-ша дія тижня → 429 AI_QUOTA з resetsAt = понеділок 00:00 Kyiv", async () => {
+    const { query } = makeAtomicPoolMock();
+    pool.query = query;
+    for (let i = 0; i < 20; i += 1) {
+      expect(await assertAiQuota(makeReq(), makeRes())).toBe(true);
+    }
+    const res = makeRes();
+    expect(await assertAiQuota(makeReq(), res)).toBe(false);
+    expect(res.statusCode).toBe(429);
+    expect(res.body).toMatchObject({
+      code: "AI_QUOTA",
+      limit: 20,
+      resetsAt: "2026-06-14T21:00:00.000Z",
+    });
+  });
+
+  it("4-те фото тижня → 429 AI_PHOTO_QUOTA і не чіпає week:ai", async () => {
+    const { query, store } = makeAtomicPoolMock();
+    pool.query = query;
+    for (let i = 0; i < 3; i += 1) {
+      expect(await assertAiQuota(makeReq(), makeRes(), "photo")).toBe(true);
+    }
+    const res = makeRes();
+    expect(await assertAiQuota(makeReq(), res, "photo")).toBe(false);
+    expect(res.statusCode).toBe(429);
+    expect(res.body).toMatchObject({ code: "AI_PHOTO_QUOTA", limit: 3 });
+    expect(store.get(key("week:photo"))).toBe(3);
+    expect(store.get(key("week:ai"))).toBeUndefined();
+  });
+
+  it("6-й vision-скан Фініка тижня → 429 AI_FINYK_VISION_QUOTA", async () => {
+    const { query, store } = makeAtomicPoolMock();
+    pool.query = query;
+    for (let i = 0; i < 5; i += 1) {
+      expect(await assertAiQuota(makeReq(), makeRes(), "finyk-vision")).toBe(
+        true,
+      );
+    }
+    const res = makeRes();
+    expect(await assertAiQuota(makeReq(), res, "finyk-vision")).toBe(false);
+    expect(res.body).toMatchObject({
+      code: "AI_FINYK_VISION_QUOTA",
+      limit: 5,
+      resetsAt: "2026-06-14T21:00:00.000Z",
+    });
+    expect(store.get(key("week:finyk-vision"))).toBe(5);
+    expect(store.get(key("week:ai"))).toBeUndefined();
+  });
+
+  it("round-trip-квиток не звільняє фото: списання йде завжди", async () => {
+    const { query, store } = makeAtomicPoolMock();
+    pool.query = query;
+    const ticket = issueRoundTripTicket({ userId: "u-free" });
+    expect(
+      await assertAiQuota(
+        makeReq({}, { round_trip_ticket: ticket }),
+        makeRes(),
+        "photo",
+      ),
+    ).toBe(true);
+    expect(store.get(key("week:photo"))).toBe(1);
   });
 });

@@ -4,7 +4,7 @@
  * BullMQ / Resend залежностей.
  *
  * Тон: pragmatic, без emoji, без artificial cheer (цього вимагає S1
- * post-mortem — `docs/01-product/launch/product-os/sprint-retros/s1-honest-valueprop.md`). Кожен
+ * post-mortem — `docs/work/specs/launch/product-os/sprint-retros/s1-honest-valueprop.md`). Кожен
  * лист має одну дію (CTA + контекст) і footer з opt-out-link-ою.
  *
  * Copy-review: KEEP-AS-IS поки founder-friend не схвалить альтернативи
@@ -21,6 +21,13 @@ export interface FtuxDripTemplateInput {
   unsubscribeUrl: string;
   /** Базова URL фронту (без trailing slash). Використовується для primary CTA. */
   appUrl: string;
+  /**
+   * У людини немає жодної push-підписки. Тоді листи дня 1 і 3 кличуть
+   * увімкнути сповіщення: без підписки нагадування й нудж відсутності до
+   * неї не дійдуть ніколи. День 0 запрошення не несе: людина щойно в
+   * застосунку й бачить налаштування сама.
+   */
+  pushInvite?: boolean;
 }
 
 export interface FtuxDripTemplate {
@@ -86,6 +93,31 @@ function ctaButton(href: string, label: string): string {
   );
 }
 
+function notificationsUrl(appUrl: string): string {
+  return `${appUrl}/?tab=settings#settings-notifications`;
+}
+
+const PUSH_INVITE_LEAD =
+  "Ще одне: сповіщення поки не увімкнені на жодному пристрої, тож нагадати про звичку чи тренування я не зможу. Хочеш нагадувань – увімкни їх у налаштуваннях. Скільки їх на день, вирішуєш ти.";
+
+function pushInviteText(input: FtuxDripTemplateInput): string[] {
+  if (!input.pushInvite) return [];
+  return [
+    PUSH_INVITE_LEAD,
+    "",
+    `Увімкнути сповіщення: ${notificationsUrl(input.appUrl)}`,
+    "",
+  ];
+}
+
+function pushInviteHtml(input: FtuxDripTemplateInput): string {
+  if (!input.pushInvite) return "";
+  return (
+    `<p>${escapeHtml(PUSH_INVITE_LEAD)} ` +
+    `<a href="${escapeAttr(notificationsUrl(input.appUrl))}">Увімкнути сповіщення</a>.</p>`
+  );
+}
+
 function buildDay0(input: FtuxDripTemplateInput): FtuxDripTemplate {
   const hello = greeting(input.recipientName);
   const text = [
@@ -111,7 +143,7 @@ function buildDay0(input: FtuxDripTemplateInput): FtuxDripTemplate {
   );
 
   return {
-    subject: "Привіт від Sergeant, давай почнемо",
+    subject: "Привіт від Sergeant, почни з першого запису",
     text,
     html,
   };
@@ -135,6 +167,7 @@ function buildDay1(input: FtuxDripTemplateInput): FtuxDripTemplate {
     "",
     `Відкрити Sergeant: ${input.appUrl}`,
     "",
+    ...pushInviteText(input),
     textFooter(input.unsubscribeUrl),
   ].join("\n");
 
@@ -151,6 +184,7 @@ function buildDay1(input: FtuxDripTemplateInput): FtuxDripTemplate {
       `</ul>`,
       `<p>Чим раніше ти створиш свій перший справжній рядок, тим швидше дашборд почне показувати твою реальну картину, а не приклад.</p>`,
       ctaButton(input.appUrl, "Відкрити Sergeant"),
+      pushInviteHtml(input),
       htmlFooter(input.unsubscribeUrl),
     ].join(""),
   );
@@ -171,12 +205,13 @@ function buildDay3(input: FtuxDripTemplateInput): FtuxDripTemplate {
     "",
     "Якщо щось не зайшло, це ОК. Sergeant корисний рівно тоді, коли модуль рятує тобі рутину, а не додає її. Якщо немає такого модуля, закрий вкладку без вини.",
     "",
-    "Якщо ти все ж хочеш дати другий шанс: один запис сьогодні. Будь-який модуль. 30 секунд, і панель оживає, а ми перестаємо писати.",
+    "Якщо ти все ж хочеш дати другий шанс: один запис сьогодні. Будь-який модуль. 30 секунд, і панель оживає, а я перестаю писати.",
     "",
     `Повернутись у Sergeant: ${input.appUrl}`,
     "",
     "Якщо хочеш, напиши, що саме не зайшло, відповівши на цей лист. Це справжня людина (founder), не auto-responder.",
     "",
+    ...pushInviteText(input),
     textFooter(input.unsubscribeUrl),
   ].join("\n");
 
@@ -185,9 +220,10 @@ function buildDay3(input: FtuxDripTemplateInput): FtuxDripTemplate {
       `<p>${escapeHtml(hello)}</p>`,
       `<p>Минуло три дні, і я не хочу, щоб ти тихенько зник у бекграунді.</p>`,
       `<p>Якщо щось не зайшло, це ОК. Sergeant корисний рівно тоді, коли модуль рятує тобі рутину, а не додає її. Якщо немає такого модуля, закрий вкладку без вини.</p>`,
-      `<p>Якщо ти все ж хочеш дати другий шанс: один запис сьогодні. Будь-який модуль. 30 секунд, і панель оживає, а ми перестаємо писати.</p>`,
+      `<p>Якщо ти все ж хочеш дати другий шанс: один запис сьогодні. Будь-який модуль. 30 секунд, і панель оживає, а я перестаю писати.</p>`,
       ctaButton(input.appUrl, "Повернутись у Sergeant"),
       `<p style="font-size:13px;color:#475569">Якщо хочеш, напиши, що саме не зайшло, відповівши на цей лист. Це справжня людина (founder), не auto-responder.</p>`,
+      pushInviteHtml(input),
       htmlFooter(input.unsubscribeUrl),
     ].join(""),
   );

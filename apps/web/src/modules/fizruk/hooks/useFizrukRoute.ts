@@ -51,7 +51,11 @@ const EXERCISE_RETURN_SESSION_KEY = "fizruk_exercise_return_path";
  */
 export interface UseFizrukRouteResult {
   page: FizrukPage;
-  /** Extra path segment after `<page>/` — used by `exercise/<id>`. */
+  /**
+   * Extra path segments after `<page>/` — `exercise/<id>` gives one,
+   * `workout/<id>/<itemId>` gives two (the item opened on its own screen
+   * inside the session).
+   */
   segments: readonly string[];
   navigate: (next: FizrukPage | string) => void;
 }
@@ -85,15 +89,19 @@ export function useFizrukRoute(
 
   const parsed = useMemo(() => {
     const segs = pathnameToSegments(location.pathname);
-    if (segs.length === 0) return { page: defaultPage, segment: undefined };
+    if (segs.length === 0) {
+      return { page: defaultPage, segment: undefined, subSegment: undefined };
+    }
     return parseFizrukSegments(segs);
   }, [location.pathname, defaultPage]);
 
   const page = parsed.page;
-  const segments = useMemo<readonly string[]>(
-    () => (parsed.segment ? [parsed.segment] : []),
-    [parsed.segment],
-  );
+  const segments = useMemo<readonly string[]>(() => {
+    if (!parsed.segment) return [];
+    return parsed.subSegment
+      ? [parsed.segment, parsed.subSegment]
+      : [parsed.segment];
+  }, [parsed.segment, parsed.subSegment]);
 
   // Hash compat: when a legacy URL (`/fizruk#workouts`,
   // `/fizruk#exercise/abc-123`, `/?module=fizruk#workouts`) lands on this
@@ -149,7 +157,11 @@ export function useFizrukRoute(
         }
       }
 
-      const target = fizrukRoutePath(result.page, result.segment);
+      const target = fizrukRoutePath(
+        result.page,
+        result.segment,
+        result.subSegment,
+      );
       if (location.pathname === target) return;
       navigateRR(target, { replace: false });
     },

@@ -217,7 +217,3 @@ export function expectedArgViolations(
   }
   return out;
 }
-
-export function formatViolation(v: ArgViolation): string {
-  return `${v.tool}.${v.field} [${v.kind}] ${v.detail}`;
-}

@@ -147,7 +147,7 @@ const UNCONFIGURED_RETRY_HOURS = 1;
 
 /**
  * PII-retention window for completed rows (fix #4, ADR-0016 addendum —
- * `docs/04-governance/adr/0016-user-deletion-and-pii-handling.md`). After
+ * `docs/governance/adr/0016-user-deletion-and-pii-handling.md`). After
  * this many days past `completed_at`, the row itself is hard-deleted, not
  * just its already-redacted PII columns — there is no remaining reason to
  * keep a bare `(id, service, completed_at)` audit row around indefinitely.

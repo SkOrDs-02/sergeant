@@ -279,7 +279,9 @@ describe("FinykWebhookServiceSection — відкликаний токен (stat
     // Головна брехня, яку лікує фікс: зелений блок «Webhook активний» над
     // даними, що застигли назавжди. `accountsCount: 5` у відповіді
     // навмисно — саме він робив картинку переконливою.
-    expect(screen.queryByText(/Webhook активний/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Синхронізація активна/i),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/5 рахунків/i)).not.toBeInTheDocument();
     // І це не «збій перевірки» — сервер відповів успішно, просто банк
     // сказав «ні». Банер про мережу тут був би хибним діагнозом.

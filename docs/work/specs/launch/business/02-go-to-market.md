@@ -1,6 +1,6 @@
 # 02. Go-to-market: запуск, промоутинг, growth
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-24.
 > **Status:** Active
 
 > Pre-MVP draft. Цифри traffic/CPA/reach — оцінкові, для брейнштормінгу.
@@ -86,7 +86,7 @@ sergeant.com.ua/blog           → SEO-блог (ще не існує; потр�
 
 **Мета:** сигнали Product-Market Fit на малій когорті.
 
-> **Розмір бети — 30 тестерів, 2 тижні.** Раніше тут стояло «100–200 активних тестерів»; актуальний план менший і коротший, бо 4-годинний SLA відповіді founder-а в Telegram-групі не масштабується далі. Тижневий розклад — [`01-web-launch-with-users.md` §3.2](../phases/01-web-launch-with-users.md#32-closed-beta-w0--w1).
+> **Розмір бети — 30 тестерів, 2 тижні.** Раніше тут стояло «100–200 активних тестерів»; актуальний план менший і коротший, бо 4-годинний SLA відповіді founder-а в Telegram-групі не масштабується далі. Тижневий розклад — [`01-web-launch-with-users.md` §3.2](../phases/01-web-launch-with-users.md#32-closed-beta-w0--w3).
 
 ### 3.1 Як роздається доступ
 

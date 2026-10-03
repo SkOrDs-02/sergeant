@@ -9,7 +9,7 @@ import { AMOUNT_MINOR_MAX, boundedDayKeySchema } from "./bounds";
  * types ↔ contract test рухаються разом. Сервер валідує кожну відповідь
  * через `.parse()` цих схем безпосередньо перед `res.json()`.
  *
- * Спека: `docs/90-work/planning/specs/receipt-scan.md` § «Фаза 2 — Масове
+ * Спека: `docs/work/specs/receipt-scan.md` § «Фаза 2 — Масове
  * ведення» → «API-контракт Фази 2». Money-інваріант: суми — **kopiykas як
  * number**, ніколи bigint-рядок (Hard Rule #1).
  *
@@ -434,7 +434,7 @@ export type ImportBatchUndoResponse = z.infer<
 
 /**
  * `GET /api/finyk/import/recent` — сирі факти для плашки «залий
- * документи» (спека `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ * документи» (спека `docs/work/specs/finyk-import-reminders.md`).
  *
  * Сервер НЕ виносить вердикт «показувати чи ні» навмисно. Умова плашки
  * росте від ЧАСУ, а не від даних («днів від останнього імпорту»), тож

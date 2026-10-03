@@ -1,7 +1,7 @@
 # Глобальний браузерний QA-аудит apps/web — дизайн тестування
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-13.
-> **Status:** Active (робочий артефакт сесії, не для merge без рішення founder-а). **Дата:** 2026-08-04.
+> **Last touched:** 2026-09-17 by @claude (Active → Reference: артефакт сесії 2026-08-04, відкриті знахідки — у реєстрі верифікації). **Next review:** 2026-12-16.
+> **Status:** Reference — робочий артефакт сесії 2026-08-04; чинні статуси знахідок — [`../verification/findings.json`](../verification/findings.json). **Дата:** 2026-08-04.
 > **Стенд:** трунк `D:\Sergeant` @ `main` (6803960e2), Vite dev `:5173` (proxy `/api` → `:3000`), API `apps/server` `:3000`, Postgres у docker (`hub-postgres`, БД `hub`, 146 таблиць, міграції `migrate_ok`).
 
 ## Мета

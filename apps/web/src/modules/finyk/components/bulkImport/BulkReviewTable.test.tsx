@@ -36,6 +36,7 @@ function rows(): BulkReviewRow[] {
 
 const CUSTOM_CATEGORIES: CustomCategoryInput[] = [
   { id: "custom-hobby", label: "Хобі" },
+  { id: "custom-rent", label: "Оренда", kind: "income" },
 ];
 
 describe("BulkReviewTable", () => {
@@ -51,7 +52,7 @@ describe("BulkReviewTable", () => {
     );
     expect(screen.getByText("Обрано 1 з 2")).toBeInTheDocument();
     expect(screen.getByText("витрата")).toBeInTheDocument();
-    expect(screen.getByText("дохід")).toBeInTheDocument();
+    expect(screen.getByText("надходження")).toBeInTheDocument();
   });
 
   it("shows a low-confidence badge only under the threshold", () => {
@@ -307,6 +308,25 @@ describe("BulkReviewTable", () => {
     ).not.toContain("Хобі");
   });
 
+  it("offers only income custom categories on an income row", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+        customCategories={CUSTOM_CATEGORIES}
+      />,
+    );
+    const incomeRowPicker = screen.getAllByLabelText("Категорія")[1]!;
+    const labels = Array.from(incomeRowPicker.querySelectorAll("option")).map(
+      (option) => option.textContent,
+    );
+    expect(labels).toContain("Оренда");
+    expect(labels).not.toContain("Хобі");
+  });
+
   it("merges customCategories into the bulk-category picker", () => {
     render(
       <BulkReviewTable
@@ -324,6 +344,51 @@ describe("BulkReviewTable", () => {
         (o) => o.textContent,
       ),
     ).toContain("Хобі");
+    expect(
+      Array.from(bulkPicker.querySelectorAll("option")).map(
+        (o) => o.textContent,
+      ),
+    ).not.toContain("Оренда");
+  });
+
+  // Звіт власника 2026-09-13: розмітити рух між власними кишенями у виписці
+  // не було чим — «Зняття готівки в банкоматі» лишалось «Іншим», тобто
+  // витратою. Чип потрібен в ОБОХ напрямах: зняття — витрата, зарахування
+  // зі своєї картки — дохід.
+  it("offers «Внутрішній переказ» on both the expense and the income row picker", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    const [expensePicker, incomePicker] = screen.getAllByLabelText("Категорія");
+    for (const picker of [expensePicker!, incomePicker!]) {
+      expect(
+        Array.from(picker.querySelectorAll("option")).map((o) => o.textContent),
+      ).toContain("Внутрішній переказ");
+    }
+  });
+
+  it("offers «Внутрішній переказ» in the bulk-category picker too", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    const bulkPicker = screen.getByLabelText("Категорія для вибраних витрат");
+    expect(
+      Array.from(bulkPicker.querySelectorAll("option")).map(
+        (o) => o.textContent,
+      ),
+    ).toContain("Внутрішній переказ");
   });
 
   it("toggling select-all calls onToggleAll with the opposite of the current all-selected state", () => {

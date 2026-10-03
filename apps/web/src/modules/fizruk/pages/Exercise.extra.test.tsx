@@ -151,7 +151,7 @@ describe("Exercise page — strength history", () => {
       screen.getAllByTestId("progress-chart").length,
     ).toBeGreaterThanOrEqual(1);
     // Set-history rows show the weight×reps summary.
-    expect(screen.getByText("Історія сетів")).toBeInTheDocument();
+    expect(screen.getByText("Історія підходів")).toBeInTheDocument();
     expect(screen.getByText(/100×5/)).toBeInTheDocument();
   });
 
@@ -318,7 +318,7 @@ describe("Exercise page — loading state (defects #2, #3)", () => {
     useExerciseCatalog.mockReturnValue(CATALOG);
     useWorkouts.mockReturnValue({ loaded: false, workouts: [] });
     render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
-    expect(screen.queryByText("Немає силових сетів")).toBeNull();
+    expect(screen.queryByText("Немає силових підходів")).toBeNull();
     expect(screen.queryByText("Поки немає записів")).toBeNull();
     expect(
       screen.getByRole("status", { name: /Завантаження вправи/i }),
@@ -332,7 +332,7 @@ describe("Exercise page — loading state (defects #2, #3)", () => {
     expect(
       screen.queryByRole("status", { name: /Завантаження вправи/i }),
     ).toBeNull();
-    expect(screen.getByText("Немає силових сетів")).toBeInTheDocument();
+    expect(screen.getByText("Немає силових підходів")).toBeInTheDocument();
   });
 });
 

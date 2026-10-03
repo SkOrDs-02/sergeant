@@ -5,7 +5,8 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
-import { deleteUser, signOut } from "../auth/authClient";
+import { meApi } from "@shared/api";
+import { signOut } from "../auth/authClient";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 
 interface DangerZoneSectionProps {
@@ -32,17 +33,11 @@ export function DangerZoneSection({
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const res = await deleteUser({ password: password || undefined });
-      if (res.error) {
-        // Діалог лишається відкритим із уже введеним паролем, тож
-        // «Повторити» жене той самий запит без повторного набору.
-        toast.error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося видалити акаунт"),
-          undefined,
-          { label: "Повторити", onClick: () => void handleDelete() },
-        );
-        return;
-      }
+      // Шлях видалення переїхав із Better Auth (`POST /api/auth/delete-user`,
+      // тепер вимкнений) на власний `DELETE /api/me`: тільки він уміє
+      // 30-денне вікно на скасування. Пароль звіряє сервер тією ж
+      // механікою, що й Better Auth раніше.
+      await meApi.deleteAccount({ password: password || undefined });
       toast.success("Акаунт видалено");
       setShowConfirm(false);
       setPassword("");
@@ -53,11 +48,30 @@ export function DangerZoneSection({
       }
       await onLogout();
       navigate("/", { replace: true });
-    } catch {
-      toast.error("Не вдалося видалити акаунт", undefined, {
-        label: "Повторити",
-        onClick: () => void handleDelete(),
-      });
+    } catch (err) {
+      // Діалог лишається відкритим із уже введеним паролем, тож
+      // «Повторити» жене той самий запит без повторного набору. Текст
+      // беремо із серверної відповіді: «Невірний пароль» корисніше за
+      // загальне «не вдалося».
+      // `ApiError` кладе розпарсене тіло у `body`, а не в себе, тож код
+      // помилки («Невірний пароль») дістаємо звідти, інакше людина побачила
+      // б загальне «не вдалося» на кожен випадок.
+      const apiError = err as {
+        status?: number;
+        body?: { code?: string; message?: string };
+      };
+      toast.error(
+        mapApiErrorToUserCopy(
+          {
+            status: apiError.status,
+            code: apiError.body?.code,
+            message: apiError.body?.message,
+          },
+          "Не вдалося видалити акаунт",
+        ),
+        undefined,
+        { label: "Повторити", onClick: () => void handleDelete() },
+      );
     } finally {
       setDeleting(false);
     }
@@ -87,7 +101,8 @@ export function DangerZoneSection({
             сервера.
           </p>
           <Button
-            variant="destructive"
+            variant="solid"
+            tone="danger"
             size="sm"
             className="w-full"
             disabled={!online}

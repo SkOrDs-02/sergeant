@@ -36,6 +36,14 @@ export type FinykStorageKey =
 export const FINYK_MANUAL_ONLY_KEY = "finyk_manual_only_v1";
 
 /**
+ * Час (epoch ms, рядок) останнього закриття банера «підключити банк».
+ * Банер ховається на `BANK_BANNER_SNOOZE_DAYS` днів від цієї позначки
+ * і потім повертається, якщо банк так і не підключено. Пристрій-локальний.
+ */
+export const FINYK_BANK_BANNER_DISMISSED_AT_KEY =
+  "finyk_bank_banner_dismissed_at_v1";
+
+/**
  * Keys covered by the JSON backup + `?sync=` payload. Anything that
  * `readFinykBackupFromStorage` writes must appear here so the mobile
  * backup/restore adapters stay in lock-step with the web ones.
@@ -43,6 +51,17 @@ export const FINYK_MANUAL_ONLY_KEY = "finyk_manual_only_v1";
 export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   budgets: "finyk_budgets",
   subscriptions: "finyk_subs",
+  /**
+   * Ручні операції — те, заради чого бекап і роблять.
+   *
+   * AI-DANGER: до 2026-09-22 цього ключа тут не було, і експорт віддавав
+   * `hiddenTxIds`, `txCategories`, `txSplits` — тобто НАДБУДОВИ над
+   * операціями без самих операцій. Файл власника від 2026-09-21: 2 417 Б
+   * при дев'яти операціях на 39 308,60 ₴ у базі, і поруч на тому ж екрані
+   * обіцянка «ручні витрати живуть лише на цьому пристрої… зроби експорт».
+   * Тобто єдина порада на випадок зміни телефона мовчки не працювала.
+   */
+  manualExpenses: "finyk_manual_expenses_v1",
   manualAssets: "finyk_assets",
   manualDebts: "finyk_debts",
   receivables: "finyk_recv",

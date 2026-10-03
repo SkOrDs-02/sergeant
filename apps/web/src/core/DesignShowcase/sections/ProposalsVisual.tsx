@@ -208,7 +208,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="R2-V-8"
           title="Паралакс hero"
-          intent="Зараз hub-hero плоский при скролі. Пропозиція: шари рухаються з різною швидкістю (useScrollParallax уже є в кодовій базі)."
+          intent="Зараз hub-hero плоский при скролі. Пропозиція: шари рухаються з різною швидкістю."
         >
           <ParallaxHeroDemo />
         </ProposalCompareCard>

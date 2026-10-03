@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-06 by docs:gen-status. **Next review:** 2026-09-13.
+> **Last touched:** 2026-10-02 by docs:gen-status. **Next review:** 2026-10-09.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -11,7 +11,16 @@
 
 <!-- FOCUS:START -->
 
-`/`
+- **Епістемічний стандарт звʼязків - три блоки з чотирьох у коді.** Спека [`link-evidence-standard.md`](./work/specs/link-evidence-standard.md), рішення - [ADR-0097](./governance/adr/0097-link-evidence-standard.md). Другий і третій ступені впевненості тепер вимагають дві тижневі перевірки поспіль, а не разовий замір; поріг спільних днів став ОДИН на продукт (чат-тул мав свій, мʼякший: 4 проти 10), і обидва блоки кореляцій у промпті підписують джерело та стандарт. При `n < 10` продукт більше не вимовляє слова «звʼязок», а віддає спостереження про одну метрику.
+- **Четвертий блок, верифікація чисел, свідомо не починався.** Спека вимагає фікстур із живих логів відповідей моделі, а їх немає де взяти: телеметрія AI-шару працює в privacy-режимі й текстів не зберігає. Механізм, зібраний на вигаданих форматах чисел, або пропускатиме брехню, або відхилятиме правду - і робив би це на грошових сумах. Потрібне рішення власника.
+- **Дві «застарілі» знахідки виявились чинними.** PR-A6: мапер 402 у коді Є, але `callRecallApi` бʼє в API сирим `fetch` повз `apiClient`, тож до нього не доходить, і free-юзер бачить сире `HTTP 402`. PR-A4: split оболонки й аркуша чату це винесення бандла, не дедуплікація, тож `Ctrl/Cmd+/` на `/chat` і далі піднімає другий інстанс.
+- **Кольори макросів лікували двічі.** Перший захід закрив знахідку N-13, поставивши всі три сегменти на однакову світлоту, і створив гіршу проблему: під протанопією білки й вуглеводи розходились на 18 одиниць із 441. Приймання було сформульоване як заперечення, тож його виконали, зламавши те, про що воно мовчало. Тепер розрізнюваність для дихроматів і видимість сегмента на темній панелі стоять гейтами.
+- **Звірку `docs/` з кодом виконано — вісім задач із дев'яти закрито.** Спека [`docs-code-drift-2026-09-19.md`](./work/specs/docs-code-drift-2026-09-19.md). Новий гейт `lint:repo-slug` тримає слуг репо в одному місці замість трьох; `docs:check-inventory` уперше здійсненний і підключений; `--require-issue` для AI-LEGACY увімкнено. Відкритий лише PR-2 — **який хендл maintainer-а чинний**, це рішення власника.
+- **Три постановки з дев'яти були помилкові, і це головний урок заходу.** PR-7 вимагав дії, яку README прямо забороняє дводенним рішенням; PR-5 — issue-номерів, яких за дизайном ще не існує; PR-3 — добити дедлайн, якого жоден канонічний документ не ставив. Спільне: завдання виводилось із **виводу гейта**, не звіреного з правилом, яке той гейт обслуговує.
+- **Три гейти більше не брешуть:** `lint:lifecycle-markers` не називає порушенням те, що правило дозволяє; `generate-playbook-index` розрізняє зафіксований виняток і реальний дрейф; `lint:dead-doc-links` опущено 255 → 251 після виносу мертвих покажчиків із текстів помилок лінтерів.
+- **Тиша замість шуму** — три хвилі фіксів злито (#96, #97, #100), лишились рішення власника — [`2026-09-16-product-noise-and-navigation.md`](./work/specs/audits/2026-09-16-product-noise-and-navigation.md).
+- **Сервер, БД, синк** — знахідки аудиту закриті (#95, #101); далі — операторський замір для 0024 PR-3.
+- **Код знову на GitHub, CI повернувся (2026-09-30, ADR-0102).** `SkOrDs-02/sergeant`, публічний; `origin` пушить у GitHub і в bare-дзеркало на Hetzner. Перший прогін CI показав борг тижня без гейтів: червоні critical-flow E2E, a11y `/chat`, dependency audit, інтеграційні тести сервера. Бекенд автодеплоїться після зелених обовʼязкових джоб.
 
 <!-- FOCUS:END -->
 
@@ -19,22 +28,22 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
-- [#895](https://github.com/Skords-01/Sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
-- [#892](https://github.com/Skords-01/Sergeant/pull/892) — feat(agents): module-owner і службові Claude-агенти _(2026-08-27)_
-- [#891](https://github.com/Skords-01/Sergeant/pull/891) — feat(agents): скіли-дисципліни _(2026-08-27)_
-- [#890](https://github.com/Skords-01/Sergeant/pull/890) — feat(agents): інфра module-скіли і nested-роутинг _(2026-08-27)_
-- [#889](https://github.com/Skords-01/Sergeant/pull/889) — feat(agents): продуктові module-owner скіли _(2026-08-27)_
-- [#689](https://github.com/Skords-01/Sergeant/pull/689) — fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого _(2026-08-07)_
-- [#508](https://github.com/Skords-01/Sergeant/pull/508) — fix(docs): reconcile canonical docs with current repo _(2026-07-29)_
-- [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(2026-07-21)_
-- [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
-- [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
+- [#1283](https://github.com/SkOrDs-02/sergeant/pull/1283) — ci(web): deploy web and landing from main only, no per-PR Vercel builds _(2026-10-01)_
+- [#1233](https://github.com/SkOrDs-02/sergeant/pull/1233) — ci(ci): GitHub Actions CI and backend autodeploy after green CI _(2026-10-01)_
+- [#101](https://bitbucket.org/skords01/sergeant/pull-requests/101) — fix(root): червоні кроки pnpm lint на main і три Windows-баги в гейтах _(2026-09-29)_
+- [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) — fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел _(2026-09-28)_
+- [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) — feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу _(2026-09-28)_
+- [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) — fix(web): виправлення за браузерним web-аудитом 2026-09-27 _(2026-09-28)_
+- [#81](https://bitbucket.org/skords01/sergeant/pull-requests/81) — fix(web): рішення власника за аудитом копі сайту _(2026-09-26)_
+- [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
+- [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
+- [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
-## 🔵 В роботі — 71 відкритий документ
+## 🔵 В роботі — 87 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 71       |
+| Активні спеки | 87       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -43,16 +52,15 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
-- [`work/specs/launch/phases/02-capacitor-launch.md`](./work/specs/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Активні спеки)_
-- [`work/specs/audits/2026-09-01-product-audit/accounts.md`](./work/specs/audits/2026-09-01-product-audit/accounts.md) — Продуктовий аудит 2026-09: тестові акаунти і наповнення — Active _(Активні спеки)_
-- [`work/specs/audits/2026-08-05-orphaned-code-audit.md`](./work/specs/audits/2026-08-05-orphaned-code-audit.md) — Аудит сиротілого коду, елементів і таблиць — 2026-08-05 — Active _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md`](./work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md) — Аудит контрасту й плоских поверхонь (WCAG AA, світла і темна тема) — Active. Реєстр знахідок із виміряними числами; виправлення на рівні токенів зроблені гілкою `claude/design-contrast-toke _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md`](./work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md) — Аудит 2026-10-01 · UX і доступність — Active. 86 кластерів (121 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
 Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
-- [`work/specs/initiatives/0024-ai-memory-source-coverage.md`](./work/specs/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
 
 ## 🧱 Стек
@@ -82,5 +90,5 @@ pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 13 
 
 - [`open-work.md`](./open-work.md) — повний rollup усіх трекерів
 - [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)
-- [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — freshness огляд
+- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; огляд: `pnpm docs:freshness-dashboard`
 - [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing

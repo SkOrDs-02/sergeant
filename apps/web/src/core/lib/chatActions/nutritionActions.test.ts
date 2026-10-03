@@ -160,6 +160,20 @@ describe("log_meal", () => {
   });
 });
 
+// ADR-0078: «сьогодні» журналу — доба ПРИСТРОЮ. О 22:00 UTC київська доба
+// вже наступна, а запис має лягти на день, який показує телефон.
+describe("log_meal / log_water · неявна дата біля межі доби", () => {
+  it("кладе їжу і воду на день пристрою, не на київський", () => {
+    vi.setSystemTime(new Date("2026-04-22T22:00:00Z"));
+    call({ name: "log_meal", input: { name: "Кефір", kcal: 100 } });
+    call({ name: "log_water", input: { amount_ml: 300 } });
+    expect(dayMeals("2026-04-22")).toHaveLength(1);
+    expect(dayMeals("2026-04-23")).toHaveLength(0);
+    expect(mem.water["2026-04-22"]).toBe(300);
+    expect(mem.water["2026-04-23"]).toBeUndefined();
+  });
+});
+
 // ---------------------------------------------------------------------------
 // log_water
 // ---------------------------------------------------------------------------
@@ -521,7 +535,7 @@ describe("set_daily_plan", () => {
       input: { kcal: 2500, protein_g: 150 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("2500");
+    expect(out).toContain("2 500");
     expect(out).toContain("150");
   });
 
@@ -685,7 +699,7 @@ describe("plan_meals_for_day", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("4");
-    expect(out).toContain("2000");
+    expect(out).toContain("2 000");
     expect(out).toContain("500");
   });
 

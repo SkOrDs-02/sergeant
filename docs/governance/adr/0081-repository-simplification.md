@@ -6,7 +6,7 @@
 - **Next review:** 2027-03-04
 - **Deciders:** @Skords-01
 - **Supersedes:** ADR-0058, ADR-0059, ADR-0060, ADR-0066, ADR-0070
-- **Related:** [`AGENTS.md`](../../../AGENTS.md), [ADR-0071](./0071-dynamic-agent-snapshot.md), [ADR-0084](./0084-agent-graph-topology.md), [`scripts/dualwrite-residue.ts`](../../../scripts/dualwrite-residue.ts)
+- **Related:** [`AGENTS.md`](../../../AGENTS.md), [ADR-0071](./0071-dynamic-agent-snapshot.md), [ADR-0084](./0084-agent-graph-topology.md), [`scripts/dualwrite-residue.ts`](../../../scripts/dualwrite-residue.ts), [ADR-0099](./0099-retired-hard-rules-registry.md) (реєстр знятих Hard Rules)
 
 ## Decision
 
@@ -31,3 +31,18 @@ New tooling must not restore a second committed knowledge graph or a local
 archive hierarchy. A document that is removed from the working tree needs its
 inbound links changed to a verified permalink or a current canonical document;
 otherwise the link checker will correctly surface debt.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket                                           | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -171,7 +171,8 @@ describe("MemoryBankSection — populated", () => {
     storedEntries = [ENTRY];
     render(<MemoryBankSection />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Додати інфо/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Додати/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Додати інфо/ }));
 
     expect(emitHubBusMock).toHaveBeenCalledTimes(1);
     const [event, payload] = emitHubBusMock.mock.calls[0]!;
@@ -192,7 +193,8 @@ describe("MemoryBankSection — populated", () => {
     storedEntries = [ENTRY];
     render(<MemoryBankSection />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Інтерв.ю/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Додати/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /інтерв.ю/i }));
 
     const [event, payload] = emitHubBusMock.mock.calls[0]!;
     expect(event).toBe("openChat");
@@ -215,7 +217,8 @@ describe("MemoryBankSection — export", () => {
       .mockImplementation(() => {});
 
     render(<MemoryBankSection />);
-    fireEvent.click(screen.getByRole("button", { name: "Експорт памʼяті" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ще дії з памʼяттю" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Експорт памʼяті" }));
 
     expect(createObjectURL).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();

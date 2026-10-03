@@ -13,6 +13,18 @@
  * those own the editable in-flight UI (warm-up checklist, superset
  * controls, per-set inputs) which is the wrong shape for a glance-back
  * summary. This component only ever reads `Workout`, never mutates it.
+ *
+ * PR-Z1 (аудит 2026-09-13, хвиля 3 «Тупики й мертві дії»): `FizrukApp`
+ * знімає шапку модуля й нижню навігацію на всьому `page === "workout"`
+ * (сесійний хром — спека `fizruk-active-session.md`), і для ЖИВОЇ сесії
+ * вихід несе `SessionTopBar` («Згорнути»). Ця гілка сесію не рендерить —
+ * `SessionTopBar` тут нема, а єдиною дією лишалась «Повторити це
+ * тренування», яка стартує НОВЕ тренування замість виходу. Власна
+ * back-кнопка (той самий іконка+заголовок патерн, що й
+ * `WorkoutHistory.tsx` / `Measurements.tsx`) дає вихід без старту нової
+ * сесії; `sessionMode` у `FizrukApp` свідомо НЕ звужено до
+ * `!endedAt` — це рухало б header/nav/FAB-логіку для всіх споживачів
+ * `page === "workout"` заради однієї гілки.
  */
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
@@ -31,20 +43,30 @@ import {
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
+import { WorkoutMomentLine } from "./WorkoutMomentLine";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
   /** 02-A item 4 — starts a new session with the same exercises, no sets. */
   onRepeat: () => void;
+  /** PR-Z1 — the only non-"start a new workout" way out of this screen. */
+  onClose: () => void;
 }
 
 /** One-line "what happened" caption for a single exercise entry. */
-function formatItemDetail(item: WorkoutItem): string {
+function formatItemDetail(item: WorkoutItem, rpeLabel: string): string {
   if (item.type === "strength") {
     const sets = item.sets || [];
     if (sets.length === 0) return "—";
     return sets
-      .map((s) => `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`)
+      .map((s) => {
+        const base = `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`;
+        const rpe = s["rpe"];
+        // RPE is strictly optional (Borg 1..10) — omit the suffix entirely
+        // rather than print a misleading "RPE 0" when it was never filled
+        // in (canon `fizruk.md` §3).
+        return typeof rpe === "number" ? `${base} · ${rpeLabel} ${rpe}` : base;
+      })
       .join(", ");
   }
   if (item.type === "distance") {
@@ -58,6 +80,7 @@ function formatItemDetail(item: WorkoutItem): string {
 export function WorkoutSummaryView({
   workout,
   onRepeat,
+  onClose,
 }: WorkoutSummaryViewProps) {
   const copy = messages.fizruk.workoutSummary;
   const summary = summarizeWorkoutForFinish(workout);
@@ -71,20 +94,34 @@ export function WorkoutSummaryView({
 
   return (
     <Card radius="lg">
-      <div>
-        <div className="text-style-label text-text">{copy.title}</div>
-        <div className="text-style-caption text-subtle mt-0.5">
-          {new Date(workout.startedAt).toLocaleString("uk-UA", {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-          {summary ? (
-            <span className="ml-2">
-              · {formatDurShort(summary.durationSec)}
-            </span>
-          ) : null}
+      <div className="flex items-start gap-2">
+        {/* PR-Z1 — session chrome (header + bottom nav) is off for the
+            whole `workout` route, so this is the only way out that does
+            not start a new workout (`onRepeat` below). */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={copy.backAria}
+          className="-ml-1 -mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] text-text hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          <Icon name="chevron-left" size="sm" aria-hidden />
+        </button>
+        <div className="flex-1">
+          <div className="text-style-label text-text">{copy.title}</div>
+          <div className="text-style-caption text-subtle mt-0.5">
+            {new Date(workout.startedAt).toLocaleString("uk-UA", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            {summary ? (
+              <span className="ml-2">
+                · {formatDurShort(summary.durationSec)}
+              </span>
+            ) : null}
+          </div>
+          <WorkoutMomentLine workoutId={workout.id} />
         </div>
       </div>
 
@@ -130,7 +167,7 @@ export function WorkoutSummaryView({
             >
               <div className="text-style-label text-text">{item.nameUk}</div>
               <div className="text-style-caption text-subtle mt-0.5">
-                {formatItemDetail(item)}
+                {formatItemDetail(item, copy.rpeLabel)}
               </div>
             </li>
           ))}
@@ -149,12 +186,14 @@ export function WorkoutSummaryView({
       )}
 
       <Button
-        module="fizruk"
+        variant="solid"
+        tone="fizruk"
+
         className="w-full h-12 mt-4"
         type="button"
         onClick={onRepeat}
       >
-        <Icon name="refresh-cw" size={16} aria-hidden /> {copy.repeatCta}
+        <Icon name="refresh-cw" size="md" aria-hidden /> {copy.repeatCta}
       </Button>
     </Card>
   );

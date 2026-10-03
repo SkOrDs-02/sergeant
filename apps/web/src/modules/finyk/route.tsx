@@ -17,6 +17,7 @@ export function Component() {
     goBackOrHub,
     goToHub,
     goToModuleSettings,
+    onOpenAuth,
     pwaAction,
     clearPwaAction,
   } = useHubShell();
@@ -31,6 +32,7 @@ export function Component() {
           onBackToHub={goBackOrHub}
           onGoToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("finyk")}
+          onOpenAuth={onOpenAuth}
           pwaAction={pwaAction}
           onPwaActionConsumed={clearPwaAction}
         />

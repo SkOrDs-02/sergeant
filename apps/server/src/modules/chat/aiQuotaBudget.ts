@@ -24,7 +24,7 @@ import type { ChatPreset } from "@sergeant/shared";
 // новий користувач упирався в paywall посеред онбордингу, з половиною
 // незбережених фактів.
 //
-// AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`,
+// AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`,
 // 2026-09-01) закрило подвійне списання: другий запит того самого ходу
 // проходить за round-trip-квитком (`chatRoundTripTicket.ts`) і не списує
 // нового квитка з ЖОДНОГО відра — ні денного, ні preset-ного. Ліміти нижче
@@ -44,7 +44,7 @@ import type { ChatPreset } from "@sergeant/shared";
 // `profile_add_info` повторюють тижнями, і спільний бюджет означав би, що
 // після інтервʼю людина до кінця тижня не додасть жодного факту. Тож сумарна
 // стеля = сума лімітів усіх preset-ів; додаєш новий — перерахуй її
-// (`docs/04-governance/security/ai-quota-kill-switch.md § preset-відро`).
+// (`docs/governance/security/ai-quota-kill-switch.md § preset-відро`).
 //
 // Другий бік цієї оборони живе не тут: `OFF_TOPIC_RULE` у `chatPresets.ts`
 // наказує моделі не виконувати сторонні запити всередині режиму. Лічильник

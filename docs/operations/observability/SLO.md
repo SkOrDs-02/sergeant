@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-09-17 by @claude (§5.1 SLO чату; web-vitals 50/min; ticket-route → Grafana). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -165,8 +165,11 @@ Recording rule: `job:health_p95_5m` у
 
 Це не page, бо повільний health endpoint сам по собі не означає downtime; це
 ранній сигнал cold-start / DB pool / event-loop деградації, який треба
-розслідувати перш ніж Coolify почне рестартити unhealthy-контейнер. Route для
-`severity=ticket` уже є в [`alertmanager.yml`](./alertmanager.yml).
+розслідувати перш ніж Coolify почне рестартити unhealthy-контейнер. Маршрут
+для `severity=ticket` — Grafana Cloud managed alerting (contact point
+`telegram-ops`, див. [§ Статус wiring](#статус-wiring-чесний-зріз-2026-07-26));
+route в [`alertmanager.yml`](./alertmanager.yml) — Deprecated legacy, не
+задеплоєний.
 
 ## 3. Sync (SLO 99.5 %)
 
@@ -248,6 +251,25 @@ sum(rate(ai_requests_total[w]))
 **Latency SLO**: `histogram_quantile(0.95, sum(rate(ai_request_duration_ms_bucket[w])) by (le, endpoint)) < 30000` — per-endpoint, щоб швидкі
 (coach-insight, ~3s) не ховали повільні (weekly-digest, ~30s).
 
+### 5.1 Чат (`/api/chat`) — очікування на першому ході
+
+Політика з [`AGENTS.md § Performance budgets`](../../../AGENTS.md#performance-budgets);
+чому саме дві метрики й чому перший хід не має SLO про перший токен — у
+[`metrics.md § 6a`](./metrics.md#6a-очікування-на-першому-ході-чату).
+
+| Хід                        | SLO                                                            | Метрика                                   |
+| -------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
+| Перший хід (не стрімиться) | p95 повної відповіді **< 15 с** — стеля-детектор, не ціль      | `chat_first_turn_phase_ms{phase="total"}` |
+| Тур синтезу (стрімиться)   | p95 першого токена **< 1,5 с** (моделезалежно, див. AGENTS.md) | `ai_first_token_ms`                       |
+
+```
+histogram_quantile(0.95, sum by (le) (rate(chat_first_turn_phase_ms_bucket{phase="total"}[w]))) < 15000
+histogram_quantile(0.95, sum by (le) (rate(ai_first_token_ms_bucket[w]))) < 1500
+```
+
+Alert-правил під ці SLO ще немає (design-only, як і `BackendHealthP95High`);
+факт на 2026-09-01 і розкладка по моделях — в `AGENTS.md`.
+
 ## 6. External HTTP per-upstream (SLO 95.0 %)
 
 **SLI**
@@ -315,7 +337,7 @@ sum(rate(web_vitals_duration_ms_count{metric="LCP"}[w]))
 
 **Джерело**: `web-vitals` npm пакет на клієнті (див. `apps/web/src/core/observability/webVitals.ts`),
 батч через `navigator.sendBeacon` на `visibilitychange=hidden` / `pagehide`,
-бекенд-ендпоінт `POST /api/metrics/web-vitals` (rate-limited 60 req/min/IP),
+бекенд-ендпоінт `POST /api/metrics/web-vitals` (rate-limited 50 req/min/IP — знижено з 60 у M12, див. [`routes/web-vitals.ts`](../../../apps/server/src/routes/web-vitals.ts)),
 запис у `web_vitals_duration_ms{metric,rating}` і `web_vitals_cls{rating}`.
 
 **Кардинальність**: 4×3 + 3 = 15 серій × бакети — безпечно.

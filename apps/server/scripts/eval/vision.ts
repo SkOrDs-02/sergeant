@@ -27,6 +27,8 @@ import {
 } from "../../src/lib/nutritionResponse.js";
 import { buildAnalyzePhotoPrompt } from "../../src/modules/nutrition/analyze-photo.js";
 import { buildRefinePhotoPrompt } from "../../src/modules/nutrition/refine-photo.js";
+import { visionViaOpenRouter } from "../../src/modules/nutrition/visionTransport.js";
+import { prodRoutedCandidates } from "./candidates.js";
 import { catalogEntry, estimateCost } from "./cost.js";
 import type { Candidate, GoldenCase, Pipeline, RunResult } from "./types.js";
 import {
@@ -196,16 +198,11 @@ const REFINE_CASES: GoldenCase[] = [
 
 /** Копіюється в кожен пайплайн — див. AI-DANGER у `pipelines.nutrition.ts`. */
 const VISION_CANDIDATES: Candidate[] = [
-  {
-    provider: "anthropic",
-    model: env.NUTRITION_MODEL,
-    label: "current default (Anthropic)",
-  },
-  {
-    provider: "openrouter",
-    model: "google/gemini-2.5-flash-lite",
-    label: "OpenRouter Gemini Flash Lite",
-  },
+  ...prodRoutedCandidates(
+    visionViaOpenRouter() ? "openrouter" : "anthropic",
+    env.OPENROUTER_VISION_MODEL,
+    env.NUTRITION_MODEL,
+  ),
   {
     provider: "openrouter",
     model: "anthropic/claude-haiku-4.5",

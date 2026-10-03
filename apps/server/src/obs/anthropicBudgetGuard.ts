@@ -65,7 +65,7 @@ import { toLocalISODate } from "@sergeant/shared";
 import { env } from "../env.js";
 import { logger } from "./logger.js";
 import { Sentry } from "../sentry.js";
-import pool from "../db.js";
+import { withBypassContext } from "../db.js";
 import { ANTHROPIC_PROVIDER_SUBJECT } from "../lib/anthropicUsageStore.js";
 import { getRedis } from "../lib/redis.js";
 
@@ -89,12 +89,16 @@ const ALERT_FLAG_KEY_PREFIX = "anthropic_budget_alert_v1";
  * `"12.5" > 15` порівнював би рядки, а не числа.
  */
 export async function readSpendFromLedger(day: string): Promise<number> {
-  const { rows } = await pool.query<{ usd: string | null }>(
-    `SELECT COALESCE(SUM(COALESCE(actual_cost_usd, est_cost_usd)), 0)::text AS usd
-       FROM ai_usage_daily
-      WHERE subject_key = $1
-        AND usage_day = $2::date`,
-    [ANTHROPIC_PROVIDER_SUBJECT, day],
+  // Глобальний агрегат провайдера (`provider:anthropic`) не належить жодному
+  // користувачеві, а читає його таймер бюджет-гарда -> bypass (A4).
+  const { rows } = await withBypassContext((client) =>
+    client.query<{ usd: string | null }>(
+      `SELECT COALESCE(SUM(COALESCE(actual_cost_usd, est_cost_usd)), 0)::text AS usd
+         FROM ai_usage_daily
+        WHERE subject_key = $1
+          AND usage_day = $2::date`,
+      [ANTHROPIC_PROVIDER_SUBJECT, day],
+    ),
   );
   const parsed = Number(rows[0]?.usd ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ChatRequestSchema, ToolCallsRawBlockSchema } from "./api";
 
 /**
- * B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — locks the
+ * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — locks the
  * `tool_calls_raw` contract on `POST /api/chat`. Before this fix the field
  * was `z.array(z.unknown()).max(60)`, an unvalidated passthrough that lands
  * verbatim in `{ role: "assistant", content: tool_calls_raw }` — the one
@@ -71,7 +71,7 @@ describe("ToolCallsRawBlockSchema", () => {
   });
 
   it("accepts a tool_use block routed through OpenRouter with a `caller` field (AI-1)", () => {
-    // AI-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`):
+    // AI-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`):
     // OpenRouter's `tool_use` blocks carry a `caller` field Anthropic-direct
     // doesn't emit. Before the fix `.strict()` rejected the whole block for
     // this one known-but-unlisted field, so every OpenRouter tool round trip

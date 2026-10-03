@@ -7,10 +7,17 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { habitScheduledOnDate, monthGrid } from "@sergeant/routine-domain";
+import {
+  habitScheduledOnDate,
+  isFlexibleHabit,
+  monthGrid,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { anchoredTodayDate } from "../lib/dayAnchor";
 import { WEEKDAY_LABELS } from "../lib/routineConstants";
 import type { Habit } from "../lib/types";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
 
 interface MonthCursor {
   y: number;
@@ -47,13 +54,7 @@ export function HabitMonthCalendar({
   );
   const completionSet = useMemo(() => new Set(completions), [completions]);
 
-  const calMonthTitle = new Date(calMonth.y, calMonth.m, 1).toLocaleDateString(
-    "uk-UA",
-    {
-      month: "long",
-      year: "numeric",
-    },
-  );
+  const calMonthTitle = formatMonthYear(new Date(calMonth.y, calMonth.m, 1));
 
   const goCalMonth = (delta: number) => {
     setCalMonth((c) => {
@@ -82,7 +83,7 @@ export function HabitMonthCalendar({
             size="xs"
             variant="ghost"
             onClick={() => goCalMonth(-1)}
-            className="rounded-xl border border-line text-muted"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             aria-label="Попередній місяць"
           >
             <Icon name="chevron-left" size="xs" />
@@ -94,7 +95,7 @@ export function HabitMonthCalendar({
             size="xs"
             variant="ghost"
             onClick={() => goCalMonth(1)}
-            className="rounded-xl border border-line text-muted"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             aria-label="Наступний місяць"
           >
             <Icon name="chevron-right" size="xs" />
@@ -113,7 +114,17 @@ export function HabitMonthCalendar({
         {cells.map((day, i) => {
           if (day === null) return <div key={`e${i}`} />;
           const dk = `${calMonth.y}-${String(calMonth.m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const scheduled = habitScheduledOnDate(habit, dk);
+          // Гнучка звичка («N разів на тиждень») перестає бути запланованою,
+          // щойно тижневу ціль добрано — без `weekDoneCount` предикат завжди
+          // істинний (`schedule.ts`), тож клітинка місяця показувала б
+          // «заплановано» навіть після закритого тижня (аудит 2026-09,
+          // PR-R4, той самий клас, що й денний звіт/bulk-mark/нагадування).
+          const weekDoneCount = isFlexibleHabit(habit)
+            ? weekDoneCountExcludingDate(completions, dk)
+            : undefined;
+          const scheduled = habitScheduledOnDate(habit, dk, {
+            weekDoneCount,
+          });
           const done = completionSet.has(dk);
           const isToday = dk === todayKey;
           return (
@@ -124,7 +135,7 @@ export function HabitMonthCalendar({
                 done
                   ? "bg-routine-surface2 dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine border border-routine-ring/40 dark:border-routine-border-dark/30 font-bold"
                   : scheduled
-                    ? "bg-panelHi/60 text-muted border border-line/30"
+                    ? "bg-panelHi text-muted border border-line/30"
                     : // eslint-disable-next-line sergeant-design/no-opacity-on-text-token -- незапланований день: неактивна клітинка, WCAG 1.4.3 її не покриває (той самий виняток, під яким `HabitDetailSheet.tsx` стоїть в allowlist `eslint.web.js`)
                       "text-subtle/50",
                 isToday &&
@@ -145,7 +156,7 @@ export function HabitMonthCalendar({
           Виконано
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-panelHi/60 border border-line/30" />
+          <span className="inline-block w-3 h-3 rounded bg-panelHi border border-line/30" />
           Заплановано
         </span>
       </div>

@@ -36,6 +36,30 @@ const TODAY_SHORT = "Сьог";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Скільки днів назад малює стрічка, коли викликач не сказав інакше. */
+export const DATE_SCRUBBER_DEFAULT_DAYS = 14;
+
+/**
+ * Чи лежить день-ключ у вікні стрічки (найстаріший день … сьогодні, включно).
+ *
+ * Потрібно викликачам, які роблять стрічку ДЕФОЛТНИМ полем дати: дата поза
+ * вікном у стрічці просто не має чіпа, тож без цієї перевірки редагування
+ * давнішого запису показувало б стрічку без жодного вибраного дня і жодного
+ * натяку, де шукати справжню дату. День-ключі — `YYYY-MM-DD`, тож порівняння
+ * рядків тут еквівалентне порівнянню дат.
+ */
+export function isWithinDateScrubberWindow(
+  dayKey: string,
+  days: number = DATE_SCRUBBER_DEFAULT_DAYS,
+): boolean {
+  if (!dayKey) return false;
+  const todayKey = getKyivDayKey();
+  const anchor = parseKyivDate(todayKey);
+  if (!anchor) return false;
+  const oldestKey = getKyivDayKey(anchor.getTime() - (days - 1) * DAY_MS);
+  return dayKey >= oldestKey && dayKey <= todayKey;
+}
+
 export interface DateScrubberProps {
   /** Selected day as Kyiv day-key `YYYY-MM-DD`. */
   value: string;
@@ -50,7 +74,7 @@ export interface DateScrubberProps {
 export function DateScrubber({
   value,
   onChange,
-  days = 14,
+  days = DATE_SCRUBBER_DEFAULT_DAYS,
   className,
   "aria-label": ariaLabel = "Вибір дати",
 }: DateScrubberProps) {

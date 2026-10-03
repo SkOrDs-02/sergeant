@@ -12,6 +12,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import { useOverviewData } from "./useOverviewData";
 import type { UseOverviewDataParams } from "./useOverviewData";
 
@@ -269,6 +270,87 @@ describe("useOverviewData", () => {
       );
       expect(result.current.budgetAlerts).toHaveLength(0);
     });
+
+    describe("правила «Завжди так для цього магазину»", () => {
+      // Функція, а не константа: `mkTx` читає `Date.now()`, а фейковий час
+      // ставить `beforeEach` — константа на рівні describe взяла б реальну дату.
+      const silpoTx = () => ({
+        ...mkTx("t-silpo", -150_000),
+        description: "Сільпо №5",
+        source: "mono",
+        _source: "mono",
+      });
+      const TRANSPORT_LIMIT = {
+        id: "b1",
+        type: "limit",
+        categoryId: "transport",
+        limit: 1000,
+      };
+      const RULES = buildMerchantRuleIndex([
+        {
+          id: "mr_1",
+          kind: "expense",
+          merchantKey: "сільпо",
+          categoryId: "transport",
+          label: "Сільпо",
+          createdAt: "2026-10-01T10:00:00.000Z",
+          updatedAt: "2026-10-01T10:00:00.000Z",
+        },
+      ]);
+
+      it("без правил витрата Сільпо не будить ліміт «Транспорт»", () => {
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono({ realTx: [silpoTx()] as never }),
+            storage: buildStorage({ budgets: [TRANSPORT_LIMIT] as never }),
+          }),
+        );
+        expect(result.current.budgetAlerts).toHaveLength(0);
+      });
+
+      it("з правилом 1500 ₴ у «Транспорт» перевищують ліміт 1000 ₴", () => {
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono({ realTx: [silpoTx()] as never }),
+            storage: buildStorage({
+              budgets: [TRANSPORT_LIMIT] as never,
+              merchantRuleIndex: RULES,
+            }),
+          }),
+        );
+        expect(result.current.budgetAlerts).toHaveLength(1);
+        // Споживачі Огляду (BudgetAlertsList, інсайти) беруть ту саму мапу.
+        expect(result.current.txCategories).toEqual({
+          "t-silpo": "transport",
+        });
+      });
+
+      it("явний override операції сильніший за правило", () => {
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono({ realTx: [silpoTx()] as never }),
+            storage: buildStorage({
+              budgets: [TRANSPORT_LIMIT] as never,
+              merchantRuleIndex: RULES,
+              txCategories: { "t-silpo": "food" },
+            }),
+          }),
+        );
+        expect(result.current.budgetAlerts).toHaveLength(0);
+        expect(result.current.txCategories).toEqual({ "t-silpo": "food" });
+      });
+
+      it("без правил віддає ТІ САМІ явні override-и (ідентичність мапи не міняється)", () => {
+        const explicit = { x: "food" };
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono(),
+            storage: buildStorage({ txCategories: explicit }),
+          }),
+        );
+        expect(result.current.txCategories).toBe(explicit);
+      });
+    });
   });
 
   describe("planned flows", () => {
@@ -287,7 +369,7 @@ describe("useOverviewData", () => {
         {
           id: "tx-spotify",
           amount: -19900,
-          time: new Date(2026, 4, 10, 12, 0).getTime(),
+          time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
           date: "2026-05-10",
           description: "spotify premium",
           categoryId: "subscriptions",
@@ -424,7 +506,7 @@ describe("useOverviewData", () => {
               {
                 id: "tx-spotify",
                 amount: -19900,
-                time: new Date(2026, 4, 10, 12, 0).getTime(),
+                time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
                 date: "2026-05-10",
                 description: "spotify premium",
                 categoryId: "subscriptions",
@@ -491,6 +573,23 @@ describe("useOverviewData", () => {
         }),
       );
       expect(result.current.showFirstInsight).toBe(true);
+    });
+
+    it("showFirstInsight is false when budgets already exist", () => {
+      // Підказка кличе поставити бюджет; людині з бюджетами вона лише
+      // відсуває першу цифру огляду вниз.
+      localStorage.removeItem("finyk_first_insight_seen_v1");
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono(),
+          storage: buildStorage({
+            budgets: [
+              { id: "b1", type: "limit", categoryId: "food", limit: 5000 },
+            ] as UseOverviewDataParams["storage"]["budgets"],
+          }),
+        }),
+      );
+      expect(result.current.showFirstInsight).toBe(false);
     });
 
     it("showFirstInsight is false when the seen-key is present", () => {

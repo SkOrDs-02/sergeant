@@ -5,6 +5,13 @@ import userEvent from "@testing-library/user-event";
 
 import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
 import { MIN_N, REPEATING_R, STABLE_N } from "./crossModuleLinkTiers";
+import { REQUIRED_CONSECUTIVE_CHECKS } from "./crossModuleLinkHistory";
+
+// Ці тести міряють драбину СИЛИ, а не повторюваність: серія перевірок
+// передається всюди явно, щоб вони лишились про те, для чого написані.
+// Саму повторюваність як умову ступеня перевіряє
+// `crossModuleLinkHistory.test.ts`.
+const REPEATED = REQUIRED_CONSECUTIVE_CHECKS;
 
 const poleA = {
   module: "fizruk" as const,
@@ -32,6 +39,7 @@ describe("CrossModuleLinkCard — напрямок звʼязку", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={-0.74}
+        checks={REPEATED}
         phrase="У дні тренувань ти витрачаєш менше"
       />,
     );
@@ -52,6 +60,7 @@ describe("CrossModuleLinkCard — напрямок звʼязку", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={-0.74}
+        checks={REPEATED}
       />,
     );
 
@@ -88,6 +97,7 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={0.62}
+        checks={REPEATED}
         days={days}
       />,
     );
@@ -118,6 +128,7 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={0.62}
+        checks={REPEATED}
         days={many}
       />,
     );
@@ -139,6 +150,7 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
         poleB={poleB}
         observations={STABLE_N}
         strength={0.62}
+        checks={REPEATED}
       />,
     );
 
@@ -158,6 +170,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={MIN_N}
         strength={0.4}
+        checks={REPEATED}
         weeks={2}
       />,
     );
@@ -178,6 +191,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={10}
         strength={REPEATING_R}
+        checks={REPEATED}
       />,
     );
 
@@ -194,6 +208,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={STABLE_N}
         strength={0.82}
+        checks={REPEATED}
         weeks={9}
       />,
     );
@@ -217,6 +232,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={59}
         strength={0.42}
+        checks={REPEATED}
       />,
     );
 
@@ -231,6 +247,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
         poleB={poleB}
         observations={STABLE_N - 1}
         strength={-0.9}
+        checks={REPEATED}
       />,
     );
 
@@ -249,6 +266,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
         poleB={poleB}
         observations={2}
         strength={0.9}
+        checks={REPEATED}
       />,
     );
 
@@ -271,6 +289,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
         poleB={poleB}
         observations={40}
         strength={0.1}
+        checks={REPEATED}
       />,
     );
 
@@ -287,6 +306,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
         poleB={poleB}
         observations={1}
         strength={0}
+        checks={REPEATED}
       />,
     );
 

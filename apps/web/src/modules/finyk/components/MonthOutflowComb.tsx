@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Гребінь місяця — signature-view Фініка (анти-слоп P4, § П1
- * `docs/05-design/design/anti-slop-strategy.md`; рішення власника
+ * `docs/design/design/anti-slop-strategy.md`; рішення власника
  * 2026-08-06 на `mockups/product/finyk-signature-view.html`).
  *
  * Стоїть НАД списком підписок, не замість нього: редагувати платіж,

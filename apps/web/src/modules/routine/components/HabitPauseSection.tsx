@@ -82,7 +82,7 @@ export function HabitPauseSection({
           <Button
             type="button"
             size="sm"
-            variant="secondary"
+            variant="outline"
             className="mt-2"
             onClick={() =>
               setRoutine((s) => resumeHabitFrom(s, habit.id, todayKey))

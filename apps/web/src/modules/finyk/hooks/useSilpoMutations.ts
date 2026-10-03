@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-08-17
  * Status: Active — walking-skeleton experiment (Silpo MCP integration,
- * track A). See `docs/90-work/planning/specs/silpo-mcp-integration.md`.
+ * track A). See `docs/work/specs/silpo-mcp-integration.md`.
  *
  * `sync` / `disconnect` / `wipe` mutations for the Settings integration
  * card. Mirrors the Mono webhook pattern in `FinykWebhookServiceSection`:

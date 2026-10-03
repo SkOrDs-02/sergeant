@@ -36,8 +36,6 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   // пристрою мовчки відкидаються на pull — тобто травма, позначена на
   // телефоні, не блокує вправи у вебі.
   "fizruk_injuries",
-  // Перенос власності pushup-даних routine → fizruk (2026-08-30).
-  "fizruk_pushups",
   "nutrition_meals",
   "nutrition_pantries",
   "nutrition_pantry_items",
@@ -66,6 +64,25 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "finyk_networth_history",
   "finyk_prefs",
 ]);
+
+/**
+ * Той самий allowlist, але як ЗНАЧЕННЯ-літерали, а не як членство.
+ *
+ * Ім'я таблиці приїжджає з мережі (`op.table`) і їде в SQL через
+ * інтерполяцію — тут це неминуче, бо ідентифікатор не можна підставити
+ * плейсхолдером. Перевірка `CLIENT_PULL_SUPPORTED_TABLES.has(...)` захищає
+ * рантайм, але НЕ міняє походження рядка: у SQL усе одно летить те, що
+ * прийшло ззовні. Лукап у цій мапі повертає рівно літерал із неї, тож далі
+ * по коду — константа з нашого коду, а не значення з відповіді сервера.
+ *
+ * Той самий прийом на сервері: `OP_LOG_TABLE_REGISTRY` у `syncV2.ts`
+ * резолвиться в літерал, а не в прокинутий рядок.
+ */
+const SAFE_TABLE_SQL: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(
+    [...CLIENT_PULL_SUPPORTED_TABLES].map((name) => [name, name]),
+  ),
+);
 
 const columnCache = new Map<string, string[]>();
 const pkCache = new Map<string, string[]>();
@@ -247,8 +264,13 @@ async function applyGenericRegistryRow(
   const row = op.row;
   if (row["user_id"] !== userId) return "rejected";
 
-  const columns = await getTableColumns(client, table);
-  const pkColumns = await getPrimaryKeyColumns(client, table);
+  // Далі в цій функції — тільки `safeTable`. `table` лишається для
+  // повідомлень і порівнянь, у SQL він не потрапляє (див. SAFE_TABLE_SQL).
+  const safeTable = SAFE_TABLE_SQL[table];
+  if (safeTable === undefined) return "rejected";
+
+  const columns = await getTableColumns(client, safeTable);
+  const pkColumns = await getPrimaryKeyColumns(client, safeTable);
   if (pkColumns.length === 0) return "rejected";
 
   const pkValues = pkColumns.map((col) => {
@@ -279,31 +301,42 @@ async function applyGenericRegistryRow(
   const lookupValues = scopeByUser ? [...pkValues, userId] : pkValues;
 
   if (hasUpdatedAt) {
-    const existing = await client.all<{
-      updated_at: string;
-      deleted_at: string | null;
-    }>(
-      `SELECT updated_at${hasDeletedAt ? ", deleted_at" : ""}
-         FROM ${table}
-        WHERE ${lookupWhere}`,
+    // `deleted_at` тут більше не читається (див. AI-DANGER нижче), тож і не
+    // селектиться: у вибірці лишається рівно те, на чому стоїть рішення.
+    const existing = await client.all<{ updated_at: string }>(
+      `SELECT updated_at FROM ${safeTable} WHERE ${lookupWhere}`,
       lookupValues,
     );
     const local = existing[0];
+    // AI-DANGER: тут НЕМАЄ і не має бути перевірки
+    // `deleted_at !== null && op.op !== "delete" → skipped`. Вона тут була і
+    // її знято свідомо — не «загублено» при рефакторингу. Не повертай.
+    //
+    // Це дзеркало серверного `guardUuidPkApply` (`applySync-helpers.ts`), де
+    // те саме правило знято після регресії `SERGEANT-WEB-T`. Клієнт тримав
+    // його ще довше, і розʼїзд двох моделей давав рівно ту тишу, яку правило
+    // мало б запобігати: пристрій A видаляє бюджет (T1), людина тисне
+    // «Скасувати» в тості → рядок повертається з `updated_at = T2 > T1`,
+    // сервер приймає його за чистим LWW, пристрій B тягне оп — і скіпає.
+    // Курсор при цьому їде далі, тож другої спроби не буде ніколи, а
+    // `deleted_at` на B уже не скинеться, тож скіпаються і ВСІ наступні
+    // правки цього рядка. Бюджет живий усюди, крім B. Мовчки.
+    //
+    // Захист від stale-правки дає `isStaleLocal` вище — той самий аргумент,
+    // що й на сервері: запис, старіший за видалення, відсіюється ним, а
+    // новіший за LWW має вигравати. Воскресіння окремої гілки не потребує,
+    // але upsert нижче МУСИТЬ явно скидати `deleted_at`: writer-и кладуть в
+    // outbox insert-рядок БЕЗ ключа `deleted_at`, сервер віддає його як є, а
+    // upsert, зібраний лише з присутніх колонок, лишав локальний tombstone
+    // (data-02: «Повернути» губило запис на інших і нових пристроях). Тому
+    // для не-delete опа `deleted_at = row.deleted_at ?? NULL` пишеться завжди.
     if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
-    if (
-      hasDeletedAt &&
-      local &&
-      local.deleted_at !== null &&
-      op.op !== "delete"
-    ) {
-      return "skipped";
-    }
   }
 
   if (op.op === "delete") {
     if (!hasDeletedAt) return "rejected";
     await client.run(
-      `UPDATE ${table}
+      `UPDATE ${safeTable}
           SET deleted_at = ?, updated_at = ?
         WHERE ${lookupWhere}`,
       [op.client_ts, op.client_ts, ...lookupValues],
@@ -312,6 +345,10 @@ async function applyGenericRegistryRow(
   }
 
   const payload: Record<string, unknown> = { ...row, updated_at: op.client_ts };
+  // Не-delete оп = «рядок живий», якщо рядок сам не несе tombstone. Без
+  // явного `deleted_at` у payload колонка випадала з `ON CONFLICT DO UPDATE`
+  // і локальний tombstone не скидався (див. AI-DANGER вище).
+  if (hasDeletedAt) payload["deleted_at"] = row["deleted_at"] ?? null;
   const insertCols = columns.filter((col) => payload[col] !== undefined);
   if (!insertCols.includes("updated_at") && hasUpdatedAt) {
     insertCols.push("updated_at");
@@ -328,7 +365,7 @@ async function applyGenericRegistryRow(
   if (nonPkAssignments.length === 0) return "skipped";
 
   await client.run(
-    `INSERT INTO ${table} (${insertCols.join(", ")})
+    `INSERT INTO ${safeTable} (${insertCols.join(", ")})
      VALUES (${placeholders})
      ON CONFLICT(${pkColumns.join(", ")}) DO UPDATE SET ${nonPkAssignments}`,
     values,

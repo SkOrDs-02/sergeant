@@ -455,8 +455,8 @@ describe("pgVectorStore integration", () => {
            (user_id, source, source_ref, content, embedding,
             embedding_provider, embedding_model, embedding_version, metadata)
          VALUES
-           ($1, 'chat', NULL, $2, $3::halfvec, 'voyage', 'voyage-3.5-lite',   '1', '{}'),
-           ($1, 'chat', NULL, $4, $5::halfvec, 'openai', 'openai-3-large',    '1', '{}')`,
+           ($1, 'digest', NULL, $2, $3::halfvec, 'voyage', 'voyage-3.5-lite',   '1', '{}'),
+           ($1, 'digest', NULL, $4, $5::halfvec, 'openai', 'openai-3-large',    '1', '{}')`,
         [
           "uMdl",
           "active model content",
@@ -506,7 +506,11 @@ describe("pgVectorStore query SQL — active-model predicate (unit)", () => {
               values?: unknown[],
             ) => {
               if (typeof textOrObj === "string") {
-                const isSelect = /^\s*SELECT/i.test(textOrObj);
+                // `SELECT set_config(...)` — RLS-контекст із withUserContext,
+                // а не пошуковий запит; його не рахуємо.
+                const isSelect =
+                  /^\s*SELECT/i.test(textOrObj) &&
+                  !/set_config\(/i.test(textOrObj);
                 if (isSelect) {
                   capturedQueries.push({
                     text: textOrObj,

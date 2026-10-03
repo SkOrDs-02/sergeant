@@ -85,6 +85,7 @@ function emptySqliteCache(): SqliteFinykCache {
     showBalance: null,
     excludedStatTxIds: null,
     dismissedRecurring: null,
+    merchantRules: null,
     refreshedAt: null,
   };
 }
@@ -127,6 +128,18 @@ describe("ExpensesCard", () => {
     vi.clearAllMocks();
   });
 
+  it("без жодної витрати показує порожній стан, а не «0 ₴»", () => {
+    // Нуль в обох вікнах не результат, а відсутність предмета (критика
+    // екранів 2026-09-23): у шапці тире, розгорнуто текст із дією.
+    render(<ExpensesCard period="week" offset={0} />);
+    expect(screen.queryByText(/0\s*₴/)).toBeNull();
+    expect(screen.getByText("–")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
+    expect(screen.queryByText(/Минулий/i)).toBeNull();
+  });
+
   it("renders collapsed by default with a hryvnia summary and toggles open", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
     render(<ExpensesCard period="week" offset={0} />);
@@ -137,7 +150,8 @@ describe("ExpensesCard", () => {
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
+    // Середа: тиждень ще йде, тож порівняння з тими ж днями минулого.
+    expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
   });
 
   /**
@@ -171,10 +185,75 @@ describe("ExpensesCard", () => {
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
   });
 
-  it("renders the no-data placeholder when the tx cache is empty", () => {
+  // Р4 (канон finyk, журнал 2026-09-24): відсоток лише коли попередня сума
+  // є базою (≥ 10 % поточної), інакше абсолютна дельта в гривнях. Раніше
+  // чип рахував відсоток із круглих гривень без цього правила.
+  describe("дельта до минулого періоду (Р4)", () => {
+    // Середа 2026-08-05: «ті ж дні» минулого тижня — пн-ср 07-27…07-29.
+    const sameDaysLastWeek = Math.floor(
+      new Date("2026-07-29T09:00:00.000Z").getTime() / 1000,
+    );
+    const seed = (prevMinor: number) =>
+      localStorage.setItem(
+        "finyk_tx_cache",
+        JSON.stringify({
+          txs: [
+            ...txCacheToday().txs,
+            {
+              id: "prev",
+              amount: -prevMinor,
+              time: sameDaysLastWeek,
+              description: "Минулий тиждень",
+            },
+          ],
+        }),
+      );
+    const chipText = () =>
+      (screen.getByTestId("delta-chip").textContent ?? "").replace(
+        /[\s\u00a0\u202f]/g,
+        " ",
+      );
+
+    it("минуле ≥ 10 % поточного — відсоток", () => {
+      seed(40_000); // 400 ₴ проти 500 ₴ → +25 %
+      render(<ExpensesCard period="week" offset={0} />);
+      expect(chipText()).toBe("+25%");
+    });
+
+    it("минуле < 10 % поточного — абсолютна дельта в гривнях, без відсотка", () => {
+      seed(2_000); // 20 ₴ проти 500 ₴: «+2400 %» було б шумом
+      render(<ExpensesCard period="week" offset={0} />);
+      expect(chipText()).toBe("+480 ₴");
+    });
+
+    it("те саме в розгорнутому стані картки", () => {
+      seed(2_000);
+      render(<ExpensesCard period="week" offset={0} />);
+      fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+      expect(chipText()).toBe("+480 ₴");
+    });
+  });
+
+  it("не каже «ще не записано», коли минулого тижня витрати були пізніше ніж сьогодні", () => {
+    // Середа: «ті ж дні» минулого тижня (пн-ср) порожні, але в пʼятницю
+    // витрата була. Предмет звіту є, тож порожнього стану не має бути.
+    const lastFriday = Math.floor(
+      new Date("2026-07-31T09:00:00.000Z").getTime() / 1000,
+    );
+    localStorage.setItem(
+      "finyk_tx_cache",
+      JSON.stringify({ txs: [{ id: "t3", amount: -20000, time: lastFriday }] }),
+    );
     render(<ExpensesCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Витрат ще не записано/)).toBeNull();
+    expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
+  });
+
+  it("renders the empty state when the tx cache is empty", () => {
+    render(<ExpensesCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
   });
 
   it("accepts a bare array tx cache shape", () => {
@@ -221,7 +300,7 @@ describe("ExpensesCard", () => {
     // this is the deep-link `/?tab=reports` state before the sync pull lands.
     render(<ExpensesCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
 
     // The pull lands: SQLite cache warms with a manual expense dated
     // today, refreshCachesAfterPull calls `notifyFinykSqliteCacheRefresh`
@@ -250,7 +329,7 @@ describe("ExpensesCard", () => {
     // (the `Money` component splits "500" / "₴" into separate spans, so
     // assert on the bar-chart tooltip's `aria-label`, which renders the
     // full "<date>: <amount> ₴" string as one accessible string).
-    expect(screen.queryByText(/Немає даних/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Витрат ще не записано/)).not.toBeInTheDocument();
     const todayKey = now
       .toISOString()
       .slice(5, 10)

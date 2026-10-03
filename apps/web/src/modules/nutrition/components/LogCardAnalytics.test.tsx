@@ -53,7 +53,7 @@ describe("LogCardAnalytics", () => {
   // UX-2 (аудит 2026-09-01): без жодного залогованого дня (`daysLogged: 0`
   // з дефолтного `beforeEach`) чотири плитки з нулями і плаский графік
   // замінені на один Tier-2 `<EmptyState>` — див.
-  // `docs/05-design/design/empty-states.md`.
+  // `docs/design/design/empty-states.md`.
   it("renders a single empty state with no dead-zero tiles when nothing is logged", () => {
     render(<LogCardAnalytics log={log} selectedDate="2026-06-20" />);
     expect(screen.getByText("Аналітика (тренди)")).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe("LogCardAnalytics", () => {
     expect(screen.queryByText("Середні ккал")).not.toBeInTheDocument();
     expect(screen.queryByText("Поки що порожньо")).not.toBeInTheDocument();
     // Без дубльованого CTA-ґудзика: "+ Додати прийом їжі" вже видно на
-    // сторінці `LogCard` нижче за цю картку (docs/05-design/design/empty-states.md
+    // сторінці `LogCard` нижче за цю картку (docs/design/design/empty-states.md
     // § «Не дублюйте action»).
     expect(
       screen.queryByRole("button", { name: /Додати/ }),

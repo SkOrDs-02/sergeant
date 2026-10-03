@@ -7,7 +7,7 @@
  * close to the runtime it composes; promotion to `@sergeant/api-client`
  * is a follow-up if a third surface needs it.
  *
- * @see docs/planning/storage-roadmap.md (Stage 5 mobile writer wiring)
+ * @see https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md (Stage 5 mobile writer wiring)
  * @see apps/web/src/core/syncEngine/syncEngineWriter.ts
  */
 import {
@@ -23,7 +23,7 @@ import {
 } from "@sergeant/api-client";
 import type {
   RecoverDeadLetterResult,
-  RecoverDeadLetterSelector,
+  RecoverDeadLetterTarget,
   SyncOpOutboxStatusCounts,
 } from "@sergeant/db-schema/sqlite";
 
@@ -49,8 +49,13 @@ export interface SyncEngineWriterDeps {
   readonly clearInterval: (handle: unknown) => void;
   readonly eventTarget: SyncEngineEventTarget;
   readonly getStatus: () => Promise<SyncOpOutboxStatusCounts>;
+  /**
+   * Скоуп власника цей шар НЕ передає — він оперує чергою, а не сесією.
+   * `userId` домішує адаптер у `singleton.ts`, де є `resolveUserId`; саме
+   * тому тип тут `RecoverDeadLetterTarget`, а не `…Selector`.
+   */
   readonly recoverDeadLetter: (
-    selector: RecoverDeadLetterSelector,
+    target: RecoverDeadLetterTarget,
   ) => Promise<RecoverDeadLetterResult>;
   readonly addBreadcrumb?: (breadcrumb: SentryBreadcrumb) => void;
   readonly captureException?: (

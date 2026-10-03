@@ -1,14 +1,16 @@
 /** @vitest-environment jsdom */
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { OnboardingOutcomeCopy } from "@sergeant/shared";
+
+const checklistSignalsMock = vi.hoisted(() => ({
+  value: {} as Record<string, boolean>,
+}));
+
+vi.mock("./useChecklistSignals", () => ({
+  useChecklistSignals: () => checklistSignalsMock.value,
+}));
 
 const firstActionMocks = vi.hoisted(() => ({
   picks: [] as string[],
@@ -99,17 +101,21 @@ vi.mock("../observability/analytics", async () => {
   };
 });
 
-vi.mock("@shared/lib/adapters/haptic", () => ({
-  hapticTap: vi.fn(),
-  hapticSuccess: vi.fn(),
-}));
+// Haptic НЕ мокається навмисно: у jsdom адаптер і так no-op —
+// `canVibrate()` перевіряє `navigator.vibrate` (його тут немає), а
+// `prefersReducedMotion()` гардить відсутній `matchMedia`. Мок лише
+// з'їдав слот у cap-і `vi.mock` (5 на файл), не даючи жодного сигналу:
+// жоден тест тут не перевіряє виклики haptic.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 import { trackEvent } from "../observability/analytics";
 import { FirstActionHeroCard } from "./FirstActionSheet";
-import { FirstRunHintBanner } from "./FirstRunHintBanner";
+import {
+  FirstRunHintBanner,
+  type FirstRunHintBannerVariant,
+} from "./FirstRunHintBanner";
 import { GoalFirstScreen } from "./GoalFirstScreen";
 import { ModuleChecklist } from "./ModuleChecklist";
 import { ReEngagementCard } from "./ReEngagementCard";
@@ -202,6 +208,7 @@ function renderChecklist(ui: ReactNode) {
 describe("ModuleChecklist extended coverage", () => {
   beforeEach(() => {
     localStorage.clear();
+    checklistSignalsMock.value = {};
     vi.useFakeTimers();
   });
 
@@ -211,38 +218,41 @@ describe("ModuleChecklist extended coverage", () => {
     vi.useRealTimers();
   });
 
-  it("collapses, expands, fires step actions, and dismisses", () => {
+  it("collapses, expands, fires step actions (as navigation, not completion), and dismisses", () => {
     const onAction = vi.fn();
     renderChecklist(<ModuleChecklist moduleId="finyk" onAction={onAction} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Додати першу витрату" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    const addExpense = screen.getByRole("checkbox", {
+    // F3 (2026-09-11): a step row is a plain navigation `<button>` now —
+    // never `role="checkbox"` — so a tap forwards the action but does
+    // NOT check the step off (no signal proved it here).
+    const addExpense = screen.getByRole("button", {
       name: "Додати першу витрату",
     });
     fireEvent.click(addExpense);
 
     expect(onAction).toHaveBeenCalledWith("add_expense");
-    expect(addExpense).toHaveAttribute("aria-checked", "true");
+    expect(addExpense).not.toHaveAttribute("aria-checked");
+    expect(
+      JSON.parse(localStorage.getItem("finyk_checklist_v1") ?? "{}"),
+    ).toMatchObject({ completedSteps: [] });
 
     fireEvent.click(screen.getByRole("button", { name: "Сховати чекліст" }));
     expect(screen.queryByText("Фінік: перші кроки")).not.toBeInTheDocument();
   });
 
-  it("auto-hides shortly after the final step is completed", () => {
+  it("hides when every step is proven by real signals", () => {
+    checklistSignalsMock.value = {
+      create_habit: true,
+      complete_habit: true,
+      three_day_streak: true,
+    };
     renderChecklist(<ModuleChecklist moduleId="routine" />);
-
-    const steps = screen.getAllByRole("checkbox");
-    for (const step of steps) {
-      fireEvent.click(step);
-    }
-
-    expect(screen.getByText("Рутина: Перші кроки")).toBeInTheDocument();
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
 
     expect(screen.queryByText("Рутина: Перші кроки")).not.toBeInTheDocument();
   });
@@ -273,8 +283,20 @@ describe("FirstRunHintBanner", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  // Перелік варіантів тримає ТИП, а не літерал у тесті. Доти тут стояв
+  // захардкоджений `["finyk", "routine"]`, і коли варіант `routine` пішов
+  // разом із мертвим банером Рутини (PR-R11), розійшовся саме тест. Ключ
+  // `Record<…, true>` дає зворотний зв'язок в обидва боки: зайвий варіант
+  // не збереться, а НОВИЙ варіант без рядка тут — теж не збереться.
+  const EVERY_VARIANT: Record<FirstRunHintBannerVariant, true> = {
+    nutrition: true,
+    finyk: true,
+  };
+
   it("uses the default CTA label for every supported variant", () => {
-    for (const variant of ["finyk", "routine"] as const) {
+    for (const variant of Object.keys(
+      EVERY_VARIANT,
+    ) as FirstRunHintBannerVariant[]) {
       const { unmount } = render(
         <FirstRunHintBanner
           variant={variant}

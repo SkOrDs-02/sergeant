@@ -123,8 +123,10 @@ function accumulateByCategory(
 }
 
 /**
- * Сума витрат (у гривнях, округлена) по кошику однієї категорії або по
- * обʼєднанню кошиків мульти-категорійного ліміту.
+ * Сума витрат у гривнях по кошику однієї категорії або по обʼєднанню
+ * кошиків мульти-категорійного ліміту. Без округлення: відсоток ліміту,
+ * прогноз і «Перевищено на 307,50 ₴» рахуються з точної суми, округлює
+ * лише показ (канон finyk § 6.1, Р7 спеки аналітики v2).
  */
 export function calcLimitCategorySpent(
   txs: readonly SpendingTxLike[],
@@ -145,7 +147,7 @@ export function calcLimitCategorySpent(
   ).values()) {
     total += value;
   }
-  return Math.round(total);
+  return total;
 }
 
 /**
@@ -171,6 +173,6 @@ export function calcLimitCategoryBreakdown(
   );
   return ids.map((categoryId) => ({
     categoryId,
-    spent: Math.round(totals.get(categoryId) || 0),
+    spent: totals.get(categoryId) || 0,
   }));
 }

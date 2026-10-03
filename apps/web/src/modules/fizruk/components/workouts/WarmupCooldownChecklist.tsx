@@ -37,7 +37,7 @@ export function WarmupCooldownChecklist({
 }: WarmupCooldownChecklistProps) {
   if (!items) {
     return (
-      <div className="rounded-xl border border-line bg-panelHi/50 px-3 py-2 flex items-center justify-between gap-2 min-h-[44px]">
+      <div className="rounded-xl border border-line bg-panelHi px-3 py-2 flex items-center justify-between gap-2 min-h-[44px]">
         <span className="text-style-caption text-subtle">{title}</span>
         <button
           type="button"
@@ -55,7 +55,7 @@ export function WarmupCooldownChecklist({
 
   return (
     <details
-      className="rounded-xl border border-line bg-panelHi/50 px-3 py-2"
+      className="rounded-xl border border-line bg-panelHi px-3 py-2"
       open={doneCount < total}
     >
       <summary className="text-style-caption text-subtle cursor-pointer select-none flex items-center justify-between min-h-[28px]">
@@ -71,7 +71,7 @@ export function WarmupCooldownChecklist({
           <li key={item.id} className="flex items-center gap-2">
             <button
               type="button"
-              className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${item.done ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
+              className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${item.done ? "bg-success-strong border-success-strong text-white" : "border-control bg-bg"}`}
               onClick={() => onToggle(item.id)}
               aria-label={
                 item.done

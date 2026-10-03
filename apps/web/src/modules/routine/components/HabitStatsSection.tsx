@@ -3,8 +3,9 @@
  * Status: Active
  */
 import { useMemo } from "react";
-import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Card } from "@shared/components/ui/Card";
+import { Stat } from "@shared/components/ui/Stat";
 import type { HabitSkip } from "@sergeant/routine-domain";
 import {
   dateKeyMinusDays,
@@ -16,7 +17,6 @@ import {
   habitCompletionRate,
   maxStreakAllTime,
 } from "../lib/streaks";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import type { Habit } from "../lib/types";
 
 /**
@@ -96,7 +96,7 @@ export function HabitStatsSection({
   // клітинки, тобто видно, ЯКІ саме дні були паузою, а не лише скільки їх.
   // Тримати обидва означало б лишити рівно той патерн, який полотно й
   // заміняє — одне число плюс текстове виправдання під ним
-  // (`docs/05-design/design/anti-slop-strategy.md` §5 P3).
+  // (`docs/design/design/anti-slop-strategy.md` §5 P3).
   const bestStreak = useMemo(
     () => maxStreakAllTime(habit, completions),
     [habit, completions],
@@ -121,77 +121,70 @@ export function HabitStatsSection({
       <SectionHeading as="h3" size="xs" className="mb-2" variant="routine">
         Статистика
       </SectionHeading>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {!isOnce && (
-          <div className={C.statCard}>
-            <p className="text-style-headline text-text tabular-nums">
-              {currentStreak}
-            </p>
-            <p className="text-style-caption text-subtle mt-0.5">
-              {isFlex ? "Тижнів поспіль" : "Поточна серія"}
-            </p>
-          </div>
+      {/* P2-4 (анти-слоп аудит 2026-09-23, хвіст F1 з 2026-09-01): та сама
+          «однакові плитки» граматика, яку `RoutineStatsPanel` уже позбувся —
+          один hero-показник, решта рядком тексту без власного бокса. */}
+      <Card as="div" radius="lg">
+        {isOnce ? (
+          <Stat label="Разів виконано" value={totalDone} size="md" />
+        ) : (
+          <Stat
+            label={isFlex ? "Тижнів поспіль" : "Поточна серія"}
+            value={currentStreak}
+            size="md"
+          />
         )}
         {!isOnce && (
-          <div className={C.statCard}>
-            <p className="text-style-headline text-text tabular-nums">
+          <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 text-style-label text-muted">
+            <span>{isFlex ? "Макс тижнів" : "Найдовша серія"}</span>
+            <span className="font-semibold text-text tabular-nums">
               {bestStreak}
-            </p>
-            <p className="text-style-caption text-subtle mt-0.5">
-              {isFlex ? "Макс тижнів" : "Макс серія"}
-            </p>
-          </div>
-        )}
-        {isFlex && (
-          <div className={C.statCard}>
-            <p className="text-style-headline text-text tabular-nums">
-              {weeklyStreak.currentWeekWorkouts} з {weeklyStreak.targetPerWeek}
-            </p>
-            <p className="text-style-caption text-subtle mt-0.5">Цього тижня</p>
-          </div>
-        )}
-        <div className={C.statCard}>
-          <p className="text-style-headline text-text tabular-nums">
-            {totalDone}
+            </span>
+            {isFlex && weeklyStreak && (
+              <>
+                <span aria-hidden className="text-subtle">
+                  ·
+                </span>
+                <span>Цього тижня</span>
+                <span className="font-semibold text-text tabular-nums">
+                  {weeklyStreak.currentWeekWorkouts} з{" "}
+                  {weeklyStreak.targetPerWeek}
+                </span>
+              </>
+            )}
+            <span aria-hidden className="text-subtle">
+              ·
+            </span>
+            <span>Усього</span>
+            <span className="font-semibold text-text tabular-nums">
+              {totalDone}
+            </span>
           </p>
-          <p className="text-style-caption text-subtle mt-0.5">
-            Разів виконано
-          </p>
-        </div>
+        )}
         {!isOnce && (
-          <div className={C.statCard}>
-            <div className="flex items-baseline justify-center gap-1.5">
-              {pct7 !== null && (
-                <Measure
-                  value={pct7}
-                  unit="%"
-                  className="text-style-label text-text"
-                />
-              )}
-              {pct30 !== null && (
-                <Measure
-                  value={pct30}
-                  unit="%"
-                  className="text-style-caption text-muted"
-                />
-              )}
-              {pct90 !== null && (
-                <Measure
-                  value={pct90}
-                  unit="%"
-                  className="text-style-caption text-subtle"
-                />
-              )}
-              {pct7 === null && pct30 === null && pct90 === null && (
-                <span className="text-style-label text-muted">—</span>
-              )}
-            </div>
-            <p className="text-style-caption text-subtle mt-0.5">
-              % за 7 / 30 / 90 д
-            </p>
-          </div>
+          <p className="mt-1 flex flex-wrap items-baseline gap-1.5 text-style-caption text-subtle">
+            <span>% за 7 / 30 / 90 д</span>
+            {pct7 !== null && (
+              <span className="text-style-label text-text tabular-nums">
+                {pct7}
+              </span>
+            )}
+            {pct30 !== null && (
+              <span className="text-style-caption text-muted tabular-nums">
+                {pct30}
+              </span>
+            )}
+            {pct90 !== null && (
+              <span className="text-style-caption text-subtle tabular-nums">
+                {pct90}
+              </span>
+            )}
+            {pct7 === null && pct30 === null && pct90 === null && (
+              <span className="text-style-label text-muted">—</span>
+            )}
+          </p>
         )}
-      </div>
+      </Card>
     </section>
   );
 }

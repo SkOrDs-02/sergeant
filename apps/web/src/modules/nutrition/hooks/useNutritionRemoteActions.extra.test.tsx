@@ -23,6 +23,21 @@ vi.mock("@shared/api", async () => {
     },
   };
 });
+
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
+  };
+});
 vi.mock("../lib/recipeCache.js", () => ({
   writeRecipeCache: vi.fn(),
 }));
@@ -55,6 +70,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const setRecipes = vi.fn();
   const setRecipesRaw = vi.fn();
   const setRecipesTried = vi.fn();
@@ -71,6 +87,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setBusy,
     setErr,
     setStatusText,
+    setDenial,
     pantry: {
       effectiveItems: [{ name: "яйця", qty: 10, unit: "шт", notes: null }],
     },
@@ -221,6 +238,34 @@ describe("useNutritionRemoteActions — addMealFromPlan branches", () => {
     expect(handleAddMeal).toHaveBeenCalledWith(
       expect.objectContaining({ time: "", label: "Вечеря" }),
     );
+  });
+
+  it("повертає, КУДИ ліг запис — без цього «Скасувати» нічим зняти", () => {
+    // PR-N1 (залишок). Тост живе на рівні `NutritionApp`, а id генерує сам
+    // хук, тож без повернення `{id, dateKey}` сторінка не мала б чим
+    // скасувати запис — і цей шлях лишався б єдиним із трьох, що пише в
+    // журнал мовчки.
+    const handleAddMeal = vi.fn();
+    const { result } = makeHarness({
+      log: {
+        nutritionLog: {},
+        selectedDate: "2026-03-07",
+        handleAddMeal,
+      },
+    });
+
+    let out: { id: string; dateKey: string } | undefined;
+    act(() => {
+      out = result.current.addMealFromPlan({ name: "Каша", type: "breakfast" });
+    });
+
+    expect(out?.dateKey).toBe("2026-03-07");
+    // Саме той id, який пішов у журнал — інакше «Скасувати» зняло б чужий
+    // запис або нічого.
+    expect(handleAddMeal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: out?.id }),
+    );
+    expect(out?.id).toBeTruthy();
   });
 
   it("falls back to snack label when meal type is unknown", () => {

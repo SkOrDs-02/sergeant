@@ -23,11 +23,11 @@ const safeCapability: AssistantCapability = {
 const riskyCapability: AssistantCapability = {
   id: "hide_transaction",
   module: "finyk",
-  label: "Приховати транзакцію",
+  label: "Приховати операцію",
   icon: "eye-off",
-  description: "Прибрати транзакцію зі статистики (без видалення).",
-  examples: ["сховай транзакцію m_42 зі звіту"],
-  prompt: "Сховай транзакцію: ",
+  description: "Прибрати операцію зі статистики (без видалення).",
+  examples: ["сховай операцію m_42 зі звіту"],
+  prompt: "Сховай операцію: ",
   requiresInput: true,
   risky: true,
   requiresOnline: true,
@@ -95,5 +95,63 @@ describe("CapabilityDetailModal", () => {
 
     expect(onTryInChat).toHaveBeenCalledTimes(1);
     expect(onTryInChat).toHaveBeenCalledWith(safeCapability);
+  });
+
+  it("не обіцяє поле вводу тим можливостям, які надсилаються одразу", () => {
+    // Регресія WF-22 (аудит шуму 2026-09-16): підказка БЕЗУМОВНО казала
+    // «вставить заготовку у поле вводу, допиши деталі і натисни Enter»,
+    // хоча для `requiresInput: false` (14 із 81 можливості) запит іде
+    // одразу — тобто картка описувала не той шлях, яким піде людина.
+    const autoSend: AssistantCapability = {
+      ...safeCapability,
+      id: "daily_summary",
+      label: "Підсумок дня",
+      requiresInput: false,
+    };
+    render(
+      <CapabilityDetailModal
+        capability={autoSend}
+        onClose={vi.fn()}
+        onTryInChat={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/у поле вводу/)).not.toBeInTheDocument();
+    expect(screen.getByText(/одразу надішле запит/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Запустити в чаті" }),
+    ).toBeInTheDocument();
+  });
+
+  it("для руйнівної можливості без вводу згадує повторне питання перед зміною", () => {
+    // Обіцянку тримає інваріант у `toolRisk.test.ts`: кожна risky-можливість
+    // каталогу мусить упиратись у `requiresConfirmation`.
+    const riskyAutoSend: AssistantCapability = {
+      ...riskyCapability,
+      id: "clear_pantry",
+      label: "Очистити комору",
+      requiresInput: false,
+    };
+    render(
+      <CapabilityDetailModal
+        capability={riskyAutoSend}
+        onClose={vi.fn()}
+        onTryInChat={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/ще раз перепитає/)).toBeInTheDocument();
+  });
+
+  it("можливості з вводом і далі обіцяє заготовку в полі", () => {
+    render(
+      <CapabilityDetailModal
+        capability={safeCapability}
+        onClose={vi.fn()}
+        onTryInChat={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/у поле вводу/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Спробувати в чаті" }),
+    ).toBeInTheDocument();
   });
 });

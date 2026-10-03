@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,6 +28,7 @@ import type { MeResponse } from "@sergeant/api-client";
 import { getSqliteDb } from "../../../core/db/sqlite";
 import { migrateFinyk } from "../lib/clientMigrate";
 import { MonoNotConnectedError } from "../lib/monoBankErrors";
+import { failedCopy } from "@shared/i18n/failedCopy";
 import {
   writeMonoTransactions,
   writeMonoAccounts,
@@ -97,7 +98,7 @@ export function useMonobankWebhook({
 
   // === Jars ("банки") ===
   // Separate query from `accounts` (own endpoint/table, migration 088) —
-  // goal-progress auto-sync (docs/90-work/planning/specs/goal-progress-auto.md)
+  // goal-progress auto-sync (docs/work/specs/goal-progress-auto.md)
   // reads a linked jar's balance to compute a goal's saved amount.
   const jarsQuery = useQuery<MonoJarDto[]>({
     queryKey: finykKeys.monoWebhookJars,
@@ -309,7 +310,7 @@ export function useMonobankWebhook({
       lastSuccess: lastUpdated,
       lastError:
         syncStateData.status === "invalid"
-          ? "Webhook connection is invalid. Please reconnect."
+          ? "Підключення Monobank недійсне. Підключи банк ще раз."
           : "",
       accountsTotal: syncStateData.accountsCount,
       accountsOk:
@@ -321,6 +322,70 @@ export function useMonobankWebhook({
   const [historyTx, setHistoryTx] = useState<Transaction[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Backfill the SQLite mirror with a historical slice, same as the
+  // current-month effect above. Without it every other reader of the
+  // mirror (Hub Reports' "previous period" card, weekly digest, coach
+  // insights, the analytics trend) stays blind to every month except
+  // whichever one happened to be "current" when the current-month effect
+  // last ran (founder report: Звіти showed "Минулий: 10 ₴" for липень
+  // while Операції correctly listed thousands in spend).
+  const backfillMirror = useCallback(
+    async (normalized: Transaction[]) => {
+      if (!userId || normalized.length === 0) return;
+      try {
+        const handle = await getSqliteDb();
+        const client = handle.migrationClient();
+        await migrateFinyk(client);
+        await writeMonoTransactions(client, userId, normalized);
+        await refreshFinykMonoMirrorState(client, userId);
+        notifyFinykMonoMirrorRefresh();
+      } catch (err) {
+        logger.warn(
+          "[finyk.monoMirror] write historical transactions failed",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    },
+    [userId],
+  );
+
+  const fetchRangeRaw = useCallback(
+    async (from: string, to: string): Promise<Transaction[]> => {
+      const data = await queryClient.fetchQuery({
+        queryKey: finykKeys.monoWebhookTransactions(`${from}|${to}`),
+        queryFn: ({ signal }) =>
+          fetchAllMonoTransactions({ from, to }, { signal }),
+        staleTime: TX_STALE,
+        retry: authAwareRetry(2),
+      });
+      return (data ?? [])
+        .map(webhookTxToNormalized)
+        .sort((a, b) => (b.time ?? 0) - (a.time ?? 0));
+    },
+    [queryClient],
+  );
+
+  /**
+   * Довільний діапазон у дзеркало, без зміни `historyTx`: той стан
+   * належить місяцю, відкритому в Операціях, а тренд Аналітики тягне
+   * одразу 11 минулих місяців одним запитом.
+   */
+  const fetchRange = useCallback(
+    async (from: string, to: string): Promise<Transaction[]> => {
+      if (!isConnected) throw new MonoNotConnectedError();
+      const normalized = await fetchRangeRaw(from, to);
+      await backfillMirror(normalized);
+      return normalized;
+    },
+    [isConnected, fetchRangeRaw, backfillMirror],
+  );
+
+  // AI-DANGER: `historyTx` належить ЛИШЕ останньому запиту `fetchMonth`.
+  // Дрил-даун стартує два запити поспіль (місяць + порівняння), і пізня
+  // відповідь давнього місяця інакше перетирала б `historyTx` вибраного:
+  // фільтр Операцій за місяцем тоді відсікав усе.
+  const latestMonthRequestRef = useRef(0);
+
   const fetchMonth = useCallback(
     async (year: number, month: number): Promise<Transaction[]> => {
       // Surface "not connected" as a rejected promise so callers can
@@ -328,58 +393,27 @@ export function useMonobankWebhook({
       // Resolving to `[]` here would let consumers cache an empty array
       // for a month that simply hasn't been fetched yet.
       if (!isConnected) throw new MonoNotConnectedError();
+      const requestId = ++latestMonthRequestRef.current;
       setLoadingHistory(true);
       try {
         // Kyiv-anchored month boundaries (consistent with the current-month
         // logic above) so historical drill-down isn't off-by-hours for users
         // outside EET. `month` is 0-based; shift to 1-based for `kyivMonthRangeIso`.
         const { from, to } = kyivMonthRangeIso(year, month + 1);
-        const key = `${from}|${to}`;
-
-        const data = await queryClient.fetchQuery({
-          queryKey: finykKeys.monoWebhookTransactions(key),
-          queryFn: ({ signal }) =>
-            fetchAllMonoTransactions({ from, to }, { signal }),
-          staleTime: TX_STALE,
-          retry: authAwareRetry(2),
-        });
-
-        const normalized = (data ?? [])
-          .map(webhookTxToNormalized)
-          .sort((a, b) => (b.time ?? 0) - (a.time ?? 0));
-        setHistoryTx(normalized);
-
-        // Backfill the SQLite mirror with this historical slice, same as
-        // the current-month effect above. Without this, `fetchMonth` only
-        // ever populated the in-memory `historyTx` state consumed by the
-        // Operations page — any other reader of the mirror (Hub Reports'
-        // "previous period" card, weekly digest, coach insights) stayed
-        // blind to every month except whichever one happened to be "current"
-        // when the current-month effect last ran, silently under-reporting
-        // past months (founder report: Звіти showed "Минулий: 10 ₴" for
-        // липень while Операції correctly listed thousands in spend).
-        if (userId && normalized.length > 0) {
-          try {
-            const handle = await getSqliteDb();
-            const client = handle.migrationClient();
-            await migrateFinyk(client);
-            await writeMonoTransactions(client, userId, normalized);
-            await refreshFinykMonoMirrorState(client, userId);
-            notifyFinykMonoMirrorRefresh();
-          } catch (err) {
-            logger.warn(
-              "[finyk.monoMirror] write historical transactions failed",
-              err instanceof Error ? err.message : err,
-            );
-          }
+        const normalized = await fetchRangeRaw(from, to);
+        // Застарілу відповідь у дзеркало пишемо, але стан списку не чіпаємо.
+        if (requestId === latestMonthRequestRef.current) {
+          setHistoryTx(normalized);
         }
-
+        await backfillMirror(normalized);
         return normalized;
       } finally {
-        setLoadingHistory(false);
+        if (requestId === latestMonthRequestRef.current) {
+          setLoadingHistory(false);
+        }
       }
     },
-    [isConnected, queryClient, userId],
+    [isConnected, fetchRangeRaw, backfillMirror],
   );
 
   // === Connect ===
@@ -479,10 +513,8 @@ export function useMonobankWebhook({
           queryKey: finykKeys.monoBackfillProgress,
         }),
       ]);
-    } catch (e) {
-      const msg =
-        e instanceof Error && e.message ? e.message : "Помилка backfill";
-      setError(msg);
+    } catch {
+      setError(failedCopy("довантажити історію операцій"));
     }
   }, [queryClient]);
 
@@ -528,6 +560,7 @@ export function useMonobankWebhook({
     connect,
     refresh,
     fetchMonth,
+    fetchRange,
     historyTx,
     loadingHistory,
     clearTxCache,

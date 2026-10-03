@@ -1,8 +1,8 @@
 # Harness Engineering v1 — Rollout Summary
 
 > **Status:** Reference — rollout v1 завершено (2026-06-29), follow-up-и закрито 2026-07-20; harness `1.0.0` + skill-trigger evals + golden-task suite + freshness-janitor + playbook-routing evals. Відкритих пунктів немає — документ лишається як довідник по чотирьох компонентах harness-у.
-> **Last touched:** 2026-07-25 by @claude (Active → Reference: відкритих пунктів немає). **Next review:** 2027-11-22.
-> **Owner:** @SkOrDs-02
+> **Last touched:** 2026-09-17 by @claude (§ «Відкриті» закрито — snapshot уже в каталозі; версія → вказівник на `.agents/harness-versions.json`; прибрані workflow-и позначено). **Next review:** 2026-12-16.
+> **Owner:** @klas149
 > **Supersedes:** —
 > **Related:** `E:\Temp\kilo\harness-plan.md` (тимчасовий план, видаляється після merge цієї сторінки), NxCode "Harness-инженерия: Полное руководство" (посилання-плейсхолдер видалено — джерело офлайн) (2026-03-01)
 
@@ -42,27 +42,30 @@ fallback, `<50 KB` cap. Інтегровано в `sergeant-start-here` як §0
 "Dynamic context".
 
 **Harness Versioning (PR #75, ADR-0072).** Append-only registry
-`.kilo/harness-versions.json` (schemaVersion 1, поточна `4.0.0`), PR-time
+`.kilo/harness-versions.json` (schemaVersion 1; з 2026-08-28 живе в
+`.agents/harness-versions.json`, ADR-0088 — поточну версію читай у полі
+`current` там, число тут не дублюється), PR-time
 bumper `scripts/ci-bump-harness-version.mjs`
 з auto-detect `patch`/`minor`/`major` за diff від `origin/main`,
 weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
-`[main, experimental/loop-detect]`. Bench-step активний: `pnpm harness:bench`
-проти `docs/start/agents/harness-golden-tasks.json` (12 tasks).
+`[main, experimental/loop-detect]` (прибрано ADR-0082 §4; A/B-прогони ручні). Bench-step
+знято 2026-09-19 разом зі скриптом `scripts/harness-bench.mjs` <!-- removed -->: після прибирання
+workflow його не викликав ніхто, а ручного прогону не було жодного.
 
 **Entropy Janitors (PR #74, ADR-0070; retired ADR-0081).** Історичний workspace-wrapper і weekly issue workflow прибрано. Сигнали запускаються напряму через Knip, docs checks і ESLint `import/no-cycle`; доменний `pnpm check:dualwrite-residue` лишився standalone.
 
 ## Metrics
 
-| Метрика                       | Baseline (pre-rollout)  | Post-rollout (2026-06-29)                                                  | Джерело                                                                                  |
-| ----------------------------- | ----------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `apps/web` JS bundle (brotli) | ≤ 1.2 MB budget         | 1.14 MB (95%)                                                              | ADR-0071 §Rationale; perf budgets таблиця                                                |
-| `apps/web` CSS bundle         | ≤ 37 kB budget          | 34.2 kB (95%)                                                              | ADR-0071 §Rationale                                                                      |
-| `pnpm check` duration         | baseline TBD            | green (4 PR послідовно)                                                    | [`2026-06-30-harness-v1-summary-worklog.md`](./2026-06-30-harness-v1-summary-worklog.md) |
-| `pr-ledger/index.json` size   | 195 lines (~PR #3614)   | 202 lines (+4 harness PR)                                                  | `docs/governance/pr-ledger/index.json`                                                   |
-| New weekly CI jobs            | 0                       | 2 (janitors + harness-a-b)                                                 | `.github/workflows/entropy-janitors.yml`, `harness-a-b.yml`                              |
-| New repo-owned skills         | 20                      | 20 (no new skill files; tooling is in `tools/**`, not `.agents/skills/**`) | `docs/start/agents/agent-skills-catalog.md`                                              |
-| Hard Rules                    | 26                      | 26 (harness work = governance, not new rules)                              | `docs/governance/governance/hard-rules.json`                                             |
-| ADRs                          | 65 (0065 = last before) | 69 (0069–0072 = harness v1, перенумеровано 2026-07-01)                     | `docs/governance/adr/`                                                                   |
+| Метрика                       | Baseline (pre-rollout)  | Post-rollout (2026-06-29)                                                     | Джерело                                                                                  |
+| ----------------------------- | ----------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `apps/web` JS bundle (brotli) | ≤ 1.2 MB budget         | 1.14 MB (95%)                                                                 | ADR-0071 §Rationale; perf budgets таблиця                                                |
+| `apps/web` CSS bundle         | ≤ 37 kB budget          | 34.2 kB (95%)                                                                 | ADR-0071 §Rationale                                                                      |
+| `pnpm check` duration         | baseline TBD            | green (4 PR послідовно)                                                       | [`2026-06-30-harness-v1-summary-worklog.md`](./2026-06-30-harness-v1-summary-worklog.md) |
+| `pr-ledger/index.json` size   | 195 lines (~PR #3614)   | 202 lines (+4 harness PR)                                                     | `docs/governance/pr-ledger/index.json`                                                   |
+| New weekly CI jobs            | 0                       | 2 (janitors + harness-a-b) — обидва відтоді прибрано (ADR-0081 / ADR-0082 §4) | `.github/workflows/entropy-janitors.yml`, `harness-a-b.yml` (файлів більше немає)        |
+| New repo-owned skills         | 20                      | 20 (no new skill files; tooling is in `tools/**`, not `.agents/skills/**`)    | `docs/start/agents/agent-skills-catalog.md`                                              |
+| Hard Rules                    | 26                      | 26 (harness work = governance, not new rules)                                 | `docs/governance/governance/hard-rules.json`                                             |
+| ADRs                          | 65 (0065 = last before) | 69 (0069–0072 = harness v1, перенумеровано 2026-07-01)                        | `docs/governance/adr/`                                                                   |
 
 > Примітка: bundle numbers у ADR-0071 наводяться як pre-rollout baseline
 > з власних вимірювань автора. Окремих CI-вимірів не збирали — baseline
@@ -78,9 +81,10 @@ weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
 ### ✅ Закрито (harness follow-ups 2026-07-20)
 
 - **Golden-task suite для A/B harness benchmark.** `docs/start/agents/harness-golden-tasks.json`
-  (schemaVersion 1, 12 tasks) + `scripts/harness-bench.mjs` + `pnpm harness:bench`.
-  `.github/workflows/harness-a-b.yml` bench-step тепер активний (без `if: false`),
-  weekly schedule Sun 00:00 UTC додано. Тести: `scripts/__tests__/harness-bench.test.mjs`.
+  (schemaVersion 1, 12 tasks) + `scripts/harness-bench.mjs` <!-- removed --> + `pnpm harness:bench`.
+  `.github/workflows/harness-a-b.yml` bench-step тоді став активний (без `if: false`),
+  weekly schedule Sun 00:00 UTC додано. Workflow прибрано ADR-0082 §4, а скрипт,
+  npm-аліас і його тест — 2026-09-19: ручний режим, який ніхто не запускав.
 - **`lint:harness-version-freshness` janitor.** `scripts/check-harness-version-freshness.mjs`
   - `pnpm lint:harness-version-freshness` wired в aggregate `pnpm lint`.
     Перевіряє: schemaVersion=1, current у versions map, releasedAt присутній,
@@ -91,12 +95,14 @@ weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
   - `pnpm eval:playbooks` wired в aggregate `pnpm lint` (поруч з `lint:skills`).
     Тести: `scripts/__tests__/eval-playbook-routing.test.mjs`.
 
-### Відкриті
+### ✅ Закрито (звірка 2026-09-17)
 
 - **Snapshot skill entry в `agent-skills-catalog.md`.** Snapshot не
   додано як окремий skill (це CLI-скрипт, а не skill file), але
   catalog посилається на нього з `sergeant-start-here` — формалізувати
-  це посилання у catalog table.
+  це посилання у catalog table. ✅ закрито — у каталозі є рядок
+  `_tooling:_ tools/agent-snapshot/snapshot.mjs`; відкритих пунктів у
+  документі немає, що й каже шапка.
 
 ## References
 
@@ -121,7 +127,7 @@ weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
   - [scripts/ci-bump-harness-version.mjs](../../../../scripts/ci-bump-harness-version.mjs) — bumper
 - **Workflows:**
   - `.github/workflows/ai-pr-checklist.yml` — прибрано ([ADR-0082](../../../governance/adr/0082-private-storage-repo-posture.md))
-  - `.github/workflows/harness-a-b.yml` — weekly Sun 00:00 UTC
+  - `.github/workflows/harness-a-b.yml` — прибрано ([ADR-0082](../../../governance/adr/0082-private-storage-repo-posture.md) §4; історично weekly Sun 00:00 UTC)
 - **Skill integration:** §0.1 "Dynamic context" у
   [`.agents/skills/sergeant-start-here/SKILL.md`](../../../../.agents/skills/sergeant-start-here/SKILL.md)
 - **План-тимчасовий:** `E:\Temp\kilo\harness-plan.md` — видаляється

@@ -84,8 +84,48 @@ describe("useFinykDualWriteSync", () => {
     expect(trigger).not.toHaveBeenCalled();
   });
 
+  it("не пише зміну, поки SQLite-кеш не прогрітий (правила мерчантів ще не завантажені)", () => {
+    // Регресія (CodeRabbit, #1285): до прогріву `merchantRules` у слотах —
+    // `[]`, і тумблер `showBalance` у цей момент давав `prefs-upsert`, що
+    // стирав збережені правила.
+    isRegistered.mockReturnValue(true);
+    const cold = { showBalance: true, storageReady: false };
+    const { rerender } = renderHook(({ s }) => useFinykDualWriteSync(s), {
+      initialProps: { s: cold as unknown as FinykStorageSlots },
+    });
+    rerender({
+      s: { ...cold, showBalance: false } as unknown as FinykStorageSlots,
+    });
+    expect(trigger).not.toHaveBeenCalled();
+
+    // Після прогріву (overlay змінює read-tick) — нова база без пушу,
+    // а наступна справжня локальна зміна пишеться як звичайно.
+    readTick.mockReturnValue(1);
+    extract.mockReturnValueOnce({ marker: "hydrated" });
+    rerender({
+      s: {
+        showBalance: true,
+        storageReady: true,
+      } as unknown as FinykStorageSlots,
+    });
+    expect(trigger).not.toHaveBeenCalled();
+
+    extract.mockReturnValueOnce({ marker: "local-edit" });
+    rerender({
+      s: {
+        showBalance: false,
+        storageReady: true,
+      } as unknown as FinykStorageSlots,
+    });
+    expect(trigger).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveBeenCalledWith(
+      { marker: "hydrated" },
+      { marker: "local-edit" },
+    );
+  });
+
   it("SYNC-3: does not re-push a change that arrived via a SQLite cache-overlay tick (pull echo)", () => {
-    // Regression: `docs/90-work/audits/2026-09-01-product-audit/findings.md`
+    // Regression: `docs/work/specs/audits/2026-09-01-product-audit/findings.md`
     // § SYNC-3. `useFinykStorageSlots` overlays every slot from
     // `getCachedFinykSqliteState()` whenever the read-tick bumps — both
     // for a genuine remote pull AND for the echo of this device's own

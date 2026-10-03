@@ -181,7 +181,7 @@ describe("Transactions page (branches)", () => {
     renderTransactions({
       mono: { realTx: [SAMPLE_TX] },
     });
-    expect(screen.queryByText("Обери транзакції")).toBeNull();
+    expect(screen.queryByText("Обери операції")).toBeNull();
   });
 
   it("shows the empty-selection hint inline in the header after entering select mode", () => {
@@ -189,7 +189,7 @@ describe("Transactions page (branches)", () => {
       mono: { realTx: [SAMPLE_TX] },
     });
     fireEvent.click(screen.getByRole("button", { name: "Режим вибору" }));
-    expect(screen.getByText("Обери транзакції")).toBeInTheDocument();
+    expect(screen.getByText("Обери операції")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Скасувати" }),
     ).toBeInTheDocument();
@@ -258,8 +258,10 @@ describe("Transactions page (branches)", () => {
     renderTransactions({
       mono: { realTx: [SAMPLE_TX] },
       storage: {
+        // Підпис навмисно не «Тварини»: з 2026-10-01 це вбудована категорія, і
+        // кнопок з таким підписом у списку було б дві.
         customCategories: [
-          { id: "pets", label: "Тварини", emoji: "🐾" } as never,
+          { id: "cus_dogs", label: "Собаки та коти", emoji: "🐾" } as never,
         ],
       },
     });
@@ -269,7 +271,7 @@ describe("Transactions page (branches)", () => {
     expect(
       screen.getByRole("dialog", { name: "Вибрати категорію" }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Тварини/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Собаки та коти/ }));
     expect(
       screen.queryByRole("dialog", { name: "Вибрати категорію" }),
     ).toBeNull();

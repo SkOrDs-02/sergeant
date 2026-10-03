@@ -64,8 +64,8 @@ const GOAL_WATER_ML_MAX = 10_000;
  * всіх екранів. Тому Hard Rule #3 (трійка server ↔ api-client ↔ contract)
  * тут не спрацьовує: форма жодної API-відповіді не змінилась.
  *
- * Канон: docs/01-product/model/nutrition.md §4 / §12
- * Аудит: docs/90-work/audits/product-knowledge-nutrition.md § E-1 / H2
+ * Канон: docs/product/modules/nutrition.md §4 / §12
+ * Аудит: docs/work/specs/audits/product-knowledge-nutrition.md § E-1 / H2
  */
 
 /** Закритий enum `origin`. Дзеркалить CHECK у міграції 087. */
@@ -198,7 +198,7 @@ export async function applyNutritionGoalPeriods(
     return { status: "rejected", reason: "invalid_tz_offset_min" };
   }
 
-  await client.query(
+  const res = await client.query(
     `INSERT INTO nutrition_goal_periods
        (id, user_id, effective_from, kcal, protein_g, fat_g, carbs_g,
         water_ml, origin, tz_offset_min, created_at, updated_at, deleted_at)
@@ -220,5 +220,24 @@ export async function applyNutritionGoalPeriods(
       deletedAt ?? null,
     ],
   );
+
+  // `DO NOTHING` мовчазний за визначенням і сам по собі не розрізняє «мій
+  // повтор» від «чужий рядок із таким самим id». Перевірка `row.user_id`
+  // вище цього не закриває: вона звіряє payload із сесією, а не з тим, ХТО
+  // вже володіє рядком у таблиці. `id` тут TEXT і будується клієнтом
+  // детерміновано, тобто вгадуваний — тож підібраний id давав no-op і
+  // чесний `applied`: нова ціль КБЖВ мовчки не доїжджала, а виглядало це
+  // як успіх. Той самий guard, що в `routine/applyCompletionEvents.ts`.
+  if (res.rowCount === 0) {
+    const existing = await client.query<{ user_id: string }>(
+      `SELECT user_id FROM nutrition_goal_periods WHERE id = $1`,
+      [id],
+    );
+    // Рядок зник між INSERT-ом і SELECT-ом — таблиця append-only, тож
+    // штатно це неможливо; трактуємо як не-наш рядок, а не як успіх.
+    if (existing.rows.length === 0 || existing.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+  }
   return { status: "applied" };
 }

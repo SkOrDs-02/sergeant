@@ -11,14 +11,16 @@ import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import { Card } from "@shared/components/ui/Card";
 import { MealStrip, type MealStripSegment } from "./MealStrip";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import {
   MEAL_META,
   MEAL_ORDER,
   WEEK_KCAL_OVER_TOLERANCE,
+  countKcalStreakDays,
   deviceWeekStartKey,
+  resolveKcalGoalsForDays,
   todayISODate,
+  type MealTypeId,
   type NutritionLog,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
@@ -29,12 +31,16 @@ import {
   getDaySummary,
   getMacrosForDateRange,
 } from "../lib/nutritionStorage";
-import { mealTypeKcalForDay } from "../lib/nutritionStats";
+import { mealsByTypeForDay, mealTypeKcalForDay } from "../lib/nutritionStats";
 import { nextMealLabel } from "../lib/nextMealLabel";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
 import { useToast } from "@shared/hooks/useToast";
+import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneCelebration";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
+import { useAdaptiveNutritionGoal } from "../hooks/useAdaptiveNutritionGoal";
+import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 
 // ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
 // тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
@@ -47,9 +53,10 @@ function todayISO(): string {
 interface NutritionDashboardProps {
   log: NutritionLog;
   prefs: NutritionPrefs;
-  onGoToLog?: (() => void) | undefined;
+  onGoToLog?: ((dateIso?: string) => void) | undefined;
   onGoToDailyPlan?: (() => void) | undefined;
-  onAddMeal?: (() => void) | undefined;
+  /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
+  onPickMeal: (type: MealTypeId) => void;
 }
 
 export function NutritionDashboard({
@@ -57,9 +64,11 @@ export function NutritionDashboard({
   prefs,
   onGoToLog,
   onGoToDailyPlan,
-  onAddMeal,
+  onPickMeal,
 }: NutritionDashboardProps) {
   const today = todayISO();
+  const goalPeriods = useNutritionGoalPeriods();
+  const adaptiveGoal = useAdaptiveNutritionGoal(log, prefs);
 
   const macros = useMemo(() => getDayMacros(log, today), [log, today]);
   const summary = useMemo(() => getDaySummary(log, today), [log, today]);
@@ -74,24 +83,31 @@ export function NutritionDashboard({
     return getMacrosForDateRange(log, weekEnd, 7);
   }, [log]);
 
-  // Ціль на кожен день тижня. Поки джерело — `prefs`, тож значення однакові
-  // й графік виглядає рівно як раніше; сходинка зʼявиться на стадії 3, коли
-  // сюди приїде `resolveEffectiveGoalForRange` (спека
-  // `nutrition-goal-journal-cutover.md`, PR-3). Форма вже правильна, тому
-  // той PR міняє лише цей `useMemo`, а не компонент.
+  // Поденна ціль із append-only журналу: зміна норми сьогодні не
+  // перефарбовує попередні стовпчики, а лінія стає східчастою.
   const weekGoals = useMemo(
-    () => weekRows.map(() => prefs.dailyTargetKcal || null),
-    [weekRows, prefs.dailyTargetKcal],
+    () =>
+      resolveKcalGoalsForDays(
+        goalPeriods,
+        weekRows.map((row) => row.date),
+      ),
+    [goalPeriods, weekRows],
   );
 
   const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
 
   // ponytail: honesty threshold for "incomplete day" (canon §5.2 — a
   // partial log must not read as a deficit). The canon's own example is
-  // "1 of 4 meals", so <3 logged meals covers both an empty day and a
+  // "1 of 4 meals", so <3 logged meal TYPES covers both an empty day and a
   // one-meal day without inventing a per-user "expected meal count"
-  // setting; 3+ meals reads as a deliberately completed log.
-  const isIncompleteDay = summary.mealCount < 3;
+  // setting; 3+ meal types reads as a deliberately completed log.
+  //
+  // `loggedMealTypesCount`, not `mealCount` (nutrition audit PR-N2,
+  // 2026-09-13): a single photo split into "суп + хліб + салат" writes 3
+  // journal ROWS of the same meal type, and `mealCount` (row count) read
+  // that as "3 прийоми їжі" — clearing the incomplete-day marker for a day
+  // that only has dinner logged.
+  const isIncompleteDay = summary.loggedMealTypesCount < 3;
 
   // Nutrition audit E-5 / founder decision 2026-08-04: share is calorie-
   // weighted (see `getDaySummary`), threshold is strictly ">50%" — exactly
@@ -111,14 +127,22 @@ export function NutritionDashboard({
     () => mealTypeKcalForDay(log, today),
     [log, today],
   );
+  // Кількість записів поруч із калоріями: саме вона вирішує, порожній
+  // сегмент чи ні (див. `MealStripSegment.count`), бо запис без макросів
+  // існує, але дає нуль ккал.
+  const mealsByType = useMemo(
+    () => mealsByTypeForDay(log, today),
+    [log, today],
+  );
   const segments: MealStripSegment[] = useMemo(
     () =>
       MEAL_ORDER.map((type) => ({
         type,
         label: MEAL_META[type].label,
         kcal: kcalByType[type],
+        count: mealsByType[type].length,
       })),
-    [kcalByType],
+    [kcalByType, mealsByType],
   );
   const remainingLabel = useMemo(() => nextMealLabel(kcalByType), [kcalByType]);
 
@@ -144,7 +168,7 @@ export function NutritionDashboard({
 
     toastFiredRef.current = true;
     safeWriteLS(LS_KEY, today);
-    toast.success("Денну норму виконано");
+    toast.success("Денну ціль виконано");
   }, [kcalConsumed, kcalGoal, hasGoal, today, toast]);
 
   const protein = {
@@ -164,7 +188,27 @@ export function NutritionDashboard({
   // Both hooks return null when their condition is not met; InsightCard
   // additionally checks the dismissal LS key so dismissed cards stay gone.
   const proteinLowInsight = useProteinLowInsight(log, prefs);
-  const streakInsight = useStreakSevenDaysInsight(log, prefs);
+  const streakInsight = useStreakSevenDaysInsight(log, goalPeriods);
+
+  // Віха серії днів у нормі калорій — тиха плашка (O1, рішення власника
+  // 2026-09-13: святкуємо в Рутині ТА Їжі).
+  //
+  // Лічильник довелось написати: `useStreakSevenDaysInsight` вище — це
+  // перевірка РІВНО СЕМИ днів, булева, тож порогів 30 і 100 у ній немає на
+  // чому рахувати. `countKcalStreakDays` дає довжину, і 7-денний інсайт
+  // лишається окремою поверхнею зі своїм CTA — дублювання тут немає:
+  // інсайт — картка з пропозицією плану, плашка — підтвердження віхи.
+  // Дашборд монтується лише після бута читання (гейт у
+  // `NutritionStartPage`), тож нуль холодного старту сюди не доходить.
+  const kcalStreak = useMemo(
+    () => countKcalStreakDays(log, goalPeriods, todayISODate()),
+    [log, goalPeriods],
+  );
+  useStreakMilestoneCelebration(
+    "nutrition",
+    kcalStreak,
+    messages.nutrition.streakMilestone.toast,
+  );
 
   // Cap at 2 simultaneous insights. Priority: streak > protein-low so the
   // positive signal surfaces first when both conditions fire together.
@@ -174,7 +218,13 @@ export function NutritionDashboard({
   const askAiDisabled = useAskAiQuotaExhausted();
 
   return (
-    <div className="grid min-w-0 gap-3" data-testid="nutrition-dashboard">
+    <div
+      className="grid min-w-0 gap-3 pb-[calc(10rem+env(safe-area-inset-bottom,0px))]"
+      data-testid="nutrition-dashboard"
+    >
+      {/* The start screen has a fixed add-meal FAB 96px above the bottom nav.
+          Keep the last card scrollable past its 56px hit area instead of
+          leaving water controls under the button on a phone viewport. */}
       {/* ── Hero card ── */}
       {/* `min-w-0`: grid-item за дефолтом має `min-width:auto`, тобто його
           мінімальна ширина = min-content вмісту. Досить одного широкого
@@ -192,8 +242,8 @@ export function NutritionDashboard({
             <div>
               <div className="text-style-label text-hero-ink">Сьогодні</div>
               <div className="text-style-caption text-hero-ink">
-                {summary.mealCount}{" "}
-                {pluralUa(summary.mealCount, {
+                {summary.loggedMealTypesCount}{" "}
+                {pluralUa(summary.loggedMealTypesCount, {
                   one: "прийом",
                   few: "прийоми",
                   many: "прийомів",
@@ -201,17 +251,6 @@ export function NutritionDashboard({
                 їжі
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onAddMeal}
-              aria-label="Додати прийом їжі"
-              className={cn(
-                "text-style-label shrink-0 px-4 h-11 min-w-[44px] rounded-xl",
-                "bg-nutrition-strong text-white hover:bg-nutrition-hover transition-colors",
-              )}
-            >
-              + Додати
-            </button>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -224,6 +263,7 @@ export function NutritionDashboard({
               </p>
             )}
             <MealStrip
+              onPickMeal={onPickMeal}
               segments={segments}
               goalKcal={hasGoal ? kcalGoal : null}
               remainingLabel={remainingLabel}
@@ -250,13 +290,15 @@ export function NutritionDashboard({
               onSetGoal={onGoToDailyPlan ?? onGoToLog}
               incompleteNote={
                 hasGoal && isIncompleteDay
-                  ? `Записано ${summary.mealCount} із 4`
+                  ? `Записано ${summary.loggedMealTypesCount} із ${MEAL_ORDER.length}`
                   : undefined
               }
             />
           </div>
         </div>
       </Card>
+
+      <AdaptiveGoalCard state={adaptiveGoal} />
 
       {/* ── Insight cards (Phase 5d) — below hero, above weekly mini-bar ── */}
       {activeInsights.map((insight) => (

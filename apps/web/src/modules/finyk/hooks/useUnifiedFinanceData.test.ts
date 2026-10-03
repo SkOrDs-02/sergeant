@@ -161,4 +161,28 @@ describe("useUnifiedFinanceData", () => {
       newer.getTime(),
     );
   });
+
+  // Regression PR-F7 (аудит 2026-09-13): гілки error/partial/loading читали
+  // обидва провайдери, а успіх — лише Monobank, тож у людини з самим Приватом
+  // об'єднаний статус лишався моновським `idle`.
+  it("lifts a privat-only success into the combined status", () => {
+    const mono = makeMono({ syncState: { status: "idle" } });
+    const privat = makePrivat({
+      connected: true,
+      syncState: { status: "success" },
+    });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.syncState.status).toBe("success");
+  });
+
+  it("keeps idle when neither provider has synced", () => {
+    const mono = makeMono({ syncState: { status: "idle" } });
+    const privat = makePrivat({ connected: true });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.syncState.status).toBe("idle");
+  });
 });

@@ -13,7 +13,7 @@ interface NetworthSectionProps {
  * Секція графіка нетворсу. Показує графік якщо історія містить ≥2 точки,
  * інакше — compact `EmptyState` (tier 2) з module-tuned-акцентом замість
  * сирого `<p>` у dashed-картці (доки даних мало, surface усе ще треба
- * представити як «card-section без items», `docs/design/empty-states.md`).
+ * представити як «card-section без items», `docs/design/design/empty-states.md`).
  */
 const NetworthSectionImpl = function NetworthSection({
   networthHistory,
@@ -51,7 +51,7 @@ const NetworthSectionImpl = function NetworthSection({
       <EmptyState
         compact
         module="finyk"
-        icon={<Icon name="trending-up" size={20} />}
+        icon={<Icon name="trending-up" size="lg" />}
         title="Поки що мало записів балансу"
         description="Графік капіталу зʼявиться після кількох змін балансу."
       />

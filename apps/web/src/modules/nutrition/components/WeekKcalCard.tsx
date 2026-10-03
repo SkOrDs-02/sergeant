@@ -57,7 +57,17 @@ export interface WeekKcalCardProps {
    */
   goalsByDay: readonly (number | null)[];
   todayIso: string;
-  onGoToLog?: (() => void) | undefined;
+  /**
+   * Відкриває журнал. Аргумент — день, на якому його відкрити; без
+   * аргументу журнал лишається на своєму поточному дні (сьогодні).
+   *
+   * AI-CONTEXT: картка має власний обраний день (тап по стовпчику), і до
+   * фіксу PR-N5 (аудит 2026-09-13) посилання «Журнал» його ігнорувало:
+   * людина тапала середу, читала її калорії в підрядку, тиснула «Журнал» —
+   * і потрапляла в сьогодні. Обраний день тут не косметика підрядка, а
+   * намір; посилання його передає.
+   */
+  onGoToLog?: ((dateIso?: string) => void) | undefined;
 }
 
 export function WeekKcalCard({
@@ -104,11 +114,11 @@ export function WeekKcalCard({
         <div className="text-style-label text-text">{t.heading}</div>
         <button
           type="button"
-          onClick={onGoToLog}
-          className="inline-flex items-center gap-0.5 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
+          onClick={() => onGoToLog?.(selectedDate ?? undefined)}
+          className="inline-flex items-center gap-0.5 rounded-md text-style-caption text-nutrition-strong dark:text-nutrition hover:underline focus-ring"
         >
           {t.logLink}
-          <Icon name="chevron-right" size={14} aria-hidden />
+          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       </div>
 
@@ -152,7 +162,7 @@ export function WeekKcalCard({
                   : `${label}, ${fmtKcal(bar.kcal)} ${t.kcalUnit}`
               }
               onClick={() => setSelectedDate(isSelected ? null : bar.date)}
-              className="flex-1 flex flex-col items-center gap-0.5 appearance-none bg-transparent border-0 p-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
+              className="flex-1 flex flex-col items-center gap-0.5 appearance-none bg-transparent border-0 p-0 cursor-pointer rounded-md focus-ring"
             >
               <div
                 className="relative w-full flex justify-center items-end"

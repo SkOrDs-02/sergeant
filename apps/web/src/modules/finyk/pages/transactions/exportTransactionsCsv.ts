@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-09-01
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * CSV-експорт операцій Фініка — «забрати свої дані у таблицю».
  *
@@ -30,7 +30,7 @@
  * - **Сума — у гривнях із крапкою, з копійками.** У домені гроші живуть
  *   копійками як `number`; ділення на 100 робиться один раз тут. Два знаки
  *   після коми — не замовчування, а правило показу з
- *   [канону §6.1](../../../../../../docs/01-product/model/finyk.md): копійки
+ *   [канону §6.1](../../../../../../docs/product/modules/finyk.md): копійки
  *   лишаються там, «що людина звіряє з чеком чи випискою», і цілі гривні —
  *   лише в аналітиці. Експорт операцій — перший регістр. Крапка, а не кома,
  *   бо роздільник полів — кома: число з комою довелося б брати в лапки, і
@@ -47,8 +47,15 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
-import { exportToCSV, type ExportColumn } from "@shared/lib/ui/export";
+import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
+import {
+  exportToCSV,
+  type ExportColumn,
+  type FileDeliveryResult,
+} from "@shared/lib/ui/export";
 import { dayKeyFromTx } from "./transactionsLib";
+import { formatTimeHm, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
+import { isExpenseDayPlaceholder } from "../../components/manualExpenseForm";
 
 /** Резолвер ефективної категорії — з `useTransactionFilters`. */
 export type EffectiveCategoryResolver = (tx: Transaction) => Category;
@@ -72,15 +79,20 @@ const COLUMNS: ExportColumn<CsvRow>[] = [
   { key: "category", header: "Категорія" },
 ];
 
-/** `HH:MM` київського часу; порожньо, якщо мітки немає. */
-function kyivTimeLabel(ts: number): string {
-  if (!Number.isFinite(ts) || ts <= 0) return "";
+/**
+ * `HH:MM` київського часу запису; порожньо, якщо запис несе лише день.
+ *
+ * `tx.time` тут у секундах, як усюди в домені (`dayKeyFromTx` множить на
+ * 1000). Сліпий замір 2026-09-24 бачив «20:17» у кожному рядку: секунди
+ * читались як мілісекунди, і кожен запис падав у січень 1970. Ручний запис
+ * із минулою датою має лише плейсхолдер дня, тож часу не вигадуємо (Р6).
+ */
+function kyivTimeLabel(ts: number, manual: boolean): string {
+  const ms = txTimeMs(ts);
+  if (!Number.isFinite(ms) || ms <= 0) return "";
+  if (manual && isExpenseDayPlaceholder(ms)) return "";
   try {
-    return new Intl.DateTimeFormat("uk-UA", {
-      timeZone: "Europe/Kyiv",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(ts));
+    return formatTimeHm(new Date(ms), { timeZone: KYIV_TIME_ZONE });
   } catch {
     return "";
   }
@@ -101,7 +113,7 @@ export function toCsvRows(
 ): CsvRow[] {
   return transactions.map((tx) => ({
     date: dayKeyFromTx(tx.time),
-    time: kyivTimeLabel(tx.time),
+    time: kyivTimeLabel(tx.time, Boolean(tx.manual)),
     description: typeof tx.description === "string" ? tx.description : "",
     amount: uahAmount(tx.amount),
     kind: tx.amount > 0 ? "дохід" : "витрата",
@@ -120,13 +132,20 @@ export function csvFilename(monthKey?: string | null): string {
   return monthKey ? `finyk-${monthKey}.csv` : "finyk.csv";
 }
 
-/** Зібрати й віддати файл. Повертає кількість вивантажених рядків. */
-export function exportTransactionsCsv(
+/**
+ * Зібрати й віддати файл. Повертає кількість рядків і те, ЧИМ закінчилась
+ * віддача: «Вивантажено…» годиться казати лише після `shared`/`downloaded`,
+ * а `cancelled` (людина закрила аркуш «Поділитись») — не успіх.
+ *
+ * Викликай із обробника кліку: файл збирається синхронно, і саме тому
+ * `navigator.share` ще в межах активації жесту (див. `saveStringAsFile`).
+ */
+export async function exportTransactionsCsv(
   transactions: readonly Transaction[],
   getEffectiveCat: EffectiveCategoryResolver,
   monthKey?: string | null,
-): number {
+): Promise<{ count: number; result: FileDeliveryResult }> {
   const rows = toCsvRows(transactions, getEffectiveCat);
-  exportToCSV(rows, COLUMNS, csvFilename(monthKey));
-  return rows.length;
+  const result = await exportToCSV(rows, COLUMNS, csvFilename(monthKey));
+  return { count: rows.length, result };
 }

@@ -21,6 +21,7 @@ type State = ReturnType<typeof useAssetsState>;
 export function AssetsTable({ state }: { state: State }) {
   const {
     networth,
+    nonUahManualAssetCount,
     totalAssets,
     totalDebt,
     showBalance,
@@ -40,6 +41,7 @@ export function AssetsTable({ state }: { state: State }) {
         totalAssets={totalAssets}
         totalDebt={totalDebt}
         showBalance={showBalance}
+        nonUahManualAssetCount={nonUahManualAssetCount}
       />
 
       <FinykStatsStrip
@@ -68,7 +70,7 @@ export function AssetsTable({ state }: { state: State }) {
               id: "asset",
               label: "Актив",
               description: "Готівка, депозит, інвестиції, авто",
-              icon: <Icon name="wallet" size={16} aria-hidden />,
+              icon: <Icon name="wallet" size="md" aria-hidden />,
               onSelect: openAssetForm,
             },
             {
@@ -76,7 +78,7 @@ export function AssetsTable({ state }: { state: State }) {
               id: "receivable",
               label: "Мені винні",
               description: "Борг, який мають повернути тобі",
-              icon: <Icon name="hand-coins" size={16} aria-hidden />,
+              icon: <Icon name="hand-coins" size="md" aria-hidden />,
               onSelect: openReceivableForm,
             },
           ]}

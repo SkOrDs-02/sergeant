@@ -2,16 +2,15 @@ import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 import {
+  applyIfNewer,
   assertRowUserId,
   guardUuidPkApply,
-  guardUserPkLww,
   queryOne,
   type ExistingUuidRow,
   parseOptionalDate,
   readBoolField,
   readJsonbField,
   softDeleteById,
-  toNonNegativeInt,
 } from "../applySync-helpers.js";
 
 export async function applyRoutineHabits(
@@ -120,7 +119,8 @@ export async function applyRoutineHabits(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE routine_habits
          SET name = $1, emoji = $2, tag_ids = $3::jsonb, category_id = $4,
              archived = $5, paused = $6, recurrence = $7,
@@ -129,7 +129,7 @@ export async function applyRoutineHabits(
              pause_intervals = $13::jsonb,
              weekly_target_history = $14::jsonb,
              updated_at = $15, deleted_at = $16
-       WHERE id = $17 AND user_id = $18`,
+       WHERE id = $17 AND user_id = $18 AND updated_at < $15`,
       [
         name,
         emoji,
@@ -210,10 +210,11 @@ export async function applyUuidNameScopeTable(
         ],
       );
     } else {
-      await client.query(
+      return applyIfNewer(
+        client,
         `UPDATE routine_categories
            SET name = $1, emoji = $2, updated_at = $3, deleted_at = $4
-         WHERE id = $5 AND user_id = $6`,
+         WHERE id = $5 AND user_id = $6 AND updated_at < $3`,
         [name, emoji, clientTs, deletedAt ?? null, id, userId],
       );
     }
@@ -235,10 +236,11 @@ export async function applyUuidNameScopeTable(
         ],
       );
     } else {
-      await client.query(
+      return applyIfNewer(
+        client,
         `UPDATE routine_tags
            SET name = $1, scope = $2, updated_at = $3, deleted_at = $4
-         WHERE id = $5 AND user_id = $6`,
+         WHERE id = $5 AND user_id = $6 AND updated_at < $3`,
         [name, scope, clientTs, deletedAt ?? null, id, userId],
       );
     }
@@ -259,58 +261,16 @@ export async function applyRoutinePrefs(
   const userReject = assertRowUserId(row, userId);
   if (userReject) return userReject;
 
-  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
-    client,
-    `SELECT user_id, updated_at FROM routine_prefs WHERE user_id = $1`,
-    [userId],
-  );
-  const guard = guardUserPkLww(existing, clientTs);
-  if (guard) return guard;
-
   const dataJson = readJsonbField(row, "data", "data_json");
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO routine_prefs (user_id, data, updated_at)
      VALUES ($1, $2::jsonb, $3)
      ON CONFLICT (user_id) DO UPDATE
-       SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+       SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+       WHERE routine_prefs.updated_at < EXCLUDED.updated_at`,
     [userId, dataJson, clientTs],
   );
-  return { status: "applied" };
-}
-
-export async function applyRoutinePushups(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  if (op.op === "delete") {
-    return { status: "rejected", reason: "delete_not_supported" };
-  }
-  const row = op.row;
-  const userReject = assertRowUserId(row, userId);
-  if (userReject) return userReject;
-
-  const dateKey = typeof row["date_key"] === "string" ? row["date_key"] : null;
-  if (!dateKey) return { status: "rejected", reason: "missing_date_key" };
-
-  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
-    client,
-    `SELECT user_id, updated_at FROM routine_pushups WHERE user_id = $1 AND date_key = $2`,
-    [userId, dateKey],
-  );
-  const guard = guardUserPkLww(existing, clientTs);
-  if (guard) return guard;
-
-  const reps = toNonNegativeInt(row["reps"]) ?? 0;
-  await client.query(
-    `INSERT INTO routine_pushups (user_id, date_key, reps, updated_at)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (user_id, date_key) DO UPDATE
-       SET reps = EXCLUDED.reps, updated_at = EXCLUDED.updated_at`,
-    [userId, dateKey, reps, clientTs],
-  );
-  return { status: "applied" };
 }
 
 export async function applyRoutineHabitOrder(
@@ -326,23 +286,16 @@ export async function applyRoutineHabitOrder(
   const userReject = assertRowUserId(row, userId);
   if (userReject) return userReject;
 
-  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
-    client,
-    `SELECT user_id, updated_at FROM routine_habit_order WHERE user_id = $1`,
-    [userId],
-  );
-  const guard = guardUserPkLww(existing, clientTs);
-  if (guard) return guard;
-
   const orderJson = readJsonbField(row, "order", "order_json");
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO routine_habit_order (user_id, "order", updated_at)
      VALUES ($1, $2::jsonb, $3)
      ON CONFLICT (user_id) DO UPDATE
-       SET "order" = EXCLUDED."order", updated_at = EXCLUDED.updated_at`,
+       SET "order" = EXCLUDED."order", updated_at = EXCLUDED.updated_at
+       WHERE routine_habit_order.updated_at < EXCLUDED.updated_at`,
     [userId, orderJson, clientTs],
   );
-  return { status: "applied" };
 }
 
 export async function applyRoutineCompletionNotes(
@@ -374,24 +327,25 @@ export async function applyRoutineCompletionNotes(
 
   if (op.op === "delete") {
     if (!existing) return { status: "rejected", reason: "not_found" };
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE routine_completion_notes
          SET deleted_at = $1, updated_at = $1
-       WHERE user_id = $2 AND note_key = $3`,
+       WHERE user_id = $2 AND note_key = $3 AND updated_at < $1`,
       [clientTs, userId, noteKey],
     );
-    return { status: "applied" };
   }
 
   const note = typeof row["note"] === "string" ? row["note"] : "";
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO routine_completion_notes (user_id, note_key, note, updated_at, deleted_at)
      VALUES ($1, $2, $3, $4, NULL)
      ON CONFLICT (user_id, note_key) DO UPDATE
-       SET note = EXCLUDED.note, updated_at = EXCLUDED.updated_at, deleted_at = NULL`,
+       SET note = EXCLUDED.note, updated_at = EXCLUDED.updated_at, deleted_at = NULL
+       WHERE routine_completion_notes.updated_at < EXCLUDED.updated_at`,
     [userId, noteKey, note, clientTs],
   );
-  return { status: "applied" };
 }
 
 /**
@@ -435,13 +389,13 @@ export async function applyRoutineHabitSkips(
 
   if (op.op === "delete") {
     if (!existing) return { status: "rejected", reason: "not_found" };
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE routine_habit_skips
          SET deleted_at = $1, updated_at = $1
-       WHERE user_id = $2 AND skip_key = $3`,
+       WHERE user_id = $2 AND skip_key = $3 AND updated_at < $1`,
       [clientTs, userId, skipKey],
     );
-    return { status: "applied" };
   }
 
   // `reason` навмисно не валідується проти серверного enum — словник причин
@@ -453,13 +407,14 @@ export async function applyRoutineHabitSkips(
   const at = parseOptionalDate(row["at"]);
   if (at === "invalid") return { status: "rejected", reason: "invalid_at" };
 
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO routine_habit_skips (user_id, skip_key, reason, note, at, updated_at, deleted_at)
      VALUES ($1, $2, $3, $4, $5, $6, NULL)
      ON CONFLICT (user_id, skip_key) DO UPDATE
        SET reason = EXCLUDED.reason, note = EXCLUDED.note, at = EXCLUDED.at,
-           updated_at = EXCLUDED.updated_at, deleted_at = NULL`,
+           updated_at = EXCLUDED.updated_at, deleted_at = NULL
+       WHERE routine_habit_skips.updated_at < EXCLUDED.updated_at`,
     [userId, skipKey, reason, note, at ?? clientTs, clientTs],
   );
-  return { status: "applied" };
 }

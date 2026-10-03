@@ -11,8 +11,10 @@ import {
   CartRefSchema,
   RawCartCatalogHitSchema,
   decodeLagerId,
+  evaluateCartMatch,
   normalizeCartDetail,
-  normalizeCartMatch,
+  queryMatchKey,
+  type CartHitDropReason,
   type CartMatch,
   type NormalizedCart,
   type RawBatchQuery,
@@ -21,7 +23,7 @@ import {
 
 /**
  * "Зібрати кошик у Сільпо зі списку покупок" (Track G — spec
- * `docs/90-work/planning/specs/silpo-mcp-integration.md`). Three entry
+ * `docs/work/specs/silpo-mcp-integration.md`). Three entry
  * points: `previewCart` (search only, no write), `applyCart` (confirm-
  * before-write — adds EXACTLY the passed `{lagerId, quantity}` pairs, never
  * more), `getCart` (read current state). All three THROW a mapped
@@ -49,6 +51,21 @@ export interface CartPreviewResult {
 const BATCH_CHUNK_SIZE = 30;
 /** Top candidate + up to 2 alternatives, per spec. */
 const MATCHES_PER_QUERY = 3;
+/**
+ * Скільки хітів просимо в Сільпо на ОДИН запит. Більше за
+ * {@link MATCHES_PER_QUERY} навмисно: `normalizeCartMatch` відкидає хіти без
+ * `companyId`/`branchId` (tool віддає їх nullable), і з `limit: 3` три
+ * непридатні хіти поспіль давали «Не знайшлось у Сільпо» для товару, який у
+ * Сільпо є. Беремо запас і лишаємо перші три ПРИДАТНІ. Менше за дефолт tool-а
+ * (30), тож відповідь на 30 запитів не розростається.
+ */
+const SEARCH_LIMIT_PER_QUERY = 10;
+
+interface PreviewFetch {
+  queries: RawBatchQuery[];
+  /** Філія, по якій шукали: нею заповнюється `null` branchId у хіті. */
+  branchId: string;
+}
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -59,7 +76,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 function makeFetchPreviewQueries(
   userId: string,
   names: string[],
-): (accessToken: string) => Promise<McpResult<RawBatchQuery[]>> {
+): (accessToken: string) => Promise<McpResult<PreviewFetch>> {
   return async (accessToken) => {
     const ctx = await resolveBranchContext(userId, accessToken);
     if (!ctx.ok) return ctx;
@@ -67,10 +84,11 @@ function makeFetchPreviewQueries(
     // Чанки йдуть паралельно, не послідовно: список на 100 позицій — це 4
     // виклики по 30, і послідовно вони складались у чотири RTT підряд перед
     // тим, як людина побачить превʼю. Порядок результатів зберігає
-    // `Promise.all`, а `buildPreviewResults` усе одно матчить за текстом
-    // запиту, не за індексом. Стеля паралелізму — сам розмір списку (роут
-    // ріже його на 100 позиціях = максимум 4 одночасні виклики), тож
-    // окремий семафор тут був би зайвою деталлю.
+    // `Promise.all`, а `buildPreviewResults` матчить за текстом запиту, і
+    // лише як крайній випадок за порядком (див. його doc). Стеля
+    // паралелізму — сам розмір списку (роут ріже його на 100 позиціях =
+    // максимум 4 одночасні виклики), тож окремий семафор тут був би
+    // зайвою деталлю.
     const batches = await Promise.all(
       chunk(names, BATCH_CHUNK_SIZE).map((group) =>
         callMcpTool({
@@ -82,7 +100,7 @@ function makeFetchPreviewQueries(
             timeslotStart: ctx.data.timeslotStart,
             timeslotEnd: ctx.data.timeslotEnd,
             products: group,
-            limit: MATCHES_PER_QUERY,
+            limit: SEARCH_LIMIT_PER_QUERY,
           },
           schema: BatchEnvelopeSchema,
         }),
@@ -96,45 +114,148 @@ function makeFetchPreviewQueries(
       if (!batch.ok) return batch;
       allQueries.push(...(batch.data.queries ?? []));
     }
-    return { ok: true, data: allQueries };
+    return {
+      ok: true,
+      data: { queries: allQueries, branchId: ctx.data.branchId },
+    };
   };
 }
 
+export interface BuildPreviewOptions {
+  /** Філія пошуку — підставляється замість `null` branchId у хіті. */
+  fallbackBranchId?: string | undefined;
+}
+
+type DropCounts = Partial<Record<CartHitDropReason | "schema", number>>;
+
 /**
- * Matches request items back to raw `queries[]` entries by exact `query`
- * text (each raw entry consumed at most once) rather than by array index —
- * a provider-side reorder or a duplicate shopping-list line must never
- * silently swap results across two different lines. A line with no
- * corresponding raw entry (schema drift / dropped by Silpo) degrades to
- * `unmatched: true`, never a crash.
+ * Matches request items back to raw `queries[]` entries and keeps the first
+ * {@link MATCHES_PER_QUERY} USABLE hits of each.
+ *
+ * Matching is by query text, not by array index (each raw entry consumed at
+ * most once): a provider-side reorder or a duplicate shopping-list line must
+ * never silently swap results across two different lines. The text is
+ * compared through {@link queryMatchKey} (NFC, apostrophes, whitespace,
+ * case) because Silpo does not necessarily echo `query` verbatim, and an
+ * exact `===` used to turn such a line into «не знайшлось» despite hits.
+ *
+ * Positional fallback is the last resort and deliberately narrow: only when
+ * the batch returned exactly as many queries as were asked (so the order is
+ * plausibly preserved), and only between the items and the raw entries that
+ * NOBODY claimed by text — paired in order. An entry claimed by text is never
+ * touched, so a fallback cannot steal a result from a line that matched. A
+ * line with no corresponding raw entry (schema drift / dropped by Silpo)
+ * degrades to `unmatched: true`, never a crash.
+ *
+ * Логи — лише лічильники й індекси рядків: назви товарів зі списку покупок
+ * в лог не йдуть (Hard Rule #21).
  */
 export function buildPreviewResults(
   items: CartPreviewInput[],
   rawQueries: RawBatchQuery[],
+  opts: BuildPreviewOptions = {},
 ): CartPreviewResult[] {
-  const remaining = [...rawQueries];
-  return items.map((item) => {
-    const trimmedName = item.name.trim();
-    const idx = remaining.findIndex((q) => q.query === trimmedName);
-    const found = idx >= 0 ? remaining.splice(idx, 1)[0] : undefined;
+  const names = items.map((item) => item.name.trim());
+  const consumed = rawQueries.map(() => false);
+  const assigned: Array<RawBatchQuery | undefined> = names.map(() => undefined);
+
+  // Прохід 1: за текстом запиту.
+  names.forEach((name, i) => {
+    const key = queryMatchKey(name);
+    const idx = rawQueries.findIndex(
+      (q, j) =>
+        !consumed[j] && q.query !== undefined && queryMatchKey(q.query) === key,
+    );
+    if (idx >= 0) {
+      consumed[idx] = true;
+      assigned[i] = rawQueries[idx];
+    }
+  });
+
+  // Прохід 2: за порядком, лише коли кількість збіглась, і лише між тим, що
+  // за текстом не взяв ніхто (лишки рівні за кількістю, бо загальні рівні).
+  let positionalFallbacks = 0;
+  if (rawQueries.length === names.length) {
+    const freeRaw: number[] = [];
+    consumed.forEach((taken, j) => {
+      if (!taken) freeRaw.push(j);
+    });
+    let next = 0;
+    names.forEach((_, i) => {
+      if (assigned[i]) return;
+      const j = freeRaw[next++];
+      if (j === undefined) return;
+      consumed[j] = true;
+      assigned[i] = rawQueries[j];
+      positionalFallbacks++;
+    });
+  }
+  if (positionalFallbacks > 0) {
+    logger.warn({
+      msg: "silpo_cart_preview_query_positional_fallback",
+      items: names.length,
+      rawQueries: rawQueries.length,
+      positionalFallbacks,
+    });
+  }
+
+  return names.map((name, itemIndex) => {
+    const found = assigned[itemIndex];
     if (!found) {
       logger.warn({
         msg: "silpo_cart_preview_query_missing",
-        query: trimmedName,
+        itemIndex,
+        items: names.length,
+        rawQueries: rawQueries.length,
       });
-      return { query: trimmedName, matches: [], unmatched: true };
+      return { query: name, matches: [], unmatched: true };
     }
 
     const matches: CartMatch[] = [];
+    const received = found.products?.length ?? 0;
+    const dropped: DropCounts = {};
+    let examined = 0;
+    let branchFilled = 0;
+    const drop = (reason: CartHitDropReason | "schema") => {
+      dropped[reason] = (dropped[reason] ?? 0) + 1;
+    };
     for (const raw of found.products ?? []) {
+      examined++;
       const parsed = RawCartCatalogHitSchema.safeParse(raw);
-      if (!parsed.success) continue;
-      const match = normalizeCartMatch(parsed.data);
-      if (match) matches.push(match);
+      if (!parsed.success) {
+        drop("schema");
+        continue;
+      }
+      const outcome = evaluateCartMatch(parsed.data, {
+        fallbackBranchId: opts.fallbackBranchId,
+      });
+      if (!outcome.ok) {
+        drop(outcome.reason);
+        continue;
+      }
+      if (outcome.branchFilled) branchFilled++;
+      matches.push(outcome.match);
       if (matches.length >= MATCHES_PER_QUERY) break;
     }
 
-    return { query: trimmedName, matches, unmatched: matches.length === 0 };
+    const droppedTotal = examined - matches.length;
+    if (droppedTotal > 0 || branchFilled > 0) {
+      // `warn`, коли рядок лишився без жодного матчу попри наявні хіти
+      // (саме так виглядав «Хліб — Не знайшлось»); `info`, коли відпала лише
+      // частина або лише добудовано branchId.
+      const level = matches.length === 0 && received > 0 ? "warn" : "info";
+      logger[level]({
+        msg: "silpo_cart_preview_hits_dropped",
+        itemIndex,
+        received,
+        examined,
+        kept: matches.length,
+        dropped,
+        branchFilled,
+      });
+    }
+
+    return { query: name, matches, unmatched: matches.length === 0 };
   });
 }
 
@@ -151,7 +272,9 @@ export async function previewCart(
     { query: deps.query ?? defaultQuery },
   );
   if (!call.ok) throw silpoErrorToAppError(call.error);
-  return buildPreviewResults(items, call.data);
+  return buildPreviewResults(items, call.data.queries, {
+    fallbackBranchId: call.data.branchId,
+  });
 }
 
 // ───────────────────────────── Cart read (shared) ────────────────────────────

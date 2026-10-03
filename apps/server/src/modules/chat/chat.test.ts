@@ -23,6 +23,17 @@ vi.mock("../../lib/anthropic.js", () => ({
   ),
 }));
 
+// Гейт згоди на дані про здоровʼя (`lib/healthConsent.ts`) читає БД. Тут
+// тестова сесія порожня (`req.user` немає), а без згоди чат урізає health-
+// частину — тож для решти тестів файлу згода «є», а сценарії без неї нижче
+// перемикають мок явно (`describe` «гейт згоди на дані про здоровʼя»).
+const { resolveHealthConsentMock } = vi.hoisted(() => ({
+  resolveHealthConsentMock: vi.fn(),
+}));
+vi.mock("../../lib/healthConsent.js", () => ({
+  resolveHealthConsent: resolveHealthConsentMock,
+}));
+
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import handler from "./chat.js";
 import { __resetChatResponseCache } from "./chatResponseCache.js";
@@ -42,7 +53,7 @@ function makeReq(body: unknown): Request {
 }
 
 /**
- * AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — same
+ * AI-5 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — same
  * as `makeReq`, but with a spy-able `aiQuotaRefund` closure attached, the
  * way `requireAiQuota()`/`assertAiQuota` attach it in production before
  * `handler` ever runs.
@@ -85,6 +96,8 @@ beforeEach(() => {
   // Інакше leftover-моки з попереднього тесту (наприклад cap-тест queue-ить 5, а
   // консьюмить лише 4) залежать у наступному.
   anthropicMessages.mockReset();
+  resolveHealthConsentMock.mockReset();
+  resolveHealthConsentMock.mockResolvedValue(true);
   // First-turn response-cache — module-level Map, що переживає між кейсами.
   // Багато тестів шлють ІДЕНТИЧНІ запити, тож без ресету другий кейс отримав
   // би cache-hit і не викликав би anthropicMessages-мок. Ізолюємо стан.
@@ -732,7 +745,7 @@ describe("chat handler — MAX_TOOL_ITERATIONS cap (M7)", () => {
   });
 });
 
-// B36 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `tool_results` і
+// B36 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `tool_results` і
 // `tool_calls_raw` мусять приходити разом. Раніше запит з РІВНО ОДНИМ полем
 // мовчки падав у "перший тур" — виконаний tool round-trip губився без
 // сигналу клієнту.
@@ -806,7 +819,7 @@ describe("chat handler — B36 tool_results/tool_calls_raw XOR", () => {
   });
 });
 
-// AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+// AI-5 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
 // `assertAiQuota` consumes a daily-quota ticket in router middleware BEFORE
 // this handler runs. A 4xx/422 that `handler` itself raises before ever
 // calling `anthropicMessages` used to keep that ticket burned — free users
@@ -879,7 +892,7 @@ describe("chat handler — AI-5 quota refund on pre-upstream rejects", () => {
   });
 });
 
-// B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `tool_calls_raw`
+// B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `tool_calls_raw`
 // більше не unvalidated passthrough: невідоме імʼя інструменту чи
 // tool_use-блок без відповідного tool_result відхиляються 400-кою ДО того,
 // як потраплять у `{role: "assistant", content: tool_calls_raw}`.
@@ -958,7 +971,7 @@ describe("chat handler — B32 tool_calls_raw allowlist + provenance", () => {
   });
 });
 
-// B35 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `sanitizeMessages`
+// B35 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `sanitizeMessages`
 // тримає НОВІШЕ з двох послідовних повідомлень однієї ролі, не старіше.
 describe("chat handler — B35 sanitizeMessages keeps newest of same-role run", () => {
   it("два user-повідомлення поспіль → Anthropic отримує НОВІШЕ", async () => {
@@ -1135,8 +1148,8 @@ describe("chat handler — system payload (prompt caching)", () => {
       type: "ephemeral",
       ttl: "1h",
     });
-    // SYSTEM_PREFIX починається з "Ти персональний асистент…"
-    expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
+    // SYSTEM_PREFIX починається з PERSONA_RULE: "Ти Сержант…"
+    expect(payload!.system[0]!.text).toMatch(/^Ти Сержант/);
     expect(payload!.system[1]!.type).toBe("text");
     expect(payload!.system[1]!.text).toContain("Алергія на горіхи");
     // context-блок НЕ кешується — інакше Anthropic зробить окремий cache slot
@@ -1371,7 +1384,7 @@ describe("chat handler — system payload (prompt caching)", () => {
         type: "ephemeral",
         ttl: "1h",
       });
-      expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
+      expect(payload!.system[0]!.text).toMatch(/^Ти Сержант/);
       const marked = payload.tools.filter((t) => t.cache_control !== undefined);
       expect(marked).toHaveLength(1);
       expect(marked[0]!.cache_control).toEqual({
@@ -1420,7 +1433,7 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
 
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
     expect(asRec(res.body)["text"]).toBe(
-      "Перша частина брифінгу… друга частина — кінець.",
+      "Перша частина брифінгу… друга частина – кінець.",
     );
 
     // Continuation-виклик отримує partial-text як останнє assistant-повідомлення.
@@ -1616,5 +1629,127 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
     expect(res.statusCode).toBe(200);
     expect(asRec(res.body)["text"]).toBe("Перша частина… ");
+  });
+});
+
+describe("chat handler — гейт згоди на дані про здоровʼя (GDPR Art. 9)", () => {
+  // Рішення власника 2026-09-29: без збереженої `healthDataConsent` тренування,
+  // вага, самопочуття, харчування й калорії до моделі не йдуть — ні через
+  // контекст, ні через tools, ні через tool_results. Зі згодою — як раніше.
+  const HEALTH_CONTEXT = [
+    "[Баланс] 12 000 грн",
+    "[Тренування] завершених всього: 12, цього тижня завершено: 2",
+    "[Харчування прийоми] Борщ (400 ккал)",
+    "[Звички] виконано 3 з 5",
+  ].join("\n");
+
+  const okText = {
+    response: { ok: true, status: 200 },
+    data: { content: [{ type: "text", text: "Ок." }] },
+  };
+
+  type Payload = {
+    system: Array<{ text: string }>;
+    tools: unknown[];
+    messages: unknown[];
+  };
+  const payloadOfCall = () => anthropicMessages.mock.calls[0]![1] as Payload;
+  const systemText = (p: Payload) => p.system.map((b) => b.text).join("\n");
+
+  it("без згоди: health-частини контексту немає в промпті, є інструкція чесно сказати про згоду", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    anthropicMessages.mockResolvedValueOnce(okText);
+
+    await handler(
+      makeReq({
+        messages: [{ role: "user", content: "як мої тренування?" }],
+        context: HEALTH_CONTEXT,
+      }),
+      makeRes(),
+    );
+
+    const system = systemText(payloadOfCall());
+    expect(system).not.toContain("[Тренування]");
+    expect(system).not.toContain("Борщ");
+    expect(system).toContain("12 000 грн");
+    expect(system).toContain("[Звички] виконано 3 з 5");
+    expect(system).toContain("ЗГОДА НА ДАНІ ПРО ЗДОРОВʼЯ");
+    expect(system).toContain("Дані та приватність");
+  });
+
+  it("без згоди: health-tools не в payload моделі, решта на місці", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    anthropicMessages.mockResolvedValueOnce(okText);
+
+    await handler(
+      makeReq({ messages: [{ role: "user", content: "привіт" }] }),
+      makeRes(),
+    );
+
+    const tools = JSON.stringify(payloadOfCall().tools);
+    expect(tools).not.toContain('"log_weight"');
+    expect(tools).not.toContain('"log_meal"');
+    expect(tools).not.toContain('"query_workouts"');
+    expect(tools).toContain('"query_transactions"');
+  });
+
+  it("зі згодою: контекст і tools — як раніше, інструкції про згоду немає", async () => {
+    anthropicMessages.mockResolvedValueOnce(okText);
+
+    await handler(
+      makeReq({
+        messages: [{ role: "user", content: "як мої тренування?" }],
+        context: HEALTH_CONTEXT,
+      }),
+      makeRes(),
+    );
+
+    const p = payloadOfCall();
+    const system = systemText(p);
+    expect(system).toContain("[Тренування]");
+    expect(system).toContain("Борщ");
+    expect(system).not.toContain("ЗГОДА НА ДАНІ ПРО ЗДОРОВʼЯ");
+    const tools = JSON.stringify(p.tools);
+    expect(tools).toContain('"log_weight"');
+    expect(tools).toContain('"log_meal"');
+  });
+
+  const roundTripBody = () => ({
+    messages: [{ role: "user", content: "запиши борщ" }],
+    context: HEALTH_CONTEXT,
+    tool_calls_raw: [
+      {
+        type: "tool_use",
+        id: "toolu_meal",
+        name: "log_meal",
+        input: { name: "Борщ", kcal: 400 },
+      },
+    ],
+    tool_results: [
+      { tool_use_id: "toolu_meal", content: "Додано: Борщ 400 ккал" },
+    ],
+  });
+
+  it("без згоди: tool_result health-tool-а замінено текстом-дією, а вхід tool_use обнулено", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    anthropicMessages.mockResolvedValueOnce(okText);
+
+    await handler(makeReq(roundTripBody()), makeRes());
+
+    const p = payloadOfCall();
+    const wire = JSON.stringify(p.messages);
+    expect(wire).not.toContain("Борщ");
+    expect(wire).not.toContain("400 ккал");
+    expect(wire).toContain("Дані та приватність");
+    expect(systemText(p)).not.toContain("Борщ");
+  });
+
+  it("зі згодою: tool_result доходить до моделі без змін", async () => {
+    anthropicMessages.mockResolvedValueOnce(okText);
+
+    await handler(makeReq(roundTripBody()), makeRes());
+
+    const wire = JSON.stringify(payloadOfCall().messages);
+    expect(wire).toContain("Додано: Борщ 400 ккал");
   });
 });

@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   bigserial,
+  customType,
   index,
   jsonb,
   pgTable,
@@ -10,11 +12,16 @@ import {
 
 import { SYNC_OP_LOG_OPS, SYNC_OP_LOG_STATUSES } from "../shared/index.js";
 
+/** Postgres `xid8` (64-бітний номер транзакції); драйвер `pg` віддає рядком. */
+const xid8 = customType<{ data: string; driverData: string }>({
+  dataType: () => "xid8",
+});
+
 /**
  * Postgres schema for `sync_op_log` table.
  * Mirrors migration 027_sync_op_log.sql.
  *
- * Stage 2 / PR #021 із `docs/planning/storage-roadmap.md` — per-row
+ * Stage 2 / PR #021 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — per-row
  * операційний лог для v2 sync. Append-only. Кожен `applied` рядок
  * є authoritative-операцією; `duplicate` — sentinel-replay (cached
  * відповідь на повтор того самого `idempotency_key`); `rejected` —
@@ -45,6 +52,12 @@ export const syncOpLog = pgTable(
     status: text({ enum: SYNC_OP_LOG_STATUSES }).notNull(),
     /** Машинно-читабельна причина для duplicate/rejected (≤120 char). */
     rejectReason: text("reject_reason"),
+    /**
+     * Транзакція, що вставила оп (міграція 147). Pull читає лише рядки,
+     * старші за найстарішу активну транзакцію, щоб курсор по BIGSERIAL
+     * `id` не перескакував оп-и довгої транзакції. NULL = рядок до 147.
+     */
+    txId: xid8("tx_id").default(sql`pg_current_xact_id()`),
   },
   (table) => [
     uniqueIndex("sync_op_log_user_idem_key").on(

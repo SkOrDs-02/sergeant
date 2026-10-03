@@ -13,7 +13,6 @@ import {
   classifyDateBound,
   DATE_INVALID_MESSAGE,
 } from "@shared/lib/time/dateBounds";
-import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import { createHabit, updateHabit } from "../lib/routineStorage";
 import {
   emptyHabitDraft,
@@ -46,15 +45,6 @@ export interface HabitQuickCreateDialogProps {
    * reopens the dialog after closing it.
    */
   focusTick?: number;
-  /**
-   * When true, render a `<FirstRunHintBanner />` at the top of the
-   * dialog framing this first habit as preliminary — used by the
-   * per-module first-run flow that auto-opens the dialog on the user's
-   * first Routine entry. See `core/onboarding/useModuleFirstRun.ts`.
-   */
-  firstRunHint?: boolean;
-  /** Dismiss callback for the first-run hint banner. */
-  onDismissFirstRunHint?: () => void;
 }
 
 function habitToDraft(habit: Habit): HabitDraft {
@@ -96,8 +86,6 @@ export function HabitQuickCreateDialog({
   onClose,
   editingId,
   focusTick,
-  firstRunHint,
-  onDismissFirstRunHint,
 }: HabitQuickCreateDialogProps) {
   const toast = useToast();
   const [draft, setDraft] = useState<HabitDraft>(() => emptyHabitDraft());
@@ -207,7 +195,7 @@ export function HabitQuickCreateDialog({
       {editingId && (
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           className="flex-1"
           onClick={onClose}
         >
@@ -216,7 +204,8 @@ export function HabitQuickCreateDialog({
       )}
       <Button
         type="button"
-        variant="routine"
+        variant="solid"
+        tone="routine"
         className="w-full"
         onClick={handleSave}
       >
@@ -234,25 +223,12 @@ export function HabitQuickCreateDialog({
       panelClassName="max-w-md"
       footer={footer}
     >
-      {firstRunHint && !editingId && (
-        <FirstRunHintBanner
-          variant="routine"
-          title={messages.routine.firstRun.title}
-          description={messages.routine.firstRun.description}
-          onDismiss={onDismissFirstRunHint ?? (() => {})}
-          className="mb-3"
-        />
-      )}
       <HabitForm
         routine={routine}
         habitDraft={draft}
         setHabitDraft={setDraft}
         editingId={editingId ?? null}
-        onSave={handleSave}
-        onCancel={onClose}
         focusTick={internalFocusTick}
-        hideHeading
-        hideActions
         errors={errors}
       />
     </Sheet>

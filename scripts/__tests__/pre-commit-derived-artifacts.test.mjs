@@ -68,7 +68,9 @@ test("кожен check/fix із таблиці існує в package.json", asyn
     (m) => m[1],
   );
 
-  assert.ok(referenced.length >= 16, "таблиця груп не розпарсилась");
+  // 7 записів × (check + fix). Було 8, доки дашборд свіжості не перестали
+  // комітити (2026-10-01).
+  assert.ok(referenced.length >= 14, "таблиця груп не розпарсилась");
   for (const name of referenced) {
     assert.ok(
       typeof pkg.scripts?.[name] === "string",

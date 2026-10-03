@@ -116,6 +116,8 @@ export function iconFor(name: string): string | undefined {
       return "piggy-bank";
     case "export_report":
       return "file-text";
+    case "get_daily_series":
+      return "bar-chart";
     case "import_monobank_range":
       return "refresh-cw";
     // Nutrition
@@ -228,7 +230,7 @@ export function iconFor(name: string): string | undefined {
 }
 
 /**
- * AI-4 / AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+ * AI-4 / AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
  * один мапер ключ → підпис на всі три родини «карта показує сирий id/enum
  * замість людського тексту»: звичка (`hab_<uuid>`), категорія Фініка
  * (`restaurant`), тип прийому їжі (`dinner`). Кожна функція повертає
@@ -308,17 +310,17 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
   switch (name) {
     // Finyk
     case "create_transaction":
-      return `Транзакцію записано${failedSuffix}`;
+      return `Операцію записано${failedSuffix}`;
     case "find_transaction":
-      return `Транзакції знайдено${failedSuffix}`;
+      return `Операції знайдено${failedSuffix}`;
     case "batch_categorize":
       return `Категорії оновлено${failedSuffix}`;
     case "change_category":
       return `Категорію змінено${failedSuffix}`;
     case "delete_transaction":
-      return `Транзакцію видалено${failedSuffix}`;
+      return `Операцію видалено${failedSuffix}`;
     case "hide_transaction":
-      return `Транзакцію приховано${failedSuffix}`;
+      return `Операцію приховано${failedSuffix}`;
     case "set_budget_limit":
     case "update_budget":
       return `Бюджет оновлено${failedSuffix}`;
@@ -333,9 +335,11 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
     case "add_asset":
       return `Актив додано${failedSuffix}`;
     case "split_transaction":
-      return `Транзакцію розділено${failedSuffix}`;
+      return `Операцію розділено${failedSuffix}`;
     case "recurring_expense":
       return `Періодичну витрату створено${failedSuffix}`;
+    case "import_monobank_range":
+      return `Імпорт з Monobank${failedSuffix}`;
     case "export_report":
       return `Звіт згенеровано${failedSuffix}`;
     // Nutrition
@@ -429,6 +433,8 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Виявлення аномалій${failedSuffix}`;
     case "habit_trend":
       return `Тренд звичок${failedSuffix}`;
+    case "get_daily_series":
+      return `Ряди метрик за днями${failedSuffix}`;
     // Utility
     case "calculate_1rm":
       return `1RM розраховано${failedSuffix}`;
@@ -451,7 +457,7 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Спогад${failedSuffix}`;
     // Query / analytics ("talk to your data", PR1-3)
     case "query_transactions":
-      return `Транзакції за запитом${failedSuffix}`;
+      return `Операції за запитом${failedSuffix}`;
     case "aggregate_spending":
       return `Розбивка витрат${failedSuffix}`;
     case "compare_periods":

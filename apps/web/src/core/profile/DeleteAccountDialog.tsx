@@ -4,7 +4,13 @@ import { Input } from "@shared/components/ui/Input";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
-import { useVisualKeyboardInset } from "@sergeant/shared";
+import {
+  ACCOUNT_DELETION_GRACE_DAYS,
+  accountDeletionDeadline,
+  useVisualKeyboardInset,
+} from "@sergeant/shared";
+import { formatDateFull } from "@shared/lib/time/formatDate";
+import { messages } from "@shared/i18n/uk";
 import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
 
 interface DeleteAccountDialogProps {
@@ -53,6 +59,13 @@ export function DeleteAccountDialog({
 
   if (!open) return null;
 
+  // Дата рахується тією самою константою, що й дедлайн на сервері
+  // (`ACCOUNT_DELETION_GRACE_DAYS` у `@sergeant/shared`): якби кожен бік
+  // рахував своє, екран показав би одне число, а видалення сталося б
+  // іншого дня. Момент прохання це «зараз», бо діалог відкритий саме
+  // перед натисканням.
+  const purgeDate = formatDateFull(accountDeletionDeadline(new Date()));
+
   return (
     <div
       ref={overlayRef}
@@ -78,17 +91,26 @@ export function DeleteAccountDialog({
         aria-describedby={descriptionId}
       >
         <h2 id={titleId} className="text-style-title text-text">
-          Видалити акаунт назавжди?
+          {messages.accountDeletion.dialogTitle}
         </h2>
         <p id={descriptionId} className="text-style-body text-muted mt-2">
-          Введи пароль для підтвердження. Цю дію неможливо скасувати.
+          Дані зникнуть {purgeDate}, через {ACCOUNT_DELETION_GRACE_DAYS} днів.
+          До того дня можна передумати: увійди і натисни «Відновити акаунт».
+          Підписка скасовується одразу, і відновлення її не поверне.
         </p>
+        {/*
+          Поле не обовʼязкове, і кнопка ним НЕ гейтиться: акаунт, заведений
+          через Google, пароля не має взагалі, і з обовʼязковим полем його
+          не можна було б видалити з інтерфейсу зовсім. Сервер робить ту саму
+          розвилку (`modules/me/verifyAccountPassword.ts`): є credential-вхід —
+          пароль звіряється, немає — пропускає.
+        */}
         <div className="mt-4 space-y-2">
           <label
             htmlFor={passwordId}
             className="block text-style-caption text-muted"
           >
-            Пароль
+            {messages.accountDeletion.passwordLabel}
           </label>
           <Input
             id={passwordId}
@@ -102,7 +124,7 @@ export function DeleteAccountDialog({
         <div className="flex gap-2 mt-5">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="md"
             className="flex-1"
             onClick={onCancel}
@@ -111,10 +133,11 @@ export function DeleteAccountDialog({
           </Button>
           <Button
             type="button"
-            variant="destructive"
+            variant="solid"
+            tone="danger"
             size="md"
             className="flex-1"
-            disabled={deleting || !password}
+            disabled={deleting}
             loading={deleting}
             onClick={onConfirm}
           >

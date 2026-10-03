@@ -1,75 +1,53 @@
 /** @vitest-environment jsdom */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ReactNode } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import type { BillingAccess } from "@sergeant/shared";
+import { accessFixture } from "../../../test/helpers/billingAccess";
 
-import type { ChatUsageResponse } from "@sergeant/shared";
-
-const { usageMock } = vi.hoisted(() => ({
-  usageMock:
-    vi.fn<(opts?: { signal?: AbortSignal }) => Promise<ChatUsageResponse>>(),
-}));
-
-vi.mock("@shared/api", () => ({
-  chatApi: { usage: usageMock },
-}));
+const { usePlanMock } = vi.hoisted(() => ({ usePlanMock: vi.fn() }));
+vi.mock("../../billing/usePlan", () => ({ usePlan: () => usePlanMock() }));
 
 import { ChatUsageCounter } from "./ChatUsageCounter";
 
-function renderWithClient() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-  function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-  }
-  return render(<ChatUsageCounter />, { wrapper: Wrapper });
+function withMeter(used: number, limit: number | null): BillingAccess {
+  const a = accessFixture(limit == null ? "pro" : "free");
+  return {
+    ...a,
+    meters: {
+      ...a.meters,
+      aiActions: { used, limit, resetsAt: "2026-06-14T21:00:00.000Z" },
+    },
+  };
 }
 
-describe("ChatUsageCounter (PR-42 chat counter)", () => {
+describe("ChatUsageCounter (тижневий лічильник зі знімка доступу)", () => {
   beforeEach(() => {
-    usageMock.mockReset();
-  });
-  afterEach(() => {
-    vi.restoreAllMocks();
+    usePlanMock.mockReset();
   });
 
-  it("renders nothing while the usage query is in flight", () => {
-    usageMock.mockReturnValue(new Promise(() => {})); // never resolves
-    renderWithClient();
+  it("renders nothing while the billing snapshot is not loaded", () => {
+    usePlanMock.mockReturnValue({ access: null });
+    render(<ChatUsageCounter />);
     expect(screen.queryByTestId("chat-usage-counter")).not.toBeInTheDocument();
   });
 
-  it("renders nothing for an unlimited Pro plan", async () => {
-    usageMock.mockResolvedValue({ plan: "pro", limit: null, remaining: null });
-    renderWithClient();
-    await waitFor(() => expect(usageMock).toHaveBeenCalledTimes(1));
+  it("renders nothing for Premium (no weekly limit)", () => {
+    usePlanMock.mockReturnValue({ access: withMeter(4, null) });
+    render(<ChatUsageCounter />);
     expect(screen.queryByTestId("chat-usage-counter")).not.toBeInTheDocument();
   });
 
-  it("shows a used/limit pill for a Free plan with remaining quota", async () => {
-    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 2 });
-    renderWithClient();
-    await waitFor(() =>
-      expect(screen.getByTestId("chat-usage-counter")).toBeInTheDocument(),
-    );
-    expect(screen.getByTestId("chat-usage-counter")).toHaveTextContent("3/5");
+  it("shows x/20 and the Monday reset for a Free plan", () => {
+    usePlanMock.mockReturnValue({ access: withMeter(3, 20) });
+    render(<ChatUsageCounter />);
+    const pill = screen.getByTestId("chat-usage-counter");
+    expect(pill).toHaveTextContent("3/20");
+    expect(pill).toHaveTextContent("понеділок");
   });
 
-  it("shows the exhausted CTA with a pricing link when remaining is 0", async () => {
-    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 0 });
-    renderWithClient();
-    await waitFor(() => expect(screen.getByRole("link")).toBeInTheDocument());
+  it("shows the exhausted CTA with a pricing link when the week is used up", () => {
+    usePlanMock.mockReturnValue({ access: withMeter(20, 20) });
+    render(<ChatUsageCounter />);
     expect(screen.getByRole("link")).toHaveAttribute("href", "/pricing");
-  });
-
-  it("renders nothing when the request fails (401 anon / network error)", async () => {
-    usageMock.mockRejectedValue(new Error("Unauthorized"));
-    renderWithClient();
-    await waitFor(() => expect(usageMock).toHaveBeenCalledTimes(1));
-    expect(screen.queryByTestId("chat-usage-counter")).not.toBeInTheDocument();
   });
 });

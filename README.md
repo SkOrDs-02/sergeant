@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-27.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-09.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -318,7 +318,7 @@ Test stacks by surface:
 
 ## Feature flags
 
-Feature flags are managed via `docs/governance/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
+Feature flags are catalogued in `docs/engineering/architecture/feature-flags.md` — every toggle across the four systems (build-time `VITE_*`, server env, user-facing `FLAG_REGISTRY`, in-memory kill-switch), its default, what breaks when flipped and the condition for removing it.
 
 ## Observability
 

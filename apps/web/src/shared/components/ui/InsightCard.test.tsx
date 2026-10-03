@@ -106,7 +106,7 @@ describe("InsightCard", () => {
   it("does not render at all when the id is already dismissed", () => {
     localStorage.setItem(
       "sergeant.v2.insights.dismissed",
-      JSON.stringify(["already-dismissed"]),
+      JSON.stringify({ "already-dismissed": Date.now() }),
     );
     const { container } = render(
       <InsightCard
@@ -126,6 +126,17 @@ describe("InsightCard", () => {
     const group = container.querySelector('[role="group"]')!;
     const titleEl = getByText("t");
     expect(group.getAttribute("aria-labelledby")).toBe(titleEl.id);
+  });
+
+  it("у темній темі не лишається білою плиткою ink-strong", () => {
+    const { container, getByText } = render(
+      <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
+    );
+    const group = container.querySelector('[role="group"]')!;
+    expect(group.className).toContain("dark:bg-panelHi");
+    expect(group.className).toContain("dark:border-line");
+    expect(getByText("t").className).toContain("dark:text-text");
+    expect(getByText("s").className).toContain("dark:text-text");
   });
 });
 
@@ -191,11 +202,11 @@ describe("InsightCard — value-loop telemetry", () => {
   });
 
   it("НЕ емітить показ для вже відкинутої картки", () => {
-    // `useInsightDismissal` тримає dismissed-id у localStorage назавжди,
-    // тож така картка ніколи не рендериться — і не має рахуватись показом.
+    // `useInsightDismissal` тримає dismissed-id до кінця поточної доби, тож
+    // сьогодні така картка не рендериться — і не має рахуватись показом.
     localStorage.setItem(
       "sergeant.v2.insights.dismissed",
-      JSON.stringify(["nutrition-protein-low"]),
+      JSON.stringify({ "nutrition-protein-low": Date.now() }),
     );
     render(
       <InsightCard
@@ -286,7 +297,7 @@ describe("InsightCard — value-loop telemetry", () => {
   it("відкинута картка не кладе сигнал у леджер", () => {
     localStorage.setItem(
       "sergeant.v2.insights.dismissed",
-      JSON.stringify(["fizruk-rest-day-overdue"]),
+      JSON.stringify({ "fizruk-rest-day-overdue": Date.now() }),
     );
     render(
       <InsightCard

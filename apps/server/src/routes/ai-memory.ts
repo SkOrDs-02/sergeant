@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
-import { requirePlan } from "../modules/billing/index.js";
+import { requireFeature } from "../modules/billing/index.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
 import { clearAiMemoryHandler } from "../modules/ai-memory/clearRoute.js";
 import {
@@ -14,16 +14,17 @@ import {
  * `/api/ai-memory/*`. Клієнт-driven ingestion (`POST /api/ai-memory/ingest`)
  * видалено ініціативою 0024 (PR-1, 2026-09-03) — жодне з клієнт-driven
  * джерел (`chat`/`fizruk`/`nutrition`/`routine`/`journal`) не мало
- * продюсера в дереві (`docs/90-work/initiatives/0024-ai-memory-source-
+ * продюсера в дереві (`docs/work/specs/initiatives/0024-ai-memory-source-
  * coverage.md`). Живі server-side producer-и: `digest/weekly-digest.ts`
  * (`source=digest`) і `ai-memory/profileMirror.ts` (`source=profile`).
  *
  * Recall (PR3) — semantic retrieval через `recall_memory` HubChat-tool.
  * Sync read-path, окремий від ingestion-черги.
  *
- * Rate-limit `30 req / 5min / IP` — стосується `recall`, лишений щедрим
- * historically ще з часів клієнт-driven ingest-у. Точніший анти-абʼюз —
- * Voyage квотою (per-user) у `service.remember()`.
+ * Rate-limit `30 req / 5min / user` (фолбек на IP лише без сесії) —
+ * стосується `recall`, лишений щедрим historically ще з часів
+ * клієнт-driven ingest-у. Точніший анти-абʼюз — Voyage квотою (per-user) у
+ * `service.remember()`.
  *
  * AI-CONTEXT (2026-07-25): цей ліміт більше НЕ вішається на весь префікс.
  * Він захищає worker-pool і Voyage-бюджет, тобто стосується `recall`.
@@ -32,6 +33,14 @@ import {
  * який чистить памʼять, впирався б у 429 приблизно на 25-му видаленні —
  * рівно посеред дії, яку ми самі йому пропонуємо. Тому list/delete мають
  * власний, ширший бакет.
+ *
+ * Кожен із чотирьох роутів нижче має ще й pre-auth IP-лімітер ПЕРЕД
+ * `requireSession()`: `requireSession()` на невдачі шле 401 і не кличе
+ * `next()`, тож без цього гейта безсесійний флуд (відсутня/підроблена
+ * кука) взагалі не діставався б до per-user бакета — а `getSessionUser`
+ * усе одно робить lookup у session-store на кожен такий запит. Окремі
+ * `key` (суфікс `:ip`) для heavy/browse, ліміти — 5× відповідного
+ * per-user бакета (150/5хв і 1000/5хв).
  */
 export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
@@ -52,18 +61,39 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     limit: 200,
     windowMs: 5 * 60_000,
   });
+  /** Pre-auth IP-бакет для `recall` — окремий `key`, 5× heavyRateLimit. */
+  const heavyPreAuthIp = rateLimitExpress({
+    key: "api:ai-memory:ip",
+    limit: 150,
+    windowMs: 5 * 60_000,
+  });
+  /** Pre-auth IP-бакет для list/delete — окремий `key`, 5× browseRateLimit. */
+  const browsePreAuthIp = rateLimitExpress({
+    key: "api:ai-memory:browse:ip",
+    limit: 1000,
+    windowMs: 5 * 60_000,
+  });
 
+  // requireSession() йде ПЕРЕД per-user rate-limit-ером навмисно на всіх
+  // чотирьох роутах нижче (рецидив знахідки B31, PR-A3 у
+  // `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP, а IPv6-клієнт має /64. Див. еталон у `chat.ts`.
   r.post(
     "/api/ai-memory/recall",
-    heavyRateLimit,
+    heavyPreAuthIp,
     requireSession(),
-    requirePlan(pool, "pro"),
+    heavyRateLimit,
+    requireFeature(pool, "ai.memoryRecall"),
     recallMemoryHandler,
   );
   r.delete(
     "/api/ai-memory",
-    browseRateLimit,
+    browsePreAuthIp,
     requireSession(),
+    browseRateLimit,
     clearAiMemoryHandler,
   );
   // AI-CONTEXT: list + per-item delete НЕ мають `requirePlan(pool, "pro")`,
@@ -80,14 +110,16 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   // спадок від попереднього Pro-періоду — і саме до нього доступ і потрібен.
   r.get(
     "/api/ai-memory/list",
-    browseRateLimit,
+    browsePreAuthIp,
     requireSession(),
+    browseRateLimit,
     buildMemoryListHandler(pool),
   );
   r.delete(
     "/api/ai-memory/:id",
-    browseRateLimit,
+    browsePreAuthIp,
     requireSession(),
+    browseRateLimit,
     buildMemoryDeleteHandler(pool),
   );
   // `POST /api/ai-memory/event-sync` (PostHog → memory, PR-24) знято

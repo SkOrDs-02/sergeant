@@ -16,16 +16,19 @@
  *
  * Mobile shell deep-links still go through `HUB_OPEN_MODULE_EVENT` on
  * `window` — that's a deliberate cross-realm bridge between the WebView
- * and the React app. This bus only replaces the in-app `hub:openChat` /
- * `hub:openSearch` signalling.
+ * and the React app. This bus only replaces the in-app `hub:openChat`
+ * signalling.
+
+ * Канал `openSearch` знято 2026-09-15 (знахідка PR-M3): він був оголошений,
+ * мав слухача в `useAppEffects`, і НУЛЬ продуктових емітерів — `emitHubBus`
+ * для нього викликався лише з тестів. Коментар над слухачем при цьому
+ * стверджував «used by hint toasts», тобто описував споживача, якого не
+ * існувало. Глобальний пошук лишається на Cmd/Ctrl+K і тач-опенері в Хабі.
  *
  * The implementation is intentionally tiny (~30 LOC of hot path) and
- * dependency-free; React subscriptions are exposed via `useHubBus` so
- * components can subscribe with the standard `useSyncExternalStore`
- * semantics handled internally via `useEffect`.
+ * dependency-free.
  */
 
-import { useEffect } from "react";
 import type { ChatPreset } from "@sergeant/shared";
 
 export interface HubBusEvents {
@@ -48,8 +51,6 @@ export interface HubBusEvents {
      */
     preset?: ChatPreset;
   };
-  /** Open the global Hub search overlay (⌘K equivalent). */
-  openSearch: void;
   /**
    * A module (Routine, Fizruk, Nutrition, Finyk) persisted new data to its
    * storage layer in the **same tab**. Hub consumers that aggregate
@@ -63,6 +64,17 @@ export interface HubBusEvents {
    * call-sites) to keep the storm bounded.
    */
   storageUpdated: void;
+  /**
+   * Показати «Звіт тижня» на головній: розгорнути блок «Порада й звіт тижня»
+   * і підвести людину до рядків «Тиждень у цифрах». Шлють тижнева картка про
+   * темп витрат (замість переходу в огляд Фініка за місяць) і понеділкова
+   * картка «Підсумок минулого тижня» (замість мертвої дії `"reports"`) —
+   * рішення власника 2026-10-01. Слухач — `HubInsightsBlock`; коли блоку на
+   * екрані немає (налаштування `showInsights`), подію не слухає ніхто, тож
+   * емітер сам перевіряє це й іде запасним шляхом (`useNowItems` →
+   * `withoutWeekReportTarget`).
+   */
+  openWeekReport: void;
 }
 
 type Handler<K extends keyof HubBusEvents> = (detail: HubBusEvents[K]) => void;
@@ -110,8 +122,7 @@ export function emitHubBus<K extends keyof HubBusEvents>(
 
 /**
  * Imperatively subscribe to a typed event. Returns an unsubscribe
- * function. Most consumers should use `useHubBus` instead — this
- * lower-level API is exposed for non-React contexts and tests.
+ * function.
  */
 export function onHubBus<K extends keyof HubBusEvents>(
   event: K,
@@ -122,19 +133,6 @@ export function onHubBus<K extends keyof HubBusEvents>(
   return () => {
     set.delete(handler);
   };
-}
-
-/**
- * React hook: subscribe to a typed hub bus event for the lifetime of
- * the component. The handler must be stable (memoised) — re-renders
- * that produce a fresh handler identity will detach and re-attach,
- * which is fine but wasteful.
- */
-export function useHubBus<K extends keyof HubBusEvents>(
-  event: K,
-  handler: Handler<K>,
-): void {
-  useEffect(() => onHubBus(event, handler), [event, handler]);
 }
 
 /** Test-only: drop every subscriber. Do not call from production code. */

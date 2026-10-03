@@ -14,7 +14,7 @@ export function createWeeklyDigestRouter(): Router {
     setModule("weekly-digest"),
     // Дайджест — звіт про дані конкретної людини й ще один витратний
     // Anthropic-виклик. Сесія обовʼязкова з тих самих причин, що в `chat.ts`
-    // (знахідка A1, `docs/90-work/audits/ai-abuse-2026-08-05.md`).
+    // (знахідка A1, `docs/work/specs/audits/ai-abuse-2026-08-05.md`).
     //
     // requireSession() стоїть ПЕРЕД rateLimitExpress навмисно (B31 у
     // `chat.ts`; тут — SEC-1 продуктового аудиту 2026-09): `rateLimitSubject`

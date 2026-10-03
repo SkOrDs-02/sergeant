@@ -180,6 +180,7 @@ function makePrefs(): FinykPrefsSnapshot {
     showBalance: true,
     excludedStatTxIdsJson: "[]",
     dismissedRecurringJson: "[]",
+    prefsJson: "{}",
   };
 }
 
@@ -556,6 +557,7 @@ describe("probeFinykParity", () => {
           showBalance: false,
           excludedStatTxIdsJson: "[]",
           dismissedRecurringJson: "[]",
+          prefsJson: "{}",
         },
       };
 

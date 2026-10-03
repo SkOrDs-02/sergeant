@@ -14,7 +14,7 @@ import { sql } from "drizzle-orm";
  * Postgres schema for `routine_entries` table.
  * Mirrors migration 026_routine_tables.sql.
  *
- * Stage 2 / PR #020 із `docs/planning/storage-roadmap.md` — нормалізована
+ * Stage 2 / PR #020 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — нормалізована
  * цільова форма habit-completion рядків. Write-only від backfill-скрипта
  * на цьому етапі; жоден API endpoint поки звідси не читає.
  */
@@ -63,7 +63,7 @@ export const routineEntries = pgTable(
  *
  * `id` — TEXT, НЕ UUID (свідомо): клієнт шле `habitId:dateKey`, що не є UUID.
  * Ця таблиця обходила пастку з самого початку; решту `routine_*` довела до
- * того ж типу міграція 094 (`docs/90-work/tech-debt/backend.md` §
+ * того ж типу міграція 094 (`docs/work/specs/tech-debt/backend.md` §
  * «Routine: PK-тип»).
  */
 export const routineCompletionEvents = pgTable(
@@ -117,7 +117,7 @@ export const routineCompletionEvents = pgTable(
  * не послідовні дні. НЕ читай ці стовпці для UI / push / digest:
  * справжній стрік рахується client-side (`streakForHabit`) з
  * `routine_entries`/completions. Канон:
- * `docs/01-product/model/routine.md` §4.
+ * `docs/product/modules/routine.md` §4.
  */
 export const routineStreaks = pgTable("routine_streaks", {
   userId: text("user_id").primaryKey(),
@@ -256,28 +256,6 @@ export const routinePrefs = pgTable("routine_prefs", {
     .notNull()
     .defaultNow(),
 });
-
-/**
- * Postgres schema for `routine_pushups` table.
- *
- * Один рядок на (user, date) — кількість відтискань за день.
- *
- * Власність перенесено у `fizruk_pushups` (канон routine.md §10, Phase B):
- * нові клієнти сюди не пишуть, таблиця жива лише для старих клієнтів.
- * DROP — окремою пізнішою міграцією за Hard Rule #4 (двофазність).
- */
-export const routinePushups = pgTable(
-  "routine_pushups",
-  {
-    userId: text("user_id").notNull(),
-    dateKey: text("date_key").notNull(),
-    reps: integer().notNull().default(0),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
-);
 
 /**
  * Postgres schema for `routine_habit_order` table.

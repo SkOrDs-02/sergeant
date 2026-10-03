@@ -90,9 +90,9 @@ describe("SilpoUnmatchedReceipts", () => {
     });
     renderList();
 
-    expect(await screen.findByText("Чеки без транзакції")).toBeInTheDocument();
-    expect(screen.getByText(/1\s+без транзакції/)).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Чеки без транзакції"));
+    expect(await screen.findByText("Чеки без операції")).toBeInTheDocument();
+    expect(screen.getByText(/1\s+без операції/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Чеки без операції"));
     expect(
       screen.getByRole("button", { name: "Створити витрату" }),
     ).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe("SilpoUnmatchedReceipts", () => {
     });
     const { addManualExpense } = renderList();
 
-    fireEvent.click(await screen.findByText("Чеки без транзакції"));
+    fireEvent.click(await screen.findByText("Чеки без операції"));
     fireEvent.click(screen.getByRole("button", { name: "Створити витрату" }));
 
     const amountInput = await screen.findByLabelText("Сума ₴");

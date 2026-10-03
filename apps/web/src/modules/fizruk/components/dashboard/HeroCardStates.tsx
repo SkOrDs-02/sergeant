@@ -18,6 +18,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { HeroRecoveryBars } from "./HeroRecoveryBars";
 import type { HeroCardState } from "./HeroCard";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 
 /**
  * Phase 2.3 v2 redesign (C4): chrome тепер через `<Card prominence="hero"
@@ -54,7 +55,29 @@ function HeroShell({
           opacity: 0.08,
         }}
       />
-      <div className="relative p-6">{children}</div>
+      {/* Перший рядок героя мусить лишити місце під `cornerSlot`, інакше
+          довгий kicker їде ПІД пілюлю: замір 2026-09-16 на 393px дав
+          накладання 114px («Четвер, 17 вересня · серія 0 тижн. · 2
+          тренування» проти «PR · Станова · 100 кг»), причому текст навіть
+          не обрізався — просто малювався під нею.
+
+          Чому 10rem, а не «на око»: ширина пілюлі має стелю. Назва вправи
+          різиться до 10 символів (`PrBadge.shortExerciseName`), тож
+          найдовший можливий рядок — «PR · <10 символів> · <вага> кг» ≈
+          139px; плюс власний відступ слота `right-3` (12px). 160px
+          покриває обидва з запасом. Ростиме межа в `PrBadge` — рости й
+          тут, інакше накладання повернеться.
+
+          Резервуємо саме на першому нащадку, бо всі чотири стани героя
+          рендерять `HeroKicker` першим, а сам слот позиціює себе сам
+          (контракт `cornerSlot` у `HeroCard`). */}
+      <div
+        className={
+          cornerSlot ? "relative p-6 [&>*:first-child]:pe-40" : "relative p-6"
+        }
+      >
+        {children}
+      </div>
       {cornerSlot}
     </Card>
   );
@@ -115,14 +138,18 @@ function useElapsedSec(startedAtIso: string): number {
   return sec;
 }
 
-function formatDateShort(dateKey: string): string {
-  try {
-    const d = new Date(`${dateKey}T12:00:00`);
-    if (Number.isNaN(d.getTime())) return dateKey;
-    return d.toLocaleDateString("uk-UA", { day: "numeric", month: "long" });
-  } catch {
-    return dateKey;
-  }
+/**
+ * День-ключ → «13 вересня». Раніше ця функція звалась `formatDateShort` — тобто
+ * ІМЕНЕМ канонічного експорту, але з іншою семантикою (`month:"long"` без
+ * року проти `month:"short"`). Канонічний імпорт у цей файл затінився б нею
+ * мовчки, тож ім'я змінено на те, що описує фактичний формат.
+ *
+ * Обгортка лишається заради фолбеку на сирий ключ: на невалідній даті
+ * `formatDayMonth` дає порожній рядок, а тут потрібен хоч якийсь підпис.
+ */
+function formatDayMonthFromKey(dateKey: string): string {
+  const d = new Date(`${dateKey}T12:00:00`);
+  return formatDayMonth(d) || dateKey;
 }
 
 function formatDaysAway(days: number): string {
@@ -147,12 +174,13 @@ export interface HeroBodyInfo {
 }
 
 /**
- * Renders the `<день тижня, дата> · серія N тижн. · M тренувань` kicker.
+ * Renders the `<день тижня, дата> · серія N тижнів · M тренувань` kicker
+ * (zero segments are dropped, so a first-run hero shows just the date).
  * Shared across all states so the top of the hero always anchors "when am
  * I" — and, since the three-tile streak/week strip that used to render
  * below the hero is gone (спека рішення 3), now also carries that
  * streak/week readout. `greeting` dropped intentionally: the demo mock and
- * click-through checklist both show the kicker as `<дата> · серія N тижн. ·
+ * click-through checklist both show the kicker as `<дата> · серія N тижнів ·
  * M тренувань`, no separate time-of-day greeting segment.
  */
 function HeroKicker({
@@ -165,13 +193,24 @@ function HeroKicker({
     few: "тренування",
     many: "тренувань",
   });
+  const weeksLabel = pluralUa(streakWeeks, {
+    one: "тиждень",
+    few: "тижні",
+    many: "тижнів",
+  });
+  // Нулі не показуємо: «серія 0 тижн. · 0 тренувань» поруч із порожнім
+  // планом: рівно те, що принцип «порожній стан, не нулі» (#17) прибирає.
+  const parts = [
+    today,
+    streakWeeks > 0 ? `серія ${streakWeeks} ${weeksLabel}` : null,
+    weeklyWorkoutsCount > 0 ? `${weeklyWorkoutsCount} ${workoutsLabel}` : null,
+  ].filter(Boolean);
   return (
     // «Чорнило» v3.1 § 3: overrides the light `text-fizruk-strong` (now
     // invisible on the saturated hero gradient) with hero-ink;
     // `dark:text-fizruk-300/70` already reads fine on the dark hero.
     <SectionHeading as="p" size="xs" variant="fizruk" className="text-hero-ink">
-      {today} · серія {streakWeeks} тижн. · {weeklyWorkoutsCount}{" "}
-      {workoutsLabel}
+      {parts.join(" · ")}
     </SectionHeading>
   );
 }
@@ -179,8 +218,9 @@ function HeroKicker({
 /**
  * Secondary eyebrow that labels each state ("Тренування триває", etc.)
  * Sits directly under the `HeroKicker` and uses the theme-invariant
- * `hero-ink/80` so it reads as an overlay label on the saturated fizruk
- * hero gradient («Чорнило» v3.1 § 3 — same treatment in both themes).
+ * full-opacity `hero-ink` so it reads as an overlay label on the saturated
+ * fizruk hero gradient («Чорнило» v3.1 § 3 — same treatment in both themes;
+ * без альфи, A9 2026-10-01).
  */
 function HeroStateLabel({ children }: { readonly children: ReactNode }) {
   return (
@@ -254,9 +294,16 @@ export function ActiveState({
       </p>
       <p className="mt-2 text-style-body text-hero-ink">{meta}</p>
       <div className="mt-6">
+        {/* Фокус CTA (follow-up аудиту контрасту 2026-10-01): кільце того ж
+            кольору, що й заливка кнопки, лише «розширювало» її (ratio 1.0).
+            Світла тема: `hero-ink` ≥4.7:1 проти градієнта й заливки (правило
+            `bg-hero-grad-*` у `theme.css` ставить колір кільця, клас тут
+            лише називає намір). Темна: заливка `dark:bg-fizruk` = `-400`
+            = колір кільця, тож кільце відсунуте на 2px (`ring-offset-bg`).
+            Та сама рецептура на двох інших CTA нижче. */}
         <button
           type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
           onClick={onResume}
           aria-label="Повернутись до активного тренування"
         >
@@ -267,7 +314,11 @@ export function ActiveState({
             <PlayIcon />
           </span>
           <span className="min-w-0 flex-1">
-            <SectionHeading as="span" size="xs" className="block text-white/70">
+            <SectionHeading
+              as="span"
+              size="xs"
+              className="block text-white dark:text-bg"
+            >
               Продовжити
             </SectionHeading>
             <span className="block text-style-title leading-tight">
@@ -296,7 +347,7 @@ export function TodayState({
   const metaParts: string[] = [
     `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
   ];
-  if (state.estimatedMin) metaParts.push(`~${state.estimatedMin} хв`);
+  if (state.estimatedMin) metaParts.push(`~${state.estimatedMin}\u202Fхв`);
   if (state.hint) metaParts.push(state.hint);
   return (
     <HeroShell ariaLabel="Сьогоднішнє тренування" cornerSlot={cornerSlot}>
@@ -319,7 +370,7 @@ export function TodayState({
       <div className="mt-6">
         <button
           type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
           onClick={onStartToday}
           aria-label={`Почати тренування: ${state.label}`}
         >
@@ -330,7 +381,11 @@ export function TodayState({
             <PlayIcon />
           </span>
           <span className="min-w-0 flex-1">
-            <SectionHeading as="span" size="xs" className="block text-white/70">
+            <SectionHeading
+              as="span"
+              size="xs"
+              className="block text-white dark:text-bg"
+            >
               Почати
             </SectionHeading>
             <span className="block text-style-title truncate leading-tight">
@@ -362,7 +417,7 @@ export function UpcomingState({
   const metaParts: string[] = [
     state.label,
     formatDaysAway(state.daysFromNow),
-    formatDateShort(state.dateKey),
+    formatDayMonthFromKey(state.dateKey),
   ];
   if (state.exerciseCount != null && state.exerciseCount > 0) {
     metaParts.push(
@@ -382,7 +437,8 @@ export function UpcomingState({
       />
       <div className="mt-6">
         <Button
-          variant="fizruk-soft"
+          variant="soft"
+          tone="fizruk"
           className="w-full h-12 min-h-[44px]"
           onClick={onOpenPlan}
           aria-label="Відкрити план тренувань"
@@ -400,6 +456,7 @@ export function EmptyState({
   body,
   onOpenTemplates,
   onOpenPrograms,
+  onQuickStart,
   cornerSlot,
 }: {
   readonly state: Extract<HeroCardState, { kind: "empty" }>;
@@ -407,20 +464,33 @@ export function EmptyState({
   readonly body: HeroBodyInfo;
   readonly onOpenTemplates: () => void;
   readonly onOpenPrograms: () => void;
+  readonly onQuickStart?: (() => void) | undefined;
   readonly cornerSlot?: ReactNode;
 }) {
-  const primaryLabel = state.hasTemplates ? "Обрати шаблон" : "Створити шаблон";
+  const templatesLabel = state.hasTemplates
+    ? "Обрати шаблон"
+    : "Створити шаблон";
+  // PR-Z6: коли старт доступний, він і є головною дією — порожній план не
+  // повинен вимагати спершу завести шаблон. Ієрархія повторює вкладку
+  // «Тренування» (звіт 2026-09-03): старт кнопкою, шаблон посиланням.
+  // Без `onQuickStart` розкладка лишається дослівно старою, тож Storybook і
+  // споживачі поза `Dashboard` нічого не помічають.
+  const primaryLabel = onQuickStart ? "Швидкий старт" : templatesLabel;
   return (
     <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
       <HeroKicker {...kicker} />
       <HeroStateLabel>План порожній</HeroStateLabel>
       <h2 className="text-style-headline font-black text-hero-ink mt-1 leading-tight text-balance">
-        Обери шаблон або заплануй день
+        {onQuickStart
+          ? "Почни зараз або обери шаблон"
+          : "Обери шаблон або заплануй день"}
       </h2>
       <p className="mt-2 text-style-body text-hero-ink">
-        {state.hasTemplates
-          ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
-          : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
+        {onQuickStart
+          ? "Нічого не заплановано. Почни порожнє тренування і додавай вправи на ходу."
+          : state.hasTemplates
+            ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
+            : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
       </p>
       <HeroRecoveryBars
         rows={body.recoveryRows}
@@ -437,13 +507,23 @@ export function EmptyState({
         */}
         <button
           type="button"
-          className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          onClick={onOpenTemplates}
+          className="w-full py-4 rounded-2xl text-style-label font-bold bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
+          onClick={onQuickStart ?? onOpenTemplates}
         >
           {primaryLabel}
         </button>
+        {onQuickStart ? (
+          <button
+            type="button"
+            onClick={onOpenTemplates}
+            className="focus-ring min-h-[44px] w-full rounded-xl text-style-caption font-semibold text-hero-ink underline-offset-4 hover:underline"
+          >
+            {state.hasTemplates ? "або із шаблону" : "або створити шаблон"}
+          </button>
+        ) : null}
         <Button
-          variant="fizruk-soft"
+          variant="soft"
+          tone="fizruk"
           className="w-full h-12 min-h-[44px]"
           onClick={onOpenPrograms}
         >

@@ -1,6 +1,6 @@
 # Design System — Типографічна шкала
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-03-25.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює типографічну шкалу, семантичні утиліти та правила ієрархії тексту.
@@ -13,11 +13,14 @@
 
 ### Семантичні `.text-style-*` ютиліті (tier-1, fluid)
 
-Дванадцять канонічних слотів — це **єдине правильне джерело істини**
-для типографіки. Кожна утиліта зашиває `font-size` (fluid через
-`clamp()`), `line-height`, `font-weight`, `letter-spacing` та casing
-як один атомарний контракт. Розміри плавно зростають від 320 px до
-1280 px вьюпорту — без media-query-стрибків, без drift-у між кейсами.
+**Вісім канонічних ролей** (D8-sweep, дизайн-аудит цикл 5) — це
+**єдине правильне джерело істини** для типографіки. Кожна утиліта
+зашиває `font-size` (fluid через `clamp()`), `line-height`,
+`font-weight` і `letter-spacing` як один атомарний контракт. Розміри
+плавно зростають від 320 px до 1280 px вьюпорту — без
+media-query-стрибків, без drift-у між кейсами. Шкала була інвентарною
+(12 слотів, де кілька пар відрізнялись лише на крок розміру); тепер
+вона модульна — роль ≠ розмір, і кожна роль має рівно одне втілення.
 
 **Дизайн-конвенція — 12px floor.** Жоден семантичний слот не опускається
 нижче 12px (caption / overline). `text-2xs` (10px) зареєстрований у preset-і,
@@ -32,55 +35,91 @@
 `prefer-text-style` / `no-arbitrary-text-size` retired
 [ADR-0081](../../../governance/adr/0081-repository-simplification.md)).
 
-| Утиліта                | Розмір (clamp)    | Lh   | Weight | Tracking | Роль                                   |
-| ---------------------- | ----------------- | ---- | ------ | -------- | -------------------------------------- |
-| `.text-style-display`  | 32 → 56 px        | 1.05 | 700    | -0.025em | Landing hero / splash heading          |
-| `.text-style-headline` | 26 → 36 px        | 1.15 | 700    | -0.02em  | Page H1, hero stat number              |
-| `.text-style-title-lg` | 22 → 28 px        | 1.25 | 600    | -0.015em | Велике секційне заголовкове            |
-| `.text-style-title`    | 18 → 22 px        | 1.3  | 600    | -0.01em  | Section heading, card title            |
-| `.text-style-subtitle` | 16 → 18 px        | 1.4  | 500    | -0.005em | Sub-heading                            |
-| `.text-style-body-lg`  | 16 → 18 px        | 1.55 | 400    | 0        | Acцентований body (intro, lead-абзаци) |
-| `.text-style-body`     | 15 → 16 px        | 1.55 | 400    | 0        | Дефолтний body                         |
-| `.text-style-body-sm`  | 13 → 14 px        | 1.55 | 400    | 0        | Secondary body, descriptions           |
-| `.text-style-label`    | 13 → 14 px        | 1.4  | 500    | 0.005em  | Form label, button text                |
-| `.text-style-caption`  | **12 px** (floor) | 1.4  | 400    | 0.005em  | Helper text, metadata, timestamps      |
-| `.text-style-overline` | **12 px** (floor) | 1.4  | 600    | 0.08em   | UPPER section kicker / eyebrow         |
-| `.text-style-code`     | 13 → 14 px / mono | 1.5  | 500    | 0        | Inline `code`, monospace stats         |
+| Утиліта                | Розмір (clamp)    | Lh   | Weight | Tracking | Роль                                        |
+| ---------------------- | ----------------- | ---- | ------ | -------- | ------------------------------------------- |
+| `.text-style-display`  | 40 → 64 px        | 1    | 800    | -0.012em | Найбільше число / heading екрана            |
+| `.text-style-headline` | 26 → 36 px        | 1.15 | 700    | -0.02em  | Page H1, hero-стат                          |
+| `.text-style-title`    | 18 → 22 px        | 1.3  | 600    | -0.01em  | Заголовок секції / картки                   |
+| `.text-style-body`     | 15 → 16 px        | 1.55 | 400    | 0        | Основний текст                              |
+| `.text-style-label`    | 13 → 14 px        | 1.4  | 500    | 0.005em  | Мітки, кнопки, вторинний текст              |
+| `.text-style-caption`  | **12 px** (floor) | 1.4  | 400    | 0.005em  | Мета, таймстемпи                            |
+| `.text-style-overline` | **12 px** (floor) | 1.4  | 600    | 0.005em  | Кікер (службовий рядок) — без капсу, див. ↓ |
+| `.text-style-code`     | 13 → 14 px / mono | 1.5  | 500    | 0        | Mono-дані, inline-код                       |
 
-**Back-compat.** `.text-style-hero` лишається аліасом на `headline`
-(той самий fluid контракт) — існуючі call-site-и не вимагають міграції.
-Нове code-author writes `.text-style-headline` напряму.
+Точні `clamp()`: display `clamp(2.5rem, 2rem + 2.5vw, 4rem)`, headline
+`clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)`, title
+`clamp(1.125rem, 1.054rem + 0.357vw, 1.375rem)`, body
+`clamp(0.9375rem, 0.920rem + 0.089vw, 1rem)`, label і code
+`clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)`.
+
+**Трекінг display — −0.012em, не −0.03em.** Калібрування під кирилицю
+(рішення власника 2026-08-05): у кирилиці помітно більше вертикальних
+штрихів на слово, тож сильніше стиснення дає «частокіл».
+
+**Overline — без `uppercase` і без широкого трекінгу** (рішення власника
+2026-08-06, `mockups/product/kickers.html`). Капс у кирилиці стирає
+силует слова, а трекінг `0.08em` існував лише заради капсу. Роль
+службового рядка тепер несуть колір і 2px смужка у `SectionHeading`, не
+форма літер. Ім'я `overline` лишили навмисно (рядок НАД заголовком ≠
+«великі літери»).
+
+**Два розмірні варіанти — лише для компонентів, не для сторінкового
+коду** (це не дев'ята роль, як bold у body):
+
+- `.text-style-label-lg` — 16 px фіксовано, та сама вага/трекінг, що в
+  `label`. Призначення — великий CTA (`Button lg/xl`).
+- `.text-style-headline-fixed` — 26 px фіксовано (= підлога плинного
+  `headline`). Призначення — число в контейнері фіксованого розміру
+  (кільце прогресу 96 px), де плинна роль переповнює контейнер на
+  планшеті й десктопі. Не «спрощуй» його назад у плинний `headline`.
+
+**Злиті в D8-sweep (куди мігрувати старі імена):** `hero` → `headline`
+(значення були ідентичні), `display-hero` → `display`, `title-lg` /
+`subtitle` → `title`, `body-lg` → `body`, `body-sm` / `body-strong` →
+`label`. Жодна з цих утиліт **не зареєстрована**: `.text-style-hero`
+у preset-і згадується лише застарілим коментарем над `.text-style-title`
+(«Back-compat alias…»), самого правила немає. Пишеш старе ім'я — клас
+мовчки не застосується.
+
+**Роль + `font-*` на одному вузлі.** Ролі реєструються через
+`addUtilities`, тобто мають ту саму специфічність, що й `font-semibold`,
+і в зібраному CSS стоять вище — тож `text-style-caption font-semibold`
+дає 600, а не 400. Роль програє явній вазі передбачувано. Перевірку
+прив'язано до порядку в білді (AI-DANGER у preset-і) — переміряй, перш
+ніж спиратись.
 
 ### Line-height & letter-spacing — за роллю, а не за розміром
 
-- **Display / headline** — `line-height: 1.05–1.15`, негативний
-  `letter-spacing` (≈ -0.02em). Великі літери "слипаються" і
+- **Display / headline** — `line-height: 1` / `1.15`, негативний
+  `letter-spacing` (-0.012em / -0.02em). Великі літери "слипаються" і
   виглядають композиційніше.
-- **Title / title-lg** — `line-height: 1.25–1.3`, легке негативне
-  трекінг (-0.01em / -0.015em).
-- **Body / body-lg / body-sm** — `line-height: 1.55` (loose),
-  трекінг 0. Це найважливіше — body для довгого читання має
-  «дихати», навіть на mobile.
-- **Label / caption** — `line-height: 1.4`, мінімальний позитивний
-  трекінг (0.005em) для читабельності на дрібних розмірах.
-- **Overline** — `line-height: 1.4`, **великий all-caps трекінг
-  0.08em** (стандарт для capslock-кікерів — без трекінгу
-  капітал-літери виглядають перевантажено).
+- **Title** — `line-height: 1.3`, легкий негативний трекінг (-0.01em).
+- **Body** — `line-height: 1.55` (loose), трекінг 0. Це найважливіше —
+  body для довгого читання має «дихати», навіть на mobile.
+- **Label / caption / overline** — `line-height: 1.4`, мінімальний
+  позитивний трекінг (0.005em) для читабельності на дрібних розмірах.
+  Overline відрізняється від caption лише вагою (600 проти 400).
 - **Code** — `line-height: 1.5`, monospace.
 
 ### Font-feature defaults
 
-На рівні `html` глобально вмикаються OpenType-фічі:
+На рівні `html` (`apps/web/src/styles/base.css`) глобально вмикаються
+OpenType-фічі:
 
 ```css
 font-feature-settings:
   "kern" 1,
   /* кернінг          */ "liga" 1,
   /* common ligatures */ "calt" 1,
-  /* contextual alts  */ "ss01" 1; /* DM Sans stylistic set 01 */
+  /* contextual alts  */ "ss01" 1; /* stylistic set 01 */
 font-kerning: normal;
 text-rendering: optimizeLegibility;
 ```
+
+Родина — **Manrope Variable** (v2 redesign 2026-05; `fontFamily.sans` і
+`.display` у preset-і, DM Sans Variable лишається у fallback-стеку, mono —
+JetBrains Mono Variable). `ss01` у base.css так і шипиться — під Manrope,
+не під DM Sans, як писав старий коментар.
 
 Це підв'язує всі екрани до однакових базових гліфів. Якщо потрібно
 відключити для специфічного блоку (наприклад, ASCII-арт або суворо
@@ -100,27 +139,20 @@ text-rendering: optimizeLegibility;
 Старий `.tabular-nums` (визначений у `apps/web/src/styles/base.css`)
 лишається back-compat-аліасом.
 
-### Канонічна `.text-*` шкала (tier-2 — окремі утиліти)
+### Legacy `.text-*` шкала (tier-2) — видалена
 
-Поряд з `text-style-*` живе ще один шар — окремі семантичні утиліти, які
-закривають дрібніші, нижчі та більші розміри, що не мають своєї
-семантичної ролі в `text-style-*`. Усі вони визначені в
-`apps/web/src/styles/utilities.css`:
-
-| Утиліта              | Контракт                                   | Коли використовувати                                                                                                             |
-| -------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `.text-display`      | 36 / none / 700 / tabular / -tracking      | Hero stat (₴ 12 400)                                                                                                             |
-| `.text-display-stat` | **40** / tight / 700 / tabular / -tracking | Найбільша цифра на екрані (HeroCard сума, AssetsTable)                                                                           |
-| `.text-display-hero` | **44** / none / 900 / tabular / -tracking  | Story / digest "celebration"-цифра (kcal, спалена сума)                                                                          |
-| `.text-h1`           | 24 / tight / 700 / -tracking               | Page / screen title                                                                                                              |
-| `.text-h2`           | 18 / snug / 600 / -0.01em                  | Section heading                                                                                                                  |
-| `.text-h3`           | 15 / snug / 600                            | Card title, subsection label                                                                                                     |
-| `.text-body`         | 15 / relaxed / 400                         | Default prose                                                                                                                    |
-| `.text-body-sm`      | 13 / relaxed / 400                         | Secondary text, descriptions                                                                                                     |
-| `.text-caption`      | 12 / snug / 400 / 0.01em                   | Labels, timestamps, meta copy                                                                                                    |
-| `.text-eyebrow`      | 11 / none / 600 / 0.08em / UPPER           | Overline / section prefix ("ФІНІК", "СЬОГОДНІ")                                                                                  |
-| `.text-meta`         | **11** / snug / 500                        | Compact lowercase labels (KPI hints, "Monobank", "USD")                                                                          |
-| `.text-micro`        | **10** / tight / 500                       | Aux glyph labels (icon-overlay numbers, ring centre, axis ticks). **Floor — нижче не використовувати, навіть на світлих фонах.** |
+Другої шкали більше немає. `.text-display` / `.text-display-stat` /
+`.text-display-hero` / `.text-h1…h3` / `.text-body` / `.text-body-sm` /
+`.text-caption` / `.text-eyebrow` / `.text-meta` / `.text-micro` жили в
+`apps/web/src/styles/utilities.css` паралельно до `.text-style-*` — два
+«display hero», два caption і два набори заголовків означали, що однакова
+роль на різних екранах отримувала різний розмір. У D8-sweep (цикл 5) усі
+31 вживання переведено на ролі вище; на місці шкали в `utilities.css`
+лишився лише tombstone-коментар («Legacy типографічна шкала — ВИДАЛЕНА»).
+Правила `sergeant-design/prefer-text-style` теж більше немає (retired
+ADR-0081), тож повернення legacy-класу механічно не ловиться — лише
+review; механічно гейтиться тільки 12px-floor
+(`scripts/check-design-conventions.mjs`).
 
 Вага:
 
@@ -133,9 +165,8 @@ text-rendering: optimizeLegibility;
 
 ### Заборонено: arbitrary `text-[Npx]` / `text-[Nrem]`
 
-Ad-hoc `text-[12px]` / `text-[40px]` / `text-[2.5rem]` обходять і tier-1
-(`text-style-*`), і tier-2 (`text-display`/`text-h*`/`text-meta`/...) —
-це призводить до vertical-rhythm-дрифту і регресій типу 8 px підпису
+Ad-hoc `text-[12px]` / `text-[40px]` / `text-[2.5rem]` обходять
+`text-style-*` — це призводить до vertical-rhythm-дрифту і регресій типу 8 px підпису
 поверх трояндового фону (нижче WCAG-комфорту). Дизайн-конвенція — tokens +
 review (колишнє lint-правило `no-arbitrary-text-size` retired ADR-0081):
 будь-яке `text-[N(px|rem|em)]` — знахідка для design-review.
@@ -145,53 +176,32 @@ DS-примітиви, які власне визначають raw-px-токе�
 `Segmented`, `Card`), звільнено від конвенції, бо вони — джерело істини
 для самих утиліт.
 
-### Prose — `@shared/components/ui/Prose`
+### Довгий текст
 
-Для довгого rich-text-у (онбординг кроки, статті у Coach, markdown
-з асистента, документація-в-екрані) використовуй компонент `Prose`.
-Він застосовує семантичну шкалу до всіх дочірніх HTML-тегів
-(h1..h4, p, ul, ol, li, blockquote, code, pre, hr, a, table),
-тримає вимірення (`measure`) у комфортних ≤70ch через токен
-`--max-line-length` і має два варіанти:
-
-| Variant   | Base    | Spacing rhythm | Коли використовувати                                   |
-| --------- | ------- | -------------- | ------------------------------------------------------ |
-| `default` | body    | 1.0× (relaxed) | Статті, довгі описи, articles, blog-style preview      |
-| `compact` | body-sm | 0.6× (tight)   | Шіти, сайдбари, in-card prose, дрібні onboarding-блоки |
-
-```tsx
-import { Prose } from "@shared/components/ui";
-
-<Prose>
-  <h2>Заголовок</h2>
-  <p>Абзац з <a href="#">посиланням</a> і <code>inline-кодом</code>.</p>
-  <ul><li>Bullet</li></ul>
-</Prose>
-
-<Prose variant="compact">…</Prose>
-```
-
-Перевизначити кеп рядка можна локально через CSS-змінну:
-
-```tsx
-<Prose style={{ "--max-line-length": "60ch" } as React.CSSProperties}>…</Prose>
-```
+Компонента `Prose` в `apps/web/src` **немає** (і в barrel
+`@shared/components/ui` теж). Довгий текст набирається ролями напряму —
+`.text-style-body` для абзаців, `.text-style-caption text-muted` для
+підписів — а ширину рядка обмежує Tailwind `max-w-prose` на самому
+елементі (так робить, наприклад, `core/DesignShowcase`). Окремого токена
+`--max-line-length` немає.
 
 ### Do / Don't — гайдлайни ієрархії
 
 - ✅ **Do** — використовуй один `display` або `headline` на екран.
   Hero — це фокусна точка; два хедлайни змагаються між собою.
-- ✅ **Do** — body / body-lg для абзаців; body-sm — лише для
-  допоміжного підпису під полем або secondary description.
-- ✅ **Do** — overline (UPPER + 0.08em tracking) як кікер, не як body.
-- ❌ **Don't** — не пар `text-style-display` з `text-style-body-sm`
-  в одному hero. Дисплейний розмір потребує body-lg як супутника
+- ✅ **Do** — `body` для абзаців; `label` — для вторинного тексту,
+  підпису під полем чи secondary description (колишній `body-sm`).
+- ✅ **Do** — `overline` як кікер (вага 600 + колір + 2px смужка
+  `SectionHeading`), не як body і не через `uppercase`.
+- ❌ **Don't** — не пар `text-style-display` з `text-style-label`
+  в одному hero. Дисплейний розмір потребує `body` як супутника
   (контраст у вазі і ритмі).
-- ❌ **Don't** — не дублюй `text-style-title` всередині `Prose` —
-  `<h3>` всередині блоку вже отримує `title-lg` автоматично.
+- ❌ **Don't** — не пиши старі імена (`title-lg`, `subtitle`, `body-lg`,
+  `body-sm`, `hero`, `display-hero`) — вони не зареєстровані, клас мовчки
+  не спрацює.
 - ❌ **Don't** — `text-2xs` (10 px) — це не "тиха caption". Це чарт-axis
   або декоративний бейдж. Для будь-якого тексту, який користувач
   має прочитати, щоб діяти — мінімум `caption` (12 px).
 - ❌ **Don't** — не комбінуй `text-style-overline` з body-розмірним
   фоном (наприклад, на `bg-finyk-soft` з 12 px без weight 600 текст
-  «втопиться» — overline передбачає контрастний weight + tracking).
+  «втопиться» — overline передбачає контрастний weight).

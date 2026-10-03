@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Підпис «лишилось на …» для hero-стрічки дня (спека
- * `docs/90-work/planning/specs/nutrition-hero-day-strip.md`, рішення 2):
+ * `docs/work/specs/nutrition-hero-day-strip.md`, рішення 2):
  * перший ще не записаний тип прийому за `MEAL_ORDER` — НЕ за годиною доби.
  * `mealTypeByHour` тут навмисно не використовується: він суперечить факту,
  * коли обід записано о 17:00.

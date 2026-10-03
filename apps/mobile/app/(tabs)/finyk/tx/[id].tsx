@@ -5,7 +5,7 @@
 ік Transactions list already exists at
  * `/(tabs)/finyk/transactions`; a full single-transaction detail
  * screen is part of a later Finyk polish PR (see
- * `docs/mobile/react-native-migration.md` § 5.2). Until then this screen
+ * `docs/engineering/mobile/react-native-migration.md` § 5.2). Until then this screen
  * prints the tx id and routes back to the Transactions list.
  */
 import { useLocalSearchParams } from "expo-router";

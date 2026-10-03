@@ -99,10 +99,10 @@ export function A11ySection() {
           <Button size="xs">xs (auto-min)</Button>
           <Button size="sm">sm (auto-min)</Button>
           <IconButton aria-label="Закрити" size="sm">
-            <Icon name="x" />
+            <Icon name="close" />
           </IconButton>
           <IconButton aria-label="Закрити" size="md">
-            <Icon name="x" />
+            <Icon name="close" />
           </IconButton>
         </div>
         <p className="text-style-caption text-muted mt-2">

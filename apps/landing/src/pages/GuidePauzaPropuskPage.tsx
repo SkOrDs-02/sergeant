@@ -3,12 +3,13 @@ import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
+import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 /**
  * Гайд, а не повтор модульної сторінки: `/zvychky` пояснює, ЧОМУ серія
  * переживає пропуск, а тут – які саме кнопки натиснути. Назви елементів
  * узяті з продукту (`shared/i18n/uk.ts` → routinePause, `skipReasons.ts`).
- * Констант мʼякого стріку сторінка не публікує – рішення §10 п. 4 спеки
+ * Констант мʼякої серії сторінка не публікує – рішення §10 п. 4 спеки
  * site-ia: числа в коді позначені як нератифіковані.
  */
 const REASONS = [
@@ -23,7 +24,7 @@ const NOT_THE_SAME = [
   "Пауза прибирає дні з розкладу: їх немає в підрахунку взагалі.",
   "Причина лишає день у підрахунку, але робить його нейтральним для серії.",
   "Заморозка автоматична, обмежена і не залежить від тебе.",
-  "Архівування звички – це не пауза: воно ховає звичку зовсім, а не на період.",
+  "Архівування звички не є паузою: воно ховає звичку зовсім.",
 ];
 
 export default function GuidePauzaPropuskPage() {
@@ -32,10 +33,10 @@ export default function GuidePauzaPropuskPage() {
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "HowTo",
-      name: "Як заявити паузу і пояснити пропуск у трекері звичок",
+      name: "Як заявити паузу і пояснити пропуск, щоб серія не обнулилась",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/pauza-i-propusk"].lastmod,
-      author: { "@type": "Person", name: "Автор Sergeant" },
+      author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
   });
@@ -55,8 +56,8 @@ export default function GuidePauzaPropuskPage() {
           </h1>
           <p className="mt-4 text-sm text-subtle">
             Оновлено{" "}
-            <UpdatedOn iso={ROUTE_META["/guides/pauza-i-propusk"].lastmod} /> ·
-            автор Sergeant
+            <UpdatedOn iso={ROUTE_META["/guides/pauza-i-propusk"].lastmod} /> ·{" "}
+            {AUTHOR_NAME}
           </p>
           <GuideHomeModule href="/zvychky" label="Звички" />
         </div>
@@ -66,17 +67,17 @@ export default function GuidePauzaPropuskPage() {
             Коротка відповідь
           </p>
           <p className="mt-3 leading-relaxed text-ink-text">
-            Знаєш наперед, що днів не буде – постав паузу датами в картці
-            звички. Пропустив і хочеш пояснити – відкрий денний звіт і вибери
-            причину. Обидва шляхи серію не ламають, і вони різні: пауза прибирає
-            дні з розкладу, причина лишає день у підрахунку, але нейтральним.
+            Знаєш наперед, що днів не буде: постав паузу датами в картці звички.
+            Пропустив і хочеш пояснити: відкрий денний звіт і вибери причину.
+            Обидва шляхи серію не ламають, і вони різні: пауза прибирає дні з
+            розкладу, причина лишає день у підрахунку, але нейтральним.
           </p>
         </div>
 
         <section>
           <h2 className={h2}>Пауза: коли знаєш наперед</h2>
           <p className="mt-4 leading-relaxed text-muted">
-            Відпустка, відрядження, лікарняний – усе, про що відомо заздалегідь
+            Відпустка, відрядження, лікарняний: усе, про що відомо заздалегідь
             або що можна описати датами.
           </p>
           <ol className="mt-5 flex flex-col gap-4">
@@ -95,8 +96,8 @@ export default function GuidePauzaPropuskPage() {
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">
                 Друге поле необовʼязкове. Якщо не знаєш, коли повернешся, лиши
-                його порожнім – пауза буде відкритою, і в картці зʼявиться
-                підпис «На паузі з» датою.
+                його порожнім: пауза буде відкритою, і в картці зʼявиться підпис
+                «На паузі з» датою.
               </p>
             </li>
             <li className="border-t border-cardline pt-4">
@@ -105,23 +106,22 @@ export default function GuidePauzaPropuskPage() {
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">
                 Дні всередині інтервалу випадають із розкладу звички: серія їх
-                не бачить і не подовжує на них. Повернувся раніше – кнопка
+                не бачить і не подовжує на них. Якщо повернувся раніше, кнопка
                 «Повернутись сьогодні» закриває паузу поточним днем.
               </p>
             </li>
           </ol>
           <p className="mt-5 leading-relaxed text-muted">
             Пауза знає обидві межі, тому заявлена наперед відпустка не переписує
-            минулу статистику. Це важлива відмінність від простого вимкнення
-            звички: недатоване вимкнення довелось би вгадувати заднім числом.
+            минулу статистику.
           </p>
         </section>
 
         <section>
           <h2 className={h2}>Причина: коли день уже минув</h2>
           <p className="mt-4 leading-relaxed text-muted">
-            День не вийшов, і ти хочеш, щоб це лишилось у статистиці чесно, але
-            без удару по серії.
+            День не вийшов, і ти хочеш, щоб це лишилось у статистиці, але без
+            удару по серії.
           </p>
           <ol className="mt-5 flex flex-col gap-4">
             <li className="border-t border-cardline pt-4">
@@ -155,8 +155,7 @@ export default function GuidePauzaPropuskPage() {
           </ol>
           <p className="mt-5 leading-relaxed text-muted">
             Пояснений пропуск нейтральний: він не додає дня до серії, але й не
-            обриває її. Формулювання навмисно без докору – «не зміг» у продукті
-            не є провалом.
+            обриває її. «Не зміг» у продукті не є провалом.
           </p>
         </section>
 
@@ -164,15 +163,14 @@ export default function GuidePauzaPropuskPage() {
           <h2 className={h2}>А якщо просто забув</h2>
           <p className="mt-4 leading-relaxed text-muted">
             День, у якому ти нічого не відмітив і нічого не пояснив, серія теж
-            може пережити – але вже з бюджету, який вона заробила виконаними
+            може пережити, але вже з бюджету, який вона заробила виконаними
             днями. Це єдиний із трьох механізмів, що працює без твоєї участі,
             тому єдиний обмежений: заморозки не видаються наперед, і мовчазний
             пропуск, що триває надто довго, серія все одно назве зупинкою.
           </p>
           <p className="mt-4 leading-relaxed text-muted">
-            Тому порада проста: якщо є що сказати про день – скажи причиною,
-            вона нічого не коштує. Бюджет прибережи на дні, коли було не до
-            застосунку.
+            Якщо є що сказати про день, скажи причиною: вона нічого не коштує.
+            Заморозки прибережи на дні, коли було не до застосунку.
           </p>
         </section>
 

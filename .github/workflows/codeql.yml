@@ -1,6 +1,6 @@
 name: CodeQL (JavaScript / TypeScript SAST)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -23,15 +23,11 @@ name: CodeQL (JavaScript / TypeScript SAST)
 #
 # Усі actions SHA-pinned згідно з repo convention (див. ci.yml /
 # container-scan.yml).
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-  pull_request:
-  schedule:
-    # Понеділок 06:00 UTC — після weekend-у, до початку робочого тижня.
-    # Не перетинається з 03:00 (nightly-audit) і 04:00 (container-scan).
-    - cron: "0 6 * * 1"
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read

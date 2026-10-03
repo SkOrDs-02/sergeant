@@ -37,7 +37,11 @@ import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import type { RecipeCacheEntry as StoredRecipeCacheEntry } from "../lib/recipeCache";
 import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
-import { guessMealTypeIdNow, type RecipeLike } from "./RecipesCard.helpers";
+import {
+  guessMealTypeIdNow,
+  parsePortionFactor,
+  type RecipeLike,
+} from "./RecipesCard.helpers";
 import { SavedSection } from "./RecipesCard.SavedSection";
 import { GeneratorCard } from "./RecipesCard.Generator";
 
@@ -82,6 +86,7 @@ export function RecipesCard({
     () => [] as SavedRecipe[],
   );
   const [savedBusy, setSavedBusy] = useState(true);
+  const [savedError, setSavedError] = useState(false);
   const [portionById, setPortionById] = useState<Record<string, string>>({});
   const [deleteRecipeConfirm, setDeleteRecipeConfirm] =
     useState<SavedRecipe | null>(null);
@@ -93,7 +98,9 @@ export function RecipesCard({
       const list = await listSavedRecipes(200);
       if (!cancelled) setSaved(list);
     })()
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setSavedError(true);
+      })
       .finally(() => {
         if (!cancelled) setSavedBusy(false);
       });
@@ -114,6 +121,7 @@ export function RecipesCard({
     setSavedBusy(true);
     try {
       setSaved(await listSavedRecipes(200));
+      setSavedError(false);
     } finally {
       setSavedBusy(false);
     }
@@ -143,15 +151,7 @@ export function RecipesCard({
   ): Promise<void> {
     if (typeof addMealToLog !== "function") return;
     const key = String(idKey || r?.id || r?.title || "");
-    const factorRaw = portionById[key];
-    const factor =
-      factorRaw == null || factorRaw === ""
-        ? 1
-        : Number(String(factorRaw).replace(",", "."));
-    const macros = scaleMacros(
-      r?.macros,
-      Number.isFinite(factor) && factor > 0 ? factor : 1,
-    );
+    const macros = scaleMacros(r?.macros, parsePortionFactor(portionById[key]));
     const mealType = guessMealTypeIdNow();
     const label =
       MEAL_TYPES.find((x) => x.id === mealType)?.label || "Прийом їжі";
@@ -188,6 +188,8 @@ export function RecipesCard({
       <SavedSection
         saved={saved}
         savedBusy={savedBusy}
+        savedError={savedError}
+        onRetry={() => void refreshSaved().catch(() => {})}
         savedOpen={savedOpen}
         setSavedOpen={setSavedOpen}
         openSavedId={openSavedId}

@@ -143,6 +143,48 @@ describe("WorkoutHistoryList – badge variants", () => {
     expect(screen.getByText("Активне")).toBeTruthy();
   });
 
+  it("позначає легкий запис поруч із «Завершене» (канон §8, 2026-09-15)", () => {
+    // «+20 відтискань» одним підходом за пів хвилини — на дні є, серію не
+    // рухає; без позначки цей запис і півторагодинне тренування виглядали б
+    // в історії однаково.
+    const started = new Date("2025-03-10T10:00:00Z");
+    const light = makeWorkout({
+      id: "w-light",
+      startedAt: started.toISOString(),
+      endedAt: new Date(started.getTime() + 40_000).toISOString(),
+      items: [
+        {
+          id: "i1",
+          exerciseId: "pushup",
+          nameUk: "Віджимання від підлоги",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [{ weightKg: 0, reps: 20 }],
+        },
+      ],
+    });
+    renderWithToast(
+      <WorkoutHistoryList {...baseProps({ workouts: [light] })} />,
+    );
+    expect(screen.getByText("легке")).toBeTruthy();
+    expect(screen.getByText("Завершене")).toBeTruthy();
+  });
+
+  it("повноцінне тренування позначки «легке» не має", () => {
+    const started = new Date("2025-03-10T10:00:00Z");
+    const full = makeWorkout({
+      id: "w-full",
+      startedAt: started.toISOString(),
+      endedAt: new Date(started.getTime() + 45 * 60_000).toISOString(),
+    });
+    renderWithToast(
+      <WorkoutHistoryList {...baseProps({ workouts: [full] })} />,
+    );
+    expect(screen.queryByText("легке")).toBeNull();
+  });
+
   it("shows workout note when present", () => {
     const noted = makeWorkout({ id: "w-note", note: "Важке тренування" });
     renderWithToast(

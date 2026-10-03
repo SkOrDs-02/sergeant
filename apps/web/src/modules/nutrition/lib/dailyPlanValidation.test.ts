@@ -30,12 +30,16 @@ function makePrefs(
     dailyTargetProtein_g: null,
     dailyTargetFat_g: null,
     dailyTargetCarbs_g: null,
+    adaptiveGoalEnabled: false,
+    adaptiveGoalIntent: "maintenance",
+    adaptiveGoalLastUpdatedAt: null,
+    adaptiveGoalLastReason: null,
     mealTemplates: [],
     reminderEnabled: false,
     reminderHour: 12,
     waterGoalMl: 2000,
     ...overrides,
-  } as NutritionPrefs;
+  };
 }
 
 // ─── calcGoalRangeIssues ──────────────────────────────────────────────────────

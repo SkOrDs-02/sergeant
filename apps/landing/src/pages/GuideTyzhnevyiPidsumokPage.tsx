@@ -3,6 +3,7 @@ import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
+import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 /**
  * Гайд, а не повтор модульної сторінки: `/zvyazky` пояснює логіку
@@ -11,8 +12,8 @@ import TelegramCta from "../components/TelegramCta";
  * лейбл тумблера – з `AIDigestSection.tsx`; чисел підсумок не публікує.
  */
 const ENTRY_POINTS = [
-  "На сторінці «Звіти», у режимі «Тиждень».",
-  "На головній – у блоці інсайтів «Звіт тижня».",
+  "Кнопка «Оновити звіт» під уже готовим звітом.",
+  "Тумблер «Автогенерація щопонеділка» у налаштуваннях, розділ «Сержант»: якщо його вимкнути, звіт не збереться.",
 ];
 
 export default function GuideTyzhnevyiPidsumokPage() {
@@ -21,10 +22,10 @@ export default function GuideTyzhnevyiPidsumokPage() {
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "HowTo",
-      name: "Коли приходить тижневий підсумок і як отримати його вручну",
+      name: "Коли приходить звіт тижня і як отримати його вручну",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/tyzhnevyi-pidsumok"].lastmod,
-      author: { "@type": "Person", name: "Автор Sergeant" },
+      author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
   });
@@ -40,12 +41,12 @@ export default function GuideTyzhnevyiPidsumokPage() {
             Гайди · Звʼязки
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
-            Коли приходить тижневий підсумок і як отримати його вручну
+            Коли приходить звіт тижня і як отримати його вручну
           </h1>
           <p className="mt-4 text-sm text-subtle">
             Оновлено{" "}
             <UpdatedOn iso={ROUTE_META["/guides/tyzhnevyi-pidsumok"].lastmod} />{" "}
-            · автор Sergeant
+            · {AUTHOR_NAME}
           </p>
           <GuideHomeModule href="/zvyazky" label="Звʼязки" />
         </div>
@@ -55,30 +56,27 @@ export default function GuideTyzhnevyiPidsumokPage() {
             Коротка відповідь
           </p>
           <p className="mt-3 leading-relaxed text-ink-text">
-            Підсумок збирається сам щопонеділка за тиждень, що щойно завершився,
-            – не за той, що триває. Не хочеш чекати або вимкнув автогенерацію –
-            згенеруй його вручну зі сторінки «Звіти» чи з блоку інсайтів на
-            головній.
+            Звіт тижня збирається сам щопонеділка за тиждень, що щойно
+            завершився. Створити його достроково не можна, є лише оновлення вже
+            готового звіту.
           </p>
         </div>
 
         <section>
           <h2 className={h2}>Коли він зʼявляється сам</h2>
           <p className="mt-4 leading-relaxed text-muted">
-            Автогенерація спрацьовує в першу сесію понеділка (за годинником
-            твого пристрою) і збирає звіт за тиждень, що завершився в неділю, –
-            не за той, що щойно почався. Якщо ти зайдеш у застосунок у вівторок
-            і шукатимеш підсумок «цього тижня», не знайдеш його: тиждень ще не
-            закінчився, і підсумку за нього поки нема, є лише підсумок за
-            попередній.
+            Автогенерація спрацьовує, коли ти вперше відкриваєш застосунок у
+            понеділок (за годинником твого пристрою), і збирає звіт за тиждень,
+            що завершився в неділю. Якщо у вівторок шукати звіт «цього тижня»,
+            його не буде: тиждень ще не закінчився, є лише звіт за попередній.
           </p>
         </section>
 
         <section>
-          <h2 className={h2}>Як отримати вручну</h2>
+          <h2 className={h2}>Що лишилось під рукою</h2>
           <p className="mt-4 leading-relaxed text-muted">
-            Кнопка «Згенерувати звіт» доступна для поточного або щойно
-            завершеного тижня в двох місцях:
+            Створити звіт раніше понеділка не вийде: так звіт не збирається на
+            пів тижня даних. Керувати можна двома речами:
           </p>
           <ul className="mt-5 flex flex-col gap-3">
             {ENTRY_POINTS.map((item) => (
@@ -95,29 +93,27 @@ export default function GuideTyzhnevyiPidsumokPage() {
             ))}
           </ul>
           <p className="mt-5 leading-relaxed text-muted">
-            Той самий шлях підходить і для оновлення вже готового звіту, якщо за
-            тиждень зʼявились нові дані.
+            Сам звіт живе внизу головної. Окремої сторінки «Звіти» немає:
+            вкладка «Звʼязки» показує кореляції між сферами.
           </p>
         </section>
 
         <section>
           <h2 className={h2}>Тумблер автогенерації</h2>
           <p className="mt-4 leading-relaxed text-muted">
-            Підсумок увімкнено за замовчуванням – це не крок, який треба вмикати
-            навмисно. Вимкнути автозапуск можна тумблером «Автогенерація
-            щопонеділка» в налаштуваннях AI-звіту; вручну згенерувати підсумок
-            після цього все одно можна. Автоматичний запуск не витрачає денний
-            ліміт AI-запитів – це підсумок поза звичайною квотою.
+            Звіт увімкнено за замовчуванням. Вимкнути автозапуск можна тим самим
+            тумблером. Денний ліміт AI-запитів звіт не витрачає.
           </p>
         </section>
 
         <section>
           <h2 className={h2}>Що всередині</h2>
           <p className="mt-4 leading-relaxed text-muted">
-            Підсумок не просто перелічує цифри по модулях окремо – він шукає
-            звʼязки між ними: як тренування вплинуло на харчування, як пропуск
-            звички повʼязаний із витратами тижня. Кожен такий звʼязок має рівень
-            впевненості, і що саме він означає та звідки береться –{" "}
+            Звіт іде по модулях окремо: коротке зведення, коментар і
+            рекомендації за кожним, плюс спільний висновок на тиждень. Звʼязків
+            між сферами з рівнем впевненості тут немає: вони живуть окремо, у
+            розділі «Звʼязки», і читаються там. Що саме означає рівень
+            впевненості і звідки він береться –{" "}
             <a
               href="/zvyazky"
               className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"

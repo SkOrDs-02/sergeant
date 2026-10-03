@@ -1,7 +1,7 @@
 /**
  * In-process typed store for sync-v2 conflicts on `finyk_manual_expenses`.
  *
- * Stage 5 PR #044 (`docs/planning/storage-roadmap.md`). Provides the UI
+ * Stage 5 PR #044 (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Provides the UI
  * surface that the eventual sync-v2 client will populate when the
  * server's per-row apply-fn rejects a push with `reason='lww_conflict'`
  * або `reason='tombstoned'` для table=`finyk_manual_expenses`. The

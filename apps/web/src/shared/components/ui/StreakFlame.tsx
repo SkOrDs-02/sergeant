@@ -1,4 +1,6 @@
 import { memo } from "react";
+import { pluralDays } from "@sergeant/shared";
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { cn } from "../../lib/ui/cn";
 import { Icon } from "./Icon";
 
@@ -19,9 +21,19 @@ import { Icon } from "./Icon";
  * ```tsx
  * <StreakFlame streak={7} />
  * <StreakFlame streak={30} size="lg" showLabel />
- * <StreakBadge streak={14} label="14 days" />
+ * <StreakBadge streak={14} label="днів поспіль" />
  * ```
+ *
+ * Доступність: aria-label — «Серія: N день/дні/днів» з каталогу `uk.core`
+ * і `pluralDays`. До 2026-09-17 тут стояв англійський літерал
+ * «Streak: N days», який чув кожен користувач скрінрідера в українському
+ * інтерфейсі — лінт на кирилицю такого не ловить.
  */
+
+/** sr-only-підпис полумʼя: «Серія: 7 днів». */
+function streakLabel(streak: number, unit: string = pluralDays(streak)) {
+  return `${messages.status.streakPrefix}: ${streak} ${unit}`;
+}
 
 export type StreakFlameSize = "sm" | "md" | "lg" | "xl";
 
@@ -135,7 +147,7 @@ export const StreakFlame = memo(function StreakFlame({
           "text-muted opacity-40",
           className,
         )}
-        aria-label={`Streak: ${streak} days`}
+        aria-label={streakLabel(streak)}
       >
         <Icon name="zap" size={styles.icon} />
       </span>
@@ -149,7 +161,7 @@ export const StreakFlame = memo(function StreakFlame({
         className,
       )}
       role="img"
-      aria-label={`Streak: ${streak} days`}
+      aria-label={streakLabel(streak)}
     >
       <span
         className={cn(
@@ -167,11 +179,10 @@ export const StreakFlame = memo(function StreakFlame({
 
       {showLabel && (
         <span
-          className={cn(
-            "ml-1.5 font-bold tabular-nums",
-            styles.text,
-            intensity.color,
-          )}
+          // Число — ТЕКСТ (поріг 4.5:1), а щабель драбини розрахований на
+          // іконку (3:1): `tier-30` у темній темі давав на ньому 3.37 (аудит
+          // 2026-10-01, A6). Колір лишається за іконкою.
+          className={cn("ml-1.5 font-bold tabular-nums text-text", styles.text)}
         >
           {streak}
         </span>
@@ -203,15 +214,21 @@ export const StreakBadge = memo(function StreakBadge({
     <span
       className={cn(
         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full",
-        "bg-panel-hi border border-line",
-        "text-style-label",
-        intensity.color,
+        "bg-panelHi border border-line",
+        "text-style-label text-text",
         className,
       )}
       role="status"
-      aria-label={`Streak: ${streak} ${label || "days"}`}
+      aria-label={streakLabel(streak, label || undefined)}
     >
-      <Icon name="zap" size={14} strokeWidth={2.5} />
+      {/* Колір щабля — лише на іконці; число — текст і бере `text-text`
+          (аудит 2026-10-01, A6: `tier-30` на `panelHi` давав 3.37:1). */}
+      <Icon
+        name="zap"
+        size="sm"
+        strokeWidth={2.5}
+        className={intensity.color}
+      />
       <span className="tabular-nums">{streak}</span>
       {label && <span className="text-style-caption text-muted">{label}</span>}
     </span>

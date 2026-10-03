@@ -1,6 +1,6 @@
 # Module-accent — канонічний reference
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-08.
 > **Status:** Active
 
 > Sergeant — 4 модулі з власним брендовим кольором. Замість того, щоб кожен компонент отримував пропс `module="finyk"` / `module="fizruk"` й мапив це у `bg-finyk` / `bg-fizruk`, ми публікуємо активний акцент як CSS-variable на дереві модуля і маємо одну Tailwind-утиліту, що тягне цей колір у будь-яку поверхню всередині модуля.
@@ -24,10 +24,10 @@
 ┌─────────────────────────────────────────────────────────┐
 │  packages/design-tokens/tokens.js  (single source)     │
 │  └─ moduleAccentRgb = {                                │
-│       finyk:     { default: "15 118 110", strong: …}   │
+│       finyk:     { default: "15 118 110", strong: "17 94 89" }   │  ← teal-700 / teal-800
 │       fizruk:    { default: "14 116 144", strong: "21 94 117" }  │  ← cyan-700 / cyan-800 (v2 2026-05)
-│       routine:   { default: "249 112 102", strong: …}  │
-│       nutrition: { default: "146 204 23", strong: …}   │
+│       routine:   { default: "235 118 145", strong: "141 66 86" } │  ← rose-500 / rose-800
+│       nutrition: { default: "146 204 23", strong: "70 98 18" }   │  ← lime-500 / lime-800
 │     }                                                   │
 └─────────────────────────────────────────────────────────┘
                          │
@@ -60,11 +60,11 @@
 
 ## Правила
 
-1. **Редагуйте RGB-трійки лише у `packages/design-tokens/tokens.js`.** Вони мають співпадати з `moduleColors.{module}.primary` (для `default`) і WCAG-AA-companion-shade (для `strong` — зазвичай `-700`, окрім nutrition/lime, який бере `-800`). Не повторно-оголошуйте їх у React-компонентах.
+1. **Редагуйте RGB-трійки лише у `packages/design-tokens/tokens.js`.** Вони мають співпадати з `moduleColors.{module}.primary` (для `default`: тир `-700` у finyk/fizruk, `-500` у routine/nutrition — тири мішані, див. [`01-tokens-colors.md § 9`](./design-system/01-tokens-colors.md#9-wcag-aa-контраст)) і WCAG-AA-companion-shade (для `strong` — `-800` в усіх чотирьох з 2026-08-07: routine на `-700` давав 4.43 : 1 на фоні сторінки `#ecebe7`). Гейт `contrast.test.js` читає саме цю мапу, а `--c-routine-accent` у `theme.css` мусить із нею збігатися. Не повторно-оголошуйте їх у React-компонентах.
 
 2. **`bg-module-accent*` працює лише всередині `ModuleAccentProvider` або `ModuleShell` із пропом `module`.** Поза цим — `--module-accent-rgb` не визначений і утиліта розреш-литься у `rgb( )` — фактично прозоро. Якщо ви робите компонент, який може рендеритись standalone (наприклад, Storybook, hub-level page-loader), лишіть явний `module`-проп + `bg-{module}/10`-fallback.
 
-3. **`-strong` — під `text-white`.** Сатуровані `-500`-shade-и регресують до ~2.4–2.8 : 1 проти білого. Див. [`docs/design/design/brandbook.md`](./brandbook.md) § WCAG-AA `-strong` Tier — повна per-family-таблиця контрасту.
+3. **`-strong` — під `text-white`.** Сатуровані `-500`-shade-и (routine `#eb7691` 2.79 : 1, nutrition `#92cc17` 1.93 : 1 — перезамір 2026-09-12 у [`01-tokens-colors.md § 9`](./design-system/01-tokens-colors.md#9-wcag-aa-контраст)) провалюють AA проти білого навіть для large-text; `-700` у finyk/fizruk проходить (5.47 / 5.36). Див. [`docs/design/design/brandbook.md`](./brandbook.md) § WCAG-AA `-strong` Tier — повна per-family-таблиця контрасту.
 
 4. **Hub-chrome лишається нейтральним.** `HubHeader`, `HubTabs`, `HubDashboard`, HubChat, дашборди з усіма 4 модулями поряд — мають тримати токени `bg-brand-*` (нейтральна палітра Sergeant) або мікс-тити per-module-токени за іменем. НЕ використовуйте `bg-module-accent*` тут — немає ambient-модуля.
 
@@ -133,7 +133,7 @@ const TINT = {
 - `apps/*/src/modules/shared/**` — не-канонічна module-папка; cross-module-утиліта, не власник акценту.
 - `__tests__/*.{ts,tsx,mjs}` — test-fixture-и природно посилаються на всі чотири для покриття.
 
-ESLint цю конвенцію більше не перевіряє — тримається design-review. Анти-патерн «file-at-a-time» вище — `fizruk`-сторінка з `ring-routine` — це саме те, що review має ловити:
+ESLint-правила для цього немає (естетичні AST-лінти retired ADR-0081) — конвенцію тримають tokens + design-review. Анти-патерн «file-at-a-time» вище — `fizruk`-сторінка з `ring-routine` — це саме те, що review має ловити:
 
 ```tsx
 // ❌ BAD
@@ -154,8 +154,8 @@ ESLint цю конвенцію більше не перевіряє — трим
 export const moduleAccentRgb: Record<
   ModuleAccent,
   {
-    default: string; // "R G B" (saturated -500)
-    strong: string; // "R G B" (WCAG-AA -700/-800)
+    default: string; // "R G B" — -700 (finyk, fizruk) або -500 (routine, nutrition)
+    strong: string; // "R G B" — WCAG-AA -800 для всіх чотирьох
   }
 >;
 ```

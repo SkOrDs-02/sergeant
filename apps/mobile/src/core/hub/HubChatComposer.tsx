@@ -73,7 +73,7 @@ export const HubChatComposer = forwardRef<RNTextInput, HubChatComposerProps>(
               ref={ref}
               testID="hub-chat-input"
               accessibilityLabel="Повідомлення для Сержанта"
-              placeholder="Запитай Sergeant…"
+              placeholder="Запитай Сержанта"
               placeholderTextColor="#a8a29e"
               multiline
               value={input}

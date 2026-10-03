@@ -125,7 +125,7 @@ export function MiniLineChart({
         compact
         className="rounded-2xl border border-dashed border-line bg-panelHi/50"
         title="Замало точок для лінії"
-        description={`Потрібні щонайменше два заміри з ${metricLabel}, щоб побудувати тренд.`}
+        description={`Щоб відстежувати ${metricLabel}, потрібні щонайменше два заміри.`}
       />
     );
   }
@@ -293,7 +293,7 @@ export function MiniLineChart({
               fill={color}
               /* #4 — "cut-out" halo uses the surface token, not a static
                * white, so it stays invisible against the dark-theme panel
-               * (`--c-panel` = #1b1613) instead of ringing each dot. */
+               * (`--c-panel` = #2a231f) instead of ringing each dot. */
               stroke="rgb(var(--c-panel))"
               strokeWidth="2"
             />
@@ -337,8 +337,8 @@ export function MiniLineChart({
 
       <div id={summaryId} className="sr-only">
         <p>
-          Тренд {metricLabel}. Поточне значення: {fmtLoose(lastValid.value)}{" "}
-          {unit}.
+          Графік показує {metricLabel}. Поточне значення:{" "}
+          {fmtLoose(lastValid.value)} {unit}.
           {delta !== 0
             ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${fmt(delta, 1)} ${unit}.`
             : ""}

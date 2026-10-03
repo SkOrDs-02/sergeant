@@ -9,12 +9,15 @@
  */
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import type { SyncTone } from "./components/SyncIndicator";
 
 export function FinykHeaderIcon(): React.ReactElement {
+  // F1-style ink glyph (BentoCard): icon sits inline with the title row as
+  // a colored glyph, not boxed in a tinted square container.
   return (
-    <div
-      className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
+    <span
+      className="shrink-0 text-success-strong dark:text-success"
       aria-hidden
     >
       <svg
@@ -30,7 +33,7 @@ export function FinykHeaderIcon(): React.ReactElement {
         <rect x="2" y="5" width="20" height="14" rx="2" />
         <line x1="2" y1="10" x2="22" y2="10" />
       </svg>
-    </div>
+    </span>
   );
 }
 
@@ -68,15 +71,28 @@ export function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
 
 interface AuthErrorBannerProps {
   authError: string;
-  onBackToHub?: (() => void) | undefined;
+  /**
+   * Відкриває Налаштування Hub на секції Фініка (`FinykWebhookServiceSection`
+   * — форма перепідключення токена). До фіксу PR-F2 (аудит 2026-09-13) CTA
+   * тут кликав `onBackToHub` («Назад»), хоча підпис обіцяв Налаштування —
+   * людина верталась у Hub і мусила самостійно шукати шлях назад до Фініка.
+   */
+  onOpenSettings?: (() => void) | undefined;
+  onOpenAuth: () => void;
   setAuthError: (msg: string) => void;
 }
 
 export function AuthErrorBanner({
   authError,
-  onBackToHub,
+  onOpenSettings,
+  onOpenAuth,
   setAuthError,
 }: AuthErrorBannerProps): React.ReactElement {
+  // Той самий банер несе і «потрібен акаунт» (сесійний 401 аноніма): під
+  // заголовком про токен і з кнопкою «Оновити токен» людина з цілим токеном
+  // ішла його перегенеровувати.
+  const needsAccount =
+    authError === messages.finyk.monoConnectErrors.accountRequired;
   // Offset clears the in-flow ModuleHeader stack: safe-area-pt + 68px title
   // row (min-h-[68px], ModuleHeader.tsx) + ~40px ModuleSwitcher row.
   return (
@@ -92,16 +108,28 @@ export function AuthErrorBanner({
           aria-hidden
         />
         <div className="flex-1 min-w-0">
-          <p className="text-style-label text-text">Токен потребує оновлення</p>
+          <p className="text-style-label text-text">
+            {needsAccount ? "Потрібен вхід" : "Токен потребує оновлення"}
+          </p>
           <p className="text-style-caption text-muted mt-0.5">{authError}</p>
-          {onBackToHub && (
+          {needsAccount ? (
             <button
               type="button"
-              onClick={onBackToHub}
+              onClick={onOpenAuth}
               className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
             >
-              Оновити токен у Налаштуваннях Hub
+              Увійти
             </button>
+          ) : (
+            onOpenSettings && (
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
+              >
+                Оновити токен у Налаштуваннях
+              </button>
+            )
           )}
         </div>
         <button
@@ -110,7 +138,7 @@ export function AuthErrorBanner({
           className="touch-target focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
           aria-label="Закрити"
         >
-          <Icon name="close" size={16} aria-hidden />
+          <Icon name="close" size="md" aria-hidden />
         </button>
       </div>
     </div>

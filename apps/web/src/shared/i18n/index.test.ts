@@ -1,6 +1,9 @@
 /** @vitest-environment node */
 import { describe, it, expect } from "vitest";
 import { messages as uk } from "./uk";
+// Реєстр доступу: чистий модуль `@sergeant/shared`, тож цей `node`-тест не
+// притягує React і react-query через `useFeatureGate`.
+import { PAYWALLED_FEATURE_IDS } from "@sergeant/shared";
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
@@ -33,10 +36,10 @@ describe("i18n resolver", () => {
       const result = getMessages("en");
       // paywall is fully translated in en.ts → en wins
       const paywall = result.paywall as Record<string, Record<string, string>>;
-      expect(paywall["ai-photo-analysis"]?.["title"]).toBe(
-        "AI photo analysis: Premium",
+      expect(paywall["ai.photo"]?.["title"]).toBe(
+        "Unlimited meal photos: Premium",
       );
-      expect(paywall["multi-currency"]?.["name"]).toBe("Multi-currency assets");
+      expect(paywall["export.pdf"]?.["name"]).toBe("PDF export");
     });
 
     it("a group declared in en.ts resolves to EN values (auth)", () => {
@@ -49,7 +52,7 @@ describe("i18n resolver", () => {
       );
       // The uk catalog itself is unchanged
       const ukAuth = uk.auth as Record<string, string>;
-      expect(ukAuth["invalidEmail"]).toBe("Невірний формат email.");
+      expect(ukAuth["invalidEmail"]).toBe("Неправильний формат email.");
     });
 
     it("does not mutate the uk catalog when resolving en", () => {
@@ -112,16 +115,22 @@ describe("i18n resolver", () => {
       }
     });
 
-    it("paywall covers all 3 PremiumFeatureId values", () => {
+    it("paywall covers every paywalled feature of the access registry", () => {
       const enPaywall = messagesEn["paywall"] as
         Record<string, Record<string, string>> | undefined;
       expect(enPaywall).toBeDefined();
-      // These IDs are locked by useFeatureGate's PremiumFeatureId union.
-      // If a new gate is added, en.ts MUST add the matching key — this test
-      // is the trip-wire.
-      expect(enPaywall?.["ai-photo-analysis"]).toBeDefined();
-      expect(enPaywall?.["multi-currency"]).toBeDefined();
-      expect(enPaywall?.["analytics-export-pdf"]).toBeDefined();
+      // Список деривується з реєстру доступу (`@sergeant/shared` FEATURES,
+      // фічі з полем `surface`), а не дублюється тут: копія рівно в цьому
+      // місці вже раз розійшлась і сторожувала борг. `ai.actions` має
+      // власну копію в `paywallModal` (гейт чату на лічильнику), тож тут
+      // його немає.
+      const ids = PAYWALLED_FEATURE_IDS.filter((id) => id !== "ai.actions");
+      expect(ids.length).toBeGreaterThan(0);
+      for (const id of ids) {
+        expect(enPaywall?.[id]).toBeDefined();
+      }
+      // І назад: у каталозі не має бути ключів під гейти, яких уже немає.
+      expect(Object.keys(enPaywall ?? {}).sort()).toEqual([...ids].sort());
     });
   });
 });

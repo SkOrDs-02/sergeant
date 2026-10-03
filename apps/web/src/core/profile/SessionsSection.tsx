@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
@@ -137,11 +136,7 @@ export function SessionsSection({ online }: { online: boolean }) {
     void load();
   }, [load]);
 
-  const handleRevoke = async (
-    id: string,
-    token: string,
-    isCurrent: boolean,
-  ) => {
+  const handleRevoke = async (id: string, isCurrent: boolean) => {
     setRevoking(id);
     try {
       if (isCurrent) {
@@ -172,21 +167,18 @@ export function SessionsSection({ online }: { online: boolean }) {
         }
       }
 
-      // Better Auth's `/revoke-session` endpoint validates the body with
-      // `z.object({ token: z.string() })` (see
-      // `node_modules/better-auth/dist/api/routes/session.mjs`). Passing
-      // `{ id }` lands as `body.token === undefined` and surfaces as a
-      // user-visible toast: `[body.token] Invalid input: expected
-      // string, received undefined`. We use the session's `token`
-      // (already returned by `listSessions`) as the identifier.
-      const res = await revokeSession({ token });
+      // Сервер більше не віддає сирий `token` у `listSessions` (аудит
+      // 2026-10-01, sec-05), тому відкликаємо за `id`: хук `hooks.before`
+      // у `apps/server/src/auth/sessionHardeningHooks.ts` сам знаходить
+      // token серед сесій поточного користувача.
+      const res = await revokeSession({ id });
       if (res.error) {
         toast.error(
           mapApiErrorToUserCopy(res.error, COPY.revokeFailed),
           undefined,
           {
             label: "Повторити",
-            onClick: () => void handleRevoke(id, token, isCurrent),
+            onClick: () => void handleRevoke(id, isCurrent),
           },
         );
         return;
@@ -214,7 +206,7 @@ export function SessionsSection({ online }: { online: boolean }) {
     } catch {
       toast.error(COPY.revokeFailed, undefined, {
         label: "Повторити",
-        onClick: () => void handleRevoke(id, token, isCurrent),
+        onClick: () => void handleRevoke(id, isCurrent),
       });
     } finally {
       setRevoking(null);
@@ -223,24 +215,11 @@ export function SessionsSection({ online }: { online: boolean }) {
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
-      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
-          (канонічний коментар там): `COPY.sectionTitle` тут дослівно
-          збігався з зовнішнім заголовком «Активні сесії» в
-          `ProfilePage.tsx` і малювався `text-style-label`, більшим за
-          `xs`-кікер `CollapsibleSection`. Прибрано; іконка й кнопка
-          «Оновити» (дія, не заголовок) лишились без змін. */}
-      <div className="px-4 py-3.5 flex items-center justify-between border-b border-line">
-        <Icon name="monitor" size={16} className="text-muted" />
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={load}
-          disabled={loading || !online}
-        >
-          {COPY.refresh}
-        </Button>
-      </div>
-
+      {/* V-4 (2026-08-08) прибрав звідси текстовий заголовок, і шапка
+          картки лишилась із самотньою іконкою та кнопкою «Оновити» —
+          залишок, а не дизайн (огляд 2026-09-04). Шапки більше немає:
+          «Оновити» стоїть під списком, там, де на нього дивляться після
+          прочитання. */}
       <div className="p-4">
         {loading && sessions.length === 0 ? (
           <p className="text-style-body text-muted text-center py-4">
@@ -303,11 +282,12 @@ export function SessionsSection({ online }: { online: boolean }) {
                       )}
                     </div>
                     <Button
-                      variant="danger"
+                      variant="soft"
+                      tone="danger"
                       size="xs"
                       disabled={revoking === s.id || currentLookupFailed}
                       loading={revoking === s.id}
-                      onClick={() => handleRevoke(s.id, s.token, isCurrent)}
+                      onClick={() => handleRevoke(s.id, isCurrent)}
                     >
                       {COPY.revoke}
                     </Button>
@@ -317,6 +297,16 @@ export function SessionsSection({ online }: { online: boolean }) {
             </ul>
           </>
         )}
+        <div className="mt-3 flex justify-end">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={load}
+            disabled={loading || !online}
+          >
+            {COPY.refresh}
+          </Button>
+        </div>
       </div>
 
       {/* F1/L-18: той самий діалог, що й «Вийти» на ProfilePage — зʼявляється

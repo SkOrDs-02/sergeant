@@ -9,11 +9,8 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
-import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { useToast } from "@shared/hooks/useToast";
 import { silpoConnectUrl } from "@shared/api";
 import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
@@ -40,6 +37,7 @@ import { NotificationsSection } from "../settings/NotificationsSection";
 import { PlanSection } from "../settings/PlanSection";
 import { PrivacySection } from "../settings/PrivacySection";
 import { PWASection } from "../settings/PWASection";
+import { SwipePages } from "@shared/components/layout";
 import { VISIBLE_SETTINGS_SECTIONS } from "./settingsSectionsCatalog";
 
 // Initiative 0017 Sprint 1.1 PR-1.2 — the four module-scoped sections
@@ -157,8 +155,9 @@ export function lazySectionMinH(
 //
 // Розгорнутою lazy-секція буває у двох випадках, і обидва відомі в тому ж
 // `map`, де рендериться `<Suspense>` (`defaultOpenForSection`): це або
-// перша секція активної вкладки (Варіант A), або ціль хеш-діп-лінка
-// `#settings-<id>`. Для `routine` перший випадок — типовий: він index 0
+// ціль хеш-діп-лінка `#settings-<id>`, або явний вибір юзера
+// (`sectionOpenOverrides`); forced-first-of-tab (Варіант A) знято
+// рішенням власника 2026-09-11. Для `routine` перший випадок — типовий: він index 0
 // вкладки «Розділи», тому 600 (консервативна оцінка двох `SettingsSubGroup`
 // — календарні перемикачі, далі редактори тегів/категорій; не піксельний
 // вимір, див. RoutineSection.tsx). Для `fizruk` / `finyk` / `nutrition`
@@ -216,18 +215,17 @@ const SECTIONS: readonly SettingsSection[] = VISIBLE_SETTINGS_SECTIONS.map(
 // throws loudly at module-load on a missing entry) a catalog id with no
 // `GROUPS` membership fails SILENTLY — the section renders fine, but only
 // ever reachable via search, never via the tab strip.
+//
+// Перекрій 2026-09-04 (правило «Профіль про людину, Налаштування про
+// застосунок»): «Загальні» — те, що людина крутить регулярно (вигляд,
+// сповіщення, Сержант, підписка); «Додатково» — дані, довідка й сервіс.
+// «Можливості» і «Фідбек» пішли з «Загальних», бо це довідка, а не
+// налаштування; PIN-блокування — у Профіль → «Безпека».
 export const GROUPS = [
   {
     id: "general",
     label: "Загальні",
-    sections: [
-      "dashboard",
-      "plan",
-      "notifications",
-      "ai",
-      "capabilities",
-      "feedback",
-    ],
+    sections: ["dashboard", "notifications", "ai", "plan"],
   },
   {
     id: "modules",
@@ -237,9 +235,24 @@ export const GROUPS = [
   {
     id: "advanced",
     label: "Додатково",
-    sections: ["privacy", "pwa", "dataExport", "experimental"],
+    sections: [
+      "privacy",
+      "dataExport",
+      "capabilities",
+      "feedback",
+      "pwa",
+      "experimental",
+    ],
   },
 ] as const;
+
+/**
+ * Порядок вкладок як плоский список — саме ним ходить горизонтальний
+ * свайп (рішення founder-а 2026-09-14). Похідний від `GROUPS`, щоб
+ * додана вкладка автоматично потрапляла в жест: окремий список рано чи
+ * пізно розʼїхався б із тим, що малюють `Tabs`.
+ */
+export const GROUP_IDS = GROUPS.map((g) => g.id);
 
 // Human copy for `?silpo=error&reason=…` codes sent by
 // `apps/server/src/routes/silpo.ts` (`redirectToSettings`). Unmapped/absent
@@ -340,7 +353,6 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     },
     [writeSettingsGroupParam],
   );
-  const [query, setQuery] = useState("");
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null);
   const [hashSectionId, setHashSectionId] = useState<string | null>(
@@ -364,17 +376,19 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
   // catalog above), stable across renders.
   const sections = SECTIONS;
 
-  const q = query.trim().toLowerCase();
-  const matchesQuery = (s: SettingsSection): boolean =>
-    !q ||
-    s.title.toLowerCase().includes(q) ||
-    s.keywords.toLowerCase().includes(q);
+  // Пошуку по сторінці більше немає (огляд 2026-09-04): 14 секцій у трьох
+  // вкладках не потребують третього механізму навігації, а ⌘K уже
+  // індексує ті самі секції (`search/searchSettings.ts`).
+  const visibleSectionIds: string[] = [
+    ...(GROUPS.find((g) => g.id === tab)?.sections ?? []),
+  ];
 
-  const visibleSectionIds: string[] = q
-    ? sections.filter(matchesQuery).map((s) => s.id)
-    : [...(GROUPS.find((g) => g.id === tab)?.sections ?? [])];
-
-  const visible = sections.filter((s) => visibleSectionIds.includes(s.id));
+  // Порядок — порядок `GROUPS`, а не каталогу: вкладка вирішує, що в ній
+  // перше (і саме перша секція відкривається за Варіантом A).
+  const visible = visibleSectionIds.flatMap((id) => {
+    const section = sections.find((s) => s.id === id);
+    return section ? [section] : [];
+  });
   const visibleSectionKey = visibleSectionIds.join("|");
   const activeGroupLabel = GROUPS.find((g) => g.id === tab)?.label;
 
@@ -384,7 +398,6 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
       if (!sectionId) return;
       const group = groupForSection(sectionId, GROUPS);
       if (!group) return;
-      setQuery("");
       setTab(group.id);
       setHashSectionId(sectionId);
     };
@@ -420,7 +433,6 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     // повторний рендер устиг би зайти в цей самий блок удруге, і тост із
     // рефетчем задвоївся б.
     queueMicrotask(() => {
-      setQuery("");
       if (group) setTab(group.id);
       setHashSectionId(targetSectionId);
     });
@@ -531,7 +543,6 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     const group = groupForSection(targetSectionId, GROUPS);
 
     queueMicrotask(() => {
-      setQuery("");
       if (group) setTabRaw(group.id);
       setHashSectionId(targetSectionId);
     });
@@ -610,8 +621,7 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     <div className="flex flex-col gap-4 pt-3 pb-6">
       <h1 className="sr-only">Налаштування</h1>
       {/* «Острів» (рішення власника 2026-08-28): sticky-обгортка прозора —
-          суцільної плашки більше немає; пошук і вкладки живуть в одній
-          піднятій картці (bg-panel + shadow-e2), а контент при скролі
+          суцільної плашки більше немає; вкладки живуть у піднятій картці (bg-panel + shadow-e2), а контент при скролі
           «розчиняється» позаду через градієнт-фейд нижче, замість різкого
           зрізу об border-b. Попередня плашка була `bg-surface-soft-glass`,
           який після «Чорнила» — НЕпрозорий #f6f5f2 (panel-hi): він не
@@ -637,103 +647,31 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
           className="absolute inset-x-0 top-0 -bottom-8 bg-linear-to-b from-bg from-55% to-transparent pointer-events-none"
         />
         <div className="relative flex flex-col gap-2.5 rounded-2xl bg-panel border border-surface-line shadow-e2 p-3">
-          {/* Audit finding #12 (2026-08-08): the clear <Button> used to live
-            INSIDE this <label>. Per the accname algorithm, a wrapped
-            <label>'s computed name folds in the text/accessible-name of
-            every descendant, including embedded controls — so the input's
-            own accessible name became "Пошук по налаштуваннях Очистити
-            пошук" whenever `query` was non-empty, not just the intended
-            "Пошук по налаштуваннях". Moving the button OUT to a sibling of
-            the <label> (both inside this shared `relative` wrapper, so the
-            absolute positioning still lines up) keeps the label's name
-            clean. The two "clear" buttons on screen at zero results also
-            now carry DISTINCT accessible names — see below. */}
-          <div className="relative block">
-            <label className="block">
-              <span className="sr-only">Пошук по налаштуваннях</span>
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
-                <Icon name="search" size={18} />
-              </span>
-              <input
-                type="search"
-                // Chrome's password manager used to claim this box: it showed
-                // the saved-account dropdown, autofilled the e-mail and refilled
-                // it after every click on the clear "×", so the field could not
-                // be emptied at all (tester video 2026-08-10). The field carried
-                // no `name`/`autocomplete`, and its only text context is
-                // Cyrillic, which Chromium's field heuristics cannot read — so
-                // it stayed unclassified and got picked up as a username field.
-                // `searchFieldProps` supplies both layers Chromium looks at.
-                {...searchFieldProps("settings-search")}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Пошук налаштувань…"
-                // V-16 (audit 2026-08-08): `[&::-webkit-search-cancel-button]:
-                // appearance-none` suppresses Chromium's own hard-coded "×"
-                // for `type="search"` inputs. Before this, a zero-result query
-                // showed the NATIVE cancel icon (our own clear <Button> below
-                // was hidden by the `visible.length > 0` guard) — two visually
-                // different "clear" affordances depending on result count, and
-                // Firefox has no native icon at all, so the field looked
-                // clear-less there. Kept `type="search"` (not `type="text"` +
-                // `role="searchbox"`) — the semantic type still drives the
-                // mobile-keyboard "Search" action key, and suppressing just
-                // the one pseudo-element is a smaller diff than overriding
-                // the input's implicit role.
-                // `bg-panelHi` (не `bg-panel`): всередині білої картки-острова
-                // біле поле зливалося б із власним контейнером — той самий
-                // ефект «порожнього блоку», що й у звіті 2026-05-26, лише
-                // навпаки. Тон panel-hi віддає поле від картки без бордера.
-                className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panelHi border border-transparent rounded-xl text-style-body text-ink placeholder:text-muted [&::-webkit-search-cancel-button]:appearance-none"
-              />
-            </label>
-            {query && (
-              <Button
-                variant="ghost"
-                size="xs"
-                iconOnly
-                onClick={() => setQuery("")}
-                // Distinct from the empty-state CTA's "Очистити пошук" below
-                // (audit finding #12) — before this fix both buttons shared
-                // the exact same accessible name, indistinguishable to a
-                // screen reader whenever both were on screen at once (zero
-                // search results).
-                aria-label="Очистити поле пошуку"
-                className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-panel"
-              >
-                <Icon name="close" size={16} />
-              </Button>
-            )}
-          </div>
-
-          {!q && (
-            <Tabs
-              style="pill"
-              variant="brand"
-              fill
-              ariaLabel="Групи налаштувань"
-              items={GROUPS.map((g) => ({ value: g.id, label: g.label }))}
-              value={tab}
-              onChange={(v) => setTab(v)}
-              getPanelId={() => groupPanelId}
-              // Трек — panel-hi всередині білої картки (та сама логіка, що
-              // в пошуку вище). На такому треці дефолтний активний піл
-              // `bg-brand-soft` (stone-100) був би невідрізнюваний від
-              // фону — тому активний перекрито на панельно-білий чип із
-              // hairline + e1 через `aria-selected:` (cn = twMerge, і
-              // `[aria-selected="true"]` специфічніший за базові класи
-              // Tabs). `rounded-lg` — концентричний радіус до треку
-              // `rounded-xl` з його p-1.
-              className="overflow-x-auto bg-panelHi rounded-xl"
-              tabsClassName="rounded-lg border-transparent aria-selected:bg-panel aria-selected:border-line aria-selected:shadow-e1"
-            />
-          )}
+          <Tabs
+            style="pill"
+            variant="brand"
+            fill
+            ariaLabel="Групи налаштувань"
+            items={GROUPS.map((g) => ({ value: g.id, label: g.label }))}
+            value={tab}
+            onChange={(v) => setTab(v)}
+            getPanelId={() => groupPanelId}
+            // Трек — panel-hi всередині білої картки (та сама логіка, що
+            // в пошуку вище). На такому треці дефолтний активний піл
+            // `bg-brand-soft` (stone-100) був би невідрізнюваний від
+            // фону — тому активний перекрито на панельно-білий чип із
+            // контуром `control` (≥3:1, аудит 2026-10-01, A4: hairline
+            // `line` давав 1.3-1.44) + e1 через `aria-selected:` (cn = twMerge, і
+            // `[aria-selected="true"]` специфічніший за базові класи
+            // Tabs). `rounded-lg` — концентричний радіус до треку
+            // `rounded-xl` з його p-1.
+            className="overflow-x-auto bg-panelHi rounded-xl border border-line"
+            tabsClassName="rounded-lg border-transparent aria-selected:bg-panel aria-selected:border-control aria-selected:shadow-e1"
+          />
         </div>
       </div>
 
-      {/* Settings sections. `role="tabpanel"` only while the group Tabs
-          above are showing (`!q`) — in search mode the Tabs (tablist)
-          itself is unmounted, so there is no tab to be "the panel of".
+      {/* Settings sections — the panel of the group Tabs above.
           V-1 (audit 2026-08-08): this landed with `role="tablist"` +
           working roving tabindex but no matching tabpanel at all —
           `aria-controls` on every tab was `null`. `aria-label` (not
@@ -743,63 +681,55 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
           without editing that component; `getPanelId` above already gives
           AT users the tab→panel link via `aria-controls`, and `aria-label`
           gives the reverse (panel→name) link without needing that id. */}
-      <div
-        className="flex flex-col gap-4"
-        role={!q ? "tabpanel" : undefined}
-        id={!q ? groupPanelId : undefined}
-        aria-label={
-          !q && activeGroupLabel
-            ? `Налаштування · ${activeGroupLabel}`
-            : undefined
-        }
-      >
-        {visible.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <div className="w-12 h-12 rounded-full bg-surface-soft-glass border border-surface-line flex items-center justify-center">
-              <Icon name="search" size={24} className="text-muted" />
-            </div>
-            <p className="text-style-body text-muted text-center">
-              Нічого не знайдено за запитом «{query}»
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setQuery("")}
-              className="text-brand"
-            >
-              Очистити пошук
-            </Button>
-          </div>
-        ) : (
-          visible.map((s, index) => {
-            // Дефект №2 (адверсарне ревʼю 2026-08-08): forced-first-of-tab
-            // не повинен спрацьовувати, коли хеш (чи billing-return, див.
-            // `readBillingReturnSectionId` вище) уже націлений на ІНШУ
-            // секцію ТІЄЇ Ж вкладки — інакше розгортаються ОБИДВІ: ціль
-            // хеша і перша секція вкладки, і сторінка приземляє юзера між
-            // двома розгорнутими картками замість однієї цільової.
-            // `hashSectionId` перевіряється саме проти `visibleSectionIds`
-            // (не голим `!!hashSectionId`): якщо юзер уже ПОКИНУВ
-            // хеш-вкладку і перемкнувся на іншу вручну, залишок
-            // `hashSectionId` із попередньої навігації не мусить назавжди
-            // глушити forced-first у ВСІХ інших вкладках.
-            const hashTargetsThisTab =
-              hashSectionId != null &&
-              visibleSectionIds.includes(hashSectionId);
-            const isFirstOfTab =
-              !q &&
-              index === 0 &&
-              (!hashTargetsThisTab || hashSectionId === s.id);
-            // Дефект №3: явний вибір юзера (запамʼятаний per-section-id у
-            // `sectionOpenOverrides`) переважає дефолт "перша секція
-            // відкрита" — якщо юзер сам згорнув форсовано-відкриту секцію,
-            // ремаунт (перемикання вкладки чи search, що ховає й показує
-            // секцію заново) більше не повертає її в розгорнутий стан.
-            // Пошук УЖЕ зберігав це випадково (та сама React-інстанція не
-            // розмонтовується, доки секція лишається серед результатів) —
-            // тепер це справжня, а не випадкова консистентність.
+      {/* Горизонтальний свайп між вкладками (рішення founder-а
+          2026-09-14). Жест той самий, що у Фініка / Фізрука / Рутини /
+          Харчування — спільний `SwipePages`, не друга реалізація: він
+          сам гасить жест на краях списку, ігнорує вертикальні скроли й
+          не свайпає всередині горизонтальних скролерів (смуга вкладок
+          `overflow-x-auto` вище — саме такий).
+
+          Чому це, а не повернення пошуку по сторінці. Пошук на цьому
+          екрані був і його навмисно зняли 2026-09-04 (#1097) з причиною
+          «14 секцій у трьох вкладках не потребують третього механізму
+          навігації». Свайп третього механізму не додає — він робить
+          дешевшим перехід між тими самими трьома вкладками, тобто
+          підсилює рішення #1097, а не скасовує його.
+
+          `SwipePages` кладе власну обгортку з `flex-1 overflow-hidden
+          flex flex-col min-h-0`, а `role="tabpanel"` лишається на
+          внутрішньому елементі — атрибути доступності не переїжджають,
+          бо `aria-controls` кожної вкладки вказує саме на `groupPanelId`. */}
+      <SwipePages ids={GROUP_IDS} activeId={tab} onChange={setTab}>
+        <div
+          className="flex flex-col gap-4"
+          role="tabpanel"
+          id={groupPanelId}
+          aria-label={
+            activeGroupLabel ? `Налаштування · ${activeGroupLabel}` : undefined
+          }
+        >
+          {visible.map((s) => {
+            // Рішення власника 2026-09-11: forced-first-of-tab (Варіант A,
+            // адверсарне ревʼю 2026-08-08, дефекти №2/№3) знято. Жодна
+            // секція більше НЕ відкривається автоматично лише тому, що вона
+            // перша у видимій вкладці — на холодному завантаженні і після
+            // перемикання вкладки всі секції стартують ЗГОРНУТИМИ, доки їх
+            // не відкриє один з двох явних сигналів нижче.
+            //
+            // Сигнал №1 — ціль хеш-діп-лінка чи query-return (`#settings-
+            // <id>`, `?billing=portal-return|manage`, `?silpo=connected|
+            // error`): їх усі зводить до одного `hashSectionId`-стейту
+            // ефекти вище в файлі, і секція, на яку він вказує, відкриється
+            // незалежно від позиції в списку чи активної вкладки.
+            //
+            // Сигнал №2 (дефект №3, лишається чинним і після зняття
+            // Варіанта A): памʼять явного вибору юзера
+            // (`sectionOpenOverrides`, per-section-id) переважає дефолт —
+            // якщо юзер сам розгорнув чи згорнув секцію, ремаунт при
+            // перемиканні вкладки відтворює саме той стан.
             const userOverride = sectionOpenOverrides[s.id];
-            const defaultOpenForSection = userOverride ?? isFirstOfTab;
+            const defaultOpenForSection =
+              userOverride ?? hashSectionId === s.id;
 
             return (
               <SettingsGroupDefaultOpenContext.Provider
@@ -857,9 +787,9 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
                 </div>
               </SettingsGroupDefaultOpenContext.Provider>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      </SwipePages>
     </div>
   );
 }

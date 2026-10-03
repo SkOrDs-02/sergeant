@@ -124,7 +124,9 @@ export function HabitRangeGrid({
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-style-body text-subtle">{M.empty}</p>
+        <p className="text-style-body text-subtle">
+          {(habits?.length ?? 0) === 0 ? M.emptyNoHabits : M.empty}
+        </p>
       ) : (
         <>
           {showWeekdayLabels && firstRowCells && (

@@ -6,6 +6,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
+  HUB_BANNER_PRIORITY,
   HubBannerBudgetProvider,
   useHubBannerSlot,
   type HubBannerId,
@@ -61,12 +62,12 @@ describe("HubBannerBudgetProvider", () => {
         <Banner id="demoMode" wants={false} />
         <Banner id="privacyLock" />
         <Banner id="dailyNudge" />
-        <Banner id="reengagement" />
+        <Banner id="crossModulePreview" />
       </HubBannerBudgetProvider>,
     );
     expect(screen.getByTestId("banner-privacyLock")).toBeInTheDocument();
     expect(screen.getByTestId("banner-dailyNudge")).toBeInTheDocument();
-    expect(screen.queryByTestId("banner-reengagement")).toBeNull();
+    expect(screen.queryByTestId("banner-crossModulePreview")).toBeNull();
   });
 
   it("стелю можна змінити через `max`", () => {
@@ -80,16 +81,26 @@ describe("HubBannerBudgetProvider", () => {
     expect(screen.queryByTestId("banner-softAuth")).toBeNull();
   });
 
+  // PR-H1 (2026-09-13): `reengagement` ЗАМІНЮЄ hero (`HubHeroBlock`), а не
+  // додається поруч, тож не має брати участь у бюджеті банерів — інакше
+  // насичений бюджет (localOnlyData + privacyLock) лишав hero-смугу
+  // порожньою для анонімного юзера з блокуванням застосунку, який
+  // повернувся після паузи. Поведінку самої картки перевіряє
+  // `ReEngagementCard.test.tsx`.
+  it("PR-H1: `reengagement` більше не бере участі в бюджеті банерів", () => {
+    expect(Object.keys(HUB_BANNER_PRIORITY)).not.toContain("reengagement");
+  });
+
   it("без провайдера хук не обмежує нічого", () => {
     render(
       <>
         <Banner id="dailyNudge" />
-        <Banner id="reengagement" />
+        <Banner id="crossModulePreview" />
         <Banner id="privacyLock" />
       </>,
     );
     expect(screen.getByTestId("banner-dailyNudge")).toBeInTheDocument();
-    expect(screen.getByTestId("banner-reengagement")).toBeInTheDocument();
+    expect(screen.getByTestId("banner-crossModulePreview")).toBeInTheDocument();
     expect(screen.getByTestId("banner-privacyLock")).toBeInTheDocument();
   });
 });

@@ -19,6 +19,7 @@ import { useFizrukRoute } from "./hooks/useFizrukRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
 import { useExerciseCatalog } from "./hooks/useExerciseCatalog";
 import { useFizrukProgramStart } from "./hooks/useFizrukProgramStart";
+import { useFizrukQuickStart } from "./hooks/useFizrukQuickStart";
 import { useFizrukDualWriteBoot } from "./hooks/useFizrukDualWriteBoot";
 import { useFizrukSqliteReadBoot } from "./hooks/useFizrukSqliteReadBoot";
 import { useFizrukWorkoutReminder } from "./hooks/useFizrukWorkoutReminder";
@@ -61,6 +62,19 @@ export default function FizrukApp({
   const exerciseId =
     page === "exercise" && segments[0] ? segments[0] : undefined;
   const workoutId = page === "workout" && segments[0] ? segments[0] : undefined;
+  // `workout/<id>/<itemId>` — вправа, відкрита на весь екран усередині сесії
+  // (спека `fizruk-active-session.md`, рішення 2).
+  const workoutItemId =
+    page === "workout" && segments[1] ? segments[1] : undefined;
+  // Сесійний режим (спека `fizruk-active-session.md`, рішення 1): активне
+  // тренування — єдиний екран модуля, що є СЕСІЄЮ, а не сторінкою. Шапка
+  // модуля, таби й нижня навігація тут не потрібні й шкідливі: випадковий
+  // тап по табу викидає із сесії посеред підходу, а разом вони зʼїдають
+  // ~212 px із 844. Свідомо ВІДМІННО від V-7 (аудит 08-07), яка повернула
+  // нав на Атлас і Вправу: ті — рівноправні сторінки, ця — модальний крок.
+  // Вихід із сесії — «Згорнути» у власній верхній смузі; FAB «Продовжити»
+  // на решті сторінок уже є, тож сесія не губиться.
+  const sessionMode = page === "workout";
   // Спека `fizruk-hero-recovery-bars.md` рішення 4: `atlas/<id>` — атласна
   // зона (або зона травми) hero-рядок просить підсвітити.
   const atlasMuscleId =
@@ -111,6 +125,16 @@ export default function FizrukApp({
     onConflict: (start) => setPendingProgramStart(() => start),
   });
 
+  // Той самий `onConflict`, що й у програмного старту: діалог «уже є
+  // активне тренування» один на обидва шляхи, тож людина не бачить двох
+  // схожих модалок залежно від того, звідки почала.
+  const handleQuickStart = useFizrukQuickStart({
+    workouts,
+    createWorkout,
+    navigate,
+    onConflict: (start) => setPendingProgramStart(() => start),
+  });
+
   const resolveProgramStartConflict = (resolution: "finish" | "discard") => {
     const current = workouts.find((workout) => !workout.endedAt);
     const start = pendingProgramStart;
@@ -121,8 +145,16 @@ export default function FizrukApp({
     start();
   };
 
+  // `start_workout` (PWA-ярлик, чекліст, `N` на клавіатурі) відкриває
+  // аркуш «Почати тренування», а не лише веде на сторінку: стан аркуша
+  // живе у `Workouts`, тож сюди йде лічильник-запит, а не boolean —
+  // повторний інтент має відкрити аркуш і після того, як його закрили.
+  const [quickStartRequest, setQuickStartRequest] = useState(0);
   usePwaAction(pwaAction, onPwaActionConsumed, {
-    start_workout: () => navigate("workouts"),
+    start_workout: () => {
+      navigate("workouts");
+      setQuickStartRequest((n) => n + 1);
+    },
   });
 
   // First-run flag bookkeeping. Fizruk's Dashboard already surfaces an
@@ -190,36 +222,35 @@ export default function FizrukApp({
       {/* Module-level rest-timer overlay — rendered above the router so it
           survives navigation between Огляд / Атлас / Тренування while a
           rest countdown is active (audit-06 F3). */}
-      <RestTimerOverlayConnected />
+      <RestTimerOverlayConnected hidden={sessionMode} />
 
       <ModuleShell
         module="fizruk"
         header={
-          <FizrukHeader
-            page={page}
-            activeProgram={activeProgram}
-            onBackToHub={onBackToHub}
-            onGoToHub={onGoToHub}
-            onContextualBack={() => navigate(contextualBackTarget)}
-            onOpenSettings={onOpenSettings}
-          />
+          sessionMode ? undefined : (
+            <FizrukHeader
+              page={page}
+              activeProgram={activeProgram}
+              onBackToHub={onBackToHub}
+              onGoToHub={onGoToHub}
+              onContextualBack={() => navigate(contextualBackTarget)}
+              onOpenSettings={onOpenSettings}
+            />
+          )
         }
         banner={
-          <StorageErrorBanner
-            eventName={FIZRUK_WORKOUTS_STORAGE_ERROR}
-            formatMessage={(reason) =>
-              `Не вдалося зберегти тренування (${reason}). Можливо, браузер переповнив сховище, експортуй бекап або звільни місце.`
-            }
-          />
+          <StorageErrorBanner eventName={FIZRUK_WORKOUTS_STORAGE_ERROR} />
         }
         nav={
-          <ModuleBottomNav
-            items={FIZRUK_NAV}
-            activeId={fizrukNavActiveId(page)}
-            onChange={(id) => navigate(id)}
-            module="fizruk"
-            ariaLabel={messages.nav.fizrukSections}
-          />
+          sessionMode ? undefined : (
+            <ModuleBottomNav
+              items={FIZRUK_NAV}
+              activeId={fizrukNavActiveId(page)}
+              onChange={(id) => navigate(id)}
+              module="fizruk"
+              ariaLabel={messages.nav.fizrukSections}
+            />
+          )
         }
       >
         {/* Свайп між чотирма вкладками нижньої навігації. `activeId={page}`
@@ -236,16 +267,19 @@ export default function FizrukApp({
             page={page}
             exerciseId={exerciseId}
             workoutId={workoutId}
+            workoutItemId={workoutItemId}
             atlasMuscleId={atlasMuscleId}
             activeProgramId={activeProgramId}
             activeProgram={activeProgram}
             activateProgram={activateProgram}
             deactivateProgram={deactivateProgram}
             todaySession={todaySession}
+            quickStartRequest={quickStartRequest}
             onNavigate={(target) => navigate(target)}
             onStartProgramWorkout={(session) =>
               handleStartProgramWorkout(session)
             }
+            onQuickStart={handleQuickStart}
             onOpenModule={onOpenModule}
           />
         </SwipePages>
@@ -258,21 +292,24 @@ export default function FizrukApp({
           footer={
             <div className="flex flex-col gap-2">
               <Button
-                module="fizruk"
+                variant="solid"
+                tone="fizruk"
+
                 className="w-full h-12"
                 onClick={() => resolveProgramStartConflict("finish")}
               >
                 {conflictCopy.finish}
               </Button>
               <Button
-                variant="destructive"
+                variant="solid"
+                tone="danger"
                 className="w-full h-12"
                 onClick={() => resolveProgramStartConflict("discard")}
               >
                 {conflictCopy.discard}
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 className="w-full h-12"
                 onClick={() => setPendingProgramStart(null)}
               >

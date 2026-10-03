@@ -3,7 +3,7 @@
  * Status: Active
  * Web I/O-адаптер для модуля Харчування: prefs, pantries, log.
  *
- * Stage 8 PR #057n-tombstone (`docs/planning/storage-roadmap.md`): the
+ * Stage 8 PR #057n-tombstone (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`): the
  * `load*` / `persist*` helpers below no longer touch `localStorage`.
  * The SQLite-WASM `nutrition_*` tables are the source of truth — reads
  * pull from the in-process cache populated by
@@ -31,13 +31,13 @@ import {
   normalizePantries,
   normalizeShoppingList,
   type NutritionLog,
+  type GoalPeriod,
   type NutritionPrefs,
   type Pantry,
   type ShoppingList,
 } from "@sergeant/nutrition-domain";
 
 import {
-  isNutritionDualWriteRegistered,
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
 } from "./sqliteWriter/index.js";
@@ -118,18 +118,58 @@ export function loadNutritionPrefs(
 export function persistNutritionPrefs(
   prefs: NutritionPrefs | null | undefined,
   _key: string = NUTRITION_PREFS_KEY,
+  goalOrigin?: "manual" | "preset" | "tdee",
 ): boolean {
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
+  const previousPrefs = prev.prefs
+    ? normalizeNutritionPrefs(JSON.parse(prev.prefs.prefsJson) as unknown)
+    : defaultNutritionPrefs();
+  const requestedPrefs = prefs || defaultNutritionPrefs();
+  const effectiveOrigin =
+    goalOrigin ??
+    (requestedPrefs.adaptiveGoalEnabled &&
+    requestedPrefs.adaptiveGoalLastUpdatedAt != null &&
+    requestedPrefs.adaptiveGoalLastUpdatedAt !==
+      previousPrefs.adaptiveGoalLastUpdatedAt
+      ? "preset"
+      : "manual");
+  const goalChanged =
+    previousPrefs.dailyTargetKcal !== requestedPrefs.dailyTargetKcal ||
+    previousPrefs.dailyTargetProtein_g !==
+      requestedPrefs.dailyTargetProtein_g ||
+    previousPrefs.dailyTargetFat_g !== requestedPrefs.dailyTargetFat_g ||
+    previousPrefs.dailyTargetCarbs_g !== requestedPrefs.dailyTargetCarbs_g;
+  const nextPrefs =
+    goalChanged && effectiveOrigin === "manual"
+      ? { ...requestedPrefs, adaptiveGoalEnabled: false }
+      : requestedPrefs;
   const next: NutritionDualWriteState = {
     ...prev,
     prefs: {
-      prefsJson: JSON.stringify(prefs || defaultNutritionPrefs()),
+      prefsJson: JSON.stringify(nextPrefs),
       activePantryId: prev.prefs?.activePantryId ?? null,
     },
+    goalOrigin: effectiveOrigin,
   };
   triggerNutritionDualWrite(prev, next);
   return true;
+}
+
+export function persistAdaptiveNutritionPrefs(prefs: NutritionPrefs): boolean {
+  return persistNutritionPrefs(
+    { ...prefs, adaptiveGoalEnabled: true },
+    NUTRITION_PREFS_KEY,
+    "tdee",
+  );
+}
+
+export function persistProfileNutritionPrefs(prefs: NutritionPrefs): boolean {
+  return persistNutritionPrefs(
+    { ...prefs, adaptiveGoalEnabled: true },
+    NUTRITION_PREFS_KEY,
+    "preset",
+  );
 }
 
 export function loadActivePantryId(
@@ -183,6 +223,11 @@ export function loadNutritionLog(
   return normalizeNutritionLog(cache.log);
 }
 
+/** Append-only history used by retrospective goal comparisons. */
+export function loadNutritionGoalPeriods(): readonly GoalPeriod[] {
+  return getCachedNutritionSqliteState().goalPeriods;
+}
+
 export function persistNutritionLog(
   log: NutritionLog | null | undefined,
   _key: string = NUTRITION_LOG_KEY,
@@ -208,6 +253,19 @@ export function persistNutritionLog(
 // ─────────────────────────────────────────────
 
 /**
+ * data-03: чи SQLite warm-кеш Їжі вже прогрівся хоч раз
+ * (`refreshedAt !== null`). Whole-blob singleton-и (список покупок, вода)
+ * без цього пишуться з порожніх дефолтів.
+ */
+function isNutritionCacheWarm(): boolean {
+  try {
+    return getCachedNutritionSqliteState().refreshedAt !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Persist the entire water-log map. Mirrors `persistNutritionLog` — the
  * caller passes the full `Record<dateKey, volumeMl>` and the diff
  * layer emits one `water-log-set` op per changed date. Pre-boot or
@@ -217,6 +275,8 @@ export function persistNutritionLog(
 export function persistNutritionWaterLog(
   waterLog: Record<string, number> | null | undefined,
 ): boolean {
+  // data-03: whole-blob запис з непрогрітого кешу затирає воду на сервері.
+  if (!isNutritionCacheWarm()) return false;
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const safe: Record<string, number> = {};
@@ -259,6 +319,11 @@ export function persistNutritionRecipes(
 export function persistNutritionShoppingList(
   shoppingList: ShoppingList | null | undefined,
 ): boolean {
+  // data-03: до першого прогріву кешу `loadShoppingList()` дає порожній
+  // дефолт; запис такого blob-а = whole-row LWW, що затирає справжній список
+  // на всіх пристроях. Тому тут (на відміну від решти persist*) запис ДО
+  // прогріву свідомо відкидається, а не буферизується.
+  if (!isNutritionCacheWarm()) return false;
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const normalized = normalizeShoppingList(shoppingList ?? null);
@@ -274,9 +339,18 @@ export function persistNutritionShoppingList(
 // Dual-write state extraction (Stage 4 PR #032; rewired by
 // PR #057n-tombstone to peek the SQLite warm cache instead of LS).
 //
-// Returns `null` when no dual-write context is registered — the
-// write call sites use this as a fast-path gate so we never enqueue
-// SQLite ops pre-auth.
+// AI-DANGER: does NOT gate on `isNutritionDualWriteRegistered()` anymore.
+// It used to — before `useNutritionDualWriteBoot` registers a context
+// (auth `status === "loading"`, right after a fresh nav/reload), every
+// `persist*` call below saw `prev === null` and returned `true`
+// ("saved") without writing ANYTHING, anywhere — a silent, permanent
+// data loss on the very first write of a session (blind nutrition run,
+// 2026-09-28: 7 entries typed in that window, all gone on next reload).
+// `triggerNutritionDualWrite` (sqliteWriter/index.js) now buffers a call
+// made before registration and replays it once a context registers
+// within the same page life, so this must keep producing a real `prev`
+// snapshot even pre-registration — the cache read below has sane
+// `EMPTY_CACHE` defaults and works regardless of registration state.
 //
 // Recipes live in IndexedDB (`recipeBook.ts`) rather than LS, but the
 // SQLite `nutrition_recipes` table is what `sqliteReader.ts` reads back
@@ -290,7 +364,6 @@ function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
 }
 
 function peekNutritionDualWriteState(): NutritionDualWriteState | null {
-  if (!isNutritionDualWriteRegistered()) return null;
   try {
     const cache = getCachedNutritionSqliteState();
     const prefs = cache.prefs ?? defaultNutritionPrefs();

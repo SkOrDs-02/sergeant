@@ -42,7 +42,7 @@ describe("NotificationBell", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /Сповіщення/ }));
 
-    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Доступна нова версія")).toBeInTheDocument();
     expect(screen.getByText("Опис оновлення")).toBeInTheDocument();
   });
@@ -55,7 +55,7 @@ describe("NotificationBell", () => {
     fireEvent.click(screen.getByText("Оновити"));
 
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("renders the dismiss affordance only when onDismiss is provided", () => {
@@ -71,7 +71,7 @@ describe("NotificationBell", () => {
     fireEvent.click(later);
     expect(onDismiss).toHaveBeenCalledTimes(1);
     // Dismiss does NOT close the popover (only onAction does).
-    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("closes on Escape and on outside click", () => {
@@ -79,26 +79,26 @@ describe("NotificationBell", () => {
     const trigger = screen.getByRole("button", { name: /Сповіщення/ });
 
     fireEvent.click(trigger);
-    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     // Re-open then click outside.
     fireEvent.click(trigger);
-    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.mouseDown(document.body);
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("collapses the popover when the last notification clears", () => {
     const { rerender } = render(<NotificationBell notifications={[note()]} />);
     fireEvent.click(screen.getByRole("button", { name: /Сповіщення/ }));
-    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
 
     rerender(<NotificationBell notifications={[]} />);
     // Whole component unmounts once count hits 0.
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Сповіщення/ }),
     ).not.toBeInTheDocument();

@@ -2286,14 +2286,14 @@ describe("routine applySync", () => {
   it("applies routine streak upsert/delete and rejects stale aggregate writes", async () => {
     await expect(
       applyRoutineStreaks(
-        makeClient([{ max_ts: NEWER_TS }]),
+        makeClient([], [{ max_ts: NEWER_TS }]),
         op({ user_id: USER_ID, current_streak: 3 }),
         USER_ID,
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
 
-    const upsertClient = makeClient([{ max_ts: OLD_TS }]);
+    const upsertClient = makeClient([], [{ max_ts: OLD_TS }]);
     await expect(
       applyRoutineStreaks(
         upsertClient,
@@ -2307,15 +2307,18 @@ describe("routine applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(upsertClient)).toContain("INSERT INTO routine_streaks");
-    expect(upsertClient.query.mock.calls[1]?.[1]).toEqual([
+    expect(sql(upsertClient, 2)).toContain("INSERT INTO routine_streaks");
+    expect(upsertClient.query.mock.calls[0]?.[0]).toContain(
+      "pg_advisory_xact_lock",
+    );
+    expect(upsertClient.query.mock.calls[2]?.[1]).toEqual([
       USER_ID,
       3,
       0,
       CLIENT_TS,
     ]);
 
-    const deleteClient = makeClient([{ max_ts: null }]);
+    const deleteClient = makeClient([], [{ max_ts: null }]);
     await expect(
       applyRoutineStreaks(
         deleteClient,
@@ -2324,7 +2327,7 @@ describe("routine applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(deleteClient)).toContain("DELETE FROM routine_streaks");
+    expect(sql(deleteClient, 2)).toContain("DELETE FROM routine_streaks");
   });
 
   it("validates routine streak ownership and date fields", async () => {
@@ -2343,7 +2346,7 @@ describe("routine applySync", () => {
 
     await expect(
       applyRoutineStreaks(
-        makeClient([{ max_ts: null }]),
+        makeClient([], [{ max_ts: null }]),
         op({ user_id: USER_ID, last_completed_at: "invalid" }),
         USER_ID,
         CLIENT_TS,

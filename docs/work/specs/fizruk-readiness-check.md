@@ -1,6 +1,6 @@
 # SPEC: чек готовності перед тренуванням
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-03.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-21.
 > **Status:** Implemented (2026-09-02)
 
 <!-- Спека несе всі ПРОДУКТОВІ рішення (ухвалені founder-ом у сесії 2026-09-02)

@@ -3,9 +3,9 @@
  * Status: Active
  *
  * Три ступені візуальної впевненості для `CrossModuleLinkCard` — П2
- * анти-слоп плану (`docs/05-design/design/anti-slop-strategy.md` §4/П1,
+ * анти-слоп плану (`docs/design/design/anti-slop-strategy.md` §4/П1,
  * §5 P2) і продуктовий канон «епістемічний стандарт звʼязків»
- * (`docs/01-product/model/product-overview.md` §6): «градація впевненості
+ * (`docs/product/model/product-overview.md` §6): «градація впевненості
  * + право мовчати».
  *
  * AI-CONTEXT: пороги НЕ вигадані для цього файлу — вони одна в одну
@@ -63,6 +63,7 @@
  */
 
 import { MIN_N, NOTABLE_R, WINDOW_DAYS } from "./digestCorrelations";
+import { REQUIRED_CONSECUTIVE_CHECKS } from "./crossModuleLinkHistory";
 
 export { MIN_N, NOTABLE_R, WINDOW_DAYS };
 
@@ -79,21 +80,31 @@ export type CrossModuleLinkTier = 1 | 2 | 3;
  *          не видно; картка не стверджує нічого.
  *   1    → «Поки що збіг» — звʼязок перетнув поріг помітності, але сила
  *          лишається в діапазоні, де випадковий збіг цілком імовірний.
- *   2    → «Повторюється» — сила помітно вища за поріг (|r| ≥ 0.55), але
- *          ще не «сильна».
- *   3    → «Тримається стабільно» — сила справді висока (|r| ≥ 0.7) І
- *          днів набралось на половину вікна (n ≥ 30). Обидві умови, не
- *          одна: див. AI-DANGER угорі файлу.
+ *   2    → «Повторюється» - сила помітно вища за поріг (|r| ≥ 0.55) І пара
+ *          пройшла перевірку дві тижневі поспіль.
+ *   3    → «Тримається стабільно» - сила справді висока (|r| ≥ 0.7), днів
+ *          набралось на половину вікна (n ≥ 30) І пара так само втрималась
+ *          дві перевірки поспіль. Усі три умови, не одна: див. AI-DANGER
+ *          угорі файлу.
+ *
+ * `checks` - скільки тижневих перевірок поспіль пара пройшла
+ * (`crossModuleLinkHistory.ts`). Дефолт 1, а не 2, навмисно: викликач без
+ * історії (сторібук, стара фікстура, щойно втрачене сховище) отримує
+ * ПЕРШИЙ ступінь, а не помилку й не завищене слово. Деградація йде вниз.
  */
 export function gradeCrossModuleLink(
   observations: number,
   strength: number,
+  checks: number = 1,
 ): CrossModuleLinkTier | null {
   if (!Number.isFinite(observations) || !Number.isFinite(strength)) {
     return null;
   }
   const absR = Math.abs(strength);
   if (observations < MIN_N || absR < NOTABLE_R) return null;
+  const repeated =
+    Number.isFinite(checks) && checks >= REQUIRED_CONSECUTIVE_CHECKS;
+  if (!repeated) return 1;
   if (absR >= STRONG_R && observations >= STABLE_N) return 3;
   if (absR >= REPEATING_R) return 2;
   return 1;

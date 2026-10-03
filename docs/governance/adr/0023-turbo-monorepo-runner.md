@@ -110,7 +110,7 @@ Task-граф у `turbo.json`:
   Custom-скрипти живуть у `scripts/` і не вписуються в задачний-граф (вони
   глобальні, перевіряють крос-пакетні інваріанти).
 - `pnpm format` / `pnpm format:check` — Prettier на всю repo, не per-package.
-- `pnpm licenses:*`, `pnpm db:migrate`, `pnpm strict:coverage` — generators
+- `pnpm licenses:*`, `pnpm db:migrate`, `pnpm strict:coverage` <!-- removed --> — generators
   / one-shots без cache-value.
 
 **Remote cache** активується автоматично в CI коли `TURBO_TOKEN` + `TURBO_TEAM`

@@ -3,18 +3,27 @@ import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { failedCopy } from "@shared/i18n/failedCopy";
 import { TransactionsHeader } from "./TransactionsHeader";
 import { exportTransactionsCsv } from "./exportTransactionsCsv";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
 import { TransactionFilters } from "./TransactionFilters";
+import { CategoryTrend } from "./CategoryTrend";
 import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
+import { useDebtPaymentSplitSync } from "../../hooks/useDebtPaymentSplitSync";
+import {
+  useMerchantRuleActions,
+  type MerchantRuleActionsDeps,
+} from "../../hooks/useMerchantRuleActions";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
 import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { TransferSuggestionCard } from "./TransferSuggestionCard";
 import {
   filterTransferSuggestions,
@@ -26,6 +35,7 @@ import {
   FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
 } from "@sergeant/finyk-domain/storage-keys";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import { formatMoney } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import type {
   Transaction,
@@ -101,7 +111,15 @@ export interface TransactionsMonoSlice {
   lastUpdated: Date | null;
   syncState: MonoSyncState;
   accounts: ReadonlyArray<TxAccount> | undefined;
+  /**
+   * Банки Monobank (`MonoJarDto`). Їхні id збігаються з `accountId`
+   * транзакцій банки, і матчер переказів лічить таку ногу маркером
+   * «картка ↔ банка» (див. `transferMatching.jarAccountIds`). У `accounts`
+   * банок немає — сервер виносить їх окремим списком.
+   */
+  jars?: ReadonlyArray<{ monoJarId?: string | undefined }> | undefined;
   fetchMonth: (year: number, month: number) => Promise<unknown>;
+  fetchRange?: (from: string, to: string) => Promise<unknown>;
   historyTx: Transaction[];
   loadingHistory: boolean;
   refresh: () => Promise<unknown>;
@@ -112,12 +130,29 @@ export interface TransactionsMonoSlice {
  * for the same reason as {@link TransactionsMonoSlice}.
  */
 export interface TransactionsStorageSlice {
+  /** `false`, поки SQLite-кеш не прогрітий і `txCategories` ще з LS-знімка. */
+  storageReady?: boolean;
   hiddenTxIds: string[];
   hideTx: (id: string) => void;
   excludedTxIds: Set<string>;
+  /**
+   * Обидві ноги скасованих платежів («Скасування. …»): уже в `excludedTxIds`,
+   * тут окремо, щоб рядок мав своє слово («скасовано»), а не загальне
+   * «не в статистиці».
+   */
+  cancelledTxIds?: ReadonlySet<string> | undefined;
   excludedStatTxIds: string[] | undefined;
   toggleExcludeFromStats: (id: string) => void;
   txCategories: TxCategoriesMap;
+  /**
+   * Правила «Завжди так для цього магазину» і їхні мутатори. Усе необовʼязкове:
+   * без них список працює як раніше, а аркуш операції не пропонує правил.
+   */
+  merchantRuleIndex?: MerchantRuleIndex | undefined;
+  upsertMerchantRule?: MerchantRuleActionsDeps["upsertMerchantRule"];
+  undoMerchantRule?: MerchantRuleActionsDeps["undoMerchantRule"];
+  deleteMerchantRule?: MerchantRuleActionsDeps["deleteMerchantRule"];
+  restoreMerchantRules?: MerchantRuleActionsDeps["restoreMerchantRules"];
   customCategories: Category[] | undefined;
   overrideCategory: (id: string, catId: string | null) => void;
   txSplits: TxSplitsMap;
@@ -147,6 +182,7 @@ export interface TransactionsProps {
   storage: TransactionsStorageSlice;
   showBalance?: boolean;
   categoryFilter?: string | null;
+  categoryMonth?: { year: number; month: number } | null;
   onClearCategoryFilter?: () => void;
   onEditManualExpense?: (id: string) => void;
   dayFilter?: string | null;
@@ -176,6 +212,7 @@ export function Transactions({
   storage,
   showBalance = true,
   categoryFilter,
+  categoryMonth,
   onClearCategoryFilter,
   onEditManualExpense,
   dayFilter,
@@ -191,18 +228,26 @@ export function Transactions({
     lastUpdated,
     syncState,
     accounts,
+    jars,
     fetchMonth,
     historyTx,
     loadingHistory,
     refresh: monoRefresh,
   } = mono;
   const {
+    storageReady = true,
     hiddenTxIds,
     hideTx,
     excludedTxIds,
+    cancelledTxIds,
     excludedStatTxIds,
     toggleExcludeFromStats,
     txCategories,
+    merchantRuleIndex,
+    upsertMerchantRule,
+    undoMerchantRule,
+    deleteMerchantRule,
+    restoreMerchantRules,
     customCategories,
     overrideCategory,
     txSplits,
@@ -228,9 +273,11 @@ export function Transactions({
     excludedTxIds,
     txSplits,
     txCategories,
+    merchantRules: merchantRuleIndex,
     customCategories,
     fetchMonth,
     categoryFilter,
+    categoryMonth,
     onClearCategoryFilter,
     dayFilter,
   });
@@ -269,11 +316,22 @@ export function Transactions({
       ) ?? {},
   );
 
+  // `jars` приходить новим масивом на кожен рендер FinykApp, тож у залежності
+  // memo йде стабільний рядок id, а не сам масив.
+  const jarIdsKey = (jars ?? []).flatMap((j) => j.monoJarId ?? []).join("|");
+  const jarAccountIds = useMemo(
+    () => new Set(jarIdsKey ? jarIdsKey.split("|") : []),
+    [jarIdsKey],
+  );
+
   const transferSuggestions = useMemo(() => {
+    // До прогріву вже підтверджені перекази ще без категорії й поверталися
+    // б у чергу пропозицій цілою пачкою.
+    if (!storageReady) return [];
     const hidden = new Set(hiddenTxIds);
     const raw = findInternalTransferSuggestions(
       filters.activeTx.filter((tx) => !hidden.has(tx.id)),
-      { txCategories },
+      { txCategories, jarAccountIds },
     );
     return filterTransferSuggestions(raw, {
       rejectedPairKeys: rejectedTransferPairs,
@@ -281,9 +339,11 @@ export function Transactions({
       todayKey: getKyivDayKey(),
     });
   }, [
+    storageReady,
     filters.activeTx,
     hiddenTxIds,
     txCategories,
+    jarAccountIds,
     rejectedTransferPairs,
     snoozedTransferPairs,
   ]);
@@ -325,17 +385,56 @@ export function Transactions({
   // CSV-експорт видимого місяця. `monthKey` збирається з `selMonth` (у
   // ньому `month` — індекс 0..11, як у `Date`), щоб імʼя файла називало
   // саме той місяць, який людина бачила на екрані.
-  const handleExportCsv = useCallback(() => {
-    const monthKey = `${filters.selMonth.year}-${String(
-      filters.selMonth.month + 1,
-    ).padStart(2, "0")}`;
-    const count = exportTransactionsCsv(
-      filters.filtered,
-      filters.getEffectiveCat,
-      monthKey,
-    );
-    toast?.success(`Вивантажено операцій: ${count}`);
-  }, [filters.selMonth, filters.filtered, filters.getEffectiveCat, toast]);
+  const handleExportCsv = useCallback(
+    async function exportCsv(): Promise<void> {
+      const monthKey = `${filters.selMonth.year}-${String(
+        filters.selMonth.month + 1,
+      ).padStart(2, "0")}`;
+      try {
+        const { count, result } = await exportTransactionsCsv(
+          filters.filtered,
+          filters.getEffectiveCat,
+          monthKey,
+        );
+        // Закрили аркуш «Поділитись» без вибору — це не вивантаження, тост
+        // «Вивантажено…» тут збрехав би.
+        if (result !== "cancelled") {
+          toast?.success(`Вивантажено операцій: ${count}`);
+        }
+      } catch {
+        // Повтор безпечний: файл збирається заново з того, що на екрані. Кнопка
+        // в тості теж жест користувача, тож `navigator.share` знову дозволений.
+        toast?.error(failedCopy("вивантажити операції"), undefined, {
+          label: "Повторити",
+          onClick: () => void exportCsv(),
+        });
+      }
+    },
+    [filters.selMonth, filters.filtered, filters.getEffectiveCat, toast],
+  );
+
+  // PR-F4 founder-UX audit 2026-09-13: `excludedStatTxIds` — джерело
+  // правди для «не враховувати у статистиці» — доти доходило лише до
+  // `BankTransactionDetailsSheet` (проп `excludedFromStats` нижче), а не
+  // до самого рядка списку чи пакетної дії. Людина бачила підсумки
+  // Огляду/Аналітики, що змінились, і жодного сліду в списку, ЯКІ саме
+  // рядки виключено. Set будується тут же й іде в кожен рядок через
+  // `TransactionList` → `TxListItem` → `TxRow` → `TxRowMetaChips`.
+  const excludedStatTxIdSet = useMemo(
+    () => new Set(excludedStatTxIds ?? []),
+    [excludedStatTxIds],
+  );
+
+  // «Завжди так для цього магазину»: створення/прибирання правила з тостом
+  // скасування (рішення власника 2026-10-01).
+  const merchantRuleActions = useMerchantRuleActions({
+    upsertMerchantRule,
+    undoMerchantRule,
+    deleteMerchantRule,
+    restoreMerchantRules,
+    customCategories,
+    toast,
+  });
 
   const selection = useTransactionSelection({
     hiddenTxIds,
@@ -351,6 +450,27 @@ export function Transactions({
     onEditManualExpense,
     toast,
   });
+
+  // Рівень 3: розподіл операції може змінитись УЖЕ ПІСЛЯ привʼязки платежу,
+  // і тоді сума привʼязки застаріває. Обгортка стоїть саме тут, бо це
+  // єдина точка, крізь яку проходять усі три шляхи зміни розподілу
+  // (редактор спліту, «прибрати розподіл», розбивка за чеком Сільпо) —
+  // аркуш роздає той самий `onSplitChange` усім трьом.
+  const splitSync = useDebtPaymentSplitSync(
+    manualDebts,
+    setLinkedTxRole,
+    toast.success,
+  );
+  const handleSplitChange = useCallback(
+    (id: string, splits: TxSplit[] | null) => {
+      selection.stableSetSplitTx(id, splits);
+      const amountKop = Math.abs(Number(editingBankTransaction?.amount) || 0);
+      if (editingBankTransaction?.id === id && amountKop > 0) {
+        splitSync.reconcile(id, splits, amountKop / 100);
+      }
+    },
+    [selection, splitSync, editingBankTransaction],
+  );
 
   return (
     <>
@@ -371,7 +491,10 @@ export function Transactions({
         selectMode={selection.selectMode}
         selectedIds={selection.selectedIds}
         hiddenTxIdSet={filters.hiddenTxIdSet}
+        excludedStatTxIdSet={excludedStatTxIdSet}
+        cancelledTxIdSet={cancelledTxIds}
         txCategories={txCategories}
+        merchantRules={merchantRuleIndex}
         txSplits={txSplits}
         txNotes={txNotes}
         accounts={accounts}
@@ -428,7 +551,6 @@ export function Transactions({
                     type="button"
                     size="xs"
                     variant="ghost"
-                    tone="finyk"
                     onClick={onClearDayFilter}
                     aria-label={messages.finyk.todayFilter.showAllAria}
                   >
@@ -463,6 +585,22 @@ export function Transactions({
               hasCreditAccounts={filters.creditAccIds.size > 0}
               activeCategoryLabel={filters.activeCategoryLabel}
             />
+            {filters.activeCategoryLabel && (
+              <CategoryTrend
+                categoryId={filters.filter}
+                label={filters.activeCategoryLabel}
+                storage={{
+                  excludedTxIds,
+                  txSplits,
+                  manualExpenses,
+                  txCategories,
+                  merchantRules: merchantRuleIndex,
+                  customCategories,
+                }}
+                fetchRange={mono.fetchRange}
+                showBalance={showBalance}
+              />
+            )}
           </section>
         }
         trailing={
@@ -499,6 +637,16 @@ export function Transactions({
           note={txNotes[editingBankTransaction.id]}
           txSplits={txSplits}
           customCategories={customCategories}
+          merchantRules={merchantRuleIndex}
+          onCreateMerchantRule={
+            upsertMerchantRule
+              ? (tx, categoryId) =>
+                  merchantRuleActions.createRule(tx, categoryId)
+              : undefined
+          }
+          onRemoveMerchantRule={
+            deleteMerchantRule ? merchantRuleActions.removeRule : undefined
+          }
           receiptId={
             receiptLinks?.getReceiptId(editingBankTransaction.id) ?? null
           }
@@ -508,10 +656,31 @@ export function Transactions({
           setLinkedTxRole={setLinkedTxRole}
           onCategoryChange={selection.stableOverrideCategory}
           onNoteChange={selection.stableSetTxNote}
-          onSplitChange={selection.stableSetSplitTx}
+          onSplitChange={handleSplitChange}
           onToggleHidden={selection.stableHideTx}
           onToggleExcludedFromStats={toggleExcludeFromStats}
           onClose={() => setEditingBankTransaction(null)}
+        />
+      )}
+
+      {/* Рівень 3: частки боргу в розподілі не лишилось. Питаємо, а не
+          відвʼязуємо самі — людина може бути посеред редагування. */}
+      {splitSync.pendingUnlink && (
+        <ConfirmDialog
+          open
+          title={messages.finyk.debtSplitSync.unlinkTitle}
+          description={messages.finyk.debtSplitSync.unlinkQuestion
+            .replace("{debt}", splitSync.pendingUnlink.debtName)
+            .replace(
+              "{amount}",
+              formatMoney(splitSync.pendingUnlink.previousAmountUAH, {
+                maxFractionDigits: 2,
+              }),
+            )}
+          confirmLabel={messages.finyk.debtSplitSync.unlinkConfirm}
+          cancelLabel={messages.finyk.debtSplitSync.unlinkKeep}
+          onConfirm={splitSync.confirmUnlink}
+          onCancel={splitSync.dismissUnlink}
         />
       )}
     </>

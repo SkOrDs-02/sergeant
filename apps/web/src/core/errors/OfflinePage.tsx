@@ -13,7 +13,7 @@
  *
  * The tone follows the brandbook voice: warning, not danger. "bg-warning"
  * reads as "we're paused, not broken" — data is queued, not lost
- * (per `docs/design/design-system.md` § 15 Offline).
+ * (per `docs/design/design/design-system.md` § 15 Offline).
  */
 import { Button, EmptyState, Icon } from "@shared/components/ui";
 import { OfflineIllustration } from "@assets/illustrations";
@@ -64,11 +64,15 @@ export function OfflinePage() {
         eyebrow={copy.eyebrow}
         illustration={<OfflineIllustration size={200} />}
         title={copy.title}
+        // The empty state is the entire `/offline` surface, so it has to
+        // carry the page heading — otherwise this route ships with no
+        // heading at all (same reasoning as `NotFoundPage`).
+        titleAs="h1"
         description={copy.description}
         primaryAction={
           <Button
             type="button"
-            variant="primary"
+            variant="solid"
             size="lg"
             disabled={!online}
             onClick={() => {
@@ -81,7 +85,7 @@ export function OfflinePage() {
               window.location.reload();
             }}
           >
-            <Icon name="refresh-cw" size={16} />
+            <Icon name="refresh-cw" size="md" />
             {online ? "Спробувати ще" : "Очікування мережі…"}
           </Button>
         }

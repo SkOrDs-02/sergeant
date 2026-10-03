@@ -4,7 +4,7 @@
  * The route is mounted by `apps/server/src/routes/csp-report.ts`; the
  * handler lives at `apps/server/src/modules/observability/csp-report.ts`
  * and is described in
- * `docs/security/hardening/C2-frontend-csp.md`. Each named case
+ * `docs/work/specs/security-hardening/C2-frontend-csp.md`. Each named case
  * represents a real wire shape browsers POST in production:
  *
  * - `legacyEnvelope` — Firefox + Chromium pre-Reporting-API. Sends
@@ -27,7 +27,7 @@
  * each fixture and asserts the route still returns 204.
  *
  * Closes audit `docs/audits/2026-05-13-security-observability-roast.md`
- * § S7 (Contract test expansion — auth, csp-report, account-recovery).
+ * § S7 (Contract test expansion — auth, csp-report).
  */
 
 import {

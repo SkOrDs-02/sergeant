@@ -1,25 +1,35 @@
 # Довідник Prometheus-метрик
 
-> **Last touched:** 2026-09-02 by @claude (звірка назв метрик проти `metrics.ts`). **Next review:** 2026-12-21.
+> **Last touched:** 2026-09-17 by @claude (джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
 > **Status:** Active — **каталог неповний**, див. врізку одразу нижче
 
-> **⚠️ Звірка 2026-09-02: каталог відстав від коду.**
+> **⚠️ Каталог відстав від коду — і відстає далі.**
 >
-> Перевірка була вимушеною і вузькою: гейт `Docs freshness cadence` став червоним
-> на `main` (`Next review` минув 2026-09-01), і його треба було або чесно
-> закрити, або зрозуміти чому. Зроблено рівно одну механічну перевірку — усі
-> імена метрик, оголошені в
-> [`metrics.ts`](../../../apps/server/src/obs/metrics.ts) через `name:`, знайдено
-> пошуком по цьому файлу.
+> Джерело істини — не цей файл, а каталог реєстру
+> [`apps/server/src/obs/metrics/`](../../../apps/server/src/obs/metrics/)
+> (`http.ts`, `sync.ts`, `domain.ts`, `billing.ts`, `jobs.ts`, `db-query.ts`,
+> `registry.ts`); [`metrics.ts`](../../../apps/server/src/obs/metrics.ts) з
+> 2026-09 — лише shim з re-export-ами, щоб імпорт-шлях `../obs/metrics.js` не
+> зламався. Повний перелік імен — `grep -rn "name:" apps/server/src/obs/metrics/`.
+> Кількість оголошених метрик тут навмисно не записана: будь-яке число
+> застаріє за тиждень (звірка 2026-09-17 показала, що не згадана вже
+> **приблизно половина** реєстру, зокрема `ai_memory_ingest_*`, `auth_mail_*`,
+> `ftux_drip_*`, `billing_*`, `chat_prompt_injection_attempt_total`,
+> `sync_stream_connections_active`, `ai_cost_consumed_total` — жодної з них
+> у списку нижче немає).
 >
-> **Результат: із 42 оголошених метрик 28 не згадані тут жодного разу.**
-> Одну з них — `ai_first_token_ms` — описано в §6a разом із
-> `chat_first_turn_phase_ms`, бо друга існує саме через межі першої;
-> лишається 27.
-> Тобто довідник описує приблизно третину того, що бекенд реально експортує, і
-> покладатись на нього як на повний каталог не можна.
+> **Історія звірки 2026-09-02.** Перевірка була вимушеною і вузькою: гейт
+> `Docs freshness cadence` став червоним на `main` (`Next review` минув
+> 2026-09-01), і його треба було або чесно закрити, або зрозуміти чому.
+> Зроблено рівно одну механічну перевірку — усі імена метрик, оголошені тоді в
+> `metrics.ts` через `name:`, знайдено пошуком по цьому файлу. Результат на ту
+> дату: із 42 оголошених метрик 28 не згадані тут жодного разу. Одну з них —
+> `ai_first_token_ms` — описано в §6a разом із `chat_first_turn_phase_ms`, бо
+> друга існує саме через межі першої; лишалось 27. Тобто довідник описує
+> приблизно третину того, що бекенд реально експортує, і покладатись на нього
+> як на повний каталог не можна.
 >
-> Не задокументовані:
+> Не задокументовані (станом на 2026-09-02; список неповний, див. вище):
 >
 > - `auth_session_lookup_failure_total`
 > - `auth_token_lazy_reencrypt_total`
@@ -55,11 +65,11 @@
 >
 > **Чому дата оновлена попри неповноту.** `Last touched` фіксує «хтось дивився
 > на документ у цю дату», а не «документ бездоганний». Прогалину названо тут
-> явно, щоб наступний читач побачив її одразу, а не вивів із тиші. Дописати ці
-> 28 метрик — окрема робота, а не побічний ефект PR, який їх не вносив.
+> явно, щоб наступний читач побачив її одразу, а не вивів із тиші. Дописати
+> відсутні метрики — окрема робота, а не побічний ефект PR, який їх не вносив.
 
-Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
-Джерело істини — [`metrics.ts`](../../../apps/server/src/obs/metrics.ts).
+Каталог Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
+Джерело істини — реєстр [`apps/server/src/obs/metrics/`](../../../apps/server/src/obs/metrics/) (`metrics.ts` — re-export shim).
 Суміжні docs: [SLO.md](./SLO.md) · [dashboards.md](./dashboards.md) · [runbook.md](./runbook.md) · [`prometheus/`](./prometheus).
 
 ---
@@ -164,7 +174,9 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 
 `op`: `push` · `pull` · `push_all` · `pull_all` · `v2_push` · `v2_pull`. `module`: `finyk` · `fizruk` · `routine` · `nutrition` · `profile` · `syncV2`. `outcome`: `ok` · `empty` · `conflict` · `invalid` · `too_large` · `unauthorized` · `error` · `partial`. Buckets duration: `10…10000` ms; bytes: `1024…5242880` (MAX_BLOB_SIZE = 5 MB).
 
-**v2 op-log per-op (`sync_op_log_apply_total`)**: `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` + `__unknown__`; `status` ∈ `applied|rejected|duplicate`; `reason` — закритий allowlist (PR #043c + PR #042a/b, Stage 5): `none` (для applied) + 5 engine-level (`clock_skew` · `table_not_allowed` · `apply_failed` · `duplicate` · `op_not_supported`) + 59 apply-fn-level (`lww_conflict` · `tombstoned` · `not_found` · `delete_not_supported` · `user_id_mismatch` · `fk_violation` · `append_only_violation` + 16 `missing_*` + 36 `invalid_*`). Source-of-truth: `APPLY_REJECT_REASONS` / `ENGINE_REJECT_REASONS` у [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — TS-union блокує emit невідомого літерала на compile-time, regression-тест у [`metrics.test.ts`](../../../apps/server/src/obs/metrics.test.ts) фіксує довжину allowlist-у. Cardinality cap: 45 tables × 3 statuses × 65 reasons (`none` + 5 engine + 59 apply) ≈ 8_775 series worst-case (phenomenologically <100 — більшість табл/reason пар не зустрічаються одночасно). PR #042a розширив engine-level allowlist `op_not_supported` як gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`; PR #042b опт-інив `routine_streaks` у whitelist + додав apply-level `missing_delta`/`invalid_delta` для PN-counter payload-валідації. Хвиля 1 (стадія 1) додала три append-only таблиці в `OP_LOG_TABLE_REGISTRY` — `routine_completion_events`, `nutrition_pantry_events`, `nutrition_goal_periods` (реєстр виріс до 45) — і три apply-level причини: `append_only_violation` — гейт на `op='update'|'delete'` для append-only журналу відміток: подія незмінна, виправлення історії = НОВА подія; `invalid_event_kind` + `missing_delta_or_abs` (валідація payload-у ledger-а комори) і `invalid_goal_origin` (журнал цілей КБЖВ). CodeRabbit PR #627: +1 `invalid_tz_offset_min` (`tz_offset_min` набуло real-world range-check замість "будь-який integer"). **`tombstoned` виведено з обігу на шляху запису** (регресія `SERGEANT-WEB-T`): жоден apply-хендлер його більше не повертає, тож на дашборді ця лінія має впасти в нуль — не-нуль означає стару інстанцію сервера за проксі. Значення лишається в allowlist-і (довжина не змінилась), бо в клієнтських аутбоксах уже лежать рядки з цим `reject_reason`; обґрунтування зняття — в `guardUuidPkApply` ([`applySync-helpers.ts`](../../../apps/server/src/modules/sync/applySync-helpers.ts)).
+**v2 op-log per-op (`sync_op_log_apply_total`)**: `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` + `__unknown__`; `status` ∈ `applied|rejected|duplicate`; `reason` — закритий allowlist (PR #043c + PR #042a/b, Stage 5): `none` (для applied) + 6 engine-level (`clock_skew` · `table_not_allowed` · `apply_failed` · `duplicate` · `op_not_supported` · `oplog_write_failed`) + 69 apply-fn-level (`lww_conflict` · `tombstoned` · `not_found` · `delete_not_supported` · `user_id_mismatch` · `fk_violation` · `append_only_violation` + 16 `missing_*` + 46 `invalid_*`). Source-of-truth: `APPLY_REJECT_REASONS` / `ENGINE_REJECT_REASONS` у [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — TS-union блокує emit невідомого літерала на compile-time, regression-тест у [`metrics.test.ts`](../../../apps/server/src/obs/metrics.test.ts) фіксує довжину allowlist-у. Cardinality cap: 45 tables × 3 statuses × 76 reasons (`none` + 6 engine + 69 apply) ≈ 10_260 series worst-case (phenomenologically <100 — більшість табл/reason пар не зустрічаються одночасно). PR #042a розширив engine-level allowlist `op_not_supported` як gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`; PR #042b опт-інив `routine_streaks` у whitelist + додав apply-level `missing_delta`/`invalid_delta` для PN-counter payload-валідації. Хвиля 1 (стадія 1) додала три append-only таблиці в `OP_LOG_TABLE_REGISTRY` — `routine_completion_events`, `nutrition_pantry_events`, `nutrition_goal_periods` (реєстр виріс до 45) — і три apply-level причини: `append_only_violation` — гейт на `op='update'|'delete'` для append-only журналу відміток: подія незмінна, виправлення історії = НОВА подія; `invalid_event_kind` + `missing_delta_or_abs` (валідація payload-у ledger-а комори) і `invalid_goal_origin` (журнал цілей КБЖВ). CodeRabbit PR #627: +1 `invalid_tz_offset_min` (`tz_offset_min` набуло real-world range-check замість "будь-який integer"). Міграція 146: +10 apply-level `invalid_*` на решту полів заміру тіла (`body_fat_pct`, `neck_cm`, `bicep_l_cm`, `bicep_r_cm`, `forearm_l_cm`, `forearm_r_cm`, `thigh_l_cm`, `thigh_r_cm`, `calf_l_cm`, `calf_r_cm`) — веб-форма збирала їх, а колонок під них не було, тож значення зникали після перезавантаження. Фікс «оп-лог поза savepoint»: +1 engine-level `oplog_write_failed` — запис рядка в `sync_op_log` тепер іде під власним savepoint-ом `op_log_write`, тож його помилка (класика — `U+0000` у рядковому полі `row`: zod пропускає, `jsonb` ні) відхиляє ОДИН оп замість ROLLBACK-у всієї транзакції; сплеск цієї лінії читається як «клієнт шле payload, який Postgres не приймає», а не як збій БД. **`tombstoned` виведено з обігу на шляху запису** (регресія `SERGEANT-WEB-T`): жоден apply-хендлер його більше не повертає, тож на дашборді ця лінія має впасти в нуль — не-нуль означає стару інстанцію сервера за проксі. Значення лишається в allowlist-і (довжина не змінилась), бо в клієнтських аутбоксах уже лежать рядки з цим `reject_reason`; обґрунтування зняття — в `guardUuidPkApply` ([`applySync-helpers.ts`](../../../apps/server/src/modules/sync/applySync-helpers.ts)).
+
+**`sync_conflicts_total`**: оголошений у [`obs/metrics/domain.ts`](../../../apps/server/src/obs/metrics/domain.ts), інкрементиться в [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — в тому самому per-op циклі `syncV2Push`, одразу після `.inc()` на `sync_op_log_apply_total`, коли свіжообчислений (не duplicate-replay) `reason === "lww_conflict"`. Це єдиний choke-point: усі apply-функції (`finyk/applySync.ts`, `routine/applySync.ts`, `fizruk/applySync.ts`, `nutrition/applySync.ts`, спільні guard-и в `applySync-helpers.ts` тощо) повертають `{status, reason}` через `ApplyFn`, і саме тут той результат перетворюється на HTTP-відповідь — тому інструментувати треба було рівно одне місце, а не кожен apply-хендлер окремо. `module` — перший underscore-сегмент `table` (`routine_entries` → `routine`), бо всі таблиці реєстру іменовані `<module>_<rest>`. До W4 (2026-09-16) лічильник був оголошений, але жоден код його не інкрементив — `sum by (module) (rate(sync_conflicts_total[1h]))` з runbook-у (`SyncConflictSpike`) завжди повертав порожній результат.
 
 **v2 pull lag/queue (`sync_op_log_pull_lag_ms`, `sync_op_log_pull_queue_depth`)**: гістограми без лейблів, спостерігаються по одній observation на `GET /v2/sync/pull` із непорожньою відповіддю. Buckets pull lag: `50…3_600_000` ms (SSE happy-path → offline-replay). Buckets queue depth: `0…1000` ops/pull.
 
@@ -609,11 +621,11 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 
 **Dashboard**: [`dashboards/cost-monitoring.json`](./dashboards/cost-monitoring.json) — пай-чарти cost-by-provider, daily AI burn timeseries, run-rate vs budget bargauge, fail-open guards (mirror з ai-cost dashboard для cost-context awareness).
 
-**Alerts**: [`voyage-cost.yml`](../../../ops/prometheus/rules/voyage-cost.yml) — `VoyageDailyBudgetSoftBreach` (warn @ 80% × `voyage_daily_budget_usd`, after 10m) і `VoyageDailyBudgetHardBreach` (page @ 100%, after 5m). Маршрут — той самий, що й інші sergeant-server alerts: Alertmanager → WF-98 → Telegram-топік `🟠 Контрол-план`.
+**Alerts**: [`voyage-cost.yml`](../../../ops/prometheus/rules/voyage-cost.yml) — `VoyageDailyBudgetSoftBreach` (warn @ 80% × `voyage_daily_budget_usd`, after 10m) і `VoyageDailyBudgetHardBreach` (page @ 100%, after 5m). Маршрут — той самий, що й інші sergeant-server alerts: Grafana Cloud managed alerting → contact point `telegram-ops` (див. [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-07-26)); історичний ланцюг Alertmanager → n8n WF-98 → Telegram-топік `🟠 Контрол-план` знято ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).
 
-**PR-14 — Anthropic daily budget alert ($3 soft / $5 hard).** На відміну від Voyage, для Anthropic не використовуємо Prometheus alert rule, а робимо in-process loop у [`obs/anthropicBudgetGuard.ts`](../../../apps/server/src/obs/anthropicBudgetGuard.ts) — Sentry → n8n WF-22 → Telegram pipeline уже live, тоді як Prometheus → Alertmanager → Telegram routing для production-deploy-у ще не змонтований. Loop читає `aiCostEstimateUsd{provider="anthropic"}` через `Counter#get()`, тримає baseline-snapshot на початок UTC-доби (`dailyBaseline`), рахує delta кожні `ANTHROPIC_BUDGET_CHECK_INTERVAL_MS` мс. Soft → `Sentry.captureMessage(level="warning", tags={op:"anthropic_budget_alert", threshold:"soft"})`, Hard → `level="error"` + взводить `isAnthropicBudgetHardExceeded()` для не-критичних шляхів. Idempotency: Redis `SET NX EX 36h` під key `anthropic_budget_alert_v1:<YYYY-MM-DD>:<soft|hard>` з in-memory fallback. Налаштовується через `ANTHROPIC_BUDGET_SOFT_USD` / `ANTHROPIC_BUDGET_HARD_USD` / `ANTHROPIC_BUDGET_ALERT_ENABLED` (див. [`env-vars.md`](../../engineering/integrations/env-vars.md#ai-budget-envelopes)).
+**PR-14 — Anthropic daily budget alert ($3 soft / $5 hard).** На відміну від Voyage, для Anthropic не використовуємо Prometheus alert rule, а робимо in-process loop у [`obs/anthropicBudgetGuard.ts`](../../../apps/server/src/obs/anthropicBudgetGuard.ts) — на момент написання (2026-05) Sentry → n8n WF-22 → Telegram pipeline був live, а Prometheus-routing ще не змонтований. Сьогодні n8n знято ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)): Sentry-подія лишається (Sentry alert rules / e-mail), Prometheus-правила маршрутизуються через Grafana Cloud managed alerting → `telegram-ops`; коментар у коді guard-а досі описує старий ланцюг. Loop читає `aiCostEstimateUsd{provider="anthropic"}` через `Counter#get()`, тримає baseline-snapshot на початок UTC-доби (`dailyBaseline`), рахує delta кожні `ANTHROPIC_BUDGET_CHECK_INTERVAL_MS` мс. Soft → `Sentry.captureMessage(level="warning", tags={op:"anthropic_budget_alert", threshold:"soft"})`, Hard → `level="error"` + взводить `isAnthropicBudgetHardExceeded()` для не-критичних шляхів. Idempotency: Redis `SET NX EX 36h` під key `anthropic_budget_alert_v1:<YYYY-MM-DD>:<soft|hard>` з in-memory fallback. Налаштовується через `ANTHROPIC_BUDGET_SOFT_USD` / `ANTHROPIC_BUDGET_HARD_USD` / `ANTHROPIC_BUDGET_ALERT_ENABLED` (див. [`env-vars.md`](../../engineering/integrations/env-vars.md#ai-budget-envelopes)).
 
-**Voyage daily cost alert ($1 soft / $5 hard) + monthly projection.** Analogous до PR-14, але post-record-driven (не polling): хук [`runVoyageBudgetTick`](../../../apps/server/src/modules/ai-memory/voyageBudget.ts) у `recordVoyageUsage()` рахує today-spend і шле Sentry alert при breach. Soft (PR-38, pre-existing) → `level="warning"`, `tags.error_signature='voyage-daily-budget-soft'`, skip non-critical embeddings. **Hard** → `level="error"`, `tags.error_signature='voyage-daily-budget-hard'`, взводить `isVoyageBudgetHardExceeded()` flag; `AiMemoryService.remember()` читає flag і skip-ить embed-call ще до `embedBatch` (auto-pause ingestion). **Monthly projection** — коли `today-spend × днів-у-місяці ≥ VOYAGE_MONTHLY_BUDGET_USD`, шлемо warning `error_signature='voyage-monthly-budget-projection'` один раз на (`YYYY-MM`, monthly). Idempotency у пам'яті: `alertedTiers` Set keyed на `(dayKey|monthKey):tier` (clearing на day/month rollover). Налаштовується через `VOYAGE_DAILY_BUDGET_USD_SOFT` / `VOYAGE_DAILY_BUDGET_USD_HARD` / `VOYAGE_MONTHLY_BUDGET_USD` (див. [`env-vars.md`](../../engineering/integrations/env-vars.md#ai-budget-envelopes)). Sentry → n8n WF-22 → Telegram (same pipeline як Anthropic). Dedup на Telegram стороні — через `error_signature` tag (analogous до WF-98 `workflowId:error_signature` шаблону, PR-15 #2535).
+**Voyage daily cost alert ($1 soft / $5 hard) + monthly projection.** Analogous до PR-14, але post-record-driven (не polling): хук [`runVoyageBudgetTick`](../../../apps/server/src/modules/ai-memory/voyageBudget.ts) у `recordVoyageUsage()` рахує today-spend і шле Sentry alert при breach. Soft (PR-38, pre-existing) → `level="warning"`, `tags.error_signature='voyage-daily-budget-soft'`, skip non-critical embeddings. **Hard** → `level="error"`, `tags.error_signature='voyage-daily-budget-hard'`, взводить `isVoyageBudgetHardExceeded()` flag; `AiMemoryService.remember()` читає flag і skip-ить embed-call ще до `embedBatch` (auto-pause ingestion). **Monthly projection** — коли `today-spend × днів-у-місяці ≥ VOYAGE_MONTHLY_BUDGET_USD`, шлемо warning `error_signature='voyage-monthly-budget-projection'` один раз на (`YYYY-MM`, monthly). Idempotency у пам'яті: `alertedTiers` Set keyed на `(dayKey|monthKey):tier` (clearing на day/month rollover). Налаштовується через `VOYAGE_DAILY_BUDGET_USD_SOFT` / `VOYAGE_DAILY_BUDGET_USD_HARD` / `VOYAGE_MONTHLY_BUDGET_USD` (див. [`env-vars.md`](../../engineering/integrations/env-vars.md#ai-budget-envelopes)). Доставка — та сама, що й для Anthropic (Sentry-подія; n8n WF-22 → Telegram знято ADR-0090). Dedup — через `error_signature` tag (історично так само дедуплікував WF-98 за шаблоном `workflowId:error_signature`, PR-15 #2535).
 
 ---
 
@@ -666,7 +678,7 @@ PostHog не може дізнатись, які сигнали показува
 
 ## Бюджет кардинальності / bad-smell-и
 
-Загальна оцінка: 36 кастомних метрик генерують ≈ **8 000–10 000 серій** — прийнятно для single-instance Hetzner-деплою.
+Загальна оцінка (2026-05, на тодішні 36 кастомних метрик): ≈ **8 000–10 000 серій** — прийнятно для single-instance Hetzner-деплою. Актуальну кількість метрик бери з реєстру `apps/server/src/obs/metrics/`, факт серій — з `up{job="sergeant-server"}` / семплів на скрейп у Grafana (див. [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-07-26)).
 
 **Антипатерни, яких уникнуто:**
 
@@ -682,7 +694,7 @@ PostHog не може дізнатись, які сигнали показува
 
 ## Відкриті питання
 
-Сиріт і несумісних label-set-ів **не знайдено**. Всі 36 метрик інкрементуються щонайменше в одному emitter. Канонічний backlog — [`docs/work/specs/planning/pr-plan-backend-perf-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-backend-perf-2026-05.md); тут — лише точки болю/розвитку observability-каталогу, які треба пам'ятати при дашборд-ревʼю.
+Сиріт і несумісних label-set-ів **не знайдено** (звірка 2026-05 на тодішні 36 метрик; для нинішнього реєстру `apps/server/src/obs/metrics/` не повторювалась). Усі перевірені тоді метрики інкрементуються щонайменше в одному emitter. Канонічний backlog — [`docs/work/specs/planning/pr-plan-backend-perf-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-backend-perf-2026-05.md); тут — лише точки болю/розвитку observability-каталогу, які треба пам'ятати при дашборд-ревʼю.
 
 ### Нещодавно закрито
 

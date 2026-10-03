@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-18.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -179,11 +179,11 @@ feat(server): tighten Finyk tool-calling rules in system prompt
 
 | PR                                                     | Title                                                                | Merged     |
 | ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
-| [#895](https://github.com/Skords-01/Sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners | 2026-08-28 |
-| [#892](https://github.com/Skords-01/Sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                  | 2026-08-27 |
-| [#891](https://github.com/Skords-01/Sergeant/pull/891) | feat(agents): скіли-дисципліни                                       | 2026-08-27 |
-| [#890](https://github.com/Skords-01/Sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                    | 2026-08-27 |
-| [#889](https://github.com/Skords-01/Sergeant/pull/889) | feat(agents): продуктові module-owner скіли                          | 2026-08-27 |
+| [#895](https://github.com/SkOrDs-02/sergeant/pull/895) | fix(agents): полірування агентного шару після розкатки module-owners | 2026-08-28 |
+| [#892](https://github.com/SkOrDs-02/sergeant/pull/892) | feat(agents): module-owner і службові Claude-агенти                  | 2026-08-27 |
+| [#891](https://github.com/SkOrDs-02/sergeant/pull/891) | feat(agents): скіли-дисципліни                                       | 2026-08-27 |
+| [#890](https://github.com/SkOrDs-02/sergeant/pull/890) | feat(agents): інфра module-скіли і nested-роутинг                    | 2026-08-27 |
+| [#889](https://github.com/SkOrDs-02/sergeant/pull/889) | feat(agents): продуктові module-owner скіли                          | 2026-08-27 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

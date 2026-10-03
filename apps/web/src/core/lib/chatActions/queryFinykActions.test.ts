@@ -179,7 +179,7 @@ describe("aggregate_spending", () => {
       input: { type: "income", date_from: "2026-04-01", date_to: "2026-04-30" },
     });
     expect(out).toContain("Дохід");
-    expect(out).toMatch(/5000/);
+    expect(out).toContain("5\u00A0000");
   });
 
   it("error: empty range returns no-data message", () => {
@@ -237,7 +237,7 @@ describe("compare_periods", () => {
       },
     });
     expect(out).toContain("Кількість");
-    expect(out).toContain("транзакц.");
+    expect(out).toContain("операц.");
   });
 
   it("error: missing period bounds returns guidance", () => {
@@ -353,7 +353,7 @@ describe("канонічний excluded-set і спліти (стадія 2b)", 
     // Без фіксу було б 1900: спліт цілком (1000) + виключені (200 + 500 + 250)
     // + готівка (250). Кожен з чотирьох excluded-рядків мусить випасти, а
     // спліт — увійти лише не-переказною часткою.
-    expect(out).toContain("850 грн усього (2 транзакц.)");
+    expect(out).toContain("850 грн усього (2 операц.)");
   });
 
   it("compare_periods рахує по тому самому всесвіту", () => {
@@ -390,7 +390,7 @@ describe("канонічний excluded-set і спліти (стадія 2b)", 
       input: { query: "b_split" },
     });
     // Фактичне списання — 1000 грн, а не статистична частка 600.
-    expect(out).toContain("1000 грн");
+    expect(out).toContain("1 000 грн");
   });
 });
 
@@ -432,7 +432,7 @@ describe("CALC-1 — manual internal_transfer excluded from chat aggregation", (
       input: { date_from: "2026-04-01", date_to: "2026-04-30" },
     });
     // Без фіксу було б 1200 (200 + 1000 переказ, порахований витратою).
-    expect(out).toContain("200 грн усього (1 транзакц.)");
+    expect(out).toContain("200 грн усього (1 операц.)");
     expect(out).not.toMatch(/1200/);
   });
 
@@ -448,6 +448,201 @@ describe("CALC-1 — manual internal_transfer excluded from chat aggregation", (
       },
     });
     expect(out).toContain("A (2026-04-01 – 2026-04-30) = 200 грн");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Категорія операції — канонічний резолв. Регресія «Без категорії: 12 967 грн
+// (29)» на звичайному тижні Monobank: виконавець брав `txCategories[id] ||
+// tx.category`, а банківська транзакція поля `category` не має (лише `mcc` /
+// `categoryId` / опис), тож у категорію потрапляли тільки вручну
+// перекатегоризовані операції, а решта падала в «Без категорії».
+// ---------------------------------------------------------------------------
+describe("категорія операції — той самий резолв, що в UI і HubChat-контексті", () => {
+  const APRIL = { date_from: "2026-04-01", date_to: "2026-04-30" };
+
+  /** Реальна форма банківського рядка: без `category`, лише mcc/опис/categoryId. */
+  function seedBank(): void {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        {
+          id: "b_mcc",
+          date: "2026-04-20",
+          description: "ФОП Іваненко",
+          mcc: 5411,
+          amount: -30000,
+        },
+        {
+          id: "b_kw",
+          date: "2026-04-18",
+          description: "Bolt",
+          mcc: 0,
+          amount: -15000,
+        },
+        {
+          id: "b_slug",
+          date: "2026-04-17",
+          description: "Квиток",
+          mcc: 0,
+          categoryId: "entertainment",
+          amount: -20000,
+        },
+        {
+          id: "b_unknown",
+          date: "2026-04-16",
+          description: "Невідомо",
+          mcc: 0,
+          amount: -10000,
+        },
+      ] as never[],
+    });
+  }
+
+  it("aggregate_spending: банківська операція групується за MCC / ключовим словом / серверним слагом", () => {
+    seedBank();
+    const out = call({
+      name: "aggregate_spending",
+      input: { ...APRIL },
+    });
+    expect(out).toContain("Продукти: 300 грн (1)"); // лише MCC 5411
+    expect(out).toContain("Транспорт: 150 грн (1)"); // лише ключове слово
+    expect(out).toContain("Розваги: 200 грн (1)"); // серверний categoryId
+    expect(out).toContain("Інше: 100 грн (1)"); // канонічний фолбек
+    expect(out).not.toContain("Без категорії");
+  });
+
+  it("aggregate_spending: ручна перекатегоризація має пріоритет над MCC", () => {
+    seedBank();
+    __setFinykSqliteStateCacheForTests({
+      txCategories: { b_mcc: "restaurant" },
+    });
+    const out = call({ name: "aggregate_spending", input: { ...APRIL } });
+    expect(out).toContain("Кафе та ресторани: 300 грн (1)");
+    expect(out).not.toContain("Продукти");
+  });
+
+  it("aggregate_spending: ручна витрата зі збереженим id категорії і легасі-підписом", () => {
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        {
+          id: "m_cafe",
+          date: "2026-04-10",
+          description: "Обід",
+          amount: 80,
+          category: "cafe",
+        },
+        {
+          id: "m_legacy",
+          date: "2026-04-11",
+          description: "Ринок",
+          amount: 120,
+          // Ери 1–2: у сховищі лежить український підпис, а не слаг.
+          category: "їжа",
+        },
+      ] as unknown as ManualExpense[],
+    });
+    const out = call({ name: "aggregate_spending", input: { ...APRIL } });
+    expect(out).toContain("Кафе та ресторани: 80 грн (1)");
+    expect(out).toContain("Продукти: 120 грн (1)");
+    expect(out).not.toContain("Без категорії");
+  });
+
+  it("aggregate_spending: користувацька категорія (override банківської і ручна)", () => {
+    seedBank();
+    __setFinykSqliteStateCacheForTests({
+      customCategories: [{ id: "cust_pets", label: "Улюбленці" }] as never,
+      txCategories: { b_unknown: "cust_pets" },
+      manualExpenses: [
+        {
+          id: "m_pet",
+          date: "2026-04-12",
+          description: "Корм",
+          amount: 60,
+          category: "cust_pets",
+        },
+      ] as unknown as ManualExpense[],
+    });
+    const out = call({ name: "aggregate_spending", input: { ...APRIL } });
+    expect(out).toContain("Улюбленці: 160 грн (2)"); // 100 банк + 60 ручна
+    expect(out).not.toContain("cust_pets"); // жодних сирих слагів у тексті
+  });
+
+  it("aggregate_spending type=income: надходження без категорії резолвиться з опису", () => {
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        {
+          id: "m_salary",
+          date: "2026-04-01",
+          description: "Зарплата",
+          amount: 5000,
+          category: "",
+          type: "income",
+        },
+      ] as unknown as ManualExpense[],
+    });
+    const out = call({
+      name: "aggregate_spending",
+      input: { type: "income", ...APRIL },
+    });
+    expect(out).toContain("Зарплата: 5 000 грн (1)");
+    expect(out).not.toContain("Без категорії");
+  });
+
+  it("query_transactions: фільтр category і підпис у списку йдуть через той самий резолв", () => {
+    seedBank();
+    const out = call({
+      name: "query_transactions",
+      input: { category: "Продукти", ...APRIL },
+    });
+    expect(out).toContain("b_mcc");
+    expect(out).not.toContain("b_kw");
+    expect(out).toContain("· Продукти");
+
+    // Фільтр за id категорії теж працює для банківського рядка без `category`.
+    const byId = call({
+      name: "query_transactions",
+      input: { category: "transport", ...APRIL },
+    });
+    expect(byId).toContain("b_kw");
+    expect(byId).toContain("· Транспорт");
+    expect(byId).not.toContain("b_mcc");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Підпис періоду. «28 вер 2026 – 1 жов 2026» — зайвий рік у діапазоні
+// поточного року: `todayKey` не доходив до `formatDayRangeUk`, а без нього
+// рік дописується завжди. Системний час у тестах — 2026-04-22.
+// ---------------------------------------------------------------------------
+describe("aggregate_spending · підпис періоду", () => {
+  it("діапазон поточного року не дописує рік, «сьогодні» лишається датою", () => {
+    seed();
+    const out = call({
+      name: "aggregate_spending",
+      input: { date_from: "2026-03-28", date_to: "2026-04-22" },
+    });
+    // 2026-04-22 — «сьогодні»: у діапазоні це все одно дата, не слово.
+    expect(out).toContain("Витрати за 28 бер – 22 кві:");
+    expect(out).not.toContain("2026");
+  });
+
+  it("один день поточного року — без року й без «сьогодні»", () => {
+    seed();
+    const out = call({
+      name: "aggregate_spending",
+      input: { date_from: "2026-04-20", date_to: "2026-04-20" },
+    });
+    expect(out).toContain("Витрати за 20 кві:");
+    expect(out).not.toContain("2026");
+  });
+
+  it("рік лишається там, де він відрізняється від поточного", () => {
+    seed();
+    const out = call({
+      name: "aggregate_spending",
+      input: { date_from: "2025-12-28", date_to: "2026-01-03" },
+    });
+    expect(out).toBe("Немає витрат за період 28 гру 2025 – 3 січ.");
   });
 });
 

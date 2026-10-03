@@ -61,7 +61,7 @@ describe("EmptyState — a11y", () => {
             <rect width="120" height="120" />
           </svg>
         }
-        title="Жодної транзакції"
+        title="Жодної операції"
       />,
     );
     const illustrationWrapper = container.querySelector(
@@ -109,7 +109,7 @@ describe("EmptyState — a11y", () => {
     const { container } = render(
       <EmptyState
         compact
-        title="Нічого не знайдено"
+        title="Нічого не знайшов"
         description="Спробуй інший запит."
       />,
     );
@@ -145,6 +145,20 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
   it("без dismissible-prop dismiss-кнопка не рендериться", () => {
     const { queryByRole } = render(<ModuleEmptyState module="finyk" />);
     expect(queryByRole("button", { name: "Закрити" })).toBeNull();
+  });
+
+  // Founder-UX audit round 2 (F1): `MODULE_EMPTY_CONFIG.finyk.actionLabel`
+  // was dead (no call-site ever passes `onAction` for finyk — see
+  // `Overview.tsx` / `TransactionList.tsx`), removed and made optional on
+  // `ModuleConfig`. This guards the button-label fallback so a future
+  // caller that DOES pass `onAction` for finyk without an explicit
+  // `actionLabel` still gets a labelled, not blank, button.
+  it("falls back to a generic label when onAction is passed for a module with no actionLabel", () => {
+    const { getByRole } = render(
+      <ModuleEmptyState module="finyk" onAction={() => {}} />,
+    );
+    const button = getByRole("button");
+    expect(button.textContent?.trim()).toBe("Додати");
   });
 
   it.each([

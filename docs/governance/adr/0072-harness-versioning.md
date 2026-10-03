@@ -1,6 +1,6 @@
 # ADR-0072: Harness versioning and A/B evaluation
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-30.
+> **Last touched:** 2026-09-20 by @Skords-01. **Next review:** 2027-01-13.
 
 - **Status:** Accepted
 - **Date:** 2026-06-29
@@ -74,6 +74,6 @@ Introduce a minimal, append-only harness version registry plus a weekly A/B work
 
 ## Open Questions / Follow-ups
 
-- Golden-task benchmark suite for `pnpm harness:bench` — separate ADR once at least 10 reproducible harness-sensitive tasks exist.
+- Golden-task benchmark suite for `pnpm harness:bench` <!-- removed --> — separate ADR once at least 10 reproducible harness-sensitive tasks exist.
 - Promote `0.1.0` → `1.0.0` after the first 3 minor bumps land without a rollback (signal of stability).
 - `lint:harness-version-freshness` — janitor that opens an issue if the registry's `current` lags behind the most recent bump-worthy commit by more than 7 days. Tracked in `docs/work/specs/tech-debt/agents.md` (follow-up).

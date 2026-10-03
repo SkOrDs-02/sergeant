@@ -1,6 +1,6 @@
 # 01. Монетизація і ціноутворення
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-24 by @Skords-01. **Next review:** 2027-10-11.
 > **Status:** Active
 >
 > **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../../governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI **5 повідомлень/день** ([ADR-0085](../../../../governance/adr/0085-free-ai-quota-five-per-day.md), 2026-08-06 — уточнює рядок «15» з ADR-0068) + cloud-sync 2 пристрої. **Анонім AI не отримує взагалі** ([ADR-0086](../../../../governance/adr/0086-no-anonymous-ai-sign-in-required.md), 2026-08-24 — знімає рядок «анонім — 1/день» з ADR-0085): асистент за `requireSession()`, гість бачить 401 і запрошення увійти. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
@@ -165,7 +165,7 @@ Freemium — найкращий вибір для Sergeant, бо:
 
 > **TL;DR:** старт з LiqPay → додати Stripe для масштабу → Paddle за потреби. Нативні сторінки — IAP обов'язково, але штовхати до PWA-оплати.
 
-Технічна імплементація Stripe webhook + env vars → [03 §2: Що додати](./03-services-and-toolstack.md#2-що-додати-нові-сервіси). Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-порядок-дій-week-by-week).
+Технічна імплементація Stripe webhook + env vars → [03 §2: Що додати](./03-services-and-toolstack.md#3-що-додати-action-items). Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-роадмеп-по-тижнях).
 
 ---
 
@@ -448,7 +448,7 @@ Paid (Pro)
 
 ## 9. Unit Economics: формули з цифрами
 
-> Числа побудовані на таргетах з [04 §4: Метрики успіху](./04-launch-readiness.md#4-метрики-успіху). Актуалізувати після перших 3 місяців реальних даних.
+> Числа побудовані на таргетах з [04 §4: Метрики успіху](./04-launch-readiness.md#4-метрики-готовності). Актуалізувати після перших 3 місяців реальних даних.
 
 ### 9.1 LTV (Lifetime Value)
 
@@ -515,7 +515,7 @@ Breakeven subscribers    = ₴3 168 / ₴191 ≈ 17 Pro subscribers
 > **Висновок:** з ~17 Pro-підписниками покриваємо фіксовані витрати — **за
 > умови, що рядок «AI API marginal cost ≈ ₴5/міс» правдивий. Він не
 > правдивий**: див. § 9.5 нижче. Детальна cost projection →
-> [03 §9: Monthly Cost Projection](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
+> [03 §9: Monthly Cost Projection](./03-services-and-toolstack.md#6-прогноз-місячних-витрат).
 
 ### 9.5 AI-COGS: оцінка з коду (2026-07-25)
 
@@ -641,11 +641,11 @@ Sonnet-модель на синтезі, а Pro після 20 викликів �
 Три важелі, реалізовані після виміру § 9.5. Числа — байти, поміряні тестом
 `promptPrefixBudget.test.ts` (він же не дає їм тихо зрости назад).
 
-| Важіль                                        | Було       | Стало            | Ефект                      |
-| --------------------------------------------- | ---------- | ---------------- | -------------------------- |
-| Контекстний префікс (tools + `SYSTEM_PREFIX`) | 46 440 B   | **7 564 B**      | **−84%**                   |
-| TTL стабільного префікса                      | 5 хв       | **1 год**        | read замість write у сесії |
-| Бюджет префікса                               | не існував | 9 000 B, CI-gate | не дає повернутись назад   |
+| Важіль                                        | Було       | Стало              | Ефект                      |
+| --------------------------------------------- | ---------- | ------------------ | -------------------------- |
+| Контекстний префікс (tools + `SYSTEM_PREFIX`) | 46 440 B   | **7 564 B**        | **−84%**                   |
+| TTL стабільного префікса                      | 5 хв       | **1 год**          | read замість write у сесії |
+| Бюджет префікса                               | не існував | 9 800 B, гейт-тест | не дає повернутись назад   |
 
 **1. Tool search (`defer_loading`).** Усі 77 дефініцій далі йдуть у `tools[]`
 (вони потрібні API server-side), але лише 5 «гарячих» потрапляють у контекстне
@@ -704,7 +704,7 @@ Write дорожчає 1.25× → 2×, read лишається 0.1×. Для N �
 (б) є пошуковим індексом — `tool_search_tool_regex` матчить саме по іменах,
 описах і назвах аргументів. Тобто скорочення описів псує рівно те, що ми
 щойно ввімкнули. Замість косметичного різання зроблено **бюджет-гейт**
-(`CONTEXT_PREFIX_BUDGET_BYTES = 9 000`): цифра в коментарі не ламається, коли
+(`CONTEXT_PREFIX_BUDGET_BYTES`, 9 000 B від 2026-07-25; 9 800 B з 2026-09-23, коли персона Сержанта і правила поведінки в `VOICE_RULE` дали 9 482 B): цифра в коментарі не ламається, коли
 реальність від неї відходить, — а тест ламається. Саме тому попередня оцінка
 й прожила стільки часу з «~19 інструментів».
 
@@ -714,9 +714,9 @@ Write дорожчає 1.25× → 2×, read лишається 0.1×. Для N �
 
 - Маркетинг, контент, фази запуску, growth engine → [02-go-to-market.md](./02-go-to-market.md).
 - Stripe / Better Auth інтеграція, env vars, week-by-week tech roadmap → [03-services-and-toolstack.md](./03-services-and-toolstack.md).
-  - Payment provider імплементація → [03 §2](./03-services-and-toolstack.md#2-що-додати-нові-сервіси).
-  - Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-порядок-дій-week-by-week).
-  - Monthly cost projection → [03 §9](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
+  - Payment provider імплементація → [03 §2](./03-services-and-toolstack.md#3-що-додати-action-items).
+  - Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-роадмеп-по-тижнях).
+  - Monthly cost projection → [03 §9](./03-services-and-toolstack.md#6-прогноз-місячних-витрат).
 - Legal/GDPR, billing edge cases, метрики, ризики, повний пре-launch чеклист → [04-launch-readiness.md](./04-launch-readiness.md).
   - North Star Metrics → [04 §4.1](./04-launch-readiness.md#41-north-star-metrics).
   - Funnel метрики → [04 §4.2](./04-launch-readiness.md#42-funnel-метрики).

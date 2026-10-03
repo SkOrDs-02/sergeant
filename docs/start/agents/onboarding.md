@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-23 by @claude (deploy-опис приведено до реального потоку: без GitHub Actions/`ghcr.io`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Claude Code, Codex, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -9,7 +9,7 @@
 
 1. Прочитай [`AGENTS.md`](../../../AGENTS.md) — hard rules + module ownership map.
 2. Завантаж `.agents/skills/sergeant-start-here/SKILL.md` як вхідну точку.
-3. За [`agent-skills-catalog.md`](./agent-skills-catalog.md) обери **рівно один** specialist skill під поверхню зміни (web / server / mobile / hubchat / data / deploy / review / bugfix / feature).
+3. За [`agent-skills-catalog.md`](./agent-skills-catalog.md) обери **рівно один** specialist skill під поверхню зміни (web / server / mobile / ai / data / deploy / review / bugfix / feature).
 4. Якщо для задачі є playbook у [`docs/start/instructions/`](../instructions/README.md) — він canonical recipe; не імпровізуй.
 
 ## 1. Секрети і env
@@ -31,16 +31,16 @@
 
 CI hard-rules ловляться різними механізмами. Стартова навігація:
 
-| Симптом                                                    | Куди дивитися                                                                                                                                                                                                       |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../governance/governance/hard-rules.json) ↔ `CONTRIBUTING.md`. Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                    |
-| `sergeant-design/no-raw-local-storage`                     | Використовуй storage-wrapper з `@shared/storage` (`ls`, `lsSet`, `safeReadLS`) замість сирого `localStorage`. Plugin: [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design). |
-| `sergeant-design/rq-keys-only-from-factory` (Hard Rule #2) | RQ-ключі лише з центральних фабрик `apps/web/src/shared/lib/api/queryKeys.ts` — не inline `queryKey: [...]`.                                                                                                        |
-| `sergeant-design/no-cyrillic-jsx-literal`                  | Кириличний literal у JSX поза allowlist — див. [`docs/design/i18n/readiness.md`](../../design/i18n/readiness.md).                                                                                                   |
-| `sergeant-design/no-flat-shared-lib`                       | Новий файл у flat `shared/lib/` заборонено — клади у тематичну підпапку (`shared/lib/<topic>/`).                                                                                                                    |
-| `sergeant-design/no-hash-router-in-modules`                | Hash-навігація всередині module-коду заборонена — роутінг лише через canonical router (`apps/web/src/core/app/router.tsx`).                                                                                         |
-| `commitlint` (Hard Rule #5)                                | Дозволені scope-и в `AGENTS.md` § Hard rules → правило #5. Не вигадуй нові.                                                                                                                                         |
-| `docs:check-playbook-schema`                               | Trigger ≤ 240 chars, Status enum {Active, Scaffolded, Deprecated, Archived}, Verification ≥ 1 checkbox. Дивись `add-playbook.md` playbook (якщо є) або інший working playbook.                                      |
+| Симптом                                                    | Куди дивитися                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../governance/governance/hard-rules.json) ↔ `CONTRIBUTING.md`. Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                                                 |
+| `sergeant-design/no-raw-local-storage`                     | Використовуй storage-wrapper з `@shared/storage` (`ls`, `lsSet`, `safeReadLS`) замість сирого `localStorage`. Plugin: [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design).                              |
+| `sergeant-design/rq-keys-only-from-factory` (Hard Rule #2) | RQ-ключі лише з центральних фабрик `apps/web/src/shared/lib/api/queryKeys.ts` — не inline `queryKey: [...]`.                                                                                                                                     |
+| `sergeant-design/no-cyrillic-jsx-literal`                  | Кириличний literal у JSX поза allowlist — див. [`docs/design/i18n/readiness.md`](../../design/i18n/readiness.md).                                                                                                                                |
+| `sergeant-design/no-flat-shared-lib`                       | Новий файл у flat `shared/lib/` заборонено — клади у тематичну підпапку (`shared/lib/<topic>/`).                                                                                                                                                 |
+| `sergeant-design/no-hash-router-in-modules`                | Hash-навігація всередині module-коду заборонена — роутінг лише через canonical router (`apps/web/src/core/app/router.tsx`).                                                                                                                      |
+| `commitlint` (Hard Rule #5)                                | Дозволені scope-и в `AGENTS.md` § Hard rules → правило #5. Не вигадуй нові.                                                                                                                                                                      |
+| `docs:check-playbook-schema`                               | Trigger ≤ 240 chars, Status enum {Active, Scaffolded, Deprecated, Archived}, Verification ≥ 1 checkbox. Новий playbook — через генератор `pnpm gen new-playbook` (шаблон `plop-templates/new-playbook/`); playbook-а `add-playbook.md` не існує. |
 
 Повна enforcement-матриця — у [`hard-rules-matrix.md`](../../governance/governance/hard-rules-matrix.md). Категорійна семантика (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) описана в `AGENTS.md` § Hard rules intro.
 
@@ -63,7 +63,7 @@ CI hard-rules ловляться різними механізмами. Стар
 
 ## 4.5. Інфраструктура (оновлено 2026-07-21)
 
-**Backend (ADR-0074):** API + Postgres + Redis на **Hetzner CX23 під Coolify**. Образ API — `ghcr.io` через `deploy-api.yml`; pre-deploy migrate — `node dist-server/migrate.js`. Railway виведено ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)).
+**Backend (ADR-0074):** API + Postgres + Redis на **Hetzner CX23 під Coolify**. GitHub Actions і `ghcr.io` більше не задіяні — Coolify білдить образ на сервері й деплоїться вручну через `pnpm deploy:api`; міграції їдуть в ENTRYPOINT образу (`node dist-server/migrate.js && exec node dist-server/index.js`), не в Coolify `pre_deployment_command`. Автодеплою на merge немає — розрив між `main` і продом виміряй через `pnpm deploy:status`. Railway виведено ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); деталі — [`AGENTS.md § Де живе код`](../../../AGENTS.md) і `§ Прод не оновлюється сам`.
 
 **OpenClaw (ADR-0075):** повністю **decommissioned** 2026-07-20 — `tools/openclaw`, gateway, `packages/openclaw-plugin`, `ops/openclaw` прибрано з репо. Hard Rule #20 лишається (fail-closed guard проти `OPENCLAW_GITHUB_PAT` у prod). Для Telegram ops — server-side alert bot, не OpenClaw (n8n теж виведено — [ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).
 

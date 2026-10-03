@@ -25,6 +25,8 @@ import { type UseInlineAiRailResult, useInlineAiRail } from "./useInlineAiRail";
 export interface UseSearchEngineOptions {
   onClose: () => void;
   onOpenModule: (moduleId: string) => void;
+  /** Запит, з яким пошук відкрили ззовні; читається лише на маунті. */
+  initialQuery?: string | undefined;
 }
 
 export interface UseSearchEngineResult {
@@ -68,8 +70,9 @@ export interface UseSearchEngineResult {
 export function useSearchEngine({
   onClose,
   onOpenModule,
+  initialQuery = "",
 }: UseSearchEngineOptions): UseSearchEngineResult {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [activeIdx, setActiveIdx] = useState(0);
   const [recents, setRecents] = useState<string[]>(() => getRecentQueries());
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -124,6 +127,7 @@ export function useSearchEngine({
       "routine",
       "nutrition",
       "settings",
+      "profile",
       "assistant",
       "ai",
     ];
@@ -224,6 +228,15 @@ export function useSearchEngine({
           announceSettingsHashChange();
           break;
         }
+        case "profile": {
+          // PR-S5 (аудит 2026-09-13 хвиля 5): Профіль — окрема вкладка
+          // хаба, не секція Налаштувань, тож ціль лише перемикає таб —
+          // на відміну від `settings`, тут немає per-секційного hash-
+          // якоря (`CollapsibleSection` у `ProfilePage` не читає
+          // `SettingsGroupDefaultOpenContext`).
+          navigate({ pathname: "/", search: "?tab=profile" });
+          break;
+        }
         case "assistant": {
           const cap = hit.target.capability;
           const example = cap?.examples?.[0];
@@ -242,7 +255,11 @@ export function useSearchEngine({
           // the bento NextCard / FAB use. The destination module reads the
           // intent on mount via `useHubModuleAction` and opens its own
           // create-modal.
-          openHubModuleWithAction(hit.target.moduleId, hit.target.action);
+          openHubModuleWithAction(
+            hit.target.moduleId,
+            hit.target.action,
+            "search",
+          );
           break;
         }
         // Note: `ai-handoff` hits never reach this switch — they're

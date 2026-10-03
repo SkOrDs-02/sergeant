@@ -23,7 +23,7 @@ import {
  * locking down the column ordering, types, nullability, indexes, and
  * defaults that mirror migration 039_finyk_tables.sql.
  *
- * Stage 4 / PR #035 of `docs/planning/storage-roadmap.md`. Pattern
+ * Stage 4 / PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Pattern
  * mirrors `pg-nutrition-snapshot.test.ts` — same structure, but the
  * 15 tables here split into five groups (see migration header for
  * rationale). The five-group structure is the test's organising

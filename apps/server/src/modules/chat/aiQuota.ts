@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { getSessionUser } from "../../auth.js";
-import pool from "../../db.js";
+import pool, { withSubjectContext } from "../../db.js";
 import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -8,16 +8,26 @@ import {
   aiQuotaFailOpenTotal,
   aiCostConsumedTotal,
 } from "../../obs/metrics.js";
-import { toLocalISODate } from "@sergeant/shared";
+import {
+  nextWeekStartKyivMs,
+  toLocalISODate,
+  weekStartKyiv,
+  weeklyLimit,
+  type FeatureId,
+} from "@sergeant/shared";
 import {
   parseLimit,
   resolvePresetBudget,
   type QuotaBudget,
 } from "./aiQuotaBudget.js";
 import { consumeRoundTripTicket } from "./chatRoundTripTicket.js";
+import {
+  AI_QUOTA_ENDPOINT,
+  WEEKLY_METERS,
+  type WeeklyMeter,
+} from "./aiQuotaWeekly.js";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
-import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
 import { isAnthropicBudgetHardExceeded } from "../../obs/anthropicBudgetGuard.js";
 import {
   freeOnPremiumEnabled,
@@ -33,6 +43,7 @@ import {
 // Реекспорт: caller-и (chat.ts, coach.ts, тести) історично беруть ці типи
 // з `aiQuota.js`. Тримаємо контракт, щоб винесення лишилось внутрішнім.
 export type { ProEndpoint, ProTier, ProTierResult };
+export { getWeeklyUsage, type WeeklyMeter } from "./aiQuotaWeekly.js";
 
 type SessionUser = { id: string } | null;
 
@@ -81,10 +92,11 @@ interface ConsumeQuotaReturn {
 }
 
 /**
- * Денна AI-квота. Зберігається в `ai_usage_daily` як лічильник по (subject, day,
- * bucket). Є два типи bucket-ів: `default` — звичайний chat/coach/digest/nutrition
- * (cost=1), `tool:<name>` — окремий tool-use виклик (cost = AI_QUOTA_TOOL_COST,
- * default 3 — див. `toolCost`).
+ * AI-квота. Зберігається в `ai_usage_daily` як лічильник по (subject, day,
+ * bucket). Free списує тижневі відра (`week:ai`, `week:photo`,
+ * `week:finyk-vision`, ключ `day` = понеділок тижня за Києвом, спека
+ * `docs/work/specs/access-tiers.md`). `tool:<name>`: окремий tool-use виклик
+ * для Pro (cost = AI_QUOTA_TOOL_COST, default 3, див. `toolCost`).
  *
  * Cost vs. limit — два незалежні важелі (детальніше в docstring-ах `toolCost`
  * і `toolLimit`):
@@ -105,8 +117,8 @@ interface ConsumeQuotaReturn {
  * upstream-ліміти Anthropic і per-route rate-limit все одно працюють.
  */
 
-const DEFAULT_BUCKET = "default";
 const TOOL_BUCKET_PREFIX = "tool:";
+
 const DEFAULT_TOOL_COST = 3;
 
 // ── Pro tiered model degradation ────────────────────────────────────
@@ -148,10 +160,9 @@ export function isAiQuotaDisabled(): boolean {
  *
  * Distinct from a Pro plan: a founder keeps whatever billing plan they have
  * but is never blocked by the per-user counter, so internal dogfooding and
- * demos don't burn the authenticated free-tier cap
- * (`FREE_LIMITS.aiRequestsPerDay`, `billing/effectiveLimits.ts` — 5/day per
- * ADR-0085).
- * Covers both the default chat bucket and tool-use buckets.
+ * demos don't burn the authenticated free-tier cap (weekly buckets from the
+ * access registry, `@sergeant/shared` `FEATURES`).
+ * Covers both the weekly buckets and tool-use buckets.
  */
 function isFounderUser(userId: string): boolean {
   const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
@@ -160,12 +171,10 @@ function isFounderUser(userId: string): boolean {
 }
 
 /**
- * Plan-aware daily AI-message cap for an authenticated user (ADR-1.7).
- * Free → `FREE_LIMITS.aiRequestsPerDay`; Pro → `null` (unlimited). See
- * `billing/effectiveLimits.ts` for the live numeric value (ADR-0085 decided
- * 5/day for Free — do not hardcode the number here, it has drifted from its
- * decision record once already).
- * Sourced from `billing/effectiveLimits` so the paid limit lives in one place.
+ * Plan-aware weekly cap of one Free bucket for an authenticated user.
+ * Free → `weeklyLimit("free", feature)` з реєстру доступу; Pro (включно з
+ * trial і grace, бо `getUserPlan` віддає для них `pro`) → `null`. Число тут
+ * не хардкодиться: воно вже раз дрейфувало від свого рішення.
  *
  * On a plan-lookup error we fall back to the FREE cap — never silently grant
  * unlimited (the monetization-safe default). A full DB outage is still
@@ -176,7 +185,10 @@ function isFounderUser(userId: string): boolean {
  * and is dwarfed by the upstream Anthropic call. Add a short-TTL cache here
  * (ADR-1.7) only if profiling shows it matters.
  */
-async function userDailyLimit(userId: string): Promise<number | null> {
+async function userWeeklyLimit(
+  userId: string,
+  feature: FeatureId,
+): Promise<number | null> {
   let plan: "free" | "pro" = "free";
   try {
     plan = (await getUserPlan(pool, userId)).plan === "pro" ? "pro" : "free";
@@ -186,7 +198,7 @@ async function userDailyLimit(userId: string): Promise<number | null> {
       err: { message: (e as Error)?.message || String(e) },
     });
   }
-  return planLimits(plan).aiRequestsPerDay;
+  return weeklyLimit(plan, feature);
 }
 
 /**
@@ -271,10 +283,12 @@ function subjectFor(sessionUser: SessionUser, req: Request): string {
 }
 
 function today(): string {
-  // Europe/Kyiv day boundary (домен-інваріант) — денна квота користувача
-  // скидається о київській півночі, не UTC. Інакше «Спробуй завтра» о 02:00
-  // Kyiv (UTC-північ влітку) відкривало б новий день посеред ночі юзера.
+  // Europe/Kyiv day boundary (домен-інваріант) для денних tool-відер Pro.
   return toLocalISODate();
+}
+
+function resetsAtIso(): string {
+  return new Date(nextWeekStartKyivMs()).toISOString();
 }
 
 /**
@@ -293,20 +307,23 @@ function tryConsumeRoundTripTicket(req: Request, userId: string): boolean {
 }
 
 /**
- * Default-bucket (plain chat) quota check. Shape збережено (backwards compat):
- * повертає true/false; при вичерпанні сама відправляє 429 у `res`.
+ * Тижнева quota check одного відра Free (`meter`, за замовчуванням `ai`).
+ * Shape збережено (backwards compat): повертає true/false; при вичерпанні
+ * сама відправляє 429 у `res`.
  */
 export async function assertAiQuota(
   req: Request,
   res: Response,
+  meter: WeeklyMeter = "ai",
 ): Promise<boolean> {
   if (isAiQuotaDisabled()) return true;
+  const spec = WEEKLY_METERS[meter];
 
   const sessionUser = await safeSessionUser(req);
   // Founder / internal-team users are never quota-blocked (plan-agnostic).
   if (sessionUser && isFounderUser(sessionUser.id)) return true;
 
-  // AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+  // AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
   // — «хід з дією коштує ОДИН запит». Якщо цей запит несе валідний
   // round-trip-квиток для ЦЬОГО юзера (`chatRoundTripTicket.ts`), він —
   // другий HTTP-запит уже оплаченого першого туру (tool-хід), а не новий
@@ -315,37 +332,41 @@ export async function assertAiQuota(
   // на звичайне списання нижче; це safe default, той самий шлях, що діяв
   // до цього рішення, і саме тому підробити «я — продовження» без
   // реального першого ходу не працює.
-  if (sessionUser && tryConsumeRoundTripTicket(req, sessionUser.id)) {
+  if (
+    meter === "ai" &&
+    sessionUser &&
+    tryConsumeRoundTripTicket(req, sessionUser.id)
+  ) {
     return true;
   }
 
   // Анонімного трафіку тут не буває. КОЖЕН роут, що монтує цю квоту, стоїть
   // за `requireSession()`: `routes/chat.ts`, `routes/coach.ts`,
   // `routes/weekly-digest.ts` і `r.use("/api/nutrition", requireSession())` —
-  // рішення A1 з `docs/90-work/audits/ai-abuse-2026-08-05.md`, і послаблювати
+  // рішення A1 з `docs/work/specs/audits/ai-abuse-2026-08-05.md`, і послаблювати
   // його не можна (без сесії ключем квоти був би `ip:<addr>`, а IPv6-клієнт
   // має під підпискою цілу /64).
   //
   // Тож `sessionUser === null` тут означає не аноніма, а збій ПОВТОРНОГО
   // session-lookup усередині запиту, який `requireSession()` уже пропустив
   // (`safeSessionUser` ковтає виняток). Даємо Free-стелю — та сама
-  // monetization-safe відповідь, що і в `userDailyLimit` на помилку плану:
+  // monetization-safe відповідь, що і в `userWeeklyLimit` на помилку плану:
   // ніколи не роздаємо безліміт мовчки.
   const planLimit = sessionUser
-    ? await userDailyLimit(sessionUser.id)
-    : planLimits("free").aiRequestsPerDay;
+    ? await userWeeklyLimit(sessionUser.id, spec.feature)
+    : weeklyLimit("free", spec.feature);
 
   // Unlimited (Pro) виходить ДО резолву preset-відра: безлімітному юзеру
   // окремий бюджет нічого не додає, а зайве відро тільки шумить у метриках.
   if (planLimit == null) return true;
 
-  // Сценарний preset витрачає власне тижневе відро замість денного (див.
+  // Сценарний preset витрачає власне тижневе відро замість спільного (див.
   // `resolvePresetBudget`). Усе решта — той самий шлях.
-  const presetBudget = resolvePresetBudget(req);
+  const presetBudget = meter === "ai" ? resolvePresetBudget(req) : null;
   const isPresetBudget = presetBudget !== null;
   const budget: QuotaBudget = presetBudget ?? {
-    bucket: DEFAULT_BUCKET,
-    day: today(),
+    bucket: spec.bucket,
+    day: weekStartKyiv(),
     limit: planLimit,
   };
   const limit = budget.limit;
@@ -394,20 +415,11 @@ export async function assertAiQuota(
       } catch {
         /* ignore */
       }
-      // Денна квота і сценарний preset вичерпують РІЗНІ ліміти, тож і виходи
-      // в них різні. Денна справді лишається чекати доби. Preset має тижневе
-      // вікно, і «спробуй завтра» там просто неправда: вихід — ручне
-      // заповнення, яке взагалі не витрачає AI.
+      // Тижневе відро і сценарний preset вичерпують РІЗНІ ліміти, тож і
+      // виходи в них різні. Тижневе чекає понеділка (`resetsAt`), а в preset
+      // вихід у ручному заповненні, яке взагалі не витрачає AI.
       // Клієнт розрізняє випадки за `code` (див. `friendlyApiError` у
       // `apps/web/src/core/lib/hubChatUtils.ts`), не за текстом.
-      //
-      // «ЗАПИТІВ», а не «повідомлень». Лічильник інкрементиться раз на
-      // HTTP-запит до AI-роута. AI-5 рішення 1 (`docs/90-work/audits/
-      // 2026-09-01-product-audit/findings.md`) зробило хід з дією рівно
-      // одним списанням (round-trip-квиток пропускає другий запит того
-      // самого ходу, `chatRoundTripTicket.ts`), тож «запитів» тепер
-      // буквально дорівнює «дій» — копія «5 повідомлень» усе одно не
-      // годиться: ліміт спільний з порадою коуча (§9 канону), не лише чат.
       res.status(429).json(
         isPresetBudget
           ? {
@@ -417,9 +429,10 @@ export async function assertAiQuota(
               limit: result.limit,
             }
           : {
-              error: "Денний ліміт AI-запитів вичерпано. Спробуй завтра.",
-              code: "AI_QUOTA",
+              error: spec.error,
+              code: spec.code,
               limit: result.limit,
+              resetsAt: resetsAtIso(),
             },
       );
       return false;
@@ -429,7 +442,13 @@ export async function assertAiQuota(
       aiCostConsumedTotal.inc(
         {
           subject_type: subjectType,
-          bucket_type: isPresetBudget ? "preset" : "default",
+          // Лейбл `default` для спільних дій лишається, щоб не рвати
+          // наявні дашборди; окремі відра Free отримують власний.
+          bucket_type: isPresetBudget
+            ? "preset"
+            : meter === "ai"
+              ? "default"
+              : meter,
         },
         cost,
       );
@@ -447,27 +466,6 @@ export async function assertAiQuota(
     }
     setRemainingHeader(res, "unknown");
     return true;
-  }
-}
-
-/**
- * Read-only lookup of today's consumed `default`-bucket count for a logged-in
- * user. Used by `GET /api/chat/usage` (PR-42 chat counter) — never mutates.
- * Fail-open to 0 on missing DB / query error: an unreadable counter renders
- * as "0 used" in the UI rather than breaking the pricing page.
- */
-export async function getTodayChatUsage(userId: string): Promise<number> {
-  if (!process.env["DATABASE_URL"]) return 0;
-  try {
-    const r = await pool.query<ConsumeQuotaRow>(
-      `SELECT request_count FROM ai_usage_daily
-        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3`,
-      [subjectForUser(userId), today(), DEFAULT_BUCKET],
-    );
-    return r.rows[0]?.request_count ?? 0;
-  } catch (e) {
-    logQuotaStoreUnavailable("db_error", e);
-    return 0;
   }
 }
 
@@ -512,6 +510,15 @@ export async function consumeToolQuota(
   }
   const limit = toolLimit(toolName);
   if (limit == null) {
+    return { ok: true, remaining: null, limit: null };
+  }
+  // Free: хід із tool-викликом коштує 1 дію з тижневих (`assertAiQuota`),
+  // окремий денний tool-бакет тут був би невидимою стелею при повних
+  // тижневих. Для Pro бакет лишається захистом від зловживань.
+  if (
+    !sessionUser ||
+    (await userWeeklyLimit(sessionUser.id, "ai.actions")) !== null
+  ) {
     return { ok: true, remaining: null, limit: null };
   }
   if (limit === 0) {
@@ -700,7 +707,9 @@ export async function resolveProTier(
       msg: "pro_tier_plan_lookup_failed",
       err: { message: (e as Error)?.message || String(e) },
     });
-    return premium(); // monetization-safe: a transient blip gives Sonnet, never blocks
+    // Як і збій сесії вище: не блокуємо, але й не даруємо premium кожному
+    // Free-юзеру, поки лежить БД (рішення власника 2026-09-28).
+    return unpaid();
   }
   // Free: кількість капає `assertAiQuota`, модель — standard (див. `unpaid`).
   if (plan !== "pro") return unpaid();
@@ -710,8 +719,7 @@ export async function resolveProTier(
   if (!aiQuotaCircuitBreaker.isAllowing()) return premium();
 
   const subject = subjectFor(sessionUser, req);
-  // Both tier buckets and Free/Anon `today()` buckets use the Kyiv civil day
-  // (домен-інваріант) — a single day boundary across all quota buckets.
+  // Tier buckets use the Kyiv civil day (домен-інваріант).
   const day = toLocalISODate();
   const premiumLimit = parseLimit(
     "AI_PRO_PREMIUM_DAILY_LIMIT",
@@ -830,18 +838,6 @@ function rejectCircuitOpen(res: Response): boolean {
 }
 
 /**
- * `endpoint` тег для quota-лічильника (міграції 104/106): PK `ai_usage_daily`
- * тепер 4-колонковий `(subject_key, usage_day, bucket, endpoint)`, і
- * `endpoint` NOT NULL без DEFAULT — INSERT без явного значення падає
- * `23502`. Цей модуль рахує КІЛЬКІСТЬ повідомлень (bucket=`default`/`tool:*`),
- * а не вартість конкретного кроку (те, що трекає `endpoint` в
- * `anthropicUsageStore.ts`) — тож фіксоване значення `'quota'`, а не одне з
- * реальних endpoint-значень (`chat`, `coach-insight`, …), щоб не змішувати
- * дві різні осі групування в одному значенні колонки.
- */
-const AI_QUOTA_ENDPOINT = "quota";
-
-/**
  * Атомарний інкремент лічильника з verifi-ON-CONFLICT:
  *   INSERT (cost) — якщо рядка ще немає (завжди проходить, бо cost <= limit
  *                   перевіряємо наперед).
@@ -873,14 +869,16 @@ async function consumeQuota({
       WHERE t.request_count + EXCLUDED.request_count <= $6
     RETURNING request_count
   `;
-  const r = await pool.query<ConsumeQuotaRow>(sql, [
-    subject,
-    day,
-    bucket,
-    AI_QUOTA_ENDPOINT,
-    cost,
-    limit,
-  ]);
+  const r = await withSubjectContext(subject, (db) =>
+    db.query<ConsumeQuotaRow>(sql, [
+      subject,
+      day,
+      bucket,
+      AI_QUOTA_ENDPOINT,
+      cost,
+      limit,
+    ]),
+  );
   if (r.rows.length === 0) {
     return { ok: false, remaining: 0, limit };
   }
@@ -897,18 +895,20 @@ async function consumeQuota({
 async function refundConsumed(ticket: ConsumedTicket): Promise<void> {
   if (!process.env["DATABASE_URL"]) return;
   try {
-    await pool.query(
-      `UPDATE ai_usage_daily
-          SET request_count = GREATEST(0, request_count - $4)
-        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
-          AND endpoint = $5`,
-      [
-        ticket.subject,
-        ticket.day,
-        ticket.bucket,
-        ticket.cost,
-        AI_QUOTA_ENDPOINT,
-      ],
+    await withSubjectContext(ticket.subject, (db) =>
+      db.query(
+        `UPDATE ai_usage_daily
+            SET request_count = GREATEST(0, request_count - $4)
+          WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
+            AND endpoint = $5`,
+        [
+          ticket.subject,
+          ticket.day,
+          ticket.bucket,
+          ticket.cost,
+          AI_QUOTA_ENDPOINT,
+        ],
+      ),
     );
   } catch (e: unknown) {
     const err = e as { message?: string; code?: string } | undefined;
@@ -940,7 +940,7 @@ function attachRefund(req: Request, ticket: ConsumedTicket): void {
 export const __aiQuotaTestHooks = {
   consumeQuota,
   refundConsumed,
-  DEFAULT_BUCKET,
+  WEEKLY_METERS,
   TOOL_BUCKET_PREFIX,
   AI_QUOTA_ENDPOINT,
 };

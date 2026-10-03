@@ -197,6 +197,14 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
    * більше не виводиться зі знаку — це рішення користувача, і (б) сума не
    * має залежати від того, чи потрапила транзакція у поточне вікно
    * завантаження. Деталі семантики — `debtEngine.LinkedTxRole`.
+   *
+   * `meta.auto` (Level 2, 2026-09-11) позначає привʼязку, яку створило
+   * авто-правило (`debtAutoLink.ts`), не рука користувача. Відвʼязування
+   * такої привʼязки для `type === "debt"` дописує id у
+   * `autoLinkDismissedTxIds` — інакше матчер привʼязав би ту саму
+   * транзакцію назад на наступному проході (той самий клас бага, що
+   * tombstone-resurrection у звичках routine). Відвʼязування ручної
+   * привʼязки лишає поведінку без змін.
    */
   const setLinkedTxRole = (
     id: string,
@@ -204,6 +212,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     type: "debt" | "receivable",
     role: LinkedTxRole | null,
     amountUAH = 0,
+    meta?: { auto?: boolean },
   ) => {
     const apply = <T extends { id: string } & Record<string, unknown>>(
       item: T,
@@ -215,14 +224,30 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
           {}),
       };
       if (role === null) {
+        const wasAuto = txLinks[txId]?.auto === true;
         delete txLinks[txId];
-        return {
+        const next: T = {
           ...item,
           linkedTxIds: linked.filter((x) => x !== txId),
           txLinks,
         };
+        if (type === "debt" && wasAuto) {
+          const dismissed =
+            (item["autoLinkDismissedTxIds"] as string[] | undefined) || [];
+          if (!dismissed.includes(txId)) {
+            (next as Record<string, unknown>)["autoLinkDismissedTxIds"] = [
+              ...dismissed,
+              txId,
+            ];
+          }
+        }
+        return next;
       }
-      txLinks[txId] = { role, amount: Math.abs(amountUAH) };
+      txLinks[txId] = {
+        role,
+        amount: Math.abs(amountUAH),
+        ...(meta?.auto ? { auto: true } : {}),
+      };
       return {
         ...item,
         linkedTxIds: linked.includes(txId) ? linked : [...linked, txId],
@@ -288,6 +313,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       billingDay: number;
       currency: string;
       linkedTxId?: string;
+      expectedAmount?: number;
     } = {
       id,
       name: candidate.displayName || candidate.key,
@@ -298,6 +324,11 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     };
     if (candidate.sampleTxIds && candidate.sampleTxIds[0]) {
       sub.linkedTxId = candidate.sampleTxIds[0];
+    }
+    // Р20: сума відома з історії одразу, а не «сума невідома» до першого
+    // збігу транзакції.
+    if (candidate.avgAmount && candidate.avgAmount > 0) {
+      sub.expectedAmount = Math.round(candidate.avgAmount * 100);
     }
     setSubscriptions((prev) => [...prev, sub]);
     // Автоматично прибираємо з пропозицій — sub з таким keyword уже його покриває,
@@ -349,7 +380,13 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       color,
       icon,
       parentId,
-    }: { color?: string; icon?: string; parentId?: string } = {},
+      kind = "expense",
+    }: {
+      color?: string;
+      icon?: string;
+      parentId?: string;
+      kind?: "expense" | "income";
+    } = {},
   ) => {
     // AI-CONTEXT (2026-08-21): підпис нормалізується на ЗАПИСІ, а не на
     // кожному рендері. Вбудовані категорії втратили емодзі-префікси того
@@ -362,7 +399,13 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     if (!trimmed || trimmed.length > 80) return;
     setCustomCategories((prev) => {
       if (prev.length >= 80) return prev;
-      if (prev.some((c) => c.label.toLowerCase() === trimmed.toLowerCase()))
+      if (
+        prev.some(
+          (c) =>
+            (c.kind ?? "expense") === kind &&
+            c.label.toLowerCase() === trimmed.toLowerCase(),
+        )
+      )
         return prev;
       const id = `cus_${Date.now().toString(36)}_${crypto.randomUUID()}`;
       const entry: {
@@ -371,7 +414,9 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         color?: string;
         icon?: string;
         parentId?: string;
+        kind?: "expense" | "income";
       } = { id, label: trimmed };
+      if (kind === "income") entry.kind = kind;
       if (color) entry.color = color;
       if (icon) entry.icon = icon;
       if (parentId) entry.parentId = parentId;

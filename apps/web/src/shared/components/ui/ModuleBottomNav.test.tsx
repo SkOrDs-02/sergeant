@@ -46,6 +46,29 @@ describe("ModuleBottomNav", () => {
     expect(statsTab.className).toContain("justify-center");
   });
 
+  // Low-vision (200% кореневого тексту): фіксована висота треку зрізала підпис
+  // активного таба до 0px (`tests/a11y/low-vision.spec.ts`). Трек має лише
+  // МІНІМУМ 60px (64px на coarse), тож росте разом із текстом, а на 100%
+  // виглядає як раніше. JSDOM не рахує layout, тому стережемо контракт класів;
+  // поведінку міряє Playwright-спек.
+  it("трек нав-бару має мінімальну, а не фіксовану висоту", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const track = screen.getByRole("navigation", { name: "Module sections" })
+      .firstElementChild as HTMLElement;
+
+    expect(track).toHaveClass("min-h-[60px]", "pointer-coarse:min-h-[64px]");
+    expect(track.className).not.toMatch(/(?:^|[\s:])h-\[\d+px\]/);
+  });
+
   it("active tab gets a solid accent fill + ink foreground in both themes (fix spec v2 § 1)", () => {
     render(
       <ModuleBottomNav
@@ -65,12 +88,12 @@ describe("ModuleBottomNav", () => {
     // one bare class covers the foreground in both themes.
     expect(activeTab.firstElementChild?.className).toContain("bg-finyk-strong");
     expect(activeTab.firstElementChild?.className).toContain(
-      "dark:bg-brand-400",
+      "dark:bg-teal-400",
     );
     expect(activeTab.className).toContain("text-bg");
     expect(activeTab.className).toContain("border-transparent");
     expect(inactiveTab.firstElementChild?.className).not.toContain(
-      "dark:bg-brand-400",
+      "dark:bg-teal-400",
     );
   });
 
@@ -91,8 +114,43 @@ describe("ModuleBottomNav", () => {
     const inactiveVisualLabel = screen.getByText("Stats", {
       selector: "span:not(.sr-only)",
     });
-    expect(activeVisualLabel.className).toContain("max-w-[88px]");
+    expect(activeVisualLabel.className).toContain("max-w-full");
     expect(inactiveVisualLabel.className).toContain("max-w-0");
+  });
+
+  // Founder-аудит R1 (2026-09-11): grid-колонки вже рівні
+  // (`repeat(N, minmax(0,1fr))`), але видима "пілюля" — внутрішній
+  // `<span>` — мала різну ширину для активного (`w-full`) і неактивного
+  // (`px-2`, ≈38px) стану. Через це зазор МІЖ ПІЛЮЛЯМИ стрибав залежно
+  // від того, який таб активний (≈90.7px між двома неактивними проти
+  // ≈47.3px між активною і сусідньою на 390px/3-табовому наві — Рутина).
+  // Єдиний спосіб тримати зазор постійним — дати пілюлі ОДНАКОВИЙ бокс
+  // в обох станах, тож і в тесті ми звіряємо саме бокс, а не колір.
+  it("gives the active and inactive pill the identical box, so the gap between pills can't shift with the active tab (R1 fix, 2026-09-11)", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const activePill = screen.getByRole("button", { name: "Overview" })
+      .firstElementChild as HTMLElement;
+    const inactivePill = screen.getByRole("button", { name: "Stats" })
+      .firstElementChild as HTMLElement;
+
+    // Regression guard: both pills must claim the FULL column box —
+    // `w-full`/`h-full` — regardless of active state. Before the fix the
+    // inactive pill was `px-2` sized to content instead, which is exactly
+    // the class this assertion would catch (verified by reverting the
+    // inactive branch back to `px-2` locally: this assertion goes red).
+    expect(activePill.className).toContain("w-full");
+    expect(activePill.className).toContain("h-full");
+    expect(inactivePill.className).toContain("w-full");
+    expect(inactivePill.className).toContain("h-full");
   });
 
   // Стеля вище — реальна межа, тож підпис, який у неї не вліз, мусить

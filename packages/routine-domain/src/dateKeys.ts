@@ -15,7 +15,7 @@
  * `dateKeyFromDate` delegates to `@sergeant/shared`'s `deviceDayKey` — the
  * canon for the device-local `YYYY-MM-DD` formatter that used to be
  * byte-identically duplicated in 8 places across the monorepo
- * (`docs/90-work/audits/unification-modules.md` §2.1).
+ * (`docs/work/specs/audits/unification-modules.md` §2.1).
  */
 
 import { deviceDayKey } from "@sergeant/shared";

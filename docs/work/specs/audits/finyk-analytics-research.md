@@ -1,7 +1,7 @@
 # Research: аналітика конкурентів і шортлист для Фініка (C6)
 
 > **Last touched:** 2026-07-29 by Codex. **Next review:** 2027-11-11.
-> **Status:** Reference — дослідження завершене; реалізаційні рекомендації ведуться в `product-knowledge-backlog.md`.
+> **Status:** Deprecated - кабінетне дослідження 2026-07, власник вважає застарілим (рішення 2026-09-23). Читати як джерело гіпотез, не фактів. Чинний замір руками і новий шортліст: [`2026-09-24-finyk-analytics-handson.md`](./2026-09-24-finyk-analytics-handson.md).
 
 Двофазне дослідження: deep-research воркфлоу (103 агенти, адверсарійна верифікація тверджень) + 4 прицільні доборні прогони по прогалинах (легкі трекери, Emma/Revolut, вбудований monobank, думки юзерів). Всі твердження з джерелами; де джерел нема — так і написано.
 
@@ -56,3 +56,18 @@ Copilot: [zenfinanceai](https://zenfinanceai.com/ynab-vs-copilot-ai/), [moneypat
 - «Що цінують юзери» — з HN/агрегаторів; прямий Reddit недоступний для фетчу — вибірка зміщена в бік технічної аудиторії.
 - Verified-набір першого прогону активно спростував 5 тверджень про YNAB — позитивних фактів про його аналітику НЕ підтверджено, тому YNAB у таблиці відсутній.
 - Фічі конкурентів дрейфують; дати перевірки — липень 2026.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
+| [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) | docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру                               | 2026-09-24 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

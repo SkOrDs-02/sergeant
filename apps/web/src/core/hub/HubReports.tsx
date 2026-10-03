@@ -28,6 +28,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { deviceDayKey } from "@sergeant/shared";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { PdfPreviewModal } from "./PdfPreviewModal";
@@ -68,10 +69,7 @@ function formatPeriodLabel(period: Period, offset: number): string {
       todayKey: deviceDayKey(),
     });
   } else {
-    return start.toLocaleDateString("uk-UA", {
-      month: "long",
-      year: "numeric",
-    });
+    return formatMonthYear(start);
   }
 }
 
@@ -104,7 +102,7 @@ function InsightRow({ iconName, title, stat, detail }: InsightRowProps) {
     <li className="flex items-start gap-3 py-2.5">
       <Icon
         name={iconName}
-        size={16}
+        size="md"
         className="mt-0.5 shrink-0 text-subtle"
         aria-hidden
       />
@@ -172,7 +170,7 @@ export function HubReports() {
   // Phase 7 D2 — cross-module PDF export is Premium. Free users see
   // the button but tapping it opens the paywall instead of generating
   // the report.
-  const exportGate = useFeatureGate("analytics-export-pdf");
+  const exportGate = useFeatureGate("export.pdf");
   const handleExportPdf = useCallback(() => {
     if (!exportGate.requireAccess()) return;
     // Escape any `<`/`&`/`>` before embedding insight strings into the report
@@ -310,7 +308,7 @@ export function HubReports() {
             onClick={() => setOffset((o) => o - 1)}
             aria-label="Попередній"
           >
-            <Icon name="chevron-left" size={16} aria-hidden />
+            <Icon name="chevron-left" size="md" aria-hidden />
           </Button>
           <span className="text-style-label text-text text-center tabular-nums">
             {label}
@@ -323,7 +321,7 @@ export function HubReports() {
             disabled={isCurrentPeriod}
             aria-label="Наступний"
           >
-            <Icon name="chevron-right" size={16} aria-hidden />
+            <Icon name="chevron-right" size="md" aria-hidden />
           </Button>
         </div>
 
@@ -379,7 +377,7 @@ export function HubReports() {
             (`useFeatureGate`). */}
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" onClick={handleExportPdf}>
-            <Icon name="download" size={16} aria-hidden />
+            <Icon name="download" size="md" aria-hidden />
             Експортувати PDF
           </Button>
         </div>
@@ -389,8 +387,8 @@ export function HubReports() {
         open={exportGate.paywallOpen}
         onClose={exportGate.closePaywall}
         surface={exportGate.paywallSurface}
-        title={i18n.paywall["analytics-export-pdf"].title}
-        description={i18n.paywall["analytics-export-pdf"].description}
+        title={i18n.paywall["export.pdf"].title}
+        description={i18n.paywall["export.pdf"].description}
       />
 
       {previewHtml !== null && (

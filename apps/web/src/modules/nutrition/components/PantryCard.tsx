@@ -2,19 +2,20 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Tooltip } from "@shared/components/ui/Tooltip";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import { formatPantryQty } from "../lib/formatPantryQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import { PantryAmbiguousQtyPrompt } from "./PantryAmbiguousQtyPrompt";
+import { PantrySourceTabs, type PantryInputMode } from "./PantrySourceTabs";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import { groupItemsByCategory } from "../lib/foodCategories";
 import type { FoodCategory } from "../lib/foodCategories";
@@ -37,18 +38,11 @@ type PantryItemView = Partial<PantryItem> & {
   pantryId?: string;
 };
 
-// Назви описують спосіб вводу, а не те, що вводиться: «Продукт»/«Список»
-// читалось як два різні типи запису, ще й плуталось із вкладкою «Покупки».
-const INPUT_MODES = [
-  { id: "single", label: "По одному" },
-  { id: "list", label: "Списком" },
-];
-
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <Icon
       name="chevron-right"
-      size={14}
+      size="sm"
       className={cn("transition-transform shrink-0", open && "rotate-90")}
     />
   );
@@ -161,7 +155,7 @@ function ItemRow({
           </span>
           {isPantryItemLowStock(item) && (
             <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
-              <Icon name="trending-down" size={12} aria-hidden />
+              <Icon name="trending-down" size="xs" aria-hidden />
               {messages.nutrition.pantryLowStock.badge}
             </span>
           )}
@@ -203,7 +197,7 @@ function CategorySection({
 }: CategorySectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border border-line/40 bg-bg/30">
+    <div className="rounded-xl border border-line bg-panel">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -214,7 +208,7 @@ function CategorySection({
           <ChevronIcon open={open} />
           <Icon
             name={cat.iconName as IconName}
-            size={16}
+            size="md"
             className="text-nutrition shrink-0"
             aria-hidden
           />
@@ -251,6 +245,8 @@ interface InventoryCardProps {
   pantryItemsLength: number;
   busy: boolean;
   placeFilter: string | null;
+  onAdd: () => void;
+  placeSelector?: ReactNode;
 }
 
 function InventoryCard({
@@ -260,6 +256,8 @@ function InventoryCard({
   pantryItemsLength,
   busy,
   placeFilter,
+  onAdd,
+  placeSelector,
 }: InventoryCardProps) {
   const userToggledRef = useRef(false);
   const [mainOpen, setMainOpen] = useState(true);
@@ -294,7 +292,7 @@ function InventoryCard({
         <EmptyState
           size="sm"
           module="nutrition"
-          icon={<Icon name="package" size={20} />}
+          icon={<Icon name="package" size="lg" />}
           title={messages.nutrition.pantryEmpty.title}
           description={messages.nutrition.pantryEmpty.description}
           examplePreview={
@@ -315,27 +313,42 @@ function InventoryCard({
 
   return (
     <Card className="p-4">
-      <button
-        type="button"
-        onClick={() => {
-          userToggledRef.current = true;
-          setMainOpen((v) => !v);
-        }}
-        className="flex items-center justify-between w-full gap-2 min-h-[44px]"
-        aria-expanded={mainOpen}
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <ChevronIcon open={mainOpen} />
-          <span className="text-style-label text-text">Моя комора</span>
-          <span className="text-style-caption text-subtle">
-            (
-            {placeFilter
-              ? `${visibleCount} з ${pantryItemsLength}`
-              : pantryItemsLength}
-            )
-          </span>
-        </div>
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            userToggledRef.current = true;
+            setMainOpen((v) => !v);
+          }}
+          className="flex flex-1 min-w-0 items-center justify-between gap-2 min-h-[44px]"
+          aria-expanded={mainOpen}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <ChevronIcon open={mainOpen} />
+            <span className="text-style-label text-text">Моя комора</span>
+            <span className="text-style-caption text-subtle">
+              (
+              {placeFilter
+                ? `${visibleCount} з ${pantryItemsLength}`
+                : pantryItemsLength}
+              )
+            </span>
+          </div>
+        </button>
+        <Button
+          variant="soft"
+          tone="nutrition"
+          size="sm"
+          onClick={onAdd}
+          disabled={busy}
+          aria-label="Додати продукти"
+          className="shrink-0"
+        >
+          <Icon name="plus" size="sm" aria-hidden />
+          Додати
+        </Button>
+      </div>
+      {placeSelector}
 
       {/* `grid-cols-[minmax(0,1fr)]`, а не дефолтний `auto`-трек: `auto`
           росте до min-content найширшої дитини, а min-content рядка комори —
@@ -383,6 +396,13 @@ interface PantryCardProps {
   dismissParsePreview?: () => void;
   placeFilter: string | null;
   /**
+   * Позиції комори — прокидається в `PantrySourceTabs` лише для дедупу
+   * превʼю сегмента «З чека» (`SilpoPantryReplenishSheet`). Дефолт `[]`:
+   * старі виклики без Сільпо-контексту (тести, снапшоти) сегмент і так не
+   * побачать — гейт стоїть на `useSilpoSyncState` усередині.
+   */
+  pantryItems?: readonly Pick<PantryItem, "name">[];
+  /**
    * UX-4 (аудит 2026-09-01) — позиції з `upsertItem`, чиє хвостове число без
    * одиниці лишилось неоднозначним. Необовʼязкові — сторінки, що ще не
    * прокидають підказку (тести, старі snapshot-и), просто її не бачать.
@@ -395,6 +415,8 @@ interface PantryCardProps {
    * (`PantryParsePreview`), незалежно від подальшого підтвердження списку.
    */
   rememberAmbiguousChoice?: (name: string, unit: AmbiguousPantryUnit) => void;
+  /** Компактний вибір місця для шапки списку наповненої комори. */
+  placeSelector?: ReactNode;
 }
 
 export function PantryCard({
@@ -418,135 +440,149 @@ export function PantryCard({
   resolveAmbiguousPantryItem,
   dismissAmbiguousPantryItem,
   rememberAmbiguousChoice,
+  pantryItems = [],
+  placeSelector,
 }: PantryCardProps) {
-  const [mode, setMode] = useState("single");
+  const [mode, setMode] = useState<PantryInputMode>("single");
+  const [addOpen, setAddOpen] = useState(false);
+
+  const empty = effectiveItems.length === 0;
+  // Питання про одиницю чи превʼю розбору, що лишились після закриття
+  // аркуша, повертають форму інлайн: інакше вони ховались би за кнопкою,
+  // а позиції так і не потрапили б у комору.
+  const hasPending =
+    (ambiguousPantryItems?.length ?? 0) > 0 || Boolean(parsePreview);
+  const formInline = empty || (hasPending && !addOpen);
+
+  const addForm = (
+    <>
+      <div className="mb-3">
+        <PantrySourceTabs
+          mode={mode}
+          onModeChange={setMode}
+          onScanBarcode={onScanBarcode}
+          pantryItems={pantryItems}
+          upsertItem={upsertItem}
+          busy={busy}
+        />
+      </div>
+
+      {mode === "single" ? (
+        <div className="flex gap-2 items-center">
+          <Input
+            value={newItemName}
+            onChange={(e) => setNewItemName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newItemName.trim()) {
+                upsertItem(newItemName);
+                setNewItemName("");
+              }
+            }}
+            // Placeholder не є доступною назвою: він зникає з першим
+            // символом і не читається як мітка. Видиму мітку не ставимо:
+            // поле живе в одному рядку з кнопкою «Додати», і заголовок
+            // картки вже каже, що це комора (підтверджено живим прогоном
+            // 2026-09-16: поле було єдиним на екрані без назви).
+            aria-label="Назва продукту"
+            placeholder="напр. лосось 300г"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
+            autoFocus={!formInline}
+            maxLength={NAME_MAX_LEN}
+            disabled={busy}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              upsertItem(newItemName);
+              setNewItemName("");
+            }}
+            disabled={busy || !newItemName.trim()}
+            className={cn(
+              // `h-11` = 2.75rem, а на 320px корінний шрифт 15px → 41.25px і провал
+              // 44px-флору; px-флор під coarse pointer, як у `Button`/`Input`.
+              "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
+              // Канонічна утиліта, а не рукописний `focus-visible:ring-2`:
+              // останній рахує храповик `check-ui-canon-ratchet.mjs`, і
+              // його стелю можна лише опускати (аудит 2026-09-16).
+              "focus-ring",
+            )}
+          >
+            Додати
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2 items-start">
+          <textarea
+            value={pantryText}
+            onChange={(e) => setPantryText(e.target.value)}
+            // Назва з тієї ж причини, що й у `Input` режиму «По одному»
+            // вище: видимої мітки в блоці немає, а плейсхолдер зникає з
+            // першим символом (аудит 2026-09-16, WF-15). Формулювання
+            // навмисно не містить слів «Додати»/«Прибрати»/«Редагувати»:
+            // сусідні тести шукають саме їх підрядком через `getByLabelText`.
+            aria-label="Список продуктів"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
+            autoFocus={!formInline}
+            placeholder={'напр. "2 яйця, курка 500г, рис, огірки, сир"'}
+            className="input-focus-nutrition flex-1 min-h-[96px] rounded-2xl bg-panel border border-line px-4 py-3 text-sm text-text placeholder:text-subtle"
+            maxLength={NOTE_MAX_LEN}
+            disabled={busy}
+          />
+          <button
+            type="button"
+            onClick={parsePantry}
+            disabled={busy || !pantryText.trim()}
+            className={cn(
+              // Той самий 44px-флор, що й у «Додати» вище: `h-11` дає
+              // 41.25px на 320px, а це вже дві кнопки того самого блоку
+              // з тим самим дефектом (ревʼю CodeRabbit 2026-08-26).
+              "text-style-label shrink-0 px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl mt-0.5",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
+              "focus-ring",
+            )}
+          >
+            Розібрати
+          </button>
+        </div>
+      )}
+
+      {mode === "list" && <PantryListGuide />}
+
+      {ambiguousPantryItems &&
+        ambiguousPantryItems.length > 0 &&
+        resolveAmbiguousPantryItem &&
+        dismissAmbiguousPantryItem && (
+          <PantryAmbiguousQtyPrompt
+            items={ambiguousPantryItems}
+            onResolve={resolveAmbiguousPantryItem}
+            onDismiss={dismissAmbiguousPantryItem}
+            busy={busy}
+          />
+        )}
+
+      {parsePreview && confirmParsePreview && dismissParsePreview && (
+        <PantryParsePreview
+          preview={parsePreview}
+          onConfirm={confirmParsePreview}
+          onDismiss={dismissParsePreview}
+          busy={busy}
+          onResolveAmbiguousUnit={(item, unit) =>
+            rememberAmbiguousChoice?.(item.name, unit)
+          }
+        />
+      )}
+    </>
+  );
 
   return (
     <>
-      <Card className="p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="min-w-0">
-            <div className="text-style-label text-text">Додати продукти</div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {typeof onScanBarcode === "function" && (
-              <Tooltip content="Сканувати штрих-код" placement="bottom-center">
-                <button
-                  type="button"
-                  onClick={onScanBarcode}
-                  disabled={busy}
-                  className="w-8 h-8 min-h-[44px] min-w-[44px] rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50 flex items-center justify-center"
-                  aria-label="Сканувати штрих-код"
-                >
-                  <Icon name="scanner" size={18} aria-hidden />
-                </button>
-              </Tooltip>
-            )}
-            <div className="flex rounded-xl bg-panelHi border border-line p-0.5">
-              {INPUT_MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setMode(m.id)}
-                  className={cn(
-                    "px-3 py-1.5 min-h-[44px] rounded-xl text-style-caption transition-colors",
-                    mode === m.id
-                      ? "bg-nutrition-strong text-white shadow-sm"
-                      : "text-subtle hover:text-text",
-                  )}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {mode === "single" ? (
-          <div className="flex gap-2 items-center">
-            <Input
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && newItemName.trim()) {
-                  upsertItem(newItemName);
-                  setNewItemName("");
-                }
-              }}
-              placeholder="напр. лосось 300г"
-              maxLength={NAME_MAX_LEN}
-              disabled={busy}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                upsertItem(newItemName);
-                setNewItemName("");
-              }}
-              disabled={busy || !newItemName.trim()}
-              className={cn(
-                // `h-11` = 2.75rem, а на 320px корінний шрифт 15px → 41.25px і провал
-                // 44px-флору; px-флор під coarse pointer, як у `Button`/`Input`.
-                "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
-                "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
-              )}
-            >
-              Додати
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2 items-start">
-            <textarea
-              value={pantryText}
-              onChange={(e) => setPantryText(e.target.value)}
-              placeholder={'напр. "2 яйця, курка 500г, рис, огірки, сир"'}
-              className="input-focus-nutrition flex-1 min-h-[96px] rounded-2xl bg-panel border border-line px-4 py-3 text-sm text-text placeholder:text-subtle"
-              maxLength={NOTE_MAX_LEN}
-              disabled={busy}
-            />
-            <button
-              type="button"
-              onClick={parsePantry}
-              disabled={busy || !pantryText.trim()}
-              className={cn(
-                // Той самий 44px-флор, що й у «Додати» вище: `h-11` дає
-                // 41.25px на 320px, а це вже дві кнопки того самого блоку
-                // з тим самим дефектом (ревʼю CodeRabbit 2026-08-26).
-                "text-style-label shrink-0 px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl mt-0.5",
-                "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
-              )}
-            >
-              Розібрати
-            </button>
-          </div>
-        )}
-
-        {mode === "list" && <PantryListGuide />}
-
-        {ambiguousPantryItems &&
-          ambiguousPantryItems.length > 0 &&
-          resolveAmbiguousPantryItem &&
-          dismissAmbiguousPantryItem && (
-            <PantryAmbiguousQtyPrompt
-              items={ambiguousPantryItems}
-              onResolve={resolveAmbiguousPantryItem}
-              onDismiss={dismissAmbiguousPantryItem}
-              busy={busy}
-            />
-          )}
-
-        {parsePreview && confirmParsePreview && dismissParsePreview && (
-          <PantryParsePreview
-            preview={parsePreview}
-            onConfirm={confirmParsePreview}
-            onDismiss={dismissParsePreview}
-            busy={busy}
-            onResolveAmbiguousUnit={(item, unit) =>
-              rememberAmbiguousChoice?.(item.name, unit)
-            }
-          />
-        )}
-      </Card>
+      {formInline && (
+        <Card className="p-4">
+          <div className="text-style-label text-text mb-3">Додати продукти</div>
+          {addForm}
+        </Card>
+      )}
 
       <InventoryCard
         effectiveItems={effectiveItems}
@@ -555,7 +591,22 @@ export function PantryCard({
         pantryItemsLength={pantryItemsLength}
         busy={busy}
         placeFilter={placeFilter}
+        onAdd={() => setAddOpen(true)}
+        placeSelector={placeSelector}
       />
+
+      {/* Аркуш лишається відкритим після «Додати»: `upsertItem` не каже, чи
+          позиція лягла, а тост «Додано …» уже підтверджує результат, тож
+          наступний продукт вводиться без повторного відкриття. */}
+      <Sheet
+        open={addOpen && !empty}
+        onClose={() => setAddOpen(false)}
+        title="Додати продукти"
+        panelClassName="nutrition-sheet"
+        zIndex={90}
+      >
+        {addForm}
+      </Sheet>
     </>
   );
 }

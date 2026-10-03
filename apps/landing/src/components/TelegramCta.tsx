@@ -63,7 +63,7 @@ export default function TelegramCta({
       }
       className={`inline-flex min-h-12 items-center justify-center px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] transition focus-visible:outline-2 focus-visible:outline-offset-2 ${palette}`}
     >
-      {label ?? "Приєднатися через Telegram"}
+      {label ?? "Стати в чергу"}
     </a>
   );
 }

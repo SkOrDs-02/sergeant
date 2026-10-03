@@ -1,5 +1,5 @@
 // Migration 052 — focused round-trip for the Fizruk full-state tables
-// (Stage 12 / PR #070f-schema of `docs/planning/storage-roadmap.md`).
+// (Stage 12 / PR #070f-schema of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // Mirrors `051-nutrition-full-state.test.ts`: same Docker / pgvector
 // testcontainer harness, same soft-skip behaviour, same assertions

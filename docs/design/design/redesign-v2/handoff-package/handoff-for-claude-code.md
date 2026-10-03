@@ -1,6 +1,6 @@
 # Sergeant v2 redesign — canvas handoff
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-08.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-24.
 > **Status:** Reference
 
 > **Призначення:** короткий бриф для Claude Code / агента що буде закривати наступні PR-и

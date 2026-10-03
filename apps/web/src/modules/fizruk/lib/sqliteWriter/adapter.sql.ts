@@ -142,9 +142,11 @@ const MEASUREMENT_UPSERT_SPEC: TableSpec = {
   table: "fizruk_measurements",
   insertClause: `INSERT INTO fizruk_measurements
        (id, user_id, measured_at, weight_kg, waist_cm, chest_cm, hips_cm,
-        bicep_cm, sleep_hours, energy_level, mood,
+        bicep_cm, body_fat_pct, neck_cm, bicep_l_cm, bicep_r_cm,
+        forearm_l_cm, forearm_r_cm, thigh_l_cm, thigh_r_cm,
+        calf_l_cm, calf_r_cm, sleep_hours, energy_level, mood,
         created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "measured_at" },
@@ -153,6 +155,16 @@ const MEASUREMENT_UPSERT_SPEC: TableSpec = {
     { column: "chest_cm" },
     { column: "hips_cm" },
     { column: "bicep_cm" },
+    { column: "body_fat_pct" },
+    { column: "neck_cm" },
+    { column: "bicep_l_cm" },
+    { column: "bicep_r_cm" },
+    { column: "forearm_l_cm" },
+    { column: "forearm_r_cm" },
+    { column: "thigh_l_cm" },
+    { column: "thigh_r_cm" },
+    { column: "calf_l_cm" },
+    { column: "calf_r_cm" },
     { column: "sleep_hours" },
     { column: "energy_level" },
     { column: "mood" },
@@ -193,19 +205,6 @@ const MONTHLY_PLAN_UPSERT_SPEC: TableSpec = {
      VALUES (?, ?, ?)`,
   conflictTarget: ["user_id"],
   updateColumns: [{ column: "data_json" }, { column: "updated_at" }],
-  upsertGuard: "strictly-newer",
-  conflictIndent: 5,
-  setIndent: 7,
-};
-
-// Перенос власності pushup-даних routine → fizruk (канон routine.md §10,
-// рішення 2026-08-30). Форма — дзеркало `nutrition_water_log`.
-const PUSHUPS_UPSERT_SPEC: TableSpec = {
-  table: "fizruk_pushups",
-  insertClause: `INSERT INTO fizruk_pushups (user_id, date_key, reps, updated_at)
-     VALUES (?, ?, ?, ?)`,
-  conflictTarget: ["user_id", "date_key"],
-  updateColumns: [{ column: "reps" }, { column: "updated_at" }],
   upsertGuard: "strictly-newer",
   conflictIndent: 5,
   setIndent: 7,
@@ -268,7 +267,6 @@ const INJURY_UPSERT_SPEC: TableSpec = {
 export const MEASUREMENT_UPSERT_SQL = buildLwwUpsert(MEASUREMENT_UPSERT_SPEC);
 export const DAILY_LOG_UPSERT_SQL = buildLwwUpsert(DAILY_LOG_UPSERT_SPEC);
 export const MONTHLY_PLAN_UPSERT_SQL = buildLwwUpsert(MONTHLY_PLAN_UPSERT_SPEC);
-export const PUSHUPS_UPSERT_SQL = buildLwwUpsert(PUSHUPS_UPSERT_SPEC);
 export const WORKOUT_TEMPLATE_UPSERT_SQL = buildLwwUpsert(
   WORKOUT_TEMPLATE_UPSERT_SPEC,
 );
@@ -391,20 +389,6 @@ export async function setMonthlyPlan(
   await client.run(MONTHLY_PLAN_UPSERT_SQL, [
     userId,
     monthlyPlan.dataJson ?? "{}",
-    clientTs,
-  ]);
-}
-
-export async function setPushups(
-  client: SqliteMigrationClient,
-  dateKey: string,
-  reps: number,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(PUSHUPS_UPSERT_SQL, [
-    userId,
-    dateKey,
-    toIntOrNull(reps) ?? 0,
     clientTs,
   ]);
 }

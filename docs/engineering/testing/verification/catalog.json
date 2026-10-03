@@ -360,6 +360,46 @@
       "pitfalls": "Cross-device — один user; isolation — два users. Не стартувати B до підтвердженого push A."
     },
     {
+      "id": "DATA-durability-live",
+      "revision": 1,
+      "title": "Живучість записів: reload, перенос аноніма, офлайн, пристрої, вкладки, вихід",
+      "suite": "data",
+      "modules": [
+        "sync",
+        "web",
+        "finyk",
+        "nutrition",
+        "routine",
+        "fizruk",
+        "ai-memory"
+      ],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "apps/web/tests/verification-live/data-durability.spec.ts",
+      "preconditions": "Локальний API на :3000 з окремою БД, прод-білд web (VERCEL=1, VITE_API_BASE_URL=http://127.0.0.1:3000) через vite preview на :4173; див. local-environment.md.",
+      "steps": [
+        "Запустити `pnpm -C apps/web exec playwright test -c playwright.verify.config.ts data-durability` з VERIFY_RESULTS і PW_VERIFY_OUT.",
+        "Фази P1-P9: reload аноніма, перенос в акаунт, новий пристрій, офлайн-черга, правки з B, LWW-конфлікт, дві вкладки, вихід із незбереженим, ізоляція користувачів.",
+        "Звести результати скриптом-зведенням JSONL (кожна перевірка = рядок pass/fail з деталлю)."
+      ],
+      "expected": [
+        "Кожен запис у чотирьох модулях і памʼяті профілю переживає reload, доїжджає на сервер і на другий пристрій рівно один раз.",
+        "Після виходу інший користувач не бачить ні локальних, ні серверних даних попереднього."
+      ],
+      "evidence": [
+        "verify-results JSONL",
+        "скріншоти fail-*.png",
+        "SQL-лічильники рядків на сервері"
+      ],
+      "cleanup": "Тимчасова БД перевірки видаляється або лишається ізольованою; прод не зачіпається.",
+      "pitfalls": "P7: Playwright емулює фокус для кожної сторінки, тож повернення до вкладки харнес моделює подією focus, а не bringToFront. Рідкісний білий екран (B1) на одній навігації каскадом валить наступні кроки фази; дивись fail-*.png перед висновками. Прод-варіанти: prod-anon-smoke без акаунта; prod-account-smoke створює акаунт, тож його запускає лише людина."
+    },
+    {
       "id": "DATA-api-security-integrations",
       "revision": 1,
       "title": "API contracts, auth/security і зовнішні інтеграції",
@@ -404,7 +444,7 @@
         "Заміряти /health p95, chat first-turn total та synthesis first-token окремо."
       ],
       "expected": [
-        "JS≤1.42 MB brotli, CSS≤40 kB, eager JS≤280 kB.",
+        "JS≤1.44 MB brotli, CSS≤40 kB, eager JS≤280 kB.",
         "LCP median≤3000 ms; FCP/TBT записані з чинною severity конфігу.",
         "/health p95<100 ms; chat total<15 s і synthesis TTFT<1.5 s не змішані."
       ],

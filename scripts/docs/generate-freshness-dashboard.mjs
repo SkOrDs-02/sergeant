@@ -9,9 +9,15 @@
 // engineer can download it and audit the full doc set in one click, instead of
 // grepping issues or the allowlist.
 //
+// AI-CONTEXT: з 2026-10-01 вихід НЕ комітиться (шлях за замовчуванням у
+// `.gitignore`). Закомічена копія переписувалась кожним комітом із `.md` і
+// конфліктувала в усіх відкритих PR після кожного мерджу. Тому і режиму
+// `--check` більше немає: звіряти нема з чим. Гейти свіжості живуть у
+// `check-freshness.mjs` (`--check-cadence`, `--check-coverage`) і від цього
+// файлу не залежать. Рішення: doc-freshness.md § «Чому дашборд не комітиться».
+//
 // Usage:
-//   node scripts/docs/generate-freshness-dashboard.mjs
-//   node scripts/docs/generate-freshness-dashboard.mjs --check
+//   node scripts/docs/generate-freshness-dashboard.mjs        # → docs/governance/governance/freshness-dashboard.html (gitignored)
 //   OUTPUT=./dist/freshness-dashboard.html node scripts/docs/generate-freshness-dashboard.mjs
 //
 // Exits 0 regardless of overdue counts (dashboard is a report, not a gate).
@@ -226,68 +232,39 @@ ${rows}
 `;
 }
 
-export function normaliseForCompare(html) {
-  return html
-    .replace(/<!doctype html>/i, "<!DOCTYPE html>")
-    .replace(/<meta charset="utf-8"\s*\/?>/g, '<meta charset="utf-8">')
-    .replace(/<style>[\s\S]*?<\/style>/g, "<style>STYLE</style>")
-    .replace(
-      /Sergeant — Docs Freshness Dashboard \(\d{4}-\d{2}-\d{2}\)/g,
-      "Sergeant — Docs Freshness Dashboard (DATE)",
-    )
-    .replace(
-      /Generated <strong>\d{4}-\d{2}-\d{2}<\/strong>/g,
-      "Generated <strong>DATE</strong>",
-    )
-    .replace(/Fresh: \d+/g, "Fresh: N")
-    .replace(/Due soon \(≤30d\): \d+/g, "Due soon (≤30d): N")
-    .replace(/Overdue: \d+/g, "Overdue: N")
-    .replace(/No header: \d+/g, "No header: N")
-    .replace(/Missing: \d+/g, "Missing: N")
-    .replace(/<tr class="(?:fresh|due-soon|overdue)">/g, '<tr class="dated">')
-    .replace(
-      /<td class="status">(?:Fresh|Due soon|Overdue) \(-?\d+d\)<\/td>/g,
-      '<td class="status">DATED</td>',
-    )
-    .replace(
-      /<td class="num days">-?\d+<\/td>/g,
-      '<td class="num days">DAYS</td>',
-    )
-    .replace(/\s+/g, " ")
-    .replace(/>\s+/g, ">")
-    .replace(/\s+</g, "<")
-    .replace(/<([^>]+?)\s+>/g, "<$1>")
-    .trim();
+/**
+ * Прогоняє згенерований HTML через Prettier тим самим конфігом, що й
+ * `pnpm format:check`, щоб звіт читався людиною, а не одним рядком.
+ *
+ * Історія: 2026-09-12 форматування додали, бо закомічений артефакт виходив
+ * сирим або форматованим залежно від того, хто його застейджив. З 2026-10-01
+ * файл не комітиться, тож тепер це лише зручність читання.
+ */
+export async function formatHtml(html, filepath) {
+  try {
+    const prettier = await import("prettier");
+    const config = await prettier.resolveConfig(filepath);
+    return prettier.format(html, { ...config, filepath });
+  } catch (error) {
+    if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    // AI-NOTE: фолбек для dep-free CI-джоби `docs-freshness.yml`, яка
+    // запускає скрипт прямим `node scripts/…` без `pnpm install`.
+    // Безумовний імпорт prettier уже раз ламав такі джоби. Звіт без
+    // форматування лишається валідним HTML.
+    console.warn(
+      "[gen-freshness] prettier недоступний (dep-free середовище) — пишу сирий HTML.",
+    );
+    return html;
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-function main() {
-  const checkMode = process.argv.includes("--check");
+async function main() {
   const outPath = process.env.OUTPUT || DEFAULT_OUTPUT;
   const { tracked } = loadConfig({ rootDir: REPO_ROOT });
   const entries = gatherEntries(tracked);
-  const html = renderHtml(entries);
-
-  if (checkMode) {
-    if (!existsSync(outPath)) {
-      console.error(
-        `❌ ${relative(REPO_ROOT, outPath)} does not exist. Run: pnpm docs:freshness-dashboard`,
-      );
-      process.exit(1);
-    }
-    const existing = readFileSync(outPath, "utf8");
-    if (normaliseForCompare(existing) !== normaliseForCompare(html)) {
-      console.error(
-        `❌ ${relative(REPO_ROOT, outPath)} is out of date. Run: pnpm docs:freshness-dashboard`,
-      );
-      process.exit(1);
-    }
-    console.log(
-      `✅ ${relative(REPO_ROOT, outPath)} is up to date (${entries.length} docs tracked).`,
-    );
-    return;
-  }
+  const html = await formatHtml(renderHtml(entries), outPath);
 
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, html);
@@ -298,4 +275,4 @@ function main() {
 const isMain =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
-if (isMain) main();
+if (isMain) await main();

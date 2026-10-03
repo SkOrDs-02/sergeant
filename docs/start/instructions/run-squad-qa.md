@@ -2,7 +2,7 @@
 
 # Playbook: Squad QA — паралельний QA по всіх surfaces
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-16. _(4 teammates: додано `qa-packages`.)_
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -25,27 +25,27 @@ Load skill: sergeant-qa-squad
 
 ```
 Create an agent team for full QA across all Sergeant surfaces.
-Spawn 3 teammates:
+Spawn 4 teammates:
 1. qa-server — apps/server tests and typecheck
-2. qa-web — apps/web tests and typecheck
+2. qa-web — apps/web + apps/landing tests and typecheck
 3. qa-mobile — apps/mobile + mobile-shell tests and typecheck
+4. qa-packages — packages/* workspaces, incl. api-client contract tests (Hard Rule #3)
 
 All run independently. Report to the lead when done.
 ```
 
-_(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)_
+### Крок 3 — Чекай на всі 4 звіти
 
-### Крок 3 — Чекай на всі 3 звіти
-
-Не роби synthesis поки всі 3 не відзвітували.
+Не роби synthesis поки всі 4 не відзвітували.
 
 ### Крок 4 — Synthesis
 
-Після отримання всіх 3 звітів:
+Після отримання всіх 4 звітів:
 
 - Зведений статус: `🟢 All surfaces green` або `🔴 Failures in: [список]`
 - Per-surface таблиця: Tests / Typecheck / Failures
 - Деталі failures з файлом тесту і причиною
+- Якщо `qa-packages` червоний — спершу перевір, чи не він пояснює падіння app-поверхонь (`shared` / `*-domain` — upstream для web і mobile)
 
 ### Крок 5 — Fix failures
 
@@ -53,13 +53,13 @@ _(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)_
 
 ## Owner surface
 
-- Primary surface: `apps/server`, `apps/web`, `apps/mobile`, `apps/mobile-shell`
+- Primary surface: `apps/server`, `apps/web`, `apps/landing`, `apps/mobile`, `apps/mobile-shell`, `packages/*`
 - Coupled surface: n/a — паралельна перевірка незалежних surfaces
 - Governing skill: `sergeant-qa-squad`
 
 ## Verification
 
-- [ ] Всі 3 qa-агенти (server, web, mobile) завершили і надіслали звіт
+- [ ] Всі 4 qa-агенти (server, web, mobile, packages) завершили і надіслали звіт
 - [ ] Synthesis містить per-surface таблицю Tests / Typecheck / Failures
 - [ ] Зелений статус (`🟢 All surfaces green`) або failures передані до `sergeant-bugfix-and-regression`
 

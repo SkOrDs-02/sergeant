@@ -15,6 +15,7 @@
  */
 
 import { env } from "../../src/env/env.js";
+import { chatViaOpenRouter } from "../../src/env/chatModels.js";
 import { SYSTEM_PREFIX } from "../../src/modules/chat/toolDefs/systemPrompt.js";
 import { buildCategorizePrompt } from "../../src/routes/internal/categorize.js";
 import { buildWeeklyDigestPrompt } from "../../src/modules/digest/weekly-digest.js";
@@ -26,6 +27,7 @@ import {
 import type { UnknownMccItem } from "../../src/lib/mcc/unknownQueue.js";
 import type { WeeklyDigestRequest } from "@sergeant/shared";
 import {
+  admitsNoData,
   categoryIs,
   digestParsesVerdict,
   digestReport,
@@ -34,6 +36,7 @@ import {
   nonEmptyUkVerdict,
   synthesisTurn,
 } from "./judges.js";
+import { prodRoutedCandidates } from "./candidates.js";
 import type { JudgeVerdict, Pipeline } from "./types.js";
 
 // ── classify (`internal/categorize`) ────────────────────────────────
@@ -41,6 +44,8 @@ import type { JudgeVerdict, Pipeline } from "./types.js";
 // Прод спершу резолвить MCC детерміністично (`lookupMccCategory`), і до
 // моделі доїжджають ЛИШЕ невідомі коди. Тому всі MCC у кейсах нижче свідомо
 // ВІДСУТНІ в `mccMap.ts` — інакше стенд міряв би шлях, якого в проді немає.
+
+const CHAT_PROVIDER = chatViaOpenRouter() ? "openrouter" : "anthropic";
 const classifyCase = (
   name: string,
   trap: string,
@@ -113,18 +118,11 @@ const classifyPipeline: Pipeline = {
       categoryIs(["other"], { maxConfidence: 0.6 }),
     ),
   ],
-  candidates: [
-    {
-      provider: "anthropic",
-      model: env.CLASSIFY_MODEL,
-      label: "current default (Anthropic)",
-    },
-    {
-      provider: "openrouter",
-      model: "google/gemini-2.5-flash-lite",
-      label: "OpenRouter Gemini Flash Lite",
-    },
-  ],
+  candidates: prodRoutedCandidates(
+    env.LLM_READONLY_PROVIDER,
+    env.OPENROUTER_READONLY_MODEL,
+    env.CLASSIFY_MODEL,
+  ),
 };
 
 // ── digest (`internal/weekly-digest`) ───────────────────────────────
@@ -276,18 +274,11 @@ const digestPipeline: Pipeline = {
       },
     ),
   ],
-  candidates: [
-    {
-      provider: "anthropic",
-      model: env.DIGEST_MODEL,
-      label: "current default (Anthropic)",
-    },
-    {
-      provider: "openrouter",
-      model: "google/gemini-2.5-flash-lite",
-      label: "OpenRouter Gemini Flash Lite",
-    },
-  ],
+  candidates: prodRoutedCandidates(
+    env.LLM_DIGEST_PROVIDER,
+    env.OPENROUTER_DIGEST_MODEL,
+    env.DIGEST_MODEL,
+  ),
 };
 
 // ── mono (`internal/mcc-batch`) ─────────────────────────────────────
@@ -363,18 +354,11 @@ const monoPipeline: Pipeline = {
       },
     },
   ],
-  candidates: [
-    {
-      provider: "anthropic",
-      model: env.MONO_ENRICHMENT_MODEL,
-      label: "current default (Anthropic)",
-    },
-    {
-      provider: "openrouter",
-      model: "google/gemini-2.5-flash-lite",
-      label: "OpenRouter Gemini Flash Lite",
-    },
-  ],
+  candidates: prodRoutedCandidates(
+    env.LLM_MONO_PROVIDER,
+    env.OPENROUTER_MONO_MODEL,
+    env.MONO_ENRICHMENT_MODEL,
+  ),
 };
 
 // ── coach-insight ───────────────────────────────────────────────────
@@ -420,7 +404,7 @@ const coachPipeline: Pipeline = {
   promptOrigin: "modules/chat/coach.ts::buildCoachInsightPrompt",
   maxTokens: 300,
   judge: nonEmptyUkVerdict,
-  checkVoice: true,
+  checkVoice: "plain",
   cases: [
     coachTurn(
       "звичайний тиждень",
@@ -465,7 +449,7 @@ const coachPipeline: Pipeline = {
     ),
     coachTurn(
       "порожній перший сеанс",
-      "НЕПРАВИЛЬНО: вигадати числа, яких немає («ти витратив 4200 грн»). Памʼяті немає, знімка немає — єдина чесна відповідь не містить конкретних сум.",
+      "НЕПРАВИЛЬНО: вигадати числа («ти витратив 4200 грн») або спостереження («Бачу, що ти сьогодні недобираєш білка»), яких немає. Памʼяті немає, знімка немає, тож чесна відповідь прямо каже, що даних ще немає, і не містить ані сум, ані висновків про поведінку.",
       {
         dateContext: {
           todayKey: "2026-07-23",
@@ -475,7 +459,7 @@ const coachPipeline: Pipeline = {
         },
       },
       null,
-      noInventedAmounts,
+      admitsNoData,
     ),
     coachTurn(
       "регрес проти памʼяті",
@@ -524,7 +508,7 @@ const chatPipeline: Pipeline = {
   promptOrigin: "modules/chat/toolDefs/systemPrompt.ts::SYSTEM_PREFIX",
   maxTokens: 2500,
   judge: nonEmptyUkVerdict,
-  checkVoice: true,
+  checkVoice: "chat",
   cacheable: true,
   cases: [
     {
@@ -593,19 +577,22 @@ const chatPipeline: Pipeline = {
       judge: mentions(/трену|достав|їж/i, "звʼязок між модулями"),
     },
   ],
+  // Транспорт той самий, що в проді: з `CHAT_VIA_OPENROUTER` моделі тарифів
+  // мають OpenRouter-ID, і жорсткий "anthropic" тут давав 18/18 транспортних
+  // відмов замість заміру (стенд 2026-09-24).
   candidates: [
     {
-      provider: "anthropic",
+      provider: CHAT_PROVIDER,
       model: env.CHAT_MODEL_SYNTHESIS,
       label: "current default (premium tier)",
     },
     {
-      provider: "anthropic",
+      provider: CHAT_PROVIDER,
       model: env.AI_PRO_STANDARD_CHAT_MODEL,
       label: "current standard tier",
     },
     {
-      provider: "anthropic",
+      provider: CHAT_PROVIDER,
       model: env.AI_PRO_FLOOR_CHAT_MODEL,
       label: "current floor tier",
     },
@@ -623,7 +610,7 @@ const analysisPipeline: Pipeline = {
   promptOrigin: "modules/chat/toolDefs/systemPrompt.ts::SYSTEM_PREFIX",
   maxTokens: 2500,
   judge: nonEmptyUkVerdict,
-  checkVoice: true,
+  checkVoice: "chat",
   cacheable: true,
   cases: [
     {

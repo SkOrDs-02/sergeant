@@ -20,12 +20,13 @@
  * перекладаємо у `translateApiError` / `translateAuthError` (fallback на цей
  * каталог).
  *
- * Roadmap: див. `docs/i18n/readiness.md` § «Покрокова міграція».
+ * Roadmap: див. `docs/design/i18n/readiness.md` § «Покрокова міграція».
  */
 
 import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
+import { dataDisclosureMessages } from "./uk.dataDisclosure";
 import { dataExportMessages } from "./uk.dataExport";
 import { nutritionPageMessages } from "./uk.nutrition";
 import { nutritionTdeeMessages } from "./uk.nutritionTdee";
@@ -33,67 +34,20 @@ import { pricingMessages } from "./uk.pricing";
 import { privacyMessages } from "./uk.privacy";
 import { crossModuleLinkMessages } from "./uk.crossModuleLink";
 import { sergeantMessages } from "./uk.sergeant";
+import { coreMessages } from "./uk.core";
 
 export const messages = {
-  auth: {
-    // Generic fallback — використовується, коли не вдалося визначити
-    // конкретну причину помилки.
-    genericFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
-
-    // Better Auth canonical error-codes:
-    invalidEmailOrPassword: "Невірний email або пароль.",
-    invalidToken:
-      "Посилання для скидання пароля невалідне або вже використане. Запроси новий лист на сторінці входу.",
-    userAlreadyExists: "Цей email вже зареєстровано. Спробуй увійти.",
-    invalidEmail: "Невірний формат email.",
-    invalidPassword: "Невірний пароль.",
-    passwordTooShort: "Пароль занадто короткий.",
-    passwordTooLong: "Пароль занадто довгий.",
-    emailNotVerified: "Email ще не підтверджено. Перевір пошту.",
-    providerNotFound: "Цей провайдер входу не налаштовано.",
-    sessionFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
-
-    // Серверні errors (rate-limiter, error handler):
-    rateLimited: "Забагато спроб. Зачекай хвилину і спробуй ще раз.",
-    serverDown: "Сервер тимчасово недоступний. Спробуй пізніше.",
-
-    // Round 16 — soft-auth prompt
-    createAccount: "Створити акаунт",
-  },
-
-  sync: {
-    anonymousMigrationProgress:
-      "Переношу дані в профіль і зберігаю на сервері…",
-    anonymousMigrationFailure:
-      "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
-    anonymousMigrationRetry: "Повторити",
-    anonymousMigrationDefer: "Продовжити, перенесу пізніше",
-    anonymousMigrationDeferredToast:
-      "Гаразд. Дані лишаються на цьому пристрої, спробую перенести їх при наступному запуску.",
-    anonymousMigrationDeferredNotice:
-      "Дані ще не перенесено в профіль, вони лише на цьому пристрої.",
-    anonymousMigrationDeferredRetry: "Спробувати зараз",
-    anonymousMigrationSuccess:
-      "Дані перенесено й безпечно збережено у профілі.",
-    // Reserved legacy sync error copy. Historical retry cycle:
-    //   network                → перевір зʼєднання
-    //   server retryable       → 5xx → invite-retry
-    //   server non-retryable   → 4xx / parse → no-retry, ask to check input
-    //   unknown                → fallback
-    errorNetwork: "Не вдалось синхронізувати, перевір зʼєднання.",
-    errorServerRetryable: "Сервер тимчасово не відповідає. Спробуй ще раз.",
-    errorServerNonRetryable: "Помилка синхронізації. Передивись введення.",
-    errorGeneric: "Помилка синхронізації.",
-    retryCta: "Спробувати ще",
-
-    // Reserved для майбутніх migration-round-ів — narrative-strings, які
-    // ще живуть inline у `cloudSync/**`. Поточний baseline (round 14) —
-    // above; no current renderer should revive CloudSync v1 toast plumbing.
-    conflictResolved: "Конфлікт автоматично вирішено.",
-    pushFailed: "Не вдалося синхронізувати. Спробую ще раз.",
-    offlineQueueRecovered: "Відновлено з офлайн-черги.",
-  },
-
+  // AI-CONTEXT (2026-09-12): групи, потрібні до першого екрана, живуть у
+  // `./uk.core`, а тут розкладаються назад — щоб `messages.actions.save`
+  // і решта call-site-ів працювали без жодної правки. Поділ зроблено не
+  // для чистоти: eager-бандл був 286.7 kB при ліміті 280, і 128.4 з
+  // 147.1 kB сирих джерел чанку `cn` були саме цим каталогом (розбір — у
+  // шапці `uk.core.ts`).
+  //
+  // AI-DANGER: цей файл статично зшиває ДЕСЯТЬ модульних каталогів нижче,
+  // тож будь-який eager-модуль, що імпортує `messages`, тягне всі. Потрібен
+  // рядок у eager-поверхні — бери його з `./uk.core`, а не звідси.
+  ...coreMessages,
   validation: {
     // Unified zod-error catalog. Канонічні рядки, які раніше повторювалися
     // inline у різних формах (`AuthPage.tsx`, `ResetPasswordPage.tsx`,
@@ -148,66 +102,6 @@ export const messages = {
     passwordsDontMatch: "Паролі не збігаються",
   },
 
-  actions: {
-    // Phase 2 — універсальні button-labels. Додавай нові тільки якщо
-    // рядок зустрічається в ≥2 поверхнях (single-use button label
-    // лишай inline → eslint-allowlist на конкретний файл).
-    save: "Зберегти",
-    cancel: "Скасувати",
-    delete: "Видалити",
-    edit: "Редагувати",
-    close: "Закрити",
-    add: "Додати",
-    confirm: "Підтвердити",
-    apply: "Застосувати",
-    retry: "Повторити",
-    back: "Назад",
-    next: "Далі",
-    done: "Готово",
-    refresh: "Оновити",
-    reset: "Скинути",
-    open: "Відкрити",
-
-    // Round 16 additions — high-frequency burndown candidates
-    // («Згорнути»/«Розгорнути» зʼявляються в 5+ місцях кожен,
-    // «Продовжити»/«Пропустити»/«Пізніше» — у onboarding-flow-ах).
-    skip: "Пропустити",
-    continue: "Продовжити",
-    collapse: "Згорнути",
-    expand: "Розгорнути",
-    hide: "Приховати",
-    tryAgain: "Спробувати ще раз",
-    later: "Пізніше",
-    change: "Змінити",
-    restore: "Відновити",
-    reload: "Перезавантажити",
-    clear: "Очистити",
-    remove: "Прибрати",
-    send: "Надіслати",
-  },
-
-  status: {
-    // Round 16 — спільні short-status labels. «Завантаження…» / «Оновлення…»
-    // використовуються кількома компонентами (loaders, pull-to-refresh
-    // pills, inline busy-states). «Виконано» (capitalized) і «виконано»
-    // (lowercase) — це різні рядки; перший — стан-картка, другий —
-    // суфікс у "X виконано" (наприклад, у `ModuleChecklist`).
-    loading: "Завантаження…",
-    updating: "Оновлення…",
-    done: "Виконано",
-    doneLowercase: "виконано",
-    // `MaskedAmount`: sr-only-підпис замість розмитого значення. Іменник
-    // приходить окремо пропом `label`, тож тут лише узгоджений з ним
-    // прикметник.
-    //
-    // AI-DANGER: рід зашитий — «Прихована» жіночого роду. Обидва наявні
-    // виклики це витримують (дефолт «сума» і `finyk.daySummaryLabel` =
-    // «сума за день»), але новий `label` у чоловічому чи середньому роді
-    // дасть скрінрідеру «Прихована підсумок дня». Або тримай `label`
-    // жіночим, або спершу перероби це на повний рядок із підстановкою.
-    hiddenValuePrefix: "Прихована",
-  },
-
   period: {
     // Round 16 — common period-labels. «День»/«Тиждень»/«Місяць» зʼявляються
     // у range-toggle-ах (analytics, journal, dashboard); «Сьогодні» — у
@@ -223,7 +117,7 @@ export const messages = {
     hubSections: "Розділи хабу",
     dashboard: "Головна",
     profile: "Профіль",
-    chat: "Чат з асистентом",
+    chat: "Чат із Сержантом",
     nutritionOverview: "Огляд",
     // Окремий ключ для фініка: Overview фініка позичав nutritionOverview —
     // семантичний copy-paste, який маскував модуль для скрінрідера
@@ -236,17 +130,25 @@ export const messages = {
      * «Звʼязки». «Аналітика» відкинута навмисно — це слово стоїть у навбарі
      * кожного продукту, тобто не відрізняє нас ні від кого; «Звʼязки»
      * називає рівно те, чого конкурент не має, бо не має чотирьох модулів на
-     * одних даних (`docs/05-design/design/anti-slop-strategy.md` §4).
+     * одних даних (`docs/design/design/anti-slop-strategy.md` §4).
      * «Сержант» теж відкинуто: це вже імʼя асистента в чаті.
      */
     reports: "Звʼязки",
+    /**
+     * Видимий підзаголовок вкладки в шапці хаба (PR-H2, аудит
+     * 2026-09-13 хвиля 5): «Доброго дня» — єдиний видимий текст на
+     * Налаштуваннях/Профілі/Звʼязках, sr-only `<h1>` людина не бачить.
+     * Тут же лежить назва для Налаштувань — `HubSettingsPage.tsx` досі
+     * тримає власний sr-only `<h1>` літералом, цей ключ його не чіпає.
+     */
+    settings: "Налаштування",
     finykSections: "Розділи Фініка",
     fizrukSections: "Розділи Фізрука",
     routineSections: "Розділи Рутини",
     nutritionSections: "Розділи Їжі",
-    openAssistant: "Відкрити AI-асистента",
+    openAssistant: "Відкрити Сержанта",
     globalSearch: "Глобальний пошук",
-    searchPlaceholder: "Пошук по всіх модулях…",
+    searchPlaceholder: "Пошук по всіх модулях",
     moduleSwitcher: "Перемикач модулів",
     closeSettings: "Закрити налаштування",
     closeMenu: "Закрити меню",
@@ -257,14 +159,14 @@ export const messages = {
 
   empty: {
     // Phase 2 — empty-state wording. <EmptyState> компонент має власні
-    // tier-specific повідомлення (див. `docs/design/empty-states.md`),
+    // tier-specific повідомлення (див. `docs/design/design/empty-states.md`),
     // ці ключі — для inline empty-state-ів, де <EmptyState> не вписується
     // (mini-stat tier).
     //
     // Цей каталог покриває inline-tier порожніх станів поза <EmptyState>.
     nothingYet: "Поки що порожньо",
     noDataYet: "Ще немає даних",
-    nothingFound: "Нічого не знайдено",
+    nothingFound: "Нічого не знайшов",
     listEmpty: "Список порожній",
     historyEmpty: "Історія порожня",
   },
@@ -289,35 +191,6 @@ export const messages = {
     goalTextRequired: "Текст цілі не може бути порожнім",
   },
 
-  errors: {
-    generic: {
-      // Phase 2 — generic-помилки, що рендеряться у банері/toast-і коли
-      // конкретніший translate-helper не дав результату.
-      network: "Не вдалось підключитися. Перевір зʼєднання.",
-      serverDown: "Сервер тимчасово недоступний. Спробуй пізніше.",
-      retry: "Спробуй ще раз",
-      timeout: "Перевищено час очікування. Спробуй ще раз.",
-      unknown: "Щось пішло не так. Спробуй ще раз.",
-
-      // Round 16 — short error labels та section-failure messages.
-      // `title` — bare "Помилка" як заголовок банера/тулбара.
-      // `somethingWrong` — fallback header без trailing-period (для
-      // стека-ерор-екранів де call-to-action є окремим reload-button).
-      // `cannotRenderPage` — module-router fallback.
-      // `sectionFailed` — section-error-boundary copy.
-      // `moduleFailed` / `backToModulePicker` — використовуються у
-      // <ModuleErrorBoundary/> вгорі модуля.
-      title: "Помилка",
-      somethingWrong: "Щось пішло не так",
-      cannotRenderPage: "Не вдалось показати сторінку",
-      sectionFailed: "Ця секція впала, але інші частини модуля працюють.",
-      moduleFailed: "Помилка в модулі",
-      backToModulePicker: "До вибору модуля",
-      copyRequestId: "Копіювати",
-      copyRequestIdAria: "Скопіювати requestId",
-    },
-  },
-
   toast: {
     // Phase 2 — generic success/error toast strings. Конкретні
     // module-toast-и (наприклад, `Витрату додано`) лишай inline у модулі —
@@ -335,13 +208,46 @@ export const messages = {
   durability: {
     localOnly: {
       title: "Дані лише на цьому пристрої",
-      body: "Витрати готівкою, активи, борги й твої категорії до банківських операцій зберігаються тільки тут. Очистиш дані браузера, вони зникнуть, і банк їх не поверне. Вхід в акаунт вмикає копію на сервері.",
+      body: "Витрати готівкою, активи, борги й твої категорії до банківських операцій зберігаються тільки тут. Очистиш дані браузера, вони зникнуть, і банк їх не поверне.",
       signIn: "Увійти",
       backup: "Завантажити копію",
     },
+    // База відкрилась у `:memory:` (воркер завис, OPFS не піднявся). Записи
+    // тримає журнал dual-write і дограє наступний бут зі справжнім сховищем.
+    memoryOnly: {
+      title: "Записи зараз не зберігаються",
+      body: "Сховище браузера не відкрилось, тож нові записи поки лише в памʼяті. Перезавантаж сторінку, щоб їх зберегти.",
+      bodyOtherTab:
+        "База відкрита в іншій вкладці. Закрий зайві вкладки Sergeant і онови цю.",
+      reload: "Перезавантажити",
+    },
   },
 
+  dataDisclosure: dataDisclosureMessages,
   dataExport: dataExportMessages,
+
+  // Вікно на скасування видалення акаунта (спека
+  // docs/work/specs/user-deletion-grace-window.md). Тексти діалогу
+  // підтвердження і екрана-блокера, який бачить людина, що вже попросила
+  // видалення і зайшла знову.
+  accountDeletion: {
+    dialogTitle: "Видалити акаунт?",
+    // «Якщо входиш паролем» — бо акаунт через Google пароля не має, і
+    // порожнє поле для нього нормальний стан, а не пропущений крок.
+    passwordLabel: "Пароль, якщо входиш паролем",
+    blockerTitle: "Акаунт готується до видалення",
+    // Рядок рендериться як `${blockerBodyPrefix} ${date}. ${blockerBodyTail}`,
+    // щоб каталог лишався плоскими рядками (см. `MessageCatalog` constraint).
+    blockerBodyPrefix: "Дані зникнуть",
+    blockerBodyTail: "До того дня їх можна повернути.",
+    blockerSubscription:
+      "Підписку вже скасовано, і відновлення її не поверне: якщо передумаєш, оформ її знову.",
+    restore: "Відновити акаунт",
+    leave: "Вийти",
+    restored: "Акаунт відновлено",
+    restoreFailed: "Не вдалося відновити акаунт",
+    retry: "Повторити",
+  },
 
   // Оцінка AI-поради (`AdviceFeedback`). Підписи — для скрінрідера:
   // самі кнопки несуть лише гліфи, і без `aria-label` пара пальців була б
@@ -352,129 +258,6 @@ export const messages = {
     // Підтвердження, а не подяка-ввічливість: людина має бачити, що
     // натискання зарахувалось, бо більше нічого на екрані не змінюється.
     thanks: "Дякую",
-  },
-
-  hub: {
-    // Канон hub-coach §8 — згода ПЕРЕД незворотною дією. Копія називає
-    // інструменти поіменно (список рендериться окремо): згода без предмета
-    // не є згодою.
-    destructiveConfirm: {
-      title: "Підтверди незворотну дію",
-      body: "Асистент хоче виконати те, що не вийде скасувати:",
-      confirm: "Так, виконати",
-      cancel: "Скасувати",
-    },
-    // Round 16 — Hub-shell-specific copy (ні header, ні bottom-nav). Сюди
-    // потрапляють reused chat/insights/cross-module-preview labels та
-    // довший offline-notice composer-а.
-    // Вкладений список під «Що зараз важливо» — усе, що не влізло в топ.
-    // Не «Інсайти»: так називалась і батьківська секція, і секція на
-    // «Звʼязках», яка рахує зовсім інше й за інше вікно.
-    otherTips: "Інші підказки",
-    overlayTitle: "AI-асистент",
-    closeChat: "Закрити чат",
-    chatQuickActions: "Швидкі сценарії",
-    valueProgressAria: "Прогрес до твоїх цілей",
-    crossModulePreviewAria: "Що Sergeant покаже далі",
-    weeklyDigestTitle: "Щотижневий дайджест: сторіс",
-    chatOfflineNotice:
-      "Асистент недоступний без інтернету. Дані модулів видно офлайн, але\n          AI-відповіді потребують підключення.",
-
-    // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
-    // тільки-но відкрив чат і ще нічого не написав, замість пустого
-    // scroll-area-я показуємо короткий title + 4 chip-suggestion-и, які
-    // префілять composer (не шлють одразу — залишаємо контроль за
-    // користувачем). Suggestion-и охоплюють по одному запиту з кожного
-    // основного модуля (finyk / fizruk / nutrition / routine), щоб
-    // first-time-user одразу бачив, що тут можна питати, а не залишався
-    // з blank-page-effect-ом.
-    chatEmptyTitle: "Запитай щось, я допоможу",
-    chatEmptyDescription:
-      "Тапни на підказку, текст вставиться у поле, і ти зможеш відредагувати його перед відправкою.",
-    // Розкриття «це AI» — вимога EU AI Act ст. 50(1), чинна з 2026-08-02:
-    // людину повідомляють, що вона взаємодіє з AI, не пізніше першого
-    // контакту. `ChatEmpty` — рівно та поверхня: вона рендериться, поки в
-    // сесії немає жодного повідомлення, тобто ДО першої репліки.
-    chatEmptyAiDisclosure:
-      "Відповідає AI, а не людина. Може помилятися, тож важливе перевіряй.",
-    chatEmptyAriaLabel: "Підказки для початку чату",
-    chatEmptySuggestionFinyk: "Скільки я витратив цього тижня?",
-    chatEmptySuggestionFizruk: "Як мої тренування?",
-    chatEmptySuggestionNutrition: "Що я їв сьогодні?",
-    chatEmptySuggestionRoutine: "Стан моїх звичок",
-
-    // HubReports per-domain cards (NutritionCard / RoutineCard) — shared
-    // inline labels for the lazy-loaded report charts.
-    reportNoData: "Немає даних",
-    reportChartAria: "Графік",
-    reportPrevious: "Минулий:",
-    // Нульова дельта до попереднього періоду — без стрілки (DeltaChip,
-    // анти-слоп аудит 2026-09-01 F4).
-    reportDeltaFlat: "без змін",
-
-    // PR-42 — Free-tier chat-usage counter pill (`ChatUsageCounter.tsx`,
-    // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are
-    // interpolated at the call-site as `${used}/${limit} ${chatUsageUnit}`
-    // (no Cyrillic-string placeholders needed for plain digits).
-    // Одиниця — ЗАПИТ до AI, не повідомлення. Копія «5 повідомлень» обіцяла
-    // людині більше, ніж дає ліміт (browser QA 2026-08-23), тож клієнт
-    // говорить тією ж мовою, що сервер. AI-5 рішення 1 (`docs/90-work/
-    // audits/2026-09-01-product-audit/findings.md`, 2026-09-01) зробило хід
-    // з дією (tool-round-trip) рівно одним запитом (раніше — 2), тож тепер
-    // «запитів» буквально дорівнює «діям», без застережень.
-    chatUsageUnit: "запитів",
-    chatUsageAriaPrefix: "Використано",
-    chatUsageAriaSuffix: "запитів до AI на сьогодні",
-    chatUsageExhausted: "Ліміт запитів до AI на сьогодні. Подивись плани",
-  },
-
-  onboarding: {
-    // Пікер модулів: усі чотири увімкнені за замовчуванням, тому тап
-    // знімає вибір, а не додає — підпис робить це чесним.
-    pickerAllOnHint: "Увімкнено все, зніми те, чим не користуватимешся.",
-    // Round 16 — onboarding-specific labels.
-    hideChecklist: "Сховати чекліст",
-
-    // Пресет-шит FTUX: запис не дійшов до сховища. Спека
-    // `anonymous-local-first-persistence.md` («Похідне правило») вимагає
-    // видимої помилки замість тихої втрати — СТАРТ-блок при цьому лишається
-    // на місці, тож копія веде в повтор, а не вибачається.
-    presetSaveFailed: "Не вдалося зберегти. Спробуй ще раз.",
-
-    // 2026-08-03: секції «Загальні» (знайомство) і «Що вміє Сержант»
-    // злиті в один блок «Можливості» — обидві відповідали на питання «а що
-    // тут взагалі є», і користувач мусив здогадуватись про різницю.
-    // «Почати знайомство з початку» прибрано разом із його confirm-копією:
-    // ре-онбординг із редіректом на `/welcome` не мав що робити в блоці,
-    // який в іншому лише читає.
-    capabilitiesGroupTitle: "Можливості",
-    // 2026-08-01: кнопка більше не переграє вітальний екран. «Вступна
-    // екскурсія» показувала той самий welcome-візард у read-only — тобто
-    // повтор привітання, а не розповідь про можливості. Тепер веде на
-    // `/capabilities`, і назва це відображає.
-    tourLaunchLabel: "Що вміє додаток",
-    appCapabilitiesHint:
-      "Що вміє кожен розділ і як вони працюють разом. Дані не зміняться.",
-
-    // PR-13 / S5.1 goal-first wizard A/B copy. The headline + body
-    // frame the outcome-first variant of the welcome screen, and
-    // `goalFirstSkipLabel` is the tertiary escape hatch back to the
-    // legacy module-checklist welcome.
-    goalFirstHeading: "Що для тебе зараз важливо?",
-    goalFirstSubtitle:
-      "Обери головне, Sergeant підбере розділ, з якого почати.",
-    goalFirstSkipLabel: "Подивитись усе",
-    goalFirstAriaLabel: "Цілі онбордингу",
-
-    // Persistent demo-mode badge (DemoModeBadge) — a global, always-on
-    // marker + exit, rendered on every route while the store holds a
-    // demo payload. Clicking runs the same action as DemoModeBanner's
-    // «Створити свій», so it's the always-available way out of demo.
-    demoBadgeText: "Демо",
-    demoBadgeExit: "Вийти",
-    demoBadgeLabel:
-      "Демонстраційні дані: натисни, щоб вийти і створити свій профіль",
-    demoBadgeTitle: "Демо. Натисни, щоб вийти й почати з чистого аркуша.",
   },
 
   // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that
@@ -494,13 +277,12 @@ export const messages = {
     cta: "Почати",
     emptyHint: "Обери хоча б один модуль, щоб продовжити.",
     lateHint: "Можна додати пізніше у налаштуваннях.",
-    demoCta: "Подивитись приклад",
     haveAccount: "У мене вже є акаунт",
     taglines: {
       finyk: "Витрати, бюджети та тренди",
       fizruk: "Тренування, прогрес і заміри",
       routine: "Звички, серії днів і нагадування",
-      nutrition: "Калорії, AI-аналіз фото та план",
+      nutrition: "Калорії, аналіз фото Сержантом та план",
     },
   },
 
@@ -508,19 +290,6 @@ export const messages = {
     // Round 16 — generic form-shell labels. `quickFill` — keyboard-accessory
     // ("autocomplete") header, зʼявляється над клавіатурою на мобілці.
     quickFill: "Швидке заповнення",
-  },
-
-  loaders: {
-    // Round 16 — page-level loader copy. Окремий ключ для full-page-loader
-    // (`Завантаження сторінки`) щоб не плутати з inline-spinner-ом
-    // (`status.loading` = `Завантаження…`).
-    pageLoading: "Завантаження сторінки",
-    // Initiative 0017 Sprint 1.1 — generic announcement for a
-    // Suspense-deferred Settings section. Used as the default
-    // `aria-label` of `<SectionSkeleton>` so screen readers do not
-    // expose the skeleton chrome before the real section heading
-    // resolves.
-    loadingSection: "Завантажую розділ",
   },
 
   loadingActions: {
@@ -542,7 +311,7 @@ export const messages = {
     connecting: "Підключаюсь…",
     // Module-/surface-specific варіації (поки що використовуються лише
     // в одному місці кожна, але живуть тут заради unified voice).
-    loadingTransactions: "Завантажую транзакції…",
+    loadingTransactions: "Завантажую операції…",
     loadingWorkouts: "Завантажую тренування",
   },
 
@@ -582,7 +351,7 @@ export const messages = {
       emptyTitle: "Поки немає силових PR",
       emptyFilteredTitle: "Немає PR для цієї групи мʼязів",
       emptyDescription:
-        "Заверши сети з вагою, рекорди зʼявляться тут автоматично.",
+        "Заверши підходи з вагою, рекорди зʼявляться тут автоматично.",
       emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
       /** Канон §6: борд бачить не лише рух угору. */
       staleBadge: "давно не робив",
@@ -630,10 +399,6 @@ export const messages = {
 
   nutrition: {
     fromPantry: "З комори",
-    /** Рядок-джерело `FromReceiptRow` — позиції останнього чека Сільпо. */
-    fromReceipt: "З чека Сільпо",
-    /** Суфікс ваги на чіпсі чека («330 г»). */
-    gramsShort: "г",
     mealType: "Прийом їжі",
     templates: "Швидкі прийоми",
     deleteTemplateTitle: "Видалити швидкий прийом?",
@@ -670,13 +435,13 @@ export const messages = {
       unitsFallback:
         "Без одиниці невелика кількість читається як «шт». Від 100 без одиниці спитаю, шт це чи г.",
       aiNote:
-        "Можна писати як завгодно: список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
+        "Можна писати як завгодно: список розбирає Сержант, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
       confirmNote:
         "Розібране буде показано списком. Додасться лише те, що ти підтвердиш.",
     },
     pantryPreview: {
       parsedCount: "Розібрано",
-      localFallback: "AI недоступний, розібрано на пристрої",
+      localFallback: "Сержант недоступний, розібрано на пристрої",
       confirm: "Додати",
       dismiss: "Скасувати",
     },
@@ -685,7 +450,7 @@ export const messages = {
       // над карткою, і дослівний повтор читався як збій рендеру.
       title: "Тут поки порожньо",
       description:
-        "Тут зʼявляться продукти, які є вдома, і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
+        "Тут зʼявляться продукти, які є вдома, і Сержант рахуватиме страви та список покупок з того, що вже маєш.",
       hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
     },
     // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
@@ -719,42 +484,6 @@ export const messages = {
       "Не вдалося визначити сесію цього пристрою. Онови список, щоб завершувати сесії.",
   },
 
-  // Experimental section (PR-36 ux-roast 2026-Q2 / §9.3): banner + opt-in
-  // gate. До першого підтвердження тумблери disabled — користувач явно
-  // визнає ризик «це може зламатись», після чого секція поводиться як
-  // звичайна група toggles.
-  experimentalSection: {
-    // V-7 audit finding (2026-08-08): було "Додаткові можливості" —
-    // майже дублювало сусідню секцію «Можливості»
-    // (`messages.onboarding.capabilitiesGroupTitle`) і розходилось із
-    // ⌘K-індексом (`settingsSectionsCatalog.ts`), який ніс "Експериментальні".
-    // `ExperimentalSection.tsx` більше не читає це поле для заголовка —
-    // тепер він бере title з `settingsSectionTitle("experimental")` — але
-    // значення тут лишається дзеркалом каталогу, щоб не зʼявлялось друге
-    // джерело правди для тексту. КОПІЯ ДЛЯ ЗАТВЕРДЖЕННЯ ВЛАСНИКОМ.
-    title: "Експериментальні функції",
-    intro:
-      "Тут зібрані функції, які ще перевіряються. У кожного перемикача є коротке пояснення, навіщо він потрібен.",
-    warningBanner:
-      "Ці можливості можуть змінюватися або працювати нестабільно. Увімкни їх лише якщо готовий швидко вимкнути назад.",
-    optInLabel: "Я розумію, що це ранні можливості",
-    optInHint:
-      "Після підтвердження перемикачі стануть активними. Налаштування зберігається тільки на цьому пристрої.",
-  },
-
-  /**
-   * Персонаж AI. Один на весь застосунок — «Сержант».
-   *
-   * До 2026-08-01 у продукті жили два імені: «асистент» (чат) і «коуч»
-   * (денна порада + тижневий звіт). Для користувача це поводилось як одна
-   * сутність, тож два імені лише плутали — картка денної поради коуча
-   * взагалі була підписана «Порада асистента».
-   *
-   * Правило: базове імʼя всюди `name`; маркер каналу додається ЛИШЕ там, де
-   * без нього незрозуміло, звідки прилетіло (пуш, бейдж, заголовок звіту).
-   * Тримай рядки тут, а не в компонентах — формулювання персонажа має
-   * мінятись в одному місці.
-   */
   // Асистент-шар (картка поради, тижневий звіт, каталог, nudges) — копія
   // в `uk.sergeant.ts` (той самий прецедент, що `uk.privacy.ts`).
   sergeant: sergeantMessages,
@@ -892,7 +621,7 @@ export const messages = {
     signInOrCreate: "Увійти або створити акаунт",
   },
 
-  // What's new modal (PR-18 у `docs/01-product/launch/product-os/ftux-master-tracker.md`
+  // What's new modal (PR-18 у `docs/work/specs/launch/product-os/ftux-master-tracker.md`
   // §3.3). UI-копія обмежена — release-specific копія (title / summary /
   // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/
   // releases.ts`; у каталог потрапляють лише chrome-літерали з рамки
@@ -906,12 +635,12 @@ export const messages = {
   // Копія за style-guide: звертання «ти», заголовки без крапки,
   // toast-success — перфект минулого часу.
   feedback: {
-    settingsTitle: "Фідбек",
+    settingsTitle: "Відгук",
     settingsSubGroupTitle: "Є ідея чи знайшов баг?",
     settingsDescription:
       "Розкажи, що поламалось або чого бракує, кожне повідомлення читає людина.",
-    openButton: "Написати фідбек",
-    dialogTitle: "Твій фідбек",
+    openButton: "Написати відгук",
+    dialogTitle: "Твій відгук",
     dialogDescription: "Кілька речень достатньо, головне, суть.",
     categoryLabel: "Про що це",
     categoryIdea: "Ідея",
@@ -935,28 +664,200 @@ export const messages = {
     copied: "Скопійовано",
   },
 
+  // Копі першої дії FTUX — аркуш `FirstActionSheet` і його плитки.
+  //
+  // AI-CONTEXT: це `uk.ts` (лінивий модульний каталог), а НЕ `uk.core.ts`.
+  // Дизайн-контракт онбордингу спершу казав «перенести в `uk.core`» — це
+  // була помилка: `uk.core` їде до першого екрана, і копі поверхні, яку
+  // видно лише новому користувачеві на хабі, там створила б рівно ту
+  // проблему, яку ратчет eager 2026-09-12 щойно вилікував. Аркуш живе в
+  // лінивому чанку хаба, тож повний каталог йому безкоштовний.
+  firstAction: {
+    sheetLabel: "Перша дія",
+    hideLabel: "Сховати",
+    picksLabel: "Обрані модулі для старту",
+    otherModuleLabel: "Інший модуль",
+    orPrefix: "Або:",
+    headingMany: "З чого хочеш почати?",
+    headingOne: "Почни з однієї дії",
+    kicker: "Старт",
+    // Три підзаголовки під одним кікером: single — один обраний модуль,
+    // multi — кілька, empty — жодного запису ще немає.
+    subtitleSingle:
+      "Обери модуль для першого запису. Routine не відкриється автоматично.",
+    subtitleMulti:
+      "Ти обрав кілька модулів, кожен може бути першим, без прихованого пріоритету.",
+    subtitleEmpty:
+      "Твої показники зʼявляться після першого збереженого запису.",
+    // Персоналізація за цілями онбордингу: підставляється в шаблон
+    // «Створи {label}, і починається серія днів.».
+    habitLabels: {
+      water: "«Пити воду»",
+      exercise: "«Зарядка»",
+      reading: "«Читання»",
+      fallback: "свою звичку",
+    },
+    goalLabels: {
+      lose: "Схуднути",
+      gain: "Набрати масу",
+      maintain: "Підтримка",
+    },
+    actions: {
+      routine: {
+        title: "Створи першу звичку",
+        desc: "~5 секунд. І серія днів стартує одразу.",
+        chipLabel: "Рутина",
+      },
+      finyk: {
+        title: "Додай першу витрату",
+        desc: "~5 секунд, будь-яка сума.",
+        chipLabel: "Фінік",
+      },
+      nutrition: {
+        title: "Запиши перший прийом їжі",
+        desc: "Калорії порахую я.",
+        chipLabel: "Їжа",
+      },
+      fizruk: {
+        title: "Увімкни розминку",
+        desc: "10 хв, таймер сам.",
+        chipLabel: "Фізрук",
+      },
+    },
+  },
+
+  // Копі аркуша пресетів FTUX — `core/onboarding/PresetSheet.tsx`.
+  //
+  // AI-CONTEXT: як і `firstAction` вище, це `uk.ts`, а не `uk.core.ts`.
+  // Дизайн-контракт онбордингу казав «перенести в `uk.core`» — помилка тієї
+  // самої форми: `uk.core` їде до першого екрана, а аркуш пресетів бачить
+  // лише новий користувач, і то з лінивого чанку хаба.
+  //
+  // `name` плиток — НЕ підпис, а те, що реально лягає в сховище як імʼя
+  // звички чи опис витрати, тож воно теж копі і теж живе тут. У коді
+  // лишились лише неперекладні слаги: `icon` / `emoji` з каталогу `Icon`
+  // і `category` Фініка (`cafe` — слаг «Кафе та ресторани», не мітка).
+  presets: {
+    routine: {
+      title: "З якої звички почати?",
+      desc: "Одне натискання, і вона у твоєму списку сьогодні.",
+      fallbackLabel: "Своя звичка",
+      items: {
+        water: {
+          title: "Випити воду",
+          desc: "Щодня, будь-коли",
+          name: "Випити воду",
+        },
+        walk: {
+          title: "Пройти 10 хв",
+          desc: "Короткий вихід після обіду",
+          name: "Пройти 10 хв",
+        },
+        read: {
+          title: "Прочитати 10 сторінок",
+          desc: "Вечірня звичка",
+          name: "Прочитати 10 сторінок",
+        },
+      },
+    },
+    finyk: {
+      title: "На що витратив?",
+      desc: "Тицяй, відкриється форма з назвою. Суму введеш сам.",
+      fallbackLabel: "Своя витрата",
+      items: {
+        coffee: {
+          title: "Кава",
+          // Підзаголовок — підказка «скільки вводити», а не таксономія:
+          // ярлик категорії тут нічого не додавав, бо категорію людина
+          // однаково підтверджує у формі модуля.
+          desc: "ранкова звичка, введи свою суму",
+          name: "Кава",
+        },
+        ride: {
+          title: "Таксі",
+          desc: "дорога на роботу чи додому",
+          name: "Таксі",
+        },
+        lunch: {
+          title: "Обід",
+          desc: "що зʼїв, і за скільки",
+          name: "Обід",
+        },
+      },
+    },
+    nutrition: {
+      title: "Що зʼїв зараз?",
+      desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
+      fallbackLabel: "Додати страву",
+    },
+    fizruk: {
+      title: "Швидкий старт",
+      desc: "Відкрию старт тренування, тривалість вкажеш на фініші.",
+      fallbackLabel: "Почати тренування",
+    },
+  },
+
+  // Дефолти самої модалки paywall — CTA, відмова і три булети переваг.
+  // Окрема група, а не ключ усередині `paywall`: той індексується рівно
+  // id-ями фіч із пейволом (`PaywalledFeatureId` реєстру доступу
+  // `@sergeant/shared`), і контрактний тест `shared/i18n/index.test.ts`
+  // звіряє його ключі з реєстром один-до-одного.
+  //
+  // Булет про «7 днів trial» сюди НЕ повертати: trial лише для нових
+  // акаунтів і за прапорцем (AI-NOTE у `PaywallModal.tsx`).
+  // Булети — три плоскі ключі, а не масив: `MessageCatalog` типізований як
+  // `string | MessageCatalog`, тобто дерево рядків без масивів і функцій
+  // (та сама конвенція, що в гребені Фініка). Порядок збирає компонент.
+  paywallModal: {
+    cta: "Перейти на Premium",
+    dismiss: "Не зараз",
+    featureAi: "Сержант без тижневого ліміту, фото їжі й AI-скани чеків",
+    featureSync: "Голосовий ввід і памʼять Сержанта",
+    featureExport: "PDF-звіти й план харчування на тиждень",
+
+    // Гейт ліміту AI-чату (`HubChat` → `surface="ai_chat_limit"`). Тут же,
+    // а не в групі `paywall`: цей гейт живе не через `useFeatureGate`, а на
+    // власному лічильнику.
+    //
+    // AI-5 (аудит 2026-09-01): round-trip-квиток зробив кожен хід рівно
+    // одним запитом, тож застереження «може коштувати кілька» більше не
+    // правда — не повертай його.
+    aiChatTitle: "Безлімітний чат із Сержантом у Premium",
+    /** `{limit}`: тижнева квота Free, коли сервер її назвав. */
+    aiChatDescription:
+      "План Free має {limit} дій Сержанта на тиждень, кожен хід рахується один раз. Ліміт оновиться в понеділок, а Premium знімає його зовсім.",
+    aiChatDescriptionUnknownLimit:
+      "План Free має тижневий ліміт дій Сержанта, кожен хід рахується один раз. Ліміт оновиться в понеділок, а Premium знімає його зовсім.",
+  },
+
   // Phase 7 D2 — paywall feature gates. Per-feature copy used by the
   // shared `<PaywallModal>` when a call-site gates an action via
   // `useFeatureGate(featureId)`. Keep `name` short enough to plug
   // into «Розблокувати {name}» (≤ 35 chars).
   paywall: {
-    "ai-photo-analysis": {
-      name: "AI-аналіз фото їжі",
-      title: "AI-аналіз фото – у Premium",
+    "ai.photo": {
+      name: "Фото їжі без ліміту",
+      title: "Фото їжі без ліміту – у Premium",
       description:
-        "ШІ визначить КБЖВ та порцію за фото страви. Доступно у Premium підписці.",
+        "На Free Сержант розбирає 3 фото на тиждень. Ліміт оновиться в понеділок, а Premium знімає його зовсім.",
     },
-    "multi-currency": {
-      name: "Кілька валют",
-      title: "Мульти-валюта – у Premium",
+    "ai.finykVision": {
+      name: "AI-скани без ліміту",
+      title: "AI-скани чеків без ліміту – у Premium",
       description:
-        "Зберігай активи в USD чи EUR. Поки що показую їх окремо, у загальний капітал у гривні не зводжу.",
+        "На Free є 5 AI-сканів на тиждень для чеків без QR і скрінів банку. Чек із QR-кодом скануй як завжди, це безкоштовно.",
     },
-    "analytics-export-pdf": {
+    "export.pdf": {
       name: "Експорт PDF",
       title: "PDF-звіти – у Premium",
       description:
-        "Розширені звіти між модулями та експорт PDF – у Premium підписці.",
+        "Експорт звітів у PDF входить у Premium. Самі звіти й CSV лишаються безкоштовними.",
+    },
+    "nutrition.weekPlan": {
+      name: "План харчування на тиждень",
+      title: "План на тиждень – у Premium",
+      description:
+        "Денний план, рецепти й список покупок лишаються у Free. План одразу на сім днів відкриває Premium.",
     },
   },
 

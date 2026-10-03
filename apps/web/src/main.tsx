@@ -34,9 +34,11 @@ import { logger } from "@shared/lib";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
 import { initLongTaskMonitor } from "./core/lib/longTaskMonitor";
-import { maybeRunOnboarding } from "./core/onboarding/index.js";
+import { cleanupDemoLeftoversOnce } from "./core/onboarding/demoLeftoverCleanup.js";
 import { isCapacitor, getPlatform } from "@sergeant/shared";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
+import { requestPersistentStorage } from "./core/db/persistentStorage.js";
+import { probeOpfsInWorker } from "./core/db/opfsProbe.js";
 import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
 import {
   markStorageBooting,
@@ -57,6 +59,13 @@ if (isCapacitor() && getPlatform() === "ios") {
 }
 
 const queryClient = createAppQueryClient();
+// Порівняння інлайн, не через спільний хелпер: інакше Rollup не згорне
+// гілку і чанк мосту потрапить у прод (feature-flags.md § dead-code).
+if (import.meta.env.VITE_E2E_SEED === "true") {
+  void import("./e2e/installScenarioBridge").then((m) =>
+    m.installScenarioBridge(queryClient),
+  );
+}
 // Persistent IDB-backed snapshot для warm-start: на холодному старті
 // PWA / Capacitor-shell `PersistQueryClientProvider` гідрирує
 // `QueryCache` з диску до того, як React зможе монтувати `useQuery`,
@@ -75,11 +84,6 @@ const ReactQueryDevtools = import.meta.env.DEV
     )
   : null;
 
-// Demo-mode URL trigger: `?demo=1` (alias `?demo=seed`) populates the
-// local store with a realistic sample payload across all modules and
-// reloads onto `/`. `?demo=reset` wipes it. Called BEFORE storage
-// migrations / the legacy demo-cleanup pass so the seeded payload is
-// visible to both and survives the boot.
 // Stale-bundle recovery: глобальні слухачі `vite:preloadError` /
 // `unhandledrejection` / `error`, що роблять одноразовий `location.reload()`
 // на `Failed to fetch dynamically imported module`. Має стояти максимально
@@ -196,10 +200,10 @@ void initSentry();
 mountApp();
 
 // Settle the SQLite warm-cache in the background, then run the storage-dependent
-// boot steps and release the readiness gate. The WRITE steps (demo seed,
-// `storageManager` migrations, sync-engine writer) still run only AFTER
-// bootstrap settles, so there is no LS→SQLite write race — only the read-only,
-// splash-gated first paint moved ahead of the boot.
+// boot steps and release the readiness gate. The WRITE steps
+// (`storageManager` migrations, sync-engine writer, демо-прибирання) still run
+// only AFTER bootstrap settles, so there is no LS→SQLite write race — only the
+// read-only, splash-gated first paint moved ahead of the boot.
 //
 // `bootstrapKvStore` is documented as never-throwing: every failure path
 // (SQLite init, migration runner, scan) leaves `kvStoreBoot.loaded = false` and
@@ -244,8 +248,23 @@ void (async () => {
     });
     logger.warn("[main] kvStoreBoot threw (should be unreachable)", err);
   } finally {
-    void maybeRunOnboarding();
+    // Демо-режим знято 2026-09-17. Одноразово прибираємо його payload у
+    // тих, хто встиг його відкрити; на решті пристроїв — одне читання
+    // рядка. Стоїть ПЕРЕД міграціями, як раніше стояв демо-сід: щоб
+    // `storageManager` не мігрував дані, яких за мить не стане.
+    cleanupDemoLeftoversOnce();
     storageManager.runAll();
+    // Просимо постійне сховище рівно тут: після того, як буту вже є що
+    // зберігати, і поза гейтом — відмова браузера нічого не блокує.
+    // Навіщо взагалі: локальна копія для офлайн-first продукту подеколи
+    // ЄДИНА (черга `sync_op_outbox` тримає записи, яких немає на сервері),
+    // а типове сховище система витирає першим під тиском місця.
+    void requestPersistentStorage();
+    // Стадія 0 спеки `sqlite-opfs-worker.md`: дізнатись із РЕАЛЬНОГО
+    // пристрою, чи підніметься OPFS у воркері. Нічого не гейтить і нічого
+    // не змінює — лише ставить тег у Sentry, щоб рішення про переїзд бази
+    // спиралось на факт, а не на припущення про Safari.
+    void probeOpfsInWorker();
     void bootSyncEngineWriter({ captureException });
     // Release the gate last — after the synchronous migrations have run — so
     // guards never observe a half-migrated store.

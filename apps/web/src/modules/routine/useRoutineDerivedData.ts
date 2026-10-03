@@ -23,6 +23,10 @@ import {
   parseDateKey,
 } from "./lib/hubCalendarAggregate";
 import { FINYK_SUB_GROUP_LABEL } from "./lib/finykSubscriptionCalendar";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
 import { addDays, startOfIsoWeek } from "./lib/weekUtils";
 import {
   calcRoutineDayProgress,
@@ -43,6 +47,7 @@ import type {
 import type { HubCalendarEvent, RoutineState } from "./lib/types";
 import type { TimeState } from "./useRoutineTimeState";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 
 export interface UseRoutineDerivedDataParams {
   routine: RoutineState;
@@ -65,6 +70,13 @@ export interface RoutineDerivedData {
   rangeLabel: string;
   headlineDate: string;
   todayKey: string;
+  /**
+   * День, за який рахується `dayProgress` — обраний день для однодневних
+   * режимів (today/tomorrow/day), інакше сьогодні (тиждень/місяць не мають
+   * одного «дня прогресу»). Той самий день має показувати денний звіт —
+   * інакше кільце і аркуш під ним говорять про різні дні (PR-R6).
+   */
+  progressDayKey: string;
   streakMax: number;
   completionRateVal: RoutineCompletionRate;
   dayProgress: RoutineDayProgress;
@@ -162,14 +174,7 @@ export function useRoutineDerivedData({
 
   const dayCounts = useMemo(() => countEventsByDate(events), [events]);
 
-  const monthTitle = new Date(
-    monthCursor.y,
-    monthCursor.m,
-    1,
-  ).toLocaleDateString("uk-UA", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthTitle = formatMonthYear(new Date(monthCursor.y, monthCursor.m, 1));
 
   const { cells } = monthGrid(monthCursor.y, monthCursor.m);
 
@@ -285,13 +290,34 @@ export function useRoutineDerivedData({
   const canBulkMark = useMemo(() => {
     if (range.startKey !== range.endKey) return false;
     const dk = range.startKey;
+    // Майбутній день домен не позначає (PR-R3), тож без цього рядка кнопка
+    // «Відмітити всі» лишалась би на зрізі «Завтра» і не робила б НІЧОГО —
+    // рівно та мертва кнопка, яку цей же аудит ловив у Фініку (PR-F1).
+    // `todayKey` тут — device-local (`anchoredTodayKey`), той самий ключ,
+    // яким домен рахує межу.
+    if (dk > todayKey) return false;
     for (const h of routine.habits) {
       if (h.archived) continue;
-      if (!habitScheduledOnDate(h, dk)) continue;
-      if (!(routine.completions[h.id] || []).includes(dk)) return true;
+      const completionsForHabit = routine.completions[h.id] || [];
+      if (completionsForHabit.includes(dk)) continue;
+      // Гнучка звичка перестає бути запланованою, щойно тижневу ціль
+      // добрано — без `weekDoneCount` предикат завжди істинний
+      // (`schedule.ts`), тож кнопка «Відмітити всі» лишалась би активною
+      // навіть коли добирати вже нічого (аудит 2026-09, PR-R4).
+      const weekDoneCount = isFlexibleHabit(h)
+        ? weekDoneCountExcludingDate(completionsForHabit, dk)
+        : undefined;
+      if (!habitScheduledOnDate(h, dk, { weekDoneCount })) continue;
+      return true;
     }
     return false;
-  }, [range.startKey, range.endKey, routine.habits, routine.completions]);
+  }, [
+    range.startKey,
+    range.endKey,
+    routine.habits,
+    routine.completions,
+    todayKey,
+  ]);
 
   const activeHabitsCount = routine.habits.filter((h) => !h.archived).length;
   const hasNoHabits = activeHabitsCount === 0;
@@ -311,6 +337,7 @@ export function useRoutineDerivedData({
     rangeLabel,
     headlineDate,
     todayKey,
+    progressDayKey,
     streakMax,
     completionRateVal,
     dayProgress,

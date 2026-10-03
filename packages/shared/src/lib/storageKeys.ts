@@ -25,7 +25,7 @@
  * прибрати tombstone означає прибрати й residual-import drain, тобто
  * вирішити, що застарілі localStorage-дані вже нікому не треба
  * підбирати. Це рішення власника про долю legacy-даних бета-тестерів,
- * не рефакторинг — реєстр у `docs/90-work/tech-debt/frontend.md`
+ * не рефакторинг — реєстр у `docs/work/specs/tech-debt/frontend.md`
  * § «Прострочені `@removeBy` 2026-09-01».
  */
 export const STORAGE_KEYS = {
@@ -43,6 +43,20 @@ export const STORAGE_KEYS = {
   FTUX_MODULES_HINT_DISMISSED: "sergeant.hub.ftuxModulesHint.dismissed.v1",
   DASHBOARD_ORDER: "hub_dashboard_order_v1",
   HUB_PREFS: "hub_prefs_v1",
+  /**
+   * Мітка «локальні `HUB_PREFS` мають зміну, якої сервер ще не підтвердив».
+   *
+   * Потрібна тому, що черга відправки (`hubPrefsSync.ts`) живе в памʼяті
+   * модуля й не переживає перезавантаження. Без мітки сценарій такий:
+   * людина перемикає тумблер → PATCH падає (метро, літак) → вкладку
+   * закрито → на наступному буті гідратація бачить не-`null` СТАРИЙ
+   * серверний мішок і перезаписує ним свіжіше локальне значення. Тобто
+   * зміна не просто не доїхала — вона зникла (знахідка рев'ю на #1195).
+   *
+   * Окремий ключ, а не поле всередині мішка: мішок цілком їде на сервер,
+   * і службова мітка синхронізації там була б і зайвою, і брехливою.
+   */
+  HUB_PREFS_UNSYNCED: "hub_prefs_unsynced_v1",
   USER_PROFILE: "hub_user_profile_v1",
   /**
    * Hub-level biometric parameters for nutrition / fitness calculations
@@ -58,7 +72,7 @@ export const STORAGE_KEYS = {
   FINYK_QUICK_STATS: "finyk_quick_stats",
   /**
    * Snooze/mute плашки «залий документи» (спека
-   * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+   * `docs/work/specs/finyk-import-reminders.md`).
    *
    * Свідомо localStorage, а не `finyk_prefs.prefs_json`: це стан
    * відхилення підказки, а не дані користувача. Ціна помилки при втраті
@@ -68,13 +82,47 @@ export const STORAGE_KEYS = {
   FINYK_IMPORT_REMINDER: "finyk_import_reminder_v1",
   FIZRUK_QUICK_STATS: "fizruk_quick_stats",
   ROUTINE_QUICK_STATS: "routine_quick_stats",
+  /**
+   * Моменти петлі винагороди (ADR-0096), показані сьогодні:
+   * `{ dayKey, byTarget }`. Живуть до кінця доби пристрою (ADR-0078) і
+   * лише в цьому браузері: інший пристрій того ж дня покаже момент удруге,
+   * і це прийнято свідомо (спека `reward-loop-and-reminders.md`, § Ризики).
+   * Один ключ із днем усередині, а не ключ на кожен день: так учорашні
+   * записи не накопичуються.
+   */
+  MOMENTS_TODAY: "hub_moments_today_v1",
+  /**
+   * Звʼязки між сферами, які вже бували помітними: `{ pairKey: { a, b,
+   * phrase, seenOn } }`. Потрібні F-5 (спека `reward-loop-and-reminders.md`):
+   * коли модуль замовк, звʼязок має сказати це прямо, а не тихо зникнути,
+   * а без памʼяті про нього зниклий звʼязок не відрізнити від ніколи не
+   * баченого.
+   */
+  LINKS_REMEMBERED: "insights_links_remembered_v1",
   NUTRITION_QUICK_STATS: "nutrition_quick_stats",
 
   // PWA / install prompts
   PWA_SESSION_COUNT: "pwa_session_count",
+  /**
+   * @deprecated Founder-ux-review round 2 (O2) — the plain "×" close now
+   * writes `PWA_INSTALL_SNOOZE` (30-day TTL, max 3 shows) instead of this
+   * permanent flag. Kept as a **read-only** legacy check so users who
+   * already dismissed forever under the old scheme stay dismissed — see
+   * `usePwaInstall.ts`. Do not write to it from new code.
+   */
   PWA_INSTALL_DISMISSED: "pwa_install_dismissed",
+  /** Snooze record (`{ until, count }`) for the Chromium install banner's "×" close. */
+  PWA_INSTALL_SNOOZE: "pwa_install_snooze_v1",
   PWA_PENDING_ACTION: "pwa_pending_action",
+  /**
+   * Permanent opt-out — the explicit "Уже встановлено або не нагадувати"
+   * link in `IOSInstallBanner`. Stays a forever-flag by design (founder
+   * decision, O2); the icon-only "×" close instead writes
+   * `IOS_BANNER_SNOOZE`.
+   */
   IOS_BANNER_DISMISSED: "ios_install_banner_dismissed",
+  /** Snooze record (`{ until, count }`) for the iOS install banner's "×" close. */
+  IOS_BANNER_SNOOZE: "ios_install_banner_snooze_v1",
 
   // Cloud sync metadata — 5 web keys dropped in Stage 13 PR #077.
   // Historically: SYNC_VERSIONS ("hub_sync_versions"),
@@ -83,7 +131,7 @@ export const STORAGE_KEYS = {
   // SYNC_OFFLINE_QUEUE ("hub_sync_offline_queue"),
   // SYNC_MIGRATION_DONE ("hub_sync_migrated_users").
   // All were dead since PR #052b (cloudSync v1 engine drop). See
-  // docs/planning/storage-roadmap.md § Stage 13 PR #077.
+  // https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md § Stage 13 PR #077.
   /**
    * Per-install stable device ID forwarded as `X-Origin-Device-Id` on
    * every sync v2 push / pull / stream request. Server uses it for
@@ -307,6 +355,19 @@ export const STORAGE_KEYS = {
   // картка носить бейдж, поки цей ключ не збігається з поточним тижнем.
   WEEKLY_DIGEST_LAST_SEEN: "hub_weekly_digest_last_seen_v1",
 
+  // ─── Cross-module links ───────────────────────────────────────────────
+  /**
+   * Історія тижневих перевірок крос-модульних пар: `{ "a|b": [weekKey, …] }`,
+   * найсвіжіші першими. Другий і третій ступені впевненості
+   * (`crossModuleLinkTiers.ts`) вимагають дві перевірки поспіль, тож
+   * потрібне саме сховище, а не похідна від поточного вікна.
+   *
+   * Локально й без синку навмисно (ADR-0097): на новому пристрої ступені
+   * заробляють час заново, і це деградація ВНИЗ, до першого ступеня. Синк
+   * підняв би довіру, якої на цьому пристрої ніхто не перевіряв.
+   */
+  CROSS_MODULE_LINK_HISTORY: "hub_cross_module_link_history_v1",
+
   // ─── Mobile: cloud sync metadata ──────────────────────────────────────
   // 6 mobile sync-metadata keys dropped in Stage 13 PR #077.
   // Historically: MOBILE_SYNC_VERSIONS ("mobile:sync_versions"),
@@ -316,7 +377,7 @@ export const STORAGE_KEYS = {
   // MOBILE_SYNC_DEAD_LETTER_QUEUE ("mobile:sync_dead_letter_queue"),
   // MOBILE_SYNC_MIGRATION_DONE ("mobile:sync_migrated_users").
   // All were dead since PR #052b (cloudSync v1 engine drop).
-  // See docs/planning/storage-roadmap.md § Stage 13 PR #077.
+  // See https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md § Stage 13 PR #077.
   MOBILE_QUERY_CACHE: "mobile:query_cache_v1",
 
   // ─── Web: React Query persisted cache ────────────────────────────────

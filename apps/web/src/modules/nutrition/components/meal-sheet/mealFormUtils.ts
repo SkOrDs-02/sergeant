@@ -9,6 +9,7 @@ import type {
 import { deviceTimeOfDay } from "@sergeant/nutrition-domain";
 import type { NutritionPhotoItem } from "@shared/api";
 import { clampText } from "@shared/lib/text/limits";
+import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { newMealId } from "../../lib/mealId";
 
 /**
@@ -22,6 +23,53 @@ import { newMealId } from "../../lib/mealId";
  */
 export const MAX_PORTION_GRAMS = 10_000;
 
+/**
+ * Значення для touch-колеса ваги. До кілограма точний крок 5 г, вище —
+ * 50 г, щоб колесо не розросталось до двох тисяч рядків.
+ *
+ * `extras` — довільні числа поза сіткою (33 г з OFF, 150.5 з чека,
+ * вага старого запису). Вони додаються без округлення, тому вага зі
+ * штрихкоду чи старого запису не змінюється сама лише від відкриття
+ * форми.
+ *
+ * AI-DANGER: список мусить лишатись СТАЛИМ, поки аркуш відкритий.
+ * Раніше сюди йшла поточна вага рядком, і довільне число зникало зі
+ * списку, щойно людина крутила колесо далі, — довжина масиву мінялась
+ * на 1, усі індекси після нього зсувались, і колесо стрибало на рядок
+ * після КОЖНОГО коміту. Тому накопичення `extras` тримає
+ * `useWheelGrams`, а не цей чистий хелпер.
+ */
+const PORTION_GRAM_BASE: readonly number[] = (() => {
+  const values: number[] = [];
+  for (let grams = 5; grams <= 1000; grams += 5) values.push(grams);
+  for (let grams = 1050; grams <= MAX_PORTION_GRAMS; grams += 50) {
+    values.push(grams);
+  }
+  return Object.freeze(values);
+})();
+
+const PORTION_GRAM_BASE_SET: ReadonlySet<number> = new Set(PORTION_GRAM_BASE);
+
+/** Чи лежить вага на регулярній сітці колеса. */
+export function isPortionGramOnGrid(grams: number): boolean {
+  return PORTION_GRAM_BASE_SET.has(grams);
+}
+
+export function portionGramValues(extras: readonly number[] = []): number[] {
+  const extra = extras.filter(
+    (grams) =>
+      Number.isFinite(grams) &&
+      grams > 0 &&
+      grams <= MAX_PORTION_GRAMS &&
+      !PORTION_GRAM_BASE_SET.has(grams),
+  );
+  if (extra.length === 0) return [...PORTION_GRAM_BASE];
+
+  return [...new Set([...PORTION_GRAM_BASE, ...extra])].sort(
+    (left, right) => left - right,
+  );
+}
+
 export function currentTime(): string {
   // ADR-0078: день-ключ запису — за годинником ПРИСТРОЮ, тож і час доби
   // поруч із ним мусить бути девайсовий. Київський час тут давав пару
@@ -30,6 +78,34 @@ export function currentTime(): string {
   // «23-тє 02:53»). `mealTypeByNow()` нижче вже рахує за `getHours()` —
   // тепер обидва дефолти читають один годинник.
   return deviceTimeOfDay();
+}
+
+/**
+ * Значення макросу для поля форми: точність 0.1 (та сама, що в
+ * `macrosForGrams`), без округлення до цілих. Ціле лишається цілим
+ * ("12", не "12.0"). Округлення до цілих - лише на показі
+ * (`fmtMacro`/`Measure`), інакше сума позицій дня розходиться з
+ * підсумком.
+ */
+export function macroToFieldString(n: number): string {
+  return String(Math.round(n * 10) / 10);
+}
+
+/** Чотири поля КБЖВ форми з nullable-макросів; `null` -> порожнє поле. */
+export function macrosToFormFields(mac: {
+  kcal?: number | null;
+  protein_g?: number | null;
+  fat_g?: number | null;
+  carbs_g?: number | null;
+}): Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g"> {
+  const f = (n: number | null | undefined) =>
+    n != null ? macroToFieldString(n) : "";
+  return {
+    kcal: f(mac.kcal),
+    protein_g: f(mac.protein_g),
+    fat_g: f(mac.fat_g),
+    carbs_g: f(mac.carbs_g),
+  };
 }
 
 export interface MealFormPhotoResult {
@@ -56,23 +132,38 @@ const PHOTO_FALLBACK_DISH_NAME = "Результат";
 
 export function emptyForm(
   photoResult?: MealFormPhotoResult | null,
+  mealType?: MealTypeId | null,
 ): MealFormState {
   const macros = photoResult?.macros || {};
   const dishName = (photoResult?.dishName || "").trim();
   return {
     name: dishName === PHOTO_FALLBACK_DISH_NAME ? "" : dishName,
-    // Default to the meal that matches the current hour. Hard-coding
-    // "breakfast" at 21:00 forced every late-dinner user to tap the picker
-    // and flip the type to "Вечеря" before they could save.
-    mealType: mealTypeByNow(),
+    // Тип прийому: явний вибір людини (тап по сегменту hero) виграє
+    // годинник. Без явного — той, що збігається з поточною годиною:
+    // жорсткий "breakfast" о 21:00 змушував кожного, хто вечеряє пізно,
+    // лізти в пікер і перемикати тип перед збереженням.
+    mealType: mealType ?? mealTypeByNow(),
     time: currentTime(),
-    kcal: macros.kcal != null ? String(Math.round(macros.kcal)) : "",
+    kcal: macros.kcal != null ? macroToFieldString(macros.kcal) : "",
     protein_g:
-      macros.protein_g != null ? String(Math.round(macros.protein_g)) : "",
-    fat_g: macros.fat_g != null ? String(Math.round(macros.fat_g)) : "",
-    carbs_g: macros.carbs_g != null ? String(Math.round(macros.carbs_g)) : "",
+      macros.protein_g != null ? macroToFieldString(macros.protein_g) : "",
+    fat_g: macros.fat_g != null ? macroToFieldString(macros.fat_g) : "",
+    carbs_g: macros.carbs_g != null ? macroToFieldString(macros.carbs_g) : "",
     err: "",
   };
+}
+
+/**
+ * Вага порції з поля вводу. `100` — коли поле порожнє або негодяще:
+ * запис без ваги неможливий, а нуль чи порожнеча в цьому місці дали б
+ * прийом із нульовими макросами.
+ *
+ * Живе тут, а не в `AddMealSheet`: той уперся в `max-lines: 600`
+ * (Hard Rule #18), а функція чиста й доменна.
+ */
+export function gramsOrDefault(raw: string): number {
+  const parsed = parseDecimalInput(raw);
+  return parsed.ok && parsed.value > 0 ? parsed.value : 100;
 }
 
 /** Дані для рядка, який пишеться коли фото-аналіз не дав `items[]`. */

@@ -53,15 +53,49 @@ const BranchesSchema = z
 // ponytail: in-memory TTL cache, per-instance — контекст квазістатичний
 // (кошик/філія юзера), а без кешу кожен food-search платив би +4 HTTP.
 const CONTEXT_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * Стеля на кількість користувачів у кеші.
+ *
+ * AI-DANGER: TTL не звільняє пам'ять сам по собі — протермінований запис
+ * лежить у `Map`, доки той самий `userId` не прийде знову. Sweep-у немає,
+ * тож без стелі це монотонне зростання з кожним новим користувачем Сільпо.
+ * Дефект той самий, що в `lib/counterpartyNames.ts`, лише легший: запис тут
+ * маленький (одна філія), а TTL утричі довший.
+ *
+ * Витіснення — найстаріший за порядком вставки, як у
+ * `modules/nutrition/barcode.ts`.
+ */
+const CONTEXT_MAX_SIZE = 500;
+
 const cache = new Map<string, { ctx: SilpoBranchContext; expiresAt: number }>();
 
 /** Test-only: clear the per-user context cache between unit tests. */
-export function __silpoBranchContextTestHooks(): { clearCache(): void } {
+export function __silpoBranchContextTestHooks(): {
+  clearCache(): void;
+  cacheSize(): number;
+} {
   return {
     clearCache(): void {
       cache.clear();
     },
+    cacheSize(): number {
+      return cache.size;
+    },
   };
+}
+
+/** Покласти запис і дотримати стелю (див. `CONTEXT_MAX_SIZE`). */
+function cacheSet(userId: string, ctx: SilpoBranchContext): void {
+  // Знімаємо наявний ключ перед вставкою, щоб оновлення переїхало в кінець
+  // черги вставки, а не витіснялось першим як «найстаріше».
+  if (cache.has(userId)) cache.delete(userId);
+  cache.set(userId, { ctx, expiresAt: Date.now() + CONTEXT_TTL_MS });
+  while (cache.size > CONTEXT_MAX_SIZE) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
 }
 
 async function fetchFromCart(
@@ -120,8 +154,13 @@ export async function resolveBranchContext(
   accessToken: string,
 ): Promise<McpResult<SilpoBranchContext>> {
   const cached = cache.get(userId);
-  if (cached && cached.expiresAt > Date.now()) {
-    return { ok: true, data: cached.ctx };
+  if (cached) {
+    if (cached.expiresAt > Date.now()) {
+      return { ok: true, data: cached.ctx };
+    }
+    // Протермінований запис знімаємо одразу — інакше він тримає місце під
+    // стелею, поки цей користувач не повернеться (а може й не повернутись).
+    cache.delete(userId);
   }
 
   const ctx =
@@ -139,6 +178,6 @@ export async function resolveBranchContext(
     };
   }
 
-  cache.set(userId, { ctx, expiresAt: Date.now() + CONTEXT_TTL_MS });
+  cacheSet(userId, ctx);
   return { ok: true, data: ctx };
 }

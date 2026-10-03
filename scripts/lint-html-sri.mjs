@@ -238,8 +238,8 @@ function main() {
     console.error(
       `\n[lint-html-sri] ${totalErrors} violation(s) across ` +
         `${paths.length} file(s).\n` +
-        `See docs/work/specs/audits/2026-05-13-security-observability-roast.md § S3 ` +
-        "for rationale, or scripts/lint-html-sri.mjs header comment.",
+        "See the header comment of scripts/lint-html-sri.mjs for rationale " +
+        "(розбір — у git history аудиту 2026-05-13-security-observability-roast § S3).",
     );
     process.exit(1);
   }

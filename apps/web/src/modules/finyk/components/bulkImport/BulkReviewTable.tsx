@@ -14,9 +14,8 @@
  * користувача просто ніде не зʼявлялись у bulk-review, хоча
  * `ReceiptReviewForm`/`ManualExpenseSheet` їх уже показують. Мержимо їх у
  * ОБИДВА пікери (per-row і масовий), той самий патерн, що
- * `ManualExpenseSheet.tsx` (`customExpenseCategories`/`customCategoryDisplay`):
- * лише для витрат — надходження мають фіксовану 5-слагову таксономію
- * (`INCOME_CATEGORY_SLUGS`) і не знають про власні категорії.
+ * `ManualExpenseSheet.tsx`: витрати й надходження мають окремі каталоги,
+ * але обидва включають відповідні власні категорії користувача.
  */
 import { useState } from "react";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
@@ -25,15 +24,40 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
+import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import { CATEGORY_DISPLAY, CATEGORY_SLUGS } from "../manualExpenseCategories";
 import {
-  INCOME_CATEGORY_DISPLAY,
   INCOME_CATEGORY_SLUGS,
+  expenseCustomCategories,
+  incomeCategoryDisplay,
+  incomeCustomCategories,
 } from "../manualIncomeCategories";
 import { ReceiptMoneyInput } from "../receiptScan/receiptMoneyInput";
 import { selectedRowCount, type BulkReviewRow } from "./bulkImportRows";
 
 const CONFIDENCE_WARN_THRESHOLD = 0.7;
+
+/**
+ * «Внутрішній переказ» у пікері імпорту — в ОБОХ напрямах.
+ *
+ * Рух між власними кишенями буває обома боками (зняття готівки, поповнення
+ * банки — витрата; зарахування зі своєї картки — дохід), а сам ярлик не є
+ * ні витратною, ні дохідною категорією: він виключає рядок з підсумків
+ * (`buildFinykExcludedTxIds` → `isTxLevelTransfer`). Тому він і не живе в
+ * `MANUAL_EXPENSE_TAXONOMY`/`MANUAL_INCOME_TAXONOMY` — там кожен чип має
+ * canonicalId і власний тир палітри, а переказ ні в чому не агрегується.
+ *
+ * Доти, доки чипа тут не було, виписку не було ЧИМ розмітити: рядок
+ * «Зняття готівки в банкоматі» їхав у «Інше» і рахувався витратою
+ * (звіт власника 2026-09-13). Ручний запис із цією категорією вже
+ * виключається агрегатами — `manualExpenseToTransaction` кладе
+ * `category` у `categoryId`, а `buildFinykSpendingUniverse` саме на це й
+ * розраховує; бракувало рівно способу її обрати.
+ */
+const TRANSFER_OPTION = {
+  id: INTERNAL_TRANSFER_ID,
+  label: "Внутрішній переказ",
+} as const;
 
 export interface BulkReviewTableProps {
   rows: BulkReviewRow[];
@@ -58,10 +82,9 @@ type CategoryOptions = {
 function categoryOptionsFor(
   direction: "expense" | "income",
   expenseOptions: CategoryOptions,
+  incomeOptions: CategoryOptions,
 ): CategoryOptions {
-  return direction === "income"
-    ? { slugs: INCOME_CATEGORY_SLUGS, display: INCOME_CATEGORY_DISPLAY }
-    : expenseOptions;
+  return direction === "income" ? incomeOptions : expenseOptions;
 }
 
 export function BulkReviewTable({
@@ -89,10 +112,8 @@ export function BulkReviewTable({
   const hasTransferLikelyRows = rows.some((r) => r.transferLikely);
   const hasDuplicateLikelyRows = rows.some((r) => r.duplicateLikely);
 
-  const customExpenseCategories = customCategories.filter(
-    (c): c is CustomCategoryInput =>
-      typeof c?.id === "string" && c.id.trim() !== "",
-  );
+  const customExpenseCategories = expenseCustomCategories(customCategories);
+  const customIncomeCategories = incomeCustomCategories(customCategories);
   const expenseCategoryDisplay: Readonly<Record<string, { label: string }>> = {
     ...CATEGORY_DISPLAY,
     ...Object.fromEntries(
@@ -100,19 +121,32 @@ export function BulkReviewTable({
         .filter((c) => c.label)
         .map((c) => [c.id, { label: c.label ?? "" }]),
     ),
+    [TRANSFER_OPTION.id]: { label: TRANSFER_OPTION.label },
   };
   const expenseCategorySlugs: readonly string[] = [
     ...CATEGORY_SLUGS,
     ...customExpenseCategories.map((c) => c.id),
+    TRANSFER_OPTION.id,
   ];
   const expenseOptions: CategoryOptions = {
     slugs: expenseCategorySlugs,
     display: expenseCategoryDisplay,
   };
+  const incomeOptions: CategoryOptions = {
+    slugs: [
+      ...INCOME_CATEGORY_SLUGS,
+      ...customIncomeCategories.map((category) => category.id),
+      TRANSFER_OPTION.id,
+    ],
+    display: {
+      ...incomeCategoryDisplay(customIncomeCategories),
+      [TRANSFER_OPTION.id]: { label: TRANSFER_OPTION.label },
+    },
+  };
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panelHi/40 p-2.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panelHi p-2.5">
         <button
           type="button"
           onClick={() => onToggleAll(!allSelected)}
@@ -130,6 +164,7 @@ export function BulkReviewTable({
         <div className="ml-auto flex items-center gap-1.5">
           <Select
             size="sm"
+            className="bg-panel"
             aria-label="Категорія для вибраних витрат"
             value={bulkCategory}
             disabled={disabled || selectedExpenseCount === 0}
@@ -144,7 +179,7 @@ export function BulkReviewTable({
           </Select>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={disabled || !bulkCategory || selectedExpenseCount === 0}
             onClick={() => {
@@ -174,7 +209,11 @@ export function BulkReviewTable({
 
       <ul className="divide-y divide-line rounded-2xl border border-line">
         {rows.map((row) => {
-          const options = categoryOptionsFor(row.direction, expenseOptions);
+          const options = categoryOptionsFor(
+            row.direction,
+            expenseOptions,
+            incomeOptions,
+          );
           const lowConfidence =
             row.confidence != null &&
             row.confidence < CONFIDENCE_WARN_THRESHOLD;
@@ -209,7 +248,7 @@ export function BulkReviewTable({
                       tone="soft"
                       size="xs"
                     >
-                      {row.direction === "income" ? "дохід" : "витрата"}
+                      {row.direction === "income" ? "надходження" : "витрата"}
                     </Badge>
                     {/* Бейджі — підозра, а не вирок: щойно людина сама
                         поставила галочку «імпортувати», підозра знята, і

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
+import { fileURLToPath } from "node:url";
 
 /**
  * Гарантія gated-readiness (review 2026-08-16).
@@ -27,7 +28,7 @@ vi.mock("../lib/redis.js", () => ({
 // би зовсім іншим шляхом, ніж перевіряє.
 vi.mock("../db.js", () => ({
   getPoolStats: () => ({}),
-  MIGRATIONS_DIR: new URL("../migrations", import.meta.url).pathname,
+  MIGRATIONS_DIR: fileURLToPath(new URL("../migrations", import.meta.url)),
   listShippedMigrations: async () => [],
 }));
 vi.mock("../lib/circuitBreaker.js", () => ({

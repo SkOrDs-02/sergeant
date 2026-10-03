@@ -9,7 +9,6 @@ import { Card } from "@shared/components/ui/Card";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { markReengagementShown, pluralDays } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
-import { useHubBannerSlot } from "../hub/bannerBudget";
 
 export function ReEngagementCard({
   daysInactive,
@@ -20,20 +19,22 @@ export function ReEngagementCard({
   onContinue: () => void;
   onDismiss: () => void;
 }) {
-  // Бюджет банерів хабу (F3, 2026-09-01): пріоритет 5; позначка «показано» — лише коли є місце.
-  const hasSlot = useHubBannerSlot("reengagement");
+  // AI-CONTEXT (H1, 2026-09-13): НЕ гейтимо через `useHubBannerSlot`.
+  // Ця картка ЗАМІНЮЄ hero (`HubHeroBlock` рендерить її замість
+  // TodayFocus/SoftAuth/FirstAction, не поруч), тож вона не має
+  // конкурувати за бюджет банерів над нею — раніше на пріоритеті 5 вона
+  // програвала `localOnlyData` (0) і `privacyLock` (3) при бюджеті 2,
+  // і hero-смуга лишалась порожньою для анонімного юзера з блокуванням
+  // застосунку, який повернувся після паузи. Деталі — `bannerBudget.tsx`.
   useEffect(() => {
-    if (!hasSlot) return;
     markReengagementShown(webKVStore);
     trackEvent(ANALYTICS_EVENTS.REENGAGEMENT_SHOWN, { daysInactive });
-  }, [daysInactive, hasSlot]);
+  }, [daysInactive]);
 
   const handleContinue = useCallback(() => {
     trackEvent(ANALYTICS_EVENTS.REENGAGEMENT_CLICKED, { daysInactive });
     onContinue();
   }, [daysInactive, onContinue]);
-
-  if (!hasSlot) return null;
 
   return (
     <Card
@@ -45,7 +46,7 @@ export function ReEngagementCard({
     >
       <div className="flex flex-col items-center text-center space-y-3">
         <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
-          <Icon name="hand-wave" size={24} />
+          <Icon name="hand-wave" size="xl" />
         </div>
         <div className="space-y-1">
           <h3 className="text-style-title text-text">Давно не бачились!</h3>
@@ -55,9 +56,9 @@ export function ReEngagementCard({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="primary" size="sm" onClick={handleContinue}>
+          <Button variant="solid" size="sm" onClick={handleContinue}>
             Продовжити
-            <Icon name="chevron-right" size={14} />
+            <Icon name="chevron-right" size="sm" />
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
             Пізніше

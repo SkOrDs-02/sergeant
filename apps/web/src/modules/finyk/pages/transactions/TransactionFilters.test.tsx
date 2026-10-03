@@ -30,7 +30,7 @@ function renderStrip(
 describe("TransactionFilters — toolbar a11y (F13)", () => {
   it("renders a labelled horizontal toolbar", () => {
     renderStrip();
-    const toolbar = screen.getByRole("toolbar", { name: "Фільтр транзакцій" });
+    const toolbar = screen.getByRole("toolbar", { name: "Фільтр операцій" });
     expect(toolbar.getAttribute("aria-orientation")).toBe("horizontal");
   });
 
@@ -60,18 +60,18 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     expect(document.activeElement).toBe(expense);
     fireEvent.keyDown(expense, { key: "ArrowLeft" });
     expect(document.activeElement).toBe(all);
-    // wrap from first → last on ArrowLeft. Остання пігулка — «Доходи»:
+    // wrap from first → last on ArrowLeft. Остання пігулка — «Надходження»:
     // чипів категорій у тулбарі більше немає.
     fireEvent.keyDown(all, { key: "ArrowLeft" });
     expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: "Доходи" }),
+      screen.getByRole("button", { name: "Надходження" }),
     );
   });
 
   it("Home / End jump to first / last pill", () => {
     renderStrip("all");
     const all = screen.getByRole("button", { name: "Всі" });
-    const last = screen.getByRole("button", { name: "Доходи" });
+    const last = screen.getByRole("button", { name: "Надходження" });
     all.focus();
     fireEvent.keyDown(all, { key: "End" });
     expect(document.activeElement).toBe(last);
@@ -81,7 +81,7 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
 
   it("click invokes onChangeFilter with the pill id", () => {
     const onChange = renderStrip("all");
-    fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
+    fireEvent.click(screen.getByRole("button", { name: "Надходження" }));
     expect(onChange).toHaveBeenCalledWith("income");
   });
 
@@ -126,7 +126,7 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
 
   it("does not toggle off a base filter pill (all/income/expense/credit) on repeat tap", () => {
     const onChange = renderStrip("income");
-    fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
+    fireEvent.click(screen.getByRole("button", { name: "Надходження" }));
     expect(onChange).toHaveBeenCalledWith("income");
   });
 

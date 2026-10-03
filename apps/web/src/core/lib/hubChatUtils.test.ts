@@ -5,6 +5,8 @@ import {
   getActiveModule,
   friendlyApiError,
   friendlyChatError,
+  CHAT_UNKNOWN_ERROR_TEXT,
+  CHAT_RESPONSE_TOO_LONG_TEXT,
   consumeHubChatSse,
   newMsgId,
   makeAssistantMsg,
@@ -56,7 +58,7 @@ describe("friendlyApiError", () => {
         "AI-помічник тимчасово недоступний. Спробуй пізніше.",
         "ANTHROPIC_KEY_MISSING",
       ),
-    ).toBe("Чат на сервері не налаштовано (немає ключа AI).");
+    ).toBe("Чат на сервері не налаштовано. Повідом у підтримку.");
   });
   it("without the code a 503 with a body stays the server's own text", () => {
     // Той самий статус без маркера — це звичайний збій upstream-у, і
@@ -70,9 +72,11 @@ describe("friendlyApiError", () => {
   });
   it("special-cases AI quota on 429", () => {
     expect(friendlyApiError(429, "AI_QUOTA exceeded")).toBe(
-      "Денний ліміт AI вичерпано. Спробуй завтра або зменш навантаження.",
+      "Тижневий ліміт Сержанта вичерпано. Оновиться в понеділок.",
     );
-    expect(friendlyApiError(429, "ліміт AI")).toContain("Денний ліміт AI");
+    expect(friendlyApiError(429, "ліміт AI")).toContain(
+      "Тижневий ліміт Сержанта",
+    );
   });
   it("passes the server copy through for a preset weekly quota block", () => {
     // Копія цього випадку живе на сервері (`assertAiQuota`) в одному
@@ -177,10 +181,39 @@ describe("friendlyChatError", () => {
     expect(friendlyChatError(bare)).toBe("Помилка 418");
   });
 
-  it("wraps other errors", () => {
-    // Сирі помилки префікс зберігають: без нього «boom» не читається як збій.
-    expect(friendlyChatError(new Error("boom"))).toBe("Помилка: boom");
-    expect(friendlyChatError("string err")).toBe("Помилка: string err");
+  it("сирий технічний текст не доходить до екрана — замість нього дія", () => {
+    // Тут раніше піналось `"Помилка: boom"` з обґрунтуванням «без префікса
+    // «boom» не читається як збій». Обґрунтування було правдиве рівно доти,
+    // доки збій рендерився звичайною реплікою асистента. Той самий захід, що
+    // прибрав подвоєння «Помилка: Помилка 504», це й змінив: `makeErrorMsg`
+    // ставить `error: true`, `core/components/ChatMessage.tsx` малює червону
+    // рамку і вішає `role="alert"`, а `useInlineAiRail` дає власний заголовок
+    // «Помилка асистента». Слово в тексті дублювало колір і скрінрідер, а §7
+    // гайду копірайтингу забороняє «Помилка» як standalone.
+    //
+    // Сам `boom` теж не показуємо: у цю гілку доходять `parse`-помилки,
+    // нетипові мережеві винятки й сирі `TypeError` — їхній `message`
+    // технічний, і §3 прямо каже не виносити його людині.
+    expect(friendlyChatError(new Error("boom"))).toBe(CHAT_UNKNOWN_ERROR_TEXT);
+    expect(friendlyChatError("string err")).toBe(CHAT_UNKNOWN_ERROR_TEXT);
+    // Головне, заради чого правка: у тексті більше немає забороненої
+    // конструкції, і він закінчується дією.
+    expect(CHAT_UNKNOWN_ERROR_TEXT).not.toMatch(/Помилка/);
+    expect(CHAT_UNKNOWN_ERROR_TEXT).toMatch(/Спробуй/);
+  });
+
+  it("НЕ ковтає копію для людини, кинуту звичайним Error", () => {
+    // Пастка, у яку я впав, коли робив правку вище: гілка «сирої помилки»
+    // виглядає технічною, але через неї їде й навмисний людський текст —
+    // стеля SSE-потоку кидається як звичайний `Error`. Заміна всієї гілки
+    // на загальний фолбек мовчки з'їдала «Відповідь занадто довга», і це
+    // спіймав `useChatSend.test.tsx` («caps the accumulated SSE stream»).
+    // Тому пропуск іде за ТОТОЖНІСТЮ константи, а не за виглядом рядка.
+    expect(friendlyChatError(new Error(CHAT_RESPONSE_TOO_LONG_TEXT))).toBe(
+      CHAT_RESPONSE_TOO_LONG_TEXT,
+    );
+    // І сама ця копія теж закінчується дією — до PR-X3 не закінчувалась.
+    expect(CHAT_RESPONSE_TOO_LONG_TEXT).toMatch(/Постав/);
     // Мережева гілка не є HTTP-помилкою, тож лишається як була.
     const offline = new ApiError({
       kind: "network",
@@ -268,11 +301,19 @@ describe("message helpers", () => {
 });
 
 describe("normalizeStoredMessages", () => {
-  it("returns greeting for empty input", () => {
-    const msgs = normalizeStoredMessages(null);
-    expect(msgs).toHaveLength(1);
-    expect(msgs[0]!.role).toBe("assistant");
-    expect(msgs[0]!.text).toContain("Привіт");
+  // PR-A7 regression guard (audit `2026-09-13-product-full-review.md`):
+  // substituting a greeting for an empty/missing input made
+  // `messages.length === 0` unreachable everywhere this function is
+  // called (`createInitialSession`, `parseSessionsBlob`, cold-boot in
+  // `useChatSessions`), so `<ChatEmpty>` never rendered. Do NOT reinstate
+  // a synthesized message here.
+  it("does not synthesize a greeting for missing input — ChatEmpty must stay reachable", () => {
+    expect(normalizeStoredMessages(null)).toEqual([]);
+    expect(normalizeStoredMessages(undefined)).toEqual([]);
+  });
+
+  it("does not synthesize a greeting for an empty stored array", () => {
+    expect(normalizeStoredMessages([])).toEqual([]);
   });
   it("normalizes stored messages and synthesizes ids", () => {
     const msgs = normalizeStoredMessages([

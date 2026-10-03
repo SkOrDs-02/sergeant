@@ -74,6 +74,37 @@ describe("LogCard", () => {
     expect(screen.getByTestId("virtual-meals")).toBeInTheDocument();
   });
 
+  it("ставить записи дня перед пошуком, тижнем і трендами", () => {
+    renderLog({
+      log: {
+        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
+      } as never,
+    });
+    const meals = screen.getByTestId("virtual-meals");
+    for (const id of ["log-search", "log-weekly", "log-analytics"]) {
+      expect(
+        meals.compareDocumentPosition(screen.getByTestId(id)) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
+  it("ховає «Скопіювати з попереднього дня», коли в дні вже є записи", () => {
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday: vi.fn(),
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
+      } as never,
+    });
+    expect(
+      screen.queryByText(/Скопіювати з попереднього дня/),
+    ).not.toBeInTheDocument();
+  });
+
   it("formats yesterday, tomorrow, and custom dates", () => {
     renderLog({ selectedDate: addDaysISODate(today, -1) });
     expect(screen.getByText("Вчора")).toBeInTheDocument();
@@ -119,6 +150,26 @@ describe("LogCard", () => {
     fireEvent.click(screen.getByText(/Скопіювати з попереднього дня/));
     fireEvent.click(screen.getByText("Скопіювати"));
     expect(onDuplicateYesterday).toHaveBeenCalled();
+  });
+
+  // Regression PR-N6 (аудит 2026-09-13): у підписі кнопки стояла сира
+  // ISO-дата (`2026-09-11`), хоча заголовок за 60 рядків вище вже показував
+  // той самий день по-людськи через `formatDate`. Пін дивиться саме на
+  // «Вчора»: коли відкрито сьогодні, попередній день — це вчора, і
+  // `formatDate` має його так і назвати.
+  it("називає попередній день по-людськи, а не сирою ISO-датою", () => {
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday: vi.fn(),
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+      } as never,
+    });
+    const btn = screen.getByText(/Скопіювати з попереднього дня/);
+    expect(btn.textContent).toContain("(Вчора)");
+    expect(btn.textContent).not.toContain(yesterday);
   });
 
   it("cancels the duplicate-yesterday flow", () => {

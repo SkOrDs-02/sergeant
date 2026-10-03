@@ -98,6 +98,34 @@ export interface LLMGenerateOpts {
    * provider-рядок (`provider:anthropic`), а саме його читає денна стеля.
    */
   userId?: string | undefined;
+  /**
+   * `$ai_trace_id` для PostHog AI Observability (ініціатива 0025, Фаза 2).
+   * Обидва провайдери, що шлють `$ai_generation`, прокидають його як-є;
+   * `Stub` ігнорує. Без нього — випадковий per-call UUID (Фаза 1 дефолт).
+   */
+  traceId?: string | undefined;
+  /**
+   * Бюджет міркувань для OpenRouter (`reasoning.effort`). Моделі на кшталт
+   * `claude-sonnet-5.5` чи `gemini-3.8-flash` міркують за замовчуванням і
+   * витрачають на це `max_tokens`: на коучі з лімітом 300 відповідь виходила
+   * порожньою. Без поля шлюз вирішує сам, як і досі. Anthropic ігнорує.
+   */
+  reasoning?: { effort: ReasoningEffort } | undefined;
+}
+
+export const REASONING_EFFORTS = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+export function isReasoningEffort(v: string): v is ReasoningEffort {
+  return (REASONING_EFFORTS as readonly string[]).includes(v);
 }
 
 /**
@@ -183,6 +211,7 @@ export class AnthropicProvider implements LLMProvider {
     if (opts.promptVersion !== undefined)
       callOpts.promptVersion = opts.promptVersion;
     if (opts.userId !== undefined) callOpts.userId = opts.userId;
+    if (opts.traceId !== undefined) callOpts.traceId = opts.traceId;
 
     try {
       const { response, data } = await anthropicMessages(
@@ -306,16 +335,78 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
  * рівно `provider="anthropic"`; з будь-яким іншим значенням ця витрата
  * лишилась би поза денною стелею, а саме через це діру й закриваємо.
  */
+/**
+ * `usage` з відповіді `/chat/completions`. Форма: OpenRouter, «Usage Accounting»
+ * (`prompt_tokens_details.cached_tokens` / `cache_write_tokens`), див. шапку
+ * `openrouterCacheTokens.test.ts`.
+ */
+type OpenRouterUsage = {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  /**
+   * Скільки шлюз реально списав за цей виклик. Приходить лише коли в
+   * тілі запиту є `usage: { include: true }`. Це факт, а не оцінка:
+   * враховує і націнку OpenRouter, і поточний прайс моделі.
+   */
+  cost?: number;
+  prompt_tokens_details?: {
+    /** Скільки з `prompt_tokens` прочитано з кешу (cache read). */
+    cached_tokens?: number;
+    /** Скільки з `prompt_tokens` записано в кеш (cache write/creation). */
+    cache_write_tokens?: number;
+  } | null;
+};
+
+function nonNegInt(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) && v > 0
+    ? Math.floor(v)
+    : 0;
+}
+
+/**
+ * Розбирає cache-поля з `usage` OpenRouter. Відсутнє поле = 0, без падіння.
+ * `cacheRead` і `cacheCreation` — окремі значення, без перехрещення.
+ *
+ * WHY `uncachedInput`: у OpenAI-стилі `prompt_tokens` ВКЛЮЧАЄ кешовані токени,
+ * а в Anthropic-семантиці `input_tokens` їх НЕ містить (леджер додає
+ * `input + cache_read + cache_creation` у колонку input). Без віднімання
+ * кешовані токени порахувалися б двічі.
+ */
+export function parseOpenRouterCacheUsage(usage: OpenRouterUsage): {
+  cacheRead: number;
+  cacheCreation: number;
+  uncachedInput: number;
+} {
+  const details = usage.prompt_tokens_details;
+  const cacheRead = nonNegInt(details?.cached_tokens);
+  const cacheCreation = nonNegInt(details?.cache_write_tokens);
+  const uncachedInput = Math.max(
+    0,
+    nonNegInt(usage.prompt_tokens) - cacheRead - cacheCreation,
+  );
+  return { cacheRead, cacheCreation, uncachedInput };
+}
+
 function recordOpenRouterUsage(
   model: string,
   endpoint: string | undefined,
-  usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number },
+  usage: OpenRouterUsage,
   userId?: string | undefined,
+  traceId?: string | undefined,
 ): void {
   const labels = {
     provider: "anthropic",
     model,
     endpoint: endpoint ?? "unknown",
+  };
+  const cache = parseOpenRouterCacheUsage(usage);
+  // Anthropic-форма для прайсингу й леджера: input без кешу, cache окремо.
+  const pricingUsage = {
+    input_tokens: cache.uncachedInput,
+    output_tokens: usage.completion_tokens ?? 0,
+    cache_creation_input_tokens: cache.cacheCreation,
+    cache_read_input_tokens: cache.cacheRead,
+    cost: usage.cost ?? null,
   };
   try {
     // Разом із токенами й вартістю — інакше три лічильники покривають різні
@@ -332,11 +423,7 @@ function recordOpenRouterUsage(
 
     // `usage.cost` від шлюза — факт; таблиця цін — запасний шлях для моделей,
     // яких у ній немає, і тоді `null` означає «не рахуємо», а не «нуль».
-    const usd = estimateAnthropicCostUsd(model, {
-      input_tokens: usage.prompt_tokens ?? 0,
-      output_tokens: usage.completion_tokens ?? 0,
-      cost: usage.cost ?? null,
-    });
+    const usd = estimateAnthropicCostUsd(model, pricingUsage);
     if (usd !== null && usd > 0) aiCostEstimateUsd.inc(labels, usd);
   } catch {
     // Метрики — advisory. Збій реєстру не повинен ламати відповідь моделі.
@@ -353,11 +440,7 @@ function recordOpenRouterUsage(
   // `void` тут не ховає нічого, що варто було б знати.
   void recordAnthropicUsageToDb(
     model,
-    {
-      input_tokens: usage.prompt_tokens ?? 0,
-      output_tokens: usage.completion_tokens ?? 0,
-      cost: usage.cost ?? null,
-    },
+    pricingUsage,
     userId,
     endpoint,
     typeof usage.cost === "number" ? usage.cost : undefined,
@@ -367,11 +450,7 @@ function recordOpenRouterUsage(
   // тут `openrouter` (це chat-completions шлях шлюзу, не Anthropic-сумісний
   // Messages API з `lib/anthropic.ts`). Без latency — цей шар його не міряє.
   // Fail-open усередині helper-а; контент відповіді не передається.
-  const usdForEvent = estimateAnthropicCostUsd(model, {
-    input_tokens: usage.prompt_tokens ?? 0,
-    output_tokens: usage.completion_tokens ?? 0,
-    cost: usage.cost ?? null,
-  });
+  const usdForEvent = estimateAnthropicCostUsd(model, pricingUsage);
   captureAiGeneration({
     userId,
     model,
@@ -380,6 +459,7 @@ function recordOpenRouterUsage(
     inputTokens: usage.prompt_tokens,
     outputTokens: usage.completion_tokens,
     costUsd: usdForEvent !== null && usdForEvent > 0 ? usdForEvent : undefined,
+    traceId,
   });
 }
 
@@ -418,6 +498,7 @@ export class OpenRouterProvider implements LLMProvider {
       usage: { include: true },
     };
     if (opts.temperature !== undefined) body["temperature"] = opts.temperature;
+    if (opts.reasoning) body["reasoning"] = opts.reasoning;
 
     const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -447,17 +528,12 @@ export class OpenRouterProvider implements LLMProvider {
     }
 
     type OpenRouterData = {
-      choices?: Array<{ message?: { content?: string | null } }>;
-      usage?: {
-        prompt_tokens?: number;
-        completion_tokens?: number;
-        /**
-         * Скільки шлюз реально списав за цей виклик. Приходить лише коли в
-         * тілі запиту є `usage: { include: true }` (див. нижче). Це факт, а
-         * не оцінка: враховує і націнку OpenRouter, і поточний прайс моделі.
-         */
-        cost?: number;
-      };
+      choices?: Array<{
+        message?: { content?: string | null };
+        finish_reason?: string | null;
+        error?: { code?: number; message?: string };
+      }>;
+      usage?: OpenRouterUsage;
       error?: { message?: string };
     };
 
@@ -487,7 +563,23 @@ export class OpenRouterProvider implements LLMProvider {
         };
       }
 
-      const text = data?.choices?.[0]?.message?.content ?? "";
+      // Апстрім може впасти посеред генерації (у замірі 2026-09-28 це 429
+      // Google у 3 з 8 викликів): шлюз тоді віддає HTTP 200, обрізаний текст,
+      // `finish_reason: "error"` і нульовий usage. Як успіх це давало
+      // обірваний JSON, який хендлери тихо перетворювали на порожній план.
+      const choice = data?.choices?.[0];
+      if (choice?.finish_reason === "error") {
+        const upstreamStatus = choice.error?.code ?? 502;
+        return {
+          ok: false,
+          error: choice.error?.message ?? "OpenRouter upstream error",
+          status: upstreamStatus,
+          code: upstreamStatus === 429 ? "rate_limited" : "openrouter_error",
+          raw: data as Record<string, unknown>,
+        };
+      }
+
+      const text = choice?.message?.content ?? "";
       const usage = data?.usage;
       const result: LLMGenerateResult = {
         ok: true,
@@ -502,8 +594,19 @@ export class OpenRouterProvider implements LLMProvider {
           usageOut.inputTokens = usage.prompt_tokens;
         if (typeof usage.completion_tokens === "number")
           usageOut.outputTokens = usage.completion_tokens;
+        const cache = parseOpenRouterCacheUsage(usage);
+        if (cache.cacheRead > 0)
+          usageOut.cacheReadInputTokens = cache.cacheRead;
+        if (cache.cacheCreation > 0)
+          usageOut.cacheCreationInputTokens = cache.cacheCreation;
         result.usage = usageOut;
-        recordOpenRouterUsage(model, opts.endpoint, usage, opts.userId);
+        recordOpenRouterUsage(
+          model,
+          opts.endpoint,
+          usage,
+          opts.userId,
+          opts.traceId,
+        );
       }
       return result;
     } catch (e: unknown) {

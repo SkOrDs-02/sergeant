@@ -37,6 +37,18 @@ describe("capabilityRegistry", () => {
     }
   });
 
+  // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+  // «Конфіденційність» у Профіль → «Безпека» 2026-09-04 — картка досі
+  // казала «постав PIN у Налаштуваннях» і вела на `#settings-privacy`,
+  // де PIN-контролу більше немає.
+  it("картка PIN веде у Профіль, а не в неіснуючий PIN-контрол Налаштувань", () => {
+    const privacy = ALL_CAPABILITIES.find((c) => c.id === "privacy");
+    expect(privacy?.href).toBe("/?tab=profile");
+    expect(privacy?.quickAction).toContain("Профілі");
+    expect(privacy?.description).toContain("Профілі");
+    expect(privacy?.href).not.toContain("settings-privacy");
+  });
+
   it("id унікальні — вони є React-ключами і testid-ами", () => {
     const ids = ALL_CAPABILITIES.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -59,6 +71,27 @@ describe("capabilityRegistry", () => {
         item.description.trim().split(/\s+/).length,
         `опис «${item.title}» надто короткий`,
       ).toBeGreaterThan(5);
+    }
+  });
+
+  /**
+   * Founder-ux-review round 2 (O4): `/capabilities` мусить читатись як
+   * «що я зроблю за 30 секунд», а не як другий каталог `/assistant`. Гейт
+   * не перевіряє формулювання (тон — робота copy-review), лише що поле
+   * заповнене й не є буквальним дублем `description` — інакше "сценарій
+   * зверху, подробиці далі" мовчки виродиться назад у "той самий текст
+   * двічі".
+   */
+  it("кожен запис має окремий quickAction — «дію за 30 секунд», не дубль опису", () => {
+    for (const item of ALL_CAPABILITIES) {
+      expect(
+        item.quickAction.trim().split(/\s+/).length,
+        `quickAction «${item.title}» надто короткий`,
+      ).toBeGreaterThan(2);
+      expect(
+        item.quickAction.trim(),
+        `quickAction «${item.title}» дублює description`,
+      ).not.toBe(item.description.trim());
     }
   });
 });

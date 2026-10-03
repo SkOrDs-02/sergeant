@@ -15,6 +15,21 @@ vi.mock("@shared/api", async () => {
   return { ...actual, nutritionApi: { parsePantry: vi.fn() } };
 });
 
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
+  };
+});
+
 import { useNutritionPantries } from "./useNutritionPantries";
 import { nutritionApi } from "@shared/api";
 import * as nutritionStorage from "../lib/nutritionStorage";
@@ -53,8 +68,9 @@ function renderHarness() {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const { result, rerender } = renderHook(
-    () => useNutritionPantries({ setBusy, setErr, setStatusText }),
+    () => useNutritionPantries({ setBusy, setErr, setStatusText, setDenial }),
     { wrapper: makeWrapper() },
   );
   return { result, rerender, setBusy, setErr, setStatusText };

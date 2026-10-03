@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2028-01-07.
 > **Status:** Active — знахідки §3 відкриті; після їх закриття перевести у Reference.
 
 - **Питання:** чи лишилися на гілках коміти або зміни, які загубилися або пішли поверх мерджу і не потрапили на `main`?
@@ -82,6 +82,13 @@
 
 Обсяг: 2 файли, +71 / −13 (`useHubChatStorageBoot.ts` + `.test.ts`).
 
+> **ЗАКРИТО 2026-09-29** (гілка `claude/hubchat-routine-dualwrite`):
+> `apps/web/src/core/hub/chat/useHubChatStorageBoot.ts` реєструє
+> `bootRoutineDualWrite` через `useLocalUserId` і ДИНАМІЧНИЙ import (без
+> `vendor-sqlite` в eager). Реєстрація routine - стек, teardown знімає лише
+> власний контекст, тож шел `/routine` не страждає; хаб teardown не викликає
+> (як finyk). Тест - `useHubChatStorageBoot.test.ts`.
+
 > `claude/sergeant-anonymous-persistence-33b5da` (#419) у зведенні показує ті самі два файли —
 > це не окрема втрата: #420 влився саме в цю гілку, тому вона несе той самий коміт.
 
@@ -96,6 +103,7 @@ when text scales», зроблений 2026-08-01 **о 18:55**, тоді як [P
 змерджено о **14:10** того ж дня. Нового PR під нього не відкривали. Не в `main` (5 файлів, +173/−3):
 
 - `HubHeader.tsx`, `HubBottomNav.tsx`, `ModuleBottomNav.tsx` — `leading-none` → `leading-tight`.
+  **Статус 2026-09-29: ЗАКРИТО** — застосовано в гілці `claude/web-copy-tails` (лейбли в трьох файлах).
   У `main` усі три досі `leading-none`; при `overflow-hidden` рядковий бокс висотою рівно 1em
   зрізає кириличні нижні виносні елементи (`р`, `у`, `д`) — помітно вже на дефолтному масштабі,
   явно при 200% тексту.

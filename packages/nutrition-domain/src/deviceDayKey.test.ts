@@ -5,6 +5,7 @@ import {
   deviceDayKey,
   deviceTimeOfDay,
   deviceWallClockToInstant,
+  deviceWeekStartKey,
   previousDeviceDayKey,
 } from "./deviceDayKey.js";
 
@@ -26,6 +27,15 @@ describe("deviceDayKey / previousDeviceDayKey", () => {
   it("бере день з годинника пристрою", () => {
     expect(deviceDayKey(new Date("2026-08-23T23:53:00.000Z"))).toBe(
       "2026-08-23",
+    );
+  });
+
+  it("підтримує timestamp і рахує понеділок тижня", () => {
+    const instant = Date.parse("2026-08-23T23:53:00.000Z");
+    expect(deviceDayKey(instant)).toBe("2026-08-23");
+    expect(deviceWeekStartKey(instant)).toBe("2026-08-17");
+    expect(deviceWeekStartKey(new Date("2026-08-19T12:00:00.000Z"))).toBe(
+      "2026-08-17",
     );
   });
 
@@ -55,6 +65,12 @@ describe("deviceTimeOfDay", () => {
 
   it("на пристрої в UTC пізній вечір лишається пізнім вечором", () => {
     expect(deviceTimeOfDay(new Date("2026-08-23T23:53:00.000Z"))).toBe("23:53");
+  });
+
+  it("підтримує timestamp", () => {
+    expect(deviceTimeOfDay(Date.parse("2026-08-23T04:05:00.000Z"))).toBe(
+      "04:05",
+    );
   });
 });
 

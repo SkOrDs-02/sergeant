@@ -181,12 +181,13 @@ describe("POST /api/telegram/webhook — гейт /stats", () => {
     expect(query).not.toHaveBeenCalled();
   });
 
-  it("36-й отримує номер у черзі, а не «ти в списку»", async () => {
-    // Ліміт хвилі — 35 (TELEGRAM_BETA_WAVE_SIZE, дефолт). Мок віддає upsert,
-    // потім позицію 36.
+  it("36-й у черзі отримує номер, а не обіцянку доступу", async () => {
+    // Ліміт раунду — 35 (TELEGRAM_BETA_WAVE_SIZE, дефолт). `id` тут навмисно
+    // не дорівнює позиції: з 2026-09-17 номер рахує лише тих, хто ще чекає,
+    // тож рядок може бути 120-м у таблиці й 36-м у черзі.
     const query = vi
       .fn()
-      .mockResolvedValueOnce({ rows: [{ created: true, id: "36" }] })
+      .mockResolvedValueOnce({ rows: [{ created: true, id: "120" }] })
       .mockResolvedValueOnce({ rows: [{ position: "36" }] });
 
     await request(makeApp(query))
@@ -196,7 +197,9 @@ describe("POST /api/telegram/webhook — гейт /stats", () => {
 
     const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
     expect(text).toContain("36-й у черзі");
-    expect(text).not.toContain("Готово");
+    // Ознака — саме обіцянка з відповіді «ти в хвилі», а не слово «Готово»:
+    // з ним тепер починаються обидві гілки, і розрізняти по ньому крихко.
+    expect(text).not.toContain("щойно доступ відкриється");
   });
 
   it("35-й ще потрапляє в хвилю", async () => {

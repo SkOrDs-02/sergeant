@@ -9,7 +9,7 @@ describe("mapApiErrorToUserCopy", () => {
         message: "Invalid password",
         status: 400,
       }),
-    ).toBe("Невірний поточний пароль.");
+    ).toBe("Неправильний поточний пароль.");
   });
 
   it("мапить USER_ALREADY_EXISTS у людську копію", () => {
@@ -70,16 +70,16 @@ describe("mapApiErrorToUserCopy", () => {
         message: "TypeError: Cannot read property 'data' of undefined",
         status: 400,
       }),
-    ).toBe("Не вдалося виконати запит");
+    ).toBe("Не вдалося виконати запит.");
   });
 
-  it("без code → status fallback (401 → 'Доступ заборонено.')", () => {
+  it("без code → status fallback (401 → текст `friendlyApiError`)", () => {
     expect(
       mapApiErrorToUserCopy({
         message: "Unauthorized",
         status: 401,
       }),
-    ).toBe("Доступ заборонено.");
+    ).toBe("Увійди в акаунт, щоб продовжити.");
   });
 
   it("без code → status fallback (429 → rate-limit копія)", () => {
@@ -112,7 +112,7 @@ describe("mapApiErrorToUserCopy", () => {
   });
 
   it("без аргумента fallback → дефолтний generic-string", () => {
-    expect(mapApiErrorToUserCopy(null)).toBe("Не вдалося виконати запит");
+    expect(mapApiErrorToUserCopy(null)).toBe("Не вдалося виконати запит.");
   });
 
   // ── @sergeant/api-client canonical lowercase codes ──────────────────
@@ -169,14 +169,14 @@ describe("mapApiErrorToUserCopy", () => {
 
   it("мапить INVALID_EMAIL у людську копію", () => {
     expect(mapApiErrorToUserCopy({ code: "INVALID_EMAIL", status: 400 })).toBe(
-      "Невірний формат email.",
+      "Неправильний формат email.",
     );
   });
 
   it("мапить INVALID_EMAIL_OR_PASSWORD у людську копію", () => {
     expect(
       mapApiErrorToUserCopy({ code: "INVALID_EMAIL_OR_PASSWORD", status: 400 }),
-    ).toBe("Невірний email або пароль.");
+    ).toBe("Неправильний email або пароль.");
   });
 
   it("мапить PASSWORD_TOO_SHORT у людську копію", () => {

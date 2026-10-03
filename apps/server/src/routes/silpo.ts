@@ -4,13 +4,9 @@ import { env } from "../env/env.js";
 import { query } from "../db.js";
 import { logger } from "../obs/logger.js";
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
-import { parseQuery } from "../http/validate.js";
+import { parseQuery, parseBody } from "../http/validate.js";
 import { getWebAppOrigin } from "../auth/verificationMail.js";
 import {
-  SilpoCartApplyRequestSchema,
-  SilpoCartDtoSchema,
-  SilpoCartPreviewRequestSchema,
-  SilpoCartPreviewResponseSchema,
   SilpoDisconnectResponseSchema,
   SilpoReceiptDetailDtoSchema,
   SilpoReceiptsPageSchema,
@@ -28,6 +24,8 @@ import {
   exchangeCode,
 } from "../modules/silpo/oauth.js";
 import { persistTokens, silpoKeyRing } from "../modules/silpo/tokenStore.js";
+import { diagnoseSilpo } from "../modules/silpo/diagnose.js";
+import { AppError, ExternalServiceError } from "../obs/errors.js";
 import {
   getReceiptDetail,
   listReceipts,
@@ -36,12 +34,21 @@ import {
   unlinkReceiptFromTransaction,
 } from "../modules/silpo/receipts.js";
 import {
-  applyCart,
-  clearCart,
-  getCart,
-  previewCart,
-} from "../modules/silpo/cart.js";
-import { parseBody } from "../http/validate.js";
+  assertSilpoEnabled,
+  getUserId,
+  type AuthedRequest,
+} from "../modules/silpo/routeHelpers.js";
+import {
+  cartApplyHandler,
+  cartClearHandler,
+  cartGetHandler,
+  cartPreviewHandler,
+} from "./silpoCart.js";
+import {
+  pantryClaimHandler,
+  pantryReleaseHandler,
+  settingsHandler,
+} from "./silpoPantry.js";
 
 /**
  * `GET /api/silpo/connect|callback`, `POST /api/silpo/disconnect|wipe|sync`,
@@ -55,7 +62,7 @@ import { parseBody } from "../http/validate.js";
  * дефолтом: обидва продуктові гейти знято 2026-08-18 (оферта — як
  * операційний ризик, приватність — текст затверджено), але вмикання в
  * проді — окремий ops-крок із власним DCR-клієнтом
- * (`docs/00-start/playbooks/enable-silpo-integration.md`).
+ * (`docs/start/instructions/enable-silpo-integration.md`).
  *
  * Сесію вимагають УСІ роути, крім `GET /api/silpo/callback`: він
  * реєструється до router-level `requireSession()`, бо приземляється на
@@ -67,32 +74,6 @@ import { parseBody } from "../http/validate.js";
  * `nutrition`, this router has no single broad `r.use(...)` bucket covering
  * `/api/silpo/*`, so each `r.get`/`r.post` below needs an explicit limiter.
  */
-
-interface AuthedRequest extends Request {
-  user?: { id: string };
-}
-
-function assertSilpoEnabled(res: Response): boolean {
-  if (!env.SILPO_ENABLED) {
-    res.status(503).json({
-      error: "Інтеграція із Сільпо вимкнена",
-      code: "SILPO_DISABLED",
-    });
-    return false;
-  }
-  return true;
-}
-
-function getUserId(req: AuthedRequest, res: Response): string | null {
-  const userId = req.user?.id;
-  if (!userId) {
-    res
-      .status(401)
-      .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
-    return null;
-  }
-  return userId;
-}
 
 function callbackRedirectUri(): string | null {
   return env.PUBLIC_API_BASE_URL
@@ -294,12 +275,34 @@ type SyncStateConnRow = {
   status: "connected" | "reauth_required";
   access_token_expires_at: Date | string | null;
   last_sync_at: Date | string | null;
+  last_failed_at: Date | string | null;
+  last_error_code: string | null;
+  pantry_auto_import_since: Date | string | null;
 };
 type SyncStateCountRow = { count: string };
 
 function toIsoOrNull(v: Date | string | null): string | null {
   if (v == null) return null;
   return v instanceof Date ? v.toISOString() : v;
+}
+
+/**
+ * `GET /api/silpo/diag` — «що саме зламано», без походу в серверні логи.
+ *
+ * `SILPO_SCHEMA_DRIFT` показує людині одну копію на кілька різних причин, а
+ * причину пише лише в лог (звіт власника 2026-09-13: «пише все одно, що
+ * змінили формат»). Цей ендпоінт віддає рівно ті докази, яких бракує:
+ * чи на місці потрібні тули і якої форми відповідь. Вміст покупок не
+ * повертає — самі імена ключів і лічильники (Hard Rule #21).
+ */
+export async function diagHandler(req: Request, res: Response): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const result = await diagnoseSilpo(userId);
+  logger.info({ msg: "silpo_diag_ran", result });
+  res.status(200).json(result);
 }
 
 export async function syncStateHandler(
@@ -314,7 +317,9 @@ export async function syncStateHandler(
     query<SyncStateConnRow>(
       // last_sync_at — персистований момент успішного pullAndSyncReceipts
       // (не MAX(created_at) по чеках: sync без нових чеків теж «оновлення»).
-      "SELECT status, access_token_expires_at, last_sync_at FROM silpo_connection WHERE user_id = $1",
+      `SELECT status, access_token_expires_at, last_sync_at,
+                last_failed_at, last_error_code, pantry_auto_import_since
+           FROM silpo_connection WHERE user_id = $1`,
       [userId],
       { op: "silpo_sync_state_connection" },
     ),
@@ -334,22 +339,108 @@ export async function syncStateHandler(
       status: conn?.status ?? "disconnected",
       accessTokenExpiresAt: toIsoOrNull(conn?.access_token_expires_at ?? null),
       lastSyncAt: toIsoOrNull(conn?.last_sync_at ?? null),
+      lastFailedAt: toIsoOrNull(conn?.last_failed_at ?? null),
+      lastErrorCode: conn?.last_error_code ?? null,
       receiptsCount: Number(counts?.count ?? 0),
+      pantryAutoImportSince: toIsoOrNull(
+        conn?.pantry_auto_import_since ?? null,
+      ),
     }),
   );
 }
 
 /** "Оновити чеки" button. Errors are thrown as `AppError` subclasses (Express 5 forwards async rejections to `errorHandler` automatically) — this is an explicit user action, a clean 4xx/5xx is the correct response, not a swallowed staleness banner. */
+/**
+ * Коди, на яких копія помилки нічого не пояснює: «Сільпо змінили формат
+ * відповіді» і «не віддав чеки» описують СИМПТОМ, а причина лишалась у
+ * серверному лозі. Для них — і тільки для них — доганяємо діагноз.
+ */
+const DIAGNOSABLE_SYNC_CODES = new Set([
+  "SILPO_SCHEMA_DRIFT",
+  "SILPO_TOOL_ERROR",
+]);
+
 export async function syncHandler(req: Request, res: Response): Promise<void> {
   if (!assertSilpoEnabled(res)) return;
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
 
-  const result = await pullAndSyncReceipts(userId);
-  res.status(200).json(SilpoSyncResultSchema.parse(result));
+  try {
+    const result = await pullAndSyncReceipts(userId);
+    res.status(200).json(SilpoSyncResultSchema.parse(result));
+  } catch (err) {
+    throw await withSyncDiagnosis(userId, err);
+  }
 }
 
-// ──────────────────────────────── Receipts read ────────────────────────────
+/**
+ * Дописує причину в текст помилки синку.
+ *
+ * Звіт власника 2026-09-13: «пише все одно, що змінили формат». Так і мало
+ * бути — копія не залежала від причини, а причину писав лише лог. Спершу це
+ * лікували окремим ендпоінтом `/api/silpo/diag`, але його треба ЗНАТИ й
+ * відкривати руками, та ще й під тією ж сесією (на піддомені API кука не
+ * їде — перевірено). Тож діагноз доганяємо самі, рівно там, де людина вже
+ * бачить помилку: у тій самій червоній плашці, без жодної нової кнопки.
+ *
+ * Ціна — один додатковий похід до Сільпо, і ЛИШЕ на вже невдалому синку
+ * (успішний шлях не чіпаємо). Провал самої діагностики нічого не ламає:
+ * повертаємо вихідну помилку як є.
+ */
+async function withSyncDiagnosis(
+  userId: string,
+  err: unknown,
+): Promise<unknown> {
+  if (!(err instanceof AppError) || !DIAGNOSABLE_SYNC_CODES.has(err.code)) {
+    return err;
+  }
+  try {
+    const diagnosis = await diagnoseSilpo(userId);
+    if ("unavailable" in diagnosis) {
+      logger.warn({
+        msg: "silpo_sync_diagnosis_unavailable",
+        state: diagnosis.unavailable,
+      });
+      return new ExternalServiceError(
+        `${err.message}. Причину дізнатись не вдалось: ${diagnosis.unavailable}`,
+        { code: err.code },
+      );
+    }
+    logger.info({ msg: "silpo_sync_diagnosed", verdict: diagnosis.verdict });
+    // Вердикт ЗАМІНЯЄ загальну копію, а не дописується до неї.
+    //
+    // Перша версія дописувала («…недоступне. <вердикт>») — і це зробило
+    // результат нерозрізненним: власник відповів «так само пише змінили
+    // формат», а з тексту неможливо було зрозуміти, чи код не спрацював,
+    // чи спрацював і людина просто переказала початок речення. Ще й
+    // вердикт про справжній дрейф сам містить слово «формат».
+    //
+    // Тепер стара фраза не може зʼявитись на діагностованому шляху взагалі,
+    // а три різні стани дають три різні тексти — це й потрібно, щоб
+    // СКРІНШОТ був доказом. Доти вони зливались в один рядок, і на
+    // скріншоті 2026-09-13 неможливо було відрізнити:
+    //   1. «Чеки не оновились. <вердикт>»       — код виконався, причина є;
+    //   2. «…недоступне. Причину дізнатись…»    — виконався, діагностика
+    //      не мала куди піти (немає підключення);
+    //   3. «…недоступне. Діагностика впала: …»  — виконався, діагностика
+    //      кинула помилку;
+    //   4. РІВНО стара фраза без хвоста         — цей код НЕ виконався,
+    //      тобто на сервері старий образ.
+    // Четвертий випадок тепер єдиний, що дає голу стару копію.
+    return new ExternalServiceError(`Чеки не оновились. ${diagnosis.verdict}`, {
+      code: err.code,
+    });
+  } catch (diagErr) {
+    const detail = diagErr instanceof Error ? diagErr.message : String(diagErr);
+    logger.warn({ msg: "silpo_sync_diagnosis_failed", err: detail });
+    return new ExternalServiceError(
+      `${err.message}. Діагностика впала: ${detail}`,
+      { code: err.code },
+    );
+  }
+}
+
+// ──────────────────────────────────── Receipts read ────────────────────────
 
 export async function receiptsListHandler(
   req: Request,
@@ -476,74 +567,6 @@ export async function receiptRelinkHandler(
   res.status(200).json(SilpoRelinkResponseSchema.parse({ ok: true }));
 }
 
-// ──────────────────────────────────── Cart (Track G) ────────────────────────
-
-/**
- * `POST /api/silpo/cart/preview` — search-only, never writes. Body:
- * `{items: [{name, quantity?}]}` (1..100, names trimmed/non-empty — Zod
- * rejects a whitespace-only name with 400 before the handler runs).
- */
-export async function cartPreviewHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const { items } = parseBody(SilpoCartPreviewRequestSchema, req);
-  const results = await previewCart(userId, items);
-  res.status(200).json(SilpoCartPreviewResponseSchema.parse({ results }));
-}
-
-/**
- * `POST /api/silpo/cart/apply` — confirm-before-write. Body:
- * `{selections: [{lagerId, quantity}]}` (1..100). Adds EXACTLY the passed
- * positions (`applyCart` uses `addQuantity: false`), then returns the
- * post-write cart state.
- */
-export async function cartApplyHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const { selections } = parseBody(SilpoCartApplyRequestSchema, req);
-  const cart = await applyCart(userId, selections);
-  res.status(200).json(SilpoCartDtoSchema.parse(cart));
-}
-
-/**
- * `POST /api/silpo/cart/clear` — empty the external cart, then return the
- * post-write (empty) state. Body-less: there is exactly one cart per user.
- */
-export async function cartClearHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const cart = await clearCart(userId);
-  res.status(200).json(SilpoCartDtoSchema.parse(cart));
-}
-
-/** `GET /api/silpo/cart` — current cart state. */
-export async function cartGetHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const cart = await getCart(userId);
-  res.status(200).json(SilpoCartDtoSchema.parse(cart));
-}
-
 // ──────────────────────────────────── Router ────────────────────────────────
 
 export function createSilpoRouter(): Router {
@@ -598,10 +621,25 @@ export function createSilpoRouter(): Router {
     }),
     syncStateHandler,
   );
+  r.put(
+    "/api/silpo/settings",
+    rateLimitExpress({
+      key: "api:silpo:settings",
+      limit: 20,
+      windowMs: 60_000,
+    }),
+    settingsHandler,
+  );
   r.post(
     "/api/silpo/sync",
     rateLimitExpress({ key: "api:silpo:sync", limit: 5, windowMs: 60_000 }),
     syncHandler,
+  );
+  // Ліміт як у `sync`: діагностика робить такі самі виклики до Сільпо.
+  r.get(
+    "/api/silpo/diag",
+    rateLimitExpress({ key: "api:silpo:diag", limit: 5, windowMs: 60_000 }),
+    diagHandler,
   );
   r.get(
     "/api/silpo/receipts",
@@ -643,6 +681,26 @@ export function createSilpoRouter(): Router {
       windowMs: 60_000,
     }),
     receiptRelinkHandler,
+  );
+  r.post(
+    "/api/silpo/receipts/:id/pantry-claim",
+    // Бронювання перед записом - той самий порядок величини, що й
+    // `receipt-relink`: пише один рядок на позицію, не читальний роут.
+    rateLimitExpress({
+      key: "api:silpo:pantry-claim",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    pantryClaimHandler,
+  );
+  r.post(
+    "/api/silpo/receipts/:id/pantry-release",
+    rateLimitExpress({
+      key: "api:silpo:pantry-release",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    pantryReleaseHandler,
   );
   r.post(
     "/api/silpo/cart/preview",

@@ -1,13 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import type { Workout } from "@sergeant/fizruk-domain";
 import {
   buildGroupedExercises,
   buildPastWorkoutTimes,
   collectLastByExerciseId,
+  countItemsByExerciseId,
   defaultPastWorkoutTimes,
+  formatAddExerciseDoneLabel,
   formatActiveDuration,
   MUSCLE_GROUP_ORDER,
+  todayLocalDateString,
 } from "./Workouts.helpers";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -276,5 +279,85 @@ describe("defaultPastWorkoutTimes", () => {
       expect(times?.inFuture, iso).toBe(false);
       expect(times?.implausiblyLong, iso).toBe(false);
     }
+  });
+});
+
+/**
+ * ADR-0078 (рішення власника 2026-09-29): дефолтна дата ретро-запису — доба
+ * ПРИСТРОЮ. Раніше була київська й для користувача поза Києвом підставляла
+ * «завтра». Пояс пристрою емулюємо через `process.env["TZ"]`.
+ */
+describe("todayLocalDateString", () => {
+  const originalTz = process.env["TZ"];
+  afterEach(() => {
+    vi.useRealTimers();
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
+  });
+
+  it("Мексика 23:30 (у Києві вже наступна доба) — лишається сьогоднішній день пристрою", () => {
+    process.env["TZ"] = "America/Mexico_City"; // UTC-6
+    // 2026-09-02 23:30 local = 2026-09-03T05:30Z = 08:30 у Києві.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-03T05:30:00Z"));
+    expect(todayLocalDateString()).toBe("2026-09-02");
+  });
+
+  it("Токіо 00:30 (у Києві ще вчора) — вже новий день пристрою", () => {
+    process.env["TZ"] = "Asia/Tokyo"; // UTC+9
+    // 2026-09-03 00:30 JST = 2026-09-02T15:30Z = 17:30 у Києві 02-го.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-02T15:30:00Z"));
+    expect(todayLocalDateString()).toBe("2026-09-03");
+  });
+});
+
+describe("countItemsByExerciseId", () => {
+  it("порожній список дає порожню мапу", () => {
+    expect(countItemsByExerciseId([])).toEqual({});
+    expect(countItemsByExerciseId(null)).toEqual({});
+    expect(countItemsByExerciseId(undefined)).toEqual({});
+  });
+
+  it("рахує дублі, бо повторне додавання дозволене", () => {
+    expect(
+      countItemsByExerciseId([
+        { exerciseId: "bench" },
+        { exerciseId: "squat" },
+        { exerciseId: "bench" },
+      ]),
+    ).toEqual({ bench: 2, squat: 1 });
+  });
+
+  it("ігнорує позиції без exerciseId (кастомна вправа з сесії)", () => {
+    expect(
+      countItemsByExerciseId([
+        { exerciseId: "bench" },
+        {},
+        { exerciseId: undefined },
+      ]),
+    ).toEqual({ bench: 1 });
+  });
+});
+
+describe("formatAddExerciseDoneLabel", () => {
+  const copy = {
+    addExerciseDone: "Готово",
+    exercisesOne: "вправа",
+    exercisesFew: "вправи",
+    exercisesMany: "вправ",
+  };
+
+  it("без доданих вправ — просто «Готово»", () => {
+    expect(formatAddExerciseDoneLabel(0, copy)).toBe("Готово");
+    expect(formatAddExerciseDoneLabel(-1, copy)).toBe("Готово");
+  });
+
+  it("несе біжучий підсумок з правильною формою слова", () => {
+    expect(formatAddExerciseDoneLabel(1, copy)).toBe("Готово · 1 вправа");
+    expect(formatAddExerciseDoneLabel(3, copy)).toBe("Готово · 3 вправи");
+    expect(formatAddExerciseDoneLabel(5, copy)).toBe("Готово · 5 вправ");
+    expect(formatAddExerciseDoneLabel(11, copy)).toBe("Готово · 11 вправ");
+    expect(formatAddExerciseDoneLabel(22, copy)).toBe("Готово · 22 вправи");
   });
 });

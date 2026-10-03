@@ -3,7 +3,6 @@
 - **Status:** Accepted
 - **Date:** 2026-05-04
 - **Last validated:** 2026-08-08 by @claude. **Next review:** 2026-11-06.
-  > **Status:** Active
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
@@ -81,3 +80,14 @@
 5. ✅ `hard-rules-matrix.md` — Category-колонка (Initiative 0009 фаза 1.5).
 6. (Майбутнє) `hard-rules-matrix.md` — розщеплення на дві таблиці, якщо матриця стане громіздкою.
 7. (Майбутнє) AGENTS.md slim-down (Initiative 0009 фаза 3.2) — § Hard rules ≤ 6 blocker-invariants + посилання на per-rule файли.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                              | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------- |
+| [#61](https://github.com/zaebal-beep/sergeant/pull/61) | docs(docs): governance — прибрати застаріле з ADR-індексу, governance/ і security/ | 2026-09-16 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

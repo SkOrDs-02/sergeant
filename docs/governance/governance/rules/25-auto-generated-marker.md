@@ -21,7 +21,6 @@ Every auto-generated artifact in the repo. Currently:
 | `docs/STATUS.md`                                       | `pnpm docs:gen-status`               |
 | `docs/work/specs/initiatives/follow-ups.md`            | `pnpm docs:gen-initiative-followups` |
 | `docs/governance/governance/hard-rules-matrix.md`      | `pnpm hard-rules:generate`           |
-| `docs/governance/governance/freshness-dashboard.html`  | `pnpm docs:freshness-dashboard`      |
 | `docs/governance/governance/repo-map.auto.json`        | `pnpm docs:gen-repo-map`             |
 | `docs/governance/governance/service-catalog.auto.json` | `pnpm docs:gen-service-catalog`      |
 
@@ -32,6 +31,12 @@ Every auto-generated artifact in the repo. Currently:
 | `docs/start/instructions/INDEX.md` | `pnpm docs:gen-playbook-index` | `pnpm docs:check-playbook-index` |
 
 Уточнювальна межа (звірка 2026-08-16): генерується саме JSON-дзеркало `service-catalog.auto.json`, а не людиночитний [`docs/engineering/architecture/service-catalog.md`](../../../engineering/architecture/service-catalog.md): той лишається рукописним (редакторські колонки — runbook, alerts, rollback, data-sensitivity), а `pnpm docs:check-service-catalog` лише звіряє, що кожна поверхня з JSON у ньому згадана. Тому маркера `<!-- AUTO-GENERATED -->` у ньому немає й бути не повинно.
+
+**Генеровані, але не комітяться** — генератор і далі пише маркер першим рядком, але файл у `.gitignore`, тож у репо його немає і `--check`-гейта теж:
+
+| Артефакт                                              | Генератор                       | Де взяти                                                                              |
+| ----------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------- |
+| `docs/governance/governance/freshness-dashboard.html` | `pnpm docs:freshness-dashboard` | локально або артефакт `docs-freshness-dashboard` (`docs-freshness.yml`), з 2026-10-01 |
 
 **Частково генеровані** — редагується лише текст поза маркованим регіоном:
 
@@ -82,7 +87,7 @@ For JSON outputs (e.g. `repo-map.auto.json`), JSON has no comments — instead t
 
 | PR                                                       | Title                                                              | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | 2026-07-29 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | 2026-07-29 |
 | [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._

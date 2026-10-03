@@ -8,6 +8,7 @@ import { RecommendRecipesSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import {
+  JSON_TEXT_STYLE_RULE,
   pantryPromptSection,
   resolvePantryMode,
 } from "../../lib/prompt-builders.js";
@@ -31,17 +32,17 @@ type WithAnthropicKey = Request & {
 const TASK_RULE: Record<PantryMode, string> = {
   prefer: `Задача: запропонувати 2–4 реалістичних рецепти під ціль користувача.
 Віддавай перевагу продуктам із комори, коли вони пасують. За потреби можна додати
-звичайні доступні продукти поза списком — просто назви їх в ingredients, не видавай
+звичайні доступні продукти поза списком – просто назви їх в ingredients, не видавай
 за те, що вже є вдома.`,
   only: `Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
 Не вигадуй інгредієнти. Дозволено додати лише базові "припущення" (сіль, перець, вода, олія) і тоді явно познач їх у tips.
 Режим комори "only" означає БУКВАЛЬНО тільки те, що є в списку: кожен інгредієнт
 рецепта мусить бути в коморі, окрім тих самих базових. Якщо з наявного не
-складається жоден пристойний рецепт — поверни менше рецептів або порожній
+складається жоден пристойний рецепт – поверни менше рецептів або порожній
 "recipes". Рецепт із продуктом, якого в користувача немає, гірший за відсутність
 рецепта: людина стане готувати й зупиниться на середині.`,
   ignore: `Задача: запропонувати 2–4 реалістичних рецептів під ціль користувача.
-Комору не враховуй — списку наявних продуктів тобі свідомо не передано. Бери будь-які звичайні доступні продукти й не припускай, що саме є вдома.`,
+Комору не враховуй – списку наявних продуктів тобі свідомо не передано. Бери будь-які звичайні доступні продукти й не припускай, що саме є вдома.`,
 };
 
 export function buildRecommendRecipesSystem(
@@ -51,10 +52,12 @@ export function buildRecommendRecipesSystem(
 
 ${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
+${JSON_TEXT_STYLE_RULE}
 
 ${TASK_RULE[mode]}
 Дай короткі поради по приготуванню і безпеці (температура/час) без зайвої води.
-ВАЖЛИВО: відповідь має бути КОРОТКА і НЕ Обрізана. Якщо не вміщається — поверни МЕНШЕ рецептів і/або коротші steps/tips.
+ВАЖЛИВО: відповідь має бути КОРОТКА і НЕ Обрізана. Якщо не вміщається – поверни МЕНШЕ рецептів і/або коротші steps/tips.
+Макроси (kcal, protein_g, fat_g, carbs_g) вказуй на ОДНУ порцію, а не на весь рецепт. Кількість порцій, які виходять, – окреме поле servings; макроси на servings не множ.
 
 Формат JSON:
 {
@@ -73,11 +76,11 @@ ${TASK_RULE[mode]}
 `;
 }
 
-/** Дефолтний system-промпт (`prefer`) — сумісність зі старими імпортами. */
+/** Дефолтний system-промпт (`prefer`) – сумісність зі старими імпортами. */
 export const SYSTEM = buildRecommendRecipesSystem("prefer");
 
 /**
- * Промпт рекомендації рецептів — рівно той, що йде в прод (винесено заради
+ * Промпт рекомендації рецептів – рівно той, що йде в прод (винесено заради
  * стенду `scripts/eval/pipelines.nutrition.ts`).
  */
 export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
@@ -91,7 +94,7 @@ export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
   const timeMinutes = Number(prefs.timeMinutes || 25);
   const exclude = String(prefs.exclude || "");
   const mealType = String(prefs.mealType || "any");
-  // Один режим на весь запит — і в секцію комори, і в system-промпт.
+  // Один режим на весь запит – і в секцію комори, і в system-промпт.
   const pantryMode: PantryMode = resolvePantryMode(prefs.pantryMode);
   const locale = String(prefs.locale || "uk-UA");
 
@@ -103,16 +106,16 @@ export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
 
   const scarcityRule =
     pantryMode === "only"
-      ? "Якщо з наявного не складаються 3 рецепти — поверни менше або порожній recipes; відсутніх продуктів не додавай."
+      ? "Якщо з наявного не складаються 3 рецепти – поверни менше або порожній recipes; відсутніх продуктів не додавай."
       : "Якщо продуктів у коморі мало, добирай звичайні доступні продукти відповідно до обраного режиму.";
 
   const prompt = `Мова: ${locale}.
 Ціль: ${goal}.
 Порції: ${Number.isFinite(servings) && servings > 0 ? servings : 1}.
 Час: ${Number.isFinite(timeMinutes) && timeMinutes > 0 ? timeMinutes : 25} хв.
-Не використовувати/алергени: ${exclude || "—"}.
+Не використовувати/алергени: ${exclude || "немає"}.
 Тип прийому їжі: ${mealType === "any" ? "будь-який" : mealType}.
-Режим комори: ${pantryMode} (prefer — віддай перевагу наявному; only — тільки наявне; ignore — не обмежуй рецепт коморою).
+Режим комори: ${pantryMode} (prefer – віддай перевагу наявному; only – тільки наявне; ignore – не обмежуй рецепт коморою).
 
 ${pantrySec}
 
@@ -127,7 +130,7 @@ ${scarcityRule}`;
 }
 
 /**
- * POST /api/nutrition/recommend-recipes — рецепти з наявних продуктів.
+ * POST /api/nutrition/recommend-recipes – рецепти з наявних продуктів.
  * CORS / token / quota / rate-limit виставляє роутер.
  */
 export default async function handler(

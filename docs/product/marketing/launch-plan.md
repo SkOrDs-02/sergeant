@@ -1,7 +1,6 @@
 # Sergeant — Pre-launch Marketing Execution Plan
 
-> **Last validated:** 2026-07-31 by @claude (звірка з кодом).
-> **Next review:** 2026-10-29.
+> **Last touched:** 2026-09-17 by @claude (IA лендінгу, стек SSR-prerender, `/llms.txt`, JSON-LD і деплой звірено з `apps/landing`; попередня звірка з кодом — 2026-07-31). **Next review:** 2026-12-16.
 > **Status:** Reference — **voice- і channel-канон, не execution plan**. Технічна частина (стек вейтліста, форма, referral) розійшлася з реалізацією; актуальний стан — у розділі «Що з цього реалізовано» нижче.
 > **Companion docs:** [`../design/brandbook.md`](../../design/design/brandbook.md) (voice + palette) · [`../design/redesign-v2/execution-plan.md`](../../design/design/redesign-v2/execution-plan.md) (parallel product polish plan).
 
@@ -16,22 +15,22 @@
 
 > ⚠️ Шляхи `apps/web/src/core/LandingPage.tsx` і `apps/web/src/core/WaitlistForm.tsx`, які раніше стояли в цьому абзаці, **не існують**. Кореневий `/` у `apps/web` — це `RootRoute` (хаб для залогіненого юзера), а не маркетингова сторінка; маркетинговий лендінг живе в окремому воркспейсі `apps/landing`.
 
-## Що з цього реалізовано (станом на 2026-07-31)
+## Що з цього реалізовано (станом на 2026-07-31, рядки IA/SEO оновлено 2026-09-17)
 
-| Блок плану                  | Стан        | Фактично                                                                                                               |
-| --------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Лендінг                     | ✅ інакше   | `apps/landing` — Vite + React 18 + Tailwind 4, **не Astro**                                                            |
-| Головний CTA                | ✅ інакше   | Telegram deep link (`TelegramCta`), **не email-форма**                                                                 |
-| Збір вейтліста              | ✅ інакше   | `telegram_waitlist` (Postgres, міграція 089) + `waitlist_entries`, **не Airtable**                                     |
-| Атрибуція каналів           | ✅ інакше   | `start_payload` у deep link (`?start=dou`), **не UTM у localStorage**                                                  |
-| Email drip (4 листи)        | ⚠️ частково | FTUX-drip у коді (`ftuxDripMail.ts` + BullMQ + `ftuxUnsubscribeToken.ts`); **блокер — домен у Resend не верифіковано** |
-| Referral / `ref_code`       | ❌ немає    | Ні таблиці, ні ендпоінтів, ні `nanoid(8)`-кодів                                                                        |
-| Live counter «847 чекають»  | ❌ немає    | Google Sheet + n8n cron не існують                                                                                     |
-| n8n флоу (10 штук)          | ❌ немає    | n8n у контурі маркетингу не піднятий                                                                                   |
-| `/llms.txt`, JSON-LD schema | ❌ немає    | —                                                                                                                      |
-| Блог `/blog`                | ❌ немає    | Ні маршруту, ні контенту                                                                                               |
-| Соцмережі                   | ❌ немає    | Акаунти не заведені                                                                                                    |
-| OG-картка                   | ✅ є        | `apps/landing/scripts/generate-og.mjs` → `public/og.png`                                                               |
+| Блок плану                  | Стан                | Фактично                                                                                                                                           |
+| --------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Лендінг                     | ✅ інакше           | `apps/landing` — Vite + React 18 + Tailwind 4 із SSR-prerender у статику (`vite build --ssr` + `apps/landing/scripts/prerender.mjs`), **не Astro** |
+| Головний CTA                | ✅ інакше           | Telegram deep link (`TelegramCta`), **не email-форма**                                                                                             |
+| Збір вейтліста              | ✅ інакше           | `telegram_waitlist` (Postgres, міграція 089) + `waitlist_entries`, **не Airtable**                                                                 |
+| Атрибуція каналів           | ✅ інакше           | `start_payload` у deep link (`?start=dou`), **не UTM у localStorage**                                                                              |
+| Email drip (4 листи)        | ⚠️ частково         | FTUX-drip у коді (`ftuxDripMail.ts` + BullMQ + `ftuxUnsubscribeToken.ts`); **блокер — домен у Resend не верифіковано**                             |
+| Referral / `ref_code`       | ❌ немає            | Ні таблиці, ні ендпоінтів, ні `nanoid(8)`-кодів                                                                                                    |
+| Live counter «847 чекають»  | ❌ немає            | Google Sheet + n8n cron не існують                                                                                                                 |
+| n8n флоу (10 штук)          | ❌ немає            | n8n у контурі маркетингу не піднятий                                                                                                               |
+| `/llms.txt`, JSON-LD schema | ✅ є (2026-09)      | `apps/landing/public/llms.txt`; JSON-LD через `src/lib/ssgJsonLd.ts` — `SoftwareApplication` на `/`, `FAQPage` на `/pytannya` (`PytannyaPage.tsx`) |
+| Блог `/blog`                | ✅ інакше (2026-09) | Маршруту `/blog` немає; SEO-контент живе як `/guides` + 12 гайдів `/guides/*` (перелік — `apps/landing/src/lib/routeMeta.json`)                    |
+| Соцмережі                   | ❌ немає            | Акаунти не заведені                                                                                                                                |
+| OG-картка                   | ✅ є                | `apps/landing/scripts/generate-og.mjs` → `public/og.png`                                                                                           |
 
 **Головна архітектурна розбіжність:** план будувався навколо «без backend, без JWT — тільки Airtable + n8n + URL params». Реалізація пішла протилежним шляхом: вейтліст живе у власній Postgres-таблиці, розсилка — CLI-скрипт у репо. Це вийшло дешевше, бо backend і Postgres уже були; зовнішній CRM додав би інтеграцію там, де вистачило однієї таблиці. Секції нижче з Airtable/n8n читай як **опис намірів**, не як інструкцію.
 
@@ -150,7 +149,7 @@ Sergeant — це багатомодульний застосунок life manag
 /compare/ (comparison hub — Phase 4, post-launch або 500+ waitlist)
 ```
 
-**Реалізовано** (`apps/landing/src/pages/HomePage.tsx`, після редизайну `b0286bc81`):
+**Реалізовано станом на 2026-07-31** (`apps/landing/src/pages/HomePage.tsx`, після редизайну `b0286bc81`) — **історичний зріз**, актуальний стан — абзацом нижче:
 
 ```
 / (single page)
@@ -166,9 +165,11 @@ Sergeant — це багатомодульний застосунок life manag
 /* → NotFoundPage
 ```
 
-**Дельта і чому вона така:**
+**Стан на 2026-09-17 — лендінг більше не single page.** Джерело істини для IA — `apps/landing/src/lib/routeMeta.json` (30 маршрутів, кожен із title/description/lastmod): головна `/`, продуктові сторінки за модулями (`/hroshi`, `/yizha`, `/zvychky`, `/trenuvannia`), `/zvyazky`, `/pomichnyk`, `/ruchna-robota`, `/about`, `/data`, `/vyhid`, `/stan`, `/obitsyanky`, `/pytannya` (FAQ з `FAQPage`-розміткою), `/beta` (noindex), хаб `/guides` + 12 гайдів `/guides/*`, `/privacy`, `/terms`, `/404`. `/llms.txt` лежить у `apps/landing/public/`. Секції самої головної — у `HomePage.tsx`; FAQ-блок з неї свідомо переїхав на `/pytannya` разом із розміткою. Список нижче описує дельту **до задуму травня 2026 станом на 2026-07-31**.
 
-- **Немає** social proof з live-лічильником, FAQ-блоку, `/blog`, `/llms.txt`, `/compare/`. Лічильник свідомо не робимо: fake або псевдодинамічні числа шкодять довірі (див. § Urgency mechanic), а реального числа, яким варто хвалитись, поки немає.
+**Дельта і чому вона така (2026-07-31):**
+
+- **Немає** social proof з live-лічильником, FAQ-блоку, `/blog`, `/llms.txt`, `/compare/`. Лічильник свідомо не робимо: fake або псевдодинамічні числа шкодять довірі (див. § Urgency mechanic), а реального числа, яким варто хвалитись, поки немає. _(2026-09: FAQ і `/llms.txt` зʼявились, роль `/blog` виконують `/guides/*` — див. абзац вище; лічильника і `/compare/` як не було, так і немає.)_
 - **Зʼявились** `ConnectionsSection` і `HonestSection` — обидві відповідають зміщенню позиціювання з «4 застосунки в одному» на «бачить звʼязки». Це той самий редизайн, що дав нинішній H1.
 - **Sticky footer CTA** не реалізований; замість якоря `#waitlist` — друга Telegram-кнопка в `BetaCta` з окремим `start_payload` (`landing_footer`), що заодно дає атрибуцію «згори чи знизу натиснули».
 
@@ -346,7 +347,7 @@ Top targets per module:
 
 ### Stack — фактичний
 
-**Лендінг:** `apps/landing` — Vite + React 18 + Tailwind 4 (SPA, не static-site-generator). Ділить `@sergeant/design-tokens` і `@sergeant/shared` з монорепо; дрейф токенів ловить `tokens.drift.test.ts`.
+**Лендінг:** `apps/landing` — Vite + React 18 + Tailwind 4. До 2026-09 це була SPA; тепер білд робить SSR-prerender у статичні сторінки (`vite build --ssr src/entry-server.tsx` + `apps/landing/scripts/postbuild-seo.mjs` + `apps/landing/scripts/prerender.mjs`, JSON-LD — `src/lib/ssgJsonLd.ts`), тобто de facto власний static-site-generator, а не Astro. Ділить `@sergeant/design-tokens` і `@sergeant/shared` з монорепо; дрейф токенів ловить `tokens.drift.test.ts`.
 
 **Два незалежні канали збору:**
 
@@ -443,19 +444,19 @@ CTA copy: «Увійди в перших 500» / «Спробуй першим �
 
 ### Phase 1 — Ship landing + waitlist (Week 1-2)
 
-| #    | Task                                                  | Effort | Стан                                                 |
-| ---- | ----------------------------------------------------- | ------ | ---------------------------------------------------- |
-| 1.1  | Landing IA build                                      | M      | ✅ інакший склад секцій — див. § Page architecture   |
-| 1.2  | Waitlist form: email only                             | S      | ✅ `WaitlistForm` → `POST /api/v1/waitlist`          |
-| 1.2a | Post-submit success card з module-interest pill chips | S      | ❌                                                   |
-| 1.3  | Sticky footer CTA                                     | XS     | ❌ замість нього — друга Telegram-кнопка в `BetaCta` |
-| 1.4  | Inline success state (timeline + referral CTA)        | S      | ❌                                                   |
-| 1.5  | UTM `localStorage` capture                            | XS     | ✅ інакше: `start_payload` у deep link               |
-| 1.6  | Live counter widget                                   | XS     | ❌ не робимо                                         |
-| 1.7  | `/llms.txt` у корені                                  | XS     | ❌                                                   |
-| 1.8  | `SoftwareApplication` + `Organization` JSON-LD schema | XS     | ❌                                                   |
-| 1.9  | Deploy до Vercel + custom domain                      | S      | ❌ домен не зареєстрований, deploy-конфіг не в репо  |
-| 1.10 | Mobile QA на real iPhone + Android budget             | S      | ❓ не задокументовано                                |
+| #    | Task                                                  | Effort | Стан                                                                                                                              |
+| ---- | ----------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1  | Landing IA build                                      | M      | ✅ інакший склад секцій — див. § Page architecture                                                                                |
+| 1.2  | Waitlist form: email only                             | S      | ✅ `WaitlistForm` → `POST /api/v1/waitlist`                                                                                       |
+| 1.2a | Post-submit success card з module-interest pill chips | S      | ❌                                                                                                                                |
+| 1.3  | Sticky footer CTA                                     | XS     | ❌ замість нього — друга Telegram-кнопка в `BetaCta`                                                                              |
+| 1.4  | Inline success state (timeline + referral CTA)        | S      | ❌                                                                                                                                |
+| 1.5  | UTM `localStorage` capture                            | XS     | ✅ інакше: `start_payload` у deep link                                                                                            |
+| 1.6  | Live counter widget                                   | XS     | ❌ не робимо                                                                                                                      |
+| 1.7  | `/llms.txt` у корені                                  | XS     | ✅ (2026-09) `apps/landing/public/llms.txt`                                                                                       |
+| 1.8  | `SoftwareApplication` + `Organization` JSON-LD schema | XS     | ✅ інакше (2026-09): `SoftwareApplication` на `/`, `FAQPage` на `/pytannya` (`ssgJsonLd.ts`); окремого `Organization`-вузла немає |
+| 1.9  | Deploy до Vercel + custom domain                      | S      | ✅ `apps/landing/vercel.json`; apex-домен — `DEFAULT_SITE` у `apps/landing/scripts/site-url.mjs` (узгоджено з § Context вище)     |
+| 1.10 | Mobile QA на real iPhone + Android budget             | S      | ❓ не задокументовано                                                                                                             |
 
 **Verification (актуалізовано під фактичний стек):**
 

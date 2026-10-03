@@ -53,7 +53,7 @@ describe("AppLock", () => {
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Відкрити" }));
     await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent("Невірний PIN"),
+      expect(screen.getByRole("alert")).toHaveTextContent("Неправильний PIN"),
     );
   });
 

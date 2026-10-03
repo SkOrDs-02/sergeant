@@ -1,7 +1,7 @@
 /**
  * React hook that boots the SQLite Mono cache mirror on mobile.
  *
- * PR #038 of `docs/planning/storage-roadmap.md` (mobile parity for
+ * PR #038 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` (mobile parity for
  * web PR #038). Stage 13 PR #078 retired the flag — the mirror now
  * boots unconditionally after mount so `transactionsStore` can overlay
  * reads from the local `finyk_mono_*` tables.

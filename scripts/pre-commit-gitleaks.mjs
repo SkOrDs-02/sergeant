@@ -3,29 +3,23 @@
 //
 // Pre-commit guard for secret leaks (closes I5 hardening item).
 //
-// Defense-in-depth on top of the `Secret scan (gitleaks)` CI job
-// (`.github/workflows/ci.yml`): catching secrets locally — *before* the
-// commit lands in the developer's reflog — is materially cheaper than
-// catching them at the pull-request boundary, because the attacker
-// timeline starts the moment a secret is committed.
+// CI (`ci.yml` job `secret-scan`, gitleaks) scans every PR since
+// 2026-09-30 (ADR-0102), but only after the push. This hook keeps the
+// secret out of the pushed history in the first place.
 //
 // Behaviour:
 //   - If `gitleaks` is installed: run `gitleaks protect --staged` on the
-//     staged changes. A finding fails the commit. The shared CI config
-//     (`.gitleaksignore` at repo root) is honoured automatically by
-//     gitleaks itself.
-//   - If `gitleaks` is NOT installed: print an actionable install hint
-//     and exit 0. We do not block the commit — the CI gate still
-//     catches anything that bypasses the local hook, so the worst case
-//     is the same as today. Forcing every developer to install gitleaks
-//     before they can `git commit` would create unnecessary onboarding
-//     friction without a security improvement (the CI gate is the
-//     authoritative check; this hook is the early-warning one).
+//     staged changes. A finding fails the commit. `.gitleaksignore` at
+//     repo root is honoured automatically by gitleaks itself.
+//   - If `gitleaks` is NOT installed: fail closed (exit 1) with an
+//     install hint. Skipping the only scan that exists is not a safe
+//     default.
 //
 // Hard Rule #7 still applies: do NOT pass `--no-verify`. Use the
 // `SERGEANT_SKIP_GITLEAKS=1` env var only for documented break-glass
 // scenarios (e.g. committing a vetted false-positive that must enter
-// `.gitleaksignore` in the same commit).
+// `.gitleaksignore` in the same commit) - it prints a loud warning
+// because nothing downstream will catch what it skips.
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -41,7 +35,7 @@ const SKIP_ENV = "SERGEANT_SKIP_GITLEAKS";
 const INSTALL_HINT = [
   "  • macOS:        brew install gitleaks",
   "  • Linux (apt):  see https://github.com/gitleaks/gitleaks/releases",
-  "  • Go install:   go install github.com/gitleaks/gitleaks/v8@latest",
+  "  • Go install:   go install github.com/zricethezav/gitleaks/v8@latest",
 ].join("\n");
 
 function isGitleaksAvailable() {
@@ -83,22 +77,33 @@ function runGitleaks() {
 function main() {
   if (process.env[SKIP_ENV] === "1") {
     console.warn(
-      `[pre-commit-gitleaks] ${SKIP_ENV}=1 — skipping. CI will still scan this commit.`,
+      [
+        "",
+        `⚠️  [pre-commit-gitleaks] ${SKIP_ENV}=1 - secret scan SKIPPED.`,
+        "  Only CI will scan it, after the secret is already pushed.",
+        "  Use this",
+        "  only for a documented break-glass case, never as a habit.",
+        "",
+      ].join("\n"),
     );
     return 0;
   }
 
   if (!isGitleaksAvailable()) {
-    console.warn(
+    console.error(
       [
-        "[pre-commit-gitleaks] gitleaks is not installed — skipping local secret scan.",
-        "  CI runs the same scanner on every PR (.github/workflows/ci.yml :: secret-scan),",
-        "  so anything that slips through this hook is still caught at PR time.",
-        "  To enable the local pre-commit gate (recommended), install gitleaks:",
+        "",
+        "🔴 [pre-commit-gitleaks] gitleaks is not installed - commit blocked.",
+        "  There is no CI on this repo to catch what this hook skips (no",
+        "  bitbucket-pipelines.yml; GitHub Actions do not run - see AGENTS.md",
+        '  § "Де живе код"), so this is the only secret scan that exists.',
+        "  Install gitleaks:",
         INSTALL_HINT,
+        "  Or, for a documented one-off exception, set SERGEANT_SKIP_GITLEAKS=1.",
+        "",
       ].join("\n"),
     );
-    return 0;
+    return 1;
   }
 
   const status = runGitleaks();

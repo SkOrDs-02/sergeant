@@ -2,7 +2,7 @@
  * Last validated: 2026-08-17
  * Status: Active
  *
- * Чек-скан v1 (спека `docs/90-work/planning/specs/receipt-scan.md` §
+ * Чек-скан v1 (спека `docs/work/specs/receipt-scan.md` §
  * Флоу v1 / § Web UI). Стани: `choose` (камера АБО фото) → `camera`
  * (живий QR-скан) / `processing` (lookup чи analyze у польоті) →
  * `review` (редагована чернетка, `ReceiptReviewForm`) → «Зберегти».
@@ -69,6 +69,7 @@ import { ScanStatus, type ScanStatusState } from "../ScanStatus";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
+import { useFinykVisionPaywall } from "./useFinykVisionPaywall";
 
 type Stage = "choose" | "camera" | "processing" | "review" | "batch";
 
@@ -122,6 +123,7 @@ export function ReceiptScanSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
+  const visionPaywall = useFinykVisionPaywall();
 
   const lookupMutation = useMutation({
     mutationFn: (req: ReceiptLookupRequest) =>
@@ -211,6 +213,10 @@ export function ReceiptScanSheet({
       }
     }
 
+    if (!visionPaywall.requireAccess()) {
+      setStage("choose");
+      return;
+    }
     const imageResult = await readReceiptImageFile(file);
     if (!imageResult.ok) {
       setFlowError(imageResult.error);
@@ -224,6 +230,7 @@ export function ReceiptScanSheet({
       );
       openReview(nextDraft);
     } catch (err) {
+      visionPaywall.onError(err);
       setFlowError(formatReceiptError(err, "Не вдалось розпізнати чек."));
       setStage("choose");
     }
@@ -291,7 +298,7 @@ export function ReceiptScanSheet({
             )}
             <div className="flex gap-3">
               <Button
-                variant="secondary"
+                variant="outline"
                 className="flex-1"
                 onClick={onClose}
                 disabled={isSaving}
@@ -299,8 +306,10 @@ export function ReceiptScanSheet({
                 Скасувати
               </Button>
               <Button
+                variant="solid"
+                tone="finyk"
                 className="flex-1"
-                module="finyk"
+
                 onClick={() => void handleSave()}
                 loading={isSaving}
               >
@@ -310,8 +319,10 @@ export function ReceiptScanSheet({
           </div>
         ) : editingItem ? (
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             onClick={() => setEditingItemId(null)}
           >
             Готово
@@ -346,26 +357,37 @@ export function ReceiptScanSheet({
           )}
           {DPS_QR_SCAN_ENABLED && (
             <Button
+              variant="solid"
+              tone="finyk"
               className="w-full"
-              module="finyk"
+
               onClick={() => {
                 setFlowError(null);
                 setStage("camera");
               }}
             >
-              <Icon name="scanner" size={16} aria-hidden />
+              <Icon name="scanner" size="md" aria-hidden />
               Скан QR камерою
             </Button>
           )}
           <Button
-            variant={DPS_QR_SCAN_ENABLED ? "secondary" : "primary"}
-            module={DPS_QR_SCAN_ENABLED ? undefined : "finyk"}
+            // Під прапорцем — нейтральна другорядна (легасі `secondary` без
+            // module); без нього — суцільна модульна (легасі `primary` +
+            // module -> `finyk`). Обидві гілки збережені один в один.
+            variant={DPS_QR_SCAN_ENABLED ? "outline" : "solid"}
+            tone={DPS_QR_SCAN_ENABLED ? undefined : "finyk"}
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Icon name="camera" size={16} aria-hidden />
+            <Icon name="camera" size="md" aria-hidden />
             Завантажити фото
           </Button>
+          {/* AI-NOTE: кегль тут навмисний — це підказка ПІД контролом, один
+              із випадків, які `no-sentence-in-caption` називає прийнятними.
+              Речення пояснює межу пакета й долю кожного фото; підняти його
+              до `text-style-body` означало б зрівняти підказку з підписом
+              самої кнопки. Попередження було й раніше, просто лінт бачить
+              файл лише коли той потрапляє в коміт. */}
           <p className="text-style-caption text-subtle">
             Можна вибрати одразу кілька фото, до {BATCH_RECEIPTS_MAX_FILES}{" "}
             чеків за раз, кожен збережеться окремою витратою.
@@ -379,7 +401,6 @@ export function ReceiptScanSheet({
             <Button
               type="button"
               variant="ghost"
-              tone="finyk"
               size="xs"
               onClick={() => setEditingItemId(null)}
             >
@@ -388,7 +409,7 @@ export function ReceiptScanSheet({
             {draftLooksUnrecognized(editingItem.draft) && (
               <p
                 role="status"
-                className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-body text-text"
+                className="rounded-xl border border-line bg-panelHi p-2.5 text-style-body text-text"
               >
                 Схоже, на фото не чек: розпізнати нічого не вдалося. Заповни
                 поля вручну, і чек повернеться у вибрані.
@@ -412,7 +433,7 @@ export function ReceiptScanSheet({
             {batchCapNote && (
               <p
                 role="status"
-                className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-body text-text"
+                className="rounded-xl border border-line bg-panelHi p-2.5 text-style-body text-text"
               >
                 {batchCapNote}
               </p>
@@ -443,7 +464,7 @@ export function ReceiptScanSheet({
             onDetected={(rawText) => void handleQrDetected(rawText)}
           />
           <Button
-            variant="secondary"
+            variant="outline"
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -461,7 +482,7 @@ export function ReceiptScanSheet({
           {draftLooksUnrecognized(draft) && (
             <p
               role="status"
-              className="rounded-xl border border-line bg-panelHi/60 p-2.5 text-style-body text-text"
+              className="rounded-xl border border-line bg-panelHi p-2.5 text-style-body text-text"
             >
               Схоже, на фото не чек: розпізнати нічого не вдалося. Спробуй
               чіткіше фото чека або заповни поля вручну.
@@ -477,6 +498,7 @@ export function ReceiptScanSheet({
           />
         </>
       )}
+      {visionPaywall.modal}
     </Sheet>
   );
 }

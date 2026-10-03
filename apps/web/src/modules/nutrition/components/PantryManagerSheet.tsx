@@ -173,7 +173,7 @@ export function PantryManagerSheet({
                   title="Видалити"
                   className="shrink-0 text-subtle hover:text-danger hover:bg-danger/10 transition-colors"
                 >
-                  <Icon name="trash" size={16} aria-hidden />
+                  <Icon name="trash" size="md" aria-hidden />
                 </Button>
               )}
             </div>
@@ -241,7 +241,8 @@ export function PantryManagerSheet({
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button
               type="button"
-              variant="nutrition"
+              variant="solid"
+              tone="nutrition"
               className="h-12 min-h-[44px] shadow-none hover:shadow-none dark:shadow-none"
               onClick={submit}
             >
@@ -249,7 +250,7 @@ export function PantryManagerSheet({
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="h-12 min-h-[44px]"
               onClick={() =>
                 setPantryForm({
@@ -273,7 +274,7 @@ export function PantryManagerSheet({
         має побачити її, поки ще може передумати.
       */}
       {redistributePlan.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-line/60 bg-bg/40 p-4">
+        <div className="mt-4 rounded-2xl border border-line bg-panel p-4">
           <SectionHeading as="div" size="xs" variant="nutrition">
             Розкласти по місцях
           </SectionHeading>
@@ -302,7 +303,7 @@ export function PantryManagerSheet({
           </ul>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             className="mt-3 w-full h-12 min-h-[44px]"
             onClick={onRedistribute}
             disabled={busy}

@@ -4,7 +4,10 @@ import type { Mock } from "vitest";
 
 vi.mock("../../db.js", () => {
   const pool = { query: vi.fn() };
-  return { default: pool, pool };
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  const withUserContext = (_userId: string, fn: (db: unknown) => unknown) =>
+    fn(pool);
+  return { default: pool, pool, withUserContext };
 });
 
 vi.mock("../../lib/anthropic.js", () => ({
@@ -22,6 +25,15 @@ vi.mock("../../lib/anthropic.js", () => ({
   ),
 }));
 
+// Гейт згоди на дані про здоровʼя читає БД; за замовчуванням у цьому файлі
+// згода «є» (поведінка до 2026-09-29), сценарій без неї перемикає мок явно.
+const { resolveHealthConsentMock } = vi.hoisted(() => ({
+  resolveHealthConsentMock: vi.fn(),
+}));
+vi.mock("../../lib/healthConsent.js", () => ({
+  resolveHealthConsent: resolveHealthConsentMock,
+}));
+
 vi.mock("../../obs/logger.js", () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -29,7 +41,12 @@ vi.mock("../../obs/logger.js", () => ({
 import _pool from "../../db.js";
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import { env } from "../../env/env.js";
-import { coachInsight, coachMemoryGet, coachMemoryPost } from "./coach.js";
+import {
+  buildCoachInsightPrompt,
+  coachInsight,
+  coachMemoryGet,
+  coachMemoryPost,
+} from "./coach.js";
 import { MAX_BLOB_SIZE } from "./coach.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import { logger as _logger } from "../../obs/logger.js";
@@ -80,6 +97,8 @@ function asReq(v: unknown): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resolveHealthConsentMock.mockReset();
+  resolveHealthConsentMock.mockResolvedValue(true);
   // Force the Anthropic path: these tests assert the prompt payload via the
   // `anthropicMessages` mock, so they must route through AnthropicProvider
   // regardless of the prod default (`LLM_COACH_PROVIDER=openrouter`).
@@ -420,6 +439,28 @@ describe("coachInsight", () => {
     } as unknown as Request;
   }
 
+  /**
+   * PR-A2 (аудит 2026-09-13-product-full-review.md) — `requireAiQuota()`
+   * атачить `aiQuotaRefund` до `req` ДО того, як `coachInsight` починає
+   * виконуватись (той самий контракт, що й у `chat.ts`, див.
+   * `chat.test.ts::makeReqWithRefundSpy`). Провал upstream мусить
+   * викликати цей closure, інакше 5xx OpenRouter/Anthropic зʼїдає денну
+   * квоту користувача за пораду, якої він не отримав.
+   */
+  function makeReqWithRefundSpy(body: unknown): {
+    req: Request;
+    aiQuotaRefund: Mock;
+  } {
+    const aiQuotaRefund = vi.fn().mockResolvedValue(undefined);
+    const req = {
+      user: { id: "user_1" },
+      anthropicKey: "sk-test",
+      body,
+      aiQuotaRefund,
+    } as unknown as Request;
+    return { req, aiQuotaRefund };
+  }
+
   it("happy: віддає insight-текст на основі snapshot+memory", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: true, status: 200 },
@@ -534,6 +575,64 @@ describe("coachInsight", () => {
     expect(prompt).toContain("82%");
   });
 
+  it("без згоди на дані про здоровʼя: тренувань, харчування і кореляцій у промпті немає, фінанси й звички є", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "ok" }] },
+    });
+
+    const res = makeRes();
+    await coachInsight(
+      makeReq({
+        snapshot: {
+          finyk: { totalSpent: 4200, totalIncome: 9000, txCount: 12 },
+          fizruk: { workoutsCount: 3, totalVolume: 12_500 },
+          nutrition: { avgKcal: 2111, avgProtein: 130, daysLogged: 6 },
+          routine: { overallRate: 82, habitCount: 5 },
+        },
+        memory: {
+          weeklyDigests: [
+            {
+              weekKey: "2026-W10",
+              weekRange: "2-8 Mar",
+              generatedAt: "2026-03-08T00:00:00.000Z",
+              finyk: { summary: "finyk summary" },
+              fizruk: { summary: "fizruk summary" },
+              nutrition: { summary: "nutrition summary" },
+              routine: { summary: "routine summary" },
+              correlations: ["corr-with-workouts"],
+              overallRecommendations: ["drink water"],
+            },
+          ],
+        },
+      }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const [, payload] = anthropicMessages.mock.calls[0] as [
+      unknown,
+      { messages: { content: string }[] },
+    ];
+    const prompt = payload!.messages[0]!.content;
+    for (const leak of [
+      "fizruk summary",
+      "nutrition summary",
+      "12500",
+      "2111",
+      "corr-with-workouts",
+      "ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ",
+      "ХАРЧУВАННЯ ЦЬОГО ТИЖНЯ",
+    ]) {
+      expect(prompt).not.toContain(leak);
+    }
+    expect(prompt).toContain("finyk summary");
+    expect(prompt).toContain("routine summary");
+    expect(prompt).toContain("4200");
+    expect(prompt).toContain("82%");
+  });
+
   it("invalid body (snapshot.finyk з неправильним типом) → ValidationError", async () => {
     await expect(
       coachInsight(
@@ -592,6 +691,42 @@ describe("coachInsight", () => {
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
+  });
+
+  // ── PR-A2: провал провайдера має повернути AI-квоту ─────────────────────
+
+  it("upstream !ok (504) повертає квоту через req.aiQuotaRefund", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: false, status: 504 },
+      data: { error: { message: "Upstream timeout" } },
+    });
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {},
+    });
+
+    await expect(coachInsight(req, makeRes())).rejects.toBeInstanceOf(
+      ExternalServiceError,
+    );
+
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+  });
+
+  it("успішний виклик НЕ повертає квоту (списання лишається чинним)", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "Усе гаразд" }] },
+    });
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {},
+    });
+
+    const res = makeRes();
+    await coachInsight(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
   });
 
   it("порожній snapshot → prompt містить 'Даних за поточний тиждень ще немає.'", async () => {
@@ -659,5 +794,48 @@ describe("coachInsight", () => {
       { messages: { content: string }[] },
     ];
     expect(payload!.messages[0]!.content).toContain("Поточну дату не передано");
+  });
+});
+
+describe("buildCoachInsightPrompt — що можна просити в людини", () => {
+  // Регресія: коуч бачить лише підсумки й топ-5 {назва, сума}, але радив
+  // «запиши, що ховається за тими 7169 грн в «Іншому»» - тобто просив дію,
+  // ефекту якої не побачить (нотаток, описів і мерчантів він не отримує).
+  // Бачить він перекатегоризацію банківських операцій, тож велике «Інше»
+  // має вести саме туди.
+  const snapshot = {
+    finyk: {
+      totalSpent: 9000,
+      totalIncome: 0,
+      txCount: 40,
+      topCategories: [
+        { name: "Інше", amount: 7169 },
+        { name: "Продукти", amount: 1200 },
+      ],
+    },
+  } as never;
+
+  /** Промпт у перенесеннях рядків читається як суцільний текст. */
+  const promptText = (): string =>
+    buildCoachInsightPrompt({ snapshot, memory: null }).user.replace(
+      /\s+/g,
+      " ",
+    );
+
+  it("для великого «Інше» називає єдину досяжну дію: перенести операції в категорії", () => {
+    expect(promptText()).toContain(
+      "«Перенеси операції з «Іншого» у потрібні категорії»",
+    );
+  });
+
+  it("забороняє просити те, чого коуч не прочитає, і дозволяє дії, що змінюють його дані", () => {
+    const text = promptText();
+    expect(text).toContain("нотаток, описів операцій і мерчантів не бачиш");
+    expect(text).toContain(
+      "Не проси «запиши причину», «поясни» чи «додай нотатку»",
+    );
+    expect(text).toContain(
+      "віднести операції до категорій, записати їжу, тренування чи витрату, відмітити звичку",
+    );
   });
 });

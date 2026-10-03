@@ -64,10 +64,11 @@ describe("HubChatBody", () => {
   afterEach(() => cleanup());
 
   // Регресія з browser-QA 2026-09-02: розкриття «це AI» (EU AI Act ст. 50(1))
-  // жило всередині `ChatEmpty`, а `normalizeStoredMessages` підставляє
-  // привітальну репліку в кожну порожню сесію — тож порожній стан недосяжний,
-  // і розкриття не показувалось ЖОДНОГО разу. Перевіряємо саме той стан, який
-  // бачить реальний користувач: у стрічці вже є привітання.
+  // жило всередині `ChatEmpty`, а `normalizeStoredMessages` підставляла
+  // привітальну репліку в кожну порожню сесію — тож порожній стан був
+  // недосяжний, і розкриття не показувалось ЖОДНОГО разу. Підстановку
+  // прибрано в PR-A7, але розкриття лишається безумовним навмисно (defense
+  // in depth) — тест і далі перевіряє стан, де в стрічці вже є повідомлення.
   it("shows the AI disclosure even when the greeting message is present", () => {
     renderBody({
       messages: [
@@ -111,7 +112,7 @@ describe("HubChatBody", () => {
       loading: true,
     });
     expect(screen.getByRole("status")).toHaveTextContent(
-      /^Асистент відповідає…$/,
+      /^Сержант відповідає…$/,
     );
   });
 
@@ -179,10 +180,18 @@ describe("HubChatBody", () => {
     expect(scrollable).toBeInTheDocument();
   });
 
+  it("keeps the scrollable message list reachable from the keyboard", () => {
+    // axe `scrollable-region-focusable`: без tabIndex стрічку без
+    // фокусованих елементів не прогорнути клавіатурою.
+    const { container } = renderBody({ loading: false });
+    const scrollable = container.querySelector('[aria-busy="false"]');
+    expect(scrollable).toHaveAttribute("tabindex", "0");
+  });
+
   it("has aria-live polite region for screen reader announcements", () => {
     const { container } = renderBody({ loading: true });
     const liveRegion = container.querySelector('[role="status"]');
-    expect(liveRegion).toHaveTextContent("Асистент відповідає…");
+    expect(liveRegion).toHaveTextContent("Сержант відповідає…");
     const scrollContainer = container.querySelector('[aria-busy="true"]');
     expect(scrollContainer).not.toHaveAttribute("aria-live");
   });

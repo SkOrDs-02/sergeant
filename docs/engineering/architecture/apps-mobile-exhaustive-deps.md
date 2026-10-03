@@ -1,11 +1,11 @@
 # Mobile: навмисні винятки `react-hooks/exhaustive-deps`
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-21.
+> **Last touched:** 2026-09-17 by @claude (додано `FirstEntryCelebrationModal`, лічильник → `rg`-команда). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Документ фіксує **живі** `eslint-disable` для `react-hooks/exhaustive-deps` у виробничому `apps/mobile/src`. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу.
 
-**Поточний стан (2026-07-20):** **9** активних disable у production (8 файлів; `ConfirmDialog.tsx` — 2 сайти). Тестові файли не враховуються. Web-каталог закритий (0 production) — див. [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md).
+**Поточний стан:** лічильник тут не тримаємо (знімок 2026-07-20 казав «9 у 8 файлах» і встиг застаріти) — джерело істини `rg`-команда в § «Перевірка живості» нижче. Тестові файли не враховуються. Web-каталог свідомих винятків — [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md).
 
 ---
 
@@ -19,6 +19,7 @@
 | `core/dashboard/SoftAuthPromptCard.tsx`             | ~56                | Аналітика `onShown` — один раз при монтуванні (parity з web `placement={"dashboard"}`).                                         | mount-only analytics           |
 | `core/dashboard/FirstActionHeroCard.tsx`            | ~182               | Report-on-mount FTUX analytics; повторний виклик при зміні ranking/picks ламає «показано раз».                                  | mount-only analytics           |
 | `core/dashboard/CrossModulePreview.tsx`             | ~61                | `CROSS_MODULE_PREVIEW_SEEN` один раз на mount; повторні surfaces блокує persisted flag, не deps.                                | mount-only analytics           |
+| `core/onboarding/FirstEntryCelebrationModal.tsx`    | ~97                | `ConfettiPiece`: snapshot-значення `spec` стабільні на весь життєвий цикл; анімація стартує один раз на mount.                  | mount-only `[]`                |
 | `components/ui/ConfirmDialog.tsx` (`handleConfirm`) | ~295               | У deps лише `state.resolve` поточного Promise — увесь `state` перестворював би handlers на кожну зміну title/open.              | вузький dep (`state.resolve`)  |
 | `components/ui/ConfirmDialog.tsx` (`handleCancel`)  | ~301               | Те саме для cancel-гілки: resolve поточного діалогу, без зайвих перестворень callback.                                          | вузький dep (`state.resolve`)  |
 | `modules/finyk/lib/transactionsStore.ts`            | ~276               | Mount-only flush seed `realTx` у MMKV; повторний seed-об'єкт на re-render не повинен перезаписувати кеш.                        | mount-only seed flush          |

@@ -17,7 +17,7 @@ import { SYNC_OP_OUTBOX_OPS } from "../sqlite/routine.js";
 
 /**
  * Integration tests for `drainSyncOpOutbox` (PR #042e-drain of
- * `docs/planning/storage-roadmap.md`). Runs the full SPIKE +
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Runs the full SPIKE +
  * PR #040 + PR #042d-prep migration stack against a fresh
  * `:memory:` engine and exercises every public branch:
  *

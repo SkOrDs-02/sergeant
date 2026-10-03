@@ -22,7 +22,7 @@ function parseRate(val: string | undefined, fallback: number): number {
  * tables make audit + drift detection trivial.
  *
  * Defaults derived from H6 (stack-pulse-2026-05/PR-12). Adjustments must
- * update `docs/observability/sentry-sampling.md` in the same PR (drift
+ * update `docs/operations/observability/sentry-sampling.md` in the same PR (drift
  * checked via review, not lint — Sentry quota is the production check).
  */
 export type SentrySamplingRule = {
@@ -30,31 +30,18 @@ export type SentrySamplingRule = {
   match: string;
   /** Sampling rate in [0, 1]. */
   rate: number;
-  /** Why this rate exists (shown in docs/sentry-sampling.md). */
+  /** Why this rate exists (shown in docs/operations/observability/sentry-sampling.md). */
   reason: string;
 };
 
 export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
   // Order is intentional: longest path first so /api/auth/sign-up does not
   // accidentally fall through to /api/health (longest-prefix-first).
-  // Specific /api/internal/openclaw/write/ must precede the broader
-  // /api/internal/ rule so its rate is not overridden.
-  {
-    match: "/api/internal/openclaw/write/",
-    rate: 1.0,
-    reason:
-      "OpenClaw write-tool mutations (ADR-0036 §3) — every founder-approved side-effect captured for audit reconstruction. Low-volume, high blast radius.",
-  },
   {
     match: "/api/internal/",
     rate: 1.0,
     reason:
       "All internal namespace routes (n8n/cron/admin tooling) — low external volume, high blast radius. PR-07 (backend-perf-2026-05): baseline before enabling; reduce to 0.5 if Sentry quota is impacted.",
-  },
-  {
-    match: "/api/account/recovery",
-    rate: 1.0,
-    reason: "Security-critical, low volume — capture every trace.",
   },
   {
     match: "/api/admin/",
@@ -66,7 +53,7 @@ export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
     rate: 1.0,
     reason: "Login/signup/SSO — security-critical, low-volume.",
   },
-  // AI-шлях (B-телеметрія, `docs/90-work/audits/ai-testing-2026-08-25.md`).
+  // AI-шлях (B-телеметрія, `docs/work/specs/audits/ai-testing-2026-08-25.md`).
   //
   // `/api/photo/analyze` стояло тут із самого початку і НЕ МАТЧИЛО НІЧОГО:
   // такого роута в застосунку немає, реальні — `/api/nutrition/analyze-photo`
@@ -268,7 +255,66 @@ function redactUrlForSink(url: string): string {
 /**
  * Span-атрибути OTel, у які інструментація кладе повний outbound-URL.
  */
-const SPAN_URL_ATTRIBUTES = ["http.url", "url.full", "http.target"] as const;
+const SPAN_URL_ATTRIBUTES = [
+  "http.url",
+  "url.full",
+  "http.target",
+  "url.path",
+] as const;
+
+/**
+ * Атрибути/поля, що несуть сирий query-рядок (з `?` або без нього).
+ */
+const SPAN_QUERY_ATTRIBUTES = ["http.query", "url.query"] as const;
+
+/**
+ * Редагує URL- і query-атрибути в пласкому record-і (span.data,
+ * contexts.trace.data, breadcrumb.data) через `redactUrlForSink`. Мутує in-place.
+ */
+function redactUrlAttributes(data: Record<string, unknown> | undefined): void {
+  if (!data || typeof data !== "object") return;
+  for (const attr of SPAN_URL_ATTRIBUTES) {
+    const value = data[attr];
+    if (typeof value === "string") data[attr] = redactUrlForSink(value);
+  }
+  for (const attr of SPAN_QUERY_ATTRIBUTES) {
+    const value = data[attr];
+    if (typeof value !== "string") continue;
+    // `redactSensitiveQueryParams` розпізнає query лише за провідним `?`.
+    const hasQ = value.startsWith("?");
+    const redacted = redactUrlForSink(hasQ ? value : `?${value}`);
+    data[attr] = hasQ ? redacted : redacted.slice(1);
+  }
+}
+
+/**
+ * Спільна редакція `event.request` для error- і transaction-подій.
+ * priv-01: `@sentry/node` 8.55 (`requestDataIntegration`) кладе сюди сире тіло
+ * (паролі входу, текст чату), розпарсені cookies і query_string; хуки мусять
+ * їх прибрати, бо `sendDefaultPii:false` цього не робить.
+ */
+function sanitizeRequest(request: Sentry.Event["request"]): void {
+  if (!request) return;
+  delete request.data;
+  delete request.cookies;
+  delete request.query_string;
+  if (request.headers) {
+    // Headers можуть містити Authorization/Cookie/X-Csrf-Token/Telegram-секрет.
+    scrubPII(request.headers);
+  }
+  if (typeof request.url === "string") {
+    request.url = redactUrlForSink(request.url);
+  }
+}
+
+/**
+ * `contexts.trace.data` (OTel кладе туди http.url/http.target root-span-а).
+ */
+function sanitizeTraceContext(contexts: Sentry.Event["contexts"]): void {
+  const data = contexts?.["trace"]?.["data"] as
+    Record<string, unknown> | undefined;
+  redactUrlAttributes(data);
+}
 
 /**
  * Чистий beforeSend-хук — extracted у named-функцію (а не inline-closure
@@ -277,12 +323,7 @@ const SPAN_URL_ATTRIBUTES = ["http.url", "url.full", "http.target"] as const;
  * хоче Sentry SDK).
  */
 export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
-  if (event.request?.data) delete event.request.data;
-  if (event.request?.cookies) delete event.request.cookies;
-  if (event.request?.headers) {
-    // Headers можуть містити Authorization/Cookie/X-Csrf-Token.
-    scrubPII(event.request.headers);
-  }
+  sanitizeRequest(event.request);
   // C1 — `req.originalUrl` для `/api/mono/webhook/<secret>` несе сам секрет,
   // і Sentry capture-ить його у `event.request.url`. Рятуємо до того, як
   // подія йде на ingest. Хелпер ідемпотентний — викликати двічі безпечно,
@@ -290,15 +331,14 @@ export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
   // Plus PII roast 2026-05-13 §P0-S2: `?token=` / `?api_key=` /
   // `?code=` query params get the same treatment so OAuth callbacks
   // and magic-link error captures don't leak the credential.
-  if (typeof event.request?.url === "string") {
-    event.request.url = redactUrlForSink(event.request.url);
-  }
+  // (URL-редакція `request.url` — усередині `sanitizeRequest`.)
   // Глибокий рекурсивний скраб PII з extra/contexts/breadcrumbs. Ловимо
   // випадки, коли user-payload потрапив у `event.extra` через
   // `Sentry.setExtra('payload', req.body)` або
   // `Sentry.captureException(e, { extra })`.
   if (event.extra) scrubPII(event.extra);
   if (event.contexts) scrubPII(event.contexts);
+  sanitizeTraceContext(event.contexts);
   // PII roast §P0-S3: also scrub the top-level `event.message` and every
   // exception `value` for embedded emails / telegram tokens / JWT / AWS
   // keys. `scrubPII` deliberately skips string contents (false-positive
@@ -373,6 +413,7 @@ export function applyBeforeBreadcrumb(
     if (typeof breadcrumb.data["url"] === "string") {
       breadcrumb.data["url"] = redactUrlForSink(breadcrumb.data["url"]);
     }
+    redactUrlAttributes(breadcrumb.data);
     scrubPII(breadcrumb.data);
   }
   if (typeof breadcrumb?.message === "string") {
@@ -392,25 +433,20 @@ export function applyBeforeBreadcrumb(
 export function applyBeforeSendTransaction<E extends Sentry.Event>(
   event: E,
 ): E {
-  if (typeof event.request?.url === "string") {
-    event.request.url = redactUrlForSink(event.request.url);
-  }
-  if (event.request?.headers) scrubPII(event.request.headers);
+  sanitizeRequest(event.request);
   if (typeof event.transaction === "string") {
     event.transaction = redactUrlForSink(event.transaction);
   }
   if (event.extra) scrubPII(event.extra);
   if (event.contexts) scrubPII(event.contexts);
+  sanitizeTraceContext(event.contexts);
   for (const span of event.spans ?? []) {
     if (typeof span.description === "string") {
       span.description = redactUrlForSink(span.description);
     }
     if (!span.data) continue;
     scrubPII(span.data);
-    for (const attr of SPAN_URL_ATTRIBUTES) {
-      const value: unknown = span.data[attr];
-      if (typeof value === "string") span.data[attr] = redactUrlForSink(value);
-    }
+    redactUrlAttributes(span.data);
   }
   return event;
 }
@@ -422,7 +458,7 @@ export function applyBeforeSendTransaction<E extends Sentry.Event>(
  * the Sentry error budget on transient 502s. Exported for tests + docs.
  *
  * Use plain strings (not regex) because the Sentry SDK accepts both and
- * strings are easier to audit against `docs/observability/sentry-sampling.md`.
+ * strings are easier to audit against `docs/operations/observability/sentry-sampling.md`.
  */
 export const SENTRY_DENY_URLS: readonly (string | RegExp)[] = [
   "/api/health",
@@ -459,9 +495,9 @@ if (dsn) {
     // Dynamic per-route sampler (stack-pulse PR-12). Replaces a static 10%
     // sample rate that over-sampled chatty heartbeats (`/api/health`,
     // `/api/sync/poll`) and under-sampled security-critical low-volume
-    // routes (`/api/auth/*`, `/api/account/recovery`). The rule table is
+    // routes (`/api/auth/*`). The rule table is
     // declarative — see `SENTRY_SAMPLING_RULES` and
-    // `docs/observability/sentry-sampling.md` for rationale + budget.
+    // `docs/operations/observability/sentry-sampling.md` for rationale + budget.
     //
     // `SENTRY_TRACES_SAMPLE_RATE=0` still works — it lowers the *fallback*
     // rate to 0 for unmatched routes (kill-switch for incident-mitigation).
@@ -486,7 +522,15 @@ if (dsn) {
         return defaultSampleRate();
       }
     },
-    // Приберемо request body зі звітів — там можуть бути фото/паролі.
+    // priv-01: тіло запиту й cookies збирає `requestDataIntegration`, а не
+    // `sendDefaultPii` (той лише керує IP/user). У @sentry/node 8.55 опції
+    // `ignoreIncomingRequestBody` немає (вона з v9), тож вимикаємо збір
+    // тут, а хуки `applyBeforeSend*` лишаються захистом у глибину.
+    integrations: [
+      Sentry.requestDataIntegration({
+        include: { data: false, cookies: false, query_string: false },
+      }),
+    ],
     sendDefaultPii: false,
     // PII roast 2026-05-13 §P0-S4: drop events from health probes so
     // uptime monitor 502s never burn the Sentry error budget. Traces

@@ -26,13 +26,14 @@ import type { Pool } from "pg";
 import type {
   BillingCheckoutResponse,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
 import {
   BillingConfigurationError,
   type BillingProvider,
+  type CancelSubscriptionOutcome,
   type ProviderCheckoutInput,
   type ProviderPortalInput,
 } from "./provider.js";
@@ -43,6 +44,7 @@ export const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
 const CCY_UAH = 980;
 const SUBSCRIPTION_VALIDITY_SECONDS = 3600;
 const PUBKEY_TTL_MS = 60 * 60 * 1000;
+const PUBKEY_FORCE_COOLDOWN_MS = 60 * 1000;
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
 export function getToken(): string {
@@ -89,9 +91,10 @@ function parsePubkey(raw: string): crypto.KeyObject {
  */
 export async function ensurePlataPubkey(force = false): Promise<void> {
   const now = Date.now();
-  if (!force && cachedPubkey && now - cachedPubkey.fetchedAt < PUBKEY_TTL_MS) {
-    return;
-  }
+  // Force приходить з анонімного вебхука з невалідним X-Sign; без cooldown
+  // кожен такий запит робив би зовнішній fetch з нашим токеном.
+  const ttl = force ? PUBKEY_FORCE_COOLDOWN_MS : PUBKEY_TTL_MS;
+  if (cachedPubkey && now - cachedPubkey.fetchedAt < ttl) return;
   const response = await fetch(`${MONOPAY_BASE}/pubkey`, {
     headers: { "X-Token": getToken() },
   });
@@ -206,19 +209,23 @@ interface BillingRow {
   plan: string | null;
   status: string;
   current_period_end: Date | string | null;
+  cancel_at_period_end: boolean;
 }
 
-function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
+function serializeBillingRow(
+  row: BillingRow | null,
+): BillingSubscriptionStatus {
   return {
     subscription: row
       ? {
           id: Number(row.id),
           provider:
-            row.provider as BillingStatusResponse["subscription"]["provider"],
-          plan: row.plan as BillingStatusResponse["subscription"]["plan"],
+            row.provider as BillingSubscriptionStatus["subscription"]["provider"],
+          plan: row.plan as BillingSubscriptionStatus["subscription"]["plan"],
           status: row.status,
           active: ACTIVE_STATUSES.has(row.status),
           currentPeriodEnd: isoOrNull(row.current_period_end),
+          cancelAtPeriodEnd: row.cancel_at_period_end === true,
         }
       : {
           id: null,
@@ -227,6 +234,7 @@ function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
           status: null,
           active: false,
           currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
         },
   };
 }
@@ -236,7 +244,7 @@ async function readLatestSubscription(
   userId: string,
 ): Promise<BillingRow | null> {
   const { rows } = await pool.query<BillingRow>(
-    `SELECT id, provider, plan, status, current_period_end
+    `SELECT id, provider, plan, status, current_period_end, cancel_at_period_end
        FROM subscriptions
       WHERE user_id = $1
       ORDER BY
@@ -323,7 +331,7 @@ export const plataProvider: BillingProvider = {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse> {
+  ): Promise<BillingSubscriptionStatus> {
     return readLatestSubscription(pool, userId).then(serializeBillingRow);
   },
 
@@ -361,8 +369,30 @@ export const plataProvider: BillingProvider = {
    * ADR-1.11). Fallback на `subscription/remove` при 404/400 — `remove`
    * працює лише поки за підпискою не було жодної оплати. Best-effort:
    * провайдер-помилка не валить локальне скасування (ADR-0016).
+   *
+   * AI-NOTE: на відміну від LiqPay/Stripe, відмову monobank тут ковтаємо й
+   * `cancel_at_period_end` усе одно виставляємо. Це давнє рішення, а не
+   * недогляд цього PR; змінювати його — окреме продуктове рішення
+   * (див. `plata.test.ts`: «swallows a network error from monobank»).
    */
-  async cancelSubscription(pool: Pool, userId: string): Promise<void> {
+  async cancelSubscription(
+    pool: Pool,
+    userId: string,
+  ): Promise<CancelSubscriptionOutcome> {
+    // Уже скасовано до кінця періоду — monobank вдруге не смикаємо.
+    const current = await pool.query<{ cancel_at_period_end: boolean }>(
+      `SELECT cancel_at_period_end
+         FROM subscriptions
+        WHERE user_id = $1 AND provider = 'plata'
+          AND status IN ('active', 'trialing', 'past_due')
+        ORDER BY updated_at DESC
+        LIMIT 1`,
+      [userId],
+    );
+    if (current.rows[0]?.cancel_at_period_end === true) {
+      return "already_canceling";
+    }
+
     const subscriptionId = await findSubscriptionId(pool, userId);
     if (subscriptionId) {
       try {
@@ -397,14 +427,15 @@ export const plataProvider: BillingProvider = {
         });
       }
     }
-    // Доступ до кінця періоду (ADR-1.11). WHERE-guard робить повторний
-    // виклик на вже скасованій підписці no-op.
-    await pool.query(
+    // Доступ до кінця періоду (ADR-1.11). WHERE-guard лишає без змін усе, що
+    // не є активною plata-підпискою; `rowCount` каже, чи було що скасовувати.
+    const updated = await pool.query(
       `UPDATE subscriptions
           SET cancel_at_period_end = TRUE, updated_at = NOW()
         WHERE user_id = $1 AND provider = 'plata'
           AND status IN ('active', 'trialing', 'past_due')`,
       [userId],
     );
+    return (updated.rowCount ?? 0) > 0 ? "canceled" : "none";
   },
 };

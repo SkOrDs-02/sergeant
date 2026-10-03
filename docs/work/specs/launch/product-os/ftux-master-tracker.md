@@ -1,6 +1,6 @@
 # FTUX Master Tracker — стан, проблеми, план
 
-> **Last touched:** 2026-07-20 by @cursor (docs-drift: S6.3/S6.11/PR-12 reconciled). **Next review:** 2027-10-23.
+> **Last touched:** 2026-09-22 by @claude (§8.5 резюме перераховано за таблицею нижче: PR-0 закрито, цифри застаріли). **Next review:** 2026-12-16.
 > **Status:** Active — **single source of truth** для First-Time User Experience.
 >
 > **Update 2026-07-10:** billing scaffold landed (`usePlan()`, `PaywallModal`, `TrialBanner`, `/api/billing/*`). Pricing — ADR-0068 (₴199, reverse trial 7d). Summer refresh whats-new shipped (`2026-06-26-summer-refresh`). Секції §1–§3 нижче містять historical PR-snapshots (2026-05) + новий зріз.
@@ -14,7 +14,7 @@
 > - Зовнішня прожарка 2026-05-05 (`reports/sergeant-onboarding-ux-roast-2026-05-05.md`) — новий зріз, **інкорпорований** сюди.
 >
 > **Cross-refs:**
-> [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
+> [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-і-конверсія-у-платників) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
 > [`docs/operations/observability/posthog-ftux-dashboards.md`](../../../../operations/observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
 > [`docs/governance/governance/feature-flags.md`](../../../../governance/governance/feature-flags.md) — flag conventions ·
@@ -50,7 +50,7 @@
 
 > **Snapshot 2026-07-10 (code truth):**
 >
-> - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open: live Stripe prod env, legal publish, remaining placement polish.
+> - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open (звірка 2026-09-17): live prod env для LiqPay/Plata — саме вони live UA-провайдери, Stripe dormant за флагом (`apps/server/src/modules/billing/provider.ts`); реквізити ФОП + представник у ЄС — legal пак опубліковано 12.07.2026 ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи)); remaining placement polish.
 > - **Pricing/trial:** ADR-0068 — ₴199/міс, ₴1490/рік, reverse trial 7 днів, cloud-sync 2 devices; Free AI **5 msg/day** (ADR-0085); анонім AI не отримує зовсім — асистент за `requireSession()`, гість бачить 401 і запрошення увійти (ADR-0086).
 > - **Landing:** in-app `LandingPage` на `/` + waitlist shipped; standalone `sergeant.com.ua` — TBD.
 > - **FTUX sprints:** S1–S3 core items merged; S6 cleanup mostly done. Real-world activation conversion still **TBD** (needs 14+ day cohort).
@@ -68,7 +68,7 @@
 
 **Стан 2026-05-05:**
 
-- **Sprint 0 (analytics транспорт):** ✅ web — done. ❌ mobile — open (PR-15 заплановано).
+- **Sprint 0 (analytics транспорт):** ✅ web — done. ❌ mobile — заморожено ADR-0094 (PR-15).
 - **Sprints 1-3 (UX-зсуви):** **27 з 35 sprint-items закрито** в `main`. 8 open, з них 5 — у Sprint 6 cleanup batch.
 - **Activation funnel:** 8-step funnel живе у PostHog для web (`onboarding_started → step_viewed → step_completed → vibe_picked → first_action_picked → ftux_preset_picked → first_real_entry → celebration_shown`). D1/D7 retention dashboards присутні.
 - **Real-world activation conversion:** **TBD** — потребує 14+ днів живої когорти (web cohort started ~2026-04-28).
@@ -131,17 +131,17 @@
 
 ### 3.1. Хвиля 1 — Quick wins (Week 1, 8 PR)
 
-| PR        | Назва                                                        | LOC          | Deps  | Метрика                                                    | Стан                                                                                                 |
-| --------- | ------------------------------------------------------------ | ------------ | ----- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **PR-00** | docs(launch): consolidate FTUX into master tracker           | ~530         | —     | SSOT існує; redirect-stub-и у старих файлах                | ✅ [Merged #1934](https://github.com/Skords-01/Sergeant/pull/1934)                                   |
-| **PR-01** | chore(docs): audit freeze + PR-template warning              | ~320         | —     | 0 нових audit/initiative-доків 4 тижні                     | ✅ [Merged #1936](https://github.com/Skords-01/Sergeant/pull/1936)                                   |
-| **PR-02** | docs(readme): hero image + GIF + product overview            | ~95 (struct) | —     | First-impression 60s test                                  | ✅ [Merged #1937](https://github.com/Skords-01/Sergeant/pull/1937) (struct only; assets у PR-02b)    |
-| **PR-03** | feat(root): pnpm bootstrap one-shot setup                    | ~510         | —     | First-run from clone до browser ≤ 5 хв                     | ✅ [Merged #1943](https://github.com/Skords-01/Sergeant/pull/1943) (seed-dev-user → PR-03b)          |
-| **PR-04** | feat(shared): hero copy A/B variants — disciplined helper    | ~107         | —     | Wizard→first-entry conversion + 5pp за 14 днів             | ✅ [Merged #1944](https://github.com/Skords-01/Sergeant/pull/1944) (v2 split, 4-way 0.4/0.2/0.2/0.2) |
-| **PR-05** | feat(welcome): demo mode as first-class CTA                  | ~60          | PR-04 | Demo share-of-traffic ≥ 15%                                | ✅ [Merged #1986](https://github.com/Skords-01/Sergeant/pull/1986)                                   |
-| **PR-06** | feat(brand): canonical Cyrillic naming sweep                 | ~150         | —     | UI label uniformity (Фінік / Фізрук / Рутина / Харчування) | ✅ [Merged #1998](https://github.com/Skords-01/Sergeant/pull/1998)                                   |
-| **PR-07** | feat(pwa): install prompt banner                             | ~140         | —     | `pwa_installed / first_real_entry ≥ 8%`                    | ✅ [Merged #2011](https://github.com/Skords-01/Sergeant/pull/2011)                                   |
-| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit | -2200        | —     | `find docs/work/specs/audits -maxdepth 1 -name '*.md'` ≤ 6 | ✅ [Merged #2768](https://github.com/Skords-01/Sergeant/pull/2768)                                   |
+| PR        | Назва                                                                                                                | LOC          | Deps  | Метрика                                                    | Стан                                                                                                 |
+| --------- | -------------------------------------------------------------------------------------------------------------------- | ------------ | ----- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **PR-00** | docs(launch): consolidate FTUX into master tracker                                                                   | ~530         | —     | SSOT існує; redirect-stub-и у старих файлах                | ✅ [Merged #1934](https://github.com/Skords-01/Sergeant/pull/1934)                                   |
+| **PR-01** | chore(docs): audit freeze + PR-template warning                                                                      | ~320         | —     | 0 нових audit/initiative-доків 4 тижні                     | ✅ [Merged #1936](https://github.com/Skords-01/Sergeant/pull/1936)                                   |
+| **PR-02** | docs(readme): hero image + GIF + product overview                                                                    | ~95 (struct) | —     | First-impression 60s test                                  | ✅ [Merged #1937](https://github.com/Skords-01/Sergeant/pull/1937) (struct only; assets у PR-02b)    |
+| **PR-03** | feat(root): pnpm bootstrap one-shot setup                                                                            | ~510         | —     | First-run from clone до browser ≤ 5 хв                     | ✅ [Merged #1943](https://github.com/Skords-01/Sergeant/pull/1943) (seed-dev-user → PR-03b)          |
+| **PR-04** | feat(shared): hero copy A/B variants — disciplined helper                                                            | ~107         | —     | Wizard→first-entry conversion + 5pp за 14 днів             | ✅ [Merged #1944](https://github.com/Skords-01/Sergeant/pull/1944) (v2 split, 4-way 0.4/0.2/0.2/0.2) |
+| **PR-05** | feat(welcome): demo mode as first-class CTA - знято [ADR-0095](../../../../governance/adr/0095-demo-mode-removed.md) | ~60          | PR-04 | Demo share-of-traffic ≥ 15%                                | ✅ [Merged #1986](https://github.com/Skords-01/Sergeant/pull/1986)                                   |
+| **PR-06** | feat(brand): canonical Cyrillic naming sweep                                                                         | ~150         | —     | UI label uniformity (Фінік / Фізрук / Рутина / Харчування) | ✅ [Merged #1998](https://github.com/Skords-01/Sergeant/pull/1998)                                   |
+| **PR-07** | feat(pwa): install prompt banner                                                                                     | ~140         | —     | `pwa_installed / first_real_entry ≥ 8%`                    | ✅ [Merged #2011](https://github.com/Skords-01/Sergeant/pull/2011)                                   |
+| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit                                                         | -2200        | —     | `find docs/work/specs/audits -maxdepth 1 -name '*.md'` ≤ 6 | ✅ [Merged #2768](https://github.com/Skords-01/Sergeant/pull/2768)                                   |
 
 ### 3.2. Хвиля 2 — Product UX (Week 2-3, 6 PR)
 
@@ -162,7 +162,7 @@
 
 | PR        | Назва                                                    | LOC  | Deps | Метрика                                             | Стан                                                                                                                                                                                                                                                                       |
 | --------- | -------------------------------------------------------- | ---- | ---- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **PR-15** | feat(mobile): posthog-react-native parity                | ~280 | —    | PostHog mobile-cohort > 0 events/day у production   | ⏳ Wave 3                                                                                                                                                                                                                                                                  |
+| **PR-15** | feat(mobile): posthog-react-native parity                | ~280 | —    | PostHog mobile-cohort > 0 events/day у production   | заморожено [ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)                                                                                                                                                                                          |
 | **PR-16** | chore(a11y): screen-reader audit + fix sweep (5 mini-PR) | ~250 | —    | 0 axe-core violations + manual recording            | ⏳ Wave 3                                                                                                                                                                                                                                                                  |
 | **PR-17** | chore(licenses): auto-generated THIRD_PARTY_LICENSES.md  | ~120 | —    | License doc drift-free у наступному PR              | ✅ Closed — [PR #516](https://github.com/Skords-01/Sergeant/pull/516) (generator + SBOM) + [PR #517](https://github.com/Skords-01/Sergeant/pull/517) (`pnpm licenses:check` у CI) + [PR #518](https://github.com/Skords-01/Sergeant/pull/518) (empty-SBOM staleness guard) |
 | **PR-18** | feat(whats-new): in-product release notes modal          | ~200 | —    | `d7_returning_user_engagement_with_whats_new ≥ 30%` | ✅ Closed — `apps/web/src/core/whatsNew/` (`<WhatsNewModal />` + `useWhatsNew` + `releases.ts`) + `docs/product/whats-new/` (markdown changelog) + 3 PostHog events. Auto-show гейт — `hasFirstRealEntry && !inFtuxSession`.                                               |
@@ -173,7 +173,7 @@
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------------- | ----------------------------------------------------------------------- |
 | **PR-19** | docs(paywall): UX placement sketch + decision doc → [`paywall-ux-placement.md`](./paywall-ux-placement.md)                                                                                                                                                                                            | ~280 doc        | —                                      | Paywall placement clearly defined ✅ landed                             |
 | **PR-20** | feat(paywall): in-product placement (post-FTUX moment) — **plan landed** [`paywall-implementation-plan.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/01-product/launch/archive/product-os/paywall-implementation-plan.md); impl gated на 0010 phase 3 | ~510 (4 sub-PR) | PR-19, 0010 phase 3 (`usePlan()` hook) | Paywall conversion ≥ 3% за перші 30 днів (start-clock = real flag-flip) |
-| **PR-21** | feat(mobile): FTUX parity sweep                                                                                                                                                                                                                                                                       | ~350            | PR-09, PR-11, PR-15                    | Mobile FTUX coverage ≥ 90%                                              |
+| **PR-21** | feat(mobile): FTUX parity sweep - заморожено [ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)                                                                                                                                                                                   | ~350            | PR-09, PR-11, PR-15                    | Mobile FTUX coverage ≥ 90%                                              |
 | **PR-22** | docs(agents): TOC + read-time annotations + quick-reference                                                                                                                                                                                                                                           | ~180            | —                                      | New-agent first-PR success rate (subjective)                            |
 
 ### 3.5. Module-level інфраструктура — вже в `main` (FTUX-relevant context)
@@ -500,7 +500,7 @@ slos:
 | M-3  | 14 onboarding-adjacent компонентів — guidance bloat                      | ⏳ Open                 | PR-12 (incremental orchestrator)                                                                                                                                                                                                 |
 | M-4  | Demo mode прихований за `?demo=1`                                        | ✅ Closed               | PR-05 [#1986](https://github.com/Skords-01/Sergeant/pull/1986)                                                                                                                                                                   |
 | M-5  | UA-only product UI без runtime i18n                                      | 🗄️ Deferred             | UA-only до launch (per Q4)                                                                                                                                                                                                       |
-| M-6  | Mobile FTUX parity gap                                                   | 🚧 Partial              | PR-15 (PostHog) ✅ код ready 2026-05-07 (needs EAS Secret); PR-21 (FTUX components) ⏳ open                                                                                                                                      |
+| M-6  | Mobile FTUX parity gap                                                   | ⏸ Заморожено            | PR-15 (PostHog) ✅ код ready 2026-05-07 (needs EAS Secret); PR-21 (FTUX components) заморожено ADR-0094; M-6 заморожено ADR-0094 (мобільний контур на паузі)                                                                     |
 | M-7  | Paywall placement у FTUX — повна відсутність UX-плану                    | ⏳ Open                 | PR-19 (sketch) → PR-20 (impl)                                                                                                                                                                                                    |
 | M-8  | AGENTS.md 81 КБ — read-tax 6×                                            | 🚧 Mitigation           | PR-22 (TOC + quick-reference, без split)                                                                                                                                                                                         |
 | M-9  | PWA install prompt відсутній                                             | ✅ Closed               | PR-07 [#2011](https://github.com/Skords-01/Sergeant/pull/2011)                                                                                                                                                                   |
@@ -513,6 +513,13 @@ slos:
 > Джерело: [`docs/work/specs/audits/2026-05-06-ux-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/work/specs/audits/2026-05-06-ux-roast-pr-plan.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../../governance/adr/0054-ux-roast-2026-q2.md).
 >
 > Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
+>
+> **Перераховано 2026-09-22 за таблицею нижче:** з 36 PR, поіменованих у
+> таблиці (вихідний план - 41, частина об'єднана в групові рядки), **15
+> закрито, 20 відкрито, 1 заблоковано** (PR-28, S3/R2 credentials). Блокер
+> Sprint 1 знято: **PR-0 (telemetry) тепер `✅ Closed`** - усі 9 подій
+> landed. Обсолет-мітку «PR-13, PR-37» таблиця не підтверджує: PR-13 і зараз
+> у рядку `⏳ Open` (`PR-8-14`), PR-37 у таблиці не згадується взагалі.
 
 | Sprint | Категорія                              | Стан       | Деталі                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------ | -------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

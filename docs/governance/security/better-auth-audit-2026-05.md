@@ -197,10 +197,11 @@ HMAC-SHA256 signed requests з timestamp anti-replay.
   `WEBHOOK_HMAC_TS_TOLERANCE_SEC`).
 - **Constant-time compare**: `safeStringEqual` → `crypto.timingSafeEqual`.
 - **Roll-out playbook**: [`docs/governance/security/api-internal-hmac.md`](./api-internal-hmac.md).
-  30-day grace window (`WEBHOOK_HMAC_REQUIRED=false`, default) — server
-  warn-logs `webhook_hmac_mismatch` на mismatch, але пропускає запит,
-  щоб n8n workflows можна було мігрувати по одному. Після `hmacSigned: true`
-  на всіх 25 workflow-ах (`manifest.json`) — flip `WEBHOOK_HMAC_REQUIRED=true`.
+  Історично тут було 30-денне grace-вікно (`WEBHOOK_HMAC_REQUIRED=false`,
+  тодішній дефолт): server warn-logs `webhook_hmac_mismatch` на mismatch, але
+  пропускає запит, щоб n8n workflows можна було мігрувати по одному. Після
+  виведення n8n (ADR-0090) вікно лишилось без предмета, і **2026-09-16 дефолт
+  перевернуто на `true`** рішенням власника.
 - **Manifest validator** (`scripts/n8n/validate-n8n-workflows.mjs` <!-- removed -->, прибрано ADR-0090): якщо
   `hmacSigned: true`, тоді `WEBHOOK_HMAC_SECRET` обов'язково в
   `requiredEnv` — щоб ops не забули виставити змінну на n8n Railway.

@@ -60,7 +60,7 @@ export const PROMPT_INJECTION_PATTERNS: ReadonlyArray<RegExp> = [
   /act\s+as\s+(?:if\s+you\s+are\s+)?(?:a\s+different|an?\s+evil)/i,
   /\bnew\s+(?:system\s+)?instructions\s*:/i,
   /jailbreak\s+mode|developer\s+mode\s+enabled/i,
-  // B40 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — UA/RU-патерни.
+  // B40 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — UA/RU-патерни.
   // Огорожа `<tool_output>` мовно-нейтральна і тримала й до цього; діра була
   // у ВИДИМОСТІ: україно/російськомовний продукт не рахував
   // `chat_prompt_injection_attempt_total` для запитів рідною мовою, тобто
@@ -96,7 +96,9 @@ function safeName(name: string | undefined): string {
  * модель сприймає їх як data всередині `<tool_output>`.
  */
 function escapeToolOutputClose(s: string): string {
-  return s.replace(/<\/tool_output>/gi, "<\u200B/tool_output>");
+  // Ентіті, як і в `escapeUserDataClose`: zero-width-варіант (B8) візуально
+  // лишався закривальним тегом, ентіті однозначні.
+  return s.replace(/<\/tool_output>/gi, "&lt;/tool_output&gt;");
 }
 
 export interface NormalizedToolResult {
@@ -154,6 +156,12 @@ export interface WrapToolResultsOptions {
   recordInjectionAttempt?: (labels: { tool: string }) => void;
   /** Override патернів — для тестів. */
   patterns?: ReadonlyArray<RegExp>;
+  /** Кожен просканований результат із вердиктом regex - для тіньових детекторів. */
+  onScanned?: (scan: {
+    tool: string;
+    content: string;
+    matched: boolean;
+  }) => void;
 }
 
 /**
@@ -187,6 +195,7 @@ export function wrapAndScanToolResults(
     if (matched) {
       inc({ tool });
     }
+    opts.onScanned?.({ tool, content: r.content, matched });
     const escaped = escapeToolOutputClose(r.content);
     const wrapped = `<tool_output tool="${tool}">${escaped}</tool_output>`;
     return { tool_use_id: r.tool_use_id, content: wrapped };

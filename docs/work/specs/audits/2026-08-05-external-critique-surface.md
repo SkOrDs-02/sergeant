@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-31.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-11-14.
 > **Status:** Active
 
 > **Питання, на яке відповідає документ:** якщо на репозиторій і продукт
@@ -126,6 +126,32 @@
 
 ### 1.3 Аналітика: згода є в даних, але не в тракті подій
 
+> **Закрито 2026-09-29** (рішення власника: банер згоди при першому запуску,
+> варіанти A + B + C). `trackEvent` не шле в PostHog без
+> `getAnalyticsConsent()` ([`analytics.ts`](../../../../apps/web/src/core/observability/analytics.ts));
+> `posthog.init()` має `opt_out_capturing_by_default: true` і
+> `opt_in_capturing` / `opt_out_capturing` за станом згоди
+> ([`posthog.ts`](../../../../apps/web/src/core/observability/posthog.ts));
+> банер — [`AnalyticsConsentBanner.tsx`](../../../../apps/web/src/core/observability/AnalyticsConsentBanner.tsx)
+> через ліниве [`AnalyticsConsentGate`](../../../../apps/web/src/core/observability/AnalyticsConsentGate.tsx);
+> одне джерело правди з тумблером у Налаштуваннях —
+> [`analyticsConsent.ts`](../../../../apps/web/src/core/observability/analyticsConsent.ts).
+>
+> **Оновлення 2026-10-01 (рішення власника): згода — крок онбордингу, а не
+> плаваючий банер над ним.** Банер перекривав картки модулів першого екрана
+> `/welcome` («З чого почати?»). Тепер після вибору модулів іде
+> [`OnboardingConsentStep`](../../../../apps/web/src/core/onboarding/OnboardingConsentStep.tsx)
+> (обидві відповіді однакового вигляду; «Про приватність» відкриває політику в
+> аркуші без втрати вибору). Запис — той самий `setAnalyticsConsent`
+> ([`useAnalyticsConsentChoice`](../../../../apps/web/src/core/observability/useAnalyticsConsentChoice.ts)),
+> нового сховища чи зміни API немає. Банер лишився запасним шляхом для тих, хто
+> вже минув онбординг і ніколи не відповідав; `AnalyticsConsentGate` не
+> показує його на `/welcome` та `/onboarding/*`. Події воронки
+> `onboarding_vibe_picked` / `onboarding_completed` тепер стартують ПІСЛЯ
+> рішення, тож потрапляють у PostHog, якщо згода є.
+>
+> Текст нижче — стан до виправлення (історія рішення).
+
 **Severity: середньо (було високо — частину закрито в `main` 2026-08-04/05).**
 
 > **Оновлено після мержу `main` (`17d31a1`).** Перша редакція цієї секції
@@ -207,6 +233,30 @@ IBAN, картка, ІПН), голос — ні, бо в аудіо маску�
 Фізрук/Харчування (перший вхід → екран explicit consent із датою і версією
 тексту), і окремий прапорець на голосове введення. Колонка вже є; бракує рівно
 перевірки.
+
+> **Закрито частково 2026-09-29 (рішення власника: ВУЗЬКИЙ гейт).** Модулі
+> Фізрук/Харчування лишаються відкритими (дані локальні), а enforcement стоїть
+> там, де дані виходять за периметр: без збереженої `healthDataConsent` health
+> не йде в LLM і `ai_memories`. Гейт на сервері (fail-closed), покриває чат
+> (контекст, tools, tool_results — [`chat/healthGate.ts`](../../../../apps/server/src/modules/chat/healthGate.ts)),
+> коуч, тижневий дайджест, фото страв і денний КБЖВ-план
+> ([`lib/healthConsent.ts`](../../../../apps/server/src/lib/healthConsent.ts)),
+> запис і читання `ai_memories`
+> ([`ai-memory/service.ts`](../../../../apps/server/src/modules/ai-memory/service.ts),
+> [`healthRows.ts`](../../../../apps/server/src/modules/ai-memory/healthRows.ts)).
+> Політика приватності приведена до поведінки
+> ([`privacyDocument.ts`](../../../../apps/web/src/core/legal/privacyDocument.ts)),
+> рішення записано в [`hub-coach.md`](../../../product/modules/hub-coach.md) §
+> Журнал рішень. **Голос закрито 2026-09-30 (рішення
+> власника: модуль-тег):** клієнт передає `?module=` у `/api/transcribe`,
+> для `nutrition`/`fizruk` без згоди сервер відповідає 403
+> `HEALTH_CONSENT_REQUIRED` до Groq і квоти
+> ([`routes/transcribe.ts`](../../../../apps/server/src/routes/transcribe.ts),
+> тест `transcribe.healthConsent.test.ts`). Тег декларативний (клієнт може
+> збрехати), відсутній або невідомий тег = відкрито для старих клієнтів.
+> **Лишається відкритим:** вільний текст у повідомленнях чату (класифікатора немає), і
+> окремий екран explicit consent із датою та версією тексту при першому
+> використанні.
 
 ### 1.5 Гейт покриття LLM-периметра сліпий до двох провайдерів із чотирьох
 
@@ -300,6 +350,8 @@ ID»). Одночасно `01-monetization-and-pricing.md` планує плат
 ім'я або назву ФОП, а не GitHub-нік — нік не є юридичною особою.
 
 ### 2.3 Open Food Facts: ODbL і відсутня атрибуція
+
+> **СТАТУС 2026-09-29: ЧАСТКОВО ЗАКРИТО.** Рядок-посилання «Open Food Facts (ліцензія ODbL)» показується під результатами пошуку їжі (`FoodPickerSection.tsx`), джерело додано в перелік довідкових сервісів політики приватності (`privacyDocument.ts`, `legalShared.ts`). README свідомо не чіпали.
 
 **Severity: середньо (реальне порушення ліцензії).**
 
@@ -637,7 +689,7 @@ URL немає**, і hero-скріншот теж (`README.md:16-18` — сло�
 
 ### Цей тиждень (малий код)
 
-5. **§ 1.3** — перенести `getAnalyticsConsent()` з двох call-site-ів у сам
+5. ✅ **§ 1.3** (закрито 2026-09-29, див. § 1.3) — перенести `getAnalyticsConsent()` з двох call-site-ів у сам
    `trackEvent` (+ `opt_out_capturing_by_default: true`). Дефолти в БД уже
    `FALSE` — бракує рівно перевірки в тракті подій.
 6. **§ 1.5** — `openrouter.ai` і Groq у `EXIT_MARKERS`; тест, що маркери

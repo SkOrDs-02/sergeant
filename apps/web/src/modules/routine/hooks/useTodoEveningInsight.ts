@@ -1,5 +1,10 @@
 import { useMemo } from "react";
-import { habitScheduledOnDate } from "@sergeant/routine-domain";
+import {
+  habitScheduledOnDate,
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
+import { pluralHabits } from "@sergeant/shared";
 import { anchoredTodayKey } from "../lib/dayAnchor";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
@@ -32,8 +37,15 @@ export function useTodoEveningInsight(routine: RoutineState): Insight | null {
     const names: string[] = [];
     for (const h of routine.habits) {
       if (h.archived) continue;
-      if (!habitScheduledOnDate(h, todayKey)) continue;
       const completions = routine.completions[h.id] ?? [];
+      // Гнучка звичка («N разів на тиждень») перестає бути запланованою,
+      // щойно тижневу ціль добрано — без `weekDoneCount` предикат завжди
+      // істинний (`schedule.ts`), тож підказка рахувала б її «незробленою»
+      // навіть коли тижневу ціль уже закрито (аудит 2026-09, PR-R4).
+      const weekDoneCount = isFlexibleHabit(h)
+        ? weekDoneCountExcludingDate(completions, todayKey)
+        : undefined;
+      if (!habitScheduledOnDate(h, todayKey, { weekDoneCount })) continue;
       if (!completions.includes(todayKey)) names.push(h.name);
     }
     return names;
@@ -45,7 +57,7 @@ export function useTodoEveningInsight(routine: RoutineState): Insight | null {
     return {
       id: "routine-todo-evening",
       module: "routine",
-      title: `${pendingNames.length} звичок чекають`,
+      title: `${pendingNames.length} ${pluralHabits(pendingNames.length)} чекають`,
       subtitle: "Закрити сьогоднішнє?",
       askAiPrompt: `Вечір, а зі звичок сьогодні не відмічені: ${pendingNames.join(", ")}. Допоможи вирішити, що з цього ще реально зробити, а що чесно перенести.`,
       action: { type: "navigate", path: "/routine/today" },

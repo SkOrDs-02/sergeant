@@ -5,10 +5,11 @@ import {
   filterVisibleAccounts,
 } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
+import { useDebtAutoLink } from "../hooks/useDebtAutoLink";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
-import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 
 // AI-NOTE: Props mirror the original Assets component signature from FinykApp.
 // The original component was untyped; we use loose structural types here to
@@ -68,6 +69,8 @@ export type AssetsProps = {
     error?: unknown;
     refetchTransactions?: () => void;
     jars?: readonly JarLike[] | undefined;
+    /** Дотягує банківський діапазон у дзеркало (`useMonobankWebhook`). */
+    fetchRange?: ((from: string, to: string) => Promise<unknown>) | undefined;
   };
   storage: StorageSlice;
   showBalance?: boolean;
@@ -120,14 +123,15 @@ export function useAssetsState({
   } = storage;
 
   const linkableTransactions = useMemo(
-    () => [
-      ...transactions,
-      ...(manualExpenses ?? []).map((expense) =>
-        manualExpenseToTransaction(expense),
-      ),
-    ],
+    () => withManualExpenses(transactions, manualExpenses),
     [manualExpenses, transactions],
   );
+
+  // Level 2 (2026-09-11): застосовує `Debt.autoLinkKeyword` до щойно
+  // завантаженого стану. Тут, а не в `AssetsLiabilitiesSection`, бо саме
+  // тут обидва входи (`manualDebts`, `linkableTransactions`) уже в
+  // пам'яті — нового fetch-у ефект не потребує.
+  useDebtAutoLink(manualDebts, linkableTransactions, setLinkedTxRole);
 
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [showDebtForm, setShowDebtForm] = useState(initialOpenDebt);
@@ -147,6 +151,7 @@ export function useAssetsState({
     emoji: "\u{1F4B8}",
     totalAmount: "",
     dueDate: "",
+    autoLinkKeyword: "",
   });
   const [newRecv, setNewRecv] = useState({
     name: "",
@@ -217,6 +222,11 @@ export function useAssetsState({
     networth,
     totalAssets,
   } = assetsSummary;
+  // Той самий предикат, що в `sumManualAssetsUAH`: у капітал іде лише
+  // `currency === "UAH"`, решту картка капіталу мусить назвати вголос.
+  const nonUahManualAssetCount = manualAssets.filter(
+    (a) => a.currency !== "UAH",
+  ).length;
   const monoDebtAccounts = filterVisibleAccounts(
     monoAccounts,
     hiddenAccounts,
@@ -230,10 +240,12 @@ export function useAssetsState({
         subscriptions,
         manualDebts,
         receivables,
-        transactions: [...transactions],
+        // Ручні записи теж: підписку й борг можна привʼязати до них, і
+        // картки нижче вже рахують з цього ж набору.
+        transactions: linkableTransactions,
         todayStart,
       }),
-    [subscriptions, manualDebts, receivables, transactions, todayStart],
+    [subscriptions, manualDebts, receivables, linkableTransactions, todayStart],
   );
 
   // Єдиний вхід у кожну форму — quick-action-ряд угорі сторінки. Раніше
@@ -260,7 +272,13 @@ export function useAssetsState({
   const openDebtForm = () => {
     setOpen((v) => ({ ...v, liabilities: true }));
     setEditingDebtId(null);
-    setNewDebt({ name: "", emoji: "", totalAmount: "", dueDate: "" });
+    setNewDebt({
+      name: "",
+      emoji: "",
+      totalAmount: "",
+      dueDate: "",
+      autoLinkKeyword: "",
+    });
     setShowDebtForm(true);
   };
 
@@ -336,6 +354,7 @@ export function useAssetsState({
     totalReceivable,
     manualAssetTotal,
     networth,
+    nonUahManualAssetCount,
     totalAssets,
     todayStart,
     urgentLiability,

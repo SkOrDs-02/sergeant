@@ -163,7 +163,7 @@ describe("WorkoutTemplatesSection", () => {
     fireEvent.change(screen.getByLabelText("Пошук вправи для шаблону"), {
       target: { value: "немає збігу" },
     });
-    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
   });
 
   it("reorders and removes exercises in the editor", () => {

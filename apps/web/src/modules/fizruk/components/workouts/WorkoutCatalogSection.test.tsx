@@ -397,3 +397,55 @@ describe("WorkoutCatalogSection — recovery warning", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("WorkoutCatalogSection — позначка «вже в тренуванні»", () => {
+  /**
+   * Аркуш каталогу навмисно не закривається після додавання, тож рядок
+   * мусить сам нести стан. До цієї позначки успіх був єдиною гілкою без
+   * зворотного звʼязку — власник вирішив, що екран зламано (2026-09-12).
+   */
+  function renderWithCounts(
+    counts: Record<string, number> | undefined,
+    mode: "log" | "catalog" = "log",
+  ) {
+    const ex = makeEx("bench", "Жим лежачи");
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({
+          mode,
+          grouped: [makeGroup("chest", [ex])],
+          open: { chest: true },
+          ...(counts ? { addedCountByExerciseId: counts } : {}),
+        })}
+      />,
+    );
+  }
+
+  it("не показує позначку, поки вправи немає в тренуванні", () => {
+    renderWithCounts({});
+    expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
+    expect(screen.queryByText(/Додано/)).not.toBeInTheDocument();
+  });
+
+  it("показує «Додано» після першого додавання", () => {
+    renderWithCounts({ bench: 1 });
+    expect(screen.getByText(/Додано/)).toBeInTheDocument();
+    expect(screen.queryByText(/×/)).not.toBeInTheDocument();
+  });
+
+  it("показує лічильник для дубля, бо повторний тап дозволений", () => {
+    renderWithCounts({ bench: 3 });
+    expect(screen.getByText(/Додано\s*×3/)).toBeInTheDocument();
+  });
+
+  it("у режимі каталогу позначки немає — там немає активного тренування", () => {
+    renderWithCounts({ bench: 2 }, "catalog");
+    expect(screen.queryByText(/Додано/)).not.toBeInTheDocument();
+  });
+
+  it("без пропа не падає", () => {
+    renderWithCounts(undefined);
+    expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
+    expect(screen.queryByText(/Додано/)).not.toBeInTheDocument();
+  });
+});

@@ -89,15 +89,36 @@
     --c-panel-hi: 246 245 242; /* #f6f5f2 — warm hover/input bg (Б1) */
 
     /* Borders — warm gray with cream undertone */
-    --c-line: 226 224 218; /* #e2e0da — warm border (Б1) */
+    /* AI-CONTEXT (2026-10-01, аудит контрасту й поверхонь, A8): було
+       `226 224 218` (#e2e0da) — 1.32:1 проти білої картки, але **1.05 проти
+       столу хаба** і 1.04-1.07 проти столів модулів, тож межа картки на столі
+       не читалась (картку тримала лише заливка 1.19-1.26). Темна тема для тієї
+       самої ролі має 1.56 (картка) / 1.91 (фон). Значення нижче — паритет зі
+       світлою: 1.57 проти білої картки, 1.25 проти столу хаба, 1.23-1.28 проти
+       столів модулів. Це «тихий» контур картки й роздільник, а НЕ межа
+       контролу: поле вводу чи перемикач мають 3:1 і беруть `--c-control`. */
+    --c-line: 210 206 197; /* #d2cec5 — warm border (було #e2e0da, 2026-10-01) */
 
     /* Text hierarchy — «Чорнило» light pair (spec § 5): green-ink tiers,
-       the tonal inverse of the dark ink text. `--c-subtle` stays at the
-       AA-safe #6b645d — spec's #98a09a is a ≥12px-labels-only tone (~3:1)
-       and would drop normal tertiary text below AA if used here. */
+       the tonal inverse of the dark ink text. Spec's #98a09a — це тон
+       для ≥12px-лейблів (~3:1); для звичайного третинного тексту він
+       нижчий за AA, тому тут його немає.
+
+       AI-DANGER: **третинні тони не ставимо «рівно на поріг».** До
+       2026-09-11 `--c-muted` (#5c665f) і `--c-subtle` (#6b645d) були
+       підібрані рівно під 4.5:1 проти білої картки й бежу — і рівно тому
+       «стіл і зона» (#1063) поклали 11 маршрутів: щойно текст сів не на
+       біле, а на тонований стіл, зону чи напівпрозору картку, весь
+       драбинковий ряд поїхав під поріг одразу (заміри axe: 4.21-4.49 на
+       14 вузлах). Тон із нульовим запасом не переживає ЖОДНОГО
+       перефарбування фону. Нові значення тримають ≥4.69:1 проти
+       найтемнішої реальної поверхні (зона хаба #dad6ce), тобто ~4%
+       запасу на ще один крок тонування. Гейт — `contrast.test.js`,
+       і він тепер перевіряє обидва тони проти СТОЛУ І ЗОНИ, а не лише
+       проти білого. */
     --c-text: 15 23 19; /* #0f1713 — green near-black (spec § 5 fg-strong) */
-    --c-muted: 92 102 95; /* #5c665f — green medium gray (spec § 5 muted), AA on white */
-    --c-subtle: 107 100 93; /* #6b645d — tertiary, WCAG AA ≥4.5:1 on panel/panel-hi/bg */
+    --c-muted: 83 92 86; /* #535c56 — green medium gray (spec § 5 muted), ≥4.78:1 на столі й зоні */
+    --c-subtle: 96 90 84; /* #605a54 — tertiary, ≥4.69:1 на столі, зоні, panel/panel-hi/bg */
     --c-primary: 15 23 19; /* #0f1713 — ink (same as text) */
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -253,7 +274,7 @@
     /* Semantic border tokens — alias `line` for back-compat, add a stronger
        divider for inputs/separators that need extra weight. */
     --c-border: var(--c-line);
-    --c-border-strong: 221 211 197; /* #ddd3c5 — stronger warm divider */
+    --c-border-strong: 195 189 177; /* #c3bdb1 — stronger warm divider (було #ddd3c5; піднято слідом за `--c-line`, щоб не перевернути ієрархію weak < line < strong) */
 
     /* ───────────────────────────────────────────────────────────────────
        SEMANTIC A11Y / STATES — focus, selection, caret, scrollbar,
@@ -270,6 +291,25 @@
     --c-ring: 15 118 110; /* teal-700 — primary keyboard-focus ring */
     --c-ring-strong: 17 94 89; /* teal-800 — WCAG-AA companion, solid */
     --c-ring-offset: 255 255 255; /* white — matches panel; pair with `ring-offset-panel`/`ring-offset-bg` */
+
+    /* ІНДИКАТОР ФОКУСУ — суцільний колір (аудит 2026-10-01, A1/A2).
+       Колір `--c-ring` мав запас, убивала його АЛЬФА: `ring-focus/45` дає
+       1.20-2.16 на світлих поверхнях (0 з 173 зупинок Tab доходять до 3:1,
+       WCAG 1.4.11), `.focus-ring` (rgba .4) — 1.82. Тому ролі «колір кільця
+       під фокусом» дано окремий СУЦІЛЬНИЙ токен: тир -strong (світла: teal-800
+       5.2-7.6:1 на всіх світлих поверхнях; темна: teal-300 8.7-12.8:1).
+       Усередині модуля його перекриває `--c-{module}-ink` (див. нижче в
+       `[data-module-accent]`), у HC — окремі значення. Застосовує його правило
+       `:focus-visible` НИЖЧЕ, поза `@layer` (інакше його перекриє `.ring-2`). */
+    --c-focus-solid: var(--c-ring-strong);
+
+    /* МЕЖА КОНТРОЛУ — роль «поле вводу / трек перемикача / непозначений
+       чекбокс впізнаються за контуром» (аудит 2026-10-01, A3). `--c-line` для
+       цього не годиться: 1.32 проти картки, а WCAG 1.4.11 вимагає 3:1.
+       #7c756e дає ≥3.13 проти КОЖНОЇ світлої поверхні (біла картка 4.54, panelHi
+       4.16, фон 3.80, стіл хаба 3.60, зона хаба — найтемніша — 3.13). Для
+       сіток і карток лишається `--c-line`; цей токен лише для контролів. */
+    --c-control: 124 117 110; /* #7c756e */
 
     /* Selection — global `::selection` wash. Soft teal tint with a
        deeper teal foreground so links/code stay readable when selected. */
@@ -293,8 +333,8 @@
        single-surface group; `-strong` is the prominent split between
        major sections that the eye should anchor to. */
     --c-divider-weak: 245 238 228; /* #f5eee4 — feather hairline */
-    --c-divider: 226 224 218; /* matches --c-line (Б1) */
-    --c-divider-strong: 221 211 197; /* matches --c-border-strong */
+    --c-divider: 210 206 197; /* matches --c-line */
+    --c-divider-strong: 195 189 177; /* matches --c-border-strong */
 
     /* Soft status backgrounds — tinted surfaces for banners/badges/cards.
        These resolve automatically between light & dark themes, eliminating
@@ -329,6 +369,13 @@
     --c-fizruk-soft: 236 254 255; /* cyan-50 — parity with `brandColors.cyan[50]` */
     --c-fizruk-soft-border: 165 243 252; /* cyan-200 */
     --c-fizruk-soft-hover: 207 250 254; /* cyan-100 */
+
+    /* `bg-fizruk-surface` — тонована заливка вибраного/поточного стану
+       (чип «Розминка», бейдж `A1`, поточний рядок сесії). Світла = cyan-50,
+       рівно `moduleColors.fizruk.surface`; темна пара — у `.dark` нижче
+       («MODULE DARK SURFACES»). Додано 2026-10-02: до того утиліта була
+       статичним hex, і темного перевизначення в неї не було. */
+    --c-fizruk-surface: 236 254 255; /* cyan-50 — parity with `moduleColors.fizruk.surface` */
 
     /* `tile` + `tile-border` — subtle stat-tile wash on the fizruk hero
        gradient (`bg-hero-cyan`). Used by `<WorkoutStatTile>` and the
@@ -539,7 +586,6 @@
     --motion-duration-loop: 1500ms; /* shimmer */
     --motion-duration-loop-glow: 2000ms; /* glow / pulse / streak */
     --motion-duration-loop-float: 8000ms; /* ambient backdrops */
-    --motion-duration-confetti-fall: 2500ms; /* CELEBRATE confetti drift */
 
     /* Easing scale.
        Tier guidance:
@@ -565,12 +611,12 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
-     DARK THEME — «Чорнило» (Ink): deep, luminescent, premium
+     DARK THEME — «Чорнило» (Ink): calm, layered, legible
      Dark-first visual direction (spec:
-     docs/90-work/planning/specs/chornylo-visual-direction.md § 1). A single
-     deep green-black surface; depth comes from surface tint + accent border +
-     glow, not neutral dividers. Neutral hairlines are intentionally subtle
-     (white/6–12%) — the accessible high-contrast dividers live in
+     docs/work/specs/chornylo-visual-direction.md § 1). A single
+     warm-charcoal surfaces; depth comes from three clear tonal levels and
+     restrained borders. Accent colour marks actions and data rather than
+     lighting every container. High-contrast dividers live in
      `html.hc.dark` below (≥4.5:1, untouched by this direction). Text tiers
      keep WCAG AA: muted ≥ 4.5:1, subtle ≥ 3:1 on the ink surface.
      ═══════════════════════════════════════════════════════════════════════ */
@@ -582,12 +628,12 @@
 
     /* Cards/panels — solid ink surface. `panel-hi` lifts one tint step so
        hover and input backgrounds separate from the base surface. */
-    --c-panel: 27 22 19; /* #1b1613 — cards, rows, nav, fields */
-    --c-panel-hi: 34 28 24; /* #221c18 — hover / input bg */
+    --c-panel: 42 35 31; /* #2a231f — cards and nav, 1.22:1 над фоном */
+    --c-panel-hi: 58 48 43; /* #3a302b — fields and hover, 1.21:1 над карткою */
 
     /* Border — ink hairline ≈ white/6% over the surface. Depth is carried by
        accent borders + glow, so the neutral edge stays quiet. */
-    --c-line: 31 42 37; /* #1f2a25 — ink hairline (≈ white/6%) */
+    --c-line: 72 66 62; /* #48423e — біле 14% над панеллю (= `line` у tokens.js), 1.56:1 до картки */
 
     /* Text hierarchy — ink tiers (spec § 1). */
     --c-text: 242 246 242; /* #f2f6f2 — display / headings, 17.33:1 on bg */
@@ -601,8 +647,8 @@
        власник (репорт тестера: «сірі літери погано видно»). `muted`
        піднято слідом, щоб драбина лишилась із трьома щаблями.
        Значення дзеркалять `inkTheme.text` у tokens.js. */
-    --c-muted: 163 174 166; /* #a3aea6 — meta, 7.83:1 on surface (було #8a968e, 5.84) */
-    --c-subtle: 138 150 142; /* #8a968e — hints, 5.84:1 on surface (було #5f6b64, 3.22) */
+    --c-muted: 163 174 166; /* #a3aea6 — meta, 6.74:1 on surface, 5.60 on panel-hi */
+    --c-subtle: 152 164 156; /* #98a49c — hints, 5.98:1 on surface, 4.96 on panel-hi (крок 2 підняв із #8a968e) */
     --c-primary: 242 246 242; /* reversed */
 
     /* «Чорнило» module accents — dark tier-400 (luminescent), the
@@ -616,18 +662,26 @@
        (700/800) rgba; without an override the active-nav glow stayed at
        the light tint on the ink surface. Derived straight from the
        tier-400 accent vars above (2026-08 design-audit T5). */
-    --shadow-finyk-nav: 0 0 8px rgb(var(--c-finyk-accent) / 0.4);
-    --shadow-fizruk-nav: 0 0 8px rgb(var(--c-fizruk-accent) / 0.4);
-    --shadow-routine-nav: 0 0 8px rgb(var(--c-routine-accent) / 0.4);
-    --shadow-nutrition-nav: 0 0 8px rgb(var(--c-nutrition-accent) / 0.4);
+    --shadow-finyk-nav: none;
+    --shadow-fizruk-nav: none;
+    --shadow-routine-nav: none;
+    --shadow-nutrition-nav: none;
 
     /* Драбина «жару» серії — темна тема. Тут працює світло, а не тінь,
-       тож щаблі йдуть від блідого до насиченого й усі шість видимі. */
-    --c-streak-tier-3: 252 179 193; /* rose-300 */
-    --c-streak-tier-7: 246 141 164; /* rose-400 */
-    --c-streak-tier-14: 235 118 145; /* rose-500 */
-    --c-streak-tier-30: 209 92 122; /* rose-600 */
-    --c-streak-tier-60: 172 76 100; /* rose-700 */
+       тож щаблі йдуть від блідого до насиченого й усі шість видимі.
+
+       AI-CONTEXT (2026-10-01, аудит контрасту, A6): драбину зсунуто на ОДИН
+       щабель вище (було rose-300…rose-700). `tier-60` = rose-700 `#ac4c64`
+       давав 2.92:1 на картці `#2a231f` і 2.43 на `panelHi` — нижче порога 3:1
+       для не-текстового елемента, тобто найвища серія мала найтьмянішу
+       іконку. Тепер найтемніший щабель — rose-600 (4.07 на картці, 3.37 на
+       `panelHi`), усі шість ≥3:1 на кожній темній поверхні. Монотонність і
+       членство в палітрі (`streakTiers.contract.test.js`) збережені. */
+    --c-streak-tier-3: 254 211 219; /* rose-200 */
+    --c-streak-tier-7: 252 179 193; /* rose-300 */
+    --c-streak-tier-14: 246 141 164; /* rose-400 */
+    --c-streak-tier-30: 235 118 145; /* rose-500 */
+    --c-streak-tier-60: 209 92 122; /* rose-600 */
     --c-streak-tier-100: 251 191 36; /* amber-400 — святкування */
 
     /* `--c-celebration` dark override — matches `celebrationColors.dark`
@@ -635,31 +689,43 @@
        (2026-08 design-audit T3). */
     --c-celebration: 251 191 36; /* amber-400 */
 
-    /* Dark counterparts of the elevation scale. In dark mode the
-       surface itself can't get darker than the bg, so we lean on a
-       stronger shadow + a brighter inset top edge to read a level up.
-       Same `eN` level = same perceived prominence across themes. */
+    /* Dark counterparts of the elevation scale — ТІЛЬКИ inset-край.
+       Рішення власника 2026-09-12 (D1 крок 3), і це приведення коду до
+       того, що `DESIGN.md` заявляє про «Чорнило» від початку: «глибина з
+       tint + accent border + glow, НЕ з тіні вниз».
+
+       AI-DANGER: не повертай тут тінь униз і не «підсилюй» її альфою —
+       вона в цій темі СТРУКТУРНО не працює, це не питання налаштування.
+       Замір контрасту тіні до фону сторінки `#14100e`:
+
+         чорний 35% → 1.043    чорний 55% → 1.063
+         чорний 45% → 1.051    чорний 70% → 1.077
+
+       Поріг, на якому шар узагалі читається окремим, — близько 1.2 (той
+       самий, яким обґрунтовано щаблі поверхонь у кроці 2). Тобто всі
+       п'ять рівнів давали 4-8% потрібного контрасту. Підняти альфу не
+       поможе: фон уже на люмінансі 0.0058, і біля чорного контраст
+       упирається в доданок `+0.05` формули WCAG — ланцюг зсувається, а
+       не розтягується. Чистий чорний під 100% дав би ~1.08.
+
+       Глибину в темній темі фактично несуть щабель поверхні (1.224 після
+       кроку 2) і межа (1.564) — обидва вище порога. Inset-край лишається
+       як єдиний shadow-сигнал: 1.093 на e1 … 1.230 на e5 над панеллю.
+
+       Світла тема не торкана — там тінь працює, бо фон світлий.
+
+       Те саме стосується `--drop-e1/e2` нижче (0.3/0.35 чорного = ті самі
+       ~1.04), але вони — інша операція: масковані краї без суцільної
+       підкладки, де inset неможливий. Знято з них нічого не буде, поки
+       для тих поверхонь не буде іншого сигналу; замір записаний тут, щоб
+       наступний не шукав його заново. */
     --shadow-e0: none;
 
-    --shadow-e1:
-      0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
-
-    --shadow-e2:
-      0 2px 4px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.45),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
-
-    --shadow-e3:
-      0 3px 10px rgba(0, 0, 0, 0.4), 0 14px 30px rgba(0, 0, 0, 0.55),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-
-    --shadow-e4:
-      0 6px 18px rgba(0, 0, 0, 0.45), 0 28px 56px rgba(0, 0, 0, 0.65),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-
-    --shadow-e5:
-      0 10px 28px rgba(0, 0, 0, 0.5), 0 36px 72px rgba(0, 0, 0, 0.7),
-      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    --shadow-e1: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --shadow-e2: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --shadow-e3: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --shadow-e4: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --shadow-e5: inset 0 1px 0 rgba(255, 255, 255, 0.07);
 
     /* Підйом для маскованого краю — темна пара. Ті самі відстані, що в
        темних e1/e2, без inset-шару (див. коментар у світлій темі). */
@@ -671,14 +737,18 @@
     /* Prominent divider — ink `line-strong` ≈ white/12% (spec § 1). Reads a
        step above `--c-line` for major section splits; the AAA divider for
        low-vision users lives in `html.hc.dark`. */
-    --c-border-strong: 74 84 78; /* #4a544e — prominent ink divider (≈ white/12%) */
+    --c-border-strong: 89 83 80; /* #595350 — біле 22% над панеллю (= `lineStrong`), 2.04:1 до картки */
 
     /* Dark-theme A11y / states overrides. Focus ring shifts to teal-400
-       so it clears ≥3:1 against the warm-charcoal panel (`--c-panel` = #201c19).
+       so it clears ≥3:1 against the warm-charcoal panel (`--c-panel` = #2a231f).
        Selection flips to a deep teal wash with a bright foreground. */
     --c-ring: 45 212 191; /* teal-400 — brighter for dark panels (2026-07: was emerald-400) */
     --c-ring-strong: 94 234 212; /* teal-300 — solid, punchy */
-    --c-ring-offset: 27 22 19; /* panel — matches `--c-panel` */
+    /* Межа контролу в «Чорнилі»: #827b77 → 3.72 на картці `#2a231f`, 3.08 на
+       `panelHi` `#3a302b` (поле всередині панелі), 4.55 на фоні `#14100e`.
+       Темний `--c-line` (#48423e) дає там 1.56 / 1.30 / 1.91. */
+    --c-control: 130 123 119; /* #827b77 */
+    --c-ring-offset: 42 35 31; /* panel — matches `--c-panel` */
     /* `--c-accent` mirrors `--c-ring` — same reason: the light-tier teal-700
        (`:root` value) reads ~3.4:1 on the ink surface, sub-AA for
        `text-accent`/`bg-accent` (107 call sites). Dark flips to the
@@ -691,12 +761,12 @@
     --c-selection-bg: 17 94 89; /* teal-800 */
     --c-selection-fg: 204 251 241; /* teal-100 */
     --c-caret: 45 212 191; /* teal-400 — visible in dark inputs */
-    --c-scrollbar-track: 27 22 19; /* panel */
-    --c-scrollbar-thumb: 31 42 37; /* matches --c-line */
-    --c-scrollbar-thumb-hover: 95 107 100; /* matches --c-subtle */
+    --c-scrollbar-track: 42 35 31; /* panel */
+    --c-scrollbar-thumb: 72 66 62; /* matches --c-line */
+    --c-scrollbar-thumb-hover: 95 107 100; /* #5f6b64 — 2.78:1 до треку. AI-NOTE: цей коментар казав «matches --c-subtle» і був неправдою з 2026-08-21 (subtle тоді пішов із #5f6b64 на #8a968e, а це значення лишилось). Свідомо НЕ зводимо з `--c-subtle`: чинний #98a49c дав би 5.98:1, тобто смуга прокрутки світилася б яскравіше за підписи. Світла тема тримає 2.20:1 — це той самий порядок. */
     --c-divider-weak: 23 31 27; /* between panel and line */
-    --c-divider: 31 42 37; /* matches --c-line */
-    --c-divider-strong: 74 84 78; /* matches --c-border-strong */
+    --c-divider: 72 66 62; /* matches --c-line */
+    --c-divider-strong: 89 83 80; /* matches --c-border-strong */
     --c-success-soft: 6 95 70; /* slightly brighter emerald-900 */
     --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
     --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */
@@ -709,24 +779,24 @@
 
        AI-CONTEXT (2026-08-21): до цього дня `.dark` не мав ЖОДНОГО
        статусного override-у, а `text-danger` віддавав світлий red-500
-       (4.77:1 на картці) — тобто «темний» варіант ніколи не існував.
+       (4.58:1 на картці) — тобто «темний» варіант ніколи не існував.
        Гірший бік — `text-{status}-strong` без ручної `dark:`-пари: red-800
-       на #1b1613 = 1.9:1. Обидва боки тепер ідуть звідси. */
-    --c-success: 52 211 153; /* emerald-400 — 9.33:1 на картці */
-    --c-warning: 251 191 36; /* amber-400   — 10.74:1 на картці */
-    --c-danger: 248 113 113; /* red-400     — 6.48:1 на картці */
-    --c-info: 56 189 248; /* sky-400      — 8.37:1 на картці */
+       на #2a231f = 1.86:1. Обидва боки тепер ідуть звідси. */
+    --c-success: 52 211 153; /* emerald-400 — 8.97:1 на картці */
+    --c-warning: 251 191 36; /* amber-400   — 10.32:1 на картці */
+    --c-danger: 248 113 113; /* red-400     — 6.23:1 на картці */
+    --c-info: 56 189 248; /* sky-400      — 8.05:1 на картці */
     /* Акцентний чорнильний тир — щабель -400 для модулів (той самий, що
        вже несуть `--c-{module}-accent` і `--c-chart-{module}` у цьому ж
        блоці) і stone-300 для нейтрального бренду (той самий, що
        `--c-brand-soft-fg` нижче). До 2026-09-02 `text-{accent}-strong`
-       віддавав тут світлий тир -800 і давав 1.18…2.60:1 на картці.
+       віддавав тут світлий тир -800 і давав 1.14…2.50:1 на картці.
        = `accentInkHex` у tokens.js. */
-    --c-brand-ink: 214 211 209; /* stone-300 — 12.04:1 на #1b1613 (= `--c-brand-soft-fg` цього ж блоку) */
-    --c-finyk-ink: 45 212 191; /* teal-400 — 9.64:1 на #1b1613 */
-    --c-fizruk-ink: 34 211 238; /* cyan-400 — 9.93:1 на #1b1613 */
-    --c-routine-ink: 246 141 164; /* rose-400 — 7.91:1 на #1b1613 */
-    --c-nutrition-ink: 176 230 54; /* lime-400 — 12.14:1 на #1b1613 */
+    --c-brand-ink: 214 211 209; /* stone-300 — 10.38:1 на #2a231f (= `--c-brand-soft-fg` цього ж блоку) */
+    --c-finyk-ink: 45 212 191; /* teal-400 — 8.30:1 на #2a231f */
+    --c-fizruk-ink: 34 211 238; /* cyan-400 — 8.55:1 на #2a231f */
+    --c-routine-ink: 246 141 164; /* rose-400 — 6.82:1 на #2a231f */
+    --c-nutrition-ink: 176 230 54; /* lime-400 — 10.46:1 на #2a231f */
 
     --c-success-ink: 52 211 153; /* = statusInkHex.success */
     --c-warning-ink: 251 191 36; /* = statusInkHex.warning */
@@ -845,6 +915,20 @@
     --c-finyk-border-dark: 15 118 110; /* teal-700 — mirrors moduleColors.finyk.primary (2026-07: was emerald-500) */
     --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
+    /* `bg-fizruk-surface` у темній — НЕ світла заливка. До 2026-10-02 утиліта
+       лишалась статичним cyan-50 `#ecfeff` і в темній: вибраний чип сесії
+       («Розминка 0/3», «Нотатка», «Час») мав текст `soft-fg` 1.39:1 і лічильник
+       1.05:1, бейдж суперсету `A1` 1.39:1, поточний рядок списку — назва
+       1.05:1, RPE-чип 1.74:1 (світлий текст по світлій заливці). Значення = cyan-700
+       (`--c-fizruk-surface-dark`) на 15% над `--c-panel` (`#2a231f`):
+       рівно те, що вже малює пара `dark:bg-fizruk-surface-dark/15`
+       (`Segmented`, `Tabs`, `WorkoutItemNextSetHint`), тож `bg-fizruk-surface`
+       без пари й із парою виглядають однаково. Саме тінт, а не `-soft`
+       (cyan-900): на cyan-900 `text-subtle` дає 3.53:1 і `text-muted` 3.98:1,
+       а в рядках сесії стоять обидва. Числа проти `#262f30`: `text` 12.56,
+       `muted` 5.98, `subtle` 5.30, `soft-fg` 9.46, `-ink` 7.59, `danger-ink`
+       4.96; гейт — `contrast.test.js` § `fizruk-surface`. */
+    --c-fizruk-surface: 38 47 48; /* #262f30 — cyan-700 @15% над panel */
     --c-routine-surface-dark: 235 118 145; /* rose-500 */
     --c-routine-border-dark: 235 118 145; /* rose-500 */
     --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel */
@@ -859,9 +943,20 @@
 
        1. Text vs. background ≥ 7:1 (WCAG AAA "Contrast (Enhanced)").
        2. Dividers vs. background ≥ 4.5:1 — separators always read.
-       3. Focus ring uses a token-driven width (`--ring-width-hc: 3px`)
-          and brand-strong colour so the visible focus indicator
-          (Hard Rule #14) stays unambiguous at distance.
+       3. Focus ring uses a token-driven width (`--ring-width-hc: 5px`
+          проти базових 3px) and brand-strong colour so the visible focus
+          indicator stays unambiguous at distance.
+
+          AI-DANGER: значення МУСИТЬ лишатись більшим за `--focus-ring-width`
+          у `:root`. До 2026-09-13 обидва були 3px — тобто вся індирекція не
+          робила нічого, а канон при цьому стверджував, що примітиви
+          отримують «ширший» індикатор. Розбіжність тримає
+          `theme.focusRingHc.test.ts`; підіймаєш базу — підіймай і це.
+
+          Сам по собі токен доходить лише до утиліти `.focus-ring` (60 місць
+          із 302) — рукописні `focus-visible:ring-2` його не бачать, бо
+          Tailwind запікає туди літерал. Це доводить окреме правило в кінці
+          файлу; там же розбір і заміри.
        4. No low-opacity surfaces — "soft" status tints fall back to a
           full-strength bordered surface so banners/badges stay legible.
 
@@ -883,27 +978,27 @@
   [data-theme-preview="dark"] {
     color-scheme: dark;
     --c-bg: 20 16 14; /* #14100e — ink base */
-    --c-panel: 27 22 19; /* #1b1613 */
-    --c-panel-hi: 34 28 24; /* #221c18 */
-    --c-line: 31 42 37; /* #1f2a25 */
+    --c-panel: 42 35 31; /* #2a231f — = `.dark` */
+    --c-panel-hi: 58 48 43; /* #3a302b — = `.dark` */
+    --c-line: 72 66 62; /* #48423e — = `.dark`; до 2026-09-12 тут стояло зелене #1f2a25 з доби до «Чорнила» */
     --c-text: 242 246 242; /* #f2f6f2 */
     --c-muted: 163 174 166; /* #a3aea6 */
-    --c-subtle: 138 150 142; /* #8a968e */
+    --c-subtle: 152 164 156; /* #98a49c */
     --c-primary: 242 246 242;
     --c-border: var(--c-line);
-    --c-border-strong: 74 84 78; /* #4a544e */
+    --c-border-strong: 89 83 80; /* #595350 — = `.dark`; до 2026-09-12 — зелене #4a544e */
+    --c-control: 130 123 119; /* = `.dark` */
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
     --c-brand-soft: 41 37 36; /* stone-800 — neutral hub (design-audit M1) */
     --c-brand-soft-border: 68 64 60; /* stone-700 */
-    --shadow-card:
-      0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    /* = `.dark` `--shadow-e1`: лише inset-край (див. розбір там). */
+    --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
   [data-theme-preview="hc-light"] {
     color-scheme: light;
-    --ring-width-hc: 3px;
+    --ring-width-hc: 5px;
     --focus-ring-width: var(--ring-width-hc);
     --c-bg: 253 249 243;
     --c-panel: 255 255 255;
@@ -912,6 +1007,7 @@
     --c-muted: 31 28 25;
     --c-subtle: 51 46 41;
     --c-line: 87 75 60;
+    --c-control: 87 75 60;
     --c-border: var(--c-line);
     --c-border-strong: 28 25 23;
     --c-fg: var(--c-text);
@@ -922,7 +1018,7 @@
 
   [data-theme-preview="hc-dark"] {
     color-scheme: dark;
-    --ring-width-hc: 3px;
+    --ring-width-hc: 5px;
     --focus-ring-width: var(--ring-width-hc);
     --c-bg: 23 20 18;
     --c-panel: 32 28 25;
@@ -931,6 +1027,7 @@
     --c-muted: 230 224 218;
     --c-subtle: 207 199 191;
     --c-line: 168 156 142;
+    --c-control: 168 156 142;
     --c-border: var(--c-line);
     --c-border-strong: 234 226 215;
     --c-fg: var(--c-text);
@@ -942,8 +1039,10 @@
   html.hc {
     /* Default focus-ring width swap — primitives that reference
        `--focus-ring-width` get a thicker ring without changing their
-       Tailwind classes. */
-    --ring-width-hc: 3px;
+       Tailwind classes. 5px проти базових 3px: до 2026-09-13 тут стояло
+       3px, тобто «swap» міняв значення на ідентичне і жоден примітив
+       нічого не отримував. */
+    --ring-width-hc: 5px;
     --focus-ring-width: var(--ring-width-hc);
     /* Focus stays teal (the canonical accent) — no longer keyed to `brand`,
        which is now the neutral hub stone (design-audit M1). */
@@ -963,6 +1062,7 @@
     --c-muted-v2: 31 28 25;
     --c-subtle-v2: 51 46 41;
     --c-line: 87 75 60; /* #574b3c — visible warm border (≥4.5:1) */
+    --c-control: 87 75 60; /* = --c-line: у HC кожна межа вже ≥4.5:1 */
     --c-border: var(--c-line);
     --c-border-strong: 28 25 23; /* #1c1917 — near-black divider */
     --c-fg: var(--c-text);
@@ -1088,6 +1188,9 @@
     --c-muted-v2: 230 224 218;
     --c-subtle-v2: 207 199 191;
     --c-line: 168 156 142; /* #a89c8e — luminous warm border (≥4.5:1) */
+    --c-control: 168 156 142; /* = --c-line */
+    /* HC dark: фокус амбровий (як `--focus-ring-color` нижче), суцільний. */
+    --c-focus-solid: 252 211 77; /* amber-300 */
     --c-border: var(--c-line);
     --c-border-strong: 234 226 215; /* near-white divider */
     --c-fg: var(--c-text);
@@ -1215,7 +1318,7 @@
        #98a09a would only lower its contrast. */
     --c-ink: 23 32 27; /* #17201b — body text (spec § 5 fg) */
     --c-ink-strong: 15 23 19; /* #0f1713 — display / headings (spec § 5 fg-strong) */
-    --c-muted-v2: 92 102 95; /* #5c665f — meta, captions (spec § 5 muted), AA on white */
+    --c-muted-v2: 83 92 86; /* #535c56 — meta, captions (spec § 5 muted); дзеркало --c-muted вище */
     --c-subtle-v2: 138 138 130; /* #8a8a82 — hints */
 
     /* Glass surfaces — alpha BAKED IN by design intent. Do not use
@@ -1305,10 +1408,17 @@
     --hero-grad-nutrition: linear-gradient(
       135deg,
       #466212,
-      #567c0f
-    ); /* lime-800 → lime-700 (was lime-ink → lime-400) — 2026-08
-          design-audit T2: same fix as routine F2; old →lime-400 light end
-          failed the hero-ink text pair. */
+      #4e6f10
+    ); /* lime-800 → середина lime-800/700 (було lime-800 → lime-700; ще раніше
+          lime-ink → lime-400) — 2026-08 design-audit T2: same fix as routine
+          F2; old →lime-400 light end failed the hero-ink text pair.
+          2026-10-01 (аудит контрасту, A9; рішення власника «темніший кінець
+          градієнта»): світлий кінець lime-700 `#567c0f` дає чорнилу 4.67
+          голим, але лише 4.27 під заливкою осередка `MealStrip`
+          (`bg-hero-ink/5`). Кінець `#4e6f10` (середина між lime-800 і
+          lime-700; щабля палітри в нього немає) дає 5.55 голим і 4.99 під
+          тією ж заливкою; початок не чіпали. `contrast.test.js` читає
+          зупинки звідси й тримає обидва числа. */
   }
 
   .dark {
@@ -1319,16 +1429,16 @@
     --c-ink: 231 240 234; /* #e7f0ea — body */
     --c-ink-strong: 242 246 242; /* #f2f6f2 — display / headings */
     --c-muted-v2: 163 174 166; /* #a3aea6 — meta (дзеркало --c-muted) */
-    --c-subtle-v2: 138 150 142; /* #8a968e — hints (дзеркало --c-subtle) */
+    --c-subtle-v2: 152 164 156; /* #98a49c — hints (дзеркало --c-subtle) */
 
     /* Glass → solid ink surface. `--surface-glass*` and `backdrop-blur` are
        deprecated under «Чорнило» (spec § Рішення): depth is surface tint +
        accent border + glow, not translucency. These stay as back-compat
        aliases so existing `bg-surface-glass*` call sites resolve to the solid
        ink surface without a per-component rewrite. */
-    --surface-glass: rgba(27, 22, 19, 1); /* #1b1613 — solid surface */
-    --surface-strong-glass: rgba(27, 22, 19, 1); /* #1b1613 — navs, pills */
-    --surface-soft-glass: rgba(27, 22, 19, 1); /* #1b1613 — tinted bg */
+    --surface-glass: rgba(42, 35, 31, 1); /* #2a231f = `--c-panel` */
+    --surface-strong-glass: rgba(42, 35, 31, 1); /* #2a231f — navs, pills */
+    --surface-soft-glass: rgba(42, 35, 31, 1); /* #2a231f — tinted bg */
     --surface-line: rgba(255, 255, 255, 0.06); /* ink hairline */
 
     --line-v2: rgba(255, 255, 255, 0.06); /* ink hairline (white/6%) */
@@ -1400,14 +1510,9 @@
 
   html.hc.dark {
     /* Dark HC — same mesh OFF + opaque glass strategy, ink colours. */
-    --surface-glass: rgba(27, 22, 19, 1); /* matches --c-panel (#1b1613) */
-    --surface-strong-glass: rgba(
-      34,
-      28,
-      24,
-      1
-    ); /* matches --c-panel-hi (#221c18) */
-    --surface-soft-glass: rgba(27, 22, 19, 0.95);
+    --surface-glass: rgba(42, 35, 31, 1); /* matches --c-panel (#2a231f) */
+    --surface-strong-glass: rgba(58, 48, 43, 1); /* = --c-panel-hi (#3a302b) */
+    --surface-soft-glass: rgba(42, 35, 31, 0.95);
     --surface-line: rgba(255, 255, 255, 0.7);
 
     --c-ink-strong: 255 255 255;
@@ -1454,9 +1559,20 @@
   background-color: rgb(var(--module-zone-rgb));
 }
 
-.zone-chip {
-  background-color: transparent;
-  border-color: rgb(var(--module-accent-strong-rgb, var(--c-line)) / 0.3);
+/* AI-DANGER (2026-10-01, аудит A8): `.zone-chip` МУСИТЬ жити в
+   `@layer components`, а не поза шарами. Неоголошений (unlayered) CSS
+   перебиває ВСІ шари Tailwind незалежно від специфічності, тож колишнє
+   `.zone-chip { background-color: transparent }` стирало `bg-panel` /
+   `border-line`, які `ModuleRail` додає саме щоб дати комірці тіло на хабі
+   (S = 1.00-1.01 проти столу: комірки не мали ні заливки, ні видимої межі), і
+   мовчки глушило `hover:bg-panelHi` у кнопок `ModuleHeader`. У шарі
+   `components` клас усе ще перебиває preflight (`border-color` із `base`), але
+   програє явним утилітам компонента — рівно так задумано. */
+@layer components {
+  .zone-chip {
+    background-color: transparent;
+    border-color: rgb(var(--module-accent-strong-rgb, var(--c-line)) / 0.3);
+  }
 }
 
 [data-module-accent="finyk"] {
@@ -1496,4 +1612,184 @@
 html.hc [data-module-accent] {
   --module-desk-rgb: var(--c-bg-base);
   --module-zone-rgb: var(--c-bg-base);
+}
+
+/* Колір індикатора фокусу в піддереві модуля — його `-ink` тир (аудит
+   2026-10-01, A1): світла `-800` (5.0-6.0:1 на столі й зоні модуля), темна
+   `-400` (6.8-10.5:1 на картці). Це той самий щабель, що вже несе текст
+   модуля (`accentInkHex`), тож AA-запас гарантований тими самими гейтами.
+   HC не чіпаємо: там `--c-focus-solid` задано окремо (teal-800 / amber-300). */
+html:not(.hc) [data-module-accent="finyk"] {
+  --c-focus-solid: var(--c-finyk-ink);
+}
+html:not(.hc) [data-module-accent="fizruk"] {
+  --c-focus-solid: var(--c-fizruk-ink);
+}
+html:not(.hc) [data-module-accent="routine"] {
+  --c-focus-solid: var(--c-routine-ink);
+}
+html:not(.hc) [data-module-accent="nutrition"] {
+  --c-focus-solid: var(--c-nutrition-ink);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   HC FOCUS RING — доводить токен ширини до РУКОПИСНИХ кілець.
+
+   Контракт HC (§3 у коментарі вище) обіцяє «ширший фокус-індикатор» усьому
+   застосунку, але до цього правила його отримували лише 60 місць із 302 —
+   ті, що беруть утиліту `.focus-ring`. Решта 242 пишуть ширину руками
+   (`focus-visible:ring-2`), а Tailwind 4 запікає туди ЛІТЕРАЛ:
+
+     .ring-2 { --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0
+                 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color) }
+
+   Тобто `--focus-ring-width` до них не дотягується взагалі — і в HC чотири
+   з пʼяти фокусованих елементів мовчки лишались на базових 2px. Це той
+   самий клас, що й баг, полагоджений 2026-09-13 (`--ring-width-hc: 3px`
+   при базових 3px): індирекція є, канон її обіцяє, ефекту нуль.
+
+   Лікуємо механізм, а не 242 місця. Правило переоголошує лише ШИРИНУ,
+   лишаючи call-site-у його власні колір (`--tw-ring-color`), відступ
+   (`--tw-ring-offset-width`) та `inset`. Заміряно в Chromium:
+
+     | елемент                              | база      | HC          |
+     | ------------------------------------ | --------- | ----------- |
+     | `focus-visible:ring-2 ring-offset-2` | 4px       | **7px**     |
+     | `.focus-ring` (утиліта)              | 5px       | 7px         |
+     | `ring-2 ring-inset`                  | 2px inset | 5px inset   |
+     | `focus-visible:ring-0`               | 0px       | 0px         |
+     | без кільця взагалі                   | none      | none        |
+
+   AI-DANGER: правило МУСИТЬ лишатись поза `@layer base`. Усередині шару
+   воно програє `.ring-2` з шару `utilities` НЕЗАЛЕЖНО від специфічності —
+   і мовчки не робить нічого (перевірено break-тестом: рукописне кільце
+   лишалось 4px у HC). Решта файлу вище — у `@layer base`; ці рядки
+   навмисно після його закриття, поруч із `html.hc [data-module-accent]`.
+
+   Два винятки:
+     - `.focus-ring` — має власний `:focus-visible` з КОЛЬОРОМ
+       `--focus-ring-color`; перебивати його означало б підмінити колір на
+       `--tw-ring-color`, якого ті місця не задають;
+     - `focus-visible:ring-0` — навмисне придушення в `DateField`/`TimeField`,
+       де кільце малює обгортка; без винятку HC дав би подвійне кільце.
+   ═════════════════════════════════════════════════════════════════════════ */
+html.hc *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0),
+[data-theme-preview="hc-light"]
+  *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0),
+[data-theme-preview="hc-dark"]
+  *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0) {
+  --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0
+    calc(var(--focus-ring-width) + var(--tw-ring-offset-width))
+    var(--tw-ring-color, currentcolor);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   ІНДИКАТОР ФОКУСУ ≥3:1 і МЕЖА ПОЛІВ ≥3:1 (аудит 2026-10-01, A1-A3)
+
+   Правила 1-2 стоять ПОЗА `@layer` навмисно — з тієї самої причини, що й
+   HC-правило вище: усередині шару вони програють `.ring-2` з шару `utilities`
+   незалежно від специфічності й мовчки не роблять нічого. Правило 3 (межа
+   поля) стоїть у `@layer utilities` навмисно ІНАКШЕ: воно має перебити
+   `.border-line`, але поступитись станові утиліті компонента, а це можливо
+   лише за специфічністю в одному шарі (деталі — коментар біля правила).
+
+   1. Колір кільця. 302 місця пишуть `focus-visible:ring-2 ring-focus/45`
+      (канон `DESIGN.md`: одна прозорість кільця). `/45` дає 1.20-2.16 (світла)
+      і 1.27-2.94 (темна): 0 з 381 зупинок Tab доходили до 3:1. Лікуємо
+      механізм, а не 302 класи: на `:focus-visible` перевизначаємо ЛИШЕ колір
+      (`--tw-ring-color`) суцільним `--c-focus-solid`; ширину, офсет, `inset`
+      лишаємо call-site-у. `.focus-ring` читає той самий токен напряму
+      (`utilities.css`), тому його тут виключено.
+   2. Контур для елементів БЕЗ власного кільця. Кнопки/посилання з
+      `outline-none` і без жодного `ring-*` не мали індикатора взагалі
+      (12 зупинок, WCAG 2.4.7), а ще 70 покладались на браузерне кільце, яке
+      різне на різних ОС. Даємо їм суцільний `outline` того ж токена. Поля
+      вводу виключені: їхній індикатор — кільце/межа обгортки (`focus-within`),
+      а подвійний контур був би гіршим за нуль.
+   3. Межа поля. Голі `input/select/textarea.border-line` у модулях (8+ файлів:
+      `input-focus-nutrition … border border-line`) мають 1.32 (світла) і 1.56
+      (темна) проти картки; WCAG 1.4.11 вимагає 3:1. Примітиви (`Input`,
+      `Select`, `DateField`, `TimeField`, `Switch`, `AnimatedCheckbox`) беруть
+      `border-control` явно, це правило — страховка для решти. Під фокусом
+      правило не діє (`:focus-visible`), а станові утиліти компонента
+      (`hover:`/`focus:`/`aria-invalid:`/`disabled:border-*`) його перекривають.
+   ═════════════════════════════════════════════════════════════════════════ */
+*:focus-visible:not(.focus-ring) {
+  --tw-ring-color: rgb(var(--c-focus-solid));
+}
+
+[class*="focus-within:ring"]:focus-within {
+  --tw-ring-color: rgb(var(--c-focus-solid));
+}
+
+/* `peer`-кільце (Switch: input `sr-only` фокусується, кільце малює СУСІДНІЙ
+   `span`-трек через `peer-focus-visible:ring-*`) — загальне правило вище
+   його не бачить, бо `:focus-visible` стоїть на input, а не на треку. */
+.peer:focus-visible ~ [class*="peer-focus-visible:ring"] {
+  --tw-ring-color: rgb(var(--c-focus-solid));
+}
+
+/* Hero-градієнт у світлій темі: фокус — чорнило `hero-ink` (`#fdf9f3`).
+   У піддереві модуля `--c-focus-solid` = `--c-{m}-ink` (світла -800), а
+   початок градієнта hero-картки — той самий тир (`#115e59 → #0f766e`,
+   `#466212 → #4e6f10`, `#8d4256 …`): кільце зливалось із фоном (≈1.0-1.3:1
+   проти градієнта; пласкому «столу» поруч воно давало хибні 5-6:1, тому
+   аудит 2026-10-01 цього не бачив). На кнопці «Повернутись у сесію» Фізрука
+   `focus-visible:ring-hero-ink` із компонента глушився глобальним правилом
+   вище. Чорнило дає ≥4.7:1 проти кожної світлої зупинки (`contrast.test.js`),
+   а темна тема й так на модульному `-ink` тирі (hero там — майже чорний
+   `--hero-ink-*`, кільце 5.7:1+). `:not(.dark)` охоплює й HC-світлу (hero
+   там плаский teal-800/cyan-800/…, кільце того ж тиру зникало б так само). */
+html:not(.dark) [class*="bg-hero-grad-"] {
+  --c-focus-solid: 253 249 243;
+}
+
+/* Невалідне поле зберігає danger-відтінок кільця, але суцільний `-ink` тир
+   (red-800 / red-400), а не `danger/25`-`/45` з прозорістю. */
+*:focus-visible[aria-invalid="true"]:not(.focus-ring) {
+  --tw-ring-color: rgb(var(--c-danger-ink));
+}
+.peer[aria-invalid="true"]:focus-visible ~ [class*="peer-focus-visible:ring"] {
+  --tw-ring-color: rgb(var(--c-danger-ink));
+}
+
+:is(
+    a[href],
+    button,
+    summary,
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"],
+    [role="link"]
+  ):focus-visible:not(.focus-ring):not([class*="ring-"]) {
+  outline: 2px solid rgb(var(--c-focus-solid));
+  outline-offset: 2px;
+}
+
+/* Межа голих полів (п. 3 вище) — У ШАРІ `utilities`, а не поза шарами, і зі
+   специфічністю (0,1,1), а не (0,3,1). Саме це вікно потрібне правилу:
+   `input.border-line` (0,1,1) б'є `.border-line` (0,1,0) того ж шару, але
+   програє станові утиліти компонента: `hover:border-*`, `focus:border-*`,
+   `aria-invalid:border-*`, `disabled:border-*`, `dark:border-*` (усі (0,2,0)).
+   Колишня форма (поза шарами + `:not(...)` без `:where`) мала (0,3,1) і
+   перебивала їх усі (знахідка CodeRabbit на #1286; заміряно в Chromium:
+   `hover:border-muted` на hover лишав `--c-control` замість `muted`).
+   `:where()` обнуляє специфічність аргументів `:not`, тож виняток для типів і
+   `:focus-visible` її не піднімає. Не доповнювати переліком станів
+   `:not(:hover):not(:disabled)…`: це прибрало б межу 3:1 з КОЖНОГО поля на
+   hover, а не лише там, де компонент сам задав станову межу. */
+@layer utilities {
+  input.border-line:where(
+      :not(
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="file"],
+        [type="color"]
+      )
+    ):where(:not(:focus-visible)),
+  select.border-line:where(:not(:focus-visible)),
+  textarea.border-line:where(:not(:focus-visible)) {
+    border-color: rgb(var(--c-control));
+  }
 }

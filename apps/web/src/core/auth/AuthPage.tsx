@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { BrandLogo } from "../app/BrandLogo";
 import { useAuth } from "./AuthContext";
@@ -21,7 +20,6 @@ interface AuthPageProps {
 export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
   const { loginWithGoogle, loginWithApple, authError, setAuthError } =
     useAuth();
-  const { CelebrationComponent } = useCelebration();
   /**
    * Соцвхід вимикається на деплої, який живе НЕ на домені з `BETTER_AUTH_URL`.
    *
@@ -37,6 +35,10 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
    */
   const socialLoginEnabled =
     import.meta.env["VITE_SOCIAL_LOGIN_ENABLED"] !== "false";
+  // Apple requires a configured Apple Developer Program. Keep it opt-in so a
+  // missing production credential can never appear as a working sign-in path.
+  const appleLoginEnabled =
+    import.meta.env["VITE_APPLE_LOGIN_ENABLED"] === "true";
   const [mode, setMode] = useState<"login" | "register">("login");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -83,13 +85,12 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
 
   return (
     <>
-      {CelebrationComponent}
       {/*
         Phase 7 D1 — visual refresh. MeshBackground wraps the whole auth
         shell (auth is pre-module, so no `<ModuleAccentProvider>` here);
         BrandLogo sits ABOVE the hero card per the redesign brief.
         Flow logic is intentionally untouched — see
-        `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md` D1.
+        `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md` D1.
       */}
       <MeshBackground
         className="items-center px-5 overflow-y-auto"
@@ -119,7 +120,9 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               </h2>
               <p className="text-style-label text-subtle mt-2">
                 {mode === "login"
-                  ? "Email і пароль, Google або Apple"
+                  ? appleLoginEnabled
+                    ? "Email і пароль, Google або Apple"
+                    : "Email і пароль або Google"
                   : "Email і пароль: мінімум 10 символів"}
               </p>
             </div>
@@ -164,10 +167,12 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                     loading={googleLoading}
                     onClick={handleGoogleSignIn}
                   />
-                  <AppleSignInButton
-                    loading={appleLoading}
-                    onClick={handleAppleSignIn}
-                  />
+                  {appleLoginEnabled && (
+                    <AppleSignInButton
+                      loading={appleLoading}
+                      onClick={handleAppleSignIn}
+                    />
+                  )}
                 </div>
               </>
             )}
@@ -189,14 +194,14 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
             <div className="mt-4 space-y-2">
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="md"
                 className="w-full"
                 onClick={onContinueWithoutAccount}
               >
                 Поки що пропустити
               </Button>
-              <p className="text-center text-style-caption text-subtle leading-relaxed px-2">
+              <p className="text-center text-style-body text-subtle leading-relaxed px-2">
                 Все працює локально. Акаунт потрібен лише для синхронізації між
                 пристроями.
               </p>

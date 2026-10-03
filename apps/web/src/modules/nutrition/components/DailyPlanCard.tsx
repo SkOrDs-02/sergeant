@@ -24,6 +24,7 @@ import {
   MissingMacrosHint,
 } from "./DailyPlanWarnings";
 import { MacroRatioBar } from "./DailyPlanMacros";
+import { WeekPlanButton } from "./WeekPlanButton";
 import {
   DailyPlanMealRow,
   MEAL_TYPE_ORDER,
@@ -210,7 +211,11 @@ export function DailyPlanCard({
                     const v =
                       raw === "" ? null : Number(raw) > 0 ? Number(raw) : null;
                     setPrefs((p) => {
-                      const next = { ...p, [key]: v };
+                      const next = {
+                        ...p,
+                        [key]: v,
+                        adaptiveGoalEnabled: false,
+                      };
                       // Авто-перерахунок Ккал лише коли користувач явно не
                       // задав ціль (kcal === null) або коли вона дорівнює
                       // попередньому авто-значенню. Інакше тиха перезапис
@@ -263,6 +268,12 @@ export function DailyPlanCard({
           <MacroKcalWarning prefs={prefs} setPrefs={setPrefs} busy={busy} />
 
           <GoalRangeWarning prefs={prefs} />
+
+          {!prefs.adaptiveGoalEnabled && (
+            <p className="mt-3 text-style-caption text-muted">
+              Автокалібрування вмикається в Налаштуваннях → Їжа.
+            </p>
+          )}
 
           {hasTargets && (
             <div className="mt-2 flex flex-wrap gap-1 items-center">
@@ -322,23 +333,23 @@ export function DailyPlanCard({
             disabled={busy || dayPlanBusy}
             className={cn(
               "text-style-label w-full h-11 rounded-2xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
+              // Обидві CTA — сирі `<button>`, тож кільце фокуса не приходить
+              // від `Button`. Без нього з клавіатури не видно, де ти стоїш
+              // (підтверджено живим прогоном 2026-09-16). Канон — утиліта
+              // `focus-ring`, а не рукописний `focus-visible:ring-2`: її
+              // стереже храповик `handRolledFocusRing` у `pnpm lint`.
+              "focus-ring",
             )}
           >
             {dayPlanBusy ? "Генерую план…" : "Згенерувати денний план"}
           </button>
           {typeof fetchWeekPlan === "function" && (
-            <button
-              type="button"
+            <WeekPlanButton
               onClick={fetchWeekPlan}
               disabled={busy || weekPlanBusy}
-              className={cn(
-                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-                "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-              )}
-            >
-              {weekPlanBusy ? "…" : "План на тиждень"}
-            </button>
+              busy={weekPlanBusy}
+            />
           )}
         </div>
 
@@ -381,16 +392,27 @@ export function DailyPlanCard({
           </div>
         )}
 
-        {weekPlanRaw && (!weekPlan?.days || weekPlan.days.length === 0) && (
-          <details className="rounded-2xl border border-line bg-bg p-3">
-            <summary className="cursor-pointer text-style-caption text-muted">
-              Діагностика плану (raw)
-            </summary>
-            <pre className="mt-2 whitespace-pre-wrap text-style-caption text-muted max-h-48 overflow-auto">
-              {weekPlanRaw}
-            </pre>
-          </details>
-        )}
+        {/* AI-DANGER: сира відповідь моделі — DEV-ONLY.
+                Це діагностика для розробника: неформатований текст від
+                LLM, який у продакшн-UI не пояснює людині нічого, зате
+                показує їй внутрішню кухню (знахідка PR-N8, аудит
+                2026-09-13). `import.meta.env.DEV` статично `false` у
+                прод-збірці, тож Vite вирізає гілку цілком — це той самий
+                гейт, що в `StandaloneRoutes` для внутрішнього стайлгайду.
+                Повертаєш це людям — роби через прапорець і у вигляді,
+                який можна прочитати, а не `<pre>{raw}</pre>`. */}
+        {import.meta.env.DEV &&
+          weekPlanRaw &&
+          (!weekPlan?.days || weekPlan.days.length === 0) && (
+            <details className="rounded-2xl border border-line bg-bg p-3">
+              <summary className="cursor-pointer text-style-caption text-muted">
+                Діагностика плану (raw)
+              </summary>
+              <pre className="mt-2 whitespace-pre-wrap text-style-caption text-muted max-h-48 overflow-auto">
+                {weekPlanRaw}
+              </pre>
+            </details>
+          )}
 
         {sortedMeals.length > 0 && (
           <div className="space-y-3">
@@ -461,7 +483,7 @@ export function DailyPlanCard({
             </div>
 
             {dayPlan?.note && (
-              <div className="rounded-xl bg-panel/60 border border-line px-3 py-2 text-style-caption text-muted">
+              <div className="rounded-xl bg-panel border border-line px-3 py-2 text-style-caption text-muted">
                 {dayPlan.note}
               </div>
             )}

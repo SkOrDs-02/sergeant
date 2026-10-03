@@ -11,6 +11,7 @@ import {
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { billingKeys } from "@shared/lib/api/queryKeys";
+import { accessFixture } from "../test/helpers/billingAccess";
 
 const {
   submitMock,
@@ -21,6 +22,7 @@ const {
   toastErrorMock,
   toastInfoMock,
   trackEventMock,
+  openHubSettingsSectionMock,
 } = vi.hoisted(() => ({
   submitMock:
     vi.fn<(input: unknown) => Promise<{ ok: true; created: boolean }>>(),
@@ -43,12 +45,14 @@ const {
         currentPeriodEnd: string | null;
         cancelAtPeriodEnd: boolean;
       };
+      access: import("@sergeant/shared").BillingAccess;
     }>
   >(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
   toastInfoMock: vi.fn(),
   trackEventMock: vi.fn(),
+  openHubSettingsSectionMock: vi.fn(),
 }));
 
 submitMock.mockResolvedValue({ ok: true, created: true });
@@ -71,6 +75,7 @@ statusMock.mockResolvedValue({
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
   },
+  access: accessFixture("free"),
 });
 
 vi.mock("@shared/api", () => ({
@@ -89,6 +94,18 @@ vi.mock("@shared/hooks/useToast", () => ({
     info: toastInfoMock,
   }),
 }));
+
+// PR-S7 (аудит 2026-09-13 хвиля 5): success-toast мусить вести в конкретну
+// секцію Налаштувань («Підписка та план»), не просто в таб — spy на
+// реальний канал, яким уже ходять інактивна Bento-картка й ⌘K. Partial
+// mock (не голий факторі-об'єкт): `appPaths.ts` (transitively, через
+// `PricingPage.tsx` → `./app/appPaths`) читає `HUB_MODULE_IDS` з того ж
+// модуля — заміна ВСЬОГО модуля лишила б цей експорт `undefined`.
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/lib/modules/hubNav")>();
+  return { ...actual, openHubSettingsSection: openHubSettingsSectionMock };
+});
 
 vi.mock("./observability/analytics", async () => {
   const shared = await import("@sergeant/shared");
@@ -137,6 +154,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     toastErrorMock.mockClear();
     toastInfoMock.mockClear();
     trackEventMock.mockClear();
+    openHubSettingsSectionMock.mockClear();
     mockAuthStatus = "authenticated";
     statusMock.mockResolvedValue({
       subscription: {
@@ -147,6 +165,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
       },
+      access: accessFixture("free"),
     });
   });
   afterEach(() => cleanup());
@@ -317,6 +336,15 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
         }),
       );
 
+      // PR-S7 (аудит 2026-09-13 хвиля 5): раніше `onClick` вів на
+      // `/?tab=settings` без таргета секції — після скасування
+      // форсованого розкриття першої секції (2026-09-11) людина бачила
+      // чотири згорнуті рядки й не бачила свого щойно активованого
+      // плану. Фікс веде через `openHubSettingsSection("plan")` — той
+      // самий канал, яким уже ходять інактивна Bento-картка й ⌘K.
+      action.onClick?.();
+      expect(openHubSettingsSectionMock).toHaveBeenCalledWith("plan");
+
       // billingKeys.status інвалідується щонайменше раз із правильною
       // фабричною композицією (Hard Rule #2 — RQ keys лише через фабрики).
       const billingInvalidations = invalidateSpy.mock.calls.filter((call) => {
@@ -393,6 +421,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
           currentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
           cancelAtPeriodEnd: false,
         },
+        access: accessFixture("pro"),
       });
     }
 
@@ -521,5 +550,56 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
         screen.queryByRole("button", { name: "Увійти й почати" }),
       ).toBeNull();
     });
+  });
+
+  it("озвучує виключену функцію текстом, а не лише формою іконки", () => {
+    // Регресія WF-25 (аудит 2026-09-16): `Icon` без `title` рендериться
+    // `aria-hidden`, тож «PDF-експорт звітів» (не входить) і «Чат із Сержантом»
+    // (входить) звучали для скрінрідера ІДЕНТИЧНО — різницю несли лише
+    // гліф і приглушений колір (WCAG 1.4.1, «сенс лише кольором»).
+    renderPricing();
+    // Назва фічі трапляється двічі (картка тарифу + порівняльний блок) —
+    // беремо ті входження, що живуть у списку фіч картки.
+    const excludedRows = screen
+      .getAllByText("PDF-експорт звітів")
+      .map((n) => n.closest("li"))
+      .filter((li): li is HTMLLIElement => li !== null);
+    expect(excludedRows.length).toBeGreaterThan(0);
+    expect(
+      excludedRows.some((li) => li.textContent?.includes("не входить:")),
+    ).toBe(true);
+
+    const includedRows = screen
+      .getAllByText("Ручний трекінг без числових лімітів")
+      .map((n) => n.closest("li"))
+      .filter((li): li is HTMLLIElement => li !== null);
+    expect(
+      includedRows.some(
+        (li) =>
+          li.textContent?.includes("входить:") &&
+          !li.textContent.includes("не входить:"),
+      ),
+    ).toBe(true);
+  });
+
+  it("малює Premium-героя чорнилом без альфи", () => {
+    // Регресія WF-23: `text-hero-ink/70` і `/60` давали 3.40:1 і 2.90:1 на
+    // світлому кінці градієнта (teal-700) при 12-14px тексті, де поріг
+    // 4.5:1. Рішення власника 2026-10-01 (A9): чорнило завжди повне, жодного
+    // кроку прозорості, ієрархію тримають кегль і вага. Лінт цього не
+    // бачить — `no-opacity-on-text-token` не знає токена `hero-ink`.
+    const { container } = renderPricing();
+    expect(container.querySelector('[class*="text-hero-ink/"]')).toBeNull();
+    expect(container.querySelector('[class*="text-brand-900/"]')).toBeNull();
+  });
+
+  it("малює Premium чорнилом хаба, а не hero-градієнтом Фініка", () => {
+    // Тарифи живуть на нейтральному хабі, а Premium відкриває всі модулі,
+    // тож teal тут читався як чужий акцент (рішення власника 2026-09-24).
+    const { container } = renderPricing();
+    expect(container.querySelector('[class*="bg-hero-grad-finyk"]')).toBeNull();
+    const premium = screen.getByText("Скоро").closest("article");
+    expect(premium?.className).toContain("bg-brand-strong");
+    expect(premium?.className).not.toContain("finyk");
   });
 });

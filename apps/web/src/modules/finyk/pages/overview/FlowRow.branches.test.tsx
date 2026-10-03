@@ -48,9 +48,10 @@ describe("FlowRow (branches)", () => {
     expect(screen.queryByText(/₴/)).toBeNull();
   });
 
-  it("shows sign with question mark when amount is null", () => {
+  it("shows «сума невідома» in words when amount is null", () => {
     const { container } = render(<FlowRow flow={mkFlow({ amount: null })} />);
-    expect(container.textContent).toMatch(/−\?\u202f₴/);
+    expect(container.textContent).toContain("сума невідома");
+    expect(container.textContent).not.toMatch(/\?/);
   });
 
   // Тон бере напрямок зі `sign`, а не з хекса (2026-08-07). Раніше тут

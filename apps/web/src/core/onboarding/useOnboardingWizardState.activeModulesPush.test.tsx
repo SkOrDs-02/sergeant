@@ -38,7 +38,6 @@ describe("useOnboardingWizardState — активні модулі їдуть н
     const { result } = renderHook(() =>
       useOnboardingWizardState({
         onDone: vi.fn(),
-        onSecondaryAction: vi.fn(),
       }),
     );
 

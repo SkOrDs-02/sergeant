@@ -1,6 +1,6 @@
 # Питання і відповіді
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-02.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-14.
 > **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/PytannyaPage.tsx`), PR #955/#956.
 
 ## Мета сторінки

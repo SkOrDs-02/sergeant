@@ -6,13 +6,14 @@ import { scoreMatch } from "../hubSearchEngine";
 
 /**
  * `module` is the visual grouping/colour key. Real modules use the
- * `ModuleAccent` palette; the four pseudo-modules ("settings",
+ * `ModuleAccent` palette; the five pseudo-modules ("settings", "profile",
  * "assistant", "actions", "ai") render with their own neutral swatches
  * and route to different navigation targets (`?tab=settings` /
- * `/assistant` / cross-module quick-add / open-chat handoff).
+ * `?tab=profile` / `/assistant` / cross-module quick-add / open-chat
+ * handoff).
  */
 export type SearchSurface =
-  ModuleAccent | "settings" | "assistant" | "actions" | "ai";
+  ModuleAccent | "settings" | "profile" | "assistant" | "actions" | "ai";
 
 export type Hit = {
   id: string;
@@ -25,6 +26,11 @@ export type Hit = {
   target:
     | { kind: "module"; moduleId: string }
     | { kind: "settings"; sectionId?: string }
+    // PR-S5 (аудит 2026-09-13 хвиля 5): Профіль (пароль, сесії, PIN,
+    // вага, вихід, видалення акаунта) не мав власного джерела в
+    // глобальному пошуку — на відміну від Налаштувань, Профіль не має
+    // per-секційних hash-якорів, тому ціль лише перемикає вкладку хаба.
+    | { kind: "profile" }
     | { kind: "assistant"; capability?: AssistantCapability }
     | {
         kind: "action";

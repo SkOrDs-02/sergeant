@@ -76,6 +76,7 @@ export function useQuickAddMealFromChip({
         undefined,
         {
           label: "Скасувати",
+          kind: "undo",
           onClick: () => {
             log.handleRemoveMeal(dateForLog, id);
           },

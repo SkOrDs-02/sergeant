@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { createMemoryKVStore } from "../test-utils";
 import {
   MODULE_CHECKLISTS,
+  CHECKLIST_ACTIONS,
   getChecklistState,
   saveChecklistState,
   markChecklistStepDone,
@@ -33,6 +34,22 @@ describe("moduleChecklist — definitions", () => {
       }
     }
   });
+
+  // F3 audit (2026-09-11): `CHECKLIST_ACTIONS` is the single source of
+  // truth `hubNav.ts`'s runtime gate derives from — `ChecklistStep.action`
+  // is typed against it, so this is defense-in-depth against an `as any`
+  // bypass, not the primary guarantee (the primary guarantee is the type
+  // itself, verified at compile time).
+  it("every declared checklist action is a member of the canonical CHECKLIST_ACTIONS list", () => {
+    const declaredActions = Object.values(MODULE_CHECKLISTS)
+      .flatMap((def) => def.steps)
+      .map((step) => step.action)
+      .filter((action) => action !== undefined);
+    expect(declaredActions.length).toBeGreaterThan(0);
+    for (const action of declaredActions) {
+      expect(CHECKLIST_ACTIONS).toContain(action);
+    }
+  });
 });
 
 describe("moduleChecklist — storage", () => {
@@ -57,7 +74,46 @@ describe("moduleChecklist — storage", () => {
     };
     saveChecklistState(store, "finyk", original);
     const loaded = getChecklistState(store, "finyk");
-    expect(loaded).toEqual(original);
+    // Писар доклав `latchVersion` — без нього читання не взяло б засувку
+    // на віру (див. нижче про епоху тапу).
+    expect(loaded).toEqual({ ...original, latchVersion: 2 });
+  });
+
+  // Знахідка рев'ю до PR #1106. До F3 тап по рядку чекліста писав `stepId`
+  // у `completedSteps` без жодного доказу даними — це і був дефект. Ключ
+  // сховища не змінювався, тож після фіксу ті самі неперевірені id почали
+  // читатись як постійний доказ, і дефект пережив власний фікс для всіх,
+  // хто встиг тапнути. Запис без `latchVersion` — саме така епоха.
+  it("distrusts completedSteps written before the latch had a version", () => {
+    store.setString(
+      "finyk_checklist_v1",
+      JSON.stringify({
+        completedSteps: ["add_expense", "set_budget"],
+        dismissed: true,
+        firstSeenAt: "2026-01-01T00:00:00.000Z",
+      }),
+    );
+    const loaded = getChecklistState(store, "finyk");
+    expect(loaded.completedSteps).toEqual([]);
+    // А решту запису чіпати підстав немає: людина, яка сховала чекліст,
+    // не має побачити його знову через чужий баг.
+    expect(loaded.dismissed).toBe(true);
+    expect(loaded.firstSeenAt).toBe("2026-01-01T00:00:00.000Z");
+  });
+
+  it("keeps completedSteps written with the current latch version", () => {
+    store.setString(
+      "finyk_checklist_v1",
+      JSON.stringify({
+        completedSteps: ["add_expense"],
+        dismissed: false,
+        firstSeenAt: null,
+        latchVersion: 2,
+      }),
+    );
+    expect(getChecklistState(store, "finyk").completedSteps).toEqual([
+      "add_expense",
+    ]);
   });
 
   it("handles malformed JSON gracefully", () => {
@@ -219,14 +275,34 @@ describe("moduleChecklist — data signals", () => {
 
   it("treats a falsy signal as 'no proof', never as an un-tick", () => {
     // routine.todayDone is 0 on a skipped day — that must not undo a step
-    // the user already ticked.
+    // the user already latched.
     markChecklistStepDone(store, "routine", "complete_habit");
     const steps = resolveChecklistSteps(store, "routine", {
       complete_habit: false,
     });
     const step = steps.find((s) => s.id === "complete_habit");
     expect(step?.done).toBe(true);
-    expect(step?.provenByData).toBe(false);
+    // F3 (2026-09-11): `provenByData` no longer means "proven by a LIVE
+    // signal this render" — it's folded with the permanent latch, so a
+    // previously-latched step reads `provenByData: true` even though
+    // today's signal is `false`. `done` and `provenByData` are the same
+    // value now; see `resolveChecklistStepsFromState`.
+    expect(step?.provenByData).toBe(true);
+  });
+
+  it("keeps a step done after its live signal disappears (F3: achievement is sticky, not a live data state)", () => {
+    // Simulate the web auto-latch effect having already recorded the
+    // step the first time real data proved it.
+    markChecklistStepDone(store, "finyk", "add_expense");
+
+    // The proving record is gone now (e.g. the user deleted a seeded
+    // test expense) — the live signal reverts to "no proof".
+    const steps = resolveChecklistSteps(store, "finyk", {
+      add_expense: false,
+    });
+    const step = steps.find((s) => s.id === "add_expense");
+    expect(step?.done).toBe(true);
+    expect(step?.provenByData).toBe(true);
   });
 
   it("resolves impliedBy transitively (streak ⇒ complete ⇒ create)", () => {

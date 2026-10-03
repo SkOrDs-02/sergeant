@@ -22,16 +22,17 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { z } from "zod";
-import { STORED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
+import { CORPUS_DOMAINS } from "./corpus.js";
 
 // Домени golden-запитів збігаються з `source` документів корпусу — див.
-// пояснення про STORED vs ALLOWED у `corpus.ts`.
-const DOMAIN_SCHEMA = z.enum(STORED_MEMORY_SOURCES);
+// `CORPUS_DOMAINS` у `corpus.ts` (розчеплений від `ai_memories.source`
+// ініціативою 0024, PR-3, 2026-09-19).
+const DOMAIN_SCHEMA = z.enum(CORPUS_DOMAINS);
 
 export const GoldenQuerySchema = z.object({
   /** Унікальний id (стабільний). Формат: `<domain>-NNN`. */
   id: z.string().min(1),
-  /** Memory-source domain - має бути у `STORED_MEMORY_SOURCES`. */
+  /** Memory-source domain - має бути у `CORPUS_DOMAINS` (`corpus.ts`). */
   domain: DOMAIN_SCHEMA,
   /** Natural-language query. */
   query: z.string().min(1),

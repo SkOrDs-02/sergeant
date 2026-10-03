@@ -1,6 +1,6 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-01.
+> **Last touched:** 2026-09-17 by @claude (handoff на Phase 2 переформульовано: Devin retired). **Next review:** 2026-12-16.
 > **Status:** Active — roadmap for first user-facing launch фази.
 
 > Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 15 тижнів від `W-4` до `W10`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
@@ -66,7 +66,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 - [x] **Marketing-лендінг існує** як окремий workspace `apps/landing` (Vite + React 18 + Tailwind 4) з hero, module-showcase, cross-module-секцією і Telegram-CTA. Див. [§2](#2-лендінг--стан-і-що-лишилось).
 - [x] **Юридичний пак опубліковано** — `apps/web/src/core/legal/LegalPage.tsx` містить 4 документи (Privacy Policy, Terms, Cookie Policy, Публічна оферта), чинні з 12.07.2026. **Лишається:** підставити реквізити ФОП (зараз `CONTROLLER_PLACEHOLDER` + IBAN — плейсхолдери). Деталі — [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#1-юридичне-та-compliance).
 - [x] **Telegram-вейтліст живий** — бот `@serg_qa_bot`, webhook `POST /api/v1/telegram/webhook` (`apps/server/src/modules/telegram/waitlistBot.ts`), таблиця `telegram_waitlist` (міграція 089), ручна розсилка `scripts/telegram/broadcast-waitlist.mjs`.
-- [ ] **Domain `sergeant.com.ua` зареєстрований** і вказує на Vercel apex (status TBD — open question).
+- [x] **Domain `sergeant.com.ua` зареєстрований** і вказує на Vercel apex: домен живий ([agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)). Search Console лишається відкритим.
 - [ ] **Telegram-канал «Sergeant 🎖️»** створений (окремо від бота вейтліста).
 - [ ] **Founder написав bullet-список того, які 10 фіч web-стеку він вважає shippable** (а не «майже готово»).
 
@@ -115,7 +115,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 
 ### 2.3 Що лишилось
 
-- [ ] **Домен.** `sergeant.com.ua` не зареєстрований. Розділення apex (лендінг) ↔ `app.` (PWA) — досі цільова схема, але не діюча.
+- [x] **Домен.** `sergeant.com.ua` зареєстрований і живий ([agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)). Search Console лишається відкритим. Розділення apex (лендінг) ↔ `app.` (PWA) — перевір за фактичним DNS.
 - [ ] **Прив'язати Vercel-проєкт.** `apps/landing/vercel.json` у репо є; лишається створити окремий Vercel-проєкт і навести на нього apex-домен.
 - [ ] **PostHog production config.** Підтвердити `VITE_POSTHOG_KEY`/host і що події `landing_viewed` + `landing_telegram_clicked` доходять у вибраний проєкт.
 - [ ] **Юзернейм бота.** `serg_qa_bot` читається як внутрішній тестовий. Перейменування вб'є вже роздані deep link-и — робити **до** першої публічної роздачі, не після ([`telegram-waitlist.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/90-work/planning/specs/archive/telegram-waitlist.md)).
@@ -142,7 +142,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 
 **Concrete actions:**
 
-- [ ] **Купити `sergeant.com.ua`** (~₴500/рік через Imena.ua або UA-DNS). Налаштувати DNS на Vercel.
+- [x] **Купити `sergeant.com.ua`** - виконано, домен живий ([agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)). DNS на Vercel налаштовано; Search Console лишається відкритим.
 - [ ] **Deploy `apps/landing` на Vercel:** окремий Vercel-проєкт (конфіг уже є — `apps/landing/vercel.json`); apex `sergeant.com.ua` → landing, subdomain `app.sergeant.com.ua` → existing `apps/web`. Тест: SSL працює, `public/og.png` рендериться в Telegram-preview.
 - [ ] **Зареєструвати webhook бота:** `node scripts/telegram/setup-webhook.mjs` (після деплою серверного ендпоінта, не раніше — інакше Telegram піде в exponential backoff). Перевірка стану — `--check`.
 - [ ] **BotFather-налаштування:** `/setprivacy → Enable` (обов'язково — інакше бот читає переписку бета-групи), `/setdescription`, `/setabout`, `/setuserpic`. Порожній опис на екрані «почати діалог» ріже конверсію рівно в тій точці, заради якої все робиться.
@@ -217,7 +217,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 - [ ] **Тестова відправка на власний `chat_id`** перед реальною хвилею.
 - [ ] **Telegram-група «Sergeant Beta»:** приватна, вступ лише за інвайт-лінком із розсилки. Mini-rule «один пост — один bug-report АБО одна ідея».
 - [ ] **In-app feedback widget:** уже shipped — Settings → «Фідбек», події `feedback_widget_opened` / `feedback_submitted` у PostHog ([`feedback-loop.md`](../../../../operations/observability/feedback-loop.md)). Перевірити, що працює, не будувати заново.
-- [ ] **Bug-tracking templates:** GitHub Issue template `bug-from-beta.md` з полями: device, OS, browser, кроки, screenshot.
+- [ ] **Bug-tracking templates:** GitHub Issue template `bug-from-beta.md` з полями: device, OS, browser, кроки, screenshot. Шаблону немає (перевірено 2026-09-29), канал фідбеку - рішення власника.
 - [ ] **Dry-run launch day:** запустити демо-юзера-від-нуля у Chrome incognito + mobile-Chrome. Прогнати критичний flow: signup → Welcome → перший модуль → перший запис. Фіксувати кожен bug.
 - [ ] **Реквізити ФОП у юридичний пак:** підставити ПІБ, РНОКПП, адресу та IBAN замість плейсхолдерів у `apps/web/src/core/legal/LegalPage.tsx`. Тексти вже чинні з 12.07.2026 — бракує лише реквізитів.
 - [ ] **Сповістити founder-pulse Telegram alert channel:** додати alert на «signup spike > 10/hour» (закрита бета не повинна мати спайків — це signal помилкового сценарію).
@@ -595,7 +595,7 @@ flowchart LR
 #### 4.7.2 Recruitment-пост для публічних каналів
 
 Публікувати в UA Telegram-каналах зі списку
-[`business/02-go-to-market.md` §4.2](../business/02-go-to-market.md#українські-канали)
+[`business/02-go-to-market.md` §4.2](../business/02-go-to-market.md#42-українські-канали)
 (наприклад `@startupukraine`, `@productivity_ua`, `@digitalnomad_ua`, `@zozh_ukraine`)
 і в коментарях під DOU/AIN-статтями (§3.1 W-3 custdev-крок готує ці статті заздалегідь):
 
@@ -696,7 +696,7 @@ Sergeant: фінанси + тренування + звички + харчува�
 
 ## 6. Метрики успіху
 
-Цей розділ доповнює [`04-launch-readiness.md` §4`](../business/04-launch-readiness.md#4-метрики-готовності) і [`01-monetization-and-pricing.md` §7`](../business/01-monetization-and-pricing.md#7-activation-метрики). Тут — **Phase 1-specific** виміри.
+Цей розділ доповнює [`04-launch-readiness.md` §4`](../business/04-launch-readiness.md#4-метрики-готовності) і [`01-monetization-and-pricing.md` §7`](../business/01-monetization-and-pricing.md#7-activation-і-конверсія-у-платників). Тут — **Phase 1-specific** виміри.
 
 ### 6.1 North Star Metric для Phase 1
 
@@ -787,17 +787,17 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 
 ### 7.1 Risk register (Phase 1)
 
-| #   | Risk                                                                                | Likelihood | Impact   | Mitigation                                                                                                                                                                                         |
-| --- | ----------------------------------------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R-1 | **Solo founder вигоряння** — 15 тижнів без перерви, custdev + dev + ops + marketing | High       | Critical | Timeline має slack-тижні (W1, W5) — якщо exit-gate не пройшов, не push: повторюй під-фазу. Telegram alerts limited до P0/P1.                                                                       |
-| R-2 | **FTUX wizard має поточну conversion < 30%** (W0-W1)                                | Medium     | High     | FTUX SLO живий у `ftux-slo.yml`; якщо < 30%, повтор W0-W1, не йди у W2. Iteration на hero copy + first action — швидкі PR-и.                                                                       |
-| R-3 | **Product Hunt launch flop** — top-20 не досягнуто                                  | Medium     | Medium   | Self-launch ОК (per [`02-go-to-market.md §4.1`](../business/02-go-to-market.md#41-product-hunt-playbook)). Backup-канал — DOU/AIN/Threads UA уже працюють. Не залежимо на PH.                      |
-| R-4 | **Реквізити ФОП не підставлені до public launch** — block W2                        | Medium     | Medium   | Тексти юридичного паку вже чинні (12.07.2026); лишились реквізити. Ризик знижений з High: це заповнення полів, не написання документів.                                                            |
-| R-5 | **Backend не витримує PH-spike** (5-10x normal traffic у W4)                        | Medium     | Critical | Coolify/VPS scaling і rollback path мають бути перевірені заздалегідь — апгрейд інстанса **не миттєвий**. Preemptive load-test у W3 (artillery або k6 із 100 RPS). Якщо < 100 RPS — escalate.      |
-| R-6 | **Beta-юзери відсутні / тихі** — нема фідбеку у W0-W1                               | Medium     | High     | На 30 тестерах і 2 тижнях цей ризик **вищий**, ніж був на 50/4 тижні: менше людей і менше часу на розгойдування. Recruit з 3 каналів одночасно; follow-up DM через 48h для тихих.                  |
-| R-7 | **Activation rate < 20%** на когорті у W1                                           | Low-Medium | Critical | Це fatal — означає FTUX broken. Stop Phase 1, повтор Sprint 1-3 з FTUX-master-tracker. Engage parent session для re-planning.                                                                      |
-| R-8 | **Mobile strategy змінилась після ADR-0010**                                        | Medium     | Medium   | ADR-0052 робить Capacitor primary; Phase 2 brief має перевірити актуальну parity-стратегію, а не старий T₀/T₁/T₂ sunset-графік.                                                                    |
-| R-9 | **Email-канал мертвий** — домен у Resend не верифіковано                            | High       | Medium   | Уже реалізувалось: саме тому вейтліст переїхав у Telegram. Email лишається як портативний запасний канал — Telegram може заблокувати бота, і тоді список у `waitlist_entries` єдиний, що лишиться. |
+| #   | Risk                                                                                | Likelihood | Impact   | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------- | ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R-1 | **Solo founder вигоряння** — 15 тижнів без перерви, custdev + dev + ops + marketing | High       | Critical | Timeline має slack-тижні (W1, W5) — якщо exit-gate не пройшов, не push: повторюй під-фазу. Telegram alerts limited до P0/P1.                                                                                                                                                                                                                                                                                                                                                      |
+| R-2 | **FTUX wizard має поточну conversion < 30%** (W0-W1)                                | Medium     | High     | FTUX SLO живий у `ftux-slo.yml`; якщо < 30%, повтор W0-W1, не йди у W2. Iteration на hero copy + first action — швидкі PR-и.                                                                                                                                                                                                                                                                                                                                                      |
+| R-3 | **Product Hunt launch flop** — top-20 не досягнуто                                  | Medium     | Medium   | Self-launch ОК (per [`02-go-to-market.md §4.1`](../business/02-go-to-market.md#41-product-hunt-playbook)). Backup-канал — DOU/AIN/Threads UA уже працюють. Не залежимо на PH.                                                                                                                                                                                                                                                                                                     |
+| R-4 | **Реквізити ФОП не підставлені до public launch** — block W2                        | Medium     | Medium   | Тексти юридичного паку вже чинні (12.07.2026); лишились реквізити. Ризик знижений з High: це заповнення полів, не написання документів.                                                                                                                                                                                                                                                                                                                                           |
+| R-5 | **Backend не витримує PH-spike** (5-10x normal traffic у W4)                        | Medium     | Critical | Coolify/VPS scaling і rollback path мають бути перевірені заздалегідь — апгрейд інстанса **не миттєвий**. Preemptive load-test у W3 (artillery або k6 із 100 RPS). Якщо < 100 RPS — escalate.                                                                                                                                                                                                                                                                                     |
+| R-6 | **Beta-юзери відсутні / тихі** — нема фідбеку у W0-W1                               | Medium     | High     | На 30 тестерах і 2 тижнях цей ризик **вищий**, ніж був на 50/4 тижні: менше людей і менше часу на розгойдування. Recruit з 3 каналів одночасно; follow-up DM через 48h для тихих.                                                                                                                                                                                                                                                                                                 |
+| R-7 | **Activation rate < 20%** на когорті у W1                                           | Low-Medium | Critical | Це fatal — означає FTUX broken. Stop Phase 1, повтор Sprint 1-3 з FTUX-master-tracker. Engage parent session для re-planning.                                                                                                                                                                                                                                                                                                                                                     |
+| R-8 | **Mobile strategy змінилась після ADR-0010** — реалізувався двічі                   | Medium     | Medium   | Спершу ADR-0052 (Capacitor primary), потім [ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md): з 2026-08-25 **обидва стеки на паузі** (web-first). Тобто ризик спрацював саме так, як тут описано, і другий раз рядок про нього оновили лише 2026-09-14. Phase 2 і Phase 3 не стартують, доки web не підтвердить потребу в продукті — і це рішення власника, не наслідок parity-метрик. Перед будь-яким mobile-brief-ом звіряйся з ADR-0094, не з цим рядком. |
+| R-9 | **Email-канал мертвий** — домен у Resend не верифіковано                            | High       | Medium   | Уже реалізувалось: саме тому вейтліст переїхав у Telegram. Email лишається як портативний запасний канал — Telegram може заблокувати бота, і тоді список у `waitlist_entries` єдиний, що лишиться.                                                                                                                                                                                                                                                                                |
 
 ### 7.2 Pre-mortem (W10)
 
@@ -930,6 +930,6 @@ Reasonable budget. Lemma: «якщо $50/міс рятує мене 2 годин
 
 Цей doc — **гайд, не контракт**. Якщо тиждень не пройшов як заплановано, **повтори тиждень**, не йди далі. Acceptance gates існують саме для цього.
 
-Ownership Phase 1 — `@Skords-01`. Cross-session handoff на Phase 2 — через `docs/work/specs/launch/phases/02-capacitor-launch.md` (інша Devin-сесія).
+Ownership Phase 1 — `@Skords-01`. Cross-session handoff на Phase 2 — через `docs/work/specs/launch/phases/02-capacitor-launch.md` (окрема агентська сесія — Claude Code / Codex; історично Devin, retired [ADR-0088](../../../../governance/adr/0088-devin-kilo-harness-retirement.md); сама Phase 2 на паузі за ADR-0094).
 
 > _Доповнення / зміни — через PR з conventional commit `docs(launch): …` і `Signed-off-by: <author>`. Не редагуй inline у production runs без owner-approval._

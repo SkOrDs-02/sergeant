@@ -1,6 +1,6 @@
 name: AI-LEGACY marker scan
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -22,23 +22,11 @@ name: AI-LEGACY marker scan
 #
 # See `scripts/check-ai-legacy.mjs` for marker grammar + classification logic.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "apps/**/*.ts"
-      - "apps/**/*.tsx"
-      - "apps/**/*.js"
-      - "apps/**/*.jsx"
-      - "apps/**/*.mjs"
-      - "packages/**/*.ts"
-      - "packages/**/*.tsx"
-      - "packages/**/*.js"
-      - "packages/**/*.mjs"
-      - "scripts/**/*.mjs"
-      - "scripts/**/*.js"
-      - "tools/**/*.mjs"
-      - ".github/workflows/ai-legacy-scan.yml"
+  schedule:
+    - cron: "30 6 * * 1"
 
 permissions:
   issues: write
@@ -67,7 +55,11 @@ jobs:
         # weekly cron exists — to file issues for them). Running --check there
         # would make GitHub Actions skip the issue/dashboard steps below.
         if: github.event_name == 'pull_request'
-        run: node scripts/check-ai-legacy.mjs --check
+        # `--require-issue` з 2026-09-19: маркер мусить називати власника —
+        # issue АБО трекер у `docs/` (PR-5 спеки docs-code-drift-2026-09-19).
+        # Доти прапорець існував, але не вмикався, і звіт показував
+        # `no-issue-ref: 9` на кожному прогоні — попередження, яке є завжди.
+        run: node scripts/check-ai-legacy.mjs --check --require-issue
 
       - name: Open GitHub issues for expired markers
         # Issue creation is skipped on pull_request because forks cannot write.

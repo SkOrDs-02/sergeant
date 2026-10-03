@@ -285,7 +285,7 @@ function DataResultCardImpl({
         >
           <Icon
             name={failed ? "alert" : iconForQueryTool(toolName)}
-            size={14}
+            size="sm"
           />
         </span>
         <div className="min-w-0 flex-1">

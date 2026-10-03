@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-01.
+> **Last touched:** 2026-09-17 by @claude (Codex helpers → посилання на codex-capabilities.md; tech-debt покриває tools/scripts). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -47,7 +47,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-module-integrations`](../../../.agents/skills/sergeant-module-integrations/SKILL.md)           | Зовнішні інтеграції: silpo, telegram, transcribe, webhooks       | Error-шляхи без блокування продукту, ідемпотентні webhooks, USD-кап transcribe                                                      |
 | [`sergeant-module-push`](../../../.agents/skills/sergeant-module-push/SKILL.md)                           | Push-сповіщення: web push, APNs, FCM                             | Server-driven fan-out (ADR-0019), деактивація протухлих підписок, UA-тексти                                                         |
 | [`sergeant-copy-and-tone`](../../../.agents/skills/sergeant-copy-and-tone/SKILL.md)                       | UA-копірайтинг: кнопки, помилки, тости, empty states             | style-guide.uk.md hard rules: «ти», 1-ша особа, action-prompt-closed errors                                                         |
-| [`sergeant-adr`](../../../.agents/skills/sergeant-adr/SKILL.md)                                           | Написання/оновлення ADR та індексу рішень                        | Нумерація без пропусків, Proposed→Accepted при мержі, supersede-ланцюги, check-adr-index                                            |
+| [`sergeant-adr`](../../../.agents/skills/sergeant-adr/SKILL.md)                                           | Написання/оновлення ADR та індексу рішень                        | Нумерація без пропусків, Proposed→Accepted при мержі, supersede-ланцюги, check-adr-graph                                            |
 | [`sergeant-feature-flags`](../../../.agents/skills/sergeant-feature-flags/SKILL.md)                       | Додавання/зняття фіче-прапорців                                  | Реєстр feature-flags.md у тому ж PR, вибір із 4 систем, умова зняття обовʼязкова                                                    |
 | [`sergeant-analytics`](../../../.agents/skills/sergeant-analytics/SKILL.md)                               | PostHog-івенти, неймінг, дашборд-манифести                       | trackEvent + ANALYTICS_EVENTS, PII-скрабінг, lint:posthog-manifests                                                                 |
 | [`sergeant-monorepo-boundaries`](../../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                                        | App vs package placement, shared logic boundaries                                                                                   |
@@ -55,7 +55,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`better-auth-best-practices`](../../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle                           | Better Auth wiring, cross-site cookies, auth env safety                                                                             |
 | [`sergeant-e2e-testing`](../../../.agents/skills/sergeant-e2e-testing/SKILL.md)                           | Playwright E2E tests, smoke tests, a11y                          | 8 golden rules, seedFTUX, no waitForTimeout, role selectors                                                                         |
 | [`sergeant-security-audit`](../../../.agents/skills/sergeant-security-audit/SKILL.md)                     | Security reviews, pnpm audit, PAT/cred safety                    | Hard Rules #20/#21/#22, Pino redaction, Drizzle SQL, supply chain                                                                   |
-| [`sergeant-tech-debt`](../../../.agents/skills/sergeant-tech-debt/SKILL.md)                               | Tech debt, dead code, ESLint baseline                            | Knip, eslint.baseline.js, module-size #18, noUncheckedIndexedAccess #19                                                             |
+| [`sergeant-tech-debt`](../../../.agents/skills/sergeant-tech-debt/SKILL.md)                               | Tech debt, dead code, ESLint baseline; `tools/**`, `scripts/**`  | Knip, eslint.baseline.js, module-size #18, noUncheckedIndexedAccess #19                                                             |
 | _tooling:_ [`tools/agent-snapshot/snapshot.mjs`](../../../tools/agent-snapshot/README.md)                 | Dynamic agent context: CI, budgets, PR-ledger                    | Zero-dep, `<50 KB` cap, 15-min TTL cache, graceful `[unavailable]` fallback                                                         |
 | [`sergeant-writing-skills`](../../../.agents/skills/sergeant-writing-skills/SKILL.md)                     | Creating or editing `.agents/skills/**`                          | TDD-for-skills, frontmatter shape, lock SHA-256, security scan                                                                      |
 | [`sergeant-review-squad`](../../../.agents/skills/sergeant-review-squad/SKILL.md)                         | PR review across 3+ governed surfaces via Agent Team             | Parallel lens coverage (contract, design, security, docs)                                                                           |
@@ -84,10 +84,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 
 ## Codex Agent Helpers
 
-| Agent                     | Use for                                                                                  | Governing skill                                               |
-| ------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| `qa-mobile`               | Mobile QA report for `apps/mobile` + `apps/mobile-shell` unit tests and typecheck        | `sergeant-qa-squad`                                           |
-| `docs-governance-auditor` | Duplicate active docs, stale trackers, canonical-owner drift, generated catalog mismatch | `sergeant-tech-debt` or `sergeant-review-and-merge` by intent |
+Повний перелік агентів (27, згруповані: delivery-ланцюг, module owners, QA, review, audit, council) і правило «правиш роль — правиш `.claude/agents/<name>.md`, потім `pnpm codex:sync-agents`» — у [`codex-capabilities.md`](./codex-capabilities.md). Дублікат таблиці тут прибрано 2026-09-17: два рядки (`qa-mobile`, `docs-governance-auditor`) розійшлись із джерелом.
 
 ## Agent graph (topology)
 

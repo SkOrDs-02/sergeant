@@ -45,12 +45,15 @@ export function TransactionsBatchToolbar({
     <>
       {selectMode && selectedSize > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-60 safe-area-pb">
-          {/* Clears the nav: 60px track + 0.375rem shell top padding
-              (round-3 UI audit — reverted the round-2 2*env() term together
-              with the shell's env() top mirror) + 0.5rem breathing room;
-              the outer `safe-area-pb` already covers the nav's bottom
-              inset. */}
-          <div className="max-w-4xl mx-auto px-4 pb-[calc(60px+0.375rem+0.5rem)] pt-3">
+          {/* Clears the nav: `above-bottom-nav-pb` = 60px track + 0.375rem
+              shell top padding (round-3 UI audit — reverted the round-2
+              2*env() term together with the shell's env() top mirror) +
+              0.5rem breathing room, or the MEASURED nav band when that is
+              taller (the track grows with scaled text, so with 60px alone
+              the toolbar card would sit on top of the nav at 200% root text);
+              the outer
+              `safe-area-pb` already covers the nav's bottom inset. */}
+          <div className="max-w-4xl mx-auto px-4 above-bottom-nav-pb pt-3">
             <div className="bg-panel border border-line rounded-2xl shadow-float px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-style-label text-text">
                 {selectedSize} обрано
@@ -99,7 +102,7 @@ export function TransactionsBatchToolbar({
         open={batchCatPicker}
         onClose={onCloseCatPicker}
         title="Вибрати категорію"
-        description={`Застосується до ${selectedSize} транзакц${selectedSize === 1 ? "ії" : "ій"}`}
+        description={`Застосується до ${selectedSize} операц${selectedSize === 1 ? "ії" : "ій"}`}
         panelClassName="finyk-sheet"
         zIndex={70}
         bodyClassName="px-4 pb-6 flex flex-col gap-1"
@@ -122,7 +125,7 @@ export function TransactionsBatchToolbar({
                 мерджі, а каст приховував це від типів. Тобто рендерився
                 порожній flex-елемент, який через `gap-3` давав кожному рядку
                 12px відступу зліва ні за що. З 2026-08-21 слот заповнює
-                той самий чип, що й у рядку транзакції.
+                той самий чип, що й у рядку операції.
               */}
               <CategoryIconChip
                 categoryId={cat.id}

@@ -37,10 +37,10 @@ const SampleContent = ({ hero = false }: { hero?: boolean }) => (
     </h3>
     <p
       className={
-        hero ? "text-hero-ink/75 mt-1 text-sm" : "text-muted mt-1 text-sm"
+        hero ? "text-hero-ink mt-1 text-sm" : "text-muted mt-1 text-sm"
       }
     >
-      ₴ 4 320 · 18 транзакцій · Mono + готівка
+      ₴ 4 320 · 18 операцій · Mono + готівка
     </p>
   </div>
 );

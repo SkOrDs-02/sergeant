@@ -33,6 +33,8 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_vibe_picks_v1: JSON.stringify({
     picks: ["finyk", "fizruk", "nutrition", "routine"],
@@ -95,7 +97,7 @@ test("@auth webkit: session cookie persists across page reload", async ({
   await signUpFlow(page);
 
   // Better Auth cookie name: `better-auth.session_token` (no `__Host-` prefix
-  // у v1.6.x — див. F5 у docs/security/better-auth-crypto-review.md). У
+  // у v1.6.x — див. F5 у docs/governance/security/better-auth-crypto-review.md). У
   // smoke-environment-i web і API на 127.0.0.1 → cookie domain-less, path=/.
   const cookies = await context.cookies();
   const sessionCookie = cookies.find((c) =>

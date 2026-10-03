@@ -104,9 +104,6 @@ vi.mock("./lib/routineStorage", () => ({
     return nextState;
   },
 }));
-vi.mock("./hooks/useRoutineDualWriteBoot", () => ({
-  useRoutineDualWriteBoot: vi.fn(),
-}));
 vi.mock("./hooks/useSqliteReadBoot", () => ({ useSqliteReadBoot: vi.fn() }));
 vi.mock("./hooks/useRoutineReminders", () => ({
   useRoutineReminders: vi.fn(),

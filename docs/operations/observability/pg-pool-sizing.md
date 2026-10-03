@@ -1,6 +1,6 @@
 # Postgres pool sizing — knobs, sizing rule, debugging
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-17 by @claude (Replit прибрано; шлях runbook-у pooling). **Next review:** 2026-12-16.
 > **Status:** Active
 > Виконує acceptance criteria stack-pulse PR-13
 > ([`docs/work/specs/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-13-postgres-pool-sizing.md)).
@@ -53,7 +53,7 @@ Postgres-default `max_connections=100`, pgBouncer `DEFAULT_POOL_SIZE=20` (transa
 2 server replicas × `PG_POOL_SIZE=20` = 40 client-side slots →
 pgBouncer мультиплексує у ≤20 backend-connections. Headroom OK.
 
-### Без pgBouncer (dev / Replit / docker-compose)
+### Без pgBouncer (dev / docker-compose)
 
 App-pool ходить напряму у Postgres. `N replicas × PG_POOL_SIZE` має лишити
 ~5 backend-slots під migrations / superuser:
@@ -135,7 +135,7 @@ leading indicator. Для першої ітерації Sentry breadcrumb-и
    - TLS-handshake до Postgres повільний (мережева латентність; на тому ж
      VPS Postgres поруч — малоймовірно, перевір Coolify container stats).
    - pgBouncer перевантажений сам по собі (`pgbouncer_*` метрики у
-     `runbooks/database-connection-pooling.md`).
+     [`docs/start/instructions/database-connection-pooling.md`](../../start/instructions/database-connection-pooling.md)).
    - Cold-start replica після scale-up.
 3. **Якщо проблема стабільна > 10хв** — підняти `PG_POOL_SIZE` НЕ допоможе
    (queue порожня); фокусуй на upstream connection-path.

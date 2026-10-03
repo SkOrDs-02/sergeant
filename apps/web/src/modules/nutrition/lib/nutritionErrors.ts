@@ -4,6 +4,14 @@
  */
 import { friendlyApiError as baseFriendlyApiError } from "@shared/lib/api/friendlyApiError";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
+import { messages } from "@shared/i18n/uk";
+
+/**
+ * Розбір списку комори не вдався: onSuccess без позицій і onError кажуть
+ * одне й те саме (аудит копі 2026-09-23 §2.6). Живе тут, а не в хуку, бо
+ * `useNutritionPantries.ts` стоїть рівно на стелі `max-lines: 600`.
+ */
+export const PARSE_FAILED = messages.nutrition.parseListFailed;
 
 /**
  * Nutrition-специфічний варіант `friendlyApiError`. Додає три речі,
@@ -25,7 +33,7 @@ export function friendlyApiError(
 ): string {
   const m = message || "";
   if (status === 500 && /ANTHROPIC|not set|key/i.test(m)) {
-    return "Сервер харчування не налаштовано (немає ключа AI).";
+    return "Сервер харчування не налаштовано. Повідом у підтримку.";
   }
   if (status === 413) {
     return "Занадто велике фото. Стисни/обріж і спробуй ще раз.";
