@@ -87,4 +87,36 @@ describe("Routine dual-write journal (аудит 2026-09-28, D1)", () => {
       { timeout: 10_000 },
     );
   });
+
+  it("keeps the journal entry when the SQL write throws, and applies it on the next boot (data-05)", async () => {
+    registerRoutineDualWriteContext(
+      ctx({
+        getMigrationClient: async () => ({
+          ...handle.client,
+          run: () => {
+            throw new Error("SQLITE_BUSY: database is locked");
+          },
+        }),
+      }),
+    );
+    triggerRoutineDualWrite(
+      state([]),
+      state([{ id: "h-journal", name: "Вода" }]),
+    );
+    await new Promise((r) => setTimeout(r, 100));
+    expect(await habitRows()).toEqual([]);
+    const pending = pendingDualWrites("routine", USER_ID);
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.attempts).toBe(1);
+
+    __clearRoutineDualWriteContextForTests();
+    registerRoutineDualWriteContext(ctx());
+    await vi.waitFor(async () => expect(await habitRows()).toHaveLength(1), {
+      timeout: 10_000,
+    });
+    await vi.waitFor(
+      () => expect(pendingDualWrites("routine", USER_ID)).toEqual([]),
+      { timeout: 10_000 },
+    );
+  });
 });

@@ -1,6 +1,6 @@
 # Sergeant Documentation
 
-> **Last touched:** 2026-09-23 by @claude (мітки секцій → реальні шляхи, злито дубль playbooks/instructions). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (Renovate → Dependabot у таблиці розділів, ADR-0103). **Next review:** 2027-01-01.
 > **Status:** Active
 
 Main documentation index for Sergeant.
@@ -72,13 +72,13 @@ rules are in
 | [`engineering/development/`](./engineering/development/README.md)   | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
 | [`governance/governance/`](./governance/governance/README.md)       | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
 | [`design/i18n/`](./design/i18n/README.md)                           | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
-| [`engineering/integrations/`](./engineering/integrations/README.md) | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
+| [`engineering/integrations/`](./engineering/integrations/README.md) | Third-party integrations (Monobank, Voyage, Dependabot, …)                            |
 | [`engineering/loops/`](./engineering/loops/tech-debt-ratchet.md)    | Engineering loops (tech-debt ratchet)                                                 |
 | [`product/marketing/`](./product/marketing/README.md)               | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
 | [`engineering/mobile/`](./engineering/mobile/README.md)             | Expo/mobile strategy and migration docs                                               |
 | [`engineering/notes/`](./engineering/notes/README.md)               | Design spikes and exploratory engineering notes                                       |
 | [`operations/observability/`](./operations/observability/README.md) | Alerts, SLOs, logs, engineering metrics                                               |
-| [`operations/ops/`](./operations/ops/README.md)                     | Recurring ops runbooks (Renovate maintainer workflow, dependency hygiene)             |
+| [`operations/ops/`](./operations/ops/README.md)                     | Recurring ops runbooks (Docker image policy)                                          |
 | [`start/instructions/`](./start/instructions/README.md)             | Єдина бібліотека playbook і runtime-runbook процедур (canonical execution recipes)    |
 | [`operations/postmortems/`](./operations/postmortems/README.md)     | Incident reviews and follow-up memory                                                 |
 | [`governance/security/`](./governance/security/README.md)           | Security policy, access governance, recovery, and audit docs                          |

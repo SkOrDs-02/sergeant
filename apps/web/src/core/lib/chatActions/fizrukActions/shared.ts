@@ -2,13 +2,17 @@ import { safeReadLS } from "@shared/lib/storage/storage";
 import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractCustomExerciseSnapshots,
   extractDailyLogSnapshots,
   extractWorkoutSnapshots,
   peekFizrukDualWriteState,
   type FizrukDailyLogEntryLike,
 } from "../../../../modules/fizruk/lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
-import type { Workout as DomainWorkout } from "@sergeant/fizruk-domain";
+import type {
+  FizrukData,
+  Workout as DomainWorkout,
+} from "@sergeant/fizruk-domain";
 import type { Workout } from "../types";
 
 const WORKOUTS_KEY = "fizruk_workouts_v1";
@@ -49,6 +53,36 @@ export function persistFizrukWorkouts(workouts: DomainWorkout[]): void {
     triggerFizrukDualWrite(prevDualWrite, {
       ...prevDualWrite,
       workouts: extractWorkoutSnapshots(workouts),
+    });
+  } catch {
+    /* trigger is fire-and-forget — never propagate */
+  }
+}
+
+/**
+ * Записати нові користувацькі вправи тим самим шляхом, що й UI
+ * (`useExerciseCatalog.addExercise` → `triggerFizrukDualWrite` зі зрізом
+ * `customExercises`). Мусить іти ДО `persistFizrukWorkouts` у тому ж
+ * екзекуторі: черга dual-write послідовна, тож вправа стає в outbox раніше за
+ * item, що на неї посилається (data-11). Нові вправи йдуть першими, дублі за
+ * id замінюються — як у `addExercise`. Fire-and-forget; a no-op pre-auth.
+ */
+export function persistFizrukCustomExercises(
+  exercises: readonly FizrukData.RawExerciseDef[],
+): void {
+  if (exercises.length === 0) return;
+  const prevDualWrite =
+    peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+  const addedIds = new Set(exercises.map((ex) => ex.id));
+  try {
+    triggerFizrukDualWrite(prevDualWrite, {
+      ...prevDualWrite,
+      customExercises: [
+        ...extractCustomExerciseSnapshots(
+          exercises.map((ex) => ({ ...ex, _custom: true })),
+        ),
+        ...prevDualWrite.customExercises.filter((ex) => !addedIds.has(ex.id)),
+      ],
     });
   } catch {
     /* trigger is fire-and-forget — never propagate */

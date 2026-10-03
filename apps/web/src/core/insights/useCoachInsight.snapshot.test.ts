@@ -31,6 +31,9 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeReadLS: vi.fn(() => null),
   safeWriteLS: vi.fn(),
   safeReadStringLS: vi.fn(() => null),
+  // `analyticsConsent` (імпортується транзитивно) читає/пише рішення через durable-пару.
+  safeReadLSDurable: vi.fn(() => null),
+  safeWriteLSDurable: vi.fn(() => true),
 }));
 
 vi.mock("@shared/lib/api/queryKeys", () => ({

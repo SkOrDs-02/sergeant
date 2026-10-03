@@ -18,6 +18,9 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeListLSKeys: () => [],
   safeReadLS: vi.fn(),
   safeWriteLS: vi.fn(),
+  // `analyticsConsent` (імпортується транзитивно) читає/пише рішення через durable-пару.
+  safeReadLSDurable: vi.fn(() => null),
+  safeWriteLSDurable: vi.fn(() => true),
 }));
 
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";

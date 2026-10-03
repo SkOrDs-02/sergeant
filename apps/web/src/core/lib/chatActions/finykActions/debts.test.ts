@@ -1,22 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../hubChatUtils", () => ({
-  ls: vi.fn(),
-}));
 vi.mock("./dualWriteBridge", () => ({
   finykChatWrite: vi.fn(),
 }));
 
-import { ls } from "../../hubChatUtils";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../../../modules/finyk/lib/sqliteReader";
 import { finykChatWrite } from "./dualWriteBridge";
 import { createDebt, createReceivable, markDebtPaid } from "./debts";
 
-const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockWrite = vi.mocked(finykChatWrite);
+
+// data-08: стан читається з прогрітого кешу SQLite, а не з kv.
+/** Сід кешу SQLite без повної типізації рядків — тестам досить мінімуму полів. */
+function seedFinykCache(partial: Record<string, unknown>): void {
+  __setFinykSqliteStateCacheForTests(partial as never);
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockLs.mockReturnValue([]);
+  clearFinykSqliteCache();
+  seedFinykCache({});
 });
 
 // ─── createDebt ───────────────────────────────────────────────────────────────
@@ -78,7 +84,7 @@ describe("createDebt", () => {
         linkedTxIds: [],
       },
     ];
-    mockLs.mockReturnValueOnce(existing);
+    seedFinykCache({ manualDebts: existing });
     createDebt({ name: "create_debt", input: { name: "New", amount: 300 } });
     const written = mockWrite.mock.calls[0]![1] as unknown[];
     expect(written).toHaveLength(2);
@@ -93,16 +99,18 @@ describe("createDebt", () => {
     const newId = written[written.length - 1]!.id;
 
     vi.clearAllMocks();
-    mockLs.mockReturnValue([
-      {
-        id: newId,
-        name: "Тест",
-        totalAmount: 200,
-        dueDate: "",
-        emoji: "💸",
-        linkedTxIds: [],
-      },
-    ]);
+    seedFinykCache({
+      manualDebts: [
+        {
+          id: newId,
+          name: "Тест",
+          totalAmount: 200,
+          dueDate: "",
+          emoji: "💸",
+          linkedTxIds: [],
+        },
+      ],
+    });
     result.undo();
     const afterUndo = mockWrite.mock.calls[0]![1] as unknown[];
     expect(afterUndo).toHaveLength(0);
@@ -162,9 +170,9 @@ describe("createReceivable", () => {
     const newId = written[written.length - 1]!.id;
 
     vi.clearAllMocks();
-    mockLs.mockReturnValue([
-      { id: newId, name: "Y", amount: 500, linkedTxIds: [] },
-    ]);
+    seedFinykCache({
+      receivables: [{ id: newId, name: "Y", amount: 500, linkedTxIds: [] }],
+    });
     result.undo();
     const afterUndo = mockWrite.mock.calls[0]![1] as unknown[];
     expect(afterUndo).toHaveLength(0);
@@ -201,7 +209,6 @@ describe("markDebtPaid", () => {
   });
 
   it("returns error when debt not found", () => {
-    mockLs.mockReturnValue([]);
     const result = markDebtPaid({
       name: "mark_debt_paid",
       input: { debt_id: "d_999", amount: 100 },
@@ -218,7 +225,7 @@ describe("markDebtPaid", () => {
       emoji: "💸",
       linkedTxIds: [],
     };
-    mockLs.mockReturnValue([debt]);
+    seedFinykCache({ manualDebts: [debt] });
     const result = markDebtPaid({
       name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 0 },
@@ -235,7 +242,7 @@ describe("markDebtPaid", () => {
       emoji: "💸",
       linkedTxIds: [],
     };
-    mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
+    seedFinykCache({ manualDebts: [debt] });
     const result = markDebtPaid({
       name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 300 },
@@ -254,7 +261,7 @@ describe("markDebtPaid", () => {
       emoji: "💸",
       linkedTxIds: [],
     };
-    mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
+    seedFinykCache({ manualDebts: [debt] });
     const result = markDebtPaid({
       name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 500 },
@@ -271,7 +278,7 @@ describe("markDebtPaid", () => {
       emoji: "💸",
       linkedTxIds: [],
     };
-    mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
+    seedFinykCache({ manualDebts: [debt] });
     const result = markDebtPaid({
       name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 300 },
@@ -288,7 +295,7 @@ describe("markDebtPaid", () => {
       emoji: "💸",
       linkedTxIds: [],
     };
-    mockLs.mockReturnValueOnce([debt]).mockReturnValueOnce([]);
+    seedFinykCache({ manualDebts: [debt] });
     markDebtPaid({
       name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 200, note: "Part 1" },
@@ -297,5 +304,87 @@ describe("markDebtPaid", () => {
     expect(expensesCall[0]).toBe("finyk_manual_expenses_v1");
     const expenses = expensesCall[1] as Array<{ description: string }>;
     expect(expenses[0]?.description).toContain("Part 1");
+  });
+});
+
+// ─── data-08: канонічний стан із SQLite, а не з kv ────────────────────────────
+
+describe("data-08: debts built on the canonical SQLite cache", () => {
+  const uiDebt = {
+    id: "d_ui",
+    name: "Створений в UI",
+    totalAmount: 1000,
+    dueDate: "",
+    emoji: "",
+    linkedTxIds: [] as string[],
+  };
+
+  it("markDebtPaid знаходить борг, створений в UI (kv порожній)", () => {
+    // kv (localStorage) порожній: UI його не пише. Борг є лише в кеші SQLite.
+    localStorage.clear();
+    seedFinykCache({ manualDebts: [uiDebt] });
+    const out = markDebtPaid({
+      name: "mark_debt_paid",
+      input: { debt_id: "d_ui", amount: 400 },
+    }) as string;
+    expect(out).not.toContain("не знайдено");
+    expect(out).toContain("Створений в UI");
+    const debtWrite = mockWrite.mock.calls.find(([k]) => k === "finyk_debts");
+    expect(debtWrite?.[1]).toEqual([
+      expect.objectContaining({
+        id: "d_ui",
+        linkedTxIds: [expect.stringMatching(/^m_/)],
+      }),
+    ]);
+  });
+
+  it("повне погашення прибирає лише закритий борг і не чіпає решту з UI", () => {
+    const other = { ...uiDebt, id: "d_other", name: "Інший" };
+    seedFinykCache({ manualDebts: [uiDebt, other] });
+    markDebtPaid({
+      name: "mark_debt_paid",
+      input: { debt_id: "d_ui", amount: 1000 },
+    });
+    const debtWrite = mockWrite.mock.calls.find(([k]) => k === "finyk_debts");
+    expect(debtWrite?.[1]).toEqual([
+      expect.objectContaining({ id: "d_other" }),
+    ]);
+  });
+
+  it("createDebt додає до боргів з UI, а не замінює їх", () => {
+    seedFinykCache({ manualDebts: [uiDebt] });
+    createDebt({ name: "create_debt", input: { name: "Новий", amount: 50 } });
+    const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
+    expect(written.map((d) => d.id)).toEqual([
+      "d_ui",
+      expect.stringMatching(/^d_/),
+    ]);
+  });
+
+  it("markDebtPaid не мутує кеш (prev для diff лишається недоторканим)", () => {
+    seedFinykCache({ manualDebts: [uiDebt] });
+    markDebtPaid({
+      name: "mark_debt_paid",
+      input: { debt_id: "d_ui", amount: 400 },
+    });
+    expect(uiDebt.linkedTxIds).toEqual([]);
+  });
+
+  it("холодний кеш: чесна відповідь замість запису", () => {
+    clearFinykSqliteCache();
+    for (const out of [
+      createDebt({ name: "create_debt", input: { name: "X", amount: 10 } }),
+      createReceivable({
+        name: "create_receivable",
+        input: { name: "Y", amount: 10 },
+      }),
+      markDebtPaid({
+        name: "mark_debt_paid",
+        input: { debt_id: "d_1", amount: 10 },
+      }),
+    ]) {
+      expect(out).toContain("ще завантажуються");
+    }
+    expect(mockWrite).not.toHaveBeenCalled();
   });
 });

@@ -91,3 +91,45 @@ describe("createSyncRouter — /api/sync/audit auth", () => {
     expect(res.status).toBe(401);
   });
 });
+
+// sec-09: стрім закритий прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт off).
+// `requireSession` у цьому файлі замокано на безумовний 401, тож 404 доводить,
+// що guard стоїть ПЕРЕД сесією (вимкнений маршрут не відрізняється для
+// анонімного й залогіненого), а 401 при ввімкненому прапорці - що guard
+// пропускає запит далі в ланцюжок.
+describe("createSyncRouter — /api/v2/sync/stream feature flag (sec-09)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns 404 by default (flag unset)", async () => {
+    vi.stubEnv("SYNC_V2_STREAM_ENABLED", "");
+    delete process.env["SYNC_V2_STREAM_ENABLED"];
+    const res = await request(mkApp()).get("/api/v2/sync/stream");
+    expect(res.status).toBe(404);
+  });
+
+  it.each(["false", "0", "yes", "banana"])(
+    "returns 404 when SYNC_V2_STREAM_ENABLED=%s",
+    async (value) => {
+      vi.stubEnv("SYNC_V2_STREAM_ENABLED", value);
+      const res = await request(mkApp()).get("/api/v2/sync/stream");
+      expect(res.status).toBe(404);
+    },
+  );
+
+  it.each(["true", "1"])(
+    "passes through to the auth chain when SYNC_V2_STREAM_ENABLED=%s",
+    async (value) => {
+      vi.stubEnv("SYNC_V2_STREAM_ENABLED", value);
+      const res = await request(mkApp()).get("/api/v2/sync/stream");
+      expect(res.status).toBe(401);
+    },
+  );
+
+  it("does not gate the other /api/v2/sync routes", async () => {
+    vi.stubEnv("SYNC_V2_STREAM_ENABLED", "false");
+    const res = await request(mkApp()).get("/api/v2/sync/pull");
+    expect(res.status).toBe(401);
+  });
+});

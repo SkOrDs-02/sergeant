@@ -107,8 +107,8 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setDayPlanBusy,
     log: {
       nutritionLog: {},
-      selectedDate: "2025-01-01",
-      handleAddMeal: vi.fn(),
+      getActiveDate: () => "2025-01-01",
+      handleAddMeal: vi.fn(() => "2025-01-01"),
     },
     shopping: { setGeneratedList },
     setShoppingBusy,

@@ -88,6 +88,11 @@ export {
 interface ManualExpenseSheetProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Сховище Фініка ще прогрівається (холодний старт): збереження заблоковане
+   * зі спінером, поки кеш не готовий (аудит 2026-10-01, data-13).
+   */
+  storageLoading?: boolean;
   onSave?: (expense: {
     id?: string;
     description: string;
@@ -167,6 +172,7 @@ interface ManualExpenseSheetProps {
 export function ManualExpenseSheet({
   open,
   onClose,
+  storageLoading = false,
   onSave,
   onDelete,
   initialExpense,
@@ -636,6 +642,7 @@ export function ManualExpenseSheet({
         <ManualExpenseFooter
           isEditing={isEditing}
           isSubmitting={isSubmitting}
+          storageLoading={storageLoading}
           createLabel={sheetTitle}
           onCancel={onClose}
           onSubmit={handleSubmit}
