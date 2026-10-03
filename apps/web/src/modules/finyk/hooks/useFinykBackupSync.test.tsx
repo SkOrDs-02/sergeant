@@ -30,7 +30,7 @@ vi.mock("@sergeant/shared", async () => {
   return {
     ...actual,
     downloadJson: (...args: unknown[]) => downloadJsonMock(...args),
-    toLocalISODate: () => "2026-06-23",
+    toKyivISODate: () => "2026-06-23",
   };
 });
 

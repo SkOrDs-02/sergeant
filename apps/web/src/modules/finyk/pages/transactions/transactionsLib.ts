@@ -58,7 +58,7 @@ export type DayCollapseOverrides = Record<string, boolean>;
 export function dayKeyFromTx(ts: number): string {
   // Kyiv-anchored (domain invariant): host-local components bucketed a
   // 23:30-Kyiv purchase under the wrong day on non-Kyiv devices and
-  // disagreed with manual-expense keys (Kyiv via toLocalISODate).
+  // disagreed with manual-expense keys (Kyiv via toKyivISODate).
   return getKyivDayKey(ts * 1000);
 }
 
@@ -244,7 +244,7 @@ const STICKY_WEEKDAYS_NOMINATIVE = [
  */
 export function formatStickyDayLabel(key: string): string {
   // Domain invariant: day keys are Europe/Kyiv-anchored (manual-expense
-  // dates default to the Kyiv date via `toLocalISODate`). «Сьогодні» /
+  // dates default to the Kyiv date via `toKyivISODate`). «Сьогодні» /
   // «Вчора» must therefore derive from the KYIV day key too — the old
   // host-local `new Date().setHours(0)` baseline drifted one day in the
   // 00:00–03:00 Kyiv window on non-Kyiv runtimes (UTC CI rendered a
