@@ -13,7 +13,15 @@
  *    без dual-write контексту, і нема даних повз App Lock) і після
  *    відновлення сервера повертають користувача.
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -27,7 +35,10 @@ import { CommandPaletteProvider } from "@shared/components/ui/CommandPalette";
 import { server } from "../../test/msw/server";
 import { AuthProvider } from "../auth/AuthContext";
 import { AppLockProvider } from "../security/AppLockContext";
-import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
+import {
+  SESSIONS_MIRROR_KEY,
+  reconcileChatOwnerOnAuthChange,
+} from "../hub/hubChatSessions";
 import { useHubShell } from "./HubShellContext";
 
 // Boot-кластери модулів тягнуть sqlite-wasm/IndexedDB; тут вони не предмет.
@@ -100,6 +111,12 @@ const meOk = () =>
   http.get("*/api/v1/me", () => HttpResponse.json(meFixtures.minimal));
 
 describe("RootLayout × стани ідентичності", () => {
+  // Прогріваємо лінивий чанк аркуша чату: інакше перший тест, що відкриває
+  // оверлей, чекає на трансформацію модуля довше за вікно очікування, і
+  // перевірка «оверлей не з'явився» проходить навіть без фіксу.
+  beforeAll(async () => {
+    await import("../hub/HubChatSheet");
+  }, 30_000);
   beforeEach(() => {
     window.localStorage.clear();
     window.sessionStorage.clear();
@@ -298,6 +315,45 @@ describe("RootLayout × стани ідентичності", () => {
       expect(await screen.findByTestId("child")).toBeInTheDocument();
       expect(screen.queryByTestId("auth-unavailable-screen")).toBeNull();
     });
+
+    it.each(["/status", "/legal/privacy"])(
+      "збій me на публічному маршруті %s: Ctrl+/ не відкриває чат, історія власника не потрапляє в DOM повз App Lock",
+      async (path) => {
+        reconcileChatOwnerOnAuthChange(USER_ID);
+        const SECRET = "секретна-історія-чату-власника";
+        window.localStorage.setItem(
+          SESSIONS_MIRROR_KEY,
+          JSON.stringify([
+            {
+              id: "s1",
+              title: SECRET,
+              createdAt: 1,
+              updatedAt: 2,
+              messages: [{ id: "m1", role: "user", text: SECRET }],
+            },
+          ]),
+        );
+        server.use(
+          http.get("*/api/v1/me", () =>
+            HttpResponse.json({ error: "db down" }, { status: 500 }),
+          ),
+        );
+        renderShell(path);
+
+        // Сторінка доступна, але лише вона: без глобального UI оболонки.
+        expect(await screen.findByTestId("child")).toBeInTheDocument();
+        expect(screen.queryByTestId("auth-unavailable-screen")).toBeNull();
+
+        fireEvent.keyDown(window, { key: "/", ctrlKey: true });
+        // Лінивий чанк аркуша резолвиться асинхронно: чекаємо з запасом, щоб
+        // відсутність оверлея не була просто «ще не встиг».
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        expect(screen.queryByRole("dialog")).toBeNull();
+        expect(screen.queryByText(SECRET)).toBeNull();
+        expect(document.body.textContent).not.toContain(SECRET);
+      },
+    );
 
     it("401 лишається виходом: без екрана збою, анонімний стан", async () => {
       server.use(

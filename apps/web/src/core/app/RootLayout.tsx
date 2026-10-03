@@ -211,13 +211,22 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // взагалі. Банера поверх мало: `useLocalUserId` тут `null` (запис у модулі
   // мовчки губиться), а App Lock шукає PIN не у слоті власника і не вмикається,
   // тож модулі показали б дані з persisted-кешу. Див. `AuthUnavailableScreen`.
-  // Публічні сторінки (юридичні тексти, статус) даних не показують і лишаються
-  // доступними.
-  if (
-    serverUnavailable &&
-    !isLegalRoutePath(pathname) &&
-    pathname !== STATUS_PATH
-  ) {
+  if (serverUnavailable) {
+    // Публічні сторінки (юридичні тексти, статус) даних не показують і лишаються
+    // доступними, але рендеримо ЛИШЕ саму сторінку. Глобальний UI оболонки
+    // тут небезпечний: `HubChatOverlay` відкривається з будь-якого маршруту
+    // через Ctrl/Cmd+/ і читає синхронне LS-дзеркало історії чату власника
+    // без жодного гейту за auth, а App Lock у цьому стані не вмикається
+    // (`user === null` → слот анонімного PIN). Тож без оверлея, boot-кластерів
+    // і решти глобального UI дані власника не потрапляють повз App Lock.
+    if (isLegalRoutePath(pathname) || pathname === STATUS_PATH) {
+      return (
+        <>
+          <SkipLink />
+          {children}
+        </>
+      );
+    }
     return (
       <Suspense fallback={null}>
         <AuthUnavailableScreen onRetry={() => void refresh()} />
