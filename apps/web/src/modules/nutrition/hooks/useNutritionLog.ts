@@ -15,7 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
 import { digestKeys } from "@shared/lib/api/queryKeys";
 import { todayISODate } from "@sergeant/nutrition-domain";
-import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
+import { useDeviceDay } from "@shared/hooks/useDeviceDayKey";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
@@ -90,7 +90,7 @@ export function useNutritionLog() {
   // `visibilitychange`). Явно обраний день (стрілки, пошук, deep-link) не
   // чіпаємо. Вибір "сьогодні" теж зберігається як `null` — це "стежити за
   // сьогодні", а не прибити вчорашню дату після півночі.
-  const deviceDay = useDeviceDayKey();
+  const { dayKey: deviceDay, refresh: refreshDeviceDay } = useDeviceDay();
   const [pickedDate, setPickedDate] = useState<string | null>(null);
   const selectedDate = pickedDate ?? deviceDay;
   const setSelectedDate: Dispatch<SetStateAction<string>> = useCallback(
@@ -102,6 +102,14 @@ export function useNutritionLog() {
       });
     },
     [],
+  );
+  // День, під яким запис ляже ЗАРАЗ. Таймер і `visibilitychange` не
+  // гарантовані (ноутбук проспав ніч), тож `selectedDate` зі стану може
+  // відставати від годинника; запис і «Скасувати» мусять іти з ОДНОГО
+  // значення — цього. Без явного вибору це сьогодні за годинником.
+  const getActiveDate = useCallback(
+    () => pickedDate ?? todayISODate(),
+    [pickedDate],
   );
   const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
   const [storageErr, setStorageErr] = useState("");
@@ -166,11 +174,16 @@ export function useNutritionLog() {
 
   /**
    * Add a meal to the currently selected date and close the add-meal sheet.
+   * Повертає день, під яким запис ЛЯГ: викликач бере його для «Скасувати»
+   * (`handleRemoveMeal`) і ключа в тості, а не `selectedDate` зі свого
+   * рендеру, який міг відстати від годинника.
    */
-  const handleAddMeal = (meal: Partial<Meal>) => {
+  const handleAddMeal = (meal: Partial<Meal>): string => {
     // День береться в момент збереження: вкладка могла перетнути північ,
-    // а таймер `useDeviceDayKey` ще не встиг перерендерити хук.
-    const targetDate = pickedDate ?? todayISODate();
+    // а таймер `useDeviceDay` ще не встиг перерендерити хук.
+    const targetDate = getActiveDate();
+    // Екран перевертається разом із записом, а не лишається на вчора.
+    refreshDeviceDay();
     setNutritionLog((log) => addLogEntry(log, targetDate, meal));
     setAddMealSheetOpen(false);
     // Момент рахується з поточного стану хука, а не всередині оновлювача:
@@ -201,6 +214,7 @@ export function useNutritionLog() {
       has_macros: Boolean(meal?.macros),
       ...readSignalContext("nutrition"),
     });
+    return targetDate;
   };
 
   const handleEditMeal = (
@@ -258,9 +272,10 @@ export function useNutritionLog() {
    * Copy all meals from the previous day into the currently selected date.
    */
   const duplicateYesterday = useCallback(() => {
-    const date = pickedDate ?? todayISODate();
+    const date = getActiveDate();
+    refreshDeviceDay();
     setNutritionLog((log) => duplicatePreviousDayMeals(log, date));
-  }, [pickedDate, setNutritionLog]);
+  }, [getActiveDate, refreshDeviceDay, setNutritionLog]);
 
   /**
    * Replace the entire log with data parsed from a JSON string.
@@ -337,6 +352,7 @@ export function useNutritionLog() {
     nutritionLog,
     setNutritionLog,
     selectedDate,
+    getActiveDate,
     setSelectedDate,
     addMealSheetOpen,
     setAddMealSheetOpen,
