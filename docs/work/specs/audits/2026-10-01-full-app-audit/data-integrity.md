@@ -1039,7 +1039,7 @@ Code path, end to end:
 
 ### `data-09` [high] Книга рецептів в IndexedDB спільна для всіх акаунтів і не гідрується з сервера: рецепти переходять в інший акаунт, а збереження рецепта на новому пристрої видаляє серверні
 
-- **Стан:** виправлено в гілці claude/fix-data-09-10-recipes-pantry
+- **Стан:** частково виправлено в гілці claude/fix-data-09-10-recipes-pantry (книга рецептів партиціонована за власником і стирається при виході; мініатюри страв `nutrition_meal_thumbs` свідомо лишаються: серверної копії фото немає, стирання втратило б їх назавжди; ключ мініатюри - id прийому, чужому акаунту він невидимий)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (recipeBook, IndexedDB)
 - **Де:** apps/web/src/modules/nutrition/lib/recipeBook.ts:111-178 (persist на :156,:173); apps/web/src/modules/nutrition/lib/nutritionStorage.ts:287-298; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:339-346; apps/web/src/shared/lib/storage/purgeLocalData.ts:35-38
 - **Першопричина:** Стор nutrition_recipes у sergeant-db не партиціонований за userId і свідомо не чиститься при виході, а saveRecipeToBook і deleteSavedRecipe передають у persistNutritionRecipes весь вміст IDB (getAll, ліміт 200) як нове повне значення. Диф проти SQLite-кешу поточного користувача емітить upsert для чужих рецептів і recipe-delete для всіх рецептів, яких немає в локальній IDB.

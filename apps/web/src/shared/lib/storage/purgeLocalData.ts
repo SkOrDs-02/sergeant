@@ -19,13 +19,13 @@
  *     never travel through `webKVStore` and the `kvvfs-*` SQLite store;
  *   - the in-memory SQLite warm-cache (`resetKvStoreBoot`);
  *   - the React-Query IndexedDB persister snapshot (a cache of server data);
- *   - the per-user nutrition IndexedDB stores: saved recipes and meal photo
- *     thumbnails (data-09). Before sign-out `flushPendingSyncOpsBeforeLogout`
- *     has already drained the outbox (and warned about what cannot be
- *     drained), and the user's SQLite partition is wiped by the same logout,
- *     so these stores hold no data that the signed-out user could still
- *     recover — leaving them would hand the previous user's recipes and meal
- *     photos to the next person on a shared device.
+ *   - the nutrition recipe-book IndexedDB store (data-09). Before sign-out
+ *     `flushPendingSyncOpsBeforeLogout` has already drained the outbox (and
+ *     warned about what cannot be drained), and recipes have a server copy
+ *     that the next pull restores into the user's SQLite partition, so the
+ *     store holds nothing the signed-out user could not recover — leaving it
+ *     would hand the previous user's recipes to the next person on a shared
+ *     device.
  *
  * Deliberately **out of scope** (see PR notes — owner decision):
  *   - the per-user OPFS SQLite DB file → handled by `wipeSqliteDb()` in
@@ -40,9 +40,13 @@
  *     `docs/work/specs/anonymous-local-first-persistence.md`
  *     § «Відомий залишковий ризик»;
  *   - the nutrition food/barcode catalogue IndexedDB stores (a product cache
- *     plus user-added foods with no server copy) and the `sync_meta` offline-op
- *     queue — clearing those risks losing un-synced local-first data, so they
- *     want a per-user partition rather than a blind wipe.
+ *     plus user-added foods with no server copy), the meal photo thumbnail
+ *     store (`nutrition_meal_thumbs`: Blobs exist only on this device, the
+ *     server has no photo field, so a wipe loses the user's meal photos for
+ *     good) and the `sync_meta` offline-op queue — clearing those risks
+ *     losing un-synced local-first data, so they want a per-user partition
+ *     rather than a blind wipe. Thumbnails are keyed by the meal id, which
+ *     another account never requests, so leaving them leaks nothing visible.
  */
 
 import { STORAGE_KEYS } from "@sergeant/shared";
@@ -125,19 +129,13 @@ export async function purgeQueryCacheSnapshot(): Promise<void> {
 }
 
 /**
- * Очистити nutrition-сховища IndexedDB, привʼязані до користувача (data-09):
- * книгу рецептів і мініатюри страв. Викликається ПІСЛЯ flush черги синхронізації
- * (див. модульний коментар), інакше стерлися б ще не вивантажені дані.
+ * Очистити книгу рецептів в IndexedDB (data-09). Викликається ПІСЛЯ flush черги
+ * синхронізації (див. модульний коментар), інакше стерлися б ще не вивантажені
+ * дані. Мініатюри страв (`nutrition_meal_thumbs`) НЕ чіпаємо: вони існують
+ * лише на пристрої, серверної копії немає, і стирання знищило б фото назавжди.
  */
 export async function purgeNutritionIdbStores(): Promise<void> {
-  // Незалежно: збій одного стору не має лишати другий з чужими даними.
-  const results = await Promise.allSettled([
-    dbClear(SERGEANT_STORE.NUTRITION_RECIPES),
-    dbClear(SERGEANT_STORE.NUTRITION_MEAL_THUMBS),
-  ]);
-  for (const result of results) {
-    if (result.status === "rejected") throw result.reason;
-  }
+  await dbClear(SERGEANT_STORE.NUTRITION_RECIPES);
 }
 
 /**
