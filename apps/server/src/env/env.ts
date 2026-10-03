@@ -10,9 +10,11 @@ import { parseKeyRing } from "../lib/keyRing.js";
 import {
   boolFromEnv,
   coerceInt,
+  enumBoolFromEnv,
   floatFromEnv,
   intFromEnv,
   founderIdsFromEnv,
+  optionalStrictBoolFromEnv,
   optionalUrl,
   strictBoolFromEnv,
   stringWithDefault,
@@ -82,10 +84,18 @@ const envSchema = z.object({
 
   MAX_PASSWORD_LENGTH: coerceInt.positive().max(256).default(256),
 
-  REQUIRE_EMAIL_VERIFICATION: z
-    .enum(["true", "false", "1", "0", ""])
-    .default("false")
-    .transform((v) => v === "true" || v === "1"),
+  REQUIRE_EMAIL_VERIFICATION: enumBoolFromEnv(),
+
+  /**
+   * sec-08 (аудит 2026-10-01): вмикає Better Auth `expo()` плагін
+   * (анонімний `GET /api/auth/expo-authorization-proxy` + origin-override з
+   * `expo-origin`). Мобільний RN-контур на паузі (ADR-0094), тож у production
+   * без явного значення плагін ВИМКНЕНО; у dev/test без значення — увімкнено,
+   * щоб `apps/mobile` працював локально. `undefined` = «не задано», рішення
+   * приймає `auth.ts` за `NODE_ENV`. `bearer()` від цього прапорця не залежить
+   * (його використовує Capacitor-shell). Реєстр: feature-flags.md § 3.2.
+   */
+  AUTH_EXPO_PLUGIN_ENABLED: optionalStrictBoolFromEnv(),
 
   ALLOWED_ORIGINS: z.string().optional(),
 
@@ -186,10 +196,7 @@ const envSchema = z.object({
       .default("whisper-large-v3-turbo"),
   ),
 
-  AI_QUOTA_DISABLED: z
-    .enum(["true", "false", "1", "0", ""])
-    .default("false")
-    .transform((v) => v === "true" || v === "1"),
+  AI_QUOTA_DISABLED: enumBoolFromEnv(),
 
   // `AI_DAILY_ANON_LIMIT` прибрано: анонімної гілки квоти більше немає —
   // `/api/chat` та решта AI-роутів стоять за `requireSession()` (A1,
