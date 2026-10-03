@@ -673,3 +673,121 @@ describe("statement/preview — категорія без колонки кат�
     ]);
   });
 });
+
+// ───────── rel-20: один рядок поза схемою не валить увесь файл ───────────────
+// `ImportStatementPreviewResponseSchema.parse` на виході кидав ZodError → 500
+// для ВСІЄЇ виписки, якщо в одному рядку опис довший за 300 символів або сума
+// понад `AMOUNT_MINOR_MAX` (10 млн грн).
+
+describe("statement/preview — рядок поза межами схеми (rel-20)", () => {
+  const MONO_HEADER =
+    "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції";
+
+  it("опис довший за 300 символів обрізається, файл віддається 200", async () => {
+    const csv = [
+      MONO_HEADER,
+      `15.01.2026 14:32:10,${"п".repeat(396)},5411,-847.50,-847.50,UAH`,
+      "16.01.2026 09:00:00,Зарплата,,15000.00,15000.00,UAH",
+    ].join("\n");
+
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      rows: Array<{ description: string; amountKopiykas: number }>;
+      skipped: unknown[];
+    };
+    expect(body.rows).toHaveLength(2);
+    expect(body.rows[0]?.description).toHaveLength(300);
+    expect(body.rows[0]?.amountKopiykas).toBe(84750);
+    expect(body.skipped).toEqual([]);
+  });
+
+  it("опис рівно 300 символів не чіпається", async () => {
+    const csv = [
+      MONO_HEADER,
+      `15.01.2026 14:32:10,${"п".repeat(300)},5411,-1.00,-1.00,UAH`,
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+    const body = res.body as { rows: Array<{ description: string }> };
+    expect(body.rows[0]?.description).toBe("п".repeat(300));
+  });
+
+  it("сума понад 10 млн грн → skipped unparsed_amount, решта рядків є", async () => {
+    const csv = [
+      MONO_HEADER,
+      "15.01.2026 14:32:10,Нормальний,5411,-100.00,-100.00,UAH",
+      "16.01.2026 14:32:10,Завелика,,-12000000.00,-12000000.00,UAH",
+      "17.01.2026 14:32:10,Межа,,-10000000.00,-10000000.00,UAH",
+    ].join("\n");
+
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      rows: Array<{ description: string; amountKopiykas: number }>;
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.rows.map((r) => r.description)).toEqual(["Нормальний", "Межа"]);
+    expect(body.rows[1]?.amountKopiykas).toBe(1_000_000_000);
+    expect(body.skipped).toEqual([{ line: 3, reason: "unparsed_amount" }]);
+  });
+
+  it("рік поза вікном 1970..2100 → skipped unparsed_date, а не 500 (guard: межі дати тримає parseCalendarDateKey)", async () => {
+    const csv = [
+      MONO_HEADER,
+      "15.01.2026 14:32:10,Нормальний,5411,-100.00,-100.00,UAH",
+      "15.01.2206 14:32:10,Рік-друкарська-помилка,,-100.00,-100.00,UAH",
+      "15.01.1969 14:32:10,До епохи,,-100.00,-100.00,UAH",
+    ].join("\n");
+
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      rows: unknown[];
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.rows).toHaveLength(1);
+    expect(body.skipped).toEqual([
+      { line: 3, reason: "unparsed_date" },
+      { line: 4, reason: "unparsed_date" },
+    ]);
+  });
+
+  it("custom mapping: ті самі межі (шлях `profile: custom`)", async () => {
+    const csv = [
+      "Коли;Скільки;Що",
+      `2026-01-15;-12000000,00;Велика`,
+      `2026-01-16;-5,00;${"ж".repeat(500)}`,
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        csv_text: csv,
+        mapping: {
+          dateCol: "Коли",
+          amountCol: "Скільки",
+          descriptionCol: "Що",
+          dateFormat: "YYYY-MM-DD",
+          decimalComma: true,
+        },
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ description: string }>;
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.profile).toBe("custom");
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0]?.description).toHaveLength(300);
+    expect(body.skipped).toEqual([{ line: 2, reason: "unparsed_amount" }]);
+  });
+});

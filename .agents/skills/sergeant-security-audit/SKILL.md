@@ -55,9 +55,9 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
   | select(.value.severity == "high" or .value.severity == "critical")'
 ```
 
-- Cross-reference CVEs with `renovate.json` — if Renovate already has a pending update PR, do not create a duplicate; comment on the existing one instead.
+- Cross-reference CVEs with open Dependabot PRs (`dependabot[bot]`, the `security-updates` group) — Dependabot is the only dependency-update bot (ADR-0103; Renovate is not installed, `renovate.json` is gone). If a PR for the fix is already open, do not create a duplicate; comment on the existing one instead. Packages ignored in `.github/dependabot.yml` (pinned via `pnpm.overrides`, mobile majors, the `node` image major) get no Dependabot PR — fix those by hand per `docs/engineering/integrations/dependabot-usage.md`.
 - For license/compliance risk (e.g. a copyleft transitive dep), inspect the resolved tree directly — `pnpm licenses list --json` — and record anything actionable in [`docs/governance/security/audit-exceptions.md`](../../../docs/governance/security/audit-exceptions.md). The repo has **no** `THIRD_PARTY_LICENSES.md`; do not look for one.
-- Run `pnpm outdated` to surface packages outside Renovate range constraints.
+- Run `pnpm outdated` to surface packages Dependabot does not propose (ignored majors, `pnpm.overrides` pins, transitive deps without an advisory).
 - For safe dep bumps, follow `docs/start/instructions/bump-dep-safely.md`.
 
 ## Frontend security (`apps/web`)
