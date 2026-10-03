@@ -17,7 +17,7 @@ import {
 } from "../../../core/syncEngine/initialPullState.js";
 import {
   isNutritionPrefsHydrated,
-  loadNutritionPrefs,
+  loadLatestNutritionPrefs,
 } from "../lib/nutritionStorage";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -39,11 +39,13 @@ export interface NutritionPrefsSnapshot {
 }
 
 /**
- * Живі prefs із кешу (а не одноразове `useState(loadNutritionPrefs)`) разом
- * із прапором гідратації. Для Settings-секцій: до `hydrated` контроли
- * блокуються, бо `prefs` там — дефолти, а не дані акаунта.
+ * Живі prefs (а не одноразове `useState(loadNutritionPrefs)`) разом із
+ * прапором гідратації. Читає ОСТАННІЙ запис, поки кеш його не наздогнав, тож
+ * рендер між записом і refresh кешу не показує застаріле значення. Для
+ * Settings-секцій: до `hydrated` контроли блокуються, бо `prefs` там —
+ * дефолти, а не дані акаунта.
  */
 export function useNutritionPrefsSnapshot(): NutritionPrefsSnapshot {
   const hydrated = useNutritionPrefsHydrated();
-  return { prefs: loadNutritionPrefs(), hydrated };
+  return { prefs: loadLatestNutritionPrefs(), hydrated };
 }

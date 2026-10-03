@@ -17,7 +17,7 @@ import { getCachedFizrukSqliteState } from "../../fizruk/lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../../fizruk/lib/sqliteReadGate";
 import {
   getDaySummary,
-  loadNutritionPrefs,
+  loadLatestNutritionPrefs,
   patchAdaptiveNutritionPrefs,
   patchProfileNutritionPrefs,
 } from "../lib/nutritionStorage";
@@ -269,9 +269,10 @@ export function useAdaptiveNutritionGoal(
     if (lastScheduledSignature === signature) return;
 
     if (prefs.dailyTargetKcal == null) {
-      // Стан компонента міг відстати від кешу (тік ще не дійшов): пишемо лише
-      // якщо актуальний кеш теж каже «ціли немає, автокалібрування ввімкнене».
-      const live = loadNutritionPrefs();
+      // Стан компонента міг відстати від кешу (тік ще не дійшов) чи від
+      // щойно зробленого запису: пишемо лише якщо актуальний стан теж каже
+      // «ціли немає, автокалібрування ввімкнене».
+      const live = loadLatestNutritionPrefs();
       if (!live.adaptiveGoalEnabled || live.dailyTargetKcal != null) return;
       lastScheduledSignature = signature;
       // Лише поля цілі: решта prefs береться з кешу в `patchNutritionPrefs`.

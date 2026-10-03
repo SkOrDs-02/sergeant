@@ -183,9 +183,22 @@ function getPrefsOverlay(): NutritionPrefs | null {
   return null;
 }
 
-/** Актуальні prefs для накладання патча: останній запис, інакше кеш. */
-function loadLatestNutritionPrefs(): NutritionPrefs {
+/**
+ * Актуальні prefs: останній запис (поки кеш не наздогнав), інакше кеш. Базa
+ * для накладання патча, а також те, що мають читати Settings/хуки, щоб не
+ * бачити застарілий кеш між записом і його refresh.
+ */
+export function loadLatestNutritionPrefs(): NutritionPrefs {
   return getPrefsOverlay() ?? loadNutritionPrefs();
+}
+
+/**
+ * Prefs, які щойно записав `persistNutritionPrefs` (з урахуванням його
+ * нормалізації, напр. `adaptiveGoalEnabled: false` після ручної цілі), або
+ * `null`, коли запису не було / кеш уже наздогнав.
+ */
+export function peekLastWrittenNutritionPrefs(): NutritionPrefs | null {
+  return getPrefsOverlay();
 }
 
 export interface PersistNutritionPrefsOptions {

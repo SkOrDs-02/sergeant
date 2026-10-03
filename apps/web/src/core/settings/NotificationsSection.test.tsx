@@ -66,6 +66,7 @@ vi.mock("../../modules/fizruk/hooks/useMonthlyPlan", () => ({
 // prefs (data-04) керує тест.
 vi.mock("../../modules/nutrition/lib/nutritionStorage", () => ({
   loadNutritionPrefs: () => loadNutritionPrefsMock(),
+  loadLatestNutritionPrefs: () => loadNutritionPrefsMock(),
   isNutritionPrefsHydrated: () => nutritionHydration.value,
   patchNutritionPrefs: patchNutritionPrefsMock,
 }));

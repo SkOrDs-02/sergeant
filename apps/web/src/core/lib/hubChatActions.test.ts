@@ -44,6 +44,8 @@ vi.mock("../../modules/nutrition/lib/waterStorage", async (orig) => {
     loadWaterLog: vi.fn(() => memWater.log),
     saveWaterLog: vi.fn((log: unknown) => {
       memWater.log = actual.normalizeWaterLog(log) as Record<string, number>;
+      // data-04: `false` = «Їжі ще не гідратовано»; тут запис завжди приймається.
+      return true;
     }),
   };
 });

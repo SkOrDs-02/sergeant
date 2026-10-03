@@ -249,7 +249,18 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
         originDeviceId: opts.originDeviceId,
       }),
     resolveClient: shared.resolveClient,
-    resolveUserId: shared.resolveUserId,
+    // data-04: `null` тут означає «вийшов», а reader на `null` скидає прапор
+    // «початковий pull завершено». Тимчасовий збій `getSession` (офлайн, 5xx)
+    // теж дає `data: null`, але виходом не є: кидаємо, тож тік падає, а прапор
+    // лишається. Writer тримає `shared.resolveUserId` (там `null` = порожній drain).
+    resolveUserId: async () => {
+      const session = await getSession();
+      const status = (session.error as { status?: number } | null)?.status;
+      if (session.error && !session.data && status !== 401 && status !== 403) {
+        throw new Error("sync reader: session lookup failed");
+      }
+      return session.data?.user?.id ?? null;
+    },
     originDeviceId: shared.originDeviceId,
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),
