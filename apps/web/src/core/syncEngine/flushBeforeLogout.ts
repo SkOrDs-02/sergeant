@@ -54,6 +54,16 @@ import { logger } from "@shared/lib";
  */
 export const LOGOUT_FLUSH_TIMEOUT_MS = 5_000;
 
+/**
+ * Мінімальний бюджет на ПІДСУМКОВИЙ підрахунок після дренажу, незалежний від
+ * дедлайну. Повільний пуш легко з'їдає весь `LOGOUT_FLUSH_TIMEOUT_MS`, і тоді
+ * `remaining() ≈ 0`: підрахунок (на воркерному бекенді це `postMessage`-roundtrip,
+ * тобто макротаск) програє `setTimeout(0)` і повертав би `null` саме в
+ * сценарії, заради якого діалог і існує (аудит `data-19`, повторна перевірка).
+ * Читання локальної БД дешеве, тож секунда понад дедлайн нічого не коштує.
+ */
+const FINAL_COUNT_MIN_BUDGET_MS = 1_000;
+
 /** Запобіжник від нескінченного циклу, якщо лічильник «прогресує» вічно. */
 const MAX_FLUSH_ROUNDS = 50;
 
@@ -149,8 +159,15 @@ export async function flushPendingSyncOpsBeforeLogout(
       // Перечитуємо стан замість того, щоб довіряти результату пуша:
       // `flushNow` звітує про ОДИН батч (ліміт 100), а паралельний запис
       // міг додати рядок уже після старту.
-      const after = await withTimeout(countUnsynced(), remaining());
-      if (after === null) return { pending: 0, unknown: true };
+      const after = await withTimeout(
+        countUnsynced(),
+        Math.max(remaining(), FINAL_COUNT_MIN_BUDGET_MS),
+      );
+      // Перерахунок не вклався навіть у мінімальний бюджет, але ми ВЖЕ знаємо,
+      // що `left > 0` і доставку ніщо не підтвердило. Консервативно віддаємо
+      // останнє відоме число (діалог покажеться), а не `unknown` (діалогу
+      // немає, і logout мовчки стирає чергу).
+      if (after === null) return { pending: left, unknown: false };
       if (after === 0) return SAFE;
       const progressed = after < left;
       left = after;

@@ -330,4 +330,63 @@ describe("flushPendingSyncOpsBeforeLogout", () => {
 
     expect(result).toEqual({ pending: 1, unknown: false });
   });
+
+  /**
+   * Клієнт, чий `all` відповідає макротаском, як `postMessage`-roundtrip до
+   * воркера на проді. Синхронний better-sqlite3 цього не відтворює — на ньому
+   * підрахунок завжди вигравав гонку з нульовим таймаутом.
+   */
+  function asyncAllClient(
+    inner: SqliteMigrationClient,
+    delayMs: (call: number) => number | null,
+  ): SqliteMigrationClient {
+    let calls = 0;
+    return {
+      ...inner,
+      all: ((sql: string, params?: unknown[]) => {
+        const wait = delayMs(calls++);
+        if (wait === null) return new Promise(() => {});
+        return new Promise((resolve) =>
+          setTimeout(() => resolve(inner.all(sql, params as never)), wait),
+        );
+      }) as SqliteMigrationClient["all"],
+    };
+  }
+
+  it("still asks the user when the push eats the whole deadline and the worker answers via a macrotask", async () => {
+    // Регресія повторної перевірки `data-19`: `flushNow` висить до дедлайну, `remaining()`
+    // = 0, і підрахунок через макротаск програвав `setTimeout(0)` → `unknown: true`
+    // → діалогу немає → logout стирає чергу.
+    const runtime = startRuntime();
+    await enqueue("op-1");
+    // `recoverAllDeadLetters` пушить через внутрішній планувальник (пуш падає і
+    // не доставляє), а ось `flushNow` з циклу дренажу висить до дедлайну.
+    pushImpl = async () => {
+      throw new Error("http_503");
+    };
+    vi.spyOn(runtime, "flushNow").mockImplementation(
+      () => new Promise(() => {}),
+    );
+    sqliteState.client = asyncAllClient(client, () => 3);
+
+    const result = await flushPendingSyncOpsBeforeLogout(60);
+
+    expect(result).toEqual({ pending: 1, unknown: false });
+  });
+
+  it("does not downgrade to unknown when the final recount itself never answers (left > 0 is already known)", async () => {
+    startRuntime();
+    await enqueue("op-1");
+    pushImpl = async () => {
+      throw new Error("http_503");
+    };
+    // Перший підрахунок відповідає, усі наступні висять.
+    sqliteState.client = asyncAllClient(client, (call) =>
+      call === 0 ? 0 : null,
+    );
+
+    const result = await flushPendingSyncOpsBeforeLogout(50);
+
+    expect(result).toEqual({ pending: 1, unknown: false });
+  });
 });
