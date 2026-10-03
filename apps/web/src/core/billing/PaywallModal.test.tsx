@@ -110,6 +110,15 @@ describe("PaywallModal", () => {
     expect(screen.getByText(/PDF-звіти/)).toBeInTheDocument();
   });
 
+  // ux-15: початковий фокус на «Закрити» робив пейвол вразливим до будь-якого
+  // «залишкового» Enter/Space. Фокус має падати на основну CTA.
+  it("moves initial focus to the primary CTA, not the close button", () => {
+    renderModal(true);
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /Перейти на Premium/ }),
+    );
+  });
+
   it("navigates to /pricing?source=paywall when the primary CTA is pressed", () => {
     renderModal(true);
     navigateSpy.mockClear();

@@ -104,7 +104,9 @@ export function PaywallModal({
           <Button variant="ghost" size="md" onClick={onClose}>
             {dismissLabel}
           </Button>
-          <Button variant="solid" size="md" onClick={handleCta}>
+          {/* Початковий фокус — на основній CTA, а не на «Закрити» в шапці:
+              інакше випадковий Enter/Space одразу закриває пейвол. */}
+          <Button variant="solid" size="md" onClick={handleCta} data-autofocus>
             {ctaLabel}
           </Button>
         </div>
