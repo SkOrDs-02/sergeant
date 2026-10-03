@@ -1,5 +1,10 @@
 import { logger } from "@shared/lib";
-import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
+import {
+  formatNumberUk,
+  generatePrefixedId,
+  pluralUa,
+  type UaPluralForms,
+} from "@sergeant/shared";
 import {
   buildPlacedItems,
   canonicalFoodKey,
@@ -68,7 +73,7 @@ export function handleNutritionAction(
         action as LogMealAction
       ).input;
       const todayKey = todayISODate();
-      const mealId = `m_${Date.now()}`;
+      const mealId = generatePrefixedId("m");
       // `addLogEntry` runs the entry through `normalizeMeal`, filling the
       // canonical Meal shape (mealType/source/macroSource/…) the chat input
       // omits. `persistNutritionLog` mirrors to SQLite via the dual-write

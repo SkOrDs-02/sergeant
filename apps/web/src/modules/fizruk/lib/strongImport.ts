@@ -7,6 +7,7 @@ import {
   tokenizeCsv,
 } from "@sergeant/tabular-import/csvParser";
 import { FizrukData } from "@sergeant/fizruk-domain";
+import { sha256Hex } from "./sha256Hex";
 import { matchStrongExerciseName } from "./strongMatch";
 import type { StrongExerciseMatch } from "./strongMatch";
 import type {
@@ -494,7 +495,17 @@ function mergeMeasurements(
   imported: readonly FizrukMeasurementSnapshot[],
 ): FizrukMeasurementSnapshot[] {
   const byId = new Map(current.map((entry) => [entry.id, entry]));
-  for (const entry of imported) byId.set(entry.id, entry);
+  for (const entry of imported) {
+    // Рядок, імпортований ще зі старим 32-бітним хешем id, має той самий `at`
+    // (id і `at` походять з одного рядка CSV): без цього повторний імпорт
+    // плодив би дубль. Ручні записи (інший префікс id) не чіпаємо.
+    for (const [id, existing] of byId) {
+      if (id.startsWith("strong_m_") && existing.at === entry.at) {
+        byId.delete(id);
+      }
+    }
+    byId.set(entry.id, entry);
+  }
   return [...byId.values()].sort((a, b) => b.at.localeCompare(a.at));
 }
 
@@ -536,11 +547,16 @@ function measurementId(idNamespace: string, strongDate: string): string {
   return `strong_m_${stableHash(`${idNamespace}|${strongDate}`)}`;
 }
 
+/**
+ * 64 біти (перші 16 hex SHA-256) замість 32-бітного FNV-1a: на глобальному PK
+ * сервера 32 біти дають колізії між акаунтами при ~65k рядків (аудит data-01).
+ * Хеш детермінований, тож повторний імпорт того самого файлу дає ті самі id.
+ *
+ * AI-CONTEXT: id, пораховані старим FNV (`strong_w_<base36>`), лишились у вже
+ * імпортованих даних. Повторний імпорт замінює такі тренування за
+ * `startedAt` (`buildStrongImportState`), а заміри — за `at`
+ * (`mergeMeasurements`), тож дублів через зміну хешу не виходить.
+ */
 function stableHash(value: string): string {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i += 1) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
+  return sha256Hex(value).slice(0, 16);
 }

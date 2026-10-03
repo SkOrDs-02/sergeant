@@ -13,7 +13,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
-import { customExerciseIdFromName } from "../../lib/customExerciseId";
+import { newCustomExerciseId } from "../../lib/customExerciseId";
 
 const EQUIPMENT_OPTIONS = [
   { id: "bodyweight", label: "Власна вага" },
@@ -273,7 +273,7 @@ export function AddExerciseSheet({
               );
               return;
             }
-            const id = customExerciseIdFromName(nameUk);
+            const id = newCustomExerciseId();
             addExercise({
               id,
               name: { uk: nameUk, en: nameUk },
