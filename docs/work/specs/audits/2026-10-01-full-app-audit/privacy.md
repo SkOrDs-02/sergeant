@@ -85,7 +85,7 @@ I couldn't refute it. My strongest angle failed, and the code path holds end to 
 
 ### `priv-02` [high] Сесія, що закінчилась без «Вийти», не запускає очищення: наступний акаунт бачить медичні факти попереднього, і вони потрапляють у його серверний профіль
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-02-expired-session-teardown (лишилось: BroadcastChannel для інших вкладок; стирання SQLite-партиції попередника — priv-05)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / локальне сховище
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:382-401 (identity-wipe), :548-697 (teardown у logout); apps/web/src/core/profile/memoryBank.ts:245-251; apps/web/src/core/profile/profileWriteThrough.ts:165-170, 459-498; apps/web/src/shared/lib/storage/storage.ts:299-321
 - **Першопричина:** Сесія може закінчитися без кнопки «Вийти»: протухла, відкликана або зник cookie. Ефект зміни ідентичності в AuthContext (user→anon) у такому разі чистить лише RQ-кеш, чат і quick-stats. purgeAppOwnedLocalData, wipeSqliteDb і swClearCaches викликає тільки logout(). readMemoryEntries() читає hub_user_profile_v1 без перевірки ownerId. Перший же запис наступного користувача перештамповує ownerId і пушить увесь банк пам'яті на сервер.
@@ -240,7 +240,7 @@ node <scratch>/agents/browser-surfaces-hub-shell/v01-lock-reload.mjs (корис
 
 ### `priv-04` [high] Вихід з акаунта не знімає web-push підписку: банківські пуші попереднього користувача далі приходять на спільний пристрій
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-04-push-unsubscribe-logout (клієнт: `logout()` знімає web-push підписку до `signOut()`, best-effort з таймаутом, скидає мітку тумблера; лишилось: прив'язка підписки до сесії і soft-delete при завершенні сесії на сервері (M), native-токен FCM/APNs при виході, відсікання пушів у service worker без активного користувача)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth + server: push
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:548-697; apps/web/src/shared/hooks/usePushNotifications.ts:224-256; apps/web/src/shared/hooks/usePushNotifications.webpush.ts:71-77; apps/server/src/modules/push/push.ts:33-56, 134-142; apps/server/src/modules/push/send.ts:103-110; apps/server/src/modules/mono/webhook.ts:130-154, 467-471
 - **Першопричина:** logout() не викликає pushManager.getSubscription().unsubscribe() і api.push.unregister: відписка є лише в тумблері. На сервері push_subscriptions прив'язана тільки до user_id, хука на завершення сесії немає. SW показує кожен пуш без перевірки активного користувача.
@@ -300,7 +300,7 @@ Each step I checked:
 
 ### `priv-05` [high] Вихід і видалення акаунта не стирають локальну SQLite-базу: close() вбиває воркер раніше, ніж до нього доходить wipe()
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-05-data-19-logout-wipe (wipe до close для воркерного бекенду + тест на справжньому sqliteWorkerClient; лишилось: повтор стирання на наступному старті, прибирання осиротілих `sergeant-*.db` на пристроях, де вже виходили, e2e «після виходу файлу немає»)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: локальна БД (OPFS-воркер)
 - **Де:** apps/web/src/core/db/sqlite.ts:235-249, 515-522; apps/web/src/core/db/sqliteWorkerClient.ts:150-151, 223-226, 255-264; apps/web/src/core/db/sqliteWorker.ts:152-160; apps/web/src/core/auth/AuthContext.tsx:646-652; apps/web/src/core/profile/DangerZoneSection.tsx:41-48
 - **Першопричина:** wipeSqliteDb() для воркерного бекенду (opfs-sahpool, безумовний основний шлях) спершу викликає stale.close(). Клієнт воркера у finally робить terminate() і ставить dead. Тому наступний conn.wipe() одразу відхиляється, помилку ковтає logger.warn, і pool.unlink так і не виконується. Тести мокають wipe і цю регресію не ловлять.
@@ -1087,7 +1087,7 @@ v4-run.log (v4-foods.mjs): після виходу X 'VFX-n777' знайдено
 
 ### `priv-18` [medium] Гість не може відкликати згоду на аналітику в Налаштуваннях: замість тумблера «Увійди в акаунт» і марна «Спробувати ще»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-18-data-49-analytics-consent
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: налаштування приватності
 - **Де:** apps/web/src/core/settings/PrivacySection.tsx:99-103, 241-251
 - **Першопричина:** PrivacySection рендерить тумблери лише після успішного GET /me/preferences. Для гостя це 401 → loadFailure 'auth'. Локального тумблера аналітики немає, хоча згода гостя зберігається локально.

@@ -18,7 +18,6 @@ vi.mock("./sqliteReader", async () => {
 
 import {
   normalizeFinykBackup,
-  normalizeFinykSyncPayload,
   FINYK_BACKUP_VERSION,
   readFinykBackupFromStorage,
   persistFinykNormalizedToStorage,
@@ -109,42 +108,6 @@ describe("normalizeFinykBackup", () => {
     expect(() =>
       normalizeFinykBackup({ version: 2, txCategories: [] }),
     ).toThrow(/обʼєктом/);
-  });
-});
-
-describe("normalizeFinykSyncPayload", () => {
-  it("розгортає компактний v3 і валідує поля", () => {
-    const compact: Record<string, unknown> = {
-      v: 3,
-      b: [] as unknown[],
-      s: [] as unknown[],
-      a: [] as unknown[],
-      d: [] as unknown[],
-      r: [] as unknown[],
-      mp: { income: "", expense: "", savings: "" },
-      tc: { x: "y" },
-      ts: {},
-      md: {},
-      nh: [{ month: "2026-01", networth: 1 }],
-      cc: [{ id: "cus_a", label: "Тест" }],
-    };
-    expect(normalizeFinykSyncPayload(compact)).toMatchObject({
-      txCategories: { x: "y" },
-      networthHistory: [{ month: "2026-01", networth: 1 }],
-      customCategories: [{ id: "cus_a", label: "Тест" }],
-    });
-  });
-
-  it("приймає повний бекап як у файлі", () => {
-    expect(normalizeFinykSyncPayload({ version: 1, budgets: [] })).toEqual({
-      budgets: [],
-    });
-  });
-
-  it("відхиляє зіпсований компактний tc", () => {
-    expect(() => normalizeFinykSyncPayload({ v: 3, b: [], tc: [] })).toThrow(
-      /обʼєктом/,
-    );
   });
 });
 

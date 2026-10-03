@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
+import { apiQueryKeys } from "@sergeant/api-client/react";
 import { PendingDeletionScreen } from "./PendingDeletionScreen";
 
 /**
@@ -30,7 +31,7 @@ function renderScreen(onLogout = vi.fn(async () => undefined)) {
       </ToastProvider>
     </QueryClientProvider>,
   );
-  return { ...utils, onLogout };
+  return { ...utils, onLogout, queryClient };
 }
 
 beforeEach(() => {
@@ -60,6 +61,24 @@ describe("PendingDeletionScreen", () => {
 
     await waitFor(() => expect(restoreAccountMock).toHaveBeenCalledTimes(1));
     expect(await screen.findByText("Акаунт відновлено")).toBeInTheDocument();
+  });
+
+  // logic-01: для акаунта у вікні `GET /api/me` віддавав 403, тож без
+  // перепиту `me` людина лишалась би «не залогіненою» після відновлення.
+  it("після restore перепитує і deletion-status, і me", async () => {
+    const { queryClient } = renderScreen();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+
+    fireEvent.click(screen.getByRole("button", { name: "Відновити акаунт" }));
+
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: apiQueryKeys.me.current(),
+      }),
+    );
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: apiQueryKeys.me.deletionStatus(),
+    });
   });
 
   it("на збої restore лишає екран і дає повторити", async () => {

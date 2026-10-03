@@ -37,7 +37,7 @@ export function useDemoCommands({
 }: DemoCommandsOptions = {}): void {
   const navigate = useNavigate();
   const toast = useToast();
-  const { logout } = useAuth();
+  const { logout, status } = useAuth();
   // `useDarkMode` was retired in PR #2660 in favour of the 3-mode
   // `useTheme` (`light` / `dark` / `hc`). The Command Palette's binary
   // toggle keeps its old UX semantics by flipping between explicit
@@ -58,7 +58,10 @@ export function useDemoCommands({
   const signOutFromPalette = useCallback(
     async function attempt(): Promise<void> {
       try {
-        await logout();
+        // `logout()` сам питає про незбережені записи; `false` — людина
+        // обрала «Залишитись», сесія жива: ні тосту, ні редіректу.
+        const done = await logout();
+        if (!done) return;
         toast.success("Вихід виконано");
         navigate(SIGN_IN_PATH, { replace: true });
       } catch {
@@ -149,19 +152,25 @@ export function useDemoCommands({
           openHubSettingsSection();
         },
       },
-      {
-        id: "session.sign-out",
-        title: "Вийти з акаунту",
-        description: "Завершити сесію та повернутися на екран входу",
-        group: "Сесія",
-        keywords: ["logout", "sign out", "вийти"],
-        run: () => {
-          logger.debug("[command-palette] session.sign-out");
-          void signOutFromPalette();
-        },
-      },
+      // «Вийти» лише для залогіненого: анонімові виходити нема з чого
+      // (аудит 2026-10-01, `data-19`).
+      ...(status === "authenticated"
+        ? [
+            {
+              id: "session.sign-out",
+              title: "Вийти з акаунту",
+              description: "Завершити сесію та повернутися на екран входу",
+              group: "Сесія",
+              keywords: ["logout", "sign out", "вийти"],
+              run: () => {
+                logger.debug("[command-palette] session.sign-out");
+                void signOutFromPalette();
+              },
+            } satisfies PaletteCommand,
+          ]
+        : []),
     ],
-    [isDark, navigate, openSearch, signOutFromPalette, toggleDark],
+    [isDark, navigate, openSearch, signOutFromPalette, status, toggleDark],
   );
 
   useRegisterCommand("core.demo", commands);

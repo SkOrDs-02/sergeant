@@ -29,9 +29,11 @@
  *
  * Best-effort, same contract as the orchestrator: never throws; a missing
  * dual-write context (e.g. the assistant is invoked from a surface where
- * the Finyk module never mounted) is a no-op — the chat action's own
- * `lsSet` keeps the value, and the boot-time residual import picks it up
- * on the next cold Finyk visit.
+ * the Finyk module never mounted) is a no-op. Екзекутори до того ж не
+ * пишуть на холодному кеші (`warmFinykCache`), тож «втрата» тут — лише
+ * гонка зі скиданням контексту. Залишкового LS→SQLite імпорту на буті
+ * більше немає (прибрано 2026-08, `sqliteReadBoot.ts`): kv-копія значення
+ * НЕ дренується в базу, лише дзеркалить канон для first-paint.
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -141,9 +143,15 @@ export async function mirrorFinykChatDualWrite(
  * merge against the other four canonical fields — otherwise the upsert would clobber them with
  * defaults. We read them from the SQLite cache, warming it first when
  * cold so a user with existing prefs is never overwritten.
+ *
+ * `monthlyPlanJson` — ПОВНИЙ наступний план (екзекутор уже змерджив поля з
+ * `cache.monthlyPlan`), не дельта. `prevMonthlyPlanJson` — знімок плану до
+ * оптимістичного патча кешу (див. `finykChatWrite`): без нього база для diff-а
+ * з кешу вже містила б новий план, і апсерт зник би як no-op.
  */
 export async function mirrorFinykChatMonthlyPlan(
   monthlyPlanJson: string,
+  prevMonthlyPlanJson?: string,
 ): Promise<void> {
   const rt = await resolveChatDualWriteRuntime();
   if (!rt) return;
@@ -164,7 +172,8 @@ export async function mirrorFinykChatMonthlyPlan(
   }
 
   const base: FinykPrefsSnapshot = {
-    monthlyPlanJson: safeStringify(cache.monthlyPlan ?? {}, "{}"),
+    monthlyPlanJson:
+      prevMonthlyPlanJson ?? safeStringify(cache.monthlyPlan ?? {}, "{}"),
     showBalance: cache.showBalance ?? true,
     excludedStatTxIdsJson: safeStringify(cache.excludedStatTxIds ?? [], "[]"),
     dismissedRecurringJson: safeStringify(cache.dismissedRecurring ?? [], "[]"),

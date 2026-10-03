@@ -21,8 +21,8 @@ vi.mock("@shared/lib/storage/storage", async () => {
   const actual = await vi.importActual<
     typeof import("@shared/lib/storage/storage")
   >("@shared/lib/storage/storage");
-  safeWriteLSMock.mockImplementation(actual.safeWriteLS);
-  return { ...actual, safeWriteLS: safeWriteLSMock };
+  safeWriteLSMock.mockImplementation(actual.safeWriteLSDurable);
+  return { ...actual, safeWriteLSDurable: safeWriteLSMock };
 });
 vi.mock("@shared/lib", () => ({ logger: { warn: warnMock } }));
 

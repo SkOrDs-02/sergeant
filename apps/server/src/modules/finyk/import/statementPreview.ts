@@ -3,6 +3,7 @@ import pool from "../../../db.js";
 import { parseBody } from "../../../http/validate.js";
 import { ValidationError } from "../../../obs/errors.js";
 import {
+  IMPORT_DESCRIPTION_MAX_LEN,
   ImportStatementPreviewRequestSchema,
   ImportStatementPreviewResponseSchema,
 } from "@sergeant/shared";
@@ -19,6 +20,7 @@ import {
   type ResolvedColumnMapping,
 } from "./csvProfiles.js";
 import { resolveCategoryHint } from "./categoryHint.js";
+import { isAmountKopiykasInBounds, truncateImportText } from "./rowLimits.js";
 import {
   gridFromCsvText,
   gridFromStatementFile,
@@ -73,6 +75,8 @@ function classifyRows(
     }
 
     const date = parseCalendarDateKey(dateRaw, mapping.dateFormat);
+    // Межі `boundedDayKeySchema` (1970..2100) `parseCalendarDateKey` уже
+    // перевіряє сам — окремої перевірки дати тут не треба (rel-20).
     if (!date) {
       skipped.push({ line, reason: "unparsed_date" });
       return;
@@ -93,7 +97,11 @@ function classifyRows(
     // (`expense`|`income`) додатну суму — нульова транзакція не має
     // жодного з двох напрямів і найчастіше сама по собі є ознакою
     // нерозпізнаного/службового рядка, не легітимним платежем.
-    if (signed === null || signed === 0) {
+    //
+    // Сума понад `AMOUNT_MINOR_MAX` (10 млн грн) — теж `unparsed_amount`:
+    // `importAmountKopiykasSchema` її відкинув би, а фінальний `.parse()`
+    // перетворив би один такий рядок на 500 для всієї виписки (rel-20).
+    if (signed === null || !isAmountKopiykasInBounds(Math.abs(signed))) {
       skipped.push({ line, reason: "unparsed_amount" });
       return;
     }
@@ -117,7 +125,10 @@ function classifyRows(
       date,
       amountKopiykas: Math.abs(signed),
       direction,
-      description,
+      // Обрізаємо ПІСЛЯ детекторів вище/нижче: вони бачать повний опис, а
+      // у відповідь іде не довше `IMPORT_DESCRIPTION_MAX_LEN` (банк дозволяє
+      // «призначення платежу» до 420 символів, схема — 300; rel-20).
+      description: truncateImportText(description, IMPORT_DESCRIPTION_MAX_LEN),
       // Лише true, без false — поле опційне у схемі, відсутність = «не
       // схожий на переказ» (див. transferLikelySchema у @sergeant/shared).
       ...(isLikelyOwnTransfer(description) ? { transferLikely: true } : {}),

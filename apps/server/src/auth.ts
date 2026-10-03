@@ -17,6 +17,7 @@ import { db } from "./drizzle.js";
 import pool from "./db.js";
 import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
+import { guardUserName } from "./auth/sanitizeUserName.js";
 import {
   hardenSessionBefore,
   stripSessionTokenAfter,
@@ -287,6 +288,16 @@ export const auth = betterAuth({
   database: databaseConfig,
   baseURL: getBaseURL(),
   basePath: "/api/auth",
+  /**
+   * sec-10: `POST /verify-password` вимкнено. Клієнти його не викликають
+   * (web користується лише `change-password`; mobile/mobile-shell цього
+   * ендпоінта не знають), а як окремий оракул поточного пароля він давав
+   * підбір без app-ліміту (вбудований Better Auth — 100/10 с на IP,
+   * in-memory) плюс scrypt на кожну спробу. Better Auth віддає 404.
+   * `change-password` і `DELETE /api/me` лишаються і лімітуються в
+   * `http/passwordCheckRateLimit.ts`.
+   */
+  disabledPaths: ["/verify-password"],
   user: {
     deleteUser: {
       /**
@@ -453,7 +464,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (data) => {
+        before: async (data, context) => {
           // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу;
           // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
           // Стоїть саме тут, а не на формі реєстрації: `user.create`
@@ -465,7 +476,11 @@ export const auth = betterAuth({
               message: "Реєстрація зараз закрита.",
             });
           }
-          const result = sanitizeUserImage(data);
+          // sec-16: `name` без межі роздуває session_data-куку до 431 на
+          // кожному запиті; режими reject/truncate — в `sanitizeUserName.ts`.
+          const result = sanitizeUserImage(
+            guardUserName(data, context, "create"),
+          );
           if (result.imageStripped) {
             logger.warn(
               {
@@ -527,8 +542,11 @@ export const auth = betterAuth({
         },
       },
       update: {
-        before: async (data) => {
-          const result = sanitizeUserImage(data);
+        before: async (data, context) => {
+          // sec-16: див. коментар в `create.before`.
+          const result = sanitizeUserImage(
+            guardUserName(data, context, "update"),
+          );
           if (result.imageStripped) {
             logger.warn(
               {

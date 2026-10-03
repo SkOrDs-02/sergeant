@@ -4,27 +4,28 @@ import {
   toIsoDay,
   toDisplayAmount,
   changeCategory,
+  batchCategorize,
 } from "./search";
 import type { FinykSearchTx } from "./search";
 import type { ChatActionUndoableResult } from "../types";
 
-// Heavy IO deps — mocked so pure helpers can be imported. `ls` is
-// key-aware (backed by `lsFixtures`, see beforeEach below) so the
-// `changeCategory` / undo tests further down can seed and observe
-// per-key state — the pure-helper tests above never call `ls`, so the
-// richer mock is a no-op for them.
-vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
+// Heavy IO deps — mocked so pure helpers can be imported. Канонічний стан
+// (data-08) — це кеш SQLite: `cacheState` — змінний фікстюр, який віддає
+// мок `getCachedFinykSqliteState`, а мок `finykChatWrite` пише назад у нього
+// (read-after-write для undo-тестів нижче).
+const cacheState = vi.hoisted(() => ({
+  refreshedAt: "2026-01-01T00:00:00.000Z" as string | null,
+  manualExpenses: [] as unknown[],
+  txCategories: {} as Record<string, string>,
+  hiddenTransactions: [] as string[],
+  customCategories: [] as unknown[],
+}));
 vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
 vi.mock("../../../../modules/finyk/utils", () => ({
   resolveExpenseCategoryMeta: vi.fn(() => ({ label: "Інше", emoji: "🔹" })),
 }));
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
-  getCachedFinykSqliteState: vi.fn(() => ({
-    manualExpenses: [],
-    txCategories: {},
-    hiddenTransactions: [],
-    customCategories: [],
-  })),
+  getCachedFinykSqliteState: vi.fn(() => cacheState),
 }));
 // `changeCategory` guards against hallucinated ids via `entityLookup`
 // (same guard as `hideTransaction`/`splitTransaction` in
@@ -36,14 +37,9 @@ vi.mock("./entityLookup", async (importOriginal) => ({
   finykCategoryExists: vi.fn(() => true),
 }));
 
-import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
 
-const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockWrite = vi.mocked(finykChatWrite);
-
-/** Mirrors the real key-value store `ls`/`finykChatWrite` operate on. */
-const lsFixtures = new Map<string, unknown>();
 
 function isUndoable(
   out: ReturnType<typeof changeCategory>,
@@ -53,21 +49,21 @@ function isUndoable(
 
 beforeEach(() => {
   vi.clearAllMocks();
-  lsFixtures.clear();
-  mockLs.mockImplementation((key: string, fallback: unknown) =>
-    lsFixtures.has(key) ? lsFixtures.get(key) : fallback,
-  );
-  // Read-after-write: `changeCategory`'s `undo` re-reads `finyk_tx_cats`
-  // via `ls`, so the mocked write must land back in the same fixture map
-  // the mocked read serves from — otherwise undo would always see the
-  // pre-mutation state regardless of what the forward write did.
+  cacheState.refreshedAt = "2026-01-01T00:00:00.000Z";
+  cacheState.manualExpenses = [];
+  cacheState.txCategories = {};
+  // Read-after-write: `changeCategory`'s `undo` re-reads `txCategories` з
+  // кешу, тож змокана запис мусить лягти назад у той самий фікстюр —
+  // інакше undo завжди бачив би стан до мутації.
   mockWrite.mockImplementation((key: string, value: unknown) => {
-    lsFixtures.set(key, value);
+    if (key === "finyk_tx_cats") {
+      cacheState.txCategories = value as Record<string, string>;
+    }
   });
 });
 
 afterEach(() => {
-  lsFixtures.clear();
+  cacheState.txCategories = {};
 });
 
 // --- txSourceOf ---
@@ -252,38 +248,38 @@ describe("changeCategory", () => {
   });
 
   it("undo restores the PREVIOUS category override", () => {
-    lsFixtures.set("finyk_tx_cats", { m_1: "transport" });
+    cacheState.txCategories = { m_1: "transport" };
     const out = changeCategory({
       name: "change_category",
       input: { tx_id: "m_1", category_id: "food" },
     });
     if (!isUndoable(out)) throw new Error("expected an undoable result");
-    expect(lsFixtures.get("finyk_tx_cats")).toEqual({ m_1: "food" });
+    expect(cacheState.txCategories).toEqual({ m_1: "food" });
 
     out.undo?.();
 
-    expect(lsFixtures.get("finyk_tx_cats")).toEqual({ m_1: "transport" });
+    expect(cacheState.txCategories).toEqual({ m_1: "transport" });
   });
 
   it("undo on a transaction with NO prior override removes the key entirely", () => {
     // The transaction's category came from the base categorisation rules
     // (no entry in `finyk_tx_cats`) — undo must not invent a mapping to
     // `undefined`, it must leave the map exactly as it was: absent.
-    lsFixtures.set("finyk_tx_cats", {});
+    cacheState.txCategories = {};
     const out = changeCategory({
       name: "change_category",
       input: { tx_id: "m_1", category_id: "food" },
     });
     if (!isUndoable(out)) throw new Error("expected an undoable result");
-    expect(lsFixtures.get("finyk_tx_cats")).toEqual({ m_1: "food" });
+    expect(cacheState.txCategories).toEqual({ m_1: "food" });
 
     out.undo?.();
 
-    expect(lsFixtures.get("finyk_tx_cats")).toEqual({});
+    expect(cacheState.txCategories).toEqual({});
   });
 
   it("undo doesn't disturb OTHER transactions' overrides", () => {
-    lsFixtures.set("finyk_tx_cats", { m_1: "transport", m_2: "housing" });
+    cacheState.txCategories = { m_1: "transport", m_2: "housing" };
     const out = changeCategory({
       name: "change_category",
       input: { tx_id: "m_1", category_id: "food" },
@@ -292,9 +288,56 @@ describe("changeCategory", () => {
 
     out.undo?.();
 
-    expect(lsFixtures.get("finyk_tx_cats")).toEqual({
+    expect(cacheState.txCategories).toEqual({
       m_1: "transport",
       m_2: "housing",
     });
+  });
+});
+
+// --- data-08: канонічний стан із SQLite, а не з kv ---
+
+describe("data-08: категорії операцій з SQLite-кешу", () => {
+  it("changeCategory будує next від override-ів з UI і не стирає їх", () => {
+    // kv (localStorage) порожній: override-и живуть лише в кеші SQLite.
+    cacheState.txCategories = { m_other: "housing" };
+    changeCategory({
+      name: "change_category",
+      input: { tx_id: "m_1", category_id: "food" },
+    });
+    expect(mockWrite).toHaveBeenCalledWith("finyk_tx_cats", {
+      m_other: "housing",
+      m_1: "food",
+    });
+  });
+
+  it("batchCategorize (dry_run=false) зберігає наявні override-и з UI", () => {
+    cacheState.txCategories = { m_other: "housing" };
+    cacheState.manualExpenses = [
+      { id: "m_1", date: "2026-04-22", description: "АТБ", amount: 10 },
+    ];
+    batchCategorize({
+      name: "batch_categorize",
+      input: { pattern: "АТБ", category_id: "food", dry_run: false },
+    });
+    expect(mockWrite).toHaveBeenCalledWith("finyk_tx_cats", {
+      m_other: "housing",
+      m_1: "food",
+    });
+  });
+
+  it("холодний кеш: чесна відповідь замість запису", () => {
+    cacheState.refreshedAt = null;
+    const a = changeCategory({
+      name: "change_category",
+      input: { tx_id: "m_1", category_id: "food" },
+    });
+    const b = batchCategorize({
+      name: "batch_categorize",
+      input: { pattern: "АТБ", category_id: "food", dry_run: false },
+    });
+    expect(a).toContain("ще завантажуються");
+    expect(b).toContain("ще завантажуються");
+    expect(mockWrite).not.toHaveBeenCalled();
   });
 });

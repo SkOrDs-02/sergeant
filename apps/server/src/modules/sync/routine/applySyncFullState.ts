@@ -12,6 +12,48 @@ import {
   readJsonbField,
   softDeleteById,
 } from "../applySync-helpers.js";
+import {
+  isValidRecurrence,
+  parseOptionalDayKey,
+} from "../../../lib/routineScheduleFields.js";
+
+/**
+ * `routine_habits.recurrence` / `start_date` / `end_date` — TEXT без CHECK,
+ * а щохвилинний sweep нагадувань (`lib/reminders/sweep.ts`) читає їх усіх
+ * користувачів одним проходом: рядок `start_date = "2000"` кидав у
+ * `parseDateKey` і валив нагадування ВСІМ (аудит 2026-10-01, rel-01).
+ * Тому невалідне відхиляється тут, до запису.
+ *
+ * Відсутнє / порожнє `recurrence` = `daily` (старі клієнти, домен читає
+ * `recurrence || "daily"`). Невалідний оп -> `rejected` із причиною; клієнт
+ * позначає його термінально (`pushLoop`: `rejected` не ретраїться), тож
+ * безкінечного повтору немає, решта батчу йде далі.
+ */
+function readHabitScheduleFields(row: Record<string, unknown>):
+  | {
+      recurrence: string;
+      startDate: string | null;
+      endDate: string | null;
+    }
+  | { reject: AppliedStatus } {
+  const rawRecurrence = row["recurrence"];
+  if (!isValidRecurrence(rawRecurrence)) {
+    return { reject: { status: "rejected", reason: "invalid_recurrence" } };
+  }
+  const recurrence =
+    typeof rawRecurrence === "string" && rawRecurrence !== ""
+      ? rawRecurrence
+      : "daily";
+  const startDate = parseOptionalDayKey(row["start_date"]);
+  if (startDate === "invalid") {
+    return { reject: { status: "rejected", reason: "invalid_start_date" } };
+  }
+  const endDate = parseOptionalDayKey(row["end_date"]);
+  if (endDate === "invalid") {
+    return { reject: { status: "rejected", reason: "invalid_end_date" } };
+  }
+  return { recurrence, startDate, endDate };
+}
 
 export async function applyRoutineHabits(
   client: PoolClient,
@@ -55,6 +97,9 @@ export async function applyRoutineHabits(
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
+
+  const schedule = readHabitScheduleFields(row);
+  if ("reject" in schedule) return schedule.reject;
 
   const emoji = typeof row["emoji"] === "string" ? row["emoji"] : "";
   const tagIds = readJsonbField(row, "tag_ids", "tag_ids_json", "[]");
@@ -105,9 +150,9 @@ export async function applyRoutineHabits(
         categoryId,
         readBoolField(row, "archived"),
         readBoolField(row, "paused"),
-        typeof row["recurrence"] === "string" ? row["recurrence"] : "daily",
-        typeof row["start_date"] === "string" ? row["start_date"] : null,
-        typeof row["end_date"] === "string" ? row["end_date"] : null,
+        schedule.recurrence,
+        schedule.startDate,
+        schedule.endDate,
         typeof row["time_of_day"] === "string" ? row["time_of_day"] : "",
         reminderTimes,
         weekdays,
@@ -137,9 +182,9 @@ export async function applyRoutineHabits(
         categoryId,
         readBoolField(row, "archived"),
         readBoolField(row, "paused"),
-        typeof row["recurrence"] === "string" ? row["recurrence"] : "daily",
-        typeof row["start_date"] === "string" ? row["start_date"] : null,
-        typeof row["end_date"] === "string" ? row["end_date"] : null,
+        schedule.recurrence,
+        schedule.startDate,
+        schedule.endDate,
         typeof row["time_of_day"] === "string" ? row["time_of_day"] : "",
         reminderTimes,
         weekdays,

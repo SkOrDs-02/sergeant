@@ -47,6 +47,10 @@ import {
 import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
 
 import { logger, serializeError } from "../../obs/logger.js";
+import {
+  isValidRecurrence,
+  parseOptionalDayKey,
+} from "../routineScheduleFields.js";
 import { sendToUserQuietly } from "../../push/send.js";
 import { budgetSlotKey, collapseReminders, planSends } from "./budget.js";
 import {
@@ -153,6 +157,42 @@ function toHabit(row: RoutineHabitDbRow): Habit {
 }
 
 /**
+ * Чи розбирає домен розклад цього рядка без винятку.
+ *
+ * `recurrence` / `start_date` / `end_date` — TEXT без CHECK. Нинішній
+ * `applyRoutineHabits` невалідне відхиляє, але отруєні рядки, що лежали в БД
+ * ДО цього (або потрапили повз sync), `parseDateKey` у `habitScheduledOnDate`
+ * кидає, і без цього guard-а один такий рядок валив нагадування всім
+ * (аудит 2026-10-01, rel-01). Такі звички пропускаємо, а не вгадуємо розклад:
+ * `monthly` без валідної дати-якоря нагадував би щодня.
+ */
+function isHabitRowSchedulable(row: RoutineHabitDbRow): boolean {
+  return (
+    isValidRecurrence(row.recurrence) &&
+    parseOptionalDayKey(row.start_date) !== "invalid" &&
+    parseOptionalDayKey(row.end_date) !== "invalid"
+  );
+}
+
+/**
+ * Пропущена звичка логується раз на процес, а не щохвилини: sweep ходить по
+ * тих самих рядках 1440 разів на добу. Набір обмежений, щоб не рости безкінечно.
+ */
+const POISONED_LOGGED_MAX = 1000;
+const poisonedLogged = new Set<string>();
+
+function warnPoisonedHabitOnce(row: RoutineHabitDbRow): void {
+  if (poisonedLogged.has(row.id)) return;
+  if (poisonedLogged.size >= POISONED_LOGGED_MAX) poisonedLogged.clear();
+  poisonedLogged.add(row.id);
+  logger.warn({
+    msg: "reminder_sweep_habit_skipped_invalid_schedule",
+    userId: row.user_id,
+    habitId: row.id,
+  });
+}
+
+/**
  * Звички з будь-яким нагадуванням на добу.
  *
  * Не лише ті, що припадають на цю хвилину: спільна стеля вимагає бачити
@@ -183,11 +223,17 @@ async function loadRoutineCandidates(pool: Pool): Promise<RoutineHabitRow[]> {
                       WHERE d.user_id = t.user_id AND d.deleted_at IS NULL)
         )`,
   );
-  return rows.map((row) => ({
-    userId: row.user_id,
-    habit: toHabit(row),
-    privacyMinimal: row.privacy === "minimal",
-  }));
+  return rows
+    .filter((row) => {
+      if (isHabitRowSchedulable(row)) return true;
+      warnPoisonedHabitOnce(row);
+      return false;
+    })
+    .map((row) => ({
+      userId: row.user_id,
+      habit: toHabit(row),
+      privacyMinimal: row.privacy === "minimal",
+    }));
 }
 
 /**
@@ -530,6 +576,35 @@ export async function runReminderSweep(
     else routineByUser.set(row.userId, [row]);
   }
 
+  // Збій одного користувача не має валити прохід решті: єдиний `flatMap` по
+  // всіх людях без ізоляції означав, що один кидок у предикаті розкладу
+  // глушив нагадування ВСІМ щохвилини (аудит 2026-10-01, rel-01).
+  // `failed` тримає `модуль:userId`, що вже впали в цьому проході: лог рівно
+  // один, а наступні виклики (хвилини дня, друга ітерація план ↔ відбір) цю
+  // людину в цьому модулі вже не чіпають — fail-closed, нагадування просто
+  // не надсилається, замість того щоб валити решту.
+  const failed = new Set<string>();
+  const isolated = (
+    userId: string,
+    module: string,
+    fn: () => DueReminder[],
+  ): DueReminder[] => {
+    const key = `${module}:${userId}`;
+    if (failed.has(key)) return [];
+    try {
+      return fn();
+    } catch (err) {
+      failed.add(key);
+      logger.warn({
+        msg: "reminder_sweep_user_failed",
+        module,
+        userId,
+        err: serializeError(err, { includeStack: false }),
+      });
+      return [];
+    }
+  };
+
   const dayTimes = [
     ...new Set([
       ...routineRows.flatMap((r) => normalizeReminderTimes(r.habit)),
@@ -537,7 +612,9 @@ export async function runReminderSweep(
       ...nutritionRows.map(nutritionReminderHm),
     ]),
   ];
-  const nudges = nudgeCandidates.map((c) => nudgeReason(c, dayKey, now));
+  const nudges = nudgeCandidates.flatMap((c) =>
+    isolated(c.userId, "sergeant", () => [nudgeReason(c, dayKey, now)]),
+  );
 
   const empty: ReadonlySet<string> = new Set();
   const emptyWeekCompletions: ReadonlyMap<string, readonly string[]> =
@@ -549,20 +626,30 @@ export async function runReminderSweep(
     completed: Map<string, Set<string>>,
     skipped: Map<string, Set<string>>,
   ): DueReminder[] => [
+    // Порядок «хвилина -> модуль -> людина» збережено: від нього залежить
+    // порядок назв у згорнутому сповіщенні (`collapseReminders`).
     ...dayTimes.flatMap((t) => [
       ...[...routineByUser.entries()].flatMap(([userId, rows]) =>
-        routineDueNow({
-          rows,
-          dayKey,
-          hm: t,
-          completedHabitIds: completed.get(userId) ?? empty,
-          skippedHabitIds: skipped.get(userId) ?? empty,
-          weekCompletionsByHabitId:
-            weekCompletionsByUser.get(userId) ?? emptyWeekCompletions,
-        }),
+        isolated(userId, "routine", () =>
+          routineDueNow({
+            rows,
+            dayKey,
+            hm: t,
+            completedHabitIds: completed.get(userId) ?? empty,
+            skippedHabitIds: skipped.get(userId) ?? empty,
+            weekCompletionsByHabitId:
+              weekCompletionsByUser.get(userId) ?? emptyWeekCompletions,
+          }),
+        ),
       ),
-      ...fizrukDueNow(fizrukRows, dayKey, t),
-      ...nutritionDueNow(nutritionRows, dayKey, t),
+      ...fizrukRows.flatMap((row) =>
+        isolated(row.userId, "fizruk", () => fizrukDueNow([row], dayKey, t)),
+      ),
+      ...nutritionRows.flatMap((row) =>
+        isolated(row.userId, "nutrition", () =>
+          nutritionDueNow([row], dayKey, t),
+        ),
+      ),
     ]),
     ...nudges,
   ];

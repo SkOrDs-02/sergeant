@@ -126,8 +126,10 @@ export interface RemoteActionsPrefs {
  */
 export interface RemoteActionsLog {
   nutritionLog: NutritionLogLike;
-  selectedDate: string;
-  handleAddMeal: (meal: Partial<Meal>) => void;
+  /** День, під яким запис ляже зараз (годинник пристрою або явний вибір). */
+  getActiveDate: () => string;
+  /** Повертає день, під яким запис ЛЯГ. */
+  handleAddMeal: (meal: Partial<Meal>) => string;
 }
 
 /**
@@ -534,15 +536,17 @@ export function useNutritionRemoteActions({
       // інакше для минулих/майбутніх днів сьогоднішній час виглядав би як баг
       // (запис "вчора 09:30 ранку" створений увечері). Див. H5 з аудиту.
       const now = new Date();
-      // ADR-0078: `log.selectedDate` is the device-local day key the log is
-      // written under (useNutritionLog) — comparing against a Kyiv key here
-      // would desync this check the moment device tz != Kyiv.
-      const isToday = log.selectedDate === deviceDayKey(now);
+      // ADR-0078: активний день — device-local day key, під яким запис
+      // лягає в лог (useNutritionLog) — порівняння з київським ключем
+      // розсинхронізувало б цю перевірку, щойно tz пристрою != Kyiv.
+      // `getActiveDate`, а не `selectedDate`: той міг відстати від годинника,
+      // а запис іде за поточним днем.
+      const isToday = log.getActiveDate() === deviceDayKey(now);
       // ADR-0078: час доби беремо з того самого годинника, що й день-ключ
       // вище (`deviceDayKey`). Київський настінний час поруч із девайсовим
       // днем дає пару, з якої `composeEatenAt` складав неіснуючий момент.
       const time = isToday ? deviceTimeOfDay(now) : "";
-      log.handleAddMeal({
+      const dateKey = log.handleAddMeal({
         id,
         time,
         mealType: (meal.type || "snack") as Meal["mealType"],
@@ -557,7 +561,7 @@ export function useNutritionRemoteActions({
         source: "manual",
         macroSource: "recipeAI",
       });
-      return { id, dateKey: log.selectedDate };
+      return { id, dateKey };
     },
     [log],
   );

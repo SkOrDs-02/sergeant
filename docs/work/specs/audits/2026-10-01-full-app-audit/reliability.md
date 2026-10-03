@@ -23,7 +23,7 @@
 
 ### `rel-01` [high] Одна звичка з невалідним start_date зупиняє серверні push-нагадування всім користувачам
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-01-routine-dates-sweep (алерт на reminder_sweep_failed не додано: у репо немає метрики збою sweep, лише лог)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: reminders / sync routine
 - **Де:** apps/server/src/modules/sync/routine/applySyncFullState.ts:108-111,140-142; apps/server/src/lib/reminders/sweep.ts:136-153,548-566; packages/routine-domain/src/schedule.ts:119-120; packages/routine-domain/src/dateKeys.ts:27-31; apps/server/src/lib/reminders/scheduler.ts:77-81
 - **Першопричина:** applyRoutineHabits пише recurrence, start_date і end_date з sync-пушу як довільні рядки (колонка TEXT без CHECK). Щохвилинний sweep для monthly-звички викликає parseDateKey, а той кидає виняток. reasonsOfDay обходить усіх користувачів одним flatMap без per-user try/catch, тож падає весь прохід.
@@ -94,7 +94,7 @@ I could not refute this finding. I traced the code end to end and also ran an in
 
 ### `rel-02` [medium] Будь-яка не-401 помилка /api/v1/me на холодному старті перемикає застосунок у гостьовий режим із «порожніми» даними
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-01-rel-02-auth-states
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth (AuthContext)
 - **Та сама першопричина, що й** [`logic-01`](./domain-logic.md#logic-01): Спільний корінь в AuthContext: будь-яка помилка /api/me (403 account_pending_deletion, 5xx, 429, мережа) трактується як «не автентифікований». Явні стани pending_deletion і unavailable закривають обидва.
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:318-360,382-401; apps/web/src/shared/lib/api/queryClient.ts:77-97; apps/web/src/shared/lib/api/queryClientPersister.ts:232; apps/server/src/http/requireSession.ts:104-106
@@ -204,7 +204,7 @@ middleware.ts: `matcher: "/api/:path*"`; копіює `new Headers(request.heade
 
 ### `rel-04` [medium] Тіла запитів розпаковуються й парсяться до автентифікації: анонімна ампліфікація через gzip до 10 МБ
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-11-rel-04-auth-body-parsing (inflate:false на default і всіх правилах понад 128 КБ; парсинг до requireSession лишається — довгострокове перенесення парсерів у роутери)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: http body parsing
 - **Де:** apps/server/src/app.ts:147-169; apps/server/src/http/bodySizePolicy.ts:92-258
 - **Першопричина:** applyBodySizePolicy монтується в app.ts раніше за CORS, CSRF, rate-limit і requireSession. Фікс B28 вимкнув inflate лише на AI-правилах. Правила sync v1/v2 (6 МБ), statement/preview (10 МБ), import/commit (2 МБ), backup-upload (4 МБ) і default досі розпаковують gzip, хоча клієнти тіла не стискають.
@@ -542,7 +542,7 @@ w6_size.mjs: 'push 2x250KB junk: 200 ["rejected:table_not_allowed","rejected:tab
 
 ### `rel-07` [medium] PII-маскування в чаті має квадратичний email-регекс: один /api/chat блокує event loop на ~9 с
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-07-pii-mask-redos
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat (pii-mask)
 - **Де:** apps/server/src/lib/pii-mask.ts:14-37; apps/server/src/lib/llmRedaction.ts:118-137; apps/server/src/modules/chat/chat.ts:515-518,650,748; apps/server/src/lib/llm/provider.ts:825-829
 - **Першопричина:** Email-патерн у pii-mask.ts на довгих рядках із дефісів і крапок дає поліноміальний backtracking. maskUserText проганяє всі повідомлення (до 50 по 8000 символів), maskMachineText — context до 40000 символів. Обидва працюють синхронно в main thread, до виклику LLM і до обліку квоти.
@@ -1240,7 +1240,7 @@ verify-server-static-ai-layer/coachmem-v2.mjs (юзер audit_pool152): POST /ap
 
 ### `rel-20` [medium] Імпорт виписки чи скріна падає з 500 на весь файл через один рядок поза межами схеми відповіді
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-20-24-import-mono-webhook
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Фінік import
 - **Де:** apps/server/src/modules/finyk/import/statementPreview.ts:101-125,239-248; apps/server/src/modules/finyk/import/screenshotAnalyze.ts:35-39,87-89,119-140,315-319; packages/shared/src/schemas/import.ts:242-250; packages/shared/src/schemas/bounds.ts:15
 - **Першопричина:** classifyRows і normalizeImportScreenshotResult не обрізають description і bank та не відсіюють рядки, де сума чи дата поза межами. Хендлери валідують усю відповідь через Schema.parse, тож ZodError одного рядка стає 500 INTERNAL. receipts/analyze.ts для порівняння обрізає поля й клампить суми.
@@ -1483,7 +1483,7 @@ performRefresh (tokenStore.ts:382-422) ловить будь-який винят
 
 ### `rel-24` [medium] Вебхук Monobank не відповідає 200 на GET-валідацію URL
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-20-24-import-mono-webhook
 - **Перевірка:** спірне · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Monobank webhook
 - **Де:** apps/server/src/routes/mono-webhook.ts:61-62; apps/server/src/modules/mono/connection.ts:152-190,204-215
 - **Першопричина:** routes/mono-webhook.ts реєструє лише POST. Прод працює в режимі API-only (servesFrontend=false), тож GET і HEAD на /api/mono/webhook/&lt;secret&gt; дають Express-404. Документація Monobank для POST /personal/webhook вимагає, щоб валідаційний GET отримав строго 200.
