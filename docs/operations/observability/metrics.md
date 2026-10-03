@@ -383,17 +383,26 @@ budgets` про бандл-ратчети. Тому 15 с — це **детек�
 
 ## 7. HubChat tools
 
-| Metric                             | Type    | Labels             | Emitter                                                                                                                                        |
-| ---------------------------------- | ------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat_tool_invocations_total`      | Counter | `tool` · `outcome` | [toolMetrics.ts:53](../../../apps/server/src/modules/chat/toolMetrics.ts#L53), [:96](../../../apps/server/src/modules/chat/toolMetrics.ts#L96) |
-| `chat_tool_result_truncated_total` | Counter | `reason`           | [toolResultTruncation.ts:132](../../../apps/server/src/modules/chat/toolResultTruncation.ts#L132)                                              |
+| Metric                             | Type      | Labels                      | Emitter                                                                                                                                        |
+| ---------------------------------- | --------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat_tool_invocations_total`      | Counter   | `tool` · `outcome`          | [toolMetrics.ts:53](../../../apps/server/src/modules/chat/toolMetrics.ts#L53), [:96](../../../apps/server/src/modules/chat/toolMetrics.ts#L96) |
+| `chat_tool_result_truncated_total` | Counter   | `reason`                    | [toolResultTruncation.ts:132](../../../apps/server/src/modules/chat/toolResultTruncation.ts#L132)                                              |
+| `chat_number_verify_total`         | Counter   | `turn` · `mode` · `outcome` | [shadow.ts](../../../apps/server/src/modules/chat/numberVerify/shadow.ts)                                                                      |
+| `chat_number_tokens_total`         | Counter   | `kind` · `explained`        | [shadow.ts](../../../apps/server/src/modules/chat/numberVerify/shadow.ts)                                                                      |
+| `chat_number_hold_ms`              | Histogram | `turn`                      | [shadow.ts](../../../apps/server/src/modules/chat/numberVerify/shadow.ts)                                                                      |
 
 `tool`: whitelist із `TOOLS` ([toolMetrics.ts:23](../../../apps/server/src/modules/chat/toolMetrics.ts#L23)) або `"unknown"`. `outcome`: `proposed` · `executed` · `unknown_tool`. `reason`: `size_threshold`. **Кардинальність**: ~32 tool × 3 = **96**; truncation = **1**.
+
+**Верифікація чисел** ([ADR-0097](../../governance/adr/0097-link-evidence-standard.md), прапорець `CHAT_NUMBER_VERIFY`, [`feature-flags.md`](../../engineering/architecture/feature-flags.md) § 3.1): один приріст `chat_number_verify_total` на звірену відповідь. `turn`: `first` · `synthesis`. `mode`: виконаний режим, до PR3 серії завжди `shadow` (навіть при `CHAT_NUMBER_VERIFY=enforce`); при `off` метрик немає взагалі. `outcome`: `ok` · `mismatch` · `no_scoped` · `error`. `kind`: `money` · `mass` · `energy` · `unscoped`; `explained`: `given` · `derived` · `none` · `na`. `chat_number_hold_ms` у shadow міряє лише час самої звірки. **Кардинальність**: 2 × 1 × 4 = **8**; 4 × 4 = **16** (фактично менше); **2**. Лічильників регенерацій і вирізання цифр ще немає: вони зʼявляться разом із поведінкою в PR3. Числа й текст відповіді ні в мітках, ні в логах `chat_number_mismatch` не зʼявляються.
 
 ```promql
 sum by (tool) (rate(chat_tool_invocations_total{outcome="proposed"}[5m]))                  # tool popularity
 sum by (tool) (rate(chat_tool_invocations_total{outcome="proposed"}[1h]))
   - sum by (tool) (rate(chat_tool_invocations_total{outcome="executed"}[1h]))              # user cancels
+sum(rate(chat_number_verify_total{outcome="mismatch"}[1d]))
+  / sum(rate(chat_number_verify_total{outcome=~"ok|mismatch"}[1d]))                         # частка відповідей із незʼясованим числом
+sum(rate(chat_number_tokens_total{explained="none"}[1d]))
+  / sum(rate(chat_number_tokens_total{kind!="unscoped"}[1d]))                               # частка незʼясованих серед перевірюваних чисел
 ```
 
 ---

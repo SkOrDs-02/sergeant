@@ -3,13 +3,11 @@
  * `docs/work/specs/link-evidence-standard.md`, блок «Верифікація чисел»).
  *
  * Бібліотека чиста: ніякого I/O, жодного читання env, жодних метрик. Хто її
- * викликає (`chat.ts`, `chatStream.ts`), вирішує сам, що робити з вердиктом.
+ * викликає, вирішує сам, що робити з вердиктом.
  *
- * @scaffolded
- * @owner @Skords-01
- * @nextStep Підключити в `chat.ts` і `chatStream.ts` у тіньовому режимі (PR2
- *           серії «Верифікація чисел»); у тому ж PR зняти цей маркер. Далі PR3
- *           вмикає `enforce`. Див. AGENTS.md → Hard Rule #10.
+ * Підключення (тіньовий режим, `CHAT_NUMBER_VERIFY`) - у `shadow.ts`: це
+ * єдиний файл теки, що знає про env, метрики й лог; `chat.ts` і
+ * `chatStream.ts` роблять до нього один тонкий виклик.
  */
 
 import { type GivenSources, buildGivenCorpus } from "./givenCorpus.js";
