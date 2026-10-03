@@ -7,6 +7,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 
+const triggerSpy = vi.fn();
+
+vi.mock("./sqliteWriter/index", async () => {
+  const actual = await vi.importActual<typeof import("./sqliteWriter/index")>(
+    "./sqliteWriter/index",
+  );
+  return {
+    ...actual,
+    triggerNutritionDualWrite: (...args: unknown[]) => triggerSpy(...args),
+  };
+});
+
+import {
+  __clearNutritionDualWriteContextForTests,
+  diffNutritionDualWriteOps,
+  registerNutritionDualWriteContext,
+  type NutritionDualWriteState,
+} from "./sqliteWriter/index";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "./sqliteReader";
+
 import {
   __resetSergeantDbForTests,
   openSergeantDb,
@@ -21,6 +44,39 @@ import {
 } from "./recipeBook";
 
 const originalIndexedDB = (globalThis as { indexedDB?: unknown }).indexedDB;
+
+/** Поточний користувач dual-write контексту; тест міняє його між «акаунтами». */
+let currentUserId: string | null = "user-a";
+let unregister: (() => void) | null = null;
+
+/** Усі recipe-опи, які дельти цього тесту передали у dual-write. */
+function emittedRecipeOps() {
+  return (
+    triggerSpy.mock.calls as [
+      NutritionDualWriteState,
+      NutritionDualWriteState,
+    ][]
+  ).flatMap(([prev, next]) =>
+    diffNutritionDualWriteOps(prev, next).filter(
+      (op) => op.kind === "recipe-upsert" || op.kind === "recipe-delete",
+    ),
+  );
+}
+
+function recipeCacheRow(id: string, title: string) {
+  return {
+    id,
+    title,
+    timeMinutes: null,
+    servings: null,
+    ingredients: [],
+    steps: [],
+    tips: [],
+    macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+    createdAt: 1,
+    updatedAt: 1,
+  };
+}
 const LEGACY_DB_NAME = "hub_nutrition_recipe_book";
 
 async function seedLegacyRecipeBook(recipes: unknown[]): Promise<void> {
@@ -47,9 +103,20 @@ async function seedLegacyRecipeBook(recipes: unknown[]): Promise<void> {
 beforeEach(() => {
   (globalThis as { indexedDB?: IDBFactory }).indexedDB = new IDBFactory();
   __resetSergeantDbForTests();
+  triggerSpy.mockReset();
+  clearNutritionSqliteCache();
+  currentUserId = "user-a";
+  unregister = registerNutritionDualWriteContext({
+    getUserId: () => currentUserId,
+    getMigrationClient: async () => null,
+    getNow: () => "2026-10-01T00:00:00.000Z",
+  });
 });
 
 afterEach(() => {
+  unregister?.();
+  __clearNutritionDualWriteContextForTests();
+  clearNutritionSqliteCache();
   if (originalIndexedDB === undefined) {
     delete (globalThis as { indexedDB?: unknown }).indexedDB;
   } else {
@@ -222,5 +289,89 @@ describe("deleteSavedRecipe", () => {
     const id = res.ok ? res.recipe.id : "";
     expect(await deleteSavedRecipe(id)).toBe(true);
     expect(await listSavedRecipes()).toEqual([]);
+  });
+});
+
+describe("data-09: дельта і партиція книги рецептів", () => {
+  it("збереження рецепта = рівно один recipe-upsert, без delete серверних рецептів", async () => {
+    // Новий пристрій: у SQLite-кеші вже є серверні рецепти, у IDB порожньо.
+    __setNutritionSqliteCacheForTests({
+      recipes: [
+        recipeCacheRow("rcp_server_1", "Серверний 1"),
+        recipeCacheRow("rcp_server_2", "Серверний 2"),
+      ],
+    });
+
+    const res = await saveRecipeToBook({ id: "rcp_new", title: "Новий" });
+    expect(res.ok).toBe(true);
+
+    const ops = emittedRecipeOps();
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({
+      kind: "recipe-upsert",
+      recipe: { id: "rcp_new", title: "Новий" },
+    });
+  });
+
+  it("видалення = рівно один recipe-delete для цього id", async () => {
+    const res = await saveRecipeToBook({ id: "rcp_a", title: "A" });
+    expect(res.ok).toBe(true);
+    __setNutritionSqliteCacheForTests({
+      recipes: [
+        recipeCacheRow("rcp_a", "A"),
+        recipeCacheRow("rcp_server", "Серверний"),
+      ],
+    });
+    triggerSpy.mockReset();
+
+    expect(await deleteSavedRecipe("rcp_a")).toBe(true);
+
+    expect(emittedRecipeOps()).toEqual([
+      { kind: "recipe-delete", recipeId: "rcp_a" },
+    ]);
+  });
+
+  it("рецепти користувача A не потрапляють до B і не їдуть у його outbox", async () => {
+    await saveRecipeToBook({ id: "rcp_of_a", title: "Секрет A" });
+    expect((await listSavedRecipes()).map((r) => r.id)).toEqual(["rcp_of_a"]);
+
+    // Той самий браузер, інший акаунт (logout не відбувся / purge не встиг).
+    currentUserId = "user-b";
+    expect(await listSavedRecipes()).toEqual([]);
+
+    triggerSpy.mockReset();
+    await saveRecipeToBook({ id: "rcp_of_b", title: "Свій B" });
+
+    const ops = emittedRecipeOps();
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({
+      kind: "recipe-upsert",
+      recipe: { id: "rcp_of_b" },
+    });
+    expect((await listSavedRecipes()).map((r) => r.id)).toEqual(["rcp_of_b"]);
+  });
+
+  it("B не може видалити чужий рецепт зі спільної IDB: ні локально, ні op-ом", async () => {
+    await saveRecipeToBook({ id: "rcp_of_a", title: "Секрет A" });
+    currentUserId = "user-b";
+    triggerSpy.mockReset();
+
+    expect(await deleteSavedRecipe("rcp_of_a")).toBe(false);
+    expect(emittedRecipeOps()).toEqual([]);
+
+    currentUserId = "user-a";
+    expect((await listSavedRecipes()).map((r) => r.id)).toEqual(["rcp_of_a"]);
+  });
+
+  it("поки власник невідомий, спільна IDB нічого не віддає", async () => {
+    await saveRecipeToBook({ id: "rcp_of_a", title: "Секрет A" });
+    currentUserId = null;
+    expect(await listSavedRecipes()).toEqual([]);
+  });
+
+  it("не віддає ownerId назовні", async () => {
+    await saveRecipeToBook({ id: "rcp_x", title: "X" });
+    const [first] = await listSavedRecipes();
+    expect(first).not.toHaveProperty("ownerId");
   });
 });

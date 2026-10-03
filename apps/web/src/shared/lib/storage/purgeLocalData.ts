@@ -18,7 +18,14 @@
  *   - physical `localStorage` app keys, incl. the LS-only fallback copies that
  *     never travel through `webKVStore` and the `kvvfs-*` SQLite store;
  *   - the in-memory SQLite warm-cache (`resetKvStoreBoot`);
- *   - the React-Query IndexedDB persister snapshot (a cache of server data).
+ *   - the React-Query IndexedDB persister snapshot (a cache of server data);
+ *   - the per-user nutrition IndexedDB stores: saved recipes and meal photo
+ *     thumbnails (data-09). Before sign-out `flushPendingSyncOpsBeforeLogout`
+ *     has already drained the outbox (and warned about what cannot be
+ *     drained), and the user's SQLite partition is wiped by the same logout,
+ *     so these stores hold no data that the signed-out user could still
+ *     recover — leaving them would hand the previous user's recipes and meal
+ *     photos to the next person on a shared device.
  *
  * Deliberately **out of scope** (see PR notes — owner decision):
  *   - the per-user OPFS SQLite DB file → handled by `wipeSqliteDb()` in
@@ -32,16 +39,16 @@
  *     key here would erase the anonymous visitor's rows too — see
  *     `docs/work/specs/anonymous-local-first-persistence.md`
  *     § «Відомий залишковий ризик»;
- *   - the authoritative nutrition IndexedDB stores (saved recipes, meal
- *     photos, food/barcode catalogue) and the `sync_meta` offline-op queue —
- *     clearing those risks losing un-synced local-first data, so they want a
- *     per-user partition (or flush-then-clear) rather than a blind wipe.
+ *   - the nutrition food/barcode catalogue IndexedDB stores (a product cache
+ *     plus user-added foods with no server copy) and the `sync_meta` offline-op
+ *     queue — clearing those risks losing un-synced local-first data, so they
+ *     want a per-user partition rather than a blind wipe.
  */
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 // eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; mirrors storageManager.ts.
 import { logger } from "../log";
-import { SERGEANT_STORE, dbDel } from "../idb/sergeantDb";
+import { SERGEANT_STORE, dbClear, dbDel } from "../idb/sergeantDb";
 import { resolveLsStore } from "./storage";
 import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
 
@@ -118,6 +125,22 @@ export async function purgeQueryCacheSnapshot(): Promise<void> {
 }
 
 /**
+ * Очистити nutrition-сховища IndexedDB, привʼязані до користувача (data-09):
+ * книгу рецептів і мініатюри страв. Викликається ПІСЛЯ flush черги синхронізації
+ * (див. модульний коментар), інакше стерлися б ще не вивантажені дані.
+ */
+export async function purgeNutritionIdbStores(): Promise<void> {
+  // Незалежно: збій одного стору не має лишати другий з чужими даними.
+  const results = await Promise.allSettled([
+    dbClear(SERGEANT_STORE.NUTRITION_RECIPES),
+    dbClear(SERGEANT_STORE.NUTRITION_MEAL_THUMBS),
+  ]);
+  for (const result of results) {
+    if (result.status === "rejected") throw result.reason;
+  }
+}
+
+/**
  * Purge all app-owned local-first stores. Best-effort: each step is isolated
  * so a failure in one (e.g. IndexedDB unavailable in Safari private mode) never
  * blocks the others or the logout flow.
@@ -137,5 +160,10 @@ export async function purgeAppOwnedLocalData(): Promise<void> {
     await purgeQueryCacheSnapshot();
   } catch (err) {
     logger.warn("[purgeLocalData] query-cache snapshot purge failed", err);
+  }
+  try {
+    await purgeNutritionIdbStores();
+  } catch (err) {
+    logger.warn("[purgeLocalData] nutrition IDB purge failed", err);
   }
 }

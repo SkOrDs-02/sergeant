@@ -43,6 +43,7 @@ import {
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
 } from "./sqliteWriter/index.js";
+import { readActiveSqliteVfs } from "../../../core/db/storageBackendState.js";
 import { hasCompletedInitialPull } from "../../../core/syncEngine/initialPullState.js";
 import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId.js";
 import type {
@@ -316,12 +317,32 @@ export function loadPantries(
   return [makeDefaultPantry()];
 }
 
+/**
+ * data-10: чи можна писати знімки комори (`pantry-upsert` = повна заміна
+ * позицій місця). У memory-режимі (фолбек `:memory:` при збої OPFS/квоти) база
+ * на старті порожня, `loadPantries()` віддає дефолти, а запис із них журналюється
+ * (журнал у memory не знімається) і на справжній базі soft-delete-ить усі живі
+ * позиції. Тому там пишемо, лише коли комору гідровано з реального джерела: кеш
+ * вже має комори або початковий pull завершено (гейти data-04). Поза memory-
+ * режимом поведінка не змінюється.
+ */
+function isPantrySnapshotWritable(): boolean {
+  if (readActiveSqliteVfs() !== "memory") return true;
+  try {
+    if (getCachedNutritionSqliteState().pantries.length > 0) return true;
+  } catch {
+    return false;
+  }
+  return isInitialSyncSettled();
+}
+
 export function persistPantries(
   _key: string = NUTRITION_PANTRIES_KEY,
   _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
   pantries?: Pantry[] | null,
   activeId?: string | null,
 ): boolean {
+  if (!isPantrySnapshotWritable()) return false;
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const nextPantries: Pantry[] = Array.isArray(pantries) ? pantries : [];
@@ -432,24 +453,44 @@ export function persistNutritionWaterLog(
 }
 
 /**
- * Persist the full saved-recipes list into SQLite. `recipeBook.ts` owns
- * IndexedDB as the write target (`saveRecipeToBook` / `deleteSavedRecipe`);
- * without this mirror, `sqliteReader.ts`'s `cache.recipes` — what
- * `RecipesCard`'s "Мої рецепти" actually reads — never sees an IDB-only
- * write, so a saved recipe shows once (optimistic local state) and then
- * disappears on the next cache refresh.
+ * Дзеркалить в SQLite ОДНУ зміну книги рецептів (збереження або видалення).
+ * `recipeBook.ts` пише в IndexedDB; без цього дзеркала `cache.recipes` (те, що
+ * читає «Мої рецепти») не бачить IDB-запису, і збережений рецепт зникає при
+ * наступному refresh кешу.
+ *
+ * data-09: раніше сюди передавали ВЕСЬ вміст IDB (`getAll`) як нове повне
+ * значення. IDB спільна для всіх акаунтів пристрою, тож диф проти кешу
+ * поточного користувача видавав upsert для чужих рецептів і delete для всіх
+ * серверних, яких немає в локальній IDB. Тепер база диф-а — кеш поточного
+ * користувача, а `next` відрізняється від нього рівно одним рецептом.
  */
-export function persistNutritionRecipes(
-  recipes: readonly SavedRecipe[] | null | undefined,
+function applyRecipeDelta(
+  change: (current: NutritionRecipeSnapshot[]) => NutritionRecipeSnapshot[],
 ): boolean {
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const next: NutritionDualWriteState = {
     ...prev,
-    recipes: (recipes ?? []).map(recipeSnapshot),
+    recipes: change([...prev.recipes]),
   };
   triggerNutritionDualWrite(prev, next);
   return true;
+}
+
+/** Один `recipe-upsert`: додати або оновити рецепт, решту книги не чіпати. */
+export function upsertNutritionRecipe(recipe: SavedRecipe): boolean {
+  const snapshot = recipeSnapshot(recipe);
+  return applyRecipeDelta((current) => [
+    ...current.filter((r) => r.id !== snapshot.id),
+    snapshot,
+  ]);
+}
+
+/** Один `recipe-delete`: прибрати лише рецепт з цим id. */
+export function removeNutritionRecipe(recipeId: string): boolean {
+  return applyRecipeDelta((current) =>
+    current.filter((r) => r.id !== recipeId),
+  );
 }
 
 /**
@@ -503,8 +544,9 @@ export function persistNutritionShoppingList(
 // Recipes live in IndexedDB (`recipeBook.ts`) rather than LS, but the
 // SQLite `nutrition_recipes` table is what `sqliteReader.ts` reads back
 // into `cache.recipes` — so `prev.recipes` below reflects the cache, and
-// `persistNutritionRecipes()` is how `recipeBook.ts` mirrors an IDB write
-// into SQLite so the next cache refresh actually contains it.
+// `upsertNutritionRecipe()` / `removeNutritionRecipe()` are how `recipeBook.ts`
+// mirrors a single IDB write into SQLite so the next cache refresh actually
+// contains it.
 // ─────────────────────────────────────────────
 
 function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {

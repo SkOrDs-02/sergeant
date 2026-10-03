@@ -9,7 +9,11 @@ import {
   openSergeantDb,
 } from "../../../shared/lib/idb/sergeantDb";
 import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
-import { persistNutritionRecipes } from "./nutritionStorage.js";
+import {
+  removeNutritionRecipe,
+  upsertNutritionRecipe,
+} from "./nutritionStorage.js";
+import { getNutritionDualWriteUserId } from "./sqliteWriter/index.js";
 
 /**
  * Pre-PR-#010 saved recipes lived in a dedicated `hub_nutrition_recipe_book`
@@ -36,6 +40,23 @@ export interface SavedRecipe {
   updatedAt: number;
 }
 
+/**
+ * data-09: запис книги в IndexedDB. Стор `nutrition_recipes` лежить у спільній
+ * для пристрою `sergeant-db` (не user-scoped), тож кожен запис несе `ownerId` -
+ * id користувача, що його зберіг, а читання віддає лише його власні записи.
+ * Записи без `ownerId` (до партиціювання) і записи інших акаунтів не показуємо:
+ * їхня копія для поточного користувача, якщо вона є, лежить у його
+ * SQLite-кеші (`cache.recipes`).
+ */
+interface StoredRecipe extends SavedRecipe {
+  ownerId?: string;
+}
+
+function stripOwner(r: StoredRecipe): SavedRecipe {
+  const { ownerId: _ownerId, ...recipe } = r;
+  return recipe;
+}
+
 export type SaveRecipeResult =
   { ok: true; recipe: SavedRecipe } | { ok: false; error: string };
 
@@ -54,7 +75,10 @@ const ensureMigrated = (): Promise<void> =>
       });
       const writeTx = sergeantDb.transaction(STORE, "readwrite");
       const writeStore = writeTx.objectStore(STORE);
-      for (const recipe of all) writeStore.put(recipe);
+      const ownerId = getNutritionDualWriteUserId();
+      for (const recipe of all) {
+        writeStore.put(ownerId ? { ...recipe, ownerId } : recipe);
+      }
       await txDone(writeTx);
     },
   });
@@ -129,14 +153,20 @@ export async function listSavedRecipesOrThrow(
   if (!db) throw new Error("Saved recipe storage unavailable");
   const tx = db.transaction(STORE, "readonly");
   const store = tx.objectStore(STORE);
-  const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
+  const all = await new Promise<StoredRecipe[]>((resolve, reject) => {
     const r = store.getAll();
     r.onsuccess = () =>
-      resolve(Array.isArray(r.result) ? (r.result as SavedRecipe[]) : []);
+      resolve(Array.isArray(r.result) ? (r.result as StoredRecipe[]) : []);
     r.onerror = () => reject(r.error);
   });
   await txDone(tx);
+  // Власник невідомий (auth ще резолвиться) - не показуємо нічого: спільна IDB
+  // могла б віддати чужі рецепти. Книгу користувача покаже SQLite-оверлей.
+  const owner = getNutritionDualWriteUserId();
+  if (!owner) return [];
   return all
+    .filter((r) => r.ownerId === owner)
+    .map(stripOwner)
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
     .slice(0, Math.max(1, Number(limit) || 200));
 }
@@ -150,14 +180,28 @@ export async function saveRecipeToBook(
     await ensureMigrated();
     const db = await openSergeantDb();
     if (!db) return { ok: false, error: "Не вдалося зберегти рецепт" };
+    const owner = getNutritionDualWriteUserId();
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(r);
+    tx.objectStore(STORE).put(owner ? { ...r, ownerId: owner } : r);
     await txDone(tx);
-    persistNutritionRecipes(await listSavedRecipes(200));
+    // data-09: лише дельта цієї дії, а не весь вміст спільної IDB.
+    upsertNutritionRecipe(r);
     return { ok: true, recipe: r };
   } catch {
     return { ok: false, error: "Не вдалося зберегти рецепт" };
   }
+}
+
+function readStoredRecipe(
+  db: IDBDatabase,
+  key: string,
+): Promise<StoredRecipe | undefined> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const r = tx.objectStore(STORE).get(key);
+    r.onsuccess = () => resolve(r.result as StoredRecipe | undefined);
+    r.onerror = () => reject(r.error);
+  });
 }
 
 export async function deleteSavedRecipe(id: unknown): Promise<boolean> {
@@ -167,10 +211,15 @@ export async function deleteSavedRecipe(id: unknown): Promise<boolean> {
     await ensureMigrated();
     const db = await openSergeantDb();
     if (!db) return false;
+    const owner = getNutritionDualWriteUserId();
+    const existing = await readStoredRecipe(db, key);
+    // Чужий запис спільної IDB не видаляємо й на сервер не пишемо.
+    if (existing && existing.ownerId !== owner) return false;
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).delete(key);
     await txDone(tx);
-    persistNutritionRecipes(await listSavedRecipes(200));
+    // data-09: один `recipe-delete`, а не диф усього списку з IDB.
+    removeNutritionRecipe(key);
     return true;
   } catch {
     return false;
