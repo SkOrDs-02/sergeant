@@ -155,6 +155,16 @@ Back-compat: старі токени `panel` / `panelHi` / `line` продовж
 `bg-finyk-surface`, `bg-fizruk-surface`, `bg-routine-surface`,
 `bg-nutrition-surface` (світла тінт поверхня під hero-картку модуля).
 
+> **`-surface` статичний, окрім Фізрука.** `bg-finyk-surface`,
+> `bg-routine-surface`, `bg-nutrition-surface` лишаються статичним світлим
+> hex, тож у темній темі їм потрібна ручна пара
+> `dark:bg-{m}-surface-dark/15`. `bg-fizruk-surface` з 2026-10-02 тема-залежний
+> (`--c-fizruk-surface`: світла cyan-50, темна cyan-700 @15% над панеллю
+> `#262f30`): 13 із 15 його вживань пари не мали, і вибраний чип, бейдж
+> суперсету та поточний рядок сесії в темній давали 1.05–1.74:1. Тема-залежна
+> заливка без пари — `bg-{m}-soft`; нова вибрана/поточна заливка Фізрука —
+> `bg-fizruk-surface` + контур `border-fizruk-edge`.
+
 > **`brand` vs `accent` — не плутати.** `brand` = нейтральний stone (hub
 > chrome); `accent` = teal-700 (`--c-accent`) для focus-ring/CTA-highlight, які
 > НЕ належать конкретному модулю. Це різні токени з 2026-07 — до M1 обидва

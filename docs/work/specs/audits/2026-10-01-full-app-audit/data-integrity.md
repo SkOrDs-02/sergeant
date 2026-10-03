@@ -235,7 +235,7 @@ verify/imp.mjs run vx2 (uid crL78tWN…): oplog 18786 finyk_manual_expenses|inse
 
 ### `data-02` [high] Запис, відновлений після видалення («Повернути», повторний пропуск, hide→show→hide), назавжди лишається видаленим на інших і нових пристроях
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-02-undo-delete (клієнтський generic upsert; пункт про переграш логу для застряглих пристроїв — рішення власника, не зроблено)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine (applyPullOp) + writers усіх модулів
 - **Де:** apps/web/src/core/syncEngine/applyPullOp.ts:311-366 (insertCols на :344); apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:155-165,209-219; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:358-381,573-628; apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:335-357
 - **Першопричина:** Writers кладуть в outbox insert-рядки без ключа deleted_at, сервер зберігає op.row як є і так само віддає його на pull. applyGenericRegistryRow будує ON CONFLICT DO UPDATE лише з колонок, присутніх у рядку, тож локальний tombstone не скидається; коментар AI-DANGER і регресійний тест (з явним deleted_at: null) хибно вважають це закритим.

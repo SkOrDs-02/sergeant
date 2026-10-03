@@ -467,7 +467,7 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 
 ### `VITE_CANONICAL_HOSTS` _(optional)_
 
-Кома-розділений список хостів, які вважаються «справжніми» деплоями. Default: `app.sergeant.com.ua,sergeant.2dmanager.com.ua,sergeant.vercel.app,beta-tau-gilt.vercel.app,sergeant-landing.vercel.app`.
+Кома-розділений список хостів, які вважаються «справжніми» деплоями. Default: `app.sergeant.com.ua,sergeant.vercel.app,beta-tau-gilt.vercel.app,sergeant-landing.vercel.app`.
 
 Читає `apps/web/src/core/observability/deployEnvironment.ts` — спільний резолвер `environment` для Sentry і PostHog. Усе, чого немає в списку і що не є localhost, отримує `environment: "preview"`.
 

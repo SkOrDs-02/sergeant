@@ -17,6 +17,10 @@ import { db } from "./drizzle.js";
 import pool from "./db.js";
 import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
+import {
+  hardenSessionBefore,
+  stripSessionTokenAfter,
+} from "./auth/sessionHardeningHooks.js";
 import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import {
@@ -596,11 +600,18 @@ export const auth = betterAuth({
    */
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // sec-02 / sec-05: `/update-user` лише з живою сесією в БД,
+      // `/revoke-session` за `{ id }` — див. auth/sessionHardeningHooks.ts.
+      await hardenSessionBefore(ctx);
       if (ctx.path !== "/change-password") return;
       const body = ctx.body;
       if (body && typeof body === "object" && !Array.isArray(body)) {
         (body as Record<string, unknown>)["revokeOtherSessions"] = true;
       }
+    }),
+    // sec-05: сирий session token не віддаємо в get-session / list-sessions.
+    after: createAuthMiddleware(async (ctx) => {
+      stripSessionTokenAfter(ctx);
     }),
   },
   trustedOrigins: getTrustedOrigins(),
