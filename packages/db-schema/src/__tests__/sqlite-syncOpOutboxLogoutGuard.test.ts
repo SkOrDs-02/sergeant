@@ -16,6 +16,7 @@ import {
   markOutboxRejected,
   markOutboxRetry,
 } from "../sqlite/syncOpOutboxLifecycle.js";
+import { countOutboxByStatus } from "../sqlite/syncOpOutboxStatus.js";
 import {
   countUnsyncedOutboxForUser,
   resetOutboxBackoffForUser,
@@ -146,6 +147,26 @@ describe("syncOpOutboxLogoutGuard", () => {
         countUnsyncedOutboxForUser(client, { userId: "" }),
       ).rejects.toThrow(/userId/);
     });
+
+    it("differs from countOutboxByStatus, which counts every user and every rejected reason", async () => {
+      await enqueue("k-mine");
+      await enqueue("k-theirs", "u-other");
+      const lww = await enqueue("k-lww");
+      await markOutboxRejected(client, lww, "lww_conflict");
+
+      const byStatus = await countOutboxByStatus(client);
+      // Наївний підсумок зі статусів: чужий рядок і штатний lww_conflict
+      // потрапляють у «незасинхронізоване».
+      expect(byStatus.pending + byStatus.dead_letter + byStatus.rejected).toBe(
+        3,
+      );
+      await expect(
+        countUnsyncedOutboxForUser(client, {
+          userId: "u-me",
+          excludeRejectReasons: ["lww_conflict"],
+        }),
+      ).resolves.toBe(1);
+    });
   });
 
   describe("resetOutboxBackoffForUser", () => {
@@ -171,6 +192,12 @@ describe("syncOpOutboxLogoutGuard", () => {
           .get(id) as { n: string | null; a: number; s: string };
       expect(row(mine)).toEqual({ n: null, a: 3, s: "pending" });
       expect(row(theirs).n).toBe("2999-01-01T00:00:00.000Z");
+    });
+
+    it("rejects an empty userId", async () => {
+      await expect(resetOutboxBackoffForUser(client, "")).rejects.toThrow(
+        /userId/,
+      );
     });
 
     it("does not touch terminal rows", async () => {
