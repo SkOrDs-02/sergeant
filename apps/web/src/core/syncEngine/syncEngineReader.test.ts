@@ -593,6 +593,74 @@ describe("createSyncEngineReaderRuntime — початковий pull завер
     expect(hasCompletedInitialPull()).toBe(false);
   });
 
+  it("невдалий тік, потім тік без своїх опів: refresh охоплює застосоване раніше, лише тоді прапор", async () => {
+    // Тік 1: сторінка 1 з nutrition_prefs застосована, сторінка 2 падає.
+    // Тік 2 продовжує і не має жодного nutrition-опа, але кеш Їжі досі не
+    // бачив prefs — прапор не можна ставити, поки refresh їх не охопить.
+    const refreshedTables: string[][] = [];
+    const flagAtRefresh: boolean[] = [];
+    refreshCachesAfterPullMock.mockImplementation(
+      async (_c: unknown, _u: unknown, tables: Set<string>) => {
+        refreshedTables.push([...tables]);
+        flagAtRefresh.push(hasCompletedInitialPull());
+      },
+    );
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ops: [{ id: 1, table: "nutrition_prefs", op: "insert", row: {} }],
+        next_cursor: 1,
+      })
+      .mockRejectedValueOnce(new Error("502"))
+      .mockResolvedValueOnce({
+        ops: [{ id: 2, table: "routine_entries", op: "insert", row: {} }],
+        next_cursor: null,
+      });
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => sharedClient }),
+    );
+
+    await expect(runtime.pullOnce()).rejects.toThrow("502");
+    expect(hasCompletedInitialPull()).toBe(false);
+    expect(refreshedTables).toEqual([]);
+
+    await runtime.pullOnce();
+    expect(refreshedTables).toHaveLength(1);
+    expect(refreshedTables[0]).toEqual(
+      expect.arrayContaining(["nutrition_prefs", "routine_entries"]),
+    );
+    expect(flagAtRefresh).toEqual([false]);
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+    refreshCachesAfterPullMock.mockReset();
+    refreshCachesAfterPullMock.mockResolvedValue(undefined);
+  });
+
+  it("невдалий refresh не губить таблиці: наступний тік без опів повторює його", async () => {
+    refreshCachesAfterPullMock
+      .mockRejectedValueOnce(new Error("refresh failed"))
+      .mockResolvedValue(undefined);
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ops: [{ id: 1, table: "nutrition_prefs", op: "insert", row: {} }],
+        next_cursor: null,
+      })
+      .mockResolvedValueOnce({ ops: [], next_cursor: null });
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => sharedClient }),
+    );
+
+    await expect(runtime.pullOnce()).rejects.toThrow("refresh failed");
+    expect(hasCompletedInitialPull()).toBe(false);
+
+    await runtime.pullOnce();
+    expect(refreshCachesAfterPullMock).toHaveBeenCalledTimes(2);
+    expect(refreshCachesAfterPullMock.mock.calls[1]?.[2]).toEqual(
+      new Set(["nutrition_prefs"]),
+    );
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+  });
+
   it("прив'язаний до користувача: чужий id не рахується", async () => {
     const runtime = createSyncEngineReaderRuntime(
       makeDeps({ resolveClient: async () => sharedClient }),

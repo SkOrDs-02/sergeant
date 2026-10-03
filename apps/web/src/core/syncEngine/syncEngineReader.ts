@@ -178,6 +178,23 @@ export function createSyncEngineReaderRuntime(
   let inflight: Promise<SyncEnginePullResult> | null = null;
   let started = false;
 
+  /**
+   * Таблиці, опи яких уже застосовано в SQLite, але кеші ще їх не бачили.
+   *
+   * AI-CONTEXT (data-04): множина живе МІЖ тіками. Тік, що впав на 3-й
+   * сторінці, уже записав сторінки 1-2 у SQLite і зберіг курсор, але до
+   * `refreshCachesAfterPull` не дійшов. Наступний тік продовжує з курсора і
+   * бачить лише власні опи; будь-яка локальна множина тіка «забула б» ті
+   * таблиці, кеш Їжі лишився б холодним, а `markInitialPullComplete` усе
+   * одно спрацював би, і prefs-гейт відкрився б на дефолтах. Чиститься лише
+   * ПІСЛЯ успішного refresh; прив'язана до (userId, client) як і сам прапор.
+   */
+  let pendingRefresh: {
+    userId: string;
+    client: SqliteMigrationClient;
+    tables: Set<string>;
+  } | null = null;
+
   const pullOnce = async (): Promise<SyncEnginePullResult> => {
     if (inflight) return inflight;
 
@@ -205,7 +222,14 @@ export function createSyncEngineReaderRuntime(
       let skipped = 0;
       let rejected = 0;
       let maxOpId = since;
-      const affectedTables = new Set<string>();
+      if (
+        pendingRefresh === null ||
+        pendingRefresh.userId !== userId ||
+        pendingRefresh.client !== client
+      ) {
+        pendingRefresh = { userId, client, tables: new Set<string>() };
+      }
+      const affectedTables = pendingRefresh.tables;
 
       let rateLimitWaits = 0;
 
@@ -254,8 +278,11 @@ export function createSyncEngineReaderRuntime(
         since = page.next_cursor;
       }
 
-      if (applied > 0) {
-        await refreshCachesAfterPull(client, userId, affectedTables);
+      // Не `applied > 0`: у множині можуть лежати таблиці з попереднього
+      // невдалого тіка (див. `pendingRefresh`).
+      if (affectedTables.size > 0) {
+        await refreshCachesAfterPull(client, userId, new Set(affectedTables));
+        affectedTables.clear();
       }
 
       // Сюди доходимо лише через `break` на `next_cursor === null` (будь-яка
@@ -318,6 +345,7 @@ export function createSyncEngineReaderRuntime(
     stop() {
       if (!started) return;
       started = false;
+      pendingRefresh = null;
       resetInitialPull();
       if (intervalHandle !== null) {
         deps.clearInterval(intervalHandle);
