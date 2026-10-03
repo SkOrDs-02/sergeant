@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-09-19",
+  "generated_at": "2026-10-03",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -19,11 +19,11 @@
       "frameworkDeps": [
         {
           "name": "@playwright/test",
-          "version": "^1.61.1"
+          "version": "^1.63.0"
         },
         {
           "name": "playwright",
-          "version": "^1.61.1"
+          "version": "^1.63.0"
         },
         {
           "name": "react",
@@ -198,7 +198,7 @@
       "frameworkDeps": [
         {
           "name": "@playwright/test",
-          "version": "^1.61.1"
+          "version": "^1.63.0"
         },
         {
           "name": "@sentry/react",
