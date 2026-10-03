@@ -63,6 +63,11 @@ export {
   type RecoverDeadLetterTarget,
 } from "./syncOpOutboxRecover.js";
 export {
+  countUnsyncedOutboxForUser,
+  resetOutboxBackoffForUser,
+  type CountUnsyncedOutboxOptions,
+} from "./syncOpOutboxLogoutGuard.js";
+export {
   repairPartialOutboxMigration,
   type RepairOutboxResult,
   type RepairPartialOutboxMigrationOptions,

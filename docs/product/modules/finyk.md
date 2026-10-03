@@ -947,7 +947,7 @@ data-07).** Імпорт ішов через dual-write, а той шле на �
 pull перебило б новіші рядки сервера старими з файлу, а «замінити» не бачило б,
 що видаляти. Офлайн-пристрій без жодного pull імпортувати не може (потрібен
 інтернет), текст кнопки й помилки це каже. Код: `core/hub/hubBackup.ts`, `HubBackupPanel.tsx`,
-`hubBackupReadiness.ts`, `syncEngine/pullCompletion.ts`,
+`hubBackupReadiness.ts`, `syncEngine/initialPullState.ts`,
 `shared/lib/backup/restoreMode.ts`,
 `modules/finyk/lib/finykBackup.ts`.
 

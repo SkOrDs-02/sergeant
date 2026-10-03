@@ -17,11 +17,11 @@ import {
   addLogEntry,
   normalizeNutritionLog,
   removeLogEntry,
+  todayISODate,
   updateLogEntry,
   type Meal,
   type NutritionLog,
 } from "@sergeant/nutrition-domain";
-import { toLocalISODate } from "@sergeant/shared";
 
 import { loadNutritionLog, saveNutritionLog } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -42,8 +42,9 @@ export function useNutritionLog(): UseNutritionLogResult {
   const [nutritionLog, setNutritionLog] = useState<NutritionLog>(() =>
     loadNutritionLog(),
   );
+  // ADR-0078: день-ключ логу їжі — за годинником пристрою, не Europe/Kyiv.
   const [selectedDate, setSelectedDate] = useState<string>(() =>
-    toLocalISODate(new Date()),
+    todayISODate(),
   );
 
   // Тримаємо в ref найсвіжіший стан, щоб обробник підписки MMKV

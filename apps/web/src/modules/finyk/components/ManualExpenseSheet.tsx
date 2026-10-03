@@ -21,7 +21,7 @@
 import { useState, useId, useMemo, useEffect, useRef } from "react";
 import { useApiForm } from "@shared/forms";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import {
   classifyDateBound,
@@ -226,7 +226,7 @@ export function ManualExpenseSheet({
         description: "",
         amount: "",
         category: DEFAULT_CATEGORY,
-        date: toLocalISODate(),
+        date: toKyivISODate(),
       },
       onSubmit: async (values) => {
         const trimmedDesc = values.description.trim();
@@ -265,9 +265,9 @@ export function ManualExpenseSheet({
           // виправлення суми переставляло б час запису на час правки.
           date:
             initialExpense?.date &&
-            toLocalISODate(initialExpense.date) === values.date
+            toKyivISODate(initialExpense.date) === values.date
               ? initialExpense.date
-              : toExpenseInstant(values.date || toLocalISODate()),
+              : toExpenseInstant(values.date || toKyivISODate()),
           kind,
         });
 
@@ -371,7 +371,7 @@ export function ManualExpenseSheet({
         description: "",
         amount: "",
         category: DEFAULT_CATEGORY,
-        date: toLocalISODate(),
+        date: toKyivISODate(),
       });
       void Promise.resolve().then(() => {
         setPrevOpenInitKey("");
@@ -400,8 +400,8 @@ export function ManualExpenseSheet({
                   customIds,
                 ),
           date: initialExpense.date
-            ? toLocalISODate(initialExpense.date)
-            : toLocalISODate(),
+            ? toKyivISODate(initialExpense.date)
+            : toKyivISODate(),
         });
       } else {
         setKind("expense");
@@ -432,7 +432,7 @@ export function ManualExpenseSheet({
             typeof initialDescription === "string" ? initialDescription : "",
           amount: initialAmount != null ? String(initialAmount) : "",
           category: startCategory,
-          date: initialDate || toLocalISODate(),
+          date: initialDate || toKyivISODate(),
         });
       }
       setDescFocused(false);

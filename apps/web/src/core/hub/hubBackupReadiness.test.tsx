@@ -39,10 +39,10 @@ import {
 import { switchSqliteUser } from "../db/sqlite";
 import { createSyncEngineReaderRuntime } from "../syncEngine/syncEngineReader";
 import {
-  hasCompletedPull,
-  markPullCompleted,
-  resetPullCompletion,
-} from "../syncEngine/pullCompletion";
+  __resetInitialPullStateForTests,
+  hasCompletedInitialPull,
+  markInitialPullComplete,
+} from "../syncEngine/initialPullState";
 import {
   getHubRestoreBlock,
   getHubRestoreModuleBlock,
@@ -172,13 +172,13 @@ describe("перший pull з акаунта (data-07: новий пристр�
   // Активна партиція SQLite визначає, чи є користувач синхронізованим: це той
   // самий `readActiveSqliteUserId`, що й у проді (`AuthContext` -> `setSqliteUser`).
   afterEach(async () => {
-    resetPullCompletion();
+    __resetInitialPullStateForTests();
     await switchSqliteUser(null);
   });
 
   it("залогінений, кеші теплі, pull ще не було: імпорт заблокований як `sync`", async () => {
     await switchSqliteUser("u1");
-    expect(hasCompletedPull("u1")).toBe(false);
+    expect(hasCompletedInitialPull("u1")).toBe(false);
     expect(isHubRestoreReady()).toBe(false);
     expect(getHubRestoreBlock()).toBe("sync");
     for (const m of MODULES) {
@@ -189,20 +189,20 @@ describe("перший pull з акаунта (data-07: новий пристр�
 
   it("після повного pull імпорт відкривається", async () => {
     await switchSqliteUser("u1");
-    markPullCompleted("u1");
+    markInitialPullComplete("u1", {});
     expect(getHubRestoreBlock()).toBeNull();
     expect(isHubRestoreReady()).toBe(true);
   });
 
   it("pull чужого користувача не рахується", async () => {
     await switchSqliteUser("u1");
-    markPullCompleted("u2");
+    markInitialPullComplete("u2", {});
     expect(getHubRestoreBlock()).toBe("sync");
   });
 
   it("холодний кеш лишається `loading`, навіть якщо pull був", async () => {
     await switchSqliteUser("u1");
-    markPullCompleted("u1");
+    markInitialPullComplete("u1", {});
     cool("finyk");
     expect(getHubRestoreBlock()).toBe("loading");
     expect(getHubRestoreModuleBlock("finyk")).toBe("loading");
@@ -260,7 +260,7 @@ describe("перший pull з акаунта (data-07: новий пристр�
     });
     expect(result.current).toBe("sync");
 
-    markPullCompleted("u1");
+    markInitialPullComplete("u1", {});
     act(() => {
       vi.advanceTimersByTime(600);
     });

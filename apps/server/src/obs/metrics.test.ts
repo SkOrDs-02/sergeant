@@ -164,7 +164,10 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // Міграція 146: +10 `invalid_*` на решту полів веб-форми заміру тіла
     // (жир, шия, передпліччя, стегно, литка, ліва/права сторони біцепса) —
     // колонок під них не було, тож уведене користувачем зникало.
-    expect(APPLY_REJECT_REASONS.length).toBe(75);
+    // Аудит 2026-10-01 (rel-01): +3 (`invalid_recurrence`,
+    // `invalid_start_date`, `invalid_end_date`) — розклад звички в
+    // `applyRoutineHabits`.
+    expect(APPLY_REJECT_REASONS.length).toBe(78);
     expect(ENGINE_REJECT_REASONS.length).toBe(6);
 
     // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,

@@ -107,6 +107,16 @@ describe("maskUserText", () => {
     expect(masked).toContain("[phone]");
   });
 
+  it("друга адреса в ланцюжку через `.`/`-`/`+` не йде до LLM у клірі", () => {
+    for (const text of [
+      "a@x.com.b@y.org",
+      "ivan@gmail.com-olya@gmail.com",
+      "ivan@example.com.ua+promo@x.com",
+    ]) {
+      expect(maskUserText(text)).not.toContain("@");
+    }
+  });
+
   it("НЕ вирізає імена — це клас В, відкладений власником", () => {
     // Головний асерт файлу і навмисно зворотний до інтуїції «маскуй
     // більше». Текст користувача під клас Б не потрапляє: вирізане імʼя
@@ -124,6 +134,11 @@ describe("maskMachineText", () => {
       ["Іван Петренко"],
     );
     expect(masked).toBe(`Від: ${PERSON_PLACEHOLDER}, [email], 500 грн`);
+  });
+
+  it("ланцюжок адрес у склеєному контексті маскується цілком", () => {
+    const masked = maskMachineText("Контакти: a@x.com.b@y.org, ok", []);
+    expect(masked).toBe("Контакти: [email][email], ok");
   });
 
   it("суми, категорії й назви крамниць лишаються недоторканими", () => {

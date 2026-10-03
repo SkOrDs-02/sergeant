@@ -62,6 +62,16 @@ export async function subscribeToWebPush(
 }
 
 /**
+ * Повертає поточний `PushSubscription` цього браузера (або `null`), нічого
+ * не змінюючи. Для `logout()`: спершу треба знати `endpoint`, щоб зняти
+ * серверний рядок, поки сесія ще жива, і лише потім `unsubscribe()`.
+ */
+export async function getCurrentWebPushSubscription(): Promise<PushSubscription | null> {
+  const reg = await navigator.serviceWorker.ready;
+  return reg.pushManager.getSubscription();
+}
+
+/**
  * Шукає активний `PushSubscription` у `pushManager` і, якщо знайдено,
  * викликає `unsubscribe()`. Повертає `endpoint` розписаної підписки
  * (або `null`), щоб хук міг послати серверний `api.push.unregister` з

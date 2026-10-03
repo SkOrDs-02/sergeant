@@ -1,8 +1,5 @@
 import { ls, lsSet } from "../../hubChatUtils";
-import {
-  loadNutritionPrefs,
-  persistNutritionPrefs,
-} from "@nutrition/lib/nutritionStorage";
+import { patchNutritionPrefs } from "@nutrition/lib/nutritionStorage";
 import type { ConvertUnitsAction, SetGoalAction } from "../types";
 import { formatNumberUk } from "@sergeant/shared";
 
@@ -52,7 +49,13 @@ export function setGoal(action: SetGoalAction): string {
       // Persist the kcal target through the canonical nutrition store
       // (dual-writes to SQLite). The legacy `nutrition_prefs_v1` LS key is
       // tombstoned — writing it raw never reached the module UI.
-      persistNutritionPrefs({ ...loadNutritionPrefs(), dailyTargetKcal: dk });
+      // Лише поле цілі, поверх актуального кешу, і не до гідратації (data-04):
+      // інакше застарілий/дефолтний blob стер би шаблони страв і нагадування.
+      if (!patchNutritionPrefs({ dailyTargetKcal: dk })) {
+        parts.push(
+          "ціль ккал у Їжі не збережено: дані Їжі ще завантажуються, спробуй за кілька секунд",
+        );
+      }
     }
   }
   if (workouts_per_week != null) {

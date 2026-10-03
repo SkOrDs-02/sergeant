@@ -271,7 +271,7 @@ export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
  * Зсув `YYYY-MM-DD` на `deltaDays` за годинником ПРИСТРОЮ (ADR-0078).
  *
  * unification-modules.md #1.17: раніше форматував результат через
- * `toLocalISODate` (Europe/Kyiv), тож для пристроїв східніше Києва
+ * `toKyivISODate` (Europe/Kyiv), тож для пристроїв східніше Києва
  * `addDaysISODate(key, -1)` міг повернути позавчора замість учора.
  * `addDeviceDays` — той самий пристроєвий годинник, що вже дає день-ключ
  * журналу, тож пара «день-ключ + зсув» більше не змішує два годинники.

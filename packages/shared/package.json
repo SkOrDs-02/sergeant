@@ -27,7 +27,7 @@
   "dependencies": {
     "@sergeant/design-tokens": "workspace:*",
     "zod": "^4.3.6",
-    "zod-openapi": "^5.4.6"
+    "zod-openapi": "^6.0.2"
   },
   "devDependencies": {
     "@sergeant/config": "workspace:*",
@@ -38,6 +38,6 @@
     "cross-env": "^10.1.0",
     "fast-check": "^3.23.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }

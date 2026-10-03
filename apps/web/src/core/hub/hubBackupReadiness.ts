@@ -16,14 +16,15 @@
  * вважає «відсутнім» кожен рядок файлу, і «додати» перебиває новіші рядки
  * сервера старими версіями з файлу на всіх пристроях, а «замінити» не бачить,
  * що видаляти. Тому для синхронізованого користувача потрібен ще й сигнал
- * «повний pull уже був» (`syncEngine/pullCompletion.ts`). Анонімам (`local-anon`)
+ * «повний pull уже був» (`syncEngine/initialPullState.ts`, той самий прапор,
+ * що й у гейта prefs Їжі, data-04). Анонімам (`local-anon`)
  * pull не потрібен.
  *
  * Контексти й кеші живуть у памʼяті модулів без підписки, тому готовність
  * читається опитуванням (див. `useHubRestoreReady`).
  */
 import { readActiveSqliteUserId } from "../db/sqlite";
-import { hasCompletedPull } from "../syncEngine/pullCompletion";
+import { hasCompletedInitialPull } from "../syncEngine/initialPullState";
 import { isSyncableUserId } from "../syncEngine/syncableUserId";
 import { getCachedFinykSqliteState } from "../../modules/finyk/lib/sqliteReader";
 import { isFinykDualWriteRegistered } from "../../modules/finyk/lib/sqliteWriter/index";
@@ -53,7 +54,7 @@ export type HubRestoreBlock = "loading" | "sync" | null;
 export function isHubRestoreSynced(): boolean {
   const userId = readActiveSqliteUserId();
   if (!userId || !isSyncableUserId(userId)) return true;
-  return hasCompletedPull(userId);
+  return hasCompletedInitialPull(userId);
 }
 
 function isModuleLocallyReady(module: HubRestoreModule): boolean {

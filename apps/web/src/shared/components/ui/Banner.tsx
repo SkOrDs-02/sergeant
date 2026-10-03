@@ -17,7 +17,7 @@ export type BannerVariant = StatusColor;
 // `text-{status}-strong dark:text-{palette}-100` pair (the fixed `-strong`
 // hex went sub-AA once HC bumped the `-soft` surface a step darker).
 const variants: Record<BannerVariant, string> = {
-  info: "border-line bg-panelHi/60 text-text",
+  info: "border-line bg-panelHi text-text",
   success: "border-success/30 bg-success-soft text-success-soft-fg",
   warning: "border-warning/30 bg-warning-soft text-warning-soft-fg",
   danger: "border-danger/30 bg-danger-soft text-danger-soft-fg",
