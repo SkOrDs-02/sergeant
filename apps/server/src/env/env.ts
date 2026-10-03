@@ -13,6 +13,7 @@ import {
   floatFromEnv,
   intFromEnv,
   founderIdsFromEnv,
+  optionalStrictBoolFromEnv,
   optionalUrl,
   strictBoolFromEnv,
   stringWithDefault,
@@ -96,10 +97,7 @@ const envSchema = z.object({
    * приймає `auth.ts` за `NODE_ENV`. `bearer()` від цього прапорця не залежить
    * (його використовує Capacitor-shell). Реєстр: feature-flags.md § 3.2.
    */
-  AUTH_EXPO_PLUGIN_ENABLED: z
-    .enum(["true", "false", "1", "0", ""])
-    .default("")
-    .transform((v) => (v === "" ? undefined : v === "true" || v === "1")),
+  AUTH_EXPO_PLUGIN_ENABLED: optionalStrictBoolFromEnv(),
 
   ALLOWED_ORIGINS: z.string().optional(),
 

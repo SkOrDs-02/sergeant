@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { founderIdsFromEnv, strictBoolFromEnv } from "./envHelpers.js";
+import {
+  founderIdsFromEnv,
+  optionalStrictBoolFromEnv,
+  strictBoolFromEnv,
+} from "./envHelpers.js";
 
 describe("strictBoolFromEnv (B15)", () => {
   const schema = z.object({ F: strictBoolFromEnv("F", false) });
@@ -81,5 +85,26 @@ describe("env.ts — startup fail-loud", () => {
     vi.resetModules();
     const { env } = await import("./env.js");
     expect(env.ANTHROPIC_BUDGET_HARD_DEGRADE_ALL).toBe(true);
+  });
+});
+
+describe("optionalStrictBoolFromEnv (sec-08)", () => {
+  const schema = z.object({ FLAG: optionalStrictBoolFromEnv() });
+
+  it("не задано або порожньо → undefined (рішення за викликачем)", () => {
+    expect(schema.parse({}).FLAG).toBeUndefined();
+    expect(schema.parse({ FLAG: "" }).FLAG).toBeUndefined();
+  });
+
+  it("true/1 → true, false/0 → false", () => {
+    expect(schema.parse({ FLAG: "true" }).FLAG).toBe(true);
+    expect(schema.parse({ FLAG: "1" }).FLAG).toBe(true);
+    expect(schema.parse({ FLAG: "false" }).FLAG).toBe(false);
+    expect(schema.parse({ FLAG: "0" }).FLAG).toBe(false);
+  });
+
+  it("будь-яке інше значення валить парсинг, а не вмикає прапорець", () => {
+    expect(() => schema.parse({ FLAG: "yes" })).toThrow();
+    expect(() => schema.parse({ FLAG: "TRUE" })).toThrow();
   });
 });

@@ -141,3 +141,15 @@ export const optionalUrl = () =>
       },
       { message: "Invalid URL" },
     );
+
+/**
+ * Тристанний прапорець без дефолту: порожнє чи не задане значення дає
+ * `undefined` (рішення лишається за викликачем, напр. за `NODE_ENV`),
+ * `true`/`1` дає `true`, `false`/`0` дає `false`. Будь-яке інше значення
+ * валить парсинг env на старті, а не вмикає прапорець тихо (sec-08).
+ */
+export const optionalStrictBoolFromEnv = () =>
+  z
+    .enum(["true", "false", "1", "0", ""])
+    .default("")
+    .transform((v) => (v === "" ? undefined : v === "true" || v === "1"));
