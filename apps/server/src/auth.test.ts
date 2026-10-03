@@ -157,8 +157,27 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
         prodAuth as unknown as { options: { trustedOrigins?: string[] } }
       ).options;
       const origins = options.trustedOrigins ?? [];
-      expect(origins).toContain("sergeant://");
+      // sec-08: у проді `sergeant://` теж НЕ довіряємо за замовчуванням
+      // (RN-контур на паузі, ADR-0094) — явне ввімкнення лише через
+      // BETTER_AUTH_TRUSTED_NATIVE_SCHEMES.
+      expect(origins).not.toContain("sergeant://");
       expect(origins).not.toContain("exp://");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("sec-08: у production BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant:// явно вмикає схему", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("BETTER_AUTH_TRUSTED_NATIVE_SCHEMES", "sergeant://");
+    try {
+      const { auth: prodAuth } = await import("./auth.js");
+      const options = (
+        prodAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      expect(options.trustedOrigins ?? []).toContain("sergeant://");
     } finally {
       vi.unstubAllEnvs();
       vi.resetModules();
@@ -768,5 +787,155 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     expect(options.session?.expiresIn).toBe(60 * 60 * 24 * 7);
     // Rolling refresh — 1 доба. Активний юзер ніколи не бачить logout.
     expect(options.session?.updateAge).toBe(60 * 60 * 24);
+  });
+});
+
+/**
+ * sec-08 (аудит 2026-10-01): нативний auth-контур не має працювати в проді
+ * при паузі мобільного (ADR-0094). Два вектори:
+ *  - `expo()` плагін додає анонімний `GET /api/auth/expo-authorization-proxy`:
+ *    open redirect + підписана `state`-кука зі значенням з query (login CSRF);
+ *  - довірена схема `sergeant://` приймається як `redirectTo` скидання пароля.
+ * `bearer()` не чіпаємо: його використовує Capacitor-shell (mobile-shell).
+ */
+describe("auth config — sec-08: нативний контур вимкнений у production", () => {
+  const PROXY_URL =
+    "http://localhost:3000/api/auth/expo-authorization-proxy" +
+    "?authorizationURL=" +
+    encodeURIComponent("https://evil.example/phish?state=ATTACKER_STATE_123");
+
+  type AuthLike = {
+    handler: (req: Request) => Promise<Response>;
+    options: { plugins?: unknown[] };
+  };
+
+  const pluginIds = (a: AuthLike) =>
+    (a.options.plugins ?? [])
+      .map((p) => (p as { id?: unknown }).id)
+      .filter((id): id is string => typeof id === "string");
+
+  const loadAuth = async (env: Record<string, string>): Promise<AuthLike> => {
+    vi.resetModules();
+    for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
+    const mod = await import("./auth.js");
+    return mod.auth as unknown as AuthLike;
+  };
+
+  const cleanup = () => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  };
+
+  it("production без прапорця: expo() не підключений, bearer() лишається", async () => {
+    try {
+      const prodAuth = await loadAuth({ NODE_ENV: "production" });
+      expect(pluginIds(prodAuth)).not.toContain("expo");
+      expect(pluginIds(prodAuth)).toContain("bearer");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("production: GET /expo-authorization-proxy -> 404, без Location і Set-Cookie", async () => {
+    try {
+      const prodAuth = await loadAuth({ NODE_ENV: "production" });
+      const res = await prodAuth.handler(new Request(PROXY_URL));
+      expect(res.status).toBe(404);
+      expect(res.headers.get("location")).toBeNull();
+      expect(res.headers.get("set-cookie")).toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("production: явне AUTH_EXPO_PLUGIN_ENABLED=false теж дає 404", async () => {
+    try {
+      const prodAuth = await loadAuth({
+        NODE_ENV: "production",
+        AUTH_EXPO_PLUGIN_ENABLED: "false",
+      });
+      const res = await prodAuth.handler(new Request(PROXY_URL));
+      expect(res.status).toBe(404);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("production + AUTH_EXPO_PLUGIN_ENABLED=true: плагін підключається (явне ввімкнення працює)", async () => {
+    try {
+      const prodAuth = await loadAuth({
+        NODE_ENV: "production",
+        AUTH_EXPO_PLUGIN_ENABLED: "true",
+      });
+      expect(pluginIds(prodAuth)).toContain("expo");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("development без прапорця: expo() увімкнений, apps/mobile працює локально", async () => {
+    try {
+      const devAuth = await loadAuth({ NODE_ENV: "development" });
+      expect(pluginIds(devAuth)).toContain("expo");
+      expect(pluginIds(devAuth)).toContain("bearer");
+    } finally {
+      cleanup();
+    }
+  });
+
+  /**
+   * Саме цю перевірку виконує `originCheck` для `redirectTo` скидання пароля
+   * й OAuth `callbackURL`. Через `auth.handler` її не проганяємо: під vitest
+   * Better Auth вмикає `skipOriginCheck` (`isTest()` читає NODE_ENV при
+   * завантаженні модуля), тож HTTP-тест тут дав би хибний «пропустив».
+   */
+  it("production: redirectTo=sergeant://reset-password НЕ довірений, https-origin з ALLOWED_ORIGINS довірений", async () => {
+    try {
+      const prodAuth = (await loadAuth({
+        NODE_ENV: "production",
+        ALLOWED_ORIGINS: "https://app.example.com",
+      })) as unknown as {
+        $context: Promise<{
+          isTrustedOrigin: (
+            url: string,
+            opts?: { allowRelativePaths?: boolean },
+          ) => boolean;
+        }>;
+      };
+      const ctx = await prodAuth.$context;
+      const opts = { allowRelativePaths: true };
+      expect(ctx.isTrustedOrigin("sergeant://reset-password", opts)).toBe(
+        false,
+      );
+      expect(ctx.isTrustedOrigin("exp://reset-password", opts)).toBe(false);
+      expect(
+        ctx.isTrustedOrigin("https://app.example.com/reset-password", opts),
+      ).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("development: sergeant:// лишається довіреним (apps/mobile локально)", async () => {
+    try {
+      const devAuth = (await loadAuth({
+        NODE_ENV: "development",
+      })) as unknown as {
+        $context: Promise<{
+          isTrustedOrigin: (
+            url: string,
+            opts?: { allowRelativePaths?: boolean },
+          ) => boolean;
+        }>;
+      };
+      const ctx = await devAuth.$context;
+      expect(
+        ctx.isTrustedOrigin("sergeant://reset-password", {
+          allowRelativePaths: true,
+        }),
+      ).toBe(true);
+    } finally {
+      cleanup();
+    }
   });
 });

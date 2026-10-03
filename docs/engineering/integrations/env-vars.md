@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-09-17 by @claude (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -44,12 +44,21 @@
 
 ### `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES` _(optional)_
 
-Список нативних deep-link схем, яким Better Auth довіряє для OAuth callback / cross-origin sign-in. Доповнює `localhost:*` у `getTrustedOrigins()`.
+Список нативних deep-link схем, яким Better Auth довіряє для OAuth callback / `redirectTo` скидання пароля / cross-origin sign-in. Доповнює `localhost:*` у `getTrustedOrigins()`.
 
-- **Без змінної у production**: тільки `sergeant://` (схема опублікованої RN-аппки, [`apps/mobile/app.config.ts`](../../../apps/mobile/app.config.ts)).
-- **Без змінної у dev**: ще додається `exp://` (Expo Go).
+- **Без змінної у production**: **порожньо** — жодна нативна схема не довіряється (sec-08, аудит 2026-10-01). Мобільний RN-контур на паузі ([ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md)), а custom scheme може заявити будь-який застосунок на пристрої і забрати токен скидання пароля з `redirectTo=sergeant://…`. Веб і Capacitor-shell ходять `https`-origin-ами (`ALLOWED_ORIGINS`), `sergeant://` їм не потрібен (схема shell — `com.sergeant.shell://`, у Better Auth не передається).
+- **Без змінної у dev/test**: `sergeant://` і `exp://` (Expo Go), щоб `apps/mobile` працював локально.
 - **`exp://` НЕ bound до конкретної аппки** — будь-який Expo Go застосунок на пристрої може її claim-ити, тому у production воно заборонене (закриває [hardening-карту H5](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/H5-trusted-origins-exp-scheme.md)).
-- Якщо змінну задати — вона **повністю** замінює дефолти (немає merge-режиму). Приклад: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant-staging://`.
+- Якщо змінну задати — вона **повністю** замінює дефолти (немає merge-режиму). Щоб свідомо повернути схему RN-аппки у проді: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant://`. Приклад staging: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant-staging://`.
+
+### `AUTH_EXPO_PLUGIN_ENABLED` _(optional)_
+
+`true` / `1` або `false` / `0`. Вмикає Better Auth `expo()` плагін (`@better-auth/expo`): анонімний `GET /api/auth/expo-authorization-proxy` і підміну `Origin` з заголовка `expo-origin` для `apps/mobile`.
+
+- **Без змінної у production**: плагін **вимкнено**, `/api/auth/expo-authorization-proxy` відповідає `404` (sec-08, аудит 2026-10-01: ендпоінт був open redirect з підписаною `state`-кукою, тобто давав OAuth login CSRF). Мобільний RN-контур на паузі, [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md).
+- **Без змінної у dev/test**: плагін увімкнено, щоб `apps/mobile` працював локально.
+- **`bearer()` не залежить від змінної**: його використовує Capacitor-shell (`apps/mobile-shell`, заголовок `set-auth-token`).
+- Умова зняття і реєстр: [`feature-flags.md` § 3.2](../architecture/feature-flags.md).
 
 ### `RESEND_API_KEY`, `RESEND_FROM` _(key required in production)_
 

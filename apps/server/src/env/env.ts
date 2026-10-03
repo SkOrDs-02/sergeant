@@ -87,6 +87,20 @@ const envSchema = z.object({
     .default("false")
     .transform((v) => v === "true" || v === "1"),
 
+  /**
+   * sec-08 (аудит 2026-10-01): вмикає Better Auth `expo()` плагін
+   * (анонімний `GET /api/auth/expo-authorization-proxy` + origin-override з
+   * `expo-origin`). Мобільний RN-контур на паузі (ADR-0094), тож у production
+   * без явного значення плагін ВИМКНЕНО; у dev/test без значення — увімкнено,
+   * щоб `apps/mobile` працював локально. `undefined` = «не задано», рішення
+   * приймає `auth.ts` за `NODE_ENV`. `bearer()` від цього прапорця не залежить
+   * (його використовує Capacitor-shell). Реєстр: feature-flags.md § 3.2.
+   */
+  AUTH_EXPO_PLUGIN_ENABLED: z
+    .enum(["true", "false", "1", "0", ""])
+    .default("")
+    .transform((v) => (v === "" ? undefined : v === "true" || v === "1")),
+
   ALLOWED_ORIGINS: z.string().optional(),
 
   ALLOWED_ORIGIN_REGEX: z.string().optional(),
