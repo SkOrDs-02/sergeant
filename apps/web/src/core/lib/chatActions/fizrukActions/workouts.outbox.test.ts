@@ -24,6 +24,7 @@ import {
   __setFizrukSqliteCacheForTests,
   clearFizrukSqliteCache,
 } from "../../../../modules/fizruk/lib/sqliteReader";
+import { __resetPendingChatExercisesForTests } from "./exerciseResolve";
 import { copyWorkout, logSet, planWorkout } from "./workouts";
 
 const enqueueMock = enqueueOutboxUpsert as unknown as ReturnType<typeof vi.fn>;
@@ -37,6 +38,7 @@ let handle: TestSqliteHandle;
 beforeEach(async () => {
   handle = await createTestSqlite();
   enqueueMock.mockClear();
+  __resetPendingChatExercisesForTests();
   clearFizrukSqliteCache();
   // Прогрітий порожній кеш: `readFizrukWorkouts()` → [], custom → [].
   __setFizrukSqliteCacheForTests({});
@@ -111,6 +113,45 @@ describe("чат log_set → outbox (data-11)", () => {
     const itemExerciseId = ops[itemIdx]!.row["exercise_id"];
     expect(itemExerciseId).toMatch(/^custom_/);
     expect(ops[customIdx]!.row["id"]).toBe(itemExerciseId);
+  });
+
+  it("два log_set одного ходу з різними кириличними назвами → різні custom-id, назви не змішуються", async () => {
+    // Усі tool calls ходу стартують синхронно (`executeActions`), кеш між
+    // ними не оновлюється; Date.now() фіксуємо, щоб колізія була гарантована.
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    try {
+      logSet({
+        name: "log_set",
+        input: { exercise_name: "Мій рух А", reps: 10, weight_kg: 20 },
+      });
+      logSet({
+        name: "log_set",
+        input: { exercise_name: "Мій рух Б", reps: 12, weight_kg: 25 },
+      });
+    } finally {
+      vi.mocked(Date.now).mockRestore();
+    }
+    const ops = await settled(2);
+    const customs = ops.filter((o) => o.table === "fizruk_custom_exercises");
+    const items = ops.filter((o) => o.table === "fizruk_workout_items");
+    const byName = new Map(
+      customs.map((c) => [
+        (JSON.parse(String(c.row["data_json"])) as { name: { uk: string } })
+          .name.uk,
+        String(c.row["id"]),
+      ]),
+    );
+    expect(byName.size).toBe(2);
+    expect(new Set(byName.values()).size).toBe(2);
+    const itemIdByName = new Map(
+      items.map((it) => [
+        String(it.row["name_uk"]),
+        String(it.row["exercise_id"]),
+      ]),
+    );
+    // Кожен item посилається на вправу СВОЄЇ назви.
+    expect(itemIdByName.get("Мій рух А")).toBe(byName.get("Мій рух А"));
+    expect(itemIdByName.get("Мій рух Б")).toBe(byName.get("Мій рух Б"));
   });
 
   it("жодна оп fizruk_workout_items не йде з порожнім exercise_id", async () => {

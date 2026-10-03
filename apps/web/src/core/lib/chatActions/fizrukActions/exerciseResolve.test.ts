@@ -1,14 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __setFizrukSqliteCacheForTests,
   clearFizrukSqliteCache,
 } from "../../../../modules/fizruk/lib/sqliteReader";
 import {
+  __resetPendingChatExercisesForTests,
   buildWorkoutItemFromExercise,
   createChatExerciseResolver,
 } from "./exerciseResolve";
 
 beforeEach(() => {
+  __resetPendingChatExercisesForTests();
   clearFizrukSqliteCache();
   __setFizrukSqliteCacheForTests({});
 });
@@ -59,6 +61,38 @@ describe("createChatExerciseResolver", () => {
     const r = createChatExerciseResolver();
     const ids = ["А рух", "Б рух", "В рух"].map((n) => r.resolve(n).id);
     expect(new Set(ids).size).toBe(3);
+  });
+
+  it("різні невідомі назви в РІЗНИХ резолверах (різні tool calls ходу) → різні id", () => {
+    // `executeActions` запускає tool calls ходу синхронно, кеш між ними не
+    // оновлюється, а резолвер на кожен виклик свіжий.
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    const a = createChatExerciseResolver().resolve("Мій рух А");
+    const b = createChatExerciseResolver().resolve("Мій рух Б");
+    vi.mocked(Date.now).mockRestore();
+    expect(b.id).not.toBe(a.id);
+    expect(a.name.uk).toBe("Мій рух А");
+    expect(b.name.uk).toBe("Мій рух Б");
+  });
+
+  it("та сама невідома назва в різних резолверах → та сама вправа, і вона є в created обох", () => {
+    const r1 = createChatExerciseResolver();
+    const a = r1.resolve("Мій рух");
+    const r2 = createChatExerciseResolver();
+    const b = r2.resolve("мій рух");
+    expect(b.id).toBe(a.id);
+    // Другий екзекутор теж перезапише вправу: item не лишиться без неї в outbox.
+    expect(r2.created.map((ex) => ex.id)).toEqual([a.id]);
+  });
+
+  it("вправа, підтверджена кешем, виходить із реєстру: нову не дублюємо і не перекриваємо", () => {
+    const a = createChatExerciseResolver().resolve("Мій рух");
+    __setFizrukSqliteCacheForTests({
+      customExercises: [{ ...a, name: { uk: "Мій рух", en: "Мій рух" } }],
+    });
+    const r = createChatExerciseResolver();
+    expect(r.resolve("Мій рух").id).toBe(a.id);
+    expect(r.created).toHaveLength(0);
   });
 
   it("використовує вже наявну custom-вправу з кешу, нової не створює", () => {
