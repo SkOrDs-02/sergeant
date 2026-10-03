@@ -130,7 +130,9 @@ export function DataTable<T>({
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead
           className={cn(
-            "bg-panelHi/60 text-style-label",
+            // Суцільна заливка, не `/60`: напівпрозора змішувалась із тлом під
+            // таблицею (1.05 світла / 1.11 темна проти 1.09 / 1.21 суцільної).
+            "bg-panelHi text-style-label",
             headerTone,
             stickyHeader && "sticky top-0 z-sticky",
           )}
@@ -164,7 +166,11 @@ export function DataTable<T>({
                   onRowClick ? () => onRowClick(row, rowIndex) : undefined
                 }
                 className={cn(
-                  zebra && rowIndex % 2 === 1 && "bg-panelHi/30",
+                  // Зебра теж суцільна: `/30` давала 1.03 / 1.05 проти рядка
+                  // без смуги, тобто смуги майже не було видно. Суцільна —
+                  // 1.09 / 1.21 (ту саму `panelHi`, що й thead, від нього
+                  // відділяє `border-b border-line` вище).
+                  zebra && rowIndex % 2 === 1 && "bg-panelHi",
                   interactive &&
                     "cursor-pointer transition-colors hover:bg-panelHi/50",
                 )}

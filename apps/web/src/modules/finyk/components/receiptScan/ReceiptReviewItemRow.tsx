@@ -52,7 +52,7 @@ function QtyInput({
       // Той самий анти-зум/тач-floor, що в `receiptMoneyInput.tsx`: 16px
       // шрифт і ≥44px висота лише під `pointer: coarse` (бета-фідбек №2).
       // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
-      className="input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panelHi px-2 text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-base"
+      className="input-focus-finyk h-9 min-w-0 rounded-xl border border-line bg-panel px-2 text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-base"
     />
   );
 }
@@ -76,7 +76,7 @@ export function ReceiptReviewItemRow({
           }
           disabled={disabled}
           size="sm"
-          className="flex-1 min-w-0"
+          className="flex-1 min-w-0 bg-panel"
           aria-label={`Назва позиції ${index + 1}`}
           placeholder="Назва товару"
         />
@@ -103,13 +103,14 @@ export function ReceiptReviewItemRow({
           }
           ariaLabel={`Ціна позиції ${index + 1}`}
           disabled={disabled}
+          className="bg-panel"
         />
         <ReceiptMoneyInput
           kopiykas={item.sumKopiykas}
           onCommitKopiykas={(sumKopiykas) => onEditItem(index, { sumKopiykas })}
           ariaLabel={`Сума позиції ${index + 1}`}
           disabled={disabled}
-          className="font-semibold"
+          className="bg-panel font-semibold"
         />
       </div>
     </li>
