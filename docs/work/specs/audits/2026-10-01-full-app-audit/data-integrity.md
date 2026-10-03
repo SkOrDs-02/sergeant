@@ -1443,7 +1443,7 @@ node <scratch>/agents/verify-api-live-sync-live/c3/w1_watermark.mjs 3 → trial0
 
 ### `data-13` [medium] Фінік до прогріву кешу мовчки відкидає нові записи: витрата чи актив, додані в перші секунди холодного старту, зникають попри тост «Витрату додано.»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-13-26-finyk-cold-start (dual-write до прогріву пише рядки й відкидає лише prefs-зріз; сабміт ручної витрати заблоковано спінером до `storageReady` з таймаутом 15 с; тост лишається синхронним, без «підтвердженого запису» — окремої API для цього немає; e2e «холодний старт» не додано, покрито інтеграційним Vitest на справжньому SQLite)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (useFinykDualWriteSync, useFinykStorageSlots)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykDualWriteSync.ts:104-115; apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:198-241; apps/web/src/modules/finyk/FinykApp.tsx:404-419
 - **Першопричина:** Гард, доданий у 0170278e (2026-10-01) для захисту merchantRules, поки storageReady === false лише переносить prevRef = next і нічого не пише: ні в SQLite, ні в журнал, ні в outbox. Після прогріву overlay перезаписує всі слоти з кешу, а FinykApp показує тост успіху без перевірки.
@@ -2319,7 +2319,7 @@ DB (read-only). Deleted by ops 22624/22625: 9424f65a… categoryIds [cus_muqjsgs
 
 ### `data-26` [medium] Посилання /finyk?sync=… без підтвердження підміняє або стирає бюджети, план, категорії й приховані рахунки, а на холодному старті хибно звітує «синхронізовано»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-13-26-finyk-cold-start (приймач `?sync=`, `loadFromUrl`, `generateSyncLink` і `normalizeFinykSyncPayload` видалено; JSON-бекап із файлу не чіпали)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (useFinykBackupSync.loadFromUrl)
 - **Де:** apps/web/src/modules/finyk/FinykApp.tsx:171-190; apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts:79-108,192-213; packages/finyk-domain/src/backup.ts:95-260; apps/web/src/core/app/ShellDeepLinkBridge.tsx:51-66; apps/mobile-shell/src/index.ts:123-150
 - **Першопричина:** FinykApp на маунті викликає loadFromUrl, якщо в URL є sync=, і applyData замінює колекції цілком (порожній масив означає стирання) без прев'ю й підтвердження; нормалізатор не валідує форму елементів. Генератора посилань в UI вже немає, живий лише приймач, а на холодному старті запис ще й відкидає гард storageReady з data-13.

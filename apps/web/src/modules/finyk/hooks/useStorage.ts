@@ -244,8 +244,6 @@ export function useStorage({
     hideTx: mutations.hideTx,
     exportData: backupSync.exportData,
     importData: backupSync.importData,
-    generateSyncLink: backupSync.generateSyncLink,
-    loadFromUrl: backupSync.loadFromUrl,
     excludedTxIds,
     cancelledTxIds,
     debtTxIds: debtLinkedTxIds, // зворотна сумісність
