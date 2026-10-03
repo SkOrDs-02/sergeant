@@ -42,9 +42,11 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
  * `requireAiQuota` до них не застосовуємо.
  *
  * Пакетування за реєстром доступу (`docs/work/specs/access-tiers.md`):
- *   - `analyze-photo` списує 1 з окремого тижневого відра фото (`week:photo`,
- *     Free 3 на тиждень) і не чіпає спільні дії. `refine-photo` того самого
- *     знімка нічого не списує: це продовження тієї самої дії.
+ *   - `analyze-photo` і `refine-photo` списують по 1 з окремого тижневого
+ *     відра фото (`week:photo`, Free 3 на тиждень) і не чіпають спільні дії.
+ *     Refine теж платний: сервер не може довести, що кадр уже проходив
+ *     analyze (`prior_result` підробляється), а без квоти refine був безкоштовним
+ *     vision-аналізом (sec-14).
  *   - `week-plan` тільки для Premium (`requireFeature("nutrition.weekPlan")`),
  *     гейт стоїть ПЕРЕД квотою, щоб Free отримав 402 до списання.
  *   - Решта nutrition-AI (денний план, рецепти, покупки, комора) коштує 1 дію
@@ -113,7 +115,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
     ...aiText,
     parsePantry,
   );
-  // Same Vision shape as analyze-photo — same cost (3).
+  // Same Vision shape as analyze-photo — same cost (3) і те саме відро фото.
   r.post(
     "/api/nutrition/refine-photo",
     rateLimitExpress({
@@ -122,10 +124,18 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
-    // ponytail: refine не має власної квоти, стелю тримає лише rate limit
-    // 20/хв; окреме відро, якщо refine почнуть ганяти без analyze.
     requireHealthConsent(),
     requireLlmUpstream("vision"),
+    // sec-14 (аудит 2026-10-01): refine коштує ту саму фото-квоту, що й
+    // analyze-photo. Раніше тут стояв «ponytail» без квоти, на припущенні
+    // «refine йде лише після analyze», якого сервер не перевіряв: схема
+    // вимагає лише `image_base64`, а порожній `prior_result` промпт читає як
+    // «оціни заново», тобто refine = повний vision-аналіз довільного кадру.
+    // `prior_result` приходить від клієнта і підробляється, тож гейтом бути
+    // не може; безкоштовним refine можна було б зробити лише серверним
+    // одноразовим дозволом від analyze-photo (відкладено до рішення власника,
+    // див. журнал рішень `docs/product/modules/nutrition.md`, 2026-10-03).
+    requireAiQuota("photo"),
     refinePhoto,
   );
   // Anthropic text generation — medium-weight (~5–8s, smaller payloads

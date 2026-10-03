@@ -323,7 +323,7 @@ revoke.mjs, одразу після sign-out: GET /api/me 200 | GET /api/auth/ge
 
 ### `sec-03` [high] Квиток round-trip чату приймається на будь-якому AI-запиті й видається знову: Free обходить тижневу AI-квоту безкінечним ланцюжком
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-03-14-ai-quota (мінімальний фікс; не входило: привʼязка квитка до id tool_use, preset-відро лише для /api/chat, echo квитка у веб-клієнті)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / billing
 - **Де:** apps/server/src/modules/chat/aiQuota.ts:302-307,335-341; apps/server/src/modules/chat/chatRoundTripTicket.ts:102-117; apps/server/src/modules/chat/chat.ts:340-360,457,786-790,894-913; apps/server/src/modules/chat/aiQuotaBudget.ts:148-156
 - **Першопричина:** assertAiQuota пропускає списання для будь-якого запиту з валідним round_trip_ticket і не перевіряє, що це справді продовження ходу (tool_results разом із tool_calls_raw). chat.ts на кожен перший тур із tool_calls видає новий квиток, навіть якщо сам запит пройшов за квитком, тож квитки ланцюжаться без кінця.
@@ -1201,7 +1201,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-14` [medium] /api/nutrition/refine-photo робить повний vision-аналіз довільного фото без квоти
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-03-14-ai-quota (варіант «а»: refine-photo списує week:photo; одноразовий серверний дозвіл відкладено до рішення власника)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / nutrition
 - **Де:** apps/server/src/routes/nutrition.ts:117-130; packages/shared/src/schemas/api.ts:723-740
 - **Першопричина:** На refine-photo немає requireAiQuota('photo'): ланцюг лише rateLimit 20/хв → requireHealthConsent → requireLlmUpstream. Схема вимагає тільки image_base64, prior_result необов'язковий, і за порожнього prior_result промпт робить повний розбір КБЖВ, тож refine рівноцінний analyze-photo.

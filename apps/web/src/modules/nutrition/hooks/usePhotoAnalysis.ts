@@ -285,6 +285,9 @@ export function usePhotoAnalysis({
       setPhotoResult(data?.result || null);
     },
     onError: (err) => {
+      // Refine списує ту саму фото-квоту, що й analyze (sec-14): без цього
+      // 429 `AI_PHOTO_QUOTA` на уточненні давав би лише текст помилки, а не пейвол.
+      if (isQuotaError(err, "AI_PHOTO_QUOTA")) onQuotaExceeded?.();
       setErr(formatNutritionError(err, failedCopy("уточнити оцінку")));
     },
     onSettled: () => {

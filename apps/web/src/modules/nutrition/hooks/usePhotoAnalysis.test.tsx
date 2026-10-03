@@ -28,7 +28,7 @@ vi.mock("@shared/lib/media/compressImage", () => ({
 }));
 
 import { PHOTO_NOTE_QUESTION, usePhotoAnalysis } from "./usePhotoAnalysis";
-import { nutritionApi } from "@shared/api";
+import { ApiError, nutritionApi } from "@shared/api";
 import { fileToBase64 } from "../lib/fileToBase64.js";
 const apiAnalyzePhoto = nutritionApi.analyzePhoto as unknown as ReturnType<
   typeof vi.fn
@@ -414,6 +414,43 @@ describe("usePhotoAnalysis", () => {
           locale: "uk-UA",
         }),
       );
+    });
+
+    it("429 AI_PHOTO_QUOTA на refine відкриває пейвол (refine списує фото-квоту)", async () => {
+      apiAnalyzePhoto.mockResolvedValueOnce({
+        result: { name: "v1", questions: [] },
+      });
+      apiRefinePhoto.mockRejectedValueOnce(
+        new ApiError({
+          kind: "http",
+          message: "Ліміт фото на тиждень вичерпано",
+          status: 429,
+          body: { code: "AI_PHOTO_QUOTA", limit: 3 },
+          url: "/api/nutrition/refine-photo",
+        }),
+      );
+      const onQuotaExceeded = vi.fn();
+      const { result } = renderHook(
+        () =>
+          usePhotoAnalysis({
+            setBusy: vi.fn(),
+            setErr: vi.fn(),
+            setStatusText: vi.fn(),
+            onQuotaExceeded,
+          }),
+        { wrapper: makeWrapper() },
+      );
+      attachFile(result, fakeImageFile());
+
+      act(() => {
+        result.current.analyzePhoto();
+      });
+      await waitFor(() => expect(result.current.photoResult).not.toBeNull());
+
+      act(() => {
+        result.current.refinePhoto();
+      });
+      await waitFor(() => expect(onQuotaExceeded).toHaveBeenCalledTimes(1));
     });
 
     it("sends the free-form note first, ahead of the model's own questions", async () => {
