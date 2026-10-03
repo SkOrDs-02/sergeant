@@ -824,7 +824,7 @@ reset-redirect.mjs і reset-follow.mjs у <scratch>/agents/verify-client-static-
 
 ### `sec-09` [medium] SSE /api/v2/sync/stream переживає sign-out і відкликання сесії та далі стрімить живі дані без обмеження часу
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-09-sync-stream-session
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync
 - **Де:** apps/server/src/modules/sync/syncV2Stream.ts:207-412 (216,331-348,366-411); apps/server/src/routes/sync.ts:80-98; apps/server/src/http/timeout.ts:54-60
 - **Першопричина:** requireSession перевіряє сесію лише на handshake; syncV2Stream запам'ятовує req.user і слухає канал user:&lt;id&gt; до закриття сокета. Немає повторної перевірки сесії, max-age, ліміту одночасних стрімів на користувача і реакції на logout/revoke; heartbeat кожні 25 с тримає з'єднання, таймаут для SSE вимкнено.
