@@ -1,6 +1,6 @@
 # Local Postgres setup
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-13.
+> **Last touched:** 2026-10-03 by @claude (Renovate прибрано: digest pgvector піднімається вручну, ADR-0103). **Next review:** 2027-04-01.
 > **Status:** Active
 
 Локальний Postgres для розробки запускається через `docker-compose.yml` у
@@ -48,27 +48,22 @@ Floating-теги (`:pg17`, `:latest`) автомутують upstream-вміс�
    `db-backup-verify.yml`) уже пінять той самий SHA;
    локальний floating-тег ламає «works locally / fails in CI» triage.
 
-PR-37 (stack-pulse 2026-05 / L10) зафіксував цей invariant і додав
-freshness-gate (`renovate.json`) щоб SHA не застрягав застарілим.
+PR-37 (stack-pulse 2026-05 / L10) зафіксував цей invariant. Тоді ж SHA
+оновлював Renovate (`pinDigests`, щомісяця), але Renovate на GitHub-репо не
+встановлено і `renovate.json` видалено ([ADR-0103](../../governance/adr/0103-dependabot-only-dependency-updates.md)).
+Автоматичного оновлення digest зараз немає.
 
 ## Bumping the SHA
 
-### Auto (default path) — Renovate
+Автоматичного шляху немає. Dependabot цей digest не бачить: екосистема
+`docker` у [`.github/dependabot.yml`](../../../.github/dependabot.yml) читає
+лише Dockerfile (`Dockerfile.api`), а `docker-compose.yml` і `services:` у
+воркфлоу не входять ні в `docker`, ні в `github-actions`. Тож SHA піднімають
+вручну: при security advisory на `pgvector`/Postgres, коли потрібна нова
+версія `vector` extension, або під час періодичного тріажу залежностей
+([`dependency-sweeper.md`](../../start/instructions/dependency-sweeper.md)).
 
-`renovate.json` має правило `pgvector pinDigests` з cadence **monthly**
-(`before 6am on the first day of the month`). Renovate відкриє PR з новим
-digest, заплановано branch-ім'я `renovate/pgvector` (group `pgvector`).
-
-`automerge: false` — bump-и SHA-pinned image-у потенційно проносять breaking
-changes у `vector` extension; merge виключно після:
-
-1. CI passes (всі 4 workflow-и + migration tests).
-2. Manual smoke: `pnpm db:up && pnpm db:migrate && pnpm test --filter
-@sergeant/server` локально.
-3. Якщо diff-changelog upstream показує major-bump pgvector — review
-   migration `025_ai_memories_pgvector.sql` ще раз перед merge-ем.
-
-### Manual (pre-Renovate, або forced security advisory)
+### Manual
 
 ```bash
 # 1. Pull latest tag і отримай digest:
@@ -76,11 +71,13 @@ docker pull pgvector/pgvector:pg17
 docker inspect pgvector/pgvector:pg17 --format '{{index .RepoDigests 0}}'
 # → pgvector/pgvector@sha256:<new-digest>
 
-# 2. Оновіть 5 місць (SHA має ідеально матчити в усіх):
+# 2. Онови всі входження (SHA має збігатися всюди):
+git grep -n 'pgvector/pgvector:pg17@sha256' -- ':!*.md'
+#    станом на 2026-10-03 це 5 місць:
 #    - docker-compose.yml (services.postgres.image)
-#    - .github/workflows/ci.yml (services.postgres.image, ~line 465)
-#    - .github/workflows/extended-e2e.yml (~line 57)
-#    - .github/workflows/db-backup-verify.yml (~line 34)
+#    - .github/workflows/ci.yml (два services.postgres.image)
+#    - .github/workflows/extended-e2e.yml
+#    - .github/workflows/db-backup-verify.yml
 
 # 3. Smoke-test:
 pnpm db:down
@@ -89,6 +86,13 @@ pnpm db:up
 pnpm db:migrate
 pnpm test --filter @sergeant/server
 ```
+
+Bump-PR мерджиться лише після:
+
+1. CI passes (усі workflow-и з pgvector + migration tests).
+2. Manual smoke вище локально.
+3. Якщо upstream changelog показує major-bump pgvector — review
+   migration `025_ai_memories_pgvector.sql` ще раз перед merge-ем.
 
 CI freshness-guard для drift між docker-compose і workflows-ами наразі немає
 (out of scope для PR-37). Якщо drift трапляється часто — додавай у backlog
@@ -111,9 +115,9 @@ linux/amd64`. Зменшіть platform-mismatch правкою в `docker-compo
 
 - `docker-compose.yml` — root, `services.postgres`.
 - CI workflows: `.github/workflows/{ci, extended-e2e, db-backup-verify}.yml`.
-- Renovate config: `renovate.json` (`pgvector pinDigests` rule).
+- Dependabot config: [`.github/dependabot.yml`](../../../.github/dependabot.yml) (pgvector не покриває, див. § Bumping the SHA).
 - Migration: `apps/server/src/migrations/025_ai_memories_pgvector.sql`.
 - Pool sizing runbook: [`docs/operations/observability/pg-pool-sizing.md`](../../operations/observability/pg-pool-sizing.md).
 - Backup/restore runbook: [`docs/start/instructions/database-backup-restore.md`](../../start/instructions/database-backup-restore.md).
-- Renovate operations: [`docs/operations/ops/renovate.md`](../../operations/ops/renovate.md).
+- Робота з PR Dependabot: [`docs/engineering/integrations/dependabot-usage.md`](../integrations/dependabot-usage.md).
 - Initiative: [`docs/work/specs/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-37-postgres-image-sha-pin.md).

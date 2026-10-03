@@ -8,7 +8,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/work/specs/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-05-typescript-types-node-downgrade.md)
-  - [`renovate.json`](../../../renovate.json) — `allowedVersions` rule for `@types/node`
+  - [`renovate.json`](https://github.com/SkOrDs-02/sergeant/blob/b47c5ac146b0b0a3e9285fe5e58985a7eaa81ca2/renovate.json) — `allowedVersions` rule for `@types/node` (файл видалено, [ADR-0103](./0103-dependabot-only-dependency-updates.md))
   - [`package.json`](../../../package.json) — `pnpm.overrides["@types/node"]`
 
 ## Context and Problem Statement
