@@ -94,7 +94,7 @@ I could not refute this finding. I traced the code end to end and also ran an in
 
 ### `rel-02` [medium] Будь-яка не-401 помилка /api/v1/me на холодному старті перемикає застосунок у гостьовий режим із «порожніми» даними
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-01-rel-02-auth-states
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth (AuthContext)
 - **Та сама першопричина, що й** [`logic-01`](./domain-logic.md#logic-01): Спільний корінь в AuthContext: будь-яка помилка /api/me (403 account_pending_deletion, 5xx, 429, мережа) трактується як «не автентифікований». Явні стани pending_deletion і unavailable закривають обидва.
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:318-360,382-401; apps/web/src/shared/lib/api/queryClient.ts:77-97; apps/web/src/shared/lib/api/queryClientPersister.ts:232; apps/server/src/http/requireSession.ts:104-106

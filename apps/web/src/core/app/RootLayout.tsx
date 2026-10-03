@@ -35,7 +35,7 @@ import {
   useHubChatOverlay,
   useHubChatOverlayState,
 } from "../hub/useHubChatOverlay";
-import { titleForPath } from "./appPaths";
+import { STATUS_PATH, isLegalRoutePath, titleForPath } from "./appPaths";
 import { useHubKeyboardShortcuts } from "../hooks/useHubKeyboardShortcuts";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { useHubNavigation } from "../hooks/useHubNavigation";
@@ -147,6 +147,16 @@ const PendingDeletionScreen = lazy(() =>
   })),
 );
 
+/**
+ * Ліниво з тієї ж причини: екран потрібен лише під час збою `me`, а в
+ * eager-бюджеті кожен кілобайт на рахунку.
+ */
+const AuthUnavailableScreen = lazy(() =>
+  import("./AuthUnavailableScreen").then((mod) => ({
+    default: mod.AuthUnavailableScreen,
+  })),
+);
+
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
   // Вікно на скасування видалення (рішення 3 спеки
@@ -155,7 +165,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // локально, ані синхронізуватись, бо сервер для нього однаково закритий
   // гейтом `requireSession` (403 `account_pending_deletion`).
   const pendingDeletion = usePendingDeletion();
-  const { logout } = useAuth();
+  const { logout, serverUnavailable, refresh } = useAuth();
+  const { pathname } = useLocation();
   // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
   // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
   // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
@@ -175,6 +186,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // write-through каналом, що й вибір модулів рядком вище.
   useHubPrefsSync();
 
+  // Вікно відкрите (403 на `me` вже сказав), а дати в тілі 403 не було:
+  // чекаємо `deletion-status`, а не віддаємо застосунок позначеному акаунту.
+  // Сервер дату віддає завжди, це лише запобіжник від ривка в застосунок.
+  if (
+    pendingDeletion.isPending &&
+    !pendingDeletion.scheduledPurgeAt &&
+    pendingDeletion.isLoading
+  ) {
+    return null;
+  }
   if (pendingDeletion.isPending && pendingDeletion.scheduledPurgeAt) {
     return (
       <Suspense fallback={null}>
@@ -182,6 +203,33 @@ function AppShell({ children }: { children: React.ReactNode }) {
           scheduledPurgeAt={pendingDeletion.scheduledPurgeAt}
           onLogout={() => logout()}
         />
+      </Suspense>
+    );
+  }
+
+  // Збій `me` на пристрої залогіненого користувача: застосунок не рендеримо
+  // взагалі. Банера поверх мало: `useLocalUserId` тут `null` (запис у модулі
+  // мовчки губиться), а App Lock шукає PIN не у слоті власника і не вмикається,
+  // тож модулі показали б дані з persisted-кешу. Див. `AuthUnavailableScreen`.
+  if (serverUnavailable) {
+    // Публічні сторінки (юридичні тексти, статус) даних не показують і лишаються
+    // доступними, але рендеримо ЛИШЕ саму сторінку. Глобальний UI оболонки
+    // тут небезпечний: `HubChatOverlay` відкривається з будь-якого маршруту
+    // через Ctrl/Cmd+/ і читає синхронне LS-дзеркало історії чату власника
+    // без жодного гейту за auth, а App Lock у цьому стані не вмикається
+    // (`user === null` → слот анонімного PIN). Тож без оверлея, boot-кластерів
+    // і решти глобального UI дані власника не потрапляють повз App Lock.
+    if (isLegalRoutePath(pathname) || pathname === STATUS_PATH) {
+      return (
+        <>
+          <SkipLink />
+          {children}
+        </>
+      );
+    }
+    return (
+      <Suspense fallback={null}>
+        <AuthUnavailableScreen onRetry={() => void refresh()} />
       </Suspense>
     );
   }

@@ -248,6 +248,19 @@ export interface ChatOwnerReconcileResult {
   prevOwnerWasUser: boolean;
 }
 
+/**
+ * Чи штампований власник цього пристрою — справжній користувач (а не анонім і
+ * не «ще не штамповано»).
+ *
+ * Потрібен AuthContext-у, щоб відрізнити «залогінений пристрій, `me` тимчасово
+ * недоступний» (особистість тримаємо, нічого не стираємо) від анонімного
+ * пристрою, якому тримати нічого. Лише читає, нічого не пише.
+ */
+export function deviceOwnerIsUser(): boolean {
+  const owner = safeReadStringLS(CHAT_OWNER_KEY);
+  return owner !== null && owner !== ANON_OWNER;
+}
+
 export function reconcileChatOwnerOnAuthChange(
   userId: string | null,
 ): ChatOwnerReconcileResult {
