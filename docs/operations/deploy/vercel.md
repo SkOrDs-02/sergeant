@@ -1,6 +1,6 @@
 # Deploy — Vercel (apps/web SPA)
 
-> **Last touched:** 2026-09-17 by @claude (COEP matrix: Google/Apple OAuth is live redirect flow; `apps/landing`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (CSP у `vercel.json`: Report-Only знято, лишився лише enforced; раніше — COEP matrix: Google/Apple OAuth is live redirect flow; `apps/landing`). **Next review:** 2027-01-01.
 > **Status:** Active
 
 Vercel hosts the React PWA from `apps/web`. The API surface runs on \*\*Hetzner CX23
@@ -76,6 +76,16 @@ When tightening a header, follow [`../security/hardening/C2-frontend-csp.md`](..
 for the Report-Only → Enforce rollout pattern. Do **not** ship a stricter
 policy without a Report-Only canary first.
 
+**Поточний стан CSP (2026-10-03).** `vercel.json` віддає лише enforced
+`Content-Security-Policy` (з `report-uri` / `report-to` на `/api/csp-report`) і
+`Reporting-Endpoints`. Постійного `Content-Security-Policy-Report-Only` немає:
+він був строго м'якшим за enforced і не міг повідомити нічого понад нього.
+Canary — це **тимчасовий** header поруч з enforced, який ти додаєш саме для
+суворішої політики і знімаєш після soak. Тест
+[`cspMonitoringAllowlist.test.ts`](../../../apps/web/src/test/cspMonitoringAllowlist.test.ts)
+навмисно падає, якщо в `vercel.json` з'являється `Content-Security-Policy-Report-Only`:
+додаючи canary, послаб цей guard у тому ж PR, а знімаючи canary — поверни.
+
 ## Third-party iframe / cross-origin compatibility
 
 > Tracked by [M21 — `docs/work/specs/security-hardening/M21-coep-stripe-compatibility.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/M21-coep-stripe-compatibility.md).
@@ -125,8 +135,10 @@ When introducing or bumping a third-party SDK / iframe:
    `Refused to (load|connect)` (CSP).
 4. If a block fires:
    - **CSP:** widen the relevant directive in `vercel.json` and re-test —
-     keep the policy in `Content-Security-Policy-Report-Only` for the
-     rollout window per [C2](../../work/specs/security-hardening/C2-frontend-csp.md).
+     keep the policy in a temporary `Content-Security-Policy-Report-Only`
+     canary header for the rollout window per
+     [C2](../../work/specs/security-hardening/C2-frontend-csp.md) (постійного
+     Report-Only у `vercel.json` немає — див. «Поточний стан CSP» вище).
    - **COEP:** decide between (a) downgrade COEP for the affected route
      glob, (b) switch the page-wide policy to `credentialless`, or (c)
      replace the iframe with a redirect-based flow. Whichever path,
