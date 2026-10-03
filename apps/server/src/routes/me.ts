@@ -21,6 +21,7 @@ import {
   setModule,
 } from "../http/index.js";
 import { pool } from "../db.js";
+import { invalidateAnalyticsConsent } from "../lib/analyticsConsent.js";
 import { AppError } from "../obs/errors.js";
 import {
   buildMeExport,
@@ -168,6 +169,9 @@ export function createMeRouter(): Router {
       const payload = UserPreferencesSchema.parse(
         await upsertUserPreferences(pool, user.id, patch),
       );
+      // priv-09: кеш згоди на аналітику (`posthogAi.ts`) не має пережити
+      // відкликання — наступна серверна AI-подія перечитає тумблер.
+      invalidateAnalyticsConsent(user.id);
       res.json(payload);
     },
   );

@@ -95,6 +95,7 @@ export * from "./lib/activeModules";
 export * from "./lib/undoToast";
 export * from "./lib/accountDeletion";
 export * from "./lib/healthConsent";
+export * from "./lib/healthMemory";
 
 // Onboarding gate helpers (first-launch detection, done flag, splash taxonomy).
 export * from "./lib/onboarding";
