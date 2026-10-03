@@ -18,11 +18,14 @@
  * founder-а, окремий ADR) — він робить union на **читанні**, тож жоден
  * запис користувача не зникає з жодного екрана.
  *
- * ## Правило дедупу (піде в майбутній ADR)
+ * ## Правило дедупу
  *
- *  1. Ключ дедупу — **календарний день у Europe/Kyiv** (домен-інваріант:
- *     межі доби — Kyiv local, не UTC; інакше вечірнє зважування після
- *     21:00 Kyiv поїхало б у сусідній день).
+ *  1. Ключ дедупу — **календарний день за годинником пристрою**
+ *     ([ADR-0078](../../../../../docs/governance/adr/0078-day-boundary-device-local.md)):
+ *     зважування — персональний щоденний запис, тож його доба — та, що її
+ *     показує телефон, а не Київ і не UTC. Київська доба склеювала б для
+ *     пристрою східніше Києва два зважування різних локальних днів в один
+ *     київський, і одне зникало б із графіка.
  *  2. При колізії за один день виграє запис із **новішим `at`**
  *     (`measured_at` — синонім-фолбек).
  *  3. Якщо `at` збігається до мілісекунди і значення однакове — це один і
@@ -36,7 +39,7 @@
  *
  * DOM-free, React-free — чистий TS, як і решта `@sergeant/fizruk-domain`.
  */
-import { toKyivISODate } from "@sergeant/shared";
+import { deviceDayKey } from "@sergeant/shared";
 
 import type { MobileMeasurementEntry } from "../measurements/types.js";
 import {
@@ -72,7 +75,7 @@ export interface BodyWeightSample {
   readonly id: string;
   /** ISO timestamp зважування. */
   readonly at: string;
-  /** Календарний день у Europe/Kyiv (`YYYY-MM-DD`) — ключ дедупу. */
+  /** Календарний день за годинником пристрою (`YYYY-MM-DD`, ADR-0078) — ключ дедупу. */
   readonly dayKey: string;
   /** Вага в кілограмах (додатне скінченне число). */
   readonly weightKg: number;
@@ -116,7 +119,7 @@ function readWeightKg(rec: BodyWeightRecordInput): number | null {
 
 /**
  * Чи `next` перемагає `prev` за правилами 2-4 з docblock-у вище.
- * Обидва семпли вже належать одному Kyiv-дню.
+ * Обидва семпли вже належать одному дню пристрою.
  */
 function winsCollision(
   next: BodyWeightSample,
@@ -143,7 +146,7 @@ function collectInto(
     if (at === null) continue;
     const weightKg = readWeightKg(rec);
     if (weightKg === null) continue;
-    const dayKey = toKyivISODate(at);
+    const dayKey = deviceDayKey(new Date(at));
     const sample: BodyWeightSample = {
       id: readString(rec.id) ?? `${source}:${at}`,
       at,
@@ -159,7 +162,7 @@ function collectInto(
 }
 
 /**
- * Union обох сховищ ваги, дедуплікований за Kyiv-днем і відсортований
+ * Union обох сховищ ваги, дедуплікований за днем пристрою і відсортований
  * **новішими вперед**. Порядок вхідних масивів не має значення.
  */
 export function selectBodyWeightSamples(
