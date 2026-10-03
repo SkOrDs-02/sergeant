@@ -180,7 +180,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <Suspense fallback={null}>
         <PendingDeletionScreen
           scheduledPurgeAt={pendingDeletion.scheduledPurgeAt}
-          onLogout={() => logout()}
+          // `logout()` сам питає про незбережені записи; `false` («Залишитись»)
+          // нічого не стерло — екран просто лишається.
+          onLogout={async () => {
+            await logout();
+          }}
         />
       </Suspense>
     );

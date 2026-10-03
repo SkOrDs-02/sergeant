@@ -2,6 +2,8 @@ import {
   createContext,
   useContext,
   useCallback,
+  lazy,
+  Suspense,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -46,6 +48,10 @@ import {
   safeRemoveLS,
   webKVStore,
 } from "@shared/lib/storage/storage";
+
+// Діалог «є незбережені записи» — лише за потреби, поза eager-чанком
+// (`apps/web/AGENTS.md § Bundle budget`). Власний файл без `@sergeant/shared`.
+const UnsyncedLossDialog = lazy(() => import("./UnsyncedLossDialog"));
 
 /**
  * AI-DANGER: цей файл сидить у eager-графі найближче до analytics, і
@@ -272,21 +278,25 @@ interface AuthContextValue {
    * Вихід із акаунта з повним локальним teardown (включно зі стиранням
    * локальної SQLite).
    *
-   * Перед стиранням завжди намагається доставити чергу синхронізації —
-   * автоматично, для БУДЬ-ЯКОГО викликача, щоб цей запобіжник не можна
-   * було забути підключити (саме так помер `purgeSyncOpOutboxForUser`).
+   * Перед стиранням завжди намагається доставити чергу синхронізації, а якщо
+   * щось лишилось (pending + dead_letter + не-benign rejected поточного
+   * користувача) — САМ питає людину діалогом провайдера. Це робить `logout()`,
+   * а не викликач, для БУДЬ-ЯКОГО викликача (Профіль, палітра команд, екран
+   * видалення акаунта): запобіжник, який кожен екран мусить підключати
+   * окремо, помирає (так і було з `purgeSyncOpOutboxForUser`, а потім із
+   * `confirmUnsyncedLoss`, якого палітра й `PendingDeletionScreen` не
+   * передавали — аудит 2026-10-01, `data-19`).
    *
-   * `confirmUnsyncedLoss` — необовʼязковий гак для шляхів, де виходить
-   * ЖИВА людина. Викликається лише тоді, коли після спроби доставки
-   * щось лишилось недоставленим, і отримує кількість таких записів.
-   * Поверни `false`, щоб СКАСУВАТИ вихід (нічого не буде стерто, сесія
-   * лишиться живою). Без гака вихід іде далі — така поведінка була
-   * завжди, і програмні шляхи (revoke сесії, demo-команди) на неї
-   * розраховують.
+   * Повертає `true`, якщо вихід виконано, і `false`, якщо людина обрала
+   * «Залишитись» (нічого не стерто, сесія жива) — викликач у цьому випадку
+   * не показує тост виходу і не редіректить.
+   *
+   * `skipUnsyncedLossPrompt` — лише для двох шляхів, де питання вже
+   * неактуальне: `SessionsSection` питає ДО відкликання сесії (після нього
+   * пуш усе одно впаде 401), а видалення акаунта нищить дані свідомо й теж
+   * іде з уже вбитою сесією.
    */
-  logout: (options?: {
-    confirmUnsyncedLoss?: (pending: number) => Promise<boolean>;
-  }) => Promise<void>;
+  logout: (options?: { skipUnsyncedLossPrompt?: boolean }) => Promise<boolean>;
   requestPasswordReset: (email: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
@@ -548,19 +558,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [invalidateMe],
   );
 
+  // Діалог «є незбережені записи». Стан живе тут, у провайдері, щоб `logout()`
+  // питав сам, не покладаючись на викликача (`data-19`). Ref відсікає другий
+  // паралельний вихід, поки перший чекає на відповідь людини.
+  const [unsyncedPrompt, setUnsyncedPrompt] = useState<{
+    pending: number;
+    resolve: (proceed: boolean) => void;
+  } | null>(null);
+  const unsyncedPromptOpenRef = useRef(false);
+  const askUnsyncedLoss = useCallback((pending: number): Promise<boolean> => {
+    if (unsyncedPromptOpenRef.current) return Promise.resolve(false);
+    unsyncedPromptOpenRef.current = true;
+    return new Promise<boolean>((resolve) => {
+      setUnsyncedPrompt({
+        pending,
+        resolve: (proceed) => {
+          unsyncedPromptOpenRef.current = false;
+          setUnsyncedPrompt(null);
+          resolve(proceed);
+        },
+      });
+    });
+  }, []);
+
   const logout = useCallback(
-    async (options?: {
-      confirmUnsyncedLoss?: (pending: number) => Promise<boolean>;
-    }) => {
+    async (options?: { skipUnsyncedLossPrompt?: boolean }) => {
       // Це МУСИТЬ бути найпершим — до `setSignedOut`, до `signOut()`, до
       // будь-якого teardown. Далі по функції йде `wipeSqliteDb()`, який
       // видаляє файл локальної БД РАЗОМ із чергою синхронізації; поки
       // запис не доїхав до Postgres, локальна копія — єдина, що існує.
       // Скасувати вихід можна лише тут, поки нічого ще не зруйновано.
-      const { pending, unknown } = await flushPendingSyncOpsBeforeLogout();
-      if (!unknown && pending > 0 && options?.confirmUnsyncedLoss) {
-        const proceed = await options.confirmUnsyncedLoss(pending);
-        if (!proceed) return;
+      if (!options?.skipUnsyncedLossPrompt) {
+        const { pending, unknown } = await flushPendingSyncOpsBeforeLogout();
+        if (!unknown && pending > 0) {
+          const proceed = await askUnsyncedLoss(pending);
+          if (!proceed) return false;
+        }
       }
 
       // Identity-wipe координація: стампимо owner ДО `setSignedOut`,
@@ -692,8 +725,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Logout уже завершений — reload лише прибирає залишковий стан.
         logger.warn("[auth.logout] reload after teardown failed", err);
       }
+      return true;
     },
-    [queryClient],
+    [askUnsyncedLoss, queryClient],
   );
 
   // Привʼязуємо/відвʼязуємо аналітику до userId. Ref тримає попередній
@@ -807,7 +841,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     ],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {unsyncedPrompt && (
+        <Suspense fallback={null}>
+          <UnsyncedLossDialog
+            pending={unsyncedPrompt.pending}
+            onResolve={unsyncedPrompt.resolve}
+          />
+        </Suspense>
+      )}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthContextValue {

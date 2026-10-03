@@ -13,6 +13,7 @@ const {
   logoutMock,
   openHubSettingsSectionMock,
   themeState,
+  authState,
 } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
   toastInfoMock: vi.fn(),
@@ -21,9 +22,10 @@ const {
   setChoiceMock: vi.fn(),
   registerMock: vi.fn(),
   debugMock: vi.fn(),
-  logoutMock: vi.fn<() => Promise<void>>(),
+  logoutMock: vi.fn<() => Promise<boolean>>(),
   openHubSettingsSectionMock: vi.fn(),
   themeState: { isDark: false },
+  authState: { status: "authenticated" as string },
 }));
 
 vi.mock("react-router-dom", () => ({ useNavigate: () => navigateMock }));
@@ -47,7 +49,7 @@ vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => {
   return { ...actual, openHubSettingsSection: openHubSettingsSectionMock };
 });
 vi.mock("../auth/AuthContext.jsx", () => ({
-  useAuth: () => ({ logout: logoutMock }),
+  useAuth: () => ({ logout: logoutMock, status: authState.status }),
 }));
 
 import { useDemoCommands } from "./useDemoCommands";
@@ -73,9 +75,10 @@ describe("useDemoCommands", () => {
     registerMock.mockReset();
     debugMock.mockReset();
     logoutMock.mockReset();
-    logoutMock.mockResolvedValue(undefined);
+    logoutMock.mockResolvedValue(true);
     openHubSettingsSectionMock.mockReset();
     themeState.isDark = false;
+    authState.status = "authenticated";
   });
 
   it("registers the baseline command set under core.demo", () => {
@@ -93,6 +96,19 @@ describe("useDemoCommands", () => {
       "session.sign-out",
     ]);
   });
+
+  // data-19: анонімові «Вийти з акаунту» пропонувало вийти з неіснуючого
+  // акаунта, а `loading` ще не знає, чи є що завершувати.
+  it.each(["unauthenticated", "loading"])(
+    "does not register session.sign-out while status is %s",
+    (status) => {
+      authState.status = status;
+      renderHook(() => useDemoCommands());
+      const ids = getCommands().map((c) => c.id);
+      expect(ids).not.toContain("session.sign-out");
+      expect(ids).toContain("settings.open");
+    },
+  );
 
   it("navigation commands route to their module paths", () => {
     renderHook(() => useDemoCommands());
@@ -164,6 +180,21 @@ describe("useDemoCommands", () => {
     );
     expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано");
     expect(toastInfoMock).not.toHaveBeenCalled();
+  });
+
+  // data-19: `logout()` сам питає про незбережені записи; «Залишитись»
+  // повертає `false` — сесія жива, тож ні тосту «Вихід виконано», ні редіректу.
+  it("session.sign-out neither toasts nor redirects when the person cancels the unsynced-loss prompt", async () => {
+    logoutMock.mockResolvedValueOnce(false);
+    renderHook(() => useDemoCommands());
+    const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
+    byId["session.sign-out"]!.run();
+
+    await vi.waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
+    await Promise.resolve();
+    expect(toastSuccessMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(toastErrorMock).not.toHaveBeenCalled();
   });
 
   it("session.sign-out shows an error toast when logout fails", async () => {

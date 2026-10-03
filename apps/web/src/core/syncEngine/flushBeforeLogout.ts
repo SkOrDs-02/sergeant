@@ -21,16 +21,30 @@
  * той розрив, але протилежним способом — не вичищає чергу, а намагається
  * її доставити.
  *
+ * Що рахується втратою (аудит 2026-10-01, `data-19`): `pending` (включно з
+ * тими, що в бекофі) + `dead_letter` + не-benign `rejected` ПОТОЧНОГО
+ * користувача. Раніше рахувався лише `pending`, а `dead_letter` (сервер так і
+ * не прийняв — після 10-15 хв поганої мережі уся черга опиняється тут) і
+ * `rejected` стирались мовчки навіть зі сторінки Профілю. Лічильник читається
+ * прямо з БД, а не з рантайму синку: рантайм може бути не піднятий (бут
+ * упав), і тоді «рушія немає» не означає «черги немає».
+ *
+ * Перед тим як здатися, модуль СПРОБУЄ доставити: скидає бекоф `pending`,
+ * оживляє `dead_letter` (одна додаткова спроба) і жене `flushNow()` у циклі,
+ * доки черга зменшується і не вичерпано бюджет часу. Один `flushNow()` —
+ * це лише один батч (100) і лише «due» рядки, цього мало.
+ *
  * Свідомо НЕ кидає: вихід не має падати через синхронізацію. Уся
  * діагностика — у поверненому результаті, і вже викликач вирішує, чи
  * питати користувача (див. `AuthContext.logout`).
  */
-import { getSyncEngineWriter } from "./singleton";
+import { getSyncEngineWriter, BENIGN_REJECT_REASONS } from "./singleton";
+import { isSyncableUserId } from "./syncableUserId";
 import { logger } from "@shared/lib";
 
 /**
- * Скільки чекаємо на доставку черги, перш ніж здатися і віддати рішення
- * користувачеві.
+ * Скільки чекаємо на доставку черги (усі раунди разом), перш ніж здатися і
+ * віддати рішення користувачеві.
  *
  * 5 секунд — компроміс: на живій мережі пуш проходить за сотні
  * мілісекунд, тож людина нічого не помічає; довше тримати вихід
@@ -40,17 +54,21 @@ import { logger } from "@shared/lib";
  */
 export const LOGOUT_FLUSH_TIMEOUT_MS = 5_000;
 
+/** Запобіжник від нескінченного циклу, якщо лічильник «прогресує» вічно. */
+const MAX_FLUSH_ROUNDS = 50;
+
 export interface FlushBeforeLogoutResult {
   /**
-   * Скільки записів лишилось недоставленими. `0` — можна безпечно
+   * Скільки записів лишилось недоставленими (pending + dead_letter +
+   * не-benign rejected поточного користувача). `0` — можна безпечно
    * стирати локальну БД.
    */
   readonly pending: number;
   /**
-   * `true`, якщо ми не змогли достукатись до рушія синхронізації або
-   * перевірка впала. Тоді `pending` недостовірний і трактується як `0`
-   * (fail-open): краще випустити людину з акаунта, ніж заблокувати вихід
-   * через зламану телеметрію.
+   * `true`, якщо не вдалося прочитати чергу або перевірка впала. Тоді
+   * `pending` недостовірний і трактується як `0` (fail-open): краще
+   * випустити людину з акаунта, ніж заблокувати вихід через зламану
+   * телеметрію.
    */
   readonly unknown: boolean;
 }
@@ -75,35 +93,72 @@ async function withTimeout<T>(
 /**
  * Пробує доставити все, що стоїть у черзі, і повертає, скільки лишилось.
  *
- * Порядок навмисний: спершу дешева перевірка лічильника, і лише якщо
- * справді є що відправляти — дорогий `flushNow()`. Переважна більшість
- * виходів відбувається з порожньою чергою, і вони не мають платити ні
- * мережевим запитом, ні затримкою.
+ * Порядок навмисний: спершу дешевий лічильник, і лише якщо справді є що
+ * відправляти — дорогий дренаж. Переважна більшість виходів відбувається з
+ * порожньою чергою, і вони не мають платити ні мережевим запитом, ні
+ * затримкою.
  */
 export async function flushPendingSyncOpsBeforeLogout(
   timeoutMs: number = LOGOUT_FLUSH_TIMEOUT_MS,
 ): Promise<FlushBeforeLogoutResult> {
-  const runtime = getSyncEngineWriter();
-  // Рушій не піднятий (анонімна сесія, ранній вихід, вимкнена
-  // синхронізація) — черги не існує, стирати безпечно.
-  if (!runtime) return SAFE;
+  const deadline = Date.now() + timeoutMs;
+  const remaining = () => Math.max(0, deadline - Date.now());
 
   try {
-    const before = await withTimeout(runtime.getStatus(), timeoutMs);
-    if (before === null) return { pending: 0, unknown: true };
-    if (before.pending === 0) return SAFE;
+    // Динамічно: sqlite-wasm і db-schema не мають їхати в eager-чанк auth
+    // (див. `sqlite.lazy.test.ts`).
+    const [sqliteMod, dbSchema] = await Promise.all([
+      import("../db/sqlite"),
+      import("@sergeant/db-schema/sqlite"),
+    ]);
+    const userId = sqliteMod.readActiveSqliteUserId();
+    // Анонімна/демо-партиція не має черги, яку варто доставляти.
+    if (userId === null || !isSyncableUserId(userId)) return SAFE;
 
-    logger.info(
-      `[auth.logout] flushing ${before.pending} pending sync op(s) before wipe`,
+    const countUnsynced = async (): Promise<number> => {
+      const client = (await sqliteMod.getSqliteDb()).migrationClient();
+      return dbSchema.countUnsyncedOutboxForUser(client, {
+        userId,
+        excludeRejectReasons: [...BENIGN_REJECT_REASONS],
+      });
+    };
+
+    let left = await withTimeout(countUnsynced(), remaining());
+    if (left === null) return { pending: 0, unknown: true };
+    if (left === 0) return SAFE;
+
+    // Рушія немає (бут упав, вимкнений синк) — доставити нічим, але черга
+    // реально є і зникне разом із файлом. Звітуємо як є, а не «безпечно».
+    const runtime = getSyncEngineWriter();
+    if (!runtime) return { pending: left, unknown: false };
+
+    logger.info(`[auth.logout] flushing ${left} unsynced op(s) before wipe`);
+
+    // Бекоф: рядки з `next_retry_at` у майбутньому `drain` пропускає, хоча
+    // людина вже на мережі й кожна секунда на вагу. Dead-letter оживляємо
+    // для однієї додаткової спроби: інакше вони не доставляються зовсім.
+    const client = (await sqliteMod.getSqliteDb()).migrationClient();
+    await withTimeout(
+      dbSchema.resetOutboxBackoffForUser(client, userId),
+      remaining(),
     );
-    await withTimeout(runtime.flushNow(), timeoutMs);
+    await withTimeout(runtime.recoverAllDeadLetters(), remaining());
 
-    // Перечитуємо стан замість того, щоб довіряти результату пуша:
-    // `flushNow` звітує про ОДИН батч (ліміт 100), а черга могла бути
-    // довшою, і паралельний запис міг додати рядок уже після старту.
-    const after = await withTimeout(runtime.getStatus(), timeoutMs);
-    if (after === null) return { pending: 0, unknown: true };
-    return { pending: after.pending, unknown: false };
+    for (let round = 0; round < MAX_FLUSH_ROUNDS && remaining() > 0; round++) {
+      await withTimeout(runtime.flushNow(), remaining());
+      // Перечитуємо стан замість того, щоб довіряти результату пуша:
+      // `flushNow` звітує про ОДИН батч (ліміт 100), а паралельний запис
+      // міг додати рядок уже після старту.
+      const after = await withTimeout(countUnsynced(), remaining());
+      if (after === null) return { pending: 0, unknown: true };
+      if (after === 0) return SAFE;
+      const progressed = after < left;
+      left = after;
+      // Лічильник не зменшився — решта в бекофі/відхиляється; ще раунд
+      // лише спалить бюджет часу.
+      if (!progressed) break;
+    }
+    return { pending: left, unknown: false };
   } catch (err) {
     // Fail-open: збій цієї перевірки не має ставати причиною, через яку
     // людина не може вийти з акаунта.
