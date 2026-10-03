@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared";
+import { kyivMondayStartMs, toKyivISODate } from "@sergeant/shared";
 
 import { logger } from "../../obs/logger.js";
 import { isChatPreset } from "./chatPresets.js";
@@ -87,7 +87,7 @@ export function parseLimit<F extends number | null>(
 
 /** Понеділок поточного київського тижня — ключ вікна для preset-відра. */
 function thisWeek(): string {
-  return toLocalISODate(kyivMondayStartMs());
+  return toKyivISODate(kyivMondayStartMs());
 }
 
 /**

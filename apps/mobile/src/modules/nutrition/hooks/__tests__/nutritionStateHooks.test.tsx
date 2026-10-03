@@ -10,6 +10,11 @@ import {
   notifyNutritionSqliteCacheRefresh,
 } from "../../lib/sqliteReadGate";
 import type { SavedRecipe } from "../../lib/recipeBookStore";
+import {
+  EAST_OF_KYIV,
+  installFakeDeviceZone,
+  WEST_OF_KYIV,
+} from "../../__tests__/fakeDeviceZone";
 import { useNutritionLog } from "../useNutritionLog";
 import { useNutritionPantries } from "../useNutritionPantries";
 import { useNutritionPrefs } from "../useNutritionPrefs";
@@ -121,6 +126,25 @@ describe("nutrition state hooks", () => {
       ),
     ).toBe(false);
   });
+
+  it.each([
+    ["на захід від Києва", WEST_OF_KYIV],
+    ["на схід від Києва", EAST_OF_KYIV],
+  ] as const)(
+    "відкриває журнал на «сьогодні» за годинником пристрою, а не Києва (ADR-0078): %s",
+    (_name, zone) => {
+      // fake-timers `Date` не підтримує підклас із перевизначеними геттерами.
+      jest.useRealTimers();
+      const restore = installFakeDeviceZone(zone);
+      try {
+        const { result } = renderHook(() => useNutritionLog());
+        expect(result.current.selectedDate).toBe(zone.deviceDay);
+        expect(result.current.selectedDate).not.toBe(zone.kyivDay);
+      } finally {
+        restore();
+      }
+    },
+  );
 
   it("shows every storage place together and applies SQLite overlays", async () => {
     const { result } = renderHook(() => useNutritionPantries());

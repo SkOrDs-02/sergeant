@@ -42,7 +42,9 @@ type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
  * версію рядка, локальна операція просто програла. Решта термінальних причин
  * означає, що дані НЕ доїхали і самі не доїдуть.
  */
-const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set(["lww_conflict"]);
+export const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set([
+  "lww_conflict",
+]);
 
 /**
  * Термінальний reject у outbox довго був повністю німим: рядок отримував

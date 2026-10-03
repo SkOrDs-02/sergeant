@@ -432,7 +432,7 @@ export function MemoryBankSection() {
           </div>
         )}
         {manualOpen && manualStep && (
-          <div className="mt-4 rounded-2xl border border-line bg-panelHi/60 p-3 text-left">
+          <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3 text-left">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-style-caption text-muted">
@@ -454,7 +454,7 @@ export function MemoryBankSection() {
             </div>
             <Textarea
               id="memory-manual-step"
-              className="mt-3 min-h-[88px]"
+              className="mt-3 min-h-[88px] bg-panel"
               value={manualValue}
               onChange={(event) => setManualValue(event.target.value)}
               placeholder={manualStep.placeholder}
@@ -476,7 +476,7 @@ export function MemoryBankSection() {
           </div>
         )}
         {pendingImport && (
-          <div className="mt-4 rounded-2xl border border-line bg-panelHi/60 p-3 text-left">
+          <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3 text-left">
             <p className="text-style-label text-text">
               Перевір імпорт: {pendingImport.fileName}
             </p>

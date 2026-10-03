@@ -51,7 +51,7 @@ describe("BODY_SIZE_POLICY (declarative table)", () => {
       expect(rule.pathPrefix).toMatch(/^\//);
       expect(rule.limit).toMatch(/^\d+(?:b|kb|mb|gb)$/i);
       expect(rule.reason.length).toBeGreaterThan(8);
-      expect(["json", "raw"]).toContain(rule.kind);
+      expect(["json", "raw", "urlencoded"]).toContain(rule.kind);
       if (rule.kind === "raw") {
         expect(rule.type).toBeTruthy();
       }
@@ -77,7 +77,11 @@ describe("BODY_SIZE_POLICY (declarative table)", () => {
     for (const [prefix, list] of seen) {
       if (list.length > 1) {
         // Дублі дозволені тільки коли кожен rule має унікальний `type`-matcher.
-        const types = new Set(list.map((r: BodySizeRule) => r.type ?? "*"));
+        const types = new Set(
+          list.map(
+            (r: BodySizeRule) => ("type" in r ? r.type : undefined) ?? "*",
+          ),
+        );
         expect(
           types.size,
           `prefix ${prefix} має дублі без унікального type`,
@@ -256,7 +260,7 @@ describe("B28 — inflate:false на AI-роутах (gzip-тіло не роз�
     expect(res.status).toBe(415);
   });
 
-  it("не-AI роут (default) поведінку не змінює: gzip і надалі розпаковується", async () => {
+  it("rel-04: default-роут теж не розпаковує gzip → 415 (анонімна ампліфікація до auth)", async () => {
     const app = makeApp();
     const res = await request(app)
       .post("/api/something-default")
@@ -264,8 +268,45 @@ describe("B28 — inflate:false на AI-роутах (gzip-тіло не роз�
       .set("Content-Encoding", "gzip")
       .serialize((b: unknown) => b as unknown as string)
       .send(gz);
-    expect(res.status).toBe(200);
-    expect(res.body.receivedKeys).toBe(1);
+    expect(res.status).toBe(415);
+  });
+
+  it("rel-04: великі не-AI правила (sync v1/v2, statement/preview, import/commit, backup-upload) → gzip 415 без розпаковки", async () => {
+    const app = makeApp();
+    // gzip-бомба: ~6MB нулів стискається до кількох KB; без inflate:false
+    // body-parser розпакував би й розпарсив її ще до 401/403.
+    const bomb = gzipSync(
+      JSON.stringify({ data: "0".repeat(6 * 1024 * 1024) }),
+    );
+    expect(bomb.length).toBeLessThan(20 * 1024);
+    for (const path of [
+      "/api/v2/sync/push",
+      "/api/sync/audit",
+      "/api/finyk/import/statement/preview",
+      "/api/finyk/import/commit",
+      "/api/nutrition/backup-upload",
+    ]) {
+      const res = await request(app)
+        .post(path)
+        .set("Content-Type", "application/json")
+        .set("Content-Encoding", "gzip")
+        .serialize((b: unknown) => b as unknown as string)
+        .send(bomb);
+      expect(res.status, path).toBe(415);
+    }
+  });
+
+  it("rel-04: інваріант — кожне правило з лімітом понад 128kb і default мають inflate:false", () => {
+    const toBytes = (l: string): number => {
+      const m = /^(\d+)(b|kb|mb|gb)$/i.exec(l);
+      const mult = { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 } as const;
+      return Number(m![1]) * mult[m![2]!.toLowerCase() as keyof typeof mult];
+    };
+    for (const rule of BODY_SIZE_POLICY) {
+      if (toBytes(rule.limit) > 128 * 1024 || rule.pathPrefix === "/") {
+        expect(rule.inflate, rule.pathPrefix).toBe(false);
+      }
+    }
   });
 
   it("усі AI-правила з таблиці мають inflate:false", () => {

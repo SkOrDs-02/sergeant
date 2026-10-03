@@ -114,10 +114,14 @@ describe("WeekDayStrip", () => {
     expect(selected?.className).not.toMatch(
       /border-routine-ring|ring-routine-line/,
     );
-    // Невибраний день не змінився: прозора межа, висота не стрибає.
+    // Невибраний день: тонкий контур `border-line` без напівпрозорої
+    // заливки (S 1.05 / 1.09 → 1.57 / 1.56, хвиля 5 аудиту контрасту). Межа
+    // є в обох станах, тож висота клітинки не стрибає при зміні вибору.
     const other = screen
       .getAllByRole("button")
       .find((button) => button.getAttribute("aria-pressed") === "false");
-    expect(other).toHaveClass("border-transparent");
+    expect(other).toHaveClass("border", "border-line");
+    expect(other).not.toHaveClass("border-transparent");
+    expect(other?.className).not.toMatch(/bg-panelHi\/\d+/);
   });
 });

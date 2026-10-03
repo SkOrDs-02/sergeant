@@ -4,7 +4,7 @@
 // рівень заощаджень і дельта по категоріях. Усе рахується з точних сум
 // (копійок), округлює лише показ (Р7), а відсоток дельти рахує той самий
 // `compareAmounts`, що й порівняння місяців (Р4).
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { resolveExpenseCategoryMeta, txTimeMs } from "../utils";
 import {
   compareAmounts,
@@ -48,7 +48,7 @@ export interface MonthlyTrendOptions extends Pick<
 function monthKeyOf(tx: Pick<Transaction, "time">): string | null {
   const ms = txTimeMs(tx.time);
   if (!Number.isFinite(ms) || ms <= 0) return null;
-  return toLocalISODate(new Date(ms)).slice(0, 7);
+  return toKyivISODate(new Date(ms)).slice(0, 7);
 }
 
 function shiftMonth(key: string, delta: number): string {
@@ -78,7 +78,7 @@ export function buildMonthlyTrend(
   } = opts;
   const excluded =
     excludedTxIds instanceof Set ? excludedTxIds : new Set(excludedTxIds ?? []);
-  const currentKey = toLocalISODate(now).slice(0, 7);
+  const currentKey = toKyivISODate(now).slice(0, 7);
   const firstWindowKey = shiftMonth(currentKey, -(Math.max(1, months) - 1));
 
   const buckets = new Map<string, Transaction[]>();

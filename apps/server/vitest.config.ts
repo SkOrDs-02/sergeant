@@ -26,9 +26,13 @@ export default defineConfig({
     // Тіньовий Jev-детектор увімкнений за замовчуванням і ходить у мережу з
     // кожного `prepareToolResults`; у юнітах вимкнений з тієї ж причини, а
     // вмикається явно в `chat/injectionShadowJev.test.ts`.
+    // Верифікація чисел (ADR-0097) за замовчуванням у `shadow`; у юнітах `off`,
+    // щоб метрики й лог чужих чат-тестів не залежали від тексту відповідей.
+    // Явно вмикається в `chat/numberVerify/*.test.ts` і `chat.numberVerify.test.ts`.
     env: {
       LAST_SEEN_TRACKING_ENABLED: "false",
       CHAT_INJECTION_JEV_SHADOW: "false",
+      CHAT_NUMBER_VERIFY: "off",
     },
     // `scripts/**` включено свідомо: `scripts/token-reencrypt-rollover.test.ts`
     // (ротація ключа шифрування токенів) раніше лежав поза include і не

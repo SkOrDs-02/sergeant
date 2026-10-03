@@ -85,7 +85,6 @@ export {
   updateLogEntry,
   updatePantry,
 } from "@sergeant/nutrition-domain";
-export { toLocalISODate } from "@sergeant/shared";
 export type {
   DaySummary,
   MacrosRow,
