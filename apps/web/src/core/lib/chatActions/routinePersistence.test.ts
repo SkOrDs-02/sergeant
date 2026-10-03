@@ -67,6 +67,16 @@ describe("persistRoutineState", () => {
     expect(dualWriteRoutineState).toHaveBeenCalledTimes(1);
   });
 
+  it("у батчі повтор із errored > 0 не рапортує довговічність (data-05)", async () => {
+    saveRoutineStateDurable.mockResolvedValue(false);
+    dualWriteRoutineState.mockResolvedValue({
+      status: "applied",
+      result: { applied: 0, errored: 1, skipped: 0 },
+    });
+    const { writes } = captureRoutineWrites(() => persistRoutineState(STATE));
+    await expect(writes[0]).resolves.toBe(false);
+  });
+
   it("збирач ізольований: поза capture промиси нікуди не течуть", async () => {
     saveRoutineStateDurable.mockResolvedValue(true);
     const { writes } = captureRoutineWrites(() => undefined);

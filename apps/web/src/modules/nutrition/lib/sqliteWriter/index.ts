@@ -29,9 +29,9 @@ import {
 } from "./diff.js";
 import { probeNutritionParity } from "./parity.js";
 import {
-  ackDualWrite,
   journalDualWrite,
   pendingDualWrites,
+  settleDualWriteEntry,
 } from "../../../../core/durability/dualWriteJournal.js";
 import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 
@@ -126,6 +126,7 @@ export function __clearNutritionDualWriteContextForTests(): void {
   dualWriteQueue = Promise.resolve();
   replayedJournalIds.clear();
   pendingBeforeRegistration.length = 0;
+  inFlightRuns = 0;
 }
 
 /**
@@ -134,6 +135,19 @@ export function __clearNutritionDualWriteContextForTests(): void {
  */
 export function isNutritionDualWriteRegistered(): boolean {
   return registeredContext !== null;
+}
+
+/**
+ * Id користувача зареєстрованого dual-write контексту (`null`, поки контексту
+ * нема або auth ще резолвиться). Читає `nutritionStorage`, щоб звірити
+ * прапор «початковий pull завершено» саме з поточним користувачем (data-04).
+ */
+export function getNutritionDualWriteUserId(): string | null {
+  try {
+    return registeredContext?.getUserId() ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -262,6 +276,18 @@ let pendingBeforeRegistration: {
   next: NutritionDualWriteState;
 }[] = [];
 
+/** Записи, що вже в черзі, але ще не пройшли apply → refresh кешу. */
+let inFlightRuns = 0;
+
+/**
+ * `true`, поки є запис, чий результат ще не потрапив у кеш: буферизований до
+ * реєстрації контексту або в черзі. `nutritionStorage` тримає «останній
+ * записаний prefs» саме на цей час (data-04).
+ */
+export function hasPendingNutritionDualWrites(): boolean {
+  return inFlightRuns > 0 || pendingBeforeRegistration.length > 0;
+}
+
 function flushPendingBeforeRegistration(): void {
   if (pendingBeforeRegistration.length === 0) return;
   const queued = pendingBeforeRegistration;
@@ -355,6 +381,7 @@ function enqueueNutritionRun(
   journalId: string | null,
 ): void {
   __openNutritionSqliteMutationWindow();
+  inFlightRuns += 1;
   dualWriteQueue = dualWriteQueue
     .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
     .then(async () => {
@@ -364,9 +391,7 @@ function enqueueNutritionRun(
       // «sqlite недоступна» лишає запис у журналі для наступного буту.
       // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
       // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
-      if (journalId && outcome.status === "applied") {
-        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
-      }
+      settleDualWriteEntry("nutrition", journalId, outcome, outboxSettled);
     })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
@@ -374,6 +399,7 @@ function enqueueNutritionRun(
       });
     })
     .then(() => {
+      inFlightRuns = Math.max(0, inFlightRuns - 1);
       __closeNutritionSqliteMutationWindow();
       // No-op while later writes are still queued (their windows are
       // open); the last write of a burst delivers the visible refresh.

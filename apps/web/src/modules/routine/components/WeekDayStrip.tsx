@@ -96,9 +96,21 @@ export function WeekDayStrip({
                 // проти сусідів в обох темах). Тихий `routine-ring` давав
                 // 1.63 (світла) / 2.41 (темна), а м'яке кільце `ring-1` лише
                 // розмивало край — A4, рішення власника 2026-10-01.
+                //
+                // Невибраний — тонкий контур `border-line` без заливки (хвиля
+                // 5 аудиту контрасту; було `border-transparent bg-panelHi/50`,
+                // S 1.05 світла / 1.09 темна, тобто зливався з карткою).
+                // Заміряно три варіанти на невибраних днях: суцільна заливка
+                // `bg-panelHi` дає 1.09 `flat` у світлій (це сама пара токенів
+                // `panel`/`panelHi`) і 1.21 у темній; контур `border-line` —
+                // 1.57 / 1.56 в обох; заливка + контур теж 1.57 / 1.56, але
+                // важча. Обрано контур: `ok` в обох темах і найтихіший, а
+                // вибраний (тон + `routine-edge`, 6.9) лишається помітно
+                // гучнішим. Усі клітинки мають `border`, тож висота не
+                // стрибає при зміні вибору.
                 isSel
                   ? "border-routine-edge bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm"
-                  : "border-transparent bg-panelHi/50 text-muted hover:bg-panelHi hover:text-text",
+                  : "border-line text-muted hover:bg-panelHi hover:text-text",
                 isToday && !isSel && "ring-1 ring-routine/40",
               )}
             >

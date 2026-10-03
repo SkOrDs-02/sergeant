@@ -152,6 +152,25 @@ const envSchema = z.object({
    */
   CHAT_INJECTION_JEV_SHADOW: boolFromEnv(true),
 
+  /**
+   * Верифікація чисел у відповідях чату (ADR-0097, `chat/numberVerify/`).
+   *
+   *   `off`     - нічого не рахується, жодних метрик;
+   *   `shadow`  - дефолт: число звіряється з поданим, результат іде лише в
+   *               метрики й лог без чисел і тексту, відповідь не змінюється;
+   *   `enforce` - парсер приймає значення, але ДО PR3 серії воно поводиться
+   *               як `shadow`: повторної генерації й вирізання цифр ще немає.
+   *
+   * Незадане або порожнє значення дає `shadow`; регістр і крайні пробіли не
+   * важливі; будь-що інше валить старт (на прапорці, що колись переписуватиме
+   * текст людині, гадати не можна).
+   * Умова зняття - `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_NUMBER_VERIFY: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(["off", "shadow", "enforce"]).default("shadow"),
+  ),
+
   CHAT_CACHE_TTL_1H: boolFromEnv(true),
 
   CHAT_RESPONSE_CACHE_TTL_MS: intFromEnv(60_000),

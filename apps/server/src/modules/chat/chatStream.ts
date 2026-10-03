@@ -11,6 +11,8 @@ import { makeAiProviderError } from "../../obs/errors.js";
 import { replaceLongDash } from "../../lib/modelText.js";
 import { logger } from "../../obs/logger.js";
 import { aiFirstTokenMs } from "../../obs/metrics.js";
+import { type GivenSources } from "./numberVerify/givenCorpus.js";
+import { shadowVerifyNumbers } from "./numberVerify/shadow.js";
 import {
   type AnthropicMessagesResponseData,
   type FetchResponse,
@@ -282,6 +284,12 @@ export async function streamAnthropicToSse(
    * дерево. Див. `AnthropicCallOptions.traceId`.
    */
   traceId?: string,
+  /**
+   * Подане цього туру для верифікації чисел (ADR-0097): без нього, або в режимі
+   * `CHAT_NUMBER_VERIFY=off`, звірки немає. Функція, щоб у `off` нічого не
+   * збирати. Не впливає на фрейми, які бачить клієнт.
+   */
+  numberVerifyGiven?: () => GivenSources,
 ): Promise<void> {
   let firstStream: AnthropicStreamResult;
   try {
@@ -495,6 +503,24 @@ export async function streamAnthropicToSse(
     }
   } finally {
     clearInterval(heartbeat);
+  }
+
+  // Верифікація чисел (ADR-0097) на повному тексті туру синтезу. Обірваний
+  // стрім (помилка, відʼєднання клієнта) звіряти нема сенсу: це половина
+  // відповіді, і розбіжність у ній нічого не каже. У shadow фрейми вже
+  // віддані й не змінюються.
+  if (
+    numberVerifyGiven &&
+    accumulatedAllText &&
+    lastOutcome !== "error" &&
+    !abortSignal?.aborted
+  ) {
+    shadowVerifyNumbers({
+      turn: "synthesis",
+      model: (payload["model"] as string) || "unknown",
+      answer: accumulatedAllText,
+      given: numberVerifyGiven,
+    });
   }
 
   // Модель чесно закрила стрім (`outcome: ok`), але не дала жодного символу.

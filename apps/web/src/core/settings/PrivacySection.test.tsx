@@ -84,16 +84,12 @@ import { DEFAULT_PREFERENCES, PrivacySection } from "./PrivacySection";
 // (тести — `AppLockSettings.test.tsx`), серверна памʼять з очищенням — у
 // `profile/AiMemorySection` (тести там же). Тут лишились згоди.
 
-// PR-S2: до 2026-09-14 будь-яка помилка GET давала «Увійди в акаунт», тож
-// тести нижче обходились `new Error("401")` — рядок був декорацією, код його
-// не читав. Тепер причину розрізняють по `ApiError`, і гостьовий випадок
-// треба будувати чесно: інакше тест перевіряв би гілку `failure`, думаючи, що
-// перевіряє гостя.
-const unauthorized = () =>
+// PR-S2: причину збою GET розрізняють по `ApiError`, тож помилки в тестах
+// будуємо чесно (гість `401` — у `PrivacySection.guest.test.tsx`).
+const offlineError = () =>
   new ApiError({
-    kind: "http",
-    status: 401,
-    message: "Unauthorized",
+    kind: "network",
+    message: "Failed to fetch",
     url: "/api/me/preferences",
   });
 
@@ -419,12 +415,14 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
   });
 
   it("shows an error when getPreferences API call fails", async () => {
-    vi.mocked(meApi.getPreferences).mockRejectedValue(unauthorized());
+    vi.mocked(meApi.getPreferences).mockRejectedValue(offlineError());
     renderSection();
     await openSection();
 
     await waitFor(() =>
-      expect(screen.getByText(/Увійди в акаунт/i)).toBeInTheDocument(),
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /Немає звʼязку з сервером/i,
+      ),
     );
   });
 
@@ -433,11 +431,11 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     // ні тумблерів (коректно, L-3), ні способу вийти з цього стану, крім
     // виходу зі сторінки Налаштувань і повернення. Тепер поруч із
     // повідомленням є кнопка, що повторно кличе той самий фетч.
-    vi.mocked(meApi.getPreferences).mockRejectedValueOnce(unauthorized());
+    vi.mocked(meApi.getPreferences).mockRejectedValueOnce(offlineError());
     renderSection();
     await openSection();
 
-    await screen.findByText(/Увійди в акаунт/i);
+    await screen.findByRole("alert");
     expect(
       screen.queryByRole("switch", { name: /Аналітика продукту/i }),
     ).not.toBeInTheDocument();
@@ -449,11 +447,11 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     expect(
       await screen.findByRole("switch", { name: /Аналітика продукту/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  // PR-S2. Гостю спокійний `role="status"` правильний: для нього це не
-  // поломка, а очікуваний стан (огляд 2026-09-04). Але доти ТА САМА подача
+  // PR-S2. Гість — не поломка, а очікуваний стан (тепер із власним тумблером,
+  // див. `PrivacySection.guest.test.tsx`). Але доти ТА САМА подача
   // діставалась і офлайну, і 500-ці — тобто справжню поломку показували як
   // норму, ще й стверджуючи неправду про стан акаунта.
   it("PR-S2: офлайн читається як поломка, а не як «ти не залогінений»", async () => {
@@ -470,6 +468,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     const message = await screen.findByRole("alert");
     expect(message).toHaveTextContent(/Немає звʼязку з сервером/i);
     expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
     // Вихід зі стану лишається: кнопка повтору не зникла разом зі зміною подачі.
     expect(
       screen.getByRole("button", { name: "Спробувати ще" }),
@@ -491,15 +490,6 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     const message = await screen.findByRole("alert");
     expect(message).toHaveTextContent(/Не вдалося завантажити налаштування/i);
     expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
-  });
-
-  it("PR-S2: гість лишається спокійним status, а не alert", async () => {
-    vi.mocked(meApi.getPreferences).mockRejectedValue(unauthorized());
-    renderSection();
-    await openSection();
-
-    await screen.findByText(/Увійди в акаунт/i);
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 

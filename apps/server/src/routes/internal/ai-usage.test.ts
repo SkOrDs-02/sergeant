@@ -3,7 +3,7 @@
  *
  * The `usage_day` column written here must use the **Europe/Kyiv** civil day
  * (domain invariant), because the same `ai_usage_daily.usage_day` column is
- * written elsewhere via `toLocalISODate` (`lib/anthropicUsageStore.ts`) and
+ * written elsewhere via `toKyivISODate` (`lib/anthropicUsageStore.ts`) and
  * read back as a Kyiv-day in `modules/openclaw/aiCostSummary.ts`. A UTC-day
  * key here would split the same civil day across two rows.
  *

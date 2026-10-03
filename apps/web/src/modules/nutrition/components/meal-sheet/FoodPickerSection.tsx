@@ -152,7 +152,7 @@ export function FoodPickerSection({
                 {/* Роздільник потрібен, коли є з чим розділяти: локальні
                     хіти вище або більше ніж одне зовнішнє джерело. */}
                 {(foodHits.length > 0 || offHitGroups.length > 1) && (
-                  <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold">
+                  <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi font-semibold">
                     {group.label}
                   </li>
                 )}
