@@ -374,4 +374,119 @@ describe("data-09: дельта і партиція книги рецептів"
     const [first] = await listSavedRecipes();
     expect(first).not.toHaveProperty("ownerId");
   });
+
+  // Записи, що лежать у IDB від версії до партиціювання, не мають ownerId.
+  async function putRawRecipe(record: Record<string, unknown>): Promise<void> {
+    const db = await openSergeantDb();
+    const tx = db!.transaction("nutrition_recipes", "readwrite");
+    tx.objectStore("nutrition_recipes").put(record);
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function idbIds(): Promise<string[]> {
+    const db = await openSergeantDb();
+    const tx = db!.transaction("nutrition_recipes", "readonly");
+    const all = await new Promise<{ id: string }[]>((resolve, reject) => {
+      const r = tx.objectStore("nutrition_recipes").getAll();
+      r.onsuccess = () => resolve(r.result as { id: string }[]);
+      r.onerror = () => reject(r.error);
+    });
+    return all.map((r) => r.id);
+  }
+
+  it("безвласний запис із копією в кеші власника видно одразу на маунті", async () => {
+    await putRawRecipe(recipeCacheRow("rcp_legacy", "Старий"));
+    __setNutritionSqliteCacheForTests({
+      recipes: [recipeCacheRow("rcp_legacy", "Старий")],
+    });
+    expect((await listSavedRecipes()).map((r) => r.id)).toEqual(["rcp_legacy"]);
+  });
+
+  it("книга з кешу видна навіть коли IDB порожня (новий пристрій)", async () => {
+    __setNutritionSqliteCacheForTests({
+      recipes: [recipeCacheRow("rcp_server", "Серверний")],
+    });
+    expect((await listSavedRecipes()).map((r) => r.id)).toEqual(["rcp_server"]);
+  });
+
+  it("безвласний запис без копії в кеші невідомого походження не показується", async () => {
+    await putRawRecipe(recipeCacheRow("rcp_orphan", "Невідомий"));
+    expect(await listSavedRecipes()).toEqual([]);
+  });
+
+  it("кеш чужого акаунта не підмішується: читається кеш поточного", async () => {
+    __setNutritionSqliteCacheForTests({
+      recipes: [recipeCacheRow("rcp_a_cache", "З кешу A")],
+    });
+    expect((await listSavedRecipes()).map((r) => r.id)).toEqual([
+      "rcp_a_cache",
+    ]);
+    clearNutritionSqliteCache();
+    currentUserId = "user-b";
+    expect(await listSavedRecipes()).toEqual([]);
+  });
+
+  it("видалення безвласного запису (до партиціювання) шле recipe-delete і стирає його з IDB", async () => {
+    await putRawRecipe(recipeCacheRow("rcp_legacy", "Старий"));
+    __setNutritionSqliteCacheForTests({
+      recipes: [recipeCacheRow("rcp_legacy", "Старий")],
+    });
+
+    expect(await deleteSavedRecipe("rcp_legacy")).toBe(true);
+
+    expect(emittedRecipeOps()).toEqual([
+      { kind: "recipe-delete", recipeId: "rcp_legacy" },
+    ]);
+    expect(await idbIds()).toEqual([]);
+    // Кеш ще не оновився (op у черзі), але видалене не воскресає.
+    expect(await listSavedRecipes()).toEqual([]);
+  });
+
+  it("видалення запису з тегом local-anon, чия копія вже в кеші акаунта, шле recipe-delete", async () => {
+    await putRawRecipe({
+      ...recipeCacheRow("rcp_anon", "Анонімний"),
+      ownerId: "local-anon",
+    });
+    __setNutritionSqliteCacheForTests({
+      recipes: [recipeCacheRow("rcp_anon", "Анонімний")],
+    });
+
+    expect(await deleteSavedRecipe("rcp_anon")).toBe(true);
+
+    expect(emittedRecipeOps()).toEqual([
+      { kind: "recipe-delete", recipeId: "rcp_anon" },
+    ]);
+    // Запис чужого тегу в IDB не чіпаємо, але у списку його вже немає.
+    expect(await listSavedRecipes()).toEqual([]);
+  });
+
+  it("серверний рецепт, якого немає в IDB, видаляється recipe-delete-ом", async () => {
+    __setNutritionSqliteCacheForTests({
+      recipes: [recipeCacheRow("rcp_server", "Серверний")],
+    });
+    expect(await deleteSavedRecipe("rcp_server")).toBe(true);
+    expect(emittedRecipeOps()).toEqual([
+      { kind: "recipe-delete", recipeId: "rcp_server" },
+    ]);
+  });
+
+  it("безвласний запис без копії в кеші відмовляється видалятись (false, без op)", async () => {
+    await putRawRecipe(recipeCacheRow("rcp_orphan", "Невідомий"));
+    expect(await deleteSavedRecipe("rcp_orphan")).toBe(false);
+    expect(emittedRecipeOps()).toEqual([]);
+    expect(await idbIds()).toEqual(["rcp_orphan"]);
+  });
+
+  it("повторне збереження видаленого id знімає позначку видалення (undo)", async () => {
+    __setNutritionSqliteCacheForTests({
+      recipes: [recipeCacheRow("rcp_u", "Undo")],
+    });
+    await deleteSavedRecipe("rcp_u");
+    expect(await listSavedRecipes()).toEqual([]);
+    await saveRecipeToBook({ id: "rcp_u", title: "Undo" });
+    expect((await listSavedRecipes()).map((r) => r.id)).toEqual(["rcp_u"]);
+  });
 });
