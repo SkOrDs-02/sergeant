@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-30.
+> **Last touched:** 2026-10-03 by @claude. **Next review:** 2027-01-01.
 > **Status:** Active
 > **Runtime-specific:** no
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @zaebal-beep недоступний тиждень / місяць / 6 місяців?»
@@ -57,13 +57,13 @@ lang: en
 
 ## What breaks first (absence timeline)
 
-| Duration      | What breaks                                                 | Action                                                                                |
-| ------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **< 1 week**  | Nothing critical. CI runs, auto-deploy works.               | Monitor Sentry / Coolify.                                                             |
-| **1–2 weeks** | Monobank webhook token may expire (30-day validity).        | Renew via Monobank developer portal using credentials in 1Password.                   |
-| **1 month**   | DNS / domain renewal reminder appears.                      | Check `sergeant.app` domain registrar (credentials in 1Password). Hetzner invoice.    |
-| **3 months**  | APNs key rotation may be needed (annual but good to check). | Re-generate APNs key in Apple Developer Portal; update `APNS_KEY` in Coolify app env. |
-| **6 months**  | Renovate PRs accumulate. Security advisories may stack up.  | Merge Renovate PRs in order (check CI passes). Review `pnpm audit`.                   |
+| Duration      | What breaks                                                  | Action                                                                                |
+| ------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| **< 1 week**  | Nothing critical. CI runs, auto-deploy works.                | Monitor Sentry / Coolify.                                                             |
+| **1–2 weeks** | Monobank webhook token may expire (30-day validity).         | Renew via Monobank developer portal using credentials in 1Password.                   |
+| **1 month**   | DNS / domain renewal reminder appears.                       | Check `sergeant.app` domain registrar (credentials in 1Password). Hetzner invoice.    |
+| **3 months**  | APNs key rotation may be needed (annual but good to check).  | Re-generate APNs key in Apple Developer Portal; update `APNS_KEY` in Coolify app env. |
+| **6 months**  | Dependabot PRs accumulate. Security advisories may stack up. | Merge Dependabot PRs in order (check CI passes). Review `pnpm audit`.                 |
 
 ---
 

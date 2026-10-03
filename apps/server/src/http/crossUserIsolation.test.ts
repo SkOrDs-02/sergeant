@@ -152,6 +152,10 @@ const NOT_USER_SCOPED: Record<string, string> = {
   "POST /api/billing/liqpay-callback":
     "вебхук провайдера, підпис замість сесії",
   "POST /api/billing/stripe-webhook": "вебхук провайдера, підпис замість сесії",
+  "GET /api/mono/webhook":
+    "валідаційний пінг Monobank (200 без даних, без БД і без секрету)",
+  "GET /api/mono/webhook/:secret":
+    "валідаційний пінг Monobank (200 без даних, секрет не читається)",
   "POST /api/mono/webhook": "вебхук Monobank, секрет замість сесії",
   "POST /api/mono/webhook/:secret": "вебхук Monobank, секрет у шляху",
   "POST /api/telegram/webhook": "вебхук Telegram, секрет замість сесії",

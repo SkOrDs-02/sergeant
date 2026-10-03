@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-29 by @claude (ADR-0101: ci.yml-джоба commitlint повернулась як гейт PR). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (scope `deps`: Renovate → Dependabot, ADR-0103). **Next review:** 2027-04-01.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #5. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -42,7 +42,7 @@ Format: `<type>(<scope>): <subject>`. Allowed types: `feat`, `fix`, `docs`, `cho
 | `eslint-plugins`   | `packages/eslint-plugin-sergeant-design/**`                       |
 | `migrations`       | `apps/server/src/migrations/**` only                              |
 | `agents`           | `.agents/**`, `.claude/agents/**`, `.codex/agents/**`             |
-| `deps`             | Renovate / dependency-only PRs                                    |
+| `deps`             | Dependabot / dependency-only PRs                                  |
 | `docs`             | `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`            |
 | `ci`               | `.github/workflows/**`, `turbo.json`, scripts under `scripts/`    |
 | `root`             | Repo-level config (`pnpm-workspace.yaml`, `package.json` at root) |

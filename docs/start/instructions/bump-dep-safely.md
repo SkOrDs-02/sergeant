@@ -1,15 +1,15 @@
 # Playbook: Bump Dependency Safely
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-03.
+> **Last touched:** 2026-10-03 by @claude. **Next review:** 2027-01-01.
 > **Status:** Active
 > **Runtime-specific:** no
 
-**Trigger:** "Оновити X до версії Y" / Renovate PR з major-bump / security advisory на залежність.
+**Trigger:** "Оновити X до версії Y" / Dependabot PR з major-bump / security advisory на залежність.
 
 ## Owner surface
 
 - Primary surface: `package.json` (root + per-workspace)
-- Coupled surface: `pnpm-lock.yaml`, `renovate.json`
+- Coupled surface: `pnpm-lock.yaml`, `.github/dependabot.yml` (`ignore:` для закріплених пакетів), `package.json` → `pnpm.overrides`
 - Governing skill: `sergeant-bugfix-and-regression`
 
 ---
@@ -89,11 +89,11 @@ pnpm lint        # має пройти
 ## Notes
 
 - **Окремий PR** — не змішувати dependency bumps з feature work (AGENTS.md soft rule).
-- Renovate автоматично створює PR-и для minor/patch — для major потрібен manual review.
+- Dependabot створює PR на кожне оновлення окремо, автомерджу немає: кожен PR, а major особливо, рев'юїть людина. Групових PR теж немає — пакети, що мусять іти разом (`@sentry/*`, `@opentelemetry/*`), піднімай одним бампом за цим playbook-ом.
 - License-звірка механічно не виконується — гейт і `THIRD_PARTY_LICENSES.md` прибрано [ADR-0082](../../governance/adr/0082-private-storage-repo-posture.md) §1; за потреби разовий огляд — `pnpm licenses list`.
 - Якщо оновлюється `@types/*` — це зазвичай safe, але все одно `pnpm typecheck`.
 
 ## See also
 
 - [AGENTS.md](../../../AGENTS.md) — soft rule про dependency bumps
-- [renovate-usage.md](../../engineering/integrations/renovate-usage.md) — як працює Renovate в цьому репо
+- [dependabot-usage.md](../../engineering/integrations/dependabot-usage.md) — як працювати з PR Dependabot у цьому репо
