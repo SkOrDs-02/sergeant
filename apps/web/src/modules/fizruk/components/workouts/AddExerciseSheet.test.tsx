@@ -6,7 +6,7 @@
  * primary-muscle / secondary-muscle toggle chips, the primary-group
  * select resetting the muscle selections, the suggested-muscle memo
  * (derived from `musclesByPrimaryGroup` ∩ `musclesUk`), the successful
- * save path (slugified id, equipmentUk mapping, form reset + onClose),
+ * save path (uuid id, equipmentUk mapping, form reset + onClose),
  * and the cancel / close paths clearing the validation error.
  *
  * `useVisualKeyboardInset` (from @sergeant/shared) is a no-op in jsdom;
@@ -146,7 +146,7 @@ describe("AddExerciseSheet", () => {
     expect(screen.queryAllByRole("button", { name: "Грудні" })).toHaveLength(0);
   });
 
-  it("saves a custom exercise with a slugified ASCII id and equipmentUk labels", () => {
+  it("saves a custom exercise with a uuid id and equipmentUk labels", () => {
     render(<Harness initial={emptyForm({ equipment: ["barbell"] })} />);
     fireEvent.change(screen.getByLabelText("Назва вправи українською"), {
       target: { value: "  Bench Press 2  " },
@@ -158,7 +158,7 @@ describe("AddExerciseSheet", () => {
 
     expect(addExercise).toHaveBeenCalledTimes(1);
     const arg = addExercise.mock.calls[0]![0] as FizrukData.RawExerciseDef;
-    expect(arg.id).toBe("custom_bench_press_2");
+    expect(arg.id).toMatch(/^custom_[0-9a-f-]{36}$/);
     expect(arg.name).toEqual({ uk: "Bench Press 2", en: "Bench Press 2" });
     expect(arg.primaryGroup).toBe("chest");
     expect(arg.primaryGroupUk).toBe("Груди");
@@ -169,15 +169,14 @@ describe("AddExerciseSheet", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("falls back to a timestamp id when the name has no slug-able chars (Cyrillic)", () => {
+  it("кирилична назва теж отримує custom_<uuid>, а не мілісекунду", () => {
     render(<Harness />);
     fireEvent.change(screen.getByLabelText("Назва вправи українською"), {
       target: { value: "Жим Гантелей" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
     const arg = addExercise.mock.calls[0]![0] as FizrukData.RawExerciseDef;
-    // slugify("Жим Гантелей") === "" → id is `custom_<Date.now()>`.
-    expect(arg.id).toMatch(/^custom_\d+$/);
+    expect(arg.id).toMatch(/^custom_[0-9a-f-]{36}$/);
     expect(arg.name).toEqual({ uk: "Жим Гантелей", en: "Жим Гантелей" });
   });
 

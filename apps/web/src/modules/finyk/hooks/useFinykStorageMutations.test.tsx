@@ -119,6 +119,25 @@ describe("addManualExpense", () => {
     );
   });
 
+  // Аудит data-01: id був `Date.now().toString()` — передбачуваний, збігається
+  // з чужим рядком на глобальному PK `finyk_manual_expenses`.
+  it("id нової витрати — mx_<uuid>, різний навіть у ту саму мілісекунду", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    try {
+      const { slots } = makeSlots();
+      const { result } = renderMutations(slots);
+      const a = result.current.addManualExpense({ amount: 1 });
+      const b = result.current.addManualExpense({ amount: 2 });
+      expect(a.id).not.toBe(b.id);
+      for (const id of [a.id, b.id]) {
+        expect(id).toMatch(/^mx_[0-9a-f]{8}-[0-9a-f]{4}-/);
+        expect(id).not.toContain("1777000000000");
+      }
+    } finally {
+      vi.mocked(Date.now).mockRestore();
+    }
+  });
+
   it("fires the first-expense funnel event once, then never again", () => {
     const { slots } = makeSlots();
     const { result } = renderMutations(slots);

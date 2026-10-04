@@ -22,7 +22,7 @@ import {
   type WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { foldApostrophes } from "@sergeant/shared";
-import { customExerciseIdFromName } from "../../../../modules/fizruk/lib/customExerciseId";
+import { newCustomExerciseId } from "../../../../modules/fizruk/lib/customExerciseId";
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -60,12 +60,11 @@ function cachedCustomExercises(): RawExerciseDef[] {
  *
  * AI-DANGER: `executeActions` запускає всі tool calls ходу синхронно, а кеш
  * fizruk оновлюється лише після асинхронного apply. Резолвер на кожен виклик
- * свіжий, тож без спільного реєстру два `log_set` в одному ході (дві різні
- * невідомі КИРИЛИЧНІ назви → `custom_<Date.now()>` в одну мілісекунду)
- * отримували той самий id: другий upsert мовчки відкидав `strictly-newer`
- * guard, і підходи вправи Б лягали на вправу А. Реєстр додається і в пул
- * пошуку, і в `taken` колізій: та сама назва перевикористає вправу, інша
- * отримає суфікс. Запис живе до підтвердження кешем або `TTL`.
+ * свіжий, тож без спільного реєстру два `log_set` в одному ході з ТІЄЮ САМОЮ
+ * невідомою назвою створили б дві різні вправи-дублі (id тепер випадковий
+ * `custom_<uuid>`, колізії id немає — data-01, але дубль за назвою лишається).
+ * Реєстр додається в пул пошуку: та сама назва перевикористає вправу, інша
+ * отримає власний id. Запис живе до підтвердження кешем або `TTL`.
  */
 const PENDING_TTL_MS = 2 * 60 * 1000;
 const pendingCustom = new Map<string, { def: RawExerciseDef; at: number }>();
@@ -108,14 +107,11 @@ export function createChatExerciseResolver(): ChatExerciseResolver {
     return ex;
   }
 
-  function buildCustom(nameUk: string, taken: Set<string>): RawExerciseDef {
-    // Кілька невідомих назв в одному виклику (`plan_workout`) чи в одному
-    // ході (кілька `log_set`, див. `pendingCustom`) мають однаковий
-    // `Date.now()` — розводимо суфіксом, інакше дві різні вправи зіллються
-    // в один id.
-    const base = customExerciseIdFromName(nameUk);
-    let id = base;
-    for (let n = 2; taken.has(id); n += 1) id = `${base}_${n}`;
+  function buildCustom(nameUk: string): RawExerciseDef {
+    // id випадковий (`custom_<uuid>`): кілька невідомих назв в одному виклику
+    // (`plan_workout`) чи ході не зіллються й не збіжаться з чужим рядком на
+    // глобальному PK сервера.
+    const id = newCustomExerciseId();
     return {
       id,
       name: { uk: nameUk, en: nameUk },
@@ -145,7 +141,7 @@ export function createChatExerciseResolver(): ChatExerciseResolver {
       );
       if (byLabel.length === 1 && byLabel[0]) return adopt(byLabel[0]);
 
-      const custom = buildCustom(name, new Set(all.map((ex) => ex.id)));
+      const custom = buildCustom(name);
       created.push(custom);
       pendingCustom.set(custom.id, { def: custom, at: Date.now() });
       return custom;

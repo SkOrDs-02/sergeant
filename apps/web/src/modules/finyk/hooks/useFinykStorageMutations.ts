@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { hubKeys } from "@shared/lib/api/queryKeys";
+import { generatePrefixedId } from "@sergeant/shared";
 import { stripCategoryEmoji } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import {
   trackEvent,
@@ -70,7 +71,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
   ) => {
     const isIncome = expense.kind === "income";
     const entry: ManualExpense = {
-      id: expense?.id != null ? String(expense.id) : Date.now().toString(),
+      id: expense?.id != null ? String(expense.id) : generatePrefixedId("mx"),
       // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock fallback for a missing entry date, not a Kyiv day-boundary computation.
       date: expense.date || new Date().toISOString(),
       description: expense.description || "",
