@@ -1,6 +1,6 @@
 # SPEC: Free і Premium: пакетування, єдиний реєстр доступу, reverse trial
 
-> **Last touched:** 2026-10-04 by @claude. **Next review:** 2027-04-05.
+> **Last touched:** 2026-10-03 by @claude. **Next review:** 2027-04-04.
 > **Status:** Active - реалізовано в коді: `packages/shared/src/billing/entitlements.ts`, міграція `149_ai_usage_daily_week_buckets`, `apps/server/src/modules/chat/aiQuotaWeekly.ts`, `billing/reverseTrial.ts`, `billing/accessSnapshot.ts`, `apps/web/src/core/billing/TrialBanner.tsx` (`effectiveLimits.ts` і `premiumFeatures.ts` видалені); лишився click-through з § Верифікація п. 5 на живому стенді.
 
 <!-- Інтервʼю провела сесія «Спека free/premium доступу» (4 раунди, 2026-09-27); 5-й раунд (vision Фініка, плани харчування, tool-квоти, функції без AI) додано того ж дня після інвентаризації всіх AI-маршрутів. -->
