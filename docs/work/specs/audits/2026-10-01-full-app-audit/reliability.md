@@ -587,7 +587,7 @@ verify-.../mask.mts (node --import tsx): одне повідомлення 8000 
 
 ### `rel-08` [medium] Клієнт синку пушить на кожну зміну без коалесингу, push і pull ділять бакет 60/хв, а 429 палить спроби
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-08-sync-push-coalesce (лишилось: розвести серверні бакети push/pull (політика rate-limit), автовідновлення dead_letter (ручний тріаж за дизайном `syncOpRetry.ts`); pull після push лишено, бо доставляє зміни інших пристроїв, а з debounce він і так зріджується)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: sync engine / api-client push loop
 - **Де:** apps/web/src/core/syncEngine/syncEngineWriter.ts:200-202; apps/web/src/core/syncEngine/outboxNudge.ts:43-55; apps/web/src/core/syncEngine/singleton.ts:689-697; packages/api-client/src/endpoints/syncV2.pushLoop.ts:399-406,471-500; packages/db-schema/src/sqlite/syncOpRetry.ts:40-53; apps/server/src/routes/sync.ts:81-84
 - **Першопричина:** notifyEnqueued одразу викликає flushNow без debounce, а кожен успішний push тягне за собою pull. /push, /pull і /stream стоять під одним per-user бакетом api:v2:sync 60/хв. Push-цикл не читає Retry-After і рахує 429/503 як спробу для кожного рядка батча. Після 10 спроб рядок іде в dead_letter, звідки його повертає лише кнопка.
