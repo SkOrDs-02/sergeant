@@ -1,5 +1,8 @@
 import { useRef, useState } from "react";
 import { downloadJson } from "@sergeant/shared";
+import type { BackupRestoreMode } from "@shared/lib/backup/restoreMode";
+import { useAuthOptional } from "../auth/AuthContext";
+import { outboxCheckpoint } from "../syncEngine/outboxCheckpoint";
 import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -10,6 +13,8 @@ import {
   buildHubBackupPayload,
   isHubBackupPayload,
 } from "./hubBackup";
+import { HubRestoreModePicker } from "./HubRestoreModePicker";
+import { useHubRestoreBlock } from "./useHubRestoreReady";
 
 interface HubBackupPanelProps {
   className?: string;
@@ -76,6 +81,16 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
     data: unknown;
     sections: string[];
   } | null>(null);
+  // Дефолт — «додати відсутнє»: видалення («замінити») лише явним вибором, бо
+  // воно їде на сервер і на всі пристрої акаунта (аудит 2026-10-01, data-06).
+  const [mode, setMode] = useState<BackupRestoreMode>("merge");
+  const [busy, setBusy] = useState(false);
+  // Імпорт до реєстрації dual-write контекстів, прогріву кешів і першого pull
+  // з акаунта або нічого не пише, або перебиває новіші дані сервера (data-07),
+  // тому кнопка чекає готовності.
+  const restoreBlock = useHubRestoreBlock();
+  const ready = restoreBlock === null;
+  const signedIn = Boolean(useAuthOptional()?.user);
 
   const exportJson = async () => {
     const payload = buildHubBackupPayload({ includeChat: false });
@@ -120,6 +135,7 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         // L-5 (P1): раніше тут одразу викликався applyHubBackupPayload +
         // reload — вибір файлу перетирав дані без жодного попередження.
         // Тепер лише ставимо файл у чергу на підтвердження.
+        setMode("merge");
         setPendingImport({
           data,
           sections: sectionsThatWillBeOverwritten(data),
@@ -148,16 +164,35 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   };
 
   const confirmImport = async () => {
-    if (!pendingImport) return;
+    if (!pendingImport || busy) return;
     const { data } = pendingImport;
+    const importMode = mode;
     setPendingImport(null);
+    setBusy(true);
     try {
-      // await — не косметика: Фінік пише в SQLite асинхронно, а reload
-      // нижче обірве fire-and-forget запис на півдорозі.
-      await applyHubBackupPayload(data);
+      if (importMode === "replace") {
+        // Заміна видаляє й на сервері, тож спершу знімок поточного стану. Якщо
+        // знімок не зберігся, замінювати не можна: кидаємо до будь-якого запису.
+        await downloadJson(
+          `hub-backup-before-replace-${new Date().toISOString().slice(0, 10)}.json`,
+          buildHubBackupPayload({ includeChat: false }),
+        );
+      }
+      // Чекпоінт беремо ДО запису: він покриває всі рядки outbox, поставлені
+      // під час імпорту, зокрема хвіст fire-and-forget черги адаптерів.
+      const outboxSettled = outboxCheckpoint();
+      await applyHubBackupPayload(data, { mode: importMode });
+      // reload вбиває чергу outbox, тож чекаємо, поки всі рядки лягли.
+      if (!(await outboxSettled())) {
+        throw new Error(
+          "Дані записались на пристрої, але не всі стали в чергу синхронізації. Спробуй імпорт ще раз.",
+        );
+      }
       window.location.reload();
     } catch (err) {
       showParseError(err);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -187,9 +222,9 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         зашифрованій хмарі, не пересилай у відкритих чатах.
       </p>
       <Banner variant="warning" className="text-style-body leading-relaxed">
-        Ручні витрати, борги, підписки й бюджети живуть лише на цьому пристрої,
-        банк відновлюється сам, а це ні. Зроби експорт, якщо плануєш міняти
-        телефон чи чистити дані.
+        {signedIn
+          ? "Ручні витрати, борги, підписки й бюджети синхронізуються з твоїм акаунтом, тож є на всіх твоїх пристроях. Банк відновлюється сам, а ручні дані з файлу ні. Експорт лишається страховкою на випадок, якщо плануєш міняти телефон чи чистити дані."
+          : "Без входу в акаунт ручні витрати, борги, підписки й бюджети живуть лише на цьому пристрої, банк відновлюється сам, а це ні. Зроби експорт, якщо плануєш міняти телефон чи чистити дані."}
       </Banner>
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -206,9 +241,10 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
           size="sm"
           className="h-9 min-h-[44px]"
           type="button"
+          disabled={!ready || busy}
           onClick={() => fileRef.current?.click()}
         >
-          Імпорт…
+          {busy ? "Імпортую…" : "Імпорт…"}
         </Button>
         <input
           ref={fileRef}
@@ -218,14 +254,27 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
           onChange={runImport}
         />
       </div>
+      {restoreBlock === "loading" && (
+        <p className="text-style-body text-muted" role="status">
+          Дані ще завантажуються, імпорт стане доступним за кілька секунд.
+        </p>
+      )}
+      {restoreBlock === "sync" && (
+        <p className="text-style-body text-muted" role="status">
+          Чекаю на синхронізацію з акаунтом, імпорт стане доступним після неї.
+          Для цього потрібен інтернет.
+        </p>
+      )}
       <ConfirmDialog
         open={pendingImport !== null}
-        title="Замінити дані з файлу?"
+        title={
+          mode === "replace" ? "Замінити дані з файлу?" : "Додати дані з файлу?"
+        }
         description={
           <>
             {pendingImport && pendingImport.sections.length > 0 ? (
               <>
-                Імпорт повністю замінить ці дані на цьому пристрої:
+                У файлі є:
                 <ul className="mt-2 space-y-1 text-left">
                   {pendingImport.sections.map((section) => (
                     <li key={section}>• {section}</li>
@@ -233,25 +282,27 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
                 </ul>
               </>
             ) : (
-              "Цей файл не містить даних Фініка, Фізрука, Рутини чи Їжі, імпорт нічого з цього не перезапише."
+              "Цей файл не містить даних Фініка, Фізрука, Рутини чи Їжі, імпорт нічого з цього не змінить."
             )}
             {/* Дефект #2 (CodeRabbit post-merge review PR #756): раніше
                 ConfirmDialog обгортав description у <p>, а <ul> вище (блочний
                 елемент) усередині <p> — невалідний HTML: реальний парсер
                 авто-закрив би зовнішній <p> ще до <ul>, розриваючи
                 aria-describedby, плюс React DOM-nesting warning. Виправлено
-                в ConfirmDialog.tsx (обгортка тепер <div>). <span
-                className="block"> нижче лишається — звичайний спосіб дати
-                блочний рядок тексту всередині фрагмента, а не обхідний
-                прийом під старе обмеження. */}
-            <span className="mt-2 block">
-              Скасувати цю дію після імпорту не можна.
+                в ConfirmDialog.tsx (обгортка тепер <div>). */}
+            <HubRestoreModePicker value={mode} onChange={setMode} />
+            <span className="mt-3 block">
+              {mode === "replace"
+                ? signedIn
+                  ? "Заміна зачепить і акаунт: усе, чого немає у файлі, видалиться на сервері та на всіх твоїх пристроях. Перед заміною збережу файл із поточними даними, а скасувати її після цього не можна."
+                  : "Усе, чого немає у файлі, видалиться на цьому пристрої. Перед заміною збережу файл із поточними даними, а скасувати її після цього не можна."
+                : "Нічого не видаляю: ні на цьому пристрої, ні в акаунті."}
             </span>
           </>
         }
-        confirmLabel="Перезаписати"
+        confirmLabel={mode === "replace" ? "Замінити дані" : "Додати відсутнє"}
         cancelLabel="Скасувати"
-        danger
+        danger={mode === "replace"}
         onConfirm={() => void confirmImport()}
         onCancel={cancelImport}
       />

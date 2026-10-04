@@ -801,7 +801,7 @@ Verifier rerun of t6_journal.mts with the real finyk orchestrator and a client w
 
 ### `data-06` [high] «Замінити дані на цьому пристрої» при відновленні бекапу видаляє на сервері й на всіх пристроях усе, чого немає у файлі
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-06-07-backup-restore
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап (HubBackupPanel, finykBackup, fizrukStorage)
 - **Де:** apps/web/src/core/hub/HubBackupPanel.tsx:150-193,228; apps/web/src/modules/finyk/lib/finykBackup.ts:159-176,199-229; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:221-243; apps/web/src/modules/fizruk/lib/fizrukStorage.ts:205-231
 - **Першопричина:** Restore будує diff від теплого кешу (дані акаунта) до вмісту файлу, і для кожного рядка, якого немає у файлі, спільний адаптер ставить op 'delete' в outbox. Ні код, ні ADR не враховують, що tombstone-и йдуть на сервер, а діалог і банер обіцяють зміни лише «на цьому пристрої».
@@ -869,7 +869,7 @@ I tried to refute this and couldn't. I traced the code end to end and checked th
 
 ### `data-07` [high] Відновлення бекапу не гарантує запису й синхронізації: reload обриває outbox, а у вікні завантаження restore мовчки пропускається
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-06-07-backup-restore
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап + dual-write (Фінік, Фізрук, Їжа)
 - **Де:** apps/web/src/core/hub/HubBackupPanel.tsx:150-162; apps/web/src/modules/finyk/lib/finykBackup.ts:171-176; apps/web/src/modules/finyk/lib/sqliteWriter/index.ts:211-226,319-336; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:155-242; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:663-670; apps/web/src/core/auth/useLocalUserId.ts:51; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:203,236
 - **Першопричина:** dualWriteFinykState і dualWriteFizrukState обходять журнал (journalDualWrite, outboxCheckpoint, ackDualWrite), адаптери роблять void enqueueOutboxUpsert без await, а HubBackupPanel одразу після apply робить window.location.reload(), обриваючи серіалізований ланцюг enqueue. Якщо dual-write контекст ще не зареєстрований (новий пристрій, перші ~10 с), dualWrite повертає skipped (context-unset), а persist* це ігнорує.

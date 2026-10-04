@@ -23,6 +23,12 @@
  * `fizrukBackupShape.ts`.
  */
 
+import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
+import {
+  addMissingBy,
+  BACKUP_RESTORE_NOT_READY_MESSAGE,
+  type BackupRestoreMode,
+} from "@shared/lib/backup/restoreMode";
 import {
   CUSTOM_ACTIVITIES_KEY,
   CUSTOM_EXERCISES_KEY,
@@ -203,21 +209,34 @@ export function buildFizrukFullBackupPayload() {
 /**
  * Імпорт повного бекапу в SQLite — туди, звідки читають усі хуки Фізрука.
  *
- * Семантика — ЗАМІНА: діалог у `HubBackupPanel` обіцяє «Імпорт повністю
- * замінить ці дані на цьому пристрої», тож diff іде проти ПОТОЧНОГО
- * теплого кеша і рядки, яких у файлі немає, гасяться. Зріз, якого файл
- * не везе (ключа немає, значення `null` або не рядок), лишається як був
- * — та сама поведінка, що й у старого LS-шляху, який такі значення
- * просто пропускав.
+ * Два режими (аудит 2026-10-01, data-06), див. `BackupRestoreMode`:
+ *
+ *  - `merge`: лише додати відсутнє. Рядок із тим самим id лишається таким,
+ *    яким був, рядки, яких файл не несе, не чіпаються: жодного `delete` у
+ *    diff, а отже жодного tombstone на сервері.
+ *  - `replace`: diff іде проти ПОТОЧНОГО теплого кеша, і рядки, яких у файлі
+ *    немає, гасяться. Це видалення їде на сервер і на всі пристрої акаунта,
+ *    тому режим лише явний (діалог у `HubBackupPanel`).
+ *
+ * Зріз, якого файл не везе (ключа немає, значення `null` або не рядок),
+ * лишається як був в обох режимах — та сама поведінка, що й у старого
+ * LS-шляху, який такі значення просто пропускав.
+ *
+ * Кеш мусить бути теплим: з холодного diff не бачить рядків акаунта, тож
+ * «заміна» мовчки стала б злиттям, а `merge` перезаписав би існуючі рядки.
+ * Панель не пускає в імпорт, доки кеш не прогрітий; тут це страховка.
  *
  * Чекати обов'язково: `HubBackupPanel` одразу після імпорту робить
- * `window.location.reload()`, а він убив би fire-and-forget запис.
+ * `window.location.reload()`, а він убив би fire-and-forget запис. Запис
+ * журнальований (`dualWriteFizrukState`), результат — `DualWriteOutcome`:
+ * `skipped` НЕ успіх, `applyHubBackupPayload` на ньому кидає.
  * Приймає і файли, експортовані до переїзду на SQLite — там ті самі
  * ключі з тими самими серіалізованими рядками.
  */
 export async function applyFizrukFullBackupPayload(
   parsed: unknown,
-): Promise<void> {
+  mode: BackupRestoreMode,
+): Promise<DualWriteOutcome> {
   if (!parsed || typeof parsed !== "object") {
     throw new Error("Неправильний формат файлу");
   }
@@ -226,8 +245,46 @@ export async function applyFizrukFullBackupPayload(
     throw new Error("Неправильний формат файлу");
   }
   const data = d as Record<string, unknown>;
+  if (getCachedFizrukSqliteState().refreshedAt === null) {
+    throw new Error(BACKUP_RESTORE_NOT_READY_MESSAGE);
+  }
   const prev = peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-  await dualWriteFizrukState(prev, backupOntoFizrukState(prev, data));
+  const replaced = backupOntoFizrukState(prev, data);
+  const next = mode === "replace" ? replaced : mergeFizrukState(prev, replaced);
+  return dualWriteFizrukState(prev, next);
+}
+
+/**
+ * Режим `merge`: поточні рядки + рядки файлу з новим id. `replaced` уже
+ * несе `prev` для зрізів, яких файл не везе, тож обʼєднання їх не змінює.
+ */
+function mergeFizrukState(
+  prev: FizrukDualWriteState,
+  replaced: FizrukDualWriteState,
+): FizrukDualWriteState {
+  const byId = (e: { readonly id: string }) => e.id;
+  return {
+    workouts: addMissingBy(prev.workouts, replaced.workouts, byId),
+    customExercises: addMissingBy(
+      prev.customExercises,
+      replaced.customExercises,
+      byId,
+    ),
+    customActivities: addMissingBy(
+      prev.customActivities ?? [],
+      replaced.customActivities ?? [],
+      byId,
+    ),
+    measurements: addMissingBy(prev.measurements, replaced.measurements, byId),
+    dailyLog: addMissingBy(prev.dailyLog, replaced.dailyLog, byId),
+    workoutTemplates: addMissingBy(
+      prev.workoutTemplates,
+      replaced.workoutTemplates,
+      byId,
+    ),
+    injuries: addMissingBy(prev.injuries, replaced.injuries, byId),
+    monthlyPlan: prev.monthlyPlan ?? replaced.monthlyPlan,
+  };
 }
 
 /** Рядок зрізу, або `undefined` коли файл його не везе. */

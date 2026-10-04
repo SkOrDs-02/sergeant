@@ -69,6 +69,8 @@ import {
   setCachedSqliteRoutineState,
 } from "./sqliteReader.js";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
+import type { BackupRestoreMode } from "@shared/lib/backup/restoreMode";
+import { mergeRoutineStateAddMissing } from "./routineBackupMerge";
 
 // Re-export key constants so web callers can keep their existing imports.
 export { ROUTINE_STORAGE_KEY, ROUTINE_EVENT, ROUTINE_STORAGE_ERROR };
@@ -489,7 +491,14 @@ export function buildRoutineBackupPayload() {
   };
 }
 
-export function applyRoutineBackupPayload(parsed: unknown): void {
+/**
+ * `mode` — див. `BackupRestoreMode`. Дефолт `replace` лишає поведінку
+ * наявних викликів; Hub-імпорт передає режим явно (дефолт панелі — `merge`).
+ */
+export function applyRoutineBackupPayload(
+  parsed: unknown,
+  mode: BackupRestoreMode = "replace",
+): void {
   if (
     !parsed ||
     typeof parsed !== "object" ||
@@ -500,7 +509,11 @@ export function applyRoutineBackupPayload(parsed: unknown): void {
     throw new Error("Некоректний файл резервної копії Рутини.");
   }
   const d = (parsed as { data: unknown }).data;
-  const merged = normalizeRoutineState(d);
+  const incoming = normalizeRoutineState(d);
+  const merged =
+    mode === "merge"
+      ? mergeRoutineStateAddMissing(loadRoutineState(), incoming)
+      : incoming;
   const { state: s } = ensureHabitOrder(merged);
   if (!saveRoutineState(s)) {
     throw new Error(
