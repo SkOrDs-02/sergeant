@@ -34,6 +34,15 @@ describe("AppLock", () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it("covers the screen with an opaque curtain while the PIN is being checked", () => {
+    renderLock({ state: "checking" });
+    expect(screen.getByTestId("app-lock-checking")).toHaveClass("bg-bg");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Перевіряю блокування",
+    );
+    expect(screen.queryByText("Введи PIN")).not.toBeInTheDocument();
+  });
+
   it("shows the unlock screen when locked", () => {
     renderLock({ state: "locked" });
     expect(screen.getByText("Введи PIN")).toBeInTheDocument();
