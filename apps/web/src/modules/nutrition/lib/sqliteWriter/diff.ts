@@ -158,6 +158,13 @@ export interface MealDeleteOp {
 export interface PantryUpsertOp {
   readonly kind: "pantry-upsert";
   readonly pantry: NutritionPantrySnapshot;
+  /**
+   * data-10: застосувати лише upsert наявних позицій, БЕЗ неявного soft-delete
+   * тих, яких у знімку немає. Ставиться при реплеї запису журналу, що був
+   * застосований у memory-режимі: той знімок знятий з порожньої/негідрованої
+   * бази і не має права видаляти живі позиції на справжній.
+   */
+  readonly keepMissing?: boolean;
 }
 
 export interface PantryDeleteOp {

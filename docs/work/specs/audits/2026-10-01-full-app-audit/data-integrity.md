@@ -1039,7 +1039,7 @@ Code path, end to end:
 
 ### `data-09` [high] Книга рецептів в IndexedDB спільна для всіх акаунтів і не гідрується з сервера: рецепти переходять в інший акаунт, а збереження рецепта на новому пристрої видаляє серверні
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-09-10-recipes-pantry (книга рецептів партиціонована за власником і стирається при виході; мініатюри страв `nutrition_meal_thumbs` свідомо лишаються: серверної копії фото немає, стирання втратило б їх назавжди; ключ мініатюри - id прийому, чужому акаунту він невидимий)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (recipeBook, IndexedDB)
 - **Де:** apps/web/src/modules/nutrition/lib/recipeBook.ts:111-178 (persist на :156,:173); apps/web/src/modules/nutrition/lib/nutritionStorage.ts:287-298; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:339-346; apps/web/src/shared/lib/storage/purgeLocalData.ts:35-38
 - **Першопричина:** Стор nutrition_recipes у sergeant-db не партиціонований за userId і свідомо не чиститься при виході, а saveRecipeToBook і deleteSavedRecipe передають у persistNutritionRecipes весь вміст IDB (getAll, ліміт 200) як нове повне значення. Диф проти SQLite-кешу поточного користувача емітить upsert для чужих рецептів і recipe-delete для всіх рецептів, яких немає в локальній IDB.
@@ -1149,7 +1149,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-10` [high] Memory-режим (збій OPFS або квоти) пише порожні знімки комори, які після відновлення сховища видаляють продукти на сервері й на всіх пристроях
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-09-10-recipes-pantry (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без soft-delete відсутніх дітей не робились, це окремий зсув моделі, закриє й data-40)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (pantry) + durability (memory VFS, журнал)
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:446-448,641-675; apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/db/sqlite.ts:846-889; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:118,161-179; packages/dualwrite-core/src/tableSpec.ts:200-215
 - **Першопричина:** У :memory:-режимі модуль бачить порожню базу і пише pantry-upsert {items: []} для дефолтних місць зберігання; ackDualWrite у memory навмисно не знімає журнал, тож знімок реплеїться на справжній OPFS-базі. upsertPantry → softDeleteRemovedChildren при порожньому keepIds видаляє всі живі позиції без LWW-перевірки і ставить delete з clientTs memory-сесії, який виграє на сервері.
