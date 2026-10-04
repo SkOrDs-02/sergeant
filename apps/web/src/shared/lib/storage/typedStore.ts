@@ -26,6 +26,8 @@
 import type { ZodType } from "zod";
 // eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; consumed by storage/ for warn-level error reporting.
 import { logger } from "../log";
+import { getActiveSqliteKvStore } from "../../../core/db/kvStoreBoot";
+import { getStorageReadySnapshot } from "../../../core/db/storageReady";
 import { webKVStore } from "./storage";
 
 type Listener<T> = (value: T) => void;
@@ -74,6 +76,60 @@ function hasLocalStorage(): boolean {
   // the in-memory `defaultValue` semantics they relied on.
   const g = globalThis as { localStorage?: unknown };
   return typeof g.localStorage !== "undefined" && g.localStorage !== null;
+}
+
+/**
+ * `true`, поки постійне сховище ще не визначилось: бут `bootstrapKvStore()`
+ * іде (`main.tsx` армує latch синхронно до першого рендера), а SQLite
+ * kv-стор ще не активний. У цьому вікні `webKVStore` віддає сирий
+ * localStorage, де SQLite-ключів (`hub_flags_v1`, …) просто немає, тож
+ * перше читання НЕ можна фіксувати назавжди (priv-03): інакше `{}` з
+ * порожнього LS пережив би бут, а PIN-блокування мовчки вимикалось би.
+ * Latch `storageReady` за замовчуванням `true` — тести/SSR/Storybook цього
+ * вікна не мають.
+ */
+function isStorageBooting(): boolean {
+  return getActiveSqliteKvStore() === null && !getStorageReadySnapshot();
+}
+
+/** Внутрішній хендл стора для {@link reloadAllTypedStores}. */
+interface RegisteredStore {
+  /** Знімає стару `onChange`-підписку і вішає нову на активне сховище. */
+  rebind(): void;
+  reload(): unknown;
+}
+
+/**
+ * Реєстр усіх створених typed-стор-ів. Живуть увесь час життя сторінки
+ * (модульні сінглтони), тож запис не прибирається.
+ */
+const registry = new Set<RegisteredStore>();
+
+/**
+ * Перечитує КОЖЕН typed-стор з активного сховища і переприв'язує його
+ * `onChange` до нього (з notify підписникам). Кличеться:
+ *  - з `main.tsx` після `bootstrapKvStore()` і до `markStorageReady()`:
+ *    стори, створені й прочитані до буту, бачили сирий localStorage, а
+ *    `webKVStore.onChange` прив'язався до LS-стора, і значення з SQLite
+ *    (`hub_flags_v1`) до них ніколи не доходило;
+ *  - з logout-чистки після `resetKvStoreBoot()`: активне сховище знову
+ *    LS, а кеш тримав би значення попереднього користувача.
+ * Під час перемикання SQLite-розділу на акаунт `replaceCache()` сам сповіщає
+ * вже прив'язані підписки, тож окремого виклику там не треба.
+ */
+export function reloadAllTypedStores(): void {
+  for (const entry of Array.from(registry)) {
+    try {
+      entry.rebind();
+      entry.reload();
+    } catch (err) {
+      try {
+        logger.warn("[typedStore] reloadAll failed", err);
+      } catch {
+        /* ignore logging errors */
+      }
+    }
+  }
 }
 
 function defaultReport(key: string, scope: string, error: unknown): void {
@@ -127,6 +183,10 @@ export function createTypedStore<T>(
 
   let cached: T | null = null;
   let cachedLoaded = false;
+  // Тимчасовий кеш читання ДО буту: ключ — сирий рядок зі сховища. Дає
+  // ref-стабільний результат для `useSyncExternalStore`, але не фіксується
+  // (`cachedLoaded` лишається false), поки сховище не визначилось.
+  let provisionalRaw: string | null | undefined;
   const listeners = new Set<Listener<T>>();
 
   function notify(next: T): void {
@@ -139,9 +199,11 @@ export function createTypedStore<T>(
     }
   }
 
-  function readFromStorage(): T {
-    if (!hasLocalStorage()) return defaultValue;
-    const raw = webKVStore.getString(key);
+  function currentRaw(): string | null {
+    return hasLocalStorage() ? webKVStore.getString(key) : null;
+  }
+
+  function parseRaw(raw: string | null): T {
     if (raw === null) return defaultValue;
 
     let parsed: unknown;
@@ -192,11 +254,25 @@ export function createTypedStore<T>(
     return result.data;
   }
 
-  function get(): T {
-    if (!cachedLoaded) {
-      cached = readFromStorage();
-      cachedLoaded = true;
+  /** Читає з активного сховища; фіксує кеш лише коли сховище визначилось. */
+  function load(): T {
+    const raw = currentRaw();
+    if (isStorageBooting()) {
+      if (provisionalRaw === undefined || provisionalRaw !== raw) {
+        cached = parseRaw(raw);
+        provisionalRaw = raw;
+      }
+      cachedLoaded = false;
+      return cached as T;
     }
+    cached = parseRaw(raw);
+    cachedLoaded = true;
+    provisionalRaw = undefined;
+    return cached;
+  }
+
+  function get(): T {
+    if (!cachedLoaded) return load();
     return cached as T;
   }
 
@@ -208,6 +284,7 @@ export function createTypedStore<T>(
     }
     cached = result.data;
     cachedLoaded = true;
+    provisionalRaw = undefined;
     if (!hasLocalStorage()) {
       notify(result.data);
       return true;
@@ -233,6 +310,7 @@ export function createTypedStore<T>(
   function reset(): void {
     cached = defaultValue;
     cachedLoaded = true;
+    provisionalRaw = undefined;
     if (hasLocalStorage()) webKVStore.remove(key);
     notify(defaultValue);
   }
@@ -243,17 +321,31 @@ export function createTypedStore<T>(
   }
 
   function reload(): T {
-    cached = readFromStorage();
-    cachedLoaded = true;
-    notify(cached);
-    return cached;
+    // Явний reload скидає і тимчасовий кеш: свіже читання завжди з активного
+    // сховища (див. `load()` щодо вікна буту).
+    provisionalRaw = undefined;
+    const next = load();
+    notify(next);
+    return next;
   }
 
   // Якщо інший tab змінив цей ключ — підхопимо і повідомимо підписників.
   // `webKVStore.onChange` фільтрує по ключу та використовує DOM `storage`
   // event під капотом (cross-tab); same-tab writes notify через `notify()`.
-  webKVStore.onChange(key, () => {
-    reload();
+  // Підписка резолвиться на сховище, активне ЗАРАЗ (до буту — LS, після —
+  // SQLite kv з BroadcastChannel), тож `rebind()` вішає її заново, коли
+  // активне сховище змінилось (`reloadAllTypedStores`).
+  const bindChange = (): (() => void) =>
+    webKVStore.onChange(key, () => {
+      reload();
+    });
+  let unbindChange = bindChange();
+  registry.add({
+    rebind() {
+      unbindChange();
+      unbindChange = bindChange();
+    },
+    reload,
   });
 
   return { key, get, set, reset, subscribe, reload };

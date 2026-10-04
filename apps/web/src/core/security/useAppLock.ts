@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
-import { useFlag } from "../lib/featureFlags";
 import { useAuth } from "../auth/AuthContext";
 import {
   clearPinHash,
@@ -10,7 +9,12 @@ import {
   verifyPinAttempt,
 } from "./lockStorage";
 
-export type LockState = "idle" | "locked" | "setup" | "change";
+/**
+ * `checking` — холодний старт: наявність PIN-креденшела ще не перевірена
+ * (IndexedDB + розв'язання користувача). `AppLock` у цьому стані закриває
+ * екран непрозорою завісою, щоб дані не блимнули до екрана PIN (priv-03).
+ */
+export type LockState = "checking" | "idle" | "locked" | "setup" | "change";
 
 // How long (ms) without pointer/keyboard activity before auto-lock.
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -48,62 +52,85 @@ export interface UseAppLockReturn {
 }
 
 export function useAppLock(): UseAppLockReturn {
-  const enabled = useFlag("app-lock-enabled");
   // Audit F16: the credential store is partitioned per Better-Auth user id.
   // Resolve it once here so every storage call below — and the closures we
   // hand to `AppLock` / `PrivacySection` — target the right partition.
-  const { user } = useAuth();
+  const { user, status } = useAuth();
   const userId = user?.id ?? null;
-  const [state, setState] = useState<LockState>("idle");
+  // Поки сесія не розв'язалась, `userId === null` ще не означає «анонім»:
+  // PIN залогіненого лежить у ЙОГО партиції, тож перевірку відкладаємо.
+  const authLoading = status === "loading";
+  const [state, setState] = useState<LockState>("checking");
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastIdleResetRef = useRef(0);
   const setupModeRef = useRef<"setup" | "change">("setup");
 
-  // On mount (and whenever the flag is toggled on) check if a PIN is already
-  // configured — if yes, lock immediately (cold-start protection).
+  // Cold-start: блокуємо за НАЯВНІСТЮ креденшела, а не за прапорцем
+  // `app-lock-enabled` (priv-03). Прапорець лежить у SQLite kv і на першому
+  // рендері (до буту) читається з порожнього localStorage; захист не має
+  // залежати від того, чи встиг він доїхати. `disablePin` стирає хеш, тож
+  // «PIN є» рівнозначне «блокування ввімкнене». До завершення перевірки стан
+  // `checking` (див. `AppLock`) не показує дані.
   useEffect(() => {
-    if (!enabled) return;
+    if (authLoading) return;
     let cancelled = false;
-    hasPinSet(userId).then((has) => {
-      if (!cancelled && has) setState("locked");
-    });
+    hasPinSet(userId)
+      .then((has) => {
+        if (cancelled) return;
+        setState((prev) =>
+          has ? "locked" : prev === "checking" ? "idle" : prev,
+        );
+      })
+      .catch(() => {
+        // IndexedDB недоступна (приватний режим Safari, брак сховища):
+        // PIN неможливо ні прочитати, ні перевірити — не замикаємо
+        // користувача назавжди перед екраном, з якого не вийти.
+        if (cancelled) return;
+        setState((prev) => (prev === "checking" ? "idle" : prev));
+      });
     return () => {
       cancelled = true;
     };
-  }, [enabled, userId]);
+  }, [userId, authLoading]);
 
-  // visibilitychange → lock when tab returns to foreground while a PIN is set.
+  // visibilitychange → lock when tab returns to foreground while a PIN is
+  // set (незалежно від прапорця — див. cold-start вище).
   useEffect(() => {
-    if (!enabled) return;
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
-      hasPinSet(userId).then((has) => {
-        if (has) setState("locked");
-      });
+      hasPinSet(userId)
+        .then((has) => {
+          if (has) setState("locked");
+        })
+        .catch(() => {
+          /* IndexedDB недоступна — нічого блокувати */
+        });
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [enabled, userId]);
+  }, [userId]);
 
   // Idle timer — reset on any user interaction; lock after IDLE_TIMEOUT_MS.
   // Throttled by IDLE_RESET_THROTTLE_MS so capture-phase scroll/pointer
   // floods do not thrash main-thread rescheduling setTimeout (audit F15).
   const resetIdleTimer = useCallback(() => {
-    if (!enabled) return;
     const now = Date.now();
     if (now - lastIdleResetRef.current < IDLE_RESET_THROTTLE_MS) return;
     lastIdleResetRef.current = now;
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
-      hasPinSet(userId).then((has) => {
-        if (has) setState("locked");
-      });
+      hasPinSet(userId)
+        .then((has) => {
+          if (has) setState("locked");
+        })
+        .catch(() => {
+          /* IndexedDB недоступна — нічого блокувати */
+        });
     }, IDLE_TIMEOUT_MS);
-  }, [enabled, userId]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!enabled) return;
     const events: (keyof DocumentEventMap)[] = [
       "pointerdown",
       "keydown",
@@ -118,7 +145,7 @@ export function useAppLock(): UseAppLockReturn {
       );
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
-  }, [enabled, resetIdleTimer]);
+  }, [resetIdleTimer]);
 
   const lock = useCallback(() => {
     setState("locked");

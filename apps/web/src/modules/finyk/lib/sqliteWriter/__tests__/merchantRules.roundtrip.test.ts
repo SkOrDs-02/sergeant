@@ -316,7 +316,7 @@ describe("інші записи prefs не гублять правила", () =>
       { userId: USER_ID, clientTs: T1 },
     );
 
-    await persistFinykNormalizedToSqlite({ budgets: [] });
+    await persistFinykNormalizedToSqlite({ budgets: [] }, "replace");
     expect(await readRules()).toEqual([RULE]);
 
     const replacement: MerchantRule = {
@@ -325,7 +325,10 @@ describe("інші записи prefs не гублять правила", () =>
       merchantKey: "атб",
     };
     __setFinykSqliteStateCacheForTests({ merchantRules: [RULE] });
-    await persistFinykNormalizedToSqlite({ merchantRules: [replacement] });
+    await persistFinykNormalizedToSqlite(
+      { merchantRules: [replacement] },
+      "replace",
+    );
     expect(await readRules()).toEqual([replacement]);
   });
 });

@@ -12,6 +12,7 @@ import {
 } from "../lib/chunkReload.js";
 import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
+import { resetInitialPull } from "../syncEngine/initialPullState.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
 import {
   noteActiveSqliteVfs,
@@ -212,6 +213,11 @@ export async function wipeSqliteDb(): Promise<void> {
   const open = currentOpen;
   const stale = resolved;
   const userIdBeingWiped = activeUserId;
+  // Локальна репліка стерта: «pull уже був» більше не правда, доки не
+  // пройде новий (гейт відновлення з файлу data-07, prefs Їжі data-04).
+  // Reader і сам скине прапор на наступному тіку (новий client), але гейт
+  // імпорту не має бачити «true» у проміжку між wipe і цим тіком.
+  if (userIdBeingWiped) resetInitialPull();
   resolved = null;
   resolvedKey = null;
   inFlight = null;
