@@ -86,7 +86,7 @@ I tried to refute this and couldn't. I traced the code end to end and reproduced
 
 ### `logic-02` [medium] Квиток round_trip_ticket звільняє від списання квоти будь-який AI-запит, а не лише тур синтезу
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1332 (змерджено 2026-10-04) (мінімальний фікс; не входило: привʼязка квитка до id tool_use, echo квитка у веб-клієнті)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / чат
 - **Та сама першопричина, що й** [`sec-03`](./security.md#sec-03): Той самий дефект assertAiQuota: квиток round_trip_ticket звільняє від списання будь-який AI-запит і видається знову на оплачений квитком тур. Логіка оцінила medium, безпека high; фікс один.
 - **Де:** apps/server/src/modules/chat/aiQuota.ts:302-307, 335-341; apps/server/src/modules/chat/chat.ts:340-362, 787-789, 911-913; apps/server/src/routes/coach.ts:44; apps/server/src/routes/nutrition.ts:86; packages/shared/src/schemas/api.ts:537-567

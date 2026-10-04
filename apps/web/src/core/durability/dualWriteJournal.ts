@@ -33,6 +33,13 @@ export interface DualWriteJournalEntry<P = unknown> {
   readonly userId: string;
   readonly payload: P;
   /**
+   * `true`, якщо запис «застосовано» в базі `:memory:` (див. {@link ackDualWrite}).
+   * Такий запис знято з порожньої/негідрованої бази, тож модуль, який його
+   * реплеїть на справжній базі, не має трактувати його як повну заміну
+   * (data-10).
+   */
+  readonly appliedInMemory?: true;
+  /**
    * Скільки разів запис дійшов до SQL і впав (`result.errored > 0`). Лише
    * невдачі: відтворення «в памʼять» чи без SQLite лічильник не чіпає, інакше
    * здоровий запис карантинувся б через кілька бутів на `:memory:`.
@@ -105,11 +112,33 @@ export function journalDualWrite<P>(
  * Guard стоїть тут, а не в модулях, бо через цю функцію йдуть усі чотири.
  */
 export function ackDualWrite(id: string): void {
-  if (readActiveSqliteVfs() === "memory") return;
+  if (readActiveSqliteVfs() === "memory") {
+    markAppliedInMemory(id);
+    return;
+  }
   try {
     const entries = readAll();
     const next = entries.filter((e) => e.id !== id);
     if (next.length !== entries.length) writeAll(next);
+  } catch {
+    /* див. journalDualWrite */
+  }
+}
+
+/**
+ * data-10: позначити запис як застосований у memory-базі. Лишається в журналі
+ * (див. AI-DANGER вище), але реплей на справжній базі бачить прапор.
+ */
+function markAppliedInMemory(id: string): void {
+  try {
+    const entries = readAll();
+    let changed = false;
+    const next = entries.map((e) => {
+      if (e.id !== id || e.appliedInMemory) return e;
+      changed = true;
+      return { ...e, appliedInMemory: true as const };
+    });
+    if (changed) writeAll(next);
   } catch {
     /* див. journalDualWrite */
   }

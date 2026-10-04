@@ -62,17 +62,67 @@ describe("useAppLock", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 'idle' when flag is disabled", () => {
+  it("starts in 'checking' and settles to 'idle' when no PIN is stored", async () => {
     const { result } = renderHook(() => useAppLock());
-    expect(result.current.state).toBe("idle");
+    // Холодний старт: до завершення перевірки креденшела дані не показуємо.
+    expect(result.current.state).toBe("checking");
+    await waitFor(() => expect(result.current.state).toBe("idle"));
+  });
+
+  // priv-03: прапорець `app-lock-enabled` на холодному старті читається до
+  // буту SQLite kv і може бути хибно `false` — блокування від нього не
+  // залежить, бо `disablePin` стирає хеш (PIN є ⇒ блокування ввімкнене).
+  it("locks on cold start when a PIN exists even if the flag reads false", async () => {
+    await savePinHash("1234");
+    mockUseFlag.mockReturnValue(false);
+    const { result } = renderHook(() => useAppLock());
+    expect(result.current.state).toBe("checking");
+    await waitFor(() => expect(result.current.state).toBe("locked"));
+  });
+
+  it("locks again on visibilitychange when a PIN exists even if the flag reads false", async () => {
+    mockUseFlag.mockReturnValue(false);
+    const { result } = renderHook(() => useAppLock());
+    await waitFor(() => expect(result.current.state).toBe("idle"));
+
+    await savePinHash("1234");
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "visible",
+    });
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await waitFor(() => expect(result.current.state).toBe("locked"));
+  });
+
+  it("stays in 'checking' while the session is still loading, then locks the user's PIN", async () => {
+    await savePinHash("1234", "user-x");
+    mockUseAuth.mockReturnValue({ user: null, status: "loading" });
+    const { result, rerender } = renderHook(() => useAppLock());
+    await act(async () => {});
+    // userId ще невідомий: це не «анонім», перевіряти партицію `anon` рано.
+    expect(result.current.state).toBe("checking");
+
+    mockUseAuth.mockReturnValue({
+      user: { id: "user-x" },
+      status: "authenticated",
+    });
+    rerender();
+    await waitFor(() => expect(result.current.state).toBe("locked"));
+  });
+
+  it("fails open ('idle') when IndexedDB is unavailable", async () => {
+    (globalThis as { indexedDB?: unknown }).indexedDB = undefined;
+    const { result } = renderHook(() => useAppLock());
+    await waitFor(() => expect(result.current.state).toBe("idle"));
   });
 
   it("returns 'idle' when flag enabled but no PIN set", async () => {
     mockUseFlag.mockReturnValue(true);
     const { result } = renderHook(() => useAppLock());
-    // hasPinSet() is async — give it a tick
-    await act(async () => {});
-    expect(result.current.state).toBe("idle");
+    // hasPinSet() is async — `checking` settles to `idle`
+    await waitFor(() => expect(result.current.state).toBe("idle"));
   });
 
   it("returns 'locked' when flag enabled and PIN is stored", async () => {
@@ -178,8 +228,7 @@ describe("useAppLock", () => {
       mockUseAuth.mockReturnValue({ user: { id: "user-y" } });
       mockUseFlag.mockReturnValue(true);
       const { result } = renderHook(() => useAppLock());
-      await act(async () => {});
-      expect(result.current.state).toBe("idle");
+      await waitFor(() => expect(result.current.state).toBe("idle"));
     });
 
     it("savePin / hasPin / disablePin round-trip the signed-in user's slot", async () => {

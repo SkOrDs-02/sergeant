@@ -10,6 +10,7 @@ import {
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 import { foldApostrophes } from "@sergeant/shared";
+import { isSameExerciseName } from "../lib/customExerciseId";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
@@ -118,9 +119,17 @@ export function useExerciseCatalog() {
     (ex: RawExerciseDef) => {
       if (!ex?.id) throw new Error("id is required");
       if (!ex?.name?.uk) throw new Error("name.uk is required");
+      // id випадковий (`custom_<uuid>`, аудит data-01), тож «та сама назва =
+      // та сама вправа» більше не виходить саме з id, як було зі slug: беремо
+      // id наявної вправи з тією самою назвою і перезаписуємо її, а не
+      // плодимо дубль (підходи в тренуваннях посилаються на старий id).
+      const sameName = customExercises.find(
+        (x) => x?.id !== ex.id && isSameExerciseName(x?.name?.uk, ex.name?.uk),
+      );
+      const id = sameName?.id ?? ex.id;
       const next = [
-        { ...ex, _custom: true },
-        ...customExercises.filter((x) => x?.id !== ex.id),
+        { ...ex, id, _custom: true },
+        ...customExercises.filter((x) => x?.id !== id),
       ];
       persistCustom(next);
     },

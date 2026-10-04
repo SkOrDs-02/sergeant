@@ -1,5 +1,28 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
+
+import {
+  SERGEANT_STORE,
+  __resetSergeantDbForTests,
+  dbGet,
+  dbSet,
+  openSergeantDb,
+} from "../idb/sergeantDb";
+
+/** Стори з `keyPath` приймають запис без зовнішнього ключа. */
+async function putInline(
+  store: (typeof SERGEANT_STORE)[keyof typeof SERGEANT_STORE],
+  value: { id: string },
+): Promise<void> {
+  const db = await openSergeantDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db!.transaction(store, "readwrite");
+    tx.objectStore(store).put(value);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
 
 import {
   isAppOwnedLocalStorageKey,
@@ -95,5 +118,40 @@ describe("purgeAppOwnedLocalData", () => {
 
     expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
     expect(localStorage.getItem("ph_keep")).toBe("1");
+  });
+});
+
+describe("purgeAppOwnedLocalData — nutrition IndexedDB (data-09)", () => {
+  const originalIndexedDB = (globalThis as { indexedDB?: unknown }).indexedDB;
+
+  beforeEach(() => {
+    (globalThis as { indexedDB?: IDBFactory }).indexedDB = new IDBFactory();
+    __resetSergeantDbForTests();
+  });
+  afterEach(() => {
+    if (originalIndexedDB === undefined) {
+      delete (globalThis as { indexedDB?: unknown }).indexedDB;
+    } else {
+      (globalThis as { indexedDB?: unknown }).indexedDB = originalIndexedDB;
+    }
+    __resetSergeantDbForTests();
+  });
+
+  it("стирає книгу рецептів, але лишає мініатюри страв (вони без серверної копії)", async () => {
+    await putInline(SERGEANT_STORE.NUTRITION_RECIPES, { id: "rcp_x" });
+    await dbSet(SERGEANT_STORE.NUTRITION_MEAL_THUMBS, "meal_x", "thumb");
+    await putInline(SERGEANT_STORE.NUTRITION_FOODS, { id: "food_x" });
+
+    await purgeAppOwnedLocalData();
+
+    expect(
+      await dbGet(SERGEANT_STORE.NUTRITION_RECIPES, "rcp_x"),
+    ).toBeUndefined();
+    // Мініатюри живуть лише локально: стерти їх означає втратити фото назавжди.
+    expect(await dbGet(SERGEANT_STORE.NUTRITION_MEAL_THUMBS, "meal_x")).toBe(
+      "thumb",
+    );
+    // Каталог продуктів не привʼязаний до акаунта й не стирається наосліп.
+    expect(await dbGet(SERGEANT_STORE.NUTRITION_FOODS, "food_x")).toBeDefined();
   });
 });

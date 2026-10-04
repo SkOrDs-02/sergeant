@@ -152,7 +152,7 @@ async function upsertIdEntry(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(idUpsertSql(table), [userId, entry.id, clientTs, clientTs]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "insert",
@@ -177,7 +177,7 @@ async function softDeleteIdEntry(
     id,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "delete",
@@ -206,7 +206,7 @@ async function upsertBlobEntry(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "insert",
@@ -231,7 +231,7 @@ async function softDeleteBlobEntry(
     userId,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "delete",
@@ -259,7 +259,7 @@ async function upsertTxCategory(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_categories",
     op: "insert",
@@ -281,7 +281,7 @@ async function deleteTxCategory(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(TX_CATEGORY_DELETE_SQL, [userId, transactionId]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_categories",
     op: "delete",
@@ -305,7 +305,7 @@ async function upsertTxSplits(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_splits",
     op: "insert",
@@ -327,7 +327,7 @@ async function deleteTxSplits(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(TX_SPLITS_DELETE_SQL, [userId, transactionId]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_splits",
     op: "delete",
@@ -383,7 +383,7 @@ async function upsertNetworth(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_networth_history",
     op: "insert",
@@ -414,7 +414,7 @@ async function upsertPrefs(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_prefs",
     op: "insert",

@@ -323,7 +323,7 @@ revoke.mjs, одразу після sign-out: GET /api/me 200 | GET /api/auth/ge
 
 ### `sec-03` [high] Квиток round-trip чату приймається на будь-якому AI-запиті й видається знову: Free обходить тижневу AI-квоту безкінечним ланцюжком
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1332 (змерджено 2026-10-04) (мінімальний фікс; не входило: привʼязка квитка до id tool_use, preset-відро лише для /api/chat, echo квитка у веб-клієнті)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / billing
 - **Де:** apps/server/src/modules/chat/aiQuota.ts:302-307,335-341; apps/server/src/modules/chat/chatRoundTripTicket.ts:102-117; apps/server/src/modules/chat/chat.ts:340-360,457,786-790,894-913; apps/server/src/modules/chat/aiQuotaBudget.ts:148-156
 - **Першопричина:** assertAiQuota пропускає списання для будь-якого запиту з валідним round_trip_ticket і не перевіряє, що це справді продовження ходу (tool_results разом із tool_calls_raw). chat.ts на кожен перший тур із tool_calls видає новий квиток, навіть якщо сам запит пройшов за квитком, тож квитки ланцюжаться без кінця.
@@ -384,7 +384,7 @@ I tried to refute this and couldn't. I traced the code end to end and also repro
 
 ### `sec-04` [high] PIN-блокування вимикається після перезавантаження: прапорець app-lock-enabled не читається на холодному старті
 
-- **Стан:** виправлено в гілці claude/fix-priv-03-app-lock-reload разом із [`priv-03`](./privacy.md#priv-03), PR #1340 (ще не змерджено)
+- **Стан:** виправлено в #1340 (змерджено 2026-10-04) разом із [`priv-03`](./privacy.md#priv-03), PR #1340 (ще не змерджено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Та сама першопричина, що й** [`priv-03`](./privacy.md#priv-03): Обидва описують вимкнення PIN-блокування після reload: прапорці читаються з localStorage до bootstrapKvStore() і typedStore кешує хибне значення. priv-03 ширший (зачіпає всі прапорці FLAG_REGISTRY) і має розмір S.
 - **Де:** apps/web/src/core/lib/featureFlags.ts:93-98,115-123,153-159; apps/web/src/shared/lib/storage/typedStore.ts:193-200,255-257; apps/web/src/shared/lib/storage/storage.ts:151-173; apps/web/src/main.tsx:198-215; apps/web/src/core/security/useAppLock.ts:51,64-103; apps/web/src/core/app/Providers.tsx:69

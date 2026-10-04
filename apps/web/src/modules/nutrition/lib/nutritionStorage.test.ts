@@ -57,6 +57,10 @@ import {
   __resetInitialPullStateForTests,
   markInitialPullComplete,
 } from "../../../core/syncEngine/initialPullState";
+import {
+  __resetActiveSqliteVfsForTests,
+  noteActiveSqliteVfs,
+} from "../../../core/db/storageBackendState";
 
 /** Початковий pull дійшов до кінця оп-логу (data-04). */
 function completeInitialPull(): void {
@@ -86,6 +90,7 @@ beforeEach(() => {
 afterEach(() => {
   clearNutritionSqliteCache();
   __resetInitialPullStateForTests();
+  __resetActiveSqliteVfsForTests();
 });
 
 // -------------------------------------------------------------------------
@@ -274,6 +279,59 @@ describe("persistPantries — dual-write only (no LS write)", () => {
     );
     expect(triggerSpy).toHaveBeenCalledTimes(1);
     expect(globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY)).toBeNull();
+  });
+});
+
+// data-10: у memory-режимі (фолбек `:memory:` при збої OPFS/квоти) модуль бачить
+// порожню базу. Знімок комори з неї журналюється (у memory журнал не знімається)
+// і на справжній базі видаляє живі позиції, тож до гідратації його не пишемо.
+describe("persistPantries — memory-режим не пише знімки з негідрованого стану (data-10)", () => {
+  const DEFAULT_PLACES: Pantry[] = [
+    { id: "home", name: "Дім", items: [], text: "" },
+    { id: "fridge", name: "Холодильник", items: [], text: "" },
+    { id: "freezer", name: "Морозилка", items: [], text: "" },
+  ];
+  const write = (pantries: Pantry[] = DEFAULT_PLACES) =>
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      pantries,
+      null,
+    );
+
+  it("холодний memory-старт (кеш прогрітий порожньою базою, pull не було) не породжує pantry-опів", () => {
+    noteActiveSqliteVfs("memory");
+    __setNutritionSqliteCacheForTests({});
+
+    expect(write()).toBe(false);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("пише, коли кеш уже має комори (гідровано)", () => {
+    noteActiveSqliteVfs("memory");
+    __setNutritionSqliteCacheForTests({
+      pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+    });
+
+    expect(write()).toBe(true);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("пише, коли початковий pull завершено (на сервері комор немає)", () => {
+    noteActiveSqliteVfs("memory");
+    __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
+
+    expect(write()).toBe(true);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("на персистентній базі поведінка не змінилась: холодний кеш пише як і раніше", () => {
+    noteActiveSqliteVfs("opfs-sahpool");
+    __setNutritionSqliteCacheForTests({});
+
+    expect(write()).toBe(true);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
   });
 });
 

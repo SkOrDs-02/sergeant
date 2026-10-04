@@ -26,6 +26,7 @@ export const privacyMessages = {
     changeTitle: "Змінити PIN",
     confirmTitle: "Підтвердь PIN",
     confirmSubtitle: "Введи PIN ще раз для підтвердження",
+    checking: "Перевіряю блокування…",
     unlockTitle: "Введи PIN",
     unlockSubtitle: "Введи PIN, щоб розблокувати",
     pinMismatch: "PIN-коди не збігаються. Спробуй ще раз.",

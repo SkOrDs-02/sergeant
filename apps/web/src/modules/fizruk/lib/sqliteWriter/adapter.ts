@@ -280,7 +280,7 @@ async function upsertWorkout(
     clientTs,
   ]);
 
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_workouts",
     op: "insert",
@@ -351,7 +351,7 @@ async function upsertWorkoutItem(
     clientTs,
   ]);
 
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_workout_items",
     op: "insert",
@@ -415,7 +415,7 @@ async function upsertWorkoutSet(
     clientTs,
   ]);
 
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_workout_sets",
     op: "insert",
@@ -485,7 +485,7 @@ async function softDeleteWorkout(
   );
 
   // Enqueue deletes for the workout and all its cascaded children.
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_workouts",
     op: "delete",
@@ -495,7 +495,7 @@ async function softDeleteWorkout(
   }).catch(() => {});
 
   for (const itemId of itemIds) {
-    void enqueueOutboxUpsert(client, {
+    await enqueueOutboxUpsert(client, {
       userId,
       table: "fizruk_workout_items",
       op: "delete",
@@ -506,7 +506,7 @@ async function softDeleteWorkout(
   }
 
   for (const setId of cascadeSetIds) {
-    void enqueueOutboxUpsert(client, {
+    await enqueueOutboxUpsert(client, {
       userId,
       table: "fizruk_workout_sets",
       op: "delete",
@@ -534,7 +534,7 @@ async function upsertCustomExercise(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_custom_exercises",
     op: "insert",
@@ -562,7 +562,7 @@ async function softDeleteCustomExercise(
     userId,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_custom_exercises",
     op: "delete",
@@ -614,7 +614,7 @@ async function upsertMeasurement(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_measurements",
     op: "insert",
@@ -660,7 +660,7 @@ async function softDeleteMeasurement(
     userId,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_measurements",
     op: "delete",

@@ -313,6 +313,22 @@ export function AppLock({
     inertBackground: true,
   });
 
+  // Холодний старт: креденшел ще перевіряється. Закриваємо екран
+  // непрозорою завісою, щоб дані не блимнули до екрана PIN. Без діалогу й
+  // фокус-пастки: це секунди-частки секунди, а не взаємодія.
+  if (state === "checking") {
+    return (
+      <div
+        className="fixed inset-0 z-modal bg-bg"
+        role="status"
+        aria-busy="true"
+        data-testid="app-lock-checking"
+      >
+        <span className="sr-only">{m.checking}</span>
+      </div>
+    );
+  }
+
   if (!visible) return null;
 
   const title =
