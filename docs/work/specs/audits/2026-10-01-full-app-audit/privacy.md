@@ -399,7 +399,7 @@ node <scratch>/agents/client-static-web-storage-session/share2.mjs <newX> wss-sh
 
 ### `priv-06` [medium] Гейт згоди на дані про здоров'я пропускає алергії, дієту, тренування й цілі з вагою: вони йдуть у LLM і в RAG без healthDataConsent
 
-- **Стан:** виправлено в гілці claude/fix-priv-06-09-ai-health-consent
+- **Стан:** виправлено в #1368 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-шар (chat, ai-memory)
 - **Де:** apps/server/src/modules/chat/healthGate.ts:53-54, 139-146; apps/server/src/modules/ai-memory/healthRows.ts:28-30; apps/server/src/modules/ai-memory/profileMirror.ts:356; apps/web/src/core/lib/hubChatContext/sections.ts:283-297; apps/web/src/core/legal/privacyDocument.ts:57-59
 - **Першопричина:** Health-фільтри розпізнають лише категорію «Здоров'я»: регекси PROFILE_HEALTH_LINE/ENTRY, classifyToolUse('remember') і isHealthMemoryRow перевіряють тільки category === 'health'. Категорії allergy, diet, training і цілі з вагою вважаються нечутливими. Спільного переліку health-категорій для клієнта і сервера немає.
@@ -577,7 +577,7 @@ NetworkFirst-кешування автентифікованих GET /api/* (30 
 
 ### `priv-09` [medium] Серверні події PostHog $ai_generation/$ai_span шлються з distinctId = userId без перевірки згоди на аналітику
 
-- **Стан:** виправлено в гілці claude/fix-priv-06-09-ai-health-consent
+- **Стан:** виправлено в #1368 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI observability (PostHog)
 - **Де:** apps/server/src/lib/posthogAi.ts:228-270; apps/server/src/lib/anthropic.ts:209, 395; apps/server/src/lib/llm/provider.ts:383; apps/server/src/modules/chat/chat.ts:578; apps/server/src/modules/me/dataRights.ts:55
 - **Першопричина:** captureAiGeneration і captureAiSpan не читають user_preferences.analytics (дефолт false), а posthog-node за замовчуванням створює person profile. Спека 0025 виходить з хибного припущення, що цей userId і так пов'язаний з продуктовими подіями. Для тих, хто відмовився від аналітики, клієнт identify не робить.
