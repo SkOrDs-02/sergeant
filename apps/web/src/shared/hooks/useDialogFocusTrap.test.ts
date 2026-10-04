@@ -160,6 +160,28 @@ describe("useDialogFocusTrap — focus restoration", () => {
     unmount();
   });
 
+  it("prefers a [data-autofocus] element over the first focusable on open", () => {
+    // ux-15: основна CTA пейволу має брати початковий фокус замість
+    // «Закрити» у шапці, що стоїть першою в DOM.
+    const panel = document.createElement("div");
+    const close = document.createElement("button");
+    close.textContent = "Close";
+    const cta = document.createElement("button");
+    cta.textContent = "CTA";
+    cta.setAttribute("data-autofocus", "");
+    panel.appendChild(close);
+    panel.appendChild(cta);
+    document.body.appendChild(panel);
+
+    const ref = createRef<HTMLDivElement>();
+    Object.defineProperty(ref, "current", { value: panel, writable: true });
+
+    const { unmount } = renderHook(() => useDialogFocusTrap(true, ref));
+
+    expect(document.activeElement).toBe(cta);
+    unmount();
+  });
+
   it("falls back to focusing the panel itself when it has no focusable children", () => {
     // Content-only dialogs (e.g. a message with no buttons) still need
     // focus inside the panel so Escape works and Tab can't escape.
