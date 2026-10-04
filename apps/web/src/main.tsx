@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { router } from "./core/app/router";
 import "./index.css";
 import { storageManager } from "@shared/lib/storage/storageManager";
+import { reloadAllTypedStores } from "@shared/lib/storage/typedStore";
 import { createAppQueryClient } from "@shared/lib/api/queryClient";
 import { createWebPersistOptions } from "@shared/lib/api/queryClientPersister";
 // Registers the web `navigator.vibrate`-based adapter on the shared
@@ -254,6 +255,13 @@ void (async () => {
     // `storageManager` не мігрував дані, яких за мить не стане.
     cleanupDemoLeftoversOnce();
     storageManager.runAll();
+    // priv-03: typed-стори (`hub_flags_v1` з `app-lock-enabled`, …), які
+    // застосунок прочитав ДО буту, бачили сирий localStorage, де SQLite-
+    // ключів немає, і їхня `onChange`-підписка висіла на LS-сторі. Тепер
+    // активне сховище визначилось (SQLite kv або LS-фолбек): перечитуємо
+    // всі стори з нього, переприв'язуємо підписки і сповіщаємо підписників
+    // — до зняття latch-а, щоб route-гарди не бачили напівстан.
+    reloadAllTypedStores();
     // Просимо постійне сховище рівно тут: після того, як буту вже є що
     // зберігати, і поза гейтом — відмова браузера нічого не блокує.
     // Навіщо взагалі: локальна копія для офлайн-first продукту подеколи

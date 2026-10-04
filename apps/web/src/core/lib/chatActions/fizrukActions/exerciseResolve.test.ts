@@ -49,6 +49,14 @@ describe("createChatExerciseResolver", () => {
     expect(ex.primaryGroup).toBe("full_body");
   });
 
+  // Аудит data-01: латинська назва давала детермінований `custom_<slug>`, який
+  // збігається з чужою вправою на глобальному PK `fizruk_custom_exercises`.
+  it("id custom-вправи — custom_<uuid>, а не slug назви (латиниця теж)", () => {
+    const ex = createChatExerciseResolver().resolve("Hip Thrust Special");
+    expect(ex.id).toMatch(/^custom_[0-9a-f]{8}-[0-9a-f]{4}-/);
+    expect(ex.id).not.toContain("hip");
+  });
+
   it("та сама невідома назва двічі → одна вправа, не дубль", () => {
     const r = createChatExerciseResolver();
     const a = r.resolve("Мій рух");

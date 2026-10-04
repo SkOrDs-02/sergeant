@@ -178,7 +178,7 @@ v5-run.log (v5-expiry.mjs, vdib_exp_943): після clearCookies і reload за
 
 ### `priv-03` [high] PIN-блокування мовчки вимикається після перезавантаження чи холодного старту: прапорці читаються до буту SQLite і кешуються як вимкнені
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-03-app-lock-reload
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку / feature flags
 - **Де:** apps/web/src/shared/lib/storage/typedStore.ts:196-201, 253-255; apps/web/src/shared/lib/storage/storage.ts:151-155; apps/web/src/main.tsx:194-213; apps/web/src/core/lib/featureFlags.ts:93-99, 128-130; apps/web/src/core/security/useAppLock.ts:51, 66-76
 - **Першопричина:** main.tsx монтує застосунок до bootstrapKvStore(). Тому useAppLock → useFlag → flagsStore.get() читає сирий localStorage, де hub_flags_v1 немає: значення лежить у SQLite kv_store. typedStore.get() назавжди кешує це перше читання. Підписка onChange прив'язана до LS-стора, тож значення з SQLite так і не підхоплюється.

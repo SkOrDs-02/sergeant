@@ -166,6 +166,25 @@ describe("log_meal", () => {
   });
 });
 
+// Аудит data-01: id страви був `m_<Date.now()>`, тобто передбачуваний і
+// однаковий у межах однієї мілісекунди; `nutrition_meals` має глобальний PK.
+// Системний час тут заморожений fake-таймерами.
+describe("log_meal · id страви", () => {
+  it("дві страви в ту саму мілісекунду мають різні непередбачувані id", () => {
+    call({ name: "log_meal", input: { name: "Яблуко", kcal: 50 } });
+    call({ name: "log_meal", input: { name: "Груша", kcal: 60 } });
+    const ids = (dayMeals("2026-04-22") as Array<{ id: string }>).map(
+      (m) => m.id,
+    );
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    for (const id of ids) {
+      expect(id).toMatch(/^m_[0-9a-f]{8}-[0-9a-f]{4}-/);
+      expect(id).not.toContain(String(Date.now()));
+    }
+  });
+});
+
 // ADR-0078: «сьогодні» журналу — доба ПРИСТРОЮ. О 22:00 UTC київська доба
 // вже наступна, а запис має лягти на день, який показує телефон.
 describe("log_meal / log_water · неявна дата біля межі доби", () => {
