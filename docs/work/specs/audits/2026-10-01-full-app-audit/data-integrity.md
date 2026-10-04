@@ -23,7 +23,7 @@
 
 ### `data-01` [high] Глобальний PK на клієнтських id: чужий рядок із тим самим id назавжди блокує синк, а id можна наперед «зайняти»
 
-- **Стан:** частково виправлено. Серверний guard власника батька для `fizruk_workout_items` і `fizruk_workout_sets` (`guardParentOwned`, відповідь `fk_violation`) — у #1345 (змерджено 2026-10-03); решта дочірніх sync-таблиць перевірена: finyk `tx_*` і routine `habit_id` мають складений ключ або не мають FK, тож діри «чужий батько» там немає. Клієнтські генератори id без `Date.now()`/slug/32-бітного хешу (ручні витрати, вправи, чат-екзекутори бюджетів/боргів/страв, Strong-імпорт 64 біти) — у гілці claude/fix-data-01-unpredictable-client-ids (крок 1). Лишилось (крок 2): складений PK `(user_id, id)` двофазною міграцією, звуження SELECT/ON CONFLICT по `user_id`, rekey застряглих рядків; детерміновані `pe::initial`/`rcp_ai_*`/`gp::` лишаються до кроку 2
+- **Стан:** частково виправлено. Серверний guard власника батька для `fizruk_workout_items` і `fizruk_workout_sets` (`guardParentOwned`, відповідь `fk_violation`) — у #1345 (змерджено 2026-10-03); решта дочірніх sync-таблиць перевірена: finyk `tx_*` і routine `habit_id` мають складений ключ або не мають FK, тож діри «чужий батько» там немає. Клієнтські генератори id без `Date.now()`/slug/32-бітного хешу (ручні витрати, вправи, чат-екзекутори бюджетів/боргів/страв, Strong-імпорт 64 біти) — у #1344 (змерджено 2026-10-04) (крок 1). Лишилось (крок 2): складений PK `(user_id, id)` двофазною міграцією, звуження SELECT/ON CONFLICT по `user_id`, rekey застряглих рядків; детерміновані `pe::initial`/`rcp_ai_*`/`gp::` лишаються до кроку 2
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: sync (applySync) + db-schema + web: генератори id
 - **Де:** apps/server/src/modules/sync/applySync-helpers.ts:61-74; apps/server/src/modules/sync/finyk/applySync.ts:140-153; apps/server/src/modules/sync/fizruk/applyMisc.ts:22-35,66-80; apps/server/src/modules/sync/fizruk/applySync.ts:40-46,196-250; apps/server/src/modules/sync/nutrition/applyPantryEvents.ts:223-238; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:73; apps/web/src/modules/fizruk/components/workouts/AddExerciseSheet.tsx:49-57,285; apps/web/src/modules/fizruk/lib/strongImport.ts:523-546; packages/nutrition-domain/src/pantryLedger.ts:227-231
 - **Першопричина:** Більшість per-row sync-таблиць (finyk_manual_expenses, fizruk_custom_exercises, fizruk_workouts, nutrition_pantry_events, nutrition_recipes, nutrition_goal_periods та ще кілька десятків) мають PRIMARY KEY (id) без user_id, а клієнт генерує передбачувані id: Date.now() для ручних витрат, custom_&lt;slug&gt; для вправ, pe::initial::home::&lt;продукт&gt;, rcp_ai_&lt;fnv32&gt;, 32-бітний FNV у Strong-імпорті. Apply шукає рядок за id без user_id і для чужого рядка повертає термінальний fk_violation; applyFizrukItems ще й не перевіряє власника батьківського тренування.
@@ -235,7 +235,7 @@ verify/imp.mjs run vx2 (uid crL78tWN…): oplog 18786 finyk_manual_expenses|inse
 
 ### `data-02` [high] Запис, відновлений після видалення («Повернути», повторний пропуск, hide→show→hide), назавжди лишається видаленим на інших і нових пристроях
 
-- **Стан:** виправлено в гілці claude/fix-data-02-undo-delete (клієнтський generic upsert; пункт про переграш логу для застряглих пристроїв — рішення власника, не зроблено)
+- **Стан:** виправлено в #1326 (змерджено 2026-10-03) (клієнтський generic upsert; пункт про переграш логу для застряглих пристроїв — рішення власника, не зроблено)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine (applyPullOp) + writers усіх модулів
 - **Де:** apps/web/src/core/syncEngine/applyPullOp.ts:311-366 (insertCols на :344); apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:155-165,209-219; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:358-381,573-628; apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:335-357
 - **Першопричина:** Writers кладуть в outbox insert-рядки без ключа deleted_at, сервер зберігає op.row як є і так само віддає його на pull. applyGenericRegistryRow будує ON CONFLICT DO UPDATE лише з колонок, присутніх у рядку, тож локальний tombstone не скидається; коментар AI-DANGER і регресійний тест (з явним deleted_at: null) хибно вважають це закритим.
@@ -396,7 +396,7 @@ Code path, end to end:
 
 ### `data-03` [high] Холодне завантаження «Їжі» (reload, deep-link, PWA-шорткат, новий пристрій) або чат-запис до прогріву кешу стирає список покупок і денну воду на всіх пристроях
 
-- **Стан:** виправлено в гілці claude/fix-data-03-nutrition-cold-cache (гейт `refreshedAt` у `persistNutritionShoppingList`/`persistNutritionWaterLog` + `diffShoppingListOps` null→порожній = 0 опів; чат-екзекутори покриті тим самим гейтом мовчки, явне повідомлення «спробуй за кілька секунд» лишається за `core/lib/chatActions`)
+- **Стан:** виправлено в #1330 (змерджено 2026-10-03) (гейт `refreshedAt` у `persistNutritionShoppingList`/`persistNutritionWaterLog` + `diffShoppingListOps` null→порожній = 0 опів; чат-екзекутори покриті тим самим гейтом мовчки, явне повідомлення «спробуй за кілька секунд» лишається за `core/lib/chatActions`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (nutritionStorage, useShoppingList, chatActions)
 - **Де:** apps/web/src/modules/nutrition/hooks/useShoppingList.ts:36-49; apps/web/src/modules/nutrition/lib/shoppingListStorage.ts:47-61; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:304-316,346-372; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:388-396,623-630; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:272-308; apps/web/src/core/lib/chatActions/nutritionActions.ts:101-111,188-232
 - **Першопричина:** useShoppingList на маунті безумовно викликає persistShoppingList з порожнім дефолтом, а peekNutritionDualWriteState при холодному кеші дає prev.shoppingList = null, тож диф null→{categories:[]} емітить shopping-list-set із найсвіжішим client_ts (буфер до реєстрації реплеїть його з новою міткою). Чат-екзекутори так само будують цілий blob списку й води з порожнього кешу, а сервер застосовує whole-row LWW, де порожнє значення перемагає.
@@ -592,7 +592,7 @@ Same class in the module UI itself (out of this lane): `useShoppingList` runs `u
 
 ### `data-04` [high] nutrition_prefs (шаблони страв, ціль ккал, вода, нагадування) перезаписуються дефолтами при першому відкритті Їжі на новому пристрої або з Settings
 
-- **Стан:** частково виправлено в гілці claude/fix-data-04-nutrition-prefs-hydration (клієнтська частина; поле-рівневий merge `prefs_json` на сервері, п. 5 «Мінімального фіксу», не робився: зміна контракту за Hard Rule #3, окремий PR)
+- **Стан:** частково виправлено в #1336 (змерджено 2026-10-03) (клієнтська частина; поле-рівневий merge `prefs_json` на сервері, п. 5 «Мінімального фіксу», не робився: зміна контракту за Hard Rule #3, окремий PR)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (prefs) + Settings
 - **Де:** apps/web/src/modules/nutrition/hooks/useAdaptiveNutritionGoal.ts:247-271; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:109-157,320-372; apps/web/src/core/settings/NotificationsSection.tsx:82-93,138-155; apps/web/src/core/settings/NutritionSection.tsx:89-91; apps/server/src/modules/sync/nutrition/applySync.ts:449-483
 - **Першопричина:** persistNutritionPrefs шле весь об'єкт prefs, побудований з холодного кешу (defaultNutritionPrefs) або з застарілого стану компонента. useAdaptiveNutritionGoal пише ціль, щойно біометрія прийшла з /api/me/profile, ще до pull, а NutritionSection і NotificationsSection читають prefs один раз у useState і не підписані на тік кешу. Сервер повністю замінює prefs_json за LWW без поле-рівневого merge.
@@ -702,7 +702,7 @@ I could not refute the core claim. The code path is as described and I reproduce
 
 ### `data-05` [high] Журнал dual-write знімається, навіть коли SQL-запис упав: при SQLITE_IOERR/BUSY запис зникає назавжди, а користувач бачить тост «додано»
 
-- **Стан:** частково виправлено в гілці claude/fix-data-05-dualwrite-ack-on-error (журнал не знімається при errored > 0, лічильник спроб і карантин після 5 невдач, «durable»-підтвердження Рутини не бреше, банер помилки сховища для Рутини; лишилось: загальний банер деградації сховища для Фініка/Харчування/Фізрука без тосту успіху і e2e з Storage.overrideQuotaForOrigin)
+- **Стан:** частково виправлено в #1338 (змерджено 2026-10-03) (журнал не знімається при errored > 0, лічильник спроб і карантин після 5 невдач, «durable»-підтвердження Рутини не бреше, банер помилки сховища для Рутини; лишилось: загальний банер деградації сховища для Фініка/Харчування/Фізрука без тосту успіху і e2e з Storage.overrideQuotaForOrigin)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/dualwrite-core + web: sqliteWriter усіх модулів
 - **Де:** packages/dualwrite-core/src/createApplyOps.ts:84-108; apps/web/src/modules/finyk/lib/sqliteWriter/index.ts:264-300,375-383; apps/web/src/modules/routine/lib/sqliteWriter/index.ts:224,243,341; apps/web/src/modules/fizruk/lib/sqliteWriter/index.ts:221,234,316; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:229,242,367; apps/web/src/core/durability/dualWriteJournal.ts:90-99
 - **Першопричина:** createApplyOps.applyBestEffort ловить виняток кожного опа і лише рахує errored; runFinykOps, runRoutineOps, runFizrukOps і runNutritionOps безумовно повертають status 'applied', і оркестратор робить ackDualWrite. outboxCheckpoint збою не бачить, бо enqueue стоїть після client.run і взагалі не викликається.
@@ -801,7 +801,7 @@ Verifier rerun of t6_journal.mts with the real finyk orchestrator and a client w
 
 ### `data-06` [high] «Замінити дані на цьому пристрої» при відновленні бекапу видаляє на сервері й на всіх пристроях усе, чого немає у файлі
 
-- **Стан:** виправлено в гілці claude/fix-data-06-07-backup-restore
+- **Стан:** виправлено в #1339 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап (HubBackupPanel, finykBackup, fizrukStorage)
 - **Де:** apps/web/src/core/hub/HubBackupPanel.tsx:150-193,228; apps/web/src/modules/finyk/lib/finykBackup.ts:159-176,199-229; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:221-243; apps/web/src/modules/fizruk/lib/fizrukStorage.ts:205-231
 - **Першопричина:** Restore будує diff від теплого кешу (дані акаунта) до вмісту файлу, і для кожного рядка, якого немає у файлі, спільний адаптер ставить op 'delete' в outbox. Ні код, ні ADR не враховують, що tombstone-и йдуть на сервер, а діалог і банер обіцяють зміни лише «на цьому пристрої».
@@ -869,7 +869,7 @@ I tried to refute this and couldn't. I traced the code end to end and checked th
 
 ### `data-07` [high] Відновлення бекапу не гарантує запису й синхронізації: reload обриває outbox, а у вікні завантаження restore мовчки пропускається
 
-- **Стан:** виправлено в гілці claude/fix-data-06-07-backup-restore
+- **Стан:** виправлено в #1339 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап + dual-write (Фінік, Фізрук, Їжа)
 - **Де:** apps/web/src/core/hub/HubBackupPanel.tsx:150-162; apps/web/src/modules/finyk/lib/finykBackup.ts:171-176; apps/web/src/modules/finyk/lib/sqliteWriter/index.ts:211-226,319-336; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:155-242; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:663-670; apps/web/src/core/auth/useLocalUserId.ts:51; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:203,236
 - **Першопричина:** dualWriteFinykState і dualWriteFizrukState обходять журнал (journalDualWrite, outboxCheckpoint, ackDualWrite), адаптери роблять void enqueueOutboxUpsert без await, а HubBackupPanel одразу після apply робить window.location.reload(), обриваючи серіалізований ланцюг enqueue. Якщо dual-write контекст ще не зареєстрований (новий пристрій, перші ~10 с), dualWrite повертає skipped (context-unset), а persist* це ігнорує.
@@ -971,7 +971,7 @@ Scripts: <scratch>/agents/verify-client-static-gap-backup-restore-file-imports/i
 
 ### `data-08` [high] Фінансові чат-дії читають застарілі kv-ключі замість SQLite: план місяця затирається, ліміти дублюються, борги «не знайдено», undo стирає план
 
-- **Стан:** виправлено в гілці claude/fix-data-08-11-chat-executors
+- **Стан:** виправлено в #1342 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (finykActions, chatBridge)
 - **Де:** apps/web/src/core/lib/chatActions/finykActions/budgets.ts:53-208; apps/web/src/core/lib/chatActions/finykActions/debts.ts:76-121; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:120-122; apps/web/src/core/lib/chatActions/finykActions/search.ts:205-226; apps/web/src/core/lib/chatActions/finykActions/dualWriteBridge.ts:99-110,260-285; apps/web/src/modules/finyk/lib/sqliteWriter/chatBridge.ts:145-181
 - **Першопричина:** Екзекутори budgets, debts, transactions і search читають ls('finyk_budgets' | 'finyk_monthly_plan' | 'finyk_debts' | ...), але UI ці ключі більше не пише: слоти на useReadonlyPersist, канон у SQLite, а дренаж LS→SQLite прибрано у 2026-08. mirrorFinykChatMonthlyPlan записує kv-похідний monthlyPlanJson поверх канонічних prefs цілком, а undo бере prev із порожнього kv.
@@ -1039,7 +1039,7 @@ Code path, end to end:
 
 ### `data-09` [high] Книга рецептів в IndexedDB спільна для всіх акаунтів і не гідрується з сервера: рецепти переходять в інший акаунт, а збереження рецепта на новому пристрої видаляє серверні
 
-- **Стан:** частково виправлено в гілці claude/fix-data-09-10-recipes-pantry (книга рецептів партиціонована за власником і стирається при виході; мініатюри страв `nutrition_meal_thumbs` свідомо лишаються: серверної копії фото немає, стирання втратило б їх назавжди; ключ мініатюри - id прийому, чужому акаунту він невидимий)
+- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (книга рецептів партиціонована за власником і стирається при виході; мініатюри страв `nutrition_meal_thumbs` свідомо лишаються: серверної копії фото немає, стирання втратило б їх назавжди; ключ мініатюри - id прийому, чужому акаунту він невидимий)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (recipeBook, IndexedDB)
 - **Де:** apps/web/src/modules/nutrition/lib/recipeBook.ts:111-178 (persist на :156,:173); apps/web/src/modules/nutrition/lib/nutritionStorage.ts:287-298; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:339-346; apps/web/src/shared/lib/storage/purgeLocalData.ts:35-38
 - **Першопричина:** Стор nutrition_recipes у sergeant-db не партиціонований за userId і свідомо не чиститься при виході, а saveRecipeToBook і deleteSavedRecipe передають у persistNutritionRecipes весь вміст IDB (getAll, ліміт 200) як нове повне значення. Диф проти SQLite-кешу поточного користувача емітить upsert для чужих рецептів і recipe-delete для всіх рецептів, яких немає в локальній IDB.
@@ -1149,7 +1149,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-10` [high] Memory-режим (збій OPFS або квоти) пише порожні знімки комори, які після відновлення сховища видаляють продукти на сервері й на всіх пристроях
 
-- **Стан:** частково виправлено в гілці claude/fix-data-09-10-recipes-pantry (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без soft-delete відсутніх дітей не робились, це окремий зсув моделі, закриє й data-40)
+- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без soft-delete відсутніх дітей не робились, це окремий зсув моделі, закриє й data-40)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (pantry) + durability (memory VFS, журнал)
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:446-448,641-675; apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/db/sqlite.ts:846-889; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:118,161-179; packages/dualwrite-core/src/tableSpec.ts:200-215
 - **Першопричина:** У :memory:-режимі модуль бачить порожню базу і пише pantry-upsert {items: []} для дефолтних місць зберігання; ackDualWrite у memory навмисно не знімає журнал, тож знімок реплеїться на справжній OPFS-базі. upsertPantry → softDeleteRemovedChildren при порожньому keepIds видаляє всі живі позиції без LWW-перевірки і ставить delete з clientTs memory-сесії, який виграє на сервері.
@@ -1207,7 +1207,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-11` [high] Підходи й вправи, записані через чат (log_set, plan_workout), ніколи не доходять на сервер: порожній exerciseId відхиляється
 
-- **Стан:** виправлено в гілці claude/fix-data-08-11-chat-executors
+- **Стан:** виправлено в #1342 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (fizrukActions) + server: sync fizruk
 - **Де:** apps/web/src/core/lib/chatActions/fizrukActions/workouts.ts:86,180; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:362; apps/server/src/modules/sync/fizruk/applySync.ts:202-206
 - **Першопричина:** Чат-екзекутори створюють WorkoutItem з порожнім рядком exerciseId, адаптер шле exercise_id = '', і сервер повертає rejected missing_exercise_id; підходи потім падають на FK workout_item_id. Відмова термінальна, ретраю немає.
@@ -1443,7 +1443,7 @@ node <scratch>/agents/verify-api-live-sync-live/c3/w1_watermark.mjs 3 → trial0
 
 ### `data-13` [medium] Фінік до прогріву кешу мовчки відкидає нові записи: витрата чи актив, додані в перші секунди холодного старту, зникають попри тост «Витрату додано.»
 
-- **Стан:** виправлено в гілці claude/fix-data-13-26-finyk-cold-start (dual-write до прогріву пише рядки й відкидає лише prefs-зріз; сабміт ручної витрати заблоковано спінером до `storageReady` з таймаутом 15 с; тост лишається синхронним, без «підтвердженого запису» — окремої API для цього немає; e2e «холодний старт» не додано, покрито інтеграційним Vitest на справжньому SQLite)
+- **Стан:** виправлено в #1349 (змерджено 2026-10-03) (dual-write до прогріву пише рядки й відкидає лише prefs-зріз; сабміт ручної витрати заблоковано спінером до `storageReady` з таймаутом 15 с; тост лишається синхронним, без «підтвердженого запису» — окремої API для цього немає; e2e «холодний старт» не додано, покрито інтеграційним Vitest на справжньому SQLite)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (useFinykDualWriteSync, useFinykStorageSlots)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykDualWriteSync.ts:104-115; apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:198-241; apps/web/src/modules/finyk/FinykApp.tsx:404-419
 - **Першопричина:** Гард, доданий у 0170278e (2026-10-01) для захисту merchantRules, поки storageReady === false лише переносить prevRef = next і нічого не пише: ні в SQLite, ні в журнал, ні в outbox. Після прогріву overlay перезаписує всі слоти з кешу, а FinykApp показує тост успіху без перевірки.
@@ -1849,7 +1849,7 @@ node <scratch>/agents/verify-api-live-sync-live/c3/w3_insert_race.mjs → {'rout
 
 ### `data-19` [medium] Вихід з акаунта стирає незасинхронізовані записи без питання: палітра команд і екран видалення акаунта обходять підтвердження, а dead_letter і rejected не рахуються
 
-- **Стан:** виправлено в гілці claude/fix-priv-05-data-19-logout-wipe
+- **Стан:** виправлено в #1335 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth (logout) + syncEngine (flushBeforeLogout)
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:279-289,551-564,646-649; apps/web/src/core/app/useDemoCommands.ts:58-75,152-162; apps/web/src/core/app/RootLayout.tsx:183,449; apps/web/src/core/syncEngine/flushBeforeLogout.ts:86-106; packages/db-schema/src/sqlite/syncOpOutboxStatus.ts:425-432
 - **Першопричина:** logout() питає про втрату лише якщо викликач передав confirmUnsyncedLoss, а signOutFromPalette і PendingDeletionScreen його не передають. flushPendingSyncOpsBeforeLogout рахує лише status 'pending', при runtime === null вважає стан безпечним, а flushNow штовхає один батч без рядків у бекофі; далі wipeSqliteDb видаляє outbox.
@@ -2319,7 +2319,7 @@ DB (read-only). Deleted by ops 22624/22625: 9424f65a… categoryIds [cus_muqjsgs
 
 ### `data-26` [medium] Посилання /finyk?sync=… без підтвердження підміняє або стирає бюджети, план, категорії й приховані рахунки, а на холодному старті хибно звітує «синхронізовано»
 
-- **Стан:** виправлено в гілці claude/fix-data-13-26-finyk-cold-start (приймач `?sync=`, `loadFromUrl`, `generateSyncLink` і `normalizeFinykSyncPayload` видалено; JSON-бекап із файлу не чіпали)
+- **Стан:** виправлено в #1349 (змерджено 2026-10-03) (приймач `?sync=`, `loadFromUrl`, `generateSyncLink` і `normalizeFinykSyncPayload` видалено; JSON-бекап із файлу не чіпали)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (useFinykBackupSync.loadFromUrl)
 - **Де:** apps/web/src/modules/finyk/FinykApp.tsx:171-190; apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts:79-108,192-213; packages/finyk-domain/src/backup.ts:95-260; apps/web/src/core/app/ShellDeepLinkBridge.tsx:51-66; apps/mobile-shell/src/index.ts:123-150
 - **Першопричина:** FinykApp на маунті викликає loadFromUrl, якщо в URL є sync=, і applyData замінює колекції цілком (порожній масив означає стирання) без прев'ю й підтвердження; нормалізатор не валідує форму елементів. Генератора посилань в UI вже немає, живий лише приймач, а на холодному старті запис ще й відкидає гард storageReady з data-13.
@@ -3389,7 +3389,7 @@ pantryConsume.ts:131-137 у гілці без варіантів записує 
 
 ### `data-42` [medium] Їжа: обраний день журналу «замерзає» на момент відкриття, тож після півночі страви пишуться у вчорашній день
 
-- **Стан:** виправлено в гілці claude/fix-data-42-43-nutrition-day-usda
+- **Стан:** виправлено в #1371 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (useNutritionLog, NutritionApp)
 - **Де:** apps/web/src/modules/nutrition/hooks/useNutritionLog.ts:75-77,143; apps/web/src/modules/nutrition/NutritionApp.tsx:322-372,459; apps/web/src/modules/nutrition/components/NutritionDashboard.tsx:69
 - **Першопричина:** selectedDate обчислюється один раз у useState-ініціалізаторі, і FAB, hero та wrappedSaveMeal пишуть саме в нього; обробки зміни доби (як useDayRollover у Рутині) в модулі немає, а дашборд рахує today на кожному рендері.
@@ -3433,7 +3433,7 @@ Reproduced live with <scratch>/agents/verify-client-static-react-correctness/v2-
 
 ### `data-43` [medium] USDA-результати пошуку без енергії показуються й записуються як 0 ккал при ненульових БЖВ
 
-- **Стан:** виправлено в гілці claude/fix-data-42-43-nutrition-day-usda
+- **Стан:** виправлено в #1371 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition (normalizers/usda)
 - **Де:** apps/server/src/lib/normalizers/usda.ts:165-190
 - **Першопричина:** normalizeUSDASearch читає енергію лише з nutrient 1008 і підставляє 0, коли її немає, а Foundation-продукти USDA віддають енергію як 2047/2048; hasSomeMacro такий продукт пропускає, клієнт не фільтрує.
@@ -3769,7 +3769,7 @@ Read-only psql: zz_audit_junk містить 3 рядки rejected/table_not_all
 
 ### `data-49` [medium] Рішення про згоду на аналітику не зберігається: банер повертається після кожного перезавантаження, а «Дозволити» гостя не доходить на сервер
 
-- **Стан:** виправлено в гілці claude/fix-priv-18-data-49-analytics-consent
+- **Стан:** виправлено в #1369 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: observability (analyticsConsent)
 - **Де:** apps/web/src/core/observability/analyticsConsent.ts:79,118; apps/web/src/shared/lib/storage/storage.ts:242-318
 - **Першопричина:** analyticsConsent читає рішення один раз при імпорті модуля, ще до bootstrapKvStore(), тобто з LS-фолбека, а persistDecision пише через safeWriteLS у SQLite warm-cache. Ключ у localStorage так і не з'являється, тож після reload рішення не видно.
