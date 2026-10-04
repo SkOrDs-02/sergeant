@@ -1157,7 +1157,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-13` [medium] Блокування обходиться клавіатурою: Ctrl/Cmd+K відкриває глобальний пошук поверх замка з даними й діями
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-13-priv-15-lock-shortcuts (гарячі клавіші вимкнені, поки замок не idle, оверлей замка на z-300 вище за пошук; лишилось: дерево застосунку й HubChatOverlay усе ще змонтовані під замком, дані лежать у DOM під оверлеєм, окремий PR)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/hooks/useHubKeyboardShortcuts.ts:57-67,124-150; apps/web/src/core/app/RootLayout.tsx:195-225; apps/web/src/core/hub/search/HubSearch.tsx:65; apps/web/src/core/security/AppLock.tsx:311-327
 - **Першопричина:** AppLock лише накриває застосунок оверлеєм: дерево AppShell рендериться за будь-якого стану замка, а useHubKeyboardShortcuts не перевіряє lock-стан (блокує лише isEditableTarget). Після кліку по цифрі фокус іде з прихованого поля, і Ctrl+K, '?' чи Ctrl+/ відкривають діалоги з вищим z-index.
