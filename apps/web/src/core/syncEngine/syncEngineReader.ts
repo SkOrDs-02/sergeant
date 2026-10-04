@@ -128,6 +128,46 @@ function reportPullRejection(
 }
 
 /**
+ * Виняток із `applyPullOp` (CHECK, NOT NULL, I/O у SQLite) — у Sentry, іменем
+ * таблиці й опа, і з текстом помилки.
+ *
+ * AI-CONTEXT (rel-11): без цього виняток вилітав із циклу сторінки, курсор
+ * не писався, і наступний тік брав ту саму сторінку та падав на тому ж опі:
+ * пристрій назавжди переставав отримувати зміни, а неідемпотентні опи ДО
+ * отруйного (`routine_streaks` `increment`) застосовувались повторно щотіку.
+ * Тепер такий оп рахується як `rejected` (той самий принцип «просуваємось і
+ * галасуємо», що й у `reportPullRejection`), а курсор іде далі.
+ *
+ * `row` сюди НЕ потрапляє (Hard Rule #21); текст помилки SQLite називає
+ * обмеження чи колонку, але не значення.
+ */
+function reportPullApplyFailure(
+  deps: SyncEngineReaderDeps,
+  op: SyncV2PullOp,
+  error: unknown,
+): void {
+  if (!deps.captureException) return;
+  const reason = error instanceof Error ? error.message : String(error);
+  try {
+    deps.captureException(
+      new Error(`sync pull op apply threw: ${op.table}.${op.op}: ${reason}`),
+      {
+        scope: "sync-v2-pull-apply",
+        tags: {
+          area: "sync",
+          sync_direction: "pull",
+          sync_table: op.table,
+          sync_op: op.op,
+        },
+        opId: op.id,
+      },
+    );
+  } catch {
+    /* обсервабіліті ніколи не має ламати шлях читання */
+  }
+}
+
+/**
  * Скільки разів один `pullOnce` згоден перечекати рейт-ліміт.
  *
  * AI-CONTEXT: догін порожнього курсора йде сторінками через увесь
@@ -252,15 +292,32 @@ export function createSyncEngineReaderRuntime(
         for (const op of page.ops) {
           pulled += 1;
           maxOpId = Math.max(maxOpId, op.id);
-          const outcome = await applyPullOp(
-            client,
-            op,
-            userId,
-            deps.originDeviceId,
-          );
+          let outcome: Awaited<ReturnType<typeof applyPullOp>>;
+          try {
+            outcome = await applyPullOp(
+              client,
+              op,
+              userId,
+              deps.originDeviceId,
+            );
+          } catch (error) {
+            // rel-11: отруйний оп не має заклинювати курсор. Без BEGIN/COMMIT
+            // навмисно: спільне з'єднання SQLite пишуть і інші писарі, тож
+            // транзакція поглинула б їхні записи.
+            rejected += 1;
+            reportPullApplyFailure(deps, op, error);
+            continue;
+          }
           if (outcome === "applied") {
             applied += 1;
             affectedTables.add(op.table);
+            // `increment` не ідемпотентний: закриття вкладки посеред сторінки
+            // повторило б його при наступному тіку. Курсор одразу після
+            // застосування звужує вікно повтору до одного опа (опи сторінки
+            // йдуть за зростанням `id`, тож усе до `maxOpId` уже оброблене).
+            if (op.op === "increment") {
+              await writePullSinceCursor(client, userId, maxOpId);
+            }
           } else if (outcome === "skipped") {
             skipped += 1;
           } else {
