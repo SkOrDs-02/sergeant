@@ -127,6 +127,27 @@ export function RecipesCard({
     }
   }
 
+  async function removeSaved(removed: SavedRecipe) {
+    const deleted = await deleteSavedRecipe(removed.id);
+    await refreshSaved();
+    if (!deleted) {
+      toast.error("Не вдалося видалити рецепт", undefined, {
+        label: "Повторити",
+        onClick: () => void removeSaved(removed),
+      });
+      return;
+    }
+    showUndoToast(toast, {
+      msg: `Видалено рецепт «${removed.title}»`,
+      onUndo: () => {
+        void (async () => {
+          await saveRecipeToBook(removed);
+          await refreshSaved();
+        })();
+      },
+    });
+  }
+
   async function saveOne(r: RecipeLike) {
     const res = await saveRecipeToBook(r);
     if (res.ok) {
@@ -225,19 +246,7 @@ export function RecipesCard({
         danger
         onConfirm={async () => {
           const removed = deleteRecipeConfirm;
-          if (removed?.id) {
-            await deleteSavedRecipe(removed.id);
-            await refreshSaved();
-            showUndoToast(toast, {
-              msg: `Видалено рецепт «${removed.title}»`,
-              onUndo: () => {
-                void (async () => {
-                  await saveRecipeToBook(removed);
-                  await refreshSaved();
-                })();
-              },
-            });
-          }
+          if (removed?.id) await removeSaved(removed);
           setDeleteRecipeConfirm(null);
         }}
         onCancel={() => setDeleteRecipeConfirm(null)}

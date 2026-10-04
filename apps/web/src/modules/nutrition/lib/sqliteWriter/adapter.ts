@@ -68,7 +68,7 @@ const applyOps = createApplyOps<NutritionDualWriteOp>({
       return "applied";
     },
     "pantry-upsert": async (client, op, rt) => {
-      await upsertPantry(client, op.pantry, rt);
+      await upsertPantry(client, op.pantry, rt, op.keepMissing === true);
       return "applied";
     },
     "pantry-delete": async (client, op, rt) => {
@@ -388,6 +388,7 @@ async function upsertPantry(
   client: SqliteMigrationClient,
   p: NutritionPantrySnapshot,
   { userId, clientTs }: DualWriteRuntime,
+  keepMissing = false,
 ): Promise<void> {
   await client.run(PANTRY_UPSERT_SQL, [
     p.id,
@@ -443,7 +444,11 @@ async function upsertPantry(
     }).catch(() => {});
   }
 
-  // Soft-delete items removed from the pantry
+  // Soft-delete items removed from the pantry.
+  // data-10: реплей знімка з memory-сесії (`keepMissing`) не видаляє те, чого
+  // в знімку немає: знімок знятий з порожньої бази, і це не «користувач
+  // прибрав позицію», а «позиції ще не завантажились».
+  if (keepMissing) return;
   const itemIds = items.map((it) => it.id);
   await softDeleteRemovedChildren(client, p.id, userId, clientTs, itemIds);
 }

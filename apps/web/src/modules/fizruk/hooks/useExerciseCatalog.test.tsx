@@ -90,6 +90,48 @@ describe("useExerciseCatalog", () => {
     ).toBe(false);
   });
 
+  it("addExercise з тією самою назвою (інший id) перезаписує наявну вправу, а не плодить дубль", () => {
+    const { result } = renderHook(() => useExerciseCatalog());
+    act(() => {
+      result.current.addExercise({
+        id: "custom_aaa",
+        name: { uk: "Hip Thrust" },
+      } as never);
+    });
+    act(() => {
+      result.current.addExercise({
+        id: "custom_bbb",
+        name: { uk: "  hip   thrust " },
+        description: "нове",
+      } as never);
+    });
+    const same = result.current.customExercises;
+    expect(same).toHaveLength(1);
+    // Id старої вправи зберігається: підходи в тренуваннях посилаються на нього.
+    expect(same[0]?.id).toBe("custom_aaa");
+    expect(same[0]?.description).toBe("нове");
+  });
+
+  it("addExercise з різними назвами лишає обидві вправи", () => {
+    const { result } = renderHook(() => useExerciseCatalog());
+    act(() => {
+      result.current.addExercise({
+        id: "custom_a",
+        name: { uk: "Жим 2" },
+      } as never);
+    });
+    act(() => {
+      result.current.addExercise({
+        id: "custom_b",
+        name: { uk: "Біг 2" },
+      } as never);
+    });
+    expect(result.current.customExercises.map((e) => e?.id).sort()).toEqual([
+      "custom_a",
+      "custom_b",
+    ]);
+  });
+
   it("addExercise validates id and name.uk", () => {
     const { result } = renderHook(() => useExerciseCatalog());
     expect(() =>

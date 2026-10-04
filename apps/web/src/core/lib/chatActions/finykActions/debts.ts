@@ -4,7 +4,7 @@
 import { finykChatWrite } from "./dualWriteBridge";
 import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import { validatePositiveAmount } from "./amountValidation";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, generatePrefixedId } from "@sergeant/shared";
 import type {
   CreateDebtAction,
   CreateReceivableAction,
@@ -32,7 +32,7 @@ export function createDebt(action: CreateDebtAction): ChatActionResult {
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   const debts = [...(cache.manualDebts as Debt[])];
   const newDebt: Debt = {
-    id: `d_${Date.now()}`,
+    id: generatePrefixedId("d"),
     name,
     totalAmount: amountN,
     dueDate: due_date || "",
@@ -63,7 +63,7 @@ export function createReceivable(
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   const recv = [...(cache.receivables as Receivable[])];
   const newRecv: Receivable = {
-    id: `r_${Date.now()}`,
+    id: generatePrefixedId("r"),
     name,
     amount: amountN,
     linkedTxIds: [],

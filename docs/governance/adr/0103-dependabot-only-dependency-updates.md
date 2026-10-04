@@ -1,6 +1,6 @@
 # ADR-0103: Dependabot — єдиний інструмент оновлення залежностей
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-03
 - **Last validated:** 2026-10-03
 - **Next review:** 2027-01-03

@@ -50,10 +50,13 @@ vi.mock("../http/index.js", () => {
       },
     requireLlmUpstream: pass,
     // Відро, яке списав би справжній `assertAiQuota`, їде в заголовок.
+    // `allowRoundTripTicket` їде окремим заголовком: nutrition-роути квиток
+    // чату приймати не мають (sec-03).
     requireAiQuota:
-      (meter = "ai") =>
+      (meter = "ai", options: { allowRoundTripTicket?: boolean } = {}) =>
       (_req: unknown, res: express.Response, next: () => void) => {
         res.append("x-quota-meter", meter);
+        if (options.allowRoundTripTicket) res.append("x-quota-ticket", "1");
         next();
       },
   };
@@ -114,6 +117,16 @@ describe("access-tiers: яке тижневе відро списує nutrition-
   it("refine-photo того самого знімка нічого не списує", async () => {
     expect(await meterOf("/api/nutrition/refine-photo")).toBeUndefined();
   });
+
+  it.each(["/api/nutrition/analyze-photo", "/api/nutrition/day-plan"])(
+    "%s не приймає round-trip-квиток чату (sec-03)",
+    async (path) => {
+      const res = await request(app()).post(path).send({});
+      expect(res.status).toBe(200);
+      expect(res.headers["x-quota-meter"]).toBeDefined();
+      expect(res.headers["x-quota-ticket"]).toBeUndefined();
+    },
+  );
 
   it("day-plan списує 1 дію зі спільних", async () => {
     expect(await meterOf("/api/nutrition/day-plan")).toBe("ai");

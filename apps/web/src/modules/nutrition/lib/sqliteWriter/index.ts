@@ -354,6 +354,22 @@ interface NutritionJournalPayload {
 /** Реплей відбувається раз на запис, хоч реєстрантів контексту кілька. */
 const replayedJournalIds = new Set<string>();
 
+/**
+ * data-10: запис, застосований у memory-базі (OPFS/квота впали), знято зі стану,
+ * якого модуль ще не гідрував з реальної бази: порожня комора, дефолтні місця
+ * зберігання. Реплей такого `pantry-upsert` як повної заміни soft-delete-ить
+ * усі живі позиції на справжній базі й ставить на сервері tombstone з
+ * `clientTs` memory-сесії, який виграє LWW (аудит 2026-10-01). Тому на реплеї
+ * знімок лише додає/оновлює позиції, а відсутні не чіпає.
+ */
+function withoutImplicitPantryDeletes(
+  ops: readonly NutritionDualWriteOp[],
+): readonly NutritionDualWriteOp[] {
+  return ops.map((op) =>
+    op.kind === "pantry-upsert" ? { ...op, keepMissing: true } : op,
+  );
+}
+
 function replayNutritionJournal(ctx: NutritionDualWriteContext): void {
   const userId = ctx.getUserId();
   if (!userId) return;
@@ -365,7 +381,9 @@ function replayNutritionJournal(ctx: NutritionDualWriteContext): void {
     replayedJournalIds.add(entry.id);
     enqueueNutritionRun(
       ctx,
-      entry.payload.ops,
+      entry.appliedInMemory
+        ? withoutImplicitPantryDeletes(entry.payload.ops)
+        : entry.payload.ops,
       entry.payload.clientTs,
       null,
       entry.id,

@@ -36,6 +36,23 @@ describe("ackDualWrite", () => {
     ackDualWrite(id);
     expect(pendingDualWrites("routine", "u1")).toHaveLength(1);
   });
+
+  it("позначає запис, застосований у памʼяті, щоб реплей не трактував його як повну заміну (data-10)", () => {
+    noteActiveSqliteVfs("memory");
+    const id = journalDualWrite("nutrition", "u1", { n: 1 });
+    expect(pendingDualWrites("nutrition", "u1")[0]?.appliedInMemory).toBe(
+      undefined,
+    );
+    ackDualWrite(id);
+    expect(pendingDualWrites("nutrition", "u1")[0]?.appliedInMemory).toBe(true);
+  });
+
+  it("запис, застосований на персистентній базі, прапора не отримує", () => {
+    noteActiveSqliteVfs("opfs-sahpool");
+    const id = journalDualWrite("nutrition", "u1", { n: 1 });
+    ackDualWrite(id);
+    expect(pendingDualWrites("nutrition", "u1")).toEqual([]);
+  });
 });
 
 describe("settleDualWriteEntry (data-05)", () => {
