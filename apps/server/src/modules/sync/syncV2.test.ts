@@ -581,6 +581,7 @@ describe("syncV2Push · op-log write під savepoint", () => {
       )
       .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (data-17)
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       // --- оп 2: цілком здоровий сусід (дедуп уже зроблено одним SELECT-ом) ---
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
@@ -613,6 +614,17 @@ describe("syncV2Push · op-log write під savepoint", () => {
     // Локальний відкат — так, глобального ROLLBACK — ні.
     expect(client.query).toHaveBeenCalledWith(
       "ROLLBACK TO SAVEPOINT op_log_write",
+    );
+    // data-17: журнал не прийняв оп -> apply відкочується разом із ним
+    // (атомарність), і саме ДО звільнення savepoint-а `op_apply`. Без цього
+    // доменний рядок лишався закоміченим, а автор бачив `rejected`.
+    const sqls = client.query.mock.calls.map((c) => c[0] as string);
+    const rollbackApply = sqls.indexOf("ROLLBACK TO SAVEPOINT op_apply");
+    expect(rollbackApply).toBeGreaterThan(
+      sqls.indexOf("ROLLBACK TO SAVEPOINT op_log_write"),
+    );
+    expect(sqls.indexOf("RELEASE SAVEPOINT op_apply")).toBeGreaterThan(
+      rollbackApply,
     );
     expect(
       client.query.mock.calls.filter((c) => c[0] === "ROLLBACK"),
@@ -1128,5 +1140,229 @@ describe("syncV2Push · NULL origin-device-id telemetry", () => {
 
     const after = await readCounterValue();
     expect(after).toBe(before + 1);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// data-17: `U+0000` / одинокий сурогат у `row` відсікається ДО apply.
+// data-48: відхилений оп не зберігає payload у `sync_op_log.row`.
+// ────────────────────────────────────────────────────────────────────────────
+
+describe("syncV2Push · data-17 / data-48", () => {
+  function op(
+    idempotency_key: string,
+    row: Record<string, unknown> = { id: "entry-1", title: "Morning" },
+    overrides: Record<string, unknown> = {},
+  ) {
+    return {
+      table: "routine_entries",
+      op: "insert" as const,
+      row,
+      client_ts: "2026-01-01T00:00:00.000Z",
+      idempotency_key,
+      ...overrides,
+    };
+  }
+
+  /** Відхилений оп: BEGIN, дедуп, SAVEPOINT op_log_write, INSERT, RELEASE, COMMIT. */
+  function mockRejectedNoApplyPath(insertedId: string) {
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({
+        rows: [
+          { id: insertedId, server_ts: new Date("2026-01-01T00:00:05.000Z") },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+  }
+
+  function mockAppliedPath(insertedId: string) {
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({
+        rows: [
+          { id: insertedId, server_ts: new Date("2026-01-01T00:00:05.000Z") },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+  }
+
+  function insertParams(): unknown[] {
+    const call = client.query.mock.calls.find((c) =>
+      /INSERT INTO sync_op_log/.test(String(c[0])),
+    );
+    expect(call).toBeDefined();
+    return call![1] as unknown[];
+  }
+
+  const UNSTORABLE: ReadonlyArray<readonly [string, Record<string, unknown>]> =
+    [
+      ["U+0000 у значенні", { id: "e1", extra: "a\u0000b" }],
+      ["U+0000 у ключі", { id: "e1", "bad\u0000key": "x" }],
+      ["U+0000 у вкладеному обʼєкті", { id: "e1", meta: { deep: "a\u0000" } }],
+      ["U+0000 у масиві", { id: "e1", tags: ["ok", "a\u0000b"] }],
+      [
+        "одинокий високий сурогат (назва, обрізана посеред емодзі)",
+        { id: "e1", name: "Пробіжка \ud83c" },
+      ],
+      ["одинокий низький сурогат", { id: "e1", name: "\udfc3 біг" }],
+    ];
+
+  it.each(UNSTORABLE)(
+    "%s: оп відхиляється до apply, доменний рядок не чіпаємо",
+    async (_label, row) => {
+      mockRejectedNoApplyPath("201");
+
+      const res = makeRes();
+      await syncV2Push(makeReq({ body: { ops: [op("bad-text", row)] } }), res);
+
+      expect(applyRoutineEntries).not.toHaveBeenCalled();
+      expect(res.body).toMatchObject({
+        accepted: 0,
+        last_op_id: 201,
+        results: [
+          {
+            idempotency_key: "bad-text",
+            status: "rejected",
+            reason: "invalid_text_encoding",
+          },
+        ],
+      });
+      // Ні SAVEPOINT op_apply, ні глобального ROLLBACK: батч цілий.
+      expect(client.query).not.toHaveBeenCalledWith("SAVEPOINT op_apply");
+      expect(
+        client.query.mock.calls.filter((c) => c[0] === "ROLLBACK"),
+      ).toHaveLength(0);
+      // Відхилений оп лишає в журналі лише ключ + причину (`row = {}`),
+      // тож сам `U+0000` до jsonb не доходить і журнал не падає.
+      const params = insertParams();
+      expect(params[4]).toBe("{}");
+      expect(params[7]).toBe("rejected");
+      expect(params[8]).toBe("invalid_text_encoding");
+    },
+  );
+
+  it("правильна пара сурогатів (емодзі) і кирилиця проходять до apply", async () => {
+    mockAppliedPath("202");
+
+    const res = makeRes();
+    await syncV2Push(
+      makeReq({
+        body: { ops: [op("good-emoji", { id: "e1", name: "Пробіжка 🏃 ✓" })] },
+      }),
+      res,
+    );
+
+    expect(applyRoutineEntries).toHaveBeenCalledTimes(1);
+    expect(res.body).toMatchObject({
+      accepted: 1,
+      results: [{ idempotency_key: "good-emoji", status: "applied" }],
+    });
+  });
+
+  it("поганий оп не валить здорового сусіда з того ж батча", async () => {
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
+      // --- оп 1: відхилено до apply ---
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({
+        rows: [{ id: "210", server_ts: new Date("2026-01-01T00:00:05Z") }],
+      })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      // --- оп 2: застосовано ---
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({
+        rows: [{ id: "211", server_ts: new Date("2026-01-01T00:00:06Z") }],
+      })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const res = makeRes();
+    await syncV2Push(
+      makeReq({
+        body: {
+          ops: [
+            op("poison", { id: "e1", x: "a\u0000b" }),
+            op("healthy", { id: "e2", title: "ok" }),
+          ],
+        },
+      }),
+      res,
+    );
+
+    expect(applyRoutineEntries).toHaveBeenCalledTimes(1);
+    expect(res.body).toMatchObject({
+      accepted: 1,
+      results: [
+        { idempotency_key: "poison", status: "rejected" },
+        { idempotency_key: "healthy", status: "applied" },
+      ],
+    });
+  });
+
+  it("відхилений apply-функцією оп (lww_conflict) не зберігає row", async () => {
+    applyRoutineEntries.mockResolvedValueOnce({
+      status: "rejected",
+      reason: "lww_conflict",
+    });
+    mockAppliedPath("220");
+
+    await syncV2Push(
+      makeReq({
+        body: { ops: [op("lww", { id: "e1", title: "x".repeat(5000) })] },
+      }),
+      makeRes(),
+    );
+
+    const params = insertParams();
+    expect(params[4]).toBe("{}");
+    expect(params[7]).toBe("rejected");
+    expect(params[8]).toBe("lww_conflict");
+  });
+
+  it("відхилений за невідомою таблицею оп не зберігає row", async () => {
+    mockRejectedNoApplyPath("221");
+
+    await syncV2Push(
+      makeReq({
+        body: {
+          ops: [
+            op("junk", { junk: "y".repeat(5000) }, { table: "zz_not_a_table" }),
+          ],
+        },
+      }),
+      makeRes(),
+    );
+
+    const params = insertParams();
+    expect(params[4]).toBe("{}");
+    expect(params[8]).toBe("table_not_allowed");
+  });
+
+  it("застосований оп зберігає повний row (його читає pull)", async () => {
+    mockAppliedPath("222");
+
+    await syncV2Push(
+      makeReq({ body: { ops: [op("kept", { id: "e1", title: "Morning" })] } }),
+      makeRes(),
+    );
+
+    const params = insertParams();
+    expect(JSON.parse(params[4] as string)).toEqual({
+      id: "e1",
+      title: "Morning",
+    });
+    expect(params[7]).toBe("applied");
   });
 });

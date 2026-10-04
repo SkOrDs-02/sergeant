@@ -285,6 +285,10 @@ export function usePhotoAnalysis({
       setPhotoResult(data?.result || null);
     },
     onError: (err) => {
+      // Refine кадру, якого сервер не аналізував цьому користувачу за 24 год,
+      // списує те саме тижневе відро фото, що й analyze (ADR-0100), тож і
+      // вичерпання відра тут веде на той самий пейвол.
+      if (isQuotaError(err, "AI_PHOTO_QUOTA")) onQuotaExceeded?.();
       setErr(formatNutritionError(err, failedCopy("уточнити оцінку")));
     },
     onSettled: () => {

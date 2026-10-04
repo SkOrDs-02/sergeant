@@ -23,7 +23,7 @@
 
 ### `logic-01` [high] Акаунт у 30-денному вікні видалення не відновити через UI: після входу немає екрана «Відновити акаунт»
 
-- **Стан:** виправлено в гілці claude/fix-logic-01-rel-02-auth-states
+- **Стан:** виправлено в #1334 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / профіль
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:317-360; apps/web/src/core/profile/usePendingDeletion.ts:20-26; apps/web/src/core/app/RootLayout.tsx:153-187; apps/web/src/core/profile/PendingDeletionScreen.tsx:47-56; apps/server/src/routes/me.ts:302-339; apps/server/src/http/requireSession.ts:146-165
 - **Першопричина:** GET /api/me для акаунта, позначеного на видалення, повертає 403 account_pending_deletion, а AuthContext вважає будь-яку помилку me станом «не автентифікований» (user = null). usePendingDeletion увімкнений лише за Boolean(user), тому /api/me/deletion-status ніколи не викликається, і PendingDeletionScreen у RootLayout недосяжний.
@@ -86,7 +86,7 @@ I tried to refute this and couldn't. I traced the code end to end and reproduced
 
 ### `logic-02` [medium] Квиток round_trip_ticket звільняє від списання квоти будь-який AI-запит, а не лише тур синтезу
 
-- **Стан:** виправлено в гілці claude/fix-sec-03-14-ai-quota (мінімальний фікс; не входило: привʼязка квитка до id tool_use, echo квитка у веб-клієнті)
+- **Стан:** виправлено в #1332 (змерджено 2026-10-04) (мінімальний фікс; не входило: привʼязка квитка до id tool_use, echo квитка у веб-клієнті)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / чат
 - **Та сама першопричина, що й** [`sec-03`](./security.md#sec-03): Той самий дефект assertAiQuota: квиток round_trip_ticket звільняє від списання будь-який AI-запит і видається знову на оплачений квитком тур. Логіка оцінила medium, безпека high; фікс один.
 - **Де:** apps/server/src/modules/chat/aiQuota.ts:302-307, 335-341; apps/server/src/modules/chat/chat.ts:340-362, 787-789, 911-913; apps/server/src/routes/coach.ts:44; apps/server/src/routes/nutrition.ts:86; packages/shared/src/schemas/api.ts:537-567

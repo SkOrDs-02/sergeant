@@ -1,6 +1,6 @@
 # Log retention archive cron
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-30.
+> **Last touched:** 2026-10-03 by @claude (`sync_op_log` rejected-рядки в ретеншені). **Next review:** 2026-12-30.
 > **Status:** Active.
 > **Code:** [`apps/server/src/modules/logRetention/archivePoller.ts`](../../../apps/server/src/modules/logRetention/archivePoller.ts).
 
@@ -11,16 +11,37 @@ audit log we can spelunk.
 
 ## Tables under retention
 
-| Таблиця                | Timestamp column | Що зберігає                                                                              |
-| ---------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
-| `openclaw_invocations` | `invoked_at`     | OpenClaw agent виклики (cost, tool-calls, status) — ADR-0036                             |
-| `tg_alert_acks`        | `posted_at`      | Telegram alert ACK history (P0–P3, escalation tiers) — ADR-0038                          |
-| `n8n_webhook_events`   | `received_at`    | n8n webhook replay history (PR-28) — also independently DELETE-d by `retentionPoller.ts` |
+| Таблиця                | Timestamp column | Що зберігає                                                                                                    |
+| ---------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------- |
+| `openclaw_invocations` | `invoked_at`     | OpenClaw agent виклики (cost, tool-calls, status) — ADR-0036                                                   |
+| `tg_alert_acks`        | `posted_at`      | Telegram alert ACK history (P0–P3, escalation tiers) — ADR-0038                                                |
+| `n8n_webhook_events`   | `received_at`    | n8n webhook replay history (PR-28) — also independently DELETE-d by `retentionPoller.ts`                       |
+| `sync_op_log`          | `server_ts`      | **Лише `status = 'rejected'`**, TTL 30 днів (власний, не `LOG_RETENTION_DAYS`), без колонки `row` — див. нижче |
 
 The table list is hard-coded in
 `apps/server/src/modules/logRetention/archivePoller.ts`
 (`DEFAULT_ARCHIVE_TABLES`). Adding a new table requires a code review —
 not just a SQL migration.
+
+### `sync_op_log`: лише відхилені оп-и
+
+Відхилений sync-оп (`status = 'rejected'`) потрібен тільки для анти-реплею
+(ідемпотентність за `idempotency_key`): pull і SSE читають виключно
+`status = 'applied'`. Тому:
+
+- `syncV2Push` для відхиленого опа пише в `row` мінімальне `{}` (колонка
+  `NOT NULL`), а не повний payload (`data-48`, аудит 2026-10-01);
+- поллер бере `sync_op_log` з предикатом `status = 'rejected'` (і в SELECT,
+  і в DELETE) та TTL 30 днів - константа `SYNC_OP_LOG_REJECTED_RETENTION_DAYS`;
+  в архів їдуть метадані без `row` (у старих відхилених рядків там повний
+  payload до 256 КБ);
+- `applied`-рядки **не видаляються**: це журнал, по якому курсором ходить
+  pull. Їхній ретеншен (ADR-0065) - окрема робота;
+- повтор відхиленого `idempotency_key` після TTL знову проходить apply.
+
+Поллер працює лише з `LOG_ARCHIVE_ENABLED=true` і заданим
+`GCS_LOG_ARCHIVE_BUCKET`; без цього рядки `sync_op_log` не чистяться (але й
+нові відхилені більше не несуть payload).
 
 ## Env vars
 
@@ -81,7 +102,7 @@ gs://sergeant-log-archive/openclaw-archive/2026-05-15/openclaw_invocations__1934
 
 | Сценарій                                | Що відбувається                                                                                                                                                 |
 | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LOG_ARCHIVE_ENABLED=false`             | Poller — no-op. Existing `WebhookEventsRetentionPoller` (PR-28) сам гасить `n8n_webhook_events`. Інші 2 таблиці ростуть.                                        |
+| `LOG_ARCHIVE_ENABLED=false`             | Poller — no-op. Existing `WebhookEventsRetentionPoller` (PR-28) сам гасить `n8n_webhook_events`. Інші таблиці ростуть.                                          |
 | `GCS_LOG_ARCHIVE_BUCKET` empty          | Poller лоґує warning при start-і, runOnce — no-op (rows у DB).                                                                                                  |
 | `LOG_RETENTION_DAYS=0`                  | Poller stop-и при start-і («retention_zero»).                                                                                                                   |
 | GCS upload failure (503, auth, network) | Sentry `level=warning` capture + `openclaw_log_archive_rows_total{outcome="upload_failed"}` +N. Rows у DB лишаються. Наступний tick перевиконає той самий батч. |
@@ -113,7 +134,7 @@ Old `WebhookEventsRetentionPoller`
 обидва pollers активні; race нешкідливий (filter-предикат однаковий —
 переможець видаляє рядок, переможений видаляє 0).
 
-Інші 2 таблиці (`openclaw_invocations`, `tg_alert_acks`) — only під
+Інші таблиці (`openclaw_invocations`, `tg_alert_acks`, `sync_op_log`) — only під
 archive poller-ом. Без opt-in вони ростуть.
 
 ## Run a single tick (operator)

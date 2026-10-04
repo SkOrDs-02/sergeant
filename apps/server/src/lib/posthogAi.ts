@@ -2,6 +2,10 @@ import { PostHog } from "posthog-node";
 import { randomUUID } from "node:crypto";
 import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
+import {
+  peekAnalyticsConsent,
+  resolveAnalyticsConsent,
+} from "./analyticsConsent.js";
 
 /**
  * PostHog AI Observability — `$ai_generation` (Фаза 1) і `$ai_span` (Фаза 2)
@@ -20,6 +24,15 @@ import { logger } from "../obs/logger.js";
  * spread. Невідомий ключ (у т.ч. `$ai_input`, `$ai_output_choices`, аргументи
  * tool-ів, суми користувача) не має шляху в подію, навіть якщо caller його
  * підсунув через `as`.
+ *
+ * Згода на аналітику (аудит 2026-10-01, `priv-09`): подія несе `userId` як
+ * `distinctId` ЛИШЕ коли `user_preferences.analytics = true`
+ * (`analyticsConsent.ts`, кеш у памʼяті). Без згоди — або коли стан
+ * невідомий/БД недоступна (fail-closed) — подія йде АНОНІМНО: `distinctId`
+ * = константний `server` (не userId і не хеш від нього) і
+ * `$process_person_profile: false`, тож у PostHog не створюється person і
+ * подію не звʼязати з людиною; лишаються агреговані cost/latency per feature,
+ * заради яких ініціатива 0025 і існує.
  *
  * Fail-open, як у ledger `anthropicUsageStore.ts`: жодна помилка SDK не
  * доходить до caller-а — `logger.warn` і далі. Capture стоїть ПІСЛЯ відповіді
@@ -112,6 +125,8 @@ export interface AiSpanProperties {
 export const AI_GENERATION_EVENT = "$ai_generation";
 export const AI_SPAN_EVENT = "$ai_span";
 export const AI_SYSTEM_DISTINCT_ID = "server";
+/** Прапорець PostHog: не створювати/не оновлювати person для події. */
+export const AI_NO_PERSON_PROFILE_PROP = "$process_person_profile";
 const DEFAULT_HOST = "https://eu.i.posthog.com";
 
 function finiteOrUndefined(v: number | null | undefined): number | undefined {
@@ -222,6 +237,52 @@ export function getPostHogAiClient(): PostHog | null {
 }
 
 /**
+ * Відправка події з урахуванням згоди на аналітику. Згода в кеші — подія
+ * йде синхронно; кеш порожній — подія відкладається до завершення ОДНОГО
+ * запиту до БД (не на кожен виклик), у цей час `true` означає «прийнято до
+ * відправки». Ніколи не кидає.
+ */
+function dispatchAiEvent(
+  ph: PostHog,
+  userId: string | null | undefined,
+  event: string,
+  properties: object,
+  failMsg: string,
+): boolean {
+  const send = (granted: boolean): boolean => {
+    try {
+      if (granted && userId) {
+        ph.capture({
+          distinctId: userId,
+          event,
+          properties: { ...properties },
+          disableGeoip: true,
+        });
+      } else {
+        ph.capture({
+          distinctId: AI_SYSTEM_DISTINCT_ID,
+          event,
+          properties: { ...properties, [AI_NO_PERSON_PROFILE_PROP]: false },
+          disableGeoip: true,
+        });
+      }
+      return true;
+    } catch (e: unknown) {
+      logger.warn({
+        msg: failMsg,
+        error: e instanceof Error ? e.message : String(e),
+      });
+      return false;
+    }
+  };
+  if (!userId) return send(false);
+  const cached = peekAnalyticsConsent(userId);
+  if (cached !== undefined) return send(cached);
+  void resolveAnalyticsConsent(userId).then(send, () => send(false));
+  return true;
+}
+
+/**
  * Єдина точка відправки `$ai_generation`. Ніколи не кидає.
  * Повертає `true`, якщо подію передано SDK (для тестів/діагностики).
  */
@@ -229,13 +290,13 @@ export function captureAiGeneration(input: AiGenerationEvent): boolean {
   try {
     const ph = getPostHogAiClient();
     if (!ph) return false;
-    ph.capture({
-      distinctId: input.userId || AI_SYSTEM_DISTINCT_ID,
-      event: AI_GENERATION_EVENT,
-      properties: buildAiGenerationProperties(input),
-      disableGeoip: true,
-    });
-    return true;
+    return dispatchAiEvent(
+      ph,
+      input.userId,
+      AI_GENERATION_EVENT,
+      buildAiGenerationProperties(input),
+      "posthog_ai_capture_failed",
+    );
   } catch (e: unknown) {
     logger.warn({
       msg: "posthog_ai_capture_failed",
@@ -253,13 +314,13 @@ export function captureAiSpan(input: AiSpanEvent): boolean {
   try {
     const ph = getPostHogAiClient();
     if (!ph) return false;
-    ph.capture({
-      distinctId: input.userId || AI_SYSTEM_DISTINCT_ID,
-      event: AI_SPAN_EVENT,
-      properties: buildAiSpanProperties(input),
-      disableGeoip: true,
-    });
-    return true;
+    return dispatchAiEvent(
+      ph,
+      input.userId,
+      AI_SPAN_EVENT,
+      buildAiSpanProperties(input),
+      "posthog_ai_span_capture_failed",
+    );
   } catch (e: unknown) {
     logger.warn({
       msg: "posthog_ai_span_capture_failed",

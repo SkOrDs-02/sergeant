@@ -12,13 +12,19 @@
  * Профіль → Памʼять).
  *
  * Ознаки збігаються з тим, що продюсери самі кладуть у `metadata`:
- *   - `profile` + `metadata.category === "health"` (`profileMirror.ts`);
+ *   - `profile` + health-категорія в `metadata.category` (health, allergy,
+ *     diet, training) або `goal` із фактом про вагу — перелік у
+ *     `@sergeant/shared` (`healthMemory.ts`), `profileMirror.ts`;
  *   - `digest` + `metadata.sections.fizruk|nutrition` (`weekly-digest.ts`);
  *   - legacy-джерела `fizruk` / `nutrition` — health за визначенням.
  */
 
+import { isHealthMemoryEntry } from "@sergeant/shared";
+
 export interface HealthRowShape {
   source: string;
+  /** Текст рядка: потрібен, щоб відрізнити ціль про вагу від інших цілей. */
+  content?: string | null | undefined;
   metadata?: Record<string, unknown> | null | undefined;
 }
 
@@ -26,7 +32,7 @@ export function isHealthMemoryRow(row: HealthRowShape): boolean {
   if (row.source === "fizruk" || row.source === "nutrition") return true;
   const metadata = row.metadata ?? {};
   if (row.source === "profile") {
-    return metadata["category"] === "health";
+    return isHealthMemoryEntry(metadata["category"], row.content);
   }
   if (row.source === "digest") {
     const sections = metadata["sections"];

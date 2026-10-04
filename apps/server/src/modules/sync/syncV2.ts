@@ -28,7 +28,11 @@ import {
   type EngineRejectReason,
   type RejectReason,
 } from "./syncV2-types.js";
-import { readOriginDeviceId, recordSyncV2 } from "./syncV2-core.js";
+import {
+  hasUnstorableText,
+  readOriginDeviceId,
+  recordSyncV2,
+} from "./syncV2-core.js";
 import {
   applyRoutineEntries,
   applyRoutineStreaks,
@@ -386,6 +390,13 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         reason = "op_not_supported";
       }
 
+      // `U+0000` / одинокий сурогат у `row` jsonb-журнал не прийме. Ловимо ДО
+      // apply: інакше доменний рядок записався б, а журнал відмовив (data-17).
+      if (status === "applied" && hasUnstorableText(op.row)) {
+        status = "rejected";
+        reason = "invalid_text_encoding";
+      }
+
       const applyFn = lookupApplyFn(op.table);
       if (status === "applied" && !applyFn) {
         status = "rejected";
@@ -393,7 +404,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       }
 
       // `op_apply` лишається відкритим до запису в журнал: якщо ON CONFLICT
-      // покаже, що цей ключ уже записав паралельний пуш, apply відкочується.
+      // покаже, що цей ключ уже записав паралельний пуш, або сам запис у
+      // журнал упаде, apply відкочується (apply і журнал атомарні).
       let applySavepointOpen = false;
       if (status === "applied" && applyFn) {
         await client.query("SAVEPOINT op_apply");
@@ -428,13 +440,16 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       //   (а) гонка двох вкладок одного акаунта на унікальному
       //       `sync_op_log_user_idem_key` — клієнтський гард «один тік за раз»
       //       живе per-runtime, тобто per-tab, і батчі вкладок перетинаються;
-      //   (б) символ `U+0000` у будь-якому рядковому полі `row` — zod його
-      //       пропускає, Postgres `jsonb` ні, і такий оп стає poison pill, що
-      //       щоразу забирає з собою 99 сусідів.
+      //   (б) символ `U+0000` / одинокий сурогат у рядковому полі `row` — zod
+      //       їх пропускає, Postgres `jsonb` ні, і такий оп стає poison pill,
+      //       що щоразу забирає з собою 99 сусідів. Їх тепер відсікає
+      //       `hasUnstorableText` ДО apply; цей savepoint лишається страховкою
+      //       від решти збоїв запису.
       // `ON CONFLICT … DO NOTHING` знімає (а) штатно: хто програв гонку,
       // бачить порожній RETURNING, дочитує рядок переможця й віддає клієнту
-      // звичайний `duplicate` замість 500. (б) лишається помилкою, але
-      // локальною — оп відхиляється, решта батча їде далі.
+      // звичайний `duplicate` замість 500. Непередбачений збій запису (б)
+      // локальний — оп відхиляється разом із відкотом свого apply, решта
+      // батча їде далі.
       let insertedRow: SyncOpLogInsertRow | undefined;
       let racedRow: SyncOpLogDuplicateRow | undefined;
       let oplogWriteFailed = false;
@@ -453,7 +468,12 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
             op.idempotency_key,
             op.table,
             op.op,
-            JSON.stringify(encryptOpRowForStorage(op.table, op.row)),
+            // Відхилений оп не реплеїться (pull і SSE читають лише
+            // `applied`), тож payload не зберігаємо: для анти-реплею досить
+            // idempotency_key + reason. Колонка `row` NOT NULL, тому `{}`.
+            status === "applied"
+              ? JSON.stringify(encryptOpRowForStorage(op.table, op.row))
+              : "{}",
             clientTs,
             originDeviceId,
             status,
@@ -495,7 +515,12 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       }
       if (applySavepointOpen) {
         try {
-          if (racedRow) await client.query("ROLLBACK TO SAVEPOINT op_apply");
+          // Apply і журнал атомарні: програли гонку за ключ АБО журнал не
+          // прийняв оп - доменний запис відкочується (data-17), інакше
+          // сервер лишався б зі змінами, про які не знає ні pull, ні автор.
+          if (racedRow || oplogWriteFailed) {
+            await client.query("ROLLBACK TO SAVEPOINT op_apply");
+          }
           await client.query("RELEASE SAVEPOINT op_apply");
         } catch {
           /* primary rollback below will catch transactional poison */

@@ -289,15 +289,27 @@ export const auth = betterAuth({
   baseURL: getBaseURL(),
   basePath: "/api/auth",
   /**
-   * sec-10: `POST /verify-password` вимкнено. Клієнти його не викликають
-   * (web користується лише `change-password`; mobile/mobile-shell цього
-   * ендпоінта не знають), а як окремий оракул поточного пароля він давав
-   * підбір без app-ліміту (вбудований Better Auth — 100/10 с на IP,
-   * in-memory) плюс scrypt на кожну спробу. Better Auth віддає 404.
-   * `change-password` і `DELETE /api/me` лишаються і лімітуються в
-   * `http/passwordCheckRateLimit.ts`.
+   * Вимкнені шляхи Better Auth (віддають 404):
+   *  - sec-10: `POST /verify-password`. Клієнти його не викликають (web
+   *    користується лише `change-password`; mobile/mobile-shell цього
+   *    ендпоінта не знають), а як окремий оракул поточного пароля він давав
+   *    підбір без app-ліміту (вбудований Better Auth — 100/10 с на IP,
+   *    in-memory) плюс scrypt на кожну спробу. `change-password` і
+   *    `DELETE /api/me` лишаються і лімітуються в
+   *    `http/passwordCheckRateLimit.ts`.
+   *  - sec-08: `GET /expo-authorization-proxy`, коли `expo()` вимкнено:
+   *    беззастережний 404, навіть якщо плагін колись підключать повторно, а
+   *    прапорець вимкнено. Без `expo()` ендпоінта й так немає.
+   *
+   * AI-DANGER: усі вимкнені шляхи тримай ОДНИМ ключем `disabledPaths` тут.
+   * Другий такий ключ чи spread `{ disabledPaths }` деінде в цьому об'єкті
+   * тихо перезапише цей список. Продовий склад пінить `auth.test.ts`
+   * («production: disabledPaths …»).
    */
-  disabledPaths: ["/verify-password"],
+  disabledPaths: [
+    "/verify-password",
+    ...(isExpoPluginEnabled() ? [] : ["/expo-authorization-proxy"]),
+  ],
   user: {
     deleteUser: {
       /**
@@ -640,19 +652,44 @@ export const auth = betterAuth({
    *     можуть ходити з cookie — плагін тільки додає альтернативний
    *     канал, нічого не ламає.
    *   - `expo()` — коригує origin-handling для `sergeant://` / `exp://`
-   *     схем і автоматично розширює `trustedOrigins` deep-link-схемами
-   *     Expo API Routes.
+   *     схем і додає анонімний `GET /expo-authorization-proxy` (open
+   *     redirect + підписана `state`-кука, sec-08). Мобільний RN-контур на
+   *     паузі (ADR-0094), тож у production плагін підключається ЛИШЕ за
+   *     явним `AUTH_EXPO_PLUGIN_ENABLED=true` (`isExpoPluginEnabled()`).
+   *     `bearer()` лишається завжди: його використовує Capacitor-shell.
    */
-  plugins: [bearer(), expo()],
+  plugins: [bearer(), ...(isExpoPluginEnabled() ? [expo()] : [])],
   ...(advancedCookies ? { advanced: advancedCookies } : {}),
 });
+
+/**
+ * Чи підключати Better Auth `expo()` плагін (sec-08, аудит 2026-10-01).
+ *
+ * Явне `AUTH_EXPO_PLUGIN_ENABLED` перемагає; без нього плагін увімкнений
+ * лише поза production (dev/test: `apps/mobile` локально). У проді за
+ * замовчуванням ВИМКНЕНО, бо мобільний RN-контур на паузі (ADR-0094), а
+ * плагін відкриває анонімний `/expo-authorization-proxy`. Умова зняття
+ * прапорця: відновлення мобільного (feature-flags.md § 3.2).
+ */
+function isExpoPluginEnabled(): boolean {
+  if (env.AUTH_EXPO_PLUGIN_ENABLED !== undefined) {
+    return env.AUTH_EXPO_PLUGIN_ENABLED;
+  }
+  return env.NODE_ENV !== "production";
+}
 
 /**
  * Native deep-link schemes that Better Auth treats as trusted origins for
  * mobile flows (OAuth callbacks, cross-origin sign-in).
  *
- * `sergeant://` — production scheme published by the RN app
- * (`apps/mobile/app.config.ts → scheme: "sergeant"`). Always trusted.
+ * `sergeant://` — scheme of the RN app (`apps/mobile/app.config.ts →
+ * scheme: "sergeant"`). Trusted outside production by default. In production
+ * it is NOT trusted by default (sec-08, ADR-0094: the RN app is paused, and
+ * any app on a device can claim a custom scheme and steal the reset-password
+ * token passed as `redirectTo=sergeant://…`); re-enable explicitly via
+ * `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant://`. The Capacitor shell
+ * (`apps/mobile-shell`) does not depend on it: its deep-link scheme is
+ * `com.sergeant.shell://` and Better Auth redirects go through https origins.
  *
  * `exp://` — Expo Go dev scheme. NOT bound to a single application: any
  * Expo Go app on the device can claim it, so a hostile dev-build could
@@ -675,7 +712,7 @@ function getTrustedNativeSchemes(): string[] {
       .filter(Boolean);
   }
   if (process.env["NODE_ENV"] === "production") {
-    return ["sergeant://"];
+    return [];
   }
   return ["sergeant://", "exp://"];
 }

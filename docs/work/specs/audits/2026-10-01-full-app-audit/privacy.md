@@ -23,7 +23,7 @@
 
 ### `priv-01` [high] Sentry-транзакції везуть сире тіло запиту (паролі входу, текст чату) і розпарсені session-cookie
 
-- **Стан:** виправлено в гілці claude/fix-priv-01-07-sentry
+- **Стан:** виправлено в #1328 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: observability (Sentry)
 - **Де:** apps/server/src/sentry.ts:266-268 (applyBeforeSend), :379-403 (applyBeforeSendTransaction), :51-55 і :76-81 (семплінг /api/auth/ = 1.0, /api/chat = 0.5), :476 (sendDefaultPii)
 - **Першопричина:** applyBeforeSendTransaction редагує лише url, headers, transaction, extra, contexts і spans. На відміну від applyBeforeSend, він не видаляє event.request.data і event.request.cookies. @sentry/node 8.55 збирає тіло кожного вхідного запиту (до 1 МБ), requestDataIntegration за замовчуванням включає data і cookies, а sendDefaultPii:false цього не вимикає.
@@ -85,7 +85,7 @@ I couldn't refute it. My strongest angle failed, and the code path holds end to 
 
 ### `priv-02` [high] Сесія, що закінчилась без «Вийти», не запускає очищення: наступний акаунт бачить медичні факти попереднього, і вони потрапляють у його серверний профіль
 
-- **Стан:** частково виправлено в гілці claude/fix-priv-02-expired-session-teardown (лишилось: BroadcastChannel для інших вкладок; стирання SQLite-партиції попередника — priv-05)
+- **Стан:** частково виправлено в #1337 (змерджено 2026-10-03) (лишилось: BroadcastChannel для інших вкладок; стирання SQLite-партиції попередника — priv-05)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / локальне сховище
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:382-401 (identity-wipe), :548-697 (teardown у logout); apps/web/src/core/profile/memoryBank.ts:245-251; apps/web/src/core/profile/profileWriteThrough.ts:165-170, 459-498; apps/web/src/shared/lib/storage/storage.ts:299-321
 - **Першопричина:** Сесія може закінчитися без кнопки «Вийти»: протухла, відкликана або зник cookie. Ефект зміни ідентичності в AuthContext (user→anon) у такому разі чистить лише RQ-кеш, чат і quick-stats. purgeAppOwnedLocalData, wipeSqliteDb і swClearCaches викликає тільки logout(). readMemoryEntries() читає hub_user_profile_v1 без перевірки ownerId. Перший же запис наступного користувача перештамповує ownerId і пушить увесь банк пам'яті на сервер.
@@ -178,7 +178,7 @@ v5-run.log (v5-expiry.mjs, vdib_exp_943): після clearCookies і reload за
 
 ### `priv-03` [high] PIN-блокування мовчки вимикається після перезавантаження чи холодного старту: прапорці читаються до буту SQLite і кешуються як вимкнені
 
-- **Стан:** виправлено в гілці claude/fix-priv-03-app-lock-reload
+- **Стан:** виправлено в #1340 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку / feature flags
 - **Де:** apps/web/src/shared/lib/storage/typedStore.ts:196-201, 253-255; apps/web/src/shared/lib/storage/storage.ts:151-155; apps/web/src/main.tsx:194-213; apps/web/src/core/lib/featureFlags.ts:93-99, 128-130; apps/web/src/core/security/useAppLock.ts:51, 66-76
 - **Першопричина:** main.tsx монтує застосунок до bootstrapKvStore(). Тому useAppLock → useFlag → flagsStore.get() читає сирий localStorage, де hub_flags_v1 немає: значення лежить у SQLite kv_store. typedStore.get() назавжди кешує це перше читання. Підписка onChange прив'язана до LS-стора, тож значення з SQLite так і не підхоплюється.
@@ -240,7 +240,7 @@ node <scratch>/agents/browser-surfaces-hub-shell/v01-lock-reload.mjs (корис
 
 ### `priv-04` [high] Вихід з акаунта не знімає web-push підписку: банківські пуші попереднього користувача далі приходять на спільний пристрій
 
-- **Стан:** частково виправлено в гілці claude/fix-priv-04-push-unsubscribe-logout (клієнт: `logout()` знімає web-push підписку до `signOut()`, best-effort з таймаутом, скидає мітку тумблера; лишилось: прив'язка підписки до сесії і soft-delete при завершенні сесії на сервері (M), native-токен FCM/APNs при виході, відсікання пушів у service worker без активного користувача)
+- **Стан:** частково виправлено в #1341 (змерджено 2026-10-03) (клієнт: `logout()` знімає web-push підписку до `signOut()`, best-effort з таймаутом, скидає мітку тумблера; лишилось: прив'язка підписки до сесії і soft-delete при завершенні сесії на сервері (M), native-токен FCM/APNs при виході, відсікання пушів у service worker без активного користувача)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth + server: push
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:548-697; apps/web/src/shared/hooks/usePushNotifications.ts:224-256; apps/web/src/shared/hooks/usePushNotifications.webpush.ts:71-77; apps/server/src/modules/push/push.ts:33-56, 134-142; apps/server/src/modules/push/send.ts:103-110; apps/server/src/modules/mono/webhook.ts:130-154, 467-471
 - **Першопричина:** logout() не викликає pushManager.getSubscription().unsubscribe() і api.push.unregister: відписка є лише в тумблері. На сервері push_subscriptions прив'язана тільки до user_id, хука на завершення сесії немає. SW показує кожен пуш без перевірки активного користувача.
@@ -300,7 +300,7 @@ Each step I checked:
 
 ### `priv-05` [high] Вихід і видалення акаунта не стирають локальну SQLite-базу: close() вбиває воркер раніше, ніж до нього доходить wipe()
 
-- **Стан:** частково виправлено в гілці claude/fix-priv-05-data-19-logout-wipe (wipe до close для воркерного бекенду + тест на справжньому sqliteWorkerClient; лишилось: повтор стирання на наступному старті, прибирання осиротілих `sergeant-*.db` на пристроях, де вже виходили, e2e «після виходу файлу немає»)
+- **Стан:** частково виправлено в #1335 (змерджено 2026-10-03) (wipe до close для воркерного бекенду + тест на справжньому sqliteWorkerClient; лишилось: повтор стирання на наступному старті, прибирання осиротілих `sergeant-*.db` на пристроях, де вже виходили, e2e «після виходу файлу немає»)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: локальна БД (OPFS-воркер)
 - **Де:** apps/web/src/core/db/sqlite.ts:235-249, 515-522; apps/web/src/core/db/sqliteWorkerClient.ts:150-151, 223-226, 255-264; apps/web/src/core/db/sqliteWorker.ts:152-160; apps/web/src/core/auth/AuthContext.tsx:646-652; apps/web/src/core/profile/DangerZoneSection.tsx:41-48
 - **Першопричина:** wipeSqliteDb() для воркерного бекенду (opfs-sahpool, безумовний основний шлях) спершу викликає stale.close(). Клієнт воркера у finally робить terminate() і ставить dead. Тому наступний conn.wipe() одразу відхиляється, помилку ковтає logger.warn, і pool.unlink так і не виконується. Тести мокають wipe і цю регресію не ловлять.
@@ -399,7 +399,7 @@ node <scratch>/agents/client-static-web-storage-session/share2.mjs <newX> wss-sh
 
 ### `priv-06` [medium] Гейт згоди на дані про здоров'я пропускає алергії, дієту, тренування й цілі з вагою: вони йдуть у LLM і в RAG без healthDataConsent
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-06-09-ai-health-consent
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-шар (chat, ai-memory)
 - **Де:** apps/server/src/modules/chat/healthGate.ts:53-54, 139-146; apps/server/src/modules/ai-memory/healthRows.ts:28-30; apps/server/src/modules/ai-memory/profileMirror.ts:356; apps/web/src/core/lib/hubChatContext/sections.ts:283-297; apps/web/src/core/legal/privacyDocument.ts:57-59
 - **Першопричина:** Health-фільтри розпізнають лише категорію «Здоров'я»: регекси PROFILE_HEALTH_LINE/ENTRY, classifyToolUse('remember') і isHealthMemoryRow перевіряють тільки category === 'health'. Категорії allergy, diet, training і цілі з вагою вважаються нечутливими. Спільного переліку health-категорій для клієнта і сервера немає.
@@ -443,7 +443,7 @@ verify-server-static-ai-layer/healthgate-v2.mts: STRIPPED CONTEXT лишає «�
 
 ### `priv-07` [medium] Прогалини редакції URL і заголовків у Sentry: токен скидання пароля в path, query_string, атрибути root-span, http.query і секрет Telegram-вебхука
 
-- **Стан:** виправлено в гілці claude/fix-priv-01-07-sentry
+- **Стан:** виправлено в #1328 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: observability (Sentry)
 - **Де:** apps/server/src/sentry.ts:258 (SPAN_URL_ATTRIBUTES), 266-282, 349-369, 379-403; apps/server/src/obs/sensitiveUrl.ts:144-147, 177; packages/shared/src/lib/pii.ts:49-120; apps/server/src/routes/mono-webhook.ts:62; apps/server/src/modules/nutrition/food-search.ts:127
 - **Першопричина:** Хуки редагують request.url, url.full і span-атрибути зі списку. Поза редакцією лишаються event.request.query_string, contexts.trace.data (туди OTel кладе http.url і http.target root-span), а також http.query/url.query у breadcrumbs і spans. sensitiveUrl знає лише шлях /api/mono/webhook/, а в REDACT_KEY_NAMES немає x-telegram-bot-api-secret-token та OAuth-ключів.
@@ -577,7 +577,7 @@ NetworkFirst-кешування автентифікованих GET /api/* (30 
 
 ### `priv-09` [medium] Серверні події PostHog $ai_generation/$ai_span шлються з distinctId = userId без перевірки згоди на аналітику
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-06-09-ai-health-consent
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI observability (PostHog)
 - **Де:** apps/server/src/lib/posthogAi.ts:228-270; apps/server/src/lib/anthropic.ts:209, 395; apps/server/src/lib/llm/provider.ts:383; apps/server/src/modules/chat/chat.ts:578; apps/server/src/modules/me/dataRights.ts:55
 - **Першопричина:** captureAiGeneration і captureAiSpan не читають user_preferences.analytics (дефолт false), а posthog-node за замовчуванням створює person profile. Спека 0025 виходить з хибного припущення, що цей userId і так пов'язаний з продуктовими подіями. Для тих, хто відмовився від аналітики, клієнт identify не робить.
@@ -1087,7 +1087,7 @@ v4-run.log (v4-foods.mjs): після виходу X 'VFX-n777' знайдено
 
 ### `priv-18` [medium] Гість не може відкликати згоду на аналітику в Налаштуваннях: замість тумблера «Увійди в акаунт» і марна «Спробувати ще»
 
-- **Стан:** виправлено в гілці claude/fix-priv-18-data-49-analytics-consent
+- **Стан:** виправлено в #1369 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: налаштування приватності
 - **Де:** apps/web/src/core/settings/PrivacySection.tsx:99-103, 241-251
 - **Першопричина:** PrivacySection рендерить тумблери лише після успішного GET /me/preferences. Для гостя це 401 → loadFailure 'auth'. Локального тумблера аналітики немає, хоча згода гостя зберігається локально.
