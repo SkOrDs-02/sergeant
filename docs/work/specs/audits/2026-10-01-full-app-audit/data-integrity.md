@@ -23,7 +23,7 @@
 
 ### `data-01` [high] Глобальний PK на клієнтських id: чужий рядок із тим самим id назавжди блокує синк, а id можна наперед «зайняти»
 
-- **Стан:** частково виправлено в гілці claude/fix-data-01-sync-parent-owner-check (серверний guard власника батька для `fizruk_workout_items` і `fizruk_workout_sets` через `guardParentOwned`, відповідь `fk_violation`; лишилось: складений PK `(user_id, id)` двофазною міграцією, звуження SELECT/ON CONFLICT по `user_id`, клієнтські генератори id і rekey застряглих рядків; решта дочірніх sync-таблиць перевірена: finyk `tx_*` і routine `habit_id` мають складений ключ або не мають FK, тож діри «чужий батько» там немає)
+- **Стан:** частково виправлено. Серверний guard власника батька для `fizruk_workout_items` і `fizruk_workout_sets` (`guardParentOwned`, відповідь `fk_violation`) — у #1345 (змерджено 2026-10-03); решта дочірніх sync-таблиць перевірена: finyk `tx_*` і routine `habit_id` мають складений ключ або не мають FK, тож діри «чужий батько» там немає. Клієнтські генератори id без `Date.now()`/slug/32-бітного хешу (ручні витрати, вправи, чат-екзекутори бюджетів/боргів/страв, Strong-імпорт 64 біти) — у гілці claude/fix-data-01-unpredictable-client-ids (крок 1). Лишилось (крок 2): складений PK `(user_id, id)` двофазною міграцією, звуження SELECT/ON CONFLICT по `user_id`, rekey застряглих рядків; детерміновані `pe::initial`/`rcp_ai_*`/`gp::` лишаються до кроку 2
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: sync (applySync) + db-schema + web: генератори id
 - **Де:** apps/server/src/modules/sync/applySync-helpers.ts:61-74; apps/server/src/modules/sync/finyk/applySync.ts:140-153; apps/server/src/modules/sync/fizruk/applyMisc.ts:22-35,66-80; apps/server/src/modules/sync/fizruk/applySync.ts:40-46,196-250; apps/server/src/modules/sync/nutrition/applyPantryEvents.ts:223-238; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:73; apps/web/src/modules/fizruk/components/workouts/AddExerciseSheet.tsx:49-57,285; apps/web/src/modules/fizruk/lib/strongImport.ts:523-546; packages/nutrition-domain/src/pantryLedger.ts:227-231
 - **Першопричина:** Більшість per-row sync-таблиць (finyk_manual_expenses, fizruk_custom_exercises, fizruk_workouts, nutrition_pantry_events, nutrition_recipes, nutrition_goal_periods та ще кілька десятків) мають PRIMARY KEY (id) без user_id, а клієнт генерує передбачувані id: Date.now() для ручних витрат, custom_&lt;slug&gt; для вправ, pe::initial::home::&lt;продукт&gt;, rcp_ai_&lt;fnv32&gt;, 32-бітний FNV у Strong-імпорті. Apply шукає рядок за id без user_id і для чужого рядка повертає термінальний fk_violation; applyFizrukItems ще й не перевіряє власника батьківського тренування.
@@ -801,7 +801,7 @@ Verifier rerun of t6_journal.mts with the real finyk orchestrator and a client w
 
 ### `data-06` [high] «Замінити дані на цьому пристрої» при відновленні бекапу видаляє на сервері й на всіх пристроях усе, чого немає у файлі
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-06-07-backup-restore
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап (HubBackupPanel, finykBackup, fizrukStorage)
 - **Де:** apps/web/src/core/hub/HubBackupPanel.tsx:150-193,228; apps/web/src/modules/finyk/lib/finykBackup.ts:159-176,199-229; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:221-243; apps/web/src/modules/fizruk/lib/fizrukStorage.ts:205-231
 - **Першопричина:** Restore будує diff від теплого кешу (дані акаунта) до вмісту файлу, і для кожного рядка, якого немає у файлі, спільний адаптер ставить op 'delete' в outbox. Ні код, ні ADR не враховують, що tombstone-и йдуть на сервер, а діалог і банер обіцяють зміни лише «на цьому пристрої».
@@ -869,7 +869,7 @@ I tried to refute this and couldn't. I traced the code end to end and checked th
 
 ### `data-07` [high] Відновлення бекапу не гарантує запису й синхронізації: reload обриває outbox, а у вікні завантаження restore мовчки пропускається
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-06-07-backup-restore
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап + dual-write (Фінік, Фізрук, Їжа)
 - **Де:** apps/web/src/core/hub/HubBackupPanel.tsx:150-162; apps/web/src/modules/finyk/lib/finykBackup.ts:171-176; apps/web/src/modules/finyk/lib/sqliteWriter/index.ts:211-226,319-336; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:155-242; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:663-670; apps/web/src/core/auth/useLocalUserId.ts:51; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:203,236
 - **Першопричина:** dualWriteFinykState і dualWriteFizrukState обходять журнал (journalDualWrite, outboxCheckpoint, ackDualWrite), адаптери роблять void enqueueOutboxUpsert без await, а HubBackupPanel одразу після apply робить window.location.reload(), обриваючи серіалізований ланцюг enqueue. Якщо dual-write контекст ще не зареєстрований (новий пристрій, перші ~10 с), dualWrite повертає skipped (context-unset), а persist* це ігнорує.
@@ -1039,7 +1039,7 @@ Code path, end to end:
 
 ### `data-09` [high] Книга рецептів в IndexedDB спільна для всіх акаунтів і не гідрується з сервера: рецепти переходять в інший акаунт, а збереження рецепта на новому пристрої видаляє серверні
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-09-10-recipes-pantry (книга рецептів партиціонована за власником і стирається при виході; мініатюри страв `nutrition_meal_thumbs` свідомо лишаються: серверної копії фото немає, стирання втратило б їх назавжди; ключ мініатюри - id прийому, чужому акаунту він невидимий)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (recipeBook, IndexedDB)
 - **Де:** apps/web/src/modules/nutrition/lib/recipeBook.ts:111-178 (persist на :156,:173); apps/web/src/modules/nutrition/lib/nutritionStorage.ts:287-298; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:339-346; apps/web/src/shared/lib/storage/purgeLocalData.ts:35-38
 - **Першопричина:** Стор nutrition_recipes у sergeant-db не партиціонований за userId і свідомо не чиститься при виході, а saveRecipeToBook і deleteSavedRecipe передають у persistNutritionRecipes весь вміст IDB (getAll, ліміт 200) як нове повне значення. Диф проти SQLite-кешу поточного користувача емітить upsert для чужих рецептів і recipe-delete для всіх рецептів, яких немає в локальній IDB.
@@ -1149,7 +1149,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-10` [high] Memory-режим (збій OPFS або квоти) пише порожні знімки комори, які після відновлення сховища видаляють продукти на сервері й на всіх пристроях
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-09-10-recipes-pantry (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без soft-delete відсутніх дітей не робились, це окремий зсув моделі, закриє й data-40)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (pantry) + durability (memory VFS, журнал)
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:446-448,641-675; apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/db/sqlite.ts:846-889; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:118,161-179; packages/dualwrite-core/src/tableSpec.ts:200-215
 - **Першопричина:** У :memory:-режимі модуль бачить порожню базу і пише pantry-upsert {items: []} для дефолтних місць зберігання; ackDualWrite у memory навмисно не знімає журнал, тож знімок реплеїться на справжній OPFS-базі. upsertPantry → softDeleteRemovedChildren при порожньому keepIds видаляє всі живі позиції без LWW-перевірки і ставить delete з clientTs memory-сесії, який виграє на сервері.

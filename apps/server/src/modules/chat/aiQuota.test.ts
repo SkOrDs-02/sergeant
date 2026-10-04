@@ -658,30 +658,133 @@ describe("atomic consumeQuota — concurrent increments", () => {
 // — «хід з дією коштує ОДИН запит». `chat.ts` видає `round_trip_ticket`
 // лише коли перший тур повертає `tool_calls`; тут перевіряється сама
 // перевірка квитка всередині `assertAiQuota`, незалежно від HTTP-шару.
-describe("assertAiQuota — AI-5 round-trip ticket bypass", () => {
-  it("валідний квиток для СВОГО юзера пропускає списання (нуль запитів до БД)", async () => {
+//
+// sec-03 / logic-02 (аудит 2026-10-01): квиток погашається ЛИШЕ на запиті
+// форми «tool_results + tool_calls_raw» і лише там, де роут явно дозволив
+// (`allowRoundTripTicket`, тільки `/api/chat`). Раніше тест «валідний квиток
+// у тілі {round_trip_ticket} пропускає списання» закріплював безкоштовний
+// прохід будь-якого запиту з одним квитком — це і був обхід квоти.
+describe("assertAiQuota — AI-5 round-trip ticket", () => {
+  const ALLOW = { allowRoundTripTicket: true };
+
+  /** Тіло туру синтезу: квиток + обидва поля tool-round-trip. */
+  const continuationBody = (ticket: string): Record<string, unknown> => ({
+    round_trip_ticket: ticket,
+    tool_results: [{ tool_use_id: "toolu_1", content: "ok" }],
+    tool_calls_raw: [
+      { type: "tool_use", id: "toolu_1", name: "mark_habit_done", input: {} },
+    ],
+  });
+
+  beforeEach(() => {
     process.env["DATABASE_URL"] = "postgres://ignored";
     process.env["AI_QUOTA_DISABLED"] = "0";
     getSessionUser.mockResolvedValue({ id: "u-1" });
+    pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
+  });
+
+  it("валідний квиток + tool_results + tool_calls_raw на дозволеному роуті пропускає списання (нуль запитів до БД)", async () => {
     const ticket = issueRoundTripTicket({ userId: "u-1" });
 
-    const req = makeReq({}, { round_trip_ticket: ticket });
-    const ok = await assertAiQuota(req, makeRes());
+    const ok = await assertAiQuota(
+      makeReq({}, continuationBody(ticket)),
+      makeRes(),
+      "ai",
+      ALLOW,
+    );
 
     expect(ok).toBe(true);
     expect(pool.query).not.toHaveBeenCalled();
   });
 
+  it("квиток + ПЕРШИЙ тур (без tool_results/tool_calls_raw) = списання, квиток не спалено", async () => {
+    // Регресія sec-03: раніше тут було `true` без жодного запиту до БД, і
+    // кожен перший тур з tool_calls видавав новий квиток — ланцюжок без кінця.
+    const ticket = issueRoundTripTicket({ userId: "u-1" });
+
+    const ok = await assertAiQuota(
+      makeReq({}, { round_trip_ticket: ticket }),
+      makeRes(),
+      "ai",
+      ALLOW,
+    );
+
+    expect(ok).toBe(true);
+    // Звичайне списання: план + upsert квоти — 2 запити до БД.
+    expect(pool.query).toHaveBeenCalledTimes(2);
+    // Квиток лишився для справжнього продовження: його ще можна погасити.
+    pool.query.mockClear();
+    expect(
+      await assertAiQuota(
+        makeReq({}, continuationBody(ticket)),
+        makeRes(),
+        "ai",
+        ALLOW,
+      ),
+    ).toBe(true);
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      "лише tool_results",
+      { tool_results: [{ tool_use_id: "t", content: "" }] },
+    ],
+    [
+      "лише tool_calls_raw",
+      { tool_calls_raw: [{ type: "tool_use", id: "t" }] },
+    ],
+    ["порожні масиви", { tool_results: [], tool_calls_raw: [] }],
+    [
+      "не масиви",
+      { tool_results: "x", tool_calls_raw: { type: "tool_use", id: "t" } },
+    ],
+  ])(
+    "квиток + неповна форма (%s) = списання",
+    async (_label, extra: Record<string, unknown>) => {
+      const ticket = issueRoundTripTicket({ userId: "u-1" });
+
+      const ok = await assertAiQuota(
+        makeReq({}, { round_trip_ticket: ticket, ...extra }),
+        makeRes(),
+        "ai",
+        ALLOW,
+      );
+
+      expect(ok).toBe(true);
+      expect(pool.query).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it("квиток не діє без allowRoundTripTicket (coach, nutrition): тур синтезу теж списується", async () => {
+    const ticket = issueRoundTripTicket({ userId: "u-1" });
+
+    // Дефолтні опції — так змонтовані /api/coach/insight і nutrition-ендпоінти.
+    const ok = await assertAiQuota(
+      makeReq({}, continuationBody(ticket)),
+      makeRes(),
+    );
+    const ok2 = await assertAiQuota(
+      makeReq({}, continuationBody(ticket)),
+      makeRes(),
+      "ai",
+      { allowRoundTripTicket: false },
+    );
+
+    expect(ok).toBe(true);
+    expect(ok2).toBe(true);
+    // Два запити × (план + upsert) і жодного безкоштовного проходу.
+    expect(pool.query).toHaveBeenCalledTimes(4);
+  });
+
   it("квиток одноразовий: другий запит із тим самим квитком списує як звичайний", async () => {
-    process.env["DATABASE_URL"] = "postgres://ignored";
-    process.env["AI_QUOTA_DISABLED"] = "0";
-    getSessionUser.mockResolvedValue({ id: "u-1" });
-    pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
     const ticket = issueRoundTripTicket({ userId: "u-1" });
 
     const ok1 = await assertAiQuota(
-      makeReq({}, { round_trip_ticket: ticket }),
+      makeReq({}, continuationBody(ticket)),
       makeRes(),
+      "ai",
+      ALLOW,
     );
     expect(ok1).toBe(true);
     expect(pool.query).not.toHaveBeenCalled();
@@ -689,22 +792,21 @@ describe("assertAiQuota — AI-5 round-trip ticket bypass", () => {
     // Replay того самого квитка — вже спожитий, тож падає на звичайне списання
     // (план + upsert квоти — 2 запити до БД).
     const ok2 = await assertAiQuota(
-      makeReq({}, { round_trip_ticket: ticket }),
+      makeReq({}, continuationBody(ticket)),
       makeRes(),
+      "ai",
+      ALLOW,
     );
     expect(ok2).toBe(true);
     expect(pool.query).toHaveBeenCalledTimes(2);
   });
 
   it("підроблений / невідомий квиток НЕ звільняє від списання (не можна вдати continuation без реального першого ходу)", async () => {
-    process.env["DATABASE_URL"] = "postgres://ignored";
-    process.env["AI_QUOTA_DISABLED"] = "0";
-    getSessionUser.mockResolvedValue({ id: "u-1" });
-    pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
-
     const ok = await assertAiQuota(
-      makeReq({}, { round_trip_ticket: "forged-ticket-not-issued" }),
+      makeReq({}, continuationBody("forged-ticket-not-issued")),
       makeRes(),
+      "ai",
+      ALLOW,
     );
 
     expect(ok).toBe(true);
@@ -713,15 +815,13 @@ describe("assertAiQuota — AI-5 round-trip ticket bypass", () => {
   });
 
   it("квиток, виданий іншому userId, не спрацьовує для цього юзера", async () => {
-    process.env["DATABASE_URL"] = "postgres://ignored";
-    process.env["AI_QUOTA_DISABLED"] = "0";
-    getSessionUser.mockResolvedValue({ id: "u-1" });
-    pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
     const ticket = issueRoundTripTicket({ userId: "someone-else" });
 
     const ok = await assertAiQuota(
-      makeReq({}, { round_trip_ticket: ticket }),
+      makeReq({}, continuationBody(ticket)),
       makeRes(),
+      "ai",
+      ALLOW,
     );
 
     expect(ok).toBe(true);
@@ -730,33 +830,64 @@ describe("assertAiQuota — AI-5 round-trip ticket bypass", () => {
   });
 
   it("20 дій поспіль (перший запит + безкоштовний continuation) проходять на Free; 21-ша впирається в 429", async () => {
-    process.env["DATABASE_URL"] = "postgres://ignored";
-    process.env["AI_QUOTA_DISABLED"] = "0";
     getSessionUser.mockResolvedValue({ id: "u-free" });
     const { query } = makeAtomicPoolMock();
     pool.query = query;
 
     for (let i = 0; i < 20; i += 1) {
       // Перший запит ходу списує одну дію з тижневих 20.
-      const firstOk = await assertAiQuota(makeReq(), makeRes());
+      const firstOk = await assertAiQuota(makeReq(), makeRes(), "ai", ALLOW);
       expect(firstOk).toBe(true);
 
       // `chat.ts` видає квиток лише коли модель повернула tool_use — тут
       // симулюємо саме цю гілку (хід з дією).
       const ticket = issueRoundTripTicket({ userId: "u-free" });
       const contOk = await assertAiQuota(
-        makeReq({}, { round_trip_ticket: ticket }),
+        makeReq({}, continuationBody(ticket)),
         makeRes(),
+        "ai",
+        ALLOW,
       );
       expect(contOk).toBe(true);
     }
 
     // 21-ша дія: перший запит нового ходу впирається у вичерпаний тижневий ліміт.
     const sixthRes = makeRes();
-    const sixthOk = await assertAiQuota(makeReq(), sixthRes);
+    const sixthOk = await assertAiQuota(makeReq(), sixthRes, "ai", ALLOW);
     expect(sixthOk).toBe(false);
     expect(sixthRes.statusCode).toBe(429);
     expect((sixthRes.body as { code?: string }).code).toBe("AI_QUOTA");
+  });
+
+  it("ланцюжок «перший тур + квиток з попереднього» (sec-03) упирається в 429 на 21-му запиті", async () => {
+    getSessionUser.mockResolvedValue({ id: "u-free" });
+    const { query } = makeAtomicPoolMock();
+    pool.query = query;
+
+    // Скриптований клієнт: кожен новий перший тур несе квиток, виданий
+    // попереднім, і сподівається не платити. Тепер платить щоразу.
+    let ticket = issueRoundTripTicket({ userId: "u-free" });
+    for (let i = 0; i < 20; i += 1) {
+      expect(
+        await assertAiQuota(
+          makeReq({}, { round_trip_ticket: ticket }),
+          makeRes(),
+          "ai",
+          ALLOW,
+        ),
+      ).toBe(true);
+      ticket = issueRoundTripTicket({ userId: "u-free" });
+    }
+    const res = makeRes();
+    expect(
+      await assertAiQuota(
+        makeReq({}, { round_trip_ticket: ticket }),
+        res,
+        "ai",
+        ALLOW,
+      ),
+    ).toBe(false);
+    expect(res.statusCode).toBe(429);
   });
 });
 
@@ -833,9 +964,17 @@ describe("assertAiQuota: тижневі відра Free (access-tiers)", () => {
     const ticket = issueRoundTripTicket({ userId: "u-free" });
     expect(
       await assertAiQuota(
-        makeReq({}, { round_trip_ticket: ticket }),
+        makeReq(
+          {},
+          {
+            round_trip_ticket: ticket,
+            tool_results: [{ tool_use_id: "t1", content: "ok" }],
+            tool_calls_raw: [{ type: "tool_use", id: "t1" }],
+          },
+        ),
         makeRes(),
         "photo",
+        { allowRoundTripTicket: true },
       ),
     ).toBe(true);
     expect(store.get(key("week:photo"))).toBe(1);

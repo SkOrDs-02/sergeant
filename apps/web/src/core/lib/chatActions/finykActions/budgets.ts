@@ -9,7 +9,11 @@ import {
   unknownCategoryMessage,
 } from "./entityLookup";
 import { validatePositiveAmount } from "./amountValidation";
-import { formatNumberUk, toKyivISODate } from "@sergeant/shared";
+import {
+  formatNumberUk,
+  generatePrefixedId,
+  toKyivISODate,
+} from "@sergeant/shared";
 import type {
   SetBudgetLimitAction,
   SetMonthlyPlanAction,
@@ -31,7 +35,7 @@ function buildAiContribution(saved: number): GoalContribution[] {
   if (saved <= 0) return [];
   return [
     {
-      id: `contrib_${Date.now()}`,
+      id: generatePrefixedId("contrib"),
       amountUah: saved,
 
       date: toKyivISODate(new Date()),
@@ -65,7 +69,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
     }
   } else {
     budgets.push({
-      id: `b_${Date.now()}`,
+      id: generatePrefixedId("b"),
       type: "limit",
       categoryId,
       limit: limitN,
@@ -155,7 +159,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       (budgets[idx] as BudgetLimit).limit = limitN;
     } else {
       budgets.push({
-        id: `b_${Date.now()}`,
+        id: generatePrefixedId("b"),
         type: "limit",
         categoryId,
         limit: limitN,
@@ -194,7 +198,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       g.contributions = buildAiContribution(saved);
     } else {
       budgets.push({
-        id: `b_${Date.now()}`,
+        id: generatePrefixedId("b"),
         type: "goal",
         name: goalName,
         targetAmount: target,
