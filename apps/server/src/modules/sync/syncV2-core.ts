@@ -397,5 +397,41 @@ export function isWithinTextBound(
   return value.length <= maxLen;
 }
 
+/**
+ * Рядок, якого не прийме `jsonb`/`text` у Postgres: містить `U+0000` або
+ * одинокий (непарний) UTF-16 сурогат. JSON.stringify пише такий сурогат як
+ * `\udXXX`-escape, а `jsonb` відкидає його ("Unicode low surrogate must
+ * follow a high surrogate"). Реалістичний тригер - назва, обрізана
+ * `.slice()` посеред емодзі (аудит 2026-10-01, `data-17`).
+ */
+const UNSTORABLE_TEXT_RE =
+  // eslint-disable-next-line no-control-regex -- U+0000 і є тим, що шукаємо.
+  /\u0000|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+/**
+ * `true`, якщо хоч один ключ чи рядкове значення в `row` (на будь-якій
+ * глибині) містить `U+0000` або одинокий сурогат. Такий оп відкидається ДО
+ * apply з reason `invalid_text_encoding`: тихо "лагодити" дані (замінювати
+ * символ) не можна, це мовчки змінило б те, що ввів користувач. Обхід
+ * ітеративний, без рекурсії, щоб глибоко вкладений payload не клав стек.
+ */
+export function hasUnstorableText(row: unknown): boolean {
+  const stack: unknown[] = [row];
+  while (stack.length > 0) {
+    const v = stack.pop();
+    if (typeof v === "string") {
+      if (UNSTORABLE_TEXT_RE.test(v)) return true;
+    } else if (Array.isArray(v)) {
+      for (const item of v) stack.push(item);
+    } else if (v !== null && typeof v === "object") {
+      for (const [k, val] of Object.entries(v)) {
+        if (UNSTORABLE_TEXT_RE.test(k)) return true;
+        stack.push(val);
+      }
+    }
+  }
+  return false;
+}
+
 export type { PoolClient };
 export type { SyncV2Op } from "../../http/schemas.js";
