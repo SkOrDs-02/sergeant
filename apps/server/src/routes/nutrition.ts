@@ -15,6 +15,7 @@ import {
 import analyzePhoto from "../modules/nutrition/analyze-photo.js";
 import parsePantry from "../modules/nutrition/parse-pantry.js";
 import refinePhoto from "../modules/nutrition/refine-photo.js";
+import { requireRefineGrantOrQuota } from "../modules/nutrition/photoRefineGrant.js";
 import recommendRecipes from "../modules/nutrition/recommend-recipes.js";
 import weekPlan from "../modules/nutrition/week-plan.js";
 import backupUpload from "../modules/nutrition/backup-upload.js";
@@ -44,7 +45,9 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
  * Пакетування за реєстром доступу (`docs/work/specs/access-tiers.md`):
  *   - `analyze-photo` списує 1 з окремого тижневого відра фото (`week:photo`,
  *     Free 3 на тиждень) і не чіпає спільні дії. `refine-photo` того самого
- *     знімка нічого не списує: це продовження тієї самої дії.
+ *     знімка нічого не списує (це продовження тієї самої дії; «той самий»
+ *     сервер визначає за SHA-256 кадру з analyze за останні 24 год), а refine
+ *     іншого кадру списує те саме відро фото.
  *   - `week-plan` тільки для Premium (`requireFeature("nutrition.weekPlan")`),
  *     гейт стоїть ПЕРЕД квотою, щоб Free отримав 402 до списання.
  *   - Решта nutrition-AI (денний план, рецепти, покупки, комора) коштує 1 дію
@@ -122,10 +125,14 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
-    // ponytail: refine не має власної квоти, стелю тримає лише rate limit
-    // 20/хв; окреме відро, якщо refine почнуть ганяти без analyze.
     requireHealthConsent(),
     requireLlmUpstream("vision"),
+    // Refine ТОГО САМОГО знімка нічого не списує (ADR-0100): сервер впізнає
+    // його за SHA-256 кадру, який analyze-photo успішно проаналізував для цього
+    // користувача за останні 24 год. Будь-який інший кадр коштує 1 фото з
+    // `week:photo`, як analyze: без цього refine з порожнім `prior_result` був
+    // безкоштовним повним vision-аналізом довільного фото (sec-14).
+    requireRefineGrantOrQuota(),
     refinePhoto,
   );
   // Anthropic text generation — medium-weight (~5–8s, smaller payloads
