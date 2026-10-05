@@ -891,7 +891,7 @@ v7-run.log (v7-precache.mjs): до виходу caches {"workbox-precache-v2-…
 
 ### `rel-13` [medium] Після збою завантаження чанка модуль недоступний до кінця сесії: «Спробувати ще» нічого не робить
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-13-chunk-retry
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: module shell / error boundary
 - **Де:** apps/web/src/core/ModuleErrorBoundary.tsx:48-54,159; apps/web/src/modules/finyk/route.tsx:7; apps/web/src/core/app/ModuleShell.tsx:63; apps/web/src/core/lib/lazyImport.ts
 - **Першопричина:** На retry ModuleErrorBoundary лише ремаунтить дітей. Модульні компоненти — singleton React.lazy, який назавжди кешує відхилений import(). Межа не перевіряє isChunkLoadError і не пропонує reload.

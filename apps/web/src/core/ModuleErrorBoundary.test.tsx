@@ -7,6 +7,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ModuleErrorBoundary from "./ModuleErrorBoundary";
+import * as chunkReload from "./lib/chunkReload";
+
+vi.mock("./lib/chunkReload", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./lib/chunkReload")>()),
+  reloadOnceForChunkError: vi.fn(),
+}));
 
 vi.mock("./observability/analytics", () => ({
   trackEvent: vi.fn(),
@@ -24,6 +30,10 @@ vi.mock("./observability/requestId", () => ({
       setState({ copied: true }),
   ),
 }));
+
+function ChunkBomb(): never {
+  throw new Error("Failed to fetch dynamically imported module: /x.js");
+}
 
 function Bomb(): never {
   throw new Error("boom-module-failure");
@@ -125,5 +135,51 @@ describe("ModuleErrorBoundary", () => {
     expect(
       screen.queryByTestId("module-error-request-id"),
     ).not.toBeInTheDocument();
+  });
+
+  describe("chunk-load error", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("shows a reload button (not retry) and reloads the page on click", () => {
+      const reloadMock = vi.fn();
+      vi.stubGlobal("location", { reload: reloadMock });
+      render(
+        <ModuleErrorBoundary onBackToHub={vi.fn()}>
+          <ChunkBomb />
+        </ModuleErrorBoundary>,
+      );
+
+      expect(screen.queryByText("Спробувати ще")).not.toBeInTheDocument();
+      expect(screen.queryByText("Помилка в модулі")).not.toBeInTheDocument();
+      expect(
+        screen.getByText("Ця секція впала, але інші частини модуля працюють."),
+      ).toBeInTheDocument();
+      expect(screen.getByText("До вибору модуля")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Перезавантажити"));
+      expect(reloadMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("triggers the guarded auto-reload once on catch", () => {
+      render(
+        <ModuleErrorBoundary onBackToHub={vi.fn()}>
+          <ChunkBomb />
+        </ModuleErrorBoundary>,
+      );
+      expect(chunkReload.reloadOnceForChunkError).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not reload or swap the retry button for a non-chunk error", () => {
+      render(
+        <ModuleErrorBoundary onBackToHub={vi.fn()}>
+          <Bomb />
+        </ModuleErrorBoundary>,
+      );
+      expect(chunkReload.reloadOnceForChunkError).not.toHaveBeenCalled();
+      expect(screen.queryByText("Перезавантажити")).not.toBeInTheDocument();
+      expect(screen.getByText("Спробувати ще")).toBeInTheDocument();
+    });
   });
 });
