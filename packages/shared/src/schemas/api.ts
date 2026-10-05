@@ -423,6 +423,40 @@ export const ToolResult = z.object({
 });
 
 /**
+ * rel-18 (`docs/work/specs/audits/2026-10-01-full-app-audit/reliability.md`) —
+ * розмір серіалізованого JSON у байтах (UTF-8). `input`/`content` у блоках
+ * `tool_calls_raw` — `z.unknown()` (чужа форма, echo назад незмінною), тож
+ * єдиний спосіб обмежити їхній вплив на вхідні токени — міряти розмір.
+ * `JSON.stringify` може кинути (BigInt/цикл) лише на об'єктах не з JSON-тіла;
+ * тіло запиту вже розпарсене з JSON, тож `catch` — страховка: що не вдалося
+ * виміряти, те не пропускаємо.
+ */
+function jsonByteSize(value: unknown): number {
+  try {
+    const json = JSON.stringify(value);
+    return json === undefined ? 0 : new TextEncoder().encode(json).length;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+/**
+ * Ліміти розміру `tool_calls_raw`. Щедрі: найбільший легітимний `input` у
+ * tool-eval-касетах — ~235 байт, результат tool search — кілька KB; 32 KB на
+ * блок і 256 KB на весь масив дають ≥100× запасу, але відсікають ~900 KB
+ * блоб, який інакше їхав би в synthesis-повідомлення повз `context.max(40000)`
+ * і повз усічення `tool_results`.
+ */
+export const TOOL_CALLS_RAW_BLOCK_MAX_BYTES = 32 * 1024;
+export const TOOL_CALLS_RAW_TOTAL_MAX_BYTES = 256 * 1024;
+
+const toolBlockPayloadSchema = z
+  .unknown()
+  .refine((v) => jsonByteSize(v) <= TOOL_CALLS_RAW_BLOCK_MAX_BYTES, {
+    message: `tool_calls_raw block payload exceeds ${TOOL_CALLS_RAW_BLOCK_MAX_BYTES} bytes`,
+  });
+
+/**
  * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — блоки, дозволені
  * всередині `tool_calls_raw`. До 2026-08-25 поле було `z.array(z.unknown())`
  * — фактично unvalidated passthrough: `chat.ts` кладе його НАПРЯМУ в
@@ -457,7 +491,7 @@ const ToolUseBlockSchema = z
     type: z.literal("tool_use"),
     id: z.string().min(1).max(200),
     name: z.string().min(1).max(200),
-    input: z.unknown(),
+    input: toolBlockPayloadSchema,
     /**
      * AI-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
      * OpenRouter's `tool_use` blocks carry a `caller` field that Anthropic's
@@ -488,7 +522,7 @@ const ServerToolUseBlockSchema = z
     type: z.literal("server_tool_use"),
     id: z.string().min(1).max(200),
     name: z.string().min(1).max(200),
-    input: z.unknown(),
+    input: toolBlockPayloadSchema,
   })
   .strict();
 
@@ -502,7 +536,7 @@ const ToolSearchToolResultBlockSchema = z
   .object({
     type: z.literal("tool_search_tool_result"),
     tool_use_id: z.string().min(1).max(200),
-    content: z.unknown(),
+    content: toolBlockPayloadSchema,
   })
   .strict();
 
@@ -551,7 +585,19 @@ export const ChatRequestSchema = z.object({
   // лишається `MAX_TOOL_ITERATIONS = 8` і перевіряється окремо в `chat.ts`,
   // тож це послаблення не розширює runaway-поверхню: воно лише перестає
   // рубати легітимний пошуковий трафік нашою ж валідацією.
-  tool_calls_raw: z.array(ToolCallsRawBlockSchema).max(60).optional(),
+  //
+  // rel-18: окрім кількості, обмежено й сумарний розмір (`input`/`content` —
+  // `z.unknown()`, тож без цього один блок міг важити до ліміту тіла запиту).
+  tool_calls_raw: z
+    .array(ToolCallsRawBlockSchema)
+    .max(60)
+    .refine(
+      (blocks) => jsonByteSize(blocks) <= TOOL_CALLS_RAW_TOTAL_MAX_BYTES,
+      {
+        message: `tool_calls_raw exceeds ${TOOL_CALLS_RAW_TOTAL_MAX_BYTES} bytes`,
+      },
+    )
+    .optional(),
   stream: z.boolean().optional(),
   /**
    * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
@@ -1125,21 +1171,36 @@ export const CoachInsightSchema = z.object({
   memory: CoachMemoryEchoSchema.nullish(),
 });
 
-// Розмірні ліміти на окремі поля не застосовуємо — загальний
-// blob-size check у `coachMemoryPost` (через `MAX_BLOB_SIZE`) слугує єдиним
-// джерелом правди про розмір payload-у. Тут лише структура.
+// rel-18: загальний blob-size check у `coachMemoryPost` (`MAX_BLOB_SIZE`, 5 MB)
+// — не ліміт на вхід у LLM: `correlations` (до 3 найсвіжіших) їдуть у system
+// prompt `/api/chat` на кожному першому турі. Тому рядки й кількість
+// обмежені тут. Числа звірені з генераторами: кореляції — ≤3 one-liner-и
+// (`digestCorrelations.ts`, `MAX_LINES`), `overallRecommendations` —
+// `WeeklyDigestReportSchema` (≤30 рядків по ≤500 символів).
+export const COACH_MEMORY_STRING_MAX = 500;
+export const COACH_MEMORY_WEEK_LABEL_MAX = 80;
+export const COACH_MEMORY_CORRELATIONS_MAX = 20;
+export const COACH_MEMORY_RECOMMENDATIONS_MAX = 30;
 export const CoachMemoryPostSchema = z.object({
   weeklyDigest: z
     .object({
-      weekKey: z.string(),
-      weekRange: z.string().optional(),
+      // `weekRange || weekKey` підписує блок кореляцій у system prompt чату
+      // (`getCoachCorrelationsBlock`), тож без ліміту обходили б ліміти нижче.
+      weekKey: z.string().max(COACH_MEMORY_WEEK_LABEL_MAX),
+      weekRange: z.string().max(COACH_MEMORY_WEEK_LABEL_MAX).optional(),
       generatedAt: z.string().optional(),
       finyk: z.unknown().optional(),
       fizruk: z.unknown().optional(),
       nutrition: z.unknown().optional(),
       routine: z.unknown().optional(),
-      overallRecommendations: z.array(z.string()).optional(),
-      correlations: z.array(z.string()).optional(),
+      overallRecommendations: z
+        .array(z.string().max(COACH_MEMORY_STRING_MAX))
+        .max(COACH_MEMORY_RECOMMENDATIONS_MAX)
+        .optional(),
+      correlations: z
+        .array(z.string().max(COACH_MEMORY_STRING_MAX))
+        .max(COACH_MEMORY_CORRELATIONS_MAX)
+        .optional(),
     })
     .optional(),
 });
