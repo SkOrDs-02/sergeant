@@ -18,13 +18,17 @@
  *
  *   3. **Build-id hard-floor** — `serverBuildIdMiddleware` stamps every
  *      API response with `X-Server-Build-Id`. The `@shared/api` client
- *      pipes header observations into {@link reportServerBuildId}; if
- *      the server build differs from `import.meta.env.VITE_BUILD_ID`
- *      for longer than `buildIdMismatchPromptMs` (1 h default), we
- *      force the prompt even when the SW pipeline thinks nothing is
- *      waiting (e.g. mid-deploy where a stale client talks to a new
- *      server but the new SW hasn't been served yet). Both sides are
- *      normalized to a git short SHA first — see {@link normalizeBuildId}.
+ *      pipes header observations into {@link reportServerBuildId}. The
+ *      trigger is a server build id that CHANGES during this session
+ *      (the API was redeployed under a live tab) and still differs from
+ *      `import.meta.env.VITE_BUILD_ID` for longer than
+ *      `buildIdMismatchPromptMs` (1 h default); then we force the prompt
+ *      even when the SW pipeline thinks nothing is waiting (e.g. a stale
+ *      client talks to a new server but the new SW hasn't been served
+ *      yet). A server id that merely differs from the client's, with no
+ *      change observed, is NOT a trigger — see {@link reportServerBuildId}.
+ *      Both sides are normalized to a git short SHA first — see
+ *      {@link normalizeBuildId}.
  *
  * The module is deliberately framework-agnostic — all DOM globals can
  * be overridden via options so the test suite can drive a fake clock /
@@ -50,9 +54,9 @@ export interface AutoUpdateOptions {
    */
   idleSkipWaitingMs?: number;
   /**
-   * Minimum duration a `client_build_id !== server_build_id`
-   * mismatch must persist before we force the update prompt.
-   * Default: 1 hour.
+   * Minimum duration a `client_build_id !== server_build_id` mismatch,
+   * which appeared because the server build id changed mid-session,
+   * must persist before we force the update prompt. Default: 1 hour.
    */
   buildIdMismatchPromptMs?: number;
   /** Client build id. Default: `import.meta.env.VITE_BUILD_ID || "dev"`. */
@@ -291,10 +295,28 @@ export function setupAutoUpdate(
     });
     dispatchUpdateReady();
   };
+  // Останній `X-Server-Build-Id`, побачений у ЦІЙ сесії. `null` до першого
+  // спостереження.
+  //
+  // AI-CONTEXT: hard-floor НЕ порівнює «сервер ≠ клієнт» як такі. Веб (Vercel) і
+  // API (Coolify) деплояться незалежно і кожен пропускає збірку, якщо його
+  // шляхи не зачеплено (`apps/web/vercel.json` ignoreCommand, `deploy-api.yml`
+  // «Чи є що викочувати»). Тож коміт B лише в `apps/server` лишає веб на A, а
+  // API на B НАЗАВЖДИ, і нерівність `B !== A` не означає застарілого бандла.
+  // Раніше (до того, як сервер узагалі віддавав заголовок на Coolify) це
+  // мовчало; зі справним заголовком наївне порівняння давало б плашку «нова
+  // версія» в кожній сесії довшій за годину, а перезавантаження її не
+  // прибирало б (бандл той самий). Тому сигнал — ЗМІНА server build id під
+  // час сесії (API перевикотили під живою вкладкою), а не сама нерівність.
+  // Перше спостереження — лише базова лінія: за ним не відрізнити «веб
+  // застарів» від «веб і API розʼїхались у різних комітах».
+  let lastServerBuildId: string | null = null;
   const reportServerBuildId = (raw: string | null | undefined) => {
     if (typeof raw !== "string") return;
     const serverBuildId = normalizeBuildId(raw);
     if (serverBuildId === "") return;
+    const previous = lastServerBuildId;
+    lastServerBuildId = serverBuildId;
     // Server has caught up — clear any pending mismatch state. Also
     // resets the "we already fired" guard so a future divergence
     // re-arms the timer.
@@ -304,25 +326,27 @@ export function setupAutoUpdate(
       firedForBuildId = null;
       return;
     }
+    if (previous == null) return; // Baseline: no change observed yet.
     if (firedForBuildId === serverBuildId) return; // Already prompted.
-    if (mismatchSince == null) {
+    if (serverBuildId !== previous) {
+      // Server redeployed under this tab: (re)start the grace window.
       mismatchSince = now();
-      const elapsed = 0;
-      const remaining = Math.max(0, buildIdMismatchPromptMs - elapsed);
       cancelMismatchTimer();
       mismatchTimer = setTimeoutFn(() => {
         mismatchTimer = null;
         fireBuildIdMismatch(serverBuildId);
-      }, remaining);
+      }, buildIdMismatchPromptMs);
       debug("build-id mismatch observed", {
         clientBuildId,
         serverBuildId,
-        graceMs: remaining,
+        previousServerBuildId: previous,
+        graceMs: buildIdMismatchPromptMs,
       });
       return;
     }
-    const elapsed = now() - mismatchSince;
-    if (elapsed >= buildIdMismatchPromptMs) {
+    // Same id as before: only an already-armed window can mature.
+    if (mismatchSince == null) return;
+    if (now() - mismatchSince >= buildIdMismatchPromptMs) {
       fireBuildIdMismatch(serverBuildId);
     }
   };
