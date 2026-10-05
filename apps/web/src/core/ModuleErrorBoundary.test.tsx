@@ -152,10 +152,14 @@ describe("ModuleErrorBoundary", () => {
       );
 
       expect(screen.queryByText("Спробувати ще")).not.toBeInTheDocument();
-      expect(screen.queryByText("Помилка в модулі")).not.toBeInTheDocument();
+      // Збій чанка = не завантажився весь модуль, тож тексту «інші частини
+      // модуля працюють» (sectionFailed) тут бути не може.
+      expect(screen.getByText("Помилка в модулі")).toBeInTheDocument();
       expect(
-        screen.getByText("Ця секція впала, але інші частини модуля працюють."),
-      ).toBeInTheDocument();
+        screen.queryByText(
+          "Ця секція впала, але інші частини модуля працюють.",
+        ),
+      ).not.toBeInTheDocument();
       expect(screen.getByText("До вибору модуля")).toBeInTheDocument();
 
       fireEvent.click(screen.getByText("Перезавантажити"));

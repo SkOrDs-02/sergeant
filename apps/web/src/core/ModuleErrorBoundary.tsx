@@ -122,9 +122,7 @@ export default class ModuleErrorBoundary extends Component<
             </svg>
           </div>
           <p className="text-style-body text-muted mb-2 text-center">
-            {isChunkError
-              ? messages.errors.generic.sectionFailed
-              : messages.errors.generic.moduleFailed}
+            {messages.errors.generic.moduleFailed}
           </p>
           {import.meta.env.DEV && (
             <pre className="text-style-code text-danger-strong dark:text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word">
