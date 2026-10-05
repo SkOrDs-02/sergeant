@@ -2,6 +2,7 @@
 import type { SyncV2Op } from "../../../http/schemas.js";
 import {
   INCREMENT_DELTA_MAX_ABS,
+  isWithinTextBound,
   parseOptionalDate,
   toNonNegativeInt,
 } from "../syncV2-core.js";
@@ -46,6 +47,11 @@ export async function applyRoutineEntries(
   const row = op.row;
   const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
+  // Аудит 2026-10-01 (rel-06): `id` і `name` йшли в БД без стелі довжини
+  // (`curl` обходить клієнтські ліміти), на відміну від nutrition-applier-ів.
+  if (!isWithinTextBound(id)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
 
   // Cross-user ownership check. Якщо клієнт надіслав `user_id` у row,
   // воно мусить збігатись із сесією; якщо ні — підставляємо у DML
@@ -89,6 +95,9 @@ export async function applyRoutineEntries(
 
   const name = typeof row["name"] === "string" ? row["name"] : null;
   if (!name) return { status: "rejected", reason: "missing_name" };
+  if (!isWithinTextBound(name)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
 
   const completedAt = parseOptionalDate(row["completed_at"]);
   if (completedAt === "invalid") {

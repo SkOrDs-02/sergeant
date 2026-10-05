@@ -64,6 +64,65 @@ describe("applyRoutineEntries", () => {
     expect(fake.queries).toHaveLength(0);
   });
 
+  // Аудит 2026-10-01 (rel-06): без text bound `id`/`name` довільної довжини
+  // потрапляли в `routine_entries` зі статусом applied.
+  it("rejects an oversized name with text_too_long before any write", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyRoutineEntries(
+        asClient(fake),
+        op(
+          { id: "entry-1", user_id: "user-1", name: "a".repeat(200_000) },
+          "insert",
+        ),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "text_too_long" });
+    expect(fake.queries.some((q) => /^\s*(INSERT|UPDATE)\b/i.test(q.sql))).toBe(
+      false,
+    );
+  });
+
+  it("rejects an oversized id with text_too_long for insert and delete", async () => {
+    for (const kind of ["insert", "delete"] as const) {
+      const fake = new FakeClient();
+      await expect(
+        applyRoutineEntries(
+          asClient(fake),
+          op(
+            { id: "h".repeat(100_000), user_id: "user-1", name: "water" },
+            kind,
+          ),
+          "user-1",
+          new Date("2026-07-21T08:00:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "text_too_long" });
+      expect(fake.queries).toHaveLength(0);
+    }
+  });
+
+  it("accepts id and name exactly at the bound", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyRoutineEntries(
+        asClient(fake),
+        op(
+          {
+            id: "h".repeat(200),
+            user_id: "user-1",
+            name: "n".repeat(200),
+          },
+          "insert",
+        ),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "applied" });
+  });
+
   it("inserts a new entry with server-side user id and parsed dates", async () => {
     const fake = new FakeClient();
     const clientTs = new Date("2026-07-21T08:00:00.000Z");
