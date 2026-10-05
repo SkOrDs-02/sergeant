@@ -5,6 +5,7 @@ import { finykChatWrite } from "./dualWriteBridge";
 import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import { validatePositiveAmount } from "./amountValidation";
 import { formatNumberUk, generatePrefixedId } from "@sergeant/shared";
+import { triggerManualExpenseDeleteSqliteMirror } from "../../../../modules/finyk/lib/sqliteWriter";
 import type {
   CreateDebtAction,
   CreateReceivableAction,
@@ -98,6 +99,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
       : Number(debt.totalAmount) || 0;
   if (payAmount <= 0) return "Сума погашення має бути додатною.";
   const txId = `m_${crypto.randomUUID()}`;
+  const debtId = debt.id;
   const manualExpenses: ManualExpenseRow[] = [...cache.manualExpenses];
   const payEntry = {
     id: txId,
@@ -118,11 +120,35 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
     }, 0);
   const totalPaid = prevPaid + payAmount;
   const closed = totalPaid >= Number(debt.totalAmount);
-  if (closed) {
-    debts.splice(idx, 1);
-  } else {
-    debts[idx] = debt;
-  }
+  // Борг НЕ видаляється навіть при повному погашенні: в UI погашений борг
+  // рахується за залишком і лишається в списку з історією платежів
+  // (logic-03). Видалення було незворотним і без підтвердження.
+  debts[idx] = debt;
   finykChatWrite("finyk_debts", debts);
-  return `Погашено ${formatNumberUk(payAmount)} грн з "${debt.name}"${closed ? ", борг закрито" : ""} (tx:${txId})`;
+  return {
+    result: `Погашено ${formatNumberUk(payAmount)} грн з "${debt.name}"${closed ? ", борг закрито" : ""} (tx:${txId})`,
+    // Undo знімає лише цей платіж: читає свіжий кеш (як undo createDebt),
+    // тож чужі зміни між дією й відкатом не затираються. Ідемпотентний.
+    undo: () => {
+      const fresh = warmFinykCache();
+      if (!fresh) return;
+      const curExpenses = fresh.manualExpenses as ManualExpenseRow[];
+      const nextExpenses = curExpenses.filter((e) => e.id !== txId);
+      if (nextExpenses.length !== curExpenses.length) {
+        finykChatWrite("finyk_manual_expenses_v1", nextExpenses);
+      }
+      triggerManualExpenseDeleteSqliteMirror(txId);
+      const curDebts = fresh.manualDebts as Debt[];
+      let debtsChanged = false;
+      const nextDebts = curDebts.map((d) => {
+        if (d.id !== debtId || !(d.linkedTxIds || []).includes(txId)) return d;
+        debtsChanged = true;
+        return {
+          ...d,
+          linkedTxIds: (d.linkedTxIds || []).filter((lid) => lid !== txId),
+        };
+      });
+      if (debtsChanged) finykChatWrite("finyk_debts", nextDebts);
+    },
+  };
 }
