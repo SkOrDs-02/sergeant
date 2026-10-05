@@ -47,11 +47,13 @@ vi.mock("../../modules/finyk/lib/finykBackup", () => ({
 vi.mock("../../modules/routine/lib/routineStorage", () => ({
   buildRoutineBackupPayload: () => ({ routine: true }),
   applyRoutineBackupPayload: vi.fn(),
+  validateRoutineBackupPayload: () => {},
 }));
 
 vi.mock("../../modules/nutrition/domain/nutritionBackup", () => ({
   buildNutritionBackupPayload: () => ({ nutrition: true }),
   applyNutritionBackupPayload: vi.fn(),
+  validateNutritionBackupPayload: () => {},
 }));
 
 import {

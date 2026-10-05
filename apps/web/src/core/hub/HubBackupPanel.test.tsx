@@ -41,7 +41,11 @@ vi.mock("./hubBackup", () => ({
   buildHubBackupPayload: (opts: unknown) => buildPayloadMock(opts),
   applyHubBackupPayload: (data: unknown, options: unknown) =>
     applyPayloadMock(data, options),
-  isHubBackupPayload: (data: unknown) => isHubBackupPayloadMock(data),
+  assertHubBackupPayload: (data: unknown) => {
+    if (!isHubBackupPayloadMock(data)) {
+      throw new Error("Некоректний файл резервної копії Hub.");
+    }
+  },
 }));
 
 // Готовність і акаунт керуються тестом. Реальний хук тягнув би storage-модулі
@@ -438,6 +442,41 @@ describe("HubBackupPanel", () => {
     );
     expect(reloadMock).not.toHaveBeenCalled();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  // ─── data-34: людські тексти й повний перелік зрізів Фізрука ────────────────
+
+  it("технічний Error з англомовним текстом показується загальним людським текстом", async () => {
+    applyPayloadMock.mockImplementationOnce(() => {
+      throw new TypeError(
+        "Cannot read properties of null (reading 'archived')",
+      );
+    });
+    vi.stubGlobal("location", { reload: vi.fn() });
+
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalled());
+    const shown = String(toastErrorMock.mock.calls[0]?.[0]);
+    expect(shown).not.toMatch(/Cannot read/);
+    expect(shown).toMatch(/Не вдалось імпортувати файл/);
+  });
+
+  it("діалог для файлу з Фізруком перелічує всі зрізи, а не лише тренування", async () => {
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    const dialog = await screen.findByRole("alertdialog");
+    for (const slice of [
+      "тренування",
+      "заміри",
+      "щоденник",
+      "травми",
+      "шаблони",
+    ]) {
+      expect(dialog.textContent).toContain(slice);
+    }
   });
 
   // ─── Режими відновлення і чесний діалог (аудит 2026-10-01, data-06) ─────────

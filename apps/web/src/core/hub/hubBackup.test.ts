@@ -22,6 +22,15 @@ describe("hubBackup", () => {
     ).toBe(true);
   });
 
+  it("відхиляє файл новішої версії (schemaVersion більший за підтримуваний)", () => {
+    expect(
+      isHubBackupPayload({
+        kind: HUB_BACKUP_KIND,
+        schemaVersion: HUB_BACKUP_SCHEMA_VERSION + 1,
+      }),
+    ).toBe(false);
+  });
+
   it("відхиляє сторонні обʼєкти", () => {
     expect(isHubBackupPayload(null)).toBe(false);
     expect(isHubBackupPayload({ kind: "other" })).toBe(false);
