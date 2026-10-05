@@ -2660,7 +2660,7 @@ dedupMono.ts:70-83: `WHERE EXISTS (SELECT 1 FROM mono_transaction t WHERE t.user
 
 ### `data-31` [medium] Парсинг сум в імпорті виписок множить чи ділить суми в 10-1000 разів: XLSX з ручним мапінгом, пересохранений у Excel mono-CSV, неоднозначні «1,234»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-06-data-31-statement-import (визначення роздільника по колонці й відхилення неоднозначного «1,234» лишились на окрему хвилю)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (csvParser, csvProfiles, statementPreview) + web: ColumnMapper
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:41,159; apps/server/src/modules/finyk/import/statementPreview.ts:228-266; apps/server/src/modules/finyk/import/csvProfiles.ts:152,187-188; apps/server/src/modules/finyk/import/csvParser.ts:13-34
 - **Першопричина:** Десятковий роздільник задається жорсткою підказкою, а не визначається по колонці: ColumnMapper за замовчуванням шле decimalComma=true і для типізованих XLSX-клітинок (custom-шлях не застосовує withAutodetectedFormats), профіль mono жорстко ставить decimalComma:false, а автодетект читає «1,234» як 1,23 ₴ і приймає hex та експоненту без skip.
