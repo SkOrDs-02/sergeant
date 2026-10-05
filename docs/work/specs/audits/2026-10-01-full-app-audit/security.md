@@ -1588,7 +1588,7 @@ Independent repro with v4-expiry.mjs: clearCookies, then a cold reload. Log: '17
 
 ### `sec-19` [medium] У прод-образ не потрапляє коміт: порожні X-Server-Build-Id, Sentry release і app_build_info після переходу на білд у Coolify
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-19-build-id-source-commit (код і коментарі готові; лишилась дія власника: увімкнути в Coolify «Include Source Commit in Build» для sergeant-api-v2 і після деплою звірити X-Server-Build-Id з pnpm deploy:status; role 'railway' не перейменовано свідомо)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: деплой / observability
 - **Де:** Dockerfile.api:20,50-58,246-254; .github/workflows/deploy-api.yml:17-18; apps/server/src/http/buildIdHeader.ts:23-40; apps/server/src/sentry.ts:216-232; apps/server/src/obs/logger.ts:285-287; apps/server/src/config.ts:11-13,40-43; apps/server/src/index.ts:1-3,715-719
 - **Першопричина:** Dockerfile.api чекає ARG GIT_SHA від deploy-api.yml, але після ADR-0102 Coolify сам клонує main і build-arg ніхто не передає; каскади resolveServerBuildId/resolveSentryRelease не читають SOURCE_COMMIT від Coolify. Коментарі Dockerfile і рантайм-конфіг досі описують ghcr і Railway (role 'railway' у логах).
