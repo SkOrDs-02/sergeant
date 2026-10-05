@@ -85,6 +85,7 @@ vi.mock("@sergeant/api-client/react", async () => {
 });
 
 import { AuthProvider, useAuth, translateAuthError } from "./AuthContext";
+import { PENDING_SIGN_OUT_KEY } from "./pendingSignOut";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 
 interface UseUserState {
@@ -159,6 +160,9 @@ describe("AuthContext", () => {
     requestPasswordReset.mockClear();
     useUserMock.mockReset();
     trackEventMock.mockClear();
+    // Тести, де `signOut` падає, лишають маркер `sec-07`; він не має
+    // переживати тест (інакше наступний провайдер стартує «розлогіненим»).
+    localStorage.removeItem(PENDING_SIGN_OUT_KEY);
   });
 
   it("drives `user`/`status` off useUser() — not better-auth/useSession", () => {
@@ -730,5 +734,180 @@ describe("translateAuthError", () => {
     expect(
       translateAuthError({ message: "Some new server error" }, "Помилка входу"),
     ).toBe("Some new server error");
+  });
+});
+
+describe("AuthContext: вихід, не підтверджений сервером (sec-07)", () => {
+  beforeEach(() => {
+    signInEmail.mockClear();
+    signInSocial.mockClear();
+    signOut.mockReset();
+    signOut.mockImplementation(async () => undefined);
+    useUserMock.mockReset();
+    localStorage.removeItem(PENDING_SIGN_OUT_KEY);
+  });
+
+  const marker = () => localStorage.getItem(PENDING_SIGN_OUT_KEY);
+
+  it("signOut() кинув виняток (офлайн): після logout маркер записано", async () => {
+    setUser({ data: { user: SAMPLE_USER } });
+    signOut.mockRejectedValueOnce(new Error("Failed to fetch"));
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(marker()).not.toBeNull();
+    expect(result.current.status).toBe("unauthenticated");
+  });
+
+  it("signOut() повернув {error} (5xx): маркер записано, бо це не виняток", async () => {
+    setUser({ data: { user: SAMPLE_USER } });
+    signOut.mockResolvedValueOnce({
+      data: null,
+      error: { status: 503 },
+    } as never);
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(marker()).not.toBeNull();
+  });
+
+  it("успішний signOut() лишає маркер знятим; 401 від сервера теж підтверджує вихід", async () => {
+    setUser({ data: { user: SAMPLE_USER } });
+    const first = makeWrapper();
+    const a = renderHook(() => useAuth(), { wrapper: first.Wrapper });
+    await act(async () => {
+      await a.result.current.logout();
+    });
+    expect(marker()).toBeNull();
+    a.unmount();
+
+    signOut.mockResolvedValueOnce({
+      data: null,
+      error: { status: 401 },
+    } as never);
+    const second = makeWrapper();
+    const b = renderHook(() => useAuth(), { wrapper: second.Wrapper });
+    await act(async () => {
+      await b.result.current.logout();
+    });
+    expect(marker()).toBeNull();
+  });
+
+  it("новий провайдер з маркером і /me=200: status unauthenticated, sign-out повторено, після успіху маркер знято", async () => {
+    localStorage.setItem(PENDING_SIGN_OUT_KEY, "1");
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    // Відповідь /me (можливо зі SW-кешу) не слухаємо ні на мить.
+    expect(result.current.user).toBeNull();
+    expect(result.current.status).toBe("unauthenticated");
+
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(marker()).toBeNull());
+    // Прапор живе до наступного входу: застарілий `me` не оживає.
+    expect(result.current.status).toBe("unauthenticated");
+  });
+
+  it("поки повтор не вдався, маркер стоїть і status unauthenticated; на `online` повтор іде знову", async () => {
+    localStorage.setItem(PENDING_SIGN_OUT_KEY, "1");
+    setUser({ data: { user: SAMPLE_USER } });
+    signOut.mockRejectedValueOnce(new Error("Failed to fetch"));
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(marker()).not.toBeNull();
+    expect(result.current.status).toBe("unauthenticated");
+
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+    });
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(marker()).toBeNull());
+  });
+
+  it("без маркера sign-out на старті не викликається", async () => {
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    expect(result.current.status).toBe("authenticated");
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(signOut).not.toHaveBeenCalled();
+  });
+
+  it("успішний login знімає маркер: повтор не розлогінить нову сесію", async () => {
+    localStorage.setItem(PENDING_SIGN_OUT_KEY, "1");
+    setUser({ data: { user: SAMPLE_USER } });
+    // Повтор на старті не вдається, тож маркер лишається до входу.
+    signOut.mockRejectedValue(new Error("Failed to fetch"));
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+    expect(result.current.status).toBe("unauthenticated");
+
+    await act(async () => {
+      const ok = await result.current.login("a@b.c", "pw");
+      expect(ok).toBe(true);
+    });
+
+    expect(marker()).toBeNull();
+    expect(result.current.status).toBe("authenticated");
+
+    // Мережа повернулась: маркера нема, тож повтору нічого робити.
+    signOut.mockClear();
+    await act(async () => {
+      window.dispatchEvent(new Event("online"));
+    });
+    expect(signOut).not.toHaveBeenCalled();
+    expect(result.current.status).toBe("authenticated");
+  });
+
+  it("невдалий login маркер не чіпає", async () => {
+    localStorage.setItem(PENDING_SIGN_OUT_KEY, "1");
+    setUser({ data: { user: SAMPLE_USER } });
+    signOut.mockRejectedValue(new Error("Failed to fetch"));
+    signInEmail.mockResolvedValueOnce({
+      data: null,
+      error: { message: "bad" },
+    });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      expect(await result.current.login("a@b.c", "nope")).toBe(false);
+    });
+
+    expect(marker()).not.toBeNull();
+    expect(result.current.status).toBe("unauthenticated");
+  });
+
+  it("соціальний вхід (редирект запущено) теж знімає маркер", async () => {
+    localStorage.setItem(PENDING_SIGN_OUT_KEY, "1");
+    setUser({ data: { user: SAMPLE_USER } });
+    signOut.mockRejectedValue(new Error("Failed to fetch"));
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      expect(await result.current.loginWithGoogle()).toBe(true);
+    });
+
+    expect(marker()).toBeNull();
   });
 });
