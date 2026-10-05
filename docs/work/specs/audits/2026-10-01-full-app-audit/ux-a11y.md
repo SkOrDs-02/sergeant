@@ -385,7 +385,7 @@ Script v5-goal-typing.mjs, user verify-gapfinyk2-v1. VGOAL-2 had target 5000 and
 
 ### `ux-05` [medium] Нагадування, вибрані у формі звички, мовчки не приходять, бо глобальний тумблер «Нагадування про звички» за замовчуванням вимкнений
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-05-routine-reminders-hint
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Рутина / нагадування
 - **Де:** apps/web/src/modules/routine/components/settings/ReminderPresets.tsx; apps/web/src/modules/routine/components/settings/HabitForm.tsx:312-319; apps/web/src/core/settings/NotificationsSection.tsx:121,283; packages/routine-domain/src/storage.ts:228; apps/web/src/core/onboarding/presetApply.ts:125; apps/server/src/lib/reminders/sweep.ts:177
 - **Першопричина:** routineRemindersEnabled за замовчуванням false (routine-domain storage.ts:228, presetApply.ts:125). Клієнт, домен і серверний sweep шлють нагадування лише при значенні true. Увімкнути прапорець можна лише тумблером у Налаштування → Сповіщення, а HabitForm показує чипи нагадувань на першому екрані без жодної підказки про цей тумблер.
