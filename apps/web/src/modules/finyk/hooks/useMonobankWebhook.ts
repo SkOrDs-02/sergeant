@@ -477,6 +477,28 @@ export function useMonobankWebhook({
               ? messages.finyk.monoConnectErrors.tokenRejected
               : messages.finyk.monoConnectErrors.accountRequired,
           );
+        } else if (isApiError(e) && e.kind === "http" && e.status === 403) {
+          // Сервер відповів, тож це НЕ мережа. Найчастіше тут
+          // `EMAIL_VERIFICATION_REQUIRED` від `requireVerifiedEmail()`
+          // (аудит 2026-10-01, ux-06): людина без підтвердженого email
+          // читала «Перевір зʼєднання» і марно перегенеровувала токен.
+          // Це не помилка токена, тож іде в `error` (рядок під полем і на
+          // Огляді), а не в `authError` з банером «Токен потребує оновлення».
+          const body =
+            e.body && typeof e.body === "object"
+              ? (e.body as { code?: unknown; error?: unknown })
+              : undefined;
+          if (body?.code === "EMAIL_VERIFICATION_REQUIRED") {
+            setError(
+              messages.finyk.monoConnectErrors.emailVerificationRequired,
+            );
+          } else if (typeof body?.error === "string" && body.error.trim()) {
+            // Інші 403 (напр. акаунт у процесі видалення) несуть власний
+            // людський текст сервера.
+            setError(body.error);
+          } else {
+            setError(messages.finyk.monoConnectErrors.forbidden);
+          }
         } else {
           setError(messages.finyk.monoConnectErrors.networkUnavailable);
         }

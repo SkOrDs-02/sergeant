@@ -9,6 +9,9 @@ export interface TransactionsBatchToolbarProps {
   selectedSize: number;
   onOpenCatPicker: () => void;
   onApplyHide: () => void;
+  /** Усі вибрані операції вже приховані: «Приховати» стає «Показати». */
+  allSelectedHidden?: boolean;
+  onApplyUnhide?: () => void;
   onApplyExclude: () => void;
   batchCatPicker: boolean;
   onCloseCatPicker: () => void;
@@ -35,6 +38,8 @@ export function TransactionsBatchToolbar({
   selectedSize,
   onOpenCatPicker,
   onApplyHide,
+  allSelectedHidden = false,
+  onApplyUnhide,
   onApplyExclude,
   batchCatPicker,
   onCloseCatPicker,
@@ -68,10 +73,10 @@ export function TransactionsBatchToolbar({
                 </button>
                 <button
                   type="button"
-                  onClick={onApplyHide}
+                  onClick={allSelectedHidden ? onApplyUnhide : onApplyHide}
                   className="text-style-label touch-target px-4 py-2 rounded-xl border border-line bg-panelHi text-text transition-colors hover:border-muted"
                 >
-                  Приховати
+                  {allSelectedHidden ? "Показати" : "Приховати"}
                 </button>
                 <button
                   type="button"
@@ -85,9 +90,18 @@ export function TransactionsBatchToolbar({
             </div>
             <div className="mt-2 rounded-xl border border-line bg-panelHi px-3 py-2 text-style-body text-muted">
               <p>
-                <strong className="text-text">Приховати</strong>: прибере
-                операції зі звичайного списку, але їх можна повернути в
-                «Прихованих».
+                {allSelectedHidden ? (
+                  <>
+                    <strong className="text-text">Показати</strong>: поверне
+                    приховані операції у звичайний список і в підсумки.
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-text">Приховати</strong>: прибере
+                    операції зі звичайного списку, але їх можна повернути в
+                    «Прихованих».
+                  </>
+                )}
               </p>
               <p className="mt-1">
                 <strong className="text-text">Не враховувати</strong>: залишить

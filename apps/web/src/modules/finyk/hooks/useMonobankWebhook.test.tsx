@@ -293,15 +293,14 @@ describe("useMonobankWebhook", () => {
     );
     expect(result.current.authError).toBe("");
 
-    // 403 must NOT be treated as "token rejected" — only 401 is. Use the
-    // generic connectivity wording for everything else (per plan / C7).
-    const forbidden = new ApiError({
+    // 5xx — теж мережева заглушка: сервер недоступний, правити нічого.
+    const unavailable = new ApiError({
       kind: "http",
-      status: 403,
-      message: "Forbidden",
+      status: 503,
+      message: "Service Unavailable",
       url: "/api/mono/webhook/connect",
     });
-    mockedConnect.mockRejectedValue(forbidden);
+    mockedConnect.mockRejectedValue(unavailable);
 
     await act(async () => {
       await result.current.connect("locked-token");
@@ -311,6 +310,88 @@ describe("useMonobankWebhook", () => {
     expect(result.current.error).toBe(
       messages.finyk.monoConnectErrors.networkUnavailable,
     );
+  });
+
+  // Регресія аудиту 2026-10-01 (ux-06): 403 `EMAIL_VERIFICATION_REQUIRED` від
+  // `requireVerifiedEmail()` потрапляв у catch-all і показувався як «Перевір
+  // зʼєднання», хоча сервер відповів і причина в непідтвердженому email.
+  describe("403 на підключенні (ux-06)", () => {
+    async function connectRejectedWith(apiError: ApiError) {
+      mockedSyncState.mockResolvedValue({
+        status: "disconnected",
+        webhookActive: false,
+        lastEventAt: null,
+        lastBackfillAt: null,
+        accountsCount: 0,
+      });
+      mockedConnect.mockRejectedValue(apiError);
+      const { result } = renderHook(() => useMonobankWebhook(), {
+        wrapper: makeWrapper(),
+      });
+      await waitFor(() => {
+        expect(result.current.syncState.status).toBe("idle");
+      });
+      await act(async () => {
+        await result.current.connect("valid-token");
+      });
+      return result;
+    }
+
+    it("EMAIL_VERIFICATION_REQUIRED показує прохання підтвердити email, а не мережу", async () => {
+      const result = await connectRejectedWith(
+        new ApiError({
+          kind: "http",
+          status: 403,
+          message: "Forbidden",
+          url: "/api/mono/connect",
+          body: {
+            error:
+              "Підтверди email, щоб виконати цю дію. Лист надіслано на адресу з реєстрації.",
+            code: "EMAIL_VERIFICATION_REQUIRED",
+          },
+        }),
+      );
+      expect(result.current.error).toBe(
+        messages.finyk.monoConnectErrors.emailVerificationRequired,
+      );
+      expect(result.current.error).not.toBe(
+        messages.finyk.monoConnectErrors.networkUnavailable,
+      );
+      // Це не помилка токена: банер «Токен потребує оновлення» не потрібен.
+      expect(result.current.authError).toBe("");
+    });
+
+    it("інший 403 із текстом сервера показує цей текст", async () => {
+      const result = await connectRejectedWith(
+        new ApiError({
+          kind: "http",
+          status: 403,
+          message: "Forbidden",
+          url: "/api/mono/connect",
+          body: {
+            error: "Акаунт у процесі видалення",
+            code: "ACCOUNT_PENDING_DELETION",
+          },
+        }),
+      );
+      expect(result.current.error).toBe("Акаунт у процесі видалення");
+      expect(result.current.authError).toBe("");
+    });
+
+    it("403 без тіла не видає себе за мережу", async () => {
+      const result = await connectRejectedWith(
+        new ApiError({
+          kind: "http",
+          status: 403,
+          message: "Forbidden",
+          url: "/api/mono/connect",
+        }),
+      );
+      expect(result.current.error).toBe(
+        messages.finyk.monoConnectErrors.forbidden,
+      );
+      expect(result.current.authError).toBe("");
+    });
   });
 
   it("does not make /api/mono?path=/personal/statement calls in webhook mode", async () => {

@@ -50,6 +50,10 @@ export interface UseTransactionSelectionResult {
   setBatchCatPicker: (v: boolean) => void;
   applyBatchCategory: (catId: string) => void;
   applyBatchHide: () => void;
+  /** `true`, коли вибрано хоча б одну операцію і всі вони вже приховані. */
+  allSelectedHidden: boolean;
+  /** Повертає вибрані приховані операції у список (зворотне до `applyBatchHide`). */
+  applyBatchUnhide: () => void;
   applyBatchExclude: () => void;
   /** Stable handler: TxRow → swipe-hide on real (non-manual) transactions. */
   stableSwipeHideTx: (id: string) => void;
@@ -283,6 +287,34 @@ export function useTransactionSelection({
     }
   }, [selectedIds, hiddenTxIds, hideTx, exitSelectMode, toast]);
 
+  // Перемикач «Приховати» ↔ «Показати» у тулбарі: коли ВСІ вибрані вже
+  // приховані, `applyBatchHide` нічого б не зробив (він пропускає приховані),
+  // тож приховану ручну/імпортовану операцію не було б чим повернути —
+  // аркуш ручного запису перемикача прихованості не має. `hideTx` — toggle,
+  // тому для показу той самий виклик, а undo ховає ці id назад.
+  const allSelectedHidden =
+    selectedIds.size > 0 &&
+    Array.from(selectedIds).every((id) => hiddenTxIds.includes(id));
+
+  const applyBatchUnhide = useCallback(() => {
+    const shownNow: string[] = [];
+    for (const id of selectedIds) {
+      if (hiddenTxIds.includes(id)) {
+        hideTx(id);
+        shownNow.push(id);
+      }
+    }
+    exitSelectMode();
+    if (shownNow.length > 0) {
+      showUndoToast(toast, {
+        msg: `Показано ${shownNow.length} ${pluralizeOps(shownNow.length, "acc")}`,
+        onUndo: () => {
+          for (const id of shownNow) hideTx(id);
+        },
+      });
+    }
+  }, [selectedIds, hiddenTxIds, hideTx, exitSelectMode, toast]);
+
   const applyBatchExclude = useCallback(() => {
     // Same toggle/snapshot pattern as applyBatchHide — capture the ids that
     // were newly excluded and call `toggleExcludeFromStats` again on undo.
@@ -320,6 +352,8 @@ export function useTransactionSelection({
     setBatchCatPicker,
     applyBatchCategory,
     applyBatchHide,
+    allSelectedHidden,
+    applyBatchUnhide,
     applyBatchExclude,
     stableSwipeHideTx,
     stableSwipeDeleteManual,
