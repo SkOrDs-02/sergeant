@@ -23,7 +23,7 @@ UX і доступність — найбільша за кількістю зн
 
 ### `ux-01` [medium] «Переношу дані в профіль…» блокує застосунок на кожному старті й reload, навіть коли переносити нічого
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-ux-01-migration-panel-text (текст панелі нейтральний, поки не почався справжній перенос; кеш «партиція порожня» і preflight-запит лишились окремою задачею через ризик пропуску переносу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability / старт сесії
 - **Де:** apps/web/src/core/durability/AnonymousDataMigrationProvider.tsx:59-75,277-369; apps/web/src/core/durability/anonymousDataMigration.ts:815-832; apps/web/src/shared/i18n/uk.core.ts:162
 - **Першопричина:** AuthenticatedMigrationGate монтується на кожному авторизованому старті й щоразу проганяє повну розвідку анонімної партиції: перемикає партицію SQLite, проганяє міграції схем 4 модулів і сканує таблиці. Розвідка триває довше за PROBE_GRACE_MS=500, і тоді показується панель із текстом про перенос (showProgressPanel = transferring || failed || probeGraceElapsed), хоча snapshot порожній і runMigration виходить раннім return.

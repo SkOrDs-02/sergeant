@@ -155,6 +155,38 @@ describe("AnonymousDataMigrationProvider", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
+  // Регресія ux-01 (аудит 2026-10-01): коли розвідка затяглась і панель
+  // з'явилась лише через grace-таймер, `onTransferStart` не було — тобто
+  // перенос не почався, і текст про нього був би хибним.
+  it("shows a neutral loading text, not the transfer text, when the panel appears only via the grace timer", async () => {
+    migrate.mockReturnValue(new Promise(() => {}));
+    renderAt("/", <div>module content</div>);
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, PROBE_GRACE_MS + 50));
+    });
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Завантаження…");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(
+      screen.queryByText(/Переношу дані в профіль/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("module content")).not.toBeInTheDocument();
+  });
+
+  it("shows the transfer text once the migration reports onTransferStart", async () => {
+    migrate.mockImplementation((options) => {
+      options?.onTransferStart?.();
+      return new Promise(() => {});
+    });
+    renderAt("/", <div>module content</div>);
+
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent(/Переношу дані в профіль/);
+    expect(screen.queryByText("Завантаження…")).not.toBeInTheDocument();
+  });
+
   // Обидві діри з browser QA 2026-08-04 (Obs-009). Синк-runtime-и раніше
   // жили в success-гілці переносу, тож будь-який шлях повз неї лишав сесію
   // без pull (reader) і без дренажу outbox (writer).
