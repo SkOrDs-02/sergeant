@@ -45,6 +45,7 @@ vi.mock("../syncEngine/flushBeforeLogout", () => ({
 vi.mock("../app/swControl", () => ({
   swClearCaches: async () => undefined,
   swSetActiveUser: async () => undefined,
+  onSwControllerChange: () => () => undefined,
 }));
 vi.mock("../db/sqlite", async () => {
   const real =
