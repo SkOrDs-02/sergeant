@@ -2505,7 +2505,7 @@ useStorage.persist.ts: `usePersist` (з writeJSONDebounced) свідомо ли�
 
 ### `data-28` [medium] Привʼязки Mono-транзакцій до кредитного боргу (finyk_mono_debt_links) ніколи не пушаться через помилково застосоване правило R7
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-28-mono-debt-links-push (пуш upsert/delete підключено; лишились tombstone data-15 і бекфіл давніх локальних привʼязок, мобільний адаптер не чіпано, ADR-0094)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (sqliteWriter adapter)
 - **Де:** apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:342-363; docs/work/specs/planning/sync-client-wiring-playbook.md:93; apps/server/src/modules/sync/syncV2.ts:218-219; apps/web/src/core/syncEngine/applyPullOp.ts:63
 - **Першопричина:** upsertMonoDebtLink і deleteMonoDebtLink пишуть лише локальний SQLite з коментарем «R7: local-only», хоча R7 у плейбуку стосується дзеркала банку, а привʼязки — дані користувача. Сервер таблицю приймає, pull її тягне, анонімна міграція її пушить, а звичайний шлях запису ні.

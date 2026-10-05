@@ -50,7 +50,7 @@ PR, що торкає web + server + api-client + mobile → `sergeant-review-sq
 | R4  | Contract triplet (Hard Rule #3)         | Зміна pull/push shape → server + api-client + contract test |
 | R5  | Demo-seed не регресувати                | Manual: cold reload demo → habits visible                   |
 | R6  | `origin_device_id` на кожному push/pull | `resolveOriginDeviceId` + header `X-Origin-Device-Id`       |
-| R7  | Mono mirror поза op-log                 | Не enqueue `finyk_mono_*` tables                            |
+| R7  | Mono mirror поза op-log                 | Не enqueue банківське дзеркало (3 таблиці, § 3.3)           |
 | R8  | Migrations sequential (Hard Rule #4)    | Phase 2 only; two-phase DROP                                |
 
 ---
@@ -90,7 +90,7 @@ rg 'enqueueOutboxUpsert' apps/ packages/ --glob '*.{ts,tsx}' \
 
 **Nutrition (2):** `nutrition_water_log`, `nutrition_shopping_list`
 
-**Finyk mono mirror (3, R7 local-only):** `finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`
+**Finyk mono mirror (3, R7 local-only):** `finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`. R7 стосується лише цих трьох. `finyk_mono_debt_links` (привʼязки транзакцій до боргу) — дані користувача, а не дзеркало банку: вони ходять через outbox, як `finyk_tx_splits` (аудит 2026-10-01, data-28)
 
 ### 3.4 Echo-suppression contract
 
@@ -190,7 +190,7 @@ rg 'enqueueOutboxUpsert|enqueueOutboxIncrement' apps/web/src/modules/finyk apps/
 **Перепровірки**
 
 - [ ] Enqueue failure does not reject mutation (R2) — test like routine integration.test.ts:295
-- [ ] No enqueue for `finyk_mono_*` (R7)
+- [ ] No enqueue for the 3 Mono-mirror tables (R7): `finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`; `finyk_mono_debt_links` enqueue-иться
 - [ ] Push scheduler drains outbox (`syncEngineWriter` existing tests green)
 
 ---
