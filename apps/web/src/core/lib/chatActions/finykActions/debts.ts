@@ -5,6 +5,7 @@ import { finykChatWrite } from "./dualWriteBridge";
 import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import { validatePositiveAmount } from "./amountValidation";
 import { formatNumberUk, generatePrefixedId } from "@sergeant/shared";
+import { calcDebtRemaining } from "@sergeant/finyk-domain/utils";
 import { triggerManualExpenseDeleteSqliteMirror } from "../../../../modules/finyk/lib/sqliteWriter";
 import type {
   CreateDebtAction,
@@ -23,6 +24,15 @@ type ManualExpenseRow = {
   category?: string;
   type?: string;
 };
+
+/**
+ * Залишок боргу тим самим рахівником, що чат-контекст і UI. Транзакції не
+ * передаємо: платежі чату живуть у `txLinks` зі знімком суми, тож залишок
+ * не залежить від набору банківських транзакцій.
+ */
+function debtRemaining(debt: Debt): number {
+  return calcDebtRemaining({ ...debt, amount: Number(debt.totalAmount) || 0 });
+}
 
 export function createDebt(action: CreateDebtAction): ChatActionResult {
   const { name, amount, due_date, emoji } = action.input;
@@ -93,6 +103,12 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   if (idx < 0) return `Борг ${id} не знайдено.`;
 
   const debt = { ...debts[idx]! };
+  // Залишок рахуємо так само, як чат-контекст і UI (`txLinks` → сума).
+  // Борг із нульовим залишком не погашаємо вдруге: без цього «закрий мої
+  // борги» створювало б другу ручну витрату на ту саму суму.
+  if (debtRemaining(debt) <= 0 && Number(debt.totalAmount) > 0) {
+    return `Борг "${debt.name}" уже закрито.`;
+  }
   const payAmount =
     amount != null && Number.isFinite(Number(amount))
       ? Math.abs(Number(amount))
@@ -112,14 +128,14 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   manualExpenses.unshift(payEntry);
   finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   debt.linkedTxIds = [...(debt.linkedTxIds || []), txId];
-  const prevPaid = debt.linkedTxIds
-    .filter((lid) => lid !== txId)
-    .reduce((sum, lid) => {
-      const linked = manualExpenses.find((e: { id: string }) => e.id === lid);
-      return sum + (linked ? Math.abs(Number(linked.amount) || 0) : 0);
-    }, 0);
-  const totalPaid = prevPaid + payAmount;
-  const closed = totalPaid >= Number(debt.totalAmount);
+  // Як у UI (`useFinykStorageMutations`): платіж пишемо знімком у `txLinks`,
+  // інакше ручна `m_…` не потрапляє в залишок на банк-only транзакціях
+  // чат-контексту, і «закритий» борг виглядає непогашеним.
+  debt.txLinks = {
+    ...(debt.txLinks ?? {}),
+    [txId]: { role: "payment", amount: payAmount },
+  };
+  const closed = debtRemaining(debt) <= 0;
   // Борг НЕ видаляється навіть при повному погашенні: в UI погашений борг
   // рахується за залишком і лишається в списку з історією платежів
   // (logic-03). Видалення було незворотним і без підтвердження.
@@ -143,9 +159,12 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
       const nextDebts = curDebts.map((d) => {
         if (d.id !== debtId || !(d.linkedTxIds || []).includes(txId)) return d;
         debtsChanged = true;
+        const { [txId]: _removed, ...restLinks } = d.txLinks ?? {};
+        const { txLinks: _prev, ...restDebt } = d;
         return {
-          ...d,
+          ...restDebt,
           linkedTxIds: (d.linkedTxIds || []).filter((lid) => lid !== txId),
+          ...(Object.keys(restLinks).length > 0 ? { txLinks: restLinks } : {}),
         };
       });
       if (debtsChanged) finykChatWrite("finyk_debts", nextDebts);

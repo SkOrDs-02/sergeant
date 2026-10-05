@@ -14,6 +14,8 @@ import {
 import { finykChatWrite } from "./dualWriteBridge";
 import { triggerManualExpenseDeleteSqliteMirror } from "../../../../modules/finyk/lib/sqliteWriter";
 import { createDebt, createReceivable, markDebtPaid } from "./debts";
+import { appendFinanceLines } from "../../hubChatContext/finance";
+import type { AllData } from "../../hubChatContext/types";
 import type { ChatActionUndoableResult } from "../types";
 
 const mockWrite = vi.mocked(finykChatWrite);
@@ -502,6 +504,87 @@ describe("data-08: debts built on the canonical SQLite cache", () => {
       expect(undoneDebts.map((d) => d.id)).toEqual(["d_1", "d_2"]);
       expect(undoneDebts[0]!.linkedTxIds).not.toContain(txId);
       expect(triggerManualExpenseDeleteSqliteMirror).toHaveBeenCalledWith(txId);
+    });
+
+    // Аудит-повторна перевірка: чат-контекст рахує борги на БАНК-ONLY
+    // транзакціях, тож без `txLinks` ручна `m_…` давала платіж 0 і «закритий»
+    // борг лишався з повним залишком у [Деталі боргів].
+    it("чат-контекст бачить залишок 0 після повного погашення (txLinks)", () => {
+      seedFinykCache({ manualDebts: [debt] });
+      markDebtPaid({
+        name: "mark_debt_paid",
+        input: { debt_id: "d_1", amount: 500 },
+      });
+      const written = mockWrite.mock.calls.find(
+        (c) => c[0] === "finyk_debts",
+      )![1] as AllData["manualDebts"];
+      const lines: string[] = [];
+      appendFinanceLines(
+        lines,
+        {
+          transactions: [],
+          accounts: [],
+          clientName: "",
+          cacheTime: null,
+          hiddenAccounts: [],
+          budgets: [],
+          manualDebts: written,
+          receivables: [],
+          txCategories: {},
+          txSplits: {},
+          customCategories: [],
+          monthlyPlan: {},
+          subscriptions: [],
+          monoDebtLinked: {},
+          statTx: [],
+          excludedIds: new Set<string>(),
+        } as AllData,
+        new Date("2026-06-15T12:00:00Z"),
+      );
+      const out = lines.join("\n");
+      expect(out).toContain("Оренда: залишок 0 грн");
+      expect(out).not.toContain("залишок 500");
+    });
+
+    it("повторне погашення закритого боргу нічого не пише", () => {
+      seedFinykCache({ manualDebts: [debt] });
+      markDebtPaid({
+        name: "mark_debt_paid",
+        input: { debt_id: "d_1", amount: 500 },
+      });
+      const written = mockWrite.mock.calls.find(
+        (c) => c[0] === "finyk_debts",
+      )![1] as unknown[];
+      vi.clearAllMocks();
+      seedFinykCache({ manualDebts: written });
+      const again = markDebtPaid({
+        name: "mark_debt_paid",
+        input: { debt_id: "d_1" },
+      });
+      expect(again).toContain("уже закрито");
+      expect(mockWrite).not.toHaveBeenCalled();
+    });
+
+    it("undo прибирає txLinks[txId] і повертає залишок", () => {
+      seedFinykCache({ manualDebts: [debt] });
+      const out = markDebtPaid({
+        name: "mark_debt_paid",
+        input: { debt_id: "d_1", amount: 200 },
+      }) as ChatActionUndoableResult;
+      const expenses = mockWrite.mock.calls.find(
+        (c) => c[0] === "finyk_manual_expenses_v1",
+      )![1] as unknown[];
+      const debts = mockWrite.mock.calls.find(
+        (c) => c[0] === "finyk_debts",
+      )![1] as unknown[];
+      vi.clearAllMocks();
+      seedFinykCache({ manualDebts: debts, manualExpenses: expenses });
+      out.undo?.();
+      const undone = mockWrite.mock.calls.find(
+        (c) => c[0] === "finyk_debts",
+      )![1] as Array<Record<string, unknown>>;
+      expect(undone[0]!["linkedTxIds"]).toEqual([]);
+      expect(undone[0]).not.toHaveProperty("txLinks");
     });
 
     it("undo ідемпотентний: другий виклик нічого не пише", () => {
