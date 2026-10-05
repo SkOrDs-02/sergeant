@@ -19,10 +19,20 @@ describe("deleteStripeCustomer", () => {
     expect(result).toEqual({ outcome: "skipped" });
   });
 
-  it("skips when there is no stripe_customer_id, even with a configured key", async () => {
+  it("returns not_found when there is no stripe_customer_id, even with a configured key", async () => {
     process.env["STRIPE_SECRET_KEY"] = "sk_test_123";
-    const result = await deleteStripeCustomer(null);
-    expect(result).toEqual({ outcome: "skipped" });
+    const fetchImpl = vi.fn();
+    const result = await deleteStripeCustomer(null, { fetchImpl });
+    expect(result).toEqual({ outcome: "not_found" });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("returns not_found when there is no stripe_customer_id and no key either (customerId is checked first)", async () => {
+    expect(await deleteStripeCustomer(null)).toEqual({ outcome: "not_found" });
+    expect(await deleteStripeCustomer("")).toEqual({ outcome: "not_found" });
+    expect(await deleteStripeCustomer(undefined)).toEqual({
+      outcome: "not_found",
+    });
   });
 
   it("calls DELETE with Basic-auth(secretKey:) when both are present", async () => {
