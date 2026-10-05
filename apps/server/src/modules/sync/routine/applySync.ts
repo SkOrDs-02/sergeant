@@ -1,6 +1,7 @@
 ﻿import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import {
+  clampTextToBound,
   INCREMENT_DELTA_MAX_ABS,
   isWithinTextBound,
   parseOptionalDate,
@@ -49,6 +50,8 @@ export async function applyRoutineEntries(
   if (!id) return { status: "rejected", reason: "missing_id" };
   // Аудит 2026-10-01 (rel-06): `id` і `name` йшли в БД без стелі довжини
   // (`curl` обходить клієнтські ліміти), на відміну від nutrition-applier-ів.
+  // `id` = `habitId:dateKey` (~50 символів), легітимний клієнт його не
+  // перевищить; `name` обрізається нижче.
   if (!isWithinTextBound(id)) {
     return { status: "rejected", reason: "text_too_long" };
   }
@@ -93,11 +96,16 @@ export async function applyRoutineEntries(
     );
   }
 
-  const name = typeof row["name"] === "string" ? row["name"] : null;
-  if (!name) return { status: "rejected", reason: "missing_name" };
-  if (!isWithinTextBound(name)) {
-    return { status: "rejected", reason: "text_too_long" };
-  }
+  const rawName = typeof row["name"] === "string" ? row["name"] : null;
+  if (!rawName) return { status: "rejected", reason: "missing_name" };
+  // AI-DANGER: `name` НЕ reject-имо за довжиною. Це денормалізована копія
+  // назви звички (`habitName` із `routine_habits`), яку клієнт підставляє
+  // сам, а назва звички на сервері/мобілці/в HubChat не обмежена 200
+  // (`applyRoutineHabits` без text bound, mobile HabitForm без maxLength,
+  // старі звички до `maxLength` у вебі). Reject тут термінальний в outbox
+  // (singleton.ts) і назавжди губив би КОЖНУ відмітку такої звички, тож
+  // стеля - обрізання, а не відмова. `id` (`habitId:dateKey`) reject-имо вище.
+  const name = clampTextToBound(rawName);
 
   const completedAt = parseOptionalDate(row["completed_at"]);
   if (completedAt === "invalid") {
