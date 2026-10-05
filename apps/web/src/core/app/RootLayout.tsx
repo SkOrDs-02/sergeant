@@ -46,6 +46,7 @@ import { DbBusyScreen, useDbIsBusyElsewhere } from "./DbBusyScreen";
 import { useIosInstallBanner } from "./useIosInstallBanner";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
+import { useRestoreWebPush } from "./useRestoreWebPush";
 // AI-CONTEXT: чотири модульні boot-кластери — ЛІНИВІ, і це не
 // оптимізація «про всяк випадок». Вони самі по собі невидимі
 // (рендерять `null`, працюють лише під автентифікованою чи demo-сесією),
@@ -375,6 +376,8 @@ function RootLayoutInner() {
   } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
+  // rel-12: «Скинути кеш PWA» знімає реєстрацію SW, а з нею і push-підписку.
+  useRestoreWebPush(user?.id);
 
   // App-level effects (idle prefetch, SW messages, hub bus, etc.)
   // Оболонка лишається на місці навмисно: навігація і шапка мають працювати,
