@@ -67,6 +67,7 @@ vi.mock("@shared/api", async () => {
 
 const storageMock = vi.hoisted(() => ({
   customCategories: [] as { id: string; label: string }[],
+  budgets: [] as unknown[],
   addCustomCategory: vi.fn(),
   removeCustomCategory: vi.fn(),
 }));
@@ -216,7 +217,50 @@ describe("FinykSection interactions", () => {
     renderSection();
     expect(await screen.findByText("🎨 Хобі")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Видалити"));
+    // Без підтвердження видалення не відбувається.
+    expect(storageMock.removeCustomCategory).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
     expect(storageMock.removeCustomCategory).toHaveBeenCalledWith("c1");
+  });
+
+  it("counts only single-category limits of the deleted category in the confirmation", async () => {
+    storageMock.customCategories = [{ id: "c1", label: "Хобі" }];
+    storageMock.budgets = [
+      { id: "b1", type: "limit", categoryId: "c1", limit: 500 },
+      {
+        id: "b2",
+        type: "limit",
+        categoryId: "c1",
+        categoryIds: ["c1"],
+        limit: 1,
+      },
+      {
+        id: "b3",
+        type: "limit",
+        categoryId: "c1",
+        categoryIds: ["c1", "food"],
+        limit: 1,
+      },
+      { id: "b4", type: "limit", categoryId: "food", limit: 1 },
+    ];
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByText("Видалити"));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("зараз їх: 2");
+    storageMock.budgets = [];
+  });
+
+  it("does not remove a custom category when the confirmation is cancelled", async () => {
+    storageMock.customCategories = [{ id: "c1", label: "Хобі" }];
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByText("Видалити"));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Скасувати" }));
+    expect(storageMock.removeCustomCategory).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("validates an empty token on connect", async () => {
