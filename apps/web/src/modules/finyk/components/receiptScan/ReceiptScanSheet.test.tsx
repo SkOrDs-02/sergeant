@@ -49,7 +49,13 @@ vi.mock("../../hooks/useReceiptQrScanner", () => ({
     decodeQrFromImageFileMock(...args),
 }));
 
+import {
+  safeReadLS,
+  safeRemoveLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 import { ReceiptScanSheet } from "./ReceiptScanSheet";
+import { FINYK_PHOTO_PRIVACY_ACK_KEY } from "./FinykPhotoPrivacyNotice";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import type { ReceiptSaveStorageSlice } from "../../hooks/useReceiptSave";
 
@@ -87,6 +93,9 @@ beforeEach(() => {
   saveReceiptMock.mockReset();
   decodeQrFromImageFileMock.mockReset();
   onDetectedRef.current = null;
+  // Більшість тестів перевіряє сам vision-флоу, тож нотіс уже підтверджено;
+  // гейт приватності має власний describe нижче й скидає ack.
+  safeWriteLS(FINYK_PHOTO_PRIVACY_ACK_KEY, true);
 });
 
 function renderSheet(
@@ -637,5 +646,111 @@ describe("ReceiptScanSheet — save (alreadyExists handling)", () => {
     );
     expect(onSaved).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe("ReceiptScanSheet — попередження «Куди їде фото» (priv-11)", () => {
+  // Рішення власника 2026-07-26 («фото: попередження») + обіцянка екрана
+  // «Дані та приватність»: «Перед першим фото ми про це попереджаємо».
+  // До ack фото чека не їде в AI; після тапу аналіз іде для вже вибраного
+  // файлу. Ключ окремий від Харчування.
+  beforeEach(() => {
+    safeRemoveLS(FINYK_PHOTO_PRIVACY_ACK_KEY);
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({ source: "vision", fiscalNum: null, store: "Сільпо" }),
+    });
+  });
+
+  function pick(files: File[]) {
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { files } });
+  }
+  const jpg = (name: string) =>
+    new File([new Uint8Array(10)], name, { type: "image/jpeg" });
+
+  it("без ack одне фото не викликає analyzeReceipt і показує текст нотіса", async () => {
+    renderSheet();
+
+    await act(async () => {
+      pick([jpg("chek.jpg")]);
+    });
+
+    expect(analyzeReceiptMock).not.toHaveBeenCalled();
+    expect(screen.getByText("Куди їде фото")).toBeInTheDocument();
+    expect(screen.getByText(/цифри картки, баланс, імена/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+    ).toBeInTheDocument();
+  });
+
+  it("тап «Зрозуміло, аналізувати» пише ack у ключ Фініка й аналізує вже вибране фото", async () => {
+    renderSheet();
+    await act(async () => {
+      pick([jpg("chek.jpg")]);
+    });
+    expect(analyzeReceiptMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+      );
+    });
+
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(1));
+    expect(safeReadLS<boolean>(FINYK_PHOTO_PRIVACY_ACK_KEY, false)).toBe(true);
+    // Ключ Харчування не зачеплено: його ack не покривав чеки.
+    expect(
+      safeReadLS("sergeant.nutrition.photoPrivacyAck.v1", null),
+    ).toBeNull();
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Сільпо")).toBeInTheDocument(),
+    );
+  });
+
+  it("підтвердження нутриційного ack не знімає гейт Фініка", async () => {
+    safeWriteLS("sergeant.nutrition.photoPrivacyAck.v1", true);
+    renderSheet();
+
+    await act(async () => {
+      pick([jpg("chek.jpg")]);
+    });
+
+    expect(analyzeReceiptMock).not.toHaveBeenCalled();
+    safeRemoveLS("sergeant.nutrition.photoPrivacyAck.v1");
+  });
+
+  it("без ack пачка з кількох фото теж не стартує, а після тапу обробляє всі", async () => {
+    renderSheet();
+
+    await act(async () => {
+      pick([jpg("a.jpg"), jpg("b.jpg")]);
+    });
+
+    expect(analyzeReceiptMock).not.toHaveBeenCalled();
+    expect(screen.queryByText("Чеки пачкою")).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+      );
+    });
+
+    expect(screen.getByText("Чеки пачкою")).toBeInTheDocument();
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(2));
+  });
+
+  it("з уже наявним ack нотіса немає і фото аналізується одразу", async () => {
+    safeWriteLS(FINYK_PHOTO_PRIVACY_ACK_KEY, true);
+    renderSheet();
+
+    expect(screen.queryByText("Куди їде фото")).not.toBeInTheDocument();
+    await act(async () => {
+      pick([jpg("chek.jpg")]);
+    });
+
+    await waitFor(() => expect(analyzeReceiptMock).toHaveBeenCalledTimes(1));
   });
 });

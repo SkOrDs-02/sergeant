@@ -731,7 +731,7 @@ legalShared.ts: Hetzner region «ЄС (Німеччина)»; OpenRouter role «
 
 ### `priv-11` [medium] Фото чеків і скріни банкінгу йдуть в AI без обіцяного попередження «Куди їде фото»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-11-finyk-photo-notice
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (vision-імпорт)
 - **Де:** apps/web/src/modules/finyk/components/receiptScan/ReceiptScanSheet.tsx:132-135; apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx (handleScreenshotSelected → POST /api/v1/finyk/import/screenshot/analyze); apps/web/src/modules/nutrition/components/PhotoPrivacyNotice.tsx; apps/web/src/shared/i18n/uk.dataDisclosure.ts:31
 - **Першопричина:** PhotoPrivacyNotice з ack-ключем sergeant.nutrition.photoPrivacyAck.v1 реалізовано лише в модулі Їжа. ReceiptScanSheet і BulkImportSheet одразу після вибору файлу викликають analyzeReceipt чи analyzeImportScreenshot, без жодного попередження.
