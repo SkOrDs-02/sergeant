@@ -78,6 +78,18 @@ export function subscribeSyncSessionMissing(listener: () => void): () => void {
   };
 }
 
+/**
+ * Скидає спостереження «сесії немає», зроблене ДО входу. Анонімний пристрій
+ * бачить `data: null` від `get-session` на кожному тіку writer-а (це норма), і
+ * без скидання щойно залогінена людина бачила б «Сесія завершилась» аж до
+ * наступного тіку (до ~36 с): `login`/`register` у SPA не перезавантажують
+ * сторінку. Нове спостереження драйна після входу виставить сигнал знову, якщо
+ * сесії справді нема.
+ */
+export function resetSyncSessionMissing(): void {
+  setSessionMissing(false);
+}
+
 /** Test-only: скинути стан і слухачів між специфікаціями. */
 export function __resetSyncSessionSignalForTests(): void {
   sessionMissing = false;

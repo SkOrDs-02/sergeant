@@ -37,6 +37,7 @@ import { SIGN_IN_PATH } from "../app/appPaths";
 import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
 import * as pendingSignOut from "./pendingSignOut";
 import { usePendingSignOutRetry } from "./usePendingSignOutRetry";
+import { useResetSyncSessionOnSignIn } from "./useResetSyncSessionOnSignIn";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
 // тягне з собою десять модульних файлів плюс en-копію: до цієї правки
 // саме ВІН лишався останнім eager-ребром до `uk.ts`, уже після того, як
@@ -564,6 +565,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       : pendingDeletion
         ? "pending_deletion"
         : "unauthenticated";
+  // `sec-18`: «сесії немає» з анонімного періоду не має пережити вхід.
+  useResetSyncSessionOnSignIn(status);
 
   // F12 privacy: історія HubChat лежить у плоских LS-ключах — при зміні
   // identity на цьому пристрої (logout, інший акаунт, протухла сесія)

@@ -86,6 +86,11 @@ vi.mock("@sergeant/api-client/react", async () => {
 
 import { AuthProvider, useAuth, translateAuthError } from "./AuthContext";
 import { PENDING_SIGN_OUT_KEY } from "./pendingSignOut";
+import {
+  __resetSyncSessionSignalForTests,
+  observeSyncSession,
+  readSyncSessionMissing,
+} from "../syncEngine/syncSessionSignal";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 
 interface UseUserState {
@@ -909,5 +914,75 @@ describe("AuthContext: вихід, не підтверджений сервер�
     });
 
     expect(marker()).toBeNull();
+  });
+});
+
+describe("AuthContext: сигнал «сесії немає» і вхід (sec-18)", () => {
+  beforeEach(() => {
+    signInEmail.mockClear();
+    signUpEmail.mockClear();
+    useUserMock.mockReset();
+    localStorage.removeItem(PENDING_SIGN_OUT_KEY);
+    __resetSyncSessionSignalForTests();
+  });
+
+  it("login після анонімного періоду скидає застаріле «сесії немає»", async () => {
+    setUser({ data: undefined });
+    const { Wrapper } = makeWrapper();
+    const { result, rerender } = renderHook(() => useAuth(), {
+      wrapper: Wrapper,
+    });
+    expect(result.current.status).toBe("unauthenticated");
+
+    // Тік writer-а на анонімному пристрої: get-session -> data: null.
+    act(() => {
+      observeSyncSession({ data: null, error: null });
+    });
+    expect(readSyncSessionMissing()).toBe(true);
+
+    await act(async () => {
+      expect(await result.current.login("a@b.c", "pw")).toBe(true);
+    });
+    // `invalidateMe` перезапитав `/me`: тепер там користувач (без reload).
+    setUser({ data: { user: SAMPLE_USER } });
+    rerender();
+
+    expect(result.current.status).toBe("authenticated");
+    expect(readSyncSessionMissing()).toBe(false);
+  });
+
+  it("register після анонімного періоду теж скидає сигнал", async () => {
+    setUser({ data: undefined });
+    const { Wrapper } = makeWrapper();
+    const { result, rerender } = renderHook(() => useAuth(), {
+      wrapper: Wrapper,
+    });
+    act(() => {
+      observeSyncSession({ data: null, error: null });
+    });
+
+    await act(async () => {
+      await result.current.register("a@b.c", "pw", "A");
+    });
+    setUser({ data: { user: SAMPLE_USER } });
+    rerender();
+
+    expect(result.current.status).toBe("authenticated");
+    expect(readSyncSessionMissing()).toBe(false);
+  });
+
+  it("холодний старт з уже авторизованим статусом спостереження не стирає", async () => {
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    expect(result.current.status).toBe("authenticated");
+
+    act(() => {
+      observeSyncSession({ data: null, error: null });
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(readSyncSessionMissing()).toBe(true);
   });
 });
