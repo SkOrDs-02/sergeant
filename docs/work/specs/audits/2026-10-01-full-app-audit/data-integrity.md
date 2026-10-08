@@ -2048,7 +2048,7 @@ migrations/133_plata_subscription.sql: `user_id TEXT PRIMARY KEY … subscriptio
 
 ### `data-22` [medium] Кілька однакових tool_calls в одному ході чату гублять записи: зі списку покупок, води, страв і боргів зберігається лише один
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-22-chat-batch-serial
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (hubChatActions, nutritionActions, finykActions)
 - **Де:** apps/web/src/core/lib/hubChatActions.ts:185-227; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:350-370; apps/web/src/core/lib/chatActions/nutritionActions.ts:71,110-113,195-233; apps/web/src/core/lib/chatActions/finykActions/debts.ts:25,54; apps/web/src/core/lib/chatActions/finykActions/budgets.ts:36,70,154,194
 - **Першопричина:** executeActions запускає всі синхронні dispatch батча в одному тіку до першого await, а nutrition-кеш оновлюється лише після асинхронного apply, тож виклик N+1 читає знімок без виклику N і перезаписує цілий blob (список, денна вода). Id з голого Date.now() (m_, d_, b_) колізять у межах мілісекунди; AI-CONTEXT приймає гонку на застарілому припущенні про синхронний localStorage.
