@@ -74,6 +74,14 @@ export function signInInvite(page: Page) {
 }
 
 export async function goto(page: Page, route: string): Promise<void> {
+  const failed: string[] = [];
+  const onFailed = (r: import("@playwright/test").Request) => {
+    if (!r.url().includes("/api/"))
+      failed.push(
+        `${r.failure()?.errorText ?? "?"} ${new URL(r.url()).pathname}`,
+      );
+  };
+  page.on("requestfailed", onFailed);
   try {
     await page.goto(route, { waitUntil: "domcontentloaded" });
   } catch (err) {
@@ -94,7 +102,40 @@ export async function goto(page: Page, route: string): Promise<void> {
   try {
     await expect.poll(rootChildren, { timeout: 15_000 }).toBeGreaterThan(0);
   } catch {
+    // Знімок стану в момент білого екрана: без нього B1 роками лишався
+    // «гонкою SW» без доказів. readyState != "complete" означає, що подія
+    // `load` не настала, і `boot-watchdog.js` (він чекає саме `load`) не
+    // спрацює ніколи; незавершені `/assets/*` показують, на чому зависло.
+    const snapshot = await page
+      .evaluate(async () => {
+        const assets = performance
+          .getEntriesByType("resource")
+          .filter((e) => e.name.includes("/assets/"))
+          .map((e) => e as PerformanceResourceTiming);
+        const reg = await navigator.serviceWorker?.getRegistration();
+        return {
+          readyState: document.readyState,
+          controlled: Boolean(navigator.serviceWorker?.controller),
+          sw: reg
+            ? {
+                installing: Boolean(reg.installing),
+                waiting: Boolean(reg.waiting),
+                active: reg.active?.state ?? null,
+              }
+            : null,
+          watchdogAt: sessionStorage.getItem("sergeant.boot_watchdog_at"),
+          assetsLoaded: assets.length,
+          assetsUnfinished: assets
+            .filter((e) => e.responseEnd === 0)
+            .map((e) => e.name.split("/assets/")[1]),
+        };
+      })
+      .catch((e: unknown) => ({ error: String(e) }));
+    console.log(
+      `[boot-white-screen] ${route} ${JSON.stringify(snapshot)} failed=${JSON.stringify(failed)}`,
+    );
     await page.reload({ waitUntil: "domcontentloaded" });
+    page.off("requestfailed", onFailed);
     const recovered = await expect
       .poll(rootChildren, { timeout: 15_000 })
       .toBeGreaterThan(0)
@@ -107,6 +148,7 @@ export async function goto(page: Page, route: string): Promise<void> {
         `дивись docs/work/specs/audits/2026-08-05-browser-profile-testing.md.`,
     );
   }
+  page.off("requestfailed", onFailed);
   await expect(
     page.getByRole("link", { name: "Перейти до основного вмісту" }),
   ).toBeAttached();
