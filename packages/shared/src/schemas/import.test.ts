@@ -127,6 +127,26 @@ describe("ImportColumnMappingSchema", () => {
     expect(r.success).toBe(true);
   });
 
+  it("приймає опційний creditCol (окрема колонка надходжень)", () => {
+    const r = ImportColumnMappingSchema.safeParse({
+      dateCol: "Дата",
+      amountCol: "Дебет",
+      creditCol: "Кредит",
+      descriptionCol: "Опис",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("відхиляє порожній creditCol", () => {
+    const r = ImportColumnMappingSchema.safeParse({
+      dateCol: "Дата",
+      amountCol: "Дебет",
+      creditCol: "",
+      descriptionCol: "Опис",
+    });
+    expect(r.success).toBe(false);
+  });
+
   it("відхиляє невідомий dateFormat", () => {
     const r = ImportColumnMappingSchema.safeParse({
       dateCol: "Дата",

@@ -3819,7 +3819,7 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "new_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "action": "keep",
       "genre": "active-work",

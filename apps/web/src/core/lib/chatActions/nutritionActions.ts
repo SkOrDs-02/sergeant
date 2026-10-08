@@ -26,6 +26,7 @@ import {
   addLogEntry,
   appendNutritionPantryEvent,
   loadNutritionLog,
+  loadLatestNutritionPrefs,
   loadNutritionPrefs,
   loadPantries,
   patchNutritionPrefs,
@@ -427,8 +428,23 @@ export function handleNutritionAction(
         parts.push(`вода ${formatNumberUk(waterN)} мл`);
       }
       if (parts.length === 0) return "Немає полів для оновлення плану.";
+      // Знімок ЛИШЕ змінюваних полів до запису: undo повертає саме їх
+      // (решта prefs, змінена між дією й відкатом, не чіпається).
+      const before = loadLatestNutritionPrefs();
+      const prevFields: Partial<NutritionPrefs> = {};
+      for (const key of Object.keys(next) as Array<keyof NutritionPrefs>) {
+        (prevFields as Record<string, unknown>)[key] = before[key];
+      }
       if (!patchNutritionPrefs(next)) return NUTRITION_STILL_LOADING;
-      return `Щоденний план оновлено: ${parts.join(", ")}`;
+      return {
+        result: `Щоденний план оновлено: ${parts.join(", ")}`,
+        // Відкат цілі лишає `adaptiveGoalEnabled` вимкненим: ручна зміна
+        // цілі вимикає адаптивну, а `patchNutritionPrefs` без origin
+        // трактує і відкат як ручну зміну.
+        undo: () => {
+          patchNutritionPrefs(prevFields);
+        },
+      };
     }
     case "log_weight": {
       const { weight_kg, note } = (action as LogWeightAction).input;

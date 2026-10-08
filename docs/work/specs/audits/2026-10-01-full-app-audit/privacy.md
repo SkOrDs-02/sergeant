@@ -731,7 +731,7 @@ legalShared.ts: Hetzner region «ЄС (Німеччина)»; OpenRouter role «
 
 ### `priv-11` [medium] Фото чеків і скріни банкінгу йдуть в AI без обіцяного попередження «Куди їде фото»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-11-finyk-photo-notice
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (vision-імпорт)
 - **Де:** apps/web/src/modules/finyk/components/receiptScan/ReceiptScanSheet.tsx:132-135; apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx (handleScreenshotSelected → POST /api/v1/finyk/import/screenshot/analyze); apps/web/src/modules/nutrition/components/PhotoPrivacyNotice.tsx; apps/web/src/shared/i18n/uk.dataDisclosure.ts:31
 - **Першопричина:** PhotoPrivacyNotice з ack-ключем sergeant.nutrition.photoPrivacyAck.v1 реалізовано лише в модулі Їжа. ReceiptScanSheet і BulkImportSheet одразу після вибору файлу викликають analyzeReceipt чи analyzeImportScreenshot, без жодного попередження.
@@ -996,7 +996,7 @@ Desktop 1280×900, користувач hubshell-lock: увімкнути PIN �
 
 ### `priv-16` [medium] Після виходу власні продукти (IDB nutrition_foods) і AI-пропозиції рецептів (sessionStorage) попереднього користувача бачать анонім і наступний акаунт
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-16-recipe-cache-purge (sessionStorage-частина закрита: purgeAppOwnedSessionStorage у purgeAppOwnedLocalData, покриває logout і identity-wipe; IDB nutrition_foods і nutrition_barcodes свідомо лишені за рішенням власника; nutrition_recipes закрито в #1343; nutrition_meal_thumbs лишено, фото існують лише на пристрої)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / очищення при виході
 - **Де:** apps/web/src/shared/lib/storage/purgeLocalData.ts:23-37, 115-131; apps/web/src/modules/nutrition/lib/recipeCache.ts:55-75
 - **Першопричина:** purgeAppOwnedLocalData чистить лише localStorage, warm-cache і RQ-снапшот. IndexedDB-сховища nutrition_foods, nutrition_barcodes, nutrition_meal_thumbs і nutrition_recipes спільні в sergeant-db і не мають userId. sessionStorage переживає location.assign у тій самій вкладці. Ключ кешу рецептів рахується з комори і prefs, без userId.

@@ -147,7 +147,7 @@ Code path (main @ c7c09607):
 
 ### `logic-03` [medium] Незворотні та перезаписні чат-дії виконуються без підтвердження і без undo
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-03-chat-actions-undo (лишилось: undo для consume_from_pantry (потребує компенсуючої події журналу комори, ADR-0077); set_goal, edit_habit, set_habit_schedule, pause_habit без undo; update_budget(goal) із saved_amount досі замінює лог, а не дописує, рішення власника; тест-інваріант «мутуючий тул або в TOOL_RISK, або з undo»)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat / виконавці дій
 - **Де:** packages/shared/src/lib/toolRisk.ts:54-116; apps/web/src/core/lib/chatActions/finykActions/debts.ts:72-123; .../finykActions/transactions.ts:95-158; .../finykActions/budgets.ts:182-201; .../nutritionActions.ts:261-416; .../crossActions/goalAndUtility.ts:179-189; .../routineActions.ts:397-556
 - **Першопричина:** Політика TOOL_RISK така: незворотне йде через confirm, решта має undo. Але частина мутуючих тулів не входить у TOOL_RISK і повертає звичайний рядок без undo. mark_debt_paid видаляє борг (splice), consume_from_pantry без qty прибирає позицію цілком. set_daily_plan і set_goal вимикають адаптивну ціль, edit_habit, set_habit_schedule і pause_habit (заднім числом) переписують звичку. split_transaction перезаписує спліти, а update_budget(goal) замінює історію поповнень цілі.
@@ -288,7 +288,7 @@ cd /home/user/sergeant && node --import tsx <scratch>/agents/client-static-domai
 
 ### `logic-06` [medium] Виписки з окремими колонками Дебет/Кредит імпортуються навпаки: витрати стають доходом «Зарплата», надходження губляться
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-06-data-31-statement-import (перемикач напряму рядка в BulkReviewTable відкладено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+server: Фінік / імпорт виписок
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:100; apps/web/src/modules/finyk/components/bulkImport/bulkImportRows.ts:184-192; apps/server/src/modules/finyk/import/statementPreview.ts:89-102
 - **Першопричина:** ColumnMapper дає обрати лише одну «Колонку суми (витрати)», а ImportColumnMappingSchema не має поля знаку чи напряму. statementPreview.ts читає значення як суму зі знаком (signed &lt; 0 → expense). Тому додатна колонка Дебет стає доходом, а порожні клітинки відкидаються як unparsed_amount. У таблиці перевірки напрям рядка не редагується.

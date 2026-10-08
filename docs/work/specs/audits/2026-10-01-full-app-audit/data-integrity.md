@@ -2048,7 +2048,7 @@ migrations/133_plata_subscription.sql: `user_id TEXT PRIMARY KEY … subscriptio
 
 ### `data-22` [medium] Кілька однакових tool_calls в одному ході чату гублять записи: зі списку покупок, води, страв і боргів зберігається лише один
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-22-chat-batch-serial
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (hubChatActions, nutritionActions, finykActions)
 - **Де:** apps/web/src/core/lib/hubChatActions.ts:185-227; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:350-370; apps/web/src/core/lib/chatActions/nutritionActions.ts:71,110-113,195-233; apps/web/src/core/lib/chatActions/finykActions/debts.ts:25,54; apps/web/src/core/lib/chatActions/finykActions/budgets.ts:36,70,154,194
 - **Першопричина:** executeActions запускає всі синхронні dispatch батча в одному тіку до першого await, а nutrition-кеш оновлюється лише після асинхронного apply, тож виклик N+1 читає знімок без виклику N і перезаписує цілий blob (список, денна вода). Id з голого Date.now() (m_, d_, b_) колізять у межах мілісекунди; AI-CONTEXT приймає гонку на застарілому припущенні про синхронний localStorage.
@@ -2660,7 +2660,7 @@ dedupMono.ts:70-83: `WHERE EXISTS (SELECT 1 FROM mono_transaction t WHERE t.user
 
 ### `data-31` [medium] Парсинг сум в імпорті виписок множить чи ділить суми в 10-1000 разів: XLSX з ручним мапінгом, пересохранений у Excel mono-CSV, неоднозначні «1,234»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-06-data-31-statement-import (визначення роздільника по колонці й відхилення неоднозначного «1,234» лишились на окрему хвилю)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (csvParser, csvProfiles, statementPreview) + web: ColumnMapper
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:41,159; apps/server/src/modules/finyk/import/statementPreview.ts:228-266; apps/server/src/modules/finyk/import/csvProfiles.ts:152,187-188; apps/server/src/modules/finyk/import/csvParser.ts:13-34
 - **Першопричина:** Десятковий роздільник задається жорсткою підказкою, а не визначається по колонці: ColumnMapper за замовчуванням шле decimalComma=true і для типізованих XLSX-клітинок (custom-шлях не застосовує withAutodetectedFormats), профіль mono жорстко ставить decimalComma:false, а автодетект читає «1,234» як 1,23 ₴ і приймає hex та експоненту без skip.
