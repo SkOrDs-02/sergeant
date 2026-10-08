@@ -64,6 +64,109 @@ describe("applyRoutineEntries", () => {
     expect(fake.queries).toHaveLength(0);
   });
 
+  // Аудит 2026-10-01 (rel-06): без text bound `id`/`name` довільної довжини
+  // потрапляли в `routine_entries` зі статусом applied. `name` - денормалізована
+  // копія назви звички, тож замість reject (термінального в outbox і такого, що
+  // назавжди губить відмітку) вона обрізається до NAME_MAX_LEN.
+  it("clamps an oversized name to the bound instead of rejecting the check-in", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyRoutineEntries(
+        asClient(fake),
+        op(
+          { id: "entry-1", user_id: "user-1", name: "a".repeat(250) },
+          "insert",
+        ),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    const insert = lastQuery(fake);
+    expect(insert.sql).toContain("INSERT INTO routine_entries");
+    expect(insert.params[2]).toBe("a".repeat(200));
+  });
+
+  it("clamps a 200 000-char name on update too", async () => {
+    const fake = new FakeClient();
+    fake.queueRows([
+      {
+        user_id: "user-1",
+        updated_at: new Date("2026-07-21T07:00:00.000Z"),
+        deleted_at: null,
+      },
+    ]);
+
+    await expect(
+      applyRoutineEntries(
+        asClient(fake),
+        op(
+          { id: "entry-1", user_id: "user-1", name: "a".repeat(200_000) },
+          "update",
+        ),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    const update = lastQuery(fake);
+    expect(update.sql).toContain("UPDATE routine_entries");
+    expect((update.params[0] as string).length).toBe(200);
+  });
+
+  it("does not split a surrogate pair when clamping the name", async () => {
+    const fake = new FakeClient();
+    // 199 ASCII + емодзі (2 code unit-и): зріз на 200 розірвав би пару.
+    const name = "a".repeat(199) + "😀" + "tail";
+
+    await expect(
+      applyRoutineEntries(
+        asClient(fake),
+        op({ id: "entry-1", user_id: "user-1", name }, "insert"),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    expect(lastQuery(fake).params[2]).toBe("a".repeat(199));
+  });
+
+  it("rejects an oversized id with text_too_long for insert and delete", async () => {
+    for (const kind of ["insert", "delete"] as const) {
+      const fake = new FakeClient();
+      await expect(
+        applyRoutineEntries(
+          asClient(fake),
+          op(
+            { id: "h".repeat(100_000), user_id: "user-1", name: "water" },
+            kind,
+          ),
+          "user-1",
+          new Date("2026-07-21T08:00:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "text_too_long" });
+      expect(fake.queries).toHaveLength(0);
+    }
+  });
+
+  it("keeps id and name exactly at the bound untouched", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyRoutineEntries(
+        asClient(fake),
+        op(
+          {
+            id: "h".repeat(200),
+            user_id: "user-1",
+            name: "n".repeat(200),
+          },
+          "insert",
+        ),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "applied" });
+  });
+
   it("inserts a new entry with server-side user id and parsed dates", async () => {
     const fake = new FakeClient();
     const clientTs = new Date("2026-07-21T08:00:00.000Z");

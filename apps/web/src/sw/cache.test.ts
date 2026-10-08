@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  canUseCachePartition,
+  selectCachesToClear,
   shouldCacheExerciseImage,
   shouldUseRuntimeCache,
   VOLATILE_API_PREFIXES,
@@ -67,6 +69,77 @@ describe("apps/web sw runtime cache predicate", () => {
       "/api/v2/sync/",
       "/api/coach",
       "/api/weekly-digest",
+      "/api/v1/sync/",
+      "/api/v1/coach",
+      "/api/v1/weekly-digest",
+    ]);
+  });
+
+  // priv-08: `@sergeant/api-client` переписує `/api/*` у `/api/v1/*` до fetch
+  // (DEFAULT_API_PREFIX), тож SW бачить саме v1-шляхи. Без v1-префіксів
+  // coach/digest/sync-запити йшли в NetworkFirst-кеш.
+  it("excludes the /api/v1/* mirrors of the volatile prefixes (priv-08)", () => {
+    expect(shouldCache("/api/v1/coach/memory", "GET")).toBe(false);
+    expect(shouldCache("/api/v1/coach/insight", "GET")).toBe(false);
+    expect(shouldCache("/api/v1/weekly-digest", "GET")).toBe(false);
+    expect(shouldCache("/api/v1/sync/pull", "GET")).toBe(false);
+  });
+
+  it("does NOT widen the policy: /me and /ai-memory stay cacheable (owner decision)", () => {
+    expect(shouldCache("/api/v1/me", "GET")).toBe(true);
+    expect(shouldCache("/api/v1/ai-memory/list", "GET")).toBe(true);
+    expect(shouldCache("/api/v1/finyk/transactions", "GET")).toBe(true);
+  });
+});
+
+describe("canUseCachePartition (priv-08)", () => {
+  const HASH = "0123456789abcdef0123456789abcdef";
+
+  it("не кешує /api/* під партицією anon (ключ користувача невідомий)", () => {
+    expect(canUseCachePartition("/api/v1/me", "anon")).toBe(false);
+    expect(canUseCachePartition("/api/v1/me", "")).toBe(false);
+    expect(canUseCachePartition("/api/v1/me", null)).toBe(false);
+    expect(canUseCachePartition("/api/v1/me", undefined)).toBe(false);
+  });
+
+  it("кешує /api/* під ключем конкретного користувача", () => {
+    expect(canUseCachePartition("/api/v1/me", HASH)).toBe(true);
+  });
+
+  it("навігації (не /api) лишаються доступні й під anon", () => {
+    expect(canUseCachePartition("/welcome", "anon")).toBe(true);
+    expect(canUseCachePartition("/", null)).toBe(true);
+  });
+});
+
+describe("selectCachesToClear (rel-12)", () => {
+  const names = [
+    "workbox-precache-v2-https://example.test/",
+    "navigations-v1",
+    "api-cache-v1",
+    "exercise-images-v1",
+    "google-fonts-css",
+    "google-fonts-woff",
+    "sw-meta",
+    "foreign-cache",
+  ];
+
+  it('"user" не чіпає precache, ілюстрації вправ і шрифти', () => {
+    const toDelete = selectCachesToClear(names, "user");
+    expect(toDelete).toEqual(["navigations-v1", "api-cache-v1", "sw-meta"]);
+    expect(toDelete.some((n) => n.startsWith("workbox-precache"))).toBe(false);
+    expect(toDelete.some((n) => n.startsWith("exercise-images-v"))).toBe(false);
+  });
+
+  it('"all" дає повний набір кешів SW і не чіпає чужі', () => {
+    expect(selectCachesToClear(names, "all")).toEqual([
+      "workbox-precache-v2-https://example.test/",
+      "navigations-v1",
+      "api-cache-v1",
+      "exercise-images-v1",
+      "google-fonts-css",
+      "google-fonts-woff",
+      "sw-meta",
     ]);
   });
 });

@@ -39,6 +39,7 @@ vi.mock("../../obs/metrics.js", () => ({
 
 import {
   hasUnstorableText,
+  clampTextToBound,
   isWithinTextBound,
   NAME_MAX_LEN,
   NOTE_MAX_LEN,
@@ -375,5 +376,18 @@ describe("parseOptionalTzOffsetMin (CodeRabbit PR #627)", () => {
   it("rejects an implausibly large value (curl bypassing the client ceiling)", () => {
     expect(parseOptionalTzOffsetMin(999_999)).toBe("invalid");
     expect(parseOptionalTzOffsetMin(Number.MAX_SAFE_INTEGER)).toBe("invalid");
+  });
+});
+
+describe("clampTextToBound", () => {
+  it("returns short text as is and cuts long text to the bound", () => {
+    expect(clampTextToBound("abc")).toBe("abc");
+    expect(clampTextToBound("a".repeat(300))).toBe("a".repeat(200));
+    expect(clampTextToBound("abcdef", 3)).toBe("abc");
+  });
+
+  it("drops a high surrogate left dangling at the cut", () => {
+    expect(clampTextToBound("ab😀cd", 3)).toBe("ab");
+    expect(clampTextToBound("a😀cd", 3)).toBe("a😀");
   });
 });

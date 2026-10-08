@@ -3,7 +3,8 @@
  * Status: Active
  *
  * Побудова `sync_op_log`-опів для рядків, які створює/тонить імпорт
- * (`commit.ts`, `batches.ts` undo). Сам запис — `modules/sync/serverOpLog.ts`;
+ * (`commit.ts`, `batches.ts` undo) і для рядків, які сервер створює
+ * сам (`manualExpenses.ts`, `receipts/save.ts`). Сам запис — `modules/sync/serverOpLog.ts`;
  * тут лише форма опа й ключі ідемпотентності, спільні для обох шляхів.
  *
  * **Форма `row`.** Клієнтський `applyPullOp` для blob-таблиць мапить
@@ -37,6 +38,16 @@ export function importDeleteOpKey(batchId: number, rowId: string): string {
   return `srvimpdel:${batchId}:${shortRowKey(rowId)}`;
 }
 
+/**
+ * Ключ insert-опа для рядка, який сервер створив поза імпортом (чат
+ * `create_transaction` / `POST /manual-expenses`, фолбек-витрата скану
+ * чека). `id` — UUID (36 символів), тож `srv:fme:<uuid>` = 44 ≤ 64.
+ * Рядок створюється рівно раз, тож батч у ключі не потрібен.
+ */
+export function serverManualExpenseOpKey(rowId: string): string {
+  return `srv:fme:${rowId}`;
+}
+
 export interface ManualExpenseOpRow {
   id: string;
   dataJson: unknown;
@@ -45,17 +56,18 @@ export interface ManualExpenseOpRow {
 }
 
 /**
- * Оп «рядок існує ось у такому вигляді». `clientTs` — `updated_at`
+ * Оп «рядок існує ось у такому вигляді» з ключем ідемпотентності, що
+ * передається ззовні (імпорт, `manualExpenses.ts`, чек). `clientTs` — `updated_at`
  * САМОГО рядка (не час запиту): так серверна репліка не перекриє
  * свіжішу локальну правку, а LWW на клієнті лишається чесним.
  */
-export function buildManualExpenseInsertOp(
-  batchId: number,
+export function buildManualExpenseInsertOpWithKey(
+  idempotencyKey: string,
   userId: string,
   row: ManualExpenseOpRow,
 ): ServerSyncOp {
   return {
-    idempotencyKey: importInsertOpKey(batchId, row.id),
+    idempotencyKey,
     op: "insert",
     row: {
       id: row.id,
@@ -67,6 +79,19 @@ export function buildManualExpenseInsertOp(
     },
     clientTs: row.updatedAt,
   };
+}
+
+/** Insert-оп рядка, створеного імпортом: ключ несе `batchId`. */
+export function buildManualExpenseInsertOp(
+  batchId: number,
+  userId: string,
+  row: ManualExpenseOpRow,
+): ServerSyncOp {
+  return buildManualExpenseInsertOpWithKey(
+    importInsertOpKey(batchId, row.id),
+    userId,
+    row,
+  );
 }
 
 /**

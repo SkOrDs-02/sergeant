@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
+  onSwControllerChange,
   swClearCaches,
   swGetDebugSnapshot,
   swSetActiveUser,
@@ -76,6 +77,9 @@ describe("swControl", () => {
     expect(msg.type).toBe("CLEAR_SW_CACHES");
     expect(msg.data?.requestId).toMatch(/^sw_clear_/);
 
+    // rel-12: без явного аргументу скоуп "user" (precache не чіпаємо).
+    expect(msg.data?.scope).toBe("user");
+
     const result = { ok: true, deleted: ["api-cache-vx"] };
     sw.dispatchEvent(
       new MessageEvent("message", {
@@ -88,6 +92,33 @@ describe("swControl", () => {
     );
 
     await expect(p).resolves.toEqual(result);
+  });
+
+  it('swClearCaches("all") передає скоуп у повідомленні', async () => {
+    const { controller } = installServiceWorkerMock();
+
+    void swClearCaches("all").catch(() => {});
+    await vi.waitFor(() =>
+      expect(controller.postMessage).toHaveBeenCalledTimes(1),
+    );
+    expect(controller.postMessage.mock.calls[0]![0].data?.scope).toBe("all");
+  });
+
+  it("onSwControllerChange викликає handler на controllerchange і відписується", () => {
+    const { sw } = installServiceWorkerMock();
+    const handler = vi.fn();
+
+    const off = onSwControllerChange(handler);
+    sw.dispatchEvent(new Event("controllerchange"));
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    off();
+    sw.dispatchEvent(new Event("controllerchange"));
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("onSwControllerChange без serviceWorker — no-op", () => {
+    expect(() => onSwControllerChange(vi.fn())()).not.toThrow();
   });
 
   it("swSetActiveUser resolves immediately but still posts once a slow SW activates", async () => {

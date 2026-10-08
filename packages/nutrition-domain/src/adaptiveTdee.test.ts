@@ -87,6 +87,72 @@ describe("measuredTdee", () => {
   });
 });
 
+/** 14 щоденних замірів (вікно хука: end = вчора, start = end - 13). */
+const dailyWeights = (weightAt: (dayIndex: number) => number): WeightPoint[] =>
+  Array.from({ length: 14 }, (_, index) => ({
+    dateKey: `2026-05-${String(index + 1).padStart(2, "0")}`,
+    weightKg: weightAt(index),
+  }));
+
+/**
+ * logic-05: раніше `startKg` був СИРИМ першим заміром, а `endKg` — EMA з
+ * лагом, тож `deltaKg` на 14-денному вікні виходила вдвічі заниженою.
+ * Регресійні кейси нижче без фіксу дають TDEE ≈2358 і ≈2343 відповідно.
+ */
+describe("measuredTdee: тренд ваги без асиметрії старт/кінець (logic-05)", () => {
+  it("лінійна втрата 0,1 кг/день без шуму: TDEE = споживання + 0,1 × 7700", () => {
+    const result = measuredTdee(
+      intake(14, 2000),
+      dailyWeights((i) => 80 - 0.1 * i),
+    );
+    expect(result).not.toBeNull();
+    expect(result!.weightDeltaKg).toBeCloseTo(-1.3, 6);
+    expect(result!.days).toBe(13);
+    // 2000 + 1.3 × 7700 / 13 = 2770
+    expect(Math.abs(result!.tdeeKcal - 2770)).toBeLessThanOrEqual(20);
+  });
+
+  it("лінійний набір 0,05 кг/день: TDEE = споживання - 0,05 × 7700", () => {
+    const result = measuredTdee(
+      intake(14, 2500),
+      dailyWeights((i) => 80 + 0.05 * i),
+    );
+    expect(result).not.toBeNull();
+    // 2500 - 0.65 × 7700 / 13 = 2115
+    expect(Math.abs(result!.tdeeKcal - 2115)).toBeLessThanOrEqual(20);
+  });
+
+  it("стабільна вага з «водяним» першим заміром +0,8 кг: TDEE близько до споживання", () => {
+    const result = measuredTdee(
+      intake(14, 2000),
+      dailyWeights((i) => (i === 0 ? 80.8 : 80)),
+    );
+    expect(result).not.toBeNull();
+    // Регресія розмазує один викид по нахилу (≈ +176); без фіксу було ≈ +343.
+    expect(Math.abs(result!.tdeeKcal - 2000)).toBeLessThanOrEqual(200);
+  });
+
+  it("startKg/endKg лежать на лінії тренду й узгоджені з deltaKg", () => {
+    const trend = weightTrendEma(dailyWeights((i) => 80 - 0.1 * i));
+    expect(trend).not.toBeNull();
+    expect(trend!.startKg).toBeCloseTo(80, 6);
+    expect(trend!.endKg).toBeCloseTo(78.7, 6);
+    expect(trend!.endKg - trend!.startKg).toBeCloseTo(trend!.deltaKg, 9);
+    expect(trend!.spanDays).toBe(13);
+  });
+
+  it("нерівномірні заміри й порядок входу не міняють тренд", () => {
+    const sparse: WeightPoint[] = [
+      { dateKey: "2026-05-14", weightKg: 78.7 },
+      { dateKey: "2026-05-01", weightKg: 80 },
+      { dateKey: "2026-05-05", weightKg: 79.6 },
+      { dateKey: "2026-05-10", weightKg: 79.1 },
+    ];
+    const trend = weightTrendEma(sparse);
+    expect(trend!.deltaKg).toBeCloseTo(-1.3, 6);
+  });
+});
+
 describe("weightTrendEma", () => {
   it("dampens a one-day 1.5 kg water jump", () => {
     const stable = weightTrendEma([

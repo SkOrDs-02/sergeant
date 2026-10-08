@@ -1,9 +1,9 @@
 # Service Worker (apps/web)
 
-> **Last touched:** 2026-09-29 by @claude (сторож білого екрана `public/boot-watchdog.js`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-05 by @claude (hard-floor реагує на зміну server build id, SOURCE_COMMIT у каскаді). **Next review:** 2026-12-16.
 > **Status:** Active
 
-Внутрішня документація стратегії оновлення Service Worker-а у `apps/web`. Базовий entry-point — [`apps/web/src/sw.ts`](../../../apps/web/src/sw.ts) (через `vite-plugin-pwa`). Build-id інжектиться у клієнт через `import.meta.env.VITE_BUILD_ID` (Vite `define`-pattern), а на сервері — через cascade `SENTRY_RELEASE → GIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID` ([`apps/server/src/http/buildIdHeader.ts`](../../../apps/server/src/http/buildIdHeader.ts); `GIT_SHA` запікає `Dockerfile.api` для Coolify/ghcr — `RAILWAY_GIT_COMMIT_SHA` знято разом із Railway, ADR-0074).
+Внутрішня документація стратегії оновлення Service Worker-а у `apps/web`. Базовий entry-point — [`apps/web/src/sw.ts`](../../../apps/web/src/sw.ts) (через `vite-plugin-pwa`). Build-id інжектиться у клієнт через `import.meta.env.VITE_BUILD_ID` (Vite `define`-pattern), а на сервері — через cascade `SENTRY_RELEASE → GIT_SHA → SOURCE_COMMIT → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID` ([`apps/server/src/http/buildIdHeader.ts`](../../../apps/server/src/http/buildIdHeader.ts); `GIT_SHA` запікає `Dockerfile.api` (`${GIT_SHA:-${SOURCE_COMMIT}}`), `SOURCE_COMMIT` дає Coolify, що збирає образ з репо, ADR-0102 — `RAILWAY_GIT_COMMIT_SHA` знято разом із Railway, ADR-0074).
 
 ## Update strategy: prompt + idle-auto + hard-floor
 
@@ -48,7 +48,7 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 
 Логіка:
 
-1. Перша сесія `serverBuildId !== clientBuildId` (`import.meta.env.VITE_BUILD_ID`) запускає grace-timer на **1 годину**. **Обидві сторони спершу зводяться до git-short-SHA (7 символів)** — сервер ріже своє значення, а клієнтський `VITE_BUILD_ID` — це повний 40-символьний `VERCEL_GIT_COMMIT_SHA`. Без нормалізації рівність недосяжна навіть для одного коміту, і hard-floor піднімав плашку в кожній сесії через годину (виправлено 2026-08-05).
+1. Перше побачене в сесії `serverBuildId` — лише базова лінія. Grace-timer на **1 годину** запускає **зміна** server build id під час сесії (API перевикотили під живою вкладкою), якщо нове значення `!== clientBuildId` (`import.meta.env.VITE_BUILD_ID`). Сама нерівність без зміни — НЕ тригер: веб (Vercel) і API (Coolify) деплояться незалежно і кожен пропускає збірку, якщо його шляхи не зачеплено, тож коміт лише в `apps/server` лишає веб на A, а API на B назавжди; наївне порівняння давало б плашку в кожній сесії довшій за годину (перезавантаження її не прибирало б). Наслідок: після деплою лише API відкрита вкладка може один раз показати плашку «нова версія» (перезавантаження безпечне, нова сесія стартує з новою базовою лінією). **Обидві сторони спершу зводяться до git-short-SHA (7 символів)** — сервер ріже своє значення, а клієнтський `VITE_BUILD_ID` — це повний 40-символьний `VERCEL_GIT_COMMIT_SHA`. Без нормалізації рівність недосяжна навіть для одного коміту, і hard-floor піднімав плашку в кожній сесії через годину (виправлено 2026-08-05).
 2. Якщо за годину mismatch зберігається — controller dispatch-ить `pwa-update-ready` (як manual toast). User бачить prompt незалежно від idle-state-у.
 3. Якщо server наздогнав client раніше (rollback, multi-instance race) — timer скасовується, mismatch-state очищується. Майбутні divergence пере-запускають timer.
 
@@ -58,7 +58,7 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 
 [`apps/server/src/http/buildIdHeader.ts`](../../../apps/server/src/http/buildIdHeader.ts) реалізує middleware, що стампить заголовок на КОЖНУ відповідь:
 
-- Cascade SENTRY_RELEASE → GIT_SHA (Coolify/ghcr build-arg) → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID (resolve-стратегія консистентна з [`resolveSentryRelease`](../../../apps/server/src/sentry.ts)).
+- Cascade SENTRY_RELEASE → GIT_SHA (build-arg або `SOURCE_COMMIT` через `Dockerfile.api`) → SOURCE_COMMIT (Coolify, ADR-0102) → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID (resolve-стратегія консистентна з [`resolveSentryRelease`](../../../apps/server/src/sentry.ts)).
 - Значення обрізається до 7 char (`git rev-parse --short HEAD`-стандарт).
 - Якщо cascade повертає `null` (локальний dev без жодного SHA) — header не виставляється, клієнт трактує відсутність як «unknown server build» і НЕ форсить prompt.
 - [`apps/server/src/http/apiCors.ts`](../../../apps/server/src/http/apiCors.ts) виставляє `X-Server-Build-Id` у `Access-Control-Expose-Headers`, інакше cross-origin Vercel → Coolify backend не побачив би заголовок.
@@ -76,7 +76,7 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 ## Тести
 
 - [`apps/web/src/core/lib/bootWatchdog.test.ts`](../../../apps/web/src/core/lib/bootWatchdog.test.ts): reload при порожньому `#root`, тиша при змонтованому, cooldown і відмова без `sessionStorage`.
-- [`apps/web/src/core/app/autoUpdate.test.ts`](../../../apps/web/src/core/app/autoUpdate.test.ts) — JSDOM + fake timers: periodic polling, saveData skip, idle-skipWaiting, no-waiting-SW guard, build-id mismatch force-prompt + reset on catch-up, short-sha ↔ full-sha нормалізація, ignores empty observations.
+- [`apps/web/src/core/app/autoUpdate.test.ts`](../../../apps/web/src/core/app/autoUpdate.test.ts) — JSDOM + fake timers: periodic polling, saveData skip, idle-skipWaiting, no-waiting-SW guard, build-id force-prompt лише після зміни server id у сесії (стабільний `API на B, веб на A` не промптить) + reset on catch-up, short-sha ↔ full-sha нормалізація, ignores empty observations.
 - [`apps/web/src/core/app/useSWUpdate.test.ts`](../../../apps/web/src/core/app/useSWUpdate.test.ts) — defer-while-busy + поведінка `applyUpdate`: без waiting-воркера кнопка робить прямий reload, з waiting-воркером reload лишається за `vite-plugin-pwa`.
 - [`apps/server/src/http/buildIdHeader.test.ts`](../../../apps/server/src/http/buildIdHeader.test.ts) — cascade priority, 7-char truncation, missing-env behavior.
 

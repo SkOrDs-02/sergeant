@@ -176,6 +176,23 @@ describe("manualExpenses.integration — real Postgres", () => {
     // The blob stores amount in hryvnyas (LS-parrity), not kopiykas
     const blob = dbResult.rows[0]!.data_json as { amount: number };
     expect(blob.amount).toBe(120);
+
+    // data-16: рядок має серверний applied-оп у sync_op_log, інакше pull
+    // з іншого пристрою його не побачить (pull читає лише журнал).
+    const expenseId = body.expense["id"] as string;
+    const opResult = await testPool.query(
+      `SELECT op, status, origin_device_id, row->>'id' AS row_id
+         FROM sync_op_log
+        WHERE user_id = $1 AND table_name = 'finyk_manual_expenses'`,
+      [USER_A],
+    );
+    expect(opResult.rows).toHaveLength(1);
+    expect(opResult.rows[0]).toMatchObject({
+      op: "insert",
+      status: "applied",
+      origin_device_id: null,
+      row_id: expenseId,
+    });
   });
 
   /**

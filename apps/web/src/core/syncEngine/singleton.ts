@@ -33,6 +33,7 @@ import {
   type SyncEngineReaderRuntime,
 } from "./syncEngineReader";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
+import { observeSyncSession } from "./syncSessionSignal";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
 type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
@@ -500,10 +501,11 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   // shared-device session-swap from pushing user A's queued ops under
   // user B's session cookie). When no user is signed in we return an
   // empty drain — the next tick will try again.
-  const resolveUserId = async (): Promise<string | null> => {
-    const session = await getSession();
-    return session.data?.user?.id ?? null;
-  };
+  //
+  // `sec-18`: той самий виклик ще й запамʼятовує «сесії немає» для UI
+  // (`syncSessionSignal.ts`), бо інакше порожній drain нічого не каже людині.
+  const resolveUserId = async (): Promise<string | null> =>
+    observeSyncSession(await getSession());
 
   // Stable per-install device id. Without this, every push lands on
   // the server with `origin_device_id = NULL`, and the pull/SSE filter
