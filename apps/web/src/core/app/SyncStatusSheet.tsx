@@ -28,6 +28,7 @@ import {
 import { probeOpfsInWorker } from "../db/opfsProbe";
 import type { OpfsProbeResult } from "../db/opfsProbe.worker";
 import { formatDayMonth } from "@shared/lib/time/formatDate";
+import { SIGN_IN_PATH } from "./appPaths";
 
 type RowTone = "ok" | "warn" | "err";
 
@@ -62,7 +63,35 @@ const COPY = {
   retry: "Повторити синхронізацію",
   purgeNoticeTitle: "Старі записи прибрано",
   purgeNoticeDismiss: "Зрозуміло",
+  sessionExpiredTitle: "Сесія завершилась",
+  sessionExpiredCta: "Увійти",
 } as const;
+
+/**
+ * `sec-18`: текст постійного повідомлення «Сесія завершилась». Лічильник черги
+ * у тексті, бо саме він пояснює, чому це важливо: записи лежать на пристрої й
+ * доїдуть після входу. Без черги лишається готовий рядок `SESSION_EXPIRED`
+ * (`mapApiErrorToUserCopy`): «Увійди ще раз.»
+ */
+function sessionExpiredBody(pending: number): string {
+  if (pending <= 0) return "Увійди ще раз.";
+  const noun = pluralUa(pending, {
+    one: "запис",
+    few: "записи",
+    many: "записів",
+  });
+  return `Увійди, щоб синхронізувати ${pending} ${noun}.`;
+}
+
+/**
+ * `/sign-in?next=<поточний маршрут>`. Читається під час рендеру аркуша, тож
+ * `next` відповідає тому місцю, де людина стоїть зараз.
+ */
+function signInHref(): string {
+  if (typeof window === "undefined") return SIGN_IN_PATH;
+  const { pathname, search } = window.location;
+  return `${SIGN_IN_PATH}?next=${encodeURIComponent(`${pathname}${search}`)}`;
+}
 
 /**
  * PR-T2 (2026-09-13 product review, "Тиха втрата даних"): the boot-time
@@ -98,6 +127,8 @@ export interface SyncStatusSheetProps {
    * їх не можна повторити — лише побачити, що саме не доїхало.
    */
   rejected?: number | undefined;
+  /** `sec-18`: сесія завершилась, а вкладка ще вважає себе залогіненою. */
+  sessionExpired?: boolean | undefined;
   onRetry?: (() => Promise<void>) | undefined;
 }
 
@@ -157,6 +188,7 @@ export function SyncStatusSheet({
   pending,
   deadLetter,
   rejected = 0,
+  sessionExpired = false,
   onRetry,
 }: SyncStatusSheetProps) {
   const purgeNotice = useOutboxPurgeNotice();
@@ -198,6 +230,30 @@ export function SyncStatusSheet({
       title={COPY.title}
       description={COPY.description}
     >
+      {sessionExpired && (
+        <div
+          role="status"
+          data-testid="sync-session-expired"
+          className="mb-3 rounded-xl border border-danger/30 bg-danger/5 px-3 py-2.5"
+        >
+          <p className="text-style-label font-semibold text-danger-strong dark:text-danger">
+            {COPY.sessionExpiredTitle}
+          </p>
+          <p className="mt-1 text-style-caption text-muted">
+            {sessionExpiredBody(pending)}
+          </p>
+          <a
+            href={signInHref()}
+            className={cn(
+              "mt-2 flex w-full min-h-[44px] items-center justify-center rounded-xl font-semibold transition-colors",
+              "bg-danger/10 text-danger-strong hover:bg-danger/15",
+              "focus-ring",
+            )}
+          >
+            {COPY.sessionExpiredCta}
+          </a>
+        </div>
+      )}
       <div className="space-y-2">
         {rows.map((row) => (
           <div

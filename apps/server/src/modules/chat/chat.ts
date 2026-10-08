@@ -407,13 +407,20 @@ export default async function handler(
     phaseMs.clear();
   };
 
-  // AbortController мапить client-disconnect (Express `req.close`) на
-  // Anthropic-виклик, щоб upstream не дограв запит, на який уже ніхто не чекає
-  // (і не спалив токени). Прокидається у всі виклики anthropicMessages*.
+  // AbortController мапить client-disconnect на Anthropic-виклик, щоб upstream
+  // не дограв запит, на який уже ніхто не чекає (і не спалив токени).
+  // Прокидається у всі виклики anthropicMessages*.
+  //
+  // Слухаємо `res` 'close', а НЕ `req` 'close' (rel-17): у Node >=16
+  // IncomingMessage емітить 'close' одразу після дочитування тіла, а цей
+  // слухач реєструється після async-мідлвар (requireSession, requireAiQuota),
+  // тож на `req` подія вже минула і сигнал був мертвий. `res` 'close' приходить
+  // і після штатного завершення (тоді `writableFinished === true` — не abort),
+  // і при обриві сокета до завершення відповіді (тоді `false` — abort).
   const clientAbort = new AbortController();
-  if (typeof req.on === "function") {
-    req.on("close", () => {
-      if (!res.writableEnded) clientAbort.abort();
+  if (typeof res.on === "function") {
+    res.on("close", () => {
+      if (!res.writableFinished) clientAbort.abort();
     });
   }
 

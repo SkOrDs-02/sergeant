@@ -587,7 +587,7 @@ verify-.../mask.mts (node --import tsx): одне повідомлення 8000 
 
 ### `rel-08` [medium] Клієнт синку пушить на кожну зміну без коалесингу, push і pull ділять бакет 60/хв, а 429 палить спроби
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-08-sync-push-coalesce (лишилось: розвести серверні бакети push/pull (політика rate-limit), автовідновлення dead_letter (ручний тріаж за дизайном `syncOpRetry.ts`); pull після push лишено, бо доставляє зміни інших пристроїв, а з debounce він і так зріджується)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: sync engine / api-client push loop
 - **Де:** apps/web/src/core/syncEngine/syncEngineWriter.ts:200-202; apps/web/src/core/syncEngine/outboxNudge.ts:43-55; apps/web/src/core/syncEngine/singleton.ts:689-697; packages/api-client/src/endpoints/syncV2.pushLoop.ts:399-406,471-500; packages/db-schema/src/sqlite/syncOpRetry.ts:40-53; apps/server/src/routes/sync.ts:81-84
 - **Першопричина:** notifyEnqueued одразу викликає flushNow без debounce, а кожен успішний push тягне за собою pull. /push, /pull і /stream стоять під одним per-user бакетом api:v2:sync 60/хв. Push-цикл не читає Retry-After і рахує 429/503 як спробу для кожного рядка батча. Після 10 спроб рядок іде в dead_letter, звідки його повертає лише кнопка.
@@ -664,7 +664,7 @@ syncOpRetry.ts:16-24 («a human triage path … decides»); singleton.ts:689-697
 
 ### `rel-09` [medium] Будь-яка правка активного тренування перезаливає на сервер усю історію тренувань
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-09-fizruk-workouts-diff
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук dual-write
 - **Де:** apps/web/src/modules/fizruk/lib/fizrukDualWriteState.ts:301-321; apps/web/src/modules/fizruk/lib/sqliteWriter/diff/workouts.ts:85-97; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:257-321
 - **Першопричина:** toWorkoutSnapshot щоразу створює нові масиви items і groups, а workoutChanged порівнює prev.items !== next.items за посиланням. Тож diff вважає зміненим кожне тренування і ставить у outbox workout, усі його items і всі sets з історії.
@@ -753,7 +753,7 @@ vb/02-pantry-bulk.mjs, новий користувач, 25 додавань за
 
 ### `rel-11` [medium] Один pulled-оп, що кидає виняток при apply, назавжди зупиняє отримання змін на пристрої
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-11-pull-apply-poison
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: sync engine reader
 - **Де:** apps/web/src/core/syncEngine/syncEngineReader.ts:436-459,477-490; apps/web/src/core/syncEngine/applyPullOp.ts:211-229,360-365
 - **Першопричина:** pullOnce викликає applyPullOp у циклі сторінки без per-op try/catch, а курсор пише лише після успіху всієї сторінки. Виняток SQLite (CHECK, NOT NULL, I/O) обриває тік, і наступний тік бере ту саму сторінку. Неідемпотентні оп-и перед отруйним, як increment стріка, застосовуються повторно на кожному тіку.
@@ -1106,7 +1106,7 @@ grep -rn 'PLAN_TEMPLATE_STORAGE_KEY|hub_goals' apps packages (excluding dist): o
 
 ### `rel-17` [medium] Розрив з'єднання не скасовує upstream-виклики LLM і Groq: req.on('close') реєструється запізно
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-17-18-llm-abort-input-limits
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat / transcribe
 - **Де:** apps/server/src/modules/chat/chat.ts:205-206,409-417; apps/server/src/modules/chat/chatStream.ts:436-445; apps/server/src/modules/transcribe/transcribe.ts:146-150
 - **Першопричина:** Слухач req.on('close') додається в хендлері після async middleware (requireSession, requireAiQuota). У Node 22 IncomingMessage емітить 'close' одразу після того, як тіло дочитано, тож на момент реєстрації подія вже минула і clientAbort ніколи не спрацьовує.
@@ -1151,7 +1151,7 @@ verify-server-static-ai-layer/reqclose-v2.mjs, варіант prod-shape: handle
 
 ### `rel-18` [medium] Розмір входу в LLM фактично не обмежений: tool_calls_raw і кореляції коуча обходять ліміт context
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-17-18-llm-abort-input-limits
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat / coach
 - **Де:** packages/shared/src/schemas/api.ts:460,491,505,554,1131-1145; apps/server/src/http/bodySizePolicy.ts:171-181; apps/server/src/modules/chat/chat.ts:617-626,734-742; apps/server/src/modules/chat/coach.ts:127,304-325
 - **Першопричина:** ToolUseBlockSchema.input і ToolSearchToolResultBlockSchema.content мають тип z.unknown() без ліміту. chat.ts кладе tool_calls_raw як є в повідомлення синтезу, повз context.max(40000) і повз обрізання tool_results. CoachMemoryPostSchema приймає кореляції без меж (блоб до 5 МБ), а getCoachCorrelationsBlock без обрізання дописує їх у system кожного першого туру.

@@ -75,9 +75,31 @@ export interface SyncEngineWriterDeps {
   ) => SyncEngineFlushOnReconnect;
   readonly intervalMs: number;
   readonly limit: number;
+  /**
+   * Trailing-debounce для `notifyEnqueued` (мс тиші після останнього
+   * enqueue, перш ніж іде push). Дефолт {@link DEFAULT_ENQUEUE_DEBOUNCE_MS}.
+   */
+  readonly enqueueDebounceMs?: number;
+  /**
+   * Стеля очікування для `notifyEnqueued` (мс від першого enqueue серії):
+   * безперервне введення не відкладає push довше. Дефолт
+   * {@link DEFAULT_ENQUEUE_MAX_WAIT_MS}.
+   */
+  readonly enqueueMaxWaitMs?: number;
   readonly originDeviceId?: string;
   readonly onTickComplete?: (result: SyncEnginePushResult) => void;
 }
+
+/**
+ * rel-08: кожне натискання в полі підходу ставило рядок в outbox і одразу
+ * запускало push (+ pull після нього) — 24 натискання за 7 с вичерпували
+ * бакет `api:v2:sync` 60/хв для ВСІХ модулів. Тому `notifyEnqueued`
+ * коалесує: push іде через 1,5 с тиші, але не пізніше ніж за 5 с від
+ * першого enqueue серії. Явні `flushNow` / `recoverAllDeadLetters`
+ * (вихід з акаунта, кнопка) лишаються негайними.
+ */
+export const DEFAULT_ENQUEUE_DEBOUNCE_MS = 1_500;
+export const DEFAULT_ENQUEUE_MAX_WAIT_MS = 5_000;
 
 export function createSyncEngineWriterRuntime(
   deps: SyncEngineWriterDeps,
@@ -85,6 +107,10 @@ export function createSyncEngineWriterRuntime(
   let scheduler: SyncEnginePushScheduler | null = null;
   let reconnect: SyncEngineFlushOnReconnect | null = null;
   let started = false;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let maxWaitTimer: ReturnType<typeof setTimeout> | null = null;
+  const debounceMs = deps.enqueueDebounceMs ?? DEFAULT_ENQUEUE_DEBOUNCE_MS;
+  const maxWaitMs = deps.enqueueMaxWaitMs ?? DEFAULT_ENQUEUE_MAX_WAIT_MS;
 
   const addBreadcrumb = deps.addBreadcrumb;
   const captureException = deps.captureException;
@@ -180,6 +206,18 @@ export function createSyncEngineWriterRuntime(
       });
   };
 
+  const clearEnqueueTimers = (): void => {
+    if (debounceTimer !== null) clearTimeout(debounceTimer);
+    if (maxWaitTimer !== null) clearTimeout(maxWaitTimer);
+    debounceTimer = null;
+    maxWaitTimer = null;
+  };
+
+  const fireEnqueueFlush = (): void => {
+    clearEnqueueTimers();
+    flushAndReport("sync-v2-push-on-enqueue");
+  };
+
   return {
     start(): void {
       if (started) return;
@@ -190,6 +228,7 @@ export function createSyncEngineWriterRuntime(
     stop(): void {
       if (!started) return;
       started = false;
+      clearEnqueueTimers();
       scheduler?.stop();
       reconnect?.dispose();
       reconnect = null;
@@ -198,7 +237,13 @@ export function createSyncEngineWriterRuntime(
       return ensureScheduler().flushNow();
     },
     notifyEnqueued(): void {
-      flushAndReport("sync-v2-push-on-enqueue");
+      // Trailing debounce + стеля: кожен виклик зсуває таймер тиші, а
+      // таймер стелі стартує лише з першого виклику серії.
+      if (debounceTimer !== null) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(fireEnqueueFlush, debounceMs);
+      if (maxWaitTimer === null) {
+        maxWaitTimer = setTimeout(fireEnqueueFlush, maxWaitMs);
+      }
     },
     getStatus(): Promise<SyncOpOutboxStatusCounts> {
       return deps.getStatus();

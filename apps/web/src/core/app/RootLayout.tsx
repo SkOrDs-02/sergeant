@@ -312,6 +312,11 @@ export function RootLayout() {
  */
 function RootLayoutInner() {
   const location = useLocation();
+  // Гарячі клавіші вимкнені, поки App Lock не в `idle` (checking / locked /
+  // setup / change): дерево під замком змонтоване, тож Ctrl+K тощо
+  // відкривали б пошук і діалоги з даними поверх екрана PIN (sec-13).
+  const appLock = useAppLockContext();
+  const shortcutsDisabled = appLock.state !== "idle";
   const browserLocation = useBrowserLocation(location);
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(browserLocation.search);
@@ -496,6 +501,7 @@ function RootLayoutInner() {
     onNavigate: handleNavigateChord,
     onCreate: handleCreateShortcut,
     onUndo: handleUndoShortcut,
+    disabled: shortcutsDisabled,
   });
 
   useDemoCommands({ openSearch: openSearchFromShortcut });

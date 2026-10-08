@@ -4,6 +4,10 @@
  *
  * Тонкий injection-point «в аутбокс щойно ліг новий рядок».
  *
+ * rel-08: нудж НЕ означає push на кожен рядок — writer-runtime коалесує
+ * серію enqueue-ів (trailing debounce ~1,5 с, стеля ~5 с), див.
+ * `syncEngineWriter.ts`.
+ *
  * AI-CONTEXT: writer-runtime із самого початку мав API
  * `notifyEnqueued()` — негайний flush замість очікування інтервалу — але
  * жоден дуал-райт його не викликав (нуль виробничих call-site-ів на web
