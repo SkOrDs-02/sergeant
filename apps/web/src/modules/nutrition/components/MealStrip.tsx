@@ -184,6 +184,11 @@ function findAccentIndex(
   return null;
 }
 
+/** На скільки спожите перевищує ціль; `0` на межі, нижче цілі і без цілі. */
+export function macroOverage(consumed: number, goal: number): number {
+  return goal > 0 && consumed > goal ? consumed - goal : 0;
+}
+
 export function MealStrip({
   segments,
   goalKcal,
@@ -361,6 +366,7 @@ export function MealStrip({
             m.goal > 0
               ? Math.min(100, Math.round((m.consumed / m.goal) * 100))
               : 0;
+          const over = macroOverage(m.consumed, m.goal);
           return (
             <li key={m.label} className="flex flex-col gap-1">
               <div className="flex flex-wrap items-baseline justify-between gap-x-1 text-style-caption text-hero-ink tabular-nums">
@@ -368,13 +374,22 @@ export function MealStrip({
                 <span className="whitespace-nowrap">
                   {m.consumed}
                   {m.goal > 0 ? ` / ${m.goal}` : ""} {unit}
+                  {over > 0 && (
+                    <span className="ml-1 font-semibold">
+                      +{formatNumberUk(Math.round(over))} {unit}
+                    </span>
+                  )}
                 </span>
               </div>
               <div
                 role="img"
                 aria-label={
                   m.goal > 0
-                    ? `${m.label}: ${m.consumed} з ${m.goal} ${unit}`
+                    ? `${m.label}: ${m.consumed} з ${m.goal} ${unit}${
+                        over > 0
+                          ? `, на ${Math.round(over)} ${unit} понад ціль`
+                          : ""
+                      }`
                     : `${m.label}: ${m.consumed} ${unit}`
                 }
                 className="h-1.5 rounded-full bg-hero-ink/15 overflow-hidden"
