@@ -541,6 +541,167 @@ describe("syncV2Push · new-op apply path", () => {
       ],
     });
   });
+
+  // data-18: гонка першого INSERT того самого id. Програвший INSERT падає з
+  // 23505, і без ретраю новіша правка отримувала термінальний apply_failed.
+  describe("data-18: ретрай apply після unique_violation", () => {
+    const uniqueViolation = () =>
+      Object.assign(new Error("duplicate key value"), { code: "23505" });
+
+    function mockRetryPath(insertedId: string) {
+      client.query
+        .mockResolvedValueOnce({ rows: [] }) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
+        .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+        .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (перед ретраєм)
+        .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+        .mockResolvedValueOnce({
+          rows: [
+            { id: insertedId, server_ts: new Date("2026-01-01T00:00:05.000Z") },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+        .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+        .mockResolvedValueOnce({ rows: [] }); // COMMIT
+    }
+
+    function insertParams(): unknown[] {
+      const call = client.query.mock.calls.find(
+        (c) =>
+          typeof c[0] === "string" && c[0].includes("INSERT INTO sync_op_log"),
+      );
+      return (call?.[1] ?? []) as unknown[];
+    }
+
+    it("23505 на першій спробі: apply повторюється в тому ж savepoint, оп applied, у журнал іде один applied-рядок", async () => {
+      applyRoutineEntries
+        .mockReset()
+        .mockRejectedValueOnce(uniqueViolation())
+        .mockResolvedValueOnce({ status: "applied" });
+      mockRetryPath("60");
+
+      const res = makeRes();
+      await syncV2Push(makeReq({ body: { ops: [op("race-retry")] } }), res);
+
+      expect(applyRoutineEntries).toHaveBeenCalledTimes(2);
+      expect(res.body).toMatchObject({
+        accepted: 1,
+        last_op_id: 60,
+        results: [{ idempotency_key: "race-retry", status: "applied" }],
+      });
+
+      const sqls = client.query.mock.calls.map((c) => c[0]);
+      expect(
+        sqls.filter((s) => s === "ROLLBACK TO SAVEPOINT op_apply"),
+      ).toHaveLength(1);
+      expect(
+        sqls.filter(
+          (s) => typeof s === "string" && s.includes("INSERT INTO sync_op_log"),
+        ),
+      ).toHaveLength(1);
+      // savepoint op_apply відкритий до запису в журнал і лише потім звільнений.
+      expect(sqls.indexOf("ROLLBACK TO SAVEPOINT op_apply")).toBeLessThan(
+        sqls.indexOf("SAVEPOINT op_log_write"),
+      );
+      expect(sqls.indexOf("RELEASE SAVEPOINT op_apply")).toBeGreaterThan(
+        sqls.indexOf("RELEASE SAVEPOINT op_log_write"),
+      );
+      // status = $8, reject_reason = $9
+      expect(insertParams()[7]).toBe("applied");
+      expect(insertParams()[8]).toBeNull();
+    });
+
+    it("друга спроба повертає lww_conflict: це штатна відмова, а не apply_failed", async () => {
+      applyRoutineEntries
+        .mockReset()
+        .mockRejectedValueOnce(uniqueViolation())
+        .mockResolvedValueOnce({ status: "rejected", reason: "lww_conflict" });
+      mockRetryPath("61");
+
+      const res = makeRes();
+      await syncV2Push(makeReq({ body: { ops: [op("race-lww")] } }), res);
+
+      expect(res.body).toMatchObject({
+        accepted: 0,
+        results: [
+          {
+            idempotency_key: "race-lww",
+            status: "rejected",
+            reason: "lww_conflict",
+          },
+        ],
+      });
+    });
+
+    it("друга 23505 поспіль лишається apply_failed (без нескінченного ретраю)", async () => {
+      applyRoutineEntries
+        .mockReset()
+        .mockRejectedValueOnce(uniqueViolation())
+        .mockRejectedValueOnce(uniqueViolation());
+      client.query
+        .mockResolvedValueOnce({ rows: [] }) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
+        .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+        .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (перед ретраєм)
+        .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (catch)
+        .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+        .mockResolvedValueOnce({
+          rows: [{ id: "62", server_ts: new Date("2026-01-01T00:00:05.000Z") }],
+        })
+        .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+        .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+        .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+      const res = makeRes();
+      await syncV2Push(makeReq({ body: { ops: [op("race-twice")] } }), res);
+
+      expect(applyRoutineEntries).toHaveBeenCalledTimes(2);
+      expect(res.body).toMatchObject({
+        accepted: 0,
+        results: [
+          {
+            idempotency_key: "race-twice",
+            status: "rejected",
+            reason: "apply_failed",
+          },
+        ],
+      });
+    });
+
+    it("не-23505 помилка (deadlock 40P01) не ретраїться: одна спроба, apply_failed", async () => {
+      applyRoutineEntries
+        .mockReset()
+        .mockRejectedValueOnce(
+          Object.assign(new Error("deadlock detected"), { code: "40P01" }),
+        );
+      client.query
+        .mockResolvedValueOnce({ rows: [] }) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
+        .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+        .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply
+        .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+        .mockResolvedValueOnce({
+          rows: [{ id: "63", server_ts: new Date("2026-01-01T00:00:05.000Z") }],
+        })
+        .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+        .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+        .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+      const res = makeRes();
+      await syncV2Push(makeReq({ body: { ops: [op("no-retry")] } }), res);
+
+      expect(applyRoutineEntries).toHaveBeenCalledTimes(1);
+      expect(res.body).toMatchObject({
+        results: [
+          {
+            idempotency_key: "no-retry",
+            status: "rejected",
+            reason: "apply_failed",
+          },
+        ],
+      });
+    });
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────────

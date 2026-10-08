@@ -29,6 +29,7 @@ import {
   type RejectReason,
 } from "./syncV2-types.js";
 import {
+  applyWithUniqueViolationRetry,
   hasUnstorableText,
   readOriginDeviceId,
   recordSyncV2,
@@ -411,7 +412,10 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         await client.query("SAVEPOINT op_apply");
         applySavepointOpen = true;
         try {
-          const applied = await applyFn(client, op, user.id, clientTs);
+          // data-18: 23505 від гонки першого INSERT повторюється один раз.
+          const applied = await applyWithUniqueViolationRetry(client, () =>
+            applyFn(client, op, user.id, clientTs),
+          );
           if (applied.status === "rejected") {
             status = "rejected";
             reason = applied.reason;

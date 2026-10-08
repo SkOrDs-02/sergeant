@@ -1761,7 +1761,7 @@ w4_nul.mjs: 'A insert w/ NUL extra: 200 ["rejected:oplog_write_failed"]; DB rout
 
 ### `data-18` [medium] Гонка першого INSERT того самого id з двох пристроїв: новіший запис отримує термінальний apply_failed, перемагає старіший
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-18-first-insert-race (syncV2 повторює apply один раз після 23505, тож гонка першого INSERT більше не дає apply_failed; лишилось: retryable-статус для 40P01/55P03/57014 і ON CONFLICT у самих apply-функціях)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync apply-функції (routine, finyk, nutrition, fizruk)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:353-368,399-421; apps/server/src/modules/sync/routine/applySync.ts:63-120; apps/server/src/modules/sync/finyk/applySync.ts:40-85,182-195,419-436; apps/server/src/modules/sync/nutrition/applySync.ts:123,265,379,467,552; apps/server/src/modules/sync/fizruk/applySync.ts:90-115,247-270,392-405
 - **Першопричина:** Apply-функції роблять SELECT без блокування, а потім plain INSERT без ON CONFLICT; друга транзакція ловить 23505, і syncV2 перетворює будь-який виняток (зокрема deadlock і lock/statement timeout) на rejected apply_failed, який кешується за idempotency_key і для клієнта термінальний.
