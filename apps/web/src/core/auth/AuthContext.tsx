@@ -876,11 +876,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (err) {
         logger.warn("[auth.logout] swClearCaches failed", err);
       }
-      try {
-        await swSetActiveUser(null);
-      } catch (err) {
-        logger.warn("[auth.logout] swSetActiveUser(null) failed", err);
-      }
+      await swSetActiveUser(null).catch((err) =>
+        logger.warn("[auth.logout] swSetActiveUser(null) failed", err),
+      );
       // Audit 10 / F17: delete the just-signed-out user's local SQLite DB so
       // user B never reads user A's rows on a shared device, then reset the
       // partition to `anon` for any post-logout anonymous usage. Dynamic import
