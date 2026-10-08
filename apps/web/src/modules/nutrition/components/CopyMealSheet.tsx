@@ -10,7 +10,10 @@ import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { todayISODate, type MealTypeId } from "@sergeant/nutrition-domain";
+import { messages } from "@shared/i18n/uk";
 import { MEAL_TYPES } from "../lib/mealTypes";
+
+const copy = messages.nutrition.copyMeal;
 
 interface CopyMealSheetProps {
   /** Прийом-джерело; `null` закриває аркуш. */
@@ -37,24 +40,24 @@ export function CopyMealSheet({
     <Sheet
       open
       onClose={onClose}
-      title="Скопіювати прийом"
-      description="Записи з цього прийому ляжуть у вибраний день і прийом."
+      title={copy.title}
+      description={copy.description}
       panelClassName="nutrition-sheet"
       zIndex={120}
     >
       <div className="mb-4">
         <SectionHeading as="div" size="xs" variant="nutrition" className="mb-1">
-          Дата
+          {copy.dateLabel}
         </SectionHeading>
         <DateField
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          aria-label="Дата копії"
+          aria-label={copy.dateAria}
         />
       </div>
       <div className="mb-4">
         <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
-          Прийом
+          {copy.mealLabel}
         </SectionHeading>
         <div className="flex gap-2 flex-wrap">
           {MEAL_TYPES.map((mt) => (
@@ -83,7 +86,7 @@ export function CopyMealSheet({
           disabled={!date}
           onClick={() => onCopy(date, chosen)}
         >
-          Скопіювати
+          {copy.submit}
         </Button>
         <Button
           type="button"
@@ -91,7 +94,7 @@ export function CopyMealSheet({
           className="h-12 min-h-[44px]"
           onClick={onClose}
         >
-          Скасувати
+          {copy.cancel}
         </Button>
       </div>
     </Sheet>
