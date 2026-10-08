@@ -104,7 +104,7 @@ describe("Analytics page", () => {
     expect(screen.getByText("Категорії")).toBeInTheDocument();
     // Поточний місяць: дельти продавців теж міряються тими ж днями.
     expect(
-      screen.getByText("Топ продавці: зміна за ті ж дні"),
+      screen.getByText("Найбільші витрати: зміна за ті ж дні"),
     ).toBeInTheDocument();
     // empty-state copy for no data
     expect(screen.getByText("Поки немає витрат")).toBeInTheDocument();

@@ -6,7 +6,8 @@
  *
  * Fires when the user has an active (in-progress) workout that includes
  * at least one strength exercise whose current set weight is within
- * PR_PROXIMITY_FACTOR of the all-time best weight for that exercise.
+ * PR_PROXIMITY_FACTOR below the best weight from OTHER workouts (the
+ * candidate itself is excluded, and reaching the record does not fire).
  *
  * ## Fallback strategy (documented)
  *
@@ -101,9 +102,6 @@ export function usePrPendingInsight({
   return useMemo(() => {
     if (!loaded) return null;
 
-    const prMap = buildMaxWeightByExercise(workouts);
-    if (prMap.size === 0) return null;
-
     // Prefer the active workout; fall back to the most-recent completed.
     const candidateWorkout =
       (activeWorkoutId
@@ -114,6 +112,14 @@ export function usePrPendingInsight({
 
     if (!candidateWorkout) return null;
 
+    // Рекорд рахується без самого кандидата: інакше тренування, яке рекорд
+    // і поставило, завжди було «в межах 5 %» від себе, і картка «рекорд
+    // близько» вискакувала одразу після першого ж тренування.
+    const prMap = buildMaxWeightByExercise(
+      workouts.filter((w) => w.id !== candidateWorkout.id),
+    );
+    if (prMap.size === 0) return null;
+
     for (const item of candidateWorkout.items ?? []) {
       if (item.type !== "strength" || !item.exerciseId) continue;
       const pr = prMap.get(item.exerciseId);
@@ -122,9 +128,10 @@ export function usePrPendingInsight({
       const currentMax = maxWeightInItem(item);
       if (currentMax === null) continue;
 
-      // Fire when current weight is within 5% below (or at/above) PR.
-      // currentMax >= pr.maxWeightKg * PR_PROXIMITY_FACTOR
+      // Лише нижче рекорду, але в межах 5 %: рівна чи більша вага вже і є
+      // рекорд, і «спробуй більше сьогодні» там нічого не означає.
       if (currentMax < pr.maxWeightKg * PR_PROXIMITY_FACTOR) continue;
+      if (currentMax >= pr.maxWeightKg) continue;
 
       const exerciseName = pr.nameUk ?? item.exerciseId;
       // Suggest the next 2.5 kg increment above their current max as
@@ -134,8 +141,10 @@ export function usePrPendingInsight({
       return {
         id: "fizruk-pr-pending",
         module: "fizruk",
-        title: `PR близько на ${exerciseName}`,
-        subtitle: `Спробуй ${fmtLoose(targetKg)} кг сьогодні?`,
+        // Картка на 375 px має ~135 px під текст: коротке на початку, назва
+        // вправи в кінці, де її обріже ellipsis без втрати суті.
+        title: "Рекорд близько",
+        subtitle: `Спробуй ${fmtLoose(targetKg)} кг: ${exerciseName}`,
         askAiPrompt: `У поточному тренуванні є шанс на PR у "${exerciseName}" (минулий макс ${pr.maxWeightKg} кг). Як підійти до підходу безпечно?`,
         action: { type: "navigate", path: "/fizruk/workouts" },
         // Hub surface promoted post-Phase 5e: PR-close is motivational tickler,
