@@ -392,8 +392,14 @@ async function upsertPantry(
   keepMissing = false,
   delta?: Pick<PantryUpsertOp, "changedItemIds" | "pantryFieldsChanged">,
 ): Promise<void> {
-  // rel-10: у outbox ідуть лише змінені позиції. Реплей (`keepMissing`) і op без
-  // `changedItemIds` лишаються повним upsert-ом, як раніше.
+  // rel-10: незмінені позиції не чіпаємо НІ в outbox, НІ локально. Локальний
+  // upsert незмінного рядка бампив би `updated_at` до `clientTs` без пушу, і
+  // pull-оп іншого пристрою з міткою між старим `updated_at` та `clientTs`
+  // відсікався б як stale (`isStaleLocal`): пристрій назавжди розходився б із
+  // сервером. Незмінена позиція за визначенням дорівнює `prev`, а `prev` - це
+  // warm-кеш, прочитаний із SQLite, тож рядок там уже є з тими самими
+  // значеннями (зсув `sort_order` входить у дельту). Реплей (`keepMissing`) і op
+  // без `changedItemIds` лишаються повним upsert-ом, як раніше.
   const changedItems =
     !keepMissing && delta?.changedItemIds
       ? new Set(delta.changedItemIds)
@@ -402,15 +408,15 @@ async function upsertPantry(
     !changedItems ||
     delta?.pantryFieldsChanged !== false ||
     changedItems.size > 0;
-  await client.run(PANTRY_UPSERT_SQL, [
-    p.id,
-    userId,
-    p.name ?? "",
-    p.text ?? "",
-    clientTs,
-    clientTs,
-  ]);
   if (enqueuePantryRow) {
+    await client.run(PANTRY_UPSERT_SQL, [
+      p.id,
+      userId,
+      p.name ?? "",
+      p.text ?? "",
+      clientTs,
+      clientTs,
+    ]);
     void enqueueOutboxUpsert(client, {
       userId,
       table: "nutrition_pantries",
@@ -430,6 +436,7 @@ async function upsertPantry(
   const items = p.items ?? [];
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
+    if (changedItems && !changedItems.has(it!.id!)) continue;
     await client.run(PANTRY_ITEM_UPSERT_SQL, [
       it!.id!,
       p.id,
@@ -443,7 +450,6 @@ async function upsertPantry(
       clientTs,
       clientTs,
     ]);
-    if (changedItems && !changedItems.has(it!.id!)) continue;
     void enqueueOutboxUpsert(client, {
       userId,
       table: "nutrition_pantry_items",

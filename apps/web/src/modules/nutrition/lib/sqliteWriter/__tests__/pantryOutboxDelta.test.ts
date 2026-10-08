@@ -19,6 +19,7 @@ import type {
   NutritionPantryItemSnapshot,
   NutritionPantrySnapshot,
 } from "../diff.js";
+import { applyPullOp } from "../../../../../core/syncEngine/applyPullOp.js";
 import { createTestSqlite, type TestSqliteHandle } from "./testSqlite.js";
 
 const UID = "user-1";
@@ -193,5 +194,78 @@ describe("rel-10: outbox комори ставить лише змінені п�
     );
     expect(outboxCalls("nutrition_pantry_items")).toHaveLength(5);
     expect(outboxCalls("nutrition_pantries")).toHaveLength(1);
+  });
+
+  it("незмінна позиція не бампить updated_at локально: pull-оп іншого пристрою між T0 і T2 застосовується", async () => {
+    // Пристрій A: місце [A, B] з updated_at = T0.
+    const [a, b] = [item(1), item(2)];
+    await dualWriteNutritionState(state([]), state([a, b]));
+    const t0 = (
+      await handle.client.all<{ updated_at: string }>(
+        "SELECT updated_at FROM nutrition_pantry_items WHERE id = ?",
+        ["p1_2"],
+      )
+    )[0]!.updated_at;
+    const t1 = new Date(Date.parse(t0) + 500).toISOString();
+
+    // A додає C (T2 > T1), поки правка B ще не підтягнута.
+    await dualWriteNutritionState(state([a, b]), state([a, b, item(3)]));
+
+    // Незмінні A/B лишились з T0, нова C отримала T2.
+    const rows = await handle.client.all<{ id: string; updated_at: string }>(
+      "SELECT id, updated_at FROM nutrition_pantry_items ORDER BY id",
+    );
+    expect(rows.map((r) => r.updated_at)).toEqual([t0, t0, expect.any(String)]);
+    expect(rows[2]!.updated_at > t1).toBe(true);
+
+    // Оп пристрою B про позицію p1_2 з T1 (T0 < T1 < T2) не відсікається як stale.
+    const outcome = await applyPullOp(
+      handle.client,
+      {
+        id: 1,
+        table: "nutrition_pantry_items",
+        op: "insert",
+        row: {
+          id: "p1_2",
+          pantry_id: "p1",
+          user_id: UID,
+          name: "продукт2",
+          qty: 777,
+          unit: "г",
+          notes: null,
+          sources: null,
+          sort_order: 1,
+        },
+        client_ts: t1,
+        server_ts: t1,
+        origin_device_id: "device-b",
+      },
+      UID,
+      "device-a",
+    );
+    expect(outcome).toBe("applied");
+    const qty = await handle.client.all<{ qty: number }>(
+      "SELECT qty FROM nutrition_pantry_items WHERE id = ?",
+      ["p1_2"],
+    );
+    expect(qty[0]!.qty).toBe(777);
+  });
+
+  it("зміна лише name місця не бампить updated_at позицій", async () => {
+    const items = [1, 2].map((n) => item(n));
+    await dualWriteNutritionState(state([]), state(items));
+    const before = await handle.client.all<{ updated_at: string }>(
+      "SELECT updated_at FROM nutrition_pantry_items ORDER BY id",
+    );
+
+    await dualWriteNutritionState(
+      state(items),
+      state([...items], { name: "Дача" }),
+    );
+
+    const after = await handle.client.all<{ updated_at: string }>(
+      "SELECT updated_at FROM nutrition_pantry_items ORDER BY id",
+    );
+    expect(after).toEqual(before);
   });
 });
