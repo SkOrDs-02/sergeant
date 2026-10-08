@@ -358,6 +358,29 @@ export async function lookupFoodByBarcode(
   }
 }
 
+/** Продукти, яких немає у вбудованій базі: те, що людина додала сама (для бекапу). */
+export async function listCustomFoods(): Promise<FoodProduct[]> {
+  const seedNorms = new Set(
+    (await loadSeedFoods()).map((s) => normText(s.name)),
+  );
+  const all = await listFoods(100000);
+  return all.filter((f) => !seedNorms.has(normText(f.norm || f.name)));
+}
+
+/** Додає продукти зі списку, яких ще немає за `id` чи нормалізованою назвою. */
+export async function importFoodsMissing(list: unknown[]): Promise<void> {
+  const existing = await listFoods(100000);
+  const ids = new Set(existing.map((f) => f.id));
+  const norms = new Set(existing.map((f) => normText(f.norm || f.name)));
+  for (const raw of list) {
+    const p = makeFoodProduct(raw);
+    if (!p.name || ids.has(p.id) || norms.has(normText(p.norm))) continue;
+    await upsertFood(p);
+    ids.add(p.id);
+    norms.add(normText(p.norm));
+  }
+}
+
 export async function replaceAllFoodsFromList(list: unknown): Promise<boolean> {
   try {
     const foods = Array.isArray(list)

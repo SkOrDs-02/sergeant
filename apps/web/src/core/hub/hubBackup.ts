@@ -34,6 +34,7 @@ import {
   buildNutritionBackupPayload,
   validateNutritionBackupPayload,
 } from "../../modules/nutrition/domain/nutritionBackup";
+import { applyNutritionBackupFoods } from "../../modules/nutrition/domain/nutritionBackupFoods";
 import { isHubModuleId } from "@shared/lib/modules/hubNav";
 
 const HUB_MODULE_KEY = "hub_last_module";
@@ -297,6 +298,7 @@ export async function applyHubBackupPayload(
   }
   if (parsed.nutrition) {
     applyNutritionBackupPayload(parsed.nutrition, mode);
+    await applyNutritionBackupFoods(parsed.nutrition);
     await nutritionDualWriteIdle();
   }
   if (parsed.hub && typeof parsed.hub === "object") {

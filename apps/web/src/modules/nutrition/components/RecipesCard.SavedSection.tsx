@@ -15,6 +15,13 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { scaleMacros, type SavedRecipe } from "../lib/recipeBook";
+import {
+  buildRecipeLogEntry,
+  defaultServingGrams,
+  parseGramsInput,
+  supportsGramsLogging,
+  type RecipeLogMode,
+} from "../lib/recipeLogging";
 import { ChevronIcon } from "./RecipesCard.ChevronIcon";
 import { parsePortionFactor } from "./RecipesCard.helpers";
 
@@ -34,6 +41,12 @@ interface SavedSectionProps {
   setOpenSavedId: Dispatch<SetStateAction<string | null>>;
   portionById: Record<string, string>;
   setPortionById: Dispatch<SetStateAction<Record<string, string>>>;
+  logModeById: Record<string, RecipeLogMode>;
+  setLogModeById: Dispatch<SetStateAction<Record<string, RecipeLogMode>>>;
+  gramsById: Record<string, string>;
+  setGramsById: Dispatch<SetStateAction<Record<string, string>>>;
+  onNewDish: () => void;
+  onEdit: (r: SavedRecipe) => void;
   onAddToLog: (r: SavedRecipe, key: string) => void;
   onDeleteClick: (r: SavedRecipe) => void;
   fmtMacro: (v: unknown) => string | number;
@@ -50,6 +63,12 @@ export function SavedSection({
   setOpenSavedId,
   portionById,
   setPortionById,
+  logModeById,
+  setLogModeById,
+  gramsById,
+  setGramsById,
+  onNewDish,
+  onEdit,
   onAddToLog,
   onDeleteClick,
   fmtMacro,
@@ -78,6 +97,15 @@ export function SavedSection({
 
       {savedOpen && (
         <div className="mt-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mb-3"
+            onClick={onNewDish}
+          >
+            Нова страва
+          </Button>
           {saved.length === 0 && savedError ? (
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-style-body text-danger-strong" role="alert">
@@ -89,7 +117,8 @@ export function SavedSection({
             </div>
           ) : saved.length === 0 ? (
             <div className="text-style-body text-muted">
-              Тут зʼявляться збережені рецепти. Згенеруй рецепти нижче й натисни
+              Тут зʼявляться збережені рецепти. Склади страву з продуктів
+              кнопкою «Нова страва» або згенеруй рецепти нижче й натисни
               &quot;Зберегти&quot;.
             </div>
           ) : (
@@ -104,6 +133,18 @@ export function SavedSection({
                 // (`addRecipeAsMeal` бере той самий `parsePortionFactor`).
                 const factor = parsePortionFactor(factorRaw);
                 const scaled = scaleMacros(r.macros, factor);
+                const canGrams = supportsGramsLogging(r);
+                const gramsMode = canGrams && logModeById[key] === "grams";
+                const gramsRaw =
+                  gramsById[key] ?? String(defaultServingGrams(r));
+                const gramsEntry = gramsMode
+                  ? buildRecipeLogEntry(
+                      r,
+                      "grams",
+                      factor,
+                      parseGramsInput(gramsRaw),
+                    )
+                  : null;
                 const isOpen = openSavedId === r.id;
                 return (
                   <div
@@ -138,11 +179,26 @@ export function SavedSection({
                           type="button"
                           variant="outline"
                           size="sm"
+                          disabled={
+                            gramsMode && parseGramsInput(gramsRaw) == null
+                          }
                           onClick={() => onAddToLog(r, key)}
                         >
                           + У журнал
-                          {factor !== 1 && ` ×${formatFactor(factor)}`}
+                          {!gramsMode &&
+                            factor !== 1 &&
+                            ` ×${formatFactor(factor)}`}
                         </Button>
+                        {r.components && r.components.length > 0 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEdit(r)}
+                          >
+                            Редагувати
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="soft"
@@ -155,25 +211,88 @@ export function SavedSection({
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="text-style-caption text-muted">
-                        Скільки порцій:
-                      </span>
-                      <Input
-                        value={factorRaw}
-                        onChange={(e) =>
-                          setPortionById((m) => ({
-                            ...m,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        inputMode="decimal"
-                        aria-label={`Скільки порцій: ${r.title}`}
-                        className="w-20"
-                      />
-                      {r.macros?.kcal != null && factor !== 1 && (
-                        <span className="text-style-caption text-muted">
-                          → усього ≈ {fmtMacro(scaled.kcal)} ккал
-                        </span>
+                      {canGrams && (
+                        <div
+                          role="group"
+                          aria-label={`Як додати: ${r.title}`}
+                          className="flex gap-1"
+                        >
+                          {(["portions", "grams"] as const).map((m) => (
+                            <Button
+                              key={m}
+                              type="button"
+                              size="sm"
+                              variant={
+                                (gramsMode ? "grams" : "portions") === m
+                                  ? "soft"
+                                  : "outline"
+                              }
+                              aria-pressed={
+                                (gramsMode ? "grams" : "portions") === m
+                              }
+                              onClick={() =>
+                                setLogModeById((s) => ({ ...s, [key]: m }))
+                              }
+                            >
+                              {m === "portions" ? "Порції" : "Грами"}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                      {gramsMode ? (
+                        <>
+                          <span className="text-style-caption text-muted">
+                            Скільки грамів:
+                          </span>
+                          <Input
+                            value={gramsRaw}
+                            onChange={(e) =>
+                              setGramsById((s) => ({
+                                ...s,
+                                [key]: e.target.value,
+                              }))
+                            }
+                            inputMode="numeric"
+                            aria-label={`Скільки грамів: ${r.title}`}
+                            className="w-24"
+                          />
+                          {gramsEntry?.macros.kcal != null && (
+                            <span className="text-style-caption text-muted">
+                              → ≈ {fmtMacro(gramsEntry.macros.kcal)} ккал
+                            </span>
+                          )}
+                          {parseGramsInput(gramsRaw) == null && (
+                            <span
+                              className="text-style-caption text-danger-strong"
+                              role="alert"
+                            >
+                              Впиши ціле число грамів, наприклад 150.
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-style-caption text-muted">
+                            Скільки порцій:
+                          </span>
+                          <Input
+                            value={factorRaw}
+                            onChange={(e) =>
+                              setPortionById((m) => ({
+                                ...m,
+                                [key]: e.target.value,
+                              }))
+                            }
+                            inputMode="decimal"
+                            aria-label={`Скільки порцій: ${r.title}`}
+                            className="w-20"
+                          />
+                          {r.macros?.kcal != null && factor !== 1 && (
+                            <span className="text-style-caption text-muted">
+                              → усього ≈ {fmtMacro(scaled.kcal)} ккал
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
 
