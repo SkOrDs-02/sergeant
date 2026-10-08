@@ -21,6 +21,7 @@
 
 import {
   formatMoney,
+  formatNumberUk,
   kyivDayStartMs,
   pluralUa,
   toKyivISODate,
@@ -135,14 +136,14 @@ function nutritionClosed(todayKey: string): ClosedTodayItem | null {
       module: "nutrition",
       label: CLOSED_TODAY_LABELS.nutrition,
       statement: "у коридорі цілі",
-      value: `${Math.round(kcal)} ккал`,
+      value: `${formatNumberUk(Math.round(kcal))} ккал`,
     };
   }
   return {
     module: "nutrition",
     label: CLOSED_TODAY_LABELS.nutrition,
     statement: `${meals.length} ${pluralUa(meals.length, MEAL_FORMS)} записано`,
-    value: kcal > 0 ? `${Math.round(kcal)} ккал` : null,
+    value: kcal > 0 ? `${formatNumberUk(Math.round(kcal))} ккал` : null,
   };
 }
 
