@@ -2428,7 +2428,7 @@ Verifier runs: pw_synclink_cold.mjs (key verify-cs-outbox-synclink) produced toa
 
 ### `data-27` [medium] Нотатки до банківських транзакцій не зберігаються ніде: зникають на reload, не синхронізуються й не потрапляють у бекап
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-27-tx-notes-persist (нотатки пишуться в LS і входять у бекап; синк між пристроями лишився follow-up-ом з міграцією і рішенням власника)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (txNotes)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:58-61,145-148; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-73; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:367-375; apps/web/src/modules/finyk/lib/sqliteWriter/extract.ts:183-198
 - **Першопричина:** txNotes оголошено через useReadonlyPersist, який лише читає LS на першому кадрі й нічого не пише, а dual-write стан (extractFinykDualWriteState) і бекап (FINYK_BACKUP_STORAGE_KEYS) txNotes не містять.
