@@ -34,7 +34,7 @@ describe("useEditedFoodRehydration", () => {
     const { result } = renderHook(() =>
       useEditedFoodRehydration({
         open: true,
-        meal: { id: "m1", foodId: "f1" },
+        meal: { id: "m1", foodId: "f1", macroSource: "productDb" },
         setPickedFood,
       }),
     );
@@ -62,7 +62,7 @@ describe("useEditedFoodRehydration", () => {
     const { result } = renderHook(() =>
       useEditedFoodRehydration({
         open: true,
-        meal: { id: "m1", foodId: "gone" },
+        meal: { id: "m1", foodId: "gone", macroSource: "productDb" },
         setPickedFood,
       }),
     );
@@ -79,7 +79,7 @@ describe("useEditedFoodRehydration", () => {
     const { result } = renderHook(() =>
       useEditedFoodRehydration({
         open: true,
-        meal: { id: "m1", foodId: "f1" },
+        meal: { id: "m1", foodId: "f1", macroSource: "productDb" },
         setPickedFood: vi.fn(),
       }),
     );
@@ -93,7 +93,7 @@ describe("useEditedFoodRehydration", () => {
     const { result } = renderHook(() =>
       useEditedFoodRehydration({
         open: false,
-        meal: { id: "m1", foodId: "f1" },
+        meal: { id: "m1", foodId: "f1", macroSource: "productDb" },
         setPickedFood: vi.fn(),
       }),
     );
@@ -116,7 +116,7 @@ describe("useEditedFoodRehydration", () => {
     const { result } = renderHook(() =>
       useEditedFoodRehydration({
         open: true,
-        meal: { id: "m1", foodId: "f1" },
+        meal: { id: "m1", foodId: "f1", macroSource: "productDb" },
         setPickedFood,
       }),
     );
@@ -179,9 +179,8 @@ describe("useEditedFoodRehydration", () => {
         }),
       );
 
-      await waitFor(() => expect(getFoodById).toHaveBeenCalled());
       await act(async () => {
-        await Promise.resolve();
+        await new Promise((r) => setTimeout(r, 20));
       });
       expect(setPickedFood).not.toHaveBeenCalled();
       expect(result.current.rehydrated).toBe(false);
@@ -194,8 +193,12 @@ describe("useEditedFoodRehydration", () => {
       const { result } = renderHook(() =>
         useEditedFoodRehydration({
           open: true,
-          // Без macroSource/ваги: відновлення має спрацювати саме по id.
-          meal: { id: "m1", foodId: `gen_${generic.slug}` },
+          // Без ваги: відновлення має спрацювати саме по id.
+          meal: {
+            id: "m1",
+            foodId: `gen_${generic.slug}`,
+            macroSource: "productDb",
+          },
           setPickedFood,
         }),
       );
@@ -208,6 +211,53 @@ describe("useEditedFoodRehydration", () => {
           per100: generic.per100,
         }),
       );
+    });
+
+    // Ревʼю ux-13: ручна правка КБЖВ лишає `foodId`, але ставить `manual`.
+    // Відновлений продукт відкрив би поле ваги, і його зміна затерла б ручні
+    // цифри значенням з каталогу.
+    it("`gen_<slug>` з macroSource manual не відновлюється", async () => {
+      getFoodById.mockResolvedValue(null);
+      const generic = GENERIC_FOODS[0]!;
+      const setPickedFood = vi.fn();
+      const { result } = renderHook(() =>
+        useEditedFoodRehydration({
+          open: true,
+          meal: {
+            id: "m1",
+            name: generic.name,
+            foodId: `gen_${generic.slug}`,
+            macroSource: "manual",
+            amount_g: 200,
+            macros: { kcal: 999, protein_g: 1, fat_g: 1, carbs_g: 1 },
+          },
+          setPickedFood,
+        }),
+      );
+
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
+      expect(setPickedFood).not.toHaveBeenCalled();
+      expect(result.current.rehydrated).toBe(false);
+    });
+
+    it("локальний продукт з macroSource manual не відновлюється", async () => {
+      getFoodById.mockResolvedValue(FOOD);
+      const setPickedFood = vi.fn();
+      const { result } = renderHook(() =>
+        useEditedFoodRehydration({
+          open: true,
+          meal: { id: "m1", foodId: "f1", macroSource: "manual" },
+          setPickedFood,
+        }),
+      );
+
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 20));
+      });
+      expect(setPickedFood).not.toHaveBeenCalled();
+      expect(result.current.rehydrated).toBe(false);
     });
 
     it("`per100FromMeal` відхиляє нульову вагу й порожні макроси", () => {

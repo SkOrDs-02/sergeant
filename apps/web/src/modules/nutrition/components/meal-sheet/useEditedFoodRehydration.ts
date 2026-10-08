@@ -21,6 +21,10 @@
  * Тому `setPickedFood` і прапорець ідуть одним батчем: картка монтується
  * вже з піднятим гардом.
  *
+ * Усі ланки діють лише для `macroSource: productDb`: прийом, чиї КБЖВ людина
+ * переписала руками (`manual`, `foodId` лишається), не відновлюється — інакше
+ * зміна ваги стерла б її цифри значенням з каталогу.
+ *
  * Локальна база — не єдине джерело (аудит 2026-10-01, ux-13). Seed-продукти
  * мали випадковий `food_<uuid>` на кожному пристрої, тож на іншому телефоні
  * чи після очищення даних сайту `getFoodById` повертав `null`, поле ваги
@@ -149,7 +153,12 @@ export function useEditedFoodRehydration({
   const carbsG = meal?.macros?.carbs_g ?? null;
 
   useEffect(() => {
-    if (!open || !editedFoodId) return;
+    // AI-DANGER: лише `productDb`. `foodId` у збереженому прийомі переживає
+    // ручну правку КБЖВ (`effectiveFoodId` в `AddMealSheet`), але
+    // `macroSource` тоді стає `manual`. Відновлений продукт відкриває поле
+    // ваги, а `PickedFoodCard` на зміну ваги переписує всі чотири поля
+    // `per100 × вага` — тобто тихо замінив би ручні КБЖВ значенням з каталогу.
+    if (!open || !editedFoodId || !fromDb) return;
     const generation = ++lookupGeneration.current;
     let cancelled = false;
     const lookup = async (): Promise<PickedFood | null> => {
@@ -165,7 +174,6 @@ export function useEditedFoodRehydration({
       }
       const generic = await pickGenericFood(editedFoodId);
       if (generic) return generic;
-      if (!fromDb) return null;
       const per100 = per100FromMeal(amountG, {
         kcal,
         protein_g: proteinG,
