@@ -231,4 +231,59 @@ describe("SyncStatusSheet", () => {
     );
     expect(screen.queryByText("Старі записи прибрано")).not.toBeInTheDocument();
   });
+  describe("sec-18: сесія завершилась", () => {
+    it("показує постійне повідомлення з лічильником черги і посиланням на вхід з поточним маршрутом", () => {
+      window.history.pushState({}, "", "/finyk/transactions?tab=all");
+      render(
+        <SyncStatusSheet
+          open
+          onClose={vi.fn()}
+          online
+          pending={3}
+          deadLetter={0}
+          sessionExpired
+        />,
+      );
+
+      expect(screen.getByText("Сесія завершилась")).toBeInTheDocument();
+      expect(
+        screen.getByText("Увійди, щоб синхронізувати 3 записи."),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Увійти" })).toHaveAttribute(
+        "href",
+        `/sign-in?next=${encodeURIComponent("/finyk/transactions?tab=all")}`,
+      );
+      window.history.pushState({}, "", "/");
+    });
+
+    it("без черги лишає готовий рядок «Увійди ще раз.»", () => {
+      render(
+        <SyncStatusSheet
+          open
+          onClose={vi.fn()}
+          online
+          pending={0}
+          deadLetter={0}
+          sessionExpired
+        />,
+      );
+
+      expect(screen.getByText("Увійди ще раз.")).toBeInTheDocument();
+    });
+
+    it("не показується за замовчуванням", () => {
+      render(
+        <SyncStatusSheet
+          open
+          onClose={vi.fn()}
+          online
+          pending={2}
+          deadLetter={0}
+        />,
+      );
+
+      expect(screen.queryByText("Сесія завершилась")).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Увійти" })).toBeNull();
+    });
+  });
 });

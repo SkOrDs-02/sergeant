@@ -639,7 +639,7 @@ chemail.mjs: 'db before: audit_pool136@example.com|f' → 'change-email 200 {"st
 
 ### `sec-07` [medium] Невдалий POST /api/auth/sign-out (офлайн чи обрив) лишає живу серверну сесію, і наступне відкриття знову входить в акаунт
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-07-18-signout-session-expiry
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth/вихід
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:336,551-697 (586-593); apps/web/src/core/auth/authClient.ts:194-202; apps/web/src/core/profile/ProfilePage.tsx:265
 - **Першопричина:** logout() ковтає помилку signOut() (try/catch без перевірки result.error), не повторює запит і не зберігає маркер «вихід не завершено», а потім робить локальне стирання і перехід на /sign-in. httpOnly-куку клієнт стерти не може, тож без успішного запиту сесія в БД живе до 7 днів.
@@ -705,7 +705,7 @@ I could not refute the bug. I reproduced it myself, but I think high overstates 
 
 ### `sec-08` [medium] Нативний auth-контур увімкнений у проді при паузі мобільного: open redirect з підписаною state-кукою (expo-authorization-proxy) і довірена схема sergeant://
 
-- **Стан:** виправлено в гілці claude/fix-sec-08-native-auth-prod
+- **Стан:** виправлено в #1350 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/OAuth
 - **Де:** apps/server/src/auth.ts:617,640-671; node_modules/@better-auth/expo/dist/index.js:7-35; node_modules/better-auth/dist/state.mjs:110-121; apps/server/src/routes/auth.ts:33; apps/mobile/app/(auth)/forgot-password.tsx:35
 - **Першопричина:** plugins: [bearer(), expo()] і getTrustedNativeSchemes() → ['sergeant://'] діють у production, хоча RN-застосунку немає (ADR-0094). Анонімний GET /api/auth/expo-authorization-proxy перевіряє лише https і «не наш origin», ставить підписану куку better-auth.state зі значенням з query і робить 302 на довільний хост; sergeant:// приймається як redirectTo для скидання пароля й OAuth.
@@ -1157,7 +1157,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-13` [medium] Блокування обходиться клавіатурою: Ctrl/Cmd+K відкриває глобальний пошук поверх замка з даними й діями
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-13-priv-15-lock-shortcuts (гарячі клавіші вимкнені, поки замок не idle, оверлей замка на z-300 вище за пошук; лишилось: дерево застосунку й HubChatOverlay усе ще змонтовані під замком, дані лежать у DOM під оверлеєм, окремий PR)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/hooks/useHubKeyboardShortcuts.ts:57-67,124-150; apps/web/src/core/app/RootLayout.tsx:195-225; apps/web/src/core/hub/search/HubSearch.tsx:65; apps/web/src/core/security/AppLock.tsx:311-327
 - **Першопричина:** AppLock лише накриває застосунок оверлеєм: дерево AppShell рендериться за будь-якого стану замка, а useHubKeyboardShortcuts не перевіряє lock-стан (блокує лише isEditableTarget). Після кліку по цифрі фокус іде з прихованого поля, і Ctrl+K, '?' чи Ctrl+/ відкривають діалоги з вищим z-index.
@@ -1202,7 +1202,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-14` [medium] /api/nutrition/refine-photo робить повний vision-аналіз довільного фото без квоти
 
-- **Стан:** виправлено в гілці claude/fix-sec-14-refine-same-photo
+- **Стан:** виправлено в #1384 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / nutrition
 - **Де:** apps/server/src/routes/nutrition.ts:117-130; packages/shared/src/schemas/api.ts:723-740
 - **Першопричина:** На refine-photo немає requireAiQuota('photo'): ланцюг лише rateLimit 20/хв → requireHealthConsent → requireLlmUpstream. Схема вимагає тільки image_base64, prior_result необов'язковий, і за порожнього prior_result промпт робить повний розбір КБЖВ, тож refine рівноцінний analyze-photo.
@@ -1543,7 +1543,7 @@ Verifier probe (verify-client-static-landing-shell-mobile/hdrs.mjs): app.sergean
 
 ### `sec-18` [medium] Коли сесія спливає посеред роботи, застосунок мовчить: записи тихо стають у чергу, а після reload модулі порожні
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-07-18-signout-session-expiry (лишилось: екран повторного входу замість анонімного хабу після 401 при reload, `next` на /sign-in поки не споживається екраном входу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / sync
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:318-401; apps/web/src/core/app/SyncStatusSheet.tsx:175-179; apps/web/src/core/syncEngine/singleton.ts:490-493
 - **Першопричина:** Коли get-session повертає null, resolveUserId віддає null і drain черги мовчки повертає [], сигналу в UI немає; /me у вкладці не перезапитується (refetchOnWindowFocus false, staleTime 60 с). Після reload 401 на /api/v1/me запускає identity wipe і анонімний режим без пояснення.

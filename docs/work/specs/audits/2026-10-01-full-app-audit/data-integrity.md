@@ -1664,7 +1664,7 @@ Verifier rerun of t2_txcat.mts: finyk_tx_splits insert → applied, delete → r
 
 ### `data-16` [medium] Витрати, створені сервером (чат create_transaction, скан чека), обходять sync_op_log і не доходять на інші пристрої, якщо годинник пристрою трохи відстає
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-16-server-expense-oplog
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: finyk (manualExpenses, receipts)
 - **Де:** apps/server/src/modules/finyk/manualExpenses.ts:104-110; apps/server/src/modules/finyk/receipts/save.ts:183-206; apps/server/src/modules/sync/serverOpLog.ts; apps/web/src/core/lib/chatActions/serverActions.ts:196-236
 - **Першопричина:** createManualExpense і insertManualExpenseForReceipt роблять прямий INSERT у finyk_manual_expenses без emitServerSyncOps (його викликає лише імпорт). Клієнтський write-through із client_ts пристрою програє серверному updated_at = now() як lww_conflict, який клієнт вважає benign і мовчки відкидає.
@@ -1714,7 +1714,7 @@ lag=0 create 201 f665ff3a-...; op-log rows right after create: 0; write-through 
 
 ### `data-17` [medium] oplog_write_failed: доменний запис комітиться, а клієнт отримує «rejected» і журнал порожній (фантомний серверний стан)
 
-- **Стан:** виправлено в гілці claude/fix-data-17-48-sync-oplog
+- **Стан:** виправлено в #1367 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync (syncV2 push)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:399-500
 - **Першопричина:** Коли INSERT у sync_op_log падає (U+0000 чи одинокий сурогат у row, яких не приймає jsonb), savepoint op_apply відкочується лише при racedRow; в інших випадках apply лишається закоміченим без запису в журнал.
@@ -3479,7 +3479,7 @@ vb/06-fs.mjs: GET /api/v1/food-search?q=Гречка повертає 200, се�
 
 ### `data-44` [medium] HubChat: відповідь, що ще стрімиться, записується в іншу бесіду після «Нова» чи вибору бесіди з історії
 
-- **Стан:** виправлено в гілці claude/fix-data-44-ux-15-hubchat-session
+- **Стан:** виправлено в #1370 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: HubChat (useChatSessions, useChatSend)
 - **Де:** apps/web/src/core/hub/chat/useChatSessions.ts:74,164-195; apps/web/src/core/hub/chat/useChatSend.ts:342,599-602,768-799; apps/web/src/core/hub/chat/HubChatHeader.tsx:169
 - **Першопричина:** useChatSessions тримає один стан messages на всі бесіди, handleCreateSession і handleSelectSession лише підміняють messages і не скасовують запит у польоті, а send() дописує відповідь функціональним апдейтером в ту бесіду, що активна на момент відповіді; «Нова» не вимкнена під час loading.
@@ -3722,7 +3722,7 @@ syncScheduler.ts: DEFAULT_MIN_AGE_HOURS = 8, DEFAULT_TICK_MS = 1 год. syncAll
 
 ### `data-48` [medium] Відхилені sync-оп-и зберігаються в sync_op_log з повним payload і без ретеншену: журнал необмежено роздувається
 
-- **Стан:** частково виправлено в гілці claude/fix-data-17-48-sync-oplog (відхилення невідомих таблиць 4xx до запису - зміна контракту, рішення власника; ретеншен `applied`-рядків і партиційний індекс під rejected лишаються за ADR-0065; поллер працює лише з `LOG_ARCHIVE_ENABLED=true` і GCS-бакетом)
+- **Стан:** частково виправлено в #1367 (змерджено 2026-10-04) (відхилення невідомих таблиць 4xx до запису - зміна контракту, рішення власника; ретеншен `applied`-рядків і партиційний індекс під rejected лишаються за ADR-0065; поллер працює лише з `LOG_ARCHIVE_ENABLED=true` і GCS-бакетом)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync (syncV2 push) + logRetention
 - **Та сама першопричина, що й** [`rel-06`](./reliability.md#rel-06): Той самий корінь: rejected-оп пишуться в sync_op_log з повним row, а retention журналу немає. rel-06 ширший (байтова межа сторінки pull, text bound); перший S-крок data-48 (не писати row для rejected і відхиляти невідомі таблиці до запису) робиться цього тижня, retention за ADR-0065 далі.
 - **Де:** apps/server/src/modules/sync/syncV2.ts:389-456; apps/server/src/modules/logRetention/archivePoller.ts:73-76
