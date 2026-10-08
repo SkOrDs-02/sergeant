@@ -25,6 +25,7 @@ import type {
   NutritionDualWriteOp,
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
+  PantryUpsertOp,
   NutritionPrefsSnapshot,
   NutritionRecipeSnapshot,
   NutritionShoppingListSnapshot,
@@ -68,7 +69,7 @@ const applyOps = createApplyOps<NutritionDualWriteOp>({
       return "applied";
     },
     "pantry-upsert": async (client, op, rt) => {
-      await upsertPantry(client, op.pantry, rt, op.keepMissing === true);
+      await upsertPantry(client, op.pantry, rt, op.keepMissing === true, op);
       return "applied";
     },
     "pantry-delete": async (client, op, rt) => {
@@ -389,7 +390,18 @@ async function upsertPantry(
   p: NutritionPantrySnapshot,
   { userId, clientTs }: DualWriteRuntime,
   keepMissing = false,
+  delta?: Pick<PantryUpsertOp, "changedItemIds" | "pantryFieldsChanged">,
 ): Promise<void> {
+  // rel-10: у outbox ідуть лише змінені позиції. Реплей (`keepMissing`) і op без
+  // `changedItemIds` лишаються повним upsert-ом, як раніше.
+  const changedItems =
+    !keepMissing && delta?.changedItemIds
+      ? new Set(delta.changedItemIds)
+      : null;
+  const enqueuePantryRow =
+    !changedItems ||
+    delta?.pantryFieldsChanged !== false ||
+    changedItems.size > 0;
   await client.run(PANTRY_UPSERT_SQL, [
     p.id,
     userId,
@@ -398,14 +410,21 @@ async function upsertPantry(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
-    userId,
-    table: "nutrition_pantries",
-    op: "insert",
-    row: { id: p.id, user_id: userId, name: p.name ?? "", text: p.text ?? "" },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
+  if (enqueuePantryRow) {
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "nutrition_pantries",
+      op: "insert",
+      row: {
+        id: p.id,
+        user_id: userId,
+        name: p.name ?? "",
+        text: p.text ?? "",
+      },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 
   // Upsert items
   const items = p.items ?? [];
@@ -424,6 +443,7 @@ async function upsertPantry(
       clientTs,
       clientTs,
     ]);
+    if (changedItems && !changedItems.has(it!.id!)) continue;
     void enqueueOutboxUpsert(client, {
       userId,
       table: "nutrition_pantry_items",
