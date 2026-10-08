@@ -40,9 +40,6 @@ vi.mock("../../fizruk/hooks/useDailyLog", () => ({
 vi.mock("../../../core/profile/useLatestBodyWeight", () => ({
   useLatestBodyWeightKg: () => null,
 }));
-vi.mock("../../../core/profile/useAverageWorkoutKcal", () => ({
-  useAverageWorkoutKcalPerDay: () => 0,
-}));
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({ success: toastSuccess, error: toastError, info: vi.fn() }),
 }));
