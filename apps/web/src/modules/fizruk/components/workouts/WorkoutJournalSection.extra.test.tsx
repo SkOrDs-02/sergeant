@@ -15,7 +15,7 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
-import { ToastProvider } from "@shared/hooks/useToast";
+import { ToastProvider, useToast } from "@shared/hooks/useToast";
 
 vi.mock("../session/SessionView", () => ({
   SessionView: ({
@@ -40,14 +40,19 @@ vi.mock("../workouts/WorkoutSummaryView", () => ({
   WorkoutSummaryView: ({
     workout,
     onRepeat,
+    onDelete,
   }: {
     workout: Workout;
     onRepeat: () => void;
+    onDelete: () => void;
   }) => (
     <div data-testid="summary-view">
       <span data-testid="summary-workout-id">{workout.id}</span>
       <button type="button" onClick={onRepeat}>
         Повторити це тренування
+      </button>
+      <button type="button" onClick={onDelete}>
+        Видалити завершене
       </button>
     </div>
   ),
@@ -55,8 +60,33 @@ vi.mock("../workouts/WorkoutSummaryView", () => ({
 
 import { WorkoutJournalSection } from "./WorkoutJournalSection";
 
+// ToastProvider сам тости не малює (це робить ToastContainer) — мінімальний
+// рендер живих тостів, щоб перевіряти undo-тост видалення.
+function ToastProbe() {
+  const { toasts } = useToast();
+  return (
+    <div>
+      {toasts.map((t) => (
+        <div key={t.id} role="status">
+          <span>{t.msg}</span>
+          {t.action ? (
+            <button type="button" onClick={t.action.onClick}>
+              {t.action.label}
+            </button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function renderWithToast(ui: React.ReactElement) {
-  return render(<ToastProvider>{ui}</ToastProvider>);
+  return render(
+    <ToastProvider>
+      {ui}
+      <ToastProbe />
+    </ToastProvider>,
+  );
 }
 
 function makeWorkout(override: Partial<Workout> = {}): Workout {
@@ -152,6 +182,37 @@ describe("WorkoutJournalSection – ended workout renders the read-only summary"
       screen.getByRole("button", { name: /повторити це тренування/i }),
     );
     expect(onRepeatWorkout).toHaveBeenCalledWith(ended);
+  });
+
+  // ux-11: видалення завершеного тренування зі сторінки підсумку — той самий
+  // шлях, що й свайп в історії (deleteWorkout + undo-тост), далі назад до списку.
+  it("wires onDelete to deleteWorkout, shows the undo toast, restores on undo and closes the page", () => {
+    const ended = makeWorkout({
+      id: "w-ended",
+      endedAt: new Date().toISOString(),
+    });
+    const deleteWorkout = vi.fn();
+    const restoreWorkout = vi.fn();
+    const onClose = vi.fn();
+    navigator.vibrate = vi.fn();
+    renderWithToast(
+      <WorkoutJournalSection
+        {...baseProps({
+          activeWorkout: ended,
+          deleteWorkout,
+          restoreWorkout,
+          onClose,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Видалити завершене" }));
+
+    expect(deleteWorkout).toHaveBeenCalledWith("w-ended");
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Тренування видалено")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Повернути" }));
+    expect(restoreWorkout).toHaveBeenCalledWith(ended);
   });
 });
 

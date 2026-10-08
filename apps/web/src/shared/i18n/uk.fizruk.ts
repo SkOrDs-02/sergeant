@@ -691,6 +691,12 @@ export const fizrukPageMessages = {
     outOfFive: "/5",
     noteHeading: "Нотатка",
     repeatCta: "Повторити це тренування",
+    /**
+     * ux-11 (аудит 2026-10-01): свайп в історії — touch-only жест, тож
+     * видалення завершеного тренування мусить мати кнопку, доступну мишею
+     * й клавіатурою. Тост з undo — `workoutHistory.deletedToast`.
+     */
+    deleteCta: "Видалити тренування",
     notFoundTitle: "Тренування не знайдено",
     notFoundDescription:
       "Його вже видалили, або посилання застаріле. Повернись до списку тренувань.",

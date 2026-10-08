@@ -8,6 +8,7 @@ import {
 } from "../lib/sqliteReader";
 import { notifyFizrukSqliteCacheRefresh } from "../lib/sqliteReadGate";
 import type { Workout } from "@sergeant/fizruk-domain";
+import { setPendingRetroEnd } from "../lib/pendingRetroEnd";
 
 type CreatedWorkout = ReturnType<
   ReturnType<typeof useWorkouts>["createWorkout"]
@@ -117,5 +118,38 @@ describe("useWorkouts – finish flow edge cases", () => {
     });
     const again = result.current.workouts.find((w) => w.id === "pre-existing");
     expect(again?.endedAt).toBe(firstEndedAt);
+  });
+
+  // data-37: ретро-тренування внесли, вкладку/PWA перезапустили, і лише тоді
+  // натиснули «Завершити». Кінець мусить бути введеним, а не «зараз».
+  it("endWorkout бере введений ретро-кінець навіть після перезапуску вкладки (sessionStorage очищено)", async () => {
+    const retro: Workout = {
+      id: "w_retro",
+      startedAt: "2026-09-29T18:00:00.000Z",
+      endedAt: null,
+      items: [],
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      note: "",
+    };
+    seedWorkouts([retro]);
+    const { result } = renderHook(() => useWorkouts());
+    await waitFor(() =>
+      expect(result.current.workouts.map((w) => w.id)).toContain("w_retro"),
+    );
+
+    const enteredEnd = "2026-09-29T19:00:00.000Z";
+    setPendingRetroEnd("w_retro", enteredEnd);
+    sessionStorage.clear(); // імітація вивантаження вкладки/PWA
+
+    act(() => {
+      result.current.endWorkout("w_retro");
+    });
+    await waitFor(() =>
+      expect(
+        result.current.workouts.find((w) => w.id === "w_retro")?.endedAt,
+      ).toBe(enteredEnd),
+    );
   });
 });

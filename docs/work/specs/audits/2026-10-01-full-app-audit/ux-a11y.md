@@ -721,7 +721,7 @@ v31-back-loop.mjs: back2+1s і back2+8s → url "/", у DOM лише sr-only «�
 
 ### `ux-11` [medium] Завершене тренування можна видалити лише свайпом на тач-екрані, а мишею чи з клавіатури не можна
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-37-ux-11-fizruk-history
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук / історія
 - **Де:** apps/web/src/modules/fizruk/components/workouts/WorkoutHistoryList.tsx:176-182; apps/web/src/shared/components/ui/SwipeToAction.tsx:259-262; fizruk WorkoutSummaryView.tsx; WorkoutJournalSection.tsx:160
 - **Першопричина:** Єдиний шлях видалення — SwipeToAction.onSwipeLeft у WorkoutHistoryList, а SwipeToAction слухає лише touch-події. WorkoutSummaryView для завершеного тренування має тільки «Назад» і «Повторити», а меню «⋯ Видалити» є лише в активній сесії.

@@ -43,6 +43,7 @@ import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
 import { recordWorkoutMoment } from "../../lib/workoutMoments";
+import { deleteWorkoutWithUndo } from "../../lib/deleteWorkoutWithUndo";
 
 /**
  * Local view state used to drive the post-finish flash card. The shape merges
@@ -163,6 +164,17 @@ export function WorkoutJournalSection({
         workout={activeWorkout}
         onRepeat={() => onRepeatWorkout(activeWorkout)}
         onClose={onClose}
+        onDelete={() => {
+          // ux-11: той самий шлях, що й свайп в історії, — видалення з
+          // undo-тостом; потім назад до списку (сторінки вже нема).
+          deleteWorkoutWithUndo({
+            toast,
+            workout: activeWorkout,
+            deleteWorkout,
+            restoreWorkout,
+          });
+          onClose();
+        }}
       />
     );
   }
