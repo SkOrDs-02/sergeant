@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { classifyDateBound } from "./dateBounds";
+import {
+  DATE_INVALID_MESSAGE,
+  DATE_WARN_MESSAGE,
+  classifyDateBound,
+  dateBoundMessage,
+} from "./dateBounds";
 
 const TODAY = "2026-08-01";
 
@@ -25,5 +30,25 @@ describe("classifyDateBound", () => {
 
   it.each(cases)("%s → %s", (dayKey, expected) => {
     expect(classifyDateBound(dayKey, TODAY)).toBe(expected);
+  });
+});
+
+describe("dateBoundMessage", () => {
+  it("returns the warn copy for a warn bound", () => {
+    expect(dateBoundMessage("warn")).toBe(
+      "Незвична дата, перевір, чи не помилка в році.",
+    );
+    expect(dateBoundMessage("warn")).toBe(DATE_WARN_MESSAGE);
+  });
+
+  it("returns the invalid copy for an invalid bound", () => {
+    expect(dateBoundMessage("invalid")).toBe(
+      "Дата поза допустимим діапазоном.",
+    );
+    expect(dateBoundMessage("invalid")).toBe(DATE_INVALID_MESSAGE);
+  });
+
+  it("returns null for an ok bound", () => {
+    expect(dateBoundMessage("ok")).toBeNull();
   });
 });
