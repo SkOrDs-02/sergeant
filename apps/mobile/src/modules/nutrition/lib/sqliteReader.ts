@@ -22,7 +22,7 @@ import { normalizeShoppingList } from "@sergeant/nutrition-domain";
 import type { NullableMacros } from "@sergeant/shared";
 
 import type { SavedRecipe } from "./recipeBookStore";
-import { recipeCompositionFields } from "./recipeComponentsNormalize";
+import { recipeCompositionFields } from "@sergeant/nutrition-domain";
 
 export interface SqliteNutritionCache {
   /** Nutrition log keyed by date string (YYYY-MM-DD). */
