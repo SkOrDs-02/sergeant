@@ -4,14 +4,14 @@ import {
   formatMoneyFromKopecks,
   pluralExercises,
 } from "@sergeant/shared";
-import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
 import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
+import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
-import { safeParseLS, scoreLru } from "./searchCache";
+import { scoreLru } from "./searchCache";
 import { searchProfile } from "./searchProfile";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
@@ -58,10 +58,9 @@ function searchFinyk(tokens: string[]): Hit[] {
     }
   }
 
-  // Hub search reads the finyk_subs LS shard; STORAGE_KEYS.FINYK_* is banned
-  // outside module wrappers by the no-restricted-syntax retirement guard.
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- intentional LS-shard read; STORAGE_KEYS.FINYK_* banned in hub/search (retirement guard)
-  const subs = safeParseLS<FinykSub[]>("finyk_subs", []);
+  // Підписки пишуться лише в SQLite (LS-ключ `finyk_subs` — tombstone),
+  // тож пошук читає SQLite-кеш Фініка.
+  const subs = getCachedFinykSqliteState().subscriptions as FinykSub[];
   if (Array.isArray(subs)) {
     for (const s of subs) {
       if (!s || typeof s !== "object") continue;
@@ -285,10 +284,10 @@ function searchNutrition(tokens: string[]): Hit[] {
  * enough that a stale hit for one keystroke is acceptable.
  */
 function storageSnapshot(): string {
-  // finyk_* are still LS-backed; routine / fizruk / nutrition moved to the
-  // SQLite warm caches (their `*_v1` LS keys are tombstoned). Build the cache
-  // half from the canonical readers so the LRU still invalidates when that
-  // data changes (counts + ids + habit/meal names catch add/remove/rename).
+  // routine / fizruk / nutrition / finyk-підписки живуть у SQLite warm
+  // caches (їхні LS-ключі — tombstone). Build the cache half from the
+  // canonical readers so the LRU still invalidates when that data changes
+  // (counts + ids + habit/meal/subscription names catch add/remove/rename).
   // finyk_tx_cache is now tombstoned — derive change-signal from the mirror cache
   // (same semantics: length change + prefix/suffix fingerprint).
   const mirrorTxs = getVisibleFinykMonoMirrorState().transactions;
@@ -296,13 +295,10 @@ function storageSnapshot(): string {
     mirrorTxs.length === 0
       ? "0"
       : `${mirrorTxs.length}:${mirrorTxs[0]?.id ?? ""}:${mirrorTxs[mirrorTxs.length - 1]?.id ?? ""}`;
-  const lsParts = [
-    mirrorSnapshot,
-    ...["finyk_subs"].map((k) => {
-      const v = safeReadStringLS(k);
-      return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
-    }),
-  ];
+  const subsSnapshot = getCachedFinykSqliteState()
+    .subscriptions.map((s) => `${s?.id ?? ""}${s?.name ?? ""}`)
+    .join("|");
+  const lsParts = [mirrorSnapshot, `s:${subsSnapshot}`];
   const routine = loadRoutineState();
   const fizruk = getCachedFizrukSqliteState();
   const nutrition = loadNutritionLog();
