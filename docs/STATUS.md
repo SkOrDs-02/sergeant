@@ -39,11 +39,11 @@
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
-## 🔵 В роботі — 88 відкритих документів
+## 🔵 В роботі — 89 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 88       |
+| Активні спеки | 89       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -52,9 +52,9 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/anonymous-migration-fast-path.md`](./work/specs/anonymous-migration-fast-path.md) — SPEC: швидкий шлях гейта міграції анонімних даних — Scaffolded - напрям («якщо переносити нічого, пропустити розвідку й вести в хаб») ухвалив власник; конкретний механізм, _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/privacy.md`](./work/specs/audits/2026-10-01-full-app-audit/privacy.md) — Аудит 2026-10-01 · Приватність і відповідність — Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
 - [`work/specs/audits/2026-10-08-site-audit.md`](./work/specs/audits/2026-10-08-site-audit.md) — Аудит сайту 2026-10-08: SEO, текст, візуал, швидкодія — Active. Реєстр знахідок; виправлення і рішення власника в PR [#1414](https://github.com/SkOrDs-02/sergeant/pull/1414), в _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/security.md`](./work/specs/audits/2026-10-01-full-app-audit/security.md) — Аудит 2026-10-01 · Безпека та доступ — Active. 62 кластерів (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
