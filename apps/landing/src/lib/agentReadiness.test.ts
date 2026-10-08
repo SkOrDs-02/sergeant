@@ -92,13 +92,18 @@ describe("одна адреса на сторінку", () => {
     headers: { source: string; headers: { key: string; value: string }[] }[];
   };
 
-  it("www веде на основний домен постійним редиректом", () => {
-    const www = cfg.redirects.find((r) =>
+  it("www веде на основний домен постійним редиректом, корінь теж", () => {
+    // Після деплою 2026-10-08 правило `/:path*` редиректило `www/hroshi`, а
+    // корінь `www/` віддавав 200, тобто головна лишалась дублем. Тепер корінь
+    // має власне правило, а решта шляхів – `(.*)`, що ловить і порожній шлях.
+    const www = cfg.redirects.filter((r) =>
       r.has?.some((h) => h.type === "host" && h.value.startsWith("www.")),
     );
-    expect(www, "немає редиректу з www").toBeDefined();
-    expect(www?.destination).toBe("https://sergeant.com.ua/:path*");
-    expect(www?.permanent).toBe(true);
+    const root = www.find((r) => r.source === "/");
+    const rest = www.find((r) => r.source === "/:path(.*)");
+    expect(root?.destination).toBe("https://sergeant.com.ua/");
+    expect(rest?.destination).toBe("https://sergeant.com.ua/:path");
+    expect(www.every((r) => r.permanent === true)).toBe(true);
   });
 
   it("шлях зі слешем у кінці редиректиться на шлях без нього", () => {
