@@ -22,6 +22,10 @@
 import type { Pool } from "pg";
 import { logger } from "../../obs/logger.js";
 import { waitUntilIdle } from "../../lib/pollerDrain.js";
+import {
+  resolveStartupDelayMs,
+  scheduleStartupTick,
+} from "../../lib/pollerStartupTick.js";
 
 export interface RetentionPollerOptions {
   pool: Pool;
@@ -29,6 +33,11 @@ export interface RetentionPollerOptions {
   retentionDays: number;
   /** Інтервал в мілісекундах. Default 1 год. 0 → off. */
   intervalMs?: number;
+  /**
+   * Затримка одноразового стартового тіку (мс). Default - jitter 30-90 с;
+   * 0 або від'ємне вимикає (rel-19: без нього кожен деплой скидав інтервал).
+   */
+  startDelayMs?: number | undefined;
 }
 
 export interface RetentionTickResult {
@@ -42,7 +51,9 @@ export class WebhookEventsRetentionPoller {
   private readonly pool: Pool;
   private readonly retentionDays: number;
   private readonly intervalMs: number;
+  private readonly startDelayMs: number;
   private timer: NodeJS.Timeout | null = null;
+  private startTimer: NodeJS.Timeout | null = null;
   private running = false;
   private stopping = false;
 
@@ -50,6 +61,7 @@ export class WebhookEventsRetentionPoller {
     this.pool = options.pool;
     this.retentionDays = options.retentionDays;
     this.intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
+    this.startDelayMs = resolveStartupDelayMs(options.startDelayMs);
   }
 
   /** Запускає cron-loop. Idempotent — повторні start-и не дублюють timer. */
@@ -69,20 +81,32 @@ export class WebhookEventsRetentionPoller {
       retentionDays: this.retentionDays,
       intervalMs: this.intervalMs,
     });
-    this.timer = setInterval(() => {
-      void this.runOnce().catch((err: unknown) => {
-        logger.error({
-          msg: "webhook_events_retention_tick_failed",
-          err: err instanceof Error ? err.message : String(err),
-        });
+    const onTickError = (err: unknown): void => {
+      logger.error({
+        msg: "webhook_events_retention_tick_failed",
+        err: err instanceof Error ? err.message : String(err),
       });
+    };
+    this.timer = setInterval(() => {
+      void this.runOnce().catch(onTickError);
     }, this.intervalMs);
     this.timer.unref?.();
+    // Одноразовий стартовий тік: інтервал рахується від старту процесу, а
+    // деплоїв більше, ніж годин (rel-19).
+    this.startTimer = scheduleStartupTick(
+      this.startDelayMs,
+      () => this.runOnce(),
+      onTickError,
+    );
   }
 
   /** Зупиняє loop. Idempotent; чекає поки in-flight tick завершиться. */
   async stop(): Promise<void> {
     this.stopping = true;
+    if (this.startTimer) {
+      clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
