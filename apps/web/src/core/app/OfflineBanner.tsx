@@ -14,6 +14,9 @@ import { useOutboxPurgeNotice } from "../syncEngine/outboxPurgeNotice";
  * критичною помилкою, тому індикатор лишається компактним.
  *
  * Visible states (idle → renders `null`):
+ *   - **session expired (`sec-18`):** сесія завершилась посеред роботи, а
+ *     вкладка ще вважає себе залогіненою: черга лежить на пристрої й нікуди
+ *     не їде, доки людина не увійде. Найвищий пріоритет.
  *   - **online + queue/dirty > 0:** "Синхронізація · N в черзі" with an
  *     animated `refresh` icon.
  *   - **offline:** "Офлайн" or "Офлайн · N в черзі" with the wifi-off icon.
@@ -38,7 +41,8 @@ import { useOutboxPurgeNotice } from "../syncEngine/outboxPurgeNotice";
 const PILL_CLS =
   "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-type BannerState = "blocked" | "offline" | "syncing" | "rejected" | "purged";
+type BannerState =
+  "session" | "blocked" | "offline" | "syncing" | "rejected" | "purged";
 
 const queueLabel = (count: number) =>
   `${count} ${pluralUa(count, {
@@ -59,6 +63,7 @@ export function OfflineBanner() {
     syncV2PendingCount = 0,
     syncV2DeadLetterCount = 0,
     syncV2RejectedCount = 0,
+    sessionExpired = false,
     retrySyncV2DeadLetters,
   } = useSyncStatus();
   const pending = syncV2PendingCount;
@@ -83,8 +88,12 @@ export function OfflineBanner() {
   // TTL-purge. Але й мовчати про нього не можна — до 2026-09-03 людина не
   // мала жодного сигналу, що запис лишився лише на пристрої
   // (tech-debt/frontend.md, знахідка 2026-08-25).
-  const state: BannerState | null =
-    syncV2DeadLetterCount > 0
+  //
+  // `session` (`sec-18`) стоїть першим: без сесії жоден інший стан не
+  // виправиться сам, а черга лишається на пристрої, доки людина не увійде.
+  const state: BannerState | null = sessionExpired
+    ? "session"
+    : syncV2DeadLetterCount > 0
       ? "blocked"
       : !online
         ? "offline"
@@ -110,47 +119,53 @@ export function OfflineBanner() {
   if (state === null) return <>{statusRegion("")}</>;
 
   const view =
-    state === "blocked"
+    state === "session"
       ? {
-          icon: "refresh-cw" as const,
+          icon: "log-in" as const,
           iconClass: undefined as string | undefined,
-          label: `${syncV2DeadLetterCount} ${pluralUa(syncV2DeadLetterCount, {
-            one: "помилка синхронізації",
-            few: "помилки синхронізації",
-            many: "помилок синхронізації",
-          })}`,
+          label: "Сесія завершилась",
         }
-      : state === "offline"
+      : state === "blocked"
         ? {
-            icon: "wifi-off" as const,
-            iconClass: undefined,
-            label: pending > 0 ? `Офлайн · ${queueLabel(pending)}` : "Офлайн",
+            icon: "refresh-cw" as const,
+            iconClass: undefined as string | undefined,
+            label: `${syncV2DeadLetterCount} ${pluralUa(syncV2DeadLetterCount, {
+              one: "помилка синхронізації",
+              few: "помилки синхронізації",
+              many: "помилок синхронізації",
+            })}`,
           }
-        : state === "rejected"
+        : state === "offline"
           ? {
-              icon: "alert-triangle" as const,
+              icon: "wifi-off" as const,
               iconClass: undefined,
-              label: `${syncV2RejectedCount} ${pluralUa(syncV2RejectedCount, {
-                one: "запис не прийнято",
-                few: "записи не прийнято",
-                many: "записів не прийнято",
-              })}`,
+              label: pending > 0 ? `Офлайн · ${queueLabel(pending)}` : "Офлайн",
             }
-          : state === "purged" && purgeNotice
+          : state === "rejected"
             ? {
-                icon: "info" as const,
+                icon: "alert-triangle" as const,
                 iconClass: undefined,
-                label: `${purgeNotice.purged} ${pluralUa(purgeNotice.purged, {
-                  one: "старий запис прибрано",
-                  few: "старі записи прибрано",
-                  many: "старих записів прибрано",
+                label: `${syncV2RejectedCount} ${pluralUa(syncV2RejectedCount, {
+                  one: "запис не прийнято",
+                  few: "записи не прийнято",
+                  many: "записів не прийнято",
                 })}`,
               }
-            : {
-                icon: "refresh-cw" as const,
-                iconClass: "motion-safe:animate-spin-slow",
-                label: `Синхронізація · ${queueLabel(pending)}`,
-              };
+            : state === "purged" && purgeNotice
+              ? {
+                  icon: "info" as const,
+                  iconClass: undefined,
+                  label: `${purgeNotice.purged} ${pluralUa(purgeNotice.purged, {
+                    one: "старий запис прибрано",
+                    few: "старі записи прибрано",
+                    many: "старих записів прибрано",
+                  })}`,
+                }
+              : {
+                  icon: "refresh-cw" as const,
+                  iconClass: "motion-safe:animate-spin-slow",
+                  label: `Синхронізація · ${queueLabel(pending)}`,
+                };
 
   const announcement =
     state === "offline"
@@ -185,6 +200,7 @@ export function OfflineBanner() {
         pending={pending}
         deadLetter={syncV2DeadLetterCount}
         rejected={syncV2RejectedCount}
+        sessionExpired={sessionExpired}
         onRetry={retrySyncV2DeadLetters}
       />
     </>

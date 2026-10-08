@@ -107,6 +107,10 @@ import {
   hasCompletedInitialPull,
 } from "./initialPullState";
 import {
+  __resetSyncSessionSignalForTests,
+  readSyncSessionMissing,
+} from "./syncSessionSignal";
+import {
   __resetSyncEngineWriterForTests,
   bootSyncEngineReader,
   bootSyncEngineWriter,
@@ -119,6 +123,7 @@ beforeEach(() => {
   client = makeClient();
   dbHandle = { migrationClient: () => client };
   __resetSyncEngineWriterForTests();
+  __resetSyncSessionSignalForTests();
 });
 
 afterEach(() => {
@@ -156,6 +161,30 @@ describe("createDefaultRuntime (default boot path)", () => {
     expect(mockCountRejected).toHaveBeenCalledWith(expect.anything(), {
       excludeReasons: ["lww_conflict"],
     });
+  });
+
+  it("sec-18: drain без сесії виставляє сигнал «сесії немає», з живою сесією знімає, збій мережі його не чіпає", async () => {
+    const runtime = await bootSyncEngineWriter();
+    expect(readSyncSessionMissing()).toBe(false);
+
+    // Сесія спливла посеред роботи: `data: null` без помилки.
+    mockGetSession.mockResolvedValueOnce({ data: null, error: null } as never);
+    await runtime!.flushNow();
+    expect(mockDrain).not.toHaveBeenCalled();
+    expect(readSyncSessionMissing()).toBe(true);
+
+    // Тимчасовий збій `getSession` (офлайн/5xx) нічого не каже про сесію.
+    mockGetSession.mockResolvedValueOnce({
+      data: null,
+      error: { status: 0 },
+    } as never);
+    await runtime!.flushNow();
+    expect(readSyncSessionMissing()).toBe(true);
+
+    // Людина увійшла знову: drain іде, сигнал знято.
+    await runtime!.flushNow();
+    expect(mockDrain).toHaveBeenCalled();
+    expect(readSyncSessionMissing()).toBe(false);
   });
 
   it("tags failure and reports via captureException when migrations throw", async () => {

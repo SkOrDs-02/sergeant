@@ -34,15 +34,18 @@ interface TestRes {
       }
     | undefined;
   writableEnded: boolean;
+  writableFinished: boolean;
   status(code: number): TestRes;
   json(payload: unknown): TestRes;
 }
 
 function makeRes(): TestRes & Response {
-  const res: TestRes = {
+  // Хендлер слухає `res.on("close")` (rel-17), тож мок — EventEmitter.
+  const res: TestRes = Object.assign(new EventEmitter(), {
     statusCode: 200,
-    body: undefined,
+    body: undefined as TestRes["body"],
     writableEnded: false,
+    writableFinished: false,
     status(code: number) {
       this.statusCode = code;
       return this;
@@ -50,10 +53,11 @@ function makeRes(): TestRes & Response {
     json(payload: unknown) {
       this.body = payload as TestRes["body"];
       this.writableEnded = true;
+      this.writableFinished = true;
       return this;
     },
-  };
-  return res as TestRes & Response;
+  });
+  return res as unknown as TestRes & Response;
 }
 
 interface MakeReqOpts {
@@ -226,5 +230,55 @@ describe("M4: GROQ_TRANSCRIBE_MODEL allowlist", () => {
     expect(["whisper-large-v3-turbo", "whisper-large-v3"]).toContain(
       __testing.resolveGroqModel(),
     );
+  });
+});
+
+// rel-17 — abort слухає `res` 'close', а не `req` 'close': на момент, коли
+// хендлер реєструє слухача (після async-мідлвар і `assertTranscribeUsdCap`),
+// `req` вже відеміттив 'close'. Реальний сокет-тест: `transcribe.clientAbort.test.ts`.
+describe("rel-17: client disconnect → abort Groq-виклику", () => {
+  async function runUntilUpstream(res: TestRes & Response) {
+    let signal: AbortSignal | undefined;
+    let release!: () => void;
+    transcribeAudio.mockImplementationOnce(
+      (args: { signal: AbortSignal }) =>
+        new Promise((resolve) => {
+          signal = args.signal;
+          release = () => resolve({ text: "ok", durationSec: 1 });
+        }),
+    );
+    const req = makeReq({ body: Buffer.from(new Uint8Array([1, 2, 3])) });
+    const done = transcribeHandler(req, res);
+    while (!signal) await new Promise((r) => setTimeout(r, 1));
+    return { req, signal, release, done };
+  }
+
+  it("res 'close' до завершення відповіді abort-ить сигнал", async () => {
+    const res = makeRes();
+    const { signal, release, done } = await runUntilUpstream(res);
+    expect(signal.aborted).toBe(false);
+    res.emit("close");
+    expect(signal.aborted).toBe(true);
+    release();
+    await done;
+  });
+
+  it("req 'close' сигнал НЕ чіпає (слухач саме на res)", async () => {
+    const res = makeRes();
+    const { req, signal, release, done } = await runUntilUpstream(res);
+    (req as unknown as EventEmitter).emit("close");
+    expect(signal.aborted).toBe(false);
+    release();
+    await done;
+  });
+
+  it("res 'close' після штатного завершення (writableFinished) не abort-ить", async () => {
+    const res = makeRes();
+    const { signal, release, done } = await runUntilUpstream(res);
+    release();
+    await done;
+    expect(res.writableFinished).toBe(true);
+    res.emit("close");
+    expect(signal.aborted).toBe(false);
   });
 });

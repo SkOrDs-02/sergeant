@@ -8,6 +8,7 @@ import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
+import { useRoutineRemindersToggle } from "../../modules/routine/hooks/useRoutineRemindersToggle";
 import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
 import { patchNutritionPrefs } from "../../modules/nutrition/lib/nutritionStorage";
 import { useNutritionPrefsSnapshot } from "../../modules/nutrition/hooks/useNutritionPrefsHydration";
@@ -102,18 +103,10 @@ export function NotificationsSection() {
     }
   };
 
+  const setRoutineReminders = useRoutineRemindersToggle(updateRoutinePref);
   const handleRoutineToggle = async (checked: boolean) => {
-    if (checked) {
-      const perm = await requestNotificationPermission();
-      setPermStatus(perm);
-      if (perm !== "granted") {
-        toastWarning(
-          "Без дозволу на сповіщення нагадування не надсилатимуться. Дозволь сповіщення у налаштуваннях браузера.",
-        );
-        return;
-      }
-    }
-    updateRoutinePref("routineRemindersEnabled", checked);
+    const perm = await setRoutineReminders(checked);
+    if (perm) setPermStatus(perm);
   };
 
   const handleFizrukToggle = async (checked: boolean) => {

@@ -34,7 +34,9 @@ describe("ColumnMapper", () => {
       />,
     );
     expect(screen.getByLabelText("Колонка дати")).toHaveValue("Дата операції");
-    expect(screen.getByLabelText("Колонка суми (витрати)")).toHaveValue("Сума");
+    expect(
+      screen.getByLabelText("Колонка суми або витрат (дебет)"),
+    ).toHaveValue("Сума");
     expect(screen.getByLabelText("Колонка опису")).toHaveValue("Опис");
   });
 
@@ -51,7 +53,7 @@ describe("ColumnMapper", () => {
     fireEvent.change(screen.getByLabelText("Колонка дати"), {
       target: { value: "Дата операції" },
     });
-    fireEvent.change(screen.getByLabelText("Колонка суми (витрати)"), {
+    fireEvent.change(screen.getByLabelText("Колонка суми або витрат (дебет)"), {
       target: { value: "Сума" },
     });
     fireEvent.change(screen.getByLabelText("Колонка опису"), {
@@ -69,6 +71,45 @@ describe("ColumnMapper", () => {
       dateFormat: "YYYY-MM-DD",
       decimalComma: true,
     });
+  });
+
+  it("sends no creditCol by default (single signed-amount column)", () => {
+    const onSubmit = vi.fn();
+    render(
+      <ColumnMapper
+        headers={headers}
+        sampleRows={sampleRows}
+        onSubmit={onSubmit}
+      />,
+    );
+    expect(
+      screen.getByLabelText("Колонка надходжень (кредит), якщо окрема"),
+    ).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Продовжити" }));
+    const submitted = onSubmit.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect("creditCol" in submitted).toBe(false);
+  });
+
+  it("passes the chosen credit column to onSubmit (debit/credit statements)", () => {
+    const onSubmit = vi.fn();
+    render(
+      <ColumnMapper
+        headers={["Дата", "Опис", "Дебет", "Кредит"]}
+        sampleRows={[["21.09.2026", "Сільпо", "350,00", ""]]}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Колонка суми або витрат (дебет)"), {
+      target: { value: "Дебет" },
+    });
+    fireEvent.change(
+      screen.getByLabelText("Колонка надходжень (кредит), якщо окрема"),
+      { target: { value: "Кредит" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Продовжити" }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ amountCol: "Дебет", creditCol: "Кредит" }),
+    );
   });
 
   it("toggling the decimal-comma switch flips the submitted mapping", () => {

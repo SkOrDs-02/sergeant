@@ -183,11 +183,18 @@ export type ImportDateFormat = (typeof IMPORT_DATE_FORMATS)[number];
 
 /** Колонки з CSV-заголовка (точний текст заголовка, як він прийшов у
  * попередньому `needsMapping: true` → `headers[]`), не індекси — стабільне
- * до перестановки колонок джерелом. */
+ * до перестановки колонок джерелом.
+ *
+ * `amountCol` без `creditCol` — одна колонка суми ЗІ ЗНАКОМ (мінус = витрата,
+ * плюс = надходження). З `creditCol` виписка має окремі колонки Дебет і
+ * Кредит (поширений український формат): `amountCol` = дебет (витрата),
+ * `creditCol` = кредит (надходження), у кожному рядку заповнена одна з двох. */
 export const ImportColumnMappingSchema = z
   .object({
     dateCol: z.string().min(1).max(200),
     amountCol: z.string().min(1).max(200),
+    /** Колонка надходжень (кредит), якщо вона окрема від `amountCol`. */
+    creditCol: z.string().min(1).max(200).optional(),
     descriptionCol: z.string().min(1).max(200),
     dateFormat: z.enum(IMPORT_DATE_FORMATS).optional(),
     decimalComma: z.boolean().optional(),

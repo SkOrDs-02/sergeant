@@ -1,6 +1,16 @@
+/**
+ * rel-12: що чистити. `"user"` (за замовчуванням) — кеші з даними користувача
+ * (`navigations-*`, `api-cache-*`, метадані партиції); `"all"` — ще й precache
+ * та ілюстрації вправ (лише ручне «Скинути кеш PWA» разом зі зняттям SW).
+ */
+export type SwClearScope = "user" | "all";
+
 type SwRequest =
   | { type: "SW_DEBUG"; data?: { requestId: string } }
-  | { type: "CLEAR_SW_CACHES"; data?: { requestId: string } }
+  | {
+      type: "CLEAR_SW_CACHES";
+      data?: { requestId: string; scope?: SwClearScope };
+    }
   | { type: "SW_SET_DEBUG"; data?: { enabled: boolean } }
   | { type: "SW_SET_USER"; data?: { userKey: string | null } };
 
@@ -150,22 +160,39 @@ export async function swGetDebugSnapshot() {
  * `cacheKeyWillBeUsed` plugin on the API + navigation routes prepends it
  * to the cache key so user A's responses never resolve user B's requests.
  *
- * Fire-and-forget: no response is required. If the SW restarts and the
- * main thread hasn't yet re-posted, cache keys fall back to `__u=anon` —
- * acceptable since `signOut` already wipes the caches as the real
- * security boundary.
+ * Fire-and-forget: no response is required. SW зберігає хеш у `sw-meta`
+ * (переживає idle-kill, priv-08); поки ключа немає (`anon`), runtime-кеш
+ * `/api/*` вимкнений, тож відкат на `__u=anon` не віддає чужих даних.
+ * `signOut` додатково чистить кеші як основну межу.
  */
 export async function swSetActiveUser(userKey: string | null) {
   await postToSw({ type: "SW_SET_USER", data: { userKey } });
 }
 
-export async function swClearCaches() {
+export async function swClearCaches(scope: SwClearScope = "user") {
   const requestId = makeRequestId("sw_clear");
   const res = await requestSw(
-    { type: "CLEAR_SW_CACHES", data: { requestId } },
+    { type: "CLEAR_SW_CACHES", data: { requestId, scope } },
     "CLEAR_SW_CACHES_RESULT",
     requestId,
     6000,
   );
   return res.result;
+}
+
+/**
+ * priv-08: повторно надсилає активного користувача, коли сторінку почав
+ * контролювати інший воркер (`controllerchange`: перший SW після install,
+ * оновлення версії). Новий воркер міг стартувати без збереженого ключа, а
+ * `SW_SET_USER` в AuthContext шлеться лише на зміну `user.id`.
+ * Повертає функцію відписки.
+ */
+export function onSwControllerChange(handler: () => void): () => void {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return () => {};
+  }
+  const sw = navigator.serviceWorker;
+  if (!sw || typeof sw.addEventListener !== "function") return () => {};
+  sw.addEventListener("controllerchange", handler);
+  return () => sw.removeEventListener("controllerchange", handler);
 }
