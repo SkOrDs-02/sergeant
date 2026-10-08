@@ -458,7 +458,7 @@ amplify-n20.json (statusMs=8, push ms 653/495) vs amplify-control-n0.json (push 
 
 ### `rel-06` [medium] Журнал синку росте без меж: rejected-оп зберігаються з повним row, retention і байтової межі pull немає
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-06-routine-text-bound (не писати row для rejected — виправлено раніше в 3836a8dd6; text bound для routine_entries у цій гілці: id понад 200 символів дає rejected/text_too_long, name обрізається до 200 (не reject: це копія назви звички, а термінальний reject губив би відмітку); лишилось: байтовий бюджет сторінки pull з next_cursor, квота обсягу, retention sync_op_log — рішення власника, ADR-0065)
+- **Стан:** частково виправлено в [#1400](https://github.com/SkOrDs-02/sergeant/pull/1400) (змерджено 2026-10-08) (не писати row для rejected — виправлено раніше в 3836a8dd6; text bound для routine_entries у цій гілці: id понад 200 символів дає rejected/text_too_long, name обрізається до 200 (не reject: це копія назви звички, а термінальний reject губив би відмітку); лишилось: байтовий бюджет сторінки pull з next_cursor, квота обсягу, retention sync_op_log — рішення власника, ADR-0065)
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: sync v2
 - **Де:** apps/server/src/modules/sync/syncV2.ts:443-462,653-711; packages/shared/src/schemas/api.ts:1164-1169; apps/server/src/http/bodySizePolicy.ts:155-168; apps/server/src/modules/sync/routine/applySync.ts
 - **Першопричина:** syncV2 пише в sync_op_log кожен оп з повним row до 256 КБ, зокрема rejected з table_not_allowed і довільною назвою таблиці. Журнал ніхто не чистить: ADR-0065 досі Proposed. Pull обмежений лише кількістю рядків (до 500), тож одна сторінка сягає ~128 МБ і кілька разів матеріалізується в пам'яті. routine_entries.name і id не мають text bound.
@@ -587,7 +587,7 @@ verify-.../mask.mts (node --import tsx): одне повідомлення 8000 
 
 ### `rel-08` [medium] Клієнт синку пушить на кожну зміну без коалесингу, push і pull ділять бакет 60/хв, а 429 палить спроби
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-08-sync-push-coalesce (лишилось: розвести серверні бакети push/pull (політика rate-limit), автовідновлення dead_letter (ручний тріаж за дизайном `syncOpRetry.ts`); pull після push лишено, бо доставляє зміни інших пристроїв, а з debounce він і так зріджується)
+- **Стан:** частково виправлено в [#1387](https://github.com/SkOrDs-02/sergeant/pull/1387) (змерджено 2026-10-08) (лишилось: розвести серверні бакети push/pull (політика rate-limit), автовідновлення dead_letter (ручний тріаж за дизайном `syncOpRetry.ts`); pull після push лишено, бо доставляє зміни інших пристроїв, а з debounce він і так зріджується)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: sync engine / api-client push loop
 - **Де:** apps/web/src/core/syncEngine/syncEngineWriter.ts:200-202; apps/web/src/core/syncEngine/outboxNudge.ts:43-55; apps/web/src/core/syncEngine/singleton.ts:689-697; packages/api-client/src/endpoints/syncV2.pushLoop.ts:399-406,471-500; packages/db-schema/src/sqlite/syncOpRetry.ts:40-53; apps/server/src/routes/sync.ts:81-84
 - **Першопричина:** notifyEnqueued одразу викликає flushNow без debounce, а кожен успішний push тягне за собою pull. /push, /pull і /stream стоять під одним per-user бакетом api:v2:sync 60/хв. Push-цикл не читає Retry-After і рахує 429/503 як спробу для кожного рядка батча. Після 10 спроб рядок іде в dead_letter, звідки його повертає лише кнопка.
@@ -664,7 +664,7 @@ syncOpRetry.ts:16-24 («a human triage path … decides»); singleton.ts:689-697
 
 ### `rel-09` [medium] Будь-яка правка активного тренування перезаливає на сервер усю історію тренувань
 
-- **Стан:** виправлено в гілці claude/fix-rel-09-fizruk-workouts-diff
+- **Стан:** виправлено в [#1389](https://github.com/SkOrDs-02/sergeant/pull/1389) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук dual-write
 - **Де:** apps/web/src/modules/fizruk/lib/fizrukDualWriteState.ts:301-321; apps/web/src/modules/fizruk/lib/sqliteWriter/diff/workouts.ts:85-97; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:257-321
 - **Першопричина:** toWorkoutSnapshot щоразу створює нові масиви items і groups, а workoutChanged порівнює prev.items !== next.items за посиланням. Тож diff вважає зміненим кожне тренування і ставить у outbox workout, усі його items і всі sets з історії.
@@ -753,7 +753,7 @@ vb/02-pantry-bulk.mjs, новий користувач, 25 додавань за
 
 ### `rel-11` [medium] Один pulled-оп, що кидає виняток при apply, назавжди зупиняє отримання змін на пристрої
 
-- **Стан:** виправлено в гілці claude/fix-rel-11-pull-apply-poison
+- **Стан:** виправлено в [#1388](https://github.com/SkOrDs-02/sergeant/pull/1388) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: sync engine reader
 - **Де:** apps/web/src/core/syncEngine/syncEngineReader.ts:436-459,477-490; apps/web/src/core/syncEngine/applyPullOp.ts:211-229,360-365
 - **Першопричина:** pullOnce викликає applyPullOp у циклі сторінки без per-op try/catch, а курсор пише лише після успіху всієї сторінки. Виняток SQLite (CHECK, NOT NULL, I/O) обриває тік, і наступний тік бере ту саму сторінку. Неідемпотентні оп-и перед отруйним, як increment стріка, застосовуються повторно на кожному тіку.
@@ -801,7 +801,7 @@ Verifier rerun of t3_wedge.mts with the real createSyncEngineReaderRuntime: pull
 
 ### `rel-12` [medium] Вихід з акаунта і «Скинути кеш PWA» видаляють Workbox precache: офлайн-запуск зламаний до наступного деплою
 
-- **Стан:** виправлено в гілці claude/fix-priv-08-rel-12-sw-cache (побічна ціна unregister - втрата push-підписки - закрита відновленням `restoreWebPushSubscriptionIfLost` після reload)
+- **Стан:** виправлено в [#1396](https://github.com/SkOrDs-02/sergeant/pull/1396) (змерджено 2026-10-08) (побічна ціна unregister - втрата push-підписки - закрита відновленням `restoreWebPushSubscriptionIfLost` після reload)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: service worker
 - **Де:** apps/web/src/sw/cache.ts:237-253; apps/web/src/sw/messages.ts:66-95; apps/web/src/core/auth/AuthContext.tsx:618-622; apps/web/src/core/app/swControl.ts:162-171; apps/web/src/core/settings/PWASection.tsx:20-27
 - **Першопричина:** clearAppCaches видаляє і workbox-precache*, хоча там лише ассети збірки без даних користувача. Workbox відновлює precache тільки коли в маніфесті є integrity, а її немає, тож кеш лишається порожнім до встановлення нового SW. Кнопка скидання при цьому не викликає ні update(), ні unregister().
@@ -891,7 +891,7 @@ v7-run.log (v7-precache.mjs): до виходу caches {"workbox-precache-v2-…
 
 ### `rel-13` [medium] Після збою завантаження чанка модуль недоступний до кінця сесії: «Спробувати ще» нічого не робить
 
-- **Стан:** виправлено в гілці claude/fix-rel-13-chunk-retry
+- **Стан:** виправлено в [#1413](https://github.com/SkOrDs-02/sergeant/pull/1413) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: module shell / error boundary
 - **Де:** apps/web/src/core/ModuleErrorBoundary.tsx:48-54,159; apps/web/src/modules/finyk/route.tsx:7; apps/web/src/core/app/ModuleShell.tsx:63; apps/web/src/core/lib/lazyImport.ts
 - **Першопричина:** На retry ModuleErrorBoundary лише ремаунтить дітей. Модульні компоненти — singleton React.lazy, який назавжди кешує відхилений import(). Межа не перевіряє isChunkLoadError і не пропонує reload.
@@ -1106,7 +1106,7 @@ grep -rn 'PLAN_TEMPLATE_STORAGE_KEY|hub_goals' apps packages (excluding dist): o
 
 ### `rel-17` [medium] Розрив з'єднання не скасовує upstream-виклики LLM і Groq: req.on('close') реєструється запізно
 
-- **Стан:** виправлено в гілці claude/fix-rel-17-18-llm-abort-input-limits
+- **Стан:** виправлено в [#1393](https://github.com/SkOrDs-02/sergeant/pull/1393) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat / transcribe
 - **Де:** apps/server/src/modules/chat/chat.ts:205-206,409-417; apps/server/src/modules/chat/chatStream.ts:436-445; apps/server/src/modules/transcribe/transcribe.ts:146-150
 - **Першопричина:** Слухач req.on('close') додається в хендлері після async middleware (requireSession, requireAiQuota). У Node 22 IncomingMessage емітить 'close' одразу після того, як тіло дочитано, тож на момент реєстрації подія вже минула і clientAbort ніколи не спрацьовує.
@@ -1151,7 +1151,7 @@ verify-server-static-ai-layer/reqclose-v2.mjs, варіант prod-shape: handle
 
 ### `rel-18` [medium] Розмір входу в LLM фактично не обмежений: tool_calls_raw і кореляції коуча обходять ліміт context
 
-- **Стан:** виправлено в гілці claude/fix-rel-17-18-llm-abort-input-limits
+- **Стан:** виправлено в [#1393](https://github.com/SkOrDs-02/sergeant/pull/1393) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat / coach
 - **Де:** packages/shared/src/schemas/api.ts:460,491,505,554,1131-1145; apps/server/src/http/bodySizePolicy.ts:171-181; apps/server/src/modules/chat/chat.ts:617-626,734-742; apps/server/src/modules/chat/coach.ts:127,304-325
 - **Першопричина:** ToolUseBlockSchema.input і ToolSearchToolResultBlockSchema.content мають тип z.unknown() без ліміту. chat.ts кладе tool_calls_raw як є в повідомлення синтезу, повз context.max(40000) і повз обрізання tool_results. CoachMemoryPostSchema приймає кореляції без меж (блоб до 5 МБ), а getCoachCorrelationsBlock без обрізання дописує їх у system кожного першого туру.

@@ -1664,7 +1664,7 @@ Verifier rerun of t2_txcat.mts: finyk_tx_splits insert → applied, delete → r
 
 ### `data-16` [medium] Витрати, створені сервером (чат create_transaction, скан чека), обходять sync_op_log і не доходять на інші пристрої, якщо годинник пристрою трохи відстає
 
-- **Стан:** виправлено в гілці claude/fix-data-16-server-expense-oplog
+- **Стан:** виправлено в [#1390](https://github.com/SkOrDs-02/sergeant/pull/1390) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: finyk (manualExpenses, receipts)
 - **Де:** apps/server/src/modules/finyk/manualExpenses.ts:104-110; apps/server/src/modules/finyk/receipts/save.ts:183-206; apps/server/src/modules/sync/serverOpLog.ts; apps/web/src/core/lib/chatActions/serverActions.ts:196-236
 - **Першопричина:** createManualExpense і insertManualExpenseForReceipt роблять прямий INSERT у finyk_manual_expenses без emitServerSyncOps (його викликає лише імпорт). Клієнтський write-through із client_ts пристрою програє серверному updated_at = now() як lww_conflict, який клієнт вважає benign і мовчки відкидає.
@@ -2048,7 +2048,7 @@ migrations/133_plata_subscription.sql: `user_id TEXT PRIMARY KEY … subscriptio
 
 ### `data-22` [medium] Кілька однакових tool_calls в одному ході чату гублять записи: зі списку покупок, води, страв і боргів зберігається лише один
 
-- **Стан:** виправлено в гілці claude/fix-data-22-chat-batch-serial
+- **Стан:** виправлено в [#1395](https://github.com/SkOrDs-02/sergeant/pull/1395) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (hubChatActions, nutritionActions, finykActions)
 - **Де:** apps/web/src/core/lib/hubChatActions.ts:185-227; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:350-370; apps/web/src/core/lib/chatActions/nutritionActions.ts:71,110-113,195-233; apps/web/src/core/lib/chatActions/finykActions/debts.ts:25,54; apps/web/src/core/lib/chatActions/finykActions/budgets.ts:36,70,154,194
 - **Першопричина:** executeActions запускає всі синхронні dispatch батча в одному тіку до першого await, а nutrition-кеш оновлюється лише після асинхронного apply, тож виклик N+1 читає знімок без виклику N і перезаписує цілий blob (список, денна вода). Id з голого Date.now() (m_, d_, b_) колізять у межах мілісекунди; AI-CONTEXT приймає гонку на застарілому припущенні про синхронний localStorage.
@@ -2505,7 +2505,7 @@ useStorage.persist.ts: `usePersist` (з writeJSONDebounced) свідомо ли�
 
 ### `data-28` [medium] Привʼязки Mono-транзакцій до кредитного боргу (finyk_mono_debt_links) ніколи не пушаться через помилково застосоване правило R7
 
-- **Стан:** частково виправлено в гілці claude/fix-data-28-mono-debt-links-push (пуш upsert/delete підключено; лишились tombstone data-15 і бекфіл давніх локальних привʼязок, мобільний адаптер не чіпано, ADR-0094)
+- **Стан:** частково виправлено в [#1399](https://github.com/SkOrDs-02/sergeant/pull/1399) (змерджено 2026-10-08) (пуш upsert/delete підключено; лишились tombstone data-15 і бекфіл давніх локальних привʼязок, мобільний адаптер не чіпано, ADR-0094)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (sqliteWriter adapter)
 - **Де:** apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:342-363; docs/work/specs/planning/sync-client-wiring-playbook.md:93; apps/server/src/modules/sync/syncV2.ts:218-219; apps/web/src/core/syncEngine/applyPullOp.ts:63
 - **Першопричина:** upsertMonoDebtLink і deleteMonoDebtLink пишуть лише локальний SQLite з коментарем «R7: local-only», хоча R7 у плейбуку стосується дзеркала банку, а привʼязки — дані користувача. Сервер таблицю приймає, pull її тягне, анонімна міграція її пушить, а звичайний шлях запису ні.
@@ -2660,7 +2660,7 @@ dedupMono.ts:70-83: `WHERE EXISTS (SELECT 1 FROM mono_transaction t WHERE t.user
 
 ### `data-31` [medium] Парсинг сум в імпорті виписок множить чи ділить суми в 10-1000 разів: XLSX з ручним мапінгом, пересохранений у Excel mono-CSV, неоднозначні «1,234»
 
-- **Стан:** частково виправлено в гілці claude/fix-logic-06-data-31-statement-import (визначення роздільника по колонці й відхилення неоднозначного «1,234» лишились на окрему хвилю)
+- **Стан:** частково виправлено в [#1394](https://github.com/SkOrDs-02/sergeant/pull/1394) (змерджено 2026-10-08) (визначення роздільника по колонці й відхилення неоднозначного «1,234» лишились на окрему хвилю)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (csvParser, csvProfiles, statementPreview) + web: ColumnMapper
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:41,159; apps/server/src/modules/finyk/import/statementPreview.ts:228-266; apps/server/src/modules/finyk/import/csvProfiles.ts:152,187-188; apps/server/src/modules/finyk/import/csvParser.ts:13-34
 - **Першопричина:** Десятковий роздільник задається жорсткою підказкою, а не визначається по колонці: ColumnMapper за замовчуванням шле decimalComma=true і для типізованих XLSX-клітинок (custom-шлях не застосовує withAutodetectedFormats), профіль mono жорстко ставить decimalComma:false, а автодетект читає «1,234» як 1,23 ₴ і приймає hex та експоненту без skip.
@@ -3025,7 +3025,7 @@ Code refs: apps/web/src/modules/nutrition/domain/nutritionBackup.ts:71-89,146-17
 
 ### `data-36` [medium] Кілька persist Фізрука в одному тіку затирають один одного: з кількох позначених зон болю зберігається одна, ккал ретро-заняття губляться
 
-- **Стан:** виправлено в гілці claude/fix-data-36-fizruk-persist-race
+- **Стан:** виправлено в [#1408](https://github.com/SkOrDs-02/sergeant/pull/1408) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук (useInjuries, useWorkoutsOrchestrator, WorkoutFinishSheets)
 - **Де:** apps/web/src/modules/fizruk/components/InjuryManager.tsx:68-80; apps/web/src/modules/fizruk/hooks/useInjuries.ts:104-122; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:497-521; apps/web/src/modules/fizruk/components/workouts/WorkoutFinishSheets.tsx:407-408
 - **Першопричина:** Хуки викликають persist кілька разів поспіль з однаковим застарілим станом із замикання, а fizrukDualWriteTransition бере кожен виклик як новий очікуваний prev, тож виклик N диффиться проти N-1 і видаляє попередній запис (insert зони N плюс delete зони N-1). submitPastWorkout так само робить create, addItem і updateWorkout(kcal) трьома окремими persist.

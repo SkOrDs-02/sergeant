@@ -23,7 +23,7 @@ UX і доступність — найбільша за кількістю зн
 
 ### `ux-01` [medium] «Переношу дані в профіль…» блокує застосунок на кожному старті й reload, навіть коли переносити нічого
 
-- **Стан:** частково виправлено в гілці claude/fix-ux-01-migration-panel-text (текст панелі нейтральний, поки не почався справжній перенос; кеш «партиція порожня» і preflight-запит лишились окремою задачею через ризик пропуску переносу)
+- **Стан:** частково виправлено в [#1409](https://github.com/SkOrDs-02/sergeant/pull/1409) (змерджено 2026-10-08) (текст панелі нейтральний, поки не почався справжній перенос; кеш «партиція порожня» і preflight-запит лишились окремою задачею через ризик пропуску переносу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability / старт сесії
 - **Де:** apps/web/src/core/durability/AnonymousDataMigrationProvider.tsx:59-75,277-369; apps/web/src/core/durability/anonymousDataMigration.ts:815-832; apps/web/src/shared/i18n/uk.core.ts:162
 - **Першопричина:** AuthenticatedMigrationGate монтується на кожному авторизованому старті й щоразу проганяє повну розвідку анонімної партиції: перемикає партицію SQLite, проганяє міграції схем 4 модулів і сканує таблиці. Розвідка триває довше за PROBE_GRACE_MS=500, і тоді показується панель із текстом про перенос (showProgressPanel = transferring || failed || probeGraceElapsed), хоча snapshot порожній і runMigration виходить раннім return.
@@ -385,7 +385,7 @@ Script v5-goal-typing.mjs, user verify-gapfinyk2-v1. VGOAL-2 had target 5000 and
 
 ### `ux-05` [medium] Нагадування, вибрані у формі звички, мовчки не приходять, бо глобальний тумблер «Нагадування про звички» за замовчуванням вимкнений
 
-- **Стан:** виправлено в гілці claude/fix-ux-05-routine-reminders-hint
+- **Стан:** виправлено в [#1410](https://github.com/SkOrDs-02/sergeant/pull/1410) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Рутина / нагадування
 - **Де:** apps/web/src/modules/routine/components/settings/ReminderPresets.tsx; apps/web/src/modules/routine/components/settings/HabitForm.tsx:312-319; apps/web/src/core/settings/NotificationsSection.tsx:121,283; packages/routine-domain/src/storage.ts:228; apps/web/src/core/onboarding/presetApply.ts:125; apps/server/src/lib/reminders/sweep.ts:177
 - **Першопричина:** routineRemindersEnabled за замовчуванням false (routine-domain storage.ts:228, presetApply.ts:125). Клієнт, домен і серверний sweep шлють нагадування лише при значенні true. Увімкнути прапорець можна лише тумблером у Налаштування → Сповіщення, а HabitForm показує чипи нагадувань на першому екрані без жодної підказки про цей тумблер.
@@ -633,7 +633,7 @@ w16-keyboard.mjs: `tab order: [INPUT#auth-email, BUTTON#[Забули парол
 
 ### `ux-09` [medium] DropdownMenu не працює з клавіатури: після відкриття фокус лишається на тригері, Esc і стрілки не діють, після Tab меню висить відкритим
 
-- **Стан:** виправлено в гілці claude/fix-ux-09-dropdown-keyboard (e2e на /routine/habits не додано)
+- **Стан:** виправлено в [#1411](https://github.com/SkOrDs-02/sergeant/pull/1411) (змерджено 2026-10-08) (e2e на /routine/habits не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: shared DropdownMenu
 - **Де:** apps/web/src/shared/components/ui/DropdownMenu.tsx:335-363; споживачі: apps/web/src/modules/routine/components/habits/HabitListItem.tsx:109, finyk ImportReminderBanner.tsx, AssetsTable.tsx, budgets/Budgets.tsx, fizruk SessionTopBar.tsx, SessionExerciseFocus.tsx, WorkoutItemRestPresets.tsx, apps/web/src/core/profile/MemoryBankSection.tsx
 - **Першопричина:** Ефект початкового фокуса в DropdownMenuPanel спрацьовує один раз на монтуванні, коли панель ще має visibility:hidden (coords==null), і focus() на прихованому елементі нічого не робить. Повторно ефект не запускається, бо focusedIndex не змінюється.
