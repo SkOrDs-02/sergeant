@@ -2768,7 +2768,7 @@ Live: <scratch>/agents/verify-server-static-gap-finyk-import-receipts-correctnes
 
 ### `data-32` [medium] Профіль mono ігнорує валюту картки «(USD)/(EUR)» у заголовку: виписки валютних карток імпортуються як гривні
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-32-mono-csv-currency
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: finyk import (csvProfiles)
 - **Де:** apps/server/src/modules/finyk/import/csvProfiles.ts:113-190
 - **Першопричина:** detectMonoProfile шукає підрядок «сума в валюті картки», ставить currencyColIndex:null і спирається на хибне припущення, що картка завжди гривнева; спека розглядає лише Privat24-рахунки у валюті.
