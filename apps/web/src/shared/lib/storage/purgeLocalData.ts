@@ -19,6 +19,10 @@
  *     never travel through `webKVStore` and the `kvvfs-*` SQLite store;
  *   - the in-memory SQLite warm-cache (`resetKvStoreBoot`);
  *   - the React-Query IndexedDB persister snapshot (a cache of server data);
+ *   - app-owned `sessionStorage` keys (priv-16). `logout()` navigates with
+ *     `location.assign` in the SAME tab, so the tab-scoped AI recipe-suggestion
+ *     cache (`nutrition_recipes_cache_v1`, keyed by pantry hash with no userId)
+ *     would otherwise be served to the next account signing in in that tab;
  *   - the nutrition recipe-book IndexedDB store (data-09). Before sign-out
  *     `flushPendingSyncOpsBeforeLogout` has already drained the outbox (and
  *     warned about what cannot be drained), and recipes have a server copy
@@ -53,7 +57,7 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 // eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; mirrors storageManager.ts.
 import { logger } from "../log";
 import { SERGEANT_STORE, dbClear, dbDel } from "../idb/sergeantDb";
-import { resolveLsStore } from "./storage";
+import { resolveLsStore, safeListSSKeys, safeRemoveSS } from "./storage";
 import { reloadAllTypedStores } from "./typedStore";
 import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
 
@@ -119,6 +123,36 @@ export function purgeAppOwnedLocalStorage(): number {
 }
 
 /**
+ * `sessionStorage` keys that match the app-owned prefixes but must survive a
+ * purge. `sergeant.auth.pendingOAuthProvider` is the signup-attribution marker
+ * written right before the OAuth full-page redirect and read-once on landing:
+ * an identity-wipe (anon device whose previous owner was another user, then a
+ * Google/Apple login) can fire between the redirect and the read, and wiping it
+ * would silently drop the `SIGNUP_COMPLETED` event. It carries only a provider
+ * name and a timestamp, no user data. Literal mirrors `AuthContext.tsx`
+ * (importing it would pull the whole auth module into this lazy chunk).
+ */
+const SESSION_KEYS_TO_PRESERVE: ReadonlySet<string> = new Set([
+  "sergeant.auth.pendingOAuthProvider",
+]);
+
+/**
+ * Remove every app-owned key from `sessionStorage` (priv-16). Same allowlist as
+ * {@link purgeAppOwnedLocalStorage}: foreign keys and the chunk-reload cooldown
+ * (`__sergeant_chunk_reload_at`, no app prefix) are never matched. Returns the
+ * number of keys removed. Never throws.
+ */
+export function purgeAppOwnedSessionStorage(): number {
+  let removed = 0;
+  // `safeListSSKeys` returns a snapshot, so removing while iterating is safe.
+  for (const key of safeListSSKeys()) {
+    if (SESSION_KEYS_TO_PRESERVE.has(key)) continue;
+    if (isAppOwnedLocalStorageKey(key) && safeRemoveSS(key)) removed += 1;
+  }
+  return removed;
+}
+
+/**
  * Drop the React-Query IndexedDB persister snapshot. It is keyed by build-id
  * (not user-id), so the previous user's non-sensitive finyk / nutrition /
  * routine query data would otherwise warm-hydrate for the next user. It holds
@@ -149,6 +183,11 @@ export async function purgeAppOwnedLocalData(): Promise<void> {
     purgeAppOwnedLocalStorage();
   } catch (err) {
     logger.warn("[purgeLocalData] localStorage purge failed", err);
+  }
+  try {
+    purgeAppOwnedSessionStorage();
+  } catch (err) {
+    logger.warn("[purgeLocalData] sessionStorage purge failed", err);
   }
   try {
     resetKvStoreBoot();
