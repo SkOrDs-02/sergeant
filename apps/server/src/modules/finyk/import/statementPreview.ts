@@ -91,6 +91,13 @@ function classifyRows(
       return;
     }
 
+    // Валюта картки з заголовка колонки суми («… (USD)») — не гривня: уся
+    // виписка у чужій валюті, конвертації немає (data-32).
+    if (mapping.fileCurrencyNotUah) {
+      skipped.push({ line, reason: "not_uah" });
+      return;
+    }
+
     if (mapping.currencyColIndex !== null) {
       const currencyRaw = row[mapping.currencyColIndex] ?? "";
       if (currencyRaw.trim() && !isUahCurrencyValue(currencyRaw)) {

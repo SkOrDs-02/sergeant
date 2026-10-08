@@ -21,7 +21,8 @@ export const NUTRITION_LOG_KEY = "nutrition_log_v1";
 export const NUTRITION_RECIPES_CACHE_KEY = "nutrition_recipes_cache_v1";
 
 export type NutritionGoal = string;
-export type MealMacroSource = "manual" | "productDb" | "photoAI" | "recipeAI";
+export type MealMacroSource =
+  "manual" | "productDb" | "photoAI" | "recipeAI" | "recipe";
 export type MealSource = "manual" | "photo";
 
 export interface MealTemplate {

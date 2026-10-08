@@ -152,6 +152,14 @@ async function enqueueOutboxUpsertLocked(
     return { id: null, inserted: false, skipped: "non-syncable-user" };
   }
 
+  // Модуль (Фінік, Їжа, Фізрук) може писати в чергу раніше, ніж хтось довів
+  // її схему на цій партиції до кінця — і тоді `INSERT` падає на
+  // `no such column: user_id` (див. `outboxSchema.ts`). Чекаємо на спільний
+  // мігратор; після першого успіху це no-op. Динамічно: цей файл лежить на
+  // eager-шляху, а міграції, раннер і адаптер — ні (`check-eager-bundle`).
+  const { ensureOutboxSchema } = await import("./outboxSchema.js");
+  await ensureOutboxSchema(client);
+
   // Content-level dedup — see the doc comment above for rationale. Runs
   // before the idempotency-key precheck since a hit here means we never
   // touch the key path at all (the duplicate submit gets the *original*

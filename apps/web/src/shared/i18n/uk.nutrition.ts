@@ -9,6 +9,22 @@
  * Спредиться в `messages.nutrition` з `uk.ts`.
  */
 export const nutritionPageMessages = {
+  // Крок «Звідки страва?» і чекбокс повтору в `AddMealSheet`.
+  addMeal: {
+    copyYesterday: "Як учора",
+    rememberForRepeat: "Запамʼятати для повтору",
+    rememberForRepeatHint:
+      "Назва, тип прийому та КБЖВ зʼявляться серед швидких прийомів.",
+  },
+  copyMeal: {
+    title: "Скопіювати прийом",
+    description: "Записи з цього прийому ляжуть у вибраний день і прийом.",
+    dateLabel: "Дата",
+    dateAria: "Дата копії",
+    mealLabel: "Прийом",
+    submit: "Скопіювати",
+    cancel: "Скасувати",
+  },
   // Моменти петлі винагороди (ADR-0096) на картці сьогоднішнього дня.
   // Наближення до звʼязку не називає звʼязок: до порога його не доведено
   // (ADR-0097), тож рядок обіцяє лише перевірку.
@@ -431,6 +447,33 @@ export const nutritionPageMessages = {
     reason:
       "За 14 днів середнє {intake} ккал, тренд ваги {delta} кг → витрата ≈{tdee} ккал.",
     goalNow: "Нова ціль: {kcal} ккал на добу.",
+  },
+
+  recipeBuilder: {
+    titleNew: "Нова страва",
+    titleEdit: "Редагувати страву",
+    description: "Склади страву з продуктів і грамів, КБЖВ порахується само.",
+    nameLabel: "Назва",
+    namePlaceholder: "напр. Гречка з філе",
+    nameAria: "Назва страви",
+    gramsAriaPrefix: "Грами:",
+    gramUnit: "г",
+    remove: "Прибрати",
+    removeAriaPrefix: "Прибрати:",
+    servingsLabel: "Порцій",
+    cookedLabel: "Вага готової страви, г",
+    cookedHint: "Без ваги страву можна додавати в журнал лише порціями.",
+    cookedErrorPrefix: "Впиши вагу від 1 до",
+    cookedErrorSuffix: "г або залиш поле порожнім.",
+    perServing: "На порцію:",
+    total: "Усього:",
+    per100: "На 100 г:",
+    noData: "немає даних",
+    reasonName: "Впиши назву страви.",
+    reasonNoIngredient: "Додай хоча б один інгредієнт.",
+    reasonGrams: "Впиши вагу в грамах для кожного інгредієнта.",
+    reasonServings: "Порцій має бути ціле число від 1.",
+    save: "Зберегти",
   },
 
   photoAuth: {
