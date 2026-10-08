@@ -4,6 +4,12 @@ import { toKyivISODate } from "@sergeant/shared";
 import pool from "../../db.js";
 import { parseBody } from "../../http/validate.js";
 import { ManualExpenseCreateSchema } from "../../http/schemas.js";
+import { emitServerSyncOps } from "../sync/serverOpLog.js";
+import {
+  MANUAL_EXPENSES_TABLE,
+  buildManualExpenseInsertOpWithKey,
+  serverManualExpenseOpKey,
+} from "./import/syncOps.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -102,19 +108,49 @@ export async function createManualExpense(
 
   // Сиблінг-патерн із `finyk/applySync.applyFinykPerRowBlob`: id UUID PK +
   // user_id + data_json JSONB. `RETURNING` віддає рядок назад у серіалізатор.
-  const result = await pool.query<ManualExpenseRow>(
-    `INSERT INTO finyk_manual_expenses (id, user_id, data_json)
-     VALUES ($1, $2, $3::jsonb)
-     RETURNING id, data_json, created_at, updated_at`,
-    [blob.id, userId, JSON.stringify(blob)],
-  );
-
-  const created = result.rows[0];
-  if (!created) {
-    // INSERT ... RETURNING завжди віддає рядок при успіху; порожній результат
-    // означав би драйвер-аномалію — хай впаде у 500 через error-handler.
-    throw new Error("finyk_manual_expenses INSERT returned no row");
+  //
+  // Транзакція + `emitServerSyncOps` (data-16): `syncV2Pull` читає ЛИШЕ
+  // `sync_op_log`, тож прямий INSERT без опа ніколи не доїжджав на інші
+  // пристрої, а клієнтський write-through із `client_ts` пристрою програвав
+  // серверному `updated_at = now()` як `lww_conflict` (benign) при дрейфі
+  // годинника. Оп пишемо в ТІЙ САМІЙ транзакції, що й рядок.
+  const client = await pool.connect();
+  let expense: ReturnType<typeof serializeManualExpense>;
+  try {
+    await client.query("BEGIN");
+    const result = await client.query<ManualExpenseRow>(
+      `INSERT INTO finyk_manual_expenses (id, user_id, data_json)
+       VALUES ($1, $2, $3::jsonb)
+       RETURNING id, data_json, created_at, updated_at`,
+      [blob.id, userId, JSON.stringify(blob)],
+    );
+    const created = result.rows[0];
+    if (!created) {
+      // INSERT ... RETURNING завжди віддає рядок при успіху; порожній
+      // результат означав би драйвер-аномалію — хай впаде у 500 через
+      // error-handler (catch нижче відкотить транзакцію).
+      throw new Error("finyk_manual_expenses INSERT returned no row");
+    }
+    await emitServerSyncOps(client, userId, MANUAL_EXPENSES_TABLE, [
+      buildManualExpenseInsertOpWithKey(
+        serverManualExpenseOpKey(created.id),
+        userId,
+        {
+          id: created.id,
+          dataJson: created.data_json,
+          createdAt: created.created_at,
+          updatedAt: created.updated_at,
+        },
+      ),
+    ]);
+    await client.query("COMMIT");
+    expense = serializeManualExpense(created);
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
   }
 
-  res.status(201).json({ ok: true, expense: serializeManualExpense(created) });
+  res.status(201).json({ ok: true, expense });
 }

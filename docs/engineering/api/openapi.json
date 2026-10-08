@@ -5666,10 +5666,12 @@
             "type": "object",
             "properties": {
               "weekKey": {
-                "type": "string"
+                "type": "string",
+                "maxLength": 80
               },
               "weekRange": {
-                "type": "string"
+                "type": "string",
+                "maxLength": 80
               },
               "generatedAt": {
                 "type": "string"
@@ -5679,15 +5681,19 @@
               "nutrition": {},
               "routine": {},
               "overallRecommendations": {
+                "maxItems": 30,
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 500
                 }
               },
               "correlations": {
+                "maxItems": 20,
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 500
                 }
               }
             },
@@ -7385,6 +7391,11 @@
                 "maxLength": 200
               },
               "amountCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "creditCol": {
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 200

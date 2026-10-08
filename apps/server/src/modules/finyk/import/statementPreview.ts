@@ -64,9 +64,18 @@ function classifyRows(
 
     const dateRaw = row[mapping.dateColIndex] ?? "";
     const amountRaw = row[mapping.amountColIndex] ?? "";
+    const creditRaw =
+      mapping.creditColIndex !== null
+        ? (row[mapping.creditColIndex] ?? "")
+        : "";
     const descriptionRaw = row[mapping.descriptionColIndex] ?? "";
 
-    if (!dateRaw.trim() && !amountRaw.trim() && !descriptionRaw.trim()) {
+    if (
+      !dateRaw.trim() &&
+      !amountRaw.trim() &&
+      !creditRaw.trim() &&
+      !descriptionRaw.trim()
+    ) {
       // Рядок несе дані в ІНШИХ колонках (напр. MCC-only службовий рядок),
       // але жодна з трьох мапованих — непридатний так само, як фізично
       // порожній рядок.
@@ -90,9 +99,32 @@ function classifyRows(
       }
     }
 
-    const signed = parseSignedAmountKopiykas(amountRaw, {
-      decimalComma: mapping.decimalComma,
-    });
+    const amountOpts = { decimalComma: mapping.decimalComma };
+    let signed: number | null;
+    if (mapping.creditColIndex === null) {
+      signed = parseSignedAmountKopiykas(amountRaw, amountOpts);
+    } else {
+      // Окремі колонки Дебет/Кредит (logic-06): `amountCol` = дебет →
+      // витрата, `creditCol` = кредит → надходження, напрям дає САМА
+      // колонка, а не знак (у таких виписках обидві суми додатні). У рядку
+      // має бути заповнена рівно одна з двох; «порожньою» вважається і
+      // клітинка з нулем («0,00» — так банки позначають відсутню сторону).
+      // Обидві заповнені чи обидві порожні — рядок неоднозначний, skip
+      // `unparsed_amount`; нерозпізнана непорожня клітинка теж.
+      const debit = parseSignedAmountKopiykas(amountRaw, amountOpts);
+      const credit = parseSignedAmountKopiykas(creditRaw, amountOpts);
+      const debitBlank = !amountRaw.trim() || debit === 0;
+      const creditBlank = !creditRaw.trim() || credit === 0;
+      if (!debitBlank && !creditBlank) {
+        signed = null;
+      } else if (!debitBlank) {
+        signed = debit === null ? null : -Math.abs(debit);
+      } else if (!creditBlank) {
+        signed = credit === null ? null : Math.abs(credit);
+      } else {
+        signed = null;
+      }
+    }
     // `signed === 0` теж skip: rowKey/commit контракт вимагає направлену
     // (`expense`|`income`) додатну суму — нульова транзакція не має
     // жодного з двох напрямів і найчастіше сама по собі є ознакою
@@ -264,9 +296,16 @@ export default async function statementPreviewHandler(
   if (mapping) {
     const resolved = resolveCustomMapping(headers, mapping);
     if (resolved) {
+      // Те саме, що в автопрофільній гілці: сітка з типізованих клітинок
+      // XLSX несе канонічну суму («-45.5»), і підказка `decimalComma:true`
+      // (дефолт ColumnMapper) перетворила б її на 455 ₴ (data-31).
+      const customMapping =
+        grid.sourceKind === "sheet"
+          ? withAutodetectedFormats(resolved)
+          : resolved;
       const { rows, skipped } = classifyRows(
         dataRows,
-        resolved,
+        customMapping,
         grid.headerRowIndex,
       );
       res.status(200).json(

@@ -46,6 +46,7 @@ import { DbBusyScreen, useDbIsBusyElsewhere } from "./DbBusyScreen";
 import { useIosInstallBanner } from "./useIosInstallBanner";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
+import { useRestoreWebPush } from "./useRestoreWebPush";
 // AI-CONTEXT: чотири модульні boot-кластери — ЛІНИВІ, і це не
 // оптимізація «про всяк випадок». Вони самі по собі невидимі
 // (рендерять `null`, працюють лише під автентифікованою чи demo-сесією),
@@ -312,6 +313,11 @@ export function RootLayout() {
  */
 function RootLayoutInner() {
   const location = useLocation();
+  // Гарячі клавіші вимкнені, поки App Lock не в `idle` (checking / locked /
+  // setup / change): дерево під замком змонтоване, тож Ctrl+K тощо
+  // відкривали б пошук і діалоги з даними поверх екрана PIN (sec-13).
+  const appLock = useAppLockContext();
+  const shortcutsDisabled = appLock.state !== "idle";
   const browserLocation = useBrowserLocation(location);
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(browserLocation.search);
@@ -375,6 +381,8 @@ function RootLayoutInner() {
   } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
+  // rel-12: «Скинути кеш PWA» знімає реєстрацію SW, а з нею і push-підписку.
+  useRestoreWebPush(user?.id);
 
   // App-level effects (idle prefetch, SW messages, hub bus, etc.)
   // Оболонка лишається на місці навмисно: навігація і шапка мають працювати,
@@ -496,6 +504,7 @@ function RootLayoutInner() {
     onNavigate: handleNavigateChord,
     onCreate: handleCreateShortcut,
     onUndo: handleUndoShortcut,
+    disabled: shortcutsDisabled,
   });
 
   useDemoCommands({ openSearch: openSearchFromShortcut });

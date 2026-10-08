@@ -1,6 +1,6 @@
 # Flow — Sign-in cookie flow (Better Auth)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-10.
+> **Last touched:** 2026-10-04 by @claude (sec-07 маркер невдалого sign-out, sec-18 сигнал завершеної сесії). **Next review:** 2026-12-10.
 > **Status:** Active
 
 Cookie-based session login через Better Auth. Email + password (magic-link / OAuth — варіації цього самого flow).
@@ -47,6 +47,8 @@ sequenceDiagram
 - **CSRF**: Better Auth автоматично ставить `sameSite=lax` cookie + перевіряє origin. CSRF token не потрібен для same-origin.
 - **`/api/me`** після login — клієнт читає поточного user-а через цей endpoint (контракт-тести у [`apps/web/src/test/contract/me.contract.test.ts`](../../../../apps/web/src/test/contract/me.contract.test.ts) і [`apps/server/src/routes/me.contract.test.ts`](../../../../apps/server/src/routes/me.contract.test.ts)).
 - **Sign-out**: `POST /api/auth/sign-out` → DELETE row у `sessions` + `Set-Cookie` із expired TTL.
+- **Sign-out, що не дійшов до сервера** (`sec-07`, аудит 2026-10-01): httpOnly-куку клієнт стерти не може, тож лише успішний запит закриває сесію. `logout()` ставить маркер `auth_pending_signout_v1` у `localStorage` ДО запиту і знімає його тільки на 2xx/401 ([`pendingSignOut.ts`](../../../../apps/web/src/core/auth/pendingSignOut.ts)). Поки маркер стоїть, `AuthContext` віддає `unauthenticated` незалежно від `GET /api/v1/me` і повторює sign-out на старті та на подію `online`; будь-який успішний вхід (email, реєстрація, social) маркер знімає. Ключ свідомо поза allowlist-ом `purgeAppOwnedLocalData`.
+- **Сесія спливла посеред роботи** (`sec-18`): drain черги бачить `getSession()` без користувача, а `AuthContext` ще `authenticated` → `useSyncStatus().sessionExpired`, пілюля `OfflineBanner` «Сесія завершилась» і блок із посиланням «Увійти» (`/sign-in?next=<маршрут>`) у `SyncStatusSheet`. Офлайн/5xx сигналу не дають (потрібна відповідь без `error` або 401/403). Екран входу замість анонімного хабу після reload і споживання `next` на `/sign-in` — окрема робота.
 - **Soft auth**: до моменту першого «real entry» (див. `core/auth/AuthContext.tsx`) ми НЕ просимо логін — це Sergeant конкретна політика, не Better Auth fea`ture.
 
 ## Помилки, які варто моніторити

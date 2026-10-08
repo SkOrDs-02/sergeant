@@ -103,6 +103,10 @@ const envSchema = z.object({
 
   GIT_SHA: z.string().optional(),
 
+  // Coolify підставляє SOURCE_COMMIT (build-arg при «Include Source Commit in
+  // Build» і/або runtime env). Fallback після GIT_SHA — див. buildIdHeader.ts.
+  SOURCE_COMMIT: z.string().optional(),
+
   GIT_COMMIT: z.string().optional(),
 
   VERCEL_GIT_COMMIT_SHA: z.string().optional(),

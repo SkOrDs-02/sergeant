@@ -71,6 +71,15 @@ const successToastUsers = new Set<string>();
  * жодного перенесення. Рендер дітей при цьому лишається заблокованим: під
  * час розвідки активна партиція перемкнута на анонімну, і читання модулів у
  * цю мить бачило б чужі дані.
+ *
+ * AI-CONTEXT: grace лише відкладає панель, але не вирішує, ЩО в ній написано.
+ * Якщо розвідка не вклалась у {@link PROBE_GRACE_MS} (на новому пристрої це
+ * 5-13 с: міграції схем чотирьох модулів і скан таблиць), панель з'являється
+ * без `onTransferStart`, тобто рядків для переносу ще не знайдено, а можливо
+ * й нема зовсім. Тому в цьому стані текст нейтральний («Завантаження…»), а
+ * «Переношу дані в профіль…» показується лише після `transferring === true`.
+ * Інакше ми знову брехали б про перенос, якого немає (аудит 2026-10-01, ux-01).
+ * Сам гейт і розвідка лишаються: блокування рендеру навмисне.
  */
 export const PROBE_GRACE_MS = 500;
 
@@ -409,7 +418,9 @@ function AuthenticatedMigrationGate({
                 role="status"
                 aria-live="polite"
               >
-                {messages.sync.anonymousMigrationProgress}
+                {transferring
+                  ? messages.sync.anonymousMigrationProgress
+                  : messages.status.loading}
               </p>
             )}
           </section>

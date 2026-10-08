@@ -16,6 +16,12 @@ import type {
   ReceiptRow,
 } from "./serialize.js";
 import { kyivDateString } from "./kyivClock.js";
+import { emitServerSyncOps } from "../../sync/serverOpLog.js";
+import {
+  MANUAL_EXPENSES_TABLE,
+  buildManualExpenseInsertOpWithKey,
+  serverManualExpenseOpKey,
+} from "../import/syncOps.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -198,11 +204,30 @@ async function insertManualExpenseForReceipt(
     amount: input.amountHryvnia,
     category: input.category,
   };
-  await client.query(
+  const { rows } = await client.query<{
+    created_at: Date;
+    updated_at: Date;
+  }>(
     `INSERT INTO finyk_manual_expenses (id, user_id, data_json)
-     VALUES ($1, $2, $3::jsonb)`,
+     VALUES ($1, $2, $3::jsonb)
+     RETURNING created_at, updated_at`,
     [id, userId, JSON.stringify(blob)],
   );
+  const inserted = rows[0];
+  if (!inserted) {
+    throw new Error("finyk_manual_expenses INSERT returned no row");
+  }
+  // data-16: `syncV2Pull` читає лише `sync_op_log` — без опа фолбек-витрата
+  // лишалась тільки на сервері. Той самий `client`, тож оп атомарний з
+  // чеком, лінком і самим рядком (ROLLBACK прибере все разом).
+  await emitServerSyncOps(client, userId, MANUAL_EXPENSES_TABLE, [
+    buildManualExpenseInsertOpWithKey(serverManualExpenseOpKey(id), userId, {
+      id,
+      dataJson: blob,
+      createdAt: inserted.created_at,
+      updatedAt: inserted.updated_at,
+    }),
+  ]);
   return id;
 }
 

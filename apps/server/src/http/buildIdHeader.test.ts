@@ -41,6 +41,31 @@ describe("resolveServerBuildId", () => {
     ).toBe("gitshaf");
   });
 
+  it("падає на SOURCE_COMMIT (Coolify білдить із репо) коли GIT_SHA відсутній", () => {
+    expect(resolveServerBuildId({ SOURCE_COMMIT: "abcdef1234" })).toBe(
+      "abcdef1",
+    );
+  });
+
+  it("GIT_SHA має пріоритет над SOURCE_COMMIT, а SOURCE_COMMIT над Vercel/GitHub", () => {
+    expect(
+      resolveServerBuildId({ GIT_SHA: "gitsha0", SOURCE_COMMIT: "coolify" }),
+    ).toBe("gitsha0");
+    expect(
+      resolveServerBuildId({
+        SOURCE_COMMIT: "coolify",
+        VERCEL_GIT_COMMIT_SHA: "vercel0",
+        GITHUB_SHA: "github0",
+      }),
+    ).toBe("coolify");
+  });
+
+  it("порожній/whitespace SOURCE_COMMIT не блокує наступні джерела", () => {
+    expect(
+      resolveServerBuildId({ SOURCE_COMMIT: "  ", GITHUB_SHA: "gh1234567" }),
+    ).toBe("gh12345");
+  });
+
   it("падає на VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID", () => {
     expect(resolveServerBuildId({ VERCEL_GIT_COMMIT_SHA: "abcdef123" })).toBe(
       "abcdef1",

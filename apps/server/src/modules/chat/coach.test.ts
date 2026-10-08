@@ -46,6 +46,7 @@ import {
   coachInsight,
   coachMemoryGet,
   coachMemoryPost,
+  getCoachCorrelationsBlock,
 } from "./coach.js";
 import { MAX_BLOB_SIZE } from "./coach.js";
 import { ExternalServiceError } from "../../obs/errors.js";
@@ -114,13 +115,15 @@ describe("coachMemoryPost blob-size guard", () => {
       rows: [{ data: JSON.stringify({ weeklyDigests: [] }) }],
     });
 
+    // `weekRange`/`correlations` тепер обмежені схемою (rel-18) і дали б 400
+    // раніше за blob-guard; роздути блоб можна лише через `z.unknown()`-поля.
     const huge = "x".repeat(MAX_BLOB_SIZE + 1);
     const req = {
       user: { id: "user_1" },
       body: {
         weeklyDigest: {
           weekKey: "2026-W01",
-          weekRange: huge,
+          finyk: { summary: huge },
         },
       },
     };
@@ -837,5 +840,55 @@ describe("buildCoachInsightPrompt — що можна просити в люди
     expect(text).toContain(
       "віднести операції до категорій, записати їжу, тренування чи витрату, відмітити звичку",
     );
+  });
+});
+
+// rel-18 — getCoachCorrelationsBlock дописує кореляції в system кожного
+// першого туру чату, повз `context.max(40000)`. Блоби, збережені до появи
+// ліміту в схемі (кореляція на 2 МБ), мають бути обрізані на читанні.
+describe("getCoachCorrelationsBlock — обрізання роздутих кореляцій (rel-18)", () => {
+  function memoryWith(correlations: string[], weekRange = "29 вер – 5 жов") {
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        {
+          data: JSON.stringify({
+            weeklyDigests: [{ weekKey: "2026-W40", weekRange, correlations }],
+          }),
+        },
+      ],
+    });
+  }
+
+  it("кореляція на 100 000 символів дає короткий блок", async () => {
+    memoryWith(["x".repeat(100_000)]);
+    const block = await getCoachCorrelationsBlock("user_1");
+    expect(block).not.toBe("");
+    // Заголовок блоку (~250 символів) + одна кореляція ≤ 500 + маркер.
+    expect(block.length).toBeLessThan(1000);
+    expect(block).not.toContain("x".repeat(501));
+  });
+
+  it("обрізає кожну з трьох кореляцій окремо", async () => {
+    memoryWith(["a".repeat(50_000), "b".repeat(50_000), "c".repeat(50_000)]);
+    const block = await getCoachCorrelationsBlock("user_1");
+    expect(block.length).toBeLessThan(2000);
+    expect(block).toContain("a".repeat(100));
+    expect(block).toContain("b".repeat(100));
+    expect(block).toContain("c".repeat(100));
+  });
+
+  it("обрізає роздутий підпис тижня", async () => {
+    memoryWith(["коротка кореляція"], "w".repeat(100_000));
+    const block = await getCoachCorrelationsBlock("user_1");
+    expect(block.length).toBeLessThan(1000);
+  });
+
+  it("коротка кореляція проходить без змін", async () => {
+    memoryWith(["у дні тренувань ти витрачаєш менше (r=-0.52, 14 дн)"]);
+    const block = await getCoachCorrelationsBlock("user_1");
+    expect(block).toContain(
+      "- у дні тренувань ти витрачаєш менше (r=-0.52, 14 дн)",
+    );
+    expect(block).not.toContain("…");
   });
 });

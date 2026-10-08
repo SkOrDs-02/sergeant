@@ -30,9 +30,9 @@ vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModule: vi.fn(),
 }));
 
-const markInjuries = vi.fn(async () => []);
+const markInjuries = vi.fn();
 vi.mock("../../hooks/useInjuries", () => ({
-  useInjuries: () => ({ mark: markInjuries }),
+  useInjuries: () => ({ markMany: markInjuries }),
 }));
 
 const addDailyLogEntry = vi.fn();
@@ -265,6 +265,18 @@ describe("WorkoutFinishSheets — injury step", () => {
     expect(
       screen.getByRole("button", { name: "Зберегти позначки (2)" }),
     ).toBeInTheDocument();
+  });
+
+  // data-36: цикл `mark()` у одному тіку лишав збереженою лише останню зону.
+  it("зберігає всі обрані зони ОДНИМ викликом markMany", () => {
+    renderSheets(
+      makeFlash({ step: "injury", injurySites: ["knee", "chest", "bogus"] }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Зберегти позначки (3)" }),
+    );
+    expect(markInjuries).toHaveBeenCalledTimes(1);
+    expect(markInjuries).toHaveBeenCalledWith(["knee", "chest"]);
   });
 
   // Позначений мʼяз може лежати у згорнутій групі — тоді єдиний слід про
