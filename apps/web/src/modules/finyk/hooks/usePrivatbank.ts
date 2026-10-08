@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { privatApi, isApiError } from "@shared/api";
 import { logger } from "@shared/lib";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
@@ -311,7 +311,10 @@ export function usePrivatbank(enabled = true) {
     lastError: "",
   });
 
-  const fetchTransactions = async (accs: PrivatAccount[]) => {
+  // fetchTransactions/loadAccounts/hydrate чіпають лише стабільні setState-и
+  // та модульні функції, тож `useCallback` із порожніми deps не змінює
+  // поведінки, а дає стабільну ідентичність для bootstrap-ефекту нижче.
+  const fetchTransactions = useCallback(async (accs: PrivatAccount[]) => {
     setLoadingTx(true);
     setSyncState((s) => ({ ...s, status: "loading", source: "none" }));
     try {
@@ -401,10 +404,10 @@ export function usePrivatbank(enabled = true) {
     } finally {
       setLoadingTx(false);
     }
-  };
+  }, []);
 
   /** Тягне залишки й нормалізує їх у рахунки; кеш рятує від удару по банку на кожен маунт. */
-  const loadAccounts = async (): Promise<PrivatAccount[]> => {
+  const loadAccounts = useCallback(async (): Promise<PrivatAccount[]> => {
     const cachedAccounts = loadBalanceCache();
     if (cachedAccounts) return cachedAccounts;
 
@@ -424,25 +427,28 @@ export function usePrivatbank(enabled = true) {
     // кешується як і раніше.
     if (envelope.matched) saveBalanceCache(accs);
     return accs;
-  };
+  }, []);
 
   /** Показує кеш або тягне свіже. Спільне для connect і для bootstrap. */
-  const hydrate = async (accs: PrivatAccount[]) => {
-    setAccounts(accs);
-    const cached = loadTxCache();
-    if (cached) {
-      setTransactions(cached.txs);
-      setLastUpdated(new Date(cached.timestamp));
-      setSyncState({
-        status: "success",
-        source: "cache",
-        lastSuccess: new Date(cached.timestamp),
-        lastError: "",
-      });
-      return;
-    }
-    await fetchTransactions(accs);
-  };
+  const hydrate = useCallback(
+    async (accs: PrivatAccount[]) => {
+      setAccounts(accs);
+      const cached = loadTxCache();
+      if (cached) {
+        setTransactions(cached.txs);
+        setLastUpdated(new Date(cached.timestamp));
+        setSyncState({
+          status: "success",
+          source: "cache",
+          lastSuccess: new Date(cached.timestamp),
+          lastError: "",
+        });
+        return;
+      }
+      await fetchTransactions(accs);
+    },
+    [fetchTransactions],
+  );
 
   /**
    * Віддає креденшели серверу рівно один раз. Локально вони не осідають —
@@ -567,8 +573,9 @@ export function usePrivatbank(enabled = true) {
         // користувач побачить форму, а не порожній екран без пояснення.
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap виконується рівно раз (guard `bootstrapped`); додавання `hydrate`/`loadAccounts`, які перестворюються щорендеру, перезапускало б перенос legacy-креденшелів
-  }, [enabled]);
+    // `hydrate`/`loadAccounts` стабільні (useCallback), а повторний запуск і
+    // так відсікає guard `bootstrapped` — legacy-креденшели переносяться раз.
+  }, [enabled, hydrate, loadAccounts]);
 
   return {
     merchantId,

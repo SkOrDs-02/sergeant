@@ -78,6 +78,16 @@ describe("usePhotoAnalysis", () => {
     vi.clearAllMocks();
   });
 
+  it("analyzePhoto/refinePhoto мають стабільну ідентичність між рендерами", async () => {
+    const { result } = renderUsePhotoAnalysis();
+    const { analyzePhoto, refinePhoto } = result.current;
+    await act(async () => {
+      result.current.setNote("зміна стану → новий рендер");
+    });
+    expect(result.current.analyzePhoto).toBe(analyzePhoto);
+    expect(result.current.refinePhoto).toBe(refinePhoto);
+  });
+
   describe("редагування позицій (ініціатива 0023)", () => {
     const twoItems = {
       isFood: true,

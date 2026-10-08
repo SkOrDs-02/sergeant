@@ -21,6 +21,10 @@ const m = messages.privacy.lock;
 
 export function AppLockSettings() {
   const appLock = useAppLockContext();
+  // `appLock` — новий обʼєкт щорендера (useAppLock не мемоізує повернене
+  // значення), а `state`/`hasPin` — примітив і стабільний useCallback.
+  // Ефект нижче залежить саме від них, тож деструктуруємо.
+  const { state: lockState, hasPin } = appLock;
   const flagEnabled = useFlag("app-lock-enabled");
   const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
   // L-11: попередній `appLock.state` — щоб реагувати лише на перехід
@@ -34,7 +38,7 @@ export function AppLockSettings() {
   // Відстеження цього дає реконсиляційному ефекту нижче покрити ще й
   // «спільний пристрій, інший користувач»: перемикання юзерів не чіпає ні
   // `appLock.state`, ні `flagEnabled`.
-  const prevHasPinRef = useRef<typeof appLock.hasPin | null>(null);
+  const prevHasPinRef = useRef<typeof hasPin | null>(null);
 
   useEffect(() => {
     // L-11: стирання PIN-креденшела після 10 невдалих спроб
@@ -49,18 +53,16 @@ export function AppLockSettings() {
     // рівнозначно «щойно змонтувались» для реконсиляції нижче.
     const cameFromLocked = prev === "locked" || prev === "checking";
     const userChanged =
-      prevHasPinRef.current !== null &&
-      prevHasPinRef.current !== appLock.hasPin;
-    prevLockStateRef.current = appLock.state;
-    prevHasPinRef.current = appLock.hasPin;
+      prevHasPinRef.current !== null && prevHasPinRef.current !== hasPin;
+    prevLockStateRef.current = lockState;
+    prevHasPinRef.current = hasPin;
 
     if (!flagEnabled) return;
-    if (appLock.state !== "idle") return;
+    if (lockState !== "idle") return;
     if (!isMount && !cameFromLocked && !userChanged) return;
 
     let cancelled = false;
-    appLock
-      .hasPin()
+    hasPin()
       .then((has) => {
         if (cancelled || has) return;
         setFlag("app-lock-enabled", false);
@@ -74,8 +76,7 @@ export function AppLockSettings() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `appLock` — новий обʼєкт-літерал щорендеру (useAppLock.ts не мемоізує повернене значення). Має значення лише ідентичність `.state` і `.hasPin` (остання міняється тільки з userId), обидві вже явно в deps.
-  }, [flagEnabled, appLock.state, appLock.hasPin]);
+  }, [flagEnabled, lockState, hasPin]);
 
   const handleToggle = async (checked: boolean) => {
     if (checked) {
