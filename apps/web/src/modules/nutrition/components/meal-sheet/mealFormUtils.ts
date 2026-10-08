@@ -108,6 +108,45 @@ export function macrosToFormFields(mac: {
   };
 }
 
+/**
+ * Чи людина змінила КБЖВ відносно збереженого прийому. Порівнюємо рядки полів
+ * форми, а не числа: `macrosToFormFields` — та сама функція, що наповнила
+ * форму при відкритті, тож неторкнуті поля збігаються точно.
+ */
+export function macroFieldsEdited(
+  form: Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g">,
+  initialMacros: Parameters<typeof macrosToFormFields>[0] | null | undefined,
+): boolean {
+  const initial = macrosToFormFields(initialMacros ?? {});
+  return (["kcal", "protein_g", "fat_g", "carbs_g"] as const).some(
+    (key) => form[key] !== initial[key],
+  );
+}
+
+/**
+ * Походження КБЖВ для збереження. Прийом із `foodId`, чий продукт не вдалося
+ * відновити (`hasPickedFood: false`), лишається `productDb` лише поки КБЖВ не
+ * чіпали. Після ручної правки це вже не значення з бази: інакше запис ніс би
+ * `productDb` з макросами, що не відповідають ні базі, ні `amount_g`
+ * (аудит 2026-10-01, ux-13).
+ */
+export function resolveMacroSource(args: {
+  fromPhoto: boolean;
+  hasPickedFood: boolean;
+  form: Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g">;
+  initialMeal: {
+    foodId?: string | null | undefined;
+    macros?: Parameters<typeof macrosToFormFields>[0] | null | undefined;
+  };
+}): MealMacroSource {
+  const { fromPhoto, hasPickedFood, form, initialMeal } = args;
+  if (fromPhoto) return "photoAI";
+  if (hasPickedFood) return "productDb";
+  const keepsDb =
+    !!initialMeal.foodId && !macroFieldsEdited(form, initialMeal.macros);
+  return keepsDb ? "productDb" : "manual";
+}
+
 export interface MealFormPhotoResult {
   dishName?: string | null;
   macros?: Partial<NullableMacros> | null;

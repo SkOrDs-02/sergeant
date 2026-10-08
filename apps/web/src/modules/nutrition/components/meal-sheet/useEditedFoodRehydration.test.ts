@@ -9,7 +9,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const getFoodById = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/foodDb/foodDb", () => ({ getFoodById }));
 
-import { useEditedFoodRehydration } from "./useEditedFoodRehydration";
+import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
+import {
+  per100FromMeal,
+  useEditedFoodRehydration,
+} from "./useEditedFoodRehydration";
 
 const FOOD = {
   id: "f1",
@@ -127,5 +131,90 @@ describe("useEditedFoodRehydration", () => {
 
     expect(setPickedFood).not.toHaveBeenCalled();
     expect(result.current.rehydrated).toBe(false);
+  });
+
+  // ux-13: на іншому пристрої локальної foodDb з `food_<uuid>` немає, і поле
+  // ваги зникало. Прийом сам несе порцію, тож етикетка виводиться з неї.
+  describe("продукту немає в локальній базі (інший пристрій)", () => {
+    it("відновлює per100 з порції прийому productDb", async () => {
+      getFoodById.mockResolvedValue(null);
+      const setPickedFood = vi.fn();
+      const { result } = renderHook(() =>
+        useEditedFoodRehydration({
+          open: true,
+          meal: {
+            id: "m1",
+            name: "Яйце куряче",
+            foodId: "food_x",
+            macroSource: "productDb",
+            amount_g: 120,
+            macros: { kcal: 172, protein_g: 15, fat_g: 13, carbs_g: 1 },
+          },
+          setPickedFood,
+        }),
+      );
+
+      await waitFor(() => expect(result.current.rehydrated).toBe(true));
+      const picked = setPickedFood.mock.calls[0]![0];
+      expect(picked).toMatchObject({ id: "food_x", name: "Яйце куряче" });
+      expect(picked.per100.kcal).toBeCloseTo(143, 0);
+      expect(picked.per100.protein_g).toBeCloseTo(12.5, 1);
+    });
+
+    it("не вигадує продукт для ручного прийому", async () => {
+      getFoodById.mockResolvedValue(null);
+      const setPickedFood = vi.fn();
+      const { result } = renderHook(() =>
+        useEditedFoodRehydration({
+          open: true,
+          meal: {
+            id: "m1",
+            name: "Суп",
+            foodId: "food_x",
+            macroSource: "manual",
+            amount_g: 120,
+            macros: { kcal: 172, protein_g: 15, fat_g: 13, carbs_g: 1 },
+          },
+          setPickedFood,
+        }),
+      );
+
+      await waitFor(() => expect(getFoodById).toHaveBeenCalled());
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(setPickedFood).not.toHaveBeenCalled();
+      expect(result.current.rehydrated).toBe(false);
+    });
+
+    it("`gen_<slug>` відновлюється зі спільного корпусу GENERIC_FOODS", async () => {
+      getFoodById.mockResolvedValue(null);
+      const generic = GENERIC_FOODS[0]!;
+      const setPickedFood = vi.fn();
+      const { result } = renderHook(() =>
+        useEditedFoodRehydration({
+          open: true,
+          // Без macroSource/ваги: відновлення має спрацювати саме по id.
+          meal: { id: "m1", foodId: `gen_${generic.slug}` },
+          setPickedFood,
+        }),
+      );
+
+      await waitFor(() => expect(result.current.rehydrated).toBe(true));
+      expect(setPickedFood).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: `gen_${generic.slug}`,
+          name: generic.name,
+          per100: generic.per100,
+        }),
+      );
+    });
+
+    it("`per100FromMeal` відхиляє нульову вагу й порожні макроси", () => {
+      expect(per100FromMeal(0, { kcal: 100 })).toBeNull();
+      expect(per100FromMeal(null, { kcal: 100 })).toBeNull();
+      expect(per100FromMeal(100, { kcal: null })).toBeNull();
+      expect(per100FromMeal(100, null)).toBeNull();
+    });
   });
 });

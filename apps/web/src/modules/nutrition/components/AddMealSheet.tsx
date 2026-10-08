@@ -52,11 +52,18 @@ import {
   currentTime,
   emptyForm,
   gramsOrDefault,
+  resolveMacroSource,
   macrosToFormFields,
   upsertMealTemplate,
   type MealFormState,
   type MealSaveTemplate,
 } from "./meal-sheet/mealFormUtils";
+import {
+  macrosAreAllEmpty,
+  parseMealMacroInputs,
+  pickedFoodLabel,
+  withoutSeededFields,
+} from "./meal-sheet/mealMacroInputs";
 import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
@@ -77,32 +84,6 @@ import { useEditedFoodRehydration } from "./meal-sheet/useEditedFoodRehydration"
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
-
-/**
- * Фізіологічно правдоподібні стелі для одного прийому їжі. Не медичні
- * норми — межі проти друкарської помилки й свідомо абсурдного вводу
- * (кома замість крапки, зайвий нуль), які інакше зламали б денні
- * агрегації та графіки.
- */
-export const MAX_KCAL_PER_MEAL = 10_000;
-export const MAX_MACRO_GRAMS = 2_000;
-
-/**
- * True when every macro field is null or 0 — mirrors the `hasPhotoMacros`
- * predicate below (photo AI returns all-null macros when it can't
- * identify the food). A meal saved with all-empty macros won't move the
- * daily stats at all, so `handleSave` routes through a confirm step
- * instead of blocking the save outright (founder decision: warn, don't
- * block).
- */
-function macrosAreAllEmpty(macros: {
-  kcal: number | null;
-  protein_g: number | null;
-  fat_g: number | null;
-  carbs_g: number | null;
-}): boolean {
-  return !Object.values(macros).some((v) => v != null && v !== 0);
-}
 
 /**
  * Грами порції з поля вводу; 100 г — дефолт, коли поле порожнє або зіпсоване.
@@ -348,9 +329,7 @@ export function AddMealSheet({
     // input (or a rare race where autofill never caught up). The source
     // already has an authoritative label — erroring out forces the user to
     // retype the food they just picked.
-    const pickedFoodName = pickedFood
-      ? [pickedFood.name, pickedFood.brand].filter(Boolean).join(" ").trim()
-      : "";
+    const pickedFoodName = pickedFoodLabel(pickedFood);
     const name = clampText(
       form.name.trim() ||
         pickedFoodName ||
@@ -361,39 +340,12 @@ export function AddMealSheet({
       setForm((s) => ({ ...s, err: "Введи назву страви." }));
       return;
     }
-    // `parseDecimalInput`, а не `Number()`: поля мають `inputMode="decimal"`,
-    // і українська (як і більшість європейських) розкладка дає кому —
-    // `Number("1212,1")` це `NaN`, тож коректний ввід відхилявся.
-    // Порожнє поле лишається `null` («не вказано»), і це НЕ помилка.
-    const macroInputs = (
-      ["kcal", "protein_g", "fat_g", "carbs_g"] as const
-    ).map((key) => (form[key] === "" ? null : parseDecimalInput(form[key])));
-    if (macroInputs.some((m) => m != null && !m.ok)) {
-      setForm((s) => ({
-        ...s,
-        err: "Некоректне значення КБЖВ. Впиши число, наприклад 12,5.",
-      }));
+    const parsed = parseMealMacroInputs(form);
+    if (!parsed.ok) {
+      setForm((s) => ({ ...s, err: parsed.err }));
       return;
     }
-    const [kcal, protein_g, fat_g, carbs_g] = macroInputs.map((m) =>
-      m != null && m.ok ? m.value : null,
-    ) as [number | null, number | null, number | null, number | null];
-    if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
-      setForm((s) => ({
-        ...s,
-        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
-      }));
-      return;
-    }
-    if (
-      [protein_g, fat_g, carbs_g].some((n) => n != null && n > MAX_MACRO_GRAMS)
-    ) {
-      setForm((s) => ({
-        ...s,
-        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом. Зменш значення.`,
-      }));
-      return;
-    }
+    const { kcal, protein_g, fat_g, carbs_g } = parsed.macros;
     const mealLabel =
       MEAL_TYPES.find((m) => m.id === form.mealType)?.label || "Прийом їжі";
     const source = appliedPhoto ? "photo" : "manual";
@@ -417,13 +369,12 @@ export function AddMealSheet({
         return;
       }
     }
-    const macroSource = appliedPhoto
-      ? "photoAI"
-      : pickedFood
-        ? "productDb"
-        : initialMeal?.foodId
-          ? "productDb"
-          : "manual";
+    const macroSource = resolveMacroSource({
+      fromPhoto: !!appliedPhoto,
+      hasPickedFood: !!pickedFood,
+      form,
+      initialMeal: initialMeal ?? {},
+    });
     const macros = { kcal, protein_g, fat_g, carbs_g };
     // PR-3 (ініціатива 0023): фото-аналіз пише N рядків журналу — по одному
     // на позицію, не один злитий. Побудова винесена в `buildMealsForSave`
@@ -494,12 +445,8 @@ export function AddMealSheet({
     setPendingMeal(null);
   }
 
-  const hasPhotoMacros = Boolean(
-    appliedPhoto?.result.macros &&
-    Object.values(appliedPhoto.result.macros).some(
-      (v: unknown) => v != null && v !== 0,
-    ),
-  );
+  const photoMacros = appliedPhoto?.result.macros;
+  const hasPhotoMacros = !!photoMacros && !macrosAreAllEmpty(photoMacros);
 
   // Photo → fill: seed the form from the analysis (same `emptyForm` path
   // the old host-held photoResult used at sheet-open) and remember the
@@ -550,7 +497,7 @@ export function AddMealSheet({
     // по-різному, але правило одне: збігається — наше, отже чистимо;
     // відрізняється — своє, отже не чіпаємо.
     const seededName = pickedFood
-      ? [pickedFood.name, pickedFood.brand].filter(Boolean).join(" ").trim()
+      ? pickedFoodLabel(pickedFood)
       : fromPantryItem !== null
         ? fromPantryItem
         : appliedPhoto
@@ -565,15 +512,7 @@ export function AddMealSheet({
     // 15:00 і потім змінив продукт, отримував назад «Обід» і поточну
     // годину.
     if (seeded) {
-      setForm((s) => ({
-        ...s,
-        name: seededName !== null && s.name !== seededName ? s.name : "",
-        kcal: "",
-        protein_g: "",
-        fat_g: "",
-        carbs_g: "",
-        err: "",
-      }));
+      setForm((s) => withoutSeededFields(s, seededName));
     }
   }
 

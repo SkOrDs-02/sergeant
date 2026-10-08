@@ -811,7 +811,7 @@ vb/05-list-typing.mjs, новий користувач. На старті «Ту
 
 ### `ux-13` [medium] У прийомі, доданому з бази продуктів, на іншому пристрої чи після очищення даних не можна змінити вагу, і він підписаний «Вручну»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-13-meal-weight-edit
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа / журнал
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useEditedFoodRehydration.ts; nutrition foodDb (makeFoodProduct, ensureSeedFoods); nutrition_meals.food_id
 - **Першопричина:** Seed-продукти отримують випадковий локальний id food_&lt;uuid&gt; окремо на кожному пристрої. Прийом зберігає цей id без per100, а useEditedFoodRehydration шукає продукт лише в локальній IndexedDB. На іншому пристрої продукт не знаходиться, поля ваги немає, і запис показується як ручний.

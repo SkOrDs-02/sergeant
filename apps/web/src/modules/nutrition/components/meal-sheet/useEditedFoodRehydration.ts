@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-03
+ * Last validated: 2026-10-08
  * Status: Active
  *
  * Відновлює звʼязаний продукт при РЕДАГУВАННІ прийому.
@@ -20,6 +20,18 @@
  * дані страви, чиї КБЖВ людина правила руками або які приїхали з фото.
  * Тому `setPickedFood` і прапорець ідуть одним батчем: картка монтується
  * вже з піднятим гардом.
+ *
+ * Локальна база — не єдине джерело (аудит 2026-10-01, ux-13). Seed-продукти
+ * мали випадковий `food_<uuid>` на кожному пристрої, тож на іншому телефоні
+ * чи після очищення даних сайту `getFoodById` повертав `null`, поле ваги
+ * зникало, а запис виглядав «Вручну». Ланцюжок відновлення:
+ *   1. локальна foodDb за `foodId`;
+ *   2. `gen_<slug>` — стабільний id базової їжі, її етикетка є в спільному
+ *      корпусі `GENERIC_FOODS` (підшлях + `import()`, щоб корпус не потрапив
+ *      в eager-чанк — той самий розрахунок, що й у `seedFoodsUk`);
+ *   3. запис `macroSource: productDb` з вагою — етикетка відновлюється
+ *      діленням: `per100 = макроси × 100 / amount_g`. Прийом зберігає саме
+ *      порцію, тож це точне відновлення, а не наближення.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
@@ -27,11 +39,75 @@ import type { Dispatch, SetStateAction } from "react";
 import { getFoodById } from "../../lib/foodDb/foodDb";
 import type { PickedFood } from "./FoodPickerSection";
 
+interface EditedMealMacros {
+  kcal?: number | null | undefined;
+  protein_g?: number | null | undefined;
+  fat_g?: number | null | undefined;
+  carbs_g?: number | null | undefined;
+}
+
 interface UseEditedFoodRehydrationArgs {
   open: boolean;
   /** Редагований прийом; `null`/без `id` — створення нового. */
-  meal: { id?: string | undefined; foodId?: string | null } | null | undefined;
+  meal:
+    | {
+        id?: string | undefined;
+        name?: string | undefined;
+        foodId?: string | null | undefined;
+        amount_g?: number | null | undefined;
+        macros?: EditedMealMacros | null | undefined;
+        macroSource?: string | null | undefined;
+      }
+    | null
+    | undefined;
   setPickedFood: Dispatch<SetStateAction<PickedFood | null>>;
+}
+
+const GENERIC_FOOD_ID_PREFIX = "gen_";
+
+/**
+ * Етикета базової їжі зі спільного корпусу за id `gen_<slug>`. Динамічний
+ * `import()` підшляху — не барель `@sergeant/shared` (див. шапку).
+ */
+async function pickGenericFood(foodId: string): Promise<PickedFood | null> {
+  if (!foodId.startsWith(GENERIC_FOOD_ID_PREFIX)) return null;
+  const slug = foodId.slice(GENERIC_FOOD_ID_PREFIX.length);
+  const { GENERIC_FOODS } = await import("@sergeant/shared/data/genericFoods");
+  const food = GENERIC_FOODS.find((f) => f.slug === slug);
+  if (!food) return null;
+  return {
+    id: foodId,
+    name: food.name,
+    brand: "",
+    defaultGrams: food.defaultGrams ?? 100,
+    per100: {
+      kcal: food.per100.kcal,
+      protein_g: food.per100.protein_g,
+      fat_g: food.per100.fat_g,
+      carbs_g: food.per100.carbs_g,
+    },
+  };
+}
+
+/**
+ * Остання ланка: продукту ніде немає, але прийом сам несе порцію (вага +
+ * КБЖВ на неї) і позначений як взятий з бази — тоді етикета на 100 г
+ * виводиться з нього.
+ */
+export function per100FromMeal(
+  amountG: number | null | undefined,
+  macros: EditedMealMacros | null | undefined,
+): PickedFood["per100"] | null {
+  if (amountG == null || !(amountG > 0) || !macros) return null;
+  if (macros.kcal == null || !Number.isFinite(macros.kcal)) return null;
+  const per100 = (n: number | null | undefined) =>
+    Math.round((((n ?? 0) * 100) / amountG) * 100) / 100;
+  return {
+    kcal: per100(macros.kcal),
+    protein_g: per100(macros.protein_g),
+    fat_g: per100(macros.fat_g),
+    carbs_g: per100(macros.carbs_g),
+  };
 }
 
 export interface EditedFoodRehydration {
@@ -62,26 +138,76 @@ export function useEditedFoodRehydration({
   // замиканні ефекту, а ефект від `clear()` не перезапускається.
   const lookupGeneration = useRef(0);
   const editedFoodId = meal?.id ? (meal.foodId ?? null) : null;
+  // Примітиви, а не обʼєкт `meal`: його ідентичність міняється на кожному
+  // рендері батька, і ефект перечитував би базу без потреби.
+  const mealName = meal?.name ?? "";
+  const fromDb = meal?.macroSource === "productDb";
+  const amountG = meal?.amount_g ?? null;
+  const kcal = meal?.macros?.kcal ?? null;
+  const proteinG = meal?.macros?.protein_g ?? null;
+  const fatG = meal?.macros?.fat_g ?? null;
+  const carbsG = meal?.macros?.carbs_g ?? null;
 
   useEffect(() => {
     if (!open || !editedFoodId) return;
     const generation = ++lookupGeneration.current;
     let cancelled = false;
-    void getFoodById(editedFoodId).then((food) => {
-      if (cancelled || generation !== lookupGeneration.current || !food) return;
-      setPickedFood({
-        id: food.id,
-        name: food.name,
-        brand: food.brand,
-        defaultGrams: food.defaultGrams,
-        per100: food.per100,
+    const lookup = async (): Promise<PickedFood | null> => {
+      const food = await getFoodById(editedFoodId);
+      if (food) {
+        return {
+          id: food.id,
+          name: food.name,
+          brand: food.brand,
+          defaultGrams: food.defaultGrams,
+          per100: food.per100,
+        };
+      }
+      const generic = await pickGenericFood(editedFoodId);
+      if (generic) return generic;
+      if (!fromDb) return null;
+      const per100 = per100FromMeal(amountG, {
+        kcal,
+        protein_g: proteinG,
+        fat_g: fatG,
+        carbs_g: carbsG,
       });
-      setRehydratedId(editedFoodId);
-    });
+      if (!per100) return null;
+      return {
+        id: editedFoodId,
+        name: mealName,
+        brand: "",
+        defaultGrams: amountG ?? 100,
+        per100,
+      };
+    };
+    void lookup()
+      .then((picked) => {
+        if (cancelled || generation !== lookupGeneration.current || !picked) {
+          return;
+        }
+        setPickedFood(picked);
+        setRehydratedId(editedFoodId);
+      })
+      .catch(() => {
+        // Відновлення — best-effort: без нього аркуш відкривається як раніше
+        // (КБЖВ редагуються руками).
+      });
     return () => {
       cancelled = true;
     };
-  }, [open, editedFoodId, setPickedFood]);
+  }, [
+    open,
+    editedFoodId,
+    setPickedFood,
+    mealName,
+    fromDb,
+    amountG,
+    kcal,
+    proteinG,
+    fatG,
+    carbsG,
+  ]);
 
   const clear = useCallback(() => {
     lookupGeneration.current += 1;

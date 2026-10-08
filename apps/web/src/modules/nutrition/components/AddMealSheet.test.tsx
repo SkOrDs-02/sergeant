@@ -979,6 +979,37 @@ describe("AddMealSheet — editing an existing meal", () => {
   });
 });
 
+describe("AddMealSheet — ручна правка КБЖВ прийому з нерозпізнаним продуктом", () => {
+  // ux-13: продукт не відновився (getFoodById → null), а КБЖВ людина
+  // змінила. Запис більше не відповідає базі, тож `productDb` — хибна мітка.
+  it("macroSource стає manual, коли КБЖВ правили, а продукт не відновлено", async () => {
+    const onSave = vi.fn();
+    renderSheet({
+      onSave,
+      initialMeal: {
+        id: "existing-meal-2",
+        name: "Гречка",
+        mealType: "lunch",
+        foodId: "food-gone",
+        amount_g: 150,
+        macros: { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 },
+      },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "250" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      id: "existing-meal-2",
+      foodId: "food-gone",
+      macroSource: "manual",
+    });
+  });
+});
+
 describe("AddMealSheet — photo step", () => {
   it("initialStep='photo' opens straight at the photo step", () => {
     renderSheet({ initialStep: "photo" });

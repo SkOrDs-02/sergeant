@@ -157,6 +157,20 @@ export function makeFoodProduct(partial: unknown): FoodProduct {
   };
 }
 
+/**
+ * Seed-продукт отримує детермінований id `gen_<slug>` (як у серверному
+ * пошуку), а не випадковий `food_<uuid>`: прийом зберігає лише `foodId`, і
+ * випадковий id існував тільки на пристрої-авторі. Наявні локальні записи не
+ * перейменовуються (їхні прийоми вже посилаються на старі id).
+ */
+function seedToProduct(seed: SeedFood): FoodProduct {
+  return makeFoodProduct({
+    ...(seed.slug ? { id: `gen_${seed.slug}` } : {}),
+    name: seed.name,
+    per100: seed.per100,
+  });
+}
+
 export async function ensureSeedFoods(): Promise<boolean> {
   try {
     await ensureMigrated();
@@ -173,9 +187,7 @@ export async function ensureSeedFoods(): Promise<boolean> {
     const seeds = await loadSeedFoods();
 
     if (count === 0) {
-      return await replaceAllFoodsFromList(
-        seeds.map((x) => makeFoodProduct({ name: x.name, per100: x.per100 })),
-      );
+      return await replaceAllFoodsFromList(seeds.map(seedToProduct));
     }
 
     // Merge: додати тільки ті seeds, яких ще немає в базі
@@ -183,11 +195,14 @@ export async function ensureSeedFoods(): Promise<boolean> {
     const byNorm = new Map(
       existing.map((x) => [normText(x.norm || x.name), x]),
     );
+    const existingIds = new Set(existing.map((x) => x.id));
     for (const seed of seeds) {
       if (byNorm.has(normText(seed.name))) continue;
-      await upsertFood(
-        makeFoodProduct({ name: seed.name, per100: seed.per100 }),
-      );
+      const product = seedToProduct(seed);
+      // Людина могла перейменувати seed-запис: його `gen_` id вже зайнятий,
+      // і `put` затер би її правку.
+      if (existingIds.has(product.id)) continue;
+      await upsertFood(product);
     }
     return true;
   } catch {
