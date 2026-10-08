@@ -518,6 +518,49 @@ export const nutritionPageMessages = {
     save: "Зберегти",
   },
 
+  // Аркуш «Моя норма»: працює без входу, пише в локальне сховище.
+  // Плейсхолдери `{...}` підставляє `MyNormSheet`.
+  myNorm: {
+    title: "Моя норма",
+    description:
+      "Рахую норму за формулою Міффлін-Сан-Жеор. Вхід не потрібен, дані лишаються на пристрої.",
+    goalLabel: "Мета",
+    goalCutting: "Схуднення",
+    goalMaintenance: "Підтримка",
+    goalBulking: "Набір",
+    rateLabel: "Темп, кг на тиждень",
+    rateOption: "{rate} кг",
+    goalWeightLabel: "Цільова вага, кг (необовʼязково)",
+    goalWeightRangeError: "Вага має бути від 20 до 400 кг",
+    goalDate: "Орієнтовно до цілі: {date}. Це прикидка, а не обіцянка.",
+    resultLabel: "Твоя норма",
+    resultKcal: "{kcal} ккал на день",
+    activitySedentary: "сидячий",
+    activityLight: "легка активність",
+    activityModerate: "помірна активність",
+    activityActive: "висока активність",
+    activityVeryActive: "дуже висока активність",
+    formulaLine: "Міффлін-Сан-Жеор · {activity} × {multiplier} · {delta}",
+    formulaLineDynamic:
+      "Міффлін-Сан-Жеор · сидячий × 1,2 + тренування за день ({workout} ккал) · {delta}",
+    deltaDeficit: "дефіцит {kcal} ккал",
+    deltaSurplus: "профіцит {kcal} ккал",
+    deltaNone: "без корекції",
+    howToggle: "Як пораховано",
+    howBody:
+      "BMR {bmr} × {multiplier} = {tdee}, {delta}, виходить {kcal} ккал.",
+    howBodyDynamic:
+      "BMR {bmr} × 1,2 + тренування {workout} = {tdee}, {delta}, виходить {kcal} ккал.",
+    floorNote: "Норма не опускається нижче 1000 ккал.",
+    incomplete:
+      "Заповни зріст, дату народження, стать, рівень активності й вагу, і я порахую норму.",
+    apply: "Застосувати",
+    retry: "Повторити",
+    applied: "Норму збережено",
+    saveError: "Не вдалося зберегти норму",
+    stillLoading: "Налаштування ще завантажуються, спробуй за мить",
+  },
+
   photoAuth: {
     heading: "Потрібен обліковий запис",
     body: "Фото надсилається на сервер для розпізнавання, тому цей сценарій доступний після входу. Ручне додавання їжі працює локально.",
