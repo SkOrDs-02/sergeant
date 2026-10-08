@@ -8,7 +8,7 @@
  * SQL-послідовність не ганяємо.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Pool } from "pg";
 import {
   GdprCleanupPoller,
@@ -221,5 +221,92 @@ describe("getGdprCleanupWorkerStatus", () => {
     expect(status.errorCode).toBe("28P01");
     expect(JSON.stringify(status)).not.toContain("sergeant_app");
     expect(JSON.stringify(status)).not.toContain("10.0.0.12");
+  });
+});
+
+/**
+ * rel-19 (аудит 2026-10-01): полер мав лише `setInterval`, тож перший тік
+ * наставав через ГОДИНУ після старту процесу, а контейнер рестартує на кожен
+ * деплой. Без стартового тіку тут 0 викликів після `startDelayMs`.
+ */
+describe("GdprCleanupPoller - стартовий тік (rel-19)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("після start() і startDelayMs (< intervalMs) batch викликано рівно один раз", async () => {
+    vi.useFakeTimers();
+    const processBatch = vi.fn().mockResolvedValue(emptyBatchResult);
+    const poller = new GdprCleanupPoller({
+      pool: mockPool(),
+      intervalMs: 3_600_000,
+      startDelayMs: 60_000,
+      processBatch,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(processBatch).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(processBatch).toHaveBeenCalledTimes(1);
+    // До першого інтервального тіку ще далеко - стартовий тік одноразовий.
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(processBatch).toHaveBeenCalledTimes(1);
+
+    await poller.stop();
+  });
+
+  it("без startDelayMs стартовий тік має jitter у межах 30-90 с", async () => {
+    vi.useFakeTimers();
+    const processBatch = vi.fn().mockResolvedValue(emptyBatchResult);
+    const poller = new GdprCleanupPoller({
+      pool: mockPool(),
+      intervalMs: 3_600_000,
+      processBatch,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(processBatch).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(60_001);
+    expect(processBatch).toHaveBeenCalledTimes(1);
+
+    await poller.stop();
+  });
+
+  it("stop() до стартового тіку гасить його", async () => {
+    vi.useFakeTimers();
+    const processBatch = vi.fn().mockResolvedValue(emptyBatchResult);
+    const poller = new GdprCleanupPoller({
+      pool: mockPool(),
+      intervalMs: 3_600_000,
+      startDelayMs: 60_000,
+      processBatch,
+    });
+
+    poller.start();
+    await poller.stop();
+    await vi.advanceTimersByTimeAsync(3_600_000 * 2);
+    expect(processBatch).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("startDelayMs: 0 вимикає стартовий тік, інтервальний лишається", async () => {
+    vi.useFakeTimers();
+    const processBatch = vi.fn().mockResolvedValue(emptyBatchResult);
+    const poller = new GdprCleanupPoller({
+      pool: mockPool(),
+      intervalMs: 3_600_000,
+      startDelayMs: 0,
+      processBatch,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(3_599_999);
+    expect(processBatch).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(processBatch).toHaveBeenCalledTimes(1);
+
+    await poller.stop();
   });
 });

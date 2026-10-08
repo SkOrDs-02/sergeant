@@ -297,7 +297,7 @@ v2.mjs: `search open {url:'/',dialogs:['d:Глобальний пошук']}` ->
 
 ### `ux-03` [medium] Приховану ручну чи імпортовану операцію неможливо повернути: шляху «Показати» немає
 
-- **Стан:** виправлено в гілці claude/fix-ux-03-04-06-finyk-ux
+- **Стан:** виправлено в [#1406](https://github.com/SkOrDs-02/sergeant/pull/1406) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік / операції
 - **Де:** apps/web/src/modules/finyk/pages/transactions/useTransactionSelection.ts:263-282; apps/web/src/modules/finyk/components/TxListItem.tsx:60-105; apps/web/src/modules/finyk/pages/Transactions.tsx:506-511; ManualExpenseSheet
 - **Першопричина:** Тап по ручному чи імпортованому рядку відкриває ManualExpenseSheet без перемикача прихованості, а свайп ліворуч його видаляє. applyBatchHide лише додає ще не приховані id і мовчки пропускає вже приховані. onToggleHidden є тільки в BankTransactionDetailsSheet для банківських операцій.
@@ -341,7 +341,7 @@ My own browser run (v10-hide.mjs, 390x844, verify-gapfinyk2-v1): added manual VH
 
 ### `ux-04` [medium] Редагування суми цілі зберігає проміжне значення (4 ₴ замість 4000 ₴): святкування «Ціль закрито» спрацьовує після першої цифри й забирає фокус
 
-- **Стан:** виправлено в гілці claude/fix-ux-03-04-06-finyk-ux
+- **Стан:** виправлено в [#1406](https://github.com/SkOrDs-02/sergeant/pull/1406) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік / цілі
 - **Де:** apps/web/src/modules/finyk/components/budgets/GoalBudgetCard.tsx:120-126,166-171; apps/web/src/modules/finyk/pages/budgets/BudgetsGoalsSection.tsx:204-212
 - **Першопричина:** BudgetsGoalsSection записує onChangeTarget у стан бюджетів на кожен символ, тож pct перераховується від недописаної суми. useEffect у GoalBudgetCard запускає goalCompleted при pct&gt;=100, не перевіряючи режим редагування, і назавжди позначає святкування показаним. Діалог забирає фокус, і решта цифр губиться.
@@ -430,7 +430,7 @@ b2_tomorrow_a11y.mjs: звичка «Робота В» з пресетом «Р�
 
 ### `ux-06` [medium] Підключення Monobank без підтвердженого email показує «Не вдалось звʼязатись з Mono. Перевір зʼєднання.» замість прохання підтвердити email
 
-- **Стан:** виправлено в гілці claude/fix-ux-03-04-06-finyk-ux
+- **Стан:** виправлено в [#1406](https://github.com/SkOrDs-02/sergeant/pull/1406) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік / Monobank
 - **Де:** apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts:458-482; apps/server/src/http/requireVerifiedEmail.ts:5-8,44-51; apps/server/src/modules/mono/mono-webhook.ts:88-93
 - **Першопричина:** catch у useMonobankWebhook окремо обробляє лише 401. Усе інше, зокрема 403 EMAIL_VERIFICATION_REQUIRED від requireVerifiedEmail і 403 від requireFreshSession, потрапляє в networkUnavailable. Серверний message ігнорується, хоча докстрінг middleware обіцяє банер «Підтвердіть email».
@@ -677,7 +677,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/menus2.mjs desktop; menus4.
 
 ### `ux-10` [medium] Після виходу з акаунта «Назад» лишає порожній екран на «/» із застряглим «Перенаправлення…»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-10-logout-back-redirect
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth / навігація
 - **Де:** apps/web/src/core/app/HubPage.tsx:127-128; apps/web/src/core/app/RedirectTo.tsx; apps/web/src/core/app/useAppEffects.ts:108-113; apps/web/src/core/hooks/useHubUIState.ts:88-103
 - **Першопричина:** Для аноніма /?tab=profile одночасно обробляють два механізми. HubPage рендерить RedirectTo(/welcome), а useAppEffects у ту саму мить робить navigate на «/» за застарілим locationRef (replace:false). Уже змонтований RedirectTo з тим самим to свій ефект повторно не запускає, тож на «/» лишається лише sr-only «Перенаправлення…».
@@ -991,7 +991,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/tabs.mjs ; kb-meal2.mjs ; �
 
 ### `ux-17` [medium] Сканер штрих-коду на десктопі й у ландшафті вилазить за верх екрана: заголовок і «Закрити сканер» недосяжні, а помилка камери не оголошується
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-17-barcode-scanner-viewport
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / сканер штрихкоду
 - **Де:** apps/web/src/modules/nutrition/components/BarcodeScanner.tsx:163-215; apps/web/src/modules/finyk/components/receiptScan/ReceiptScanCameraView.tsx:38-41
 - **Першопричина:** Оверлей BarcodeScanner має класи fixed inset-0 items-end, панель w-full без max-height і overflow, а відео w-full aspect-video. На широкому вʼюпорті панель стає вищою за екран і зсувається вгору. Статус і помилка камери рендеряться як &lt;p&gt; без role і aria-live; так само в ReceiptScanCameraView.

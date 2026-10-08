@@ -101,11 +101,12 @@ git checkout -b hotfix/$(date +%s)-<short-description>
 # ... fix ...
 git commit -m "fix(<scope>): <subject>"  # див. AGENTS.md §5 для scope enum
 git push -u origin hotfix/...
-gh pr create --base main --title "fix(<scope>): <subject>" --body-file <(cat .github/PULL_REQUEST_TEMPLATE.md)
+gh pr create --base main --title "fix(<scope>): <subject>" --body-file <заповнений-шаблон>.md  # шаблон: .github/PULL_REQUEST_TEMPLATE.md
 
-# 2. CI має пройти. Якщо CI зелений + PR має одного approving reviewer →
-#    merge через "Squash and merge". Якщо approving reviewer відсутній і
-#    incident severity SEV-1/SEV-2:
+# 2. CI має пройти. Required-чеки `main` зелені → власник мерджить через
+#    "Squash and merge"; апрув не вимагається (AGENTS.md § Де живе код).
+#    Якщо required-чек червоний з причини поза фіксом і incident severity
+#    SEV-1/SEV-2:
 #    - адмін override через Settings → Branches (потрібні admin права на repo)
 #    - АБО merge through admin-bypass і одразу post у Telegram з посиланням на PR
 #    - повний flow → docs/start/instructions/hotfix-prod-regression.md

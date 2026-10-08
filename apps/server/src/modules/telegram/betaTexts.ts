@@ -218,14 +218,17 @@ export function surveyAnsweredText(
   survey: SurveyDefinition,
   answerLabel: string,
 ): string {
-  return `${survey.question}\n\n✅ Твоя відповідь: ${answerLabel}. Дякую, саме це й потрібно.`;
+  // Без ✅: слова «Твоя відповідь» уже кажуть, що її зараховано. ⚠️ в
+  // інструкції iPhone лишається, воно несе попередження (рішення власника
+  // 2026-10-08, анти-слоп раунд 4, Q7).
+  return `${survey.question}\n\nТвоя відповідь: ${answerLabel}. Дякую, саме це й потрібно.`;
 }
 
 /** Спливашка на повторне натискання. Telegram ріже її на 200 символах. */
 export const SURVEY_ALREADY_ANSWERED_TOAST = "Відповідь уже зарахована.";
 
 /** Спливашка на успішне зарахування. */
-export const SURVEY_ACCEPTED_TOAST = "Дякую!";
+export const SURVEY_ACCEPTED_TOAST = "Дякую.";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Відповіді на /start і /stop
@@ -279,7 +282,7 @@ export function startReplyQueued(position: number): string {
  */
 export const STOP_REPLY =
   "Прибрав тебе зі списку, більше не напишу.\n\n" +
-  "Шкода! Скажи одним рядком, чому? Просто надішли повідомлення у відповідь, " +
+  "Шкода. Скажи одним рядком, чому? Просто надішли повідомлення у відповідь, " +
   "це найкорисніше, що можна лишити на виході.\n\n" +
   "Передумаєш, надішли /start.";
 

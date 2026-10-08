@@ -54,6 +54,10 @@ import { toKyivISODate } from "@sergeant/shared";
 
 import { logger } from "../../obs/logger.js";
 import { waitUntilIdle } from "../../lib/pollerDrain.js";
+import {
+  resolveStartupDelayMs,
+  scheduleStartupTick,
+} from "../../lib/pollerStartupTick.js";
 import { logArchiveRowsTotal } from "../../obs/metrics.js";
 import { Sentry } from "../../sentry.js";
 
@@ -133,6 +137,11 @@ export interface LogArchivePollerOptions {
   gcsDeps?: Partial<GcsUploadDeps>;
   /** Inject a clock for deterministic object-name dates in tests. */
   now?: () => Date;
+  /**
+   * One-shot startup tick delay in ms. Default: jitter 30-90 s; `0` or a
+   * negative value disables it (rel-19: every deploy restarted the interval).
+   */
+  startDelayMs?: number | undefined;
 }
 
 export interface ArchiveTickResult {
@@ -149,6 +158,7 @@ export class LogArchivePoller {
   private readonly pool: Pool;
   private readonly retentionDays: number;
   private readonly intervalMs: number;
+  private readonly startDelayMs: number;
   private readonly batchSize: number;
   private readonly bucket: string;
   private readonly enabled: boolean;
@@ -156,6 +166,7 @@ export class LogArchivePoller {
   private readonly gcsDeps: GcsUploadDeps;
   private readonly now: () => Date;
   private timer: NodeJS.Timeout | null = null;
+  private startTimer: NodeJS.Timeout | null = null;
   private running = false;
   private stopping = false;
 
@@ -163,6 +174,7 @@ export class LogArchivePoller {
     this.pool = options.pool;
     this.retentionDays = options.retentionDays;
     this.intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
+    this.startDelayMs = resolveStartupDelayMs(options.startDelayMs);
     this.batchSize = options.batchSize ?? DEFAULT_BATCH_SIZE;
     this.bucket = options.bucket;
     this.enabled = options.enabled;
@@ -208,19 +220,31 @@ export class LogArchivePoller {
       bucket: this.bucket,
       tables: this.tables.map((t) => t.table),
     });
-    this.timer = setInterval(() => {
-      void this.runOnce().catch((err: unknown) => {
-        logger.error({
-          msg: "log_archive_tick_failed",
-          err: err instanceof Error ? err.message : String(err),
-        });
+    const onTickError = (err: unknown): void => {
+      logger.error({
+        msg: "log_archive_tick_failed",
+        err: err instanceof Error ? err.message : String(err),
       });
+    };
+    this.timer = setInterval(() => {
+      void this.runOnce().catch(onTickError);
     }, this.intervalMs);
     this.timer.unref?.();
+    // Одноразовий стартовий тік: інтервал рахується від старту процесу, а
+    // деплоїв більше, ніж годин (rel-19).
+    this.startTimer = scheduleStartupTick(
+      this.startDelayMs,
+      () => this.runOnce(),
+      onTickError,
+    );
   }
 
   async stop(): Promise<void> {
     this.stopping = true;
+    if (this.startTimer) {
+      clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;

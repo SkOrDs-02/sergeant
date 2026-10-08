@@ -71,13 +71,21 @@ export interface EnqueueOutboxUpsertResult {
  * never catches a genuine double-submit (double-click, retry-after-offline,
  * a `popstate`-vs-submit race) — each attempt gets its own key. The content
  * check compares against the single most-recent still-`pending` row for the
- * same `(user_id, table_name, op)`; once a row is pushed it is `DELETE`-d
- * (`markOutboxSuccess`), so a later *legitimate* repeat of the same content
- * is never blocked by history. Limiting the comparison to the most recent
- * pending row (not any older one) keeps rapid, genuinely different writes to
- * the same op-shape (e.g. toggling a preference on/off/on again before the
- * first push drains) from being coalesced into a stale earlier op — see
- * `docs/work/specs/beta-input-boundaries.md` § «Ризики».
+ * same `(user_id, table_name)` — **whatever its op** — and treats the call as
+ * a duplicate only when that row has the same `op` AND the same canonical
+ * content. Once a row is pushed it is `DELETE`-d (`markOutboxSuccess`), so a
+ * later *legitimate* repeat of the same content is never blocked by history.
+ *
+ * Why the newest row is taken regardless of `op` (data-14): a toggle
+ * on/off/on (insert → delete → insert, hide → unhide → hide) must reach the
+ * server as three ops. If the lookup were scoped to `op`, the third call
+ * would be compared with the *first* row (the delete in between is invisible
+ * to it), match, and be swallowed — leaving the server and every other
+ * device in the opposite state to what the user last chose. With an op of a
+ * different kind in between, the newest pending row has another `op`, so the
+ * new op is always queued. The cost is conservative: a double-submit
+ * separated by an unrelated write to the same table is queued twice, which
+ * is harmless (LWW makes the repeat idempotent server-side).
  *
  * Ops belonging to a synthetic local user id (anonymous / demo) are NOT
  * written: `drainSyncOpOutbox` scopes on the Better Auth session id, so
@@ -92,7 +100,7 @@ export interface EnqueueOutboxUpsertResult {
  *
  * **Concurrency:** the (content-dedup lookup → INSERT) pair below is not
  * atomic by itself — two concurrent calls for the same
- * `(user_id, table_name, op)` content can both run `findDuplicatePending`
+ * `(user_id, table_name)` content can both run `findDuplicatePending`
  * before either has inserted, both see "nothing pending yet", and both
  * insert (CodeRabbit PR #627). The browser's single JS thread makes a
  * plain module-level promise-chain mutex sufficient (no real lock
@@ -200,8 +208,11 @@ async function enqueueOutboxUpsertLocked(
 
 /**
  * Looks up the most recent still-`pending` outbox row for the same
- * `(user_id, table_name, op)` and returns its id if its content matches
- * `row` — `null` when there is no such row or its content differs.
+ * `(user_id, table_name)` — regardless of `op` — and returns its id only
+ * if it has the same `op` and its content matches `row`. Returns `null`
+ * when there is no such row, when its `op` differs (an opposite action
+ * sits between the repeats, so the new op must be queued) or when its
+ * content differs.
  *
  * "Content matches" ignores any field whose value equals that op's own
  * `clientTs`: write paths commonly echo the call-time timestamp into
@@ -223,17 +234,20 @@ async function findDuplicatePending(
 
   const rows = await client.all<{
     id: number;
+    op: string;
     row: string;
     client_ts: string;
   }>(
-    `SELECT id, row, client_ts FROM sync_op_outbox
-       WHERE user_id = ? AND table_name = ? AND op = ? AND status = 'pending'
+    `SELECT id, op, row, client_ts FROM sync_op_outbox
+       WHERE user_id = ? AND table_name = ? AND status = 'pending'
        ORDER BY id DESC
        LIMIT 1`,
-    [userId, table, op],
+    [userId, table],
   );
   const lastPending = rows[0];
   if (lastPending === undefined) return null;
+  // Newest pending row is a different kind of op → not a repeat of it.
+  if (lastPending.op !== op) return null;
 
   let parsedRow: unknown;
   try {

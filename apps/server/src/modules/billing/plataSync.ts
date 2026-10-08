@@ -8,8 +8,13 @@
  *   - **швидкий тик** (5 хв) — `plata_subscription`-рядки без `confirmed_at`,
  *     створені менш ніж годину тому. Існує рівно для того, щоб активація Pro
  *     не чекала доби, якщо webhook не дійшов.
- *   - **повільний тик** (24 год) — усі `active`/`past_due` підписки, ловить
- *     `past_due`-грейс і дунінг-цикл довше години.
+ *   - **повільний тик** (щогодини, модель «кому вже час») — `active`/
+ *     `past_due` підписки, яких не звіряли понад 24 год
+ *     (`plata_subscription.updated_at`; його проставляє кожна успішна
+ *     звірка). Ловить `past_due`-грейс і дунінг-цикл довше години. Це НЕ
+ *     24-годинний таймер процесу: контейнер рестартує на кожен деплой, і
+ *     такий таймер ніколи б не спрацював (аудит 2026-10-01, rel-19) —
+ *     годинний тік + стартовий тік із затримкою переживають рестарти.
  *
  * Перелік значень `subscription.status` у доках monobank не наведено;
  * підтверджене прикладом лише `active`. Невідоме значення — безпечний
@@ -28,6 +33,10 @@ import type { Pool } from "pg";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
 import { billingRecurringChargeTotal } from "../../obs/metrics.js";
+import {
+  resolveStartupDelayMs,
+  scheduleStartupTick,
+} from "../../lib/pollerStartupTick.js";
 import { BillingConfigurationError } from "./provider.js";
 
 // `plata.ts` імпортує з цього модуля (`reconcileBySubscriptionId`) — власний
@@ -44,7 +53,12 @@ function getToken(): string {
 }
 
 const FAST_TICK_MS = 5 * 60 * 1000;
-const SLOW_TICK_MS = 24 * 60 * 60 * 1000;
+/**
+ * Як часто питати «кому вже час». Не частота звірки однієї підписки: та
+ * визначається порогом `updated_at < NOW() - INTERVAL '24 hours'` у
+ * {@link runSlowTick}.
+ */
+const SLOW_TICK_MS = 60 * 60 * 1000;
 const FAST_WINDOW_MS = 60 * 60 * 1000;
 const GRACE_DAYS = 3;
 const ACTIVE_STATUSES = new Set(["active"]);
@@ -165,6 +179,21 @@ async function applyPastDue(pool: Pool, userId: string): Promise<void> {
   billingRecurringChargeTotal.inc({ provider: "plata", result: "past_due" });
 }
 
+/**
+ * Позначити, що `subscription/status` успішно прочитано й застосовано, -
+ * незалежно від гілки (active / past_due / невідомий статус). Годинний
+ * повільний тик за цим штампом вирішує, кому вже час (rel-19), тож без
+ * нього невідомий статус перезвірявся б щогодини. Викликається ЛИШЕ після
+ * успішної відповіді й застосування: якщо fetch чи запис впали, штампа
+ * немає і рядок буде перезвірено наступним годинним тіком.
+ */
+async function markReconciled(pool: Pool, userId: string): Promise<void> {
+  await pool.query(
+    `UPDATE plata_subscription SET updated_at = NOW() WHERE user_id = $1`,
+    [userId],
+  );
+}
+
 /** Один прогін звірки для однієї підписки. Ніколи не кидає. */
 export async function reconcileSubscription(
   pool: Pool,
@@ -176,10 +205,12 @@ export async function reconcileSubscription(
     const failureDescription = statusResp.walletData?.failureDescription;
     if (failureDescription) {
       await applyPastDue(pool, row.user_id);
+      await markReconciled(pool, row.user_id);
       return;
     }
     if (statusResp.status && ACTIVE_STATUSES.has(statusResp.status)) {
       await applyActive(pool, row, statusResp);
+      await markReconciled(pool, row.user_id);
       return;
     }
     // Невідомий/порожній статус, без ознаки невдачі — безпечний дефолт:
@@ -189,6 +220,7 @@ export async function reconcileSubscription(
       subscriptionId: row.subscription_id,
       status: statusResp.status ?? null,
     });
+    await markReconciled(pool, row.user_id);
   } catch (err) {
     logger.error({
       msg: "plata_sync_reconcile_error",
@@ -235,13 +267,19 @@ export async function runFastTick(pool: Pool): Promise<PlataSyncResult> {
   return { processed: rows.length };
 }
 
-/** Повільний тик: усі активні й past_due Plata-підписки. */
+/**
+ * Повільний тик, модель «кому вже час»: активні й past_due Plata-підписки,
+ * яких не звіряли понад 24 год. Штамп - `plata_subscription.updated_at`
+ * (ставить `markReconciled`/`applyActive`), тому тік можна запускати
+ * щогодини й після кожного рестарту: свіжозвірені рядки він пропускає.
+ */
 export async function runSlowTick(pool: Pool): Promise<PlataSyncResult> {
   const { rows } = await pool.query<PlataSubscriptionRow>(
     `SELECT ps.user_id, ps.subscription_id
        FROM plata_subscription ps
        JOIN subscriptions s ON s.user_id = ps.user_id AND s.provider = 'plata'
-      WHERE s.status IN ('active', 'past_due')`,
+      WHERE s.status IN ('active', 'past_due')
+        AND ps.updated_at < NOW() - INTERVAL '24 hours'`,
   );
   for (const row of rows) await reconcileSubscription(pool, row);
   return { processed: rows.length };
@@ -251,8 +289,16 @@ export interface PlataSyncPollerOptions {
   pool: Pool;
   /** Інтервал швидкого тику (мс). Default 5 хв. */
   fastTickMs?: number;
-  /** Інтервал повільного тику (мс). Default 24 год. */
+  /**
+   * Інтервал повільного тику (мс) - як часто питати «кому вже час».
+   * Default 1 год; поріг давності звірки (24 год) зашитий у SQL.
+   */
   slowTickMs?: number;
+  /**
+   * Затримка одноразового стартового тіку (мс). Default - jitter 30-90 с;
+   * 0 або від'ємне вимикає (rel-19).
+   */
+  startDelayMs?: number | undefined;
   /** Явний enable. Default `env.PLATA_ENABLED`. */
   enabled?: boolean;
 }
@@ -263,8 +309,10 @@ export class PlataSyncPoller {
   private readonly fastTickMs: number;
   private readonly slowTickMs: number;
   private readonly enabled: boolean;
+  private readonly startDelayMs: number;
   private fastTimer: NodeJS.Timeout | null = null;
   private slowTimer: NodeJS.Timeout | null = null;
+  private startTimer: NodeJS.Timeout | null = null;
   private runningFast = false;
   private runningSlow = false;
   private stopping = false;
@@ -274,6 +322,7 @@ export class PlataSyncPoller {
     this.fastTickMs = options.fastTickMs ?? FAST_TICK_MS;
     this.slowTickMs = options.slowTickMs ?? SLOW_TICK_MS;
     this.enabled = options.enabled ?? env.PLATA_ENABLED;
+    this.startDelayMs = resolveStartupDelayMs(options.startDelayMs);
   }
 
   start(): void {
@@ -298,10 +347,27 @@ export class PlataSyncPoller {
       void this.runSlow();
     }, this.slowTickMs);
     this.slowTimer.unref?.();
+    // Одноразовий стартовий тік (rel-19): інтервали рахуються від старту
+    // процесу, а контейнер рестартує на кожен деплой. Slow-тік сам відсіює
+    // свіжозвірених, тож зайвого навантаження на monobank немає.
+    this.startTimer = scheduleStartupTick(
+      this.startDelayMs,
+      () => Promise.all([this.runFast(), this.runSlow()]),
+      (err) => {
+        logger.error({
+          msg: "plata_sync_startup_tick_failed",
+          err: err instanceof Error ? err.message : String(err),
+        });
+      },
+    );
   }
 
   async stop(): Promise<void> {
     this.stopping = true;
+    if (this.startTimer) {
+      clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
     if (this.fastTimer) {
       clearInterval(this.fastTimer);
       this.fastTimer = null;

@@ -48,6 +48,15 @@ vi.mock("@shared/api", async () => {
   };
 });
 
+// «Приховувати суми» живе тут з 2026-10-08 (переїхало з шапки Фініка), тож
+// мок хука віддає і цей стан: `showBalance` мутабельний між тестами.
+// `vi.hoisted`, бо фабрика `vi.mock` піднімається над `const` і без цього
+// читала б ще не ініціалізовану змінну.
+const storageState = vi.hoisted(() => ({
+  showBalance: true,
+  setShowBalance: vi.fn(),
+}));
+
 vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => ({
     hiddenAccounts: [],
@@ -55,6 +64,10 @@ vi.mock("@finyk/hooks/useStorage", () => ({
     customCategories: [],
     addCustomCategory: vi.fn(),
     removeCustomCategory: vi.fn(),
+    get showBalance() {
+      return storageState.showBalance;
+    },
+    setShowBalance: storageState.setShowBalance,
   }),
 }));
 
@@ -268,6 +281,34 @@ describe("FinykSection", () => {
     renderWithProviders();
     expect(screen.getByText("Правила категорій")).toBeInTheDocument();
     expect(screen.getByText("Правил поки немає")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+    });
+  });
+
+  // «Приховувати суми» (анти-слоп раунд 4, Q5): перемикач інвертує
+  // `showBalance`, бо користувач вмикає ПРИХОВУВАННЯ, а сховище зберігає
+  // ПОКАЗ.
+  it("тумблер «Приховувати суми» інвертує showBalance", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    storageState.showBalance = true;
+    renderWithProviders();
+    expect(screen.getByText("Показ сум")).toBeInTheDocument();
+    // Група «Фінік» на першому рендері згорнута (`inert` + `aria-hidden`,
+    // див. `SettingsGroup`), тож без `hidden: true` роль не знаходиться.
+    const toggle = screen.getByRole("switch", {
+      name: /Приховувати суми/,
+      hidden: true,
+    });
+    expect(toggle).not.toBeChecked();
+    fireEvent.click(toggle);
+    expect(storageState.setShowBalance).toHaveBeenCalledWith(false);
     await waitFor(() => {
       expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
     });

@@ -132,6 +132,23 @@ describe("FoodPickerSection — search mode", () => {
     expect(screen.queryByText(/Open Food Facts/)).not.toBeInTheDocument();
   });
 
+  it("tells what to do when a settled search finds nothing", () => {
+    render(
+      <Section
+        {...baseProps({ foodQuery: "ковбаса докторська", searchSettled: true })}
+      />,
+    );
+    expect(
+      screen.getByText(/Не знайшов «ковбаса докторська»/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/скануй штрихкод/)).toBeInTheDocument();
+  });
+
+  it("stays silent on empty hits while the search is not settled", () => {
+    render(<Section {...baseProps({ foodQuery: "ковбаса" })} />);
+    expect(screen.queryByText(/Не знайшов/)).not.toBeInTheDocument();
+  });
+
   it("renders the food error message", () => {
     render(<Section {...baseProps({ foodErr: "Помилка пошуку" })} />);
     expect(screen.getByText("Помилка пошуку")).toBeInTheDocument();

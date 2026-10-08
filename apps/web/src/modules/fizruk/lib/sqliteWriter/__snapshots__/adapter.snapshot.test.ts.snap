@@ -184,13 +184,15 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "u1",
       "i1:s0",
       "i1:s1",
+      "2026-06-23T00:00:00.000Z",
     ],
     "sql": "UPDATE fizruk_workout_sets
         SET deleted_at = ?, updated_at = ?
       WHERE workout_item_id = ?
         AND user_id = ?
         AND deleted_at IS NULL
-        AND id NOT IN (?,?)",
+        AND id NOT IN (?,?)
+        AND updated_at < ?",
   },
   {
     "params": [
@@ -199,13 +201,15 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "w1",
       "u1",
       "i1",
+      "2026-06-23T00:00:00.000Z",
     ],
     "sql": "UPDATE fizruk_workout_items
         SET deleted_at = ?, updated_at = ?
       WHERE workout_id = ?
         AND user_id = ?
         AND deleted_at IS NULL
-        AND id NOT IN (?)",
+        AND id NOT IN (?)
+        AND updated_at < ?",
   },
   {
     "params": [
@@ -225,10 +229,12 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "2026-06-23T00:00:00.000Z",
       "w2",
       "u1",
+      "2026-06-23T00:00:00.000Z",
     ],
     "sql": "UPDATE fizruk_workout_items
         SET deleted_at = ?, updated_at = ?
-      WHERE workout_id = ? AND user_id = ? AND deleted_at IS NULL",
+      WHERE workout_id = ? AND user_id = ? AND deleted_at IS NULL
+        AND updated_at < ?",
   },
   {
     "params": [
@@ -236,12 +242,13 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "2026-06-23T00:00:00.000Z",
       "w2",
       "u1",
+      "2026-06-23T00:00:00.000Z",
     ],
     "sql": "UPDATE fizruk_workout_sets
         SET deleted_at = ?, updated_at = ?
       WHERE workout_item_id IN (
         SELECT id FROM fizruk_workout_items WHERE workout_id = ?
-      ) AND user_id = ? AND deleted_at IS NULL",
+      ) AND user_id = ? AND deleted_at IS NULL AND updated_at < ?",
   },
   {
     "params": [

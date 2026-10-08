@@ -68,13 +68,54 @@ function buildCacheControl(options: CacheOptions): string {
   }
 }
 
+/**
+ * Публічний `Cache-Control` доживає лише до успішної відповіді.
+ *
+ * AI-CONTEXT: `cachingMiddleware` ставить заголовок ДО лімітера й хендлера,
+ * тож без перекриття його несла будь-яка відповідь, зокрема 429 від
+ * лімітера, 400/404 і 503 «база лежить» (аудит 2026-10-01, rel-21):
+ * браузер/CDN віддавали б «спробуй за хвилину» з кешу до 10 хв. Перекриваємо
+ * у `writeHead`, бо це єдина точка, де вже відомий фінальний статус, а
+ * заголовки ще не пішли. 304 лишаємо як є: це підтвердження валідатора для
+ * вже закешованого 2xx, і заголовки кешу в ньому мусять збігатися з оригіналом.
+ */
+function downgradeCacheOnNonSuccess(res: Response): void {
+  if (typeof res.writeHead !== "function") return;
+  const originalWriteHead = res.writeHead;
+  Object.defineProperty(res, "writeHead", {
+    configurable: true,
+    writable: true,
+    value: function writeHead(
+      this: Response,
+      statusCode: unknown,
+      ...rest: unknown[]
+    ): unknown {
+      if (
+        typeof statusCode === "number" &&
+        statusCode >= 300 &&
+        statusCode !== 304 &&
+        !this.headersSent
+      ) {
+        const current = this.getHeader("Cache-Control");
+        if (!(typeof current === "string" && current.includes("no-store"))) {
+          this.setHeader("Cache-Control", "no-store");
+        }
+      }
+      return Reflect.apply(originalWriteHead, this, [statusCode, ...rest]);
+    },
+  });
+}
+
 export function cachingMiddleware(
   options: CacheOptions = {},
 ): (req: Request, res: Response, next: NextFunction) => void {
   const cacheControl = buildCacheControl(options);
+  // `no-store`-політика вже найсуворіша — перекривати нічого.
+  const publicPolicy = (options.policy ?? "no-store") !== "no-store";
 
   return (_req: Request, res: Response, next: NextFunction) => {
     res.setHeader("Cache-Control", cacheControl);
+    if (publicPolicy) downgradeCacheOnNonSuccess(res);
     next();
   };
 }

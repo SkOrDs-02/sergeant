@@ -452,5 +452,46 @@ export function hasUnstorableText(row: unknown): boolean {
   return false;
 }
 
+/**
+ * SQLSTATE `23505` (`unique_violation`) від apply-функції. `pg` кладе код у
+ * `err.code`; інші помилки (deadlock `40P01`, lock timeout `55P03`, ...) сюди
+ * не потрапляють навмисно: їх ретрай змінив би контракт пушу (data-18).
+ */
+export function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: unknown }).code === "23505"
+  );
+}
+
+/**
+ * Виконує apply оп-а і ОДИН раз повторює його, якщо перша спроба впала з
+ * `23505` (data-18). Усі apply-функції роблять SELECT без блокування, а потім
+ * plain INSERT: коли два пристрої одночасно створюють той самий рядок, програвший
+ * INSERT чекає на коміт переможця і падає з `23505`. Без ретраю це ставало
+ * термінальним `rejected/apply_failed` (його ще й кешує `idempotency_key`), хоч
+ * новіша правка мала перемогти за LWW.
+ *
+ * Перед повтором відкочуємось до savepoint-а `op_apply` (його відкрив
+ * викликач і він лишається відкритим до запису в журнал). Під READ COMMITTED
+ * повторний SELECT уже бачить закомічений рядок переможця, тож далі працює
+ * штатна гілка: `applied`, `lww_conflict` або `fk_violation`. Друга `23505` чи
+ * будь-яка інша помилка летить до викликача й стає `apply_failed`, як і раніше.
+ */
+export async function applyWithUniqueViolationRetry<T>(
+  client: PoolClient,
+  attempt: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await attempt();
+  } catch (err: unknown) {
+    if (!isUniqueViolation(err)) throw err;
+    await client.query("ROLLBACK TO SAVEPOINT op_apply");
+    logger.info({ msg: "sync_v2_apply_unique_violation_retry" });
+    return await attempt();
+  }
+}
+
 export type { PoolClient };
 export type { SyncV2Op } from "../../http/schemas.js";

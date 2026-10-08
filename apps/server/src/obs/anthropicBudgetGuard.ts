@@ -68,6 +68,10 @@ import { Sentry } from "../sentry.js";
 import { withBypassContext } from "../db.js";
 import { ANTHROPIC_PROVIDER_SUBJECT } from "../lib/anthropicUsageStore.js";
 import { getRedis } from "../lib/redis.js";
+import {
+  resolveStartupDelayMs,
+  scheduleStartupTick,
+} from "../lib/pollerStartupTick.js";
 
 /**
  * Тег `provider` у Sentry-алерті. Як і скрізь у цій схемі, позначає ПУЛ
@@ -129,6 +133,12 @@ export interface AnthropicBudgetGuardDeps {
    * предмет цих тестів — пороги й ідемпотентність алертів, а не SQL.
    */
   readSpendUsd?: (day: string) => Promise<number>;
+  /**
+   * Затримка одноразового стартового тіку (мс). Default - jitter 5-15 с
+   * (guard дешевий, а без цього після кожного рестарту він "сліпий" цілий
+   * `ANTHROPIC_BUDGET_CHECK_INTERVAL_MS`); 0 або від'ємне вимикає (rel-19).
+   */
+  startDelayMs?: number;
 }
 
 export interface AnthropicBudgetCaptureInput {
@@ -209,8 +219,14 @@ export class AnthropicBudgetGuard {
   private readonly readSpendUsd: (day: string) => Promise<number>;
   private state: AnthropicBudgetState;
   private timer: NodeJS.Timeout | null = null;
+  private startTimer: NodeJS.Timeout | null = null;
+  private readonly startDelayMs: number;
 
   constructor(deps: AnthropicBudgetGuardDeps = {}) {
+    this.startDelayMs = resolveStartupDelayMs(deps.startDelayMs, {
+      minMs: 5_000,
+      maxMs: 15_000,
+    });
     this.now = deps.now ?? Date.now;
     this.capture = deps.capture ?? defaultCapture;
     this.redisOverride = deps.redis;
@@ -378,21 +394,33 @@ export class AnthropicBudgetGuard {
       softUsd: env.ANTHROPIC_BUDGET_SOFT_USD,
       hardUsd: env.ANTHROPIC_BUDGET_HARD_USD,
     });
-    this.timer = setInterval(() => {
-      void this.runBudgetCheckTick().catch((err: unknown) => {
-        logger.error({
-          msg: "anthropic_budget_guard_tick_failed",
-          err: err instanceof Error ? err.message : String(err),
-        });
+    const onTickError = (err: unknown): void => {
+      logger.error({
+        msg: "anthropic_budget_guard_tick_failed",
+        err: err instanceof Error ? err.message : String(err),
       });
+    };
+    this.timer = setInterval(() => {
+      void this.runBudgetCheckTick().catch(onTickError);
     }, intervalMs);
     // unref щоб не блокувати graceful shutdown — guard це best-effort
     // observability, не критичний шлях.
     this.timer.unref?.();
+    // Одноразовий стартовий тік (rel-19): без нього після кожного рестарту
+    // guard не бачить пробиття бюджету цілий інтервал.
+    this.startTimer = scheduleStartupTick(
+      this.startDelayMs,
+      () => this.runBudgetCheckTick(),
+      onTickError,
+    );
   }
 
   /** Stop loop. Idempotent. */
   stop(): void {
+    if (this.startTimer) {
+      clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
     if (!this.timer) return;
     clearInterval(this.timer);
     this.timer = null;

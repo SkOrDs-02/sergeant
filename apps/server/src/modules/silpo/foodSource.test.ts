@@ -534,6 +534,31 @@ describe("searchSilpoProducts", () => {
     );
   });
 
+  it("дедлайн викликача доходить до refresh-координатора, контексту філії та кожного tools/call (rel-22)", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    mockTwoPhaseSearch();
+    const deadline = new AbortController();
+
+    await searchSilpoProducts("user-1", "молоко", { signal: deadline.signal });
+
+    expect(mocks.callWithFreshAccessToken).toHaveBeenCalledWith(
+      "user-1",
+      expect.any(Function),
+      expect.objectContaining({ signal: deadline.signal }),
+    );
+    expect(mocks.resolveBranchContext).toHaveBeenCalledWith(
+      "user-1",
+      expect.any(String),
+      deadline.signal,
+    );
+    const tools = mocks.callMcpTool.mock.calls.map(
+      ([o]) => o as { toolName: string; signal?: AbortSignal },
+    );
+    expect(tools.length).toBeGreaterThanOrEqual(2);
+    for (const t of tools) expect(t.signal).toBe(deadline.signal);
+  });
+
   it("drops a malformed batch element (never fails the whole search) and logs a warn", async () => {
     connectedRow();
     passThroughAccessToken();
