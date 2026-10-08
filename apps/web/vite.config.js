@@ -164,10 +164,10 @@ export default defineConfig(({ mode }) => {
             // shortcut, share target) as the same installed app rather than
             // minting separate instances.
             id: "/",
-            name: "Sergeant · Твій персональний хаб життя",
+            name: "Sergeant · гроші, тренування, звички і їжа",
             short_name: "Sergeant",
             description:
-              "Персональний хаб: фінанси, спорт, звички та харчування",
+              "Гроші, тренування, звички і їжа в одному застосунку, який бачить звʼязки між ними",
             start_url: "/",
             display: "standalone",
             orientation: "portrait",

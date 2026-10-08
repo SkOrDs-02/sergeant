@@ -188,7 +188,7 @@ export function FoodPickerSection({
         </div>
       )}
       {noResults && (
-        <p className="text-style-caption text-muted">
+        <p className="text-style-body text-muted">
           Не знайшов «{foodQuery.trim()}». Спробуй іншу форму слова, скануй
           штрихкод або додай свій продукт.
         </p>
