@@ -44,6 +44,10 @@ import {
 } from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
 import { useFinykVisionPaywall } from "../receiptScan/useFinykVisionPaywall";
+import {
+  FinykPhotoPrivacyNotice,
+  readFinykPhotoPrivacyAck,
+} from "../receiptScan/FinykPhotoPrivacyNotice";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import {
   IMPORT_STATEMENT_FILE_ACCEPT,
@@ -173,6 +177,11 @@ export function BulkImportSheet({
     null,
   );
   const [processing, setProcessing] = useState<ScanStatusState | null>(null);
+  // Попередження «Куди їде фото» (рішення власника 2026-07-26): доки його
+  // не підтверджено, скрін нікуди не їде, а чекає тапу в нотісі. Див.
+  // `ReceiptScanSheet` — той самий гейт і той самий ключ.
+  const [privacyAcked, setPrivacyAcked] = useState(readFinykPhotoPrivacyAck);
+  const [pendingScreenshot, setPendingScreenshot] = useState<File | null>(null);
 
   // Підказку категорії від сервера приймаємо лише коли пікер справді має
   // такий чип — інакше тихо падаємо на дефолт (`bulkImportRows.ts`).
@@ -217,6 +226,7 @@ export function BulkImportSheet({
       setMapperSampleRows([]);
       setCommitResult(null);
       setProcessing(null);
+      setPendingScreenshot(null);
     });
   }, [open]);
 
@@ -229,7 +239,7 @@ export function BulkImportSheet({
     setStage("choose");
   };
 
-  const handleScreenshotSelected = async (file: File) => {
+  const analyzeScreenshot = async (file: File) => {
     setFlowError(null);
     if (!visionPaywall.requireAccess()) return;
     // Спінер до `await`: стиснення великого фото саме по собі помітна
@@ -268,6 +278,23 @@ export function BulkImportSheet({
       visionPaywall.onError(err);
       failBackToChoose(formatReceiptError(err, "Не вдалось розпізнати скрін."));
     }
+  };
+
+  const handleScreenshotSelected = (file: File) => {
+    if (!privacyAcked) {
+      setFlowError(null);
+      setPendingScreenshot(file);
+      return;
+    }
+    void analyzeScreenshot(file);
+  };
+
+  // Тап «Зрозуміло, аналізувати»: аналіз іде для вже вибраного скріна.
+  const handlePrivacyAck = () => {
+    setPrivacyAcked(true);
+    const pending = pendingScreenshot;
+    setPendingScreenshot(null);
+    if (pending) void analyzeScreenshot(pending);
   };
 
   const applyStatementPreview = (
@@ -409,7 +436,7 @@ export function BulkImportSheet({
         onChange={(e) => {
           const file = e.target.files?.[0];
           e.target.value = "";
-          if (file) void handleScreenshotSelected(file);
+          if (file) handleScreenshotSelected(file);
         }}
         className="sr-only"
         aria-label="Завантажити скрін банкінгу"
@@ -435,6 +462,10 @@ export function BulkImportSheet({
 
       {stage === "choose" && (
         <div className="space-y-3">
+          <FinykPhotoPrivacyNotice
+            onAck={handlePrivacyAck}
+            blockingAnalysis={pendingScreenshot !== null}
+          />
           <Button
             variant="solid"
             tone="finyk"
