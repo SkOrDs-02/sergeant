@@ -151,6 +151,14 @@ export function splitTransaction(
   }));
   const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
   if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
+  // Спліти для tx_id перезаписуються цілком: знімок попередніх потрібен
+  // для undo (`undefined` — спліту не було, тож undo прибирає ключ).
+  const prevSplit = (
+    cache.txSplits as Record<
+      string,
+      Array<{ categoryId: string; amount: number }> | undefined
+    >
+  )[id];
   splits[id] = newSplits;
   finykChatWrite("finyk_tx_splits", splits);
   const desc = newSplits
@@ -159,5 +167,17 @@ export function splitTransaction(
       return `${cat?.label || s.categoryId}: ${formatNumberUk(s.amount)} грн`;
     })
     .join(", ");
-  return `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
+  return {
+    result: `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`,
+    // Читає свіжий кеш і чіпає лише ключ цього tx, щоб не затерти спліти
+    // інших операцій, змінені між дією й відкатом.
+    undo: () => {
+      const cur: Record<string, unknown> = {
+        ...((warmFinykCache()?.txSplits as Record<string, unknown>) ?? {}),
+      };
+      if (prevSplit === undefined) delete cur[id];
+      else cur[id] = prevSplit;
+      finykChatWrite("finyk_tx_splits", cur);
+    },
+  };
 }

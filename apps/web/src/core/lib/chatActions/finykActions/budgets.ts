@@ -182,10 +182,9 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     );
     if (!targetCheck.ok) return targetCheck.message;
     const target = targetCheck.value;
-    const saved =
-      input.saved_amount != null && Number.isFinite(Number(input.saved_amount))
-        ? Number(input.saved_amount)
-        : 0;
+    const savedProvided =
+      input.saved_amount != null && Number.isFinite(Number(input.saved_amount));
+    const saved = savedProvided ? Number(input.saved_amount) : 0;
     const idx = budgets.findIndex(
       (b) =>
         b.type === "goal" &&
@@ -195,7 +194,10 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       const g = budgets[idx] as BudgetGoal;
       g.targetAmount = target;
       g.name = goalName;
-      g.contributions = buildAiContribution(saved);
+      // Без saved_amount лог поповнень цілі лишається як є (logic-03):
+      // раніше `buildAiContribution(0)` стирав його в []. Семантика
+      // «абсолютна сума при переданому saved_amount» не змінена.
+      if (savedProvided) g.contributions = buildAiContribution(saved);
     } else {
       budgets.push({
         id: generatePrefixedId("b"),
@@ -207,7 +209,10 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       });
     }
     finykChatWrite("finyk_budgets", budgets);
-    const result = `Ціль "${goalName}" оновлено: ${formatNumberUk(saved)}/${formatNumberUk(target)}\u202F₴`;
+    const result =
+      idx >= 0 && !savedProvided
+        ? `Ціль "${goalName}" оновлено: ціль ${formatNumberUk(target)}\u202F₴, накопичене не змінено`
+        : `Ціль "${goalName}" оновлено: ${formatNumberUk(saved)}/${formatNumberUk(target)}\u202F₴`;
     return {
       result,
       undo: () => finykChatWrite("finyk_budgets", prevBudgets),
