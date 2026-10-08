@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   assertCompleteFileList,
+  bitbucketSource,
   CANONICAL_DOC_ROOTS,
   entryKey,
   examinedKey,
@@ -385,4 +386,71 @@ test("parseArgs: типовий хост github, --host і --since валіду�
   assert.equal(a.since, "2026-09-30");
   assert.throws(() => parseArgs(["--host", "gitlab"]), /--host/);
   assert.throws(() => parseArgs(["--since", "30.09.2026"]), /--since/);
+});
+
+test("listMerged: ліміт рахує лише потрібні PR, а не найсвіжіші", async () => {
+  // Найсвіжіші вже в реєстрі; повторний запуск мусить дійти до старіших
+  // пропущених, а не обрізатись на тих самих записаних (CodeRabbit, #1458).
+  const mk = (number) => ({
+    number,
+    merged_at: "2026-10-05T00:00:00Z",
+    updated_at: "2026-10-05T00:00:00Z",
+  });
+  const { fetchImpl } = mockFetch({
+    [`${LIST}&page=1`]: { body: [mk(10), mk(9), mk(8)], link: NEXT },
+    [`${LIST}&page=2`]: { body: [mk(7), mk(6)], link: null },
+  });
+  const recorded = new Set([10, 9, 8]);
+  const { prs, capped, scanned } = await githubSource({
+    slug: SLUG,
+    token: "t",
+    fetchImpl,
+  }).listMerged(2, null, (n) => !recorded.has(n));
+  assert.deepEqual(
+    prs.map((p) => p.number),
+    [7, 6],
+  );
+  assert.equal(capped, false);
+  assert.equal(scanned, 5);
+});
+
+test("bitbucketSource: сторінки беруться з `next`, а не рахуються", async () => {
+  const BB = "https://api.bitbucket.org/2.0/repositories";
+  const NEXT_URL = `${BB}/skords01/sergeant/pullrequests?cursor=opaque-2`;
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    const body = url.startsWith(NEXT_URL)
+      ? { values: [{ id: 2, closed_on: "2026-09-25T00:00:00Z" }] }
+      : {
+          values: [{ id: 3, closed_on: "2026-09-26T00:00:00Z" }],
+          next: NEXT_URL,
+        };
+    return { ok: true, status: 200, json: async () => body };
+  };
+  const { prs } = await bitbucketSource({
+    slug: "skords01/sergeant",
+    token: "t",
+    fetchImpl,
+  }).listMerged(50);
+  assert.deepEqual(
+    prs.map((p) => p.number),
+    [3, 2],
+  );
+  assert.equal(calls[1], NEXT_URL);
+});
+
+test("--since відкидає неіснуючу календарну дату", () => {
+  assert.equal(
+    parseArgs(["--sync", "--since", "2026-09-30"]).since,
+    "2026-09-30",
+  );
+  assert.throws(
+    () => parseArgs(["--sync", "--since", "2026-02-30"]),
+    /YYYY-MM-DD/,
+  );
+  assert.throws(
+    () => parseArgs(["--sync", "--since", "2026-13-01"]),
+    /YYYY-MM-DD/,
+  );
 });

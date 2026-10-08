@@ -413,7 +413,13 @@ async function rebuildAllBlocks(ledger, { write = true } = {}) {
 //   { host, slug,
 //     getPR(n)                 → { number, title, merged_at, author,
 //                                  merge_commit, url, paths },
-//     listMerged(limit, since) → { prs: [{ number, merged_at }], capped } }
+//     listMerged(limit, since, wanted)
+//                              → { prs: [{ number, merged_at }], capped, scanned } }
+//
+// `limit` рахує лише PR, для яких `wanted(number)` істинний (за замовчуванням
+// усі): бекфіл просить «200 відсутніх у реєстрі», а не «200 найсвіжіших».
+// Інакше, коли найсвіжіші 200 уже записані, старіші пропущені не досяжні
+// жодним повторним запуском.
 //
 // `paths` — ПОВНИЙ список змінених файлів (звірений `assertCompleteFileList`),
 // `merged_at` — ISO без мілісекунд. Писач далі не знає, звідки прийшли дані.
@@ -516,8 +522,9 @@ export function githubSource({ slug, token, fetchImpl = globalThis.fetch }) {
      * сторінка дійшла до оновлених раніше за `since`, змерджених пізніше вже
      * не буде.
      */
-    async listMerged(limit, since = null) {
+    async listMerged(limit, since = null, wanted = () => true) {
       const out = [];
+      let scanned = 0;
       let more = false;
       for (let page = 1; ; page++) {
         const { data, next } = await ghGet(
@@ -532,7 +539,8 @@ export function githubSource({ slug, token, fetchImpl = globalThis.fetch }) {
           if (!pr.merged_at) continue;
           const merged_at = normalizeISO(pr.merged_at);
           if (since && merged_at.slice(0, 10) < since) continue;
-          out.push({ number: pr.number, merged_at });
+          scanned++;
+          if (wanted(pr.number)) out.push({ number: pr.number, merged_at });
         }
         more = next && !reachedSince;
         if (!more || out.length >= limit) break;
@@ -540,6 +548,7 @@ export function githubSource({ slug, token, fetchImpl = globalThis.fetch }) {
       return {
         prs: out.slice(0, limit),
         capped: out.length > limit || (out.length >= limit && more),
+        scanned,
       };
     },
   };
@@ -621,8 +630,11 @@ function bitbucketAuthor(slug) {
 }
 
 export function bitbucketSource({ slug, token, fetchImpl = globalThis.fetch }) {
+  // Bitbucket віддає наступну сторінку готовим абсолютним URL у `next`;
+  // його формат не контракт, тож ходимо саме по ньому, а не рахуємо `page`.
   async function bbGet(path) {
-    const res = await fetchImpl(`${BB_API}/${path}`, {
+    const url = path.startsWith("https://") ? path : `${BB_API}/${path}`;
+    const res = await fetchImpl(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {
@@ -635,17 +647,16 @@ export function bitbucketSource({ slug, token, fetchImpl = globalThis.fetch }) {
   async function changedPaths(prNumber) {
     const paths = [];
     let expected = null;
-    for (let page = 1; ; page++) {
-      const data = await bbGet(
-        `${slug}/pullrequests/${prNumber}/diffstat?pagelen=100&page=${page}`,
-      );
+    let next = `${slug}/pullrequests/${prNumber}/diffstat?pagelen=100`;
+    while (next) {
+      const data = await bbGet(next);
       if (expected === null) expected = data.size ?? null;
       for (const v of data.values ?? []) {
         // `new` порожній у видалених файлів, `old` — у доданих.
         const p = v.new?.path ?? v.old?.path;
         if (p) paths.push(p);
       }
-      if (!data.next) break;
+      next = data.next ?? null;
     }
     assertCompleteFileList(paths.length, expected, prNumber);
     return paths;
@@ -675,26 +686,30 @@ export function bitbucketSource({ slug, token, fetchImpl = globalThis.fetch }) {
         paths: await changedPaths(prNumber),
       };
     },
-    async listMerged(limit, since = null) {
+    async listMerged(limit, since = null, wanted = () => true) {
       const out = [];
+      let scanned = 0;
       let more = false;
-      for (let page = 1; ; page++) {
-        const data = await bbGet(
-          `${slug}/pullrequests?q=${encodeURIComponent('state="MERGED"')}` +
-            `&sort=-updated_on&pagelen=50&page=${page}` +
-            `&fields=next,values.id,values.closed_on,values.updated_on`,
-        );
+      let next =
+        `${slug}/pullrequests?q=${encodeURIComponent('state="MERGED"')}` +
+        `&sort=-updated_on&pagelen=50` +
+        `&fields=next,values.id,values.closed_on,values.updated_on`;
+      while (next) {
+        const data = await bbGet(next);
         for (const pr of data.values ?? []) {
           const merged_at = mergedAt(pr);
           if (since && (merged_at ?? "").slice(0, 10) < since) continue;
-          out.push({ number: pr.id, merged_at });
+          scanned++;
+          if (wanted(pr.id)) out.push({ number: pr.id, merged_at });
         }
-        more = Boolean(data.next);
+        next = data.next ?? null;
+        more = Boolean(next);
         if (!more || out.length >= limit) break;
       }
       return {
         prs: out.slice(0, limit),
         capped: out.length > limit || (out.length >= limit && more),
+        scanned,
       };
     },
   };
@@ -761,15 +776,18 @@ function markExamined(ledger, key, numbers) {
 async function findMissingPRs(ledger, source, { limit, since }) {
   const known = new Set(ledger.prs.map((p) => entryKey(p)));
   const examined = examinedSet(ledger, examinedKey(source.host, source.slug));
-  const { prs, capped } = await source.listMerged(limit, since);
-  const missing = prs.filter(
-    (pr) =>
-      !known.has(
-        entryKey({ number: pr.number, host: source.host, repo: source.slug }),
-      ) && !examined.has(pr.number),
+  const isMissing = (number) =>
+    !known.has(entryKey({ number, host: source.host, repo: source.slug })) &&
+    !examined.has(number);
+  // Ліміт рахує лише відсутні: повторний запуск після обрізаного скану мусить
+  // дійти до старіших пропущених, а не знову переглянути ті самі записані.
+  const { prs, capped, scanned } = await source.listMerged(
+    limit,
+    since,
+    isMissing,
   );
-  missing.reverse();
-  return { missing, capped, scanned: prs.length };
+  const missing = [...prs].reverse();
+  return { missing, capped, scanned: scanned ?? prs.length };
 }
 
 // ── Ledger upsert ───────────────────────────────────────────────────────────
@@ -822,7 +840,14 @@ export function parseArgs(argv) {
       out.host = v;
     } else if (a === "--since") {
       const v = argv[++i];
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(v ?? "")) {
+      // Форма і справжня календарна дата: `2026-02-30` регексп пропускає,
+      // а `Date` переносить у березень, тож звіряємо зворотне форматування.
+      const d = new Date(`${v}T00:00:00Z`);
+      const valid =
+        /^\d{4}-\d{2}-\d{2}$/.test(v ?? "") &&
+        !Number.isNaN(d.getTime()) &&
+        d.toISOString().slice(0, 10) === v;
+      if (!valid) {
         throw new Error(`--since requires YYYY-MM-DD (got ${v})`);
       }
       out.since = v;
