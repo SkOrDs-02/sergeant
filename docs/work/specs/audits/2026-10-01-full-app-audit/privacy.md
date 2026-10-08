@@ -493,7 +493,7 @@ node --import tsx <scratch>/agents/verify-server-static-privacy-logging/v2/hooks
 
 ### `priv-08` [medium] Service Worker кешує приватні відповіді /api/v1/* з no-store, а партиція користувача скидається в спільне anon: у сесії B SW може віддати /me користувача A
 
-- **Стан:** частково виправлено в гілці claude/fix-priv-08-rel-12-sw-cache (лишилось рішення власника: повага до no-store і чи лишати /me та /ai-memory у runtime-кеші; партиція, anon-guard, v1-префікси та SW_SET_USER на controllerchange зроблені)
+- **Стан:** частково виправлено в [#1396](https://github.com/SkOrDs-02/sergeant/pull/1396) (змерджено 2026-10-08) (лишилось рішення власника: повага до no-store і чи лишати /me та /ai-memory у runtime-кеші; партиція, anon-guard, v1-префікси та SW_SET_USER на controllerchange зроблені)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: service worker
 - **Де:** apps/web/src/sw/cache.ts:22, 52-118, 151-175; apps/web/src/sw/messages.ts:97-107; apps/web/src/sw/cachePolicy.ts; apps/web/src/core/app/swControl.ts:97-99, 146-160; apps/web/src/core/auth/AuthContext.tsx:382-402, 728-733
 - **Першопричина:** activeUserKey живе в пам'яті SW і після idle-kill (близько 30 с) повертається в anon. SW_SET_USER надсилається лише при зміні user.id за життя сторінки. Тому boot-запити всіх користувачів пишуться в спільну партицію, а /me нового користувача може лягти під ключ попереднього. CacheableResponsePlugin кешує будь-яку 200, ігноруючи Cache-Control: no-store, а identity-wipe не викликає swClearCaches.
@@ -731,7 +731,7 @@ legalShared.ts: Hetzner region «ЄС (Німеччина)»; OpenRouter role «
 
 ### `priv-11` [medium] Фото чеків і скріни банкінгу йдуть в AI без обіцяного попередження «Куди їде фото»
 
-- **Стан:** виправлено в гілці claude/fix-priv-11-finyk-photo-notice
+- **Стан:** виправлено в [#1403](https://github.com/SkOrDs-02/sergeant/pull/1403) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (vision-імпорт)
 - **Де:** apps/web/src/modules/finyk/components/receiptScan/ReceiptScanSheet.tsx:132-135; apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx (handleScreenshotSelected → POST /api/v1/finyk/import/screenshot/analyze); apps/web/src/modules/nutrition/components/PhotoPrivacyNotice.tsx; apps/web/src/shared/i18n/uk.dataDisclosure.ts:31
 - **Першопричина:** PhotoPrivacyNotice з ack-ключем sergeant.nutrition.photoPrivacyAck.v1 реалізовано лише в модулі Їжа. ReceiptScanSheet і BulkImportSheet одразу після вибору файлу викликають analyzeReceipt чи analyzeImportScreenshot, без жодного попередження.
@@ -859,7 +859,7 @@ Script v3-export.mjs, output in v3-out.txt, run as idorA, who owns receipts 23 (
 
 ### `priv-13` [medium] Черга GDPR-очищення безстроково зберігає email видалених користувачів: рядок stripe без customer_id ніколи не завершується
 
-- **Стан:** частково виправлено в гілці claude/fix-priv-13-gdpr-queue-email (рядок stripe без customer_id тепер завершується з email = NULL; лишилось рішення власника за ADR-0016 п.5: стеля waitingOnConfig і редагування email в exhausted-рядках; sentry/resend без токенів досі чекають конфіг)
+- **Стан:** частково виправлено в [#1402](https://github.com/SkOrDs-02/sergeant/pull/1402) (змерджено 2026-10-08) (рядок stripe без customer_id тепер завершується з email = NULL; лишилось рішення власника за ADR-0016 п.5: стеля waitingOnConfig і редагування email в exhausted-рядках; sentry/resend без токенів досі чекають конфіг)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: GDPR cleanup worker
 - **Де:** apps/server/src/modules/gdpr/externalDelete.ts:113-120; apps/server/src/modules/gdpr/cleanupWorker.ts:178-181, 220-231, 279-318; apps/server/src/modules/gdpr/cleanupQueue.ts
 - **Першопричина:** deleteStripeCustomer повертає 'skipped' в обох випадках: коли немає ключа і коли немає stripe_customer_id. cleanupWorker трактує 'skipped' для всіх сервісів, крім posthog, як «чекаємо конфіг» і переносить рядок на годину вперед. Email обнуляється лише при завершенні, тож для більшості користувачів (без Stripe) рядок з email живе вічно. Exhausted-рядки email теж зберігають.
@@ -951,7 +951,7 @@ s21-lock-session.out: 'attempt 1..9: locked=true err=Неправильний PI
 
 ### `priv-15` [medium] Під час активного блокування Ctrl+K відкриває глобальний пошук поверх екрана PIN з приватними даними; Ctrl+/ і g-хорди теж працюють
 
-- **Стан:** частково виправлено в гілці claude/fix-sec-13-priv-15-lock-shortcuts (гарячі клавіші, зокрема Ctrl+K, Ctrl+/ і g-хорди, вимкнені, поки замок не idle, AppLock на z-300 вище за пошук; лишилось: не монтувати пошук і чат під замком, разом із sec-13)
+- **Стан:** частково виправлено в [#1392](https://github.com/SkOrDs-02/sergeant/pull/1392) (змерджено 2026-10-08) (гарячі клавіші, зокрема Ctrl+K, Ctrl+/ і g-хорди, вимкнені, поки замок не idle, AppLock на z-300 вище за пошук; лишилось: не монтувати пошук і чат під замком, разом із sec-13)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку / hub shell
 - **Та сама першопричина, що й** [`sec-13`](./security.md#sec-13): useHubKeyboardShortcuts не перевіряє стан замка, тому Ctrl+K відкриває пошук поверх PIN-екрана. Швидкий гейт гарячих клавіш і повний фікс (не рендерити дерево під замком) зручно робити одним PR.
 - **Де:** apps/web/src/core/app/RootLayout.tsx:439-447; apps/web/src/core/hub/search/HubSearch.tsx:63-66
@@ -996,7 +996,7 @@ Desktop 1280×900, користувач hubshell-lock: увімкнути PIN �
 
 ### `priv-16` [medium] Після виходу власні продукти (IDB nutrition_foods) і AI-пропозиції рецептів (sessionStorage) попереднього користувача бачать анонім і наступний акаунт
 
-- **Стан:** частково виправлено в гілці claude/fix-priv-16-recipe-cache-purge (sessionStorage-частина закрита: purgeAppOwnedSessionStorage у purgeAppOwnedLocalData, покриває logout і identity-wipe; IDB nutrition_foods і nutrition_barcodes свідомо лишені за рішенням власника; nutrition_recipes закрито в #1343; nutrition_meal_thumbs лишено, фото існують лише на пристрої)
+- **Стан:** частково виправлено в [#1397](https://github.com/SkOrDs-02/sergeant/pull/1397) (змерджено 2026-10-08) (sessionStorage-частина закрита: purgeAppOwnedSessionStorage у purgeAppOwnedLocalData, покриває logout і identity-wipe; IDB nutrition_foods і nutrition_barcodes свідомо лишені за рішенням власника; nutrition_recipes закрито в #1343; nutrition_meal_thumbs лишено, фото існують лише на пристрої)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / очищення при виході
 - **Де:** apps/web/src/shared/lib/storage/purgeLocalData.ts:23-37, 115-131; apps/web/src/modules/nutrition/lib/recipeCache.ts:55-75
 - **Першопричина:** purgeAppOwnedLocalData чистить лише localStorage, warm-cache і RQ-снапшот. IndexedDB-сховища nutrition_foods, nutrition_barcodes, nutrition_meal_thumbs і nutrition_recipes спільні в sergeant-db і не мають userId. sessionStorage переживає location.assign у тій самій вкладці. Ключ кешу рецептів рахується з комори і prefs, без userId.
