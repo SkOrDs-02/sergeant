@@ -767,7 +767,7 @@ grep deleteWorkout по apps/web/src/modules/fizruk: для завершених
 
 ### `ux-12` [medium] Режим «Списком» на порожній коморі: перша літера ховає форму, фокус губиться, а в коморі зʼявляється фантомна позиція з назвою цієї літери
 
-- **Стан:** виправлено в гілці claude/fix-ux-12-pantry-list-mode
+- **Стан:** виправлено в [#1412](https://github.com/SkOrDs-02/sergeant/pull/1412) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / комора
 - **Де:** apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:203-209; apps/web/src/modules/nutrition/components/PantryCard.tsx
 - **Першопричина:** PantryCard рахує empty = effectiveItems.length === 0, а для порожньої комори effectiveItems = parseLoosePantryText(pantryText), тобто живий парс чернетки textarea. Перша ж літера робить комору «непорожньою», formInline стає false, і інлайн-форма розмонтовується. Чернетка зберігається, тож фантом лишається й після reload.
