@@ -3462,6 +3462,13 @@
       "canonical_owner": "docs/work/specs/anonymous-local-first-persistence.md"
     },
     {
+      "old_path": "docs/work/specs/anonymous-migration-fast-path.md",
+      "new_path": "docs/work/specs/anonymous-migration-fast-path.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/anonymous-migration-fast-path.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/_runner-report.md",
       "new_path": "docs/work/specs/audits/_runner-report.md",
       "action": "keep",
