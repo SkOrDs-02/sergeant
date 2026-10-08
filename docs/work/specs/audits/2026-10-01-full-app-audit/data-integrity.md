@@ -1511,7 +1511,7 @@ I could not refute the mechanism and reproduced the loss myself. But the impact 
 
 ### `data-14` [medium] Контент-дедуп outbox ковтає останню дію в чергуванні check→uncheck→check (hide→show→hide, delete→undo→delete): сервер і інші пристрої лишаються в протилежному стані
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-14-outbox-dedup-toggle
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine (enqueueOutboxUpsert)
 - **Де:** apps/web/src/core/syncEngine/enqueueOutboxUpsert.ts:76-80,151-160,212-272; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:190-255; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:148-244
 - **Першопричина:** findDuplicatePending порівнює новий оп лише з найновішим pending-рядком того самого (user_id, table, op) і вирізає з порівняння поля, рівні clientTs. Проміжний оп іншого типу не враховується, тож третій крок збігається з першим і не ставиться в чергу, всупереч власному коментарю модуля й AI-CONTEXT серверного applySync про toggle→untoggle→toggle.
