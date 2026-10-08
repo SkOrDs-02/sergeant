@@ -7,7 +7,7 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 
 # Sync — власник інфра-модуля
 
-Інфра-модуль без продуктового канону: контекст і журнал рішень живуть прямо тут (рішення 6 спеки `docs/work/specs/archive/agent-module-owners.md`). Роутинг двовимірний: технічні правила поверхні бере surface-скіл.
+Інфра-модуль без продуктового канону: контекст і журнал рішень живуть прямо тут (рішення 6 [спеки agent-module-owners](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/90-work/planning/specs/archive/agent-module-owners.md), архів старого репо). Роутинг двовимірний: технічні правила поверхні бере surface-скіл.
 
 ## Контекст
 
@@ -17,7 +17,7 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 
 ## Мапа файлів
 
-- Server: `apps/server/src/modules/sync/` (`applySync.ts`, `applySync-helpers.ts`, audit-тести поруч).
+- Server: `apps/server/src/modules/sync/` (`syncV2.ts`, `syncV2-core.ts`, `applySync-helpers.ts`, пер-таблична логіка в `finyk/`, `fizruk/`, `nutrition/`, `routine/`; тести поруч).
 - Ядро: `packages/dualwrite-core/`.
 - Web-клієнт: RQ-ключі `syncKeys` з `apps/web/src/shared/lib/api/queryKeys.ts` (Hard Rule #2).
 

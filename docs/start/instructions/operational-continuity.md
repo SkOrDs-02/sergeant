@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last touched:** 2026-10-03 by @claude. **Next review:** 2027-01-01.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-01-18.
 > **Status:** Active
 > **Runtime-specific:** no
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @zaebal-beep недоступний тиждень / місяць / 6 місяців?»
@@ -33,23 +33,22 @@ lang: en
 
 ## External systems & credential owners
 
-| System            | Purpose                                              | Where credentials live                      | Primary contact |
-| ----------------- | ---------------------------------------------------- | ------------------------------------------- | --------------- |
-| **Hetzner**       | VPS host (CX23) for backend                          | 1Password vault `Sergeant / Hetzner`        | @zaebal-beep    |
-| **Coolify**       | Self-hosted PaaS on the VPS (API + Postgres + Redis) | Coolify admin login in `Sergeant / Hetzner` | @zaebal-beep    |
-| **Vercel**        | Web app deployment + edge-proxy                      | 1Password vault `Sergeant / Vercel`         | @zaebal-beep    |
-| **GHCR**          | API container registry                               | GitHub Actions `GITHUB_TOKEN` (auto)        | @zaebal-beep    |
-| **Anthropic**     | Claude API (AI features)                             | 1Password vault `Sergeant / Anthropic`      | @zaebal-beep    |
-| **OpenRouter**    | AI routing (coach/digest/classify)                   | 1Password vault `Sergeant / OpenRouter`     | @zaebal-beep    |
-| **Voyage AI**     | Embeddings (RAG)                                     | 1Password vault `Sergeant / Voyage`         | @zaebal-beep    |
-| **Sentry**        | Error tracking                                       | 1Password vault `Sergeant / Sentry`         | @zaebal-beep    |
-| **Grafana Cloud** | Loki log sink                                        | 1Password vault `Sergeant / Grafana`        | @zaebal-beep    |
-| **PostHog**       | Analytics                                            | 1Password vault `Sergeant / PostHog`        | @zaebal-beep    |
-| **Resend**        | Transactional email                                  | 1Password vault `Sergeant / Resend`         | @zaebal-beep    |
-| **Monobank**      | Webhook source (finyk)                               | 1Password vault `Sergeant / Monobank`       | @zaebal-beep    |
-| **Apple APNs**    | iOS push (routine)                                   | 1Password vault `Sergeant / APNs`           | @zaebal-beep    |
-| **Firebase FCM**  | Android push (routine)                               | 1Password vault `Sergeant / Firebase`       | @zaebal-beep    |
-| **GitHub**        | Source + CI + GHCR                                   | GitHub App credentials                      | @zaebal-beep    |
+| System            | Purpose                                                          | Where credentials live                      | Primary contact |
+| ----------------- | ---------------------------------------------------------------- | ------------------------------------------- | --------------- |
+| **Hetzner**       | VPS host (CX23) for backend                                      | 1Password vault `Sergeant / Hetzner`        | @zaebal-beep    |
+| **Coolify**       | Self-hosted PaaS on the VPS (API + Postgres + Redis)             | Coolify admin login in `Sergeant / Hetzner` | @zaebal-beep    |
+| **Vercel**        | Web app deployment + edge-proxy                                  | 1Password vault `Sergeant / Vercel`         | @zaebal-beep    |
+| **Anthropic**     | Claude API (AI features)                                         | 1Password vault `Sergeant / Anthropic`      | @zaebal-beep    |
+| **OpenRouter**    | AI routing (coach/digest/classify)                               | 1Password vault `Sergeant / OpenRouter`     | @zaebal-beep    |
+| **Voyage AI**     | Embeddings (RAG)                                                 | 1Password vault `Sergeant / Voyage`         | @zaebal-beep    |
+| **Sentry**        | Error tracking                                                   | 1Password vault `Sergeant / Sentry`         | @zaebal-beep    |
+| **Grafana Cloud** | Loki log sink                                                    | 1Password vault `Sergeant / Grafana`        | @zaebal-beep    |
+| **PostHog**       | Analytics                                                        | 1Password vault `Sergeant / PostHog`        | @zaebal-beep    |
+| **Resend**        | Transactional email                                              | 1Password vault `Sergeant / Resend`         | @zaebal-beep    |
+| **Monobank**      | Webhook source (finyk)                                           | 1Password vault `Sergeant / Monobank`       | @zaebal-beep    |
+| **Apple APNs**    | iOS push (routine)                                               | 1Password vault `Sergeant / APNs`           | @zaebal-beep    |
+| **Firebase FCM**  | Android push (routine)                                           | 1Password vault `Sergeant / Firebase`       | @zaebal-beep    |
+| **GitHub**        | Source + CI + autodeploy (`COOLIFY_URL`/`COOLIFY_TOKEN` secrets) | GitHub App credentials                      | @zaebal-beep    |
 
 > **Access escalation:** If you cannot get 1Password access, contact @zaebal-beep directly. No credential is stored in the repository. The single SSH key that reaches the VPS lives in `Sergeant / Hetzner` — without it the server is unreachable (password login is disabled).
 

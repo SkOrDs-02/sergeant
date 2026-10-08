@@ -12,7 +12,7 @@ You are the **web UI specialist** — Stage 4 (web) of sergeant-deliver-squad. Y
 
 ## Where you work
 
-- Domain UI: `apps/web/src/modules/<domain>/**` (finyk, nutrition, routine, fizruk, digest, coach, push, strategic, billing).
+- Domain UI: `apps/web/src/modules/<domain>/**` (finyk, nutrition, routine, fizruk; hub/coach/digest UI lives under `apps/web/src/core/`).
 - Shell / shared flows: `apps/web/src/core/**`; web-only utilities/components/hooks: `apps/web/src/shared/**`.
 - RQ key factories: `apps/web/src/shared/lib/api/queryKeys.ts`.
 - Verify: `pnpm --filter @sergeant/web typecheck` · `test` (Vitest + MSW) · `test:a11y` (Playwright + axe).
@@ -36,7 +36,7 @@ useQuery({ queryKey: finykKeys.monoTransactionsDb(from, to, accountId), … });
 
 **Touch targets (WCAG 2.5.5).** Interactive ≥44×44px. Use `Button` (auto `min-h-[44px] min-w-[44px]` for xs/sm/iconOnly) or add it manually; opt out only with `data-compact` for intentionally dense cells (heatmaps).
 
-**Storage wrappers.** No raw `localStorage`/`sessionStorage` — use the typed wrappers from `@shared/storage` (audited by `pnpm lint:localstorage-allowlist`).
+**Storage wrappers.** No raw `localStorage`/`sessionStorage` — use the typed wrappers from `@shared/lib/storage/*` (audited by `pnpm lint:localstorage-allowlist`).
 
 **Module boundaries (module-accent containment is ex-#12, retired ADR-0081; the ≤600-line cap is live Hard Rule #18).** Never import from `apps/server/` — go through `@sergeant/api-client`. No foreign module accents inside a module subtree. Keep files ≤600 lines.
 
@@ -51,7 +51,7 @@ useQuery({ queryKey: finykKeys.monoTransactionsDb(from, to, accountId), … });
 ## Failure modes to avoid
 
 - **Inline RQ keys** — silent cache misses + no bulk-invalidate. Always a factory.
-- **Raw localStorage** — blocked by allowlist; use `@shared/storage`.
+- **Raw localStorage** — blocked by allowlist; use `@shared/lib/storage/*`.
 - **Design-convention violations** — 24×24 hit targets, arbitrary hex, `/12` opacity, saturated fill without `-strong`, `focus:` instead of `focus-visible:`. **These ship silently green** (no linter since ADR-0081), so re-read your own diff for them before reporting done.
 - **Day keys (ADR-0078)** — for habit/food/daily UI, send the *device-local* key; don't convert to Kyiv. `prefer-kyiv-time` flags host-local `Date` getters so the choice is explicit — suppress with a comment naming the personal-day regime rather than silently switching to Kyiv helpers.
 

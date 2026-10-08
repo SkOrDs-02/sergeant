@@ -1,6 +1,6 @@
 # Playbook: Аудит CI-гейтів — чи кожен гейт реально виконався
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-24.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-01-12.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -101,7 +101,7 @@ grep -n "^  [a-z0-9-]*:$\|name:\|run:\|if:\|continue-on-error:" .github/workflow
 | 5   | `ci.yml` — ланцюг статичних гейтів                                                                                         | серіальний ланцюг                                                | `always()` на кожному: усі секундні, дає повний список за один прогін                     |
 | 6   | `mutation-testing.yml`, RAG eval, migration down drill, `docs-automation.yml`, `contract-tests.yml`, `skill-freshness.yml` | той самий патерн                                                 | нижчий пріоритет                                                                          |
 
-> **Важливо.** `required status checks` на `main` наразі не увімкнені (це окремий відкритий борг у кількох аудитах). Поки їх немає, **червоний CI не блокує мерж** — і значить будь-яка знахідка з цієї таблиці діє ще й на пів кроку раніше: гейт може бути не просто мовчазним, а обійденим.
+> **Важливо.** З 2026-10-01 `required status checks` на `main` увімкнені лише для шести джоб: `check`, `Critical-flow E2E (Playwright)`, `Migration lint (AGENTS rule #4)`, `Migration down drill (AGENTS rule #4)`, `Commit messages (commitlint)`, `Secret scan (gitleaks)` ([`AGENTS.md`](../../../AGENTS.md) § Де живе код). Червоний гейт поза цим списком (увесь тижневий набір) **мерж не блокує** — тож знахідка з цієї таблиці там діє на пів кроку раніше: гейт може бути не просто мовчазним, а обійденим.
 
 ---
 

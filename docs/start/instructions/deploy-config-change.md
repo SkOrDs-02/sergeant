@@ -1,12 +1,12 @@
 # Playbook: Зміна deploy-конфігу (vercel / Dockerfile / Coolify)
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-20.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-01-08.
 > **Status:** Active
 > **Runtime-specific:** no
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `Dockerfile*`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
 
-> `railway.toml` більше не трекається гейтом — Railway декомісовано, файл видалено з репо ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). `fly.toml`/`fly.staging.toml`/`Caddyfile` ніколи не існували в цьому репо — Fly.io в стеку немає. Coolify app-config (env, pre-deploy command, health-check, image tag) живе в Coolify UI, не в git, тож механічний гейт його фізично не бачить — верифікація там людська, див. [§3](#3-перевір-coolify-prod-деплой).
+> `railway.toml` більше не трекається гейтом — Railway декомісовано, файл видалено з репо ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). `fly.toml`/`fly.staging.toml`/`Caddyfile` ніколи не існували в цьому репо — Fly.io в стеку немає. Coolify app-config (env, pre-deploy command, health-check) живе в Coolify UI, не в git, тож механічний гейт його фізично не бачить — верифікація там людська, див. [§3](#3-перевір-coolify-prod-деплой).
 
 ## Owner surface
 
@@ -81,10 +81,10 @@ flowchart TD
 
 > Окремого staging-VPS немає — прод-бекенд живе на одному Hetzner CX23 під Coolify ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Зміни Coolify app-config (env, pre-deploy command, health-check, image tag) верифікуються на живому деплої одразу після merge, тож stage-gate тут — про уважність, а не про окреме середовище.
 
-1. Після merge `deploy-api.yml` збирає образ (`ghcr.io/skords-02/sergeant-api`) і тригерить Coolify redeploy (auto-deploy).
+1. Після merge у `main` джоба `deploy-api` (`ci.yml` → `deploy-api.yml`) чекає зелених обовʼязкових джоб і тригерить Coolify, який збирає `Dockerfile.api` на сервері з GitHub `main`. Джоба сама звіряє, що задеплоєний коміт = `github.sha`; розрив прод ↔ `main` показує `pnpm deploy:status`.
 2. Підтверди, що застосунок стартує чисто: Coolify → `sergeant-api` → Deployments → latest → жодного restart-loop; контейнер `Up (running)`.
 3. Smoke: `/health` повертає 200; для проксі-шляху перевір `https://<prod-domain>/api/auth/get-session` → 200.
-4. Якщо зміна ризикована (env/pre-deploy migrate) — тримай напоготові попередній image-tag для миттєвого rollback (Coolify → Deployments → previous → Redeploy).
+4. Якщо зміна ризикована (env/pre-deploy migrate) — тримай напоготові попередній деплой для миттєвого rollback (Coolify → Deployments → previous → Redeploy).
 5. Постав лейбл `verified-on-staging` (для Coolify-поверхні він означає «verified on prod deploy з rollback-планом»).
 
 ### Лендінг: окремий контур деплою (якщо чіпав `apps/landing/**`)

@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-01-25.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-02-01.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/start/instructions/README.md](./docs/start/instructions/README.md).
@@ -20,7 +20,7 @@
 - Docker для локального Postgres
 
 ```bash
-git clone git@bitbucket.org:skords01/sergeant.git
+git clone git@github.com:SkOrDs-02/sergeant.git
 cd sergeant
 pnpm install --frozen-lockfile
 cp .env.example .env

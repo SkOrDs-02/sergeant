@@ -20,7 +20,7 @@ Concurrent heavy Node can OOM (exit 134) and garble output. One at a time:
 
 If the aggregate run is hard to attribute, re-run the failing workspace alone for a clean summary, e.g. `pnpm --filter @sergeant/api-client test --reporter=verbose`.
 
-Workspaces in scope (11 with `test` scripts): `api-client`, `config`, `db-schema`, `design-tokens`, `dualwrite-core`, `finyk-domain`, `fizruk-domain`, `insights`, `nutrition-domain`, `routine-domain`, `shared`. `eslint-plugin-sergeant-design` has no `test` script — note it as **not run**, never as passed.
+Workspaces in scope (12 with `test` scripts): `api-client`, `config`, `db-schema`, `design-tokens`, `dualwrite-core`, `finyk-domain`, `fizruk-domain`, `insights`, `nutrition-domain`, `routine-domain`, `shared`, `tabular-import`. `eslint-plugin-sergeant-design` has no `test` script — note it as **not run**, never as passed.
 
 ## Evidence discipline (non-negotiable)
 
@@ -33,7 +33,7 @@ Workspaces in scope (11 with `test` scripts): `api-client`, `config`, `db-schema
 
 ```
 ### Packages QA Results
-- Workspaces run: N of 11
+- Workspaces run: N of 12
 - Tests: X passed, Y failed, Z skipped   ← from the actual summary lines
 - Typecheck: ✅ clean / ❌ N errors
 - 🔗 Contract tests (api-client, Hard Rule #3): ✅ pass / ❌ <which contract broke>
