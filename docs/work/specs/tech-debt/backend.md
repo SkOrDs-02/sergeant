@@ -232,7 +232,7 @@
 
 EXPLAIN-нотатки, CHECK-constraints і канонічний `idx_push_subs_user_active` закриті (див. DB-section нижче). Єдиний відкритий хвіст — `idx_module_data_server_updated_at` (P2): досі не створений і не потрібен, поки нема фічі «recent changes across all modules». Не закривати «для чистоти».
 
-### F. Спостережуваність / логи — ~~потребує PR E~~ **✅ DONE** (PR E 2026-06-01; частково PR #335)
+### F. Спостережуваність / логи — ~~потребує PR E~~ **✅ DONE** (PR E 2026-06-01; частково PR #335), крім шардингу per-route error-rate на `route_pattern`: він лишається відкритим як окремий пункт (див. «Gaps → PR E»)
 
 `app_build_info`, мітка `endpoint` на AI-метриках, `GIT_SHA` у Sentry release і `.env.example` закриті (див. § Observability, «Gaps → PR E»). Відкритий хвіст один, середньої важливості: шардінг per-route error-rate на `route_pattern` (не перевірено, чи `path` у `http_requests_total` уже нормалізований шаблон).
 
