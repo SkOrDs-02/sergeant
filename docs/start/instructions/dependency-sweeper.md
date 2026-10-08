@@ -1,6 +1,6 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-10-03 by @claude. **Next review:** 2027-01-01.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-02-01.
 > **Status:** Active
 > **Runtime-specific:** no
 

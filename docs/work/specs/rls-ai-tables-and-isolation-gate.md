@@ -1,7 +1,7 @@
 # SPEC: RLS на таблицях AI-шару + гейт крос-юзер ізоляції
 
-> **Last touched:** 2026-10-01 by @claude (хвости Стадії 1: гейт покриває 50 роутів, у `TODO_UNCOVERED` лишились лише ті, що б'ють у зовнішній сервіс). **Next review:** 2027-05-14.
-> **Status:** In progress (Стадії 1-3 з 4)
+> **Last touched:** 2026-10-03 by @claude (рішення власника 2026-10-02: окрема runtime-роль `sergeant_app`, міграція 154, рунбук перемикання; раніше: хвости Стадії 1, гейт покриває 50 роутів). **Next review:** 2027-05-14.
+> **Status:** In progress (Стадії 1-3 з 4; PR-1 «роль sergeant_app» виконано в коді, перемикання прода за власником)
 
 <!-- Спека самодостатня: виконавець у свіжій сесії реалізує зміну, читаючи лише
 цей файл, AGENTS.md і названий тут код. Контексту попередньої сесії немає. -->
@@ -100,9 +100,11 @@ RLS вмикається рівно на серверних таблицях, я
 Решта схеми (`sync_module_data`, `mono_*`, `finyk_*`, `push_*` тощо) у цю спеку
 **не входить**. Її стереже лінія Б.
 
-### A2. Роль не міняємо, вмикаємо FORCE
+### A2. FORCE на власника (ДОПОВНЕНО 2026-10-02: потрібна ще й окрема роль)
 
-Сервер і міграції продовжують ходити під тим самим користувачем Postgres. Щоб
+> **Знахідка 2026-10-02 перекриває «роль не міняємо».** Прод ходить у Postgres роллю `postgres` з атрибутами Superuser і Bypass RLS. Суперкористувач і роль з BYPASSRLS ігнорують RLS **навіть із `FORCE`**, тож політики Стадії 4 на такому з'єднанні були б no-op. Рішення власника (2026-10-02): рантайм ходить окремою не-суперюзерською роллю `sergeant_app` (міграція 154), міграції лишаються під `postgres`. Пункт «Окрема DB-роль» нижче в «Поза скоупом» знято цим рішенням. `FORCE` лишається потрібним: таблиці належать `postgres`, а `sergeant_app` не власник, але якщо власник колись змінить, `FORCE` не дасть обійти політику. Етап 4 мержиться лише ПІСЛЯ кроку (в) рунбуку нижче.
+
+Початкове формулювання (до знахідки): сервер і міграції ходять під тим самим користувачем Postgres. Щоб
 правила діяли на власника таблиць, кожна таблиця отримує обидва statements:
 
 ```sql
@@ -238,7 +240,8 @@ allowlist із коментарем-причиною.
 | 1. Гейт ізоляції (Б1-Б3)       | **Виконано, крім роутів із зовнішнім викликом.** [`apps/server/src/http/crossUserIsolation.test.ts`](../../../apps/server/src/http/crossUserIsolation.test.ts): перевірка повноти списку роутів (без БД) + 50 ізоляційних кейсів на живому Postgres (AI-шар, `me/*`, Finyk, Mono, Privat, Silpo, nutrition-бекапи, billing status, push, sync). У `TODO_UNCOVERED` лишилось 34 роути, кожен із причиною в коментарі (LLM, банк, ДПС, MCP Сільпо, платіжні провайдери, SSE). Список лише скорочується. |
 | 2. A5 helper `withUserContext` | **Виконано** (гілка `claude/rls-ai-stage-2-3`). [`dbContext.ts`](../../../apps/server/src/dbContext.ts) (`runWith{User,Bypass,Subject}Context` над будь-яким пулом) + обгортки `withUserContext` / `withBypassContext` / `withSubjectContext` у `db.ts`. Переписано: ai-memory (`vectorStore`, `listRoute`, `profileMirror`), `coach.ts`, ledger `ai_usage_daily` (`aiQuota`, `aiQuotaWeekly`, `usdCap`, `anthropicUsageStore`), `purgeUserData`.                                                     |
 | 3. A4 bypass у поллерах        | **Виконано** (та сама гілка). Bypass рівно у трьох місцях: `selectNudgeCandidates` у `sweep.ts` (reminder-sweep), `/api/internal/ai-usage` (обидва handler-и), `readSpendFromLedger` (бюджет-гард). Ledger-рядки без `u:` (`ip:`, `provider:anthropic`, `n8n:`) ідуть під bypass через `withSubjectContext`.                                                                                                                                                                                          |
-| 4. A1-A3 міграція з політиками | Не почато (потребує рішення власника)                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 0. Роль `sergeant_app` (PR-1)  | **Виконано в коді** ([`154_sergeant_app_role.sql`](../../../apps/server/src/migrations/154_sergeant_app_role.sql), тест-режим `SERGEANT_TEST_APP_ROLE=1`, [`appRole.integration.test.ts`](../../../apps/server/src/test/appRole.integration.test.ts)). Прод ще на `postgres`: перемикання робить власник за рунбуком нижче.                                                                                                                                                                           |
+| 4. A1-A3 міграція з політиками | Не почато. Блокер: мерж ЛИШЕ після кроку (в) рунбуку (прод уже ходить під `sergeant_app`)                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 Перевірка Стадій 2-3 на живому Postgres (2026-10-01, Testcontainers `pgvector/pgvector:pg17`): серверний `vitest run` 5802 passed / 5 skipped, інтеграційний лейн 171/171. Верифікація №2 виконана: з `WHERE user_id = $1` у `listRoute.ts`, заміненим на `WHERE $1::text IS NOT NULL`, гейт падає рівно на `GET /api/ai-memory/list` («відповідь для А містить дані Б»), після відкату 16/16. Інтеграційний прогін знайшов один застарілий тест: `vectorStore.integration` рахував `SELECT set_config(...)` як пошуковий запит, виправлено.
 
@@ -255,6 +258,31 @@ allowlist із коментарем-причиною.
 Хвости Стадії 1 закрито 2026-10-01 (гілка `claude/rls-isolation-coverage`): покрито `POST /api/ai-memory/recall`, `GET /api/chat/usage` (`ai_usage_daily`), `DELETE /api/me`, `POST /api/me/restore` і DB-частини Finyk, Mono, Privat, Silpo, Nutrition (бекапи), Billing (`status`), Push (`register`/`unregister`), Sync (`audit`, `pull`, `push`). Стан Б сідиться в усіх відповідних таблицях, а знімок Б (`B_SNAPSHOT_QUERIES`, 26 запитів із `to_jsonb`) ловить зміну будь-якої колонки. Для recall замінено лише ембеддинг (константний вектор), стор і consent справжні; `verifyAccountPassword` замокано як «акаунт без пароля», бо пул Better Auth у цьому стенді не піднімається.
 
 Лишилось у `TODO_UNCOVERED` (34 роути), причини в коментарях до записів: LLM-виклики (`/api/chat`, `coach/insight`, `weekly-digest`, 7 nutrition-роутів, vision-аналізи Finyk), зовнішні банки й ДПС (`mono/connect`, `privat/connect`, `_ALL /api/privat`, `receipts/lookup`), MCP Сільпо (`connect`, `callback`, `sync`, `diag`, `cart*`), платіжні провайдери (5 billing-роутів), `push/send` (internal за IP-allowlist, `userId` у тілі за задумом), `push/test`, SSE `v2/sync/stream`, `transcribe`, `mono/backfill-progress` (стан лише в пам'яті процесу). Для них потрібен мок мережі або окремий стенд; це окрема робота, а не хвіст гейта. Реальний `userId` у `POST /api/push/send` береться з тіла і не звіряється з сесією: це дизайн внутрішнього роута, але саме він перший кандидат на окрему перевірку, коли з'явиться мок webpush.
+
+## Рунбук власника: перемикання на роль `sergeant_app`
+
+**Знахідка.** Прод ходить суперюзером `postgres` (Superuser + Bypass RLS). RLS до нього не застосовується навіть із `FORCE`, тому політики Стадії 4 без цього кроку нічого б не захищали. Рішення власника 2026-10-02: окрема роль (раніше була «поза скоупом»).
+
+**Що вже в коді (PR-1).** Міграція 154 створює `sergeant_app` (NOLOGIN, NOSUPERUSER, NOBYPASSRLS, без пароля), видає DML на всі таблиці `public`, USAGE/SELECT/UPDATE на sequences, EXECUTE на функції, ставить `ALTER DEFAULT PRIVILEGES` (лише для об'єктів, створених роллю, що мігрує, тобто `postgres`) і відкликає запис у `schema_migrations` (SELECT лишається: його читає `/healthz`). Прав на DDL, TRUNCATE і CREATE EXTENSION у ролі немає. Поведінка застосунку не змінюється, доки не перемкнуто `DATABASE_URL`.
+
+**Кроки (виконує власник).**
+
+1. **(а)** Змерджити PR-1. Міграція (ENTRYPOINT образу) створює роль при наступному деплої.
+2. **(б)** У терміналі ресурсу Postgres у Coolify: `ALTER ROLE sergeant_app LOGIN PASSWORD '<новий-довгий-пароль>';` Пароль не комітити й не логувати.
+3. **(в)** У Coolify, застосунок `sergeant-api-v2`, змінні оточення, **саме в такому порядку**:
+   1. `MIGRATE_DATABASE_URL` = поточне значення `DATABASE_URL` (юзер `postgres`). **ОБОВ'ЯЗКОВО до зміни `DATABASE_URL`**: `migrate.mjs` бере `MIGRATE_DATABASE_URL`, якщо він заданий, інакше `DATABASE_URL`. Без нього міграції підуть під `sergeant_app` і впадуть на DDL, а ENTRYPOINT не стартує сервер.
+   2. `DATABASE_URL` = той самий хост і БД, але юзер `sergeant_app` і його пароль.
+4. **(г)** Редеплой. Перевірка: `/health` = 200, і в терміналі Postgres `SELECT usename FROM pg_stat_activity WHERE datname='postgres';` показує `sergeant_app` для з'єднань застосунку (міграційні з'єднання короткі й під `postgres`). Додатково `pnpm deploy:status`.
+5. **(ґ)** Відкат: повернути `DATABASE_URL` на `postgres` і редеплой. Роль і гранти шкоди не роблять, їх можна лишити.
+
+**Окремо.**
+
+- `DATABASE_URL_POOL` (pgBouncer): зараз не задано. Якщо колись з'явиться, `sergeant_app` треба додати в `userlist`/auth-конфіг пулера, інакше застосунок не підключиться.
+- `DATABASE_URL_REPLICA`: роль `sergeant_app` і її пароль мають існувати і на репліці (ролі не реплікуються логічно; при фізичній вже є, але пароль/LOGIN перевір).
+- `ALTER DEFAULT PRIVILEGES` з міграції 154 діє на об'єкти, створені тим, хто мігрує. Якщо міграції колись поїдуть під іншим користувачем, для нього потрібен окремий `ALTER DEFAULT PRIVILEGES FOR ROLE <migrator> IN SCHEMA public GRANT ... TO sergeant_app`.
+- **Стадія 4 (міграція з політиками) мержиться лише ПІСЛЯ кроку (в)** і після підтвердженого кроку (г).
+
+**Що перевірено під `sergeant_app` (2026-10-03, Testcontainers `pgvector/pgvector:pg17`, `SERGEANT_TEST_APP_ROLE=1`).** Рантайм-код без DDL: `grep` по `apps/server/src` не знаходить `REFRESH MATERIALIZED VIEW`, `CREATE TEMP`, `ANALYZE`, `TRUNCATE`, `LISTEN/NOTIFY`, `CREATE EXTENSION` поза міграціями й тестами; materialized view у міграціях немає. `pg_advisory_xact_lock` (`routine/applySync.ts`) і `nextval` працюють без додаткових прав. `pg_advisory_lock` у `db.ts` використовує лише migrate-шлях (під `postgres`). Тестовий стенд (`pool` з `truncateIntegrationTables`) лишається суперюзером, `sergeant_app` TRUNCATE не має за задумом.
 
 ## Порядок робіт
 
@@ -280,7 +308,7 @@ allowlist із коментарем-причиною.
 
 - RLS на решті user-scoped таблиць (`sync_module_data`, `mono_*`, доменні
   таблиці модулів). Лишається app-enforced, стережеться лінією Б.
-- Окрема DB-роль без BYPASSRLS і `service_role` з ADR-0012 § ADR-12.2.
+- `service_role` з ADR-0012 § ADR-12.2. (Окрема runtime-роль без BYPASSRLS у скоупі з 2026-10-02, див. A2 і § Рунбук власника.)
 - Column-level security, маскування PII у SELECT-ах.
 - Feature-flag на поступове ввімкнення політик модуль за модулем (ADR-12.3):
   п'ять таблиць - надто мала площа, щоб виправдати прапорець.
