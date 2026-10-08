@@ -639,7 +639,7 @@ chemail.mjs: 'db before: audit_pool136@example.com|f' → 'change-email 200 {"st
 
 ### `sec-07` [medium] Невдалий POST /api/auth/sign-out (офлайн чи обрив) лишає живу серверну сесію, і наступне відкриття знову входить в акаунт
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-07-18-signout-session-expiry
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth/вихід
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:336,551-697 (586-593); apps/web/src/core/auth/authClient.ts:194-202; apps/web/src/core/profile/ProfilePage.tsx:265
 - **Першопричина:** logout() ковтає помилку signOut() (try/catch без перевірки result.error), не повторює запит і не зберігає маркер «вихід не завершено», а потім робить локальне стирання і перехід на /sign-in. httpOnly-куку клієнт стерти не може, тож без успішного запиту сесія в БД живе до 7 днів.
@@ -1543,7 +1543,7 @@ Verifier probe (verify-client-static-landing-shell-mobile/hdrs.mjs): app.sergean
 
 ### `sec-18` [medium] Коли сесія спливає посеред роботи, застосунок мовчить: записи тихо стають у чергу, а після reload модулі порожні
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-07-18-signout-session-expiry (лишилось: екран повторного входу замість анонімного хабу після 401 при reload, `next` на /sign-in поки не споживається екраном входу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / sync
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:318-401; apps/web/src/core/app/SyncStatusSheet.tsx:175-179; apps/web/src/core/syncEngine/singleton.ts:490-493
 - **Першопричина:** Коли get-session повертає null, resolveUserId віддає null і drain черги мовчки повертає [], сигналу в UI немає; /me у вкладці не перезапитується (refetchOnWindowFocus false, staleTime 60 с). Після reload 401 на /api/v1/me запускає identity wipe і анонімний режим без пояснення.

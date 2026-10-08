@@ -11,6 +11,10 @@ import type { ReactNode } from "react";
 import { getSyncEngineWriter } from "../../syncEngine/singleton";
 
 import { emitSyncOutboxChanged } from "../../syncEngine/outboxChanged";
+import {
+  __resetSyncSessionSignalForTests,
+  observeSyncSession,
+} from "../../syncEngine/syncSessionSignal";
 
 import {
   OUTBOX_INVALIDATE_DEBOUNCE_MS,
@@ -20,6 +24,12 @@ import {
 
 vi.mock("../../syncEngine/singleton", () => ({
   getSyncEngineWriter: vi.fn(),
+}));
+
+// `sec-18`: статус `AuthContext` керується з тесту; `null` = поза провайдером.
+const authRef: { value: { status: string } | null } = { value: null };
+vi.mock("../../auth/AuthContext", () => ({
+  useAuthOptional: () => authRef.value,
 }));
 
 const mockedGetSyncEngineWriter = vi.mocked(getSyncEngineWriter);
@@ -53,6 +63,8 @@ function makeRuntime(
 describe("useSyncStatus", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authRef.value = null;
+    __resetSyncSessionSignalForTests();
   });
 
   afterEach(() => {
@@ -342,5 +354,59 @@ describe("useSyncStatus", () => {
 
     await result.current.retrySyncV2DeadLetters();
     expect(recover).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("useSyncStatus.sessionExpired (sec-18)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedGetSyncEngineWriter.mockReturnValue(null);
+    __resetSyncSessionSignalForTests();
+  });
+
+  it("виставляється, коли drain бачить «сесії немає», а AuthContext ще authenticated", async () => {
+    authRef.value = { status: "authenticated" };
+    const { result } = renderHook(() => useSyncStatus(), {
+      wrapper: makeWrapper(),
+    });
+    expect(result.current.sessionExpired).toBe(false);
+
+    act(() => {
+      observeSyncSession({ data: null, error: null });
+    });
+
+    expect(result.current.sessionExpired).toBe(true);
+
+    // Сесія повернулась (повторний вхід) — сигнал знімається сам.
+    act(() => {
+      observeSyncSession({ data: { user: { id: "u1" } }, error: null });
+    });
+    expect(result.current.sessionExpired).toBe(false);
+  });
+
+  it("анонімний режим сигнал не виставляє: null без сесії там норма", () => {
+    authRef.value = { status: "unauthenticated" };
+    const { result } = renderHook(() => useSyncStatus(), {
+      wrapper: makeWrapper(),
+    });
+
+    act(() => {
+      observeSyncSession({ data: null, error: null });
+    });
+
+    expect(result.current.sessionExpired).toBe(false);
+  });
+
+  it("поза AuthProvider сигнал теж не виставляється", () => {
+    authRef.value = null;
+    const { result } = renderHook(() => useSyncStatus(), {
+      wrapper: makeWrapper(),
+    });
+
+    act(() => {
+      observeSyncSession({ data: null, error: null });
+    });
+
+    expect(result.current.sessionExpired).toBe(false);
   });
 });
