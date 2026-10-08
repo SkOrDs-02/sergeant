@@ -7,12 +7,12 @@
  */
 import {
   importFoodsMissing,
-  listCustomFoods,
+  listUserFoods,
   type FoodProduct,
 } from "../lib/foodDb/foodDb";
 
 export function buildNutritionBackupFoods(): Promise<FoodProduct[]> {
-  return listCustomFoods();
+  return listUserFoods();
 }
 
 /** Дописує `foods` у секцію `nutrition` вже зібраного Hub-бекапу. */
