@@ -677,7 +677,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/menus2.mjs desktop; menus4.
 
 ### `ux-10` [medium] Після виходу з акаунта «Назад» лишає порожній екран на «/» із застряглим «Перенаправлення…»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-10-logout-back-redirect
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth / навігація
 - **Де:** apps/web/src/core/app/HubPage.tsx:127-128; apps/web/src/core/app/RedirectTo.tsx; apps/web/src/core/app/useAppEffects.ts:108-113; apps/web/src/core/hooks/useHubUIState.ts:88-103
 - **Першопричина:** Для аноніма /?tab=profile одночасно обробляють два механізми. HubPage рендерить RedirectTo(/welcome), а useAppEffects у ту саму мить робить navigate на «/» за застарілим locationRef (replace:false). Уже змонтований RedirectTo з тим самим to свій ефект повторно не запускає, тож на «/» лишається лише sr-only «Перенаправлення…».
