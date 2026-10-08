@@ -264,7 +264,13 @@ export async function connectHandler(
   // persist them now instead of dropping `clientInfo.jars` on the floor, so
   // goal-progress auto-sync (docs/work/specs/goal-progress-auto.md)
   // has a linkable balance from the moment of connect.
-  await upsertJars(userId, clientInfo.jars ?? []);
+  //
+  // `clientInfoRes.ok` перевірено вище (інакше ми кинули AppError), тож
+  // список авторитетний, якщо `jars` є масивом: закриті банки прибираються.
+  // Відсутнє поле `jars` порожнім списком не вважаємо.
+  await upsertJars(userId, clientInfo.jars ?? [], {
+    authoritative: Array.isArray(clientInfo.jars),
+  });
 
   logger.info({
     msg: "mono_connected",

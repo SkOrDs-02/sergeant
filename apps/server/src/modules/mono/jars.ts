@@ -21,20 +21,39 @@ export interface MonoClientInfoJar {
   goal?: number;
 }
 
+export interface UpsertJarsOptions {
+  /**
+   * `true` лише коли `jars` — повна й авторитетна відповідь Monobank:
+   * `/personal/client-info` повернув 2xx і поле `jars` у ній є масивом.
+   * Тоді банки користувача, яких у списку немає, видаляються (закрита банка
+   * не має лишатись у капіталі). Відсутнє поле `jars` авторитетним
+   * порожнім списком НЕ є: викликач передає `false`.
+   */
+  authoritative?: boolean;
+}
+
 /**
  * Upsert jars from a client-info response into `mono_jar` (migration 088).
  * Mirrors the `mono_account` upsert loop in `connection.ts` — same
  * `ON CONFLICT (user_id, mono_jar_id) DO UPDATE` shape.
+ *
+ * За `authoritative: true` після upsert-у ще й прибирає з `mono_jar` банки,
+ * яких Mono більше не віддає (закриті/розбиті). `mono_account.is_jar` і
+ * `mono_transaction` не чіпає: історія операцій банки лишається.
  */
 export async function upsertJars(
   userId: string,
   jars: readonly MonoClientInfoJar[],
+  options: UpsertJarsOptions = {},
 ): Promise<void> {
-  // Порожній `jars[]` — «Mono не знає про банки взагалі». Реконсиляція
-  // нижче тоді безпредметна, а ця гілка лишається чистим no-op-ом: її
-  // кличе і `refreshJarsFromMono`, який ковтає помилки Mono, тож зайвий
-  // запис у БД на кожен невдалий рефреш був би даремним навантаженням.
-  if (jars.length === 0) return;
+  const authoritative = options.authoritative === true;
+
+  // Порожній неавторитетний `jars[]` — «невідомо, що там у Mono»: поле
+  // відсутнє у відповіді, а не явно порожнє. Видаляти за такого нічого, а
+  // реконсиляція безпредметна, тож гілка лишається чистим no-op-ом. (Явно
+  // порожній `jars[]` з успішного client-info — авторитетний: людина закрила
+  // останню банку, і DELETE нижче мусить її прибрати.)
+  if (jars.length === 0 && !authoritative) return;
 
   for (const jar of jars) {
     await query(
@@ -63,6 +82,24 @@ export async function upsertJars(
       { op: "mono_jar_upsert" },
     );
   }
+
+  // Закриті банки. Monobank віддає в client-info лише живі банки; закриття
+  // («розбити») переносить гроші на картку, тож без видалення рядок `mono_jar`
+  // лишався б із останнім балансом назавжди, а `sumJarsUAH` додавав би його в
+  // капітал вдруге. Цілі, привʼязані до такої банки, клієнт уже переживає
+  // (`jarsById.get` дає undefined). Працює й для явно порожнього `jars[]`.
+  if (authoritative) {
+    await query(
+      `DELETE FROM mono_jar
+        WHERE user_id = $1
+          AND NOT (mono_jar_id = ANY($2::text[]))`,
+      [userId, jars.map((j) => j.id)],
+      { op: "mono_jar_prune_closed" },
+    );
+  }
+
+  // Нема живих банок — нема чого й реконсилювати.
+  if (jars.length === 0) return;
 
   // Реконсиляція заглушок-привидів (міграція 119).
   //
@@ -137,7 +174,12 @@ export async function refreshJarsFromMono(userId: string): Promise<void> {
     }
 
     const clientInfo = (await res.json()) as { jars?: MonoClientInfoJar[] };
-    await upsertJars(userId, clientInfo.jars ?? []);
+    // Авторитетний список — лише успішна відповідь (`res.ok` вище) з полем
+    // `jars`-масивом. Відсутнє поле не вважаємо порожнім списком: інакше
+    // збій чи зміна формату у Mono стерли б усі банки користувача.
+    await upsertJars(userId, clientInfo.jars ?? [], {
+      authoritative: Array.isArray(clientInfo.jars),
+    });
   } catch (err) {
     logger.warn({
       msg: "mono_jars_refresh_failed",
