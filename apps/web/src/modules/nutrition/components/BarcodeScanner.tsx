@@ -172,12 +172,12 @@ function WebBarcodeScanner({
         role="dialog"
         aria-modal="true"
         aria-labelledby="barcode-scanner-title"
-        className="relative w-full bg-panel rounded-t-3xl border-t border-line shadow-soft"
+        className="relative flex w-full max-h-[100dvh] flex-col bg-panel rounded-t-3xl border-t border-line shadow-soft"
       >
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex shrink-0 justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-line rounded-full" aria-hidden />
         </div>
-        <div className="px-4 pb-2 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between px-4 pb-2">
           <div
             id="barcode-scanner-title"
             className="text-sm font-extrabold text-text"
@@ -193,11 +193,14 @@ function WebBarcodeScanner({
             <Icon name="close" size={18} aria-hidden />
           </button>
         </div>
-        <div className="px-4 pb-8 space-y-3">
+        {/* Шапка (заголовок + «Закрити») лишається поза скролом, тож на
+            низькому вʼюпорті (ноутбук, зум, ландшафт) панель не виїжджає за
+            верх екрана, а прокручується лише тіло з відео і статусом. */}
+        <div className="min-h-0 space-y-3 overflow-y-auto px-4 pb-8">
           <div className="rounded-2xl overflow-hidden border border-line bg-black relative">
             <video
               ref={videoRef}
-              className="w-full aspect-video object-cover"
+              className="w-full aspect-video max-h-[60dvh] object-cover"
               muted
               playsInline
               autoPlay
@@ -207,7 +210,10 @@ function WebBarcodeScanner({
             </div>
           </div>
           {status ? (
-            <p className="text-style-caption text-danger-strong dark:text-danger">
+            <p
+              role="alert"
+              className="text-style-caption text-danger-strong dark:text-danger"
+            >
               {status}
             </p>
           ) : noRead ? (

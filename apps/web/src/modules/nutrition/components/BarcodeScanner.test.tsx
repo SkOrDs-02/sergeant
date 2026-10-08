@@ -88,6 +88,57 @@ describe("BarcodeScanner — web variant", () => {
     expect(screen.getByText("Камера недоступна")).toBeInTheDocument();
   });
 
+  it("announces a camera error via role=alert (WCAG 4.1.3)", () => {
+    useWebScannerMock.mockReturnValue({
+      videoRef: videoRefMock,
+      status: "Не вдалося відкрити камеру. Перевір дозволи.",
+    });
+    render(<BarcodeScanner onDetected={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Не вдалося відкрити камеру. Перевір дозволи.",
+    );
+  });
+
+  it("does not mark the idle hint as an alert", () => {
+    render(<BarcodeScanner onDetected={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("caps the panel at the viewport and keeps the header outside the scroll body", () => {
+    const { container } = render(
+      <BarcodeScanner onDetected={vi.fn()} onClose={vi.fn()} />,
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toMatch(/max-h-\[100dvh\]/);
+    expect(dialog.className).toContain("flex-col");
+
+    // Кнопка «Закрити сканер» у шапці: усередині панелі, але поза
+    // скрол-контейнером (який несе відео).
+    const scrollBody = container
+      .querySelector("video")!
+      .closest(".overflow-y-auto") as HTMLElement;
+    expect(scrollBody).not.toBeNull();
+    expect(scrollBody.className).toContain("min-h-0");
+    const closeInPanel = Array.from(
+      dialog.querySelectorAll<HTMLButtonElement>("button"),
+    ).find((b) => b.getAttribute("aria-label") === "Закрити сканер");
+    expect(closeInPanel).toBeDefined();
+    expect(dialog.contains(closeInPanel!)).toBe(true);
+    expect(scrollBody.contains(closeInPanel!)).toBe(false);
+    expect(scrollBody.contains(screen.getByText("Сканер штрих-коду"))).toBe(
+      false,
+    );
+  });
+
+  it("limits the video height so it cannot outgrow a short viewport", () => {
+    const { container } = render(
+      <BarcodeScanner onDetected={vi.fn()} onClose={vi.fn()} />,
+    );
+    expect(container.querySelector("video")!.className).toMatch(
+      /max-h-\[60dvh\]/,
+    );
+  });
+
   it("shows hint text when status is empty", () => {
     render(<BarcodeScanner onDetected={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText(/Наведи камеру на штрихкод/)).toBeInTheDocument();

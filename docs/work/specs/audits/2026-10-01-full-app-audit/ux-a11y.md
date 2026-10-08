@@ -991,7 +991,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/tabs.mjs ; kb-meal2.mjs ; �
 
 ### `ux-17` [medium] Сканер штрих-коду на десктопі й у ландшафті вилазить за верх екрана: заголовок і «Закрити сканер» недосяжні, а помилка камери не оголошується
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-17-barcode-scanner-viewport
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / сканер штрихкоду
 - **Де:** apps/web/src/modules/nutrition/components/BarcodeScanner.tsx:163-215; apps/web/src/modules/finyk/components/receiptScan/ReceiptScanCameraView.tsx:38-41
 - **Першопричина:** Оверлей BarcodeScanner має класи fixed inset-0 items-end, панель w-full без max-height і overflow, а відео w-full aspect-video. На широкому вʼюпорті панель стає вищою за екран і зсувається вгору. Статус і помилка камери рендеряться як &lt;p&gt; без role і aria-live; так само в ReceiptScanCameraView.
