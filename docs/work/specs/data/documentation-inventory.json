@@ -1614,7 +1614,7 @@
       "canonical_owner": "docs/governance/adr/0103-dependabot-only-dependency-updates.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/governance/adr/0104-goal-period-extended-before-first-step.md",
       "new_path": "docs/governance/adr/0104-goal-period-extended-before-first-step.md",
       "action": "keep",
       "genre": "adr",
@@ -4001,28 +4001,28 @@
       "canonical_owner": "docs/work/specs/audits/verification/README.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
       "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl",
       "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl",
       "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json",
       "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json",
       "action": "keep",
       "genre": "active-work",
