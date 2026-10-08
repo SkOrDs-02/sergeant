@@ -49,7 +49,7 @@ describe("FirstActionHeroCard", () => {
     render(<FirstActionHeroCard />);
 
     expect(screen.getByText("З чого хочеш почати?")).toBeInTheDocument();
-    expect(screen.getByText(/без прихованого пріоритету/i)).toBeInTheDocument();
+    expect(screen.getByText(/порядок не важить/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
   });
 });

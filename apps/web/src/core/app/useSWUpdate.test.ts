@@ -269,7 +269,7 @@ describe("useSWUpdate — defer-while-busy", () => {
     });
 
     expect(mockToastInfo).toHaveBeenCalledWith(
-      "Додаток готовий до роботи офлайн",
+      "Застосунок готовий до роботи офлайн",
       4000,
     );
   });

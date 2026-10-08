@@ -252,7 +252,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "nutrition");
 
-    const pantryInput = page.getByPlaceholder("напр. лосось 300г");
+    const pantryInput = page.getByPlaceholder("напр. лосось 300 г");
     await pantryInput.fill("DCRUD йогурт");
     await waitForSqliteRefreshAfter(page, "nutrition", async () => {
       await page.getByRole("button", { name: "Додати", exact: true }).click();

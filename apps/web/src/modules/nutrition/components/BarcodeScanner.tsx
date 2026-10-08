@@ -80,7 +80,7 @@ function NativeBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
         const msg = (err as Error)?.message ?? "";
         if (msg === "camera-permission-denied") {
           toastRef.current.error(
-            "Потрібен дозвіл на камеру. Увімкни його в налаштуваннях додатку.",
+            "Потрібен дозвіл на камеру. Увімкни його в налаштуваннях застосунку.",
           );
         } else {
           toastRef.current.error("Сканер недоступний. Додай страву вручну.");

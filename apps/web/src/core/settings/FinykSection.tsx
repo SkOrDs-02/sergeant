@@ -13,7 +13,11 @@ import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
 import { SilpoIntegrationSection } from "./SilpoIntegrationSection";
-import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
+import {
+  SettingsGroup,
+  SettingsSubGroup,
+  ToggleRow,
+} from "./SettingsPrimitives";
 
 // ПриватБанк-секція готова, але без live-rollout рішення лишається за
 // env-прапорцем (дефолт off), той самий патерн, що інші env-гейти web
@@ -55,6 +59,12 @@ interface FinykStorageShape {
   merchantRules?: readonly MerchantRule[] | undefined;
   deleteMerchantRule?: ((id: string) => MerchantRule[]) | undefined;
   restoreMerchantRules?: ((rules: readonly MerchantRule[]) => void) | undefined;
+  // «Приховати суми»: до 2026-10-08 жило кнопкою-оком у шапці Фініка і
+  // відбирало в назви модуля 44px на 375px (анти-слоп раунд 4, A3/Q5).
+  // Необовʼязкові з тієї ж причини, що й правила мерчантів: мок хука в
+  // тестах секції їх не дає.
+  showBalance?: boolean | undefined;
+  setShowBalance?: ((next: boolean) => void) | undefined;
 }
 
 const NO_MERCHANT_RULES: readonly MerchantRule[] = [];
@@ -71,6 +81,8 @@ export function FinykSection() {
     merchantRules,
     deleteMerchantRule,
     restoreMerchantRules,
+    showBalance = true,
+    setShowBalance,
   } = useFinykStorage({}) as FinykStorageShape;
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
@@ -101,6 +113,16 @@ export function FinykSection() {
         module="finyk"
         anchorId="settings-finyk"
       >
+        {setShowBalance ? (
+          <SettingsSubGroup title="Показ сум">
+            <ToggleRow
+              label="Приховувати суми"
+              description="Баланс, бюджети й аналітика показують «••••» замість чисел. Операції лишаються видимими."
+              checked={!showBalance}
+              onChange={(hide) => setShowBalance(!hide)}
+            />
+          </SettingsSubGroup>
+        ) : null}
         <SettingsSubGroup title="Власні категорії">
           <p className="text-style-body text-subtle leading-snug">
             Витрати й надходження мають окремі списки. Іконка підбирається

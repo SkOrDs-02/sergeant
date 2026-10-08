@@ -23,7 +23,6 @@ import { shouldShowNoBankBanner } from "./components/NoBankBanner.visibility";
 import { useBankBannerClock } from "./hooks/useBankBannerClock";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
-import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { formatMoney } from "@sergeant/shared";
@@ -131,7 +130,6 @@ export default function App({
     month: number;
   } | null>(null);
   const showBalance = storage.showBalance;
-  const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
   // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
   // відкривають два входи — FAB і плашка нагадування в Огляді.
@@ -501,15 +499,11 @@ export default function App({
           right={
             <div className="flex items-center gap-2 shrink-0">
               {showSyncPill ? <SyncPill syncTone={syncTone} /> : null}
-              <button
-                type="button"
-                onClick={() => setShowBalance(!showBalance)}
-                className="focus-ring shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-subtle hover:text-text hover:bg-panelHi transition-colors"
-                aria-label={showBalance ? "Приховати суми" : "Показати суми"}
-                title={showBalance ? "Приховати суми" : "Показати суми"}
-              >
-                <Icon name={showBalance ? "eye" : "eye-off"} size="lg" />
-              </button>
+              {/* «Приховати суми» переїхало в Налаштування → Фінік
+                  (`core/settings/FinykSection.tsx`, рішення власника
+                  2026-10-08, анти-слоп раунд 4, Q5): шість контролів у
+                  шапці на 375px лишали назві модуля 27px, і «Фінік /
+                  Фінанси» різалось до «Фі… / Фіна…». */}
               <ModuleHeaderAssistantButton />
               {onOpenSettings && (
                 <ModuleHeaderSettingsButton onClick={onOpenSettings} />

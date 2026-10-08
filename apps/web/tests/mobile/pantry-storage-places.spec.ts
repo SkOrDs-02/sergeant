@@ -31,7 +31,7 @@ const ITEMS = [
 ];
 
 async function fillPantry(page: Page) {
-  const nameInput = page.getByPlaceholder("напр. лосось 300г");
+  const nameInput = page.getByPlaceholder("напр. лосось 300 г");
   await nameInput.waitFor({ state: "visible", timeout: 15_000 });
   for (const [i, item] of ITEMS.entries()) {
     // Перша позиція йде в інлайн-форму порожньої комори, решта в аркуш

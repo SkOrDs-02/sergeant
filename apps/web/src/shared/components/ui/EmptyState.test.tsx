@@ -122,10 +122,10 @@ describe("EmptyState — a11y", () => {
     const { getByText } = render(
       <EmptyState
         title="Готовий до першої цілі?"
-        hint="Порада: підключи Monobank — імпорт автоматично."
+        hint="Підключи Monobank, і операції приїдуть самі"
       />,
     );
-    const hint = getByText("Порада: підключи Monobank — імпорт автоматично.");
+    const hint = getByText("Підключи Monobank, і операції приїдуть самі");
     // muted, не subtle: 12px normal-weight потребує 4.5:1, dark subtle дає 3.33:1
     expect(hint.className).toContain("text-muted");
     expect(hint.className).not.toMatch(/text-gray-/);
@@ -170,7 +170,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
         routineFirstHabit: null,
         nutritionGoal: null,
       },
-      /Встанови бюджет 12\s000₴, додай першу витрату\./,
+      /Встанови бюджет 12\s000\s₴ і додай першу витрату\./,
     ],
     [
       "fizruk",
@@ -190,7 +190,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
         routineFirstHabit: "reading",
         nutritionGoal: null,
       },
-      "Відстеж «Читання», серія днів покаже правду.",
+      "Познач «Читання» сьогодні, і серія почнеться.",
     ],
     [
       "nutrition",
@@ -200,7 +200,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
         routineFirstHabit: null,
         nutritionGoal: "gain",
       },
-      "Ціль «набрати масу», залогай перший прийом їжі.",
+      "Ціль «набрати масу», запиши перший прийом їжі.",
     ],
   ] as const)(
     "personalises %s empty-state copy from onboarding goals",
@@ -227,7 +227,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
     );
 
     expect(
-      getByText("Відстеж свою звичку, серія днів покаже правду."),
+      getByText("Познач свою звичку сьогодні, і серія почнеться."),
     ).toBeInTheDocument();
   });
 });

@@ -3819,6 +3819,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",

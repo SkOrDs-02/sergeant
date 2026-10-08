@@ -484,7 +484,7 @@ export function PantryCard({
             // картки вже каже, що це комора (підтверджено живим прогоном
             // 2026-09-16: поле було єдиним на екрані без назви).
             aria-label="Назва продукту"
-            placeholder="напр. лосось 300г"
+            placeholder="напр. лосось 300 г"
             // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
             autoFocus={!formInline}
             maxLength={NAME_MAX_LEN}
@@ -524,7 +524,7 @@ export function PantryCard({
             aria-label="Список продуктів"
             // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
             autoFocus={!formInline}
-            placeholder={'напр. "2 яйця, курка 500г, рис, огірки, сир"'}
+            placeholder={'напр. "2 яйця, курка 500 г, рис, огірки, сир"'}
             className="input-focus-nutrition flex-1 min-h-[96px] rounded-2xl bg-panel border border-line px-4 py-3 text-sm text-text placeholder:text-subtle"
             maxLength={NOTE_MAX_LEN}
             disabled={busy}
