@@ -1,6 +1,6 @@
 # Service Worker (apps/web)
 
-> **Last touched:** 2026-10-05 by @claude (hard-floor реагує на зміну server build id, SOURCE_COMMIT у каскаді). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-08 by @claude (Шар 3: idle-reload не руйнує форми, reload лише у вкладці-ініціаторі, applyUpdate чекає controllerchange). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Внутрішня документація стратегії оновлення Service Worker-а у `apps/web`. Базовий entry-point — [`apps/web/src/sw.ts`](../../../apps/web/src/sw.ts) (через `vite-plugin-pwa`). Build-id інжектиться у клієнт через `import.meta.env.VITE_BUILD_ID` (Vite `define`-pattern), а на сервері — через cascade `SENTRY_RELEASE → GIT_SHA → SOURCE_COMMIT → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID` ([`apps/server/src/http/buildIdHeader.ts`](../../../apps/server/src/http/buildIdHeader.ts); `GIT_SHA` запікає `Dockerfile.api` (`${GIT_SHA:-${SOURCE_COMMIT}}`), `SOURCE_COMMIT` дає Coolify, що збирає образ з репо, ADR-0102 — `RAILWAY_GIT_COMMIT_SHA` знято разом із Railway, ADR-0074).
@@ -29,6 +29,8 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 
 `applyUpdate` тримає фолбек: якщо waiting-воркера не видно (плашку підняв Шар 4, а не SW-шлях), робиться прямий `location.reload()` — інакше клік не дав би нічого.
 
+Якщо waiting-воркер є, `applyUpdate` шле `SKIP_WAITING` і сам чекає `controllerchange` (одноразовий слухач), після чого робить `location.reload()` рівно один раз (`reloadOnce`) — незалежно від `isUpdate` у `vite-plugin-pwa`, тож перша сесія, де SW встановився під час цього ж завантаження, теж перезавантажується (rel-14). Якщо `controllerchange` не прийшов за **3 с** (старий воркер ще тримає lame-duck, до 5 хв), користувач бачить тост «Застосовую оновлення…» з кнопкою «Перезавантажити» замість мовчання; слухач лишається, тож пізня активація все одно перезавантажить вкладку. Reload на `controllerchange` поза кліком «Оновити» не робиться: перший воркер активується з `clients.claim()` посеред буту.
+
 ### Шар 2 — periodic update polling
 
 [`setupAutoUpdate()`](../../../apps/web/src/core/app/autoUpdate.ts) (мунтиться відразу після `registerSW`) кожні **30 хвилин** викликає `registration.update()`. Якщо нова версія SW з'явилась на CDN, browser стягне її і переведе у `waiting` стан → стандартний `onNeedRefresh` спрацює і user побачить toast. Trade-off:
@@ -38,9 +40,19 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 
 ### Шар 3 — idle auto-skipWaiting
 
-Якщо tab був у `document.visibilityState === "hidden"` довше **5 хвилин** _і_ існує `waiting`-SW коли user повертається — `setupAutoUpdate()` сам викликає `updateSW(true)` (skip-waiting + reload). User не бачить prompt-у бо AFK-ситуація = «свіжий старт» по UX. Активного user-а (visibilityState весь час visible) це НЕ зачіпає — він далі побачить manual toast.
+Якщо tab був у `document.visibilityState === "hidden"` довше **5 хвилин** _і_ існує `waiting`-SW коли user повертається — `setupAutoUpdate()` викликає `updateSW(true)` (skip-waiting + reload): AFK = «свіжий старт» по UX. Активного user-а (visibilityState весь час visible) це НЕ зачіпає — він далі бачить manual toast.
 
-Захист від втрати даних: skip-waiting reload відбувається тільки якщо user був AFK >5 хв (це достатньо для browser «forgot last keystroke» поведінки). Активна редакція форми залишається у манulkial-flow Шару 1.
+**Захист від втрати даних (data-45).** Сама тривалість AFK не гарантує, що вводу немає: людина відкрила аркуш витрати, перемкнулась у банк звірити суму і повернулась через 6 хв. Тому перед `updateSW(true)` `autoUpdate` питає [`isForcedReloadBlocked`](../../../apps/web/src/core/app/updateGate.ts) і **пропускає тихий reload**, якщо:
+
+- реєстр «брудного» стану [`dirtyState`](../../../apps/web/src/shared/lib/ui/dirtyState.ts) непорожній: його тримає кожен відкритий `Sheet` (а також центрований `Modal` і `InputDialog`) та непорожній композер HubChat (`useChatSend`). Реєструються через [`useRegisterDirtyState`](../../../apps/web/src/shared/hooks/useRegisterDirtyState.ts) — на open, знімається на close/unmount. Реєстр лічить джерела й не зберігає чернеток (у `sessionStorage` вони свідомо не пишуться);
+- триває стрім HubChat (`isHubStreaming`);
+- є мутації в польоті (`isMutating` з `QueryClient`, передається з `main.tsx`).
+
+Waiting-SW тоді лишається, а користувач бачить manual toast Шару 1 і вирішує сам. Консервативність свідома: зараховується кожен відкритий аркуш, не лише той, де вже введено текст — зайва відстрочка тихого reload нічого не коштує. Повторна спроба — наступне повернення у вкладку після ≥5 хв у фоні.
+
+**Reload лише у вкладці, що ініціювала оновлення.** `vite-plugin-pwa` вішає слухач `controlling` у кожній вкладці, де піднімали плашку, і без власного `onNeedReload` перезавантажував усі, коли оновлення прийняли в одній. Тепер `main.tsx` передає `onNeedReload` ([`swReload.ts`](../../../apps/web/src/core/app/swReload.ts)): вкладка, що натиснула «Оновити» (`applyUpdate`) або прийняла idle-оновлення, перезавантажується; в інших `useSWUpdate` показує тост «Застосунок оновлено в іншій вкладці» з кнопкою «Перезавантажити». Інші вкладки тим часом працюють на старому JS проти нового прекешу: перший ліниво підвантажений чанк зі старим хешем дасть 404 і reload через [`chunkReload.ts`](../../../apps/web/src/core/lib/chunkReload.ts), тож тост варто прийняти, але форму він не знищує.
+
+Не входить у цей шар: перехоплення бази іншою вкладкою (`dbOwnership`/`yieldOwnership`, «Працювати тут») — задумана multi-tab специфікація; захист введеного там потребує окремого UX-рішення.
 
 ### Шар 4 — build-id hard-floor
 
@@ -76,8 +88,8 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 ## Тести
 
 - [`apps/web/src/core/lib/bootWatchdog.test.ts`](../../../apps/web/src/core/lib/bootWatchdog.test.ts): reload при порожньому `#root`, тиша при змонтованому, cooldown і відмова без `sessionStorage`.
-- [`apps/web/src/core/app/autoUpdate.test.ts`](../../../apps/web/src/core/app/autoUpdate.test.ts) — JSDOM + fake timers: periodic polling, saveData skip, idle-skipWaiting, no-waiting-SW guard, build-id force-prompt лише після зміни server id у сесії (стабільний `API на B, веб на A` не промптить) + reset on catch-up, short-sha ↔ full-sha нормалізація, ignores empty observations.
-- [`apps/web/src/core/app/useSWUpdate.test.ts`](../../../apps/web/src/core/app/useSWUpdate.test.ts) — defer-while-busy + поведінка `applyUpdate`: без waiting-воркера кнопка робить прямий reload, з waiting-воркером reload лишається за `vite-plugin-pwa`.
+- [`apps/web/src/core/app/autoUpdate.test.ts`](../../../apps/web/src/core/app/autoUpdate.test.ts) — JSDOM + fake timers: periodic polling, saveData skip, idle-skipWaiting, ПРОПУСК idle-reload при непорожньому реєстрі брудного стану / стрімі HubChat / мутаціях у польоті, no-waiting-SW guard, build-id force-prompt лише після зміни server id у сесії (стабільний `API на B, веб на A` не промптить) + reset on catch-up, short-sha ↔ full-sha нормалізація, ignores empty observations.
+- [`apps/web/src/core/app/useSWUpdate.test.ts`](../../../apps/web/src/core/app/useSWUpdate.test.ts) — defer-while-busy + поведінка `applyUpdate`: без waiting-воркера кнопка робить прямий reload; з waiting-воркером reload рівно один раз після `controllerchange`, статус-тост через 3 с без нього; тост замість reload у вкладці, що оновлення не ініціювала.
 - [`apps/server/src/http/buildIdHeader.test.ts`](../../../apps/server/src/http/buildIdHeader.test.ts) — cascade priority, 7-char truncation, missing-env behavior.
 
 ## Як змінювати константи

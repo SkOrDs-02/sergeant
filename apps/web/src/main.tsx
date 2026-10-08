@@ -369,6 +369,10 @@ if (
   // Тобто оновлення тепер завжди застосовується у момент, коли сторінка
   // жива, а не посеред її буту.
   //
+  //   4. Reload на `controlling` тепер робить `onNeedReload` нижче через
+  //      `swReload.ts`, а не сам `vite-plugin-pwa`: лише вкладка, що
+  //      ініціювала оновлення, перезавантажується; інші показують тост.
+  //
   // Після того, як `sw.ts` перестав робити `skipWaiting()` в `install`
   // (той самий аудит), воркер-ЗАМІННИК більше не перехоплює сторінку сам:
   // він чекає в `waiting`, поки користувач не натисне «Оновити», і reload
@@ -381,7 +385,15 @@ if (
   // посеред буту, і це той самий білий екран, з якого все почалось.
 
   import("virtual:pwa-register").then(async ({ registerSW }) => {
+    const { handleNeedReload } = await import("./core/app/swReload");
     const updateSW = registerSW({
+      // data-45 / rel-14: без власного `onNeedReload` слухач `controlling` з
+      // `vite-plugin-pwa` перезавантажує КОЖНУ вкладку, де піднімали плашку,
+      // разом з їхніми незбереженими формами. Reload — лише у вкладці, що
+      // натиснула «Оновити» (або прийняла idle-оновлення); решта отримує тост.
+      onNeedReload() {
+        handleNeedReload();
+      },
       onNeedRefresh() {
         window.__pwaUpdateReady = true;
         window.__pwaUpdateSW = updateSW;
@@ -398,9 +410,14 @@ if (
     // response interceptor via `subscribeServerBuildIdObservers`.
     try {
       const { setupAutoUpdate } = await import("./core/app/autoUpdate");
+      const { hasMutationsInFlight } = await import("./core/app/updateGate");
       const { subscribeServerBuildId } =
         await import("@shared/api/serverBuildIdBus");
-      const ctrl = setupAutoUpdate({ updateSW });
+      const ctrl = setupAutoUpdate({
+        updateSW,
+        isMutating: () =>
+          hasMutationsInFlight(() => queryClient.getMutationCache()),
+      });
       subscribeServerBuildId((id) => ctrl.reportServerBuildId(id));
     } catch (err) {
       logger.warn("[main] setupAutoUpdate failed", err);

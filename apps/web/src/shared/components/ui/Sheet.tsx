@@ -8,6 +8,7 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
+import { useRegisterDirtyState } from "../../hooks/useRegisterDirtyState";
 import {
   SHEET_FOOTER_INSET_VAR,
   useBottomInsetVar,
@@ -157,6 +158,13 @@ export function Sheet({
   // Lock body scroll while sheet is open — iOS-safe (position: fixed),
   // not just `overflow: hidden` (round-2 UI audit X2).
   useBodyScrollLock(open);
+
+  // Відкритий аркуш = потенційно незбережений ввід: тихий idle-reload
+  // сервіс-воркера (`core/app/autoUpdate.ts`) у цей час не спрацьовує
+  // (data-45). Реєструємо всі аркуші, а не лише ті, де зараз є текст: поля
+  // можуть зʼявитись пізніше, а зайва відстрочка reload нічого не коштує —
+  // тост «Доступна нова версія» лишається.
+  useRegisterDirtyState(open);
 
   // Browser / Android Back closes the sheet instead of leaving the module.
   useHistoryDismiss(open, onClose);

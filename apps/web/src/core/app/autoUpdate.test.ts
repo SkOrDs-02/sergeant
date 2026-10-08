@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { setupAutoUpdate } from "./autoUpdate";
+import {
+  registerDirtyState,
+  resetDirtyStateForTests,
+} from "@shared/lib/ui/dirtyState";
+import { setHubStreaming } from "../hub/streamingStore";
+import { resetSwReloadForTests, isLocalUpdateRequested } from "./swReload";
 
 interface FakeRegistration {
   update: ReturnType<typeof vi.fn>;
@@ -37,6 +43,9 @@ describe("setupAutoUpdate", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     uninstallServiceWorkerMock();
+    resetDirtyStateForTests();
+    resetSwReloadForTests();
+    setHubStreaming(false);
     delete (window as { __pwaUpdateReady?: boolean }).__pwaUpdateReady;
     delete (window as { __pwaUpdateSW?: unknown }).__pwaUpdateSW;
   });
@@ -336,5 +345,79 @@ describe("setupAutoUpdate", () => {
     vi.advanceTimersByTime(10 * 60 * 60 * 1000);
     expect(events).toEqual([]);
     ctrl.dispose();
+  });
+  // data-45: тихий idle-reload не має права знищувати незбережений ввід.
+  describe("idle skip-waiting × незбережений ввід", () => {
+    /** Ховає вкладку на 6 хв і повертає її; повертає `updateSW`-спай. */
+    async function hideSixMinutesThenShow(
+      extra: Partial<Parameters<typeof setupAutoUpdate>[0]> = {},
+    ) {
+      const waitingSW = { postMessage: vi.fn() } as unknown as ServiceWorker;
+      installServiceWorkerMock({ waiting: waitingSW });
+      const updateSW = vi.fn();
+      Object.defineProperty(document, "visibilityState", {
+        value: "visible",
+        configurable: true,
+      });
+      let fakeNow = 0;
+      const ctrl = setupAutoUpdate({
+        updateSW,
+        idleSkipWaitingMs: 5 * 60 * 1000,
+        now: () => fakeNow,
+        ...extra,
+      });
+      Object.defineProperty(document, "visibilityState", {
+        value: "hidden",
+        configurable: true,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      await Promise.resolve();
+      fakeNow = 6 * 60 * 1000;
+      Object.defineProperty(document, "visibilityState", {
+        value: "visible",
+        configurable: true,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      for (let i = 0; i < 5; i += 1) await Promise.resolve();
+      return { updateSW, ctrl };
+    }
+
+    it("НЕ викликає triggerUpdate, поки реєстр брудного стану непорожній", async () => {
+      registerDirtyState(); // відкритий аркуш / непорожній композер
+      const { updateSW, ctrl } = await hideSixMinutesThenShow();
+      expect(updateSW).not.toHaveBeenCalled();
+      expect(isLocalUpdateRequested()).toBe(false);
+      ctrl.dispose();
+    });
+
+    it("викликає triggerUpdate як раніше, коли реєстр порожній", async () => {
+      const { updateSW, ctrl } = await hideSixMinutesThenShow();
+      expect(updateSW).toHaveBeenCalledWith(true);
+      expect(isLocalUpdateRequested()).toBe(true);
+      ctrl.dispose();
+    });
+
+    it("знову дозволяє оновлення, щойно аркуш закрито (зняття з реєстру)", async () => {
+      const unregister = registerDirtyState();
+      unregister();
+      const { updateSW, ctrl } = await hideSixMinutesThenShow();
+      expect(updateSW).toHaveBeenCalledWith(true);
+      ctrl.dispose();
+    });
+
+    it("НЕ викликає triggerUpdate під час стріму HubChat", async () => {
+      setHubStreaming(true);
+      const { updateSW, ctrl } = await hideSixMinutesThenShow();
+      expect(updateSW).not.toHaveBeenCalled();
+      ctrl.dispose();
+    });
+
+    it("НЕ викликає triggerUpdate, коли є мутації в польоті", async () => {
+      const { updateSW, ctrl } = await hideSixMinutesThenShow({
+        isMutating: () => true,
+      });
+      expect(updateSW).not.toHaveBeenCalled();
+      ctrl.dispose();
+    });
   });
 });

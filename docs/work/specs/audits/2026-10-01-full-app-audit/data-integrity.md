@@ -3523,7 +3523,7 @@ Reproduced live with <scratch>/agents/verify-client-static-react-correctness/v2-
 
 ### `data-45` [medium] Оновлення сервіс-воркера і перехоплення бази іншою вкладкою перезавантажують чи розмонтовують сторінку без перевірки незбережених форм
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-45-rel-14-sw-update (лишилось: перехоплення бази іншою вкладкою, dbOwnership/yieldOwnership — окреме UX-рішення)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: PWA (autoUpdate, registerSW) + dbOwnership
 - **Де:** apps/web/src/core/app/autoUpdate.ts:247-265; apps/web/src/main.tsx:376-381; node_modules/vite-plugin-pwa/dist/client/build/register.js:55-64; apps/web/src/core/db/sqlite.ts:309-325; apps/web/src/core/db/dbOwnership.ts:106-140; docs/engineering/web/service-worker.md:41-43
 - **Першопричина:** Реєстру «брудного» стану немає: autoUpdate після 5+ хв у фоні робить triggerUpdate(true) при поверненні у вкладку, ігноруючи відкриті аркуші й «Пізніше»; слухач controlling у vite-plugin-pwa перезавантажує всі вкладки, коли оновлення прийнято в одній (onNeedReload не передано); yieldOwnership на claim іншої вкладки розмонтовує дерево маршрутів.

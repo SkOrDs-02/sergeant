@@ -14,7 +14,11 @@
  *      sitting in the background for more than `idleSkipWaitingMs`
  *      (5 min default) AND a `waiting` SW exists, we silently apply the
  *      update via `updateSW(true)`. The user was AFK, so we trade
- *      "subtle reload" for "no stale UI when they come back".
+ *      "subtle reload" for "no stale UI when they come back". The silent
+ *      reload is SKIPPED while the tab holds unsaved input (open
+ *      Sheet/Modal, non-empty HubChat composer), a live HubChat stream or
+ *      in-flight mutations — see {@link isForcedReloadBlocked}; the waiting
+ *      SW then stays for the manual toast (layer 1).
  *
  *   3. **Build-id hard-floor** — `serverBuildIdMiddleware` stamps every
  *      API response with `X-Server-Build-Id`. The `@shared/api` client
@@ -34,6 +38,9 @@
  * be overridden via options so the test suite can drive a fake clock /
  * fake `navigator.serviceWorker` without touching JSDOM internals.
  */
+
+import { isForcedReloadBlocked } from "./updateGate";
+import { markLocalUpdateRequested } from "./swReload";
 
 declare global {
   interface Window {
@@ -69,6 +76,12 @@ export interface AutoUpdateOptions {
    * `location.reload()`.
    */
   updateSW?: (reloadPage?: boolean) => void | Promise<void>;
+  /**
+   * Чи є в цій вкладці мутації в польоті. Ззовні, бо `QueryClient` живе в
+   * `main.tsx`. Разом зі стрімом HubChat і реєстром відкритих форм
+   * (`@shared/lib/ui/dirtyState`) блокує тихий idle-reload.
+   */
+  isMutating?: () => boolean;
   /** Override `window` (tests). */
   windowRef?: Window;
   /** Override `document` (tests). */
@@ -192,6 +205,9 @@ export function setupAutoUpdate(
   };
 
   const triggerUpdate = (reloadPage: boolean) => {
+    // Reload під цей виклик дозволений лише ЦІЙ вкладці (`onNeedReload` у
+    // main.tsx читає прапорець); інші вкладки отримають тост, не reload.
+    if (reloadPage) markLocalUpdateRequested();
     const fn =
       opts.updateSW ??
       (win.__pwaUpdateSW as ((reloadPage?: boolean) => void) | undefined);
@@ -262,6 +278,14 @@ export function setupAutoUpdate(
     try {
       const reg = await getRegistration(nav);
       if (!reg?.waiting) return;
+      // data-45: тихий reload знищує незбережений ввід. Є що втрачати —
+      // лишаємо waiting-SW для ручного тоста, форма живе далі.
+      if (isForcedReloadBlocked(opts.isMutating)) {
+        debug("auto-skipWaiting deferred (unsaved input / busy)", {
+          hiddenDurationMs,
+        });
+        return;
+      }
       debug("auto-skipWaiting on visibility", {
         hiddenDurationMs,
         idleSkipWaitingMs,

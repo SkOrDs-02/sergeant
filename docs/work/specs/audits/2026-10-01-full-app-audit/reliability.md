@@ -935,7 +935,7 @@ Independent repro with v5-chunk.mjs (serviceWorkers: block, abort FinykApp-*.js)
 
 ### `rel-14` [medium] Кнопка «Оновити» PWA ненадійна: активація зависає на 5 хв або проходить без перезавантаження
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-45-rel-14-sw-update (лишилось: web-vitals beacon на першому input і далі тримає старий SW до 5 хв, але тап «Оновити» вже не мовчить: статус-тост через 3 с з ручним reload)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: SW update flow
 - **Де:** apps/web/src/core/app/useSWUpdate.ts:74-91; apps/web/src/sw/messages.ts:24; apps/web/src/core/observability/webVitals.ts:59-69,224; node_modules/workbox-window/Workbox.js:294; vite-plugin-pwa register.js:57-63
 - **Першопричина:** applyUpdate шле SKIP_WAITING і покладається на reload від vite-plugin-pwa, а той спрацьовує лише при event.isUpdate. Якщо першим input на сторінці став тап «Оновити», LCP-beacon web-vitals іде через fetch-обробник старого SW і тримає його до 5-хвилинного ліміту. У першій сесії, коли SW встановився під час цього ж завантаження, isUpdate=false і reload не відбувається взагалі.
