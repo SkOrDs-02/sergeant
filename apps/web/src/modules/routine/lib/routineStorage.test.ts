@@ -2,7 +2,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 
-import { loadRoutineState, saveRoutineState } from "./routineStorage";
+import {
+  loadRoutineState,
+  saveRoutineState,
+  validateRoutineBackupPayload,
+} from "./routineStorage";
 import {
   __setRoutineSqliteCompletionsCacheForTests,
   __setRoutineSqliteStateCacheForTests,
@@ -60,5 +64,24 @@ describe("routine/routineStorage", () => {
     expect(saveRoutineState(next)).toBe(true);
     // Tombstone confirmation: we never wrote to LS.
     expect(localStorage.getItem("hub_routine_v1")).toBe(null);
+  });
+});
+
+describe("validateRoutineBackupPayload — completionNotes", () => {
+  const file = (completionNotes: unknown) => ({
+    kind: "hub-routine-backup",
+    data: { habits: [], completionNotes },
+  });
+
+  it("відхиляє нотатку не рядком", () => {
+    expect(() =>
+      validateRoutineBackupPayload(file({ "h1:2026-10-01": 5 })),
+    ).toThrow(/нотатку не рядком/);
+  });
+
+  it("приймає рядкові нотатки", () => {
+    expect(() =>
+      validateRoutineBackupPayload(file({ "h1:2026-10-01": "ок" })),
+    ).not.toThrow();
   });
 });

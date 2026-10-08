@@ -10,11 +10,14 @@ import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
 import {
   applyHubBackupPayload,
+  assertHubBackupPayload,
   buildHubBackupPayload,
-  isHubBackupPayload,
 } from "./hubBackup";
 import { HubRestoreModePicker } from "./HubRestoreModePicker";
 import { useHubRestoreBlock } from "./useHubRestoreReady";
+
+/** Повідомлення, написане людиною для людини, містить кирилицю. */
+const UA_TEXT_RE = /[А-Яа-яІіЇїЄєҐґ]/;
 
 interface HubBackupPanelProps {
   className?: string;
@@ -24,7 +27,8 @@ interface HubBackupPanelProps {
 // збігаються з полями HubBackupPayload (`hubBackup.ts`).
 const OVERWRITE_LABELS: Record<string, string> = {
   finyk: "Фінік: витрати, борги, бюджети, підписки",
-  fizruk: "Фізрук: тренування",
+  fizruk:
+    "Фізрук: тренування, заміри, щоденник, травми, шаблони, власні вправи й активності, план місяця",
   routine: "Рутина: звички",
   nutrition: "Їжа: харчування",
   // Дефект #3 (CodeRabbit post-merge review PR #756): `applyHubBackupPayload`
@@ -101,8 +105,13 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   };
 
   const showParseError = (err: unknown) => {
+    // Текст помилки показуємо лише людський (українською): технічний `Error`
+    // з англомовним повідомленням (`TypeError: Cannot read properties…`) іде
+    // на загальний текст (аудит 2026-10-01, data-34).
     const message =
-      err instanceof Error ? err.message : "Не вдалось імпортувати файл";
+      err instanceof Error && UA_TEXT_RE.test(err.message)
+        ? err.message
+        : "Не вдалось імпортувати файл. Перевір, що він не пошкоджений, і спробуй ще раз.";
     // Adversarial review (backup group) #8: цей самий тост тепер обслуговує
     // і невалідний файл (r.onload), і збій applyHubBackupPayload ПІСЛЯ
     // підтвердження (наприклад переповнення сховища) — в другому випадку
@@ -129,9 +138,8 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         // і єдиний спосіб дізнатись про помилку — натиснути червону кнопку.
         // Валідуємо форму тут, до setPendingImport, щоб діалог підтвердження
         // взагалі не зʼявлявся для файлу, який гарантовано не hub-backup.
-        if (!isHubBackupPayload(data)) {
-          throw new Error("Некоректний файл резервної копії Hub.");
-        }
+        // `assertHubBackupPayload` дає людський текст і для файлу новішої версії.
+        assertHubBackupPayload(data);
         // L-5 (P1): раніше тут одразу викликався applyHubBackupPayload +
         // reload — вибір файлу перетирав дані без жодного попередження.
         // Тепер лише ставимо файл у чергу на підтвердження.

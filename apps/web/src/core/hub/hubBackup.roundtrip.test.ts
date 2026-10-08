@@ -45,6 +45,7 @@ const applyFizrukFullBackupPayload = vi.fn(async (_v?: unknown) => ({
 vi.mock("../../modules/fizruk/lib/fizrukStorage", () => ({
   buildFizrukFullBackupPayload: () => buildFizrukFullBackupPayload(),
   applyFizrukFullBackupPayload: (v: unknown) => applyFizrukFullBackupPayload(v),
+  validateFizrukFullBackupPayload: () => ({}),
 }));
 
 const buildRoutineBackupPayload = vi.fn(() => ({ routine: true }));
@@ -52,6 +53,7 @@ const applyRoutineBackupPayload = vi.fn();
 vi.mock("../../modules/routine/lib/routineStorage", () => ({
   buildRoutineBackupPayload: () => buildRoutineBackupPayload(),
   applyRoutineBackupPayload: (v: unknown) => applyRoutineBackupPayload(v),
+  validateRoutineBackupPayload: () => {},
 }));
 
 const buildNutritionBackupPayload = vi.fn(() => ({ nutrition: true }));
@@ -59,6 +61,7 @@ const applyNutritionBackupPayload = vi.fn();
 vi.mock("../../modules/nutrition/domain/nutritionBackup", () => ({
   buildNutritionBackupPayload: () => buildNutritionBackupPayload(),
   applyNutritionBackupPayload: (v: unknown) => applyNutritionBackupPayload(v),
+  validateNutritionBackupPayload: () => {},
 }));
 
 import {
