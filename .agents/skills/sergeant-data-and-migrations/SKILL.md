@@ -1,6 +1,6 @@
 ---
 name: sergeant-data-and-migrations
-description: "Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Coolify pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних."
+description: "Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or ENTRYPOINT migration rollout; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних."
 lang: uk
 lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
@@ -9,7 +9,7 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 
 Sergeant використовує **два шляхи до БД поверх одного `pg` Pool** — raw parameterized `pg` (`db.ts`, більшість модулів) і Drizzle ORM (`drizzle.ts`, waitlist / auth-суміжні таблиці, типізовані читання) — плюс послідовні SQL-міграції як єдине джерело істини для схеми. Обидва шляхи легітимні; новий код тримається стилю сусідніх файлів модуля. Для аудиту це означає, що перевіряти треба **обидві** поверхні (те саме формулювання — у `sergeant-security-audit` і `sergeant-backend-architecture`).
 
-Зміни в БД мають бути безпечними для Coolify pre-deploy (`pre_deployment_command = node dist-server/migrate.js`, ADR-0074) і для старої версії app-у, яка ще може коротко обслуговувати трафік.
+Зміни в БД мають бути безпечними для міграцій в ENTRYPOINT образу (`node dist-server/migrate.js && exec node dist-server/index.js`, ADR-0074; Coolify `pre_deployment_command` порожній і має таким лишатись) і для старої версії app-у, яка ще може коротко обслуговувати трафік.
 
 ## Що покриває
 
@@ -51,4 +51,4 @@ Sergeant використовує **два шляхи до БД поверх о�
 
 - [docs/start/instructions/add-sql-migration.md](../../../docs/start/instructions/add-sql-migration.md)
 - [docs/start/instructions/pre-merge-migration-checklist.md](../../../docs/start/instructions/pre-merge-migration-checklist.md)
-- [docs/governance/adr/0074-hosting-hetzner-coolify.md](../../../docs/governance/adr/0074-hosting-hetzner-coolify.md) — актуальний backend-хостинг (Hetzner + Coolify), pre-deploy міграції
+- [docs/governance/adr/0074-hosting-hetzner-coolify.md](../../../docs/governance/adr/0074-hosting-hetzner-coolify.md) — актуальний backend-хостинг (Hetzner + Coolify); міграції в ENTRYPOINT — [`AGENTS.md`](../../../AGENTS.md) § Deployment
