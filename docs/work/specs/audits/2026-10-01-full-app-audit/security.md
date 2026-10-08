@@ -705,7 +705,7 @@ I could not refute the bug. I reproduced it myself, but I think high overstates 
 
 ### `sec-08` [medium] Нативний auth-контур увімкнений у проді при паузі мобільного: open redirect з підписаною state-кукою (expo-authorization-proxy) і довірена схема sergeant://
 
-- **Стан:** виправлено в гілці claude/fix-sec-08-native-auth-prod
+- **Стан:** виправлено в #1350 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/OAuth
 - **Де:** apps/server/src/auth.ts:617,640-671; node_modules/@better-auth/expo/dist/index.js:7-35; node_modules/better-auth/dist/state.mjs:110-121; apps/server/src/routes/auth.ts:33; apps/mobile/app/(auth)/forgot-password.tsx:35
 - **Першопричина:** plugins: [bearer(), expo()] і getTrustedNativeSchemes() → ['sergeant://'] діють у production, хоча RN-застосунку немає (ADR-0094). Анонімний GET /api/auth/expo-authorization-proxy перевіряє лише https і «не наш origin», ставить підписану куку better-auth.state зі значенням з query і робить 302 на довільний хост; sergeant:// приймається як redirectTo для скидання пароля й OAuth.
@@ -1202,7 +1202,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-14` [medium] /api/nutrition/refine-photo робить повний vision-аналіз довільного фото без квоти
 
-- **Стан:** виправлено в гілці claude/fix-sec-14-refine-same-photo
+- **Стан:** виправлено в #1384 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / nutrition
 - **Де:** apps/server/src/routes/nutrition.ts:117-130; packages/shared/src/schemas/api.ts:723-740
 - **Першопричина:** На refine-photo немає requireAiQuota('photo'): ланцюг лише rateLimit 20/хв → requireHealthConsent → requireLlmUpstream. Схема вимагає тільки image_base64, prior_result необов'язковий, і за порожнього prior_result промпт робить повний розбір КБЖВ, тож refine рівноцінний analyze-photo.

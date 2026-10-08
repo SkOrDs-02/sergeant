@@ -902,7 +902,7 @@ s18b-profile.out: '200 POST /api/auth/update-user req={"image":"data:image/webp;
 
 ### `ux-15` [medium] Enter у композері чату при вичерпаному ліміті: пейвол відкривається й одразу закривається, а повідомлення не надсилається
 
-- **Стан:** виправлено в гілці claude/fix-data-44-ux-15-hubchat-session
+- **Стан:** виправлено в #1370 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: чат / пейвол
 - **Де:** apps/web/src/core/components/ChatInput.tsx:132-133; apps/web/src/core/hub/chat/useChatSend.ts:324-332
 - **Першопричина:** ChatInput викликає onSend() на keydown Enter без preventDefault. useChatSend синхронно відкриває PaywallModal, пастка фокуса ставить фокус на «Закрити», і keypress того самого Enter натискає цю кнопку.
