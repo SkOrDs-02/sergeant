@@ -183,15 +183,15 @@ export function buildNutritionBackupPayload(): NutritionBackupPayload {
 }
 
 /**
- * `mode` — див. `BackupRestoreMode`. Дефолт `replace` лишає поведінку
- * наявних викликів (хмарний бекап); Hub-імпорт передає режим явно, і його
- * дефолт — `merge`: додати відсутнє, нічого не видаляючи на пристрої й
- * на сервері (аудит 2026-10-01, data-06).
+ * Чиста фаза «validate all» імпорту (аудит 2026-10-01, data-34): нічого не
+ * пише, кидає на файлі не того типу чи форми й повертає нормалізовані секції.
  */
-export function applyNutritionBackupPayload(
-  payload: unknown,
-  mode: BackupRestoreMode = "replace",
-): void {
+function parseNutritionBackupPayload(payload: unknown): {
+  data: Record<string, unknown>;
+  pantries: NutritionBackupPantry[];
+  activePantryId: string;
+  prefs: NutritionPrefs;
+} {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Некоректний бекап харчування.");
   }
@@ -214,6 +214,30 @@ export function applyNutritionBackupPayload(
     : [];
   const activePantryId = safeString(data["activePantryId"], "home") || "home";
   const prefs = normalizePrefs(data["prefs"]);
+  const log = data["log"];
+  if (log && typeof log === "object" && !Array.isArray(log)) {
+    normalizeNutritionLog(log);
+  }
+  return { data, pantries, activePantryId, prefs };
+}
+
+/** Фаза «validate all» Hub-імпорту: кидає на битому файлі, нічого не пишучи. */
+export function validateNutritionBackupPayload(payload: unknown): void {
+  parseNutritionBackupPayload(payload);
+}
+
+/**
+ * `mode` — див. `BackupRestoreMode`. Дефолт `replace` лишає поведінку
+ * наявних викликів (хмарний бекап); Hub-імпорт передає режим явно, і його
+ * дефолт — `merge`: додати відсутнє, нічого не видаляючи на пристрої й
+ * на сервері (аудит 2026-10-01, data-06).
+ */
+export function applyNutritionBackupPayload(
+  payload: unknown,
+  mode: BackupRestoreMode = "replace",
+): void {
+  const { data, pantries, activePantryId, prefs } =
+    parseNutritionBackupPayload(payload);
 
   if (mode === "merge") {
     mergeNutritionBackup({ pantries, log: data["log"] });
