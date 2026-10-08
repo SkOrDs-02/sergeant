@@ -43,7 +43,7 @@ export function ModulesSection() {
     <section id="modules" className="scroll-mt-16">
       <div className="mx-auto w-full max-w-6xl px-5 pb-9 pt-16 sm:px-8">
         <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-balance text-foreground-strong sm:text-3xl">
-          Чотири модулі, які бачать одне одного
+          Чотири модулі, які бачать один одного
         </h2>
         <p className="mt-4 max-w-2xl leading-relaxed text-muted">
           Витрати приходять з Monobank і чеків, їжа – зі штрихкоду чи фото,
@@ -51,7 +51,10 @@ export function ModulesSection() {
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+      {/* Смуга в тій самій колонці max-w-6xl, що й решта головної: на всю
+          ширину вікна текст крайніх блоків стояв за 24px від краю екрана, а не
+          по сітці (рішення власника за аудитом сайту 2026-10-08, V18). */}
+      <div className="mx-auto grid w-full max-w-6xl sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
         <a
           href="/hroshi"
           className="group flex flex-col gap-1 bg-finyk px-6 py-7 text-ink-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"

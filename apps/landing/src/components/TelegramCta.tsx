@@ -1,9 +1,8 @@
-import { useState } from "react";
 import {
   formatLandingStartPayload,
   newLandingRef,
   type LandingPlacement,
-} from "@sergeant/shared";
+} from "@sergeant/shared/lib/landingAttribution";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 import { telegramStartLink } from "../lib/links";
 
@@ -33,16 +32,19 @@ interface TelegramCtaProps {
  * дозволяє зшити «клікнув на лендінгу» з «натиснув Start у боті», не заводячи
  * жодного персистентного ідентифікатора – лендінг лишається cookieless.
  *
- * Токен береться через ініціалізатор `useState`, а не рахується на кожен
- * рендер: інакше `href` і подія могли б розійтись, якби React перемалював
- * кнопку між рендером і кліком.
+ * Токен народжується в момент кліку і вписується в `href` перед переходом,
+ * тож посилання і подія не розходяться. До 2026-10-08 він брався в
+ * `useState` під час рендера: пререндер вшивав один токен у статичний HTML
+ * для всіх, хто клікав до виконання JS, а клієнтський рендер давав інший, і
+ * гідрація на цьому розходженні ламалась (аудит сайту 2026-10-08, F1). У
+ * розмітці лишається посилання лише з місцем кнопки; таку форму бот розбирає
+ * через `resolveLandingPlacement`.
  */
 export default function TelegramCta({
   placement,
   label,
   variant = "ink",
 }: TelegramCtaProps) {
-  const [ref] = useState(newLandingRef);
   const palette =
     variant === "inverse"
       ? "bg-background text-foreground-strong hover:bg-card focus-visible:outline-ink-text"
@@ -50,17 +52,21 @@ export default function TelegramCta({
 
   return (
     <a
-      href={telegramStartLink(formatLandingStartPayload(placement, ref))}
+      href={telegramStartLink(placement)}
       target="_blank"
       rel="noreferrer"
-      onClick={() =>
+      onClick={(e) => {
+        const ref = newLandingRef();
+        e.currentTarget.href = telegramStartLink(
+          formatLandingStartPayload(placement, ref),
+        );
         track(ANALYTICS_EVENTS.LANDING_TELEGRAM_CLICKED, {
           source: placement,
           locale: LANDING_LOCALE,
           ref,
           path: window.location.pathname,
-        })
-      }
+        });
+      }}
       className={`inline-flex min-h-12 items-center justify-center px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] transition focus-visible:outline-2 focus-visible:outline-offset-2 ${palette}`}
     >
       {label ?? "Стати в чергу"}

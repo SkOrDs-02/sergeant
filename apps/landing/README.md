@@ -1,6 +1,6 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-10-08 by @claude (аудит сайту: телеметрія, гейт дат, іконки й og, preview як Vercel). **Next review:** 2027-01-08.
 > **Status:** Active
 
 Маркетинговий сайт Sergeant: 31 маршрут із `src/lib/routeMeta.json`, кожен
@@ -142,12 +142,18 @@ same-origin-проксі дешевший, ніж вписувати туди д
 вручну, автоматичного звіту не буде. Деталі —
 [спека](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/90-work/planning/specs/archive/telegram-waitlist.md).
 
+Поруч із подіями SDK шле теплову карту (`$$heatmap`: кліки й рух курсора) і
+`$web_vitals`. Обидва задекларовані в політиці приватності і задані в
+`posthog.init` явно, як і вимкнені surveys, dead clicks і exceptions: без
+явних прапорців збором керував remote config спільного з `apps/web` проєкту
+(аудит сайту 2026-10-08, priv-27).
+
 Свідомі обмеження:
 
 - **Cookieless** (`persistence: "memory"`). Банер згоди не потрібен, але
   крос-сесійна аналітика неможлива — кожне завантаження сторінки це новий
   анонім.
-- **Без autocapture, session-recording і pageview-хуків.**
+- **Без autocapture, session-recording, surveys і pageview-хуків.**
 - SDK вантажиться динамічним імпортом, тому ~220 kB аналітики не стоять на
   критичному шляху першого рендера.
 
@@ -179,6 +185,29 @@ same-origin-проксі дешевший, ніж вписувати туди д
 ```bash
 node apps/landing/scripts/generate-og.mjs
 ```
+
+Іконки (`favicon.ico`, `apple-touch-icon.png`) збираються з
+`public/icon.svg`: `node apps/landing/scripts/generate-icons.mjs`. Обом
+скриптам потрібен Chromium Playwright (у контейнері –
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`).
+
+## Дата «Оновлено»
+
+`lastmod` маршруту в `routeMeta.json` іде в sitemap, у видиму дату і в
+`dateModified` розмітки. Гейт `src/lib/contentFreshness.test.ts` хешує текст
+`<main>` кожної сторінки разом із title і description і падає, якщо текст
+змінився, а `lastmod` ні. Змінив текст – підніми `lastmod`, потім:
+
+```bash
+pnpm --filter @sergeant/landing content:hashes
+```
+
+## Превʼю збірки
+
+`vite preview` поводиться як Vercel (`vercelLikePreview` у `vite.config.ts`):
+`/hroshi` віддає `dist/hroshi/index.html`, невідомий шлях – `404.html` зі
+статусом 404. Без цього preview віддавав HTML головної на будь-який шлях без
+слеша, і Lighthouse та браузерна перевірка міряли не ту сторінку.
 
 Новий контентний маршрут = запис у `routeMeta.json` з `ogImage` + прогін
 генератора в тому ж PR.

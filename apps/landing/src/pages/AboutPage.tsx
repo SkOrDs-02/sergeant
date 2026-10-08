@@ -159,7 +159,7 @@ export default function AboutPage() {
                 </span>
               </span>
               <span className="mt-2 block text-sm leading-relaxed text-ink-muted">
-                Короткі думки й спостереження по ходу. @sergeant.app
+                Короткі думки й спостереження в процесі роботи. @sergeant.app
               </span>
             </a>
             <a

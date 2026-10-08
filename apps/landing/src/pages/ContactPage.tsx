@@ -41,14 +41,22 @@ export default function ContactPage() {
     },
   });
 
+  // Ті самі заголовки і посилання, що на «Твої дані» і «Вихід»: до
+  // 2026-10-08 сторінка мала власні H2 без капсу і сірі посилання без
+  // фокус-рамки (аудит сайту 2026-10-08, V15).
+  const h2 =
+    "mt-12 font-display text-xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-2xl";
+  const link =
+    "font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
   return (
     <SiteLayout mainClassName="mx-auto w-full max-w-3xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
       <h1 className="font-display text-4xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-5xl">
         Звʼязок
       </h1>
       <p className="mt-5 leading-relaxed text-muted">
-        Продукт робить одна людина, тож і відповідає одна людина. Каналів два,
-        обидва публічні, обидва читаються щодня.
+        Продукт робить одна людина, тож і відповідає одна людина. Каналів два:
+        Telegram-бот для питань і Threads для оголошень. Обидва читаю щодня.
       </p>
       <p className="mt-3 text-sm text-subtle">
         Оновлено{" "}
@@ -58,14 +66,12 @@ export default function ContactPage() {
         />
       </p>
 
-      <h2 className="mt-12 font-display text-2xl font-bold text-foreground-strong">
-        Telegram, основний канал
-      </h2>
+      <h2 className={h2}>Telegram, основний канал</h2>
       <p className="mt-4 leading-relaxed text-muted">
         Бот тримає чергу закритої бети й приймає повідомлення. Через нього ж
         ідуть запити на доступ, повідомлення про поламане і питання, яких немає
         у{" "}
-        <a className="underline" href="/pytannya">
+        <a className={link} href="/pytannya">
           відповідях
         </a>
         . Пиши як людині: що робив, що очікував побачити, що побачив насправді.
@@ -79,44 +85,35 @@ export default function ContactPage() {
         <TelegramCta placement="footer" label="Написати в Telegram" />
       </div>
 
-      <h2 className="mt-12 font-display text-2xl font-bold text-foreground-strong">
-        Threads, публічні оголошення
-      </h2>
+      <h2 className={h2}>Threads, публічні оголошення</h2>
       <p className="mt-4 leading-relaxed text-muted">
         Те, що змінилось у продукті, зʼявляється{" "}
-        <a
-          className="underline"
-          href={THREADS_URL}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a className={link} href={THREADS_URL} target="_blank" rel="noreferrer">
           у Threads
         </a>
         . Особисті питання туди краще не писати: там немає приватності, і
         відповідь усе одно переїде в Telegram.
       </p>
 
-      <h2 className="mt-12 font-display text-2xl font-bold text-foreground-strong">
-        Чого тут немає
-      </h2>
+      <h2 className={h2}>Чого тут немає</h2>
       <p className="mt-4 leading-relaxed text-muted">
         Ні пошти підтримки, ні телефону, ні поштової адреси: юридичної особи
         поки немає, а вигадувати реквізити я не буду. Коли зʼявиться ФОП чи ТОВ,
-        реквізити стануть тут і в{" "}
-        <a className="underline" href="/terms">
+        реквізити зʼявляться тут і в{" "}
+        <a className={link} href="/terms">
           умовах
         </a>{" "}
         одночасно.
       </p>
       <p className="mt-4 leading-relaxed text-muted">
-        Що стосується даних: забрати їх можна самостійно, без листування – у
+        Щодо даних: забрати їх можна самостійно, без листування – у
         налаштуваннях застосунку є вивантаження всього акаунта і видалення. Як
         це влаштовано, описано на сторінках{" "}
-        <a className="underline" href="/data">
+        <a className={link} href="/data">
           про дані
         </a>{" "}
         і{" "}
-        <a className="underline" href="/vyhid">
+        <a className={link} href="/vyhid">
           про вихід
         </a>
         .

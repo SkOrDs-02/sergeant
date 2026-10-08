@@ -78,11 +78,10 @@ export default function VyhidPage() {
         <p className={body}>
           Сервер знає лише те, що встигло синхронізуватись під твоїм акаунтом.
           Записи, зроблені до входу або на пристрої без звʼязку, лишаються
-          тільки там. Єдиного експорту, що зводить обидва в один файл, поки
-          немає.
+          тільки там.
         </p>
         <p className={body}>
-          Він у списку «в розробці» на{" "}
+          Один файл на обидві частини стоїть у списку «в розробці» на{" "}
           <a
             href="/stan"
             className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
@@ -131,7 +130,7 @@ export default function VyhidPage() {
         </p>
 
         <h3 className={h3}>Чого тут точно не станеться</h3>
-        <p className={body}>{NO_SALE_CLAIM}: ні зараз, ні при зупинці.</p>
+        <p className={body}>{NO_SALE_CLAIM}: ні зараз, ні після зупинки.</p>
         <p className={body}>
           Одне застереження все ж є, і воно не про продаж. Щоб працював Сержант,
           частина даних їде до сторонніх обробників: текст чату, фото страви й

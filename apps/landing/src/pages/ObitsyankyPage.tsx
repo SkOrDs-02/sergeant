@@ -2,6 +2,7 @@ import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import TelegramCta from "../components/TelegramCta";
 import { PREMIUM_CLAIM } from "../content/premiumClaim";
+import { FREE_LIMITS_CLAIM } from "../content/freeLimitsClaim";
 
 /**
  * Пʼять обіцянок продукту. Пункт 04 навмисно несе межу: єдиного експорту,
@@ -44,7 +45,7 @@ const RULES = [
     n: "05",
     title: "Ядро безкоштовне назавжди",
     text: "Чотири модулі, ручний трекінг і підключення банку платними не стануть.",
-    extra: `${PREMIUM_CLAIM}. Безкоштовний план має тижневий ліміт дій Сержанта, а банк, синхронізація між пристроями і ручний трекінг лишаються безкоштовними.`,
+    extra: `${PREMIUM_CLAIM}. ${FREE_LIMITS_CLAIM}, а банк, синхронізація між пристроями і ручний трекінг лишаються безкоштовними.`,
     link: null,
   },
 ];
