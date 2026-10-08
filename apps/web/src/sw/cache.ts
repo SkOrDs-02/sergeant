@@ -21,70 +21,26 @@ import { CacheFirst, NetworkFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { CACHE_NAMES } from "./version";
-import { shouldCacheExerciseImage, shouldUseRuntimeCache } from "./cachePolicy";
+import {
+  canUseCachePartition,
+  selectCachesToClear,
+  shouldCacheExerciseImage,
+  shouldUseRuntimeCache,
+  type ClearCachesScope,
+} from "./cachePolicy";
+import {
+  getActiveUserKey,
+  primeActiveUserKey,
+  resetActiveUserKeyInMemory,
+} from "./activeUserKey";
 import { isNavigationRequest, resolveOfflineShell } from "./offlineFallback";
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
 };
 
-/**
- * Audit 03 / Decision #2 (C) + `2026-05-13-consolidated-page-audit.md` C2:
- * module-scope active-user cache partition.
- *
- * Holds a **hashed** identifier derived from the opaque Better Auth user id
- * posted from the main thread via `SW_SET_USER`. The `cacheKeyWillBeUsed`
- * plugin below appends it to the Request URL (`__u=<hash>`) so user A's cache
- * entries never resolve user B's reads. Resets to `"anon"` on SW restart —
- * main thread re-posts on next mount, and `signOut → CLEAR_SW_CACHES` already
- * wipes the caches as the security boundary.
- *
- * Why hashed and not the raw id: the partition value is written into cache-key
- * URLs (and surfaces in any cache-inspection / debug snapshot). Hashing keeps
- * the raw account identifier out of those keys — a stable, collision-resistant
- * SHA-256 prefix is enough to isolate users without leaking the id itself.
- *
- * Why a query param and not a per-user cacheName: cache.delete() under
- * `clearAppCaches` already walks every cache name; an unbounded set of
- * per-user cache names would leak across logged-out users and require
- * extra cleanup logic. A varied cache *key* keeps the cache count fixed.
- */
-let activeUserKey = "anon";
-
-const PARTITION_HASH_LEN = 32; // 128 bits of SHA-256 hex — collision-safe here
-
-/**
- * SHA-256 → truncated lowercase hex. Uses Web Crypto, available in the SW
- * global scope. Falls back to `"anon"` if hashing throws (no crypto / bad
- * input) so a failure degrades to the shared-anon partition rather than
- * leaking the raw id.
- */
-async function hashUserKey(raw: string): Promise<string> {
-  try {
-    const bytes = new TextEncoder().encode(raw);
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    const hex = Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    return hex.slice(0, PARTITION_HASH_LEN);
-  } catch {
-    return "anon";
-  }
-}
-
-/**
- * Store the hashed partition for the active user. Async because hashing goes
- * through Web Crypto; the message handler wraps the returned promise in
- * `event.waitUntil` so the SW stays alive until the key is updated. Anonymous
- * / empty input resets to the shared `"anon"` partition synchronously.
- */
-export async function setActiveUserKey(key: string | null): Promise<void> {
-  if (!key || key.length === 0) {
-    activeUserKey = "anon";
-    return;
-  }
-  activeUserKey = await hashUserKey(key);
-}
+// `messages.ts` імпортує звідси; сама логіка ключа живе без workbox-імпортів.
+export { setActiveUserKey } from "./activeUserKey";
 
 const PARTITION_PARAM = "__u";
 
@@ -93,6 +49,10 @@ const PARTITION_PARAM = "__u";
  * synthetic query param so the cache key varies per user without changing
  * the actual network Request that flies on miss. Drop-in: idempotent if
  * called twice on the same Request.
+ *
+ * Ключ партиції (хеш користувача, див. `./activeUserKey`) переживає
+ * перезапуск SW і ліниво відновлюється, тож плагін чекає на нього, а не читає
+ * змінну, що після idle-kill була б `anon` (priv-08).
  */
 const userPartitionPlugin = {
   cacheKeyWillBeUsed: async ({
@@ -102,6 +62,7 @@ const userPartitionPlugin = {
     mode: string;
   }): Promise<Request> => {
     try {
+      const activeUserKey = await getActiveUserKey();
       const url = new URL(request.url);
       if (url.searchParams.get(PARTITION_PARAM) === activeUserKey) {
         return request;
@@ -118,12 +79,48 @@ const userPartitionPlugin = {
 };
 
 /**
+ * priv-08: поки партиція користувача невідома (`anon`), runtime-кеш `/api/*`
+ * не читаємо й не пишемо. Автентифіковані відповіді під спільним `__u=anon`
+ * потрапляли б до наступного користувача (рішення — `canUseCachePartition`).
+ * Стоїть ПЕРЕД `userPartitionPlugin`-ом у списку плагінів лише для
+ * читабельності: ці хуки з `cacheKeyWillBeUsed` не перетинаються.
+ */
+const apiPartitionGuardPlugin = {
+  cacheWillUpdate: async ({
+    request,
+    response,
+  }: {
+    request: Request;
+    response: Response;
+  }): Promise<Response | null> => {
+    const key = await getActiveUserKey();
+    return canUseCachePartition(new URL(request.url).pathname, key)
+      ? response
+      : null;
+  },
+  cachedResponseWillBeUsed: async ({
+    request,
+    cachedResponse,
+  }: {
+    request: Request;
+    cachedResponse?: Response;
+  }): Promise<Response | null | undefined> => {
+    const key = await getActiveUserKey();
+    return canUseCachePartition(new URL(request.url).pathname, key)
+      ? cachedResponse
+      : null;
+  },
+};
+
+/**
  * Реєструє precache і runtime route-и. Викликається
  * один раз при старті SW. Розбиття на функцію (а не side-effect на
  * import) дає змогу легше mock-ати у тестах і робить порядок
  * ініціалізації явним.
  */
 export function setupCacheRoutes(): void {
+  // Прогріваємо відновлення партиції з `sw-meta` на холодному старті воркера.
+  primeActiveUserKey();
   cleanupOutdatedCaches();
   precacheAndRoute(self.__WB_MANIFEST);
 
@@ -160,6 +157,7 @@ export function setupCacheRoutes(): void {
       networkTimeoutSeconds: 5,
       plugins: [
         new CacheableResponsePlugin({ statuses: [200] }),
+        apiPartitionGuardPlugin,
         new ExpirationPlugin({
           maxEntries: 60,
           // Keep it short: the API is largely user-specific and can change
@@ -231,23 +229,25 @@ export async function listStaleCaches(): Promise<string[]> {
 }
 
 /**
- * Викидає все, що SW колись закешував (precache, navigation, API,
- * Google Fonts). Використовується ручним «Очистити кеш» з UI.
+ * Видаляє кеші SW за скоупом (вибір — `selectCachesToClear` у `./cachePolicy`)
+ * і скидає активну партицію користувача.
+ *
+ * - `"user"` (за замовчуванням; вихід, втрата сесії) — `navigations-v*`,
+ *   `api-cache-v*`, `sw-meta`. Precache і ілюстрації вправ лишаються: даних
+ *   користувача в них немає, а Workbox сам їх не відновить (rel-12).
+ * - `"all"` — ручне «Скинути кеш PWA»: ще й precache, шрифти, ілюстрації.
+ *   Після цього викликач зобовʼязаний зняти реєстрацію SW.
  */
-export async function clearAppCaches(): Promise<{
+export async function clearAppCaches(
+  scope: ClearCachesScope = "user",
+): Promise<{
   ok: true;
   deleted: string[];
 }> {
   const names = await caches.keys();
-  const toDelete = names.filter(
-    (n) =>
-      n === "google-fonts-css" ||
-      n === "google-fonts-woff" ||
-      n.startsWith("navigations-v") ||
-      n.startsWith("api-cache-v") ||
-      n.startsWith("exercise-images-v") ||
-      n.startsWith("workbox-precache"),
-  );
+  const toDelete = selectCachesToClear(names, scope);
+  // Спершу скидаємо ключ у памʼяті: поки йде видалення, нічий кеш не активний.
+  resetActiveUserKeyInMemory();
   await Promise.allSettled(toDelete.map((n) => caches.delete(n)));
   return { ok: true, deleted: toDelete };
 }

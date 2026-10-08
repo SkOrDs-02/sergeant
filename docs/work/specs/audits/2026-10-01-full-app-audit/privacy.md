@@ -399,7 +399,7 @@ node <scratch>/agents/client-static-web-storage-session/share2.mjs <newX> wss-sh
 
 ### `priv-06` [medium] Гейт згоди на дані про здоров'я пропускає алергії, дієту, тренування й цілі з вагою: вони йдуть у LLM і в RAG без healthDataConsent
 
-- **Стан:** виправлено в гілці claude/fix-priv-06-09-ai-health-consent
+- **Стан:** виправлено в #1368 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-шар (chat, ai-memory)
 - **Де:** apps/server/src/modules/chat/healthGate.ts:53-54, 139-146; apps/server/src/modules/ai-memory/healthRows.ts:28-30; apps/server/src/modules/ai-memory/profileMirror.ts:356; apps/web/src/core/lib/hubChatContext/sections.ts:283-297; apps/web/src/core/legal/privacyDocument.ts:57-59
 - **Першопричина:** Health-фільтри розпізнають лише категорію «Здоров'я»: регекси PROFILE_HEALTH_LINE/ENTRY, classifyToolUse('remember') і isHealthMemoryRow перевіряють тільки category === 'health'. Категорії allergy, diet, training і цілі з вагою вважаються нечутливими. Спільного переліку health-категорій для клієнта і сервера немає.
@@ -493,7 +493,7 @@ node --import tsx <scratch>/agents/verify-server-static-privacy-logging/v2/hooks
 
 ### `priv-08` [medium] Service Worker кешує приватні відповіді /api/v1/* з no-store, а партиція користувача скидається в спільне anon: у сесії B SW може віддати /me користувача A
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-08-rel-12-sw-cache (лишилось рішення власника: повага до no-store і чи лишати /me та /ai-memory у runtime-кеші; партиція, anon-guard, v1-префікси та SW_SET_USER на controllerchange зроблені)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: service worker
 - **Де:** apps/web/src/sw/cache.ts:22, 52-118, 151-175; apps/web/src/sw/messages.ts:97-107; apps/web/src/sw/cachePolicy.ts; apps/web/src/core/app/swControl.ts:97-99, 146-160; apps/web/src/core/auth/AuthContext.tsx:382-402, 728-733
 - **Першопричина:** activeUserKey живе в пам'яті SW і після idle-kill (близько 30 с) повертається в anon. SW_SET_USER надсилається лише при зміні user.id за життя сторінки. Тому boot-запити всіх користувачів пишуться в спільну партицію, а /me нового користувача може лягти під ключ попереднього. CacheableResponsePlugin кешує будь-яку 200, ігноруючи Cache-Control: no-store, а identity-wipe не викликає swClearCaches.
@@ -577,7 +577,7 @@ NetworkFirst-кешування автентифікованих GET /api/* (30 
 
 ### `priv-09` [medium] Серверні події PostHog $ai_generation/$ai_span шлються з distinctId = userId без перевірки згоди на аналітику
 
-- **Стан:** виправлено в гілці claude/fix-priv-06-09-ai-health-consent
+- **Стан:** виправлено в #1368 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI observability (PostHog)
 - **Де:** apps/server/src/lib/posthogAi.ts:228-270; apps/server/src/lib/anthropic.ts:209, 395; apps/server/src/lib/llm/provider.ts:383; apps/server/src/modules/chat/chat.ts:578; apps/server/src/modules/me/dataRights.ts:55
 - **Першопричина:** captureAiGeneration і captureAiSpan не читають user_preferences.analytics (дефолт false), а posthog-node за замовчуванням створює person profile. Спека 0025 виходить з хибного припущення, що цей userId і так пов'язаний з продуктовими подіями. Для тих, хто відмовився від аналітики, клієнт identify не робить.
@@ -859,7 +859,7 @@ Script v3-export.mjs, output in v3-out.txt, run as idorA, who owns receipts 23 (
 
 ### `priv-13` [medium] Черга GDPR-очищення безстроково зберігає email видалених користувачів: рядок stripe без customer_id ніколи не завершується
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-13-gdpr-queue-email (рядок stripe без customer_id тепер завершується з email = NULL; лишилось рішення власника за ADR-0016 п.5: стеля waitingOnConfig і редагування email в exhausted-рядках; sentry/resend без токенів досі чекають конфіг)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: GDPR cleanup worker
 - **Де:** apps/server/src/modules/gdpr/externalDelete.ts:113-120; apps/server/src/modules/gdpr/cleanupWorker.ts:178-181, 220-231, 279-318; apps/server/src/modules/gdpr/cleanupQueue.ts
 - **Першопричина:** deleteStripeCustomer повертає 'skipped' в обох випадках: коли немає ключа і коли немає stripe_customer_id. cleanupWorker трактує 'skipped' для всіх сервісів, крім posthog, як «чекаємо конфіг» і переносить рядок на годину вперед. Email обнуляється лише при завершенні, тож для більшості користувачів (без Stripe) рядок з email живе вічно. Exhausted-рядки email теж зберігають.
@@ -951,7 +951,7 @@ s21-lock-session.out: 'attempt 1..9: locked=true err=Неправильний PI
 
 ### `priv-15` [medium] Під час активного блокування Ctrl+K відкриває глобальний пошук поверх екрана PIN з приватними даними; Ctrl+/ і g-хорди теж працюють
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-13-priv-15-lock-shortcuts (гарячі клавіші, зокрема Ctrl+K, Ctrl+/ і g-хорди, вимкнені, поки замок не idle, AppLock на z-300 вище за пошук; лишилось: не монтувати пошук і чат під замком, разом із sec-13)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку / hub shell
 - **Та сама першопричина, що й** [`sec-13`](./security.md#sec-13): useHubKeyboardShortcuts не перевіряє стан замка, тому Ctrl+K відкриває пошук поверх PIN-екрана. Швидкий гейт гарячих клавіш і повний фікс (не рендерити дерево під замком) зручно робити одним PR.
 - **Де:** apps/web/src/core/app/RootLayout.tsx:439-447; apps/web/src/core/hub/search/HubSearch.tsx:63-66

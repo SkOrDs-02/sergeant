@@ -22,6 +22,7 @@ import {
 } from "./authClient";
 import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
 import { swClearCaches, swSetActiveUser } from "../app/swControl";
+import { useSwControllerResync } from "./useSwControllerResync";
 import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -35,6 +36,9 @@ import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout
 import { teardownLocalStateAfterSessionLoss } from "./sessionLossTeardown";
 import { SIGN_IN_PATH } from "../app/appPaths";
 import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
+import * as pendingSignOut from "./pendingSignOut";
+import { usePendingSignOutRetry } from "./usePendingSignOutRetry";
+import { useResetSyncSessionOnSignIn } from "./useResetSyncSessionOnSignIn";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
 // тягне з собою десять модульних файлів плюс en-копію: до цієї правки
 // саме ВІН лишався останнім eager-ребром до `uk.ts`, уже після того, як
@@ -488,7 +492,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // відскакував назад на хаб, бо `renderStandaloneRoute` бачив непорожній
   // `user` (browser QA 2026-08-05, F-008). Прапорець робить перехід у
   // signed-out незалежним від внутрішньої механіки React Query.
-  const [signedOut, setSignedOut] = useState(false);
+  //
+  // `sec-07`: стартує `true`, якщо минулий вихід не дійшов до сервера (маркер
+  // у `pendingSignOut.ts`). Тоді серверна сесія ще жива, `/api/v1/me` віддасть
+  // 200 (можливо зі SW-кешу), але цей пристрій уже «вийшов»: доки повтор
+  // sign-out не вдався, status = unauthenticated незалежно від відповіді `me`.
+  // Знімає прапор лише вхід (`login`/`register` → `setSignedOut(false)`).
+  const [signedOut, setSignedOut] = useState(pendingSignOut.hasPendingSignOut);
+  usePendingSignOutRetry();
 
   // Під `signedOut` помилку `me` не запамʼятовуємо, а запамʼятовану скидаємо:
   // вона належить попередній сесії, і наступний вхід (іншим акаунтом) не має
@@ -555,6 +566,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       : pendingDeletion
         ? "pending_deletion"
         : "unauthenticated";
+  // `sec-18`: «сесії немає» з анонімного періоду не має пережити вхід.
+  useResetSyncSessionOnSignIn(status);
 
   // F12 privacy: історія HubChat лежить у плоских LS-ключах — при зміні
   // identity на цьому пристрої (logout, інший акаунт, протухла сесія)
@@ -637,6 +650,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           );
           return false;
         }
+        pendingSignOut.clearPendingSignOut();
         setSignedOut(false);
         await invalidateMe();
         return true;
@@ -674,6 +688,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
         return false;
       }
+      // `sec-07`: редирект на провайдера вже пішов, нова сесія замінить
+      // стару куку; маркер лишити означало б розлогінити її повтором.
+      pendingSignOut.clearPendingSignOut();
       return true;
     } catch (err) {
       setAuthError(
@@ -707,6 +724,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
         return false;
       }
+      pendingSignOut.clearPendingSignOut();
       return true;
     } catch (err) {
       setAuthError(
@@ -739,6 +757,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // помилки і ніколи не кидає. Викликаємо до `invalidateMe`, щоб
         // ивент полетів навіть якщо рефетч `me` зависне.
         trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { method: "email" });
+        pendingSignOut.clearPendingSignOut();
         setSignedOut(false);
         await invalidateMe();
         return true;
@@ -814,18 +833,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // нижче — teardown, який не має права гейтити цей перехід (і історично
       // саме тому клали `clear()` першим — див. коментар нижче).
       setSignedOut(true);
+      // `sec-07`: маркер ДО запиту — обрив/закриття вкладки посеред `signOut()`
+      // теж лишає його. Знімається лише після підтвердження сервера нижче.
+      pendingSignOut.markPendingSignOut();
       // `priv-04`: зняти web-push підписку ДО `signOut()` — серверний
       // `unregister` потребує живої сесії. Best-effort під таймаутом, не
       // кидає; інакше банківські пуші A далі приходили б наступній людині
       // на цьому пристрої.
       await releasePushSubscriptionOnLogout();
-      try {
-        await signOut();
-      } catch {
-        // Ігноруємо: навіть якщо Better Auth endpoint повернув помилку,
-        // далі все одно викидаємо локальний me-кеш — UI має показати
-        // sign-in surface, а не застрягти в «напів-залогіненому» стані.
-      }
+      // `sec-07`: повертає маркер у силі, якщо сервер вихід не підтвердив
+      // (мережа, 5xx, виняток); teardown нижче йде в будь-якому разі: UI має
+      // показати sign-in surface, а не застрягти в «напів-залогіненому»
+      // стані. Сервер добʼє повтор на старті (`usePendingSignOutRetry`).
+      await pendingSignOut.settleSignOut(signOut);
       // Drop the whole in-memory query cache FIRST, before any of the
       // best-effort teardown below. Two reasons:
       //
@@ -851,15 +871,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // shared devices. Fire-and-forget — ignore SW failures since the
       // partition plugin (`cacheKeyWillBeUsed`) is the in-flight defense.
       try {
-        await swClearCaches();
+        // rel-12: лише кеші з даними користувача; precache лишається.
+        await swClearCaches("user");
       } catch (err) {
         logger.warn("[auth.logout] swClearCaches failed", err);
       }
-      try {
-        await swSetActiveUser(null);
-      } catch (err) {
-        logger.warn("[auth.logout] swSetActiveUser(null) failed", err);
-      }
+      await swSetActiveUser(null).catch((err) =>
+        logger.warn("[auth.logout] swSetActiveUser(null) failed", err),
+      );
       // Audit 10 / F17: delete the just-signed-out user's local SQLite DB so
       // user B never reads user A's rows on a shared device, then reset the
       // partition to `anon` for any post-logout anonymous usage. Dynamic import
@@ -962,8 +981,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       identifyPostHogUser(currentId, buildIdentifyTraits(sessionUser));
       lastIdentifiedUserIdRef.current = currentId;
       // Audit 03 / Decision #2 (C): partition SW cache keys per user.
-      // Fire-and-forget; SW restart will fall back to `__u=anon` until
-      // next mount re-posts.
+      // Fire-and-forget; SW зберігає ключ у `sw-meta`, а при `anon` кеш /api
+      // вимкнений (priv-08); повтор на `controllerchange` — окремий ефект нижче.
       void swSetActiveUser(currentId).catch((err) =>
         logger.warn("[auth.identify] swSetActiveUser failed", err),
       );
@@ -982,6 +1001,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // спричинив би зайві identify-виклики при тому самому id.
     // `userRef` дає свіжі traits лише на переході id.
   }, [user?.id]);
+
+  // priv-08: повтор SW_SET_USER на `controllerchange` (див. хук).
+  useSwControllerResync(userRef);
 
   // Request a password reset email via Better Auth. Returns `true` when
   // the request was accepted (the server still answers OK even if the

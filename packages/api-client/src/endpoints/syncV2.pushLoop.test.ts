@@ -7,6 +7,7 @@ import type { SyncV2OpKind, SyncV2PushOp, SyncV2PushResponse } from "./syncV2";
 import {
   describePushError,
   isTerminalPushFailure,
+  isThrottledPushFailure,
   mapDrainedRowToSyncV2PushOp,
   runSyncEnginePushOnce,
   type DrainSyncOpOutboxFn,
@@ -486,6 +487,148 @@ describe("runSyncEnginePushOnce — transport failure (whole batch retry)", () =
     await runSyncEnginePushOnce(deps, { limit: 100 });
 
     expect(planRetry).toHaveBeenCalledWith(0, NOW, "unknown");
+  });
+});
+
+describe("runSyncEnginePushOnce — 429 / 503 не палять спроби (rel-08)", () => {
+  function httpError(status: number, retryAfterMs?: number): ApiError {
+    return new ApiError({
+      kind: "http",
+      status,
+      message: `HTTP ${status}`,
+      url: "https://api.example.com/api/v2/sync/push",
+      retryAfterMs,
+    });
+  }
+
+  it("429 з Retry-After: attempts не зростає, next_retry_at >= now + Retry-After", async () => {
+    const { deps, drain, push, markRetry, markRejected, planRetry } =
+      makeDeps();
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A, attempts: 4 }),
+      makeRow({ id: 2, idempotencyKey: IDEM_B, attempts: 9 }),
+    ]);
+    push.mockRejectedValueOnce(httpError(429, 30_000));
+
+    const result = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(result).toEqual({
+      drained: 2,
+      pushed: 0,
+      retried: 2,
+      rejected: 0,
+    });
+    expect(markRejected).not.toHaveBeenCalled();
+    expect(planRetry).not.toHaveBeenCalled();
+    expect(markRetry).toHaveBeenCalledTimes(2);
+    const expectedAt = new Date(NOW.getTime() + 30_000).toISOString();
+    expect(markRetry).toHaveBeenNthCalledWith(1, 1, {
+      attempts: 4,
+      status: "pending",
+      nextRetryAt: expectedAt,
+      lastError: "http_429",
+    });
+    // Рядок на межі dead_letter (9 з 10) тротлінг у dead_letter не штовхає.
+    expect(markRetry).toHaveBeenNthCalledWith(2, 2, {
+      attempts: 9,
+      status: "pending",
+      nextRetryAt: expectedAt,
+      lastError: "http_429",
+    });
+  });
+
+  it("503 без Retry-After: звичайний backoff, але attempts незмінний", async () => {
+    const { deps, drain, push, markRetry, planRetry } = makeDeps();
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A, attempts: 3 }),
+    ]);
+    push.mockRejectedValueOnce(httpError(503));
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(planRetry).toHaveBeenCalledWith(3, NOW, "http_503");
+    // planRetry-стаб збільшує attempts до 4 — throttled-план мусить його скинути.
+    expect(markRetry).toHaveBeenCalledWith(1, {
+      attempts: 3,
+      status: "pending",
+      nextRetryAt: "2026-05-05T12:01:00.000Z",
+      lastError: "http_503",
+    });
+  });
+
+  it("503 без Retry-After на межі dead_letter: рядок лишається pending з backoff", async () => {
+    const deadLetterPlan: SyncOpRetryPlanShape = {
+      attempts: 10,
+      status: "dead_letter",
+      nextRetryAt: null,
+      lastError: "http_503",
+    };
+    const planRetry = vi.fn((previousAttempts: number) =>
+      previousAttempts >= 9
+        ? deadLetterPlan
+        : {
+            attempts: previousAttempts + 1,
+            status: "pending" as const,
+            nextRetryAt: "2026-05-05T12:00:01.000Z",
+            lastError: "http_503",
+          },
+    );
+    const { deps, drain, push, markRetry } = makeDeps({
+      planRetry: planRetry as unknown as PlanRetryFn,
+    });
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A, attempts: 9 }),
+    ]);
+    push.mockRejectedValueOnce(httpError(503));
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(markRetry).toHaveBeenCalledWith(1, {
+      attempts: 9,
+      status: "pending",
+      nextRetryAt: "2026-05-05T12:00:01.000Z",
+      lastError: "http_503",
+    });
+  });
+
+  it("Retry-After обмежений стелею 5 хв і отримує джитер", async () => {
+    const { deps, drain, push, markRetry } = makeDeps({ jitterMs: () => 100 });
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+    push.mockRejectedValueOnce(httpError(429, 24 * 60 * 60 * 1_000));
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(markRetry).toHaveBeenCalledWith(1, {
+      attempts: 0,
+      status: "pending",
+      nextRetryAt: new Date(NOW.getTime() + 300_000 + 100).toISOString(),
+      lastError: "http_429",
+    });
+  });
+
+  it("інші 5xx і мережеві збої далі інкрементують attempts через planRetry", async () => {
+    const { deps, drain, push, markRetry } = makeDeps();
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A, attempts: 2 }),
+    ]);
+    push.mockRejectedValueOnce(httpError(500));
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(markRetry).toHaveBeenCalledWith(1, {
+      attempts: 3,
+      status: "pending",
+      nextRetryAt: "2026-05-05T12:01:00.000Z",
+      lastError: "http_500",
+    });
+  });
+
+  it("isThrottledPushFailure: лише ApiError http 429 / 503", () => {
+    expect(isThrottledPushFailure(httpError(429))).toBe(true);
+    expect(isThrottledPushFailure(httpError(503))).toBe(true);
+    expect(isThrottledPushFailure(httpError(500))).toBe(false);
+    expect(isThrottledPushFailure(httpError(401))).toBe(false);
+    expect(isThrottledPushFailure(new TypeError("boom"))).toBe(false);
   });
 });
 

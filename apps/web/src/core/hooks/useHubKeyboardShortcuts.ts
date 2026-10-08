@@ -38,6 +38,15 @@ interface HubKeyboardShortcutsOptions {
    * далі як звичайний undo браузера. `Cmd+Shift+Z` (redo) сюди не йде.
    */
   onUndo?: () => boolean;
+  /**
+   * `true` — усі гарячі клавіші вимкнені (жодного `preventDefault`, жодного
+   * колбека, `G`-акорд скинуто). `RootLayout` ставить його, поки App Lock не
+   * в `idle`: дерево застосунку під замком змонтоване, і без цього гейта
+   * Ctrl+K / `?` / Ctrl+/ / `N` відкривали пошук чи діалоги з даними поверх
+   * екрана PIN, щойно фокус залишав приховане поле (аудит 2026-10-01,
+   * sec-13 / priv-15).
+   */
+  disabled?: boolean;
 }
 
 /** Map the second key of a G-chord to a navigation target. */
@@ -84,6 +93,7 @@ export function useHubKeyboardShortcuts({
   onNavigate,
   onCreate,
   onUndo,
+  disabled = false,
 }: HubKeyboardShortcutsOptions) {
   // Track whether we are in the G-chord first-key window.
   const gPendingRef = useRef(false);
@@ -99,6 +109,14 @@ export function useHubKeyboardShortcuts({
     };
 
     const handler = (event: KeyboardEvent) => {
+      // ── Замок застосунку (або його перевірка/налаштування): нічого не
+      //    робимо й не гасимо подію. Скидаємо `G`-акорд, щоб перший `g`,
+      //    натиснутий до блокування, не добіг до `onNavigate` під замком.
+      if (disabled) {
+        clearGPending();
+        return;
+      }
+
       // ── G-chord second-key resolution (runs before editable-target guard
       //    so chord stays responsive when focus happens to be in a non-editable
       //    descendant that triggered the G press). Guard still applies for the
@@ -207,5 +225,6 @@ export function useHubKeyboardShortcuts({
     onNavigate,
     onCreate,
     onUndo,
+    disabled,
   ]);
 }

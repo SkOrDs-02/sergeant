@@ -497,27 +497,46 @@ export function useWorkoutsOrchestrator(
       if (activity) {
         // Короткий запис нікуди не веде: сесія одразу завершена, слот
         // «одне активне» не займає, тож і діалог конфлікту тут зайвий.
-        const workout = createWorkoutWithTimes({ startedAt, endedAt });
-        addItem(workout.id, {
-          exerciseId: `activity:${activity.activityId}`,
-          nameUk: activity.nameUk,
-          primaryGroup: "full_body",
-          musclesPrimary: ACTIVITY_MUSCLE_ZONE_MUSCLES[activity.zone],
-          musclesSecondary: [],
-          type: "time",
-          // Інтенсивність множить саме тривалість, що йде у
-          // `loadPointsForItem`: «важко 45 хв» важить як 56. Формулу
-          // навантаження таким чином чіпати не довелось (D4 спеки).
-          durationSec: Math.round(
-            activity.durationSec *
-              ACTIVITY_INTENSITY_MULTIPLIERS[activity.intensity],
-          ),
-          met: activity.met,
-          intensity: activity.intensity,
-        });
-        if (activity.kcalBurned != null) {
-          updateWorkout(workout.id, { kcalBurned: activity.kcalBurned });
-        }
+        // Одним `restoreWorkout`, як `useQuickLog`: create + addItem +
+        // updateWorkout(kcal) були трьома dual-write-циклами в одному тіку,
+        // і якщо третій діставав той самий `clientTs`, що й перший, upsert
+        // з `kcalBurned` відкидав LWW-гард, тож «Приблизно N ккал» інколи
+        // не зберігалось (аудит 2026-10-01, data-36).
+        const workoutId = `w_${crypto.randomUUID()}`;
+        const workout: Workout = {
+          id: workoutId,
+          // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
+          startedAt: startedAt || new Date().toISOString(),
+          endedAt,
+          items: [
+            {
+              id: `i_${crypto.randomUUID()}`,
+              exerciseId: `activity:${activity.activityId}`,
+              nameUk: activity.nameUk,
+              primaryGroup: "full_body",
+              musclesPrimary: ACTIVITY_MUSCLE_ZONE_MUSCLES[activity.zone],
+              musclesSecondary: [],
+              type: "time",
+              // Інтенсивність множить саме тривалість, що йде у
+              // `loadPointsForItem`: «важко 45 хв» важить як 56. Формулу
+              // навантаження таким чином чіпати не довелось (D4 спеки).
+              durationSec: Math.round(
+                activity.durationSec *
+                  ACTIVITY_INTENSITY_MULTIPLIERS[activity.intensity],
+              ),
+              met: activity.met,
+              intensity: activity.intensity,
+            },
+          ],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+          ...(activity.kcalBurned != null
+            ? { kcalBurned: activity.kcalBurned }
+            : {}),
+        };
+        restoreWorkout(workout);
         trackFizrukWorkoutStarted(workout.id, "past");
         return;
       }
@@ -532,11 +551,10 @@ export function useWorkoutsOrchestrator(
       });
     },
     [
-      addItem,
       createWorkoutWithTimes,
       onWorkoutStarted,
       requestWorkoutStart,
-      updateWorkout,
+      restoreWorkout,
     ],
   );
 

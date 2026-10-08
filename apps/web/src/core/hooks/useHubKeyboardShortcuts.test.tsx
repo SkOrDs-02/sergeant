@@ -467,4 +467,88 @@ describe("useHubKeyboardShortcuts", () => {
     fireEvent.keyDown(window, { key: "z", metaKey: true, shiftKey: true });
     expect(onUndo).not.toHaveBeenCalled();
   });
+
+  // ── sec-13 / priv-15: під замком застосунку клавіші не працюють ───────────
+
+  describe("disabled (App Lock)", () => {
+    const setup = (disabled: boolean) => {
+      const handlers = {
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onOpenAssistant: vi.fn(),
+        onNavigate: vi.fn(),
+        onCreate: vi.fn(),
+        onUndo: vi.fn<() => boolean>().mockReturnValue(true),
+      };
+      renderHook(() => useHubKeyboardShortcuts({ ...handlers, disabled }));
+      return handlers;
+    };
+
+    const press = (init: KeyboardEventInit) => {
+      const event = new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      });
+      window.dispatchEvent(event);
+      return event;
+    };
+
+    it("Ctrl+K, ?, Ctrl+/, N, Cmd+Z and G-chords call nothing and are not prevented", () => {
+      const h = setup(true);
+      // Фокус на кнопці (не поле вводу) — саме так обходили замок.
+      const button = document.createElement("button");
+      document.body.append(button);
+      button.focus();
+
+      const events = [
+        press({ key: "k", ctrlKey: true }),
+        press({ key: "?", shiftKey: true }),
+        press({ key: "/", ctrlKey: true }),
+        press({ key: "n" }),
+        press({ key: "z", metaKey: true }),
+        press({ key: "g" }),
+        press({ key: "f" }),
+      ];
+
+      expect(h.onOpenSearch).not.toHaveBeenCalled();
+      expect(h.onOpenShortcuts).not.toHaveBeenCalled();
+      expect(h.onOpenAssistant).not.toHaveBeenCalled();
+      expect(h.onNavigate).not.toHaveBeenCalled();
+      expect(h.onCreate).not.toHaveBeenCalled();
+      expect(h.onUndo).not.toHaveBeenCalled();
+      for (const e of events) expect(e.defaultPrevented).toBe(false);
+    });
+
+    it("the same keys work once disabled is false (control)", () => {
+      const h = setup(false);
+      press({ key: "k", ctrlKey: true });
+      press({ key: "?", shiftKey: true });
+      press({ key: "/", ctrlKey: true });
+      press({ key: "g" });
+      press({ key: "f" });
+      expect(h.onOpenSearch).toHaveBeenCalledTimes(1);
+      expect(h.onOpenShortcuts).toHaveBeenCalledTimes(1);
+      expect(h.onOpenAssistant).toHaveBeenCalledTimes(1);
+      expect(h.onNavigate).toHaveBeenCalledWith("finyk");
+    });
+
+    it("a G pressed before the lock does not complete its chord after locking", () => {
+      const handlers = {
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onNavigate: vi.fn(),
+      };
+      const { rerender } = renderHook(
+        ({ disabled }) => useHubKeyboardShortcuts({ ...handlers, disabled }),
+        { initialProps: { disabled: false } },
+      );
+      press({ key: "g" });
+      rerender({ disabled: true });
+      press({ key: "f" });
+      rerender({ disabled: false });
+      press({ key: "f" });
+      expect(handlers.onNavigate).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -242,6 +242,42 @@ describe("processGdprCleanupQueueBatch — stripe/sentry/resend (unwired vendors
     expect(rescheduleCall.params).toEqual([4, "1"]);
   });
 
+  it.each([
+    ["STRIPE_SECRET_KEY is set", "sk_test_123"],
+    ["STRIPE_SECRET_KEY is unset", undefined],
+  ])(
+    "completes a stripe row with no stripe_customer_id and redacts email when %s (priv-13)",
+    async (_label, key) => {
+      if (key) process.env["STRIPE_SECRET_KEY"] = key;
+      const fetchImpl = vi.fn();
+      const pool = makePoolMock([
+        {
+          id: 40,
+          user_id: "u3",
+          email: "u3@example.com",
+          stripe_customer_id: null,
+          service: "stripe",
+          attempts: 0,
+        },
+      ]);
+
+      const result = await processGdprCleanupQueueBatch(pool as never, {
+        fetchImpl: fetchImpl as never,
+      });
+
+      // Nothing to delete at Stripe: no HTTP call, row completes, not parked.
+      expect(fetchImpl).not.toHaveBeenCalled();
+      expect(result.completed).toBe(1);
+      expect(result.waitingOnConfig).toBe(0);
+      const updateCall = pool.calls()[1]!;
+      expect(updateCall.sql).toMatch(/completed_at = NOW\(\)/);
+      expect(updateCall.sql).toMatch(/email = NULL/);
+      expect(updateCall.sql).toMatch(/stripe_customer_id = NULL/);
+      expect(updateCall.sql).not.toMatch(/next_attempt_at/);
+      expect(updateCall.params).toEqual([40]);
+    },
+  );
+
   it("reschedules a sentry row +1h when SENTRY_AUTH_TOKEN/org/project are unset", async () => {
     const pool = makePoolMock([
       {
