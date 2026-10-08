@@ -6,6 +6,24 @@ import { test, expect, type Page } from "@playwright/test";
 test.use({ storageState: { cookies: [], origins: [] } });
 
 /**
+ * Скільки чекати, поки застосунок піде з `/sign-in` після реєстрації.
+ *
+ * Після sign-up `AnonymousDataMigrationProvider` блокує рендер роутера
+ * (а отже і редирект з `/sign-in`) на час розвідки анонімних даних: на
+ * новому пристрої це 5-13 с (див. `PROBE_GRACE_MS` у провайдері), на
+ * webkit-раннері CI повільніше за chromium. Дефолтні 5 с `expect` це не
+ * покривали: error-context падінь nightly 2026-10-05 показує
+ * `status: Переношу дані в профіль і зберігаю на сервері…` при URL
+ * `/sign-in`, тобто реєстрація пройшла, а гейт ще працював. Той самий
+ * підхід (15 с) стоїть у `auth.setup.ts`; тут 30 с із запасом на webkit.
+ */
+const LEAVE_SIGN_IN_TIMEOUT_MS = 30_000;
+
+// Реєстрація + гейт переносу + (в другому тесті) reload не вкладаються в
+// дефолтні 30 с тесту разом із 30 с очікування редиректу.
+test.setTimeout(90_000);
+
+/**
  * Webkit / mobile-safari authentication regression suite (PR-48).
  *
  * Контекст: Sergeant deploy-иться як cross-origin pair (Vercel web ↔ Railway
@@ -76,7 +94,9 @@ async function signUpFlow(
 
   await page.getByRole("button", { name: "Зареєструватися" }).click();
 
-  await expect(page).not.toHaveURL(/\/sign-in/);
+  await expect(page).not.toHaveURL(/\/sign-in/, {
+    timeout: LEAVE_SIGN_IN_TIMEOUT_MS,
+  });
   await expect(page.locator("main")).toBeVisible();
 
   return { email, password };
@@ -113,6 +133,8 @@ test("@auth webkit: session cookie persists across page reload", async ({
   await page.reload({ waitUntil: "domcontentloaded" });
 
   // Після reload-у юзер не повинен потрапляти назад на /sign-in
-  await expect(page).not.toHaveURL(/\/sign-in/);
+  await expect(page).not.toHaveURL(/\/sign-in/, {
+    timeout: LEAVE_SIGN_IN_TIMEOUT_MS,
+  });
   await expect(page.locator("main")).toBeVisible();
 });

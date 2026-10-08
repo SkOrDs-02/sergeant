@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 // Самохостинг шрифту замість Google Fonts: сторінка суцільно україномовна, а
 // попередній DM Sans узагалі не має кириличного набору (U+0400–04FF відсутній
 // у нього в обох підмножинах), тож кирилиця падала на системний шрифт і в
@@ -20,8 +20,21 @@ import { initAnalytics } from "./lib/analytics";
 
 initAnalytics();
 
-createRoot(document.getElementById("root")!).render(
+const root = document.getElementById("root")!;
+const app = (
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
 );
+
+// Кожна сторінка приходить пререндереною (scripts/prerender.mjs), тож React
+// гідрує готовий DOM, а не малює його заново. До 2026-10-08 тут стояв
+// `createRoot`: він викидав пререндер і будував той самий DOM ще раз, і на
+// повільному телефоні через 1-1,5 с після першого кадру скидався скрол, а
+// відкрите питання FAQ закривалось (аудит сайту 2026-10-08, F1). Порожній
+// `#root` буває лише на dev-сервері, там лишається звичайний рендер.
+if (root.hasChildNodes()) {
+  hydrateRoot(root, app);
+} else {
+  createRoot(root).render(app);
+}

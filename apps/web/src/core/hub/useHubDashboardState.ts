@@ -197,11 +197,12 @@ export function useHubDashboardState(props: {
     hasUser: Boolean(user),
     authStatus,
   });
-  const entryCount = useMemo(
-    () => countRealEntries(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- storage-write tick
-    [storageBump],
-  );
+  const entryCount = useMemo(() => {
+    // `storageBump` — тік запису в сховище: тіло його не читає, але без нього
+    // лічильник не перечитався б після запису.
+    void storageBump;
+    return countRealEntries();
+  }, [storageBump]);
   // LOG-8: `entryCount` doubles as the celebration's "is this genuinely the
   // FIRST entry, or a returning device whose 60-day-old account just synced
   // down" guard — see the doc-comment on `useFirstEntryCelebration`.

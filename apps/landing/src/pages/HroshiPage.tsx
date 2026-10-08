@@ -85,6 +85,16 @@ const GUIDES = [
     teaser: "Автосинхронізація лише з Monobank, решта карт випискою файлом.",
   },
   {
+    href: "/guides/pryvat24",
+    title: "Як завести виписку Приват24 у трекер витрат",
+    teaser: "Виписка файлом Excel або CSV.",
+  },
+  {
+    href: "/guides/silpo",
+    title: "Як бачити чек Сільпо по позиціях",
+    teaser: "Позиції йдуть у категорії і комору.",
+  },
+  {
     href: "/guides/bank-bezpeka",
     title: "Чи безпечно давати застосунку доступ до банку",
     teaser: "Сім питань до будь-якого сервісу перед підключенням.",
@@ -113,7 +123,7 @@ export default function HroshiPage() {
   return (
     <SiteLayout mainClassName="mx-auto w-full max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
       <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-finyk">
-        Модуль · Фінік
+        Модуль <span className="font-sans">·</span> Фінік
       </p>
       <h1 className="mt-4 font-display text-4xl font-extrabold uppercase leading-[1.06] tracking-tight text-foreground-strong sm:text-5xl">
         Облік витрат без ручного вводу кожної покупки
@@ -249,7 +259,7 @@ export default function HroshiPage() {
           Рядок імпорту отримує підказку категорії з трьох джерел: колонка
           «Категорія» у виписці, код категорії від банку і ключові слова в описі
           продавця. Без жодного з них підказки не буде: вгадувати навмання
-          гірше, ніж мовчати. На живій виписці Privat24 із 27 рядків категорію
+          гірше, ніж мовчати. На живій виписці Приват24 із 27 рядків категорію
           дістали 23. Це один замір на одному файлі.
         </p>
         <h3 className={h3}>Що робить із дублями</h3>
@@ -294,7 +304,7 @@ export default function HroshiPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/finyk.webp"
-            alt="Екран Фініка: денний ліміт, витрати і надходження за сьогодні"
+            alt="Огляд Фініка: на сьогодні лишилось 462 ₴ у межах плану, витрати й надходження за день і графік капіталу"
             width={414}
             height={896}
             loading="lazy"

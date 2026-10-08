@@ -14,8 +14,17 @@ import ROUTE_META from "./routeMeta.json";
  * `window.location.origin`.
  */
 // `item` – адреса кроку в `BreadcrumbList`; без нього крихти лишались
-// відносними, а Google для них вимагає абсолютні адреси.
-const URL_KEYS = new Set(["url", "logo", "image", "contentUrl", "item"]);
+// відносними, а Google для них вимагає абсолютні адреси. `@id` і
+// `mainEntityOfPage` пишуться відносними з `enrichJsonLd` нижче.
+const URL_KEYS = new Set([
+  "url",
+  "logo",
+  "image",
+  "contentUrl",
+  "item",
+  "mainEntityOfPage",
+  "@id",
+]);
 
 export function absolutizeJsonLd(value: unknown, origin: string): unknown {
   if (Array.isArray(value)) {
@@ -78,4 +87,76 @@ export function withBreadcrumb(
       },
     ],
   };
+}
+
+/** Вузол організації, на який посилаються всі сторінки сайту. */
+export const ORGANIZATION_ID = "/#organization";
+
+const ORGANIZATION_BASE = {
+  "@type": "Organization",
+  "@id": ORGANIZATION_ID,
+  name: "Sergeant",
+  url: "/",
+  logo: "/apple-touch-icon.png",
+};
+
+const ARTICLE_TYPES = new Set(["Article", "HowTo"]);
+
+type Node = Record<string, unknown>;
+
+function isNode(value: unknown): value is Node {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function enrichNode(node: Node, route: string): Node {
+  const out: Node = { ...node };
+  const meta = (ROUTE_META as Record<string, { ogImage?: string } | undefined>)[
+    route
+  ];
+
+  // Одна організація з `@id` замість безіменних копій на кожній сторінці:
+  // за ним пошуковик склеює видавця всіх сторінок з вузлом головної.
+  if (isNode(out.publisher) && out.publisher["@type"] === "Organization") {
+    out.publisher = { ...ORGANIZATION_BASE, ...out.publisher };
+  }
+  // Автор веде на сторінку «Про проєкт», де названо, хто він.
+  if (isNode(out.author) && out.author["@type"] === "Person") {
+    out.author = { url: "/about", ...out.author };
+  }
+  // Поля, які Google рекомендує для Article: адреса сторінки і картинка.
+  // Картинка – та сама og-картинка маршруту, що й у превʼю посилань.
+  if (typeof out["@type"] === "string" && ARTICLE_TYPES.has(out["@type"])) {
+    out.url ??= route;
+    out.mainEntityOfPage ??= route;
+    out.image ??= meta?.ogImage ?? "/og.png";
+  }
+  return out;
+}
+
+/**
+ * Спільні поля сторінкової розмітки, дописані централізовано.
+ *
+ * Навіщо: до 2026-10-08 кожна з двадцяти чотирьох сторінок писала видавця
+ * як `{ "@type": "Organization", name: "Sergeant" }` без `@id`, а статті не
+ * мали ні адреси, ні картинки (аудит сайту 2026-10-08, S8–S9). Правити це в
+ * кожному файлі означало б, що наступна сторінка знову забуде, тож поля
+ * додаються тут, в обох шляхах рендера, поруч із `withBreadcrumb`. Значення,
+ * які сторінка задала сама, не перезаписуються.
+ */
+export function enrichJsonLd(
+  jsonLd: object | undefined,
+  pathname: string,
+): object | undefined {
+  if (!jsonLd) return jsonLd;
+  const route = pathname.replace(/\/$/, "") || "/";
+  const root = jsonLd as Node;
+  if (Array.isArray(root["@graph"])) {
+    return {
+      ...root,
+      "@graph": root["@graph"].map((n: unknown) =>
+        isNode(n) ? enrichNode(n, route) : n,
+      ),
+    };
+  }
+  return enrichNode(root, route);
 }

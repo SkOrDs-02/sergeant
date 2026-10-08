@@ -1,10 +1,26 @@
+import type { ReactNode } from "react";
 import { telegramStartLink, THREADS_URL } from "../lib/links";
 import { LogoMark } from "./Wordmark";
+import { useCurrentRoute } from "../lib/currentRoute";
+
+const LINK =
+  "inline-flex min-h-11 items-center underline-offset-4 transition hover:text-foreground-strong aria-[current=page]:text-foreground-strong aria-[current=page]:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
+/** Внутрішнє посилання підвалу; поточна сторінка позначена `aria-current`. */
+function FooterLink({ href, children }: { href: string; children: ReactNode }) {
+  const current = useCurrentRoute();
+  return (
+    <a
+      href={href}
+      className={LINK}
+      aria-current={current === href ? "page" : undefined}
+    >
+      {children}
+    </a>
+  );
+}
 
 export default function SiteFooter() {
-  const link =
-    "inline-flex min-h-11 items-center transition hover:text-foreground-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
-
   return (
     <footer className="border-t-2 border-foreground-strong">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-7 sm:px-8">
@@ -19,66 +35,45 @@ export default function SiteFooter() {
         </div>
         <nav
           aria-label="Посилання сайту"
-          className="mt-2 grid gap-x-8 gap-y-1 text-sm text-muted sm:grid-cols-3"
+          className="mt-2 grid gap-x-8 gap-y-6 text-sm text-muted sm:grid-cols-3 sm:gap-y-1 print:hidden"
         >
           <div className="flex flex-col">
             <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
               Продукт
             </p>
-            <a href="/zvyazky" className={link}>
-              Звʼязки
-            </a>
-            <a href="/pomichnyk" className={link}>
-              Сержант
-            </a>
-            <a href="/guides" className={link}>
-              Гайди
-            </a>
-            <a href="/ruchna-robota" className={link}>
+            <FooterLink href="/zvyazky">Звʼязки</FooterLink>
+            <FooterLink href="/pomichnyk">Сержант</FooterLink>
+            <FooterLink href="/guides">Гайди</FooterLink>
+            <FooterLink href="/ruchna-robota">
               Скільки вводити руками
-            </a>
+            </FooterLink>
           </div>
           <div className="flex flex-col">
             <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
               Про продукт
             </p>
-            <a href="/obitsyanky" className={link}>
-              Що обіцяю
-            </a>
-            <a href="/stan" className={link}>
-              Доповідь про стан
-            </a>
-            <a href="/pytannya" className={link}>
-              Питання
-            </a>
-            <a href="/about" className={link}>
-              Про проєкт
-            </a>
+            <FooterLink href="/obitsyanky">Що обіцяю</FooterLink>
+            <FooterLink href="/stan">Доповідь про стан</FooterLink>
+            <FooterLink href="/pytannya">Питання</FooterLink>
+            <FooterLink href="/about">Про проєкт</FooterLink>
+            <FooterLink href="/contact">Звʼязок</FooterLink>
           </div>
           <div className="flex flex-col">
             <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
               Дані і право
             </p>
-            <a href="/data" className={link}>
-              Твої дані
-            </a>
-            <a href="/vyhid" className={link}>
-              Забрати свої дані
-            </a>
-            <a href="/privacy" className={link}>
-              Політика приватності
-            </a>
-            <a href="/terms" className={link}>
-              Умови використання
-            </a>
+            <FooterLink href="/data">Твої дані</FooterLink>
+            <FooterLink href="/vyhid">Забрати свої дані</FooterLink>
+            <FooterLink href="/privacy">Політика приватності</FooterLink>
+            <FooterLink href="/terms">Умови використання</FooterLink>
           </div>
         </nav>
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 border-t border-cardline pt-2 text-sm text-muted">
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 border-t border-cardline pt-2 text-sm text-muted print:hidden">
           <a
             href={telegramStartLink("footer")}
             target="_blank"
             rel="noreferrer"
-            className={link}
+            className={LINK}
           >
             Telegram
           </a>
@@ -86,7 +81,7 @@ export default function SiteFooter() {
             href={THREADS_URL}
             target="_blank"
             rel="noreferrer"
-            className={link}
+            className={LINK}
           >
             Threads
           </a>

@@ -1,5 +1,6 @@
 import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { TELEGRAM_BOT_URL, THREADS_URL } from "../lib/links";
 
 /**
  * Реєстр гайдів. Один запис – один файл сторінки; нові гайди додаються
@@ -22,7 +23,7 @@ const GUIDES: {
     href: "/guides/foto-kalorii",
     module: { href: "/yizha", label: "Їжа" },
     teaser:
-      "Що фото справді впізнає, а де починає вгадувати, і як Сержант закриває сліпі місця уточнюючими питаннями. Плюс ієрархія точності від штрихкоду до ока.",
+      "Що фото справді впізнає, а де починає вгадувати, і як Сержант закриває сліпі місця уточнювальними питаннями. Плюс ієрархія точності від штрихкоду до ока.",
   },
   {
     href: "/guides/cheky",
@@ -52,7 +53,7 @@ const GUIDES: {
     href: "/guides/zamist-chotyryokh-trekeriv",
     module: { href: "/zvyazky", label: "Звʼязки" },
     teaser:
-      "Що саме він замінює, що переноситься зі старих застосунків (виписки і Strong), що ні (Apple Health, чужі звички та їжа), і коли окремі трекери будуть кращими.",
+      "Що саме він замінює, що переноситься зі старих застосунків (виписки і Strong), що ні (Apple Health, звички та їжа з інших застосунків), і коли окремі трекери будуть кращими.",
   },
   {
     href: "/guides/tyzhnevyi-pidsumok",
@@ -138,7 +139,7 @@ export default function GuidesPage() {
             <h2 className="font-display text-xs font-bold uppercase tracking-[0.12em] text-subtle">
               <a
                 href={group.href}
-                className="transition hover:text-foreground-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                className="inline-flex min-h-11 items-center underline decoration-cardline-strong underline-offset-4 transition hover:text-foreground-strong hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 {group.label}
               </a>
@@ -164,8 +165,25 @@ export default function GuidesPage() {
       })}
 
       <p className="mt-8 text-sm text-subtle">
-        Нові гайди зʼявляються, щойно я їх дописую. Анонси – у Threads і
-        Telegram.
+        Нові гайди зʼявляються, щойно я їх дописую. Анонси – у{" "}
+        <a
+          href={THREADS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-cardline-strong underline-offset-4 transition hover:text-foreground-strong hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          Threads
+        </a>{" "}
+        і{" "}
+        <a
+          href={TELEGRAM_BOT_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-cardline-strong underline-offset-4 transition hover:text-foreground-strong hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          Telegram
+        </a>
+        .
       </p>
     </SiteLayout>
   );

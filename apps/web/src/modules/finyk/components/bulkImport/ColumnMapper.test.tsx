@@ -112,6 +112,48 @@ describe("ColumnMapper", () => {
     );
   });
 
+  it("does not offer the amount column as the credit column", () => {
+    render(
+      <ColumnMapper
+        headers={["Дата", "Опис", "Дебет", "Кредит"]}
+        sampleRows={[]}
+        onSubmit={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Колонка суми або витрат (дебет)"), {
+      target: { value: "Дебет" },
+    });
+    const credit = screen.getByLabelText(
+      "Колонка надходжень (кредит), якщо окрема",
+    );
+    const options = Array.from(credit.querySelectorAll("option")).map(
+      (o) => o.value,
+    );
+    expect(options).not.toContain("Дебет");
+  });
+
+  it("drops the credit column when the amount column is switched onto it", () => {
+    const onSubmit = vi.fn();
+    render(
+      <ColumnMapper
+        headers={["Дата", "Опис", "Дебет", "Кредит"]}
+        sampleRows={[]}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(
+      screen.getByLabelText("Колонка надходжень (кредит), якщо окрема"),
+      { target: { value: "Кредит" } },
+    );
+    fireEvent.change(screen.getByLabelText("Колонка суми або витрат (дебет)"), {
+      target: { value: "Кредит" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Продовжити" }));
+    const submitted = onSubmit.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(submitted["amountCol"]).toBe("Кредит");
+    expect("creditCol" in submitted).toBe(false);
+  });
+
   it("toggling the decimal-comma switch flips the submitted mapping", () => {
     const onSubmit = vi.fn();
     render(

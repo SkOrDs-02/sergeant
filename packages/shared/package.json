@@ -14,7 +14,9 @@
     "./data/pantryCategories": "./src/data/pantryCategories.ts",
     "./openapi": "./src/openapi/index.ts",
     "./test-utils": "./src/test-utils.ts",
-    "./lib/pii": "./src/lib/pii.ts"
+    "./lib/pii": "./src/lib/pii.ts",
+    "./lib/analyticsEvents": "./src/lib/analyticsEvents.ts",
+    "./lib/landingAttribution": "./src/lib/landingAttribution.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

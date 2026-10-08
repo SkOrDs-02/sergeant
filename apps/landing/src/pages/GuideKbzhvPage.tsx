@@ -3,7 +3,7 @@ import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
-import { AUTHOR_NAME } from "../content/author";
+import { AUTHOR_JSON_LD, AUTHOR_NAME } from "../content/author";
 
 const SITUATIONS = [
   {
@@ -47,6 +47,8 @@ export default function GuideKbzhvPage() {
       name: "Як рахувати КБЖВ, коли в базі немає українських продуктів",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/kbzhv"].lastmod,
+      author: AUTHOR_JSON_LD,
+      publisher: { "@type": "Organization", name: "Sergeant" },
       step: STEPS.map((text, i) => ({
         "@type": "HowToStep",
         position: i + 1,
@@ -63,7 +65,7 @@ export default function GuideKbzhvPage() {
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
         <div>
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Гайди · Харчування
+            Гайди <span className="font-sans">·</span> Харчування
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
             Як рахувати КБЖВ, коли в базі немає українських продуктів
@@ -111,7 +113,7 @@ export default function GuideKbzhvPage() {
         </section>
 
         <section>
-          <h2 className={h2}>Чотири кроки, які робиш один раз</h2>
+          <h2 className={h2}>Чотири кроки на старті</h2>
           <ol className="mt-5 flex flex-col gap-3.5">
             {STEPS.map((step, i) => (
               <li
