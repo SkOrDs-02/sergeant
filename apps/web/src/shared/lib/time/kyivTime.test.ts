@@ -5,6 +5,7 @@ import {
   getKyivDayKey,
   getKyivDateParts,
   getKyivMondayIndex,
+  getKyivShortDateStamp,
   getKyivShortStamp,
   getKyivWeekStart,
   getKyivWeekStartKey,
@@ -241,6 +242,128 @@ describe("kyivTime", () => {
         expect(parsed).not.toBeNull();
         expect(getKyivDayKey(parsed as Date)).toBe(key);
       }
+    });
+  });
+
+  describe("isSameKyivDay — negatives", () => {
+    it("returns false for instants on different Kyiv days", () => {
+      const a = new Date("2026-05-16T20:00:00Z"); // 23:00 Kyiv 2026-05-16
+      const b = new Date("2026-05-16T21:00:00Z"); // 00:00 Kyiv 2026-05-17
+      expect(isSameKyivDay(a, b)).toBe(false);
+    });
+
+    it("accepts numeric timestamps on both sides", () => {
+      const a = Date.parse("2026-05-16T06:00:00Z");
+      const b = Date.parse("2026-05-17T06:00:00Z");
+      expect(isSameKyivDay(a, b)).toBe(false);
+      expect(isSameKyivDay(a, a + 3_600_000)).toBe(true);
+    });
+  });
+
+  describe("getKyivShortStamp — zero padding", () => {
+    it("pads single-digit hour and minute", () => {
+      // 2026-01-05 03:07 UTC + 2h (EET) = 05:07 Kyiv
+      expect(getKyivShortStamp(new Date("2026-01-05T03:07:00Z"))).toBe(
+        "2026-01-05 05:07",
+      );
+    });
+
+    it("renders Kyiv midnight as 00:00 (hour 24 normalised)", () => {
+      expect(getKyivShortStamp(new Date("2026-01-04T22:00:00Z"))).toBe(
+        "2026-01-05 00:00",
+      );
+    });
+  });
+
+  describe("getKyivShortDateStamp", () => {
+    it("formats DD.MM HH:mm in Kyiv TZ", () => {
+      // 2026-05-16 10:30 UTC + 3h = 13:30 Kyiv
+      expect(getKyivShortDateStamp(new Date("2026-05-16T10:30:00Z"))).toBe(
+        "16.05 13:30",
+      );
+    });
+
+    it("zero-pads day, month, hour and minute", () => {
+      // 2026-01-05 03:07 UTC + 2h (EET) = 05:07 Kyiv
+      expect(getKyivShortDateStamp(new Date("2026-01-05T03:07:00Z"))).toBe(
+        "05.01 05:07",
+      );
+    });
+
+    it("uses the Kyiv day when UTC is still on the previous date", () => {
+      expect(getKyivShortDateStamp(Date.parse("2026-01-04T22:30:00Z"))).toBe(
+        "05.01 00:30",
+      );
+    });
+  });
+
+  describe("parseKyivDate — strict shape and calendar validity", () => {
+    it("rejects keys with a prefix or suffix around a valid date", () => {
+      expect(parseKyivDate("x2026-05-16")).toBeNull();
+      expect(parseKyivDate("2026-05-16x")).toBeNull();
+      expect(parseKyivDate("2026-05-16T00:00")).toBeNull();
+      expect(parseKyivDate(" 2026-05-16")).toBeNull();
+    });
+
+    it("rejects impossible calendar days that roll into the next month", () => {
+      expect(parseKyivDate("2026-02-30")).toBeNull();
+      expect(parseKyivDate("2026-02-29")).toBeNull(); // 2026 is not a leap year
+      expect(parseKyivDate("2026-04-31")).toBeNull();
+      expect(parseKyivDate("2026-06-31")).toBeNull();
+    });
+
+    it("accepts the last valid day of each month length", () => {
+      expect(getKyivDayKey(parseKyivDate("2024-02-29") as Date)).toBe(
+        "2024-02-29",
+      );
+      expect(getKyivDayKey(parseKyivDate("2026-04-30") as Date)).toBe(
+        "2026-04-30",
+      );
+      expect(getKyivDayKey(parseKyivDate("2026-12-31") as Date)).toBe(
+        "2026-12-31",
+      );
+      expect(getKyivDayKey(parseKyivDate("2026-01-01") as Date)).toBe(
+        "2026-01-01",
+      );
+    });
+
+    it("rejects day/month zero and boundary overflow", () => {
+      expect(parseKyivDate("2026-01-00")).toBeNull();
+      expect(parseKyivDate("2026-00-01")).toBeNull();
+      expect(parseKyivDate("2026-12-32")).toBeNull();
+      expect(parseKyivDate("2026-13-31")).toBeNull();
+    });
+
+    it("rejects years below 100 (Date.UTC maps 0-99 to 19xx)", () => {
+      expect(parseKyivDate("0050-01-01")).toBeNull();
+    });
+
+    it("returns exactly Kyiv-local midnight for winter and summer days", () => {
+      // EET (UTC+2): midnight Kyiv = 22:00Z previous day
+      expect((parseKyivDate("2026-01-15") as Date).toISOString()).toBe(
+        "2026-01-14T22:00:00.000Z",
+      );
+      // EEST (UTC+3): midnight Kyiv = 21:00Z previous day
+      expect((parseKyivDate("2026-07-15") as Date).toISOString()).toBe(
+        "2026-07-14T21:00:00.000Z",
+      );
+    });
+
+    it("returns exact midnight on the spring-forward day (2026-03-29)", () => {
+      // Midnight is still EET (UTC+2) that day; the switch happens at 03:00.
+      expect((parseKyivDate("2026-03-29") as Date).toISOString()).toBe(
+        "2026-03-28T22:00:00.000Z",
+      );
+      // Next day is already EEST.
+      expect((parseKyivDate("2026-03-30") as Date).toISOString()).toBe(
+        "2026-03-29T21:00:00.000Z",
+      );
+    });
+
+    it("returns exact midnight on the fall-back day (2026-10-25)", () => {
+      expect((parseKyivDate("2026-10-25") as Date).toISOString()).toBe(
+        "2026-10-24T21:00:00.000Z",
+      );
     });
   });
 });
