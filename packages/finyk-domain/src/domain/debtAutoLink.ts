@@ -11,6 +11,7 @@
  * (`autoLinkDismissedTxIds`) — окремі шари.
  */
 import type { Debt } from "./debtEngine.js";
+import { expandLinkedKeys } from "./debtLinkKeys.js";
 
 /**
  * Мінімальний вигляд транзакції, потрібний матчеру — навмисно вужчий за
@@ -46,8 +47,9 @@ export function matchDebtAutoLinkTxIds(
   const keyword = (debt.autoLinkKeyword ?? "").trim().toLowerCase();
   if (!keyword) return [];
 
-  const linked = new Set(debt.linkedTxIds ?? []);
-  const dismissed = new Set(debt.autoLinkDismissedTxIds ?? []);
+  // Аліаси: спадкова сира привʼязка `X` теж блокує `manual_X` (`debtLinkKeys`).
+  const linked = expandLinkedKeys(debt.linkedTxIds);
+  const dismissed = expandLinkedKeys(debt.autoLinkDismissedTxIds);
 
   return transactions
     .filter((tx) => {

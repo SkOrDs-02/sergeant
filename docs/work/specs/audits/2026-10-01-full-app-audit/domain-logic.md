@@ -333,7 +333,7 @@ Live API (v8-v9-api.mjs, user verify-gapfinyk2-v1) with f2-debit-credit-cp1251.c
 
 ### `logic-07` [medium] Ліміти рахуються по-різному на Огляді, Плануванні й хабі: період і глибина історії не збігаються
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-07-limits-period
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (Огляд, Планування)
 - **Де:** apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:120-133, 176-179, 314-331; apps/web/src/modules/finyk/pages/overview/BudgetAlertsList.tsx:46-56; apps/web/src/modules/finyk/pages/budgets/Budgets.tsx:209-235, 283-290; apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts:160-179, 257-267; apps/web/src/modules/finyk/hooks/useCoffeeLimitInsight.ts:100-117
 - **Першопричина:** Єдиного обчислення використання ліміту на всіх поверхнях немає. Алерти Огляду (budgetAlerts, BudgetAlertsList) порівнюють будь-який ліміт, зокрема тижневий і разовий, з витратами за весь київський місяць і ігнорують period. Сторінка Планування накладає період правильно, але бере realTx, який після мережевого запиту містить лише поточний місяць, тож тиждень на межі місяців і старі разові ліміти недораховуються.

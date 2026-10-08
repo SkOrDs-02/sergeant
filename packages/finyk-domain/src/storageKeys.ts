@@ -71,6 +71,12 @@ export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   monthlyPlan: "finyk_monthly_plan",
   txCategories: "finyk_tx_cats",
   txSplits: "finyk_tx_splits",
+  /**
+   * Нотатки до банківських операцій (`{ [txId]: string }`). Живуть лише в
+   * localStorage пристрою (не в SQLite dual-write, не в синку), тож бекап —
+   * єдиний спосіб їх перенести (аудит 2026-10-01, data-27).
+   */
+  txNotes: "finyk_tx_notes",
   monoDebtLinkedTxIds: "finyk_mono_debt_linked",
   networthHistory: "finyk_networth_history",
   customCategories: "finyk_custom_cats_v1",
