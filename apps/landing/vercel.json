@@ -9,14 +9,25 @@
   "trailingSlash": false,
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/",
       "has": [
         {
           "type": "host",
           "value": "www.sergeant.com.ua"
         }
       ],
-      "destination": "https://sergeant.com.ua/:path*",
+      "destination": "https://sergeant.com.ua/",
+      "permanent": true
+    },
+    {
+      "source": "/:path(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.sergeant.com.ua"
+        }
+      ],
+      "destination": "https://sergeant.com.ua/:path",
       "permanent": true
     },
     {
