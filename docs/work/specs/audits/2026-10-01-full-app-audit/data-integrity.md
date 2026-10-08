@@ -3345,7 +3345,7 @@ vb/04-concurrent.mjs, користувач vrf-nutri-conc-1. Сервер до �
 
 ### `data-41` [medium] Комора: списання менше 50 г з позиції в кг чи л губиться округленням, а журнал подій фіксує списання
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-41-pantry-consume-rounding
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/nutrition-domain (pantryConsume) + web: useNutritionPantries
 - **Де:** packages/nutrition-domain/src/pantryConsume.ts:131-137; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:458-486
 - **Першопричина:** pantryConsume у гілці без варіантів округлює залишок до 0.1 одиниці позиції (100 г чи мл для кг і л), але повертає нерозкруглений deducted, який хук пише в журнал як consume.
