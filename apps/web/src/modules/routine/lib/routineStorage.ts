@@ -532,6 +532,16 @@ function parseRoutineBackupPayload(parsed: unknown): RoutineState {
       );
     }
   }
+  const notes = d["completionNotes"];
+  if (
+    notes !== null &&
+    typeof notes === "object" &&
+    !Object.values(notes).every((v) => typeof v === "string")
+  ) {
+    throw new Error(
+      "Пошкоджений файл: розділ Рутини містить нотатку не рядком. Експортуй копію ще раз.",
+    );
+  }
   return normalizeRoutineState(d);
 }
 

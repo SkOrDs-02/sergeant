@@ -349,8 +349,39 @@ export function validateFizrukFullBackupPayload(
         Array.isArray(value) ||
         (isPlainObject(value) && Array.isArray(value[shape.wrapper]));
     if (!ok) throw corruptSliceError(label);
+    if (key === FIZRUK_BACKUP_SLICES.workouts && !workoutsNestedOk(value)) {
+      throw corruptSliceError(label);
+    }
   }
   return d;
+}
+
+/** Поле відсутнє (`null`/`undefined`) або масив обʼєктів. */
+function isObjectListOrAbsent(v: unknown): boolean {
+  return v == null || (Array.isArray(v) && v.every(isPlainObject));
+}
+
+/**
+ * Вкладені записи тренувань: `items: [null]` пройшов би перевірку форми зрізу,
+ * а потім упав би в `toItemSnapshot` уже після запису Фініка.
+ */
+function workoutsNestedOk(value: unknown): boolean {
+  const list = Array.isArray(value)
+    ? value
+    : (value as Record<string, unknown[]>)["workouts"];
+  return (list ?? []).every((w) => {
+    if (!isPlainObject(w)) return true; // верхній рівень екстрактор пропускає
+    const items = w["items"];
+    return (
+      isObjectListOrAbsent(items) &&
+      isObjectListOrAbsent(w["groups"]) &&
+      isObjectListOrAbsent(w["warmup"]) &&
+      isObjectListOrAbsent(w["cooldown"]) &&
+      ((items as Record<string, unknown>[] | null | undefined) ?? []).every(
+        (it) => isObjectListOrAbsent(it["sets"]),
+      )
+    );
+  });
 }
 
 /**
