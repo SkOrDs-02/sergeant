@@ -133,6 +133,8 @@ export function ReceiptScanSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
+  // `reset` — стабільний (useCallback []), на відміну від обʼєкта `bulkReceipts`.
+  const { reset: resetBulkReceipts } = bulkReceipts;
   const visionPaywall = useFinykVisionPaywall();
 
   const lookupMutation = useMutation({
@@ -164,10 +166,9 @@ export function ReceiptScanSheet({
       setEditingItemId(null);
       setPendingPhotos(null);
       resetSave();
-      bulkReceipts.reset();
+      resetBulkReceipts();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий обʼєкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
-  }, [open, resetSave]);
+  }, [open, resetSave, resetBulkReceipts]);
 
   const openReview = (nextDraft: ReceiptDraft) => {
     setDraft(nextDraft);
