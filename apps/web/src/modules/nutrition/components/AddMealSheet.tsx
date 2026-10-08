@@ -70,6 +70,7 @@ import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
 import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
+import { useSavePickedFood } from "./meal-sheet/useSavePickedFood";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
@@ -154,6 +155,7 @@ export function AddMealSheet({
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("100");
+  const savePicked = useSavePickedFood();
   const [sourceTab, setSourceTab] = useState<SourceTabId>("search");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
   const [date, setDate] = useState("");
@@ -408,6 +410,7 @@ export function AddMealSheet({
   }
 
   function finalizeSave(meals: Meal[], template: MealSaveTemplate) {
+    savePicked.persist(pickedFood);
     if (fromPantryItem && onConsumePantryItem) {
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
@@ -459,8 +462,8 @@ export function AddMealSheet({
     setStep("fill");
   }
 
-  // Крок «з упаковки» → «fill»: продукт уже збережено в локальну базу,
-  // лишається звʼязати його з прийомом. Макроси форми не чіпаємо тут —
+  // Крок «з упаковки» → «fill»: продукт ще не в базі (його пише
+  // `finalizeSave`), лишається звʼязати його з прийомом. Макроси форми не чіпаємо тут —
   // їх порахує `PickedFoodCard` під вагу порції.
   function handlePackageCreated(product: PickedFood, grams: string) {
     setAppliedPhoto(null);
@@ -659,6 +662,7 @@ export function AddMealSheet({
                 setPickedGrams={setPickedGrams}
                 onChangeProduct={handleChangeProduct}
                 skipInitialRescale={editedFood.rehydrated}
+                onUnitChange={savePicked.onUnitChange}
               />
             ) : fromPantryItem ? (
               <PantryPortionField

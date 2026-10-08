@@ -430,6 +430,48 @@ export const nutritionPageMessages = {
     packageCta: "Маю етикетку на 100 г",
   },
 
+  // Менеджер власних продуктів і власні порції (спека nutrition-my-products).
+  myFoods: {
+    open: "Мої продукти",
+    title: "Мої продукти",
+    editTitle: "Редагувати продукт",
+    emptyBody:
+      "Тут зʼявляться продукти, які ти додаси сам. Створити продукт можна під час запису прийому: вкладка «Своє», далі «З упаковки».",
+    kcalPer100: "ккал / 100 г",
+    portionsCount: "порцій: {n}",
+    editAction: "Змінити",
+    editAria: "Редагувати {name}",
+    deleteAction: "Видалити",
+    deleteAria: "Видалити {name}",
+    deleteKeep: "Залишити",
+    deleteTitle: "Видалити «{name}»?",
+    deleteTitleFallback: "Видалити продукт?",
+    deleteBody:
+      "Записи в щоденнику лишаться з їхніми числами. Перерахувати їх від ваги вже не вийде.",
+    save: "Зберегти",
+    cancel: "Скасувати",
+    existingUnchanged: "Записи, які вже є, не зміняться.",
+    nameLabel: "Назва продукту",
+    namePlaceholder: "Равіолі з сиром",
+  },
+
+  portionRows: {
+    heading: "Порції",
+    hint: "Необовʼязково: скибка, батон, пачка. Тоді при записі можна вводити кількість штук.",
+    nameLabel: "Назва",
+    gramsLabel: "Грами",
+    namePlaceholder: "скибка",
+    remove: "Прибрати",
+    add: "Додати порцію",
+  },
+
+  portionUnit: {
+    label: "Одиниця",
+    grams: "г",
+    decrease: "Зменшити",
+    increase: "Збільшити",
+  },
+
   pantryPortion: {
     label: "Вага порції, г",
     description: "Стільки буде списано з комори після збереження.",
@@ -474,6 +516,49 @@ export const nutritionPageMessages = {
     reasonGrams: "Впиши вагу в грамах для кожного інгредієнта.",
     reasonServings: "Порцій має бути ціле число від 1.",
     save: "Зберегти",
+  },
+
+  // Аркуш «Моя норма»: працює без входу, пише в локальне сховище.
+  // Плейсхолдери `{...}` підставляє `MyNormSheet`.
+  myNorm: {
+    title: "Моя норма",
+    description:
+      "Рахую норму за формулою Міффлін-Сан-Жеор. Вхід не потрібен, дані лишаються на пристрої.",
+    goalLabel: "Мета",
+    goalCutting: "Схуднення",
+    goalMaintenance: "Підтримка",
+    goalBulking: "Набір",
+    rateLabel: "Темп, кг на тиждень",
+    rateOption: "{rate} кг",
+    goalWeightLabel: "Цільова вага, кг (необовʼязково)",
+    goalWeightRangeError: "Вага має бути від 20 до 400 кг",
+    goalDate: "Орієнтовно до цілі: {date}. Це прикидка, а не обіцянка.",
+    resultLabel: "Твоя норма",
+    resultKcal: "{kcal} ккал на день",
+    activitySedentary: "сидячий",
+    activityLight: "легка активність",
+    activityModerate: "помірна активність",
+    activityActive: "висока активність",
+    activityVeryActive: "дуже висока активність",
+    formulaLine: "Міффлін-Сан-Жеор · {activity} × {multiplier} · {delta}",
+    formulaLineDynamic:
+      "Міффлін-Сан-Жеор · сидячий × 1,2 + тренування за день ({workout} ккал) · {delta}",
+    deltaDeficit: "дефіцит {kcal} ккал",
+    deltaSurplus: "профіцит {kcal} ккал",
+    deltaNone: "без корекції",
+    howToggle: "Як пораховано",
+    howBody:
+      "BMR {bmr} × {multiplier} = {tdee}, {delta}, виходить {kcal} ккал.",
+    howBodyDynamic:
+      "BMR {bmr} × 1,2 + тренування {workout} = {tdee}, {delta}, виходить {kcal} ккал.",
+    floorNote: "Норма не опускається нижче 1000 ккал.",
+    incomplete:
+      "Заповни зріст, дату народження, стать, рівень активності й вагу, і я порахую норму.",
+    apply: "Застосувати",
+    retry: "Повторити",
+    applied: "Норму збережено",
+    saveError: "Не вдалося зберегти норму",
+    stillLoading: "Налаштування ще завантажуються, спробуй за мить",
   },
 
   photoAuth: {

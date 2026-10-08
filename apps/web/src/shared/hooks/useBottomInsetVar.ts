@@ -34,10 +34,14 @@ export function useBottomInsetVar(
   useLayoutEffect(() => {
     const root = document.documentElement;
     const el = ref.current;
-    if (!active || !el) {
-      root.style.removeProperty(varName);
-      return;
-    }
+    // Неактивний екземпляр нічого не ставив, тож і знімати йому нічого:
+    // змінна спільна на `<html>`, і зняття тут стирало значення ІНШОГО,
+    // відкритого власника (закритий `Sheet`, що змонтувався поруч, скидав
+    // футер відкритого аркуша, і тост лягав на його CTA). Перехід
+    // active → false прибирає cleanup попереднього запуску.
+    // ponytail: два одночасно активні власники однієї змінної досі
+    // перетирають одне одного; лічильник власників, якщо таке зʼявиться.
+    if (!active || !el) return;
 
     const publish = () => {
       const rect = el.getBoundingClientRect();

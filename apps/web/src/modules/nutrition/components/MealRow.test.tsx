@@ -55,11 +55,11 @@ describe("MealRow", () => {
     expect(screen.getByText("Сержант")).toBeInTheDocument();
   });
 
-  it("shows a DB badge for productDb-sourced macros", () => {
+  it("productDb: підпис «продукт», а не внутрішнє «DB»", () => {
     render(
       <MealRow meal={{ ...baseMeal, macroSource: "productDb" } as never} />,
     );
-    expect(screen.getByText("DB")).toBeInTheDocument();
+    expect(screen.getByText("продукт")).toBeInTheDocument();
   });
 
   it("invokes onEdit and onRemove callbacks", () => {

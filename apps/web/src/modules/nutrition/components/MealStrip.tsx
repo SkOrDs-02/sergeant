@@ -245,7 +245,7 @@ export function MealStrip({
                 {seg.label}
               </span>
               <span className="relative text-style-caption font-semibold text-hero-ink tabular-nums truncate w-full">
-                {seg.kcal > 0 ? Math.round(seg.kcal) : "—"}
+                {seg.kcal > 0 ? formatNumberUk(Math.round(seg.kcal)) : "—"}
               </span>
             </>
           );

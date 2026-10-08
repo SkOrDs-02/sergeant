@@ -1614,6 +1614,13 @@
       "canonical_owner": "docs/governance/adr/0103-dependabot-only-dependency-updates.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/governance/adr/0104-goal-period-extended-before-first-step.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0104-goal-period-extended-before-first-step.md"
+    },
+    {
       "old_path": "docs/governance/adr/README.md",
       "new_path": "docs/governance/adr/README.md",
       "action": "keep",

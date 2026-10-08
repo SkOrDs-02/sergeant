@@ -68,7 +68,7 @@ describe("бекап Їжі: власні продукти і вода", () => {
       name: "Мій сирник",
       per100: { kcal: 200, protein_g: 12, fat_g: 8, carbs_g: 20 },
     });
-    await upsertFood({ name: "Молоко 2.5%" }); // збігається з вбудованою базою
+    await upsertFood({ name: "Молоко 2.5%", origin: "seed" }); // вбудований продукт
     __setNutritionSqliteCacheForTests({
       waterLog: { "2026-10-01": 1500, "2026-10-02": 800 },
     });

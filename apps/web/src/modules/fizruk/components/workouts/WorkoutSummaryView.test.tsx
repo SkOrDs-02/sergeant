@@ -66,6 +66,46 @@ describe("WorkoutSummaryView", () => {
     expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
   });
 
+  it("shows a skipped exercise as «—», not the empty auto-row «0×0»", () => {
+    const workout = makeWorkout({
+      items: [
+        {
+          id: "i1",
+          exerciseId: "pullup",
+          nameUk: "Підтягування",
+          primaryGroup: "back",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [{ weightKg: 0, reps: 0 }],
+        },
+        {
+          id: "i2",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [
+            { weightKg: 60, reps: 8 },
+            { weightKg: 0, reps: 0 },
+          ],
+        },
+      ],
+    });
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/0×0/)).not.toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("60×8")).toBeInTheDocument();
+  });
+
   it("renders the exercise list with per-item set details", () => {
     const workout = makeWorkout({
       items: [
