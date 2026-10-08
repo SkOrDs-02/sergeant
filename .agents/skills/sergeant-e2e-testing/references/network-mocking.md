@@ -40,17 +40,7 @@ await page.route("**/*.{png,jpg,gif,svg}", (route) => route.abort());
 
 ## MSW handlers
 
-The web app uses MSW for browser-level mocking. Handlers live in `apps/web/src/mocks/`. In Playwright, MSW runs inside the browser context started by the app. To override a handler for a single test:
-
-```typescript
-// Add a test-specific override before navigation
-await page.addInitScript(() => {
-  // access MSW worker through the app's global setup
-  window.__msw_override = { path: "/api/hubs", response: { hubs: [] } };
-});
-```
-
-Check `apps/web/src/mocks/` for the current handler setup before adding test-specific overrides.
+MSW in Sergeant is unit/integration-only (Vitest, `setupServer` from `msw/node`): handlers live in `apps/web/src/test/msw/handlers.ts`, the server in `apps/web/src/test/msw/server.ts`. No MSW service worker is registered in the browser, so MSW does **not** apply in Playwright — mock the network in E2E with `page.route()` (see above).
 
 ## Sergeant-specific note
 

@@ -1,10 +1,10 @@
 # Playbook: Червоний бандл-бюджет (size-limit / eager)
 
-> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-01-25.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-02-02.
 > **Status:** Active
 > **Runtime-specific:** no
 
-**Trigger:** `pnpm --filter @sergeant/web size` або `size:eager` падає локально (CI-джоби `bundle-budgets` з 2026-09-23 немає) · зʼявилась спокуса підняти стелю в `apps/web/package.json` чи `check-eager-bundle.mjs`.
+**Trigger:** `pnpm --filter @sergeant/web size` або `size:eager` падає локально (CI-джоба `bundle-budgets` біжить щопонеділка і вручну, не на PR) · зʼявилась спокуса підняти стелю в `apps/web/package.json` чи `check-eager-bundle.mjs`.
 
 ## Owner surface
 
