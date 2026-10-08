@@ -22,6 +22,7 @@ import {
 } from "./authClient";
 import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
 import { swClearCaches, swSetActiveUser } from "../app/swControl";
+import { useSwControllerResync } from "./useSwControllerResync";
 import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -870,7 +871,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // shared devices. Fire-and-forget — ignore SW failures since the
       // partition plugin (`cacheKeyWillBeUsed`) is the in-flight defense.
       try {
-        await swClearCaches();
+        // rel-12: лише кеші з даними користувача; precache лишається.
+        await swClearCaches("user");
       } catch (err) {
         logger.warn("[auth.logout] swClearCaches failed", err);
       }
@@ -981,8 +983,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       identifyPostHogUser(currentId, buildIdentifyTraits(sessionUser));
       lastIdentifiedUserIdRef.current = currentId;
       // Audit 03 / Decision #2 (C): partition SW cache keys per user.
-      // Fire-and-forget; SW restart will fall back to `__u=anon` until
-      // next mount re-posts.
+      // Fire-and-forget; SW зберігає ключ у `sw-meta`, а при `anon` кеш /api
+      // вимкнений (priv-08); повтор на `controllerchange` — окремий ефект нижче.
       void swSetActiveUser(currentId).catch((err) =>
         logger.warn("[auth.identify] swSetActiveUser failed", err),
       );
@@ -1001,6 +1003,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // спричинив би зайві identify-виклики при тому самому id.
     // `userRef` дає свіжі traits лише на переході id.
   }, [user?.id]);
+
+  // priv-08: повтор SW_SET_USER на `controllerchange` (див. хук).
+  useSwControllerResync(userRef);
 
   // Request a password reset email via Better Auth. Returns `true` when
   // the request was accepted (the server still answers OK even if the

@@ -493,7 +493,7 @@ node --import tsx <scratch>/agents/verify-server-static-privacy-logging/v2/hooks
 
 ### `priv-08` [medium] Service Worker кешує приватні відповіді /api/v1/* з no-store, а партиція користувача скидається в спільне anon: у сесії B SW може віддати /me користувача A
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-08-rel-12-sw-cache (лишилось рішення власника: повага до no-store і чи лишати /me та /ai-memory у runtime-кеші; партиція, anon-guard, v1-префікси та SW_SET_USER на controllerchange зроблені)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: service worker
 - **Де:** apps/web/src/sw/cache.ts:22, 52-118, 151-175; apps/web/src/sw/messages.ts:97-107; apps/web/src/sw/cachePolicy.ts; apps/web/src/core/app/swControl.ts:97-99, 146-160; apps/web/src/core/auth/AuthContext.tsx:382-402, 728-733
 - **Першопричина:** activeUserKey живе в пам'яті SW і після idle-kill (близько 30 с) повертається в anon. SW_SET_USER надсилається лише при зміні user.id за життя сторінки. Тому boot-запити всіх користувачів пишуться в спільну партицію, а /me нового користувача може лягти під ключ попереднього. CacheableResponsePlugin кешує будь-яку 200, ігноруючи Cache-Control: no-store, а identity-wipe не викликає swClearCaches.

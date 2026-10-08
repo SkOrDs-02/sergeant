@@ -801,7 +801,7 @@ Verifier rerun of t3_wedge.mts with the real createSyncEngineReaderRuntime: pull
 
 ### `rel-12` [medium] Вихід з акаунта і «Скинути кеш PWA» видаляють Workbox precache: офлайн-запуск зламаний до наступного деплою
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-08-rel-12-sw-cache (побічна ціна unregister - втрата push-підписки - закрита відновленням `restoreWebPushSubscriptionIfLost` після reload)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: service worker
 - **Де:** apps/web/src/sw/cache.ts:237-253; apps/web/src/sw/messages.ts:66-95; apps/web/src/core/auth/AuthContext.tsx:618-622; apps/web/src/core/app/swControl.ts:162-171; apps/web/src/core/settings/PWASection.tsx:20-27
 - **Першопричина:** clearAppCaches видаляє і workbox-precache*, хоча там лише ассети збірки без даних користувача. Workbox відновлює precache тільки коли в маніфесті є integrity, а її немає, тож кеш лишається порожнім до встановлення нового SW. Кнопка скидання при цьому не викликає ні update(), ні unregister().
