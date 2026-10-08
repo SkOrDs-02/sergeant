@@ -37,6 +37,10 @@ import type { Pool } from "pg";
 import { env } from "../../env/env.js";
 import { logger, serializeError } from "../../obs/logger.js";
 import { waitUntilIdle } from "../../lib/pollerDrain.js";
+import {
+  resolveStartupDelayMs,
+  scheduleStartupTick,
+} from "../../lib/pollerStartupTick.js";
 import { toPublicErrorCode } from "../../obs/errorCode.js";
 import { gdprCleanupQueueDepth } from "../../obs/metrics.js";
 import {
@@ -66,6 +70,11 @@ export interface GdprCleanupPollerOptions {
   intervalMs?: number | undefined;
   /** Рядків за tick. Default 20. */
   batchLimit?: number | undefined;
+  /**
+   * Затримка одноразового стартового тіку (мс). Default - jitter 30-90 с;
+   * 0 або від'ємне вимикає (rel-19: без нього кожен деплой скидав інтервал).
+   */
+  startDelayMs?: number | undefined;
   /** Інʼєкція для тестів — реальний прогін бʼє у vendor-API. */
   processBatch?: typeof processGdprCleanupQueueBatch | undefined;
 }
@@ -74,8 +83,10 @@ export class GdprCleanupPoller {
   private readonly pool: Pool;
   private readonly intervalMs: number;
   private readonly batchLimit: number;
+  private readonly startDelayMs: number;
   private readonly processBatch: typeof processGdprCleanupQueueBatch;
   private timer: NodeJS.Timeout | null = null;
+  private startTimer: NodeJS.Timeout | null = null;
   private running = false;
   private stopping = false;
 
@@ -83,6 +94,7 @@ export class GdprCleanupPoller {
     this.pool = options.pool;
     this.intervalMs = options.intervalMs ?? DEFAULT_INTERVAL_MS;
     this.batchLimit = options.batchLimit ?? DEFAULT_BATCH_LIMIT;
+    this.startDelayMs = resolveStartupDelayMs(options.startDelayMs);
     this.processBatch = options.processBatch ?? processGdprCleanupQueueBatch;
   }
 
@@ -102,20 +114,32 @@ export class GdprCleanupPoller {
       intervalMs: this.intervalMs,
       batchLimit: this.batchLimit,
     });
-    this.timer = setInterval(() => {
-      void this.runOnce().catch((err: unknown) => {
-        logger.error({
-          msg: "gdpr_cleanup_tick_failed",
-          err: err instanceof Error ? err.message : String(err),
-        });
+    const onTickError = (err: unknown): void => {
+      logger.error({
+        msg: "gdpr_cleanup_tick_failed",
+        err: err instanceof Error ? err.message : String(err),
       });
+    };
+    this.timer = setInterval(() => {
+      void this.runOnce().catch(onTickError);
     }, this.intervalMs);
     this.timer.unref?.();
+    // Одноразовий стартовий тік: інтервал рахується від старту процесу, а
+    // деплоїв більше, ніж годин (rel-19).
+    this.startTimer = scheduleStartupTick(
+      this.startDelayMs,
+      () => this.runOnce(),
+      onTickError,
+    );
   }
 
   /** Зупиняє loop. Idempotent; чекає поки in-flight tick завершиться. */
   async stop(): Promise<void> {
     this.stopping = true;
+    if (this.startTimer) {
+      clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;

@@ -8,6 +8,7 @@ let handle: TestSqliteHandle;
 const UID = "user-1";
 const TS1 = "2026-05-01T10:00:00.000Z";
 const TS2 = "2026-05-01T11:00:00.000Z";
+const TS3 = "2026-05-01T12:00:00.000Z";
 
 beforeEach(async () => {
   handle = await createTestSqlite();
@@ -161,6 +162,120 @@ describe("applyFizrukDualWriteOps", () => {
       ["i1"],
     );
     expect(sets[0]!["deleted_at"]).toBe(TS2);
+  });
+
+  it("data-38: реплей старішого знімка (менше підходів) не гасить новіші підходи", async () => {
+    const makeWorkout = (setCount: number): FizrukDualWriteOp => ({
+      kind: "workout-upsert",
+      workout: {
+        id: "w38",
+        startedAt: "2026-05-01T10:00:00Z",
+        endedAt: null,
+        items: [
+          {
+            id: "i38",
+            exerciseId: "pushup",
+            nameUk: "Віджимання",
+            primaryGroup: "chest",
+            musclesPrimary: ["chest"],
+            musclesSecondary: [],
+            type: "strength",
+            sets: Array.from({ length: setCount }, () => ({
+              weightKg: 10,
+              reps: 12,
+            })),
+          },
+        ],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      },
+    });
+    const liveSets = () =>
+      handle.client.all<{ id: string; deleted_at: string | null }>(
+        "SELECT id, deleted_at FROM fizruk_workout_sets WHERE workout_item_id = ? ORDER BY sort_order",
+        ["i38"],
+      );
+
+    // Новіша правка (T2): 7 підходів.
+    await applyFizrukDualWriteOps(handle.client, [makeWorkout(7)], {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+    // Реплей журналу після краша: старіший знімок (T1 < T2) з 5 підходами.
+    await applyFizrukDualWriteOps(handle.client, [makeWorkout(5)], {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const sets = await liveSets();
+    expect(sets).toHaveLength(7);
+    for (const set of sets) expect(set.deleted_at).toBeNull();
+    expect(sets.map((x) => x.id)).toContain("i38:s5");
+    expect(sets.map((x) => x.id)).toContain("i38:s6");
+
+    // Контроль: легітимна новіша правка (T3 > T2) з 5 підходами прибирає s5/s6.
+    await applyFizrukDualWriteOps(handle.client, [makeWorkout(5)], {
+      userId: UID,
+      clientTs: TS3,
+      logger: silentLogger,
+    });
+    const after = await liveSets();
+    const byId = new Map(after.map((x) => [x.id, x.deleted_at]));
+    expect(byId.get("i38:s4")).toBeNull();
+    expect(byId.get("i38:s5")).toBe(TS3);
+    expect(byId.get("i38:s6")).toBe(TS3);
+  });
+
+  it("data-38: реплей старішого видалення тренування не гасить новіші items/sets", async () => {
+    const workout: FizrukDualWriteOp = {
+      kind: "workout-upsert",
+      workout: {
+        id: "w38b",
+        startedAt: "2026-05-01T10:00:00Z",
+        endedAt: null,
+        items: [
+          {
+            id: "i38b",
+            exerciseId: "squat",
+            nameUk: "Присідання",
+            primaryGroup: "legs",
+            musclesPrimary: ["quads"],
+            musclesSecondary: [],
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      },
+    };
+    await applyFizrukDualWriteOps(handle.client, [workout], {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+    // Старіше видалення (T1 < T2) приходить із журналу після новішої правки.
+    await applyFizrukDualWriteOps(
+      handle.client,
+      [{ kind: "workout-delete", workoutId: "w38b" }],
+      { userId: UID, clientTs: TS1, logger: silentLogger },
+    );
+    const items = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_workout_items WHERE workout_id = ?",
+      ["w38b"],
+    );
+    expect(items[0]!["deleted_at"]).toBeNull();
+    const sets = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_workout_sets WHERE workout_item_id = ?",
+      ["i38b"],
+    );
+    expect(sets[0]!["deleted_at"]).toBeNull();
   });
 
   it("LWW guard: stale workout upsert is a no-op", async () => {

@@ -36,7 +36,7 @@ SKILL.md — це не проза, а інструкція, яку агент в
 
 ### 2. GREEN — мінімальний SKILL, що адресує саме ті раціоналізації
 
-- Frontmatter: `name` = slug папки, `description` ≤ 220 символів з UA-тригером (`; UA: …`), `lang: en`, `lang-reason`.
+- Frontmatter: `name` = slug папки, `description` ≤ 220 символів з UA-тригером (`; UA: …`), `lang: uk` (дефолт, Hard Rule #15) або `en`, і `lang-reason`.
 - Body — EN, грунтований у конкретних шляхах (`apps/`, `packages/`, `scripts/`, `docs/`, `.agents/`) або `pnpm` командах.
 - Один обовʼязковий лінк на playbook у `docs/start/instructions/` або на `docs/start/agents/agent-skills-catalog.md`.
 - Адресуй **саме ті** раціоналізації з RED-фази. Не пиши «загальну освіту» — пиши контр-приклади.
@@ -58,7 +58,7 @@ SKILL.md — це не проза, а інструкція, яку агент в
 
 Кожен SKILL у `.agents/skills/` ОБОВ'ЯЗКОВО:
 
-1. Починається з `---` YAML-frontmatter з `name`, `description` (≤220 chars), `lang: en`, `lang-reason`.
+1. Починається з `---` YAML-frontmatter з `name`, `description` (≤220 chars), `lang` (`uk` за замовчуванням або `en`), `lang-reason`.
 2. `name:` дорівнює slug-у директорії — інакше `pnpm lint:skills` падає.
 3. Body містить конкретний шлях у репо або `pnpm`/`pnpx` команду — інакше SKILL «не заземлений» і ловиться `check-skill-shape.mjs`.
 4. Body лінкує мінімум один playbook у `docs/start/instructions/` або сам `docs/start/agents/agent-skills-catalog.md`.

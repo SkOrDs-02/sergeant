@@ -186,6 +186,52 @@ describe("normalizeRecipeForSave (pure)", () => {
   });
 });
 
+describe("components і cookedWeightG", () => {
+  const comp = (grams: unknown, name: unknown = "Гречка") => ({
+    name,
+    grams,
+    foodId: "f1",
+    per100: { kcal: 110, protein_g: 4.2, fat_g: 1.1, carbs_g: 21.3 },
+  });
+
+  it("пропускає валідний склад і вагу, відкидає невалідні компоненти", () => {
+    const r = normalizeRecipeForSave({
+      title: "Гречка з філе",
+      servings: 2,
+      components: [
+        comp(250),
+        comp(0),
+        comp(-5),
+        comp(10_001),
+        comp(Number.NaN),
+        comp(100, ""),
+      ],
+      cookedWeightG: 400,
+    });
+    expect(r.components).toHaveLength(1);
+    expect(r.components?.[0]).toMatchObject({ name: "Гречка", grams: 250 });
+    expect(r.cookedWeightG).toBe(400);
+  });
+
+  it("невалідна вага стає null, рецепт зберігається", () => {
+    for (const w of [0, -1, 10_001, Number.NaN, "400"]) {
+      const r = normalizeRecipeForSave({
+        title: "X",
+        components: [comp(100)],
+        cookedWeightG: w,
+      });
+      expect(r.cookedWeightG).toBeNull();
+      expect(r.components).toHaveLength(1);
+    }
+  });
+
+  it("вага без складу відкидається", () => {
+    const r = normalizeRecipeForSave({ title: "AI", cookedWeightG: 400 });
+    expect(r.components).toBeUndefined();
+    expect(r.cookedWeightG).toBeUndefined();
+  });
+});
+
 describe("scaleMacros (pure)", () => {
   it("scales non-null macros by a positive factor", () => {
     expect(

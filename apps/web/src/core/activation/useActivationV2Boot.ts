@@ -10,7 +10,9 @@ import {
   type UseActivationV2Options,
 } from "./useActivationV2";
 import { safeReadLS, webKVStore } from "@shared/lib/storage/storage";
-import { getCachedFinykSqliteState } from "../../modules/finyk/lib/sqliteReader";
+// Легкий стан кешу, НЕ `sqliteReader`: рідер тягне `merchantRules` +
+// `recurringDetect` на критичний шлях (eager-бюджет, 2026-10-08).
+import { getCachedFinykSqliteState } from "../../modules/finyk/lib/sqliteCacheState";
 
 /**
  * Wire-up adapter for `useActivationV2` (audit

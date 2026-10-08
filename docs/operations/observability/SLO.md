@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-09-17 by @claude (§5.1 SLO чату; web-vitals 50/min; ticket-route → Grafana). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-08 by @claude (§2.1: проби `/health`, `/readyz`, `/livez` тепер пишуть латентність, правило звужено до проб; статус ticket-маршруту Mimir-ruler-а не підтверджено); 2026-09-17 by @claude (§5.1 SLO чату; web-vitals 50/min; ticket-route → Grafana). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -155,7 +155,19 @@ AI endpoint-и виключаємо — у них власний latency SLO в 
 ### 2.1 Health endpoint p95
 
 Health/readiness/liveness probes мають окремий легший SLO: p95 `< 100ms` over
-5m для `path=~"/health(|/.*)|/healthz|/readyz|/livez|/startupz"`.
+5m для `path=~"/health|/readyz|/livez|/startupz|/health/(liveness|readiness|startup)"`.
+Детальні `/healthz` і `/health/workers` у SLO не входять: це важкі
+діагностичні відповіді, не проби. Проби виключено й з
+`sli:http_latency_p95_ms:rate5m`, щоб тисячі швидких відповідей не тягнули
+p95 API вниз.
+
+**До 2026-10-08 правило не мало даних саме від проб.** `requestLog.ts`
+повертався раніше для `/health`, `/readyz` і `/livez`, ще до хука, що пише
+`http_request_duration_ms`, тож у гістограму потрапляли лише `/healthz`,
+`/startupz` і `/health/*`, а проба Coolify на `/health` не мірялась узагалі.
+Тепер проби пишуть гістограму (тест `apps/server/src/http/requestLog.test.ts`),
+але як і раніше не йдуть в access-log і `http_requests_total`: інакше успішні
+проби розбавляли б частку 5xx у burn-rate.
 
 Recording rule: `job:health_p95_5m` у
 [`prometheus/recording_rules.yml`](./prometheus/recording_rules.yml). Alert:
@@ -165,11 +177,17 @@ Recording rule: `job:health_p95_5m` у
 
 Це не page, бо повільний health endpoint сам по собі не означає downtime; це
 ранній сигнал cold-start / DB pool / event-loop деградації, який треба
-розслідувати перш ніж Coolify почне рестартити unhealthy-контейнер. Маршрут
-для `severity=ticket` — Grafana Cloud managed alerting (contact point
-`telegram-ops`, див. [§ Статус wiring](#статус-wiring-чесний-зріз-2026-07-26));
-route в [`alertmanager.yml`](./alertmanager.yml) — Deprecated legacy, не
-задеплоєний.
+розслідувати перш ніж Coolify почне рестартити unhealthy-контейнер.
+
+**Доставка не підтверджена (зріз 2026-10-08).** Правило оцінює Mimir ruler, а
+Mimir-ruler шле в Alertmanager тенанта, не в Grafana-managed alerting. У репо
+задокументовано лише маршрут Grafana-managed `severity=page` → `telegram-ops`;
+маршруту для `severity=ticket` з боку Mimir-ruler-а не видно ніде. Поки власник
+не перевірив contact point і notification policy у Grafana Cloud Alertmanager
+(або не переніс правило в Grafana-managed групу `Sergeant Ops`), вважай, що
+цей алерт до Telegram не доходить. Зміни в `recording_rules.yml` і
+`alert_rules.yml` діють лише після ручного `mimirtool rules sync`. Route в
+[`alertmanager.yml`](./alertmanager.yml) — Deprecated legacy, не задеплоєний.
 
 ## 3. Sync (SLO 99.5 %)
 
@@ -216,8 +234,8 @@ sum(rate(sync_op_log_apply_total{status="rejected",reason!="lww_conflict"}[15m])
 шле той самий факт у Sentry (`area=sync`, `reject_reason`), щоб розлад було
 видно навіть там, де до Prometheus руки не дійшли.
 
-**Статус**: design-only, як і решта правил у цьому документі — див. § «Статус
-wiring».
+**Статус**: правило в `alert_rules.yml`; оцінювання й доставку див. § «Статус
+wiring» і застереження про `severity=ticket` у §2.1.
 
 ## 4. Auth (SLO 99.0 %)
 
@@ -267,7 +285,7 @@ histogram_quantile(0.95, sum by (le) (rate(chat_first_turn_phase_ms_bucket{phase
 histogram_quantile(0.95, sum by (le) (rate(ai_first_token_ms_bucket[w]))) < 1500
 ```
 
-Alert-правил під ці SLO ще немає (design-only, як і `BackendHealthP95High`);
+Alert-правил під ці SLO ще немає;
 факт на 2026-09-01 і розкладка по моделях — в `AGENTS.md`.
 
 ## 6. External HTTP per-upstream (SLO 95.0 %)

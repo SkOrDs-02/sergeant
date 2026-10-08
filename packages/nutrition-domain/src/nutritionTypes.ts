@@ -21,7 +21,8 @@ export const NUTRITION_LOG_KEY = "nutrition_log_v1";
 export const NUTRITION_RECIPES_CACHE_KEY = "nutrition_recipes_cache_v1";
 
 export type NutritionGoal = string;
-export type MealMacroSource = "manual" | "productDb" | "photoAI" | "recipeAI";
+export type MealMacroSource =
+  "manual" | "productDb" | "photoAI" | "recipeAI" | "recipe";
 export type MealSource = "manual" | "photo";
 
 export interface MealTemplate {
@@ -30,6 +31,10 @@ export interface MealTemplate {
   mealType: MealTypeId;
   macros: NullableMacros;
 }
+
+export const WEEKLY_RATES_KG = [0.25, 0.5, 0.75] as const;
+export type WeeklyRateKg = (typeof WEEKLY_RATES_KG)[number];
+export const DEFAULT_WEEKLY_RATE_KG: WeeklyRateKg = 0.5;
 
 export interface NutritionPrefs {
   goal: NutritionGoal;
@@ -46,6 +51,10 @@ export interface NutritionPrefs {
   reminderEnabled: boolean;
   reminderHour: number;
   waterGoalMl: number;
+  /** Темп схуднення, кг/тиж (дефіцит = round(7700 × темп / 7)). */
+  weeklyRateKg: WeeklyRateKg;
+  /** Цільова вага для орієнтовної дати цілі; `null` - не задана. */
+  goalWeightKg: number | null;
   /** Щотижневе калібрування цілі за фактичним енергобалансом. */
   adaptiveGoalEnabled: boolean;
   adaptiveGoalIntent: "cutting" | "maintenance" | "bulking";

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.2.0",
+  "current": "8.3.2",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -746,6 +746,30 @@
       "releasedAt": "2026-10-03",
       "changes": [
         "bump from 8.1.1 -> 8.2.0: ADR-0103 (лише Dependabot, Renovate прибрано): у rules/05 змінено тільки опис scope `deps` (Renovate → Dependabot), сам scope-enum не змінився; sergeant-security-audit звіряє CVE з PR Dependabot замість renovate.json. Minor, а не major бампера: правила для агентів не змінились, як у 8.1.0 (рішення власника 2026-10-01)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.3.0": {
+      "releasedAt": "2026-10-08",
+      "changes": [
+        "bump from 8.2.0 -> 8.3.0 (minor): docs/skills/agents drift audit — CI/autodeploy (ADR-0102), ENTRYPOINT migrations, required checks, e2e inventory, qa counts, ai-owner file map; rule 26 touched only in its historical section (no rule change, so not major)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.3.1": {
+      "releasedAt": "2026-10-08",
+      "changes": [
+        "bump from 8.3.0 -> 8.3.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.3.2": {
+      "releasedAt": "2026-10-08",
+      "changes": [
+        "bump from 8.3.1 -> 8.3.2: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

@@ -22,13 +22,13 @@ Do not change `trace` to `"on"` globally — it bloats CI artifacts on every pas
 
 ```bash
 # Interactive UI mode — full timeline, network tab, DOM snapshots
-pnpm playwright test --ui
+pnpm --filter @sergeant/web exec playwright test --ui
 
 # Force trace on every test (local only — do not use in CI config)
-pnpm playwright test --trace on
+pnpm --filter @sergeant/web exec playwright test --trace on
 
 # Playwright Inspector — pauses on every step, shows selector suggestions
-PWDEBUG=1 pnpm playwright test tests/smoke/auth.spec.ts
+PWDEBUG=1 pnpm --filter @sergeant/web exec playwright test tests/smoke/auth.spec.ts
 ```
 
 ## Viewing traces from CI
@@ -36,7 +36,7 @@ PWDEBUG=1 pnpm playwright test tests/smoke/auth.spec.ts
 When a CI run fails, download the `playwright-report` artifact from the workflow run. Open the trace locally:
 
 ```bash
-pnpm playwright show-trace path/to/trace.zip
+pnpm --filter @sergeant/web exec playwright show-trace path/to/trace.zip
 ```
 
 The trace shows: DOM snapshot at every action, network calls (request + response), action timeline. This is usually sufficient to diagnose a flaky failure without reproducing it locally.

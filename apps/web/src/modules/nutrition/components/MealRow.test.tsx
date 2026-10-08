@@ -37,16 +37,29 @@ describe("MealRow", () => {
     expect(screen.getByText(flatMatch("Б 35 г"))).toBeInTheDocument();
   });
 
+  it("recipe: підпис «рецепт» без гліфа AI і грами з amount_g", () => {
+    render(
+      <MealRow
+        meal={{ ...baseMeal, macroSource: "recipe", amount_g: 150 } as never}
+      />,
+    );
+    expect(screen.getByText("рецепт")).toBeInTheDocument();
+    expect(
+      screen.getByTitle("Походження КБЖВ").querySelector("svg"),
+    ).toBeNull();
+    expect(screen.getByText(flatMatch("150 г"))).toBeInTheDocument();
+  });
+
   it("shows an AI badge for photoAI-sourced macros", () => {
     render(<MealRow meal={{ ...baseMeal, macroSource: "photoAI" } as never} />);
     expect(screen.getByText("Сержант")).toBeInTheDocument();
   });
 
-  it("shows a DB badge for productDb-sourced macros", () => {
+  it("productDb: підпис «продукт», а не внутрішнє «DB»", () => {
     render(
       <MealRow meal={{ ...baseMeal, macroSource: "productDb" } as never} />,
     );
-    expect(screen.getByText("DB")).toBeInTheDocument();
+    expect(screen.getByText("продукт")).toBeInTheDocument();
   });
 
   it("invokes onEdit and onRemove callbacks", () => {

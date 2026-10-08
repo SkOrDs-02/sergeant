@@ -414,7 +414,7 @@ sum(rate(chat_number_tokens_total{explained="none"}[1d]))
 | `external_http_requests_total` | Counter   | `upstream` · `outcome` | [externalHttp.ts:30](../../../apps/server/src/lib/externalHttp.ts#L30), [anthropic.ts:78](../../../apps/server/src/lib/anthropic.ts#L78) |
 | `external_http_duration_ms`    | Histogram | `upstream` · `outcome` | [externalHttp.ts:32](../../../apps/server/src/lib/externalHttp.ts#L32), [anthropic.ts:80](../../../apps/server/src/lib/anthropic.ts#L80) |
 
-`upstream`: `monobank` · `privat` · `anthropic` · `off` · `usda` · `upcitemdb`. `outcome`: `ok` · `error` · `timeout` · `rate_limited` · `hit` · `miss` · `circuit_open`. Buckets: `25…20000` ms. **Cardinality**: ~42 (counter); histogram ~378.
+`upstream`: `monobank` · `privat` · `anthropic` · `off` · `usda` · `upcitemdb`. `off`/`usda` пишуться і зі штрихкодів (`barcode.ts`), і з `/api/food-search` (`food-search.ts`, з 2026-10-08, аудит rel-21): не-2xx і таймаут пошуку тепер дають `error`/`rate_limited`/`timeout`, а не тихий порожній результат. `outcome`: `ok` · `error` · `timeout` · `rate_limited` · `hit` · `miss` · `circuit_open`. Buckets: `25…20000` ms. **Cardinality**: ~42 (counter); histogram ~378.
 
 ```promql
 sum by (upstream, outcome) (rate(external_http_requests_total[5m]))                        # breakdown

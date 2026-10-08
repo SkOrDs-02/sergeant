@@ -57,7 +57,8 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
@@ -452,49 +453,32 @@ interface ModuleConfig {
   exampleLine2: string;
 }
 
+// Копія в `coreMessages.moduleEmpty` (чому саме там, а не в модульних
+// каталогах, пояснено біля неї); тут лише іконка й акцент.
 const MODULE_EMPTY_CONFIG: Record<
   ModuleEmptyStateProps["module"],
   ModuleConfig
 > = {
   finyk: {
     icon: "credit-card",
-    title: "Куди йдуть твої гроші?",
-    description: "Додай першу витрату і побач реальну картину бюджету.",
-    hint: "Порада: Підключи Monobank для автоматичного імпорту",
     // `actionLabel` навмисно відсутній — див. коментар над `ModuleConfig`.
     accent: "text-finyk bg-finyk-soft dark:bg-finyk/10",
-    exampleLine1: "Кава",
-    exampleLine2: "-85 ₴ · Сьогодні",
+    ...coreMessages.moduleEmpty.finyk,
   },
   fizruk: {
     icon: "dumbbell",
-    title: "Як прогресують мої тренування?",
-    description: "Запиши перше тренування, і побачиш ріст у цифрах.",
-    hint: "Порада: Почни з 10-хвилинної розминки",
-    actionLabel: "Почати тренування",
     accent: "text-fizruk bg-fizruk-soft dark:bg-fizruk/10",
-    exampleLine1: "Ранкова розминка",
-    exampleLine2: "10 хв · 5 вправ",
+    ...coreMessages.moduleEmpty.fizruk,
   },
   routine: {
     icon: "check-circle",
-    title: "Що насправді стало звичкою?",
-    description: "Відстежуй щоденні дії, серія днів покаже правду.",
-    hint: "Порада: Почни з однієї звички, яку точно виконаєш",
-    actionLabel: "Створити звичку",
     accent: "text-routine bg-routine-surface dark:bg-routine/10",
-    exampleLine1: "Пити воду",
-    exampleLine2: "Щодня · Серія: 0 днів",
+    ...coreMessages.moduleEmpty.routine,
   },
   nutrition: {
     icon: "utensils",
-    title: "Що ти їси насправді?",
-    description: "Залогай перший прийом їжі й отримай чесну картину.",
-    hint: "Порада: Сфоткай страву, Сержант порахує калорії",
-    actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
-    exampleLine1: "Сніданок",
-    exampleLine2: "420 ккал · Б: 15г | Ж: 12г | В: 58г",
+    ...coreMessages.moduleEmpty.nutrition,
   },
 };
 
@@ -511,7 +495,7 @@ function resolveGoalAwareDesc(
   goals: OnboardingGoals,
 ): string {
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}${NARROW_NBSP}₴ і додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
     return `${goals.fizrukWeeklyGoal}× на тиждень, починай із першого тренування.`;
@@ -523,7 +507,7 @@ function resolveGoalAwareDesc(
       reading: "«Читання»",
     };
     const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
-    return `Відстеж ${label}, серія днів покаже правду.`;
+    return `Познач ${label} сьогодні, і серія почнеться.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
     const goalLabels: Record<string, string> = {
@@ -532,7 +516,7 @@ function resolveGoalAwareDesc(
       maintain: "підтримувати вагу",
     };
     const goalLabel = goalLabels[goals.nutritionGoal] ?? goals.nutritionGoal;
-    return `Ціль «${goalLabel}», залогай перший прийом їжі.`;
+    return `Ціль «${goalLabel}», запиши перший прийом їжі.`;
   }
   return fallback;
 }

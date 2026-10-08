@@ -849,6 +849,14 @@ test("P9 вихід і інший користувач на тому ж прис
     await openMemory(a);
     await expect(a.getByText(new RegExp(`V${RUN}`))).toHaveCount(0);
   });
+  // C зареєструвався з порожнім анонімом — рівно той шлях, де перший запис
+  // ішов у чергу посеред клієнтських міграцій і не доїжджав на сервер до
+  // наступного буту (живий прогін 2026-10-08, `outboxSchema.ts`).
+  await check(ph, "C: перший запис після реєстрації доїжджає на сервер", () =>
+    addExpense(a, T("C1"), "44").then(() =>
+      expectOnServer("finyk", userC, T("C1")),
+    ),
+  );
   await check(ph, "A: дані на сервері цілі після виходу", async () => {
     expect(Number(sql(SERVER_ROW["finyk"]!(userId, T("F2"))))).toBe(1);
   });

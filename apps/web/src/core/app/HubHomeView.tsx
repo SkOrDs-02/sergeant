@@ -151,7 +151,7 @@ export function HubHomeView(props: HubHomeViewProps) {
     notifications.push({
       id: "pwa-install",
       icon: "download",
-      title: "Встановити додаток",
+      title: "Встановити застосунок",
       description: "Офлайн · пуш-нагадування · ярлик на екрані",
       actionLabel: "Встановити",
       onAction: () => {

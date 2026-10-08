@@ -144,11 +144,37 @@ export async function auditPage(page: Page, id: string) {
       });
     }
 
+    // Назва й підзаголовок модуля в шапці (`ModuleHeader`) стоять на
+    // `truncate`, тож ані `clippedLabels` (лише uppercase), ані
+    // `clippedContent` (ellipsis виключено) їх не бачать. На 375px «Фінік /
+    // Фінанси» різалось до «Фі… / Фіна…» за шістьма контролами в один ряд
+    // (анти-слоп раунд 4, A3). Назва модуля на екрані самого модуля не може
+    // бути обрізаною.
+    const clippedHeader: Array<{ label: string; lostPx: number }> = [];
+    const titleEl = document.querySelector(
+      '[data-testid="module-header-title"]',
+    );
+    if (titleEl) {
+      const candidates = [
+        ...Array.from(titleEl.querySelectorAll("*")),
+        ...Array.from(titleEl.parentElement?.children ?? []),
+      ];
+      for (const el of candidates) {
+        if (getComputedStyle(el).textOverflow !== "ellipsis") continue;
+        if (el.scrollWidth <= el.clientWidth + 1) continue;
+        clippedHeader.push({
+          label: (el.textContent || "").trim().slice(0, 40),
+          lostPx: el.scrollWidth - el.clientWidth,
+        });
+      }
+    }
+
     return {
       overflowPx: document.documentElement.scrollWidth - window.innerWidth,
       undersized,
       clippedLabels,
       clippedContent,
+      clippedHeader,
     };
   }, FLOOR_SELECTOR);
 
@@ -164,4 +190,5 @@ export async function auditPage(page: Page, id: string) {
   expect(report.clippedLabels, `truncated uppercase labels — ${id}`).toEqual(
     [],
   );
+  expect(report.clippedHeader, `truncated module header — ${id}`).toEqual([]);
 }

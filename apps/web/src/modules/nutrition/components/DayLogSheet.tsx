@@ -13,6 +13,7 @@ interface DayLogSheetProps {
   selectedDate: string;
   onRemoveMeal?: ((date: string, meal: Meal) => void) | undefined;
   onEditMeal?: ((date: string, meal: Meal) => void) | undefined;
+  onCopyMeals?: ((type: MealTypeId) => void) | undefined;
 }
 
 /**
@@ -49,6 +50,7 @@ export function DayLogSheet({
   selectedDate,
   onRemoveMeal,
   onEditMeal,
+  onCopyMeals,
 }: DayLogSheetProps) {
   return (
     <Card
@@ -78,6 +80,7 @@ export function DayLogSheet({
           selectedDate={selectedDate}
           onRemoveMeal={onRemoveMeal}
           onEditMeal={onEditMeal}
+          onCopyMeals={onCopyMeals}
         />
       </div>
     </Card>

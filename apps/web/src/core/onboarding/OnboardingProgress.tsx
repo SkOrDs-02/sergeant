@@ -29,6 +29,11 @@ export function OnboardingProgress({
 }: OnboardingProgressProps) {
   const count = Math.min(activeModules.length, totalModules);
 
+  // Повна смуга «4 з 4» на порожньому хабі це прогрес без задачі (анти-слоп
+  // раунд 4, A6): увімкнено все, показувати нема чого. Смуга потрібна лише
+  // тоді, коли частина модулів вимкнена і число пояснює порожні місця.
+  if (count >= totalModules) return null;
+
   return (
     <div className="flex items-center gap-3 px-1">
       <ProgressBar

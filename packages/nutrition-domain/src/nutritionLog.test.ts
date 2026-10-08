@@ -10,12 +10,14 @@ import { describe, expect, it } from "vitest";
 import {
   addDaysISODate,
   addLogEntry,
+  cloneMealsForCopy,
   duplicatePreviousDayMeals,
   estimateLogBytes,
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
   mergeNutritionLogs,
+  moveLogEntry,
   normalizeMeal,
   normalizeNutritionLog,
   removeLogEntry,
@@ -99,6 +101,9 @@ describe("normalizeMeal", () => {
     );
     expect(normalizeMeal({ macroSource: "recipeAI" }, 0).macroSource).toBe(
       "recipeAI",
+    );
+    expect(normalizeMeal({ macroSource: "recipe" }, 0).macroSource).toBe(
+      "recipe",
     );
     expect(normalizeMeal({ macroSource: "manual" }, 0).macroSource).toBe(
       "manual",
@@ -639,5 +644,56 @@ describe("addLogEntry — ідемпотентність за id", () => {
       { id: "m2", name: "Чай" },
     );
     expect(log["2026-08-01"]?.meals).toHaveLength(2);
+  });
+});
+
+describe("cloneMealsForCopy", () => {
+  it("нові id, source=manual, без demo; тип і підпис перекриваються", () => {
+    const [copy] = cloneMealsForCopy(
+      [makeMeal({ id: "m1", source: "photo", demo: true })],
+      "dinner",
+    );
+    expect(copy!.id).not.toBe("m1");
+    expect(copy!.source).toBe("manual");
+    expect(copy!.demo).toBeUndefined();
+    expect(copy!.mealType).toBe("dinner");
+    expect(copy!.label).toBe("Вечеря");
+    expect(copy!.time).toBe("08:00");
+  });
+
+  it("без mealType лишає тип оригіналу", () => {
+    const [copy] = cloneMealsForCopy([makeMeal()]);
+    expect(copy!.mealType).toBe("breakfast");
+  });
+});
+
+describe("moveLogEntry", () => {
+  const meal = makeMeal({ id: "m1" });
+  const log: NutritionLog = {
+    "2026-05-10": { meals: [meal, makeMeal({ id: "m2" })] },
+  };
+
+  it("переносить запис: id той самий, зникає зі старого дня, є в новому", () => {
+    const r = moveLogEntry(log, "2026-05-10", "2026-05-11", meal);
+    expect(r["2026-05-10"]!.meals.map((m) => m.id)).toEqual(["m2"]);
+    expect(r["2026-05-11"]!.meals.map((m) => m.id)).toEqual(["m1"]);
+  });
+
+  it("порожній старий день прибирається з журналу", () => {
+    const single: NutritionLog = { "2026-05-10": { meals: [meal] } };
+    const r = moveLogEntry(single, "2026-05-10", "2026-05-11", meal);
+    expect(r["2026-05-10"]).toBeUndefined();
+  });
+
+  it("той самий день = оновлення на місці", () => {
+    const r = moveLogEntry(log, "2026-05-10", "2026-05-10", {
+      ...meal,
+      name: "Нова",
+    });
+    expect(r["2026-05-10"]!.meals[0]!.name).toBe("Нова");
+  });
+
+  it("no-op, коли запису у вихідному дні немає", () => {
+    expect(moveLogEntry(log, "2026-05-09", "2026-05-11", meal)).toBe(log);
   });
 });

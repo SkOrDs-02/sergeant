@@ -84,10 +84,14 @@ describe("countKcalStreakDays", () => {
     expect(countKcalStreakDays(logWith({ 1: 1899 }), GOALS, TODAY)).toBe(0);
   });
 
-  it("день без цілі обриває прохід, а не пропускається", () => {
+  it("дні до першої сходинки рахуються за нею (origin 'extended')", () => {
     const late: GoalPeriod[] = [goal("2026-09-11")];
-    // 11-те і 12-те мають ціль, 10-те — ні. Серія не має склеювати періоди.
     const log = logWith({ 1: 2000, 2: 2000, 3: 2000, 4: 2000 });
-    expect(countKcalStreakDays(log, late, TODAY)).toBe(2);
+    expect(countKcalStreakDays(log, late, TODAY)).toBe(4);
+  });
+
+  it("без жодної цілі в журналі серії немає", () => {
+    const log = logWith({ 1: 2000, 2: 2000 });
+    expect(countKcalStreakDays(log, [], TODAY)).toBe(0);
   });
 });

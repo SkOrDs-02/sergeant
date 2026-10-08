@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+vi.mock("./MyNormSheet", () => ({
+  MyNormSheet: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="my-norm-sheet" /> : null,
+}));
+
 import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 import type { AdaptiveGoalState } from "../hooks/useAdaptiveNutritionGoal";
 
@@ -57,18 +62,17 @@ describe("AdaptiveGoalCard", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("дія для 'profile-needed' веде В ПРОФІЛЬ, куди й відсилає текст", () => {
-    // Раніше тест пінив, що викликано `onOpenSettings` — тобто ФАКТ
-    // виклику, а не його наслідок. А наслідком на єдиному call-site був
-    // `setActivePageAndHash("menu")`: текст казав «додай … у профілі», а
-    // кнопка вела в Харчування → Меню. Знахідка PR-N4.
+  it("дія для 'profile-needed' відкриває аркуш «Моя норма», а не веде на /profile", () => {
+    // Для гостя /profile редіректить на вхід, а біометрика працює локально.
     render(
       <MemoryRouter>
         <AdaptiveGoalCard state={state({ mode: "profile-needed" })} />
       </MemoryRouter>,
     );
-    expect(screen.getByText(/у профілі/)).toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute("href", "/profile");
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("my-norm-sheet")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
+    expect(screen.getByTestId("my-norm-sheet")).toBeInTheDocument();
   });
 });
 

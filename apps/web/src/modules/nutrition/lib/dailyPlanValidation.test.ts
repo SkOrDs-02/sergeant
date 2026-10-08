@@ -38,6 +38,8 @@ function makePrefs(
     reminderEnabled: false,
     reminderHour: 12,
     waterGoalMl: 2000,
+    weeklyRateKg: 0.5,
+    goalWeightKg: null,
     ...overrides,
   };
 }

@@ -15,6 +15,7 @@ import {
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AddMealSheet } from "./AddMealSheet";
+import { upsertFood } from "../lib/foodDb/foodDb";
 
 // ─── Mock heavy sub-components ───────────────────────────────────────────────
 
@@ -288,7 +289,13 @@ vi.mock("./meal-sheet/PackageEntryStep", () => ({
     onCreated,
   }: {
     onCreated: (
-      product: { id: string; name: string; per100?: unknown },
+      product: {
+        id: string;
+        name: string;
+        per100?: unknown;
+        portions?: unknown;
+        unsaved?: boolean;
+      },
       grams: string,
     ) => void;
   }) => (
@@ -302,6 +309,8 @@ vi.mock("./meal-sheet/PackageEntryStep", () => ({
               id: "food-9",
               name: "Равіолі",
               per100: { kcal: 250, protein_g: 9, fat_g: 6, carbs_g: 40 },
+              portions: [{ id: "portion_1", name: "пачка", grams: 250 }],
+              unsaved: true,
             },
             "250",
           )
@@ -427,6 +436,7 @@ vi.mock("../lib/mealTypes", () => ({
 
 vi.mock("../lib/foodDb/foodDb", () => ({
   ensureSeedFoods: vi.fn(() => Promise.resolve()),
+  upsertFood: vi.fn(() => Promise.resolve({ ok: true })),
   // Аркуш редагування піднімає звʼязаний продукт за `foodId`
   // (`useEditedFoodRehydration`). `null` = продукту в базі немає, тобто
   // поведінка цих тестів лишається тією, що була до відновлення: картка
@@ -650,6 +660,51 @@ describe("AddMealSheet — source step (with templates)", () => {
     });
   });
 
+  describe("продукт з упаковки пишеться в базу лише разом із записом", () => {
+    it("закриття аркуша після «Далі» не пише продукт", () => {
+      const onClose = vi.fn();
+      renderSheet({ mealTemplates: [], onClose });
+      openManualTab();
+      fireEvent.click(screen.getByTestId("create-package-food"));
+      fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+      expect(onClose).toHaveBeenCalled();
+      expect(upsertFood).not.toHaveBeenCalled();
+    });
+
+    it("збереження пише продукт рівно раз, з тим самим id і порціями", () => {
+      renderSheet({ mealTemplates: [], onSave: vi.fn() });
+      openManualTab();
+      fireEvent.click(screen.getByTestId("create-package-food"));
+      fireEvent.change(screen.getByTestId("kcal-input"), {
+        target: { value: "625" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+      expect(upsertFood).toHaveBeenCalledTimes(1);
+      const saved = vi.mocked(upsertFood).mock.calls[0]?.[0] as Record<
+        string,
+        unknown
+      >;
+      expect(saved).toMatchObject({
+        id: "food-9",
+        portions: [{ id: "portion_1", name: "пачка", grams: 250 }],
+      });
+      expect(saved).not.toHaveProperty("unsaved");
+    });
+
+    it("шлях через порожні макроси пише продукт лише після підтвердження", () => {
+      const onSave = vi.fn();
+      renderSheet({ mealTemplates: [], onSave });
+      openManualTab();
+      fireEvent.click(screen.getByTestId("create-package-food"));
+      fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+      expect(onSave).not.toHaveBeenCalled();
+      expect(upsertFood).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+      expect(onSave).toHaveBeenCalledTimes(1);
+      expect(upsertFood).toHaveBeenCalledTimes(1);
+    });
+  });
+
   // Регресія: `gramsOrDefault` підставляє 100 для нуля й порожнього поля,
   // а `PickedFoodCard` навмисно не перераховує КБЖВ під нульову вагу —
   // разом це давало запис «100 г» із числами, порахованими під 250 г.
@@ -803,6 +858,58 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(
       screen.queryByRole("button", { name: "Маю етикетку на 100 г" }),
     ).toBeNull();
+  });
+
+  describe("перенос запису на іншу дату", () => {
+    const editProps = {
+      initialDate: "2026-05-10",
+      initialMeal: {
+        id: "m1",
+        name: "Суп",
+        mealType: "lunch" as const,
+        time: "13:00",
+        macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 40 },
+      },
+    };
+
+    it("змінена дата їде третім аргументом onSave", () => {
+      const onSave = vi.fn();
+      renderSheet({ ...editProps, onSave });
+      fireEvent.change(screen.getByLabelText("Дата запису"), {
+        target: { value: "2026-05-09" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "m1" }),
+        null,
+        "2026-05-09",
+      );
+    });
+
+    it("без зміни дати третього аргументу немає", () => {
+      const onSave = vi.fn();
+      renderSheet({ ...editProps, onSave });
+      fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
+      expect(onSave.mock.calls[0]![2]).toBeUndefined();
+    });
+
+    it("поля дати немає при створенні запису", () => {
+      renderSheet();
+      expect(screen.queryByLabelText("Дата запису")).toBeNull();
+    });
+  });
+
+  it("«Як учора» копіює вчорашній прийом одним тапом і не показується без записів", () => {
+    const onCopyYesterday = vi.fn();
+    const yesterdayMeals = [
+      { id: "y1", name: "Сирники", mealType: "breakfast" },
+    ] as never;
+    const { unmount } = renderSheet({ yesterdayMeals, onCopyYesterday });
+    fireEvent.click(screen.getByRole("button", { name: /Як учора/ }));
+    expect(onCopyYesterday).toHaveBeenCalledTimes(1);
+    unmount();
+    renderSheet({ yesterdayMeals: [], onCopyYesterday });
+    expect(screen.queryByRole("button", { name: /Як учора/ })).toBeNull();
   });
 
   it("selecting a template via MealTemplatesRow advances to fill step", () => {

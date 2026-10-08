@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-09-23 by @claude (deploy-опис приведено до реального потоку: без GitHub Actions/`ghcr.io`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-08 by @claude (CI і автодеплой бекенду через GitHub Actions, ADR-0102; PR-шаблон і 3-way sync hard rules). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Claude Code, Codex, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -33,7 +33,7 @@ CI hard-rules ловляться різними механізмами. Стар
 
 | Симптом                                                    | Куди дивитися                                                                                                                                                                                                                                    |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../governance/governance/hard-rules.json) ↔ `CONTRIBUTING.md`. Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                                                 |
+| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../governance/governance/hard-rules.json) ↔ [`rules/*.md`](../../governance/governance/rules/) ↔ `CONTRIBUTING.md` § Hard rules. Прогнати `pnpm hard-rules:list` побачиш точне правило.               |
 | `sergeant-design/no-raw-local-storage`                     | Використовуй storage-wrapper з `@shared/storage` (`ls`, `lsSet`, `safeReadLS`) замість сирого `localStorage`. Plugin: [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design).                              |
 | `sergeant-design/rq-keys-only-from-factory` (Hard Rule #2) | RQ-ключі лише з центральних фабрик `apps/web/src/shared/lib/api/queryKeys.ts` — не inline `queryKey: [...]`.                                                                                                                                     |
 | `sergeant-design/no-cyrillic-jsx-literal`                  | Кириличний literal у JSX поза allowlist — див. [`docs/design/i18n/readiness.md`](../../design/i18n/readiness.md).                                                                                                                                |
@@ -61,9 +61,9 @@ CI hard-rules ловляться різними механізмами. Стар
 
 Більше одного скіла одночасно тримати не треба — [`AGENTS.md`](../../../AGENTS.md) описує routing-disсipline.
 
-## 4.5. Інфраструктура (оновлено 2026-07-21)
+## 4.5. Інфраструктура (оновлено 2026-10-08)
 
-**Backend (ADR-0074):** API + Postgres + Redis на **Hetzner CX23 під Coolify**. GitHub Actions і `ghcr.io` більше не задіяні — Coolify білдить образ на сервері й деплоїться вручну через `pnpm deploy:api`; міграції їдуть в ENTRYPOINT образу (`node dist-server/migrate.js && exec node dist-server/index.js`), не в Coolify `pre_deployment_command`. Автодеплою на merge немає — розрив між `main` і продом виміряй через `pnpm deploy:status`. Railway виведено ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); деталі — [`AGENTS.md § Де живе код`](../../../AGENTS.md) і `§ Прод не оновлюється сам`.
+**Backend (ADR-0074):** API + Postgres + Redis на **Hetzner CX23 під Coolify**. Coolify білдить образ із `Dockerfile.api` на самому сервері з GitHub `main` (`ghcr.io` не задіяний). CI - GitHub Actions (`ci.yml`, з 2026-09-30, [ADR-0102](../../governance/adr/0102-github-actions-ci-and-autodeploy.md)): після зелених `check`, `critical-flow`, `migration-lint` і `migration-down-drill` джоба `deploy-api` викочує бекенд сама, ручний `pnpm deploy:api -- --yes` лише запасний шлях. Міграції їдуть в ENTRYPOINT образу (`node dist-server/migrate.js && exec node dist-server/index.js`), не в Coolify `pre_deployment_command`. Розрив між `main` і продом виміряй через `pnpm deploy:status`. Railway виведено ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); деталі — [`AGENTS.md § Де живе код`](../../../AGENTS.md) і `§ Прод не оновлюється сам`.
 
 **OpenClaw (ADR-0075):** повністю **decommissioned** 2026-07-20 — `tools/openclaw`, gateway, `packages/openclaw-plugin`, `ops/openclaw` прибрано з репо. Hard Rule #20 лишається (fail-closed guard проти `OPENCLAW_GITHUB_PAT` у prod). Для Telegram ops — server-side alert bot, не OpenClaw (n8n теж виведено — [ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).
 
@@ -86,7 +86,7 @@ CI hard-rules ловляться різними механізмами. Стар
 pnpm lint                    # ESLint flat config + custom plugin
 pnpm typecheck               # TypeScript per-app
 pnpm lint:skills             # SKILL.md shape + skills-lock SHA-256
-pnpm lint:hard-rules-registry  # hard-rules.json ↔ AGENTS.md ↔ CONTRIBUTING.md
+pnpm lint:hard-rules-registry  # hard-rules.json ↔ AGENTS.md ↔ rules/*.md ↔ CONTRIBUTING.md
 pnpm docs:check-playbook-schema  # якщо торкався playbook'ів
 pnpm docs:check-links        # якщо доді/змінив internal лінки
 ```
@@ -97,7 +97,7 @@ Husky pre-commit прогонить `lint-staged` (ESLint --fix + Prettier) і �
 
 - Один surface → один primary skill → один primary playbook.
 - Conventional Commits scope з enum у `AGENTS.md` Hard Rule #5 (наприклад: `docs(agents)`, `feat(server)`, `fix(web)`).
-- PR template — [`AGENTS.md`](../../../AGENTS.md) § PR template секція в Verification before PR.
+- PR template — [`.github/PULL_REQUEST_TEMPLATE.md`](../../../.github/PULL_REQUEST_TEMPLATE.md); PR відкривається як draft через `gh pr create` ([`AGENTS.md`](../../../AGENTS.md) § Де живе код).
 - Post-PR: чекай CI. `pnpm lint` падає на новому ESLint warning'у → fix. `Markdown link checker` падає на pre-existing broken link → можна зберегти scope, але зазнач у PR description.
 - Якщо CI блок через pre-existing failure (не від твоєї роботи) — окремий міні-PR-розблокувач, не міксуй scope.
 

@@ -1,6 +1,6 @@
 # Локальне середовище верифікації
 
-> **Last validated:** 2026-09-05 by Codex. **Next review:** 2026-10-05.
+> **Last validated:** 2026-10-08 by @claude (додано хмарний Linux-стенд без Docker, прогін `durability-2026-10-08`). **Next review:** 2026-11-08.
 > **Status:** Active
 
 ## База даних
@@ -33,3 +33,15 @@ pnpm --filter @sergeant/server db:migrate:dev
 Для пілота: API 127.0.0.1:3000, preview 127.0.0.1:4173, BETTER_AUTH_URL на API й ALLOWED_ORIGINS на preview. Web збирається з VERCEL=1 (outDir=dist) і VITE_API_BASE_URL=http://127.0.0.1:3000. Без VERCEL=1 Vite використовує іншу теку результату.
 
 Продуктові OAuth, email, push, зовнішні банківські токени та Redis не налаштовані на цьому стенді. Це обмеження відповідних сценаріїв, не причина називати їх пройденими. На машині мало вільної RAM; важкі тести запускати послідовно, browser workers=1.
+
+## Хмарний Linux-контейнер без Docker (2026-10-08)
+
+Стенд прогону `durability-2026-10-08`. Docker-демона в контейнері немає, тому все локально:
+
+- **Postgres 16 з apt** (`service postgresql start`, роль `hub/hub`, база `sergeant_verify`). Пакет `postgresql-16-pgvector` з apt має версію 0.6 без `halfvec`, і міграція 025 на ньому падає. pgvector ≥0.7 збирається з вихідників (`git clone --branch v0.8.0 … && make && make install`, потрібен `postgresql-server-dev-16`). Міграції: `DATABASE_URL` і `MIGRATE_DATABASE_URL` на локальну базу, далі `pnpm --filter @sergeant/server db:migrate:dev`.
+- **API:** `pnpm --filter @sergeant/server dev` з `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=http://127.0.0.1:3000`, `ALLOWED_ORIGINS=http://127.0.0.1:4173` у процесі.
+- **Web:** `VERCEL=1 VITE_API_BASE_URL=http://127.0.0.1:3000` для білда **і** `VERCEL=1` для `vite preview`. Без нього preview роздає `../server/dist` і віддає 404 на `/`.
+- **Харнес `data-durability`** читає БД через `docker exec hub-postgres psql`. Замість докера досить shim-скрипта першим у `PATH`, який для `exec hub-postgres` запускає локальний `psql -h 127.0.0.1` з тими самими аргументами. Плюс `VERIFY_DB=sergeant_verify`.
+- **Браузер:** репо пінить Playwright, що чекає `chromium_headless_shell-1243`, а в образі є лише 1194. `playwright install` у цьому середовищі не запускаємо. Робочий обхід: symlink `…/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell` на `…-1194/chrome-linux/headless_shell` і маркери `INSTALLATION_COMPLETE`/`DEPENDENCIES_VALIDATED` поруч.
+- **Pre-commit** вимагає `gitleaks`: є в apt (`apt-get install gitleaks`).
+- **Діагностика:** прод-логер (`logger.*`) у білді мовчить. Щоб побачити внутрішній стан, потрібні тимчасові `console.info` у джерелі й перезбірка, які потім треба прибрати перед комітом.

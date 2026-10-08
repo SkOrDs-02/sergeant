@@ -25,6 +25,7 @@ import { meApi } from "@shared/api";
 import { logger } from "@shared/lib";
 import { hubKeys } from "@shared/lib/api/queryKeys";
 import { useAuth } from "../auth/AuthContext";
+import { LOCAL_ANON_USER_ID } from "../auth/localIdentity";
 import { setBiometricsOwner } from "./biometrics";
 import { setMemoryBankOwner, subscribeLocalMemoryEdit } from "./memoryBank";
 import {
@@ -43,7 +44,9 @@ export function useProfileWriteThroughBoot(): void {
   // `profileWriteThrough.ts` (CodeRabbit PR #627, mirrored for the memory
   // bank by L-8).
   useEffect(() => {
-    setBiometricsOwner(userId);
+    // Анонімна біометрика штампується явним маркером, а не `null`: `null` -
+    // це легасі-запис невідомого власника, який звірка вважає чужим.
+    setBiometricsOwner(userId ?? LOCAL_ANON_USER_ID);
     setMemoryBankOwner(userId);
   }, [userId]);
 

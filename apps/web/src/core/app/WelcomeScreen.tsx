@@ -2,8 +2,6 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
 import {
   markFirstActionPending,
   markFirstActionStartedAt,
@@ -23,156 +21,14 @@ import { WelcomeModulePicker } from "./WelcomeModulePicker";
 import type { DashboardModuleId } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 
-// Static preview of the populated hub that sits behind the splash card on
-// `/welcome`. Renders a 2×2 bento grid matching `HubDashboard`'s module
-// cards so the blurred silhouette under the splash accurately teases the
-// real dashboard layout new users are about to see.
-//
-// PR-06 — canonical Cyrillic without emoji. Module labels are bare brand
-// names (`Фінік / Фізрук / Рутина / Їжа`) — the colored module-icon
-// bubble already carries the visual association, so emoji prefixed to the
-// text was duplicative and broke uniformity vs the hub bottom-nav and
-// settings groups.
-//
-// AI-CONTEXT: картки навмисно БЕЗ числових значень. Доти тут стояли
-// `−320 ₴`, `5 трен.`, `7 днів`, `420 ккал`, а підпис «Це приклад» мав
-// `hidden sm:flex` — тобто на телефоні, основній платформі web-first PWA,
-// новачок бачив чужі числа без жодної ознаки, що вони несправжні
-// (`docs/work/specs/audits/2026-09-20-rada-skeptykiv.md` § G). Форму
-// дашборда тепер тримають скелетон-риски: вони не вдають дані, тож і
-// дисклеймер більше не потрібен.
-const PEEK_CARDS = [
-  {
-    id: "finyk",
-    label: "Фінік",
-    cardBg: "bg-finyk-soft/40 dark:bg-finyk-surface-dark/8",
-    iconClass: "bg-finyk-soft text-finyk dark:bg-finyk-surface-dark/15",
-    icon: "credit-card",
-  },
-  {
-    id: "fizruk",
-    label: "Фізрук",
-    cardBg: "bg-fizruk-soft/40 dark:bg-fizruk-surface-dark/8",
-    iconClass: "bg-fizruk-soft text-fizruk dark:bg-fizruk-surface-dark/15",
-    icon: "dumbbell",
-  },
-  {
-    id: "routine",
-    label: "Рутина",
-    cardBg: "bg-routine-surface/40 dark:bg-routine-surface-dark/8",
-    iconClass:
-      "bg-routine-surface text-routine dark:bg-routine-surface-dark/15",
-    icon: "check",
-  },
-  {
-    id: "nutrition",
-    label: "Їжа",
-    cardBg: "bg-nutrition-soft/40 dark:bg-nutrition-surface-dark/8",
-    iconClass:
-      "bg-nutrition-soft text-nutrition dark:bg-nutrition-surface-dark/15",
-    icon: "utensils",
-  },
-];
-
-function PeekBackdrop() {
-  // 2026-05-08 — `fixed inset-0` (not `absolute inset-0`).
-  // Раніше backdrop сидів у тому самому потоці page-wrapper'а, тож
-  // коли scroll-шар розширювався (через «Що це за розділи?»),
-  // floating-shapes / blurred bento теж тягнулися вниз разом із
-  // вмістом. `fixed` пришпилює backdrop до viewport — він залишається
-  // на місці, а splash-картка прокручується над ним. Дзеркало того
-  // ж патерну, що й у `OnboardingWizard` modal-варіанті.
-  return (
-    <div
-      aria-hidden
-      role="presentation"
-      className="pointer-events-none fixed inset-0 overflow-hidden"
-    >
-      <div
-        className={cn(
-          "absolute inset-0",
-          // Soft brand wash so the backdrop never looks empty on cold load.
-          "bg-linear-to-b from-brand-500/5 via-transparent to-transparent",
-        )}
-      />
-      {/* Animated floating shapes for visual interest */}
-      <div className="absolute inset-0">
-        <div
-          className="absolute top-[15%] left-[10%] w-24 h-24 rounded-full bg-brand-500/5 blur-2xl motion-safe:animate-float-slow"
-          style={{ animationDelay: "0s" }}
-        />
-        <div
-          className="absolute top-[30%] right-[15%] w-32 h-32 rounded-full bg-finyk/5 blur-2xl motion-safe:animate-float-slow"
-          style={{ animationDelay: "1s" }}
-        />
-        <div
-          className="absolute bottom-[25%] left-[20%] w-20 h-20 rounded-full bg-fizruk/5 blur-2xl motion-safe:animate-float-slow"
-          style={{ animationDelay: "2s" }}
-        />
-      </div>
-      {/* Faux hub rendered under a blur so the user perceives the shape
-          and accent colors of their about-to-be-populated dashboard. The
-          cards carry skeleton bars, not numbers — nothing here pretends to
-          be data, so no disclaimer is needed. Uses a 2×2 bento grid
-          matching the real dashboard. */}
-      <div
-        className={cn(
-          "absolute inset-x-0 top-0 pt-[max(2.5rem,env(safe-area-inset-top))] px-5 max-w-lg mx-auto w-full",
-          "opacity-0 motion-safe:animate-fade-in-slow",
-        )}
-        style={{
-          filter: "blur(6px) saturate(0.85)",
-          animationDelay: "0.3s",
-          animationFillMode: "forwards",
-        }}
-      >
-        <div className="space-y-3 opacity-40">
-          <div>
-            <div className="h-6 w-32 rounded-xl bg-panelHi" />
-            <div className="h-3 w-24 rounded-xl bg-panelHi mt-2" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {PEEK_CARDS.map((card, idx) => (
-              <div
-                key={card.id}
-                className={cn(
-                  "flex flex-col rounded-3xl border border-line p-3.5 shadow-card",
-                  card.cardBg,
-                  "motion-safe:animate-card-enter",
-                )}
-                // Hard Rule #17 — крок стагеру ≤30 мс (було 100 мс).
-                // 0.4 с — це затримка входу всієї peek-групи, не крок
-                // між дітьми, тому лишається.
-                style={{
-                  animationDelay: `calc(0.4s + ${Math.min(idx * 30, 150)}ms)`,
-                }}
-              >
-                <div
-                  className={cn(
-                    "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mb-2",
-                    card.iconClass,
-                  )}
-                >
-                  <Icon
-                    name={card.icon}
-                    size="md"
-                    strokeWidth={2}
-                    aria-hidden
-                  />
-                </div>
-                <span className="text-style-label font-semibold text-text">
-                  {card.label}
-                </span>
-                <div className="h-5 w-16 rounded-xl bg-panelHi mt-1" />
-                <div className="h-3 w-12 rounded-xl bg-panelHi mt-1.5" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// AI-CONTEXT: до 2026-10-08 за карткою стояв `PeekBackdrop`: три розмиті
+// плаваючі плями (`blur-2xl animate-float-slow`) і розмитий псевдо-хаб із
+// скелетон-рисками. Це T3 «aurora/orbs» і T13 «floating blobs» з матриці
+// анти-слоп аудиту 2026-09-01, тобто перший екран продукту стояв на
+// найпоширенішому відбитку генераторів. Знято рішенням власника
+// (`docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md`, Q1):
+// верх екрана лишається тихим, картка центрується. Повертати декор сюди не
+// треба: §8 анти-слоп стратегії, «не додавати характеру декором».
 
 interface WelcomeScreenProps {
   /** Called when onboarding completes. Receives the selected start module and optional wizard options. */
@@ -294,13 +150,12 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   //
   // Тепер page-wrapper — справжній scroll-контейнер: `h-app-dvh`
   // (рівно viewport), `overflow-y-auto` (внутрішній скрол),
-  // `overscroll-contain` (гасить body-bounce на iOS). `PeekBackdrop`
-  // переведено на `fixed inset-0`, тож floating-shapes / blurred
-  // bento залишаються в viewport, а splash-блок ковзає над ними.
-  // Внутрішній шар — `min-h-full flex items-end sm:items-center`:
-  // коли вміст вміщується — картка центрується як раніше; коли
-  // overflow — зовнішній скролить і вертикально розкриває і верх
-  // (логотип), і низ (auth-кнопка + «Згорнути»).
+  // `overscroll-contain` (гасить body-bounce на iOS).
+  // Внутрішній шар — `min-h-full flex items-center`: коли вміст
+  // вміщується — картка по центру (до 2026-10-08 на телефоні вона стояла
+  // внизу, а верх займав декор); коли overflow — зовнішній скролить і
+  // вертикально розкриває і верх (логотип), і низ (auth-кнопка +
+  // «Згорнути»).
   return (
     // `<main>` (not `<div>`) — `/welcome` is a standalone landing route
     // rendered outside `ActiveModuleView`, so without a `<main>` landmark
@@ -315,8 +170,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
       tabIndex={-1}
       className="relative h-app-dvh overflow-y-auto overscroll-contain bg-mesh text-text outline-none"
     >
-      <PeekBackdrop />
-      <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
+      <div className="relative min-h-full flex items-center justify-center p-4 pb-safe">
         <h1 className="sr-only">{messages.nav.welcome}</h1>
         <div className="w-full max-w-md space-y-3">
           {/* Phase 7 D4 — preset picker replaces the row-based

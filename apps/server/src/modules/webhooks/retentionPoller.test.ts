@@ -6,7 +6,7 @@
  * в integration-тесті `migrations/__tests__/061-n8n-webhook-events.test.ts`.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Pool } from "pg";
 import { WebhookEventsRetentionPoller } from "./retentionPoller.js";
 
@@ -190,4 +190,70 @@ describe("WebhookEventsRetentionPoller", () => {
     // Головне: ми взагалі повернулись, і в межах стелі (2 с) із запасом.
     expect(elapsed).toBeLessThan(4_000);
   }, 10_000);
+});
+
+/**
+ * rel-19 (аудит 2026-10-01): без стартового тіку перший DELETE наставав через
+ * цілу годину після старту процесу, а контейнер рестартує на кожен деплой.
+ */
+describe("WebhookEventsRetentionPoller - стартовий тік (rel-19)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("після start() і startDelayMs (< intervalMs) DELETE виконано рівно один раз", async () => {
+    vi.useFakeTimers();
+    const pool = mockPool(0);
+    const queryFn = pool.query as ReturnType<typeof vi.fn>;
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 3_600_000,
+      startDelayMs: 45_000,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(44_999);
+    expect(queryFn).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(queryFn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(queryFn).toHaveBeenCalledTimes(1);
+
+    await poller.stop();
+  });
+
+  it("stop() до стартового тіку гасить його", async () => {
+    vi.useFakeTimers();
+    const pool = mockPool(0);
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 3_600_000,
+      startDelayMs: 45_000,
+    });
+
+    poller.start();
+    await poller.stop();
+    await vi.advanceTimersByTimeAsync(2 * 3_600_000);
+    expect(pool.query).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("startDelayMs: -1 вимикає стартовий тік", async () => {
+    vi.useFakeTimers();
+    const pool = mockPool(0);
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 3_600_000,
+      startDelayMs: -1,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(3_599_999);
+    expect(pool.query).not.toHaveBeenCalled();
+
+    await poller.stop();
+  });
 });

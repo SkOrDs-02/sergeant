@@ -13,6 +13,7 @@ import {
   assertHubBackupPayload,
   buildHubBackupPayload,
 } from "./hubBackup";
+import { withNutritionFoods } from "../../modules/nutrition/domain/nutritionBackupFoods";
 import { HubRestoreModePicker } from "./HubRestoreModePicker";
 import { useHubRestoreBlock } from "./useHubRestoreReady";
 
@@ -97,7 +98,9 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   const signedIn = Boolean(useAuthOptional()?.user);
 
   const exportJson = async () => {
-    const payload = buildHubBackupPayload({ includeChat: false });
+    const payload = await withNutritionFoods(
+      buildHubBackupPayload({ includeChat: false }),
+    );
     await downloadJson(
       `hub-backup-${new Date().toISOString().slice(0, 10)}.json`,
       payload,
@@ -183,7 +186,9 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         // знімок не зберігся, замінювати не можна: кидаємо до будь-якого запису.
         await downloadJson(
           `hub-backup-before-replace-${new Date().toISOString().slice(0, 10)}.json`,
-          buildHubBackupPayload({ includeChat: false }),
+          await withNutritionFoods(
+            buildHubBackupPayload({ includeChat: false }),
+          ),
         );
       }
       // Чекпоінт беремо ДО запису: він покриває всі рядки outbox, поставлені

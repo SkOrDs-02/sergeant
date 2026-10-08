@@ -193,22 +193,46 @@ export function buildDelete(spec: DeleteSpec): string {
 }
 
 /**
+ * Опції {@link buildReconcileChildren}.
+ */
+export interface ReconcileChildrenOptions {
+  /**
+   * LWW-захист: додає `AND updated_at < ?` в обидві гілки, тож рядок, який
+   * уже має `updated_at >= clientTs`, НЕ гаситься. Без цього реплей старішого
+   * знімка (WAL-журнал dual-write після краша) ставить tombstone зі старою
+   * міткою на дітей, яких новіша правка вже відродила (data-38). Додатковий
+   * bind-параметр `clientTs` іде ОСТАННІМ, після `keepIds`. За замовчуванням
+   * вимкнено, щоб не змінювати форму bind-масиву наявних викликачів
+   * (nutrition, mobile fizruk); вмикай разом з оновленням їхніх bind-ів.
+   */
+  lwwGuard?: boolean;
+}
+
+/**
  * Build the parent/child reconciliation soft-delete: children of `parentId`
  * that are no longer in `keepCount` ids get tombstoned. Two branches match
  * the hand-written adapter:
  *
  *  - `keepCount === 0` → soft-delete every live child of the parent.
  *  - `keepCount > 0`   → soft-delete live children whose id is NOT IN (…).
+ *
+ * Bind order: `[deletedAt, updatedAt, parentId, userId, ...keepIds]`; with
+ * `options.lwwGuard` the trailing `clientTs` (for `updated_at < ?`) follows.
  */
 export function buildReconcileChildren(
   spec: ReconcileChildrenSpec,
   keepCount: number,
+  options: ReconcileChildrenOptions = {},
 ): string {
   assertNotAppendOnly(spec.table, "buildReconcileChildren");
+  const lww = options.lwwGuard
+    ? `
+        AND updated_at < ?`
+    : "";
   if (keepCount === 0) {
     return `UPDATE ${spec.table}
         SET deleted_at = ?, updated_at = ?
-      WHERE ${spec.parentColumn} = ? AND user_id = ? AND deleted_at IS NULL`;
+      WHERE ${spec.parentColumn} = ? AND user_id = ? AND deleted_at IS NULL${lww}`;
   }
   const placeholders = Array.from({ length: keepCount }, () => "?").join(",");
   return `UPDATE ${spec.table}
@@ -216,5 +240,5 @@ export function buildReconcileChildren(
       WHERE ${spec.parentColumn} = ?
         AND user_id = ?
         AND deleted_at IS NULL
-        AND id NOT IN (${placeholders})`;
+        AND id NOT IN (${placeholders})${lww}`;
 }
