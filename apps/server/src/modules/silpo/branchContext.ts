@@ -100,12 +100,14 @@ function cacheSet(userId: string, ctx: SilpoBranchContext): void {
 
 async function fetchFromCart(
   accessToken: string,
+  signal?: AbortSignal,
 ): Promise<SilpoBranchContext | null> {
   const cartRef = await callMcpTool({
     accessToken,
     toolName: "silpo_get_my_shopping_cart",
     args: {},
     schema: CartRefSchema,
+    signal,
   });
   if (!cartRef.ok || !cartRef.data.shoppingCartId) return null;
 
@@ -114,6 +116,7 @@ async function fetchFromCart(
     toolName: "silpo_get_shopping_cart_by_id",
     args: { shoppingCartId: cartRef.data.shoppingCartId },
     schema: CartByIdSchema,
+    signal,
   });
   if (!cart.ok) return null;
 
@@ -125,12 +128,14 @@ async function fetchFromCart(
 
 async function fetchFromBranches(
   accessToken: string,
+  signal?: AbortSignal,
 ): Promise<SilpoBranchContext | null> {
   const branches = await callMcpTool({
     accessToken,
     toolName: "silpo_list_branches",
     args: { limit: 1, hasPickup: true },
     schema: BranchesSchema,
+    signal,
   });
   if (!branches.ok) return null;
   const branchId = branches.data.branches?.find((b) => b.branchId)?.branchId;
@@ -152,6 +157,7 @@ async function fetchFromBranches(
 export async function resolveBranchContext(
   userId: string,
   accessToken: string,
+  signal?: AbortSignal,
 ): Promise<McpResult<SilpoBranchContext>> {
   const cached = cache.get(userId);
   if (cached) {
@@ -164,8 +170,8 @@ export async function resolveBranchContext(
   }
 
   const ctx =
-    (await fetchFromCart(accessToken)) ??
-    (await fetchFromBranches(accessToken));
+    (await fetchFromCart(accessToken, signal)) ??
+    (signal?.aborted ? null : await fetchFromBranches(accessToken, signal));
   if (!ctx) {
     logger.warn({ msg: "silpo_branch_context_unavailable" });
     return {

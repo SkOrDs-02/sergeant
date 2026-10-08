@@ -10,6 +10,7 @@ import {
   type EncryptedToken,
 } from "../mono/crypto.js";
 import { refreshTokens as oauthRefreshTokens } from "./oauth.js";
+import { isDefinitiveRefreshRejection } from "./oauthErrors.js";
 import type { McpError, McpResult } from "./mcpClient.js";
 
 /**
@@ -344,7 +345,15 @@ export async function markReauthRequired(
  * and an explicit transaction spanning an outbound HTTP call, which is
  * worse than the race it fixes.
  */
-type RefreshOutcome = { ok: true; accessToken: string } | { ok: false };
+/**
+ * `transient: true` — refresh не відбувся через збій, що не доводить смерті
+ * токена (мережа, abort, 5xx, 429, discovery): статус підключення не
+ * чіпаємо, caller віддає `upstream_unavailable`. Без прапорця — токен
+ * остаточно відхилено (або обмін пройшов, а запис не вдався) і підключення
+ * вже переведено в `reauth_required`.
+ */
+type RefreshOutcome =
+  { ok: true; accessToken: string } | { ok: false; transient?: true };
 
 const inFlightRefresh = new Map<string, Promise<RefreshOutcome>>();
 
@@ -378,15 +387,49 @@ async function rereadAfterFailedRefresh(
   }
 }
 
-/** Performs the actual exchange + persist. Never throws. */
+/**
+ * Performs the actual exchange + persist. Does not throw on exchange
+ * failures. Розрізняє два види збою refresh:
+ *
+ *  - Сільпо ВІДХИЛИЛО грант (400/401 з `invalid_grant`/`invalid_client` або
+ *    без розбірливого тіла) чи обмін пройшов, але нові токени не записались
+ *    (старий refresh вже спалено) → `markReauthRequired`.
+ *  - Усе інше (мережа, abort, 5xx, 429, збій discovery) нічого не каже про
+ *    стан токена → `{ ok: false, transient: true }` без зміни статусу: інакше
+ *    секундний збій OAuth Сільпо розлогінює кожного, чий access-токен саме
+ *    протух (аудит 2026-10-01, rel-23).
+ */
 async function performRefresh(
   userId: string,
   ring: KeyRing,
   queryFn: QueryFn,
   staleRefreshToken: string,
 ): Promise<RefreshOutcome> {
+  let refreshed: Awaited<ReturnType<typeof oauthRefreshTokens>>;
   try {
-    const refreshed = await oauthRefreshTokens(staleRefreshToken);
+    refreshed = await oauthRefreshTokens(staleRefreshToken);
+  } catch (err) {
+    const rotatedElsewhere = await rereadAfterFailedRefresh(
+      userId,
+      ring,
+      queryFn,
+      staleRefreshToken,
+    );
+    if (rotatedElsewhere) {
+      logger.info({ msg: "silpo.token.refresh_raced" });
+      return { ok: true, accessToken: rotatedElsewhere };
+    }
+    const errMessage = err instanceof Error ? err.message : String(err);
+    if (isDefinitiveRefreshRejection(err)) {
+      await markReauthRequired(userId, queryFn);
+      logger.warn({ msg: "silpo_token_refresh_failed", err: errMessage });
+      return { ok: false };
+    }
+    logger.warn({ msg: "silpo_token_refresh_transient", err: errMessage });
+    return { ok: false, transient: true };
+  }
+
+  try {
     await persistTokens(
       userId,
       ring,
@@ -412,6 +455,8 @@ async function performRefresh(
       logger.info({ msg: "silpo.token.refresh_raced" });
       return { ok: true, accessToken: rotatedElsewhere };
     }
+    // Обмін успішний, а запис — ні: Сільпо вже ротувало refresh-токен, тож
+    // старий мертвий, а новий ми втратили. Перепідключення неминуче.
     await markReauthRequired(userId, queryFn);
     logger.warn({
       msg: "silpo_token_refresh_failed",
@@ -460,6 +505,16 @@ export type SilpoAuthedCallResult<T> =
       error: McpError | { kind: SilpoAuthedCallErrorKind; message: string };
     };
 
+function abortedBeforeRefresh<T>(): SilpoAuthedCallResult<T> {
+  return {
+    ok: false,
+    error: {
+      kind: "upstream_unavailable",
+      message: "Silpo call aborted by caller deadline",
+    },
+  };
+}
+
 /**
  * Runs `fn(accessToken)` against the current connection, transparently
  * handling the lazy-refresh-on-401 dance (spec § Рішення дизайну,
@@ -470,8 +525,14 @@ export type SilpoAuthedCallResult<T> =
  *   3. `fn` returns `auth_required` (HTTP 401 from MCP) → refresh once
  *      (single-flight per user — see `refreshAccessTokenOnce`), persist the
  *      new tokens, retry `fn` ONE more time.
- *   4. Still `auth_required` after the retry → `markReauthRequired` and
- *      return `reauth_required` — never a silent third attempt/loop.
+ *   4. Still `auth_required` after the retry → якщо це справжній HTTP 401
+ *      (`error.status === 401`) — `markReauthRequired` і `reauth_required`,
+ *      без третьої спроби. `auth_required` без `status` виведено ЕВРИСТИКОЮ
+ *      з тексту відмови тули (`looksLikeAuthRefusal`) — це може бути
+ *      бізнес-відмова («Товар 3401567 відсутній»), і здорове підключення з
+ *      неї не розлогінюється: вона повертається як `tool_error`.
+ *   5. Refresh не відбувся через транзієнтний збій (мережа/5xx/429/discovery)
+ *      → `upstream_unavailable`, статус підключення не змінюється.
  *
  * Any other {@link McpError} (`rate_limited`, `upstream_unavailable`,
  * `schema_drift`, `protocol_error`) passes through unchanged — those are
@@ -480,7 +541,11 @@ export type SilpoAuthedCallResult<T> =
 export async function callWithFreshAccessToken<T>(
   userId: string,
   fn: (accessToken: string) => Promise<McpResult<T>>,
-  deps: { ring?: KeyRing | null; query?: QueryFn } = {},
+  deps: {
+    ring?: KeyRing | null;
+    query?: QueryFn;
+    signal?: AbortSignal | undefined;
+  } = {},
 ): Promise<SilpoAuthedCallResult<T>> {
   const ring = deps.ring ?? silpoKeyRing();
   const queryFn = deps.query ?? defaultQuery;
@@ -524,12 +589,25 @@ export async function callWithFreshAccessToken<T>(
   const first = await fn(connection.accessToken);
   if (first.ok || first.error.kind !== "auth_required") return first;
 
+  // Дедлайн викликача вже сплив: refresh ротує одноразовий токен, а
+  // результат ніхто не дочекається. Не палимо грант даремно.
+  if (deps.signal?.aborted) return abortedBeforeRefresh();
+
   const refreshOutcome = await refreshAccessTokenOnce(
     userId,
     ring,
     queryFn,
     connection.refreshToken,
   );
+  if (!refreshOutcome.ok && refreshOutcome.transient) {
+    return {
+      ok: false,
+      error: {
+        kind: "upstream_unavailable",
+        message: "Silpo OAuth temporarily unavailable, token refresh deferred",
+      },
+    };
+  }
   if (!refreshOutcome.ok) {
     return {
       ok: false,
@@ -540,16 +618,26 @@ export async function callWithFreshAccessToken<T>(
     };
   }
 
+  if (deps.signal?.aborted) return abortedBeforeRefresh();
+
   const second = await fn(refreshOutcome.accessToken);
   if (second.ok) return second;
   if (second.error.kind === "auth_required") {
-    await markReauthRequired(userId, queryFn);
+    if (second.error.status === 401) {
+      await markReauthRequired(userId, queryFn);
+      return {
+        ok: false,
+        error: {
+          kind: "reauth_required",
+          message: "Silpo access denied twice after refresh",
+        },
+      };
+    }
+    // Без HTTP-статусу `auth_required` — лише текстова евристика: свіжий
+    // токен щойно отримано, тож це бізнес-відмова тули, а не смерть сесії.
     return {
       ok: false,
-      error: {
-        kind: "reauth_required",
-        message: "Silpo access denied twice after refresh",
-      },
+      error: { kind: "tool_error", message: second.error.message },
     };
   }
   return second;

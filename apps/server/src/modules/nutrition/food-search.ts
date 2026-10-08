@@ -21,6 +21,9 @@ import {
 } from "../silpo/foodSource.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 import { logger } from "../../obs/logger.js";
+import { AppError } from "../../obs/errors.js";
+import { recordExternalHttp } from "../../lib/externalHttp.js";
+import { elapsedMs } from "../../lib/timing.js";
 import { searchCatalog } from "./productCatalog.js";
 import { searchGenericFoods } from "./genericFoods.js";
 
@@ -88,6 +91,79 @@ export function normalizeUSDAProduct(
   return normalizeUSDASearch(food, stableId);
 }
 
+/**
+ * Не-2xx від апстріму — це збій, а не «нічого не знайдено» (аудит
+ * 2026-10-01, rel-21). Статус несемо в помилці, щоб метрика відрізнила 429
+ * від решти, а лог — показав код.
+ */
+function upstreamHttpError(source: string, status: number): Error {
+  const error = new Error(`${source} upstream HTTP ${status}`);
+  error.name = "UpstreamHttpError";
+  (error as Error & { status?: number }).status = status;
+  return error;
+}
+
+function failureOutcome(e: unknown): "timeout" | "rate_limited" | "error" {
+  if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
+    return "timeout";
+  }
+  if ((e as { status?: number } | null)?.status === 429) return "rate_limited";
+  return "error";
+}
+
+/**
+ * Один upstream-пошук з метрикою `external_http_requests_total{upstream}` (як
+ * у barcode) і логом збою. Збій НЕ кидається далі: повертає `null`, щоб
+ * handler міг порахувати, скільки апстрімів упало, і відрізнити «база лежить»
+ * від порожньої видачі. У лозі лише джерело й причина, без тексту запиту.
+ */
+async function trackedSearch<T>(
+  upstream: "off" | "usda",
+  run: () => Promise<T[]>,
+): Promise<T[] | null> {
+  const start = process.hrtime.bigint();
+  try {
+    const rows = await run();
+    recordExternalHttp(upstream, "ok", elapsedMs(start));
+    return rows;
+  } catch (e) {
+    const outcome = failureOutcome(e);
+    recordExternalHttp(upstream, outcome, elapsedMs(start));
+    logger.warn({
+      msg: "food_search_upstream_failed",
+      upstream,
+      outcome,
+      err: e instanceof Error ? e.message : String(e),
+    });
+    return null;
+  }
+}
+
+/**
+ * Резолвиться порожнім масивом, щойно спрацював `signal`, навіть якщо `work`
+ * ще висить. Гілка Сільпо ходить у MCP (initialize + кілька tools/call із
+ * ретраями) і не мусить тримати відповідь довше за дедлайн, у який вже
+ * вклалися OFF і USDA.
+ */
+function resolveEmptyOnAbort<T>(
+  work: Promise<T[]>,
+  signal: AbortSignal,
+): Promise<T[]> {
+  if (signal.aborted) {
+    work.catch(() => undefined);
+    return Promise.resolve([]);
+  }
+  return new Promise<T[]>((resolve) => {
+    const onAbort = () => resolve([]);
+    signal.addEventListener("abort", onAbort, { once: true });
+    work
+      .then(resolve, () => resolve([]))
+      .finally(() => {
+        signal.removeEventListener("abort", onAbort);
+      });
+  });
+}
+
 async function fetchOFF(
   searchTerms: string,
   lc: string,
@@ -107,7 +183,7 @@ async function fetchOFF(
     },
     signal,
   });
-  if (!r.ok) return [];
+  if (!r.ok) throw upstreamHttpError("OFF", r.status);
   const data = (await r.json()) as { products?: OFFSearchProduct[] };
   return data?.products || [];
 }
@@ -127,7 +203,7 @@ async function fetchUSDA(
   url.searchParams.set("api_key", apiKey);
 
   const r = await fetch(url.toString(), { signal });
-  if (!r.ok) return [];
+  if (!r.ok) throw upstreamHttpError("USDA", r.status);
   const data = (await r.json()) as { foods?: USDASearchFood[] };
   return data?.foods || [];
 }
@@ -214,24 +290,55 @@ export default async function handler(
     const userId = env.SILPO_ENABLED ? await resolveOptionalUserId(req) : null;
     const silpoConnected = userId ? await isSilpoConnectedUser(userId) : false;
 
-    const [ukOff, enOff, usdaRaw, silpoProducts] = await Promise.all([
-      fetchOFF(query, "uk", signal).catch((): OFFSearchProduct[] => []),
-      enTerm
-        ? fetchOFF(enTerm, "en", signal).catch((): OFFSearchProduct[] => [])
-        : Promise.resolve<OFFSearchProduct[]>([]),
-      enTerm
-        ? fetchUSDA(enTerm, signal).catch((): USDASearchFood[] => [])
-        : Promise.resolve<USDASearchFood[]>([]),
-      // Uses the original (Ukrainian) query, not `enTerm` — Silpo's catalog
-      // is a Ukrainian retailer, mirroring the OFF `uk` branch above.
-      // `searchSilpoProducts` never throws (see its docstring); `.catch` is
-      // defense-in-depth so a bug there can never break this cascade.
-      silpoConnected
-        ? searchSilpoProducts(userId, query).catch(
-            (): SilpoSearchProduct[] => [],
-          )
-        : Promise.resolve<SilpoSearchProduct[]>([]),
-    ]);
+    const [ukOffRaw, enOffRaw, usdaRawOrNull, silpoProducts] =
+      await Promise.all([
+        trackedSearch("off", () => fetchOFF(query, "uk", signal)),
+        enTerm
+          ? trackedSearch("off", () => fetchOFF(enTerm, "en", signal))
+          : Promise.resolve<OFFSearchProduct[] | null>([]),
+        enTerm
+          ? trackedSearch("usda", () => fetchUSDA(enTerm, signal))
+          : Promise.resolve<USDASearchFood[] | null>([]),
+        // Uses the original (Ukrainian) query, not `enTerm` — Silpo's catalog
+        // is a Ukrainian retailer, mirroring the OFF `uk` branch above.
+        // `searchSilpoProducts` never throws (see its docstring); `.catch` is
+        // defense-in-depth so a bug there can never break this cascade.
+        // Той самий 8-секундний дедлайн, що й в OFF/USDA (rel-22): сигнал
+        // іде до самого fetch у MCP-клієнті, а race гарантує, що відповідь не
+        // чекає на Сільпо довше за дедлайн.
+        silpoConnected
+          ? resolveEmptyOnAbort(
+              searchSilpoProducts(userId, query, { signal }).catch(
+                (): SilpoSearchProduct[] => [],
+              ),
+              signal,
+            )
+          : Promise.resolve<SilpoSearchProduct[]>([]),
+      ]);
+
+    // `null` = апстрім відповів збоєм (не-2xx, мережа, таймаут). Порожній
+    // масив = апстрім відповів «нічого немає». Ці два стани різні.
+    const attempted = enTerm ? 3 : 1;
+    const failed = [ukOffRaw, enOffRaw, usdaRawOrNull].filter(
+      (r) => r === null,
+    ).length;
+    if (
+      failed === attempted &&
+      ownProducts.length === 0 &&
+      silpoProducts.length === 0
+    ) {
+      // Той самий принцип, що G5 у barcode: «база лежить» ≠ «продукту
+      // немає». 503 і no-store, щоб повтор через хвилину пройшов каскад
+      // знову, а не віддавався з кешу.
+      res.setHeader("Cache-Control", "no-store");
+      throw new AppError(
+        "Бази продуктів зараз не відповідають, це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
+        { status: 503, code: "UPSTREAM_UNAVAILABLE" },
+      );
+    }
+    const ukOff = ukOffRaw ?? [];
+    const enOff = enOffRaw ?? [];
+    const usdaRaw = usdaRawOrNull ?? [];
 
     const offProducts = [...ukOff, ...enOff]
       .map((p) => normalizeOFFProduct(p))
@@ -304,6 +411,8 @@ export default async function handler(
     }
     res.status(200).json(FoodSearchSuccessSchema.parse({ products }));
   } catch (e: unknown) {
+    // Очікувані operational-помилки (503 «бази лежать») віддає errorHandler.
+    if (e instanceof AppError) throw e;
     if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
       res
         .status(504)
