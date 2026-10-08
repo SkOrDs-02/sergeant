@@ -254,6 +254,54 @@ describe("sqliteReader: оновлення кеша не затирає запи
     expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
   });
 
+  // rel-15: перша звичка нового акаунта. Відмітка кладеться у write-through
+  // кеш, dual-write ще чекає на sqlite-wasm, а boot-refresh (той самий, що й
+  // після pull) читає порожній `routine_entries` і затирав кеш нулем.
+  it("completions: відкидає знімок, прочитаний доки dual-write у польоті", async () => {
+    clearSqliteCompletionsCache();
+    setCachedSqliteCompletions({ h1: ["2026-10-02"] });
+
+    beginRoutineLocalWrite();
+    // Рядок відмітки ще не доїхав у базу.
+    await refreshSqliteCompletions(makeClient({}), "u1");
+    endRoutineLocalWrite();
+
+    expect(getCachedSqliteCompletions().completions).toEqual({
+      h1: ["2026-10-02"],
+    });
+  });
+
+  it("completions: відкидає й тоді, коли запис завершився під час читання", async () => {
+    clearSqliteCompletionsCache();
+    setCachedSqliteCompletions({ h1: ["2026-10-02"] });
+
+    beginRoutineLocalWrite();
+    const client = {
+      all: vi.fn(async () => {
+        endRoutineLocalWrite();
+        return [] as never;
+      }),
+    } as never;
+    await refreshSqliteCompletions(client, "u1");
+
+    expect(getCachedSqliteCompletions().completions).toEqual({
+      h1: ["2026-10-02"],
+    });
+  });
+
+  it("completions: публікує знімок, коли локальних записів не було", async () => {
+    clearSqliteCompletionsCache();
+
+    await refreshSqliteCompletions(
+      makeClient({ routine_entries: [{ id: "h1:2026-10-02" }] }),
+      "u1",
+    );
+
+    expect(getCachedSqliteCompletions().completions).toEqual({
+      h1: ["2026-10-02"],
+    });
+  });
+
   it("публікує знімок, коли локальних записів не було", async () => {
     await refreshSqliteRoutineState(
       makeClient({

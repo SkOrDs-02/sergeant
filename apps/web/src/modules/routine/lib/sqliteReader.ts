@@ -87,6 +87,7 @@ export async function refreshSqliteCompletions(
   userId: string,
 ): Promise<SqliteCompletionsCache> {
   const seq = ++completionsRefreshSeq;
+  const localWrites = markRoutineLocalWrites();
   const rows = await client.all<{ id: string }>(
     `SELECT id FROM routine_entries
       WHERE user_id = ? AND deleted_at IS NULL`,
@@ -111,6 +112,13 @@ export async function refreshSqliteCompletions(
   }
 
   if (seq <= completionsPublishedSeq) return cache;
+  // Той самий причинний гвард, що й у `refreshSqliteRoutineState`: знімок,
+  // прочитаний доки dual-write у польоті, старший за write-through-відмітку.
+  // Найперший boot-refresh нового акаунта чекає, поки відкриється sqlite-wasm
+  // (секунди), і читає базу, куди відмітка ще не дійшла (rel-15, відтворено
+  // 2026-10-08: `rows=0`, `moved=true`, кеш 1→0, кільце 0/1). Розбір —
+  // `./localWriteWindow.ts`.
+  if (routineLocalWritesMoved(localWrites)) return cache;
   completionsPublishedSeq = seq;
   // eslint-disable-next-line no-restricted-syntax -- `refreshedAt` — це UTC-мітка «коли кеш прогріли», а не доменний день: вона порівнюється лише сама з собою (warm/cold гейт), тож київська межа доби до неї не застосовна
   cache = { completions, refreshedAt: new Date().toISOString() };
