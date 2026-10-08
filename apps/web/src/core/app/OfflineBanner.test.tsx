@@ -11,11 +11,13 @@ const syncStatusRef: {
   syncV2PendingCount: number;
   syncV2DeadLetterCount: number;
   syncV2RejectedCount: number;
+  sessionExpired: boolean;
   retrySyncV2DeadLetters: () => Promise<void>;
 } = {
   syncV2PendingCount: 0,
   syncV2DeadLetterCount: 0,
   syncV2RejectedCount: 0,
+  sessionExpired: false,
   retrySyncV2DeadLetters,
 };
 
@@ -43,6 +45,7 @@ beforeEach(() => {
   syncStatusRef.syncV2PendingCount = 0;
   syncStatusRef.syncV2DeadLetterCount = 0;
   syncStatusRef.syncV2RejectedCount = 0;
+  syncStatusRef.sessionExpired = false;
   retrySyncV2DeadLetters.mockReset();
   purgeNoticeRef.value = null;
 });
@@ -209,6 +212,18 @@ describe("OfflineBanner", () => {
     const { getByTestId } = render(<OfflineBanner />);
     expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
       "rejected",
+    );
+  });
+  it("sec-18: сесія завершилась перекриває решту станів (навіть офлайн-чергу)", () => {
+    syncStatusRef.sessionExpired = true;
+    syncStatusRef.syncV2PendingCount = 4;
+    syncStatusRef.syncV2DeadLetterCount = 1;
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill).toHaveAttribute("data-state", "session");
+    expect(pill).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("Сесія завершилась"),
     );
   });
 });

@@ -86,7 +86,7 @@ export function WorkoutFinishSheets({
   updateWorkout,
   onDone,
 }: WorkoutFinishSheetsProps) {
-  const { mark } = useInjuries();
+  const { markMany } = useInjuries();
   const { entries: dailyLogEntries, addEntry: addDailyLogEntry } =
     useDailyLog();
   const injuryCopy = messages.fizruk.injuries;
@@ -404,9 +404,9 @@ export function WorkoutFinishSheets({
                 onClick={() => {
                   setSavingInjuries(true);
                   try {
-                    for (const site of finishFlash.injurySites) {
-                      if (isInjurySiteId(site)) mark(site);
-                    }
+                    // Одним записом: цикл `mark` у одному тіку лишав лише
+                    // останню зону (аудит data-36).
+                    markMany(finishFlash.injurySites.filter(isInjurySiteId));
                     setFinishFlash(
                       (current) => current && { ...current, step: "summary" },
                     );

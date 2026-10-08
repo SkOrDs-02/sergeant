@@ -37,6 +37,8 @@ export function ColumnMapper({
   const [descriptionCol, setDescriptionCol] = useState(
     headers[2] ?? headers[0] ?? "",
   );
+  // "" = окремої колонки надходжень немає: `amountCol` — сума зі знаком.
+  const [creditCol, setCreditCol] = useState("");
   const [dateFormat, setDateFormat] = useState<ImportDateFormat>("DD.MM.YYYY");
   const [decimalComma, setDecimalComma] = useState(true);
 
@@ -97,12 +99,34 @@ export function ColumnMapper({
           </Select>
         </div>
         <div>
-          <Label htmlFor="col-amount">Колонка суми (витрати)</Label>
+          <Label htmlFor="col-amount">Колонка суми або витрат (дебет)</Label>
           <Select
             id="col-amount"
+            aria-describedby="col-amount-hint"
             value={amountCol}
             onChange={(e) => setAmountCol(e.target.value)}
           >
+            {headers.map((h) => (
+              <option key={h} value={h}>
+                {h}
+              </option>
+            ))}
+          </Select>
+          <p id="col-amount-hint" className="mt-1 text-style-body text-subtle">
+            Без окремої колонки надходжень тут сума зі знаком: мінус це витрата,
+            плюс це надходження.
+          </p>
+        </div>
+        <div>
+          <Label htmlFor="col-credit">
+            Колонка надходжень (кредит), якщо окрема
+          </Label>
+          <Select
+            id="col-credit"
+            value={creditCol}
+            onChange={(e) => setCreditCol(e.target.value)}
+          >
+            <option value="">немає</option>
             {headers.map((h) => (
               <option key={h} value={h}>
                 {h}
@@ -154,6 +178,9 @@ export function ColumnMapper({
           onSubmit({
             dateCol,
             amountCol,
+            // Лише коли обрано: інакше ключа немає взагалі, і сервер
+            // читає `amountCol` як суму зі знаком.
+            ...(creditCol ? { creditCol } : {}),
             descriptionCol,
             dateFormat,
             decimalComma,

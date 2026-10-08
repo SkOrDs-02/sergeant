@@ -20,6 +20,7 @@ function withInjuries(sites: string[]) {
     active: [],
     activeSites: new Set(sites) as never,
     mark: vi.fn(),
+    markMany: vi.fn(),
     clear: vi.fn(),
     remove: vi.fn(),
   });
