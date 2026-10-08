@@ -3178,7 +3178,7 @@ apps/web/src/modules/fizruk/lib/pendingRetroEnd.ts:16-26 (sessionStorage by desi
 
 ### `data-38` [medium] Після аварійного закриття браузера пристрій втрачає останні правки, які вже прийняв сервер, і ніколи їх не підтягує
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-38-fizruk-crash-recovery (LWW-умова `updated_at < ?` у reconcile/каскаді fizruk через `lwwGuard` у buildReconcileChildren; лишилось: самовідновлення через pull без фільтра origin_device_id або reconcile за хешем, постановка видалень дочірніх рядків в outbox, LWW у nutrition-копії - data-10/data-40)
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** web: Фізрук dual-write + dualwrite-core + server: sync pull
 - **Де:** packages/dualwrite-core/src/tableSpec.ts:196-215; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.sql.ts:315-340; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:311,386; apps/server/src/modules/sync/syncV2.ts:659
 - **Першопричина:** За аналізом верифікатора після краша поверх новішої правки застосовується старіший знімок (у локальній БД підходи s5/s6 мають tombstone зі старшою міткою, ніж правка s0-s4): reconcile дочірніх рядків (buildReconcileChildren, softDeleteRemovedChildren) soft-delete-ить без LWW-перевірки. Pull виключає власні оп-и пристрою (origin_device_id IS DISTINCT FROM), тож самовідновлення немає.
