@@ -380,8 +380,10 @@ describe("splitTransaction", () => {
         ],
       },
     });
-    expect(out).toContain("🛒 Продукти: 50 грн");
-    expect(out).toContain("custom_cat: 30 грн");
+    expect(isUndoable(out)).toBe(true);
+    const text = (out as ChatActionUndoableResult).result;
+    expect(text).toContain("🛒 Продукти: 50 грн");
+    expect(text).toContain("custom_cat: 30 грн");
   });
 
   it("coerces negative/non-numeric part amounts to absolute numbers", () => {
@@ -423,6 +425,63 @@ describe("splitTransaction", () => {
     const written = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
     expect(written).toHaveProperty("tx-existing");
     expect(written).toHaveProperty("tx1");
+  });
+
+  // logic-03: split_transaction перезаписує спліти tx без підтвердження;
+  // за політикою TOOL_RISK (рішення #8) це оборотна дія, тож потрібен undo.
+  it("logic-03: undo відновлює попередні спліти цього tx", () => {
+    const prev = [
+      { categoryId: "food", amount: 70 },
+      { categoryId: "transport", amount: 10 },
+    ];
+    const other = [{ categoryId: "food", amount: 10 }];
+    seedFinykCache({ txSplits: { tx1: prev, "tx-existing": other } });
+    const out = splitTransaction({
+      name: "split_transaction",
+      input: {
+        tx_id: "tx1",
+        parts: [
+          { category_id: "food", amount: 50 },
+          { category_id: "transport", amount: 30 },
+        ],
+      },
+    });
+    if (!isUndoable(out)) throw new Error("очікую { result, undo }");
+    const after = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
+    expect(after["tx1"]).not.toEqual(prev);
+
+    // Між дією й відкатом змінився сплід іншої операції: undo не має його
+    // затерти, бо читає свіжий кеш і чіпає лише ключ tx1.
+    const otherChanged = [{ categoryId: "transport", amount: 99 }];
+    vi.clearAllMocks();
+    seedFinykCache({ txSplits: { ...after, "tx-existing": otherChanged } });
+    out.undo?.();
+    expect(mockWrite).toHaveBeenCalledWith("finyk_tx_splits", {
+      tx1: prev,
+      "tx-existing": otherChanged,
+    });
+  });
+
+  it("logic-03: undo прибирає ключ, якщо спліту до дії не було", () => {
+    seedFinykCache({ txSplits: { "tx-existing": [] } });
+    const out = splitTransaction({
+      name: "split_transaction",
+      input: {
+        tx_id: "tx1",
+        parts: [
+          { category_id: "food", amount: 50 },
+          { category_id: "transport", amount: 30 },
+        ],
+      },
+    });
+    if (!isUndoable(out)) throw new Error("очікую { result, undo }");
+    const after = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
+    vi.clearAllMocks();
+    seedFinykCache({ txSplits: after });
+    out.undo?.();
+    const restored = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
+    expect(restored).not.toHaveProperty("tx1");
+    expect(restored).toHaveProperty("tx-existing");
   });
 });
 

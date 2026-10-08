@@ -44,6 +44,10 @@ vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
       ...domain.defaultNutritionPrefs(),
       ...mem.prefs,
     })),
+    loadLatestNutritionPrefs: vi.fn(() => ({
+      ...domain.defaultNutritionPrefs(),
+      ...mem.prefs,
+    })),
     patchNutritionPrefs: vi.fn((patch: Record<string, unknown>) => {
       if (mem.blocked) return false;
       mem.prefs = { ...mem.prefs, ...patch };
@@ -571,6 +575,31 @@ describe("set_daily_plan", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("Немає");
+  });
+
+  // logic-03: set_daily_plan перезаписує ціль без підтвердження — потрібен undo.
+  it("logic-03: повертає undo, що повертає старі значення лише змінених полів", () => {
+    mem.prefs = {
+      dailyTargetKcal: 1800,
+      dailyTargetProtein_g: 120,
+      waterGoalMl: 2750,
+    };
+    const out = handleNutritionAction({
+      name: "set_daily_plan",
+      input: { kcal: 2500, protein_g: 150 },
+    });
+    expect(typeof out).toBe("object");
+    const undoable = out as { result: string; undo: () => void };
+    expect(typeof undoable.undo).toBe("function");
+    expect(mem.prefs["dailyTargetKcal"]).toBe(2500);
+    expect(mem.prefs["dailyTargetProtein_g"]).toBe(150);
+
+    // Поле, змінене між дією й відкатом (не з цього плану), не відкочується.
+    mem.prefs["waterGoalMl"] = 3000;
+    undoable.undo();
+    expect(mem.prefs["dailyTargetKcal"]).toBe(1800);
+    expect(mem.prefs["dailyTargetProtein_g"]).toBe(120);
+    expect(mem.prefs["waterGoalMl"]).toBe(3000);
   });
 
   it("canonical: plan persists via patchNutritionPrefs", () => {
