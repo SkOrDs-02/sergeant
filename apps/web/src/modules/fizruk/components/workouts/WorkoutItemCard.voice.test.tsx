@@ -103,7 +103,11 @@ describe("WorkoutItemCard voice set entry", () => {
         { weightKg: 80, reps: 6 },
       ],
     });
-    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
+    expect(setRestTimer).toHaveBeenCalledWith({
+      remaining: 90,
+      total: 90,
+      endsAt: expect.any(Number),
+    });
   });
 
   // Назва тесту була «ignores empty voice parses» — і саме це й було

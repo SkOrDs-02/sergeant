@@ -24,6 +24,7 @@ import {
   makeDefaultCooldown,
 } from "../../hooks/useWorkouts";
 import { trackFizrukRestTimerDone } from "../../lib/workoutTelemetry";
+import { adjustRestTimerState } from "../../lib/restTimer";
 import { uid } from "../workouts/activeWorkoutLib";
 import { isSetDone } from "../workouts/WorkoutSetRow";
 import { SessionTopBar } from "./SessionTopBar";
@@ -239,8 +240,7 @@ export function SessionView({
     (seconds: number) =>
       setRestTimer((current) => {
         if (!current) return null;
-        const remaining = Math.max(1, current.remaining + seconds);
-        return { remaining, total: Math.max(current.total, remaining) };
+        return adjustRestTimerState(current, seconds);
       }),
     [setRestTimer],
   );

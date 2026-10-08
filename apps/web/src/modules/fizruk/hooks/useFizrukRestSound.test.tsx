@@ -92,7 +92,7 @@ describe("useFizrukRestSound", () => {
     act(() => rerender({ timer: null }));
     mockHaptic.mockClear();
     // restart and clear without re-marking → no second beep
-    act(() => rerender({ timer: { remaining: 3, total: 10 } }));
+    act(() => rerender({ timer: { remaining: 3, total: 10, endsAt: 0 } }));
     act(() => rerender({ timer: null }));
     expect(mockHaptic).not.toHaveBeenCalled();
   });

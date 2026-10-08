@@ -136,7 +136,11 @@ describe("WorkoutItemCard — strength set rows", () => {
   it("tapping ✓ on a completed row starts the rest timer with the default seconds", () => {
     renderCard();
     fireEvent.click(screen.getByRole("button", { name: /Підхід 1: зроблено/ }));
-    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
+    expect(setRestTimer).toHaveBeenCalledWith({
+      remaining: 90,
+      total: 90,
+      endsAt: expect.any(Number),
+    });
   });
 
   it("✓ stays enabled on an empty row without a ghost and focuses the reps field instead of starting the timer", () => {
@@ -180,13 +184,21 @@ describe("WorkoutItemCard — strength set rows", () => {
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [{ weightKg: 80, reps: 8 }],
     });
-    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
+    expect(setRestTimer).toHaveBeenCalledWith({
+      remaining: 90,
+      total: 90,
+      endsAt: expect.any(Number),
+    });
   });
 
   it("treats a bodyweight set (0 кг × N) as done", () => {
     renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 12 }] }) });
     fireEvent.click(screen.getByRole("button", { name: /Підхід 1: зроблено/ }));
-    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
+    expect(setRestTimer).toHaveBeenCalledWith({
+      remaining: 90,
+      total: 90,
+      endsAt: expect.any(Number),
+    });
   });
 
   it("editing reps does not auto-start the rest timer", () => {
@@ -314,7 +326,11 @@ describe("WorkoutItemCard — superset rest rule", () => {
   it("starts the group rest timer from the last superset member", () => {
     renderCard({ it: makeItem({ id: "it-2" }), group });
     fireEvent.click(screen.getByRole("button", { name: /Підхід 1: зроблено/ }));
-    expect(setRestTimer).toHaveBeenCalledWith({ remaining: 45, total: 45 });
+    expect(setRestTimer).toHaveBeenCalledWith({
+      remaining: 45,
+      total: 45,
+      endsAt: expect.any(Number),
+    });
   });
 
   it("restSecAfterCheck: default outside a group, group seconds on the last member, null otherwise", () => {
