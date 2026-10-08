@@ -370,6 +370,12 @@ export const finykPageMessages = {
     accountRequired:
       "Спершу увійди в акаунт, токен Mono зберігається на сервері, тож без входу підключити банк не вийде. Твій токен із цим не повʼязаний.",
     networkUnavailable: "Не вдалось звʼязатись з Mono. Перевір зʼєднання.",
+    // 403 `EMAIL_VERIFICATION_REQUIRED` з `requireVerifiedEmail()` (ux-06).
+    emailVerificationRequired:
+      "Підтверди email, щоб підключити банк. Лист можна надіслати ще раз у профілі.",
+    // Інший 403 без тексту від сервера: сервер відповів, мережа ні при чому.
+    forbidden:
+      "Сервер не дозволив підключити банк. Перезайди в акаунт і спробуй ще раз.",
   },
   jarSelector: {
     ariaLabel: "Банка Monobank",

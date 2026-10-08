@@ -794,3 +794,218 @@ describe("@sergeant/design-tokens — `{module}-edge`: контур вибран
     }
   }
 });
+
+/**
+ * `fizruk-surface` — тема-залежна тонована заливка (follow-up аудиту
+ * контрасту 2026-10-02).
+ *
+ * Дефект: `bg-fizruk-surface` був статичним hex (cyan-50 `#ecfeff`) без
+ * темного перевизначення. У темній темі заливка лишалась світлою під
+ * світлішим текстом: вибраний чип активної сесії («Розминка 0/3», «Нотатка»,
+ * «Час») мав `text-fizruk-soft-fg` 1.39:1, лічильник `0/3` (`text-text`)
+ * 1.05:1, бейдж суперсету `A1` 1.39:1, назва поточного рядка списку 1.05:1,
+ * RPE-чип 1.74:1, галочка обладнання в каталозі ~1.4:1. 13 з 15 вживань у
+ * Фізруку не мали ручної `dark:`-пари.
+ *
+ * Лікування на рівні токена: `--c-fizruk-surface` (світла cyan-50, темна —
+ * cyan-700 @15% над `--c-panel`, дзеркало пари `dark:bg-fizruk-surface-dark/15`).
+ * Тест читає значення зі `theme.css`, а не з копії: що малює браузер, те й
+ * міряємо. Якщо темної декларації немає — береться те, що лишається
+ * (світле значення), тобто рівно старий дефект, і тест червоніє.
+ */
+describe("@sergeant/design-tokens — `fizruk-surface`: темна пара заливки", () => {
+  const HERE = path.dirname(fileURLToPath(import.meta.url));
+  const FIZRUK_COMPONENTS = path.join(
+    HERE,
+    "..",
+    "..",
+    "apps",
+    "web",
+    "src",
+    "modules",
+    "fizruk",
+    "components",
+  );
+  const CSS = THEME_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  /**
+   * Усі декларації `--name: R G B;` у блоках із ТОЧНИМ селектором (`.dark`,
+   * `:root`, `html.hc.dark`), у порядку появи в файлі. Коментарі вже
+   * вирізані, тож дужки в них не збивають підрахунок вкладеності.
+   */
+  function themeVar(selector, name) {
+    const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const opener = new RegExp(`(?:^|[\\n}{;])\\s*${esc}\\s*\\{`, "g");
+    const found = [];
+    while (opener.exec(CSS)) {
+      let depth = 1;
+      let i = opener.lastIndex;
+      while (depth > 0 && i < CSS.length) {
+        const c = CSS[i++];
+        if (c === "{") depth++;
+        else if (c === "}") depth--;
+      }
+      const body = CSS.slice(opener.lastIndex, i - 1);
+      const decl = new RegExp(`${name}:\\s*(\\d+\\s+\\d+\\s+\\d+)\\s*;`).exec(
+        body,
+      );
+      if (decl) found.push(decl[1]);
+    }
+    return found;
+  }
+  /** Перший однорядковий рядок-літерал у джерелі, що містить `token` (клас-стрічка). */
+  const classLiteralWith = (src, token) =>
+    [...src.matchAll(/"([^"\n]*)"/g)]
+      .map((m) => m[1])
+      .find((lit) => lit.includes(token)) ?? "";
+  const hexOf = (triple) => rgbTripleToHex(triple);
+  const tripleOf = (hex) =>
+    [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
+  const need = (selector, name) => {
+    const [v] = themeVar(selector, name);
+    if (!v) throw new Error(`${name} не знайдено в ${selector} (theme.css)`);
+    return hexOf(v);
+  };
+  const mix = (fgHex, bgHex, a) =>
+    "#" +
+    [1, 3, 5]
+      .map((i) =>
+        Math.round(
+          parseInt(fgHex.slice(i, i + 2), 16) * a +
+            parseInt(bgHex.slice(i, i + 2), 16) * (1 - a),
+        )
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("");
+
+  // Що реально малює браузер: власне перевизначення, інакше успадковане
+  // світле, інакше fallback пресета (статичний cyan-50 — це і є старий дефект).
+  const declared = (sel) => themeVar(sel, "--c-fizruk-surface")[0];
+  const LIGHT_FILL = hexOf(
+    declared(":root") ?? tripleOf(moduleColors.fizruk.surface),
+  );
+  const DARK_FILL = hexOf(
+    declared(".dark") ??
+      declared(":root") ??
+      tripleOf(moduleColors.fizruk.surface),
+  );
+
+  it("пресет: `fizruk.surface` → `--c-fizruk-surface` з fallback на cyan-50", async () => {
+    const { default: preset } = await import("./tailwind-preset.js");
+    expect(preset.theme.extend.colors.fizruk.surface).toBe(
+      `rgb(var(--c-fizruk-surface, ${tripleOf(moduleColors.fizruk.surface)}) / <alpha-value>)`,
+    );
+  });
+
+  it("світла: `:root` = `moduleColors.fizruk.surface` (світлий вигляд не змінився)", () => {
+    expect(LIGHT_FILL.toLowerCase()).toBe(
+      moduleColors.fizruk.surface.toLowerCase(),
+    );
+  });
+
+  it("темна: `.dark` має власне значення, не світле cyan-50", () => {
+    expect(declared(".dark")).toBeDefined();
+    expect(DARK_FILL.toLowerCase()).not.toBe(LIGHT_FILL.toLowerCase());
+  });
+
+  it("темна = cyan-700 (`--c-fizruk-surface-dark`) @15% над `--c-panel` (±1 на канал)", () => {
+    const expected = mix(
+      need(".dark", "--c-fizruk-surface-dark"),
+      need(".dark", "--c-panel"),
+      0.15,
+    );
+    for (const i of [1, 3, 5]) {
+      const got = parseInt(DARK_FILL.slice(i, i + 2), 16);
+      const want = parseInt(expected.slice(i, i + 2), 16);
+      expect(Math.abs(got - want)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  // Ролі тексту й контуру, що реально лежать на цій заливці (виміряно на
+  // екрані активної сесії, 393×852, 2026-10-02).
+  const ROLES = [
+    ["text — лічильник «0/3», назва поточного рядка", "--c-text"],
+    ["muted", "--c-muted"],
+    ["subtle — підрядок поточного рядка", "--c-subtle"],
+    ["soft-fg — підпис вибраного чипа, бейдж A1", "--c-fizruk-soft-fg"],
+    [
+      "ink — RPE-чип, шеврон, «наступна вправа» (text-fizruk-strong)",
+      "--c-fizruk-ink",
+    ],
+    ["danger-ink — «Ще рано: …» у поточному рядку", "--c-danger-ink"],
+  ];
+
+  for (const [label, name] of ROLES) {
+    it(`світла: ${label} на заливці ≥ 4.5:1`, () => {
+      expect(
+        contrastRatio(need(":root", name), LIGHT_FILL),
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+    it(`темна: ${label} на заливці ≥ 4.5:1`, () => {
+      const ratio = contrastRatio(need(".dark", name), DARK_FILL);
+      expect(
+        ratio,
+        `${name} на ${DARK_FILL} → ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  // HC dark успадковує `--c-fizruk-surface` з `.dark`; текстові змінні має
+  // власні (білий, `#e6e0da`, `#cfc7bf`, cyan-300). Контракт HC — ≥ 7:1.
+  for (const [label, name] of ROLES.filter(([, n]) => n !== "--c-danger-ink")) {
+    it(`HC dark: ${label} на заливці ≥ 7:1`, () => {
+      const [own] = themeVar("html.hc.dark", name);
+      const hex = hexOf(own ?? themeVar(".dark", name)[0]);
+      const ratio = contrastRatio(hex, DARK_FILL);
+      expect(
+        ratio,
+        `${name} на ${DARK_FILL} → ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(7);
+    });
+  }
+
+  it("темна: контур `fizruk-edge` проти заливки, картки, `panelHi` і фону ≥ 3:1", () => {
+    const edge = need(".dark", "--c-fizruk-ink");
+    for (const [name, surface] of [
+      ["заливка", DARK_FILL],
+      ["картка", inkTheme.surface.surface],
+      ["panelHi", inkTheme.surface.surfaceHi],
+      ["фон", inkTheme.surface.bg],
+    ]) {
+      expect(
+        contrastRatio(edge, surface),
+        `edge проти ${name}`,
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("негативна пара: статичний cyan-50 у темній — це 1.39:1 і 1.05:1 (старий дефект)", () => {
+    const old = moduleColors.fizruk.surface;
+    expect(
+      contrastRatio(need(".dark", "--c-fizruk-soft-fg"), old),
+    ).toBeLessThan(1.5);
+    expect(contrastRatio(need(".dark", "--c-text"), old)).toBeLessThan(1.5);
+  });
+
+  it("чип «Розминка/Нотатка/Час»: вибраний = заливка `fizruk-surface` + контур `fizruk-edge` (не `-ring`)", () => {
+    const src = readFileSync(
+      path.join(FIZRUK_COMPONENTS, "session", "SessionExtrasRow.tsx"),
+      "utf8",
+    );
+    const active = classLiteralWith(src, "bg-fizruk-surface");
+    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
+    expect(active).toMatch(/(?<![\w:-])text-fizruk-soft-fg(?![\w-])/);
+    // `border-fizruk-ring` (cyan-200) давав 1.01:1 проти столу у світлій.
+    expect(active).not.toMatch(/border-fizruk-ring/);
+  });
+
+  it("вибране заняття в пікері: контур `fizruk-edge` (заливки 1.04 / 1.13 для стану мало)", () => {
+    const src = readFileSync(
+      path.join(FIZRUK_COMPONENTS, "workouts", "LogPastActivityPicker.tsx"),
+      "utf8",
+    );
+    const active = classLiteralWith(src, "bg-fizruk-surface");
+    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
+  });
+});

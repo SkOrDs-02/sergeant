@@ -23,6 +23,13 @@
  * `fizrukBackupShape.ts`.
  */
 
+import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
+import {
+  addMissingBy,
+  BACKUP_NEWER_VERSION_MESSAGE,
+  BACKUP_RESTORE_NOT_READY_MESSAGE,
+  type BackupRestoreMode,
+} from "@shared/lib/backup/restoreMode";
 import {
   CUSTOM_ACTIVITIES_KEY,
   CUSTOM_EXERCISES_KEY,
@@ -203,31 +210,211 @@ export function buildFizrukFullBackupPayload() {
 /**
  * Імпорт повного бекапу в SQLite — туди, звідки читають усі хуки Фізрука.
  *
- * Семантика — ЗАМІНА: діалог у `HubBackupPanel` обіцяє «Імпорт повністю
- * замінить ці дані на цьому пристрої», тож diff іде проти ПОТОЧНОГО
- * теплого кеша і рядки, яких у файлі немає, гасяться. Зріз, якого файл
- * не везе (ключа немає, значення `null` або не рядок), лишається як був
- * — та сама поведінка, що й у старого LS-шляху, який такі значення
- * просто пропускав.
+ * Два режими (аудит 2026-10-01, data-06), див. `BackupRestoreMode`:
+ *
+ *  - `merge`: лише додати відсутнє. Рядок із тим самим id лишається таким,
+ *    яким був, рядки, яких файл не несе, не чіпаються: жодного `delete` у
+ *    diff, а отже жодного tombstone на сервері.
+ *  - `replace`: diff іде проти ПОТОЧНОГО теплого кеша, і рядки, яких у файлі
+ *    немає, гасяться. Це видалення їде на сервер і на всі пристрої акаунта,
+ *    тому режим лише явний (діалог у `HubBackupPanel`).
+ *
+ * Зріз, якого файл не везе (ключа немає, значення `null` або не рядок),
+ * лишається як був в обох режимах — та сама поведінка, що й у старого
+ * LS-шляху, який такі значення просто пропускав.
+ *
+ * Кеш мусить бути теплим: з холодного diff не бачить рядків акаунта, тож
+ * «заміна» мовчки стала б злиттям, а `merge` перезаписав би існуючі рядки.
+ * Панель не пускає в імпорт, доки кеш не прогрітий; тут це страховка.
  *
  * Чекати обов'язково: `HubBackupPanel` одразу після імпорту робить
- * `window.location.reload()`, а він убив би fire-and-forget запис.
+ * `window.location.reload()`, а він убив би fire-and-forget запис. Запис
+ * журнальований (`dualWriteFizrukState`), результат — `DualWriteOutcome`:
+ * `skipped` НЕ успіх, `applyHubBackupPayload` на ньому кидає.
  * Приймає і файли, експортовані до переїзду на SQLite — там ті самі
  * ключі з тими самими серіалізованими рядками.
  */
 export async function applyFizrukFullBackupPayload(
   parsed: unknown,
-): Promise<void> {
-  if (!parsed || typeof parsed !== "object") {
-    throw new Error("Неправильний формат файлу");
+  mode: BackupRestoreMode,
+): Promise<DualWriteOutcome> {
+  // Та сама перевірка, що й у фазі «validate all» Hub-імпорту: прямий виклик
+  // не має права стерти зріз, який файл не зміг прочитати.
+  const data = validateFizrukFullBackupPayload(parsed);
+  if (getCachedFizrukSqliteState().refreshedAt === null) {
+    throw new Error(BACKUP_RESTORE_NOT_READY_MESSAGE);
   }
-  const d = (parsed as { data?: unknown }).data;
-  if (!d || typeof d !== "object" || Array.isArray(d)) {
-    throw new Error("Неправильний формат файлу");
-  }
-  const data = d as Record<string, unknown>;
   const prev = peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-  await dualWriteFizrukState(prev, backupOntoFizrukState(prev, data));
+  const replaced = backupOntoFizrukState(prev, data);
+  const next = mode === "replace" ? replaced : mergeFizrukState(prev, replaced);
+  return dualWriteFizrukState(prev, next);
+}
+
+const FIZRUK_FULL_BACKUP_KIND = "fizruk-full-backup";
+const FIZRUK_FULL_BACKUP_SCHEMA_VERSION = 1;
+
+/** Назва зрізу для тексту помилки і очікувана форма його JSON. */
+const FIZRUK_SLICE_CHECKS: ReadonlyArray<{
+  key: string;
+  label: string;
+  shape: "array" | "object" | { wrapper: "workouts" | "exercises" };
+}> = [
+  {
+    key: FIZRUK_BACKUP_SLICES.workouts,
+    label: "тренування",
+    shape: { wrapper: "workouts" },
+  },
+  {
+    key: FIZRUK_BACKUP_SLICES.customExercises,
+    label: "власні вправи",
+    shape: { wrapper: "exercises" },
+  },
+  {
+    key: FIZRUK_BACKUP_SLICES.customActivities,
+    label: "власні активності",
+    shape: "array",
+  },
+  { key: FIZRUK_BACKUP_SLICES.measurements, label: "заміри", shape: "array" },
+  { key: FIZRUK_BACKUP_SLICES.dailyLog, label: "щоденник", shape: "array" },
+  {
+    key: FIZRUK_BACKUP_SLICES.workoutTemplates,
+    label: "шаблони",
+    shape: "array",
+  },
+  { key: FIZRUK_BACKUP_SLICES.injuries, label: "травми", shape: "array" },
+  {
+    key: FIZRUK_BACKUP_SLICES.monthlyPlan,
+    label: "план місяця",
+    shape: "object",
+  },
+];
+
+function corruptSliceError(label: string): Error {
+  return new Error(
+    `Пошкоджений файл: розділ Фізрука «${label}» не читається. Експортуй копію ще раз.`,
+  );
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+/**
+ * Фаза «validate all» імпорту (аудит 2026-10-01, data-34): без жодного запису
+ * перевіряє форму файлу й кожен присутній зріз, повертає `data`.
+ *
+ * Зріз-рядок, який не парситься в очікувану форму (масив або обʼєкт), це
+ * помилка імпорту, а не `[]`: інакше в режимі `replace` обрізаний файл мовчки
+ * стирав би заміри, щоденник, травми й шаблони. Зріз, якого файл не везе (ключа
+ * немає, `null` або не рядок), лишається як є, це не помилка. `kind` і
+ * `schemaVersion` перевіряються, коли поля є: файл новішої версії відхиляється.
+ */
+export function validateFizrukFullBackupPayload(
+  parsed: unknown,
+): Record<string, unknown> {
+  if (!isPlainObject(parsed)) {
+    throw new Error("Неправильний формат файлу");
+  }
+  const kind = parsed["kind"];
+  if (kind !== undefined && kind !== FIZRUK_FULL_BACKUP_KIND) {
+    throw new Error("Некоректний файл резервної копії Фізрука.");
+  }
+  const version = parsed["schemaVersion"];
+  if (version !== undefined) {
+    if (typeof version !== "number" || !Number.isFinite(version)) {
+      throw new Error("Некоректний файл резервної копії Фізрука.");
+    }
+    if (version > FIZRUK_FULL_BACKUP_SCHEMA_VERSION) {
+      throw new Error(BACKUP_NEWER_VERSION_MESSAGE);
+    }
+  }
+  const d = parsed["data"];
+  if (!isPlainObject(d)) {
+    throw new Error("Неправильний формат файлу");
+  }
+  for (const { key, label, shape } of FIZRUK_SLICE_CHECKS) {
+    const raw = sliceRaw(d, key);
+    if (raw === undefined) continue;
+    let value: unknown;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      throw corruptSliceError(label);
+    }
+    let ok: boolean;
+    if (shape === "array") ok = Array.isArray(value);
+    else if (shape === "object") ok = value === null || isPlainObject(value);
+    else
+      ok =
+        Array.isArray(value) ||
+        (isPlainObject(value) && Array.isArray(value[shape.wrapper]));
+    if (!ok) throw corruptSliceError(label);
+    if (key === FIZRUK_BACKUP_SLICES.workouts && !workoutsNestedOk(value)) {
+      throw corruptSliceError(label);
+    }
+  }
+  return d;
+}
+
+/** Поле відсутнє (`null`/`undefined`) або масив обʼєктів. */
+function isObjectListOrAbsent(v: unknown): boolean {
+  return v == null || (Array.isArray(v) && v.every(isPlainObject));
+}
+
+/**
+ * Вкладені записи тренувань: `items: [null]` пройшов би перевірку форми зрізу,
+ * а потім упав би в `toItemSnapshot` уже після запису Фініка.
+ */
+function workoutsNestedOk(value: unknown): boolean {
+  const list = Array.isArray(value)
+    ? value
+    : (value as Record<string, unknown[]>)["workouts"];
+  return (list ?? []).every((w) => {
+    if (!isPlainObject(w)) return true; // верхній рівень екстрактор пропускає
+    const items = w["items"];
+    return (
+      isObjectListOrAbsent(items) &&
+      isObjectListOrAbsent(w["groups"]) &&
+      isObjectListOrAbsent(w["warmup"]) &&
+      isObjectListOrAbsent(w["cooldown"]) &&
+      ((items as Record<string, unknown>[] | null | undefined) ?? []).every(
+        (it) => isObjectListOrAbsent(it["sets"]),
+      )
+    );
+  });
+}
+
+/**
+ * Режим `merge`: поточні рядки + рядки файлу з новим id. `replaced` уже
+ * несе `prev` для зрізів, яких файл не везе, тож обʼєднання їх не змінює.
+ */
+function mergeFizrukState(
+  prev: FizrukDualWriteState,
+  replaced: FizrukDualWriteState,
+): FizrukDualWriteState {
+  const byId = (e: { readonly id: string }) => e.id;
+  return {
+    workouts: addMissingBy(prev.workouts, replaced.workouts, byId),
+    customExercises: addMissingBy(
+      prev.customExercises,
+      replaced.customExercises,
+      byId,
+    ),
+    customActivities: addMissingBy(
+      prev.customActivities ?? [],
+      replaced.customActivities ?? [],
+      byId,
+    ),
+    measurements: addMissingBy(prev.measurements, replaced.measurements, byId),
+    dailyLog: addMissingBy(prev.dailyLog, replaced.dailyLog, byId),
+    workoutTemplates: addMissingBy(
+      prev.workoutTemplates,
+      replaced.workoutTemplates,
+      byId,
+    ),
+    injuries: addMissingBy(prev.injuries, replaced.injuries, byId),
+    monthlyPlan: prev.monthlyPlan ?? replaced.monthlyPlan,
+  };
 }
 
 /** Рядок зрізу, або `undefined` коли файл його не везе. */

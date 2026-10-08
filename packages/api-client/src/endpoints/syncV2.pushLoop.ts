@@ -96,6 +96,11 @@ import type {
  *     тиха втрата офлайн-записів. Тепер вони одразу `rejected` із
  *     причиною `http_<status>`, а це вже видно і в Sentry
  *     (`reportTerminalRejection`), і в екрані стану синку.
+ *   * 429 / 503 ({@link isThrottledPushFailure}) — «почекай», а не збій:
+ *     увесь батч іде в {@link MarkOutboxRetryFn} з НЕзмінним `attempts`
+ *     і `next_retry_at = now + Retry-After` ({@link planThrottledRetry}).
+ *     Без цього хвилинний ліміт `api:v2:sync` за ~10 тактів переводив
+ *     чергу в `dead_letter` (rel-08).
  *   * Усе інше — транзієнт: увесь батч іде в
  *     {@link MarkOutboxRetryFn}. `ApiError.kind === 'http'` зі
  *     `status === 401 | 403` теж лишається транзієнтом — рушій не
@@ -396,6 +401,28 @@ export async function runSyncEnginePushOnce(
       };
     }
 
+    // 429 / 503 — сервер просить почекати, а не відкидає рядки. Спроба НЕ
+    // рахується (інакше черга за хвилину ліміту йде в `dead_letter`), а
+    // наступна спроба стоїть не раніше `Retry-After`.
+    if (isThrottledPushFailure(err)) {
+      for (const row of drained) {
+        const plan = planThrottledRetry(
+          deps,
+          row.attempts,
+          now,
+          lastError,
+          err.retryAfterMs,
+        );
+        await deps.markRetry(row.id, plan);
+      }
+      return {
+        drained: drained.length,
+        pushed: 0,
+        retried: drained.length,
+        rejected: 0,
+      };
+    }
+
     // Transport / HTTP failure: every row in the batch goes to retry.
     for (const row of drained) {
       const plan = callPlanRetry(deps, row.attempts, now, lastError);
@@ -512,6 +539,71 @@ export function isTerminalPushFailure(err: unknown): boolean {
     err.kind === "http" &&
     TERMINAL_PUSH_HTTP_STATUSES.has(err.status)
   );
+}
+
+/**
+ * HTTP-статуси «сервер просить почекати»: 429 (ліміт) і 503 (перевантаження).
+ * Це не збій рядка й не збій батча, тож спроба не спалюється; див.
+ * {@link planThrottledRetry}.
+ */
+const THROTTLED_PUSH_HTTP_STATUSES: ReadonlySet<number> = new Set([429, 503]);
+
+/**
+ * Стеля затримки з `Retry-After`: збійний чи зловмисний заголовок не має
+ * відправити рядок у далеке майбутнє. Збігається з
+ * `SYNC_OP_MAX_BACKOFF_MS` у db-schema (api-client від нього не залежить).
+ */
+const MAX_THROTTLE_DELAY_MS = 5 * 60 * 1_000;
+
+/**
+ * `true`, якщо push відхилено через ліміт/перевантаження (429 / 503).
+ *
+ * Exported for tests; not part of the runtime contract.
+ */
+export function isThrottledPushFailure(err: unknown): err is ApiError {
+  return (
+    err instanceof ApiError &&
+    err.kind === "http" &&
+    THROTTLED_PUSH_HTTP_STATUSES.has(err.status)
+  );
+}
+
+/**
+ * План ретраю для 429 / 503: `attempts` лишається як був, статус `pending`
+ * (рядок ніколи не стає `dead_letter` через тротлінг), `next_retry_at` =
+ * `now + retryAfterMs` (з джитером і стелею {@link MAX_THROTTLE_DELAY_MS}).
+ * Без `Retry-After` береться звичайний backoff за поточним `attempts`, але
+ * лічильник не зростає. Якщо `planRetry` повернув `dead_letter` (attempts
+ * уже на межі) і `nextRetryAt` порожній — беремо базовий backoff першої
+ * спроби.
+ */
+function planThrottledRetry(
+  deps: SyncEnginePushDeps,
+  previousAttempts: number,
+  now: Date,
+  lastError: string,
+  retryAfterMs: number | undefined,
+): SyncOpRetryPlanShape {
+  if (retryAfterMs !== undefined && retryAfterMs > 0) {
+    const jitter = deps.jitterMs === undefined ? 0 : deps.jitterMs();
+    const delay = Math.min(retryAfterMs, MAX_THROTTLE_DELAY_MS) + jitter;
+    return {
+      attempts: previousAttempts,
+      status: "pending",
+      nextRetryAt: new Date(now.getTime() + delay).toISOString(),
+      lastError,
+    };
+  }
+  let backoff = callPlanRetry(deps, previousAttempts, now, lastError);
+  if (backoff.nextRetryAt === null) {
+    backoff = callPlanRetry(deps, 0, now, lastError);
+  }
+  return {
+    attempts: previousAttempts,
+    status: "pending",
+    nextRetryAt: backoff.nextRetryAt,
+    lastError,
+  };
 }
 
 /**

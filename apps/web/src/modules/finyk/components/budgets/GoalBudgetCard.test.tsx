@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { useState } from "react";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { GoalBudgetCard } from "./GoalBudgetCard";
@@ -188,8 +189,11 @@ describe("GoalBudgetCard", () => {
     expect(screen.queryByLabelText("Відкладено")).not.toBeInTheDocument();
     const target = screen.getByLabelText("Сума цілі");
     fireEvent.change(target, { target: { value: "12000" } });
-    expect(onChangeTarget).toHaveBeenCalledWith(12000);
+    // Сума живе в локальній чернетці й іде нагору лише на «Зберегти».
+    expect(onChangeTarget).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Зберегти"));
+    expect(onChangeTarget).toHaveBeenCalledTimes(1);
+    expect(onChangeTarget).toHaveBeenCalledWith(12000);
     expect(onSave).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText("Видалити"));
     expect(onDelete).toHaveBeenCalledTimes(1);
@@ -327,5 +331,95 @@ describe("GoalBudgetCard", () => {
     render(<GoalBudgetCard {...props} />);
 
     expect(screen.queryByText(/Ціль закрито/)).not.toBeInTheDocument();
+  });
+
+  // Регресія аудиту 2026-10-01 (ux-04): `onChangeTarget` летів на кожен
+  // символ, pct перераховувався від недописаної суми («4» при накопиченому
+  // 3000), святкування «Ціль закрито» спрацьовувало і забирало фокус, а в
+  // стан/синк потрапляло 4 ₴ замість 4000 ₴. Обгортка рахує pct так само,
+  // як сторінка бюджетів — від поточного `targetAmount` у стані.
+  describe("редагування суми цілі (чернетка)", () => {
+    const SAVED = 3000;
+
+    function Harness({
+      onChangeTarget,
+      onSave,
+    }: {
+      onChangeTarget: (n: number) => void;
+      onSave: () => void;
+    }) {
+      const [target, setTarget] = useState(5000);
+      const [editing, setEditing] = useState(true);
+      return (
+        <GoalBudgetCard
+          budget={{ ...baseBudget, targetAmount: target }}
+          saved={SAVED}
+          pct={Math.min(100, Math.round((SAVED / target) * 100))}
+          daysLeft={null}
+          isEditing={editing}
+          onBeginEdit={() => setEditing(true)}
+          onChangeTarget={(n) => {
+            onChangeTarget(n);
+            setTarget(n);
+          }}
+          onSave={() => {
+            onSave();
+            setEditing(false);
+          }}
+          onDelete={vi.fn()}
+        />
+      );
+    }
+
+    it("набір «4000» не святкує, не пише проміжні значення, а «Зберегти» пише 4000 рівно раз", () => {
+      const onChangeTarget = vi.fn();
+      const onSave = vi.fn();
+      render(<Harness onChangeTarget={onChangeTarget} onSave={onSave} />);
+      const input = screen.getByLabelText("Сума цілі");
+      fireEvent.change(input, { target: { value: "" } });
+      fireEvent.change(input, { target: { value: "4" } });
+      fireEvent.change(input, { target: { value: "40" } });
+      fireEvent.change(input, { target: { value: "400" } });
+      fireEvent.change(input, { target: { value: "4000" } });
+
+      expect(screen.queryByText(/Ціль закрито/)).not.toBeInTheDocument();
+      expect(onChangeTarget).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByText("Зберегти"));
+      expect(onChangeTarget).toHaveBeenCalledTimes(1);
+      expect(onChangeTarget).toHaveBeenCalledWith(4000);
+      expect(onSave).toHaveBeenCalledTimes(1);
+      // 3000 / 4000 = 75% — ціль не досягнута, святкування немає.
+      expect(screen.queryByText(/Ціль закрито/)).not.toBeInTheDocument();
+    });
+
+    it("не дає зберегти порожню або нульову суму", () => {
+      const onChangeTarget = vi.fn();
+      const onSave = vi.fn();
+      render(<Harness onChangeTarget={onChangeTarget} onSave={onSave} />);
+      const input = screen.getByLabelText("Сума цілі");
+      fireEvent.change(input, { target: { value: "" } });
+      const save = screen.getByText("Зберегти").closest("button")!;
+      expect(save).toBeDisabled();
+      fireEvent.click(save);
+      expect(onChangeTarget).not.toHaveBeenCalled();
+      expect(onSave).not.toHaveBeenCalled();
+    });
+
+    it("не святкує, поки картка в режимі редагування, навіть якщо pct уже 100", () => {
+      render(
+        <GoalBudgetCard
+          budget={baseBudget}
+          saved={10000}
+          pct={100}
+          daysLeft={10}
+          isEditing
+          onBeginEdit={vi.fn()}
+          onSave={vi.fn()}
+          onDelete={vi.fn()}
+        />,
+      );
+      expect(screen.queryByText(/Ціль закрито/)).not.toBeInTheDocument();
+    });
   });
 });

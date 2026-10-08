@@ -28,6 +28,20 @@ describe("FoodHitRow", () => {
     expect(onPick).toHaveBeenCalled();
   });
 
+  it("shows the source badge and keeps an English name as is", () => {
+    render(
+      <ul>
+        <FoodHitRow
+          p={{ name: "Bread, cheese" }}
+          externalSourceLabel="USDA"
+          onPick={vi.fn()}
+        />
+      </ul>,
+    );
+    expect(screen.getByTestId("food-source-badge")).toHaveTextContent("USDA");
+    expect(screen.getByText(/Bread, cheese/)).toBeInTheDocument();
+  });
+
   it("handles missing brand", () => {
     render(
       <ul>

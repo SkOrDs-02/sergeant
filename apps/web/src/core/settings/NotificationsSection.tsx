@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
@@ -8,13 +8,10 @@ import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
+import { useRoutineRemindersToggle } from "../../modules/routine/hooks/useRoutineRemindersToggle";
 import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
-import {
-  loadNutritionPrefs,
-  persistNutritionPrefs,
-  NUTRITION_PREFS_KEY,
-  type NutritionPrefs,
-} from "../../modules/nutrition/lib/nutritionStorage";
+import { patchNutritionPrefs } from "../../modules/nutrition/lib/nutritionStorage";
+import { useNutritionPrefsSnapshot } from "../../modules/nutrition/hooks/useNutritionPrefsHydration";
 import { messages } from "@shared/i18n/uk";
 import { PUSH_DAILY_CAP_DEFAULT, PUSH_DAILY_CAP_MAX } from "@sergeant/shared";
 import { PushNotificationToggle } from "../components/PushNotificationToggle";
@@ -79,18 +76,17 @@ export function NotificationsSection() {
 
   const monthlyPlan = useMonthlyPlan();
 
-  const [nutritionPrefs, setNutritionPrefs] = useState<NutritionPrefs>(() =>
-    loadNutritionPrefs(),
+  // data-04: живі prefs із кешу + блок тумблерів до гідратації. Раніше prefs
+  // читались один раз у `useState` (слухач `storage` був мертвий — LS
+  // tombstoned), і запис ЦІЛОГО застарілого об'єкта стирав на сервері шаблони
+  // страв, ціль і воду.
+  const { prefs: nutritionPrefs, hydrated: nutritionHydrated } =
+    useNutritionPrefsSnapshot();
+  // Кеш оновлюється асинхронно після запису, а контрольований number-інпут
+  // мусить відповідати на введення одразу: чернетка живе до blur.
+  const [reminderHourDraft, setReminderHourDraft] = useState<number | null>(
+    null,
   );
-  useEffect(() => {
-    const handler = (e: StorageEvent) => {
-      if (e.key === NUTRITION_PREFS_KEY || e.key === null) {
-        setNutritionPrefs(loadNutritionPrefs());
-      }
-    };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
-  }, []);
 
   const requestPermission = async () => {
     if (typeof Notification === "undefined") return;
@@ -107,18 +103,10 @@ export function NotificationsSection() {
     }
   };
 
+  const setRoutineReminders = useRoutineRemindersToggle(updateRoutinePref);
   const handleRoutineToggle = async (checked: boolean) => {
-    if (checked) {
-      const perm = await requestNotificationPermission();
-      setPermStatus(perm);
-      if (perm !== "granted") {
-        toastWarning(
-          "Без дозволу на сповіщення нагадування не надсилатимуться. Дозволь сповіщення у налаштуваннях браузера.",
-        );
-        return;
-      }
-    }
-    updateRoutinePref("routineRemindersEnabled", checked);
+    const perm = await setRoutineReminders(checked);
+    if (perm) setPermStatus(perm);
   };
 
   const handleFizrukToggle = async (checked: boolean) => {
@@ -146,12 +134,7 @@ export function NotificationsSection() {
         return;
       }
     }
-    const next: NutritionPrefs = {
-      ...nutritionPrefs,
-      reminderEnabled: checked,
-    };
-    persistNutritionPrefs(next, NUTRITION_PREFS_KEY);
-    setNutritionPrefs(next);
+    patchNutritionPrefs({ reminderEnabled: checked });
   };
 
   const permLabels: Record<PermStatus, string> = {
@@ -331,6 +314,7 @@ export function NotificationsSection() {
             "Щоденне нагадування записати прийоми їжі.",
           )}
           checked={Boolean(nutritionPrefs.reminderEnabled)}
+          disabled={!nutritionHydrated}
           onChange={handleNutritionToggle}
         />
         {nutritionPrefs.reminderEnabled && (
@@ -341,17 +325,16 @@ export function NotificationsSection() {
               min={0}
               max={23}
               className="w-16 h-9 touch-target rounded-xl bg-panel border border-line px-2 text-style-body text-text"
-              value={nutritionPrefs.reminderHour ?? 12}
+              value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
+              disabled={!nutritionHydrated}
+              onBlur={() => setReminderHourDraft(null)}
               onChange={(e) => {
-                const next: NutritionPrefs = {
-                  ...nutritionPrefs,
-                  reminderHour: Math.min(
-                    23,
-                    Math.max(0, Number(e.target.value) || 0),
-                  ),
-                };
-                persistNutritionPrefs(next, NUTRITION_PREFS_KEY);
-                setNutritionPrefs(next);
+                const reminderHour = Math.min(
+                  23,
+                  Math.max(0, Number(e.target.value) || 0),
+                );
+                setReminderHourDraft(reminderHour);
+                patchNutritionPrefs({ reminderHour });
               }}
             />
             <span className="text-style-caption text-subtle">год.</span>

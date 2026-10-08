@@ -75,6 +75,7 @@
 import { createHash } from "node:crypto";
 
 import type { Pool } from "pg";
+import { isHealthMemoryEntry } from "@sergeant/shared";
 
 import { env } from "../../env.js";
 import { runWithUserContext } from "../../dbContext.js";
@@ -343,17 +344,17 @@ function toRememberInput(
     content: entry.fact,
     metadata: { category: entry.category },
     dedupeSalt: contentFingerprint(entry.fact),
-    // PR-S3: факт із категорії «Здоровʼя» (в UI банку памʼяті —
-    // `health: { label: "Здоровʼя" }`) потребує окремої згоди на
-    // ПЕРСИСТЕНТНИЙ запис (GDPR Art. 9). Решта категорій — ні: те, що
-    // людина любить каву, спеціальною категорією даних не є.
+    // PR-S3: факт health-категорії потребує окремої згоди на ПЕРСИСТЕНТНИЙ
+    // запис (GDPR Art. 9). Перелік — `@sergeant/shared` (`healthMemory.ts`):
+    // health, allergy, diet, training і `goal` із фактом про вагу (аудит
+    // `priv-06`: раніше гейтилась лише `health`). Решта категорій — ні: те,
+    // що людина любить каву, спеціальною категорією даних не є.
     //
-    // Категорія нормалізована (`normalizeCategory` — trim + lowercase),
-    // тож порівняння з літералом безпечне. Клієнт може прислати будь-що —
-    // усе незнайоме стає `other` і гейт не вмикає; це правильний бік
-    // помилки, бо гейт тут не про приховування, а про згоду на категорію,
-    // яку продукт сам і називає.
-    healthData: entry.category === "health",
+    // Категорія нормалізована (`normalizeCategory` — trim + lowercase).
+    // Клієнт може прислати будь-що — усе незнайоме стає `other` і гейт не
+    // вмикає; це правильний бік помилки, бо гейт тут про згоду на категорії,
+    // які продукт сам і називає.
+    healthData: isHealthMemoryEntry(entry.category, entry.fact),
   };
 }
 

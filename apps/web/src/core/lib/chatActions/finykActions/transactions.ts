@@ -1,8 +1,7 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executors run outside React; storage key strings are used
-   directly here. Same pattern as queryFinykActions.ts. */
-import { ls } from "../../hubChatUtils";
+// Chat-action executors run outside React. Стан читається з SQLite warm
+// cache (`warmFinykCache`), а не з kv — див. warmCache.ts (data-08).
 import { finykChatWrite } from "./dualWriteBridge";
+import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
   finykTransactionExists,
@@ -25,6 +24,15 @@ import type {
   ChatActionResult,
 } from "../types";
 
+type ManualExpenseRow = {
+  id: string;
+  date: string;
+  description?: string;
+  amount: number;
+  category?: string;
+  type?: string;
+};
+
 export function createTransaction(
   action: CreateTransactionAction,
 ): ChatActionResult {
@@ -39,26 +47,16 @@ export function createTransaction(
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? (parseKyivDate(date)?.toISOString() ?? nowIso)
       : nowIso;
-  const customC = ls<Array<{ id: string; label?: string }>>(
-    "finyk_custom_cats_v1",
-    [],
-  );
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const customC = cache.customCategories;
   let categoryLabel = "";
   if (category && category.trim()) {
     const meta = resolveExpenseCategoryMeta(category.trim(), customC);
     categoryLabel = meta?.label || category.trim();
   }
   const manualId = `m_${crypto.randomUUID()}`;
-  const manualExpenses = ls<
-    Array<{
-      id: string;
-      date: string;
-      description?: string;
-      amount: number;
-      category?: string;
-      type?: string;
-    }>
-  >("finyk_manual_expenses_v1", []);
+  const manualExpenses: ManualExpenseRow[] = [...cache.manualExpenses];
   const entry = {
     id: manualId,
     date: isoDate,
@@ -79,7 +77,7 @@ export function createTransaction(
   return {
     result,
     undo: () => {
-      const current = ls<Array<{ id: string }>>("finyk_manual_expenses_v1", []);
+      const current = warmFinykCache()?.manualExpenses ?? [];
       const next = current.filter((tx) => tx.id !== manualId);
       if (next.length !== current.length) {
         finykChatWrite("finyk_manual_expenses_v1", next);
@@ -96,8 +94,10 @@ export function hideTransaction(
   action: HideTransactionAction,
 ): ChatActionResult {
   const txId = normalizeFinykId(action.input.tx_id);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
-  const hidden = ls<string[]>("finyk_hidden_txs", []);
+  const hidden = [...cache.hiddenTransactions];
   if (!hidden.includes(txId)) {
     hidden.push(txId);
     finykChatWrite("finyk_hidden_txs", hidden);
@@ -117,7 +117,9 @@ export function deleteTransaction(
   if (!id.startsWith("m_")) {
     return `Операцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-операцій використай hide_transaction.`;
   }
-  const list = ls<Array<{ id: string }>>("finyk_manual_expenses_v1", []);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const list = cache.manualExpenses;
   const idx = list.findIndex((t) => t.id === id);
   if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
   const next = list.slice();
@@ -133,19 +135,30 @@ export function splitTransaction(
   const { tx_id, parts: splitParts } = action.input;
   const id = normalizeFinykId(tx_id);
   if (!id) return "Потрібен tx_id.";
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   if (!finykTransactionExists(id)) return unknownTransactionMessage(id);
   if (!Array.isArray(splitParts) || splitParts.length < 2)
     return "Потрібно мінімум 2 частини для розділення.";
-  const splits = ls<
-    Record<string, Array<{ categoryId: string; amount: number }>>
-  >("finyk_tx_splits", {});
-  const customC = ls<unknown[]>("finyk_custom_cats_v1", []);
+  const splits: Record<
+    string,
+    Array<{ categoryId: string; amount: number }>
+  > = { ...(cache.txSplits as Record<string, never>) };
+  const customC = cache.customCategories;
   const newSplits = splitParts.map((p) => ({
     categoryId: normalizeFinykId(p.category_id),
     amount: Math.abs(Number(p.amount) || 0),
   }));
   const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
   if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
+  // Спліти для tx_id перезаписуються цілком: знімок попередніх потрібен
+  // для undo (`undefined` — спліту не було, тож undo прибирає ключ).
+  const prevSplit = (
+    cache.txSplits as Record<
+      string,
+      Array<{ categoryId: string; amount: number }> | undefined
+    >
+  )[id];
   splits[id] = newSplits;
   finykChatWrite("finyk_tx_splits", splits);
   const desc = newSplits
@@ -154,5 +167,17 @@ export function splitTransaction(
       return `${cat?.label || s.categoryId}: ${formatNumberUk(s.amount)} грн`;
     })
     .join(", ");
-  return `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
+  return {
+    result: `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`,
+    // Читає свіжий кеш і чіпає лише ключ цього tx, щоб не затерти спліти
+    // інших операцій, змінені між дією й відкатом.
+    undo: () => {
+      const cur: Record<string, unknown> = {
+        ...((warmFinykCache()?.txSplits as Record<string, unknown>) ?? {}),
+      };
+      if (prevSplit === undefined) delete cur[id];
+      else cur[id] = prevSplit;
+      finykChatWrite("finyk_tx_splits", cur);
+    },
+  };
 }

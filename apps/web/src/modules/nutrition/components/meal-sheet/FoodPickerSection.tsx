@@ -33,6 +33,8 @@ const EXTERNAL_SOURCE_LABELS: Record<string, string> = {
   silpo: "Сільпо",
 };
 
+const OWN_PRODUCT_LABEL = "Мій продукт";
+
 function externalSourceLabel(source: string | undefined): string {
   return (
     (source ? EXTERNAL_SOURCE_LABELS[source] : undefined) ?? "Open Food Facts"
@@ -73,6 +75,8 @@ interface FoodPickerSectionProps {
   foodBusy: boolean;
   offBusy: boolean;
   foodErr: string;
+  /** Обидва пошуки догнали набраний запит і завершились (див. `useFoodSearch`). */
+  searchSettled?: boolean;
   setPickedFood: Dispatch<SetStateAction<PickedFood | null>>;
   setPickedGrams: Dispatch<SetStateAction<string>>;
 }
@@ -85,6 +89,7 @@ export function FoodPickerSection({
   foodBusy,
   offBusy,
   foodErr,
+  searchSettled = false,
   setPickedFood,
   setPickedGrams,
 }: FoodPickerSectionProps) {
@@ -100,6 +105,13 @@ export function FoodPickerSection({
     }
     return groups;
   }, [offHits]);
+
+  const noResults =
+    searchSettled &&
+    !foodErr &&
+    foodQuery.trim().length >= 2 &&
+    foodHits.length === 0 &&
+    offHits.length === 0;
 
   return (
     <div className="mb-4 space-y-2">
@@ -140,6 +152,7 @@ export function FoodPickerSection({
               <FoodHitRow
                 key={p.id}
                 p={p}
+                externalSourceLabel={OWN_PRODUCT_LABEL}
                 onPick={() => {
                   setPickedFood(p);
                   setPickedGrams(String(Math.round(p.defaultGrams || 100)));
@@ -152,7 +165,7 @@ export function FoodPickerSection({
                 {/* Роздільник потрібен, коли є з чим розділяти: локальні
                     хіти вище або більше ніж одне зовнішнє джерело. */}
                 {(foodHits.length > 0 || offHitGroups.length > 1) && (
-                  <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold">
+                  <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi font-semibold">
                     {group.label}
                   </li>
                 )}
@@ -173,6 +186,12 @@ export function FoodPickerSection({
             ))}
           </ul>
         </div>
+      )}
+      {noResults && (
+        <p className="text-style-body text-muted">
+          Не знайшов «{foodQuery.trim()}». Спробуй іншу форму слова, скануй
+          штрихкод або додай свій продукт.
+        </p>
       )}
       {offHitGroups.some((g) => g.label === EXTERNAL_SOURCE_LABELS["off"]) && (
         <p className="text-style-caption text-subtle">

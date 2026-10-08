@@ -1,10 +1,34 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
+
+import {
+  SERGEANT_STORE,
+  __resetSergeantDbForTests,
+  dbGet,
+  dbSet,
+  openSergeantDb,
+} from "../idb/sergeantDb";
+
+/** Стори з `keyPath` приймають запис без зовнішнього ключа. */
+async function putInline(
+  store: (typeof SERGEANT_STORE)[keyof typeof SERGEANT_STORE],
+  value: { id: string },
+): Promise<void> {
+  const db = await openSergeantDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db!.transaction(store, "readwrite");
+    tx.objectStore(store).put(value);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
 
 import {
   isAppOwnedLocalStorageKey,
   purgeAppOwnedLocalData,
   purgeAppOwnedLocalStorage,
+  purgeAppOwnedSessionStorage,
 } from "./purgeLocalData";
 
 describe("isAppOwnedLocalStorageKey", () => {
@@ -95,5 +119,84 @@ describe("purgeAppOwnedLocalData", () => {
 
     expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
     expect(localStorage.getItem("ph_keep")).toBe("1");
+  });
+});
+
+describe("purgeAppOwnedLocalData — nutrition IndexedDB (data-09)", () => {
+  const originalIndexedDB = (globalThis as { indexedDB?: unknown }).indexedDB;
+
+  beforeEach(() => {
+    (globalThis as { indexedDB?: IDBFactory }).indexedDB = new IDBFactory();
+    __resetSergeantDbForTests();
+  });
+  afterEach(() => {
+    if (originalIndexedDB === undefined) {
+      delete (globalThis as { indexedDB?: unknown }).indexedDB;
+    } else {
+      (globalThis as { indexedDB?: unknown }).indexedDB = originalIndexedDB;
+    }
+    __resetSergeantDbForTests();
+  });
+
+  it("стирає книгу рецептів, але лишає мініатюри страв (вони без серверної копії)", async () => {
+    await putInline(SERGEANT_STORE.NUTRITION_RECIPES, { id: "rcp_x" });
+    await dbSet(SERGEANT_STORE.NUTRITION_MEAL_THUMBS, "meal_x", "thumb");
+    await putInline(SERGEANT_STORE.NUTRITION_FOODS, { id: "food_x" });
+
+    await purgeAppOwnedLocalData();
+
+    expect(
+      await dbGet(SERGEANT_STORE.NUTRITION_RECIPES, "rcp_x"),
+    ).toBeUndefined();
+    // Мініатюри живуть лише локально: стерти їх означає втратити фото назавжди.
+    expect(await dbGet(SERGEANT_STORE.NUTRITION_MEAL_THUMBS, "meal_x")).toBe(
+      "thumb",
+    );
+    // Каталог продуктів не привʼязаний до акаунта й не стирається наосліп.
+    expect(await dbGet(SERGEANT_STORE.NUTRITION_FOODS, "food_x")).toBeDefined();
+  });
+});
+
+describe("purgeAppOwnedLocalData — sessionStorage (priv-16)", () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
+
+  it("стирає кеш AI-пропозицій рецептів і лишає сторонні ключі", async () => {
+    sessionStorage.setItem(
+      "nutrition_recipes_cache_v1",
+      JSON.stringify({ abc: { recipes: [{ title: "SECRET-X-suggest" }] } }),
+    );
+    sessionStorage.setItem("fizruk_pending_retro_end_v1", "{}");
+    sessionStorage.setItem("__sergeant_chunk_reload_at", "1000");
+    sessionStorage.setItem("ph_session_marker", "1");
+
+    await purgeAppOwnedLocalData();
+
+    expect(sessionStorage.getItem("nutrition_recipes_cache_v1")).toBeNull();
+    expect(sessionStorage.getItem("fizruk_pending_retro_end_v1")).toBeNull();
+    // Сторонні та неапповські ключі лишаються.
+    expect(sessionStorage.getItem("ph_session_marker")).toBe("1");
+    expect(sessionStorage.getItem("__sergeant_chunk_reload_at")).toBe("1000");
+  });
+
+  it("лишає маркер OAuth-реєстрації, який має пережити identity-wipe до читання", () => {
+    sessionStorage.setItem(
+      "sergeant.auth.pendingOAuthProvider",
+      "google:1700000000000",
+    );
+    sessionStorage.setItem("sergeant.v2.routine.streakExposure", "{}");
+
+    expect(purgeAppOwnedSessionStorage()).toBe(1);
+
+    expect(sessionStorage.getItem("sergeant.auth.pendingOAuthProvider")).toBe(
+      "google:1700000000000",
+    );
+    expect(
+      sessionStorage.getItem("sergeant.v2.routine.streakExposure"),
+    ).toBeNull();
+  });
+
+  it("є no-op на порожньому сховищі", () => {
+    expect(purgeAppOwnedSessionStorage()).toBe(0);
   });
 });

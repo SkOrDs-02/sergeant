@@ -119,6 +119,25 @@ describe("addManualExpense", () => {
     );
   });
 
+  // Аудит data-01: id був `Date.now().toString()` — передбачуваний, збігається
+  // з чужим рядком на глобальному PK `finyk_manual_expenses`.
+  it("id нової витрати — mx_<uuid>, різний навіть у ту саму мілісекунду", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    try {
+      const { slots } = makeSlots();
+      const { result } = renderMutations(slots);
+      const a = result.current.addManualExpense({ amount: 1 });
+      const b = result.current.addManualExpense({ amount: 2 });
+      expect(a.id).not.toBe(b.id);
+      for (const id of [a.id, b.id]) {
+        expect(id).toMatch(/^mx_[0-9a-f]{8}-[0-9a-f]{4}-/);
+        expect(id).not.toContain("1777000000000");
+      }
+    } finally {
+      vi.mocked(Date.now).mockRestore();
+    }
+  });
+
   it("fires the first-expense funnel event once, then never again", () => {
     const { slots } = makeSlots();
     const { result } = renderMutations(slots);
@@ -626,5 +645,57 @@ describe("custom categories", () => {
     expect(splits[0]!["categoryId"]).toBe("other");
     // limit budget on c1 dropped, goal budget kept
     expect(state["budgets"]).toEqual([{ id: "b2", type: "goal" }]);
+  });
+  it("removeCustomCategory знімає id з комбінованих лімітів, а не видаляє їх цілком", () => {
+    const { slots, state } = makeSlots({
+      customCategories: [{ id: "c1", label: "Gone" }],
+      budgets: [
+        {
+          id: "b1",
+          type: "limit",
+          limit: 1000,
+          categoryId: "c1",
+          categoryIds: ["c1", "food"],
+        },
+        {
+          id: "b2",
+          type: "limit",
+          limit: 800,
+          categoryId: "restaurant",
+          categoryIds: ["restaurant", "c1"],
+        },
+        {
+          id: "b3",
+          type: "limit",
+          limit: 500,
+          categoryId: "c1",
+          categoryIds: ["c1"],
+        },
+        { id: "b4", type: "limit", limit: 300, categoryId: "transport" },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.removeCustomCategory("c1");
+
+    const budgets = state["budgets"] as Array<Record<string, unknown>>;
+    expect(budgets.map((b) => b["id"])).toEqual(["b1", "b2", "b4"]);
+    expect(budgets[0]).toMatchObject({
+      categoryIds: ["food"],
+      categoryId: "food",
+      limit: 1000,
+    });
+    expect(budgets[1]).toMatchObject({
+      categoryIds: ["restaurant"],
+      categoryId: "restaurant",
+      limit: 800,
+    });
+    // ліміт без видаленої категорії не чіпаємо
+    expect(budgets[2]).toEqual({
+      id: "b4",
+      type: "limit",
+      limit: 300,
+      categoryId: "transport",
+    });
   });
 });

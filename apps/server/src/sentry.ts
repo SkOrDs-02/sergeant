@@ -202,10 +202,12 @@ export function pickTracesSampleRate(
  * happens to be". The cascade lets one helper serve every host:
  *
  *   1. `SENTRY_RELEASE`        — explicit override (release-please, custom CI)
- *   2. `GIT_SHA`               — Coolify/ghcr: baked into the image by
- *                                `Dockerfile.api` (build-arg `${github.sha}`)
- *   3. `VERCEL_GIT_COMMIT_SHA` — Vercel auto-injects this per deploy
- *   4. `GITHUB_SHA`            — fallback when running in GitHub Actions
+ *   2. `GIT_SHA`               — baked into the image by `Dockerfile.api`
+ *                                (`ENV GIT_SHA=${GIT_SHA:-${SOURCE_COMMIT}}`)
+ *   3. `SOURCE_COMMIT`         — Coolify builds from the repo (ADR-0102) and
+ *                                exposes the commit under this name
+ *   4. `VERCEL_GIT_COMMIT_SHA` — Vercel auto-injects this per deploy
+ *   5. `GITHUB_SHA`            — fallback when running in GitHub Actions
  *                                (mobile-shell builds, container scans, etc.)
  *
  * Returns `undefined` when none of the variables are set so Sentry's own
@@ -220,6 +222,7 @@ export function resolveSentryRelease(
   const candidates = [
     env["SENTRY_RELEASE"],
     env["GIT_SHA"],
+    env["SOURCE_COMMIT"],
     env["VERCEL_GIT_COMMIT_SHA"],
     env["GITHUB_SHA"],
   ];
@@ -255,7 +258,66 @@ function redactUrlForSink(url: string): string {
 /**
  * Span-атрибути OTel, у які інструментація кладе повний outbound-URL.
  */
-const SPAN_URL_ATTRIBUTES = ["http.url", "url.full", "http.target"] as const;
+const SPAN_URL_ATTRIBUTES = [
+  "http.url",
+  "url.full",
+  "http.target",
+  "url.path",
+] as const;
+
+/**
+ * Атрибути/поля, що несуть сирий query-рядок (з `?` або без нього).
+ */
+const SPAN_QUERY_ATTRIBUTES = ["http.query", "url.query"] as const;
+
+/**
+ * Редагує URL- і query-атрибути в пласкому record-і (span.data,
+ * contexts.trace.data, breadcrumb.data) через `redactUrlForSink`. Мутує in-place.
+ */
+function redactUrlAttributes(data: Record<string, unknown> | undefined): void {
+  if (!data || typeof data !== "object") return;
+  for (const attr of SPAN_URL_ATTRIBUTES) {
+    const value = data[attr];
+    if (typeof value === "string") data[attr] = redactUrlForSink(value);
+  }
+  for (const attr of SPAN_QUERY_ATTRIBUTES) {
+    const value = data[attr];
+    if (typeof value !== "string") continue;
+    // `redactSensitiveQueryParams` розпізнає query лише за провідним `?`.
+    const hasQ = value.startsWith("?");
+    const redacted = redactUrlForSink(hasQ ? value : `?${value}`);
+    data[attr] = hasQ ? redacted : redacted.slice(1);
+  }
+}
+
+/**
+ * Спільна редакція `event.request` для error- і transaction-подій.
+ * priv-01: `@sentry/node` 8.55 (`requestDataIntegration`) кладе сюди сире тіло
+ * (паролі входу, текст чату), розпарсені cookies і query_string; хуки мусять
+ * їх прибрати, бо `sendDefaultPii:false` цього не робить.
+ */
+function sanitizeRequest(request: Sentry.Event["request"]): void {
+  if (!request) return;
+  delete request.data;
+  delete request.cookies;
+  delete request.query_string;
+  if (request.headers) {
+    // Headers можуть містити Authorization/Cookie/X-Csrf-Token/Telegram-секрет.
+    scrubPII(request.headers);
+  }
+  if (typeof request.url === "string") {
+    request.url = redactUrlForSink(request.url);
+  }
+}
+
+/**
+ * `contexts.trace.data` (OTel кладе туди http.url/http.target root-span-а).
+ */
+function sanitizeTraceContext(contexts: Sentry.Event["contexts"]): void {
+  const data = contexts?.["trace"]?.["data"] as
+    Record<string, unknown> | undefined;
+  redactUrlAttributes(data);
+}
 
 /**
  * Чистий beforeSend-хук — extracted у named-функцію (а не inline-closure
@@ -264,12 +326,7 @@ const SPAN_URL_ATTRIBUTES = ["http.url", "url.full", "http.target"] as const;
  * хоче Sentry SDK).
  */
 export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
-  if (event.request?.data) delete event.request.data;
-  if (event.request?.cookies) delete event.request.cookies;
-  if (event.request?.headers) {
-    // Headers можуть містити Authorization/Cookie/X-Csrf-Token.
-    scrubPII(event.request.headers);
-  }
+  sanitizeRequest(event.request);
   // C1 — `req.originalUrl` для `/api/mono/webhook/<secret>` несе сам секрет,
   // і Sentry capture-ить його у `event.request.url`. Рятуємо до того, як
   // подія йде на ingest. Хелпер ідемпотентний — викликати двічі безпечно,
@@ -277,15 +334,14 @@ export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
   // Plus PII roast 2026-05-13 §P0-S2: `?token=` / `?api_key=` /
   // `?code=` query params get the same treatment so OAuth callbacks
   // and magic-link error captures don't leak the credential.
-  if (typeof event.request?.url === "string") {
-    event.request.url = redactUrlForSink(event.request.url);
-  }
+  // (URL-редакція `request.url` — усередині `sanitizeRequest`.)
   // Глибокий рекурсивний скраб PII з extra/contexts/breadcrumbs. Ловимо
   // випадки, коли user-payload потрапив у `event.extra` через
   // `Sentry.setExtra('payload', req.body)` або
   // `Sentry.captureException(e, { extra })`.
   if (event.extra) scrubPII(event.extra);
   if (event.contexts) scrubPII(event.contexts);
+  sanitizeTraceContext(event.contexts);
   // PII roast §P0-S3: also scrub the top-level `event.message` and every
   // exception `value` for embedded emails / telegram tokens / JWT / AWS
   // keys. `scrubPII` deliberately skips string contents (false-positive
@@ -360,6 +416,7 @@ export function applyBeforeBreadcrumb(
     if (typeof breadcrumb.data["url"] === "string") {
       breadcrumb.data["url"] = redactUrlForSink(breadcrumb.data["url"]);
     }
+    redactUrlAttributes(breadcrumb.data);
     scrubPII(breadcrumb.data);
   }
   if (typeof breadcrumb?.message === "string") {
@@ -379,25 +436,20 @@ export function applyBeforeBreadcrumb(
 export function applyBeforeSendTransaction<E extends Sentry.Event>(
   event: E,
 ): E {
-  if (typeof event.request?.url === "string") {
-    event.request.url = redactUrlForSink(event.request.url);
-  }
-  if (event.request?.headers) scrubPII(event.request.headers);
+  sanitizeRequest(event.request);
   if (typeof event.transaction === "string") {
     event.transaction = redactUrlForSink(event.transaction);
   }
   if (event.extra) scrubPII(event.extra);
   if (event.contexts) scrubPII(event.contexts);
+  sanitizeTraceContext(event.contexts);
   for (const span of event.spans ?? []) {
     if (typeof span.description === "string") {
       span.description = redactUrlForSink(span.description);
     }
     if (!span.data) continue;
     scrubPII(span.data);
-    for (const attr of SPAN_URL_ATTRIBUTES) {
-      const value: unknown = span.data[attr];
-      if (typeof value === "string") span.data[attr] = redactUrlForSink(value);
-    }
+    redactUrlAttributes(span.data);
   }
   return event;
 }
@@ -473,7 +525,15 @@ if (dsn) {
         return defaultSampleRate();
       }
     },
-    // Приберемо request body зі звітів — там можуть бути фото/паролі.
+    // priv-01: тіло запиту й cookies збирає `requestDataIntegration`, а не
+    // `sendDefaultPii` (той лише керує IP/user). У @sentry/node 8.55 опції
+    // `ignoreIncomingRequestBody` немає (вона з v9), тож вимикаємо збір
+    // тут, а хуки `applyBeforeSend*` лишаються захистом у глибину.
+    integrations: [
+      Sentry.requestDataIntegration({
+        include: { data: false, cookies: false, query_string: false },
+      }),
+    ],
     sendDefaultPii: false,
     // PII roast 2026-05-13 §P0-S4: drop events from health probes so
     // uptime monitor 502s never burn the Sentry error budget. Traces

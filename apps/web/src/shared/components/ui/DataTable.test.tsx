@@ -67,6 +67,26 @@ describe("DataTable", () => {
     expect(caption.className).toContain("sr-only");
   });
 
+  it("заливка thead і зебри суцільна, без напівпрозорості (хвиля 5 аудиту контрасту)", () => {
+    // `/60` на thead і `/30` на зебрі змішувались із тлом під таблицею:
+    // зебра давала 1.03 (світла) / 1.05 (темна) проти рядка без смуги, thead
+    // 1.05 / 1.11. Суцільна `bg-panelHi` — 1.09 / 1.21.
+    const { container } = render(
+      <DataTable
+        columns={columns}
+        rows={rows}
+        getRowKey={(r) => r.name}
+        zebra
+      />,
+    );
+    const thead = container.querySelector("thead");
+    expect(thead).toHaveClass("bg-panelHi");
+    const bodyRows = container.querySelectorAll("tbody tr");
+    expect(bodyRows[0]?.className).not.toContain("bg-panelHi");
+    expect(bodyRows[1]).toHaveClass("bg-panelHi");
+    expect(container.innerHTML).not.toMatch(/bg-panelHi\/\d+/);
+  });
+
   it("applies the module header tone via the static class map", () => {
     render(
       <DataTable

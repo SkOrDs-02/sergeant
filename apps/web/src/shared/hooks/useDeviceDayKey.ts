@@ -22,7 +22,7 @@
  * Значення стабільне в межах доби, тож зайвих ререндерів немає:
  * `setDayKey` з тим самим рядком React ігнорує.
  */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { deviceDayKey } from "@sergeant/shared";
 
 /** Скільки чекати після півночі, щоб не влучити в межу за мілісекунду. */
@@ -38,8 +38,19 @@ function msUntilNextDeviceMidnight(): number {
   return next.getTime() - now.getTime() + BOUNDARY_SLACK_MS;
 }
 
-export function useDeviceDayKey(): string {
+/**
+ * Те саме, що `useDeviceDayKey`, плюс `refresh` — синхронне «перечитай день
+ * зараз». Потрібен тому, що таймер і `visibilitychange` не гарантовані
+ * (ноутбук проспав ніч, Chromium не рахує час сну): код, який ПИШЕ запис
+ * під ключем дня, читає годинник напряму, а екран тим часом ще показує
+ * вчора. Викликаєш `refresh()` разом із записом — і екран перевертається
+ * разом із ним, а не розходиться з тим, куди запис ліг.
+ */
+export function useDeviceDay(): { dayKey: string; refresh: () => void } {
   const [dayKey, setDayKey] = useState(() => deviceDayKey());
+  const refresh = useCallback(() => {
+    setDayKey(deviceDayKey());
+  }, []);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -72,5 +83,9 @@ export function useDeviceDayKey(): string {
     };
   }, []);
 
-  return dayKey;
+  return { dayKey, refresh };
+}
+
+export function useDeviceDayKey(): string {
+  return useDeviceDay().dayKey;
 }

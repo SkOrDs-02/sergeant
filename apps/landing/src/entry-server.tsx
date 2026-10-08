@@ -3,7 +3,8 @@ import { renderToString } from "react-dom/server";
 import { ROUTES } from "./App";
 import NotFoundPage from "./pages/NotFoundPage";
 import { takeSsgJsonLd } from "./lib/ssgJsonLd";
-import { absolutizeJsonLd, withBreadcrumb } from "./lib/jsonLd";
+import { CurrentRouteContext } from "./lib/currentRoute";
+import { absolutizeJsonLd, enrichJsonLd, withBreadcrumb } from "./lib/jsonLd";
 
 /**
  * SSG-вхід для scripts/prerender.mjs: рендерить сторінку маршруту в рядок,
@@ -21,10 +22,15 @@ export function render(
   const Page = ROUTES[path] ?? NotFoundPage;
   const html = renderToString(
     <StrictMode>
-      <Page />
+      <CurrentRouteContext.Provider value={path}>
+        <Page />
+      </CurrentRouteContext.Provider>
     </StrictMode>,
   );
-  const jsonLd = withBreadcrumb(takeSsgJsonLd() ?? undefined, path);
+  const jsonLd = withBreadcrumb(
+    enrichJsonLd(takeSsgJsonLd() ?? undefined, path),
+    path,
+  );
   return {
     html,
     jsonLd: jsonLd ? (absolutizeJsonLd(jsonLd, origin) as object) : null,

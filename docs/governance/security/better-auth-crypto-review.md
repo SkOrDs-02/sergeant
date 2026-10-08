@@ -1,6 +1,6 @@
 # Better Auth crypto review (PR-48 / stack-pulse PR-10)
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2027-07-01.
+> **Last touched:** 2026-10-03 by @claude (CVE-трекінг: Renovate → Dependabot, ADR-0103). **Next review:** 2027-07-01.
 > **Status:** Reference
 
 | Field        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -224,10 +224,10 @@ severity: high finding адресований у тому самому PR») tri
 
 ## CVE / advisory tracking
 
-- `Renovate` (per ADR-0044) групує `better-auth*` updates у окремий PR
-  через `packageRules` matchPackagePatterns `^better-auth` + label
-  `security`. Для існуючої CI без Renovate `npm-version-mismatch` job у
-  `nightly-audit.yml` ловить mismatched lockfile.
+- Оновлення `better-auth*` веде Dependabot
+  ([ADR-0103](../adr/0103-dependabot-only-dependency-updates.md), замінив
+  ADR-0044 про Renovate): security-фікси приходять у групі
+  `security-updates`, звичайні версії — окремим PR без групування.
 - GitHub Dependabot security advisories для `better-auth` приходять у
   Slack через webhook (organization-level, налаштований).
 - Manual sweep: `pnpm audit --filter @sergeant/server --json` запускається

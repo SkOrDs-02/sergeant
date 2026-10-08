@@ -114,6 +114,11 @@ export default function CrossModuleLinksSection() {
   // 60 днів × 10 метрик зі сховища, тож і картки, і стан мовчання беруть
   // дані з ОДНОГО обчислення, а не з двох незалежних.
   const { links, silent, smallData, quiet } = useMemo(() => {
+    // Ключі інвалідації «використано» явно — див. коментар до deps нижче.
+    void storageBump;
+    void finykTick;
+    void nutritionTick;
+    void fizrukTick;
     const series = buildCrossModuleSeries();
     const pairs = notablePairsFromSeries(series);
 
@@ -184,7 +189,6 @@ export default function CrossModuleLinksSection() {
     // `buildCrossModuleSeries` бере дані з модульних кешів і сховища, тобто
     // ззовні React. Правило їх не бачить і зве «unnecessary» — але без них
     // секція застигає на холодному першому рендері (B1). Не прибирай.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageBump, finykTick, nutritionTick, fizrukTick]);
 
   return (

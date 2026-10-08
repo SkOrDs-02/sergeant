@@ -419,6 +419,8 @@ interface PantryCardProps {
   placeSelector?: ReactNode;
 }
 
+const NO_ITEMS: PantryItemView[] = [];
+
 export function PantryCard({
   busy,
   parsePantry,
@@ -446,7 +448,14 @@ export function PantryCard({
   const [mode, setMode] = useState<PantryInputMode>("single");
   const [addOpen, setAddOpen] = useState(false);
 
-  const empty = effectiveItems.length === 0;
+  // «Порожня» = у коморі немає ЗБЕРЕЖЕНИХ позицій. `effectiveItems` для
+  // порожньої комори — це живий парс чернетки textarea («Списком»), тож
+  // рахувати `empty` по ньому означало, що перша ж літера робила комору
+  // «непорожньою»: інлайн-форма розмонтовувалась (фокус у `<body>`), а в
+  // списку зʼявлявся фантом із назвою цієї літери (аудит 2026-10-01, ux-12).
+  // Чернетка живе лише у формі: превʼю розбору — `PantryParsePreview`.
+  const empty = pantryItemsLength === 0;
+  const inventoryItems = empty ? NO_ITEMS : effectiveItems;
   // Питання про одиницю чи превʼю розбору, що лишились після закриття
   // аркуша, повертають форму інлайн: інакше вони ховались би за кнопкою,
   // а позиції так і не потрапили б у комору.
@@ -585,7 +594,7 @@ export function PantryCard({
       )}
 
       <InventoryCard
-        effectiveItems={effectiveItems}
+        effectiveItems={inventoryItems}
         editItemAt={editItemAt}
         removeItemAtOrByName={removeItemAtOrByName}
         pantryItemsLength={pantryItemsLength}

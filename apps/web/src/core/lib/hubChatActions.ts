@@ -12,6 +12,10 @@ import {
   ASYNC_CHAT_ACTION_NAMES,
 } from "./chatActions/serverActions";
 import { captureRoutineWrites } from "./chatActions/routinePersistence";
+import {
+  hasPendingNutritionDualWrites,
+  nutritionDualWriteIdle,
+} from "../../modules/nutrition/lib/sqliteWriter/index";
 import type { ChatActionResult } from "./chatActions/types";
 
 export type { ChatAction, ChatActionResult } from "./chatActions/types";
@@ -43,9 +47,9 @@ export interface ExecutedActionResult {
   ok: boolean;
   /**
    * Тривалість саме ЦЬОГО виклику, мс. Міряється всередині, бо
-   * `executeActions` виконує батч через `Promise.all` — ззовні видно лише
-   * тривалість найповільнішого, і приписати її кожному інструменту означало
-   * б завищити всі, крім одного.
+   * `executeActions` повертає весь батч одним `Promise.all` — ззовні видно
+   * лише тривалість найповільнішого, і приписати її кожному інструменту
+   * означало б завищити всі, крім одного.
    */
   latencyMs: number;
   undo?: (() => void) | undefined;
@@ -169,60 +173,118 @@ export function executeAction(action: ChatAction): string {
 /**
  * Execute multiple tool calls and return their results in the same order.
  *
- * Today every handler is synchronous (writes go to localStorage) so this is
- * effectively the same as `actions.map(dispatch)` — the value is in
- * pinning the API shape now. As soon as a handler needs to hit the network
- * (e.g. `compare_weeks` aggregating from `/api/...` snapshots), we can flip
- * its `handle*Action` signature to `Promise<string>` and `Promise.all` here
- * starts giving real parallelism without touching `HubChat.tsx`.
+ * Sync-дії батча виконуються ПОСЛІДОВНО, у порядку, який віддала модель;
+ * async (server-side) тули з `ASYNC_CHAT_ACTION_NAMES` стартують одразу на
+ * своїй позиції й далі йдуть паралельно (їм нема чого читати з кешу).
+ * Порядок результатів завжди збігається з порядком `actions`.
  *
- * AI-CONTEXT: parallel write-tools that target the same localStorage key can
- * race — Anthropic rarely emits two writes to the same key in one turn but
- * if it ever does, the last `JSON.parse` → mutate → `JSON.stringify` pair
- * wins. Сompose handlers so each domain owns one key per turn, or sequence
- * conflicting writes via a queue if it becomes a real problem.
+ * AI-CONTEXT: чому послідовно (data-22). Їжа читає й пише через SQLite
+ * warm-кеш, який оновлюється лише ПІСЛЯ асинхронного apply у черзі dual-write
+ * (`enqueueNutritionRun`, `setTimeout(0)`), а не синхронно, як localStorage.
+ * Раніше всі sync `dispatch` батча йшли в одному тіку: виклик N+1 читав знімок
+ * без виклику N і перезаписував цілий blob (`add_to_shopping_list` — весь
+ * список, `log_water` — абсолютну суму дня), тож «додай молоко, хліб і яйця»
+ * лишало одну позицію. Модель штатно шле такі виклики паралельно
+ * (`disable_parallel_tool_use` не виставлено). Тому після кожної дії, що
+ * залишила запис у черзі Їжі, чекаємо `nutritionDualWriteIdle()`: до наступного
+ * виклику кеш уже оновлено. Для дій інших модулів черги нема, і очікування
+ * не додається. Фініковий кеш оновлюється оптимістично (`patchFinykSqliteStateCache`),
+ * routine — `routinePersistence`; їхнє підтвердження довговічності, як і раніше,
+ * чекається паралельно в `settle`, а не блокує наступні виклики.
  */
+/** Стеля очікування черги Їжі між діями батча (мс). */
+export const NUTRITION_IDLE_TIMEOUT_MS = 10_000;
+
+/**
+ * Текст для дій, які батч не виконав, бо черга Їжі не звільнилась за
+ * {@link NUTRITION_IDLE_TIMEOUT_MS}: наступна дія читала б застарілий знімок.
+ */
+const NUTRITION_QUEUE_STALLED =
+  "Дію не виконано: попередній запис Їжі ще зберігається. " +
+  "Скажи про це користувачу й попроси повторити за кілька секунд. " +
+  "НЕ стверджуй, що дію виконано.";
+
+/** `true`, якщо черга Їжі звільнилась вчасно; `false` на тайм-ауті. */
+async function waitNutritionIdle(): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      nutritionDualWriteIdle().then(() => true),
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), NUTRITION_IDLE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 export async function executeActions(
   actions: ReadonlyArray<ChatAction>,
 ): Promise<ExecutedActionResult[]> {
-  return Promise.all(
-    actions.map(async (action) => {
-      const startedAt = performance.now();
-      const withLatency = (r: Omit<ExecutedActionResult, "latencyMs">) => ({
-        ...r,
-        latencyMs: Math.round(performance.now() - startedAt),
-      });
-      // Async (server-side) tools проходять окремою гілкою — їхній результат
-      // — Promise<string>, який не вписується у sync-`dispatch(...)` ?? -чейн.
-      if (ASYNC_CHAT_ACTION_NAMES.has(action.name)) {
-        try {
-          const result = await handleAsyncChatAction(action);
-          if (typeof result === "string") {
-            return withLatency({ name: action.name, result, ok: true });
-          }
-          if (result) {
+  const pending: Promise<ExecutedActionResult>[] = [];
+  // Черга Їжі зависла: решта sync-дій батча не виконується (див. waitNutritionIdle).
+  let nutritionStalled = false;
+  for (const action of actions) {
+    const startedAt = performance.now();
+    const withLatency = (r: Omit<ExecutedActionResult, "latencyMs">) => ({
+      ...r,
+      latencyMs: Math.round(performance.now() - startedAt),
+    });
+    // Async (server-side) tools проходять окремою гілкою — їхній результат
+    // — Promise<string>, який не вписується у sync-`dispatch(...)` ?? -чейн.
+    if (ASYNC_CHAT_ACTION_NAMES.has(action.name)) {
+      pending.push(
+        (async () => {
+          try {
+            const result = await handleAsyncChatAction(action);
+            if (typeof result === "string") {
+              return withLatency({ name: action.name, result, ok: true });
+            }
+            if (result) {
+              return withLatency({
+                name: action.name,
+                result: result.result,
+                ok: true,
+                ...(result.undo ? { undo: result.undo } : {}),
+              });
+            }
             return withLatency({
               name: action.name,
-              result: result.result,
-              ok: true,
-              ...(result.undo ? { undo: result.undo } : {}),
+              result: `Невідома дія: ${action.name}`,
+              ok: false,
+            });
+          } catch {
+            return withLatency({
+              name: action.name,
+              result: "Не вдалося виконати дію. Спробуй ще раз.",
+              ok: false,
             });
           }
-          return withLatency({
+        })(),
+      );
+      continue;
+    }
+    if (nutritionStalled) {
+      pending.push(
+        Promise.resolve(
+          withLatency({
             name: action.name,
-            result: `Невідома дія: ${action.name}`,
+            result: NUTRITION_QUEUE_STALLED,
             ok: false,
-          });
-        } catch {
-          return withLatency({
-            name: action.name,
-            result: "Не вдалося виконати дію. Спробуй ще раз.",
-            ok: false,
-          });
-        }
-      }
-      const { value: out } = captureRoutineWrites(() => dispatch(action));
-      return withLatency(await settle(action.name, out, out.ok));
-    }),
-  );
+          }),
+        ),
+      );
+      continue;
+    }
+    const { value: out } = captureRoutineWrites(() => dispatch(action));
+    // Мутація Їжі лишила запис у черзі dual-write → дочекатися, поки кеш його
+    // побачить, і лише тоді віддати керування наступній дії батча. Очікування
+    // обмежене: завислий SQLite не має вішати весь хід чату.
+    if (hasPendingNutritionDualWrites() && !(await waitNutritionIdle())) {
+      nutritionStalled = true;
+    }
+    pending.push(settle(action.name, out, out.ok).then(withLatency));
+  }
+  return Promise.all(pending);
 }

@@ -20,6 +20,7 @@
  */
 
 import { anchoredCompletionBounds } from "./dayAnchor";
+import { isDualWriteOutcomeClean } from "../../../core/durability/dualWriteJournal.js";
 import {
   ROUTINE_STORAGE_KEY,
   ROUTINE_EVENT,
@@ -68,6 +69,8 @@ import {
   setCachedSqliteRoutineState,
 } from "./sqliteReader.js";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
+import type { BackupRestoreMode } from "@shared/lib/backup/restoreMode";
+import { mergeRoutineStateAddMissing } from "./routineBackupMerge";
 
 // Re-export key constants so web callers can keep their existing imports.
 export { ROUTINE_STORAGE_KEY, ROUTINE_EVENT, ROUTINE_STORAGE_ERROR };
@@ -190,7 +193,15 @@ export async function saveRoutineStateDurable(
     const prev = writeThroughRoutineCaches(next);
     const outcome = await dualWriteRoutineState(prev, next);
     emitRoutineStorage();
-    return outcome.status === "applied";
+    // `applied` без `errored`: адаптер ловить виняток кожного опа і все одно
+    // повертає `applied` (data-05), тож «довговічно» = жоден оп не впав.
+    const durable = isDualWriteOutcomeClean(outcome);
+    // Тихий збій SQL (IOERR/FULL/BUSY) не має виглядати успіхом: той самий
+    // банер, що й для синхронного збою (`StorageErrorBanner`).
+    if (outcome.status === "applied" && !durable) {
+      emitRoutineStorageError(new Error("sqlite write errored"));
+    }
+    return durable;
   } catch (err) {
     emitRoutineStorageError(err);
     return false;
@@ -480,7 +491,25 @@ export function buildRoutineBackupPayload() {
   };
 }
 
-export function applyRoutineBackupPayload(parsed: unknown): void {
+/** Елемент списку Рутини має бути обʼєктом з непорожнім рядковим `id`. */
+function hasStringId(v: unknown): boolean {
+  return (
+    v !== null &&
+    typeof v === "object" &&
+    typeof (v as { id?: unknown }).id === "string" &&
+    (v as { id: string }).id !== ""
+  );
+}
+
+/**
+ * Чиста фаза «validate all» імпорту (аудит 2026-10-01, data-34): нічого не
+ * читає зі сховища й не пише, повертає нормалізований стан із файлу.
+ *
+ * Звичка, категорія чи тег без `id` (зокрема `null`) не потрапляє в стан:
+ * `normalizeHabit(null)` повертає `null`, а `ensureHabitOrder` далі кидав
+ * сирий `TypeError`, уже ПІСЛЯ того як Hub записав Фінік.
+ */
+function parseRoutineBackupPayload(parsed: unknown): RoutineState {
   if (
     !parsed ||
     typeof parsed !== "object" ||
@@ -490,8 +519,50 @@ export function applyRoutineBackupPayload(parsed: unknown): void {
   ) {
     throw new Error("Некоректний файл резервної копії Рутини.");
   }
-  const d = (parsed as { data: unknown }).data;
-  const merged = normalizeRoutineState(d);
+  const d = (parsed as { data: Record<string, unknown> }).data;
+  for (const [field, label] of [
+    ["habits", "звичку"],
+    ["categories", "категорію"],
+    ["tags", "тег"],
+  ] as const) {
+    const list = d[field];
+    if (Array.isArray(list) && !list.every(hasStringId)) {
+      throw new Error(
+        `Пошкоджений файл: розділ Рутини містить ${label} без ідентифікатора. Експортуй копію ще раз.`,
+      );
+    }
+  }
+  const notes = d["completionNotes"];
+  if (
+    notes !== null &&
+    typeof notes === "object" &&
+    !Object.values(notes).every((v) => typeof v === "string")
+  ) {
+    throw new Error(
+      "Пошкоджений файл: розділ Рутини містить нотатку не рядком. Експортуй копію ще раз.",
+    );
+  }
+  return normalizeRoutineState(d);
+}
+
+/** Фаза «validate all» Hub-імпорту: кидає на битому файлі, нічого не пишучи. */
+export function validateRoutineBackupPayload(parsed: unknown): void {
+  parseRoutineBackupPayload(parsed);
+}
+
+/**
+ * `mode` — див. `BackupRestoreMode`. Дефолт `replace` лишає поведінку
+ * наявних викликів; Hub-імпорт передає режим явно (дефолт панелі — `merge`).
+ */
+export function applyRoutineBackupPayload(
+  parsed: unknown,
+  mode: BackupRestoreMode = "replace",
+): void {
+  const incoming = parseRoutineBackupPayload(parsed);
+  const merged =
+    mode === "merge"
+      ? mergeRoutineStateAddMissing(loadRoutineState(), incoming)
+      : incoming;
   const { state: s } = ensureHabitOrder(merged);
   if (!saveRoutineState(s)) {
     throw new Error(

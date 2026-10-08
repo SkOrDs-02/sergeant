@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: профіль
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-05-10.
+> **Last touched:** 2026-10-03 by @claude (§ Вихід: підтвердження втрати живе в `logout()`). **Next review:** 2027-05-10.
 > **Status:** Active — контракт as-built: описує `core/profile/{ProfilePage,PersonalInfoSection,ChangePasswordSection,SessionsSection,BiometricsSection,MemoryBankSection,AiMemorySection,DangerZoneSection,DeleteAccountDialog}.tsx`, `avatar.ts`, `biometrics.ts`, `useBiometrics.ts`, `recordBodyWeight.ts`, `useLatestBodyWeight.ts` і `core/security/AppLockSettings.tsx` (як гостя групи «Безпека») станом на 2026-09-17. Код не правився: кожна розбіжність із каноном позначена **[борг]** із файлом і рядком. Відкритих боргів — 5 (перелік у підсумку внизу).
 
 Профіль — вкладка хаба (`/?tab=profile`), де людина керує собою, а не
@@ -277,9 +277,15 @@ WebAuthn), не форма «Біометрія». Отже, воронок ви
   `pushBiometricsToServer`. Вага поза 20–400 кг — no-op у фаннелі, а не
   клемп (`recordBodyWeight.ts:52-61`); зріст поза 80–260 — відхилений, не
   підігнаний (`BiometricsSection.tsx:99-107`).
-- **Вихід** — `logout()` спершу пробує доставити чергу синку, і лише коли
-  щось лишилось, питає через `confirmUnsyncedLoss` (`AuthContext.tsx:546-557`);
-  «Залишитись» гарантує, що нічого не стерто (`ProfilePage.tsx:69-76`).
+- **Вихід** — `logout()` спершу пробує доставити чергу синку (скидає бекоф,
+  оживляє `dead_letter`, жене `flushNow()` доки черга зменшується, у бюджеті
+  5 с), і лише коли щось лишилось (pending + dead_letter + не-benign
+  rejected поточного користувача), САМ питає діалогом провайдера
+  (`UnsyncedLossDialog`, `AuthContext.tsx`) — для будь-якого викликача, а не
+  лише Профілю (аудит 2026-10-01, `data-19`). Повертає `false` при
+  «Залишитись»: нічого не стерто, Профіль не показує тост і не редіректить.
+  Винятки `skipUnsyncedLossPrompt`: завершення поточної сесії (питання було
+  ДО відкликання) і видалення акаунта (сесію вже вбито).
 - **Діалоги** — усі три (`ConfirmDialog`, `DeleteAccountDialog`, App Lock)
   ідуть через `useDialogFocusTrap(..., { inertBackground: true })` +
   `useBodyScrollLock`; `DeleteAccountDialog` додатково підключений до

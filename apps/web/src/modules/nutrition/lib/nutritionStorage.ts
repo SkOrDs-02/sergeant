@@ -38,16 +38,24 @@ import {
 } from "@sergeant/nutrition-domain";
 
 import {
+  getNutritionDualWriteUserId,
+  hasPendingNutritionDualWrites,
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
 } from "./sqliteWriter/index.js";
+import { readActiveSqliteVfs } from "../../../core/db/storageBackendState.js";
+import { hasCompletedInitialPull } from "../../../core/syncEngine/initialPullState.js";
+import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId.js";
 import type {
   NutritionMealSnapshot,
   NutritionPantryEventSnapshot,
   NutritionPantrySnapshot,
   NutritionRecipeSnapshot,
 } from "./sqliteWriter/diff.js";
-import { getCachedNutritionSqliteState } from "./sqliteReader.js";
+import {
+  getCachedNutritionSqliteState,
+  type SqliteNutritionCache,
+} from "./sqliteReader.js";
 import type { SavedRecipe } from "./recipeBook.js";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 
@@ -77,7 +85,6 @@ export {
   updateLogEntry,
   updatePantry,
 } from "@sergeant/nutrition-domain";
-export { toLocalISODate } from "@sergeant/shared";
 export type {
   DaySummary,
   MacrosRow,
@@ -115,11 +122,107 @@ export function loadNutritionPrefs(
     : defaultNutritionPrefs();
 }
 
+/**
+ * data-04: початковий догін курсора для поточного користувача завершено (або
+ * його в цього користувача не буде: анонімний режим не синкається).
+ *
+ * Поки контекст dual-write ще не зареєстровано (auth резолвиться), id
+ * невідомий, тож довіряємо лише факту «якийсь pull уже завершувався».
+ */
+function isInitialSyncSettled(): boolean {
+  const userId = getNutritionDualWriteUserId();
+  if (userId === null) return hasCompletedInitialPull();
+  if (!isSyncableUserId(userId)) return true;
+  return hasCompletedInitialPull(userId);
+}
+
+/**
+ * data-04: чи можна писати `nutrition_prefs`. Рядок prefs — один blob на
+ * акаунт (шаблони страв, ціль, вода, нагадування), і сервер замінює його
+ * цілком за LWW. До гідратації `loadNutritionPrefs()` віддає ДЕФОЛТИ, тож
+ * запис із них стирає справжні налаштування на всіх пристроях.
+ *
+ * Гідратовано, якщо кеш Їжі ПРОГРІТО (`refreshedAt !== null`) І він має рядок
+ * prefs АБО початковий pull завершено. Прапор pull без прогрітого кешу не
+ * годиться: на вже наявному пристрої pull без nutrition-опів кеш не торкається,
+ * а бут кешу міг упасти або ще не довантажитись, тож `loadNutritionPrefs()`
+ * знову дав би дефолти (той самий гейт, що в `isNutritionSingletonWritable`).
+ */
+export function isNutritionPrefsHydrated(): boolean {
+  if (!isNutritionCacheWarm()) return false;
+  try {
+    if (getCachedNutritionSqliteState().prefs != null) return true;
+  } catch {
+    return false;
+  }
+  return isInitialSyncSettled();
+}
+
+/**
+ * «Останній записаний prefs»: кеш Їжі оновлюється лише після асинхронного
+ * apply → refresh у черзі dual-write, тож два швидкі патчі підряд (blur поля
+ * і одразу click по тумблеру) бачили б ОДИН і той самий застарілий кеш, і
+ * повний `prefs_json` другого перезаписував би перший. `persistNutritionPrefs`
+ * кладе сюди результат синхронно; він діє, доки кеш не оновився (інший
+ * обʼєкт кешу) і в черзі немає незавершених записів. Тоді кеш знову джерело
+ * правди (і для змін, що прийшли з pull).
+ */
+interface PrefsOverlay {
+  readonly prefs: NutritionPrefs;
+  readonly cacheRef: SqliteNutritionCache;
+}
+let prefsOverlay: PrefsOverlay | null = null;
+
+function getPrefsOverlay(): NutritionPrefs | null {
+  if (prefsOverlay === null) return null;
+  const cache = getCachedNutritionSqliteState();
+  if (prefsOverlay.cacheRef === cache || hasPendingNutritionDualWrites()) {
+    return prefsOverlay.prefs;
+  }
+  prefsOverlay = null;
+  return null;
+}
+
+/**
+ * Актуальні prefs: останній запис (поки кеш не наздогнав), інакше кеш. Базa
+ * для накладання патча, а також те, що мають читати Settings/хуки, щоб не
+ * бачити застарілий кеш між записом і його refresh.
+ */
+export function loadLatestNutritionPrefs(): NutritionPrefs {
+  return getPrefsOverlay() ?? loadNutritionPrefs();
+}
+
+/**
+ * Prefs, які щойно записав `persistNutritionPrefs` (з урахуванням його
+ * нормалізації, напр. `adaptiveGoalEnabled: false` після ручної цілі), або
+ * `null`, коли запису не було / кеш уже наздогнав.
+ */
+export function peekLastWrittenNutritionPrefs(): NutritionPrefs | null {
+  return getPrefsOverlay();
+}
+
+export interface PersistNutritionPrefsOptions {
+  /**
+   * Лише для явної заміни всього стану (відновлення з бекапу): користувач
+   * свідомо хоче, щоб ЦІЛИЙ blob переміг. Решта викликачів — через
+   * {@link patchNutritionPrefs}.
+   */
+  readonly allowUnhydrated?: boolean;
+}
+
+/**
+ * Запис ЦІЛОГО об'єкта prefs. Повертає `false` (і нічого не пише), доки
+ * prefs не гідратовано — див. {@link isNutritionPrefsHydrated}. Викликач, що
+ * змінює окремі поля, бере {@link patchNutritionPrefs}: він накладає зміну на
+ * актуальний кеш у момент виклику, а не на застарілий стан компонента.
+ */
 export function persistNutritionPrefs(
   prefs: NutritionPrefs | null | undefined,
   _key: string = NUTRITION_PREFS_KEY,
   goalOrigin?: "manual" | "preset" | "tdee",
+  options: PersistNutritionPrefsOptions = {},
 ): boolean {
+  if (!options.allowUnhydrated && !isNutritionPrefsHydrated()) return false;
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const previousPrefs = prev.prefs
@@ -152,24 +255,44 @@ export function persistNutritionPrefs(
     },
     goalOrigin: effectiveOrigin,
   };
+  prefsOverlay = {
+    prefs: nextPrefs,
+    cacheRef: getCachedNutritionSqliteState(),
+  };
   triggerNutritionDualWrite(prev, next);
   return true;
 }
 
-export function persistAdaptiveNutritionPrefs(prefs: NutritionPrefs): boolean {
+/**
+ * Накладає `patch` (лише змінені поля) на АКТУАЛЬНИЙ кеш prefs у момент
+ * виклику й пише результат. Непов'язані поля (шаблони страв, вода,
+ * нагадування…) беруться з останнього запису або кешу, а не зі стану
+ * компонента, який міг застаріти. `false` — prefs ще не гідратовано, нічого не записано.
+ */
+export function patchNutritionPrefs(
+  patch: Partial<NutritionPrefs>,
+  goalOrigin?: "manual" | "preset" | "tdee",
+): boolean {
+  if (!isNutritionPrefsHydrated()) return false;
   return persistNutritionPrefs(
-    { ...prefs, adaptiveGoalEnabled: true },
+    { ...loadLatestNutritionPrefs(), ...patch },
     NUTRITION_PREFS_KEY,
-    "tdee",
+    goalOrigin,
   );
 }
 
-export function persistProfileNutritionPrefs(prefs: NutritionPrefs): boolean {
-  return persistNutritionPrefs(
-    { ...prefs, adaptiveGoalEnabled: true },
-    NUTRITION_PREFS_KEY,
-    "preset",
-  );
+/** Патч цілі від автокалібрування за тижневим вікном (origin `tdee`). */
+export function patchAdaptiveNutritionPrefs(
+  patch: Partial<NutritionPrefs>,
+): boolean {
+  return patchNutritionPrefs({ ...patch, adaptiveGoalEnabled: true }, "tdee");
+}
+
+/** Патч цілі, розрахованої з профілю (origin `preset`). */
+export function patchProfileNutritionPrefs(
+  patch: Partial<NutritionPrefs>,
+): boolean {
+  return patchNutritionPrefs({ ...patch, adaptiveGoalEnabled: true }, "preset");
 }
 
 export function loadActivePantryId(
@@ -193,12 +316,32 @@ export function loadPantries(
   return [makeDefaultPantry()];
 }
 
+/**
+ * data-10: чи можна писати знімки комори (`pantry-upsert` = повна заміна
+ * позицій місця). У memory-режимі (фолбек `:memory:` при збої OPFS/квоти) база
+ * на старті порожня, `loadPantries()` віддає дефолти, а запис із них журналюється
+ * (журнал у memory не знімається) і на справжній базі soft-delete-ить усі живі
+ * позиції. Тому там пишемо, лише коли комору гідровано з реального джерела: кеш
+ * вже має комори або початковий pull завершено (гейти data-04). Поза memory-
+ * режимом поведінка не змінюється.
+ */
+function isPantrySnapshotWritable(): boolean {
+  if (readActiveSqliteVfs() !== "memory") return true;
+  try {
+    if (getCachedNutritionSqliteState().pantries.length > 0) return true;
+  } catch {
+    return false;
+  }
+  return isInitialSyncSettled();
+}
+
 export function persistPantries(
   _key: string = NUTRITION_PANTRIES_KEY,
   _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
   pantries?: Pantry[] | null,
   activeId?: string | null,
 ): boolean {
+  if (!isPantrySnapshotWritable()) return false;
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const nextPantries: Pantry[] = Array.isArray(pantries) ? pantries : [];
@@ -253,6 +396,30 @@ export function persistNutritionLog(
 // ─────────────────────────────────────────────
 
 /**
+ * data-03: чи SQLite warm-кеш Їжі вже прогрівся хоч раз
+ * (`refreshedAt !== null`). Whole-blob singleton-и (список покупок, вода)
+ * без цього пишуться з порожніх дефолтів.
+ */
+function isNutritionCacheWarm(): boolean {
+  try {
+    return getCachedNutritionSqliteState().refreshedAt !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * data-04 (посилення data-03): `refreshedAt !== null` означає лише, що
+ * ЛОКАЛЬНИЙ бут завершився — на новому пристрої він завершується з порожньою
+ * базою ще до першого pull. Whole-blob singleton пишемо, лише якщо кеш уже
+ * має власний рядок (`hasLocalRow`) або початковий pull завершено.
+ */
+function isNutritionSingletonWritable(hasLocalRow: boolean): boolean {
+  if (!isNutritionCacheWarm()) return false;
+  return hasLocalRow || isInitialSyncSettled();
+}
+
+/**
  * Persist the entire water-log map. Mirrors `persistNutritionLog` — the
  * caller passes the full `Record<dateKey, volumeMl>` and the diff
  * layer emits one `water-log-set` op per changed date. Pre-boot or
@@ -262,6 +429,14 @@ export function persistNutritionLog(
 export function persistNutritionWaterLog(
   waterLog: Record<string, number> | null | undefined,
 ): boolean {
+  // data-03/04: whole-blob запис з непрогрітого кешу затирає воду на сервері.
+  if (
+    !isNutritionSingletonWritable(
+      Object.keys(getCachedNutritionSqliteState().waterLog ?? {}).length > 0,
+    )
+  ) {
+    return false;
+  }
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const safe: Record<string, number> = {};
@@ -277,24 +452,44 @@ export function persistNutritionWaterLog(
 }
 
 /**
- * Persist the full saved-recipes list into SQLite. `recipeBook.ts` owns
- * IndexedDB as the write target (`saveRecipeToBook` / `deleteSavedRecipe`);
- * without this mirror, `sqliteReader.ts`'s `cache.recipes` — what
- * `RecipesCard`'s "Мої рецепти" actually reads — never sees an IDB-only
- * write, so a saved recipe shows once (optimistic local state) and then
- * disappears on the next cache refresh.
+ * Дзеркалить в SQLite ОДНУ зміну книги рецептів (збереження або видалення).
+ * `recipeBook.ts` пише в IndexedDB; без цього дзеркала `cache.recipes` (те, що
+ * читає «Мої рецепти») не бачить IDB-запису, і збережений рецепт зникає при
+ * наступному refresh кешу.
+ *
+ * data-09: раніше сюди передавали ВЕСЬ вміст IDB (`getAll`) як нове повне
+ * значення. IDB спільна для всіх акаунтів пристрою, тож диф проти кешу
+ * поточного користувача видавав upsert для чужих рецептів і delete для всіх
+ * серверних, яких немає в локальній IDB. Тепер база диф-а — кеш поточного
+ * користувача, а `next` відрізняється від нього рівно одним рецептом.
  */
-export function persistNutritionRecipes(
-  recipes: readonly SavedRecipe[] | null | undefined,
+function applyRecipeDelta(
+  change: (current: NutritionRecipeSnapshot[]) => NutritionRecipeSnapshot[],
 ): boolean {
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const next: NutritionDualWriteState = {
     ...prev,
-    recipes: (recipes ?? []).map(recipeSnapshot),
+    recipes: change([...prev.recipes]),
   };
   triggerNutritionDualWrite(prev, next);
   return true;
+}
+
+/** Один `recipe-upsert`: додати або оновити рецепт, решту книги не чіпати. */
+export function upsertNutritionRecipe(recipe: SavedRecipe): boolean {
+  const snapshot = recipeSnapshot(recipe);
+  return applyRecipeDelta((current) => [
+    ...current.filter((r) => r.id !== snapshot.id),
+    snapshot,
+  ]);
+}
+
+/** Один `recipe-delete`: прибрати лише рецепт з цим id. */
+export function removeNutritionRecipe(recipeId: string): boolean {
+  return applyRecipeDelta((current) =>
+    current.filter((r) => r.id !== recipeId),
+  );
 }
 
 /**
@@ -304,6 +499,19 @@ export function persistNutritionRecipes(
 export function persistNutritionShoppingList(
   shoppingList: ShoppingList | null | undefined,
 ): boolean {
+  // data-03: до першого прогріву кешу `loadShoppingList()` дає порожній
+  // дефолт; запис такого blob-а = whole-row LWW, що затирає справжній список
+  // на всіх пристроях. Тому тут (на відміну від решти persist*) запис ДО
+  // прогріву свідомо відкидається, а не буферизується.
+  // data-04: прогрітий кеш без власного рядка списку (новий пристрій) теж не
+  // годиться — чекаємо початкового pull.
+  if (
+    !isNutritionSingletonWritable(
+      getCachedNutritionSqliteState().shoppingList != null,
+    )
+  ) {
+    return false;
+  }
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const normalized = normalizeShoppingList(shoppingList ?? null);
@@ -335,8 +543,9 @@ export function persistNutritionShoppingList(
 // Recipes live in IndexedDB (`recipeBook.ts`) rather than LS, but the
 // SQLite `nutrition_recipes` table is what `sqliteReader.ts` reads back
 // into `cache.recipes` — so `prev.recipes` below reflects the cache, and
-// `persistNutritionRecipes()` is how `recipeBook.ts` mirrors an IDB write
-// into SQLite so the next cache refresh actually contains it.
+// `upsertNutritionRecipe()` / `removeNutritionRecipe()` are how `recipeBook.ts`
+// mirrors a single IDB write into SQLite so the next cache refresh actually
+// contains it.
 // ─────────────────────────────────────────────
 
 function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
@@ -346,7 +555,7 @@ function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
 function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   try {
     const cache = getCachedNutritionSqliteState();
-    const prefs = cache.prefs ?? defaultNutritionPrefs();
+    const prefs = getPrefsOverlay() ?? cache.prefs ?? defaultNutritionPrefs();
     return {
       meals: extractMealSnapshots(normalizeNutritionLog(cache.log)),
       pantries: extractPantrySnapshots(normalizePantries(cache.pantries)),

@@ -7,6 +7,11 @@ import {
   totalCompletedVolumeKg,
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
+import {
+  GOAL_MEMORY_CATEGORY,
+  WEIGHT_GOAL_CONTEXT_LABEL,
+  isWeightGoalFact,
+} from "@sergeant/shared";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { logger } from "@shared/lib";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
@@ -285,16 +290,25 @@ export function appendAiSignalLines(lines: string[]): void {
     const profile = readMemoryEntries();
     if (profile.length > 0) {
       lines.push("[Профіль користувача]");
+      // AI-DANGER: мітка рядка — контракт із сервером. `healthGate.ts`
+      // (`stripHealthContext`) без згоди на дані про здоровʼя зрізає рядки
+      // за переліком health-категорій із `@sergeant/shared` (health,
+      // allergy, diet, training). Цілі про вагу кладемо в окремий рядок
+      // `WEIGHT_GOAL_CONTEXT_LABEL`, щоб сервер різав їх за міткою, не
+      // розбираючи факти. Міняєш мітки — онови `healthMemory.ts` і тести.
       const grouped: Record<string, string[]> = {};
+      const labelOf = (cat: string) => CATEGORY_META[cat]?.label || cat;
       for (const entry of profile) {
         const cat = entry.category || "other";
-        if (!grouped[cat]) grouped[cat] = [];
-        grouped[cat].push(entry.fact);
+        const key =
+          cat === GOAL_MEMORY_CATEGORY && isWeightGoalFact(entry.fact)
+            ? WEIGHT_GOAL_CONTEXT_LABEL
+            : labelOf(cat);
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(entry.fact);
       }
-      for (const [cat, facts] of Object.entries(grouped)) {
-        lines.push(
-          `  ${CATEGORY_META[cat]?.label || cat}: ${facts.join("; ")}`,
-        );
+      for (const [label, facts] of Object.entries(grouped)) {
+        lines.push(`  ${label}: ${facts.join("; ")}`);
       }
     }
   } catch (err) {

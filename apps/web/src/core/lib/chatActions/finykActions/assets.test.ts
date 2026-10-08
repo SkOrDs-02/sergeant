@@ -1,18 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
 vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
 
-import { ls } from "../../hubChatUtils";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../../../modules/finyk/lib/sqliteReader";
 import { finykChatWrite } from "./dualWriteBridge";
 import { addAsset, recurringExpense } from "./assets";
 
-const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockWrite = vi.mocked(finykChatWrite);
 
+// data-08: стан читається з прогрітого кешу SQLite, а не з kv.
 beforeEach(() => {
   vi.clearAllMocks();
-  mockLs.mockReturnValue([]);
+  clearFinykSqliteCache();
+  __setFinykSqliteStateCacheForTests({});
 });
 
 // ─── addAsset ─────────────────────────────────────────────────────────────────
@@ -85,8 +88,9 @@ describe("addAsset", () => {
   });
 
   it("appends to existing assets", () => {
-    const existing = [{ id: "a1", name: "Old", amount: 100, currency: "UAH" }];
-    mockLs.mockReturnValue(existing);
+    __setFinykSqliteStateCacheForTests({
+      manualAssets: [{ id: "a1", name: "Old", amount: 100, currency: "UAH" }],
+    });
     addAsset({ name: "add_asset", input: { name: "New", amount: 200 } });
     const written = mockWrite.mock.calls[0]![1] as unknown[];
     expect(written).toHaveLength(2);
@@ -108,7 +112,9 @@ describe("addAsset", () => {
     const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
     const assetId = written[written.length - 1]!.id;
     vi.clearAllMocks();
-    mockLs.mockReturnValue([{ id: assetId, name: "Undo Test", amount: 300 }]);
+    __setFinykSqliteStateCacheForTests({
+      manualAssets: [{ id: assetId, name: "Undo Test", amount: 300 }],
+    });
     result.undo();
     expect(mockWrite).toHaveBeenCalledWith("finyk_assets", []);
   });
@@ -187,5 +193,27 @@ describe("recurringExpense", () => {
       input: { name: "Gym", amount: 500 },
     });
     expect(mockWrite).toHaveBeenCalledWith("finyk_subs", expect.any(Array));
+  });
+});
+
+describe("cold SQLite cache (data-08)", () => {
+  it("addAsset відповідає чесним повідомленням і нічого не пише", () => {
+    clearFinykSqliteCache();
+    const out = addAsset({
+      name: "add_asset",
+      input: { name: "Авто", amount: 1000 },
+    });
+    expect(out).toContain("ще завантажуються");
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
+
+  it("recurringExpense відповідає чесним повідомленням і нічого не пише", () => {
+    clearFinykSqliteCache();
+    const out = recurringExpense({
+      name: "recurring_expense",
+      input: { name: "Gym", amount: 500 },
+    });
+    expect(out).toContain("ще завантажуються");
+    expect(mockWrite).not.toHaveBeenCalled();
   });
 });

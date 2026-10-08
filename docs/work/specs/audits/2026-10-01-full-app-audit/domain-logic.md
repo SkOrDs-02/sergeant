@@ -23,7 +23,7 @@
 
 ### `logic-01` [high] Акаунт у 30-денному вікні видалення не відновити через UI: після входу немає екрана «Відновити акаунт»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1334 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / профіль
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:317-360; apps/web/src/core/profile/usePendingDeletion.ts:20-26; apps/web/src/core/app/RootLayout.tsx:153-187; apps/web/src/core/profile/PendingDeletionScreen.tsx:47-56; apps/server/src/routes/me.ts:302-339; apps/server/src/http/requireSession.ts:146-165
 - **Першопричина:** GET /api/me для акаунта, позначеного на видалення, повертає 403 account_pending_deletion, а AuthContext вважає будь-яку помилку me станом «не автентифікований» (user = null). usePendingDeletion увімкнений лише за Boolean(user), тому /api/me/deletion-status ніколи не викликається, і PendingDeletionScreen у RootLayout недосяжний.
@@ -86,7 +86,7 @@ I tried to refute this and couldn't. I traced the code end to end and reproduced
 
 ### `logic-02` [medium] Квиток round_trip_ticket звільняє від списання квоти будь-який AI-запит, а не лише тур синтезу
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1332 (змерджено 2026-10-04) (мінімальний фікс; не входило: привʼязка квитка до id tool_use, echo квитка у веб-клієнті)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / чат
 - **Та сама першопричина, що й** [`sec-03`](./security.md#sec-03): Той самий дефект assertAiQuota: квиток round_trip_ticket звільняє від списання будь-який AI-запит і видається знову на оплачений квитком тур. Логіка оцінила medium, безпека high; фікс один.
 - **Де:** apps/server/src/modules/chat/aiQuota.ts:302-307, 335-341; apps/server/src/modules/chat/chat.ts:340-362, 787-789, 911-913; apps/server/src/routes/coach.ts:44; apps/server/src/routes/nutrition.ts:86; packages/shared/src/schemas/api.ts:537-567
@@ -147,7 +147,7 @@ Code path (main @ c7c09607):
 
 ### `logic-03` [medium] Незворотні та перезаписні чат-дії виконуються без підтвердження і без undo
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) (лишилось: undo для consume_from_pantry (потребує компенсуючої події журналу комори, ADR-0077); set_goal, edit_habit, set_habit_schedule, pause_habit без undo; update_budget(goal) із saved_amount досі замінює лог, а не дописує, рішення власника; тест-інваріант «мутуючий тул або в TOOL_RISK, або з undo»)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat / виконавці дій
 - **Де:** packages/shared/src/lib/toolRisk.ts:54-116; apps/web/src/core/lib/chatActions/finykActions/debts.ts:72-123; .../finykActions/transactions.ts:95-158; .../finykActions/budgets.ts:182-201; .../nutritionActions.ts:261-416; .../crossActions/goalAndUtility.ts:179-189; .../routineActions.ts:397-556
 - **Першопричина:** Політика TOOL_RISK така: незворотне йде через confirm, решта має undo. Але частина мутуючих тулів не входить у TOOL_RISK і повертає звичайний рядок без undo. mark_debt_paid видаляє борг (splice), consume_from_pantry без qty прибирає позицію цілком. set_daily_plan і set_goal вимикають адаптивну ціль, edit_habit, set_habit_schedule і pause_habit (заднім числом) переписують звичку. split_transaction перезаписує спліти, а update_budget(goal) замінює історію поповнень цілі.
@@ -244,7 +244,7 @@ computeOneRmAging (oneRmAging.ts:151-186) визначає застаріліс�
 
 ### `logic-05` [medium] Адаптивна ціль калорій систематично занижує виміряний TDEE (EMA-кінець проти сирого старту)
 
-- **Стан:** відкрито
+- **Стан:** виправлено в [#1407](https://github.com/SkOrDs-02/sergeant/pull/1407) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** nutrition-domain / web: Їжа
 - **Де:** packages/nutrition-domain/src/adaptiveTdee.ts:125-151, 176-184; apps/web/src/modules/nutrition/hooks/useAdaptiveNutritionGoal.ts:171-213, 270-285
 - **Першопричина:** weightTrendEma бере за startKg сирий перший замір, а за endKg згладжену EMA (напіврозпад 7 днів). На 14-денному вікні EMA відстає приблизно на половину реальної зміни ваги, тож deltaKg занижена: під час схуднення TDEE виходить заниженим, під час набору завищеним. Один «водяний» перший замір теж зсуває результат.
@@ -288,7 +288,7 @@ cd /home/user/sergeant && node --import tsx <scratch>/agents/client-static-domai
 
 ### `logic-06` [medium] Виписки з окремими колонками Дебет/Кредит імпортуються навпаки: витрати стають доходом «Зарплата», надходження губляться
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в [#1394](https://github.com/SkOrDs-02/sergeant/pull/1394) (змерджено 2026-10-08) (перемикач напряму рядка в BulkReviewTable відкладено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+server: Фінік / імпорт виписок
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:100; apps/web/src/modules/finyk/components/bulkImport/bulkImportRows.ts:184-192; apps/server/src/modules/finyk/import/statementPreview.ts:89-102
 - **Першопричина:** ColumnMapper дає обрати лише одну «Колонку суми (витрати)», а ImportColumnMappingSchema не має поля знаку чи напряму. statementPreview.ts читає значення як суму зі знаком (signed &lt; 0 → expense). Тому додатна колонка Дебет стає доходом, а порожні клітинки відкидаються як unparsed_amount. У таблиці перевірки напрям рядка не редагується.

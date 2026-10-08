@@ -21,8 +21,14 @@ export function PWASection() {
     setConfirmOpen(false);
     setSwBusy(true);
     try {
-      const res = await swClearCaches();
+      const res = await swClearCaches("all");
       logger.info("[sw] caches cleared", res);
+      // rel-12: прекеш видалено, а Workbox сам його не відновить (у маніфесті
+      // немає integrity), тож активний SW лишився б без ассетів до наступного
+      // деплою. Знімаємо реєстрацію ДО reload: наступне завантаження
+      // зареєструє SW заново і він поставить precache з нуля.
+      const registration = await navigator.serviceWorker.getRegistration();
+      await registration?.unregister();
       toast.success("Кеш PWA скинуто. Перезавантажую…", 4000);
       setTimeout(() => window.location.reload(), 300);
     } catch (err) {
@@ -143,9 +149,23 @@ export function PWASection() {
       </details>
       {/* AI-CONTEXT: попередження «несинхронізовані зміни в офлайн-черзі
           можуть бути втрачені» тут стояло помилково (browser-QA
-          2026-09-03). `clearAppCaches` (`src/sw/cache.ts`) видаляє РІВНО
-          записи CacheStorage: `google-fonts-*`, `navigations-v*`,
-          `api-cache-v*`, `exercise-images-v*`, `workbox-precache*`.
+          2026-09-03). `clearAppCaches("all")` (`src/sw/cache.ts`; вибір
+          кешів — `selectCachesToClear` у `src/sw/cachePolicy.ts`) видаляє
+          РІВНО записи CacheStorage: `google-fonts-*`, `navigations-v*`,
+          `api-cache-v*`, `exercise-images-v*`, `workbox-precache*`, `sw-meta`.
+          Лише ця кнопка шле скоуп `"all"` (rel-12): вихід і втрата сесії
+          шлють `"user"` і precache не чіпають. Після `"all"` кнопка знімає
+          реєстрацію SW (`registration.unregister()`) і лише тоді
+          перезавантажує, інакше активний SW лишався б без precache до
+          наступного деплою і застосунок не стартував би офлайн.
+          Побічна ціна `unregister()`: за Push API разом із реєстрацією
+          гине push-підписка, а локальна мітка тумблера (`PUSH_SUB_KEY`)
+          лишається «увімкнено». Тому після reload `RootLayout` викликає
+          `useRestoreWebPush` -> `restoreWebPushSubscriptionIfLost`
+          (`@shared/hooks`): мітка є, дозвіл `granted`, підписки нема ->
+          ставить її заново і реєструє на сервері. Не прибирай цей виклик і
+          не додавай сюди ручного `pushManager`-коду: без відновлення банківські
+          пуші й нагадування мовчки припиняються.
           Офлайн-черга (`sync_op_outbox`) живе в SQLite/OPFS, нутриційні
           офлайн-операції в IndexedDB, налаштування в localStorage, і
           жодного з цих сховищ воно не торкається. Обіцяти втрату даних

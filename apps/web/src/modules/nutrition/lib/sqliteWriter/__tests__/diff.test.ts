@@ -327,16 +327,14 @@ describe("diffNutritionDualWriteOps", () => {
   // --- Shopping list (Stage 11) ---
 
   it("emits shopping-list-set on add", () => {
+    const dataJson = '{"categories":[{"name":"Інше","items":[]}]}';
     const next: NutritionDualWriteState = {
       ...EMPTY,
-      shoppingList: { dataJson: '{"categories":[]}' },
+      shoppingList: { dataJson },
     };
     const ops = diffNutritionDualWriteOps(EMPTY, next);
     expect(ops).toEqual([
-      {
-        kind: "shopping-list-set",
-        shoppingList: { dataJson: '{"categories":[]}' },
-      },
+      { kind: "shopping-list-set", shoppingList: { dataJson } },
     ]);
   });
 

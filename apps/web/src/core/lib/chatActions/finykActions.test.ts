@@ -7,9 +7,17 @@ import {
 } from "../../../modules/finyk/lib/sqliteReader";
 import type { ChatAction } from "./types";
 
+/** Сід кешу SQLite без повної типізації рядків — тестам досить мінімуму полів. */
+function seedFinykCache(partial: Record<string, unknown>): void {
+  __setFinykSqliteStateCacheForTests(partial as never);
+}
+
 beforeEach(() => {
   localStorage.clear();
   clearFinykSqliteCache();
+  // data-08: екзекутори читають лише прогрітий кеш SQLite; тести, що хочуть
+  // власний стан, перезасівають його (`__setFinykSqliteStateCacheForTests`).
+  seedFinykCache({});
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-04-22T12:00:00"));
 });
@@ -25,7 +33,7 @@ afterEach(() => {
  * they act on.
  */
 function seedTransactions(...ids: string[]): void {
-  __setFinykSqliteStateCacheForTests({
+  seedFinykCache({
     manualExpenses: ids.map((id) => ({
       id,
       date: "2026-04-22",
@@ -84,7 +92,7 @@ describe("change_category", () => {
 // ---------------------------------------------------------------------------
 describe("find_transaction", () => {
   it("happy: finds transactions matching query", () => {
-    __setFinykSqliteStateCacheForTests({
+    seedFinykCache({
       manualExpenses: [
         {
           id: "m_1",
@@ -124,7 +132,7 @@ describe("find_transaction", () => {
 // ---------------------------------------------------------------------------
 describe("batch_categorize", () => {
   it("happy: dry-run returns preview string", () => {
-    __setFinykSqliteStateCacheForTests({
+    seedFinykCache({
       manualExpenses: [
         {
           id: "m_1",
@@ -392,10 +400,9 @@ describe("create_transaction", () => {
 // ---------------------------------------------------------------------------
 describe("delete_transaction", () => {
   it("happy: deletes manual transaction", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([{ id: "m_test", amount: 100, date: "2026-04-22" }]),
-    );
+    seedFinykCache({
+      manualExpenses: [{ id: "m_test", amount: 100, date: "2026-04-22" }],
+    });
     const out = call({
       name: "delete_transaction",
       input: { tx_id: "m_test" },
@@ -477,12 +484,11 @@ describe("update_budget", () => {
 // ---------------------------------------------------------------------------
 describe("mark_debt_paid", () => {
   it("happy: pays debt and creates manual tx", () => {
-    localStorage.setItem(
-      "finyk_debts",
-      JSON.stringify([
+    seedFinykCache({
+      manualDebts: [
         { id: "d_1", name: "Борг", totalAmount: 5000, linkedTxIds: [] },
-      ]),
-    );
+      ],
+    });
     const out = call({
       name: "mark_debt_paid",
       input: { debt_id: "d_1", amount: 2000 },

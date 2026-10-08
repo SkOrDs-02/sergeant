@@ -397,5 +397,60 @@ export function isWithinTextBound(
   return value.length <= maxLen;
 }
 
+/**
+ * Обрізає текст до `maxLen` UTF-16 code unit-ів (так само рахує
+ * `isWithinTextBound`) і не лишає на кінці половину сурогатної пари: хвіст
+ * із одиноким сурогатом `jsonb`/`text` не прийме (див. `hasUnstorableText`).
+ * Для денормалізованих копій display-рядків (напр. `routine_entries.name` -
+ * копія назви звички), де reject був би термінальним і назавжди губив би
+ * відмітку, а не лише відсікав зловмисний payload.
+ */
+export function clampTextToBound(
+  value: string,
+  maxLen: number = NAME_MAX_LEN,
+): string {
+  if (value.length <= maxLen) return value;
+  let end = maxLen;
+  const last = value.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return value.slice(0, end);
+}
+
+/**
+ * Рядок, якого не прийме `jsonb`/`text` у Postgres: містить `U+0000` або
+ * одинокий (непарний) UTF-16 сурогат. JSON.stringify пише такий сурогат як
+ * `\udXXX`-escape, а `jsonb` відкидає його ("Unicode low surrogate must
+ * follow a high surrogate"). Реалістичний тригер - назва, обрізана
+ * `.slice()` посеред емодзі (аудит 2026-10-01, `data-17`).
+ */
+const UNSTORABLE_TEXT_RE =
+  // eslint-disable-next-line no-control-regex -- U+0000 і є тим, що шукаємо.
+  /\u0000|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+/**
+ * `true`, якщо хоч один ключ чи рядкове значення в `row` (на будь-якій
+ * глибині) містить `U+0000` або одинокий сурогат. Такий оп відкидається ДО
+ * apply з reason `invalid_text_encoding`: тихо "лагодити" дані (замінювати
+ * символ) не можна, це мовчки змінило б те, що ввів користувач. Обхід
+ * ітеративний, без рекурсії, щоб глибоко вкладений payload не клав стек.
+ */
+export function hasUnstorableText(row: unknown): boolean {
+  const stack: unknown[] = [row];
+  while (stack.length > 0) {
+    const v = stack.pop();
+    if (typeof v === "string") {
+      if (UNSTORABLE_TEXT_RE.test(v)) return true;
+    } else if (Array.isArray(v)) {
+      for (const item of v) stack.push(item);
+    } else if (v !== null && typeof v === "object") {
+      for (const [k, val] of Object.entries(v)) {
+        if (UNSTORABLE_TEXT_RE.test(k)) return true;
+        stack.push(val);
+      }
+    }
+  }
+  return false;
+}
+
 export type { PoolClient };
 export type { SyncV2Op } from "../../http/schemas.js";

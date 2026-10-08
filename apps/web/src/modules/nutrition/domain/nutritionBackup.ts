@@ -3,6 +3,11 @@
  * Status: Active
  */
 import { normalizeNutritionPrefs } from "@sergeant/nutrition-domain";
+import type { Pantry } from "@sergeant/nutrition-domain";
+import {
+  addMissingBy,
+  type BackupRestoreMode,
+} from "@shared/lib/backup/restoreMode";
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_PANTRIES_KEY,
@@ -177,7 +182,16 @@ export function buildNutritionBackupPayload(): NutritionBackupPayload {
   };
 }
 
-export function applyNutritionBackupPayload(payload: unknown): void {
+/**
+ * Чиста фаза «validate all» імпорту (аудит 2026-10-01, data-34): нічого не
+ * пише, кидає на файлі не того типу чи форми й повертає нормалізовані секції.
+ */
+function parseNutritionBackupPayload(payload: unknown): {
+  data: Record<string, unknown>;
+  pantries: NutritionBackupPantry[];
+  activePantryId: string;
+  prefs: NutritionPrefs;
+} {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Некоректний бекап харчування.");
   }
@@ -200,6 +214,35 @@ export function applyNutritionBackupPayload(payload: unknown): void {
     : [];
   const activePantryId = safeString(data["activePantryId"], "home") || "home";
   const prefs = normalizePrefs(data["prefs"]);
+  const log = data["log"];
+  if (log && typeof log === "object" && !Array.isArray(log)) {
+    normalizeNutritionLog(log);
+  }
+  return { data, pantries, activePantryId, prefs };
+}
+
+/** Фаза «validate all» Hub-імпорту: кидає на битому файлі, нічого не пишучи. */
+export function validateNutritionBackupPayload(payload: unknown): void {
+  parseNutritionBackupPayload(payload);
+}
+
+/**
+ * `mode` — див. `BackupRestoreMode`. Дефолт `replace` лишає поведінку
+ * наявних викликів (хмарний бекап); Hub-імпорт передає режим явно, і його
+ * дефолт — `merge`: додати відсутнє, нічого не видаляючи на пристрої й
+ * на сервері (аудит 2026-10-01, data-06).
+ */
+export function applyNutritionBackupPayload(
+  payload: unknown,
+  mode: BackupRestoreMode = "replace",
+): void {
+  const { data, pantries, activePantryId, prefs } =
+    parseNutritionBackupPayload(payload);
+
+  if (mode === "merge") {
+    mergeNutritionBackup({ pantries, log: data["log"] });
+    return;
+  }
 
   // Stage 8 PR #057n-tombstone: writes go through the dual-write
   // pipeline so the SQLite tables become the source of truth and the
@@ -216,7 +259,11 @@ export function applyNutritionBackupPayload(payload: unknown): void {
     pantries,
     activePantryId,
   );
-  persistNutritionPrefs(prefs, NUTRITION_PREFS_KEY);
+  // Відновлення з бекапу — явна заміна цілого стану: користувач свідомо
+  // хоче, щоб бекап переміг, тож гейт гідратації (data-04) тут не діє.
+  persistNutritionPrefs(prefs, NUTRITION_PREFS_KEY, undefined, {
+    allowUnhydrated: true,
+  });
   if (
     data["log"] &&
     typeof data["log"] === "object" &&
@@ -224,4 +271,48 @@ export function applyNutritionBackupPayload(payload: unknown): void {
   ) {
     persistNutritionLog(normalizeNutritionLog(data["log"]), NUTRITION_LOG_KEY);
   }
+}
+
+/**
+ * Режим `merge`: комори за id (наявна комора лишається такою, яка є, а
+ * порожню, наприклад свіжу `home`, файл заповнює; `text` і `items` комори
+ * ніколи не змішуються, щоб не розійтись), журнал їжі по днях (лише прийоми
+ * з новим id). Налаштування й активна комора лишаються поточними. Жодного
+ * видалення, тож жодного tombstone на сервері.
+ */
+function mergeNutritionBackup(file: {
+  pantries: NutritionBackupPantry[];
+  log: unknown;
+}): void {
+  const currentPantries = loadPantries(
+    NUTRITION_PANTRIES_KEY,
+    NUTRITION_ACTIVE_PANTRY_KEY,
+  );
+  const known = new Map(currentPantries.map((p) => [p.id, p]));
+  const merged = currentPantries.map((p) => {
+    const incoming = file.pantries.find((f) => f.id === p.id);
+    const isEmpty = p.items.length === 0 && p.text.trim() === "";
+    return incoming && isEmpty ? (incoming as Pantry) : p;
+  });
+  const added = file.pantries.filter((f) => !known.has(f.id));
+  persistPantries(
+    NUTRITION_PANTRIES_KEY,
+    NUTRITION_ACTIVE_PANTRY_KEY,
+    [...merged, ...(added as Pantry[])],
+    loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY),
+  );
+
+  const incomingLog =
+    file.log && typeof file.log === "object" && !Array.isArray(file.log)
+      ? normalizeNutritionLog(file.log)
+      : null;
+  if (!incomingLog) return;
+  const currentLog = loadNutritionLog(NUTRITION_LOG_KEY);
+  const nextLog: NutritionLog = { ...currentLog };
+  for (const [day, entry] of Object.entries(incomingLog)) {
+    const existing = nextLog[day]?.meals ?? [];
+    const meals = addMissingBy(existing, entry?.meals ?? [], (m) => m.id);
+    if (meals.length !== existing.length) nextLog[day] = { meals };
+  }
+  persistNutritionLog(nextLog, NUTRITION_LOG_KEY);
 }

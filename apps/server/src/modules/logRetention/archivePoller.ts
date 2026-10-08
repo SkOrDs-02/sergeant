@@ -10,6 +10,9 @@
  *   - `openclaw_invocations`  (audit-trail for OpenClaw agent calls)
  *   - `tg_alert_acks`         (Telegram alert ACK history, ADR-0038 §1)
  *   - `n8n_webhook_events`    (n8n webhook replay history, PR-28)
+ *   - `sync_op_log`           (ЛИШЕ `status = 'rejected'`, TTL 30 днів,
+ *                              без колонки `row`; `applied`-рядки — це
+ *                              курсор pull і не видаляються, `data-48`)
  *
  * Design notes:
  *
@@ -47,7 +50,7 @@
 import { gzipSync } from "node:zlib";
 
 import type { Pool } from "pg";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import { logger } from "../../obs/logger.js";
 import { waitUntilIdle } from "../../lib/pollerDrain.js";
@@ -68,12 +71,45 @@ import {
 export interface ArchiveTableSpec {
   table: string;
   timestampColumn: string;
+  /**
+   * Додатковий предикат, який діє і в SELECT, і в DELETE (захист: id-список
+   * не може зачепити рядки поза предикатом). Лише хардкодні константи, не
+   * ввід користувача.
+   */
+  where?: string;
+  /**
+   * Явний список колонок замість `*` (хардкодна константа). Для таблиць, де
+   * важкий payload не має сенсу архівувати.
+   */
+  columns?: string;
+  /** Власний TTL у днях замість `retentionDays` поллера. */
+  retentionDays?: number;
 }
+
+/**
+ * TTL відхилених оп-ів `sync_op_log`. Рядок потрібен лише для анти-реплею
+ * (ідемпотентність за `idempotency_key`); після TTL повтор того самого ключа
+ * просто пройде apply заново.
+ */
+export const SYNC_OP_LOG_REJECTED_RETENTION_DAYS = 30;
 
 export const DEFAULT_ARCHIVE_TABLES: readonly ArchiveTableSpec[] = [
   { table: "openclaw_invocations", timestampColumn: "invoked_at" },
   { table: "tg_alert_acks", timestampColumn: "posted_at" },
   { table: "n8n_webhook_events", timestampColumn: "received_at" },
+  // `data-48`: відхилені оп-и не читає ні pull, ні SSE (обидва беруть
+  // `status = 'applied'`), але раніше вони жили вічно. `applied`-рядки НЕ
+  // чіпаємо: це журнал, по якому курсором ходить pull. Колонку `row` не
+  // тягнемо: у старих відхилених рядків там повний payload (до 256 КБ), який
+  // роздув би пам'ять тіку заради сміття.
+  {
+    table: "sync_op_log",
+    timestampColumn: "server_ts",
+    where: "status = 'rejected'",
+    columns:
+      "id, user_id, idempotency_key, table_name, op, client_ts, server_ts, origin_device_id, status, reject_reason",
+    retentionDays: SYNC_OP_LOG_REJECTED_RETENTION_DAYS,
+  },
 ] as const;
 
 export interface LogArchivePollerOptions {
@@ -241,16 +277,19 @@ export class LogArchivePoller {
     spec: ArchiveTableSpec,
   ): Promise<{ archived: number; failed: number }> {
     const { table, timestampColumn } = spec;
-    // eslint-disable-next-line no-restricted-syntax -- `table` and `timestampColumn` come from the hard-coded `DEFAULT_ARCHIVE_TABLES` allowlist; values that drive bind-params still flow through $1/$2.
+    const columns = spec.columns ?? "*";
+    const extraWhere = spec.where ? ` AND ${spec.where}` : "";
+    const retentionDays = spec.retentionDays ?? this.retentionDays;
+    // eslint-disable-next-line no-restricted-syntax -- `table`, `timestampColumn`, `columns` and `where` come from the hard-coded `DEFAULT_ARCHIVE_TABLES` allowlist; values that drive bind-params still flow through $1/$2.
     const select = await this.pool.query<
       { id: string } & Record<string, unknown>
     >(
-      `SELECT *
+      `SELECT ${columns}
          FROM ${table}
-        WHERE ${timestampColumn} < now() - ($1::int * INTERVAL '1 day')
+        WHERE ${timestampColumn} < now() - ($1::int * INTERVAL '1 day')${extraWhere}
         ORDER BY id ASC
         LIMIT $2::int`,
-      [this.retentionDays, this.batchSize],
+      [retentionDays, this.batchSize],
     );
     const rows = select.rows;
     if (rows.length === 0) {
@@ -289,9 +328,9 @@ export class LogArchivePoller {
     }
 
     const ids = rows.map((r) => r.id);
-    // eslint-disable-next-line no-restricted-syntax -- `table` is allowlisted via `DEFAULT_ARCHIVE_TABLES`; ids flow through $1.
+    // eslint-disable-next-line no-restricted-syntax -- `table` and `where` are allowlisted via `DEFAULT_ARCHIVE_TABLES`; ids flow through $1.
     const deleted = await this.pool.query(
-      `DELETE FROM ${table} WHERE id = ANY($1::bigint[])`,
+      `DELETE FROM ${table} WHERE id = ANY($1::bigint[])${extraWhere}`,
       [ids],
     );
     const deletedCount = deleted.rowCount ?? 0;
@@ -321,7 +360,7 @@ export class LogArchivePoller {
     // Europe/Kyiv day boundary (домен-інваріант) — archive object date prefix
     // matches Kyiv civil day, not UTC, so a nightly batch lands in the same
     // day-folder as the rest of the domain's day-keyed data.
-    const date = toLocalISODate(this.now());
+    const date = toKyivISODate(this.now());
     const first = rows[0]?.id ?? "unknown";
     const last = rows[rows.length - 1]?.id ?? first;
     return `openclaw-archive/${date}/${table}__${first}-${last}.jsonl.gz`;

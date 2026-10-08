@@ -164,8 +164,13 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // Міграція 146: +10 `invalid_*` на решту полів веб-форми заміру тіла
     // (жир, шия, передпліччя, стегно, литка, ліва/права сторони біцепса) —
     // колонок під них не було, тож уведене користувачем зникало.
-    expect(APPLY_REJECT_REASONS.length).toBe(75);
-    expect(ENGINE_REJECT_REASONS.length).toBe(6);
+    // Аудит 2026-10-01 (rel-01): +3 (`invalid_recurrence`,
+    // `invalid_start_date`, `invalid_end_date`) — розклад звички в
+    // `applyRoutineHabits`.
+    expect(APPLY_REJECT_REASONS.length).toBe(78);
+    // data-17: +1 engine-level `invalid_text_encoding` — `U+0000` / одинокий
+    // сурогат у `row` відсікається ДО apply.
+    expect(ENGINE_REJECT_REASONS.length).toBe(7);
 
     // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,
     // фіксуємо явно — щоб accidental refactor не приховав їх із
@@ -179,6 +184,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(ENGINE_REJECT_REASONS).toContain("table_not_allowed");
     expect(ENGINE_REJECT_REASONS).toContain("op_not_supported");
     expect(ENGINE_REJECT_REASONS).toContain("oplog_write_failed");
+    expect(ENGINE_REJECT_REASONS).toContain("invalid_text_encoding");
 
     // Жодних дублікатів — Set.size має дорівнювати довжині масиву.
     const all = [...APPLY_REJECT_REASONS, ...ENGINE_REJECT_REASONS];

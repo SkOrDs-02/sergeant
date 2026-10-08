@@ -39,6 +39,10 @@ const REDACTED_PLACEHOLDER = "[redacted]";
 const SENSITIVE_PATH_PREFIXES = [
   "/api/mono/webhook/",
   "/api/v1/mono/webhook/",
+  // Better Auth: посилання зі листа скидання пароля несе токен у path
+  // (`/api/auth/reset-password/<token>?callbackURL=…`), дійсний ~1 год.
+  "/api/auth/reset-password/",
+  "/api/v1/auth/reset-password/",
 ] as const;
 
 /**
@@ -93,8 +97,12 @@ export function redactSensitiveUrl(url: string | undefined | null): string {
   // `req.originalUrl` без фрагменту, але Sentry-payload може мати повний
   // URL із фрагментом — тримаємо це у `tail`.
   const queryIdx = safeUrl.search(/[?#]/);
-  const pathPart = queryIdx >= 0 ? safeUrl.slice(0, queryIdx) : safeUrl;
+  const fullPath = queryIdx >= 0 ? safeUrl.slice(0, queryIdx) : safeUrl;
   const tailPart = queryIdx >= 0 ? safeUrl.slice(queryIdx) : "";
+  // Sentry дає і абсолютні URL (`https://host/api/auth/reset-password/<token>`),
+  // тож origin відділяємо від path-у, щоб префікси матчились в обох формах.
+  const origin = /^[a-z][a-z0-9+.-]*:\/\/[^/]*/i.exec(fullPath)?.[0] ?? "";
+  const pathPart = fullPath.slice(origin.length);
 
   for (const prefix of SENSITIVE_PATH_PREFIXES) {
     if (pathPart.startsWith(prefix)) {
@@ -106,9 +114,9 @@ export function redactSensitiveUrl(url: string | undefined | null): string {
       // потенційний suffix (на майбутнє, якщо колись будуть під-роути).
       const slashIdx = rest.indexOf("/");
       if (slashIdx >= 0) {
-        return `${prefix}${REDACTED_PLACEHOLDER}${rest.slice(slashIdx)}${tailPart}`;
+        return `${origin}${prefix}${REDACTED_PLACEHOLDER}${rest.slice(slashIdx)}${tailPart}`;
       }
-      return `${prefix}${REDACTED_PLACEHOLDER}${tailPart}`;
+      return `${origin}${prefix}${REDACTED_PLACEHOLDER}${tailPart}`;
     }
   }
   return safeUrl;

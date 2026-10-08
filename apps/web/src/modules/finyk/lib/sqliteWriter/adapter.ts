@@ -152,7 +152,7 @@ async function upsertIdEntry(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(idUpsertSql(table), [userId, entry.id, clientTs, clientTs]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "insert",
@@ -177,7 +177,7 @@ async function softDeleteIdEntry(
     id,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "delete",
@@ -206,7 +206,7 @@ async function upsertBlobEntry(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "insert",
@@ -231,7 +231,7 @@ async function softDeleteBlobEntry(
     userId,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table,
     op: "delete",
@@ -259,7 +259,7 @@ async function upsertTxCategory(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_categories",
     op: "insert",
@@ -281,7 +281,7 @@ async function deleteTxCategory(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(TX_CATEGORY_DELETE_SQL, [userId, transactionId]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_categories",
     op: "delete",
@@ -305,7 +305,7 @@ async function upsertTxSplits(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_splits",
     op: "insert",
@@ -327,7 +327,7 @@ async function deleteTxSplits(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(TX_SPLITS_DELETE_SQL, [userId, transactionId]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_splits",
     op: "delete",
@@ -339,27 +339,59 @@ async function deleteTxSplits(
   });
 }
 
-// R7: finyk_mono_debt_links is local-only — intentionally NOT enqueued.
+// `finyk_mono_debt_links` — привʼязки Mono-транзакцій до боргу — це ДАНІ
+// КОРИСТУВАЧА, а не дзеркало банку, тож R7 («Mono mirror поза op-log») на них
+// не поширюється: R7 стосується лише `finyk_mono_transactions`,
+// `finyk_mono_accounts`, `finyk_mono_account_snapshots`. Без пушу привʼязки,
+// що впливають на залишок боргу й капітал, губляться на новому пристрої та
+// після виходу з акаунта (аудит 2026-10-01, data-28). Ставимо в outbox так
+// само, як `finyk_tx_splits`; сервер приймає таблицю через
+// `perTxJsonb("finyk_mono_debt_links", "debt_ids_json")`.
 async function upsertMonoDebtLink(
   client: SqliteMigrationClient,
   entry: FinykMonoDebtLinkEntry,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
+  const debtIdsJson = entry.debtIdsJson ?? "[]";
   await client.run(MONO_DEBT_LINK_UPSERT_SQL, [
     userId,
     entry.transactionId,
-    entry.debtIdsJson ?? "[]",
+    debtIdsJson,
     clientTs,
     clientTs,
   ]);
+  await enqueueOutboxUpsert(client, {
+    userId,
+    table: "finyk_mono_debt_links",
+    op: "insert",
+    row: {
+      user_id: userId,
+      transaction_id: entry.transactionId,
+      debt_ids_json: debtIdsJson,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
 }
 
 async function deleteMonoDebtLink(
   client: SqliteMigrationClient,
   transactionId: string,
-  { userId }: DualWriteRuntime,
+  { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   await client.run(MONO_DEBT_LINK_DELETE_SQL, [userId, transactionId]);
+  await enqueueOutboxUpsert(client, {
+    userId,
+    table: "finyk_mono_debt_links",
+    op: "delete",
+    row: { user_id: userId, transaction_id: transactionId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -383,7 +415,7 @@ async function upsertNetworth(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_networth_history",
     op: "insert",
@@ -414,7 +446,7 @@ async function upsertPrefs(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_prefs",
     op: "insert",

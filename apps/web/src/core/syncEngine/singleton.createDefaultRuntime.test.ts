@@ -103,6 +103,14 @@ vi.mock("@sergeant/db-schema/migrate/sqlite", () => ({
 }));
 
 import {
+  __resetInitialPullStateForTests,
+  hasCompletedInitialPull,
+} from "./initialPullState";
+import {
+  __resetSyncSessionSignalForTests,
+  readSyncSessionMissing,
+} from "./syncSessionSignal";
+import {
   __resetSyncEngineWriterForTests,
   bootSyncEngineReader,
   bootSyncEngineWriter,
@@ -115,6 +123,7 @@ beforeEach(() => {
   client = makeClient();
   dbHandle = { migrationClient: () => client };
   __resetSyncEngineWriterForTests();
+  __resetSyncSessionSignalForTests();
 });
 
 afterEach(() => {
@@ -154,6 +163,30 @@ describe("createDefaultRuntime (default boot path)", () => {
     });
   });
 
+  it("sec-18: drain без сесії виставляє сигнал «сесії немає», з живою сесією знімає, збій мережі його не чіпає", async () => {
+    const runtime = await bootSyncEngineWriter();
+    expect(readSyncSessionMissing()).toBe(false);
+
+    // Сесія спливла посеред роботи: `data: null` без помилки.
+    mockGetSession.mockResolvedValueOnce({ data: null, error: null } as never);
+    await runtime!.flushNow();
+    expect(mockDrain).not.toHaveBeenCalled();
+    expect(readSyncSessionMissing()).toBe(true);
+
+    // Тимчасовий збій `getSession` (офлайн/5xx) нічого не каже про сесію.
+    mockGetSession.mockResolvedValueOnce({
+      data: null,
+      error: { status: 0 },
+    } as never);
+    await runtime!.flushNow();
+    expect(readSyncSessionMissing()).toBe(true);
+
+    // Людина увійшла знову: drain іде, сигнал знято.
+    await runtime!.flushNow();
+    expect(mockDrain).toHaveBeenCalled();
+    expect(readSyncSessionMissing()).toBe(false);
+  });
+
   it("tags failure and reports via captureException when migrations throw", async () => {
     mockRunMigrations.mockRejectedValueOnce(new Error("migrate boom"));
     const captureException = vi.fn();
@@ -182,6 +215,26 @@ describe("createDefaultReaderRuntime (default reader boot path)", () => {
       "sync.origin_device_id_present",
       "true",
     );
+  });
+
+  it("data-04: тимчасовий збій getSession не скидає прапор початкового pull, справжній logout скидає", async () => {
+    __resetInitialPullStateForTests();
+    const reader = await bootSyncEngineReader();
+    await reader!.pullOnce();
+    expect(hasCompletedInitialPull("user-123")).toBe(true);
+
+    // Офлайн / 5xx: `data: null` з помилкою — тік падає, прапор лишається.
+    mockGetSession.mockResolvedValueOnce({
+      data: null,
+      error: { status: 0 },
+    } as never);
+    await expect(reader!.pullOnce()).rejects.toThrow();
+    expect(hasCompletedInitialPull("user-123")).toBe(true);
+
+    // Сесії справді немає (`data: null`, `error: null`): logout.
+    mockGetSession.mockResolvedValueOnce({ data: null, error: null } as never);
+    await reader!.pullOnce();
+    expect(hasCompletedInitialPull("user-123")).toBe(false);
   });
 
   it("tags failure and reports via captureException when reader boot fails", async () => {

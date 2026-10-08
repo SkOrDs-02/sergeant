@@ -885,7 +885,7 @@
     "/api/v2/sync/stream": {
       "get": {
         "summary": "SSE-стрім op-ів (hello / op / caught_up / heartbeat)",
-        "description": "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`.",
+        "description": "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`. Маршрут закритий серверним прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт вимкнено → 404). Коли ввімкнено: сервер перевіряє сесію на кожному heartbeat і закриває стрім без неї, зʼєднання живе не довше 15 хв, одночасних стрімів на юзера не більше 3 (новий витісняє найстаріший); перед серверним закриттям летить `event: closed` із `reason` (`max_age` / `session_revoked` / `session_check_failed` / `evicted`).",
         "tags": ["sync"],
         "security": [
           {
@@ -947,6 +947,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Стрім вимкнено (`SYNC_V2_STREAM_ENABLED=false`, дефолт); віддається і без сесії."
           }
         }
       }
@@ -2429,6 +2432,24 @@
       }
     },
     "/api/mono/webhook": {
+      "get": {
+        "summary": "Mono webhook URL validation (GET/HEAD) — Monobank чекає строго 200; без секрету, без побічних ефектів",
+        "tags": ["mono"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Mono webhook (X-Mono-Webhook-Secret header — edge-proxy only)",
         "tags": ["mono"],
@@ -2461,6 +2482,34 @@
       }
     },
     "/api/mono/webhook/{secret}": {
+      "get": {
+        "summary": "Mono webhook URL validation (GET/HEAD): завжди 200, секрет НЕ перевіряється й не читається (він ще не збережений на момент реєстрації)",
+        "tags": ["mono"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "secret",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Mono webhook (per-user secret у URL — транспорт Monobank; secret редагується в логах + ротується 90d, C1)",
         "tags": ["mono"],
@@ -5617,10 +5666,12 @@
             "type": "object",
             "properties": {
               "weekKey": {
-                "type": "string"
+                "type": "string",
+                "maxLength": 80
               },
               "weekRange": {
-                "type": "string"
+                "type": "string",
+                "maxLength": 80
               },
               "generatedAt": {
                 "type": "string"
@@ -5630,15 +5681,19 @@
               "nutrition": {},
               "routine": {},
               "overallRecommendations": {
+                "maxItems": 30,
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 500
                 }
               },
               "correlations": {
+                "maxItems": 20,
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 500
                 }
               }
             },
@@ -7336,6 +7391,11 @@
                 "maxLength": 200
               },
               "amountCol": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "creditCol": {
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 200

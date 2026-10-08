@@ -33,6 +33,7 @@ import {
   type SyncEngineReaderRuntime,
 } from "./syncEngineReader";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
+import { observeSyncSession } from "./syncSessionSignal";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
 type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
@@ -42,7 +43,9 @@ type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
  * версію рядка, локальна операція просто програла. Решта термінальних причин
  * означає, що дані НЕ доїхали і самі не доїдуть.
  */
-const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set(["lww_conflict"]);
+export const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set([
+  "lww_conflict",
+]);
 
 /**
  * Термінальний reject у outbox довго був повністю німим: рядок отримував
@@ -249,7 +252,18 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
         originDeviceId: opts.originDeviceId,
       }),
     resolveClient: shared.resolveClient,
-    resolveUserId: shared.resolveUserId,
+    // data-04: `null` тут означає «вийшов», а reader на `null` скидає прапор
+    // «початковий pull завершено». Тимчасовий збій `getSession` (офлайн, 5xx)
+    // теж дає `data: null`, але виходом не є: кидаємо, тож тік падає, а прапор
+    // лишається. Writer тримає `shared.resolveUserId` (там `null` = порожній drain).
+    resolveUserId: async () => {
+      const session = await getSession();
+      const status = (session.error as { status?: number } | null)?.status;
+      if (session.error && !session.data && status !== 401 && status !== 403) {
+        throw new Error("sync reader: session lookup failed");
+      }
+      return session.data?.user?.id ?? null;
+    },
     originDeviceId: shared.originDeviceId,
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),
@@ -487,10 +501,11 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   // shared-device session-swap from pushing user A's queued ops under
   // user B's session cookie). When no user is signed in we return an
   // empty drain — the next tick will try again.
-  const resolveUserId = async (): Promise<string | null> => {
-    const session = await getSession();
-    return session.data?.user?.id ?? null;
-  };
+  //
+  // `sec-18`: той самий виклик ще й запамʼятовує «сесії немає» для UI
+  // (`syncSessionSignal.ts`), бо інакше порожній drain нічого не каже людині.
+  const resolveUserId = async (): Promise<string | null> =>
+    observeSyncSession(await getSession());
 
   // Stable per-install device id. Without this, every push lands on
   // the server with `origin_device_id = NULL`, and the pull/SSE filter

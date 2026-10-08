@@ -20,7 +20,7 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -88,9 +88,9 @@ export function upgradeCategory(
 function computeInitialExpenseDate(raw?: string | number | Date): string {
   if (raw != null && raw !== "") {
     const d = raw instanceof Date ? raw : new Date(raw);
-    if (!Number.isNaN(d.getTime())) return toLocalISODate(d);
+    if (!Number.isNaN(d.getTime())) return toKyivISODate(d);
   }
-  return toLocalISODate(new Date());
+  return toKyivISODate(new Date());
 }
 
 function stripEmoji(label: string): string {

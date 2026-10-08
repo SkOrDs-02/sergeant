@@ -21,8 +21,8 @@ export default function GuideTyzhnevyiPidsumokPage() {
     ...ROUTE_META["/guides/tyzhnevyi-pidsumok"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "HowTo",
-      name: "Коли приходить звіт тижня і як отримати його вручну",
+      "@type": "Article",
+      headline: "Коли приходить звіт тижня і як його оновити",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/tyzhnevyi-pidsumok"].lastmod,
       author: AUTHOR_JSON_LD,
@@ -38,10 +38,10 @@ export default function GuideTyzhnevyiPidsumokPage() {
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
         <div>
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Гайди · Звʼязки
+            Гайди <span className="font-sans">·</span> Звʼязки
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
-            Коли приходить звіт тижня і як отримати його вручну
+            Коли приходить звіт тижня і як його оновити
           </h1>
           <p className="mt-4 text-sm text-subtle">
             Оновлено{" "}
@@ -102,7 +102,7 @@ export default function GuideTyzhnevyiPidsumokPage() {
           <h2 className={h2}>Тумблер автогенерації</h2>
           <p className="mt-4 leading-relaxed text-muted">
             Звіт увімкнено за замовчуванням. Вимкнути автозапуск можна тим самим
-            тумблером. Денний ліміт AI-запитів звіт не витрачає.
+            тумблером. Тижневий ліміт Сержанта звіт не витрачає.
           </p>
         </section>
 

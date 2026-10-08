@@ -83,6 +83,9 @@ const { photoState } = vi.hoisted(() => ({
   photoState: {
     photoPreviewUrl: "",
     analyzePhoto: vi.fn(),
+    // true — контролер віддає НОВУ обгортку analyzePhoto щорендера (старий
+    // контракт), щоб довести: ефект не залежить від ідентичності.
+    freshIdentity: false,
     // Заповнюється моком: канал, яким контролер повідомляє про помилку
     // аналізу. Тримаємо його, щоб тест міг увійти в гілку retry.
     setErr: null as null | ((message: string) => void),
@@ -101,7 +104,9 @@ vi.mock("../../hooks/usePhotoAnalysis", () => ({
       portionGrams: "",
       setPortionGrams: vi.fn(),
       onPickPhoto: vi.fn(),
-      analyzePhoto: photoState.analyzePhoto,
+      analyzePhoto: photoState.freshIdentity
+        ? () => photoState.analyzePhoto()
+        : photoState.analyzePhoto,
       refinePhoto: vi.fn(),
       isAnalyzing: false,
       isRefining: false,
@@ -114,6 +119,7 @@ beforeEach(() => {
   gateState.canAccess = true;
   photoState.photoPreviewUrl = "";
   photoState.analyzePhoto = vi.fn();
+  photoState.freshIdentity = false;
   photoState.setErr = null;
 });
 
@@ -138,6 +144,25 @@ describe("PhotoStep — auto-analyze gating", () => {
         <PhotoStep onApply={vi.fn()} />
       </MemoryRouter>,
     );
+    expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
+  });
+
+  it("не перезапускає аналіз того самого кадру, коли analyzePhoto змінює ідентичність", () => {
+    storageState.privacyAcked = true;
+    photoState.photoPreviewUrl = "blob:photo-1";
+    photoState.freshIdentity = true;
+    const { rerender } = render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
+    for (let i = 0; i < 3; i++) {
+      rerender(
+        <MemoryRouter>
+          <PhotoStep onApply={vi.fn()} />
+        </MemoryRouter>,
+      );
+    }
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
   });
 

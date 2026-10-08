@@ -1,15 +1,21 @@
 // Телеметрія лендінга. Імена подій НЕ вигадуються тут – беруться з
 // `ANALYTICS_EVENTS` у `@sergeant/shared`, де описані контракти payload-ів.
-// Лендінг шле рівно чотири події: `landing_viewed` (App.tsx),
+// Лендінг шле чотири явні події: `landing_viewed` (App.tsx),
 // `landing_telegram_clicked` (TelegramCta.tsx), `landing_widget_changed`
 // (HomePage.tsx) і `landing_faq_opened` (PytannyaPage.tsx). Ренейм події
 // ламає дашборди й губить історію, тож константа – єдине джерело.
 //
+// Поруч із ними SDK шле теплову карту (`$$heatmap`: координати кліків і
+// руху курсора) і `$web_vitals`. До 2026-10-08 їх вмикав remote config
+// спільного з apps/web проєкту PostHog, а політика приватності про них
+// мовчала (аудит сайту 2026-10-08, priv-27). Рішення власника: лишити і
+// задекларувати. Тому всі розширення нижче задані явно: тумблер у
+// налаштуваннях проєкту більше не розширює збір на сайті без зміни коду.
+//
 // Транспорт умисно вузький: жодного autocapture, session-recording чи
 // pageview-хуків. Полів вводу на сайті немає взагалі – конверсія йде через
-// deep link у Telegram, – але «розумний» збір усе одно не потрібен: кожна
-// подія несе лише стан контрола, і всі чотири перелічені у політиці
-// приватності поіменно. Додаєш подію – онови і її, і README.
+// deep link у Telegram. Усе, що шле сайт, перелічене в політиці
+// приватності. Додаєш подію чи розширення – онови і її, і README.
 //
 // До 2026-09-17 цей коментар описував email-еру лендінга (поле вводу,
 // `landing_email_captured`, `waitlist_submitted`), яку скасовано 2026-07-26
@@ -19,7 +25,10 @@
 // аналітики не мають стояти на шляху першого рендера сторінки, чия єдина
 // робота – конвертувати. Події до завершення init складаються в чергу.
 
-import { ANALYTICS_EVENTS } from "@sergeant/shared";
+// Підшлях, а не корінь пакета: барель `@sergeant/shared` тягнув у бандл
+// сайту zod і половину пакета, 145 КБ мертвого коду (аудит сайту
+// 2026-10-08, F2).
+import { ANALYTICS_EVENTS } from "@sergeant/shared/lib/analyticsEvents";
 
 export { ANALYTICS_EVENTS };
 
@@ -65,6 +74,16 @@ export function initAnalytics(): void {
         capture_pageview: false,
         capture_pageleave: false,
         disable_session_recording: true,
+
+        // Задекларовані в політиці приватності: теплова карта і швидкість
+        // завантаження. Решта розширень SDK вимкнена явно, щоб її не
+        // вмикав remote config (surveys.js і dead-clicks-autocapture.js
+        // вантажились на кожній сторінці, аудит сайту 2026-10-08, F4).
+        enable_heatmaps: true,
+        capture_performance: { web_vitals: true, network_timing: false },
+        capture_dead_clicks: false,
+        capture_exceptions: false,
+        disable_surveys: true,
       });
 
       // Та сама супер-властивість, що й у `apps/web`. Ключ PostHog один на

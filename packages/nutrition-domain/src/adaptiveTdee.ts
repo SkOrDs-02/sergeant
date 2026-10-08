@@ -6,6 +6,12 @@
 
 /** Емпірична енергія зміни 1 кг маси тіла (вода і глікоген включені). */
 export const KCAL_PER_KG = 7700;
+/**
+ * Півперіод EMA, яким тренд ваги рахувався ДО logic-05. Сам тренд тепер
+ * береться з лінійної регресії (див. `weightTrendEma`), і константа в
+ * розрахунку не бере участі; лишена, бо це частина публічного експорту
+ * пакета.
+ */
 export const WEIGHT_EMA_HALF_LIFE_DAYS = 7;
 export const MIN_COMPLETE_DAYS = 10;
 export const MIN_WEIGHT_POINTS = 4;
@@ -122,6 +128,26 @@ function dayNumber(key: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+/**
+ * Тренд ваги за вікно: нахил лінійної регресії (найменші квадрати) за днями.
+ *
+ * Назва історична (`Ema`): до logic-05 тут була EMA з півперіодом 7 днів,
+ * але `startKg` брався СИРИМ першим заміром, а `endKg` ЗГЛАДЖЕНИМ. На
+ * 14-денному вікні EMA відстає від реальної ваги приблизно на половину
+ * зміни, тож `deltaKg` виходила вдвічі заниженою: схуднення на 0,1 кг/день
+ * давало TDEE ≈2358 замість 2770, а випадковий «водяний» перший замір
+ * роздував його на 300+ ккал. Автоматика щотижня зсувала ціль на цю
+ * похибку, без участі людини.
+ *
+ * Регресія порівнює однаково оброблені точки: усі заміри входять одним
+ * фітом, лага немає, а один аномальний замір розмазується по 13 днях
+ * нахилу замість того, щоб зсунути весь старт. Це лишається «трендом ваги,
+ * а не сирою вагою» зі спеки; відкинуте просте порівняння перший-проти-
+ * останнього саме тому, що воно віддає весь шум двом крайнім точкам.
+ *
+ * `deltaKg = нахил × spanDays`; `startKg`/`endKg` — значення регресійної
+ * лінії на першому й останньому днях, тож `endKg - startKg === deltaKg`.
+ */
 export function weightTrendEma(
   points: readonly WeightPoint[],
 ): WeightTrend | null {
@@ -136,18 +162,26 @@ export function weightTrendEma(
     .sort((a, b) => a.day - b.day);
   if (clean.length < 2) return null;
 
-  let ema = clean[0]!.weightKg;
-  const startKg = ema;
-  let previousDay = clean[0]!.day;
-  for (const point of clean.slice(1)) {
-    const elapsed = Math.max(1, point.day - previousDay);
-    const alpha = 1 - Math.pow(0.5, elapsed / WEIGHT_EMA_HALF_LIFE_DAYS);
-    ema += alpha * (point.weightKg - ema);
-    previousDay = point.day;
-  }
-  const spanDays = clean[clean.length - 1]!.day - clean[0]!.day;
+  const firstDay = clean[0]!.day;
+  const spanDays = clean[clean.length - 1]!.day - firstDay;
   if (spanDays <= 0) return null;
-  return { startKg, endKg: ema, deltaKg: ema - startKg, spanDays };
+
+  // x — дні від першого заміру: так суми лишаються малими й без втрати точності.
+  const n = clean.length;
+  const meanX = clean.reduce((sum, p) => sum + (p.day - firstDay), 0) / n;
+  const meanY = clean.reduce((sum, p) => sum + p.weightKg, 0) / n;
+  let sxx = 0;
+  let sxy = 0;
+  for (const point of clean) {
+    const dx = point.day - firstDay - meanX;
+    sxx += dx * dx;
+    sxy += dx * (point.weightKg - meanY);
+  }
+  // spanDays > 0 гарантує хоча б два різні x, отже sxx > 0.
+  const slopeKgPerDay = sxy / sxx;
+  const startKg = meanY - slopeKgPerDay * meanX;
+  const deltaKg = slopeKgPerDay * spanDays;
+  return { startKg, endKg: startKg + deltaKg, deltaKg, spanDays };
 }
 
 export function measuredTdee(

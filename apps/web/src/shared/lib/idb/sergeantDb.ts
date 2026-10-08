@@ -163,6 +163,22 @@ export async function dbDel(
   });
 }
 
+/**
+ * Видалити ВСІ записи зі стору (logout-очищення nutrition-сховищ, data-09).
+ * Чекає `oncomplete`, тож після `await` стор гарантовано порожній.
+ */
+export async function dbClear(storeName: SergeantStoreName): Promise<void> {
+  const db = await openSergeantDb();
+  if (!db) return;
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(storeName, "readwrite");
+    tx.objectStore(storeName).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 /* Legacy database migration                                                  */
 /* -------------------------------------------------------------------------- */

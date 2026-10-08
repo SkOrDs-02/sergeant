@@ -223,7 +223,11 @@ describe("sync v2: ланцюг «локальний запис → HTTP-push»"
     runtime.start();
 
     await enqueueFinykOp(AUTHED_USER_ID, "op-authed-2");
-    await vi.waitFor(() => expect(pushCalls).toHaveLength(1));
+    // rel-08: нудж коалесується (тиша ~1,5 с), тож вікно очікування ширше
+    // за дефолтні 1 с `waitFor`; усе одно в рази коротше за 30-секундний тік.
+    await vi.waitFor(() => expect(pushCalls).toHaveLength(1), {
+      timeout: 4_000,
+    });
 
     expect(pushCalls[0]![0]!.idempotency_key).toBe("op-authed-2");
     expect((await countOutboxByStatus(client)).pending).toBe(0);

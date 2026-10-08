@@ -105,16 +105,16 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     if (!privacyAcked) return;
     void photo.analyzePhoto();
   };
+  const { analyzePhoto, fileRef } = photo;
   useEffect(() => {
     if (!previewUrl || !canAutoAnalyze) return;
     if (lastAutoAnalyzedUrlRef.current === previewUrl) return;
     lastAutoAnalyzedUrlRef.current = previewUrl;
-    void photo.analyzePhoto();
-    // `photo.analyzePhoto` навмисно поза deps: його ідентичність
-    // змінюється щорендера (обгортка над mutation.mutate), а повторний
-    // запуск для того самого кадру відсікає ref вище.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewUrl, canAutoAnalyze]);
+    void analyzePhoto();
+    // `analyzePhoto` стабільний (usePhotoAnalysis: useCallback над
+    // `mutation.mutate`), а повторний запуск для того самого кадру
+    // відсікає ref вище.
+  }, [previewUrl, canAutoAnalyze, analyzePhoto]);
 
   // Вхід у крок — це вже жест «хочу дати фото», тож одразу відкриваємо
   // нативний піккер (та сама поведінка, що мав PWA-шорткат
@@ -126,7 +126,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     pickerRafRef.current = requestAnimationFrame(() => {
       pickerRafRef.current = null;
       try {
-        photo.fileRef.current?.click();
+        fileRef.current?.click();
       } catch {
         /* noop — picker may be blocked without a user gesture */
       }
@@ -137,9 +137,9 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         pickerRafRef.current = null;
       }
     };
-    // Mount-only: автовідкриття піккера — одноразовий жест входу в крок.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authenticated]);
+    // Одноразовий жест входу в крок: `fileRef` — стабільний ref з
+    // usePhotoAnalysis, тож у deps він повторних запусків не додає.
+  }, [authenticated, fileRef]);
 
   // Кнопка «Аналізувати» — запасний вихід, не основний шлях. Авто-ефект
   // вище вже запускає аналіз сам, тож показувати її на щасливому шляху

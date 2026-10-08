@@ -47,7 +47,13 @@ vi.mock("../../hooks/useReceiptQrScanner", () => ({
   decodeQrFromImageFile: vi.fn().mockResolvedValue(null),
 }));
 
+import {
+  safeReadLS,
+  safeRemoveLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 import { BulkImportSheet } from "./BulkImportSheet";
+import { FINYK_PHOTO_PRIVACY_ACK_KEY } from "../receiptScan/FinykPhotoPrivacyNotice";
 import type { ManualExpenseWriteThroughStorage } from "../../hooks/manualExpenseWriteThrough";
 
 function makeStorage(): ManualExpenseWriteThroughStorage & {
@@ -100,6 +106,9 @@ beforeEach(() => {
   lookupReceiptMock.mockReset();
   analyzeReceiptMock.mockReset();
   saveReceiptMock.mockReset();
+  // Більшість тестів перевіряє сам vision-флоу, тож нотіс уже підтверджено;
+  // гейт приватності має власний describe нижче й скидає ack.
+  safeWriteLS(FINYK_PHOTO_PRIVACY_ACK_KEY, true);
 });
 
 describe("BulkImportSheet — choose stage", () => {
@@ -730,5 +739,91 @@ describe("BulkImportSheet — commit + undo", () => {
       screen.queryByRole("button", { name: "Скасувати імпорт" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/вже є в mono/)).toBeInTheDocument();
+  });
+});
+
+describe("BulkImportSheet — попередження «Куди їде фото» (priv-11)", () => {
+  // Рішення власника 2026-07-26: до ack скрін банку не їде в AI; після
+  // тапу в нотісі аналіз іде для вже вибраного файлу.
+  const shot = () =>
+    new File([new Uint8Array(10)], "s.png", { type: "image/png" });
+
+  beforeEach(() => {
+    safeRemoveLS(FINYK_PHOTO_PRIVACY_ACK_KEY);
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "mono",
+        rows: [
+          {
+            date: "2026-08-01",
+            time: "10:00",
+            amountKopiykas: 15000,
+            direction: "expense",
+            description: "Сільпо",
+            confidence: 0.9,
+          },
+        ],
+      },
+    });
+  });
+
+  it("без ack вибір скріна не викликає analyzeImportScreenshot і показує нотіс", async () => {
+    renderSheet();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: { files: [shot()] },
+      });
+    });
+
+    expect(analyzeImportScreenshotMock).not.toHaveBeenCalled();
+    expect(screen.getByText("Куди їде фото")).toBeInTheDocument();
+    expect(screen.getByText(/цифри картки, баланс, імена/)).toBeInTheDocument();
+  });
+
+  it("тап «Зрозуміло, аналізувати» пише ack і аналізує вже вибраний скрін", async () => {
+    renderSheet();
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: { files: [shot()] },
+      });
+    });
+    expect(analyzeImportScreenshotMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
+      );
+    });
+
+    await waitFor(() =>
+      expect(analyzeImportScreenshotMock).toHaveBeenCalledTimes(1),
+    );
+    expect(safeReadLS<boolean>(FINYK_PHOTO_PRIVACY_ACK_KEY, false)).toBe(true);
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Сільпо")).toBeInTheDocument(),
+    );
+  });
+
+  it("виписка файлом не гейтиться нотісом: це не фото", async () => {
+    previewImportStatementMock.mockResolvedValue({
+      needsMapping: false,
+      rows: [],
+      skipped: [],
+    });
+    renderSheet();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
+        target: {
+          files: [new File(["a,b"], "s.csv", { type: "text/csv" })],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(previewImportStatementMock).toHaveBeenCalledTimes(1),
+    );
   });
 });

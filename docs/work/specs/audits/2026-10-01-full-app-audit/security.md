@@ -23,7 +23,7 @@
 
 ### `sec-01` [critical] Прод-API дає credentialed CORS мертвому домену sergeant.2dmanager.com.ua, який вільний для реєстрації
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1327 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: CORS / auth
 - **Де:** apps/server/src/http/cors.ts:23-27,62-66,129-133; apps/server/src/auth.ts:69-84; apps/web/src/core/observability/deployEnvironment.ts:52-54; apps/mobile-shell/src/index.ts:172; apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66; apps/mobile/app.config.ts:69; apps/mobile/src/lib/deepLinks.ts:34; apps/web/public/.well-known/security.txt:5
 - **Першопричина:** Колишній кастомний домен лишився захардкодженим у PROD_ORIGINS (cors.ts:25). Цей список діє і в production, а ALLOWED_ORIGINS/ALLOWED_ORIGIN_REGEX можуть лише додавати origin-и. Домен 2dmanager.com.ua нікому не належить (NXDOMAIN, WHOIS hostmaster.ua: «доступне для реєстрації»), а сесійна кука в проді SameSite=None; Secure. Той самий хост досі в deep link/App Links, deployEnvironment і Canonical у security.txt.
@@ -217,7 +217,7 @@ NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt node <scratch>
 
 ### `sec-02` [high] Відкликана сесія живе до 7 днів: /api/auth/update-user перевипускає cookie-кеш без перевірки сесії в БД
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1329 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:424-431,597-605,714-726; node_modules/better-auth/dist/api/routes/update-user.mjs:16,54-69; node_modules/better-auth/dist/cookies/index.mjs:93; apps/server/src/http/requireSession.ts:83-91
 - **Першопричина:** session.cookieCache (maxAge 300 с) довіряє підписаній куці session_data без звернення до БД. Better Auth /update-user стоїть на sessionMiddleware, бере сесію з цього кешу і викликає setSessionCookie, який ставить новий строк кешу від поточного моменту. Кожен виклик раз на &lt;5 хв продовжує кеш, хоча рядка сесії в БД уже немає.
@@ -323,7 +323,7 @@ revoke.mjs, одразу після sign-out: GET /api/me 200 | GET /api/auth/ge
 
 ### `sec-03` [high] Квиток round-trip чату приймається на будь-якому AI-запиті й видається знову: Free обходить тижневу AI-квоту безкінечним ланцюжком
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1332 (змерджено 2026-10-04) (мінімальний фікс; не входило: привʼязка квитка до id tool_use, preset-відро лише для /api/chat, echo квитка у веб-клієнті)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / billing
 - **Де:** apps/server/src/modules/chat/aiQuota.ts:302-307,335-341; apps/server/src/modules/chat/chatRoundTripTicket.ts:102-117; apps/server/src/modules/chat/chat.ts:340-360,457,786-790,894-913; apps/server/src/modules/chat/aiQuotaBudget.ts:148-156
 - **Першопричина:** assertAiQuota пропускає списання для будь-якого запиту з валідним round_trip_ticket і не перевіряє, що це справді продовження ходу (tool_results разом із tool_calls_raw). chat.ts на кожен перший тур із tool_calls видає новий квиток, навіть якщо сам запит пройшов за квитком, тож квитки ланцюжаться без кінця.
@@ -384,7 +384,7 @@ I tried to refute this and couldn't. I traced the code end to end and also repro
 
 ### `sec-04` [high] PIN-блокування вимикається після перезавантаження: прапорець app-lock-enabled не читається на холодному старті
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1340 (змерджено 2026-10-04) разом із [`priv-03`](./privacy.md#priv-03), PR #1340 (ще не змерджено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Та сама першопричина, що й** [`priv-03`](./privacy.md#priv-03): Обидва описують вимкнення PIN-блокування після reload: прапорці читаються з localStorage до bootstrapKvStore() і typedStore кешує хибне значення. priv-03 ширший (зачіпає всі прапорці FLAG_REGISTRY) і має розмір S.
 - **Де:** apps/web/src/core/lib/featureFlags.ts:93-98,115-123,153-159; apps/web/src/shared/lib/storage/typedStore.ts:193-200,255-257; apps/web/src/shared/lib/storage/storage.ts:151-173; apps/web/src/main.tsx:198-215; apps/web/src/core/security/useAppLock.ts:51,64-103; apps/web/src/core/app/Providers.tsx:69
@@ -443,7 +443,7 @@ Code path, traced end to end at HEAD c7c09607:
 
 ### `sec-05` [medium] Сирий session token віддається в JSON get-session і list-sessions (з токенами всіх пристроїв) і приймається як Bearer
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1329 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:607-617; node_modules/better-auth/dist/plugins/bearer/index.mjs:32-37; node_modules/better-auth/dist/api/routes/session.mjs:17-260,371-397; apps/server/src/routes/auth.ts:33
 - **Першопричина:** Плагін bearer() увімкнений для всіх клієнтів без requireSignature, тож сирий токен без HMAC є повноцінним креденшелом. Better Auth віддає поле token у /get-session і в кожному елементі /list-sessions, і застосунок його не вирізає, хоча веб працює на httpOnly-куці, а мобільний контур на паузі (ADR-0094).
@@ -639,7 +639,7 @@ chemail.mjs: 'db before: audit_pool136@example.com|f' → 'change-email 200 {"st
 
 ### `sec-07` [medium] Невдалий POST /api/auth/sign-out (офлайн чи обрив) лишає живу серверну сесію, і наступне відкриття знову входить в акаунт
 
-- **Стан:** відкрито
+- **Стан:** виправлено в [#1391](https://github.com/SkOrDs-02/sergeant/pull/1391) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth/вихід
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:336,551-697 (586-593); apps/web/src/core/auth/authClient.ts:194-202; apps/web/src/core/profile/ProfilePage.tsx:265
 - **Першопричина:** logout() ковтає помилку signOut() (try/catch без перевірки result.error), не повторює запит і не зберігає маркер «вихід не завершено», а потім робить локальне стирання і перехід на /sign-in. httpOnly-куку клієнт стерти не може, тож без успішного запиту сесія в БД живе до 7 днів.
@@ -705,7 +705,7 @@ I could not refute the bug. I reproduced it myself, but I think high overstates 
 
 ### `sec-08` [medium] Нативний auth-контур увімкнений у проді при паузі мобільного: open redirect з підписаною state-кукою (expo-authorization-proxy) і довірена схема sergeant://
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1350 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/OAuth
 - **Де:** apps/server/src/auth.ts:617,640-671; node_modules/@better-auth/expo/dist/index.js:7-35; node_modules/better-auth/dist/state.mjs:110-121; apps/server/src/routes/auth.ts:33; apps/mobile/app/(auth)/forgot-password.tsx:35
 - **Першопричина:** plugins: [bearer(), expo()] і getTrustedNativeSchemes() → ['sergeant://'] діють у production, хоча RN-застосунку немає (ADR-0094). Анонімний GET /api/auth/expo-authorization-proxy перевіряє лише https і «не наш origin», ставить підписану куку better-auth.state зі значенням з query і робить 302 на довільний хост; sergeant:// приймається як redirectTo для скидання пароля й OAuth.
@@ -824,7 +824,7 @@ reset-redirect.mjs і reset-follow.mjs у <scratch>/agents/verify-client-static-
 
 ### `sec-09` [medium] SSE /api/v2/sync/stream переживає sign-out і відкликання сесії та далі стрімить живі дані без обмеження часу
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1346 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync
 - **Де:** apps/server/src/modules/sync/syncV2Stream.ts:207-412 (216,331-348,366-411); apps/server/src/routes/sync.ts:80-98; apps/server/src/http/timeout.ts:54-60
 - **Першопричина:** requireSession перевіряє сесію лише на handshake; syncV2Stream запам'ятовує req.user і слухає канал user:&lt;id&gt; до закриття сокета. Немає повторної перевірки сесії, max-age, ліміту одночасних стрімів на користувача і реакції на logout/revoke; heartbeat кожні 25 с тримає з'єднання, таймаут для SSE вимкнено.
@@ -977,7 +977,7 @@ node …/agents/api-live-sync-live/t09_stream.mjs (миттєво) і t10_stream
 
 ### `sec-10` [medium] DELETE /api/me і /api/auth/verify-password перевіряють пароль без app-ліміту: оракул пароля і навантаження scrypt
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (DELETE /api/me і change-password під лімітом per-IP 5 і per-user 20 за 15 хв, verify-password вимкнено через disabledPaths; лишилось: алерт на серію INVALID_PASSWORD і повторна автентифікація OAuth-only акаунтів)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/акаунт
 - **Де:** apps/server/src/routes/me.ts:272-297; apps/server/src/modules/me/verifyAccountPassword.ts:38-54; apps/server/src/http/authMiddleware.ts:31-37; node_modules/better-auth/dist/api/routes/password.mjs:166-192
 - **Першопричина:** DELETE /api/me викликає verifyAccountPassword (scrypt ~130 мс) без rateLimitExpress, а authSensitiveRateLimit не покриває /verify-password і /change-password. Better Auth реєструє /verify-password у HTTP-роутері (scope 'server', а не SERVER_ONLY), і на ньому діє лише вбудований in-memory ліміт 100 за 10 с на IP.
@@ -1058,7 +1058,8 @@ node <scratch>/agents/verify-server-static-auth-session/v4-misc.mjs: verify-pass
 
 ### `sec-11` [medium] Per-account ліміт входу обходиться тілом application/x-www-form-urlencoded
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1347 (змерджено 2026-10-03)
+- **Фікс:** `express.urlencoded` (16 КБ) для `/api/auth` + fail-closed у `authAccountRateLimit`: на sign-in/forget/request-password-reset/reset-password тіло з типом, відмінним від точного `application/json` / `application/x-www-form-urlencoded` (Better Auth приймає `application/jsonx`, `+json` через `includes`), отримує 415, а `email`, що не є одним рядком (повтор ключа у формі, Better Auth бере останнє значення), — 400. OAuth-колбеки не зачеплено.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/rate limit
 - **Де:** apps/server/src/http/authMiddleware.ts:71-104; apps/server/src/http/bodySizePolicy.ts; node_modules/better-auth/dist/api/routes/sign-in.mjs:155
 - **Першопричина:** authAccountRateLimit бере email з req.body, а для /api/auth змонтовано лише express.json, тож для form-тіла req.body порожній і middleware пропускає запит, не чіпаючи бакет. Better Auth /sign-in/email сам приймає urlencoded і перевіряє пароль.
@@ -1156,7 +1157,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-13` [medium] Блокування обходиться клавіатурою: Ctrl/Cmd+K відкриває глобальний пошук поверх замка з даними й діями
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в [#1392](https://github.com/SkOrDs-02/sergeant/pull/1392) (змерджено 2026-10-08) (гарячі клавіші вимкнені, поки замок не idle, оверлей замка на z-300 вище за пошук; лишилось: дерево застосунку й HubChatOverlay усе ще змонтовані під замком, дані лежать у DOM під оверлеєм, окремий PR)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/hooks/useHubKeyboardShortcuts.ts:57-67,124-150; apps/web/src/core/app/RootLayout.tsx:195-225; apps/web/src/core/hub/search/HubSearch.tsx:65; apps/web/src/core/security/AppLock.tsx:311-327
 - **Першопричина:** AppLock лише накриває застосунок оверлеєм: дерево AppShell рендериться за будь-якого стану замка, а useHubKeyboardShortcuts не перевіряє lock-стан (блокує лише isEditableTarget). Після кліку по цифрі фокус іде з прихованого поля, і Ctrl+K, '?' чи Ctrl+/ відкривають діалоги з вищим z-index.
@@ -1201,7 +1202,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-14` [medium] /api/nutrition/refine-photo робить повний vision-аналіз довільного фото без квоти
 
-- **Стан:** відкрито
+- **Стан:** виправлено в #1384 (змерджено 2026-10-04)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-квота / nutrition
 - **Де:** apps/server/src/routes/nutrition.ts:117-130; packages/shared/src/schemas/api.ts:723-740
 - **Першопричина:** На refine-photo немає requireAiQuota('photo'): ланцюг лише rateLimit 20/хв → requireHealthConsent → requireLlmUpstream. Схема вимагає тільки image_base64, prior_result необов'язковий, і за порожнього prior_result промпт робить повний розбір КБЖВ, тож refine рівноцінний analyze-photo.
@@ -1354,7 +1355,7 @@ silpo.ts:165-197: `const pending = await consumeAuthorizationState(state); ... c
 
 ### `sec-16` [medium] Необмежене name роздуває cookie-кеш сесії до 28-33 КБ: усі запити отримують 431, акаунт блокується без самовідновлення
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (name ≤ 100 символів і лише рядок у databaseHooks; лишилось: очищення наявних довгих імен у БД і виключення user-полів із cookieCache)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/профіль
 - **Де:** apps/server/src/auth.ts:427-431,449-540; apps/server/src/auth/sanitizeUserImage.ts; node_modules/better-auth/dist/api/routes/update-user.mjs:12-73; apps/web/src/core/profile/PersonalInfoSection.tsx:27
 - **Першопричина:** Better Auth update-user і sign-up приймають name без maxLength (ще й з коерцією не-рядків у JSON), а databaseHooks чистить лише image (sanitizeUserImage). Увесь user потрапляє в session_data, тож довге ім'я дає Cookie-заголовок понад ліміт Node у 16 КБ.
@@ -1435,7 +1436,7 @@ node <scratch>/agents/verify-server-static-auth-session/v4-misc.mjs: update-user
 
 ### `sec-17` [medium] Канали для звітів про вразливості й запитів приватності не працюють: security.txt веде на мертвий репозиторій, а email-и на запаркований sergeant.app
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в #1365 (змерджено 2026-10-03) (лишилось: робоча скринька з MX на домені проєкту для legal@/privacy@/support@/security@, зараз sergeant.app з Null MX; увімкнення private vulnerability reporting у налаштуваннях SkOrDs-02/sergeant)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: security.txt / юридичні сторінки
 - **Де:** apps/web/public/.well-known/security.txt:1-6; apps/web/src/core/legal/legalShared.ts:15-18; scripts/check-security-txt-expiry.sh; .github/workflows/ci.yml:217-218; docs/governance/security/beta-tester-brief.md:8; apps/landing/public/.well-known/
 - **Першопричина:** Після переїздів репозиторію й доменів контакти не оновили. Contact у security.txt веде на Skords-01/Sergeant (не існує), Canonical на 2dmanager.com.ua; legal@, privacy@, security@ і support@sergeant.app живуть на домені з Null MX, запаркованому на продаж (NS afternic). SECURITY.md немає, на лендингу security.txt немає, private vulnerability reporting на SkOrDs-02/sergeant вимкнено.
@@ -1542,7 +1543,7 @@ Verifier probe (verify-client-static-landing-shell-mobile/hdrs.mjs): app.sergean
 
 ### `sec-18` [medium] Коли сесія спливає посеред роботи, застосунок мовчить: записи тихо стають у чергу, а після reload модулі порожні
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в [#1391](https://github.com/SkOrDs-02/sergeant/pull/1391) (змерджено 2026-10-08) (лишилось: екран повторного входу замість анонімного хабу після 401 при reload, `next` на /sign-in поки не споживається екраном входу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / sync
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:318-401; apps/web/src/core/app/SyncStatusSheet.tsx:175-179; apps/web/src/core/syncEngine/singleton.ts:490-493
 - **Першопричина:** Коли get-session повертає null, resolveUserId віддає null і drain черги мовчки повертає [], сигналу в UI немає; /me у вкладці не перезапитується (refetchOnWindowFocus false, staleTime 60 с). Після reload 401 на /api/v1/me запускає identity wipe і анонімний режим без пояснення.
@@ -1587,7 +1588,7 @@ Independent repro with v4-expiry.mjs: clearCookies, then a cold reload. Log: '17
 
 ### `sec-19` [medium] У прод-образ не потрапляє коміт: порожні X-Server-Build-Id, Sentry release і app_build_info після переходу на білд у Coolify
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в [#1401](https://github.com/SkOrDs-02/sergeant/pull/1401) (змерджено 2026-10-08) (код і коментарі готові; лишилась дія власника: увімкнути в Coolify «Include Source Commit in Build» для sergeant-api-v2 і після деплою звірити X-Server-Build-Id з pnpm deploy:status; role 'railway' не перейменовано свідомо)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: деплой / observability
 - **Де:** Dockerfile.api:20,50-58,246-254; .github/workflows/deploy-api.yml:17-18; apps/server/src/http/buildIdHeader.ts:23-40; apps/server/src/sentry.ts:216-232; apps/server/src/obs/logger.ts:285-287; apps/server/src/config.ts:11-13,40-43; apps/server/src/index.ts:1-3,715-719
 - **Першопричина:** Dockerfile.api чекає ARG GIT_SHA від deploy-api.yml, але після ADR-0102 Coolify сам клонує main і build-arg ніхто не передає; каскади resolveServerBuildId/resolveSentryRelease не читають SOURCE_COMMIT від Coolify. Коментарі Dockerfile і рантайм-конфіг досі описують ghcr і Railway (role 'railway' у логах).

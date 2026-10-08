@@ -47,13 +47,13 @@
 # runtime: `/health` 200 → healthy / exit 0, 503 → unhealthy / exit 1,
 # образ без `/bin/wget` → unhealthy / exit 1.
 #
-# Dockerfile-івський `HEALTHCHECK` лишається опущеним свідомо, і додати
-# його «своїм» healthcheck-ом НЕ вийде: Coolify читає `HEALTHCHECK` з
-# Dockerfile лише коли САМ будує з репозиторію
-# (`parseHealthcheckFromDockerfile` викликається з
-# `dockerfile_from_repo`). Тут він тягне готовий образ із ghcr, тож
-# `custom_healthcheck_found` лишається false, Coolify додає власний
-# healthcheck у compose, і той перекриває запечений в образ.
+# Dockerfile-івський `HEALTHCHECK` лишається опущеним свідомо: healthcheck
+# задається полями `health_check_*` застосунку в Coolify, і саме з них
+# Coolify збирає команду для compose (див. вище). Окремий `HEALTHCHECK` у
+# Dockerfile дублював би її другим джерелом правди. З ADR-0102 Coolify
+# будує образ із репозиторію сам, тож `parseHealthcheckFromDockerfile` його
+# прочитав би (раніше, за часів готового образу з ghcr, він ігнорувався), але
+# змінювати це рішення без власника не слід.
 #
 # Історична примітка: раніше тут стояло «Railway моніторить через
 # external HTTP-probe». Railway виведено з експлуатації (ADR-0074), а
@@ -245,13 +245,18 @@ ENV PATH="/nodejs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/b
 
 ENV NODE_ENV=production
 
-# Per-deploy commit SHA. No PaaS injects one at runtime here (Coolify pulls a
-# prebuilt ghcr image), so `deploy-api.yml` passes `--build-arg GIT_SHA=${{
-# github.sha }}` and we bake it as an env var. Feeds `resolveSentryRelease`,
-# `resolveServerBuildId`, and `app_build_info` so Sentry releases + the
-# X-Server-Build-Id header stop reading "unknown". Empty in local `docker build`.
+# Per-deploy commit SHA. Coolify builds this Dockerfile on the server from the
+# GitHub clone of `main` (ADR-0102) and no workflow passes `--build-arg GIT_SHA`.
+# Coolify exposes the commit as `SOURCE_COMMIT`; it reaches the build only with
+# «Include Source Commit in Build» ON for `sergeant-api-v2` (owner setting), so
+# we bake it into `GIT_SHA`. Feeds `resolveSentryRelease`, `resolveServerBuildId`,
+# and `app_build_info` so Sentry releases + the X-Server-Build-Id header stop
+# reading "unknown". An explicit `--build-arg GIT_SHA=…` still wins. Empty in a
+# local `docker build`. Both ARGs sit as late as possible: Coolify's value
+# changes on every commit, and a changed ARG invalidates every layer after it.
 ARG GIT_SHA=""
-ENV GIT_SHA=${GIT_SHA}
+ARG SOURCE_COMMIT=""
+ENV GIT_SHA=${GIT_SHA:-${SOURCE_COMMIT}}
 
 # ЗАЛИШОК OpenClaw (ADR-0075): рантайм `read_strategy_docs` видалено, цей
 # ENV і COPY docs нижче ніщо не читає. Лишаються навмисно: зняття — non-comment

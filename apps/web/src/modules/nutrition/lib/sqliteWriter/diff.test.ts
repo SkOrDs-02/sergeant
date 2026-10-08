@@ -112,7 +112,10 @@ function makePrefs(
 function makeShoppingList(
   overrides: Partial<NutritionShoppingListSnapshot> = {},
 ): NutritionShoppingListSnapshot {
-  return { dataJson: '{"categories":[]}', ...overrides };
+  return {
+    dataJson: '{"categories":[{"name":"Інше","items":[]}]}',
+    ...overrides,
+  };
 }
 
 function makeState(
@@ -663,6 +666,25 @@ describe("diffNutritionDualWriteOps — shopping-list-set (Stage 11)", () => {
       makeState({ shoppingList: sl }),
     );
     expect(ops).toEqual([{ kind: "shopping-list-set", shoppingList: sl }]);
+  });
+
+  it("data-03: null → порожній список не є зміною (0 опів)", () => {
+    expect(
+      diffNutritionDualWriteOps(
+        makeState({ shoppingList: null }),
+        makeState({ shoppingList: { dataJson: '{"categories":[]}' } }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("data-03: реальний список → порожній (clearAll) досі емітить op", () => {
+    const next = { dataJson: '{"categories":[]}' };
+    expect(
+      diffNutritionDualWriteOps(
+        makeState({ shoppingList: makeShoppingList() }),
+        makeState({ shoppingList: next }),
+      ),
+    ).toEqual([{ kind: "shopping-list-set", shoppingList: next }]);
   });
 
   it("емітить shopping-list-set при зміні dataJson", () => {

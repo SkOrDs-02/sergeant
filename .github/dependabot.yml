@@ -1,21 +1,22 @@
 # Dependabot configuration for the Sergeant monorepo.
 #
-# **Per ADR-0044** (`docs/governance/adr/0044-renovate-vs-dependabot.md`) — Dependabot's
-# scope is **security-only fallback**. Regular weekly bumps are owned by
-# Renovate (`renovate.json`); Dependabot lifts security-updates daily so a
-# CVE disclosed Tuesday lands in a PR Wednesday morning, not next Monday.
+# **Per ADR-0103** (`docs/governance/adr/0103-dependabot-only-dependency-updates.md`)
+# Dependabot — єдиний інструмент оновлення залежностей. Renovate на репо не
+# встановлено, `renovate.json` видалено (ADR-0044 superseded). Гід для роботи
+# з PR: `docs/engineering/integrations/dependabot-usage.md`.
 #
-# Scopes kept here:
-# - **npm** : security updates only, daily.
-# - **github-actions** : SHA-pin rotation (overlap з Renovate `pinDigests:
-#   true` навмисний — supply-chain integrity критична).
-# - **docker** : same logic as github-actions.
+# Scopes:
+# - **npm** : щодня; security-оновлення однією групою `security-updates`,
+#   звичайні оновлення версій — окремий PR на пакет.
+# - **github-actions** : щотижня; оновлює дії, вже закріплені на SHA. Нову дію
+#   пінуй на SHA вручну — Dependabot тег на SHA не переводить.
+# - **docker** : щотижня; лише Dockerfile (`Dockerfile.api`, `ops/grafana-alloy`).
+#   Digest `pgvector/pgvector` у `docker-compose.yml` і `services:` воркфлоу
+#   сюди не входить — його піднімають вручну
+#   (`docs/engineering/development/local-postgres-setup.md` § Bumping the SHA).
 #
-# Scopes that used to live here (production-deps / dev-deps groups) belong
-# to Renovate now; видалено щоб уникнути duplicate-PR-noise.
-#
-# Auto-merge for patch-only security updates lives in
-# `.github/workflows/dependabot-automerge.yml`.
+# Автомерджу немає: воркфлоу `dependabot-automerge.yml` у репо більше немає,
+# кожен PR мерджить людина після зеленого CI.
 
 version: 2
 updates:
@@ -37,10 +38,9 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-    # Без `production-deps` / `dev-deps` groups — їх власник Renovate
-    # (див. ADR-0044). Якщо Dependabot створить non-security PR з npm
-    # ecosystem, це bug у налаштуванні і має бути закритий вручну з
-    # коментарем «duplicate of Renovate group: <name>».
+    # Груп для звичайних оновлень версій не налаштовано (ADR-0103): кожен
+    # пакет приходить окремим PR. Пакети, що мусять іти разом (`@sentry/*`,
+    # `@opentelemetry/*`), рев'юер підтягує вручну в тому ж PR.
     ignore:
       # Manual pins via pnpm.overrides in package.json — Dependabot must
       # not propose updates that fight the override pin. Keep this list in
@@ -52,10 +52,30 @@ updates:
       - dependency-name: "postcss"
       - dependency-name: "uuid"
       - dependency-name: "@tootallnate/once"
-    labels:
-      - "dependencies"
-      - "security"
-      - "automerge-eligible"
+      # Мажори, привʼязані до мобільного стеку (Expo SDK, React Native,
+      # Capacitor). Їх ставлять разом із SDK (`expo install`), а не поодинці,
+      # і мобільний контур на паузі (ADR-0094). Security-оновлення в межах
+      # мажору ці правила не блокують. PR #878, #882, #1085 закрито з цієї
+      # причини 2026-10-03.
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-test-renderer"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@capacitor/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@capacitor-mlkit/*"
+        update-types: ["version-update:semver-major"]
+    # Без власного `labels:` Dependabot ставить свої дефолтні мітки й сам їх
+    # створює. Колишній список посилався на мітки, яких у репо немає
+    # (`dependencies`, `automerge-eligible` — Dependabot скаржився в кожному
+    # PR), а `security` чіплявся до ВСІХ npm-PR, зокрема звичайних оновлень
+    # версій, і вводив в оману (розбір 2026-10-03).
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -69,9 +89,6 @@ updates:
       # `ci(deps)` lands the bump under the `ci` type (workflow change)
       # with the `deps` scope so commitlint scope-enum accepts it.
       prefix: "ci(deps)"
-    labels:
-      - "dependencies"
-      - "ci"
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -83,9 +100,12 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "docker"
+    ignore:
+      # Проєкт закріплений на Node 22 LTS (Volta 22.19.0, рантайм
+      # distroless nodejs22). Перехід на інший мажор — окреме рішення, а не
+      # автооновлення (PR #1177 закрито 2026-10-03).
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/ops/grafana-alloy"
@@ -97,7 +117,3 @@ updates:
     open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "docker"
-      - "observability"

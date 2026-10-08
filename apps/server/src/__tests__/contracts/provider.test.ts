@@ -285,7 +285,7 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 86 expected consumer interactions across 53 routes", () => {
+  it("pact file has 87 expected consumer interactions across 53 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
     // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
@@ -312,7 +312,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // `GET /billing/status` зі `subscription.cancelAtPeriodEnd: true` і
     // `POST /billing/cancel` → 409 `NO_ACTIVE_SUBSCRIPTION`. Маршрути ті
     // самі, тож `expectedRoutes` не росте.
-    expect(pact.interactions).toHaveLength(86);
+    // 87, не 86: +1 інтеракція на ВЖЕ покритому `statement/preview`
+    // (logic-06): `mapping.creditCol` для виписок Дебет/Кредит.
+    // `expectedRoutes` не росте.
+    expect(pact.interactions).toHaveLength(87);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",

@@ -153,6 +153,14 @@ export const APPLY_REJECT_REASONS = [
   // rather than silently accepted or nulled (CodeRabbit PR #627,
   // `parseOptionalTzOffsetMin()` in `syncV2-core.ts`).
   "invalid_tz_offset_min",
+  // Аудит 2026-10-01 (rel-01): `routine_habits.recurrence/start_date/end_date`
+  // — TEXT без CHECK, а sweep нагадувань кидав на `parseDateKey` для рядка
+  // `start_date = "2000"` і глушив нагадування ВСІМ. Невалідне (не enum /
+  // не реальна дата `YYYY-MM-DD`) відхиляється до запису; окремі причини,
+  // бо це три різні колонки (`applyRoutineHabits`).
+  "invalid_recurrence",
+  "invalid_start_date",
+  "invalid_end_date",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];
@@ -167,12 +175,22 @@ export const ENGINE_REJECT_REASONS = [
    * Сам apply пройшов (або й не потрібен був), а запис рядка в `sync_op_log`
    * упав. Окрема причина, а не спільна з `apply_failed`: та каже «хендлер
    * таблиці не зміг», а ця — «журнал не прийняв», і лікуються вони в різних
-   * місцях. Реальний тригер — `U+0000` у рядковому полі `row`: zod його
-   * пропускає, Postgres `jsonb` ні. Доти така помилка йшла в зовнішній catch
+   * місцях. Раніше типовий тригер — `U+0000` у рядковому полі `row` (zod його
+   * пропускає, Postgres `jsonb` ні) — тепер відсікається ДО apply з
+   * `invalid_text_encoding`; ця причина лишилась для решти збоїв запису, і
+   * apply такого опа відкочується. Доти така помилка йшла в зовнішній catch
    * і робила ROLLBACK УСЬОГО батча (500 на сотню рядків через один оп); тепер
    * вона локальна — див. savepoint `op_log_write` у `syncV2.ts`.
    */
   "oplog_write_failed",
+  /**
+   * Рядок `row` містить `U+0000` або одинокий UTF-16 сурогат (назва, обрізана
+   * `.slice()` посеред емодзі). Postgres `jsonb` такого не приймає, тож
+   * відхиляємо оп ДО apply: тихо "лагодити" ввід користувача не можна, а
+   * пустити apply без запису в журнал означало б фантомний серверний стан
+   * (аудит 2026-10-01, `data-17`). Для клієнта це термінальна відмова.
+   */
+  "invalid_text_encoding",
 ] as const;
 
 export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];

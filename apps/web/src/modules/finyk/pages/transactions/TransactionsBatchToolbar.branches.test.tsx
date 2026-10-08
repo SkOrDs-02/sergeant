@@ -59,6 +59,20 @@ describe("TransactionsBatchToolbar (branches)", () => {
     expect(props.onApplyExclude).toHaveBeenCalledTimes(1);
   });
 
+  it("при allSelectedHidden кнопка «Приховати» стає «Показати» і кличе onApplyUnhide", () => {
+    const props = buildProps({
+      selectMode: true,
+      selectedSize: 1,
+      allSelectedHidden: true,
+      onApplyUnhide: vi.fn(),
+    });
+    render(<TransactionsBatchToolbar {...props} />);
+    expect(screen.queryByRole("button", { name: "Приховати" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Показати" }));
+    expect(props.onApplyUnhide).toHaveBeenCalledTimes(1);
+    expect(props.onApplyHide).not.toHaveBeenCalled();
+  });
+
   it("uses singular copy in the category sheet when selectedSize=1", () => {
     render(
       <TransactionsBatchToolbar

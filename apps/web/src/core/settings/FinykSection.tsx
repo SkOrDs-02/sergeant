@@ -4,10 +4,13 @@
  */
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { useInView } from "@shared/hooks/useInView";
 import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
+import { limitBudgetCategoryIds } from "@sergeant/finyk-domain/domain/budget";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
@@ -53,6 +56,9 @@ interface FinykStorageShape {
     options?: { kind?: "expense" | "income" },
   ) => void;
   removeCustomCategory: (id: string) => void;
+  // Потрібні лише для підрахунку лімітів у тексті підтвердження; необовʼязкові,
+  // бо «вужчий вигляд» хука терпить їх відсутність (мок у тестах).
+  budgets?: readonly Budget[] | undefined;
   addManualExpense: (expense: ManualExpenseDraft) => void;
   // Правила категорій мерчантів. Необовʼязкові у цьому «вужчому вигляді» хука:
   // секція нижче терпить їх відсутність (мок `useStorage` у тестах).
@@ -77,6 +83,7 @@ export function FinykSection() {
     customCategories,
     addCustomCategory,
     removeCustomCategory,
+    budgets,
     addManualExpense,
     merchantRules,
     deleteMerchantRule,
@@ -88,6 +95,20 @@ export function FinykSection() {
   const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
     "expense",
   );
+
+  // Категорія, що чекає підтвердження видалення. Видалення необоротне
+  // (ліміти лише з цією категорією зникають), тож без підтвердження не йдемо.
+  const [pendingDelete, setPendingDelete] = useState<CustomCategory | null>(
+    null,
+  );
+  const soleLimitsCount = pendingDelete
+    ? (Array.isArray(budgets) ? budgets : []).filter(
+        (b) =>
+          b.type === "limit" &&
+          limitBudgetCategoryIds(b).length === 1 &&
+          limitBudgetCategoryIds(b)[0] === pendingDelete.id,
+      ).length
+    : 0;
 
   const addCategory = () => {
     if (newCategoryKind === "income") {
@@ -189,7 +210,7 @@ export function FinykSection() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => removeCustomCategory(category.id)}
+                    onClick={() => setPendingDelete(category)}
                     className="text-style-label font-semibold text-danger-strong dark:text-danger hover:text-danger shrink-0"
                   >
                     Видалити
@@ -206,6 +227,25 @@ export function FinykSection() {
               description="Додай першу категорію вище, вона зʼявиться у списку операцій, сплітів і лімітів."
             />
           )}
+          <ConfirmDialog
+            open={pendingDelete !== null}
+            title="Видалити категорію?"
+            description={
+              <>
+                Категорію «{pendingDelete?.label}» буде видалено. Ліміти лише з
+                цією категорією буде видалено
+                {soleLimitsCount > 0 ? ` (зараз їх: ${soleLimitsCount})` : ""};
+                в комбінованих лімітах вона просто зникне зі списку. Дію не
+                можна скасувати.
+              </>
+            }
+            confirmLabel="Видалити"
+            onConfirm={() => {
+              if (pendingDelete) removeCustomCategory(pendingDelete.id);
+              setPendingDelete(null);
+            }}
+            onCancel={() => setPendingDelete(null)}
+          />
         </SettingsSubGroup>
 
         <FinykMerchantRulesSection

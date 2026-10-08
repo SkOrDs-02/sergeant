@@ -67,6 +67,10 @@ import {
 import { BulkReceiptsProgress } from "../bulkImport/BulkReceiptsProgress";
 import { ScanStatus, type ScanStatusState } from "../ScanStatus";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
+import {
+  FinykPhotoPrivacyNotice,
+  readFinykPhotoPrivacyAck,
+} from "./FinykPhotoPrivacyNotice";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
 import { useFinykVisionPaywall } from "./useFinykVisionPaywall";
@@ -120,9 +124,17 @@ export function ReceiptScanSheet({
   const [batchCapNote, setBatchCapNote] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [processing, setProcessing] = useState<ScanStatusState>(RECOGNIZING);
+  // Попередження «Куди їде фото» (рішення власника 2026-07-26, гейт за
+  // зразком Харчування 2026-08-13): доки його не підтверджено, вибір фото
+  // нічого не відправляє, а лишає файли тут і чекає тапу «Зрозуміло,
+  // аналізувати». Читаємо ту саму пару safeReadLS/safeWriteLS, що й нотіс.
+  const [privacyAcked, setPrivacyAcked] = useState(readFinykPhotoPrivacyAck);
+  const [pendingPhotos, setPendingPhotos] = useState<File[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
+  // `reset` — стабільний (useCallback []), на відміну від обʼєкта `bulkReceipts`.
+  const { reset: resetBulkReceipts } = bulkReceipts;
   const visionPaywall = useFinykVisionPaywall();
 
   const lookupMutation = useMutation({
@@ -152,11 +164,11 @@ export function ReceiptScanSheet({
       setFlowError(null);
       setBatchCapNote(null);
       setEditingItemId(null);
+      setPendingPhotos(null);
       resetSave();
-      bulkReceipts.reset();
+      resetBulkReceipts();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset-on-close only; `bulkReceipts` — новий обʼєкт щорендера (той самий патерн, що в BulkImportSheet до переносу).
-  }, [open, resetSave]);
+  }, [open, resetSave, resetBulkReceipts]);
 
   const openReview = (nextDraft: ReceiptDraft) => {
     setDraft(nextDraft);
@@ -187,7 +199,7 @@ export function ReceiptScanSheet({
     }
   };
 
-  const handleFileSelected = async (file: File) => {
+  const analyzeSingleFile = async (file: File) => {
     setFlowError(null);
     // Спінер до першого `await`: QR-декод і стиснення фото самі по собі
     // помітна пауза, і саме вона першою читається як зависання.
@@ -236,7 +248,7 @@ export function ReceiptScanSheet({
     }
   };
 
-  const handleBatchSelected = (files: File[]) => {
+  const analyzeBatch = (files: File[]) => {
     setFlowError(null);
     // Кап застосовує `startFiles` (slice до BATCH_RECEIPTS_MAX_FILES) — але
     // МОВЧКИ: без примітки людина, що вибрала 15 фото, дізналась би про
@@ -249,6 +261,39 @@ export function ReceiptScanSheet({
     setEditingItemId(null);
     setStage("batch");
     void bulkReceipts.startFiles(files);
+  };
+
+  // Гейт приватності: до ack фото нікуди не їде (ні vision, ні пачка).
+  const handleFileSelected = (file: File) => {
+    if (!privacyAcked) {
+      setFlowError(null);
+      setPendingPhotos([file]);
+      setStage("choose");
+      return;
+    }
+    void analyzeSingleFile(file);
+  };
+
+  const handleBatchSelected = (files: File[]) => {
+    if (!privacyAcked) {
+      setFlowError(null);
+      setPendingPhotos(files);
+      setStage("choose");
+      return;
+    }
+    analyzeBatch(files);
+  };
+
+  // Тап «Зрозуміло, аналізувати»: аналіз іде для вже вибраних файлів, без
+  // повторного вибору.
+  const handlePrivacyAck = () => {
+    setPrivacyAcked(true);
+    const pending = pendingPhotos;
+    setPendingPhotos(null);
+    const first = pending?.[0];
+    if (!pending || !first) return;
+    if (pending.length === 1) void analyzeSingleFile(first);
+    else analyzeBatch(pending);
   };
 
   // Повний review одного чека пачки: живий лише поки item існує і ще
@@ -341,7 +386,7 @@ export function ReceiptScanSheet({
           e.target.value = "";
           const first = files[0];
           if (!first) return;
-          if (files.length === 1) void handleFileSelected(first);
+          if (files.length === 1) handleFileSelected(first);
           else handleBatchSelected(files);
         }}
         className="sr-only"
@@ -355,6 +400,10 @@ export function ReceiptScanSheet({
               {flowError}
             </p>
           )}
+          <FinykPhotoPrivacyNotice
+            onAck={handlePrivacyAck}
+            blockingAnalysis={pendingPhotos !== null}
+          />
           {DPS_QR_SCAN_ENABLED && (
             <Button
               variant="solid"

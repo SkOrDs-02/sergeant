@@ -22,6 +22,7 @@
 import { resolveLsStore } from "@shared/lib/storage/storage";
 
 import { readActiveSqliteVfs } from "../db/storageBackendState";
+import { addSentryBreadcrumb, captureException } from "../observability/sentry";
 
 export type DualWriteJournalModule =
   "finyk" | "nutrition" | "routine" | "fizruk";
@@ -31,9 +32,32 @@ export interface DualWriteJournalEntry<P = unknown> {
   readonly module: DualWriteJournalModule;
   readonly userId: string;
   readonly payload: P;
+  /**
+   * `true`, якщо запис «застосовано» в базі `:memory:` (див. {@link ackDualWrite}).
+   * Такий запис знято з порожньої/негідрованої бази, тож модуль, який його
+   * реплеїть на справжній базі, не має трактувати його як повну заміну
+   * (data-10).
+   */
+  readonly appliedInMemory?: true;
+  /**
+   * Скільки разів запис дійшов до SQL і впав (`result.errored > 0`). Лише
+   * невдачі: відтворення «в памʼять» чи без SQLite лічильник не чіпає, інакше
+   * здоровий запис карантинувся б через кілька бутів на `:memory:`.
+   */
+  readonly attempts?: number;
 }
 
 export const DUAL_WRITE_JOURNAL_KEY = "sergeant.dual_write_journal_v1";
+/** Запис, що вичерпав {@link MAX_DUAL_WRITE_FAILED_ATTEMPTS}: лежить тут для ручного розбору. */
+export const DUAL_WRITE_QUARANTINE_KEY = "sergeant.dual_write_quarantine_v1";
+
+/**
+ * Скільки разів запис журналу може впасти в SQL, перш ніж його покладуть у
+ * карантин. Постійна помилка (схема, constraint) інакше реплеїлась би на
+ * кожному буті вічно, а відсікала б її лише стеля {@link MAX_ENTRIES}.
+ */
+export const MAX_DUAL_WRITE_FAILED_ATTEMPTS = 5;
+const MAX_QUARANTINED = 20;
 
 // ponytail: стеля проти розростання, якщо SQLite недоступна цілу сесію;
 // найстаріші записи відкидаються. Нормальний стан журналу 0-2 записи.
@@ -88,11 +112,33 @@ export function journalDualWrite<P>(
  * Guard стоїть тут, а не в модулях, бо через цю функцію йдуть усі чотири.
  */
 export function ackDualWrite(id: string): void {
-  if (readActiveSqliteVfs() === "memory") return;
+  if (readActiveSqliteVfs() === "memory") {
+    markAppliedInMemory(id);
+    return;
+  }
   try {
     const entries = readAll();
     const next = entries.filter((e) => e.id !== id);
     if (next.length !== entries.length) writeAll(next);
+  } catch {
+    /* див. journalDualWrite */
+  }
+}
+
+/**
+ * data-10: позначити запис як застосований у memory-базі. Лишається в журналі
+ * (див. AI-DANGER вище), але реплей на справжній базі бачить прапор.
+ */
+function markAppliedInMemory(id: string): void {
+  try {
+    const entries = readAll();
+    let changed = false;
+    const next = entries.map((e) => {
+      if (e.id !== id || e.appliedInMemory) return e;
+      changed = true;
+      return { ...e, appliedInMemory: true as const };
+    });
+    if (changed) writeAll(next);
   } catch {
     /* див. journalDualWrite */
   }
@@ -107,4 +153,105 @@ export function pendingDualWrites<P>(
     (e): e is DualWriteJournalEntry<P> =>
       e.module === module && e.userId === userId,
   );
+}
+
+/** Звужена форма `DualWriteOutcome`, яку розуміє журнал. */
+export interface DualWriteOutcomeLike {
+  readonly status: string;
+  readonly result?: { readonly errored?: number };
+}
+
+/**
+ * `true`, коли SQL справді прийняв УСІ операції. `status: "applied"` цього не
+ * гарантує: `createApplyOps.applyBestEffort` ловить виняток кожного опа,
+ * лише рахує `errored` і повертає «applied». Тому ack і «durable»-підтвердження
+ * UI мусять дивитись і на `errored` (аудит 2026-10-01, data-05).
+ */
+export function isDualWriteOutcomeClean(
+  outcome: DualWriteOutcomeLike,
+): boolean {
+  return outcome.status === "applied" && (outcome.result?.errored ?? 0) === 0;
+}
+
+/**
+ * Зафіксувати невдалу спробу запису журналу. Запис лишається для реплею на
+ * наступному буті, доки не вичерпає {@link MAX_DUAL_WRITE_FAILED_ATTEMPTS}:
+ * тоді він переїжджає в карантин, а в Sentry летить подія (без payload: там
+ * дані користувача). Повертає `true`, якщо запис щойно карантинився.
+ */
+export function recordDualWriteFailure(
+  module: DualWriteJournalModule,
+  id: string,
+): boolean {
+  try {
+    const entries = readAll();
+    const idx = entries.findIndex((e) => e.id === id);
+    const entry = entries[idx];
+    if (!entry) return false;
+    const attempts = (entry.attempts ?? 0) + 1;
+    if (attempts < MAX_DUAL_WRITE_FAILED_ATTEMPTS) {
+      entries[idx] = { ...entry, attempts };
+      writeAll(entries);
+      return false;
+    }
+    writeAll(entries.filter((e) => e.id !== id));
+    quarantine({ ...entry, attempts });
+    captureException(
+      new Error(
+        `dual-write journal entry quarantined after ${attempts} failed attempts`,
+      ),
+      { tags: { module, dualWriteQuarantine: "1" }, extra: { id, attempts } },
+    );
+    return true;
+  } catch {
+    /* див. journalDualWrite */
+    return false;
+  }
+}
+
+function quarantine(entry: DualWriteJournalEntry): void {
+  const store = resolveLsStore();
+  if (!store) return;
+  let existing: unknown[] = [];
+  try {
+    const parsed: unknown = JSON.parse(
+      store.getString(DUAL_WRITE_QUARANTINE_KEY) ?? "[]",
+    );
+    if (Array.isArray(parsed)) existing = parsed;
+  } catch {
+    /* зіпсований карантин перезаписуємо */
+  }
+  existing.push(entry);
+  store.setString(
+    DUAL_WRITE_QUARANTINE_KEY,
+    JSON.stringify(existing.slice(-MAX_QUARANTINED)),
+  );
+}
+
+/**
+ * Підсумок спроби запису журналу: єдине місце, де оркестратори вирішують
+ * «зняти чи лишити». Знімає лише чистий результат після того, як ліг рядок
+ * outbox; `errored > 0` лишає запис для реплею (та сама `clientTs`, строгий
+ * LWW `>` у адаптерах: уже застосовані опи стають no-op, впалі доїжджають) і
+ * рахує невдачу. `skipped` (SQLite недоступна) журнал не чіпає.
+ */
+export function settleDualWriteEntry(
+  module: DualWriteJournalModule,
+  journalId: string | null,
+  outcome: DualWriteOutcomeLike,
+  outboxSettled: () => Promise<boolean>,
+): void {
+  if (!journalId) return;
+  if (isDualWriteOutcomeClean(outcome)) {
+    void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
+  } else if (outcome.status === "applied") {
+    if (recordDualWriteFailure(module, journalId)) {
+      addSentryBreadcrumb({
+        category: "storage",
+        level: "error",
+        message: `dualwrite ${module} journal entry quarantined`,
+        data: { module },
+      });
+    }
+  }
 }

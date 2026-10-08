@@ -12,6 +12,8 @@
 // Baseline captured 2026-09-16: 198 findings across 83 files.
 // 2026-09-29: TrialBanner.tsx fixed and dropped (82 files).
 // 2026-09-30: HubInsightsBlock.tsx no longer floats a promise (81 files).
+// 2026-10-03: useFinykBackupSync.ts fixed (приймач ?sync= з navigate видалено, 80 files).
+// 2026-10-03: useAppLock.ts: усі проміси мають .catch (79 files).
 export const floatingPromisesBaseline = [
   "apps/mobile/src/components/ui/ConfirmDialog.tsx",
   "apps/mobile/src/components/ui/SwipeToAction.tsx",
@@ -62,14 +64,12 @@ export const floatingPromisesBaseline = [
   "apps/web/src/core/profile/ProfilePage.tsx",
   "apps/web/src/core/profile/SessionsSection.tsx",
   "apps/web/src/core/security/AppLock.tsx",
-  "apps/web/src/core/security/useAppLock.ts",
   "apps/web/src/core/settings/FinykWebhookServiceSection.tsx",
   "apps/web/src/core/settings/NutritionSection.tsx",
   "apps/web/src/core/settings/PlanSection.tsx",
   "apps/web/src/core/whatsNew/WhatsNewModal.tsx",
   "apps/web/src/main.tsx",
   "apps/web/src/modules/finyk/components/FinykInsightsBlock.tsx",
-  "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
   "apps/web/src/modules/finyk/hooks/useFinykRoute.ts",
   "apps/web/src/modules/finyk/hooks/useMonoBackfillProgress.ts",
   "apps/web/src/modules/finyk/hooks/useMonoTokenMigration.ts",

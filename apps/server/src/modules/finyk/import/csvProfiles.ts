@@ -22,6 +22,12 @@ export type CsvProfileId = "mono" | "privat24";
 export interface ResolvedColumnMapping {
   dateColIndex: number;
   amountColIndex: number;
+  /** Індекс окремої колонки надходжень (кредит) для виписок з двома
+   * колонками Дебет/Кредит. `null` — сума в `amountColIndex` ЗІ ЗНАКОМ
+   * (так працюють обидва автопрофілі; лише клієнтський custom `mapping`
+   * може вказати `creditCol`). Якщо не `null`, `amountColIndex` читається
+   * як дебет (витрата), а `creditColIndex` як кредит (надходження). */
+  creditColIndex: number | null;
   descriptionColIndex: number;
   /** Індекс колонки валюти рахунку — лише автопрофілі можуть її нести
    * (клієнтський custom `mapping` контракту currency-колонки не має, спека
@@ -143,6 +149,7 @@ function detectMonoProfile(
   return {
     dateColIndex,
     amountColIndex,
+    creditColIndex: null,
     descriptionColIndex,
     currencyColIndex: null,
     // mono власної категорії не друкує, але друкує MCC — і це той самий
@@ -150,7 +157,13 @@ function detectMonoProfile(
     categoryColIndex: null,
     mccColIndex: findColumnIndexOrNull(normalizedHeaders, "мсс"),
     dateFormat: "DD.MM.YYYY",
-    decimalComma: false,
+    // `undefined` = автодетект, свідомо (data-31): виписку, відкриту й
+    // пересохранену в Excel з локаллю uk-UA, зберігає як CSV з «;» і
+    // десятковою комою («-95,50», «-1 234,56»). Жорстке `false` викидало
+    // б кожну кому й множило суму в 100 разів без жодного skip. Оригінальна
+    // mono-виписка («-95.00», без роздільника тисяч) автодетектом читається
+    // так само.
+    decimalComma: undefined,
   };
 }
 
@@ -208,6 +221,7 @@ function detectPrivat24Profile(
   return {
     dateColIndex,
     amountColIndex,
+    creditColIndex: null,
     descriptionColIndex,
     currencyColIndex: currencyColIndex === -1 ? null : currencyColIndex,
     // «Категорія» — власна розмітка банку, найнадійніший доказ категорії
@@ -247,6 +261,12 @@ export function detectCsvProfile(headers: string[]): DetectedProfile | null {
  * mapping. `null`, якщо будь-яка з трьох обовʼязкових колонок не
  * знайдена серед `headers`.
  *
+ * Опційний `mapping.creditCol` (виписка з окремими колонками Дебет/Кредит)
+ * резолвиться в `creditColIndex`. Заданий, але відсутній серед `headers`
+ * (застарілий mapping) — теж `null`, як і для обовʼязкових колонок. Заданий
+ * і збігається з `amountCol` — ігнорується (`creditColIndex: null`): одна
+ * колонка не може бути і дебетом, і кредитом, тож лишається сума зі знаком.
+ *
  * Custom mapping НЕ несе currency-колонку (контракт `ImportColumnMapping`,
  * `@sergeant/shared`) — валютна нормалізація довільних CSV навмисно НЕ
  * вгадується (0022 § Відкриті рішення №4), тож `currencyColIndex` завжди
@@ -269,9 +289,16 @@ export function resolveCustomMapping(
   ) {
     return null;
   }
+  let creditColIndex: number | null = null;
+  if (mapping.creditCol !== undefined) {
+    const idx = normalized.indexOf(normalizeHeader(mapping.creditCol));
+    if (idx === -1) return null;
+    creditColIndex = idx === amountColIndex ? null : idx;
+  }
   return {
     dateColIndex,
     amountColIndex,
+    creditColIndex,
     descriptionColIndex,
     currencyColIndex: null,
     // Контракт `ImportColumnMapping` колонок категорії/MCC не має —

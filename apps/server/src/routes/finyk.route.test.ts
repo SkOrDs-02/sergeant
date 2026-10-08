@@ -98,7 +98,30 @@ async function loadCreateApp(): Promise<
   return mod.createApp;
 }
 
+/**
+ * `createManualExpense` працює через `pool.connect()` + транзакцію (data-16):
+ * INSERT рядка йде в `queryMock` (як і раніше), службові BEGIN/COMMIT/ROLLBACK
+ * і запис опа в `sync_op_log` фіксуються в `clientSql`.
+ */
+const clientSql: string[] = [];
+function wireTxClient(): void {
+  mockPool.connect.mockResolvedValue({
+    query: vi.fn(async (sql: string, params?: unknown[]) => {
+      clientSql.push(sql.trim());
+      if (/^(BEGIN|COMMIT|ROLLBACK)/.test(sql.trim())) return { rows: [] };
+      if (sql.includes("INSERT INTO sync_op_log")) {
+        return { rows: [], rowCount: 1 };
+      }
+      return queryMock(sql, params);
+    }),
+    release: vi.fn(),
+  });
+}
+
 beforeEach(() => {
+  clientSql.length = 0;
+  mockPool.connect.mockReset();
+  wireTxClient();
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
@@ -180,6 +203,13 @@ describe("finyk routes — POST /manual-expenses happy path", () => {
     const storedBlob = JSON.parse(insertCall![1][2]);
     expect(storedBlob.amount).toBe(200);
     expect(storedBlob.category).toBe("food");
+
+    // data-16: оп у sync_op_log — у тій самій транзакції (BEGIN ... COMMIT).
+    expect(clientSql.some((q) => q.includes("INSERT INTO sync_op_log"))).toBe(
+      true,
+    );
+    expect(clientSql[0]).toBe("BEGIN");
+    expect(clientSql.at(-1)).toBe("COMMIT");
   });
 
   it("без `date` підставляє Kyiv-сьогодні (YYYY-MM-DD у blob)", async () => {

@@ -10,20 +10,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * `scripts/ci/check-vi-mock-cap.mjs`). Сама арифметика відер (21-ша дія,
  * 4-те фото, 6-й скан) живе в `modules/chat/aiQuota.test.ts`; тут лише те,
  * що правильний `requireAiQuota(meter)` стоїть у правильному ланцюжку, а
- * там, де списання бути не повинно (refine-photo), його немає.
+ * refine-photo списує відро фото лише без гранту на кадр (sec-14, ADR-0100).
+ * Логіку гранту (TTL, інший користувач, збій БД) доводить
+ * `modules/nutrition/photoRefineGrant.test.ts`.
  */
 
-const { handler, poolQuery } = vi.hoisted(() => ({
+const { handler, poolQuery, grantQuery } = vi.hoisted(() => ({
   handler: (_req: unknown, res: express.Response) => res.json({ ok: true }),
   // Гейт згоди на дані про здоровʼя (`lib/healthConsent.ts`) читає
   // `user_preferences` через `pool`; окремого `vi.mock` на нього немає
   // (cap 5 на файл), тож підміняємо лише відповідь БД.
   poolQuery: vi.fn(),
+  // Пошук гранту refine-photo йде через `withUserContext`, окремо від
+  // `poolQuery`: гейт згоди й грант не мусять бачити відповіді одне одного.
+  grantQuery: vi.fn(),
 }));
 
 vi.mock("../db.js", () => ({
   default: { query: vi.fn() },
   pool: { query: poolQuery },
+  withUserContext: (_id: string, fn: (db: unknown) => unknown) =>
+    fn({ query: grantQuery }),
 }));
 
 vi.mock("../modules/nutrition/analyze-photo.js", () => ({ default: handler }));
@@ -50,10 +57,13 @@ vi.mock("../http/index.js", () => {
       },
     requireLlmUpstream: pass,
     // Відро, яке списав би справжній `assertAiQuota`, їде в заголовок.
+    // `allowRoundTripTicket` їде окремим заголовком: nutrition-роути квиток
+    // чату приймати не мають (sec-03).
     requireAiQuota:
-      (meter = "ai") =>
+      (meter = "ai", options: { allowRoundTripTicket?: boolean } = {}) =>
       (_req: unknown, res: express.Response, next: () => void) => {
         res.append("x-quota-meter", meter);
+        if (options.allowRoundTripTicket) res.append("x-quota-ticket", "1");
         next();
       },
   };
@@ -79,8 +89,11 @@ function app(): express.Express {
   return a;
 }
 
-async function meterOf(path: string): Promise<string | undefined> {
-  const res = await request(app()).post(path).send({});
+async function meterOf(
+  path: string,
+  body: object = {},
+): Promise<string | undefined> {
+  const res = await request(app()).post(path).send(body);
   expect(res.status).toBe(200);
   return res.headers["x-quota-meter"];
 }
@@ -90,6 +103,9 @@ describe("access-tiers: яке тижневе відро списує nutrition-
     vi.unstubAllEnvs();
     poolQuery.mockReset();
     poolQuery.mockResolvedValue({ rows: [{ health_data_consent: true }] });
+    grantQuery.mockReset();
+    grantQuery.mockResolvedValue({ rows: [] });
+    vi.stubEnv("DATABASE_URL", "postgres://ignored");
   });
 
   it.each([
@@ -111,9 +127,32 @@ describe("access-tiers: яке тижневе відро списує nutrition-
     expect(await meterOf("/api/nutrition/analyze-photo")).toBe("photo");
   });
 
-  it("refine-photo того самого знімка нічого не списує", async () => {
-    expect(await meterOf("/api/nutrition/refine-photo")).toBeUndefined();
+  it("refine-photo кадру без гранту списує відро фото", async () => {
+    expect(
+      await meterOf("/api/nutrition/refine-photo", {
+        image_base64: "A".repeat(200),
+      }),
+    ).toBe("photo");
   });
+
+  it("refine-photo кадру з грантом від analyze нічого не списує", async () => {
+    grantQuery.mockResolvedValue({ rows: [{ "?column?": 1 }] });
+    const res = await request(app())
+      .post("/api/nutrition/refine-photo")
+      .send({ image_base64: "A".repeat(200) });
+    expect(res.status).toBe(200);
+    expect(res.headers["x-quota-meter"]).toBeUndefined();
+  });
+
+  it.each(["/api/nutrition/analyze-photo", "/api/nutrition/day-plan"])(
+    "%s не приймає round-trip-квиток чату (sec-03)",
+    async (path) => {
+      const res = await request(app()).post(path).send({});
+      expect(res.status).toBe(200);
+      expect(res.headers["x-quota-meter"]).toBeDefined();
+      expect(res.headers["x-quota-ticket"]).toBeUndefined();
+    },
+  );
 
   it("day-plan списує 1 дію зі спільних", async () => {
     expect(await meterOf("/api/nutrition/day-plan")).toBe("ai");

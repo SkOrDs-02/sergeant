@@ -26,9 +26,9 @@ import {
 } from "./diff.js";
 import { probeFinykParity } from "./parity.js";
 import {
-  ackDualWrite,
   journalDualWrite,
   pendingDualWrites,
+  settleDualWriteEntry,
 } from "../../../../core/durability/dualWriteJournal.js";
 import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 
@@ -198,10 +198,16 @@ export function getFinykDualWriteRuntime(): {
 }
 
 /**
- * Run the dual-write pipeline for a `prev → next` LS-state transition.
+ * Run the dual-write pipeline for a `prev → next` LS-state transition and
+ * resolve with its terminal outcome.
  *
- * The function is `async` but the LS-write call site fires it
- * fire-and-forget through {@link triggerFinykDualWrite}.
+ * AI-CONTEXT: запис іде ЖУРНАЛЬОВАНИМ шляхом (`journalDualWrite` до
+ * асинхронної межі, `settleDualWriteEntry` після), як `triggerFinykDualWrite`
+ * і дуалрайт Рутини та Їжі. Єдиний чинний виклик поза тригером - відновлення
+ * з файлу (`finykBackup.ts`): воно йшло повз журнал, тож обірваний reload чи
+ * `skipped` лишали пристрій без жодного шансу догнати сервер (аудит
+ * 2026-10-01, data-07). Помилкові й `skipped` результати журнал не знімає,
+ * див. {@link settleDualWriteEntry}.
  *
  * Every call records its terminal outcome through
  * `recordDualWriteOutcome("finyk", …)` so the Stage 8 decision-gate
@@ -213,15 +219,25 @@ export async function dualWriteFinykState(
   next: FinykDualWriteState,
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
-  const outcome = ctx
-    ? await runFinykOps(
-        ctx,
-        diffFinykDualWriteOps(prev, next),
-        nextMonotonicClientTs(ctx),
-        next,
-      )
-    : ({ status: "skipped", reason: "context-unset" } as const);
+  if (!ctx) {
+    const skipped = { status: "skipped", reason: "context-unset" } as const;
+    recordDualWriteOutcome("finyk", skipped);
+    return skipped;
+  }
+  const ops = diffFinykDualWriteOps(prev, next);
+  const clientTs = nextMonotonicClientTs(ctx);
+  const userId = ctx.getUserId();
+  const journalId =
+    ops.length > 0 && userId
+      ? journalDualWrite<FinykJournalPayload>("finyk", userId, {
+          ops,
+          clientTs,
+        })
+      : null;
+  const outboxSettled = outboxCheckpoint();
+  const outcome = await runFinykOps(ctx, ops, clientTs, next);
   recordDualWriteOutcome("finyk", outcome);
+  settleDualWriteEntry("finyk", journalId, outcome, outboxSettled);
   return outcome;
 }
 
@@ -378,9 +394,7 @@ function enqueueFinykRun(
       // «sqlite недоступна» лишає запис у журналі для наступного буту.
       // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
       // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
-      if (journalId && outcome.status === "applied") {
-        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
-      }
+      settleDualWriteEntry("finyk", journalId, outcome, outboxSettled);
     })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {

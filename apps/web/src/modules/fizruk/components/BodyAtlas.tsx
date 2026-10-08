@@ -25,6 +25,7 @@ import type { RecoveryStatus } from "@sergeant/fizruk-domain";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
+import { useLatestRef } from "@shared/hooks/useLatestRef";
 import type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
 import { BodyAtlasSegGroup } from "./BodyAtlasSegGroup";
 import { atlasHitStroke, fatiguePercent, heatColor } from "../lib/atlasHeat";
@@ -306,15 +307,17 @@ export function BodyAtlas({
   // runs the two genuinely imperative side effects — announcing the
   // selection and scrolling the silhouette into view — once per
   // `focusMuscleId` (a fresh navigation into the page).
+  // `selectionAnnouncement` читає `data` — беремо його з ref, щоб оновлення
+  // даних не перезапускало ефект і не повторювало озвучення.
+  const selectionAnnouncementRef = useLatestRef(selectionAnnouncement);
   useEffect(() => {
     if (!focusMuscleId || !isBodyAtlasMuscleId(focusMuscleId)) return;
-    announce(selectionAnnouncement(focusMuscleId));
+    announce(selectionAnnouncementRef.current(focusMuscleId));
     silhouetteBoxRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "center",
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per incoming focus target; `announce`/`data` intentionally excluded.
-  }, [focusMuscleId]);
+  }, [focusMuscleId, announce, selectionAnnouncementRef]);
 
   const selectedDatum = selected ? data[selected] : undefined;
 

@@ -43,7 +43,7 @@ export function PhotoAddItemPicker({
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("");
-  const { foodHits, offHits, foodBusy, offBusy, foodErr } =
+  const { foodHits, offHits, foodBusy, offBusy, foodErr, searchSettled } =
     useFoodSearch(foodQuery);
 
   const grams = Math.min(
@@ -123,6 +123,7 @@ export function PhotoAddItemPicker({
             foodBusy={foodBusy}
             offBusy={offBusy}
             foodErr={foodErr}
+            searchSettled={searchSettled}
             setPickedFood={setPickedFood}
             setPickedGrams={setPickedGrams}
           />

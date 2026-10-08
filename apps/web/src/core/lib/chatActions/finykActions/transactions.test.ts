@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
+  getCachedFinykSqliteState,
 } from "../../../../modules/finyk/lib/sqliteReader";
 
-vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
 vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
 vi.mock("../../../../modules/finyk/utils", () => ({
   resolveExpenseCategoryMeta: vi.fn(() => null),
@@ -25,7 +25,6 @@ vi.mock("./entityLookup", async (importOriginal) => ({
   finykCategoryExists: vi.fn(() => true),
 }));
 
-import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
@@ -40,7 +39,6 @@ import {
 } from "./transactions";
 import type { ChatActionUndoableResult } from "../types";
 
-const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockWrite = vi.mocked(finykChatWrite);
 const mockResolveMeta = vi.mocked(resolveExpenseCategoryMeta);
 const mockHiddenMirror = vi.mocked(triggerHiddenTransactionSqliteMirror);
@@ -52,21 +50,19 @@ function isUndoable(
   return typeof out === "object" && out !== null && "undo" in out;
 }
 
-const lsFixtures = new Map<string, unknown>();
+/** Сід кешу SQLite без повної типізації рядків — тестам досить мінімуму полів. */
+function seedFinykCache(partial: Record<string, unknown>): void {
+  __setFinykSqliteStateCacheForTests(partial as never);
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
-  lsFixtures.clear();
-  // Mirrors the real `ls(key, fallback)` behaviour (empty storage → fallback),
-  // але читання KEY-AWARE: seed конкретного ключа через lsFixtures.set(...) —
-  // хендлер, що читає не той ключ, отримає fallback і тест впаде чесно.
-  mockLs.mockImplementation((key: string, fallback: unknown) =>
-    lsFixtures.has(key) ? lsFixtures.get(key) : fallback,
-  );
+  // data-08: стан читається з прогрітого кешу SQLite (не з kv) — тести
+  // перезасівають його через `__setFinykSqliteStateCacheForTests`.
   mockResolveMeta.mockReturnValue(null);
   // hide/split валідують існування tx через entityLookup (гард проти
   // вигаданих моделлю id, 2ae99a1) — happy-path кейси сідять "tx1" у кеш.
-  __setFinykSqliteStateCacheForTests({
+  seedFinykCache({
     manualExpenses: [
       {
         id: "tx1",
@@ -97,7 +93,8 @@ describe("createTransaction", () => {
       (c) => c[0] === "finyk_manual_expenses_v1",
     );
     expect(saved).toBeDefined();
-    const tx = (saved?.[1] as Array<{ date: string }>).at(-1);
+    // Нова витрата йде першою (unshift) поверх засіяного в кеш "tx1".
+    const tx = (saved?.[1] as Array<{ date: string }>)[0];
     // Інстант — київська опівніч 2026-08-04 (21:00Z 3-го, EEST +3):
     // день у Europe/Kyiv збережений, хай би який TZ був у хоста/браузера.
     expect(tx?.date).toBe("2026-08-03T21:00:00.000Z");
@@ -180,7 +177,9 @@ describe("createTransaction", () => {
   });
 
   it("prepends the new entry so it is written first", () => {
-    mockLs.mockReturnValue([{ id: "m_old", amount: 10 }]);
+    seedFinykCache({
+      manualExpenses: [{ id: "m_old", amount: 10, date: "2026-04-22" }],
+    });
     createTransaction({
       name: "create_transaction",
       input: { amount: 20 },
@@ -210,10 +209,12 @@ describe("createTransaction", () => {
       const newId = written[0]!.id;
 
       vi.clearAllMocks();
-      mockLs.mockReturnValue([
-        { id: newId, amount: 100 },
-        { id: "m_other", amount: 50 },
-      ]);
+      seedFinykCache({
+        manualExpenses: [
+          { id: newId, amount: 100, date: "2026-04-22" },
+          { id: "m_other", amount: 50, date: "2026-04-22" },
+        ],
+      });
       out.undo?.();
 
       const afterUndo = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
@@ -231,7 +232,7 @@ describe("createTransaction", () => {
       const newId = written[0]!.id;
 
       vi.clearAllMocks();
-      mockLs.mockReturnValue([]); // already removed elsewhere
+      seedFinykCache({ manualExpenses: [] }); // already removed elsewhere
       out.undo?.();
 
       expect(mockWrite).not.toHaveBeenCalled();
@@ -260,7 +261,7 @@ describe("hideTransaction", () => {
   });
 
   it("is idempotent when the tx is already hidden", () => {
-    mockLs.mockReturnValue(["tx1"]);
+    seedFinykCache({ hiddenTransactions: ["tx1"] });
     hideTransaction({ name: "hide_transaction", input: { tx_id: "tx1" } });
     expect(mockWrite).not.toHaveBeenCalled();
     // Mirror still fires — safe to re-trigger a soft-delete-style upsert.
@@ -290,7 +291,7 @@ describe("deleteTransaction", () => {
   });
 
   it("returns an error when the manual tx is not found", () => {
-    mockLs.mockReturnValue([]);
+    seedFinykCache({ manualExpenses: [] });
     const out = deleteTransaction({
       name: "delete_transaction",
       input: { tx_id: "m_ghost" },
@@ -300,7 +301,12 @@ describe("deleteTransaction", () => {
   });
 
   it("removes the manual tx and mirrors the delete", () => {
-    mockLs.mockReturnValue([{ id: "m_1" }, { id: "m_2" }]);
+    seedFinykCache({
+      manualExpenses: [
+        { id: "m_1", amount: 1, date: "2026-04-22" },
+        { id: "m_2", amount: 2, date: "2026-04-22" },
+      ],
+    });
     const out = deleteTransaction({
       name: "delete_transaction",
       input: { tx_id: "m_1" },
@@ -308,7 +314,7 @@ describe("deleteTransaction", () => {
     expect(out).toContain("m_1");
     expect(out).toContain("видалено");
     expect(mockWrite).toHaveBeenCalledWith("finyk_manual_expenses_v1", [
-      { id: "m_2" },
+      { id: "m_2", amount: 2, date: "2026-04-22" },
     ]);
     expect(mockDeleteMirror).toHaveBeenCalledWith("m_1");
   });
@@ -374,8 +380,10 @@ describe("splitTransaction", () => {
         ],
       },
     });
-    expect(out).toContain("🛒 Продукти: 50 грн");
-    expect(out).toContain("custom_cat: 30 грн");
+    expect(isUndoable(out)).toBe(true);
+    const text = (out as ChatActionUndoableResult).result;
+    expect(text).toContain("🛒 Продукти: 50 грн");
+    expect(text).toContain("custom_cat: 30 грн");
   });
 
   it("coerces negative/non-numeric part amounts to absolute numbers", () => {
@@ -401,8 +409,8 @@ describe("splitTransaction", () => {
   });
 
   it("merges into existing splits for other tx ids", () => {
-    mockLs.mockReturnValue({
-      "tx-existing": [{ categoryId: "food", amount: 10 }],
+    seedFinykCache({
+      txSplits: { "tx-existing": [{ categoryId: "food", amount: 10 }] },
     });
     splitTransaction({
       name: "split_transaction",
@@ -417,5 +425,125 @@ describe("splitTransaction", () => {
     const written = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
     expect(written).toHaveProperty("tx-existing");
     expect(written).toHaveProperty("tx1");
+  });
+
+  // logic-03: split_transaction перезаписує спліти tx без підтвердження;
+  // за політикою TOOL_RISK (рішення #8) це оборотна дія, тож потрібен undo.
+  it("logic-03: undo відновлює попередні спліти цього tx", () => {
+    const prev = [
+      { categoryId: "food", amount: 70 },
+      { categoryId: "transport", amount: 10 },
+    ];
+    const other = [{ categoryId: "food", amount: 10 }];
+    seedFinykCache({ txSplits: { tx1: prev, "tx-existing": other } });
+    const out = splitTransaction({
+      name: "split_transaction",
+      input: {
+        tx_id: "tx1",
+        parts: [
+          { category_id: "food", amount: 50 },
+          { category_id: "transport", amount: 30 },
+        ],
+      },
+    });
+    if (!isUndoable(out)) throw new Error("очікую { result, undo }");
+    const after = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
+    expect(after["tx1"]).not.toEqual(prev);
+
+    // Між дією й відкатом змінився сплід іншої операції: undo не має його
+    // затерти, бо читає свіжий кеш і чіпає лише ключ tx1.
+    const otherChanged = [{ categoryId: "transport", amount: 99 }];
+    vi.clearAllMocks();
+    seedFinykCache({ txSplits: { ...after, "tx-existing": otherChanged } });
+    out.undo?.();
+    expect(mockWrite).toHaveBeenCalledWith("finyk_tx_splits", {
+      tx1: prev,
+      "tx-existing": otherChanged,
+    });
+  });
+
+  it("logic-03: undo прибирає ключ, якщо спліту до дії не було", () => {
+    seedFinykCache({ txSplits: { "tx-existing": [] } });
+    const out = splitTransaction({
+      name: "split_transaction",
+      input: {
+        tx_id: "tx1",
+        parts: [
+          { category_id: "food", amount: 50 },
+          { category_id: "transport", amount: 30 },
+        ],
+      },
+    });
+    if (!isUndoable(out)) throw new Error("очікую { result, undo }");
+    const after = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
+    vi.clearAllMocks();
+    seedFinykCache({ txSplits: after });
+    out.undo?.();
+    const restored = mockWrite.mock.calls[0]![1] as Record<string, unknown>;
+    expect(restored).not.toHaveProperty("tx1");
+    expect(restored).toHaveProperty("tx-existing");
+  });
+});
+
+// ─── data-08: канонічний стан із SQLite, а не з kv ──────────────────────────
+
+describe("data-08: ручні витрати з UI (kv порожній)", () => {
+  it("deleteTransaction знаходить витрату, створену в UI", () => {
+    localStorage.clear();
+    seedFinykCache({
+      manualExpenses: [{ id: "m_ui", amount: 70, date: "2026-04-22" }],
+    });
+    const out = deleteTransaction({
+      name: "delete_transaction",
+      input: { tx_id: "m_ui" },
+    });
+    expect(out).toContain("видалено");
+    expect(mockWrite).toHaveBeenCalledWith("finyk_manual_expenses_v1", []);
+  });
+
+  it("createTransaction дописує до витрат з UI і не мутує кеш", () => {
+    const uiRow = { id: "m_ui", amount: 70, date: "2026-04-22" };
+    seedFinykCache({ manualExpenses: [uiRow] });
+    createTransaction({
+      name: "create_transaction",
+      input: { amount: 20 },
+    });
+    const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
+    expect(written.map((r) => r.id)).toEqual([
+      expect.stringMatching(/^m_/),
+      "m_ui",
+    ]);
+    expect(
+      (getCachedFinykSqliteState().manualExpenses as Array<{ id: string }>).map(
+        (r) => r.id,
+      ),
+    ).toEqual(["m_ui"]);
+  });
+
+  it("холодний кеш: чесна відповідь замість запису", () => {
+    clearFinykSqliteCache();
+    const outs = [
+      createTransaction({
+        name: "create_transaction",
+        input: { amount: 20 },
+      }),
+      hideTransaction({ name: "hide_transaction", input: { tx_id: "tx1" } }),
+      deleteTransaction({
+        name: "delete_transaction",
+        input: { tx_id: "m_1" },
+      }),
+      splitTransaction({
+        name: "split_transaction",
+        input: {
+          tx_id: "tx1",
+          parts: [
+            { category_id: "food", amount: 1 },
+            { category_id: "transport", amount: 1 },
+          ],
+        },
+      }),
+    ];
+    for (const out of outs) expect(out).toContain("ще завантажуються");
+    expect(mockWrite).not.toHaveBeenCalled();
   });
 });

@@ -692,7 +692,7 @@ describe("Finyk dual-write — outbox enqueue wiring", () => {
     });
   });
 
-  it("does NOT enqueue finyk_mono_debt_links (R7 local-only)", async () => {
+  it("enqueues finyk_mono_debt_links insert on mono-debt-link-upsert (data-28)", async () => {
     await applyFinykDualWriteOps(
       handle.client,
       [
@@ -705,7 +705,65 @@ describe("Finyk dual-write — outbox enqueue wiring", () => {
     );
     await Promise.resolve();
     await Promise.resolve();
-    expect(enqueueMock).not.toHaveBeenCalled();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_mono_debt_links");
+    expect(input.op).toBe("insert");
+    expect(input.clientTs).toBe(NOW);
+    expect(input.row).toEqual({
+      user_id: USER_ID,
+      transaction_id: "tx-mdl-1",
+      debt_ids_json: '["d1"]',
+    });
+  });
+
+  it("enqueues finyk_mono_debt_links delete on mono-debt-link-delete (data-28)", async () => {
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "mono-debt-link-upsert",
+          entry: { transactionId: "tx-mdl-2", debtIdsJson: '["d1"]' },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    enqueueMock.mockClear();
+    await applyFinykDualWriteOps(
+      handle.client,
+      [{ kind: "mono-debt-link-delete", transactionId: "tx-mdl-2" }],
+      { userId: USER_ID, clientTs: LATER },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("finyk_mono_debt_links");
+    expect(input.op).toBe("delete");
+    expect(input.clientTs).toBe(LATER);
+    expect(input.row).toEqual({
+      user_id: USER_ID,
+      transaction_id: "tx-mdl-2",
+    });
+  });
+
+  it("не губить локальний запис, коли enqueue у outbox падає (data-28)", async () => {
+    enqueueMock.mockRejectedValueOnce(new Error("outbox down"));
+    await applyFinykDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "mono-debt-link-upsert",
+          entry: { transactionId: "tx-mdl-3", debtIdsJson: '["d9"]' },
+        },
+      ],
+      { userId: USER_ID, clientTs: NOW },
+    );
+    const rows = await handle.client.all<{ debt_ids_json: string }>(
+      "SELECT debt_ids_json FROM finyk_mono_debt_links WHERE transaction_id = ?",
+      ["tx-mdl-3"],
+    );
+    expect(rows).toEqual([{ debt_ids_json: '["d9"]' }]);
   });
 
   it("enqueues finyk_networth_history insert on networth-upsert", async () => {

@@ -507,7 +507,11 @@ describe("FinykApp (extra) — pwaAction='add_expense'", () => {
 
 // ── URL sync effect ───────────────────────────────────────────────────────────
 
-describe("FinykApp (extra) — URL sync effect", () => {
+describe("FinykApp (extra) — ?sync= у URL ігнорується (data-26)", () => {
+  // Регресія аудиту 2026-10-01: на маунті з `?sync=…` застосунок без
+  // підтвердження підміняв бюджети/план/категорії/приховані рахунки даними з
+  // URL і показував тост «синхронізовано». `loadFromUrl` лишено в моку як
+  // шпигуна: приймача більше нема, тож його ніхто не має викликати.
   beforeEach(() => {
     vi.stubGlobal("location", {
       search: "?sync=abc",
@@ -519,22 +523,12 @@ describe("FinykApp (extra) — URL sync effect", () => {
     vi.unstubAllGlobals();
   });
 
-  it("calls toast.success when loadFromUrl returns true", () => {
+  it("не викликає loadFromUrl і не показує жодного тоста", () => {
     storageMock.loadFromUrl.mockReturnValue(true);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(toastMock.success).toHaveBeenCalledWith(
-      "Налаштування синхронізовано.",
-    );
-  });
-
-  it("calls toast.error when loadFromUrl returns false", () => {
-    storageMock.loadFromUrl.mockReturnValue(false);
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(toastMock.error).toHaveBeenCalledWith(
-      "Не вдалось завантажити синк-дані",
-      undefined,
-      expect.objectContaining({ label: "Повторити" }),
-    );
+    expect(storageMock.loadFromUrl).not.toHaveBeenCalled();
+    expect(toastMock.success).not.toHaveBeenCalled();
+    expect(toastMock.error).not.toHaveBeenCalled();
   });
 });
 

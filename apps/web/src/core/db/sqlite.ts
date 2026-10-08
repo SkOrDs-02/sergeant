@@ -12,6 +12,7 @@ import {
 } from "../lib/chunkReload.js";
 import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
+import { resetInitialPull } from "../syncEngine/initialPullState.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
 import {
   noteActiveSqliteVfs,
@@ -212,25 +213,40 @@ export async function wipeSqliteDb(): Promise<void> {
   const open = currentOpen;
   const stale = resolved;
   const userIdBeingWiped = activeUserId;
+  // Локальна репліка стерта: «pull уже був» більше не правда, доки не
+  // пройде новий (гейт відновлення з файлу data-07, prefs Їжі data-04).
+  // Reader і сам скине прапор на наступному тіку (новий client), але гейт
+  // імпорту не має бачити «true» у проміжку між wipe і цим тіком.
+  if (userIdBeingWiped) resetInitialPull();
   resolved = null;
   resolvedKey = null;
   inFlight = null;
   inFlightKey = null;
   currentOpen = null;
 
-  // Ordering is VFS-dependent and NOT interchangeable:
-  //   - kvvfs's row-level `DELETE` (see `OpenedDb.wipe`) needs the
-  //     connection still open, so it must run BEFORE `close()`.
-  //   - OPFS-SAH's `unlink` is the opposite — the pool's own contract
-  //     leaves the result undefined if the file is still open for access,
-  //     so it must run AFTER `close()` releases the sync-access-handle lock.
-  if (open && open.vfs === "kvvfs") {
+  // Ordering is backend-dependent and NOT interchangeable
+  // ({@link OpenedDb.wipeBeforeClose}):
+  //   - kvvfs's row-level `DELETE` needs the connection still open, so it
+  //     must run BEFORE `close()`.
+  //   - the worker backend's `wipe` message is handled INSIDE the worker,
+  //     which closes the db itself and only then `unlink`s. `close()` on the
+  //     client terminates the worker, so a `wipe` sent after it is rejected
+  //     (`dead`) and the file is never unlinked (priv-05) — wipe first.
+  //   - main-thread OPFS-SAH's `unlink` is the opposite: the pool leaves the
+  //     result undefined while the file is still open, so it runs AFTER
+  //     `close()` releases the sync-access-handle lock.
+  const wipeStorage = async (): Promise<void> => {
+    if (!open) return;
     try {
       await open.wipe(userIdBeingWiped);
     } catch (err) {
-      logger.warn("[sqlite] storage wipe failed", err);
+      // Не ковтаємо мовчки: файл із даними користувача лишився на диску.
+      // `logger.error` у проді йде в Sentry (breadcrumb + captureException).
+      logger.error("[sqlite] storage wipe failed", err);
     }
-  }
+  };
+
+  if (open?.wipeBeforeClose) await wipeStorage();
 
   if (stale) {
     try {
@@ -240,13 +256,7 @@ export async function wipeSqliteDb(): Promise<void> {
     }
   }
 
-  if (open && open.vfs !== "kvvfs") {
-    try {
-      await open.wipe(userIdBeingWiped);
-    } catch (err) {
-      logger.warn("[sqlite] storage wipe failed", err);
-    }
-  }
+  if (open && !open.wipeBeforeClose) await wipeStorage();
 }
 
 /**
@@ -519,6 +529,9 @@ async function attemptWorkerBackedDb(
     // Файл на акаунт — видаляється цілком, як і в головнопотоковій
     // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
     wipe: () => conn.wipe(),
+    // Воркер у `wipe` сам закриває БД і робить `unlink`; після `close()`
+    // клієнт уже мертвий, тож стирати треба ДО нього (priv-05).
+    wipeBeforeClose: true,
   };
 }
 
@@ -631,7 +644,8 @@ interface OpenedDb {
   /** Name of the underlying store (OPFS filename / kvvfs slot / `:memory:`). */
   readonly dbName: string;
   /**
-   * Removes this DB's persistent storage. Call only after {@link close}.
+   * Removes this DB's persistent storage. Order relative to `close()` is
+   * given by {@link wipeBeforeClose}.
    *
    * @param userId Raw id of the user being wiped, or `null` when there is
    *   none to scope by. On OPFS this is unused (the file itself already
@@ -642,6 +656,14 @@ interface OpenedDb {
    *   rows) survive. See {@link wipeSqliteDb}.
    */
   wipe(userId: string | null): Promise<void>;
+  /**
+   * `true` — `wipe` викликається ДО `close()`: kvvfs (потрібне живе
+   * з'єднання для `DELETE`) і воркерний бекенд (воркер сам закриває БД
+   * перед `unlink`, а `close()` клієнта вбиває воркер). `false` — після
+   * `close()`: головнопотоковий OPFS-SAH (`unlink` відкритого файлу в пулі
+   * невизначений) і memory (нічого стирати).
+   */
+  readonly wipeBeforeClose: boolean;
 }
 
 /**
@@ -815,6 +837,7 @@ async function openDb(
           // always correct regardless of which userId is passed in.
           pool.unlink(dbName);
         },
+        wipeBeforeClose: false,
       };
     } catch (err) {
       logger.debug("[sqlite] OPFS-SAH Pool VFS unavailable, falling back", err);
@@ -863,6 +886,7 @@ async function openDb(
             await wipeKvvfsUserRows(conn, userId);
           }
         },
+        wipeBeforeClose: true,
       };
     } catch (err) {
       logger.warn("[sqlite] kvvfs (localStorage) unavailable", err);
@@ -886,6 +910,7 @@ async function openDb(
     vfs: "memory",
     dbName: ":memory:",
     wipe: async () => {},
+    wipeBeforeClose: false,
   };
 }
 

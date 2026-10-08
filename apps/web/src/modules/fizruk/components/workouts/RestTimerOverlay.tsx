@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { formatRestClock } from "@sergeant/fizruk-domain";
 import { messages } from "@shared/i18n/uk";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
+import { useLatestRef } from "@shared/hooks/useLatestRef";
 
 interface RestTimerState {
   remaining: number;
@@ -47,16 +48,17 @@ export function RestTimerOverlay({
   // Deliberately keyed on `isActive` (not on `restTimer` itself) so
   // ±15/±30 adjustments — which replace the `restTimer` object but keep
   // it non-null — do NOT re-fire the "started" announcement.
+  // `total` читаємо з ref (а не з замикання), щоб ±15/±30, які міняють
+  // `restTimer.total`, не потрапляли в deps і не перезапускали ефект.
+  const totalRef = useLatestRef(restTimer?.total ?? 0);
+  const { restingPrefix, secondsSuffix, finished } = rt;
   useEffect(() => {
-    if (!restTimer) return;
-    announce(`${rt.restingPrefix} ${restTimer.total} ${rt.secondsSuffix}`);
+    if (!isActive) return;
+    announce(`${restingPrefix} ${totalRef.current} ${secondsSuffix}`);
     return () => {
-      announce(rt.finished);
+      announce(finished);
     };
-    // Keyed on `isActive` only (see comment above) — not exhaustive on
-    // purpose.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive]);
+  }, [isActive, announce, restingPrefix, secondsSuffix, finished, totalRef]);
 
   useEffect(() => {
     if (!restTimer) {

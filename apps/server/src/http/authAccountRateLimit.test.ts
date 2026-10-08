@@ -31,7 +31,12 @@ vi.mock("./rateLimit.js", () => ({
 import { authAccountRateLimit } from "./authMiddleware.js";
 
 function run(url: string, body: unknown, method = "POST") {
-  const req = { originalUrl: url, method, body } as unknown as Request;
+  const req = {
+    originalUrl: url,
+    method,
+    body,
+    headers: {},
+  } as unknown as Request;
   const res = {} as Response;
   const next = vi.fn();
   authAccountRateLimit(req, res, next);

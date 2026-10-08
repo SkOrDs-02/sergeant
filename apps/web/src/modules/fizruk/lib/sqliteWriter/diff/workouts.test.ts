@@ -80,44 +80,34 @@ describe("diffWorkoutsOps", () => {
     ]);
   });
 
-  it("emits an upsert when only items' reference differs", () => {
+  it("emits no ops when items is a new object with the same content", () => {
     const prev = baseWorkout();
     const next = baseWorkout({ items: [...ITEMS] });
-    expect(diffWorkoutsOps([prev], [next])).toEqual([
-      { kind: "workout-upsert", workout: next },
-    ]);
+    expect(diffWorkoutsOps([prev], [next])).toEqual([]);
   });
 
-  it("emits an upsert when only groups' reference differs", () => {
+  it("emits no ops when groups is a new object with the same content", () => {
     const prev = baseWorkout();
     const next = baseWorkout({ groups: [...GROUPS] });
-    expect(diffWorkoutsOps([prev], [next])).toEqual([
-      { kind: "workout-upsert", workout: next },
-    ]);
+    expect(diffWorkoutsOps([prev], [next])).toEqual([]);
   });
 
-  it("emits an upsert when only warmup's reference differs", () => {
+  it("emits no ops when warmup is a new object with the same content", () => {
     const prev = baseWorkout();
     const next = baseWorkout({ warmup: [...WARMUP] });
-    expect(diffWorkoutsOps([prev], [next])).toEqual([
-      { kind: "workout-upsert", workout: next },
-    ]);
+    expect(diffWorkoutsOps([prev], [next])).toEqual([]);
   });
 
-  it("emits an upsert when only cooldown's reference differs", () => {
+  it("emits no ops when cooldown is a new object with the same content", () => {
     const prev = baseWorkout();
     const next = baseWorkout({ cooldown: [...COOLDOWN] });
-    expect(diffWorkoutsOps([prev], [next])).toEqual([
-      { kind: "workout-upsert", workout: next },
-    ]);
+    expect(diffWorkoutsOps([prev], [next])).toEqual([]);
   });
 
-  it("emits an upsert when only wellbeing's reference differs", () => {
+  it("emits no ops when wellbeing is a new object with the same content", () => {
     const prev = baseWorkout();
     const next = baseWorkout({ wellbeing: { ...WELLBEING } });
-    expect(diffWorkoutsOps([prev], [next])).toEqual([
-      { kind: "workout-upsert", workout: next },
-    ]);
+    expect(diffWorkoutsOps([prev], [next])).toEqual([]);
   });
 
   it("emits an upsert (and preserves group type/restSec) when only the group's restSec changes", () => {
@@ -136,5 +126,74 @@ describe("diffWorkoutsOps", () => {
       type: "circuit",
       restSec: 90,
     });
+  });
+
+  it("emits an upsert when only kcalBurned differs", () => {
+    const prev = baseWorkout({ kcalBurned: null });
+    const next = baseWorkout({ kcalBurned: 320 });
+    expect(diffWorkoutsOps([prev], [next])).toEqual([
+      { kind: "workout-upsert", workout: next },
+    ]);
+  });
+
+  it("treats a missing kcalBurned and null as the same value", () => {
+    const prev = baseWorkout();
+    const next = baseWorkout({ kcalBurned: null });
+    expect(diffWorkoutsOps([prev], [next])).toEqual([]);
+  });
+
+  it("emits an upsert when a set's weight changes inside a cloned items array", () => {
+    const withSets = (weightKg: number) =>
+      baseWorkout({
+        items: [{ ...ITEMS[0]!, sets: [{ weightKg, reps: 5, rpe: 8 }] }],
+      });
+    const prev = withSets(50);
+    const next = withSets(55);
+    expect(diffWorkoutsOps([prev], [next])).toEqual([
+      { kind: "workout-upsert", workout: next },
+    ]);
+  });
+
+  it("emits an upsert when an item is removed or the order of items changes", () => {
+    const second = { ...ITEMS[0]!, id: "i2", exerciseId: "squat" };
+    const prev = baseWorkout({ items: [ITEMS[0]!, second] });
+    expect(
+      diffWorkoutsOps([prev], [baseWorkout({ items: [ITEMS[0]!] })]),
+    ).toHaveLength(1);
+    expect(
+      diffWorkoutsOps([prev], [baseWorkout({ items: [second, ITEMS[0]!] })]),
+    ).toHaveLength(1);
+  });
+
+  it("emits an upsert when warmup or wellbeing flips between null and a value", () => {
+    expect(
+      diffWorkoutsOps([baseWorkout()], [baseWorkout({ warmup: null })]),
+    ).toHaveLength(1);
+    expect(
+      diffWorkoutsOps([baseWorkout()], [baseWorkout({ wellbeing: null })]),
+    ).toHaveLength(1);
+    expect(
+      diffWorkoutsOps([baseWorkout({ wellbeing: null })], [baseWorkout()]),
+    ).toHaveLength(1);
+  });
+
+  it("treats an undefined optional key as absent but a defined extra key as a change", () => {
+    const prev = baseWorkout({
+      items: [{ ...ITEMS[0]!, sets: [{ weightKg: 50, reps: 5 }] }],
+    });
+    const same = baseWorkout({
+      items: [
+        {
+          ...ITEMS[0]!,
+          // exactOptionalPropertyTypes забороняє літерал `rpe: undefined`.
+          sets: [{ weightKg: 50, reps: 5, rpe: undefined } as never],
+        },
+      ],
+    });
+    const changed = baseWorkout({
+      items: [{ ...ITEMS[0]!, sets: [{ weightKg: 50, reps: 5, rpe: 9 }] }],
+    });
+    expect(diffWorkoutsOps([prev], [same])).toEqual([]);
+    expect(diffWorkoutsOps([prev], [changed])).toHaveLength(1);
   });
 });

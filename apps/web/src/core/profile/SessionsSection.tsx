@@ -136,11 +136,7 @@ export function SessionsSection({ online }: { online: boolean }) {
     void load();
   }, [load]);
 
-  const handleRevoke = async (
-    id: string,
-    token: string,
-    isCurrent: boolean,
-  ) => {
+  const handleRevoke = async (id: string, isCurrent: boolean) => {
     setRevoking(id);
     try {
       if (isCurrent) {
@@ -171,21 +167,18 @@ export function SessionsSection({ online }: { online: boolean }) {
         }
       }
 
-      // Better Auth's `/revoke-session` endpoint validates the body with
-      // `z.object({ token: z.string() })` (see
-      // `node_modules/better-auth/dist/api/routes/session.mjs`). Passing
-      // `{ id }` lands as `body.token === undefined` and surfaces as a
-      // user-visible toast: `[body.token] Invalid input: expected
-      // string, received undefined`. We use the session's `token`
-      // (already returned by `listSessions`) as the identifier.
-      const res = await revokeSession({ token });
+      // Сервер більше не віддає сирий `token` у `listSessions` (аудит
+      // 2026-10-01, sec-05), тому відкликаємо за `id`: хук `hooks.before`
+      // у `apps/server/src/auth/sessionHardeningHooks.ts` сам знаходить
+      // token серед сесій поточного користувача.
+      const res = await revokeSession({ id });
       if (res.error) {
         toast.error(
           mapApiErrorToUserCopy(res.error, COPY.revokeFailed),
           undefined,
           {
             label: "Повторити",
-            onClick: () => void handleRevoke(id, token, isCurrent),
+            onClick: () => void handleRevoke(id, isCurrent),
           },
         );
         return;
@@ -200,12 +193,11 @@ export function SessionsSection({ online }: { online: boolean }) {
       // user to sign-in, mirroring `ProfilePage.handleLogout`.
       //
       // The unsynced-loss gate already ran above, BEFORE the revoke, so
-      // `logout()` here doesn't need `confirmUnsyncedLoss` again — its
-      // own internal flush re-check runs against an already-revoked
-      // session (fails open, per its documented contract for callers
-      // that omit the hook) and proceeds straight to the local teardown.
+      // `logout()` must not ask again: its own flush would hit an
+      // already-revoked session (every push 401s) and re-show the same
+      // dialog with a misleading "connect to the network" hint.
       if (isCurrent) {
-        await logout();
+        await logout({ skipUnsyncedLossPrompt: true });
         navigate(SIGN_IN_PATH, { replace: true });
         return;
       }
@@ -213,7 +205,7 @@ export function SessionsSection({ online }: { online: boolean }) {
     } catch {
       toast.error(COPY.revokeFailed, undefined, {
         label: "Повторити",
-        onClick: () => void handleRevoke(id, token, isCurrent),
+        onClick: () => void handleRevoke(id, isCurrent),
       });
     } finally {
       setRevoking(null);
@@ -294,7 +286,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                       size="xs"
                       disabled={revoking === s.id || currentLookupFailed}
                       loading={revoking === s.id}
-                      onClick={() => handleRevoke(s.id, s.token, isCurrent)}
+                      onClick={() => handleRevoke(s.id, isCurrent)}
                     >
                       {COPY.revoke}
                     </Button>

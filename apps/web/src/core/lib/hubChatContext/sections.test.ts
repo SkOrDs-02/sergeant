@@ -16,7 +16,13 @@ import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
 } from "../../../modules/nutrition/lib/sqliteReader";
-import { writeMemoryEntries } from "../../profile/memoryBank";
+import { CATEGORY_META, writeMemoryEntries } from "../../profile/memoryBank";
+import {
+  GOAL_MEMORY_CATEGORY,
+  HEALTH_MEMORY_CATEGORIES,
+  HEALTH_MEMORY_CATEGORY_LABELS,
+  isHealthProfileLabel,
+} from "@sergeant/shared";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
 
 const NOW = new Date("2026-06-15T12:00:00Z");
@@ -201,5 +207,55 @@ describe("appendAiSignalLines", () => {
   it("does not throw with empty data", () => {
     const lines: string[] = [];
     expect(() => appendAiSignalLines(lines)).not.toThrow();
+  });
+
+  // priv-06: сервер зрізає health-рядки за міткою з @sergeant/shared; мітка,
+  // яку пише клієнт, мусить із нею збігатись.
+  it("мітки health-категорій у CATEGORY_META збігаються з переліком у shared", () => {
+    for (const cat of HEALTH_MEMORY_CATEGORIES) {
+      expect(CATEGORY_META[cat]?.label).toBe(
+        HEALTH_MEMORY_CATEGORY_LABELS[cat],
+      );
+    }
+  });
+
+  it.each(HEALTH_MEMORY_CATEGORIES.map((c) => [c]))(
+    "категорія %s пишеться рядком із міткою, яку сервер визнає health",
+    (category) => {
+      writeMemoryEntries([
+        { id: "m1", fact: "СЕКРЕТНИЙ-ФАКТ", category, createdAt: 1 },
+      ] as never);
+      const lines: string[] = [];
+      appendAiSignalLines(lines);
+      const line = lines.find((l) => l.includes("СЕКРЕТНИЙ-ФАКТ"));
+      expect(line).toBeDefined();
+      const label = line!.trim().split(":")[0]!;
+      expect(isHealthProfileLabel(label)).toBe(true);
+    },
+  );
+
+  it("ціль про вагу йде окремим рядком із health-міткою, ціль без ваги лишається «Цілі»", () => {
+    writeMemoryEntries([
+      {
+        id: "g1",
+        fact: "схуднути до 70 кг",
+        category: GOAL_MEMORY_CATEGORY,
+        createdAt: 1,
+      },
+      {
+        id: "g2",
+        fact: "накопичити на відпустку",
+        category: GOAL_MEMORY_CATEGORY,
+        createdAt: 2,
+      },
+    ] as never);
+    const lines: string[] = [];
+    appendAiSignalLines(lines);
+    const weight = lines.find((l) => l.includes("70 кг"))!;
+    const plain = lines.find((l) => l.includes("відпустку"))!;
+    expect(isHealthProfileLabel(weight.trim().split(":")[0]!)).toBe(true);
+    expect(weight).not.toContain("відпустку");
+    expect(plain.trim().startsWith("Цілі:")).toBe(true);
+    expect(isHealthProfileLabel(plain.trim().split(":")[0]!)).toBe(false);
   });
 });

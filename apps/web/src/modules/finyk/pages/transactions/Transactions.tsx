@@ -616,6 +616,8 @@ export function Transactions({
             selectedSize={selection.selectedIds.size}
             onOpenCatPicker={() => selection.setBatchCatPicker(true)}
             onApplyHide={selection.applyBatchHide}
+            allSelectedHidden={selection.allSelectedHidden}
+            onApplyUnhide={selection.applyBatchUnhide}
             onApplyExclude={selection.applyBatchExclude}
             batchCatPicker={selection.batchCatPicker}
             onCloseCatPicker={() => selection.setBatchCatPicker(false)}

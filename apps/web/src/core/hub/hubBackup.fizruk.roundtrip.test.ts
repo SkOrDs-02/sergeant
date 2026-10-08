@@ -25,6 +25,18 @@ vi.mock("../syncEngine/enqueueOutboxUpsert.js", () => ({
   enqueueOutboxUpsert: vi.fn().mockResolvedValue({ id: 1, inserted: true }),
 }));
 
+// Готовність реальна лише для Фізрука (його контекст реєструє `beforeEach`);
+// решта модулів тут замокана, тож для них гейт готовності пропускає.
+vi.mock("./hubBackupReadiness", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./hubBackupReadiness")>();
+  return {
+    ...actual,
+    getHubRestoreModuleBlock: (
+      m: Parameters<typeof actual.getHubRestoreModuleBlock>[0],
+    ) => (m !== "fizruk" ? null : actual.getHubRestoreModuleBlock(m)),
+  };
+});
+
 vi.mock("../../modules/finyk/lib/finykBackup", () => ({
   normalizeFinykBackup: (v: unknown) => v,
   readFinykBackupFromStorage: () => ({}),
@@ -35,11 +47,13 @@ vi.mock("../../modules/finyk/lib/finykBackup", () => ({
 vi.mock("../../modules/routine/lib/routineStorage", () => ({
   buildRoutineBackupPayload: () => ({ routine: true }),
   applyRoutineBackupPayload: vi.fn(),
+  validateRoutineBackupPayload: () => {},
 }));
 
 vi.mock("../../modules/nutrition/domain/nutritionBackup", () => ({
   buildNutritionBackupPayload: () => ({ nutrition: true }),
   applyNutritionBackupPayload: vi.fn(),
+  validateNutritionBackupPayload: () => {},
 }));
 
 import {
@@ -57,7 +71,17 @@ import {
   getCachedFizrukSqliteState,
   refreshFizrukSqliteState,
 } from "../../modules/fizruk/lib/sqliteReader.js";
+import { DUAL_WRITE_JOURNAL_KEY } from "../durability/dualWriteJournal";
+import { enqueueOutboxUpsert } from "../syncEngine/enqueueOutboxUpsert.js";
 import { applyHubBackupPayload, buildHubBackupPayload } from "./hubBackup";
+
+/** Видалення, які імпорт поставив у outbox для сервера. */
+function enqueuedDeletes(): string[] {
+  return vi
+    .mocked(enqueueOutboxUpsert)
+    .mock.calls.filter(([, input]) => input.op === "delete")
+    .map(([, input]) => `${input.table}:${(input.row as { id?: string }).id}`);
+}
 
 const USER_ID = "u-fizruk-roundtrip";
 
@@ -320,7 +344,7 @@ describe("Hub backup — коло експорт → очистка → імпо
     expect(sets.map((r) => r.id)).toEqual(["wi-1:s0", "wi-1:s1"]);
   });
 
-  it("замінює дані пристрою, а не зливає їх із бекапом", async () => {
+  it("режим «замінити»: прибирає те, чого немає у файлі, і ставить delete в outbox", async () => {
     await seedFizruk();
     const payload = buildHubBackupPayload();
 
@@ -348,15 +372,96 @@ describe("Hub backup — коло експорт → очистка → імпо
     await refreshFizrukSqliteState(handle.client, USER_ID);
     expect(getCachedFizrukSqliteState().workouts).toHaveLength(2);
 
-    await applyHubBackupPayload(JSON.parse(JSON.stringify(payload)));
+    vi.mocked(enqueueOutboxUpsert).mockClear();
+    await applyHubBackupPayload(JSON.parse(JSON.stringify(payload)), {
+      mode: "replace",
+    });
     await refreshFizrukSqliteState(handle.client, USER_ID);
 
     expect(getCachedFizrukSqliteState().workouts.map((w) => w.id)).toEqual([
       WORKOUT.id,
     ]);
+    expect(enqueuedDeletes()).toContain("fizruk_workouts:w-later");
+  });
+
+  // Аудит 2026-10-01, data-06: дефолтний режим не має видаляти нічого, чого
+  // немає у файлі, і не слати tombstone-и на сервер.
+  it("режим «додати» (дефолт): пізніше тренування лишається, жодного delete в outbox", async () => {
+    await seedFizruk();
+    const payload = buildHubBackupPayload();
+
+    const later: FizrukDualWriteState = {
+      ...SEED,
+      workouts: [
+        ...SEED.workouts,
+        {
+          id: "w-later",
+          startedAt: "2026-09-20T07:00:00.000Z",
+          endedAt: null,
+          note: "",
+          kcalBurned: null,
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          wellbeing: null,
+          items: [],
+        },
+      ],
+    };
+    await dualWriteFizrukState(SEED, later);
+    await refreshFizrukSqliteState(handle.client, USER_ID);
+
+    vi.mocked(enqueueOutboxUpsert).mockClear();
+    await applyHubBackupPayload(JSON.parse(JSON.stringify(payload)));
+    await refreshFizrukSqliteState(handle.client, USER_ID);
+
+    expect(
+      getCachedFizrukSqliteState()
+        .workouts.map((w) => w.id)
+        .sort(),
+    ).toEqual(["w-later", WORKOUT.id].sort());
+    expect(enqueuedDeletes()).toEqual([]);
+  });
+
+  it("режим «додати»: рядок, який уже є, не перезаписується файлом", async () => {
+    await seedFizruk();
+    const payload = buildHubBackupPayload();
+    const edited: FizrukDualWriteState = {
+      ...SEED,
+      measurements: [{ ...MEASUREMENT, weightKg: 79 }],
+    };
+    await dualWriteFizrukState(SEED, edited);
+    await refreshFizrukSqliteState(handle.client, USER_ID);
+
+    await applyHubBackupPayload(JSON.parse(JSON.stringify(payload)));
+    await refreshFizrukSqliteState(handle.client, USER_ID);
+
+    expect(getCachedFizrukSqliteState().measurements[0]?.weightKg).toBe(79);
+  });
+
+  // Аудит 2026-10-01, data-07: restore ходив повз журнал, тож збій запису не
+  // лишав сліду, а UI робив reload як при успіху. Тепер збій SQL кидає з
+  // `applyHubBackupPayload`, а запис лишається в журналі для реплею.
+  it("збій SQL: імпорт кидає помилку, а запис лишається в журналі для реплею", async () => {
+    await seedFizruk();
+    const payload = buildHubBackupPayload();
+    await wipeDevice();
+    localStorage.clear();
+    vi.spyOn(handle.client, "run").mockRejectedValue(new Error("SQLITE_BUSY"));
+
+    await expect(
+      applyHubBackupPayload(JSON.parse(JSON.stringify(payload))),
+    ).rejects.toThrow(/Частина даних Фізрука не записалась/);
+
+    const journal = JSON.parse(
+      localStorage.getItem(DUAL_WRITE_JOURNAL_KEY) ?? "[]",
+    ) as Array<{ module: string }>;
+    expect(journal.map((e) => e.module)).toEqual(["fizruk"]);
   });
 
   it("читає файли, експортовані до переїзду на SQLite (ті самі ключі, ті самі рядки)", async () => {
+    // Теплий (порожній) кеш: без нього імпорт відмовляє, див. data-07.
+    await refreshFizrukSqliteState(handle.client, USER_ID);
     await applyHubBackupPayload({
       kind: "hub-backup",
       schemaVersion: 1,

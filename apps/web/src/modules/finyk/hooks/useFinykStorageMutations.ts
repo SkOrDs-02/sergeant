@@ -1,6 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { hubKeys } from "@shared/lib/api/queryKeys";
+import { generatePrefixedId } from "@sergeant/shared";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import {
+  limitBudgetCategoryIds,
+  normalizeLimitBudget,
+} from "@sergeant/finyk-domain/domain/budget";
 import { stripCategoryEmoji } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import {
   trackEvent,
@@ -70,7 +76,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
   ) => {
     const isIncome = expense.kind === "income";
     const entry: ManualExpense = {
-      id: expense?.id != null ? String(expense.id) : Date.now().toString(),
+      id: expense?.id != null ? String(expense.id) : generatePrefixedId("mx"),
       // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock fallback for a missing entry date, not a Kyiv day-boundary computation.
       date: expense.date || new Date().toISOString(),
       description: expense.description || "",
@@ -466,8 +472,20 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       }
       return out;
     });
+    // Комбінований ліміт читається через `limitBudgetCategoryIds` (пара
+    // `categoryId` + `categoryIds`), а не лише за першою категорією:
+    // фільтр за `b.categoryId` знищував ліміт разом з іншими категоріями,
+    // якщо видалена стояла першою, і лишав мертвий id, якщо не першою.
+    // Ліміт зникає лише тоді, коли після зняття id категорій не лишилось.
     setBudgets((bs) =>
-      bs.filter((b) => b.type !== "limit" || b.categoryId !== id),
+      bs.flatMap((b): Budget[] => {
+        if (b.type !== "limit") return [b];
+        const all = limitBudgetCategoryIds(b);
+        if (!all.includes(id)) return [b];
+        const ids = all.filter((c) => c !== id);
+        if (ids.length === 0) return [];
+        return [{ ...normalizeLimitBudget({ ...b, categoryIds: ids }) }];
+      }),
     );
   };
 

@@ -158,6 +158,13 @@ export interface MealDeleteOp {
 export interface PantryUpsertOp {
   readonly kind: "pantry-upsert";
   readonly pantry: NutritionPantrySnapshot;
+  /**
+   * data-10: застосувати лише upsert наявних позицій, БЕЗ неявного soft-delete
+   * тих, яких у знімку немає. Ставиться при реплеї запису журналу, що був
+   * застосований у memory-режимі: той знімок знятий з порожньої/негідрованої
+   * бази і не має права видаляти живі позиції на справжній.
+   */
+  readonly keepMissing?: boolean;
 }
 
 export interface PantryDeleteOp {
@@ -385,6 +392,19 @@ function diffWaterLogOps(
 // Stage 11 — shopping list diff
 // -----------------------------------------------------------------------
 
+function isEmptyShoppingListJson(sl: { dataJson: string }): boolean {
+  try {
+    const parsed = JSON.parse(sl.dataJson) as { categories?: unknown };
+    return (
+      !parsed ||
+      !Array.isArray(parsed.categories) ||
+      parsed.categories.length === 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 function diffShoppingListOps(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
@@ -392,6 +412,11 @@ function diffShoppingListOps(
 ): void {
   if (!shoppingListChanged(prev.shoppingList, next.shoppingList)) return;
   if (!next.shoppingList) return;
+  // data-03: «рядка немає → порожній дефолт» не є зміною. Інакше холодний
+  // маунт (новий пристрій) емітить shopping-list-set зі свіжим client_ts,
+  // і whole-row LWW затирає реальний список на сервері.
+  if (prev.shoppingList === null && isEmptyShoppingListJson(next.shoppingList))
+    return;
   ops.push({ kind: "shopping-list-set", shoppingList: next.shoppingList });
 }
 
