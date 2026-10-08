@@ -146,6 +146,33 @@ export async function goto(page: Page, route: string): Promise<void> {
         };
       })
       .catch((e: unknown) => ({ error: String(e) }));
+    // Що бачить сам воркер: якщо CacheStorage або цикл подій SW завис,
+    // evaluate не повернеться — тому гонка з тайм-аутом.
+    const swProbe = await Promise.all(
+      page
+        .context()
+        .serviceWorkers()
+        .map((w) =>
+          Promise.race([
+            w.evaluate(async () => {
+              const t0 = Date.now();
+              const keys = await caches.keys();
+              const tKeys = Date.now() - t0;
+              const hit = await caches.match("/boot-watchdog.js", {
+                ignoreSearch: true,
+              });
+              return {
+                keys,
+                tKeys,
+                tMatch: Date.now() - t0,
+                hit: Boolean(hit),
+              };
+            }),
+            new Promise((r) => setTimeout(() => r("sw-timeout-3s"), 3000)),
+          ]).catch((e: unknown) => `sw-error ${String(e)}`),
+        ),
+    );
+    console.log(`[boot-white-screen-sw] ${route} ${JSON.stringify(swProbe)}`);
     console.log(
       `[boot-white-screen] ${route} ${JSON.stringify(snapshot)} failed=${failed.length} pending=${JSON.stringify(
         [...pending].map(
