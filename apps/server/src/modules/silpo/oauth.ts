@@ -5,6 +5,7 @@ import { query as defaultQuery } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs } from "../../lib/timing.js";
+import { SilpoOAuthHttpError } from "./oauthErrors.js";
 
 /**
  * OAuth 2.1 + PKCE (S256) + Dynamic Client Registration client for Silpo
@@ -278,6 +279,20 @@ const TokenResponseSchema = z
   .passthrough();
 export type SilpoTokenResponse = z.infer<typeof TokenResponseSchema>;
 
+/** Поле `error` з JSON-тіла помилки token-ендпоінта (RFC 6749 § 5.2) або `null`. */
+function parseOAuthErrorCode(bodyText: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(bodyText);
+    if (parsed && typeof parsed === "object") {
+      const code = (parsed as { error?: unknown }).error;
+      if (typeof code === "string" && code.length > 0) return code;
+    }
+  } catch {
+    /* тіло не JSON — код невідомий */
+  }
+  return null;
+}
+
 async function postTokenRequest(
   params: Record<string, string>,
   outcomeLabel: string,
@@ -305,7 +320,7 @@ async function postTokenRequest(
         // only the upstream error body, truncated (Hard Rule #21).
         upstreamBody: bodyText.slice(0, 200),
       });
-      throw new Error(`Silpo OAuth token request failed: HTTP ${res.status}`);
+      throw new SilpoOAuthHttpError(res.status, parseOAuthErrorCode(bodyText));
     }
     const json: unknown = await res.json();
     recordExternalHttp("silpo", outcomeLabel, ms);

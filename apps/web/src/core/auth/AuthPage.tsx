@@ -116,7 +116,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
           >
             <div className="text-center">
               <h2 className="text-style-headline text-text text-balance">
-                {mode === "login" ? "З поверненням" : "Створити акаунт"}
+                {mode === "login" ? "Вхід в акаунт" : "Створити акаунт"}
               </h2>
               <p className="text-style-label text-subtle mt-2">
                 {mode === "login"

@@ -522,3 +522,71 @@ describe("LogArchivePoller", () => {
     });
   });
 });
+
+/**
+ * rel-19 (аудит 2026-10-01): без стартового тіку архів логів вперше
+ * спрацьовував через годину після старту процесу, а контейнер рестартує на
+ * кожен деплой.
+ */
+describe("LogArchivePoller - стартовий тік (rel-19)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function makePoller(startDelayMs?: number): LogArchivePoller {
+    return new LogArchivePoller({
+      pool: makePool(emptyTables),
+      enabled: true,
+      retentionDays: 30,
+      bucket: "test-bucket",
+      intervalMs: 3_600_000,
+      startDelayMs,
+    });
+  }
+
+  it("після start() і startDelayMs (< intervalMs) runOnce викликано рівно один раз", async () => {
+    vi.useFakeTimers();
+    const poller = makePoller(45_000);
+    const runOnce = vi
+      .spyOn(poller, "runOnce")
+      .mockResolvedValue({ archived: {}, failed: {} });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(44_999);
+    expect(runOnce).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(runOnce).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(runOnce).toHaveBeenCalledTimes(1);
+
+    await poller.stop();
+  });
+
+  it("stop() до стартового тіку гасить його", async () => {
+    vi.useFakeTimers();
+    const poller = makePoller(45_000);
+    const runOnce = vi
+      .spyOn(poller, "runOnce")
+      .mockResolvedValue({ archived: {}, failed: {} });
+
+    poller.start();
+    await poller.stop();
+    await vi.advanceTimersByTimeAsync(2 * 3_600_000);
+    expect(runOnce).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("startDelayMs: 0 вимикає стартовий тік", async () => {
+    vi.useFakeTimers();
+    const poller = makePoller(0);
+    const runOnce = vi
+      .spyOn(poller, "runOnce")
+      .mockResolvedValue({ archived: {}, failed: {} });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(3_599_999);
+    expect(runOnce).not.toHaveBeenCalled();
+
+    await poller.stop();
+  });
+});

@@ -474,14 +474,15 @@ async function softDeleteWorkout(
     clientTs,
     workoutId,
     userId,
+    clientTs,
   ]);
   await client.run(
     `UPDATE fizruk_workout_sets
         SET deleted_at = ?, updated_at = ?
       WHERE workout_item_id IN (
         SELECT id FROM fizruk_workout_items WHERE workout_id = ?
-      ) AND user_id = ? AND deleted_at IS NULL`,
-    [clientTs, clientTs, workoutId, userId],
+      ) AND user_id = ? AND deleted_at IS NULL AND updated_at < ?`,
+    [clientTs, clientTs, workoutId, userId, clientTs],
   );
 
   // Enqueue deletes for the workout and all its cascaded children.

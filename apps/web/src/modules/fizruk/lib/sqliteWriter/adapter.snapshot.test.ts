@@ -42,10 +42,24 @@
  * `(sql, params)` entries, reordered — confirmed via a sorted diff against
  * the pre-fix snapshot (no entry added, removed, or altered).
  *
+ * Зміщення 2026-10-08 — `ensureOutboxSchema` у `enqueueOutboxUpsert`
+ * (живий прогін `data-durability`: запис у чергу на півмігрованій партиції
+ * падав на `no such column: user_id`). Схему тут замокано (вона не SQL
+ * адаптера), але динамічний імпорт і `await` перед записом у чергу зсувають
+ * interleaving fire-and-forget викликів. Sorted-diff проти попереднього
+ * знімка: 32 → 32 записи, мультимножини рівні, змінився лише порядок.
+ *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+// Доведення схеми `sync_op_outbox` (`ensureOutboxSchema`, 2026-10-08) — не SQL
+// адаптера: на записуючому клієнті воно додало б у знімок міграції черги.
+// Гейт фіксує write-шлях адаптера, тож схему тут вважаємо вже готовою.
+vi.mock("../../../../core/syncEngine/outboxSchema.js", () => ({
+  ensureOutboxSchema: async () => {},
+}));
 import { applyFizrukDualWriteOps } from "./adapter";
 import type { FizrukDualWriteOp } from "./diff/index.js";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";

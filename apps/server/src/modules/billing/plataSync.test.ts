@@ -268,6 +268,85 @@ describe("runFastTick / runSlowTick — query shape", () => {
     const select = calls.find((c) => c.sql.includes("JOIN subscriptions"));
     expect(select?.sql).toContain("'active', 'past_due'");
   });
+
+  it("slow tick бере лише тих, кого не звіряли понад 24 год (модель «кому вже час», rel-19)", async () => {
+    const { pool, calls } = mockPool([
+      { match: "JOIN subscriptions", response: { rows: [] } },
+    ]);
+    await runSlowTick(pool);
+    const select = calls.find((c) => c.sql.includes("JOIN subscriptions"));
+    expect(select?.sql).toMatch(
+      /ps\.updated_at\s*<\s*NOW\(\)\s*-\s*INTERVAL '24 hours'/,
+    );
+  });
+});
+
+/**
+ * rel-19: годинний slow tick вирішує «кому вже час» за
+ * `plata_subscription.updated_at`, тож кожна УСПІШНА звірка мусить його
+ * оновити - незалежно від гілки. Інакше невідомий статус / past_due
+ * перезвірялись би щогодини, а без оновлення нічого не виходить із вибірки.
+ */
+describe("reconcileSubscription - штамп звірки для slow tick (rel-19)", () => {
+  // Саме окремий штамп: UPDATE у applyActive (confirmed_at + updated_at) сюди
+  // не потрапляє, тож тест не проходить "випадково" на гілці active.
+  const stamp = (calls: { sql: string; params: unknown[] | undefined }[]) =>
+    calls.filter(
+      (c) =>
+        c.sql.includes("UPDATE plata_subscription") &&
+        c.sql.includes("SET updated_at = NOW()"),
+    );
+
+  async function reconcileWith(body: unknown) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(body))),
+    );
+    const { pool, calls } = mockPool([]);
+    await reconcileSubscription(pool, {
+      user_id: "usr_stamp",
+      subscription_id: "s2_stamp",
+    });
+    return calls;
+  }
+
+  it("гілка active штампує updated_at", async () => {
+    const calls = await reconcileWith({ status: "active" });
+    expect(stamp(calls)).toHaveLength(1);
+  });
+
+  it("гілка past_due (failureDescription) штампує updated_at", async () => {
+    const calls = await reconcileWith({
+      status: "active",
+      walletData: { failureDescription: "Недостатньо коштів" },
+    });
+    expect(stamp(calls).map((c) => c.params)).toEqual([["usr_stamp"]]);
+  });
+
+  it("невідомий статус штампує updated_at, але subscriptions не чіпає", async () => {
+    const calls = await reconcileWith({ status: "weird_new_value" });
+    expect(stamp(calls)).toHaveLength(1);
+    expect(
+      calls.some(
+        (c) =>
+          c.sql.includes("INSERT INTO subscriptions") ||
+          c.sql.includes("UPDATE subscriptions"),
+      ),
+    ).toBe(false);
+  });
+
+  it("неуспішний fetch НЕ штампує: рядок буде перезвірено наступним тіком", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("boom", { status: 500 })),
+    );
+    const { pool, calls } = mockPool([]);
+    await reconcileSubscription(pool, {
+      user_id: "usr_stamp",
+      subscription_id: "s2_stamp",
+    });
+    expect(stamp(calls)).toHaveLength(0);
+  });
 });
 
 describe("PlataSyncPoller", () => {
@@ -319,6 +398,80 @@ describe("PlataSyncPoller", () => {
     resolveFetch?.();
     await runPromise;
     await stopPromise;
+  });
+});
+
+/**
+ * rel-19: 24-годинний `setInterval` скидався кожним рестартом (деплоїв кілька
+ * на день), тож `runSlowTick` не виконувався ніколи. Тепер slow tick годинний
+ * + є одноразовий стартовий тік із затримкою.
+ */
+describe("PlataSyncPoller - slow tick переживає рестарти (rel-19)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const slowSelects = (calls: { sql: string }[]) =>
+    calls.filter(
+      (c) =>
+        c.sql.includes("JOIN subscriptions") &&
+        c.sql.includes("ps.updated_at <"),
+    );
+
+  it("slow tick виконується після ~1 год роботи процесу (дефолтні інтервали)", async () => {
+    vi.useFakeTimers();
+    const { pool, calls } = mockPool([]);
+    // startDelayMs: 0 - ізолюємо саме годинний інтервал від стартового тіку.
+    const poller = new PlataSyncPoller({
+      pool,
+      enabled: true,
+      startDelayMs: 0,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(59 * 60_000);
+    expect(slowSelects(calls)).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(slowSelects(calls)).toHaveLength(1);
+
+    await poller.stop();
+  });
+
+  it("стартовий тік (< fastTickMs) виконує slow tick одразу після затримки", async () => {
+    vi.useFakeTimers();
+    const { pool, calls } = mockPool([]);
+    const poller = new PlataSyncPoller({
+      pool,
+      enabled: true,
+      startDelayMs: 45_000,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(44_999);
+    expect(slowSelects(calls)).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(slowSelects(calls)).toHaveLength(1);
+    // Fast tick (5 хв) ще не настав - не рахуємо його, лише slow.
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(slowSelects(calls)).toHaveLength(1);
+
+    await poller.stop();
+  });
+
+  it("stop() до стартового тіку не викликає тік", async () => {
+    vi.useFakeTimers();
+    const { pool, calls } = mockPool([]);
+    const poller = new PlataSyncPoller({
+      pool,
+      enabled: true,
+      startDelayMs: 45_000,
+    });
+
+    poller.start();
+    await poller.stop();
+    await vi.advanceTimersByTimeAsync(2 * 3_600_000);
+    expect(calls).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

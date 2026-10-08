@@ -129,40 +129,33 @@ describe("WelcomeScreen — /welcome scroll-layer audit-guard", () => {
     expect(pageWrapper.className).not.toMatch(/\bpage-enter\b/);
   });
 
-  it("PeekBackdrop is fixed inset-0 (decoupled from the scroll layer)", () => {
+  it("no decorative backdrop: floating blobs and the blurred faux-hub stay gone", () => {
+    // Анти-слоп раунд 4 (2026-10-08, A2/Q1): `PeekBackdrop` з трьома
+    // розмитими плямами (`blur-2xl animate-float-slow`) і розмитим
+    // псевдо-хабом знято. Пінимо відсутність, бо саме цей декор пережив три
+    // живі проходи непоміченим.
     const { container } = render(
       <WelcomeScreen onDone={() => {}} onOpenAuth={() => {}} />,
     );
-    // The backdrop is the page-wrapper's first child with
-    // `aria-hidden="true"` (decorative shapes + bento blur).
-    const pageWrapper = container.firstElementChild as HTMLElement;
-    const backdrop = pageWrapper.querySelector('[aria-hidden="true"]');
-    expect(backdrop).not.toBeNull();
-    expect(backdrop?.className).toMatch(/\bfixed\b/);
-    expect(backdrop?.className).toMatch(/\binset-0\b/);
-    // Pre-fix it was `absolute inset-0` — pin against resurrection so
-    // floating shapes don't re-couple to the scroll layer and drag
-    // along when modules expand.
-    expect(backdrop?.className).not.toMatch(/\babsolute\b/);
+    expect(container.querySelector('[role="presentation"]')).toBeNull();
+    expect(container.querySelector(".blur-2xl")).toBeNull();
+    expect(container.querySelector('[class*="animate-float"]')).toBeNull();
   });
 
-  it("inner flex layer uses min-h-full so short content centres but tall content scrolls", () => {
+  it("inner flex layer uses min-h-full and centres on every width", () => {
     const { container } = render(
       <WelcomeScreen onDone={() => {}} onOpenAuth={() => {}} />,
     );
     const pageWrapper = container.firstElementChild as HTMLElement;
-    // Inner flex layer is the page-wrapper's second child (sibling
-    // after the fixed backdrop). Selecting via class avoids depending
-    // on PeekBackdrop's internal DOM.
     const innerLayer = pageWrapper.querySelector(
       ":scope > .relative.min-h-full",
     );
     expect(innerLayer).not.toBeNull();
     expect((innerLayer as HTMLElement).className).toMatch(/\bflex\b/);
-    expect((innerLayer as HTMLElement).className).toMatch(/\bitems-end\b/);
-    expect((innerLayer as HTMLElement).className).toMatch(
-      /\bsm:items-center\b/,
-    );
+    // До 2026-10-08 на телефоні картка стояла внизу (`items-end`), бо верх
+    // займав декор; тепер верх порожній і картка по центру всюди.
+    expect((innerLayer as HTMLElement).className).toMatch(/\bitems-center\b/);
+    expect((innerLayer as HTMLElement).className).not.toMatch(/\bitems-end\b/);
   });
 });
 
@@ -180,24 +173,16 @@ describe("WelcomeScreen — handlePicksComplete side-effects", () => {
     __resetAnalyticsConsentForTests();
   });
 
-  it("превʼю дашборда не показує жодного вигаданого числа", () => {
-    // Знахідка ради скептиків § G: картки малювали `−320 ₴`, `5 трен.`,
-    // `7 днів`, `420 ккал`, а підпис «Це приклад» мав `hidden sm:flex` —
-    // тобто на телефоні, основній платформі, новачок бачив чужі числа
-    // без жодної ознаки, що вони несправжні.
+  it("перший екран не показує жодного вигаданого числа", () => {
+    // Знахідка ради скептиків § G: превʼю дашборда малювало `−320 ₴`,
+    // `5 трен.`, `7 днів`, `420 ккал` без ознаки, що числа несправжні.
+    // Превʼю знято цілком (анти-слоп раунд 4, A2), але інваріант лишається
+    // на весь екран: до першого запису тут немає чого показувати цифрами.
     const { container } = render(
       <WelcomeScreen onDone={() => {}} onOpenAuth={() => {}} />,
     );
-
-    const backdrop = container.querySelector('[role="presentation"]');
-    expect(backdrop).not.toBeNull();
-    const text = backdrop!.textContent ?? "";
-
-    // Валюта, калорії, тренування, дні — усе, що читається як показник.
+    const text = container.textContent ?? "";
     expect(text).not.toMatch(/\d+\s*(₴|ккал|трен|дн)/i);
-    // Узагалі жодної цифри: форму дашборда тримають скелетон-риски.
-    expect(text).not.toMatch(/\d/);
-    // А отже й дисклеймер більше не потрібен — нічого не вдає за дані.
     expect(text).not.toContain("Це приклад");
   });
 

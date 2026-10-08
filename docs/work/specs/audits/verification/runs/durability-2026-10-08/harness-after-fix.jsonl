@@ -1,0 +1,97 @@
+{"at":"2026-10-08T17:07:16.577Z","run":"shdpa","phase":"meta","check":"run=shdpa db=sergeant_verify email=verify_shdpa@example.com","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:17.411Z","run":"shdpa","phase":"P1-anon-reload","check":"анонімність: /api/me","verdict":"pass","detail":"HTTP 401"}
+{"at":"2026-10-08T17:07:22.221Z","run":"shdpa","phase":"P1-anon-reload","check":"finyk: створити витрату","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:25.102Z","run":"shdpa","phase":"P1-anon-reload","check":"nutrition: створити продукт у коморі","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:28.439Z","run":"shdpa","phase":"P1-anon-reload","check":"routine: створити звичку","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:31.360Z","run":"shdpa","phase":"P1-anon-reload","check":"fizruk: запис ваги","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:31.372Z","run":"shdpa","phase":"P1-anon-reload","check":"SW activated перед reload","verdict":"pass","detail":"controlling"}
+{"at":"2026-10-08T17:07:32.591Z","run":"shdpa","phase":"P1-anon-reload","check":"finyk після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:33.398Z","run":"shdpa","phase":"P1-anon-reload","check":"nutrition після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:34.330Z","run":"shdpa","phase":"P1-anon-reload","check":"routine після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:35.161Z","run":"shdpa","phase":"P1-anon-reload","check":"fizruk після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:35.654Z","run":"shdpa","phase":"P1-anon-reload","check":"profile: сторінка доступна аноніму?","verdict":"pass","detail":"http://127.0.0.1:4173/sign-in"}
+{"at":"2026-10-08T17:07:40.083Z","run":"shdpa","phase":"P2-anon-to-account","check":"тост «Дані перенесено»","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:40.099Z","run":"shdpa","phase":"P2-anon-to-account","check":"userId=DD7QjLvwf2Vv4FFUeN9B9eIvw6g4iGQr","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:40.159Z","run":"shdpa","phase":"P2-anon-to-account","check":"server: finyk F1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:07:40.216Z","run":"shdpa","phase":"P2-anon-to-account","check":"server: nutrition N1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:07:40.271Z","run":"shdpa","phase":"P2-anon-to-account","check":"server: routine R1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:07:40.323Z","run":"shdpa","phase":"P2-anon-to-account","check":"server: fizruk Z1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:07:44.142Z","run":"shdpa","phase":"P2-anon-to-account","check":"profile: додати факт у памʼять","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:44.213Z","run":"shdpa","phase":"P2-anon-to-account","check":"server: profile M1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:07:47.657Z","run":"shdpa","phase":"P2-anon-to-account","check":"KV без дзеркала: обрати вкладку «Статистика»","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:49.186Z","run":"shdpa","phase":"P2-anon-to-account","check":"UI після reload: finyk","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:51.121Z","run":"shdpa","phase":"P2-anon-to-account","check":"UI після reload: routine","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:07:52.418Z","run":"shdpa","phase":"P2-anon-to-account","check":"UI після reload: memory","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:01.664Z","run":"shdpa","phase":"P2-anon-to-account","check":"UI після reload: KV-вкладка Рутини на місці","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:10.250Z","run":"shdpa","phase":"P3-device-B-pull","check":"B: finyk F1","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:11.591Z","run":"shdpa","phase":"P3-device-B-pull","check":"B: nutrition N1","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:12.940Z","run":"shdpa","phase":"P3-device-B-pull","check":"B: routine R1","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:14.161Z","run":"shdpa","phase":"P3-device-B-pull","check":"B: fizruk 81.2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:15.530Z","run":"shdpa","phase":"P3-device-B-pull","check":"B: memory M1","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:19.039Z","run":"shdpa","phase":"P3-device-B-pull","check":"B: KV-вкладка Рутини лишилась локальною на A","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:23.985Z","run":"shdpa","phase":"P3-device-B-pull","check":"B: KV-вкладка Рутини переживає reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:28.299Z","run":"shdpa","phase":"P4-offline","check":"offline: finyk F2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:32.235Z","run":"shdpa","phase":"P4-offline","check":"offline: nutrition N2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:36.155Z","run":"shdpa","phase":"P4-offline","check":"offline: routine R2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:39.575Z","run":"shdpa","phase":"P4-offline","check":"offline: fizruk Z2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:43.296Z","run":"shdpa","phase":"P4-offline","check":"offline: memory M2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:43.314Z","run":"shdpa","phase":"P4-offline","check":"offline: індикатор черги видно","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:43.373Z","run":"shdpa","phase":"P4-offline","check":"server НЕ має F2 поки офлайн","verdict":"pass","detail":"server rows=0"}
+{"at":"2026-10-08T17:08:43.741Z","run":"shdpa","phase":"P4-offline","check":"offline reload: застосунок відкривається","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:45.088Z","run":"shdpa","phase":"P4-offline","check":"offline reload: finyk F2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:46.457Z","run":"shdpa","phase":"P4-offline","check":"offline reload: nutrition N2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:47.785Z","run":"shdpa","phase":"P4-offline","check":"offline reload: routine R2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:49.041Z","run":"shdpa","phase":"P4-offline","check":"offline reload: fizruk 82.3","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:50.356Z","run":"shdpa","phase":"P4-offline","check":"offline reload: memory M2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:51.256Z","run":"shdpa","phase":"P4-offline","check":"online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:51.311Z","run":"shdpa","phase":"P4-offline","check":"server: finyk F2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:08:51.370Z","run":"shdpa","phase":"P4-offline","check":"server: nutrition N2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:08:51.421Z","run":"shdpa","phase":"P4-offline","check":"server: routine R2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:08:51.476Z","run":"shdpa","phase":"P4-offline","check":"server: fizruk Z2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:08:51.533Z","run":"shdpa","phase":"P4-offline","check":"server: memory M2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:08:51.587Z","run":"shdpa","phase":"P4-offline","check":"server: F2 без дубля","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:53.729Z","run":"shdpa","phase":"P4-offline","check":"B після reload: finyk F2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:55.104Z","run":"shdpa","phase":"P4-offline","check":"B після reload: nutrition N2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:56.515Z","run":"shdpa","phase":"P4-offline","check":"B після reload: routine R2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:57.870Z","run":"shdpa","phase":"P4-offline","check":"B після reload: fizruk 82.3","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:08:59.154Z","run":"shdpa","phase":"P4-offline","check":"B після reload: memory M2","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:03.016Z","run":"shdpa","phase":"P5-edit-delete-propagation","check":"B: перейменувати F1","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:06.647Z","run":"shdpa","phase":"P5-edit-delete-propagation","check":"B: видалити R1","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:06.789Z","run":"shdpa","phase":"P5-edit-delete-propagation","check":"B: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:06.850Z","run":"shdpa","phase":"P5-edit-delete-propagation","check":"server: F1-ed є","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:09:06.907Z","run":"shdpa","phase":"P5-edit-delete-propagation","check":"server: R1 soft-deleted","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:09.285Z","run":"shdpa","phase":"P5-edit-delete-propagation","check":"A: бачить F1-ed","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:09.834Z","run":"shdpa","phase":"P5-edit-delete-propagation","check":"A: R1 зник","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:14.413Z","run":"shdpa","phase":"P6-lww-conflict","check":"A offline: R2 → R2-A","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:19.949Z","run":"shdpa","phase":"P6-lww-conflict","check":"B offline (пізніше): R2 → R2-B","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:20.826Z","run":"shdpa","phase":"P6-lww-conflict","check":"A online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:21.696Z","run":"shdpa","phase":"P6-lww-conflict","check":"B online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:21.804Z","run":"shdpa","phase":"P6-lww-conflict","check":"server: переміг пізніший запис (R2-B)","verdict":"pass","detail":"Vshdpa R2-B"}
+{"at":"2026-10-08T17:09:24.684Z","run":"shdpa","phase":"P6-lww-conflict","check":"A сходиться до R2-B","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:27.619Z","run":"shdpa","phase":"P6-lww-conflict","check":"B сходиться до R2-B","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:28.151Z","run":"shdpa","phase":"P6-lww-conflict","check":"A: R2-A більше не видно","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:29.487Z","run":"shdpa","phase":"P7-two-tabs","check":"tab2: екран «уже відкрито в іншій вкладці»","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:30.004Z","run":"shdpa","phase":"P7-two-tabs","check":"tab2: «Працювати тут» переносить роботу","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:30.030Z","run":"shdpa","phase":"P7-two-tabs","check":"tab1: тепер заблокована","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:35.817Z","run":"shdpa","phase":"P7-two-tabs","check":"tab2: створити витрату F4","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:41.319Z","run":"shdpa","phase":"P7-two-tabs","check":"tab2: створити звичку R4","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:44.422Z","run":"shdpa","phase":"P7-two-tabs","check":"tab1 розблокувалась, коли до неї повернулись","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:46.495Z","run":"shdpa","phase":"P7-two-tabs","check":"tab1 після reload: F4","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:47.875Z","run":"shdpa","phase":"P7-two-tabs","check":"tab1 після reload: R4","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:09:47.930Z","run":"shdpa","phase":"P7-two-tabs","check":"server: F4","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:09:47.980Z","run":"shdpa","phase":"P7-two-tabs","check":"server: R4","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:10:19.238Z","run":"shdpa","phase":"P8-logout-pending","check":"offline: F3","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:20.915Z","run":"shdpa","phase":"P8-logout-pending","check":"показано «Є незбережені записи»","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:21.078Z","run":"shdpa","phase":"P8-logout-pending","check":"«Залишитись» лишає сесію","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:22.020Z","run":"shdpa","phase":"P8-logout-pending","check":"online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:22.073Z","run":"shdpa","phase":"P8-logout-pending","check":"server: F3","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:10:24.094Z","run":"shdpa","phase":"P9-logout-isolation","check":"перехід на /sign-in","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:28.629Z","run":"shdpa","phase":"P9-logout-isolation","check":"анонім після виходу: F2 не видно","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:28.652Z","run":"shdpa","phase":"P9-logout-isolation","check":"анонім після виходу: F1 (колишній анонімний запис) не видно","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:32.174Z","run":"shdpa","phase":"P9-logout-isolation","check":"анонім після виходу: звички не видно","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:37.309Z","run":"shdpa","phase":"P9-logout-isolation","check":"userC=rBYdImjeWKpos9aqqvy58phtDlNbRCda","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:45.376Z","run":"shdpa","phase":"P9-logout-isolation","check":"C: сервер не має жодного рядка користувача A","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:49.929Z","run":"shdpa","phase":"P9-logout-isolation","check":"C: UI Фініка без чужих записів","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:51.267Z","run":"shdpa","phase":"P9-logout-isolation","check":"C: памʼять профілю порожня","verdict":"pass","detail":""}
+{"at":"2026-10-08T17:10:55.432Z","run":"shdpa","phase":"P9-logout-isolation","check":"C: перший запис після реєстрації доїжджає на сервер","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T17:10:55.484Z","run":"shdpa","phase":"P9-logout-isolation","check":"A: дані на сервері цілі після виходу","verdict":"pass","detail":""}

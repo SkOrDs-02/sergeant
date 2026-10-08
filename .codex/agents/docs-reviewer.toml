@@ -30,7 +30,7 @@ Generated docs carry an `<!-- AUTO-GENERATED … -->` marker near the top (e.g. 
 
 ## Hard Rule #26 — PR ledger (the only BLOCKER)
 
-The whitelist is exactly four globs (canonical source: [`rules/26-pr-ledger-update-on-merge.md § Scope`](../../docs/governance/governance/rules/26-pr-ledger-update-on-merge.md), enforced by `scripts/ci/update-pr-backlinks.mjs`):
+The whitelist is exactly four globs (canonical source: [`rules/26-pr-ledger-update-on-merge.md § Scope`](../../docs/governance/governance/rules/26-pr-ledger-update-on-merge.md)) — no automation since 2026-09-30: `update-pr-backlinks.mjs` reads only the Bitbucket API and `pr-backlinks.yml` is off (`PR_LEDGER_ON_GITHUB`), so the ledger entry is added by hand in the PR:
 
 - `docs/governance/adr/*.md` (excl. `TEMPLATE.md`, `README.md`)
 - `docs/work/specs/initiatives/*.md` (excl. `archive/`, `follow-ups.md`, `README.md`)

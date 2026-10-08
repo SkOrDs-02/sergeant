@@ -185,7 +185,7 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
   {
     name: "plan_meals_for_day",
     description:
-      "Попросити ШІ спланувати всі прийоми їжі на день під калорійну ціль. Відповідає текстом-планом, використай log_meal для запису кожного.",
+      "Спланувати всі прийоми їжі на день під калорійну ціль. Відповідає текстом-планом, використай log_meal для запису кожного.",
     input_schema: {
       type: "object",
       properties: {

@@ -19,6 +19,7 @@ import {
   type SilpoConnectionRow,
 } from "./tokenStore.js";
 import type { McpResult } from "./mcpClient.js";
+import { SilpoOAuthHttpError } from "./oauthErrors.js";
 
 const KEY_V1 = "1".repeat(64);
 const KEY_V2 = "2".repeat(64);
@@ -249,8 +250,25 @@ describe("callWithFreshAccessToken", () => {
   function okResult<T>(data: T): McpResult<T> {
     return { ok: true, data };
   }
+  /** Справжній HTTP 401 з `mcpRpcCall` — несе `status`. */
   function authRequired<T>(): McpResult<T> {
-    return { ok: false, error: { kind: "auth_required", message: "401" } };
+    return {
+      ok: false,
+      error: { kind: "auth_required", message: "401", status: 401 },
+    };
+  }
+  /**
+   * `auth_required`, виведений ЕВРИСТИКОЮ з тексту відмови тули
+   * (`looksLikeAuthRefusal`): без `status`.
+   */
+  function textAuthRefusal<T>(): McpResult<T> {
+    return {
+      ok: false,
+      error: {
+        kind: "auth_required",
+        message: "Сесію кошика не знайдено",
+      },
+    };
   }
   function rateLimited<T>(): McpResult<T> {
     return { ok: false, error: { kind: "rate_limited", message: "429" } };
@@ -407,7 +425,7 @@ describe("callWithFreshAccessToken", () => {
     expect(db.getRow()!.status).toBe("reauth_required");
   });
 
-  it("marks reauth_required when the refresh HTTP call itself throws", async () => {
+  it("текстова відмова тули двічі поспіль → tool_error, підключення НЕ розлогінюється (rel-23)", async () => {
     const db = makeFakeDb();
     await persistTokens(
       "user-1",
@@ -415,7 +433,35 @@ describe("callWithFreshAccessToken", () => {
       { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
       db.query,
     );
-    mocks.refreshTokens.mockRejectedValue(new Error("invalid_grant"));
+    mocks.refreshTokens.mockResolvedValue({ access_token: "at-fresh" });
+    const fn = vi
+      .fn()
+      .mockResolvedValueOnce(textAuthRefusal())
+      .mockResolvedValueOnce(textAuthRefusal());
+
+    const result = await callWithFreshAccessToken("user-1", fn, {
+      ring: ringV1Only(),
+      query: db.query,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "tool_error", message: "Сесію кошика не знайдено" },
+    });
+    expect(db.getRow()!.status).toBe("connected");
+  });
+
+  it("refresh відхилено з 400 invalid_grant → reauth_required", async () => {
+    const db = makeFakeDb();
+    await persistTokens(
+      "user-1",
+      ringV1Only(),
+      { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    mocks.refreshTokens.mockRejectedValue(
+      new SilpoOAuthHttpError(400, "invalid_grant"),
+    );
     const fn = vi.fn().mockResolvedValueOnce(authRequired());
 
     const result = await callWithFreshAccessToken("user-1", fn, {
@@ -427,6 +473,129 @@ describe("callWithFreshAccessToken", () => {
     if (!result.ok) expect(result.error.kind).toBe("reauth_required");
     expect(fn).toHaveBeenCalledTimes(1);
     expect(db.getRow()!.status).toBe("reauth_required");
+  });
+
+  it("refresh відхилено з 401 без розбірливого тіла → reauth_required", async () => {
+    const db = makeFakeDb();
+    await persistTokens(
+      "user-1",
+      ringV1Only(),
+      { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    mocks.refreshTokens.mockRejectedValue(new SilpoOAuthHttpError(401));
+    const fn = vi.fn().mockResolvedValueOnce(authRequired());
+
+    const result = await callWithFreshAccessToken("user-1", fn, {
+      ring: ringV1Only(),
+      query: db.query,
+    });
+
+    if (!result.ok) expect(result.error.kind).toBe("reauth_required");
+    expect(db.getRow()!.status).toBe("reauth_required");
+  });
+
+  it.each([
+    ["503 від token-ендпоінта", new SilpoOAuthHttpError(503)],
+    ["429 від token-ендпоінта", new SilpoOAuthHttpError(429)],
+    [
+      "400 з іншим кодом (temporarily_unavailable)",
+      new SilpoOAuthHttpError(400, "temporarily_unavailable"),
+    ],
+    [
+      "таймаут/abort",
+      Object.assign(new Error("aborted"), { name: "AbortError" }),
+    ],
+    [
+      "збій discovery",
+      new Error("Silpo OAuth metadata discovery failed: HTTP 502"),
+    ],
+  ])(
+    "транзієнтний збій refresh (%s) → upstream_unavailable, статус лишається connected (rel-23)",
+    async (_label, failure) => {
+      const db = makeFakeDb();
+      await persistTokens(
+        "user-1",
+        ringV1Only(),
+        { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+        db.query,
+      );
+      mocks.refreshTokens.mockRejectedValue(failure);
+      const fn = vi.fn().mockResolvedValueOnce(authRequired());
+
+      const result = await callWithFreshAccessToken("user-1", fn, {
+        ring: ringV1Only(),
+        query: db.query,
+      });
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.kind).toBe("upstream_unavailable");
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(db.getRow()!.status).toBe("connected");
+      // Токени не чіпали: наступний виклик спробує refresh знову.
+      const reread = await readAndDecrypt("user-1", ringV1Only(), db.query);
+      expect(reread).toMatchObject({
+        kind: "connected",
+        connection: { refreshToken: "rt-1" },
+      });
+    },
+  );
+
+  it("обмін пройшов, а запис нових токенів упав → reauth_required (старий refresh спалено)", async () => {
+    const db = makeFakeDb();
+    await persistTokens(
+      "user-1",
+      ringV1Only(),
+      { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    mocks.refreshTokens.mockResolvedValue({
+      access_token: "at-fresh",
+      refresh_token: "rt-2",
+    });
+    // Перший UPDATE/INSERT із новими токенами падає; markReauthRequired — ні.
+    const failingQuery = (async (text: string, ...rest: unknown[]) => {
+      if (text.includes("INSERT INTO silpo_connection")) {
+        throw new Error("db down");
+      }
+      return (db.query as (...a: unknown[]) => unknown)(text, ...rest);
+    }) as unknown as QueryFn;
+    const fn = vi.fn().mockResolvedValueOnce(authRequired());
+
+    const result = await callWithFreshAccessToken("user-1", fn, {
+      ring: ringV1Only(),
+      query: failingQuery,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe("reauth_required");
+    expect(db.getRow()!.status).toBe("reauth_required");
+  });
+
+  it("не робить refresh, якщо дедлайн викликача уже спливув", async () => {
+    const db = makeFakeDb();
+    await persistTokens(
+      "user-1",
+      ringV1Only(),
+      { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
+      db.query,
+    );
+    const deadline = new AbortController();
+    const fn = vi.fn().mockImplementationOnce(async () => {
+      deadline.abort();
+      return authRequired();
+    });
+
+    const result = await callWithFreshAccessToken("user-1", fn, {
+      ring: ringV1Only(),
+      query: db.query,
+      signal: deadline.signal,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe("upstream_unavailable");
+    expect(mocks.refreshTokens).not.toHaveBeenCalled();
+    expect(db.getRow()!.status).toBe("connected");
   });
 
   it("coalesces concurrent refreshes into a single token exchange", async () => {
@@ -522,7 +691,9 @@ describe("callWithFreshAccessToken", () => {
       { accessToken: "at-stale", refreshToken: "rt-1", expiresAtMs: null },
       db.query,
     );
-    mocks.refreshTokens.mockRejectedValue(new Error("invalid_grant"));
+    mocks.refreshTokens.mockRejectedValue(
+      new SilpoOAuthHttpError(400, "invalid_grant"),
+    );
     const fn = vi.fn().mockResolvedValueOnce(authRequired());
 
     const result = await callWithFreshAccessToken("user-1", fn, {

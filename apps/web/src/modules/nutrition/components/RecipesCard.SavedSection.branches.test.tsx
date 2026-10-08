@@ -21,6 +21,12 @@ describe("SavedSection", () => {
         setOpenSavedId={vi.fn()}
         portionById={{}}
         setPortionById={vi.fn()}
+        logModeById={{}}
+        setLogModeById={vi.fn()}
+        gramsById={{}}
+        setGramsById={vi.fn()}
+        onNewDish={vi.fn()}
+        onEdit={vi.fn()}
         onAddToLog={vi.fn()}
         onDeleteClick={vi.fn()}
         fmtMacro={(v) => String(v)}
@@ -44,6 +50,12 @@ describe("SavedSection", () => {
         setOpenSavedId={vi.fn()}
         portionById={{}}
         setPortionById={vi.fn()}
+        logModeById={{}}
+        setLogModeById={vi.fn()}
+        gramsById={{}}
+        setGramsById={vi.fn()}
+        onNewDish={vi.fn()}
+        onEdit={vi.fn()}
         onAddToLog={vi.fn()}
         onDeleteClick={vi.fn()}
         fmtMacro={(v) => String(v)}
@@ -75,6 +87,12 @@ describe("SavedSection", () => {
         setOpenSavedId={vi.fn()}
         portionById={{ s1: "1" }}
         setPortionById={vi.fn()}
+        logModeById={{}}
+        setLogModeById={vi.fn()}
+        gramsById={{}}
+        setGramsById={vi.fn()}
+        onNewDish={vi.fn()}
+        onEdit={vi.fn()}
         onAddToLog={vi.fn()}
         onDeleteClick={onDeleteClick}
         fmtMacro={(v) => String(v)}
@@ -114,6 +132,12 @@ describe("SavedSection — порції: макроси на одну порці
         setOpenSavedId={vi.fn()}
         portionById={portionById}
         setPortionById={vi.fn()}
+        logModeById={{}}
+        setLogModeById={vi.fn()}
+        gramsById={{}}
+        setGramsById={vi.fn()}
+        onNewDish={vi.fn()}
+        onEdit={vi.fn()}
         onAddToLog={vi.fn()}
         onDeleteClick={vi.fn()}
         fmtMacro={(v) => String(v)}
@@ -195,6 +219,12 @@ describe("SavedSection — порції: макроси на одну порці
         setOpenSavedId={vi.fn()}
         portionById={{ s1: "2" }}
         setPortionById={vi.fn()}
+        logModeById={{}}
+        setLogModeById={vi.fn()}
+        gramsById={{}}
+        setGramsById={vi.fn()}
+        onNewDish={vi.fn()}
+        onEdit={vi.fn()}
         onAddToLog={vi.fn()}
         onDeleteClick={vi.fn()}
         fmtMacro={(v) => String(v)}

@@ -128,6 +128,101 @@ describe("statementPreviewHandler — mono autoprofile", () => {
   });
 });
 
+describe("statementPreviewHandler — mono: валютна картка в заголовку (data-32)", () => {
+  const monoCsv = (amountHeader: string, dataRows: string[]) =>
+    [
+      `Дата i час операції,Деталі операції,МСС,${amountHeader},Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції`,
+      ...dataRows,
+    ].join("\n");
+
+  const run = async (csv_text: string) => {
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text }), res);
+    expect(res.statusCode).toBe(200);
+    return res.body as {
+      profile: string;
+      needsMapping: boolean;
+      rows: Array<{ amountKopiykas: number }>;
+      skipped: Array<{ line: number; reason: string }>;
+    };
+  };
+
+  it("«(USD)»: Amazon -25.00 не імпортується як 25 грн — рядок йде в not_uah", async () => {
+    const body = await run(
+      monoCsv("Сума в валюті картки (USD)", [
+        "16.08.2026 12:00:00,Amazon,5999,-25.00,-25.00,USD,1,0.00,0.00,100.00",
+      ]),
+    );
+    expect(body.profile).toBe("mono");
+    expect(body.needsMapping).toBe(false);
+    expect(body.rows).toEqual([]);
+    expect(body.skipped).toEqual([{ line: 2, reason: "not_uah" }]);
+  });
+
+  it("«(EUR)»: Booking -120.50 теж not_uah, кожен непорожній рядок", async () => {
+    const body = await run(
+      monoCsv("Сума в валюті картки (EUR)", [
+        "16.08.2026 12:00:00,Booking,7011,-120.50,-120.50,EUR,1,0.00,0.00,900.00",
+        "17.08.2026 09:00:00,Зарплата,,300.00,300.00,EUR,1,0.00,0.00,1200.00",
+      ]),
+    );
+    expect(body.rows).toEqual([]);
+    expect(body.skipped).toEqual([
+      { line: 2, reason: "not_uah" },
+      { line: 3, reason: "not_uah" },
+    ]);
+  });
+
+  it("«(USD)» у XLSX-сітці (типізовані клітинки) теж not_uah", async () => {
+    const xlsx = makeXlsx({
+      sharedStrings: [
+        "Дата i час операції",
+        "Деталі операції",
+        "Сума в валюті картки (USD)",
+        "Amazon",
+      ],
+      rows: [
+        [
+          { kind: "shared", index: 0 },
+          { kind: "shared", index: 1 },
+          { kind: "shared", index: 2 },
+        ],
+        [
+          { kind: "date", serial: 46250 },
+          { kind: "shared", index: 3 },
+          { kind: "number", value: -25 },
+        ],
+      ],
+    });
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({ file_base64: xlsx.toString("base64") }),
+      res,
+    );
+    const body = res.body as {
+      profile: string;
+      rows: unknown[];
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.profile).toBe("mono");
+    expect(body.rows).toEqual([]);
+    expect(body.skipped).toEqual([{ line: 2, reason: "not_uah" }]);
+  });
+
+  it.each(["Сума в валюті картки (UAH)", "Сума в валюті картки"])(
+    "«%s»: рядки імпортуються як і раніше",
+    async (amountHeader) => {
+      const body = await run(
+        monoCsv(amountHeader, [
+          "16.08.2026 12:00:00,Сільпо,5411,-25.00,-25.00,UAH,1,0.00,0.00,100.00",
+        ]),
+      );
+      expect(body.rows.map((r) => r.amountKopiykas)).toEqual([2500]);
+      expect(body.skipped).toEqual([]);
+    },
+  );
+});
+
 describe("statementPreviewHandler — privat24 autoprofile", () => {
   it("детектить privat24, comma-decimal суми, not_uah skip для чужої валюти рахунку", async () => {
     const res = makeRes();

@@ -37,7 +37,7 @@ export interface FlagDefinition {
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     id: "app-lock-enabled",
-    label: "Блокування додатку (PIN)",
+    label: "Блокування застосунку (PIN)",
     // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
     // «Конфіденційність» у Профіль → «Безпека» → «Блокування застосунку»
     // 2026-09-04 (`ProfilePage.tsx`); опис досі називав старе місце.

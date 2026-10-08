@@ -470,7 +470,7 @@ export const paths: ZodOpenApiPathsObject = {
   // ────────────────────── /api/ai-memory/* ──────────────────────
   "/api/ai-memory": {
     delete: {
-      summary: "Очистити серверну памʼять ШІ поточного користувача.",
+      summary: "Очистити серверну памʼять AI поточного користувача.",
       tags: ["ai-memory"],
       security: cookieOrBearer,
       responses: {

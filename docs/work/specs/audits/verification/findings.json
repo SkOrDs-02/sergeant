@@ -8,14 +8,23 @@
       "severity": "major",
       "source": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/handoff.md",
       "sourceAnchor": "SYNC-fresh-device-pull",
-      "status": "open",
+      "status": "verified",
       "history": [
         {
           "at": "2026-09-05",
           "event": "observed",
           "note": "Двічі відтворено на окремих disposable users після підтвердженого v2 push; pull у context B повернув empty."
+        },
+        {
+          "at": "2026-10-08",
+          "event": "retested",
+          "note": "P3 data-durability (чистий context B без storageState, вхід тим самим логіном) бачить витрату, памʼять і решту модулів; див. прогін durability-2026-10-08."
         }
-      ]
+      ],
+      "verification": {
+        "runId": "durability-2026-10-08",
+        "attemptId": "d-fresh-device"
+      }
     },
     {
       "id": "PILOT-20260905-AI-1",
@@ -3818,6 +3827,75 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        }
+      ]
+    },
+    {
+      "id": "DURABILITY-20261008-LOGOUT-1",
+      "legacyId": "offline-logout-silent-wipe",
+      "title": "Офлайн-вихід мовчки стирає незбережені записи",
+      "severity": "critical",
+      "source": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-10-08",
+          "event": "observed",
+          "note": "P8: запис офлайн, «Вийти» — діалогу «Є незбережені записи» немає, черга стерта, запис не доїхав на сервер. Корінь: офлайн drain кидає `TypeError: Failed to fetch` з getSession() крізь flushNow(), catch у flushPendingSyncOpsBeforeLogout давав `unknown: true`. Фікс ac4420f5 у PR; live pass P8 на гілці."
+        }
+      ]
+    },
+    {
+      "id": "DURABILITY-20261008-SIGNUP-1",
+      "legacyId": "signup-first-write-not-enqueued",
+      "title": "Після реєстрації без анонімних даних запис не їде на сервер до reload",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-10-08",
+          "event": "observed",
+          "note": "Свіжа реєстрація → витрата: 60+ с жодного /sync/push, 0 у sync_op_log; після reload доїжджає (реплей журналу dual-write). Корінь: запис у sync_op_outbox посеред ROUTINE_CLIENT_MIGRATIONS на свіжій партиції (`no such column: user_id`, 006), помилку ковтав адаптер. Фікс 5a9667c8 у PR; live pass (P9 C1, запис на сервері за ~3 с)."
+        }
+      ]
+    },
+    {
+      "id": "DURABILITY-20261008-BOOT-1",
+      "legacyId": "boot-white-screen-b1",
+      "title": "Інтермітентний білий екран на буті (#root порожній, reload рятує)",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-10-08",
+          "event": "observed",
+          "note": "3 з 6 прогонів харнесу: /profile (P3, P2) і /sign-in (P2) — #root порожній, reload рятує; один раз обвалив усі фази каскадом. Симптом B1 з аудиту 2026-08-05; корінь не встановлено."
+        },
+        {
+          "at": "2026-10-08",
+          "event": "observed",
+          "note": "Відтворено на свіжому main (хмарний стенд: Postgres 16 + pgvector 0.8, API, VERCEL=1-білд), data-durability P1+P2 у циклі: ~2-3 з 10 прогонів, лише /profile і /sign-in після зміни користувача (анонім → акаунт). Знімок харнесу (#1460-#1462): readyState=\"loading\" через 15 с, сторінку контролює активний SW, жоден підресурс нового документа не завершився — висять index-*.js, index-*.css, /boot-watchdog.js і всі eager-чанки (старт ~400 мс). SW живий: caches.keys() у ньому за 1-64 мс, прекеш на місці, /boot-watchdog.js у ньому є. До порту застосунку 1 ESTABLISHED + TIME_WAIT, тобто запити не йдуть у мережу і пул зʼєднань не вичерпано. Висновок: підресурси застрягають між сторінкою і fetch-обробником SW. boot-watchdog.js безсилий: він сам серед завислих і чекає load. Без бекенду (45 завантажень) і в гонці з активацією SW (48) не відтворюється. Наступний крок: логування fetch-подій у SW або рішення власника про inline-сторож із CSP-хешем."
+        }
+      ]
+    },
+    {
+      "id": "DURABILITY-20261008-OFFLINE-1",
+      "legacyId": "offline-first-nav-module-crash",
+      "title": "Перша офлайн-навігація свіжої сесії: «Помилка в модулі» (Failed to fetch dynamically imported module)",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-10-08",
+          "event": "observed",
+          "note": "Одноразово: офлайн goto /finyk/transactions → FinykApp, RoutineBootCluster, sqliteWriter: ERR_ABORTED / Failed to fetch dynamically imported module, хоча чанки є в прекеші SW (controller активний). Повтори не падали. Не підтверджено, можливо гонка навігації з SW."
         }
       ]
     }

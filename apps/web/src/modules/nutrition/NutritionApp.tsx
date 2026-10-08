@@ -2,16 +2,11 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
-import { matchFoodName, todayISODate } from "@sergeant/nutrition-domain";
+import { todayISODate } from "@sergeant/nutrition-domain";
 import { mealsByTypeForDay } from "./lib/nutritionStats";
 import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
-import {
-  SkeletonMealCard,
-  SkeletonText,
-  Skeleton,
-} from "@shared/components/ui/Skeleton";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
@@ -36,12 +31,8 @@ import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { useQueryClient } from "@tanstack/react-query";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
-import {
-  useNutritionPantries,
-  type PantryItemsAddedEntry,
-} from "./hooks/useNutritionPantries";
+import { useNutritionPantries } from "./hooks/useNutritionPantries";
 import { useSilpoPantryAutoImport } from "./hooks/useSilpoPantryAutoImport";
-import { buildPantryAddedToastMessage } from "./lib/pantryAddedToast";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
@@ -69,6 +60,8 @@ import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { AccessDenial } from "@shared/lib/api/accessDenial";
 import { AccessDenialNotice } from "../../core/access/AccessDenialNotice";
+import { DayPlanLoadingSkeleton } from "./components/DayPlanLoadingSkeleton";
+import { usePantryAddedToast } from "./hooks/usePantryAddedToast";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
 
 interface NutritionAppProps {
@@ -146,55 +139,8 @@ export default function NutritionApp({
     setMenuSubTab,
   });
 
-  // Рішення власника 2026-09-11 — «куди лягло» тост живе тут (page-рівень,
-  // де вже є `useToast()`), не всередині `useNutritionPantries`. Колбек
-  // мусить читати найсвіжіші `pantry.pantries`/`pantry.pantryItems`, але
-  // сам хук ще не повернув значення в момент, коли колбек передається йому
-  // ПАРАМЕТРОМ — класична курка-яйце. `pantryRef` розриває цикл: колбек
-  // читає його в МОМЕНТ виклику (після кліку користувача), а не в момент
-  // визначення, тож посилання на ще неіснуючий `pantry` тут не потрібне.
-  const pantryRef = useRef<ReturnType<typeof useNutritionPantries> | null>(
-    null,
-  );
-  const onPantryItemsAdded = useCallback(
-    (items: PantryItemsAddedEntry[]) => {
-      const p = pantryRef.current;
-      if (!p) return;
-      const msg = buildPantryAddedToastMessage(items, p.pantries);
-      if (!msg) return;
-
-      // Дія «Змінити» — лише для одиночного додавання: список одразу
-      // втратив би сенс «однієї» адреси для редагування.
-      const single = items.length === 1 ? items[0] : undefined;
-      toast.success(
-        msg,
-        undefined,
-        single
-          ? {
-              label: "Змінити",
-              onClick: () => {
-                // Адресу рахуємо ЛІНИВО, на кліку — не в момент показу
-                // toast. `setPantries` усередині хука асинхронний, тож
-                // одразу після виклику `pantryRef.current` ще вказує на
-                // стан ДО злиття, і щойно доданої позиції в ньому просто
-                // немає. До моменту фактичного кліку користувача re-render
-                // уже закомітився.
-                const cur = pantryRef.current;
-                if (!cur) return;
-                const key = matchFoodName(single.name);
-                const idx = cur.pantryItems.findIndex(
-                  (x) =>
-                    x.pantryId === single.pantryId &&
-                    matchFoodName(x.name) === key,
-                );
-                if (idx >= 0) cur.editItemAt(idx);
-              },
-            }
-          : undefined,
-      );
-    },
-    [toast],
-  );
+  // «Куди лягло» тост — див. `usePantryAddedToast` (рішення власника 2026-09-11).
+  const { pantryRef, onPantryItemsAdded } = usePantryAddedToast(toast);
 
   const pantry = useNutritionPantries({
     setBusy,
@@ -205,7 +151,7 @@ export default function NutritionApp({
   });
   useEffect(() => {
     pantryRef.current = pantry;
-  }, [pantry]);
+  }, [pantry, pantryRef]);
   // Автоімпорт чеків Сільпо в комору (спека
   // docs/work/specs/silpo-pantry-auto-import.md) - ТА САМА інстанція
   // `pantry` вище, не окремий `useNutritionPantries` (ризик «два
@@ -449,12 +395,25 @@ export default function NutritionApp({
   );
 
   const wrappedSaveMeal = useCallback(
-    async (meal: Meal, photoFile?: File | null) => {
+    async (meal: Meal, photoFile?: File | null, newDate?: string) => {
       const isEdit = !!editingMeal?.id;
       if (isEdit && editingMeal && editingMeal.date) {
-        log.handleEditMeal(editingMeal.date, meal);
+        const fromDate = editingMeal.date;
+        if (newDate && newDate !== fromDate) {
+          // Спершу правки в самому записі, потім переїзд на інший день.
+          log.handleEditMeal(fromDate, meal);
+          log.handleMoveMeal(fromDate, newDate, meal);
+          const [y, m, d] = newDate.split("-");
+          toast.success(`Страву перенесено на ${d}.${m}.${y}.`, undefined, {
+            label: "Скасувати",
+            kind: "undo",
+            onClick: () => log.handleMoveMeal(newDate, fromDate, meal),
+          });
+        } else {
+          log.handleEditMeal(fromDate, meal);
+          toast.success("Страву оновлено.");
+        }
         setEditingMeal(null);
-        toast.success("Страву оновлено.");
       } else {
         // День — той, під яким запис ЛЯГ (повертає `handleAddMeal`), а не
         // `log.selectedDate` цього рендеру: він міг відстати від годинника.
@@ -522,22 +481,6 @@ export default function NutritionApp({
     data: dayPlanBusy ? undefined : dayPlan,
     isLoading: dayPlanBusy,
   };
-
-  const dayPlanLoadingSkeleton = (
-    <div className="space-y-3 motion-safe:animate-in motion-safe:fade-in">
-      <div className="flex items-center justify-between px-1 pb-1">
-        <SkeletonText shimmer className="w-32" />
-        <Skeleton shimmer className="w-20 h-6 rounded-full" />
-      </div>
-      {[0, 1, 2].map((i) => (
-        <SkeletonMealCard
-          key={i}
-          shimmer
-          style={{ animationDelay: `${i * 60}ms` }}
-        />
-      ))}
-    </div>
-  );
 
   return (
     // Sergeant v2 redesign (2026-05, PR-6) — Nutrition shell wraps content
@@ -668,7 +611,7 @@ export default function NutritionApp({
                     dayPlanBusy={dayPlanBusy}
                     dayPlanQuery={dayPlanQuery}
                     dayPlanSavedAt={dayPlanSavedAt}
-                    dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
+                    dayPlanLoadingSkeleton={<DayPlanLoadingSkeleton />}
                     fetchDayPlan={fetchDayPlan}
                     addMealFromPlan={(meal) => {
                       // Тост «Скасувати» живе тут, а не в дата-хуку — та сама

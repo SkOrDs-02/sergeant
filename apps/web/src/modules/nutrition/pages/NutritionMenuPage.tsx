@@ -2,6 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { useState } from "react";
 import type { Dispatch, SetStateAction, ReactNode } from "react";
 import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
 import {
@@ -11,6 +12,7 @@ import {
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
+import { MyFoodsSheet } from "../components/MyFoodsSheet";
 import { DailyPlanCard } from "../components/DailyPlanCard";
 import type { PlanMeal } from "../components/DailyPlanMealRow";
 import { RecipesCard } from "../components/RecipesCard";
@@ -86,6 +88,7 @@ export function NutritionMenuPage({
   wrappedSaveMeal,
   selectedDate,
 }: NutritionMenuPageProps) {
+  const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   return (
     <SectionErrorBoundary key="page-menu" title="Не вдалось показати «Меню»">
       <>
@@ -98,6 +101,19 @@ export function NutritionMenuPage({
             { id: "plan", label: "План на день" },
             { id: "recipes", label: "Рецепти" },
           ]}
+        />
+        <div className="mb-2 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMyFoodsOpen(true)}
+          >
+            {messages.nutrition.myFoods.open}
+          </Button>
+        </div>
+        <MyFoodsSheet
+          open={myFoodsOpen}
+          onClose={() => setMyFoodsOpen(false)}
         />
         {menuSubTab === "plan" ? (
           <DataState

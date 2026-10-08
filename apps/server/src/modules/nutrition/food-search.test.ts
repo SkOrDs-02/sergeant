@@ -74,6 +74,11 @@ import {
   normalizeUSDAProduct,
 } from "./food-search.js";
 import handler from "./food-search.js";
+import { externalHttpRequestsTotal } from "../../obs/metrics.js";
+import express from "express";
+import request from "supertest";
+import { errorHandler } from "../../http/errorHandler.js";
+import { cachingMiddleware } from "../../http/cacheMiddleware.js";
 import { FoodSearchSuccessSchema } from "@sergeant/shared/schemas";
 
 interface TestRes {
@@ -118,6 +123,17 @@ function jsonResponse(ok: boolean, body: unknown, status = ok ? 200 : 500) {
   } as unknown as Response;
 }
 
+/** `external_http_requests_total` як `{ "upstream/outcome": n }`. */
+async function upstreamCounts(): Promise<Record<string, number>> {
+  const { values } = await externalHttpRequestsTotal.get();
+  return Object.fromEntries(
+    values.map((v) => [
+      `${v.labels["upstream"]}/${v.labels["outcome"]}`,
+      v.value,
+    ]),
+  );
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
@@ -138,6 +154,7 @@ beforeEach(() => {
   silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
   silpoMocks.searchSilpoProducts.mockReset().mockResolvedValue([]);
   silpoMocks.envOverrides.SILPO_ENABLED = true;
+  externalHttpRequestsTotal.reset();
 });
 
 afterEach(() => {
@@ -487,7 +504,7 @@ describe("food-search handler", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("tolerates upstream fetch failures and returns an empty list", async () => {
+  it("усі апстріми впали і власних результатів немає → 503 no-store, а не 200 {products:[]} (rel-21)", async () => {
     const fetchMock = vi.mocked(global.fetch);
     fetchMock
       .mockRejectedValueOnce(new Error("OFF unavailable"))
@@ -495,10 +512,108 @@ describe("food-search handler", () => {
       .mockRejectedValueOnce(new Error("USDA unavailable"));
 
     const res = mockRes();
+    await expect(
+      handler(asReq({ q: "груша", limit: "3" }), res),
+    ).rejects.toMatchObject({
+      status: 503,
+      code: "UPSTREAM_UNAVAILABLE",
+      message: expect.stringMatching(/Бази продуктів зараз не відповідають/),
+    });
+    expect(res.headers["Cache-Control"]).toBe("no-store");
+  });
+
+  it("повний шлях через Express: 503 з no-store, а 200 лишається public (rel-21)", async () => {
+    const app = express();
+    app.get(
+      "/api/food-search",
+      cachingMiddleware({
+        policy: "stale-while-revalidate",
+        maxAgeSeconds: 300,
+      }),
+      handler,
+    );
+    app.use(errorHandler);
+
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse(false, {}, 503));
+    const down = await request(app).get("/api/food-search?q=груша");
+    expect(down.status).toBe(503);
+    expect(down.headers["cache-control"]).toBe("no-store");
+    expect(down.body).toMatchObject({
+      error: expect.stringMatching(/Бази продуктів зараз не відповідають/),
+      code: "UPSTREAM_UNAVAILABLE",
+    });
+
+    vi.mocked(global.fetch).mockResolvedValue(
+      jsonResponse(true, { products: [offPear], foods: [] }),
+    );
+    const up = await request(app).get("/api/food-search?q=груша");
+    expect(up.status).toBe(200);
+    expect(up.headers["cache-control"]).toBe(
+      "public, max-age=300, stale-while-revalidate=300",
+    );
+  });
+
+  it("OFF і USDA відповіли 503 → 503 no-store, збій видно в метриках (rel-21)", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock.mockResolvedValue(jsonResponse(false, {}, 503));
+
+    const res = mockRes();
+    await expect(
+      handler(asReq({ q: "груша", limit: "3" }), res),
+    ).rejects.toMatchObject({ status: 503 });
+    expect(res.headers["Cache-Control"]).toBe("no-store");
+    expect(await upstreamCounts()).toEqual({
+      "off/error": 2,
+      "usda/error": 1,
+    });
+  });
+
+  it("429 від апстріму рахується як rate_limited, таймаут — як timeout", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(false, {}, 429))
+      .mockRejectedValueOnce(
+        Object.assign(new Error("t"), { name: "TimeoutError" }),
+      )
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "груша", limit: "3" }), res);
+
+    // Один апстрім відповів порожньо (USDA ok) — це справжній «нічого».
+    expect(res.statusCode).toBe(200);
+    expect(await upstreamCounts()).toEqual({
+      "off/rate_limited": 1,
+      "off/timeout": 1,
+      "usda/ok": 1,
+    });
+  });
+
+  it("упав лише один апстрім → 200 з тим, що дали решта (як і раніше)", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [offPear] }))
+      .mockResolvedValueOnce(jsonResponse(false, {}, 503))
+      .mockResolvedValueOnce(jsonResponse(false, {}, 503));
+
+    const res = mockRes();
     await handler(asReq({ q: "груша", limit: "3" }), res);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual({ products: [] });
+    expect(products(res.body)).toHaveLength(1);
+  });
+
+  it("запит без англійського перекладу: єдиний апстрім (OFF uk) упав → 503", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock.mockResolvedValue(jsonResponse(false, {}, 503));
+
+    const res = mockRes();
+    await expect(
+      handler(asReq({ q: "qwertyuiop", limit: "3" }), res),
+    ).rejects.toMatchObject({ status: 503 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.headers["Cache-Control"]).toBe("no-store");
   });
 
   it("returns 504 when response validation is interrupted by an abort-like error", async () => {
@@ -726,6 +841,7 @@ describe("food-search handler > Silpo as fourth source", () => {
     expect(silpoMocks.searchSilpoProducts).toHaveBeenCalledWith(
       "user-1",
       "молоко",
+      { signal: expect.any(AbortSignal) },
     );
     expect(products(res.body).map((p) => p["source"])).toEqual(["silpo"]);
     // A Silpo-augmented response reflects one user's linked account — it
@@ -750,6 +866,70 @@ describe("food-search handler > Silpo as fourth source", () => {
 
     expect(silpoMocks.searchSilpoProducts).not.toHaveBeenCalled();
     expect(res.headers["Cache-Control"]).toBeUndefined();
+  });
+
+  it("Сільпо, що не відповідає, не тримає відповідь довше за дедлайн: OFF/USDA-результати віддаються (rel-22)", async () => {
+    // `AbortSignal.timeout` живе на внутрішніх таймерах Node і fake timers
+    // його не бачать, тож дедлайн підміняємо керованим сигналом.
+    const deadline = new AbortController();
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+    silpoMocks.getSessionUser.mockResolvedValue({ id: "user-1" });
+    silpoMocks.isSilpoConnectedUser.mockResolvedValue(true);
+    // Імітація MCP: чекає лише на сигнал і сам по собі ніколи не резолвиться.
+    silpoMocks.searchSilpoProducts.mockImplementation(
+      () => new Promise<never>(() => undefined),
+    );
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(true, {
+          products: [
+            {
+              code: "1",
+              product_name: "Молоко OFF",
+              nutriments: { "energy-kcal_100g": 60 },
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+
+    const res = mockRes();
+    let finished = false;
+    const pending = handler(asReq({ q: "молоко", limit: "5" }), res).then(
+      () => {
+        finished = true;
+      },
+    );
+    await new Promise((r) => setTimeout(r, 20));
+    expect(finished).toBe(false); // чекаємо Сільпо до дедлайну
+
+    deadline.abort(new DOMException("timeout", "TimeoutError"));
+    await pending;
+
+    expect(res.statusCode).toBe(200);
+    expect(products(res.body).map((p) => p["name"])).toEqual(["Молоко OFF"]);
+  });
+
+  it("Сільпо отримує той самий сигнал дедлайну, що й OFF/USDA", async () => {
+    const deadline = new AbortController();
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(deadline.signal);
+    silpoMocks.getSessionUser.mockResolvedValue({ id: "user-1" });
+    silpoMocks.isSilpoConnectedUser.mockResolvedValue(true);
+    vi.mocked(global.fetch).mockResolvedValue(
+      jsonResponse(true, { products: [], foods: [] }),
+    );
+
+    await handler(asReq({ q: "молоко", limit: "5" }), mockRes());
+
+    const opts = silpoMocks.searchSilpoProducts.mock.calls[0]?.[2] as {
+      signal: AbortSignal;
+    };
+    expect(opts.signal).toBe(deadline.signal);
+    expect(vi.mocked(global.fetch).mock.calls[0]?.[1]).toMatchObject({
+      signal: deadline.signal,
+    });
   });
 });
 
@@ -798,6 +978,21 @@ describe("food-search — Tier-1 (власний каталог)", () => {
     expect(res.statusCode).toBe(200);
     expect((res.body as { products: unknown[] }).products).toHaveLength(5);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("апстріми лежать, але власний каталог дав результат → 200 з ним, не 503", async () => {
+    searchCatalogMock.mockResolvedValue([catalogProduct(1)]);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({}),
+    });
+
+    const res = mockRes();
+    await handler(req("молоко", 10), res);
+
+    expect(res.statusCode).toBe(200);
+    expect((res.body as { products: unknown[] }).products).toHaveLength(1);
   });
 
   it("неповна видача каталогу добирається з upstream", async () => {

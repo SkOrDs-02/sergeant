@@ -1,6 +1,14 @@
 /** @vitest-environment jsdom */
 import { renderHook } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { shouldShowOnboardingMock } = vi.hoisted(() => ({
+  shouldShowOnboardingMock: vi.fn(() => false),
+}));
+vi.mock("../onboarding/onboardingGate", () => ({
+  shouldShowOnboarding: shouldShowOnboardingMock,
+}));
+
 import { useAppEffects, type AppEffectsDeps } from "./useAppEffects";
 
 // Regression guard for the «Профіль не перемикається» bug (PR #2935
@@ -31,6 +39,11 @@ function makeDeps(over: Partial<AppEffectsDeps> = {}): AppEffectsDeps {
 }
 
 describe("useAppEffects — profile bounce on auth state", () => {
+  beforeEach(() => {
+    shouldShowOnboardingMock.mockReset();
+    shouldShowOnboardingMock.mockReturnValue(false);
+  });
+
   it("does NOT bounce profile→dashboard while auth is still loading", () => {
     const setHubView = vi.fn();
     const deps = makeDeps({
@@ -122,6 +135,29 @@ describe("useAppEffects — profile bounce on auth state", () => {
       ...initial,
       ui: { ...initial.ui },
     });
+    expect(setHubView).not.toHaveBeenCalled();
+  });
+
+  // Регресія ux-10 (аудит 2026-10-01): для аноніма, якого `HubPage` сам веде
+  // на `/welcome`, bounce у «dashboard» навігує від застарілого locationRef
+  // (push на «/») і ламає редирект — «Назад» після виходу лишав порожній екран.
+  it("does NOT bounce profile→dashboard for an anonymous visitor that HubPage redirects to /welcome", () => {
+    shouldShowOnboardingMock.mockReturnValue(true);
+    const setHubView = vi.fn();
+    const deps = makeDeps({
+      authLoading: false,
+      user: null,
+      ui: {
+        searchOpen: false,
+        hubView: "profile",
+        setHubView,
+        setSearchOpen: vi.fn(),
+        closeSearch: vi.fn(),
+        searchQuery: "",
+        openSearch: vi.fn(),
+      },
+    });
+    renderHook(() => useAppEffects(deps));
     expect(setHubView).not.toHaveBeenCalled();
   });
 });

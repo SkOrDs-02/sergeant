@@ -220,7 +220,9 @@ describe("DailyPlanCard — firstRunHint", () => {
       />,
     );
     expect(screen.getByTestId("first-run-hint")).toBeInTheDocument();
-    expect(screen.getByText(/це попередня ціль/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Цілі на день поки орієнтовні/i),
+    ).toBeInTheDocument();
   });
 
   it("calls onDismissFirstRunHint when the hint is dismissed", () => {

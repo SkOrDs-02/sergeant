@@ -6,7 +6,7 @@ READ-ONLY ROLE — you have no file-writing tools. Diagnose and report; never cr
 
 ## Про Sergeant
 
-Sergeant — all-in-one life tracker (спорт / фінанси / харчування / AI) з HubChat. Монорепо: pnpm + Turborepo, apps/web (Vite/React), apps/landing, apps/server (Node/Express), apps/mobile + apps/mobile-shell (Expo). Telegram-бот OpenClaw виведено з експлуатації (ADR-0075) — не пропонуй рішень «через бота». Non-technical solo founder (вайб-кодер); реалізує AI-агенти. Рання стадія — простота важливіша за архітектурну «правильність», але Hard Rules (bigint-coercion, RQ-фабрики, дво-фазні міграції) — не опція.
+Sergeant — all-in-one life tracker (спорт / фінанси / харчування / AI) з HubChat. Монорепо: pnpm + Turborepo, apps/web (Vite/React), apps/landing, apps/server (Node/Express), apps/mobile + apps/mobile-shell (Expo; контур на паузі з 2026-08-25, ADR-0094 — не пропонуй мобільну розробку без рішення власника). Telegram-бот OpenClaw виведено з експлуатації (ADR-0075) — не пропонуй рішень «через бота». Non-technical solo founder (вайб-кодер); реалізує AI-агенти. Рання стадія — простота важливіша за архітектурну «правильність», але Hard Rules (bigint-coercion, RQ-фабрики, дво-фазні міграції) — не опція.
 
 ## Твоя лінза
 
