@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-04 by docs:gen-status. **Next review:** 2026-10-11.
+> **Last touched:** 2026-10-08 by docs:gen-status. **Next review:** 2026-10-15.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -39,11 +39,11 @@
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
-## 🔵 В роботі — 87 відкритих документів
+## 🔵 В роботі — 88 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 87       |
+| Активні спеки | 88       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -52,9 +52,9 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/anonymous-migration-fast-path.md`](./work/specs/anonymous-migration-fast-path.md) — SPEC: швидкий шлях гейта міграції анонімних даних — Scaffolded - напрям («якщо переносити нічого, пропустити розвідку й вести в хаб») ухвалив власник; конкретний механізм, _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/security.md`](./work/specs/audits/2026-10-01-full-app-audit/security.md) — Аудит 2026-10-01 · Безпека та доступ — Active. 62 кластерів (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/reliability.md`](./work/specs/audits/2026-10-01-full-app-audit/reliability.md) — Аудит 2026-10-01 · Надійність, продуктивність, експлуатація — Active. 64 кластерів (91 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластерів (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
