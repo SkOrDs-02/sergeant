@@ -26,6 +26,13 @@ import {
   type OutboxUpsertInput,
 } from "./enqueueOutboxUpsert.js";
 
+// Тут перевіряється логіка самої черги на вже мігрованій схемі (моки й
+// реальний SQLite з прогнаними міграціями). Доведення схеми до кінця —
+// окремий контракт, `enqueueOutboxUpsert.schema.test.ts`.
+vi.mock("./outboxSchema.js", () => ({
+  ensureOutboxSchema: async () => {},
+}));
+
 const IDEM_KEY = "00000000-0000-0000-0000-000000000001";
 const USER_ID = "user-abc";
 const CLIENT_TS = "2026-06-12T10:00:00.000Z";

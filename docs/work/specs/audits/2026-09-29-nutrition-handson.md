@@ -1,6 +1,6 @@
 # Модуль «Їжа» проти ринку: hands-on замір і шортлист (2026-09-29)
 
-> **Last touched:** 2026-10-08 by @test. **Next review:** 2027-11-22.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-11-22.
 > **Status:** Active - заміряно на планшеті 15 конкурентів (датасет v1, ядро 15 вимірів) і сліпо наш вебзастосунок; 14 пунктів за пріоритетом, фікс пункту 3 у роботі.
 
 Джерело правди - приватний репо `D:\competitor-research`: `verdicts/nutrition/*.yaml` (вердикт і доказ у кожній клітинці), `SYNTHESIS-nutrition.md` (загальна картина по 11 розділах), `SHORTLIST-nutrition-2026-09-29.md` (цей шортлист), `dimensions/nutrition/reports.md` (розбір звітів), `batches/nutrition/batch-1.md` (журнал прогонів). Шляхи до доказів нижче вказують у приватний репо: скріншоти чужих апок у цей репо не переносяться. Сторінка-огляд рішень для власника: https://claude.ai/artifact/1TtNte8SQocwjQCfDNTqgd (приватна).

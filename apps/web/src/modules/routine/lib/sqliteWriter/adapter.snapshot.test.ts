@@ -52,11 +52,25 @@
  *    тепер рахується за годинником пристрою, і колонка нарешті каже про
  *    це правду для НОВИХ рядків. У знімку `kyiv` → `device-local`; більше
  *    нічого не змінилось.
+ * 6. Зміщення 2026-10-08 — `ensureOutboxSchema` у `enqueueOutboxUpsert`
+ *    (живий прогін `data-durability`: запис у чергу на півмігрованій
+ *    партиції падав на `no such column: user_id`). Тут схему замокано
+ *    (вона не SQL адаптера), але динамічний імпорт і `await` перед записом
+ *    у чергу зсувають interleaving fire-and-forget викликів — як у №3.
+ *    Sorted-diff проти попереднього знімка: 37 → 37 записів, мультимножини
+ *    рівні, змінився лише порядок.
  *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+// Доведення схеми `sync_op_outbox` (`ensureOutboxSchema`, 2026-10-08) — не SQL
+// адаптера: на записуючому клієнті воно додало б у знімок міграції черги.
+// Гейт фіксує write-шлях адаптера, тож схему тут вважаємо вже готовою.
+vi.mock("../../../../core/syncEngine/outboxSchema.js", () => ({
+  ensureOutboxSchema: async () => {},
+}));
 import { applyRoutineDualWriteOps } from "./adapter";
 import { completionEventEnv } from "./adapter.completionEvents.js";
 import type { RoutineDualWriteOp } from "./diff.js";
