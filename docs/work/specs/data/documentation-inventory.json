@@ -3826,7 +3826,7 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md",
       "new_path": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md",
       "action": "keep",
       "genre": "active-work",
@@ -4428,7 +4428,7 @@
       "canonical_owner": "docs/work/specs/nutrition-hero-day-strip.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/nutrition-norm-without-login.md",
       "new_path": "docs/work/specs/nutrition-norm-without-login.md",
       "action": "keep",
       "genre": "active-work",
@@ -4442,7 +4442,7 @@
       "canonical_owner": "docs/work/specs/nutrition-plan-cross-device.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/nutrition-recipe-builder.md",
       "new_path": "docs/work/specs/nutrition-recipe-builder.md",
       "action": "keep",
       "genre": "active-work",
@@ -4512,7 +4512,7 @@
       "canonical_owner": "docs/work/specs/planning/model-eval-2026-08-25.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/planning/nutrition-my-products.md",
       "new_path": "docs/work/specs/planning/nutrition-my-products.md",
       "action": "keep",
       "genre": "active-work",
