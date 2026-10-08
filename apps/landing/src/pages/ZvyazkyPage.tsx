@@ -48,6 +48,8 @@ export default function ZvyazkyPage() {
   const h2 =
     "font-display text-2xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-3xl";
   const body = "mt-3 max-w-2xl leading-relaxed text-muted";
+  const link =
+    "font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
   return (
     <SiteLayout mainClassName="mx-auto w-full max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
@@ -146,9 +148,13 @@ export default function ZvyazkyPage() {
         </p>
         <p className={body}>
           Звʼязки живуть у власному розділі застосунку: три найпомітніші, перший
-          розгорнутою карткою, решта рядками. У звіті тижня їх немає, той звіт
-          іде по модулях окремо. Ця частина продукту безкоштовна: рахує її сам
-          застосунок на твоїх даних, без звернень до AI.
+          розгорнутою карткою, решта рядками. У{" "}
+          <a href="/guides/tyzhnevyi-pidsumok" className={link}>
+            звіті тижня
+          </a>{" "}
+          їх немає, той звіт іде по модулях окремо. Ця частина продукту
+          безкоштовна: рахує її сам застосунок на твоїх даних, без звернень до
+          AI.
         </p>
       </section>
 
@@ -192,10 +198,7 @@ export default function ZvyazkyPage() {
         </ul>
         <p className="mt-6 text-sm text-subtle">
           Що з цього вже працює, видно на сторінці про{" "}
-          <a
-            href="/stan"
-            className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
+          <a href="/stan" className={link}>
             стан розробки
           </a>
           .
