@@ -74,6 +74,29 @@ export function signInInvite(page: Page) {
 }
 
 export async function goto(page: Page, route: string): Promise<void> {
+  const failed: string[] = [];
+  const onFailed = (r: import("@playwright/test").Request) => {
+    if (!r.url().includes("/api/"))
+      failed.push(
+        `${r.failure()?.errorText ?? "?"} ${new URL(r.url()).pathname}`,
+      );
+  };
+  page.on("requestfailed", onFailed);
+  // Запити, що стартували й не завершились: з них видно, на чому висить парсер.
+  const pending = new Map<import("@playwright/test").Request, number>();
+  const t0 = Date.now();
+  const onRequest = (r: import("@playwright/test").Request) => {
+    if (!r.url().includes("/api/")) pending.set(r, Date.now() - t0);
+  };
+  const onDone = (r: import("@playwright/test").Request) => pending.delete(r);
+  page.on("request", onRequest);
+  page.on("requestfinished", onDone);
+  page.on("requestfailed", onDone);
+  const stopTracking = () => {
+    page.off("request", onRequest);
+    page.off("requestfinished", onDone);
+    page.off("requestfailed", onDone);
+  };
   try {
     await page.goto(route, { waitUntil: "domcontentloaded" });
   } catch (err) {
@@ -94,7 +117,95 @@ export async function goto(page: Page, route: string): Promise<void> {
   try {
     await expect.poll(rootChildren, { timeout: 15_000 }).toBeGreaterThan(0);
   } catch {
+    // Знімок стану в момент білого екрана: без нього B1 роками лишався
+    // «гонкою SW» без доказів. readyState != "complete" означає, що подія
+    // `load` не настала, і `boot-watchdog.js` (він чекає саме `load`) не
+    // спрацює ніколи; незавершені `/assets/*` показують, на чому зависло.
+    const snapshot = await page
+      .evaluate(async () => {
+        const assets = performance
+          .getEntriesByType("resource")
+          .filter((e) => e.name.includes("/assets/"))
+          .map((e) => e as PerformanceResourceTiming);
+        const reg = await navigator.serviceWorker?.getRegistration();
+        return {
+          readyState: document.readyState,
+          controlled: Boolean(navigator.serviceWorker?.controller),
+          sw: reg
+            ? {
+                installing: Boolean(reg.installing),
+                waiting: Boolean(reg.waiting),
+                active: reg.active?.state ?? null,
+              }
+            : null,
+          watchdogAt: sessionStorage.getItem("sergeant.boot_watchdog_at"),
+          assetsLoaded: assets.length,
+          assetsUnfinished: assets
+            .filter((e) => e.responseEnd === 0)
+            .map((e) => e.name.split("/assets/")[1]),
+        };
+      })
+      .catch((e: unknown) => ({ error: String(e) }));
+    // Що бачить сам воркер: якщо CacheStorage або цикл подій SW завис,
+    // evaluate не повернеться — тому гонка з тайм-аутом.
+    const swProbe = await Promise.all(
+      page
+        .context()
+        .serviceWorkers()
+        .map((w) =>
+          Promise.race([
+            w.evaluate(async () => {
+              const t0 = Date.now();
+              const keys = await caches.keys();
+              const tKeys = Date.now() - t0;
+              const hit = await caches.match("/boot-watchdog.js", {
+                ignoreSearch: true,
+              });
+              return {
+                keys,
+                tKeys,
+                tMatch: Date.now() - t0,
+                hit: Boolean(hit),
+              };
+            }),
+            new Promise((r) => setTimeout(() => r("sw-timeout-3s"), 3000)),
+          ]).catch((e: unknown) => `sw-error ${String(e)}`),
+        ),
+    );
+    console.log(`[boot-white-screen-sw] ${route} ${JSON.stringify(swProbe)}`);
+    // Скільки TCP-зʼєднань браузер тримає до хоста застосунку і в якому стані
+    // (HTTP/1.1 дає ≤6 на хост: усі зайняті = решта запитів стоїть у черзі).
+    try {
+      const { readFileSync } = await import("node:fs");
+      const port = Number(new URL(page.url()).port || 80)
+        .toString(16)
+        .toUpperCase()
+        .padStart(4, "0");
+      const states: Record<string, number> = {};
+      for (const line of readFileSync("/proc/net/tcp", "utf8")
+        .split("\n")
+        .slice(1)) {
+        const cols = line.trim().split(/\s+/);
+        if (cols.length < 4 || !cols[2]?.endsWith(`:${port}`)) continue;
+        states[cols[3] ?? "?"] = (states[cols[3] ?? "?"] ?? 0) + 1;
+      }
+      console.log(
+        `[boot-white-screen-tcp] ${route} to-port=${port} ${JSON.stringify(states)}`,
+      );
+    } catch (e) {
+      console.log(`[boot-white-screen-tcp] ${route} n/a ${String(e)}`);
+    }
+    console.log(
+      `[boot-white-screen] ${route} ${JSON.stringify(snapshot)} failed=${failed.length} pending=${JSON.stringify(
+        [...pending].map(
+          ([r, at]) =>
+            `${at}ms ${r.resourceType()} ${new URL(r.url()).pathname}${r.serviceWorker() ? " (sw)" : ""}`,
+        ),
+      )}`,
+    );
     await page.reload({ waitUntil: "domcontentloaded" });
+    page.off("requestfailed", onFailed);
+    stopTracking();
     const recovered = await expect
       .poll(rootChildren, { timeout: 15_000 })
       .toBeGreaterThan(0)
@@ -107,6 +218,8 @@ export async function goto(page: Page, route: string): Promise<void> {
         `дивись docs/work/specs/audits/2026-08-05-browser-profile-testing.md.`,
     );
   }
+  page.off("requestfailed", onFailed);
+  stopTracking();
   await expect(
     page.getByRole("link", { name: "Перейти до основного вмісту" }),
   ).toBeAttached();

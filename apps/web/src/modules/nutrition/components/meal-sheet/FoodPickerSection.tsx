@@ -16,7 +16,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
-import type { FoodProduct } from "../../lib/foodDb/foodDb";
+import type { FoodPortion, FoodProduct } from "../../lib/foodDb/foodDb";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { SEARCH_QUERY_MAX_LEN, type ProductNutrients } from "@sergeant/shared";
 
@@ -53,6 +53,13 @@ export interface PickedFood {
     carbs_g?: number | null;
   };
   source?: string;
+  /** Власні порції продукту; немає чи порожньо - лише грами. */
+  portions?: FoodPortion[];
+  /**
+   * Продукт зібрано на кроці «З упаковки», але ще не записано в базу:
+   * його пише `AddMealSheet` разом із записом (скасування нічого не лишає).
+   */
+  unsaved?: boolean;
   /**
    * Нутрієнти понад КБЖВ із відповіді на скан (N9). Транзитні: живуть у
    * вʼюмоделі аркуша й НЕ їдуть у `FoodProduct` — розбір у

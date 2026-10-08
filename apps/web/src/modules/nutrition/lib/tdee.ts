@@ -45,7 +45,11 @@ import {
   type Biometrics,
   type Sex,
 } from "../../../core/profile/biometrics";
-import { ATWATER_KCAL_PER_G } from "@sergeant/nutrition-domain";
+import {
+  ATWATER_KCAL_PER_G,
+  DEFAULT_WEEKLY_RATE_KG,
+  type WeeklyRateKg,
+} from "@sergeant/nutrition-domain";
 
 export const NUTRITION_GOALS = ["cutting", "maintenance", "bulking"] as const;
 export type NutritionGoalId = (typeof NUTRITION_GOALS)[number];
@@ -82,6 +86,31 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
  * maintenance, modest surplus — without being so aggressive that the
  * user has no buffer for a hard training day.
  */
+/** Оціночна енергія 1 кг маси тіла, ккал (загальноприйнята 7700). */
+export const KCAL_PER_KG_BODY_MASS = 7700;
+
+/** Добовий дефіцит схуднення для темпу кг/тиж: 0,5 → 550 ккал. */
+export function weeklyRateDeficitKcal(rateKgPerWeek: number): number {
+  return Math.round((KCAL_PER_KG_BODY_MASS * rateKgPerWeek) / 7);
+}
+
+/**
+ * Орієнтовна дата досягнення цільової ваги: сьогодні + ceil(|вага - ціль| / темп)
+ * тижнів. `null`, коли різниці немає або вхід некоректний.
+ */
+export function estimateGoalDate(
+  weightKg: number,
+  goalWeightKg: number,
+  rateKgPerWeek: number,
+  now: Date = new Date(),
+): Date | null {
+  const diff = weightKg - goalWeightKg;
+  if (!(diff > 0) || !(rateKgPerWeek > 0)) return null;
+  const weeks = Math.ceil(diff / rateKgPerWeek);
+  // Орієнтир із точністю до доби: DST-зсув на годину тут не має значення.
+  return new Date(now.getTime() + weeks * 7 * 86_400_000);
+}
+
 export const GOAL_KCAL_DELTA: Record<NutritionGoalId, number> = {
   cutting: -500,
   maintenance: 0,
@@ -154,6 +183,63 @@ export interface NutritionTargets {
   carbs_g: number;
 }
 
+export interface NutritionTargetsExplanation {
+  bmr: number;
+  activityLevel: ActivityLevel;
+  /** Множник, що реально застосовано (1,2 у динамічному режимі). */
+  multiplier: number;
+  /** Тренування за день, ккал; `0` поза динамічним режимом. */
+  workoutKcal: number;
+  tdee: number;
+  deltaKcal: number;
+  /**
+   * `'floor'` - норму піднято до підлоги 1000 ккал. Обрізки до BMR тут немає
+   * навмисно: сидячий профіль із дефіцитом майже завжди нижче BMR, і це
+   * штатна норма (BMR-межа живе лише в автокалібруванні).
+   */
+  clampedBy: "floor" | null;
+  targets: NutritionTargets;
+}
+
+/**
+ * Єдиний розрахунок норми з розкладом для екрана («BMR × множник - дефіцит»).
+ * `computeNutritionTargets` - обгортка над ним, тож число й пояснення не
+ * можуть розійтись.
+ */
+export function explainNutritionTargets(
+  input: TdeeInput,
+  goal: NutritionGoalId | string,
+  weeklyRateKg: WeeklyRateKg | number = DEFAULT_WEEKLY_RATE_KG,
+): NutritionTargetsExplanation {
+  const normalizedGoal = normalizeNutritionGoal(goal);
+  const bmr = mifflinStJeorBmr(input);
+  const tdee = computeTdee(input);
+  const dynamic = Boolean(input.countWorkoutsInGoal);
+  const burned = Number(input.workoutKcal);
+  const deltaKcal =
+    normalizedGoal === "cutting"
+      ? -weeklyRateDeficitKcal(weeklyRateKg)
+      : GOAL_KCAL_DELTA[normalizedGoal];
+  const raw = Math.round((tdee + deltaKcal) / 10) * 10;
+  const clampedBy = raw < 1000 ? "floor" : null;
+  return {
+    bmr,
+    activityLevel: input.activityLevel,
+    multiplier: dynamic
+      ? ACTIVITY_MULTIPLIERS.sedentary
+      : ACTIVITY_MULTIPLIERS[input.activityLevel],
+    workoutKcal: dynamic && Number.isFinite(burned) && burned > 0 ? burned : 0,
+    tdee,
+    deltaKcal,
+    clampedBy,
+    targets: computeMacrosForKcal(
+      Math.max(1000, raw),
+      input.weightKg,
+      normalizedGoal,
+    ),
+  };
+}
+
 /**
  * Strict variant for callers that already validated their inputs (e.g.
  * the unit tests). Returns the targets straight, no `null` branch.
@@ -161,15 +247,9 @@ export interface NutritionTargets {
 export function computeNutritionTargets(
   input: TdeeInput,
   goal: NutritionGoalId | string,
+  weeklyRateKg: WeeklyRateKg | number = DEFAULT_WEEKLY_RATE_KG,
 ): NutritionTargets {
-  const normalizedGoal = normalizeNutritionGoal(goal);
-  const tdee = computeTdee(input);
-  const kcal = Math.max(
-    1000,
-    Math.round((tdee + GOAL_KCAL_DELTA[normalizedGoal]) / 10) * 10,
-  );
-
-  return computeMacrosForKcal(kcal, input.weightKg, normalizedGoal);
+  return explainNutritionTargets(input, goal, weeklyRateKg).targets;
 }
 
 export function computeMacrosForKcal(
@@ -235,7 +315,29 @@ export function computeNutritionTargetsFromBiometrics(
   now: Date = new Date(),
   fizrukWeightKg?: number | null,
   workoutKcal?: number | null,
+  weeklyRateKg: WeeklyRateKg | number = DEFAULT_WEEKLY_RATE_KG,
 ): NutritionTargets | null {
+  return (
+    explainNutritionTargetsFromBiometrics(
+      biometrics,
+      goal,
+      now,
+      fizrukWeightKg,
+      workoutKcal,
+      weeklyRateKg,
+    )?.targets ?? null
+  );
+}
+
+/** Те саме, що {@link computeNutritionTargetsFromBiometrics}, але з розкладом. */
+export function explainNutritionTargetsFromBiometrics(
+  biometrics: Biometrics,
+  goal: NutritionGoalId,
+  now: Date = new Date(),
+  fizrukWeightKg?: number | null,
+  workoutKcal?: number | null,
+  weeklyRateKg: WeeklyRateKg | number = DEFAULT_WEEKLY_RATE_KG,
+): NutritionTargetsExplanation | null {
   const ageYears = computeAgeYears(biometrics.birthDate, now);
   const weightKg = resolveEffectiveWeightKg(biometrics, fizrukWeightKg);
   if (
@@ -247,7 +349,7 @@ export function computeNutritionTargetsFromBiometrics(
   ) {
     return null;
   }
-  return computeNutritionTargets(
+  return explainNutritionTargets(
     {
       weightKg,
       heightCm: biometrics.heightCm,
@@ -258,6 +360,7 @@ export function computeNutritionTargetsFromBiometrics(
       workoutKcal: workoutKcal ?? 0,
     },
     goal,
+    weeklyRateKg,
   );
 }
 

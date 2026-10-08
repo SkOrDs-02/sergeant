@@ -195,6 +195,10 @@ function normalizePrefs(x: unknown): NutritionPrefs {
     dailyTargetProtein_g: optionalPositiveNumber(p.dailyTargetProtein_g),
     dailyTargetFat_g: optionalPositiveNumber(p.dailyTargetFat_g),
     dailyTargetCarbs_g: optionalPositiveNumber(p.dailyTargetCarbs_g),
+    weeklyRateKg: normalizeNutritionPrefs({ weeklyRateKg: p.weeklyRateKg })
+      .weeklyRateKg,
+    goalWeightKg: normalizeNutritionPrefs({ goalWeightKg: p.goalWeightKg })
+      .goalWeightKg,
     adaptiveGoalEnabled: Boolean(p.adaptiveGoalEnabled),
     adaptiveGoalIntent: p.adaptiveGoalIntent,
     adaptiveGoalLastUpdatedAt:

@@ -358,7 +358,7 @@ function MonthlyPlanCardComponent({
             </div>
           ) : (
             <div className="text-style-label text-subtle">
-              Постав план, і побачиш скільки безпечно витрачати на день.
+              Постав план, і побачиш, скільки безпечно витрачати на день.
             </div>
           )}
 

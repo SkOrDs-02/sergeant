@@ -14,7 +14,10 @@ import {
   computeNutritionTargets,
   computeNutritionTargetsFromBiometrics,
   computeTdee,
+  estimateGoalDate,
+  explainNutritionTargets,
   mifflinStJeorBmr,
+  weeklyRateDeficitKcal,
 } from "./tdee";
 
 describe("mifflinStJeorBmr", () => {
@@ -88,9 +91,9 @@ describe("computeNutritionTargets", () => {
   };
 
   it("rounds kcal to the nearest 10 after applying the goal delta", () => {
-    // BMR 1780 · 1.55 ≈ 2759 → maintenance 2760, cut 2260, bulk 3060.
+    // BMR 1780 · 1.55 ≈ 2759 → maintenance 2760, cut 2210 (дефіцит 550 за темпом 0,5), bulk 3060.
     expect(computeNutritionTargets(baseInput, "maintenance").kcal).toBe(2760);
-    expect(computeNutritionTargets(baseInput, "cutting").kcal).toBe(2260);
+    expect(computeNutritionTargets(baseInput, "cutting").kcal).toBe(2210);
     expect(computeNutritionTargets(baseInput, "bulking").kcal).toBe(3060);
   });
 
@@ -307,5 +310,79 @@ describe("countWorkoutsInGoal", () => {
     expect(computeTdee({ ...base, countWorkoutsInGoal: true })).toBe(
       1780 * 1.2,
     );
+  });
+});
+
+describe("explainNutritionTargets", () => {
+  const male = {
+    weightKg: 80,
+    heightCm: 180,
+    ageYears: 30,
+    sex: "male" as const,
+    activityLevel: "sedentary" as const,
+  };
+
+  it("розкладає норму: BMR 1780 x 1,2, дефіцит 550 -> 1590", () => {
+    const e = explainNutritionTargets(male, "cutting", 0.5);
+    expect(e.bmr).toBe(1780);
+    expect(e.multiplier).toBe(1.2);
+    expect(e.tdee).toBe(2136);
+    expect(e.deltaKcal).toBe(-550);
+    expect(e.targets.kcal).toBe(1590);
+    expect(e.clampedBy).toBeNull();
+  });
+
+  it("темпи 0,25 / 0,5 / 0,75 дають 275 / 550 / 825 ккал дефіциту", () => {
+    expect([0.25, 0.5, 0.75].map(weeklyRateDeficitKcal)).toEqual([
+      275, 550, 825,
+    ]);
+  });
+
+  it("підлога 1000 ккал позначається clampedBy 'floor'", () => {
+    const tiny = { ...male, weightKg: 40, heightCm: 150, ageYears: 60 };
+    const e = explainNutritionTargets(tiny, "cutting", 0.75);
+    expect(e.targets.kcal).toBe(1000);
+    expect(e.clampedBy).toBe("floor");
+  });
+
+  it("динамічний режим: множник 1,2 плюс тренування", () => {
+    const e = explainNutritionTargets(
+      {
+        ...male,
+        activityLevel: "active",
+        countWorkoutsInGoal: true,
+        workoutKcal: 300,
+      },
+      "maintenance",
+    );
+    expect(e.multiplier).toBe(1.2);
+    expect(e.workoutKcal).toBe(300);
+    expect(e.tdee).toBe(2436);
+  });
+
+  it("число з explain і з computeNutritionTargets однакове для 3 x 5 комбінацій", () => {
+    for (const goal of ["cutting", "maintenance", "bulking"] as const) {
+      for (const activityLevel of Object.keys(ACTIVITY_MULTIPLIERS) as Array<
+        keyof typeof ACTIVITY_MULTIPLIERS
+      >) {
+        const input = { ...male, activityLevel };
+        expect(explainNutritionTargets(input, goal).targets).toEqual(
+          computeNutritionTargets(input, goal),
+        );
+      }
+    }
+  });
+});
+
+describe("estimateGoalDate", () => {
+  it("80 -> 75 кг при 0,5 кг/тиж: сьогодні + 10 тижнів", () => {
+    const now = new Date(2026, 9, 8);
+    const d = estimateGoalDate(80, 75, 0.5, now)!;
+    expect(Math.round((d.getTime() - now.getTime()) / 86_400_000)).toBe(70);
+  });
+
+  it("ціль не нижче ваги -> null", () => {
+    expect(estimateGoalDate(80, 80, 0.5)).toBeNull();
+    expect(estimateGoalDate(70, 75, 0.5)).toBeNull();
   });
 });

@@ -5,12 +5,28 @@
 import { normalizeMacrosNullable, type NullableMacros } from "@sergeant/shared";
 
 import { isMealTypeId } from "./mealTypes.js";
-import type { MealTemplate, NutritionPrefs } from "./nutritionTypes.js";
+import {
+  DEFAULT_WEEKLY_RATE_KG,
+  WEEKLY_RATES_KG,
+  type MealTemplate,
+  type NutritionPrefs,
+} from "./nutritionTypes.js";
+
+// Дзеркалить WEIGHT_KG_RANGE з apps/web/src/core/profile/biometrics.ts.
+const GOAL_WEIGHT_KG_MIN = 20;
+const GOAL_WEIGHT_KG_MAX = 400;
 
 function optionalPositiveNumber(v: unknown): number | null {
   if (v == null || v === "") return null;
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function normalizeGoalWeight(v: unknown): number | null {
+  const n = optionalPositiveNumber(v);
+  return n != null && n >= GOAL_WEIGHT_KG_MIN && n <= GOAL_WEIGHT_KG_MAX
+    ? n
+    : null;
 }
 
 export function defaultNutritionPrefs(): NutritionPrefs {
@@ -29,6 +45,8 @@ export function defaultNutritionPrefs(): NutritionPrefs {
     reminderEnabled: false,
     reminderHour: 12,
     waterGoalMl: 2000,
+    weeklyRateKg: DEFAULT_WEEKLY_RATE_KG,
+    goalWeightKg: null,
     adaptiveGoalEnabled: true,
     adaptiveGoalIntent: "maintenance",
     adaptiveGoalLastUpdatedAt: null,
@@ -127,6 +145,10 @@ export function normalizeNutritionPrefs(p: unknown): NutritionPrefs {
           ? Math.min(23, Math.max(0, Math.floor(Number(raw["reminderHour"]))))
           : 12,
       waterGoalMl: waterGoalMl != null ? waterGoalMl : defaults.waterGoalMl,
+      weeklyRateKg:
+        WEEKLY_RATES_KG.find((r) => r === Number(raw["weeklyRateKg"])) ??
+        DEFAULT_WEEKLY_RATE_KG,
+      goalWeightKg: normalizeGoalWeight(raw["goalWeightKg"]),
       adaptiveGoalEnabled:
         raw["adaptiveGoalEnabled"] == null
           ? optionalPositiveNumber(raw["dailyTargetKcal"]) == null

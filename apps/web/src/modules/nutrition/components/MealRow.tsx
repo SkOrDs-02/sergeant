@@ -60,7 +60,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
       : macroSource === "recipeAI"
         ? "рецепт Сержанта"
         : macroSource === "productDb"
-          ? "DB"
+          ? "продукт"
           : macroSource === "recipe"
             ? "рецепт"
             : "";
