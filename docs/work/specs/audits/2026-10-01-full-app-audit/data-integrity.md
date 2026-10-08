@@ -3025,7 +3025,7 @@ Code refs: apps/web/src/modules/nutrition/domain/nutritionBackup.ts:71-89,146-17
 
 ### `data-36` [medium] Кілька persist Фізрука в одному тіку затирають один одного: з кількох позначених зон болю зберігається одна, ккал ретро-заняття губляться
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-36-fizruk-persist-race
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук (useInjuries, useWorkoutsOrchestrator, WorkoutFinishSheets)
 - **Де:** apps/web/src/modules/fizruk/components/InjuryManager.tsx:68-80; apps/web/src/modules/fizruk/hooks/useInjuries.ts:104-122; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:497-521; apps/web/src/modules/fizruk/components/workouts/WorkoutFinishSheets.tsx:407-408
 - **Першопричина:** Хуки викликають persist кілька разів поспіль з однаковим застарілим станом із замикання, а fizrukDualWriteTransition бере кожен виклик як новий очікуваний prev, тож виклик N диффиться проти N-1 і видаляє попередній запис (insert зони N плюс delete зони N-1). submitPastWorkout так само робить create, addItem і updateWorkout(kcal) трьома окремими persist.
