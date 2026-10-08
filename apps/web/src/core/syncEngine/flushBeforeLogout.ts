@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-05
+ * Last validated: 2026-10-08
  * Status: Active
  *
  * Останній шанс дофлашити чергу синхронізації перед виходом з акаунта.
@@ -75,7 +75,9 @@ export interface FlushBeforeLogoutResult {
    */
   readonly pending: number;
   /**
-   * `true`, якщо не вдалося прочитати чергу або перевірка впала. Тоді
+   * `true`, якщо не вдалося прочитати чергу (або перевірка впала ще ДО
+   * першого успішного підрахунку; збій самої доставки після нього дає
+   * останнє відоме `pending`, а не `unknown`). Тоді
    * `pending` недостовірний і трактується як `0` (fail-open): краще
    * випустити людину з акаунта, ніж заблокувати вихід через зламану
    * телеметрію.
@@ -113,6 +115,13 @@ export async function flushPendingSyncOpsBeforeLogout(
 ): Promise<FlushBeforeLogoutResult> {
   const deadline = Date.now() + timeoutMs;
   const remaining = () => Math.max(0, deadline - Date.now());
+  // Останнє прочитане з БД число недоставлених записів. Щойно воно > 0,
+  // fail-open більше не діє: збій ДОСТАВКИ (офлайн `drain` кидає
+  // `TypeError: Failed to fetch` з `getSession()` крізь `flushNow`) — це не
+  // «не змогли прочитати чергу», а «черга є і нікуди не поїхала». Живий
+  // прогін 2026-10-08 (P8): саме цей виняток давав `unknown: true`, діалогу
+  // не було, і logout стирав запис.
+  let known: number | null = null;
 
   try {
     // Динамічно: sqlite-wasm і db-schema не мають їхати в eager-чанк auth
@@ -136,6 +145,7 @@ export async function flushPendingSyncOpsBeforeLogout(
     let left = await withTimeout(countUnsynced(), remaining());
     if (left === null) return { pending: 0, unknown: true };
     if (left === 0) return SAFE;
+    known = left;
 
     // Рушія немає (бут упав, вимкнений синк) — доставити нічим, але черга
     // реально є і зникне разом із файлом. Звітуємо як є, а не «безпечно».
@@ -171,15 +181,17 @@ export async function flushPendingSyncOpsBeforeLogout(
       if (after === 0) return SAFE;
       const progressed = after < left;
       left = after;
+      known = left;
       // Лічильник не зменшився — решта в бекофі/відхиляється; ще раунд
       // лише спалить бюджет часу.
       if (!progressed) break;
     }
     return { pending: left, unknown: false };
   } catch (err) {
+    logger.warn("[auth.logout] pre-wipe sync flush failed", err);
+    if (known !== null && known > 0) return { pending: known, unknown: false };
     // Fail-open: збій цієї перевірки не має ставати причиною, через яку
     // людина не може вийти з акаунта.
-    logger.warn("[auth.logout] pre-wipe sync flush failed", err);
     return { pending: 0, unknown: true };
   }
 }

@@ -60,8 +60,10 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
       : macroSource === "recipeAI"
         ? "рецепт Сержанта"
         : macroSource === "productDb"
-          ? "DB"
-          : "";
+          ? "продукт"
+          : macroSource === "recipe"
+            ? "рецепт"
+            : "";
   // 6.4: AI-sourced entries (photoAI / recipeAI) get the nutrition-tinted
   // sergeant-glyph badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
   // is a deterministic lookup, not AI inference, so it keeps the neutral
@@ -103,6 +105,11 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
           )}
         </div>
         <div className="flex gap-2 mt-0.5 flex-wrap">
+          {meal.amount_g != null && meal.amount_g > 0 && (
+            <span className="text-style-caption text-subtle">
+              <Measure value={Math.round(meal.amount_g)} unit="г" />
+            </span>
+          )}
           {mac.kcal != null && (
             <Measure
               value={Math.round(mac.kcal)}

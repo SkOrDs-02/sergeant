@@ -223,7 +223,7 @@ describe("BarcodeScanner — native variant", () => {
     });
 
     expect(toastErrorMock).toHaveBeenCalledWith(
-      "Потрібен дозвіл на камеру. Увімкни його в налаштуваннях додатку.",
+      "Потрібен дозвіл на камеру. Увімкни його в налаштуваннях застосунку.",
     );
     expect(onClose).toHaveBeenCalledTimes(1);
   });

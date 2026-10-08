@@ -46,14 +46,14 @@ groups:
         expr: |
           histogram_quantile(
             0.95,
-            sum(rate(http_request_duration_ms_bucket{path!~"/api/(chat|coach|weekly-digest|nutrition/.*)"}[5m])) by (le)
+            sum(rate(http_request_duration_ms_bucket{path!~"/api/(chat|coach|weekly-digest|nutrition/.*)|/health(|/.*)|/healthz|/readyz|/livez|/startupz"}[5m])) by (le)
           )
 
       - record: job:health_p95_5m
         expr: |
           histogram_quantile(
             0.95,
-            sum(rate(http_request_duration_ms_bucket{path=~"/health(|/.*)|/healthz|/readyz|/livez|/startupz"}[5m])) by (le)
+            sum(rate(http_request_duration_ms_bucket{path=~"/health|/readyz|/livez|/startupz|/health/(liveness|readiness|startup)"}[5m])) by (le)
           )
 
   # ──────────────────────────── Sync ────────────────────────────

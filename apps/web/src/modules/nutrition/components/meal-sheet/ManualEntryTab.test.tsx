@@ -44,9 +44,22 @@ vi.mock("./PackageEntryStep", () => ({
   ),
 }));
 
+// Сам аркуш «Мої продукти» має власний тест; тут важить лише вхід у нього.
+vi.mock("../MyFoodsSheet", () => ({
+  MyFoodsSheet: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="my-foods-sheet" /> : null,
+}));
+
 afterEach(() => cleanup());
 
 describe("ManualEntryTab", () => {
+  it("«Мої продукти» відкриває список власних продуктів", () => {
+    render(<ManualEntryTab onCreated={vi.fn()} onWholeMeal={vi.fn()} />);
+    expect(screen.queryByTestId("my-foods-sheet")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Мої продукти" }));
+    expect(screen.getByTestId("my-foods-sheet")).toBeInTheDocument();
+  });
+
   it("типовий режим — «з упаковки», і поля етикетки видно одразу", () => {
     render(<ManualEntryTab onCreated={vi.fn()} onWholeMeal={vi.fn()} />);
     expect(screen.getByRole("radio", { name: /З упаковки/ })).toHaveAttribute(
