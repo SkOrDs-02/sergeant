@@ -14,7 +14,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
 import { digestKeys } from "@shared/lib/api/queryKeys";
-import { todayISODate } from "@sergeant/nutrition-domain";
+import {
+  cloneMealsForCopy,
+  moveLogEntry,
+  todayISODate,
+  type MealTypeId,
+} from "@sergeant/nutrition-domain";
 import { useDeviceDay } from "@shared/hooks/useDeviceDayKey";
 import {
   ANALYTICS_EVENTS,
@@ -227,6 +232,37 @@ export function useNutritionLog() {
   };
 
   /**
+   * Перенос запису на інший день. `toDate` приходить з поля дати (`YYYY-MM-DD`
+   * без часової зони), тож ключ той самий, що й у нового запису (ADR-0078).
+   */
+  const handleMoveMeal = (
+    fromDate: string,
+    toDate: string,
+    meal: Partial<Meal> & { id?: string },
+  ) => {
+    if (!meal?.id) return;
+    setNutritionLog((log) => moveLogEntry(log, fromDate, toDate, meal));
+    setAddMealSheetOpen(false);
+  };
+
+  /**
+   * Копія записів в інший день і/або прийом. Повертає id клонів для «Скасувати».
+   */
+  const handleCopyMeals = (
+    meals: readonly Meal[],
+    toDate: string,
+    mealType?: MealTypeId,
+  ): string[] => {
+    const clones = cloneMealsForCopy(meals, mealType);
+    if (clones.length === 0) return [];
+    setNutritionLog((log) =>
+      clones.reduce((acc, c) => addLogEntry(acc, toDate, c), log),
+    );
+    setAddMealSheetOpen(false);
+    return clones.map((c) => c.id);
+  };
+
+  /**
    * Remove a meal entry by date and ID and delete its photo thumbnail if any.
    */
   const handleRemoveMeal = (
@@ -358,6 +394,8 @@ export function useNutritionLog() {
     setAddMealSheetOpen,
     handleAddMeal,
     handleEditMeal,
+    handleMoveMeal,
+    handleCopyMeals,
     handleRemoveMeal,
     handleRestoreMeal,
     storageErr,
