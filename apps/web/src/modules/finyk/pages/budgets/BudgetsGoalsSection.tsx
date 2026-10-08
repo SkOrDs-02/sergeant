@@ -4,7 +4,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import type { MonoJarDto } from "@shared/api";
 import {
   calculateGoalProgress,
@@ -63,7 +63,7 @@ export function BudgetsGoalsSection({
   toast,
   jars = [],
 }: BudgetsGoalsSectionProps) {
-  const migrationDate = toLocalISODate(now);
+  const migrationDate = toKyivISODate(now);
 
   const jarsById = useMemo(
     () => new Map(jars.map((j) => [j.monoJarId, j])),
@@ -133,7 +133,7 @@ export function BudgetsGoalsSection({
             </svg>
           }
           title="Поки немає цілей"
-          description="Постав ціль накопичення і відстежуй прогрес, кнопка нижче."
+          description="Постав ціль накопичення і стеж за прогресом."
         />
       )}
       {goalsOpen &&
@@ -246,8 +246,8 @@ export function BudgetsGoalsSection({
                         {
                           id: crypto.randomUUID(),
                           amountUah,
-                          // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper toLocalISODate
-                          date: toLocalISODate(new Date()),
+                          // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper toKyivISODate
+                          date: toKyivISODate(new Date()),
                           note,
                         },
                       ],

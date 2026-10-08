@@ -66,10 +66,15 @@ describe("узгодженість копії між сторінками", () =
       "pages/DataPage.tsx",
       "pages/VyhidPage.tsx",
       "content/faqItems.ts",
+      // Гайд про безпеку банку обіцяв «передачі стороннім немає» своїми
+      // словами, поза формулою, і суперечив сторінкам про AI-провайдера
+      // (аудит сайту 2026-10-08, T1).
+      "pages/GuideBankBezpekaPage.tsx",
     ]) {
       const src = read(file);
       expect(src, file).toMatch(/NO_SALE_CLAIM/);
       expect(src, file).not.toMatch(/не продаються і не передаються/);
+      expect(src, file).not.toMatch(/передачі стороннім немає/);
     }
   });
 

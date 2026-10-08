@@ -21,6 +21,10 @@ vi.mock("./sqliteWriter/index", async () => {
 });
 
 import {
+  __clearNutritionDualWriteContextForTests,
+  registerNutritionDualWriteContext,
+} from "./sqliteWriter/index";
+import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_LOG_KEY,
   NUTRITION_PANTRIES_KEY,
@@ -36,6 +40,8 @@ import {
   normalizeNutritionLog,
   normalizePantries,
   persistNutritionLog,
+  isNutritionPrefsHydrated,
+  patchNutritionPrefs,
   persistNutritionPrefs,
   persistNutritionShoppingList,
   persistNutritionWaterLog,
@@ -45,7 +51,21 @@ import {
 import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
+  getCachedNutritionSqliteState as getCachedNutritionSqliteStateForTest,
 } from "./sqliteReader";
+import {
+  __resetInitialPullStateForTests,
+  markInitialPullComplete,
+} from "../../../core/syncEngine/initialPullState";
+import {
+  __resetActiveSqliteVfsForTests,
+  noteActiveSqliteVfs,
+} from "../../../core/db/storageBackendState";
+
+/** Початковий pull дійшов до кінця оп-логу (data-04). */
+function completeInitialPull(): void {
+  markInitialPullComplete("user-1", {});
+}
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -63,11 +83,14 @@ function createLocalStorageMock() {
 beforeEach(() => {
   globalThis.localStorage = createLocalStorageMock() as unknown as Storage;
   clearNutritionSqliteCache();
+  __resetInitialPullStateForTests();
   triggerSpy.mockReset();
 });
 
 afterEach(() => {
   clearNutritionSqliteCache();
+  __resetInitialPullStateForTests();
+  __resetActiveSqliteVfsForTests();
 });
 
 // -------------------------------------------------------------------------
@@ -259,6 +282,59 @@ describe("persistPantries — dual-write only (no LS write)", () => {
   });
 });
 
+// data-10: у memory-режимі (фолбек `:memory:` при збої OPFS/квоти) модуль бачить
+// порожню базу. Знімок комори з неї журналюється (у memory журнал не знімається)
+// і на справжній базі видаляє живі позиції, тож до гідратації його не пишемо.
+describe("persistPantries — memory-режим не пише знімки з негідрованого стану (data-10)", () => {
+  const DEFAULT_PLACES: Pantry[] = [
+    { id: "home", name: "Дім", items: [], text: "" },
+    { id: "fridge", name: "Холодильник", items: [], text: "" },
+    { id: "freezer", name: "Морозилка", items: [], text: "" },
+  ];
+  const write = (pantries: Pantry[] = DEFAULT_PLACES) =>
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      pantries,
+      null,
+    );
+
+  it("холодний memory-старт (кеш прогрітий порожньою базою, pull не було) не породжує pantry-опів", () => {
+    noteActiveSqliteVfs("memory");
+    __setNutritionSqliteCacheForTests({});
+
+    expect(write()).toBe(false);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("пише, коли кеш уже має комори (гідровано)", () => {
+    noteActiveSqliteVfs("memory");
+    __setNutritionSqliteCacheForTests({
+      pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+    });
+
+    expect(write()).toBe(true);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("пише, коли початковий pull завершено (на сервері комор немає)", () => {
+    noteActiveSqliteVfs("memory");
+    __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
+
+    expect(write()).toBe(true);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("на персистентній базі поведінка не змінилась: холодний кеш пише як і раніше", () => {
+    noteActiveSqliteVfs("opfs-sahpool");
+    __setNutritionSqliteCacheForTests({});
+
+    expect(write()).toBe(true);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("persistNutritionLog — dual-write only", () => {
   it("does not touch localStorage", () => {
     persistNutritionLog({}, NUTRITION_LOG_KEY);
@@ -292,6 +368,12 @@ describe("persistNutritionLog — dual-write only", () => {
 });
 
 describe("persistNutritionPrefs — dual-write only", () => {
+  beforeEach(() => {
+    // Гейт гідратації: кеш прогрітий І pull завершено.
+    __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
+  });
+
   it("does not write to localStorage", () => {
     persistNutritionPrefs(
       { ...defaultNutritionPrefs(), reminderHour: 8 },
@@ -309,6 +391,201 @@ describe("persistNutritionPrefs — dual-write only", () => {
   });
 });
 
+describe("data-04 — гейт гідратації prefs і patchNutritionPrefs", () => {
+  const template = {
+    id: "t1",
+    name: "Сніданок",
+    mealType: "breakfast" as const,
+    macros: { kcal: 400, protein_g: 20, fat_g: 10, carbs_g: 50 },
+  };
+  const accountPrefs = {
+    ...defaultNutritionPrefs(),
+    dailyTargetKcal: 2100,
+    adaptiveGoalEnabled: false,
+    waterGoalMl: 2750,
+    reminderEnabled: true,
+    mealTemplates: [template],
+  };
+
+  it("холодний кеш без pull: prefs не гідратовано і нічого не пишеться", () => {
+    // Локальний бут завершено (refreshedAt), але рядка prefs немає і pull ще
+    // не йшов — `loadNutritionPrefs()` віддає ДЕФОЛТИ.
+    __setNutritionSqliteCacheForTests({});
+    expect(isNutritionPrefsHydrated()).toBe(false);
+    expect(
+      persistNutritionPrefs({ ...defaultNutritionPrefs(), reminderHour: 8 }),
+    ).toBe(false);
+    expect(patchNutritionPrefs({ dailyTargetKcal: 2740 })).toBe(false);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("після завершення початкового pull правки пишуться", () => {
+    __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
+    expect(isNutritionPrefsHydrated()).toBe(true);
+    expect(patchNutritionPrefs({ reminderHour: 8 })).toBe(true);
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("кеш з рядком prefs вважається гідратованим і без pull", () => {
+    __setNutritionSqliteCacheForTests({ prefs: accountPrefs });
+    expect(isNutritionPrefsHydrated()).toBe(true);
+    expect(patchNutritionPrefs({ reminderHour: 8 })).toBe(true);
+  });
+
+  it("pull ІНШОГО користувача не гідратує prefs поточного", () => {
+    __setNutritionSqliteCacheForTests({});
+    const unregister = registerNutritionDualWriteContext({
+      getUserId: () => "user-B",
+      getMigrationClient: async () => null,
+      getNow: () => "2026-10-02T00:00:00.000Z",
+    });
+    try {
+      markInitialPullComplete("user-A", {});
+      expect(isNutritionPrefsHydrated()).toBe(false);
+      expect(patchNutritionPrefs({ reminderHour: 8 })).toBe(false);
+
+      markInitialPullComplete("user-B", {});
+      expect(isNutritionPrefsHydrated()).toBe(true);
+    } finally {
+      unregister();
+      __clearNutritionDualWriteContextForTests();
+    }
+  });
+
+  it("pull завершено, але кеш Їжі НЕ прогрітий (refreshedAt === null): prefs не гідратовано, нічого не пишеться", () => {
+    // Вже наявний пристрій: pull без nutrition-опів кеш не торкається, а бут
+    // кешу впав або ще не довантажився — `loadNutritionPrefs()` дає дефолти.
+    clearNutritionSqliteCache();
+    completeInitialPull();
+    expect(getCachedNutritionSqliteStateForTest().refreshedAt).toBeNull();
+    expect(isNutritionPrefsHydrated()).toBe(false);
+    expect(
+      persistNutritionPrefs({ ...defaultNutritionPrefs(), reminderHour: 8 }),
+    ).toBe(false);
+    expect(patchNutritionPrefs({ dailyTargetKcal: 2740 })).toBe(false);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("два патчі підряд без оновлення кешу: другий містить поля обох", () => {
+    // Blur поля і одразу click по тумблеру: dual-write ще не відпрацював, кеш
+    // старий. Другий патч не має загубити перший.
+    __setNutritionSqliteCacheForTests({ prefs: accountPrefs });
+    expect(patchNutritionPrefs({ waterGoalMl: 2500 })).toBe(true);
+    expect(patchNutritionPrefs({ adaptiveGoalEnabled: true })).toBe(true);
+
+    const [, next] = triggerSpy.mock.calls[1]!;
+    const written = JSON.parse(next.prefs.prefsJson as string) as Record<
+      string,
+      unknown
+    >;
+    expect(written["waterGoalMl"]).toBe(2500);
+    expect(written["adaptiveGoalEnabled"]).toBe(true);
+    expect(written["mealTemplates"]).toEqual([template]);
+    // `prev` другого виклику теж бачить перший запис: diff емітить лише різницю.
+    const [prev2] = triggerSpy.mock.calls[1]!;
+    expect(
+      (JSON.parse(prev2.prefs.prefsJson as string) as Record<string, unknown>)[
+        "waterGoalMl"
+      ],
+    ).toBe(2500);
+  });
+
+  it("після оновлення кешу патч знову береться з кешу (зміни з pull не губляться)", () => {
+    __setNutritionSqliteCacheForTests({ prefs: accountPrefs });
+    expect(patchNutritionPrefs({ waterGoalMl: 2500 })).toBe(true);
+    // Refresh приніс інші prefs (наприклад, з іншого пристрою).
+    __setNutritionSqliteCacheForTests({
+      prefs: { ...accountPrefs, waterGoalMl: 3100, reminderHour: 7 },
+    });
+    expect(patchNutritionPrefs({ adaptiveGoalEnabled: true })).toBe(true);
+
+    const [, next] = triggerSpy.mock.calls[1]!;
+    const written = JSON.parse(next.prefs.prefsJson as string) as Record<
+      string,
+      unknown
+    >;
+    expect(written["waterGoalMl"]).toBe(3100);
+    expect(written["reminderHour"]).toBe(7);
+  });
+
+  it("скидання прапора (logout) знову блокує запис", () => {
+    __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
+    expect(isNutritionPrefsHydrated()).toBe(true);
+    __resetInitialPullStateForTests();
+    expect(isNutritionPrefsHydrated()).toBe(false);
+  });
+
+  it("patch накладає лише змінені поля на актуальний кеш: шаблони, вода, нагадування цілі", () => {
+    __setNutritionSqliteCacheForTests({ prefs: accountPrefs });
+    expect(patchNutritionPrefs({ reminderHour: 8 })).toBe(true);
+
+    const [, next] = triggerSpy.mock.calls[0]!;
+    const written = JSON.parse(next.prefs.prefsJson as string) as Record<
+      string,
+      unknown
+    >;
+    expect(written["reminderHour"]).toBe(8);
+    expect(written["mealTemplates"]).toEqual([template]);
+    expect(written["waterGoalMl"]).toBe(2750);
+    expect(written["reminderEnabled"]).toBe(true);
+    expect(written["dailyTargetKcal"]).toBe(2100);
+    expect(written["adaptiveGoalEnabled"]).toBe(false);
+  });
+
+  it("patch береться з кешу В МОМЕНТ ВИКЛИКУ, а не зі знімка, взятого раніше", () => {
+    __setNutritionSqliteCacheForTests({ prefs: defaultNutritionPrefs() });
+    const staleSnapshot = loadNutritionPrefs();
+    // Pull приніс справжні prefs уже після того, як компонент зняв знімок.
+    __setNutritionSqliteCacheForTests({ prefs: accountPrefs });
+
+    expect(staleSnapshot.mealTemplates).toEqual([]);
+    expect(patchNutritionPrefs({ reminderHour: 9 })).toBe(true);
+
+    const [, next] = triggerSpy.mock.calls[0]!;
+    const written = JSON.parse(next.prefs.prefsJson as string) as Record<
+      string,
+      unknown
+    >;
+    expect(written["mealTemplates"]).toEqual([template]);
+    expect(written["waterGoalMl"]).toBe(2750);
+  });
+
+  it("whole-blob вода й список покупок: прогрітий кеш БЕЗ власного рядка і без pull не пишеться", () => {
+    __setNutritionSqliteCacheForTests({});
+    expect(persistNutritionWaterLog({ "2026-07-01": 500 })).toBe(false);
+    expect(
+      persistNutritionShoppingList({
+        categories: [
+          {
+            name: "Інше",
+            items: [
+              {
+                id: "i1",
+                name: "Молоко",
+                quantity: "",
+                note: "",
+                checked: false,
+              },
+            ],
+          },
+        ],
+      }),
+    ).toBe(false);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("whole-blob вода й список покупок: з власним рядком у кеші пишуться й без pull", () => {
+    __setNutritionSqliteCacheForTests({
+      waterLog: { "2026-07-01": 300 },
+      shoppingList: { categories: [] },
+    });
+    expect(persistNutritionWaterLog({ "2026-07-01": 500 })).toBe(true);
+    expect(persistNutritionShoppingList({ categories: [] })).toBe(true);
+  });
+});
+
 describe("persistNutritionWaterLog — dual-write only", () => {
   it("data-03: на непрогрітому кеші — no-op (нічого не пише)", () => {
     expect(persistNutritionWaterLog({ "2026-07-01": 500 })).toBe(false);
@@ -317,6 +594,7 @@ describe("persistNutritionWaterLog — dual-write only", () => {
 
   it("sanitizes the water log and sends it through dual-write", () => {
     __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
     persistNutritionWaterLog({
       "2026-07-01": 750.6,
       "2026-07-02": -10,
@@ -334,6 +612,7 @@ describe("persistNutritionWaterLog — dual-write only", () => {
 
   it("still forwards to triggerNutritionDualWrite before the dual-write context is registered", () => {
     __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
     expect(persistNutritionWaterLog({ "2026-07-01": 500 })).toBe(true);
     expect(triggerSpy).toHaveBeenCalledTimes(1);
   });
@@ -365,6 +644,7 @@ describe("persistNutritionShoppingList — dual-write only", () => {
 
   it("data-03: після прогріву звичайні правки пишуться", () => {
     __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
     expect(
       persistNutritionShoppingList({
         categories: [
@@ -388,6 +668,7 @@ describe("persistNutritionShoppingList — dual-write only", () => {
 
   it("normalizes the shopping-list document and sends it through dual-write", () => {
     __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
     persistNutritionShoppingList({
       categories: [
         {
@@ -437,6 +718,7 @@ describe("persistNutritionShoppingList — dual-write only", () => {
 
   it("still forwards to triggerNutritionDualWrite before the dual-write context is registered", () => {
     __setNutritionSqliteCacheForTests({});
+    completeInitialPull();
     expect(persistNutritionShoppingList({ categories: [] })).toBe(true);
     expect(triggerSpy).toHaveBeenCalledTimes(1);
   });

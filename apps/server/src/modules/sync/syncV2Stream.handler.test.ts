@@ -48,18 +48,28 @@ vi.mock("../../obs/metrics.js", () => ({
   syncStreamConnectionsActive: { inc: vi.fn(), dec: vi.fn() },
 }));
 
+// sec-09: heartbeat перевіряє сесію через `getFreshSessionUser` (ліниво
+// імпортований `auth.js`). Мокаємо лише його: справжній Better Auth тут не
+// потрібен, а вердикт («сесія жива / відкликана») задає кожен тест.
+vi.mock("../../auth.js", () => ({ getFreshSessionUser: vi.fn() }));
+
 import _pool from "../../db.js";
+import { getFreshSessionUser as _getFreshSessionUser } from "../../auth.js";
 import {
+  __testingResetSyncV2StreamRegistry,
   notifySyncV2OpsApplied,
   opLogEmitter,
   syncV2Stream,
   SYNC_V2_STREAM_HEARTBEAT_MS,
+  SYNC_V2_STREAM_MAX_AGE_MS,
+  SYNC_V2_STREAM_MAX_PER_USER,
   SYNC_V2_STREAM_REPLAY_LIMIT,
   type SyncV2StreamOp,
 } from "./syncV2Stream.js";
 import { SYNC_OP_LOG_COMMITTED_WATERMARK_SQL } from "./syncV2-core.js";
 
 const pool = _pool as unknown as { query: Mock };
+const getFreshSessionUser = _getFreshSessionUser as unknown as Mock;
 
 interface FakeRes {
   statusCode: number;
@@ -152,6 +162,10 @@ const SAMPLE_DB_ROW = {
 beforeEach(() => {
   pool.query.mockReset();
   opLogEmitter.removeAllListeners();
+  __testingResetSyncV2StreamRegistry();
+  // За замовчуванням сесія жива: повертаємо того самого юзера, що в req.
+  getFreshSessionUser.mockReset();
+  getFreshSessionUser.mockImplementation(async (req: FakeReq) => req.user);
   vi.useFakeTimers();
 });
 
@@ -418,5 +432,161 @@ describe("syncV2Stream handler — live emit & heartbeat", () => {
 
     expect(tab1Res.writes.length).toBe(before1 + 1);
     expect(tab2Res.writes.length).toBe(before2 + 1);
+  });
+});
+
+// ───────────────────────── sec-09: сесія, вік, ліміт ─────────────────────────
+
+describe("syncV2Stream handler — sec-09 session / max-age / per-user cap", () => {
+  const closedFrame = (res: FakeRes, reason: string): boolean =>
+    res.writes.some(
+      (w) => w.includes("event: closed") && w.includes(`"reason":"${reason}"`),
+    );
+
+  async function open(userId: string): Promise<{
+    req: FakeReq & Request;
+    res: FakeRes & Response;
+  }> {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+    const req = makeReq({ userId });
+    const res = makeRes();
+    await syncV2Stream(req as Request, res as Response);
+    return { req, res };
+  }
+
+  it("keeps the stream open while the session is alive and re-checks it from DB on every heartbeat", async () => {
+    const { req, res } = await open("u1");
+
+    await vi.advanceTimersByTimeAsync(SYNC_V2_STREAM_HEARTBEAT_MS * 3);
+
+    expect(res.ended).toBe(false);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(1);
+    expect(getFreshSessionUser).toHaveBeenCalledTimes(3);
+    expect(getFreshSessionUser).toHaveBeenCalledWith(req);
+  });
+
+  it("closes the stream on the next heartbeat after the session is revoked", async () => {
+    const { res } = await open("u1");
+    getFreshSessionUser.mockResolvedValue(null); // sign-out / revoke-sessions
+
+    // Поки heartbeat не тікнув, стрім ще живий: вікно закриття = один тік.
+    expect(res.ended).toBe(false);
+    await vi.advanceTimersByTimeAsync(SYNC_V2_STREAM_HEARTBEAT_MS);
+
+    expect(res.ended).toBe(true);
+    expect(closedFrame(res, "session_revoked")).toBe(true);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
+
+    // Після закриття live-ops у відкликаний стрім більше не летять.
+    const before = res.writes.length;
+    notifySyncV2OpsApplied("u1", [
+      {
+        id: 7,
+        table: "routine_entries",
+        op: "insert",
+        row: {},
+        client_ts: "2026-05-04T11:00:00.000Z",
+        server_ts: "2026-05-04T11:00:00.250Z",
+        origin_device_id: null,
+      },
+    ]);
+    expect(res.writes.length).toBe(before);
+  });
+
+  it("closes the stream when the cookie now resolves to a different user", async () => {
+    const { res } = await open("u1");
+    getFreshSessionUser.mockResolvedValue({ id: "someone-else" });
+
+    await vi.advanceTimersByTimeAsync(SYNC_V2_STREAM_HEARTBEAT_MS);
+
+    expect(res.ended).toBe(true);
+    expect(closedFrame(res, "session_revoked")).toBe(true);
+  });
+
+  it("fails closed when the session lookup throws", async () => {
+    const { res } = await open("u1");
+    getFreshSessionUser.mockRejectedValue(new Error("db down"));
+
+    await vi.advanceTimersByTimeAsync(SYNC_V2_STREAM_HEARTBEAT_MS);
+
+    expect(res.ended).toBe(true);
+    expect(closedFrame(res, "session_check_failed")).toBe(true);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
+  });
+
+  it("closes the stream at SYNC_V2_STREAM_MAX_AGE_MS even if the session stays valid", async () => {
+    const { res } = await open("u1");
+
+    await vi.advanceTimersByTimeAsync(SYNC_V2_STREAM_MAX_AGE_MS - 1_000);
+    expect(res.ended).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(res.ended).toBe(true);
+    expect(closedFrame(res, "max_age")).toBe(true);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
+  });
+
+  it("evicts the OLDEST stream when a user opens more than SYNC_V2_STREAM_MAX_PER_USER", async () => {
+    expect(SYNC_V2_STREAM_MAX_PER_USER).toBe(3);
+    const first = await open("u1");
+    const second = await open("u1");
+    const third = await open("u1");
+    const other = await open("u2");
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(3);
+
+    const fourth = await open("u1");
+
+    expect(first.res.ended).toBe(true);
+    expect(closedFrame(first.res, "evicted")).toBe(true);
+    expect(second.res.ended).toBe(false);
+    expect(third.res.ended).toBe(false);
+    expect(fourth.res.ended).toBe(false);
+    expect(other.res.ended).toBe(false);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(3);
+
+    // П'ятий витісняє вже другого (наступного за віком).
+    await open("u1");
+    expect(second.res.ended).toBe(true);
+    expect(third.res.ended).toBe(false);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(3);
+  });
+
+  it("frees a slot when a stream closes normally (no phantom eviction)", async () => {
+    const a = await open("u1");
+    const b = await open("u1");
+    const c = await open("u1");
+    fireClose(a.req);
+
+    const d = await open("u1");
+
+    expect(b.res.ended).toBe(false);
+    expect(c.res.ended).toBe(false);
+    expect(d.res.ended).toBe(false);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(3);
+  });
+
+  it("evicts a stream that is still replaying without writing data to it", async () => {
+    let resolveFirst: (v: { rows: unknown[] }) => void = () => undefined;
+    pool.query.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirst = resolve;
+        }),
+    );
+    const slowReq = makeReq({ userId: "u1" });
+    const slowRes = makeRes();
+    const slow = syncV2Stream(slowReq as Request, slowRes as Response);
+
+    await open("u1");
+    await open("u1");
+    await open("u1"); // 4-й: витісняє `slow`, що ще чекає SELECT
+
+    resolveFirst({ rows: [SAMPLE_DB_ROW] });
+    await slow;
+
+    expect(slowRes.ended).toBe(true);
+    expect(slowRes.writes.some((w) => w.includes("event: op"))).toBe(false);
+    expect(closedFrame(slowRes, "evicted")).toBe(true);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(3);
   });
 });

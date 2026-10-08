@@ -14,7 +14,9 @@
  * завжди бачить теплу гілку — імпортоване не зʼявлялось НІКОЛИ.
  * Тому `persistFinykNormalizedToSqlite` тут обовʼязковий, і виклик
  * треба **чекати**: `HubBackupPanel` одразу після імпорту робить
- * `window.location.reload()`, який убʼє fire-and-forget запис.
+ * `window.location.reload()`, який убʼє fire-and-forget запис. Запис іде
+ * журнальованим шляхом (`dualWriteFinykState`), а панель перед reload ще
+ * чекає `outboxCheckpoint()` (аудит 2026-10-01, data-07).
  *
  * LS-запис лишається для холодного кеша (анонім до boot-у, SQLite
  * недоступний) — там `readFinykBackupFromStorage` читає саме LS.
@@ -24,6 +26,12 @@
  * without depending on localStorage.
  */
 
+import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
+import {
+  addMissingBy,
+  BACKUP_RESTORE_NOT_READY_MESSAGE,
+  type BackupRestoreMode,
+} from "@shared/lib/backup/restoreMode";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { readJSON, writeJSON } from "./finykStorage";
 import { getCachedFinykSqliteState } from "./sqliteReader";
@@ -46,15 +54,10 @@ import {
   FINYK_BACKUP_VERSION,
   FINYK_FIELD_TO_STORAGE_KEY,
   normalizeFinykBackup,
-  normalizeFinykSyncPayload,
   type FinykBackup,
 } from "@sergeant/finyk-domain/backup";
 
-export {
-  FINYK_BACKUP_VERSION,
-  normalizeFinykBackup,
-  normalizeFinykSyncPayload,
-};
+export { FINYK_BACKUP_VERSION, normalizeFinykBackup };
 export type { FinykBackup };
 
 /**
@@ -116,6 +119,9 @@ export function readFinykBackupFromStorage() {
     monoDebtLinkedTxIds: warm
       ? cache.monoDebtLinkedTxIds
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.monoDebtLinkedTxIds, {}),
+    // Нотатки живуть лише в LS (поза SQLite dual-write), тож і на теплому
+    // кеші джерело одне — LS (аудит 2026-10-01, data-27).
+    txNotes: readJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, {}),
     networthHistory: warm
       ? cache.networthHistory
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.networthHistory, []),
@@ -156,23 +162,59 @@ export function persistFinykNormalizedToStorage(normalized: FinykBackup): void {
  * Canonical import write: mirrors a normalised backup into the Finyk
  * SQLite tables, which is what every Finyk read path actually looks at.
  *
- * Replace, not merge. `HubBackupPanel` asks the user to confirm
- * «Імпорт повністю замінить ці дані на цьому пристрої», so the diff
- * runs against the CURRENT warm cache: rows the backup no longer
- * carries are tombstoned instead of surviving as a silent union.
+ * Два режими (аудит 2026-10-01, data-06), див. `BackupRestoreMode`:
+ *
+ *  - `merge`: лише додати відсутнє. Рядок із тим самим id лишається таким,
+ *    яким був на пристрої, рядки, яких файл не несе, не чіпаються: diff
+ *    не містить жодного `delete`, а отже на сервер не їде жоден tombstone.
+ *  - `replace`: diff іде проти ПОТОЧНОГО теплого кеша, і рядки, яких у файлі
+ *    немає, гасяться. Це видалення їде на сервер і на всі пристрої акаунта,
+ *    тому режим лише явний (діалог у `HubBackupPanel`).
+ *
+ * Обидва режими потребують ТЕПЛОГО кеша: diff від холодного (порожнього)
+ * кеша не бачить рядків акаунта, тож «заміна» мовчки вироджується в злиття, а
+ * `merge` перезаписав би існуючі рядки. Панель блокує імпорт, доки кеш не
+ * прогрітий, а тут це ще й перевіряється.
+ *
  * Slices the file omits are copied over from `prev` untouched, which
  * mirrors `persistFinykNormalizedToStorage` skipping absent fields.
  *
  * Awaitable on purpose — the caller reloads the page right after.
- * Never rejects: `dualWriteFinykState` reports failures through
- * dual-write telemetry and returns a `skipped` outcome when no
- * context is registered (anonymous / pre-boot).
+ * Resolves with the `DualWriteOutcome`: `skipped` (no context, sqlite
+ * unavailable) is NOT an error here but the caller MUST NOT treat it as a
+ * successful restore (`applyHubBackupPayload` throws on it). На холодному
+ * кеші кидає, а не повертає `skipped`: це не стан запису, а відмова почати.
  */
 export async function persistFinykNormalizedToSqlite(
   normalized: FinykBackup,
-): Promise<void> {
+  mode: BackupRestoreMode,
+): Promise<DualWriteOutcome> {
+  if (getCachedFinykSqliteState().refreshedAt === null) {
+    throw new Error(BACKUP_RESTORE_NOT_READY_MESSAGE);
+  }
+  // Нотатки не в SQLite: `replace` уже записав їх у LS через
+  // `persistFinykNormalizedToStorage`, а `merge` до LS не торкається, тож
+  // дописуємо відсутні тут (існуюча нотатка пристрою лишається).
+  if (mode === "merge") mergeTxNotesIntoStorage(normalized.txNotes);
   const prev = cacheToDualWriteState();
-  await dualWriteFinykState(prev, backupOntoState(prev, normalized));
+  const next =
+    mode === "replace"
+      ? backupOntoState(prev, normalized)
+      : mergeBackupOntoState(prev, normalized);
+  return dualWriteFinykState(prev, next);
+}
+
+function mergeTxNotesIntoStorage(incoming: FinykBackup["txNotes"]): void {
+  if (!incoming) return;
+  const current = readJSON<Record<string, string>>(
+    FINYK_FIELD_TO_STORAGE_KEY.txNotes,
+    {},
+  );
+  const base =
+    current && typeof current === "object" && !Array.isArray(current)
+      ? current
+      : {};
+  writeJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, { ...incoming, ...base });
 }
 
 function cacheToDualWriteState(): FinykDualWriteState {
@@ -232,6 +274,167 @@ function backupOntoState(
 }
 
 /**
+ * Режим `merge`: те саме, що {@link backupOntoState}, але кожен зріз =
+ * поточні рядки + рядки файлу з новим ключем. Скалярні налаштування (план
+ * місяця, правила мерчантів) файл ставить лише там, де на пристрої порожньо;
+ * списки id (виключені з статистики, відхилені рекурентні) обʼєднуються.
+ */
+function mergeBackupOntoState(
+  prev: FinykDualWriteState,
+  b: FinykBackup,
+): FinykDualWriteState {
+  const byId = (e: { readonly id: string }) => e.id;
+  const byTx = (e: { readonly transactionId: string }) => e.transactionId;
+  const next: {
+    -readonly [K in keyof FinykDualWriteState]: FinykDualWriteState[K];
+  } = { ...prev };
+  if (b.hiddenAccounts) {
+    next.hiddenAccounts = addMissingBy(
+      prev.hiddenAccounts,
+      idsFromArray(b.hiddenAccounts),
+      byId,
+    );
+  }
+  if (b.hiddenTxIds) {
+    next.hiddenTransactions = addMissingBy(
+      prev.hiddenTransactions,
+      idsFromArray(b.hiddenTxIds),
+      byId,
+    );
+  }
+  if (b.budgets) {
+    next.budgets = addMissingBy(prev.budgets, blobsFromArray(b.budgets), byId);
+  }
+  if (b.subscriptions) {
+    next.subscriptions = addMissingBy(
+      prev.subscriptions,
+      blobsFromArray(b.subscriptions),
+      byId,
+    );
+  }
+  if (b.manualAssets) {
+    next.assets = addMissingBy(
+      prev.assets,
+      blobsFromArray(b.manualAssets),
+      byId,
+    );
+  }
+  if (b.manualDebts) {
+    next.debts = addMissingBy(prev.debts, blobsFromArray(b.manualDebts), byId);
+  }
+  if (b.receivables) {
+    next.receivables = addMissingBy(
+      prev.receivables,
+      blobsFromArray(b.receivables),
+      byId,
+    );
+  }
+  if (b.customCategories) {
+    next.customCategories = addMissingBy(
+      prev.customCategories,
+      blobsFromArray(b.customCategories),
+      byId,
+    );
+  }
+  if (b.manualExpenses) {
+    next.manualExpenses = addMissingBy(
+      prev.manualExpenses,
+      blobsFromArray(b.manualExpenses),
+      byId,
+    );
+  }
+  if (b.txCategories) {
+    next.txCategories = addMissingBy(
+      prev.txCategories,
+      txCatsFromMap(b.txCategories),
+      byTx,
+    );
+  }
+  if (b.txSplits) {
+    next.txSplits = addMissingBy(
+      prev.txSplits,
+      txSplitsFromMap(b.txSplits),
+      byTx,
+    );
+  }
+  if (b.monoDebtLinkedTxIds) {
+    next.monoDebtLinks = addMissingBy(
+      prev.monoDebtLinks,
+      monoDebtLinksFromMap(b.monoDebtLinkedTxIds),
+      byTx,
+    );
+  }
+  if (b.networthHistory) {
+    next.networthHistory = addMissingBy(
+      prev.networthHistory,
+      networthHistoryFrom(b.networthHistory),
+      (e) => e.month,
+    );
+  }
+  next.prefs = mergePrefs(prev.prefs, b);
+  return next;
+}
+
+function isEmptyJson(raw: string): boolean {
+  return raw === "" || raw === "{}" || raw === "[]" || raw === "null";
+}
+
+function parseStringArray(raw: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? onlyStrings(parsed) : [];
+  } catch {
+    return [];
+  }
+}
+
+function mergePrefs(
+  prev: FinykPrefsSnapshot | null,
+  b: FinykBackup,
+): FinykPrefsSnapshot {
+  const fromFile = prefsOntoSnapshot(prev, b);
+  const cur = prev ?? EMPTY_PREFS;
+  const unionIds = (
+    curRaw: string,
+    incoming: readonly unknown[] | undefined,
+  ) =>
+    incoming
+      ? toJson(
+          addMissingBy(
+            parseStringArray(curRaw),
+            onlyStrings(incoming),
+            (v) => v,
+          ),
+          "[]",
+        )
+      : curRaw;
+  const hasRules = (getCachedFinykSqliteState().merchantRules ?? []).length > 0;
+  return {
+    showBalance: cur.showBalance,
+    monthlyPlanJson: isEmptyJson(cur.monthlyPlanJson)
+      ? fromFile.monthlyPlanJson
+      : cur.monthlyPlanJson,
+    excludedStatTxIdsJson: unionIds(
+      cur.excludedStatTxIdsJson,
+      b.excludedStatTxIds,
+    ),
+    dismissedRecurringJson: unionIds(
+      cur.dismissedRecurringJson,
+      b.dismissedRecurring,
+    ),
+    prefsJson: hasRules ? cur.prefsJson : fromFile.prefsJson,
+  };
+}
+
+const EMPTY_PREFS: FinykPrefsSnapshot = {
+  monthlyPlanJson: "{}",
+  showBalance: true,
+  excludedStatTxIdsJson: "[]",
+  dismissedRecurringJson: "[]",
+  prefsJson: "{}",
+};
+
+/**
  * `showBalance` навмисно береться з `prev`: конверт бекапу його не
  * везе, а дефолт `true` затер би вимкнений баланс на пристрої.
  */
@@ -239,13 +442,7 @@ function prefsOntoSnapshot(
   prev: FinykPrefsSnapshot | null,
   b: FinykBackup,
 ): FinykPrefsSnapshot {
-  const base: FinykPrefsSnapshot = prev ?? {
-    monthlyPlanJson: "{}",
-    showBalance: true,
-    excludedStatTxIdsJson: "[]",
-    dismissedRecurringJson: "[]",
-    prefsJson: "{}",
-  };
+  const base: FinykPrefsSnapshot = prev ?? EMPTY_PREFS;
   return {
     showBalance: base.showBalance,
     monthlyPlanJson: b.monthlyPlan

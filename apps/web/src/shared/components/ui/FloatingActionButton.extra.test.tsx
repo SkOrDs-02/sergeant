@@ -160,7 +160,7 @@ describe("FloatingActionButton — scroll-to-hide", () => {
       configurable: true,
     });
     fireEvent.scroll(window);
-    expect(outer.className).toContain("translate-y-24");
+    expect(outer.className).toContain("invisible");
 
     // Scroll back up.
     Object.defineProperty(window, "scrollY", {
@@ -168,7 +168,7 @@ describe("FloatingActionButton — scroll-to-hide", () => {
       configurable: true,
     });
     fireEvent.scroll(window);
-    expect(outer.className).not.toContain("translate-y-24");
+    expect(outer.className).not.toContain("invisible");
   });
 
   it("ховається й від прокрутки внутрішнього контейнера, не лише вікна", () => {
@@ -183,11 +183,11 @@ describe("FloatingActionButton — scroll-to-hide", () => {
 
     scroller.scrollTop = 200;
     fireEvent.scroll(scroller);
-    expect(outer.className).toContain("translate-y-24");
+    expect(outer.className).toContain("invisible");
 
     scroller.scrollTop = 120;
     fireEvent.scroll(scroller);
-    expect(outer.className).not.toContain("translate-y-24");
+    expect(outer.className).not.toContain("invisible");
   });
 
   it("лишає резерв під собою, коли ховається від прокрутки", () => {
@@ -217,7 +217,7 @@ describe("FloatingActionButton — scroll-to-hide", () => {
     const outer = fab.parentElement!;
     expect(outer).toHaveAttribute("aria-hidden", "true");
     expect(fab).toHaveAttribute("tabindex", "-1");
-    expect(outer.className).toContain("translate-y-24");
+    expect(outer.className).toContain("invisible");
   });
 
   it("stays reachable while the keyboard is closed", () => {
@@ -226,6 +226,6 @@ describe("FloatingActionButton — scroll-to-hide", () => {
 
     const fab = screen.getByRole("button", { name: "Додати звичку" });
     expect(fab).not.toHaveAttribute("tabindex", "-1");
-    expect(fab.parentElement!.className).not.toContain("translate-y-24");
+    expect(fab.parentElement!.className).not.toContain("invisible");
   });
 });

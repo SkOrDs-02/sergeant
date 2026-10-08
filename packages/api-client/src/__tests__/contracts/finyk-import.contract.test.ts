@@ -451,6 +451,83 @@ describe(
         });
     });
 
+    it("accepts a mapping with a separate creditCol (debit/credit statement)", async () => {
+      // logic-06: українські виписки з окремими колонками «Дебет» і
+      // «Кредит». `amountCol` = дебет (витрата), `creditCol` = кредит
+      // (надходження) — напрям дає колонка, а не знак. Інтеракція замикає
+      // ФОРМУ запиту (`mapping.creditCol`): `.strict()`-схема на сервері
+      // відкинула б невідомий ключ 400-кою, якби його не було в контракті.
+      const debitCreditCsv = [
+        "Дата;Опис;Дебет;Кредит",
+        "21.09.2026;Сільпо;350,00;",
+        "22.09.2026;Зарплата;;30000,00",
+      ].join("\n");
+      const mapping = {
+        dateCol: "Дата",
+        amountCol: "Дебет",
+        creditCol: "Кредит",
+        descriptionCol: "Опис",
+        decimalComma: true,
+      };
+
+      await pact
+        .addInteraction()
+        .given(
+          "authenticated user-pact-001; CSV has separate debit and credit columns",
+        )
+        .uponReceiving(
+          "a POST /api/v1/finyk/import/statement/preview request (debit/credit mapping)",
+        )
+        .withRequest(
+          "POST",
+          "/api/v1/finyk/import/statement/preview",
+          (req) => {
+            req.headers({
+              accept: "application/json",
+              "content-type": "application/json",
+            });
+            req.jsonBody({ csv_text: debitCreditCsv, mapping });
+          },
+        )
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            profile: "custom",
+            needsMapping: false,
+            rows: [
+              {
+                date: "2026-09-21",
+                amountKopiykas: 35000,
+                direction: "expense",
+                description: "Сільпо",
+              },
+              {
+                date: "2026-09-22",
+                amountKopiykas: 3000000,
+                direction: "income",
+                description: "Зарплата",
+              },
+            ],
+            skipped: [],
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const imports = createFinykImportEndpoints(http);
+          const out = await imports.previewImportStatement({
+            csv_text: debitCreditCsv,
+            mapping,
+          });
+
+          expect(out.profile).toBe("custom");
+          expect(out.rows.map((r) => r.direction)).toEqual([
+            "expense",
+            "income",
+          ]);
+          expect(out.rows[1]!.amountKopiykas).toBe(3000000);
+        });
+    });
+
     it("accepts the raw file (XLSX) instead of pre-read text", async () => {
       // Privat24 hands out the statement as a spreadsheet, so the
       // text-only branch of this endpoint could never serve it. The

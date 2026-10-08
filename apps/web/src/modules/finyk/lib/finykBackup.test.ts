@@ -18,10 +18,10 @@ vi.mock("./sqliteReader", async () => {
 
 import {
   normalizeFinykBackup,
-  normalizeFinykSyncPayload,
   FINYK_BACKUP_VERSION,
   readFinykBackupFromStorage,
   persistFinykNormalizedToStorage,
+  persistFinykNormalizedToSqlite,
 } from "./finykBackup";
 import { HUB_FINYK_ROUTINE_SYNC_EVENT } from "../hubRoutineSync";
 
@@ -109,42 +109,6 @@ describe("normalizeFinykBackup", () => {
     expect(() =>
       normalizeFinykBackup({ version: 2, txCategories: [] }),
     ).toThrow(/обʼєктом/);
-  });
-});
-
-describe("normalizeFinykSyncPayload", () => {
-  it("розгортає компактний v3 і валідує поля", () => {
-    const compact: Record<string, unknown> = {
-      v: 3,
-      b: [] as unknown[],
-      s: [] as unknown[],
-      a: [] as unknown[],
-      d: [] as unknown[],
-      r: [] as unknown[],
-      mp: { income: "", expense: "", savings: "" },
-      tc: { x: "y" },
-      ts: {},
-      md: {},
-      nh: [{ month: "2026-01", networth: 1 }],
-      cc: [{ id: "cus_a", label: "Тест" }],
-    };
-    expect(normalizeFinykSyncPayload(compact)).toMatchObject({
-      txCategories: { x: "y" },
-      networthHistory: [{ month: "2026-01", networth: 1 }],
-      customCategories: [{ id: "cus_a", label: "Тест" }],
-    });
-  });
-
-  it("приймає повний бекап як у файлі", () => {
-    expect(normalizeFinykSyncPayload({ version: 1, budgets: [] })).toEqual({
-      budgets: [],
-    });
-  });
-
-  it("відхиляє зіпсований компактний tc", () => {
-    expect(() => normalizeFinykSyncPayload({ v: 3, b: [], tc: [] })).toThrow(
-      /обʼєктом/,
-    );
   });
 });
 
@@ -323,5 +287,63 @@ describe("persistFinykNormalizedToStorage", () => {
 
     expect(handler).toHaveBeenCalledTimes(1);
     window.removeEventListener(HUB_FINYK_ROUTINE_SYNC_EVENT, handler);
+  });
+});
+
+describe("txNotes у бекапі (аудит 2026-10-01, data-27)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it("експорт на теплому кеші містить нотатки з LS, а normalize їх пропускає", () => {
+    fakeCache.value = warmCache({ networthHistory: [], customCategories: [] });
+    localStorage.setItem(
+      "finyk_tx_notes",
+      JSON.stringify({ "tx-1": "оренда" }),
+    );
+
+    const snapshot = readFinykBackupFromStorage();
+    expect(snapshot.txNotes).toEqual({ "tx-1": "оренда" });
+    expect(normalizeFinykBackup(snapshot).txNotes).toEqual({
+      "tx-1": "оренда",
+    });
+  });
+
+  it("старий бекап без txNotes проходить, поля в результаті немає", () => {
+    const out = normalizeFinykBackup({ version: 2, budgets: [] });
+    expect(out).toEqual({ budgets: [] });
+    expect("txNotes" in out).toBe(false);
+  });
+
+  it("відхиляє txNotes не-обʼєкт і нерядкові значення", () => {
+    expect(() => normalizeFinykBackup({ version: 3, txNotes: [] })).toThrow(
+      /обʼєктом/,
+    );
+    expect(() =>
+      normalizeFinykBackup({ version: 3, txNotes: { a: 1 } }),
+    ).toThrow(/txNotes/);
+  });
+
+  it("replace-імпорт (persistFinykNormalizedToStorage) пише нотатки в LS", () => {
+    persistFinykNormalizedToStorage({ txNotes: { "tx-2": "подарунок" } });
+    expect(
+      JSON.parse(localStorage.getItem("finyk_tx_notes") ?? "null"),
+    ).toEqual({ "tx-2": "подарунок" });
+  });
+
+  it("merge-імпорт додає відсутні нотатки й не затирає наявні на пристрої", async () => {
+    fakeCache.value = warmCache();
+    localStorage.setItem("finyk_tx_notes", JSON.stringify({ "tx-1": "моя" }));
+    await persistFinykNormalizedToSqlite(
+      { txNotes: { "tx-1": "з файлу", "tx-9": "нова" } },
+      "merge",
+    );
+    expect(
+      JSON.parse(localStorage.getItem("finyk_tx_notes") ?? "null"),
+    ).toEqual({ "tx-1": "моя", "tx-9": "нова" });
   });
 });

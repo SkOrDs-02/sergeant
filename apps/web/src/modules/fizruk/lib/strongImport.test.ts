@@ -124,6 +124,45 @@ describe("parseStrongWeightCsv", () => {
     expect(a.measurements[0]!.id).not.toBe(b.measurements[0]!.id);
     expect(a.measurements[0]!.id).toBe(again.measurements[0]!.id);
   });
+
+  // Аудит data-01: 32-бітний FNV-1a давав колізії між акаунтами на глобальному
+  // PK. Тепер id = перші 64 біти SHA-256(namespace|…), детерміновано.
+  it("id заміру — 64 біти SHA-256(namespace|дата), детермінований", () => {
+    const csv = [
+      "Date,Measurement Type,Value,Unit,Source",
+      "2024-03-04 07:00:00,Weight,80,kg,Manual",
+    ].join("\n");
+    // sha256("user-a|2024-03-04 07:00:00")[0:16], порахований незалежно (sha256sum).
+    expect(parseStrongWeightCsv(csv, "user-a").measurements[0]!.id).toBe(
+      "strong_m_918c26b8ca6e3541",
+    );
+  });
+
+  it("повторний імпорт заміру, збереженого зі старим 32-бітним id, не плодить дубль", () => {
+    const csv = [
+      "Date,Measurement Type,Value,Unit,Source",
+      "2024-03-04 07:00:00,Weight,80,kg,Manual",
+    ].join("\n");
+    const draft = parseStrongWeightCsv(csv, "user-a");
+    const imported = draft.measurements[0]!;
+    const legacy = { ...imported, id: "strong_m_1k2j3h4" };
+    const manual = {
+      id: "m_manual",
+      at: "2024-03-05T07:00:00.000Z",
+      weightKg: 79,
+    };
+    const next = buildStrongImportState(
+      { ...EMPTY_FIZRUK_DUAL_WRITE_STATE, measurements: [legacy, manual] },
+      { workouts: [], skippedRestTimerRows: 0, setCount: 0, exerciseNames: [] },
+      [],
+      {},
+      "user-a",
+      draft,
+    ).next;
+    expect(next.measurements.map((m) => m.id).sort()).toEqual(
+      [imported.id, "m_manual"].sort(),
+    );
+  });
 });
 
 describe("matchStrongExercises", () => {
@@ -240,6 +279,52 @@ describe("buildStrongImportState", () => {
     );
     expect(itemIdsA.length).toBeGreaterThan(0);
     for (const id of itemIdsB) expect(itemIdsA).not.toContain(id);
+  });
+
+  it("id тренування й вправи — 16 hex (64 біти), а не 32-бітний base36", () => {
+    const draft = parseStrongWorkoutCsv(fixture, "kg");
+    const state = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matchStrongExercises(draft),
+      {},
+      "user-a",
+    ).next;
+    for (const workout of state.workouts) {
+      expect(workout.id).toMatch(/^strong_w_[0-9a-f]{16}$/);
+      for (const item of workout.items) {
+        expect(item.id).toMatch(/^strong_i_[0-9a-f]{16}$/);
+      }
+    }
+  });
+
+  it("повторний імпорт замінює тренування, збережене зі старим id, а не дублює його", () => {
+    const draft = parseStrongWorkoutCsv(fixture, "kg");
+    const matches = matchStrongExercises(draft);
+    const first = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matches,
+      {},
+      "user-a",
+    ).next;
+    const legacy = {
+      ...first,
+      workouts: first.workouts.map((w, i) => ({
+        ...w,
+        id: `strong_w_old${i}`,
+      })),
+    };
+    const again = buildStrongImportState(
+      legacy,
+      draft,
+      matches,
+      {},
+      "user-a",
+    ).next;
+    expect(again.workouts.map((w) => w.id).sort()).toEqual(
+      first.workouts.map((w) => w.id).sort(),
+    );
   });
 
   it("keeps ids stable for the same namespace so re-import still de-duplicates", () => {

@@ -189,6 +189,15 @@ export interface Debt {
   dueDate: string;
   emoji: string;
   linkedTxIds: string[];
+  /**
+   * Знімок ролі й суми привʼязки (як пише UI, `setLinkedTxRole`). Без нього
+   * `calcDebtRemaining` бере суму з банківських транзакцій, а ручна `m_…`
+   * там не знаходиться, і платіж рахується як 0.
+   */
+  txLinks?: Record<
+    string,
+    { role: "source" | "increase" | "payment"; amount: number; auto?: boolean }
+  >;
 }
 
 export interface Receivable {

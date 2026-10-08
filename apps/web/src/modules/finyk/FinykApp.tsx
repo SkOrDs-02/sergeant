@@ -23,7 +23,6 @@ import { shouldShowNoBankBanner } from "./components/NoBankBanner.visibility";
 import { useBankBannerClock } from "./hooks/useBankBannerClock";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
-import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { formatMoney } from "@sergeant/shared";
@@ -49,6 +48,7 @@ import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { FinykScanEntryPoints } from "./components/FinykScanEntryPoints";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
+import { useStorageWarmGate } from "./hooks/useStorageWarmGate";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
@@ -104,6 +104,9 @@ export default function App({
   useMonoTokenMigration(true);
   const toast = useToast();
   const storage = useStorage({ toast });
+  // Холодний старт: до прогріву SQLite-кешу форма запису не надсилається
+  // (data-13), щоб тост «додано» не з'являвся над ще не прогрітим сховищем.
+  const storageWarming = useStorageWarmGate(storage.storageReady);
   // Device-local чек↔транзакція лінки (спека § Розгортка) — одне джерело
   // для індикатора в списку транзакцій І для write-through записувача
   // ReceiptScanSheet/BulkImportSheet (`FinykScanEntryPoints`).
@@ -131,7 +134,6 @@ export default function App({
     month: number;
   } | null>(null);
   const showBalance = storage.showBalance;
-  const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
   // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
   // відкривають два входи — FAB і плашка нагадування в Огляді.
@@ -168,26 +170,12 @@ export default function App({
   // `PlanningSubscriptions` відкриває форму на кожній зміні значення.
   const [subscriptionFormSignal, setSubscriptionFormSignal] = useState(0);
 
-  const syncHandledRef = useRef(false);
-  useEffect(() => {
-    if (syncHandledRef.current) return;
-    syncHandledRef.current = true;
-    if (window.location.search.includes("sync=")) {
-      const loadSync = () => {
-        if (storage.loadFromUrl()) {
-          toast.success("Налаштування синхронізовано.");
-          return;
-        }
-        // Читання з URL чисте — повтор безпечний. Без кнопки користувач,
-        // що прийшов саме по sync-лінку, лишався ні з чим і без підказки.
-        toast.error("Не вдалось завантажити синк-дані", undefined, {
-          label: "Повторити",
-          onClick: loadSync,
-        });
-      };
-      loadSync();
-    }
-  }, [storage, toast]);
+  // AI-DANGER: приймача `?sync=…` тут більше немає (аудит 2026-10-01, data-26).
+  // Він на маунті без підтвердження підміняв бюджети, план, категорії й
+  // приховані рахунки даними з URL (а на холодному старті ще й хибно звітував
+  // «синхронізовано»), хоча генератора посилань в UI давно нема. Не повертай
+  // його без прев'ю з ConfirmDialog, застосування лише після `storageReady`,
+  // валідації елементів і передачі payload у `#fragment`.
 
   // AI-CONTEXT: тут БУВ одноразовий ефект, що з `/finyk` кидав першого
   // користувача на `/finyk/budgets` (фінплан). Аудит зафіксував це як
@@ -501,15 +489,11 @@ export default function App({
           right={
             <div className="flex items-center gap-2 shrink-0">
               {showSyncPill ? <SyncPill syncTone={syncTone} /> : null}
-              <button
-                type="button"
-                onClick={() => setShowBalance(!showBalance)}
-                className="focus-ring shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-subtle hover:text-text hover:bg-panelHi transition-colors"
-                aria-label={showBalance ? "Приховати суми" : "Показати суми"}
-                title={showBalance ? "Приховати суми" : "Показати суми"}
-              >
-                <Icon name={showBalance ? "eye" : "eye-off"} size="lg" />
-              </button>
+              {/* «Приховати суми» переїхало в Налаштування → Фінік
+                  (`core/settings/FinykSection.tsx`, рішення власника
+                  2026-10-08, анти-слоп раунд 4, Q5): шість контролів у
+                  шапці на 375px лишали назві модуля 27px, і «Фінік /
+                  Фінанси» різалось до «Фі… / Фіна…». */}
               <ModuleHeaderAssistantButton />
               {onOpenSettings && (
                 <ModuleHeaderSettingsButton onClick={onOpenSettings} />
@@ -570,6 +554,7 @@ export default function App({
 
         <ManualExpenseSheet
           open={showExpenseSheet}
+          storageLoading={storageWarming}
           onClose={() => {
             setShowExpenseSheet(false);
             setEditingManualExpenseId(null);
@@ -605,12 +590,13 @@ export default function App({
               (e) => String(e.id) === String(id),
             );
             const isIncome = snapshot?.kind === "income";
-            storage.removeManualExpense(id);
+            const removedLinks = storage.removeManualExpense(id);
             setEditingManualExpenseId(null);
             if (snapshot) {
               showUndoToast(toast, {
                 msg: isIncome ? "Надходження видалено" : "Витрату видалено",
-                onUndo: () => storage.restoreManualExpense(snapshot),
+                onUndo: () =>
+                  storage.restoreManualExpense(snapshot, removedLinks),
               });
             } else {
               toast.success("Витрату видалено");

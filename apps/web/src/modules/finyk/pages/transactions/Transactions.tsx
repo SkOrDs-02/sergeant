@@ -48,6 +48,7 @@ import type {
   LinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import type { ManualExpenseLinkSnapshot } from "../../hooks/manualExpenseDebtLinks";
 import type { Category } from "@sergeant/finyk-domain/domain/types";
 
 /**
@@ -173,8 +174,11 @@ export interface TransactionsStorageSlice {
   txNotes: Record<string, string | undefined>;
   setTxNote: (id: string, note: string | null) => void;
   manualExpenses: ManualExpense[] | undefined;
-  addManualExpense: (expense: Omit<ManualExpense, "id">) => void;
-  removeManualExpense: (id: string) => void;
+  addManualExpense: (
+    expense: Omit<ManualExpense, "id">,
+    restoredLinks?: readonly ManualExpenseLinkSnapshot[],
+  ) => void;
+  removeManualExpense: (id: string) => ManualExpenseLinkSnapshot[] | void;
 }
 
 export interface TransactionsProps {
@@ -616,6 +620,8 @@ export function Transactions({
             selectedSize={selection.selectedIds.size}
             onOpenCatPicker={() => selection.setBatchCatPicker(true)}
             onApplyHide={selection.applyBatchHide}
+            allSelectedHidden={selection.allSelectedHidden}
+            onApplyUnhide={selection.applyBatchUnhide}
             onApplyExclude={selection.applyBatchExclude}
             batchCatPicker={selection.batchCatPicker}
             onCloseCatPicker={() => selection.setBatchCatPicker(false)}

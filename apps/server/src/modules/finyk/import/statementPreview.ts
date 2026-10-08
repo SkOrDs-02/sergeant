@@ -3,6 +3,7 @@ import pool from "../../../db.js";
 import { parseBody } from "../../../http/validate.js";
 import { ValidationError } from "../../../obs/errors.js";
 import {
+  IMPORT_DESCRIPTION_MAX_LEN,
   ImportStatementPreviewRequestSchema,
   ImportStatementPreviewResponseSchema,
 } from "@sergeant/shared";
@@ -19,6 +20,7 @@ import {
   type ResolvedColumnMapping,
 } from "./csvProfiles.js";
 import { resolveCategoryHint } from "./categoryHint.js";
+import { isAmountKopiykasInBounds, truncateImportText } from "./rowLimits.js";
 import {
   gridFromCsvText,
   gridFromStatementFile,
@@ -62,9 +64,18 @@ function classifyRows(
 
     const dateRaw = row[mapping.dateColIndex] ?? "";
     const amountRaw = row[mapping.amountColIndex] ?? "";
+    const creditRaw =
+      mapping.creditColIndex !== null
+        ? (row[mapping.creditColIndex] ?? "")
+        : "";
     const descriptionRaw = row[mapping.descriptionColIndex] ?? "";
 
-    if (!dateRaw.trim() && !amountRaw.trim() && !descriptionRaw.trim()) {
+    if (
+      !dateRaw.trim() &&
+      !amountRaw.trim() &&
+      !creditRaw.trim() &&
+      !descriptionRaw.trim()
+    ) {
       // Рядок несе дані в ІНШИХ колонках (напр. MCC-only службовий рядок),
       // але жодна з трьох мапованих — непридатний так само, як фізично
       // порожній рядок.
@@ -73,8 +84,17 @@ function classifyRows(
     }
 
     const date = parseCalendarDateKey(dateRaw, mapping.dateFormat);
+    // Межі `boundedDayKeySchema` (1970..2100) `parseCalendarDateKey` уже
+    // перевіряє сам — окремої перевірки дати тут не треба (rel-20).
     if (!date) {
       skipped.push({ line, reason: "unparsed_date" });
+      return;
+    }
+
+    // Валюта картки з заголовка колонки суми («… (USD)») — не гривня: уся
+    // виписка у чужій валюті, конвертації немає (data-32).
+    if (mapping.fileCurrencyNotUah) {
+      skipped.push({ line, reason: "not_uah" });
       return;
     }
 
@@ -86,14 +106,41 @@ function classifyRows(
       }
     }
 
-    const signed = parseSignedAmountKopiykas(amountRaw, {
-      decimalComma: mapping.decimalComma,
-    });
+    const amountOpts = { decimalComma: mapping.decimalComma };
+    let signed: number | null;
+    if (mapping.creditColIndex === null) {
+      signed = parseSignedAmountKopiykas(amountRaw, amountOpts);
+    } else {
+      // Окремі колонки Дебет/Кредит (logic-06): `amountCol` = дебет →
+      // витрата, `creditCol` = кредит → надходження, напрям дає САМА
+      // колонка, а не знак (у таких виписках обидві суми додатні). У рядку
+      // має бути заповнена рівно одна з двох; «порожньою» вважається і
+      // клітинка з нулем («0,00» — так банки позначають відсутню сторону).
+      // Обидві заповнені чи обидві порожні — рядок неоднозначний, skip
+      // `unparsed_amount`; нерозпізнана непорожня клітинка теж.
+      const debit = parseSignedAmountKopiykas(amountRaw, amountOpts);
+      const credit = parseSignedAmountKopiykas(creditRaw, amountOpts);
+      const debitBlank = !amountRaw.trim() || debit === 0;
+      const creditBlank = !creditRaw.trim() || credit === 0;
+      if (!debitBlank && !creditBlank) {
+        signed = null;
+      } else if (!debitBlank) {
+        signed = debit === null ? null : -Math.abs(debit);
+      } else if (!creditBlank) {
+        signed = credit === null ? null : Math.abs(credit);
+      } else {
+        signed = null;
+      }
+    }
     // `signed === 0` теж skip: rowKey/commit контракт вимагає направлену
     // (`expense`|`income`) додатну суму — нульова транзакція не має
     // жодного з двох напрямів і найчастіше сама по собі є ознакою
     // нерозпізнаного/службового рядка, не легітимним платежем.
-    if (signed === null || signed === 0) {
+    //
+    // Сума понад `AMOUNT_MINOR_MAX` (10 млн грн) — теж `unparsed_amount`:
+    // `importAmountKopiykasSchema` її відкинув би, а фінальний `.parse()`
+    // перетворив би один такий рядок на 500 для всієї виписки (rel-20).
+    if (signed === null || !isAmountKopiykasInBounds(Math.abs(signed))) {
       skipped.push({ line, reason: "unparsed_amount" });
       return;
     }
@@ -117,7 +164,10 @@ function classifyRows(
       date,
       amountKopiykas: Math.abs(signed),
       direction,
-      description,
+      // Обрізаємо ПІСЛЯ детекторів вище/нижче: вони бачать повний опис, а
+      // у відповідь іде не довше `IMPORT_DESCRIPTION_MAX_LEN` (банк дозволяє
+      // «призначення платежу» до 420 символів, схема — 300; rel-20).
+      description: truncateImportText(description, IMPORT_DESCRIPTION_MAX_LEN),
       // Лише true, без false — поле опційне у схемі, відсутність = «не
       // схожий на переказ» (див. transferLikelySchema у @sergeant/shared).
       ...(isLikelyOwnTransfer(description) ? { transferLikely: true } : {}),
@@ -253,9 +303,16 @@ export default async function statementPreviewHandler(
   if (mapping) {
     const resolved = resolveCustomMapping(headers, mapping);
     if (resolved) {
+      // Те саме, що в автопрофільній гілці: сітка з типізованих клітинок
+      // XLSX несе канонічну суму («-45.5»), і підказка `decimalComma:true`
+      // (дефолт ColumnMapper) перетворила б її на 455 ₴ (data-31).
+      const customMapping =
+        grid.sourceKind === "sheet"
+          ? withAutodetectedFormats(resolved)
+          : resolved;
       const { rows, skipped } = classifyRows(
         dataRows,
-        resolved,
+        customMapping,
         grid.headerRowIndex,
       );
       res.status(200).json(

@@ -39,7 +39,7 @@ const fizrukMock = vi.hoisted(() => ({
 const persisted = vi.hoisted(() => ({
   profile: [] as unknown[],
   /**
-   * Записи ТИЖНЕВОГО перерахунку. Раніше `persistAdaptiveNutritionPrefs`
+   * Записи ТИЖНЕВОГО перерахунку. Раніше `patchAdaptiveNutritionPrefs`
    * був заглушкою `() => true`, тож ядро фічі — сам перерахунок — не було
    * покрите жодним тестом: покривався лише seed першої цілі.
    */
@@ -72,18 +72,28 @@ vi.mock("../lib/nutritionStorage", async () => {
   >("../lib/nutritionStorage");
   return {
     ...actual,
-    persistProfileNutritionPrefs: (prefs: unknown) => {
-      persisted.profile.push(prefs);
+    patchProfileNutritionPrefs: (patch: unknown) => {
+      persisted.profile.push(patch);
       return true;
     },
-    persistAdaptiveNutritionPrefs: (prefs: unknown) => {
-      persisted.adaptive.push(prefs);
+    patchAdaptiveNutritionPrefs: (patch: unknown) => {
+      persisted.adaptive.push(patch);
       return true;
     },
   };
 });
 
+// data-04: гідратацію prefs керує тест (за замовчуванням гідратовано).
+const hydration = vi.hoisted(() => ({ value: true }));
+vi.mock("./useNutritionPrefsHydration", () => ({
+  useNutritionPrefsHydrated: () => hydration.value,
+}));
+
 import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "../lib/sqliteReader";
 import {
   __resetAdaptiveGoalScheduleForTests,
   useAdaptiveNutritionGoal,
@@ -104,6 +114,10 @@ function basePrefs(): NutritionPrefs {
     adaptiveGoalLastUpdatedAt: null,
   } as unknown as NutritionPrefs;
 }
+
+beforeEach(() => {
+  hydration.value = true;
+});
 
 function Probe({ prefs }: { prefs: NutritionPrefs }) {
   useAdaptiveNutritionGoal(EMPTY_LOG, prefs);
@@ -478,5 +492,59 @@ describe("useAdaptiveNutritionGoal · тижневий перерахунок", 
     } as unknown as NutritionPrefs;
     render(<ProbeWithLog log={log} prefs={prefs} />);
     expect(persisted.adaptive).toHaveLength(0);
+  });
+});
+
+describe("useAdaptiveNutritionGoal · data-04: холодний старт", () => {
+  beforeEach(() => {
+    persisted.profile = [];
+    persisted.adaptive = [];
+    fizrukMock.workouts = [];
+    fizrukMock.measurements = [];
+    fizrukMock.dailyLog = [];
+    localStorage.clear();
+    __resetAdaptiveGoalScheduleForTests();
+  });
+
+  it("біометрія є, а prefs ще не гідратовано: жодного запису", () => {
+    // Рівно сценарій аудиту: профіль із /api/me/profile приходить за секунди,
+    // prefs акаунта — з повільного pull. Дефолтні prefs (ціль null,
+    // автокалібрування true) не повинні дати seed, що стер би шаблони страв.
+    hydration.value = false;
+    render(<Probe prefs={basePrefs()} />);
+    expect(persisted.profile).toHaveLength(0);
+    expect(persisted.adaptive).toHaveLength(0);
+  });
+
+  it("після гідратації seed пишеться, і це патч лише полів цілі", () => {
+    hydration.value = false;
+    const view = render(<Probe prefs={basePrefs()} />);
+    expect(persisted.profile).toHaveLength(0);
+
+    hydration.value = true;
+    view.rerender(<Probe prefs={basePrefs()} />);
+
+    expect(persisted.profile).toHaveLength(1);
+    const patch = persisted.profile[0] as Record<string, unknown>;
+    expect(patch["dailyTargetKcal"]).toBeTypeOf("number");
+    // Непов'язані поля (шаблони страв, вода, нагадування) у патчі відсутні:
+    // їх бере з кешу `patchNutritionPrefs`.
+    expect(patch).not.toHaveProperty("mealTemplates");
+    expect(patch).not.toHaveProperty("waterGoalMl");
+    expect(patch).not.toHaveProperty("reminderEnabled");
+  });
+
+  it("гідратований кеш уже має ручну ціль: seed не перетирає її", () => {
+    // Стан компонента відстав від кешу (`prefs.dailyTargetKcal == null`), а
+    // актуальний кеш уже каже «ціль є»: гілка мусить мовчати.
+    __setNutritionSqliteCacheForTests({
+      prefs: { ...basePrefs(), dailyTargetKcal: 2100 } as NutritionPrefs,
+    });
+    try {
+      render(<Probe prefs={basePrefs()} />);
+      expect(persisted.profile).toHaveLength(0);
+    } finally {
+      clearNutritionSqliteCache();
+    }
   });
 });

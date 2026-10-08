@@ -5,7 +5,6 @@ import {
   FINYK_BACKUP_VERSION,
   FINYK_FIELD_TO_STORAGE_KEY,
   normalizeFinykBackup,
-  normalizeFinykSyncPayload,
 } from "./backup.js";
 import { FINYK_BACKUP_STORAGE_KEYS } from "./storageKeys.js";
 
@@ -130,44 +129,32 @@ describe("excludedStatTxIds round-trip", () => {
     });
     expect(out.excludedStatTxIds).toEqual(["tx-1", "tx-2"]);
   });
-
-  it("survives the compact `es` sync payload key", () => {
-    const out = normalizeFinykSyncPayload({ es: ["tx-1"] });
-    expect(out.excludedStatTxIds).toEqual(["tx-1"]);
-  });
 });
 
-describe("normalizeFinykSyncPayload", () => {
-  it("detects full-backup shape via field presence", () => {
-    const out = normalizeFinykSyncPayload({ budgets: [{ id: "x" }] });
-    expect(out.budgets).toEqual([{ id: "x" }]);
+describe("normalizeFinykBackup — txNotes (аудит 2026-10-01, data-27)", () => {
+  it("мапить txNotes на LS-ключ finyk_tx_notes", () => {
+    expect(FINYK_BACKUP_STORAGE_KEYS.txNotes).toBe("finyk_tx_notes");
   });
 
-  it("expands compact short-key payloads into full shape", () => {
-    const out = normalizeFinykSyncPayload({
-      b: [{ id: "a" }],
-      s: [{ id: "sub" }],
-      mp: { income: "1" },
+  it("пропускає мапу string→string", () => {
+    const out = normalizeFinykBackup({
+      version: FINYK_BACKUP_VERSION,
+      txNotes: { "tx-1": "оренда" },
     });
-    // normalizeFinykBackup validates version but does not echo it back
-    // on the output — match the existing web behaviour.
-    expect(out.budgets).toEqual([{ id: "a" }]);
-    expect(out.subscriptions).toEqual([{ id: "sub" }]);
-    expect(out.monthlyPlan).toEqual({ income: "1" });
+    expect(out.txNotes).toEqual({ "tx-1": "оренда" });
   });
 
-  it("rejects out-of-range compact version `v`", () => {
-    expect(() => normalizeFinykSyncPayload({ v: 0, b: [] })).toThrow(
-      /Невідома версія синку/,
-    );
-    expect(() => normalizeFinykSyncPayload({ v: 100, b: [] })).toThrow(
-      /Невідома версія синку/,
-    );
+  it("старий бекап без txNotes проходить", () => {
+    const out = normalizeFinykBackup({ version: 2, budgets: [] });
+    expect(out.txNotes).toBeUndefined();
   });
 
-  it("rejects non-object input", () => {
-    expect(() => normalizeFinykSyncPayload(null)).toThrow(
-      /Некоректні дані синку/,
+  it("відхиляє масив і нерядкові значення", () => {
+    expect(() => normalizeFinykBackup({ version: 3, txNotes: [] })).toThrow(
+      /обʼєктом/,
     );
+    expect(() =>
+      normalizeFinykBackup({ version: 3, txNotes: { a: 5 } }),
+    ).toThrow(/txNotes/);
   });
 });

@@ -5,7 +5,7 @@
  * Unit tests for `PantryCard` (add modes + inventory list).
  */
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/foodCategories", () => ({
@@ -344,5 +344,80 @@ describe("PantryCard: список першим, додавання в арку�
     );
     expect(screen.getByPlaceholderText(/лосось/)).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("PantryCard: режим «Списком» на порожній коморі (ux-12)", () => {
+  // Повторює контракт `useNutritionPantries`: коли збережених позицій немає,
+  // `effectiveItems` - це живий парс чернетки textarea.
+  function EmptyPantryWithDraft() {
+    const [pantryText, setPantryText] = useState("");
+    const effectiveItems = pantryText
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .map((name) => ({ name }));
+    return (
+      <Card
+        {...baseProps({
+          pantryText,
+          setPantryText,
+          effectiveItems,
+          pantryItemsLength: 0,
+        })}
+      />
+    );
+  }
+
+  it("перша літера не розмонтовує форму, не губить фокус і не створює фантомну позицію", () => {
+    render(<EmptyPantryWithDraft />);
+    fireEvent.click(screen.getByText("Списком"));
+    const field = screen.getByLabelText("Список продуктів");
+    field.focus();
+    expect(field).toHaveFocus();
+
+    fireEvent.change(field, { target: { value: "я" } });
+
+    const after = screen.getByLabelText("Список продуктів");
+    expect(after).toBe(field);
+    expect(after).toBeInTheDocument();
+    expect(after).toHaveFocus();
+    expect(after).toHaveValue("я");
+    expect(screen.getByText("Розібрати")).toBeInTheDocument();
+    // Фантомної позиції «я» у списку немає: лишається порожній стан комори.
+    expect(screen.queryByLabelText("Редагувати я")).not.toBeInTheDocument();
+    expect(screen.queryByText("Моя комора")).not.toBeInTheDocument();
+    expect(screen.getByText("Тут поки порожньо")).toBeInTheDocument();
+  });
+
+  it("далі набір триває: наступні символи теж лягають у те саме поле", () => {
+    render(<EmptyPantryWithDraft />);
+    fireEvent.click(screen.getByText("Списком"));
+    const field = screen.getByLabelText("Список продуктів");
+    fireEvent.change(field, { target: { value: "я" } });
+    fireEvent.change(field, { target: { value: "яйця, молоко" } });
+    expect(screen.getByLabelText("Список продуктів")).toHaveValue(
+      "яйця, молоко",
+    );
+    expect(screen.queryByLabelText("Редагувати яйця")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Редагувати молоко"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("не відкриває аркуш, поки в коморі немає збережених позицій", () => {
+    render(
+      <Card
+        {...baseProps({
+          pantryText: "я",
+          effectiveItems: [{ name: "я" }],
+          pantryItemsLength: 0,
+        })}
+      />,
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Додати продукти" }),
+    ).not.toBeInTheDocument();
   });
 });

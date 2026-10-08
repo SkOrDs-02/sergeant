@@ -207,6 +207,55 @@ describe("useTransactionSelection", () => {
     });
   });
 
+  describe("applyBatchUnhide (показ прихованих)", () => {
+    it("allSelectedHidden=true лише коли всі вибрані вже приховані", () => {
+      const params = buildParams({ hiddenTxIds: ["manual_1", "tx2"] });
+      const { result } = renderHook(() => useTransactionSelection(params));
+      expect(result.current.allSelectedHidden).toBe(false); // нічого не вибрано
+      act(() => result.current.toggleSelect("manual_1"));
+      expect(result.current.allSelectedHidden).toBe(true);
+      act(() => result.current.toggleSelect("visible"));
+      expect(result.current.allSelectedHidden).toBe(false); // мікс
+    });
+
+    it("повертає прихований id: hideTx(id) рівно раз + тост з undo, що ховає назад", () => {
+      const hideTx = vi.fn();
+      const toast = mkToast();
+      const params = buildParams({
+        hideTx,
+        hiddenTxIds: ["manual_1"],
+        toast,
+      });
+      const { result } = renderHook(() => useTransactionSelection(params));
+      act(() => result.current.toggleSelect("manual_1"));
+      act(() => result.current.applyBatchUnhide());
+      expect(hideTx).toHaveBeenCalledTimes(1);
+      expect(hideTx).toHaveBeenCalledWith("manual_1");
+      const show = toast.show as unknown as ReturnType<typeof vi.fn>;
+      expect(show).toHaveBeenCalledTimes(1);
+      expect(show.mock.calls[0]?.[0]).toBe("Показано 1 операцію");
+      expect(result.current.selectedIds.size).toBe(0);
+      // Undo ховає операцію назад (hideTx — toggle).
+      hideTx.mockClear();
+      show.mock.calls[0]?.[3].onClick();
+      expect(hideTx).toHaveBeenCalledTimes(1);
+      expect(hideTx).toHaveBeenCalledWith("manual_1");
+    });
+
+    it("пропускає ще не приховані id, щоб не сховати їх випадково", () => {
+      const hideTx = vi.fn();
+      const params = buildParams({ hideTx, hiddenTxIds: ["tx2"] });
+      const { result } = renderHook(() => useTransactionSelection(params));
+      act(() => {
+        result.current.toggleSelect("tx1");
+        result.current.toggleSelect("tx2");
+      });
+      act(() => result.current.applyBatchUnhide());
+      expect(hideTx).toHaveBeenCalledTimes(1);
+      expect(hideTx).toHaveBeenCalledWith("tx2");
+    });
+  });
+
   describe("applyBatchExclude", () => {
     it("calls toggleExcludeFromStats for ids not already excluded", () => {
       const toggleExcludeFromStats = vi.fn();
@@ -320,6 +369,37 @@ describe("useTransactionSelection", () => {
       };
       act(() => result.current.stableSwipeDeleteManual(tx));
       expect(removeManualExpense).toHaveBeenCalledWith("m123");
+    });
+
+    it("undo віддає у addManualExpense привʼязки, зняті removeManualExpense (data-24)", () => {
+      const links = [
+        {
+          type: "debt" as const,
+          itemId: "d1",
+          role: "payment" as const,
+          amount: 400,
+        },
+      ];
+      const removeManualExpense = vi.fn().mockReturnValue(links);
+      const addManualExpense = vi.fn();
+      const toast = mkToast();
+      const { result } = renderHook(() =>
+        useTransactionSelection(
+          buildParams({ removeManualExpense, addManualExpense, toast }),
+        ),
+      );
+      const tx = { ...mkTx("tx1", -100), manualId: "m123" } as Transaction & {
+        manualId: string;
+      };
+      act(() => result.current.stableSwipeDeleteManual(tx));
+
+      // `showUndoToast` кладе колбек у 4-й аргумент `toast.show` (`onClick`).
+      const show = toast.show as unknown as ReturnType<typeof vi.fn>;
+      const action = show.mock.calls[0]?.[3] as { onClick: () => void };
+      action.onClick();
+
+      expect(addManualExpense).toHaveBeenCalledTimes(1);
+      expect(addManualExpense.mock.calls[0]?.[1]).toEqual(links);
     });
   });
 });

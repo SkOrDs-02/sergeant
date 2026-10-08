@@ -328,6 +328,7 @@
         "bump dep",
         "bump dependency",
         "upgrade dep",
+        "dependabot",
         "renovate",
         "sdk upgrade",
         "sdk migration"

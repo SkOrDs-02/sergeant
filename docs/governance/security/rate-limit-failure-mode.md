@@ -1,7 +1,7 @@
 # Rate-limit failure mode
 
 > **Status:** Active
-> **Last touched:** 2026-09-17 by @claude (limit 20 → 5 via `AUTH_RATE_LIMIT_MAX`, Railway → Coolify, config moved to `config/rateLimit.ts`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (sec-10: `DELETE /api/me` і `change-password` у fail-closed; раніше: limit 20 → 5 via `AUTH_RATE_LIMIT_MAX`, Railway → Coolify, config moved to `config/rateLimit.ts`). **Next review:** 2026-12-16.
 
 ## TL;DR
 
@@ -9,10 +9,10 @@ The rate-limit middleware tries three backends in order: **Redis → Postgres �
 
 PR-02 introduces a `failMode` option per route:
 
-| Mode             | Used by                                                 | When Redis+PG both fail                                       |
-| ---------------- | ------------------------------------------------------- | ------------------------------------------------------------- |
-| `closed`         | `/api/auth/*` (sign-in, sign-up, forget/reset-password) | Refuse with `503 Service Unavailable` + `Retry-After: 5`      |
-| `open` (default) | everything else (health, public reads, AI, sync, …)     | Degrade to per-process in-memory bucket and serve the request |
+| Mode             | Used by                                                                                    | When Redis+PG both fail                                       |
+| ---------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `closed`         | `/api/auth/*` (sign-in, sign-up, forget/reset-password, change-password), `DELETE /api/me` | Refuse with `503 Service Unavailable` + `Retry-After: 5`      |
+| `open` (default) | everything else (health, public reads, AI, sync, …)                                        | Degrade to per-process in-memory bucket and serve the request |
 
 Both transitions are recorded on the `rate_limit_degraded_total{key,mode}` Prometheus counter so you can alert on a degraded production limiter.
 

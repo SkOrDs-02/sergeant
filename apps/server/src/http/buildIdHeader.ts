@@ -8,11 +8,15 @@ import type { RequestHandler } from "express";
  * source-map upload references all converge on the same identity.
  *
  *   1. `SENTRY_RELEASE`        — explicit override (release-please, custom CI)
- *   2. `GIT_SHA`                — Coolify/ghcr: baked into the image by
- *                                 `Dockerfile.api` (build-arg `${github.sha}`)
- *   3. `VERCEL_GIT_COMMIT_SHA`  — Vercel injects per deploy
- *   4. `GITHUB_SHA`             — GitHub Actions fallback
- *   5. `BUILD_ID`               — generic CI / docker-build fallback
+ *   2. `GIT_SHA`                — baked into the image by `Dockerfile.api`
+ *                                 (`ENV GIT_SHA=${GIT_SHA:-${SOURCE_COMMIT}}`)
+ *   3. `SOURCE_COMMIT`          — Coolify builds `Dockerfile.api` from the repo
+ *                                 (ADR-0102) and exposes the commit under this
+ *                                 name; needs «Include Source Commit in Build»
+ *                                 for the build stage, runtime env always has it
+ *   4. `VERCEL_GIT_COMMIT_SHA`  — Vercel injects per deploy
+ *   5. `GITHUB_SHA`             — GitHub Actions fallback
+ *   6. `BUILD_ID`               — generic CI / docker-build fallback
  *
  * The value is truncated to a 7-character short SHA (git-default
  * abbreviation length) — anything longer leaks no extra information
@@ -26,6 +30,7 @@ export function resolveServerBuildId(
   const candidates = [
     env["SENTRY_RELEASE"],
     env["GIT_SHA"],
+    env["SOURCE_COMMIT"],
     env["VERCEL_GIT_COMMIT_SHA"],
     env["GITHUB_SHA"],
     env["BUILD_ID"],
@@ -63,7 +68,7 @@ export function resolveServerBuildId(
  *
  * Exposed cross-origin via `apiCorsMiddleware` (`Access-Control-Expose-Headers`),
  * otherwise the Vercel-hosted web bundle cannot read it on
- * Railway-served responses.
+ * Coolify-served responses.
  */
 export function serverBuildIdMiddleware(
   env: NodeJS.ProcessEnv = process.env,

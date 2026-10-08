@@ -66,7 +66,8 @@ export function normalizeMeal(m: unknown, idx: number): Meal {
     rawMacroSource === "manual" ||
     rawMacroSource === "productDb" ||
     rawMacroSource === "photoAI" ||
-    rawMacroSource === "recipeAI"
+    rawMacroSource === "recipeAI" ||
+    rawMacroSource === "recipe"
       ? (rawMacroSource as MealMacroSource)
       : source === "photo"
         ? "photoAI"
@@ -271,7 +272,7 @@ export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
  * Зсув `YYYY-MM-DD` на `deltaDays` за годинником ПРИСТРОЮ (ADR-0078).
  *
  * unification-modules.md #1.17: раніше форматував результат через
- * `toLocalISODate` (Europe/Kyiv), тож для пристроїв східніше Києва
+ * `toKyivISODate` (Europe/Kyiv), тож для пристроїв східніше Києва
  * `addDaysISODate(key, -1)` міг повернути позавчора замість учора.
  * `addDeviceDays` — той самий пристроєвий годинник, що вже дає день-ключ
  * журналу, тож пара «день-ключ + зсув» більше не змішує два годинники.
@@ -299,6 +300,50 @@ export function duplicatePreviousDayMeals(
     ...log,
     [targetDate]: { meals: [...existing, ...clones] },
   };
+}
+
+/**
+ * Клони записів для копії в інший прийом чи день: нові id, `source: manual`
+ * (фото-мініатюра належить оригіналу), без FTUX-прапора `demo`. Тип прийому
+ * і підпис перекриваються, коли копіюють в інший прийом; час лишається.
+ */
+export function cloneMealsForCopy(
+  meals: readonly Meal[],
+  mealType?: Meal["mealType"],
+): Meal[] {
+  return meals.map((m, i) => {
+    const { demo: _demo, ...rest } = m;
+    return normalizeMeal(
+      {
+        ...rest,
+        id: undefined,
+        source: "manual",
+        ...(mealType ? { mealType, label: labelForMealType(mealType) } : {}),
+      },
+      i,
+    );
+  });
+}
+
+/**
+ * Перенос запису з `fromDate` на `toDate`: id і вміст ті самі, змінюється лише
+ * день-ключ. Обидва дні перераховуються самі, бо денні суми похідні від журналу.
+ * Ідемпотентно за id у `toDate` (подвійний збіг — лише прибирає з `fromDate`).
+ */
+export function moveLogEntry(
+  log: NutritionLog,
+  fromDate: string,
+  toDate: string,
+  meal: unknown,
+): NutritionLog {
+  if (fromDate === toDate) return updateLogEntry(log, fromDate, meal);
+  const normalized = normalizeMeal(meal, 0);
+  if (!log[fromDate]?.meals?.some((m) => m.id === normalized.id)) return log;
+  return addLogEntry(
+    removeLogEntry(log, fromDate, normalized.id),
+    toDate,
+    normalized,
+  );
 }
 
 export function mergeNutritionLogs(

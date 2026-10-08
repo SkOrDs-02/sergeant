@@ -76,11 +76,50 @@ describe("upsertJars", () => {
     ]);
   });
 
-  it("is a no-op for an empty jars array", async () => {
-    // Порожній `jars[]` означає «Mono не знає про банки взагалі» — тоді й
-    // реконсилювати нема з чим, тож жодного запиту.
+  it("is a no-op for an empty NON-authoritative jars array", async () => {
+    // Неавторитетний порожній список («невідомо, що в Mono») — жодного
+    // запиту: ні upsert-у, ні DELETE, ні реконсиляції.
     await upsertJars("user_1", []);
+    await upsertJars("user_1", [], { authoritative: false });
     expect(dbQuery).not.toHaveBeenCalled();
+  });
+
+  it("authoritative list: deletes jars missing from the response", async () => {
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+    await upsertJars(
+      "user_1",
+      [{ id: "jar_1", currencyCode: 980, balance: 100 }],
+      { authoritative: true },
+    );
+    const del = dbQuery.mock.calls.find((c) =>
+      String(c[0]).includes("DELETE FROM mono_jar"),
+    );
+    expect(del).toBeDefined();
+    expect(String(del![0])).toContain("user_id = $1");
+    expect(String(del![0])).toContain("NOT (mono_jar_id = ANY($2::text[]))");
+    expect(del![1]).toEqual(["user_1", ["jar_1"]]);
+    // DELETE іде після upsert-у і перед реконсиляцією привидів.
+    const order = dbQuery.mock.calls.map((c) => String(c[0]));
+    expect(order.findIndex((q) => q.includes("INSERT INTO mono_jar"))).toBe(0);
+    expect(order.findIndex((q) => q.includes("DELETE FROM mono_jar"))).toBe(1);
+    expect(order.findIndex((q) => q.includes("UPDATE mono_account"))).toBe(2);
+  });
+
+  it("authoritative EMPTY list: deletes every jar of the user", async () => {
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 2 });
+    await upsertJars("user_1", [], { authoritative: true });
+    expect(dbQuery).toHaveBeenCalledTimes(1);
+    const [sql, params] = dbQuery.mock.calls[0]!;
+    expect(String(sql)).toContain("DELETE FROM mono_jar");
+    expect(params).toEqual(["user_1", []]);
+  });
+
+  it("never touches mono_account/mono_transaction when pruning", async () => {
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+    await upsertJars("user_1", [], { authoritative: true });
+    for (const [sql] of dbQuery.mock.calls) {
+      expect(String(sql)).not.toMatch(/mono_transaction|mono_account/);
+    }
   });
 
   it("upserts multiple jars, one query per jar", async () => {
@@ -160,10 +199,82 @@ describe("refreshJarsFromMono", () => {
       "https://api.monobank.ua/personal/client-info",
       expect.objectContaining({ headers: { "X-Token": "mono-token-abc" } }),
     );
-    // 1 connection SELECT + 1 jar upsert + 1 реконсиляція привидів
-    expect(dbQuery).toHaveBeenCalledTimes(3);
+    // 1 connection SELECT + 1 jar upsert + 1 DELETE закритих банок
+    // + 1 реконсиляція привидів
+    expect(dbQuery).toHaveBeenCalledTimes(4);
     const upsertCall = dbQuery.mock.calls[1]!;
     expect(String(upsertCall[0])).toContain("INSERT INTO mono_jar");
+  });
+
+  function connectionRow() {
+    const enc = encryptToken("mono-token-abc", mockEnv.MONO_TOKEN_ENC_KEY);
+    return {
+      rows: [
+        {
+          token_ciphertext: enc.ciphertext,
+          token_iv: enc.iv,
+          token_tag: enc.tag,
+          token_key_version: null,
+        },
+      ],
+    };
+  }
+
+  it("successful refresh with jars array prunes closed jars", async () => {
+    dbQuery.mockResolvedValueOnce(connectionRow());
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ jars: [{ id: "jar_1", currencyCode: 980 }] }),
+    });
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+
+    await refreshJarsFromMono("user_1");
+
+    const del = dbQuery.mock.calls.find((c) =>
+      String(c[0]).includes("DELETE FROM mono_jar"),
+    );
+    expect(del?.[1]).toEqual(["user_1", ["jar_1"]]);
+  });
+
+  it("successful refresh with explicit empty jars[] deletes all jars", async () => {
+    dbQuery.mockResolvedValueOnce(connectionRow());
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ jars: [] }),
+    });
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+
+    await refreshJarsFromMono("user_1");
+
+    const del = dbQuery.mock.calls.find((c) =>
+      String(c[0]).includes("DELETE FROM mono_jar"),
+    );
+    expect(del?.[1]).toEqual(["user_1", []]);
+  });
+
+  it("response WITHOUT the jars field deletes nothing", async () => {
+    dbQuery.mockResolvedValueOnce(connectionRow());
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ accounts: [] }),
+    });
+
+    await refreshJarsFromMono("user_1");
+
+    // Лише SELECT зʼєднання: ні upsert-у, ні DELETE.
+    expect(dbQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("non-array jars field (garbage) deletes nothing", async () => {
+    dbQuery.mockResolvedValueOnce(connectionRow());
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ jars: null }),
+    });
+
+    await refreshJarsFromMono("user_1");
+
+    expect(dbQuery).toHaveBeenCalledTimes(1);
   });
 
   it("swallows an upstream error without throwing", async () => {
@@ -181,8 +292,11 @@ describe("refreshJarsFromMono", () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
 
     await expect(refreshJarsFromMono("user_1")).resolves.toBeUndefined();
-    // No jar-upsert call beyond the initial connection SELECT.
+    // No jar-upsert/DELETE call beyond the initial connection SELECT.
     expect(dbQuery).toHaveBeenCalledTimes(1);
+    expect(
+      dbQuery.mock.calls.some((c) => String(c[0]).includes("DELETE")),
+    ).toBe(false);
   });
 
   it("swallows a thrown fetch error without throwing", async () => {
@@ -200,5 +314,8 @@ describe("refreshJarsFromMono", () => {
     mockFetch.mockRejectedValueOnce(new Error("network error"));
 
     await expect(refreshJarsFromMono("user_1")).resolves.toBeUndefined();
+    expect(
+      dbQuery.mock.calls.some((c) => String(c[0]).includes("DELETE")),
+    ).toBe(false);
   });
 });

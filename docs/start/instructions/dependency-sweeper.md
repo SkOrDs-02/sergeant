@@ -1,32 +1,32 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-05.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-02-01.
 > **Status:** Active
 > **Runtime-specific:** no
 
-**Trigger:** запланований періодичний прогін (через будь-який scheduler/cron-примітив харнеса, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
+**Trigger:** запланований періодичний прогін (через будь-який scheduler/cron-примітив харнеса, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Dependabot — див. § «Чим це відрізняється від Dependabot».
 
 > **Про slash-команди в цьому файлі:** нижче зустрічаються узагальнені позначення на кшталт «періодичний тригер» і «ізольований worktree» — це harness-level можливості (scheduler / worktree-менеджер), а не конкретні repo-скоуп slash-команди. Кожен харнес реалізує їх по-своєму й конфігурує поза цим репо ([AGENTS.md § Harness config lives outside the repo](../../../AGENTS.md#harness-config-lives-outside-the-repo)) — свій примітив шукай у власному харнесі (наприклад Claude Code: MCP-сесії/рутини + `EnterWorktree`; інші харнеси — власні еквіваленти). Repo-скоуп slash-команди живуть лише в `.claude/commands/` (`initiative-task.md`, `web-ux-cycle.md`) і жодна з них тут не застосовна.
 
 ## Owner surface
 
-- Primary surface: `package.json` (root + per-workspace), `pnpm-lock.yaml`, `renovate.json`.
+- Primary surface: `package.json` (root + per-workspace), `pnpm-lock.yaml`, `.github/dependabot.yml`.
 - Coupled surface: [`audit-exceptions.md`](../../governance/security/audit-exceptions.md) (ledger waived-CVE), `scripts/dependency-sweeper-report.mjs` (engine звіту).
 - Governing skill: `sergeant-bugfix-and-regression` (для власне бампів — `bump-dep-safely.md`).
 - Engine: [`scripts/dependency-sweeper-report.mjs`](../../../scripts/dependency-sweeper-report.mjs) — read-only движок звіту L1.
 
 ---
 
-## Чим це відрізняється від Renovate
+## Чим це відрізняється від Dependabot
 
-Renovate у цьому репо вже відкриває PR-и на бампи (щопонеділка до 6:00, `vulnerabilityAlerts` — будь-коли), групує `@types/*` та ESLint, automerge для частини. **Dependency Sweeper його не дублює й не замінює.** Sweeper — це шар **звітності + тріажу + ескалації** поверх наших примітивів:
+Dependabot у цьому репо вже відкриває PR-и на бампи ([ADR-0103](../../governance/adr/0103-dependabot-only-dependency-updates.md)): npm щодня (security-оновлення однією групою, звичайні — окремим PR на пакет), GitHub Actions і Docker щотижня. Груп для звичайних оновлень, автомерджу й оновлення lockfile немає. **Dependency Sweeper його не дублює й не замінює.** Sweeper — це шар **звітності + тріажу + ескалації** поверх наших примітивів:
 
 - зводить `pnpm outdated` + `pnpm audit` + `pnpm licenses list` в **один людино-читаний дайджест** з ризик-класифікацією;
 - звіряє CVE з ledger-ом [`audit-exceptions.md`](../../governance/security/audit-exceptions.md), щоб **не нагадувати про вже-waived** вразливості;
-- підсвічує те, що **провалилось крізь Renovate** (згруповані major-и, що висять; CVE без запису в ledger; license-дрейф);
-- на L2 — **батчить safe-патчі**, які Renovate не заавтомерджив, окремим bump-PR.
+- підсвічує те, що **провалилось крізь Dependabot** (major-и в `ignore:`, що висять; транзитивні залежності, які без advisory ніхто не оновлює; CVE без запису в ledger; license-дрейф);
+- на L2 — **батчить safe-патчі**, які Dependabot розкидав по окремих PR, одним bump-PR.
 
-Якщо Renovate покриває конкретний апдейт — Sweeper лише репортить його статус, а не відкриває конкурентний PR.
+Якщо Dependabot уже відкрив PR на конкретний апдейт — Sweeper лише репортить його статус, а не відкриває конкурентний PR.
 
 ---
 
@@ -118,4 +118,4 @@ node scripts/dependency-sweeper-report.mjs
 
 - [bump-dep-safely.md](./bump-dep-safely.md) — власне механіка одного бампа.
 - [audit-exceptions.md](../../governance/security/audit-exceptions.md) — ledger waived-CVE.
-- [renovate-usage.md](../../engineering/integrations/renovate-usage.md) — як працює Renovate тут.
+- [dependabot-usage.md](../../engineering/integrations/dependabot-usage.md) — як працювати з PR Dependabot тут.

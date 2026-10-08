@@ -254,6 +254,37 @@ describe("profileMirror — вставка нового факту", () => {
   });
 });
 
+describe("profileMirror — healthData для health-категорій (priv-06)", () => {
+  const healthDataOf = async (category: string, fact: string) => {
+    enqueueMock.mockClear();
+    await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile([{ id: `f-${category}`, fact, category }]),
+    );
+    const arg = enqueueMock.mock.calls[0]?.[0] as { healthData?: boolean };
+    return arg?.healthData;
+  };
+
+  it.each([
+    ["health", "гіпертонія"],
+    ["allergy", "алергія на арахіс"],
+    ["diet", "вегетаріанка, 1800 ккал"],
+    ["training", "жим 100 кг"],
+    ["goal", "схуднути до 70 кг"],
+  ])("%s → healthData: true", async (category, fact) => {
+    expect(await healthDataOf(category, fact)).toBe(true);
+  });
+
+  it.each([
+    ["preference", "любить каву"],
+    ["other", "живе в Києві"],
+    ["goal", "накопичити на відпустку"],
+  ])("%s без health-змісту → healthData: false", async (category, fact) => {
+    expect(await healthDataOf(category, fact)).toBe(false);
+  });
+});
+
 describe("profileMirror — вимкнена фіча (AI_MEMORY_ENABLED=false)", () => {
   it("не читає БД і не кладе нічого в чергу", async () => {
     env.AI_MEMORY_ENABLED = false;

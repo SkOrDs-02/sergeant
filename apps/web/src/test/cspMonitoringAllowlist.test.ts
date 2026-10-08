@@ -14,9 +14,11 @@ import { parseCsp as parseCspToMap } from "./helpers/parseCsp.js";
  *
  * The C2 frontend CSP is shipped from two sources:
  *
- * 1. The `Content-Security-Policy-Report-Only` response header sent by
+ * 1. The ENFORCED `Content-Security-Policy` response header sent by
  *    Vercel via `apps/web/vercel.json` headers config — the canonical
- *    policy in production.
+ *    policy in production. It also carries `report-uri` / `report-to`
+ *    pointing at `/api/csp-report`, so violations of the enforced policy
+ *    still feed the `csp_violation_total` metric.
  * 2. A `<meta http-equiv="Content-Security-Policy">` tag in
  *    `apps/web/index.html` — defense-in-depth fallback for contexts
  *    where Vercel headers are absent (file://, local Vite preview).
@@ -29,7 +31,12 @@ import { parseCsp as parseCspToMap } from "./helpers/parseCsp.js";
  *     egress channel for an XSS payload to exfiltrate to an arbitrary
  *     host.
  *
- * This test is the regression guard against both failure modes.
+ * There is deliberately NO `Content-Security-Policy-Report-Only` header any
+ * more (C2 Phase 2, 2026-10-03): it was strictly looser than the enforced
+ * policy, so anything it could report the enforced policy already reports.
+ * The guard below keeps it gone.
+ *
+ * This test is the regression guard against all of the above.
  */
 
 interface CspDirectives {
@@ -47,50 +54,36 @@ function parseCsp(csp: string): CspDirectives {
   return out;
 }
 
-function readVercelCsp(): string {
+interface VercelHeaderBlock {
+  source: string;
+  headers: Array<{ key: string; value: string }>;
+}
+
+function readVercelHeaderBlocks(): VercelHeaderBlock[] {
   const cfg = JSON.parse(
     readFileSync(resolve(process.cwd(), "vercel.json"), "utf8"),
-  ) as {
-    headers: Array<{
-      source: string;
-      headers: Array<{ key: string; value: string }>;
-    }>;
-  };
-  const wildcard = cfg.headers.find((h) => h.source === "/(.*)");
+  ) as { headers: VercelHeaderBlock[] };
+  return cfg.headers;
+}
+
+function readVercelWildcardHeaders(): VercelHeaderBlock["headers"] {
+  const wildcard = readVercelHeaderBlocks().find((h) => h.source === "/(.*)");
   if (!wildcard) throw new Error("vercel.json missing wildcard header block");
-  const cspHeader = wildcard.headers.find(
-    (h) =>
-      h.key === "Content-Security-Policy-Report-Only" ||
-      h.key === "Content-Security-Policy",
-  );
-  if (!cspHeader)
-    throw new Error("vercel.json wildcard block missing CSP header");
-  return cspHeader.value;
+  return wildcard.headers;
 }
 
 /**
- * The ENFORCED policy specifically — `readVercelCsp()` above returns whichever
- * CSP header appears first, which is the (deliberately looser) Report-Only
- * baseline.
+ * The ENFORCED `Content-Security-Policy` header — the only CSP header
+ * `vercel.json` ships. Parity with the `<meta>` fallback is anchored on it.
  *
- * Parity must be anchored on the enforced policy, not the baseline. Anchoring
- * it on Report-Only is what let the meta tag keep `script-src 'unsafe-inline'`
- * for months after the enforced header dropped it: both "matched", so the
- * guard stayed green while the fallback policy was strictly weaker than the
- * one real users get (spec beta-security-readiness, F4).
+ * History worth keeping: this used to be paired with a looser Report-Only
+ * baseline, and anchoring parity on that baseline is what let the meta tag keep
+ * `script-src 'unsafe-inline'` for months after the enforced header dropped it —
+ * both "matched", so the guard stayed green while the fallback policy was
+ * strictly weaker than the one real users get (spec beta-security-readiness, F4).
  */
-function readVercelEnforcedCsp(): string {
-  const cfg = JSON.parse(
-    readFileSync(resolve(process.cwd(), "vercel.json"), "utf8"),
-  ) as {
-    headers: Array<{
-      source: string;
-      headers: Array<{ key: string; value: string }>;
-    }>;
-  };
-  const wildcard = cfg.headers.find((h) => h.source === "/(.*)");
-  if (!wildcard) throw new Error("vercel.json missing wildcard header block");
-  const enforced = wildcard.headers.find(
+function readVercelCsp(): string {
+  const enforced = readVercelWildcardHeaders().find(
     (h) => h.key === "Content-Security-Policy",
   );
   if (!enforced)
@@ -145,9 +138,20 @@ const REQUIRED_SCRIPT_SRC = [
 
 // `connect-src` is the egress channel an XSS would use to exfiltrate;
 // any of these tokens collapses the policy to "anywhere on the web" and
-// must be rejected. `wss:` / `ws:` are intentionally permitted today
-// (real-time sync + better-auth WebSocket) — see audit-exceptions.md.
-const FORBIDDEN_BARE_SOURCES = ["https:", "http:", "*", "data:", "blob:"];
+// must be rejected. Bare `wss:` / `ws:` are in the list because `apps/web`
+// opens no WebSocket at all — they were dropped from the enforced policy
+// (spec beta-security-readiness, F4) and must not creep back in. The meta
+// fallback keeps only the loopback `ws://localhost:*` HMR origins, which are
+// not bare schemes.
+const FORBIDDEN_BARE_SOURCES = [
+  "https:",
+  "http:",
+  "*",
+  "data:",
+  "blob:",
+  "wss:",
+  "ws:",
+];
 
 describe("L11: CSP monitoring allowlist", () => {
   describe("vercel.json (production response header)", () => {
@@ -169,20 +173,59 @@ describe("L11: CSP monitoring allowlist", () => {
     );
 
     it("connect-src has no bare-host wildcards beyond documented vendor subdomains", () => {
-      // Allow the documented WebSocket schemes (see audit-exceptions.md
-      // "CSP wildcards"), every other source must be either `'self'` or
-      // an `https://<vendor>.<host>` URL with at least one literal label.
-      const allowedNonHttps = new Set([
-        "'self'",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "wss:",
-        "ws:",
-      ]);
+      // The enforced policy carries no dev loopback origins and no
+      // WebSocket schemes, so every source must be either `'self'` or an
+      // `https://<vendor>.<host>` URL with at least one literal label.
+      const allowedNonHttps = new Set(["'self'"]);
       for (const src of csp["connect-src"] ?? []) {
         if (allowedNonHttps.has(src)) continue;
         expect(src).toMatch(/^https:\/\/[^*\s]*\*?\.[a-z0-9.-]+$/i);
       }
+    });
+  });
+
+  describe("vercel.json ships only the enforced CSP (C2 Phase 2)", () => {
+    // C2 dropped the `Content-Security-Policy-Report-Only` header on
+    // 2026-10-03: it was strictly looser than the enforced policy (extra
+    // `script-src 'unsafe-inline'`; extra `connect-src` loopback + `wss: ws:`),
+    // so every violation it could report the enforced policy reports too, to
+    // the same sink. Keeping it only doubled `csp_violation_total` noise and
+    // left a second, weaker policy to drift. If you are deliberately running a
+    // Report-Only canary for a stricter policy, relax this guard in the same PR
+    // and remove the canary again after the soak (docs/operations/deploy/vercel.md).
+    it("has no Content-Security-Policy-Report-Only header in any block", () => {
+      for (const block of readVercelHeaderBlocks()) {
+        const keys = block.headers.map((h) => h.key.toLowerCase());
+        expect(
+          keys,
+          `vercel.json block "${block.source}" re-introduced a Report-Only CSP`,
+        ).not.toContain("content-security-policy-report-only");
+      }
+    });
+
+    it("has no Report-Only header in the wildcard block", () => {
+      const keys = readVercelWildcardHeaders().map((h) => h.key.toLowerCase());
+      expect(keys).not.toContain("content-security-policy-report-only");
+      expect(keys).toContain("content-security-policy");
+    });
+
+    it("enforced CSP still reports to /api/csp-report via report-uri and report-to", () => {
+      const csp = parseCsp(readVercelCsp());
+      // Host-agnostic on purpose: the API host may move, the sink path and the
+      // `report-uri` ↔ `Reporting-Endpoints` pairing must not.
+      expect(csp["report-uri"]).toHaveLength(1);
+      const reportUri = csp["report-uri"]![0]!;
+      expect(reportUri).toMatch(/^https:\/\/[^/\s]+\/api\/csp-report$/);
+      expect(csp["report-to"]).toEqual(["csp-endpoint"]);
+
+      const reportingEndpoints = readVercelWildcardHeaders().find(
+        (h) => h.key === "Reporting-Endpoints",
+      );
+      expect(
+        reportingEndpoints,
+        "vercel.json wildcard block missing Reporting-Endpoints header",
+      ).toBeDefined();
+      expect(reportingEndpoints!.value).toBe(`csp-endpoint="${reportUri}"`);
     });
   });
 
@@ -225,7 +268,7 @@ describe("L11: CSP monitoring allowlist", () => {
     // express as cleanly: the meta fallback must never grant an origin that
     // the enforced policy withholds — dev loopback origins excepted.
     it("meta CSP grants nothing beyond the enforced policy + dev loopback", () => {
-      const enforced = parseCsp(readVercelEnforcedCsp());
+      const enforced = parseCsp(readVercelCsp());
       for (const [directive, sources] of Object.entries(metaCsp)) {
         if (META_NOT_ALLOWED.has(directive)) continue;
         const enforcedSources = enforced[directive] ?? [];
@@ -256,7 +299,7 @@ describe("L11: CSP monitoring allowlist", () => {
   describe("S11: full directive-set parity (vercel.json ↔ index.html meta)", () => {
     // Parse both CSP strings with the shared helper so assertions use
     // Set semantics (source order does not matter).
-    const vercelMap = parseCspToMap(readVercelEnforcedCsp());
+    const vercelMap = parseCspToMap(readVercelCsp());
     const metaMap = parseCspToMap(readMetaCsp());
 
     // Directives forbidden inside <meta http-equiv="Content-Security-Policy">

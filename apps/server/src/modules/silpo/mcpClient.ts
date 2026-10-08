@@ -180,9 +180,14 @@ async function postJsonRpc(opts: {
   sessionId?: string | null | undefined;
   body: JsonRpcRequest | JsonRpcNotification;
   timeoutMs: number;
+  /** Дедлайн викликача: абортує і fetch, і читання тіла відповіді. */
+  signal?: AbortSignal | undefined;
 }): Promise<RawResponse> {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), opts.timeoutMs);
+  const signal = opts.signal
+    ? AbortSignal.any([opts.signal, controller.signal])
+    : controller.signal;
   try {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -196,7 +201,7 @@ async function postJsonRpc(opts: {
       method: "POST",
       headers,
       body: JSON.stringify(opts.body),
-      signal: controller.signal,
+      signal,
     });
     const bodyText = await response.text();
     return {
@@ -226,13 +231,22 @@ function rpcErr(error: McpError): McpRpcCallResult {
   return { ok: false, error };
 }
 
+function abortedByCaller(): McpRpcCallResult {
+  return rpcErr({
+    kind: "upstream_unavailable",
+    message: "Silpo MCP виклик скасовано дедлайном викликача",
+  });
+}
+
 async function mcpRpcCall(opts: {
   accessToken: string;
   sessionId?: string | null | undefined;
   method: string;
   params?: unknown;
   timeoutMs?: number;
+  signal?: AbortSignal | undefined;
 }): Promise<McpRpcCallResult> {
+  if (opts.signal?.aborted) return abortedByCaller();
   if (isBreakerOpen()) {
     recordExternalHttp("silpo", "circuit_open", 0);
     return rpcErr({
@@ -255,6 +269,8 @@ async function mcpRpcCall(opts: {
   for (let attempt = 0; attempt < retryDelaysMs.length; attempt++) {
     const delay = retryDelaysMs[attempt] ?? 0;
     if (delay > 0) await sleep(delay);
+    // Дедлайн викликача сплив між спробами: жодних ретраїв.
+    if (opts.signal?.aborted) return abortedByCaller();
 
     let raw: RawResponse;
     try {
@@ -263,9 +279,17 @@ async function mcpRpcCall(opts: {
         sessionId: opts.sessionId,
         body,
         timeoutMs,
+        signal: opts.signal,
       });
     } catch (e) {
       lastNetworkError = e;
+      // Аборт ЗОВНІШНЬОГО сигналу — рішення викликача (дедлайн typeahead), а
+      // не доказ, що Сільпо лежить: без ретраїв і без `onBreakerFailure`,
+      // інакше повільний день відкриє breaker для синку чеків усіх людей.
+      if (opts.signal?.aborted) {
+        recordExternalHttp("silpo", "timeout", elapsedMs(start));
+        return abortedByCaller();
+      }
       if (attempt < retryDelaysMs.length - 1) continue;
       const ms = elapsedMs(start);
       onBreakerFailure();
@@ -407,9 +431,11 @@ async function mcpRpcCall(opts: {
  */
 export async function mcpInitialize(
   accessToken: string,
+  signal?: AbortSignal,
 ): Promise<McpResult<{ sessionId: string | null }>> {
   const initResult = await mcpRpcCall({
     accessToken,
+    signal,
     method: "initialize",
     params: {
       protocolVersion: MCP_PROTOCOL_VERSION,
@@ -421,15 +447,18 @@ export async function mcpInitialize(
 
   // Fire-and-forget notification — no response expected/awaited beyond the
   // HTTP round-trip; a failure here must never block tool calls.
-  try {
-    await postJsonRpc({
-      accessToken,
-      sessionId: initResult.sessionId,
-      body: { jsonrpc: "2.0", method: "notifications/initialized" },
-      timeoutMs: SILPO_MCP_TIMEOUT_MS,
-    });
-  } catch {
-    /* best-effort */
+  if (!signal?.aborted) {
+    try {
+      await postJsonRpc({
+        accessToken,
+        sessionId: initResult.sessionId,
+        body: { jsonrpc: "2.0", method: "notifications/initialized" },
+        timeoutMs: SILPO_MCP_TIMEOUT_MS,
+        signal,
+      });
+    } catch {
+      /* best-effort */
+    }
   }
 
   return { ok: true, data: { sessionId: initResult.sessionId } };
@@ -460,12 +489,15 @@ export async function callMcpTool<T>(opts: {
   toolName: string;
   args?: Record<string, unknown>;
   schema: z.ZodType<T>;
+  /** Дедлайн викликача (наприклад, 8 с typeahead): абортує всі HTTP-кроки. */
+  signal?: AbortSignal | undefined;
 }): Promise<McpResult<T>> {
-  const init = await mcpInitialize(opts.accessToken);
+  const init = await mcpInitialize(opts.accessToken, opts.signal);
   if (!init.ok) return errResult(init.error);
 
   const callResult = await mcpRpcCall({
     accessToken: opts.accessToken,
+    signal: opts.signal,
     sessionId: init.data.sessionId,
     method: "tools/call",
     params: { name: opts.toolName, arguments: opts.args ?? {} },
@@ -547,12 +579,17 @@ function toolRefusal(result: unknown): string | null {
 
 /**
  * Евристика — у MCP немає машинного коду для причини відмови тули, лише
- * текст. Тримаємо перелік вузьким: хибний збіг коштує зайвого refresh-у
- * (дешево, ідемпотентно), а пропущений — помилки в людини замість
- * мовчазного оновлення токена.
+ * текст. Збіг дає `auth_required` БЕЗ `status`, і `callWithFreshAccessToken`
+ * реагує на нього refresh-ом (одноразовий грант спалюється!) та повтором.
+ * Якщо повтор дає ту саму відмову без HTTP 401, вона повертається як
+ * `tool_error` і підключення НЕ переводиться в `reauth_required` — тож хибний
+ * збіг коштує зайвого refresh-у, але не розлогінює. Голих `401|403` тут
+ * немає навмисно: вони збігалися з числами в id товарів і кількостях
+ * («Товар 3401567 відсутній у філії»). Справжній HTTP 401 приходить окремим
+ * шляхом (`mcpRpcCall`, `status: 401`).
  */
 function looksLikeAuthRefusal(text: string): boolean {
-  return /unauthor|unauthenticat|forbidden|401|403|token|expired|сесі|авториз|токен/i.test(
+  return /unauthor|unauthenticat|forbidden|token|expired|сесі|авториз|токен/i.test(
     text,
   );
 }

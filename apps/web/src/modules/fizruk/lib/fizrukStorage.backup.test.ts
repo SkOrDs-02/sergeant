@@ -8,6 +8,7 @@ import {
   parseCustomExercisesFromStorage,
   WORKOUTS_STORAGE_KEY,
   CUSTOM_EXERCISES_KEY,
+  validateFizrukFullBackupPayload,
 } from "./fizrukStorage";
 import { FIZRUK_BACKUP_KIND } from "./fizrukBackupShape";
 
@@ -119,5 +120,43 @@ describe("fizrukStorage – backup builders", () => {
         localStorage.getItem(CUSTOM_EXERCISES_KEY),
       ),
     ).toEqual([{ id: "x1" }]);
+  });
+});
+
+describe("validateFizrukFullBackupPayload — вкладені записи тренувань", () => {
+  const withWorkouts = (workouts: unknown[]) => ({
+    data: {
+      [WORKOUTS_STORAGE_KEY]: JSON.stringify({
+        schemaVersion: 1,
+        workouts,
+      }),
+    },
+  });
+
+  it.each([
+    ["items: [null]", { id: "w1", items: [null] }],
+    ["groups: [null]", { id: "w1", groups: [null] }],
+    ["warmup не масив", { id: "w1", warmup: "x" }],
+    ["cooldown: [1]", { id: "w1", cooldown: [1] }],
+    ["sets: [null]", { id: "w1", items: [{ id: "i1", sets: [null] }] }],
+  ])("відхиляє %s", (_label, workout) => {
+    expect(() =>
+      validateFizrukFullBackupPayload(withWorkouts([workout])),
+    ).toThrow(/Пошкоджений файл/);
+  });
+
+  it("приймає коректне тренування і відсутні поля", () => {
+    expect(() =>
+      validateFizrukFullBackupPayload(
+        withWorkouts([
+          { id: "w1" },
+          {
+            id: "w2",
+            items: [{ id: "i1", sets: [{ reps: 5 }] }],
+            warmup: null,
+          },
+        ]),
+      ),
+    ).not.toThrow();
   });
 });

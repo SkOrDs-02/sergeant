@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { applyFizrukSets, applyFizrukWorkouts } from "./applySync.js";
+import {
+  applyFizrukItems,
+  applyFizrukSets,
+  applyFizrukWorkouts,
+} from "./applySync.js";
 import {
   asClient,
   FakeClient,
@@ -58,9 +62,70 @@ describe("applyFizrukWorkouts", () => {
   });
 });
 
+// data-11: контракт для рядків, які шле веб-асистент (log_set / plan_workout).
+// Клієнт тепер завжди резолвить назву в каталожний або `custom_*` id, тож
+// item приймається; порожній `exercise_id` лишається термінальною відмовою
+// (її більше не повинен слати жоден клієнтський шлях).
+describe("applyFizrukItems — рядки з чат-екзекуторів (data-11)", () => {
+  const chatRow = (exerciseId: string) => ({
+    id: "i_chat_1",
+    user_id: "user-1",
+    workout_id: "w_chat_1",
+    exercise_id: exerciseId,
+    name_uk: "Мій рух",
+    primary_group: "full_body",
+    muscles_primary: "[]",
+    muscles_secondary: "[]",
+    type: "strength",
+    duration_sec: 0,
+    distance_m: 0,
+    chosen_variant: null,
+    sort_order: 0,
+  });
+
+  it.each([
+    ["каталожний id", "deadlift"],
+    ["custom-вправа з генератора AddExerciseSheet", "custom_1790000000000"],
+  ])(
+    "приймає item з непорожнім exercise_id: %s",
+    async (_label, exerciseId) => {
+      const fake = new FakeClient();
+      fake.queueRows([]); // ownership lookup за id позиції
+      fake.queueRows([{ "?column?": 1 }]); // батьківське тренування — власне
+      const clientTs = new Date("2026-07-21T08:00:00.000Z");
+      await expect(
+        applyFizrukItems(
+          asClient(fake),
+          syncOp("fizruk_workout_items", "insert", chatRow(exerciseId)),
+          "user-1",
+          clientTs,
+        ),
+      ).resolves.toEqual({ status: "applied" });
+      const insert = lastQuery(fake);
+      expect(insert.sql).toContain("INSERT INTO fizruk_workout_items");
+      expect(insert.params[3]).toBe(exerciseId);
+    },
+  );
+
+  it("порожній exercise_id — термінальна відмова missing_exercise_id", async () => {
+    const fake = new FakeClient();
+    await expect(
+      applyFizrukItems(
+        asClient(fake),
+        syncOp("fizruk_workout_items", "insert", chatRow("")),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "missing_exercise_id" });
+    expect(fake.queries.every((q) => !/^\s*INSERT/i.test(q.sql))).toBe(true);
+  });
+});
+
 describe("applyFizrukSets", () => {
   it("inserts a set with numeric defaults", async () => {
     const fake = new FakeClient();
+    fake.queueRows([]); // ownership lookup за id підходу
+    fake.queueRows([{ "?column?": 1 }]); // батьківська позиція — власна
     const clientTs = new Date("2026-07-21T08:00:00.000Z");
 
     await expect(
@@ -197,6 +262,8 @@ describe("applyFizrukSets", () => {
 
     it("accepts boundary values (weight_kg=1000, reps=1000) and inserts them as-is", async () => {
       const fake = new FakeClient();
+      fake.queueRows([]); // ownership lookup за id підходу
+      fake.queueRows([{ "?column?": 1 }]); // батьківська позиція — власна
       const clientTs = new Date("2026-07-21T08:00:00.000Z");
 
       await expect(

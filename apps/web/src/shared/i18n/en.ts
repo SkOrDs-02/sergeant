@@ -41,6 +41,10 @@ export const messagesEn: Partial<{
     // Server errors (rate-limiter, error handler):
     rateLimited: "Too many attempts. Wait a minute and try again.",
     serverDown: "The server is temporarily unavailable. Try again later.",
+    serverUnavailable: "The server is unavailable. Retrying.",
+    serverUnavailableBody:
+      "Your data on this device is safe. The app opens as soon as the server responds.",
+    serverUnavailableRetry: "Retry now",
 
     // Round 16 — soft-auth prompt
     createAccount: "Create account",
@@ -257,6 +261,13 @@ export const messagesEn: Partial<{
       photoNote:
         "Photos are the exception: part of the frame cannot be hidden, so it is sent whole. We warn you before the first photo.",
     },
+    photoNotice: {
+      title: "Where the photo goes",
+      blocking:
+        "Analysis starts as soon as you confirm this. Until then the frame goes nowhere.",
+      ack: "Got it",
+      ackAnalyze: "Got it, analyze",
+    },
     sunset: {
       title: "If Sergeant ever shuts down",
       body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
@@ -459,6 +470,7 @@ export const messagesEn: Partial<{
       changeTitle: "Change PIN",
       confirmTitle: "Confirm PIN",
       confirmSubtitle: "Enter your PIN again to confirm",
+      checking: "Checking app lock…",
       unlockTitle: "Enter PIN",
       unlockSubtitle: "Enter your PIN to unlock",
       pinMismatch: "PINs don't match. Try again.",

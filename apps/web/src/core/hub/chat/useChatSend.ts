@@ -29,21 +29,19 @@ import { logger } from "@shared/lib";
 import {
   ANALYTICS_EVENTS,
   getToolModule,
-  getToolOutcomeClass,
   type ChatPreset,
 } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
 import { keepReplayableToolBlocks } from "./replayableToolBlocks";
+import { buildTurnCards, markCardsAfterFailedSynthesis } from "./turnCards";
 import {
   useDestructiveConfirm,
   type UseDestructiveConfirmResult,
 } from "./useDestructiveConfirm";
 import { summarizeDestructiveToolInput } from "./destructiveConfirmSummary";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
-import { buildActionCard, isFailureResult } from "../../lib/hubChatActionCards";
 import { setHubStreaming } from "../streamingStore";
-import type { ChatActionCard } from "../../lib/hubChatActionCards";
 import { useFinykHubPreview } from "../useFinykHubPreview";
 import type { HubChatSession } from "../hubChatSessions";
 import { usePlan } from "../../billing/usePlan";
@@ -99,6 +97,18 @@ const PRESET_TURNS: Record<ChatPreset, number> = {
 export interface UseChatSendOptions {
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  /** Id активної бесіди — хід привʼязується до неї на старті (data-44). */
+  activeId?: string | undefined;
+  /**
+   * Запис у бесіду за id (див. `useChatSessions.updateSessionMessages`).
+   * Без нього (ізольовані тести/вбудовування) хід пише в `setMessages`.
+   */
+  updateSessionMessages?:
+    | ((
+        sessionId: string,
+        updater: React.SetStateAction<ChatMessage[]>,
+      ) => void)
+    | undefined;
   initialMessage?: string | undefined;
   autoSendInitial?: boolean | undefined;
   onOpenCatalogue?: (() => void) | undefined;
@@ -153,6 +163,8 @@ export interface UseChatSendResult {
 export function useChatSend({
   messages,
   setMessages,
+  activeId,
+  updateSessionMessages,
   initialMessage,
   autoSendInitial,
   onOpenCatalogue,
@@ -341,6 +353,23 @@ export function useChatSend({
       const userMsg = makeUserMsg(msg);
       const next = [...messages, userMsg];
       setMessages(next);
+
+      // data-44: усе, що хід пише ПІСЛЯ цього рядка (стрім, картки,
+      // помилки, «Запит скасовано»), адресується бесіді, у якій хід
+      // стартував. Якщо користувач за цей час натисне «Нова» чи обере
+      // іншу бесіду, відповідь однаково дописується у свою, а не в ту, що
+      // стала активною (раніше — осиротіла відповідь у чужій бесіді й
+      // персистенція зіпсованої історії).
+      const turnSessionId = activeId;
+      const setTurnMessages = (
+        updater: React.SetStateAction<ChatMessage[]>,
+      ): void => {
+        if (updateSessionMessages && turnSessionId) {
+          updateSessionMessages(turnSessionId, updater);
+        } else {
+          setMessages(updater);
+        }
+      };
       setInput("");
       setLoading(true);
       setHubStreaming(true);
@@ -459,7 +488,7 @@ export function useChatSend({
             // зламаний інструмент виглядав би звичайною текстовою відповіддю.
             // Досі це відображалось лише в телеметрії, а бульбашка лишалась
             // невідрізненною — і озвучувалась.
-            setMessages((m) => [...m, makeErrorMsg(fallback)]);
+            setTurnMessages((m) => [...m, makeErrorMsg(fallback)]);
             return;
           }
           const toolCalls = parsed.value;
@@ -497,7 +526,7 @@ export function useChatSend({
               // Другий запит до моделі теж не робимо: `tool_calls_raw`
               // йде лише в ньому, тож жоден `tool_use` не лишається без
               // пари — протокол не ламається, а токени не палимо.
-              setMessages((m) => [
+              setTurnMessages((m) => [
                 ...m,
                 makeAssistantMsg(CANCELLED_BY_USER_TEXT),
               ]);
@@ -553,50 +582,15 @@ export function useChatSend({
             }
           }
 
-          // Build action cards for known tools. Unknown tool → null,
-          // text-only fallback.
-          const builtCards = toolCalls.map((tc, idx) =>
-            buildActionCard({
-              name: tc.name as string,
-              input: tc.input as Record<string, unknown>,
-              result: toolResults[idx]?.content || "",
-            }),
+          // Картки для відомих tool-ів + текстовий фолбек для решти.
+          const { cards, uncardedText } = buildTurnCards(
+            toolCalls,
+            toolResults,
           );
-          const cards: ChatActionCard[] = builtCards.filter(
-            (c): c is ChatActionCard => c !== null,
-          );
-
-          /**
-           * Текстовий рядок «✓ …» — фолбек для інструментів БЕЗ картки.
-           *
-           * AI-CONTEXT (2026-08-07): раніше він друкувався для кожного
-           * виклику незалежно від картки, тобто дублював її слово в слово —
-           * і разом із тим виносив у чат сирий результат виконавця. Для
-           * `remember` це означало UUID запису памʼяті
-           * (`✓ Запамʼятав: Звати Діма (Інше, id:5c47fa7f-…)`) просто над
-           * карткою, яка каже те саме людськими словами. Виглядало як
-           * переказ моделі, але клеїв рядок саме цей код.
-           *
-           * Картка й рядок зʼявляються ОДНОЧАСНО (обидва летять у той самий
-           * `setMessages`), тож там, де картка є, рядок не додає нічого.
-           * Там, де її немає (невідомий tool), він лишається єдиним
-           * підтвердженням — тому не викидаємо його зовсім.
-           *
-           * U+2713 CHECK MARK — типографічний символ, не emoji: наслідує
-           * колір/шрифт повідомлення (emoji ✅ завжди зелена й чужа
-           * токенам). Re-audit §7.2 — системний статус-маркер.
-           */
-          const uncardedText = toolResults
-            .filter((_, idx) => builtCards[idx] == null)
-            // Помилковий результат не маркуємо «✓» — це б рапортувало успіх.
-            .map((r) =>
-              isFailureResult(r.content) ? r.content : `✓ ${r.content}`,
-            )
-            .join("\n");
           const prefix = uncardedText ? `${uncardedText}\n\n` : "";
 
           const assistantId = newMsgId();
-          setMessages((m) => [
+          setTurnMessages((m) => [
             ...m,
             {
               id: assistantId,
@@ -649,7 +643,7 @@ export function useChatSend({
                   throw new Error(CHAT_RESPONSE_TOO_LONG_TEXT);
                 }
                 acc += delta;
-                setMessages((m) =>
+                setTurnMessages((m) =>
                   m.map((x) =>
                     x.id === assistantId ? { ...x, text: prefix + acc } : x,
                   ),
@@ -683,7 +677,7 @@ export function useChatSend({
                   url: res2.url,
                 });
               followUpText = parsed.text || "";
-              setMessages((m) =>
+              setTurnMessages((m) =>
                 m.map((x) =>
                   x.id === assistantId
                     ? { ...x, text: prefix + followUpText }
@@ -693,40 +687,13 @@ export function useChatSend({
             }
           } catch (e2) {
             synthesisFailed = true;
-            setMessages((m) =>
+            setTurnMessages((m) =>
               m.map((x) => {
                 if (x.id !== assistantId) return x;
-                // AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/
-                // findings.md`) — синтез (другий тур) упав, але картки вже
-                // побудовані з результату ВИКОНАННЯ tool-а на клієнті, до
-                // того, як стало відомо, чи синтез узагалі відбудеться.
-                // `getToolOutcomeClass` (`@sergeant/shared`) вирішує, як
-                // саме картка має про це сказати:
-                //   - `state-mutating` (mark_habit_done, create_transaction,
-                //     …) — дія вже сталась незалежно від синтезу; картка
-                //     лишається «Виконано», лише дописуємо, що пояснення
-                //     не дійшло;
-                //   - `advice` (suggest_meal, query_*, …) — цінність саме
-                //     в синтезованому тексті, якого нема, тож «completed»-
-                //     картка з проміжними даними виглядала б як завершена
-                //     рекомендація, якою вона не є — переводимо у `failed`.
-                // Чіпаємо лише картки, що самі стартували як «completed»:
-                // якщо локальний виконавець уже позначив картку `failed`
-                // (сам tool впав), це не про синтез — не переписуємо.
-                const patchedCards = x.cards?.map((c) => {
-                  if (c.status !== "completed") return c;
-                  if (getToolOutcomeClass(c.toolName) === "state-mutating") {
-                    return {
-                      ...c,
-                      summary: `${c.summary} · Пояснення не дійшло.`,
-                    };
-                  }
-                  return {
-                    ...c,
-                    status: "failed" as const,
-                    summary: "Не вдалося отримати відповідь. Спробуй ще раз.",
-                  };
-                });
+                // AI-6: картки синтезу, що впав (див. `turnCards.ts`).
+                const patchedCards = x.cards
+                  ? markCardsAfterFailedSynthesis(x.cards)
+                  : undefined;
                 return {
                   ...x,
                   // `prefix` уже закінчується порожнім рядком, коли не
@@ -765,7 +732,7 @@ export function useChatSend({
           replyLength = uncardedText.length + followUpText.length;
         } else {
           const reply = data.text || "Немає відповіді.";
-          setMessages((m) => [...m, makeAssistantMsg(reply)]);
+          setTurnMessages((m) => [...m, makeAssistantMsg(reply)]);
           if (shouldSpeak) maybeSpeak(reply);
           replyLength = reply.length;
         }
@@ -785,7 +752,7 @@ export function useChatSend({
           (isApiError(e) && e.kind === "aborted") ||
           (e as { name?: string } | null)?.name === "AbortError";
         if (isAbort && timedOut) {
-          setMessages((m) => [
+          setTurnMessages((m) => [
             ...m,
             makeErrorMsg("Час очікування вичерпано. Спробуй ще раз."),
           ]);
@@ -794,9 +761,9 @@ export function useChatSend({
           // Explicit cancel (cancel button or chat close). Події НЕ шлемо:
           // користувач передумав — це не збій асистента. Такі спроби видно
           // як розрив `message_sent − (response_received + error)`.
-          setMessages((m) => [...m, makeAssistantMsg("Запит скасовано.")]);
+          setTurnMessages((m) => [...m, makeAssistantMsg("Запит скасовано.")]);
         } else {
-          setMessages((m) => [...m, makeErrorMsg(friendlyChatError(e))]);
+          setTurnMessages((m) => [...m, makeErrorMsg(friendlyChatError(e))]);
           const kind = isApiError(e) ? e.kind : "unknown";
           trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, {
             kind,
@@ -820,6 +787,7 @@ export function useChatSend({
       }
     },
     [
+      activeId,
       activeModule,
       input,
       isPro,
@@ -834,6 +802,7 @@ export function useChatSend({
       scheduleContextBuild,
       setMessages,
       toast,
+      updateSessionMessages,
       usageData,
     ],
   );

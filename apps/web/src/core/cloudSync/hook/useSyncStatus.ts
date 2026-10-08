@@ -1,11 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { syncKeys } from "@shared/lib/api/queryKeys";
 
+import { useAuthOptional } from "../../auth/AuthContext";
 import { SYNC_OUTBOX_CHANGED_EVENT } from "../../syncEngine/outboxChanged";
 import { getSyncEngineWriter } from "../../syncEngine/singleton";
+import {
+  readSyncSessionMissing,
+  subscribeSyncSessionMissing,
+} from "../../syncEngine/syncSessionSignal";
 
 /**
  * Lightweight hook that mirrors the v2 op-log writer's outbox counters
@@ -62,6 +67,12 @@ interface SyncStatusState {
   syncV2PendingCount: number;
   syncV2RejectedCount: number;
   syncV2DeadLetterCount: number;
+  /**
+   * `sec-18`: сесія завершилась, поки вкладка ще вважає себе залогіненою, тож
+   * черга нікуди не їде. `true` лише коли drain бачить «сесії немає» І
+   * `AuthContext` ще `authenticated`: на анонімному пристрої `null` — норма.
+   */
+  sessionExpired: boolean;
   retrySyncV2DeadLetters: () => Promise<void>;
 }
 
@@ -156,6 +167,17 @@ export function useSyncStatus(): SyncStatusState {
 
   const counts = data ?? EMPTY_COUNTS;
 
+  // `sec-18`: сигнал драйна (`syncSessionSignal.ts`) гейтиться статусом
+  // `AuthContext` тут, а не в sync-ядрі: ядро не має імпортувати авторизацію
+  // (цикл), а `useAuthOptional` не кидає там, де провайдера немає.
+  const sessionMissing = useSyncExternalStore(
+    subscribeSyncSessionMissing,
+    readSyncSessionMissing,
+    () => false,
+  );
+  const authStatus = useAuthOptional()?.status;
+  const sessionExpired = sessionMissing && authStatus === "authenticated";
+
   // Stabilise the return reference. The query runs with `staleTime: 0` and
   // hands React Query a fresh options object every render, so `OfflineBanner`
   // (and any future consumer) re-renders often; returning a fresh object
@@ -171,8 +193,15 @@ export function useSyncStatus(): SyncStatusState {
       syncV2PendingCount: counts.pending,
       syncV2RejectedCount: counts.rejected,
       syncV2DeadLetterCount: counts.dead_letter,
+      sessionExpired,
       retrySyncV2DeadLetters,
     }),
-    [isOnline, counts.pending, counts.rejected, counts.dead_letter],
+    [
+      isOnline,
+      counts.pending,
+      counts.rejected,
+      counts.dead_letter,
+      sessionExpired,
+    ],
   );
 }

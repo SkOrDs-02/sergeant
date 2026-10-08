@@ -23,7 +23,14 @@
  * `privacyDocument.ts` каже це прямо.
  */
 
-import { HEALTH_CONSENT_REQUIRED_MESSAGE } from "@sergeant/shared";
+import {
+  HEALTH_CONSENT_REQUIRED_MESSAGE,
+  isGoalProfileLabel,
+  isHealthMemoryEntry,
+  isHealthMemoryCategory,
+  isHealthProfileLabel,
+  isWeightGoalFact,
+} from "@sergeant/shared";
 import { HEALTH_ONLY_TOOL_NAMES } from "./tools.js";
 import type { CoachMemory, CoachSnapshot } from "./coach.js";
 
@@ -48,15 +55,50 @@ const HEALTH_SECTION_TAG =
   /^\[(?:Тренування|Фізрук[^\]]*|Останнє тренування вправи|Харчування[^\]]*)\]/;
 const HEALTH_MODULE_SUFFIX = /\(модуль:\s*(?:fizruk|nutrition)\)\s*$/;
 const INSIGHTS_HEADING = /^\[Аналітичні інсайти\]/;
-// Категорія профілю «Здоровʼя» (`memoryBank.ts`): апостроф може бути U+02BC
-// або звичайним, тож `.`.
-const PROFILE_HEALTH_LINE = /^\s+Здоров.я:/;
-const PROFILE_HEALTH_ENTRY = /\[Здоров.я\]/;
+// Категорії профілю з даними про здоровʼя (`@sergeant/shared/healthMemory`:
+// health, allergy, diet, training + цілі з вагою). Мітки порівнюємо з
+// переліком із shared, а не регексом на одну «Здоровʼя» (аудит `priv-06`).
+// Рядок профілю в контексті: `  <Мітка>: факт; факт` (`sections.ts`).
+const PROFILE_CONTEXT_LINE = /^(\s+)([^:\n]+):\s?(.*)$/;
+// Запис у `my_profile`: `  - [<Мітка>] факт (id:…)` (`memoryHandlers.ts`).
+const PROFILE_ENTRY_LINE = /\[([^\]\n]+)\]\s*(.*)$/;
+
+/**
+ * Рядок профілю в клієнтському контексті → що з ним робити без згоди:
+ * `null` = лишити, `""` = прибрати, інакше — лишити тільки цей залишок
+ * (старі клієнти шлють усі цілі одним рядком «Цілі: …»).
+ */
+function stripProfileContextLine(line: string): string | null {
+  const m = PROFILE_CONTEXT_LINE.exec(line);
+  if (!m) return null;
+  const [, indent = "", label = "", facts = ""] = m;
+  if (isHealthProfileLabel(label)) return "";
+  if (isGoalProfileLabel(label)) {
+    const kept = facts
+      .split("; ")
+      .filter((f) => f.trim() !== "" && !isWeightGoalFact(f));
+    if (kept.length === facts.split("; ").length) return null;
+    return kept.length === 0
+      ? ""
+      : `${indent}${label.trim()}: ${kept.join("; ")}`;
+  }
+  return null;
+}
+
+function isHealthProfileEntryLine(line: string): boolean {
+  const m = PROFILE_ENTRY_LINE.exec(line);
+  if (!m) return false;
+  const [, label = "", rest = ""] = m;
+  return (
+    isHealthProfileLabel(label) ||
+    (isGoalProfileLabel(label) && isWeightGoalFact(rest))
+  );
+}
 
 /**
  * Прибирає з клієнтського знімка секції про здоровʼя: тренування, харчування,
- * рекомендації модулів fizruk/nutrition, категорію профілю «Здоровʼя» і всю
- * секцію інсайтів (вона крос-модульна: день тренувань, калорії проти звичок).
+ * рекомендації модулів fizruk/nutrition, health-категорії профілю (здоровʼя,
+ * алергії, дієта, тренування, цілі про вагу) і всю секцію інсайтів (вона крос-модульна: день тренувань, калорії проти звичок).
  */
 export function stripHealthContext(context: string): string {
   if (!context) return context;
@@ -74,8 +116,9 @@ export function stripHealthContext(context: string): string {
     }
     if (HEALTH_SECTION_TAG.test(line)) continue;
     if (HEALTH_MODULE_SUFFIX.test(line)) continue;
-    if (PROFILE_HEALTH_LINE.test(line)) continue;
-    out.push(line);
+    const profileLine = stripProfileContextLine(line);
+    if (profileLine === "") continue;
+    out.push(profileLine ?? line);
   }
   return out.join("\n");
 }
@@ -137,13 +180,14 @@ function classifyToolUse(name: string, rawInput: unknown): ToolVerdict {
       return mod === "fizruk" || mod === "nutrition" ? "block" : "pass";
     }
     case "remember":
-      return input["category"] === "health" ? "block" : "pass";
-    case "my_profile": {
-      const cat = String(input["category"] ?? "")
-        .toLowerCase()
-        .trim();
-      return cat === "health" ? "block" : "filter-lines";
-    }
+      // Категорія health-типу, або `goal` із фактом про вагу.
+      return isHealthMemoryEntry(input["category"], input["fact"])
+        ? "block"
+        : "pass";
+    case "my_profile":
+      return isHealthMemoryCategory(input["category"])
+        ? "block"
+        : "filter-lines";
     case "morning_briefing":
     case "weekly_summary":
       return "filter-lines";
@@ -155,7 +199,7 @@ function classifyToolUse(name: string, rawInput: unknown): ToolVerdict {
 function filterHealthLines(name: string, text: string): string {
   const drop =
     name === "my_profile"
-      ? (l: string) => PROFILE_HEALTH_ENTRY.test(l)
+      ? isHealthProfileEntryLine
       : (l: string) => BRIEFING_HEALTH_LINE.test(l);
   return text
     .split("\n")

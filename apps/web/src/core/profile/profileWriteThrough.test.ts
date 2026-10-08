@@ -35,8 +35,10 @@ vi.mock("@shared/api", () => ({
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { STORAGE_KEYS, UserProfilePayloadSchema } from "@sergeant/shared";
 import type { UserProfileResponse } from "@shared/api";
+import { LOCAL_ANON_USER_ID } from "../auth/localIdentity";
 import {
   BIOMETRICS_DEFAULT,
+  readBiometricsOwnerId,
   readBiometrics,
   setBiometricsOwner,
   writeBiometrics,
@@ -416,9 +418,10 @@ describe("reconcileBiometricsWithServerProfile — cross-account upload guard", 
     await reconcileBiometricsWithServerProfile(NO_SERVER_ROW, USER_B);
 
     expect(mockUpdateProfile).not.toHaveBeenCalled();
-    // The snapshot is left exactly as A wrote it — reconcile declines to
-    // touch data it can't attribute to the current session.
-    expect(readBiometrics()).toEqual(FRESH);
+    // priv-02: чужий снапшот не лишається на пристрої — скинуто до
+    // порожнього, а не залишено «як A записав» (інакше він читається в UI і
+    // осідає в профілі B першою ж правкою).
+    expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
   });
 
   it("still uploads when the local snapshot is the current user's own data", async () => {
@@ -462,6 +465,71 @@ describe("reconcileBiometricsWithServerProfile — cross-account upload guard", 
     await reconcileBiometricsWithServerProfile(serverResponse(OLDER), USER_A);
 
     expect(mockUpdateProfile).toHaveBeenCalledWith(combined(NEWER));
+  });
+});
+
+// В1 (2026-10-08): анонімний профіль пристрою (`ownerId: "local-anon"`) переходить
+// до першого акаунта, що увійшов; далі LWW за `updatedAt`. Легасі `null`
+// лишається чужим (захист PR #627 не слабне).
+describe("reconcileBiometricsWithServerProfile - local-anon (В1)", () => {
+  const USER_A = "user-a";
+  const USER_B = "user-b";
+
+  it("local-anon + сервер без рядка: профіль їде нагору і перештамповується акаунтом", async () => {
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    writeBiometrics(FRESH);
+
+    await reconcileBiometricsWithServerProfile(NO_SERVER_ROW, USER_A);
+
+    expect(mockUpdateProfile).toHaveBeenCalledWith(combined(FRESH));
+    expect(readBiometricsOwnerId()).toBe(USER_A);
+  });
+
+  it("local-anon новіший за серверний: PUT; старіший: гідратація серверним", async () => {
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    writeBiometrics(NEWER);
+    await reconcileBiometricsWithServerProfile(serverResponse(FRESH), USER_A);
+    expect(mockUpdateProfile).toHaveBeenCalledWith(combined(NEWER));
+
+    mockUpdateProfile.mockClear();
+    localStorage.clear();
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    writeBiometrics(OLDER);
+    await reconcileBiometricsWithServerProfile(serverResponse(FRESH), USER_A);
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    expect(readBiometrics()).toEqual(FRESH);
+    expect(readBiometricsOwnerId()).toBe(USER_A);
+  });
+
+  it("легасі null лишається чужим: сервер перемагає, PUT немає (регрес PR #627)", async () => {
+    localStorage.setItem(STORAGE_KEYS.HUB_BIOMETRICS, JSON.stringify(NEWER));
+
+    await reconcileBiometricsWithServerProfile(serverResponse(OLDER), USER_A);
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    expect(readBiometrics()).toEqual(OLDER);
+
+    localStorage.clear();
+    localStorage.setItem(STORAGE_KEYS.HUB_BIOMETRICS, JSON.stringify(NEWER));
+    await reconcileBiometricsWithServerProfile(NO_SERVER_ROW, USER_A);
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+  });
+
+  it("запис залогінованого A при вході B скидається (priv-02 без змін)", async () => {
+    setBiometricsOwner(USER_A);
+    writeBiometrics(NEWER);
+
+    await reconcileBiometricsWithServerProfile(NO_SERVER_ROW, USER_B);
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
+  });
+
+  it("анонімна сесія не бачить запис залогінованого A", () => {
+    setBiometricsOwner(USER_A);
+    writeBiometrics(FRESH);
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
   });
 });
 
@@ -594,9 +662,9 @@ describe("reconcileMemoryBankWithServerProfile — cross-account upload guard", 
     await reconcileMemoryBankWithServerProfile(NO_SERVER_ROW, USER_B);
 
     expect(mockUpdateProfile).not.toHaveBeenCalled();
-    // Left exactly as A wrote it — declined to touch data it can't
-    // attribute to the current session.
-    expect(readMemoryEntries()).toEqual([FACT_A]);
+    // priv-02: чужі факти не лишаються на пристрої — скинуто до порожнього.
+    expect(readMemoryEntries()).toEqual([]);
+    expect(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)).toBe("[]");
   });
 
   it("still uploads when the local memory bank is the current user's own data", async () => {
@@ -864,5 +932,102 @@ describe("L-8 regression: логаут → вхід відновлює банк 
       "Профіль памʼяті порожній.",
     );
     expect(mockUpdateProfile).not.toHaveBeenCalled();
+  });
+});
+
+// priv-02 (аудит 2026-10-01): сесія A закінчилась без «Вийти», у плоскому
+// ключі лежать дані A, а на пристрої вже сесія B. Читання фільтрується за
+// ownerId, записи чужого власника не перештамповуються і не їдуть на сервер.
+describe("priv-02: дані чужого ownerId на спільному пристрої", () => {
+  const USER_A = "user-a";
+  const USER_B = "user-b";
+  const SECRET: MemoryEntry = {
+    id: "m-secret",
+    fact: "діабет 1 типу, антидепресанти",
+    category: "health",
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  function sentPayloads(): string {
+    return JSON.stringify(mockUpdateProfile.mock.calls.map((c) => c[0]));
+  }
+
+  it("банк памʼяті з чужим ownerId не читається (UI і чат-тули бачать порожньо)", () => {
+    setMemoryBankOwner(USER_A);
+    writeMemoryEntries([SECRET]);
+    expect(readMemoryEntries()).toEqual([SECRET]);
+
+    setMemoryBankOwner(USER_B);
+    expect(readMemoryEntries()).toEqual([]);
+    expect(myProfile({ name: "my_profile", input: {} })).toBe(
+      "Профіль памʼяті порожній.",
+    );
+  });
+
+  it("власні й легасі-записи (ownerId відсутній) читаються як раніше", () => {
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify([SECRET]));
+    setMemoryBankOwner(USER_B);
+    expect(readMemoryEntries()).toEqual([SECRET]);
+  });
+
+  it("pushMemoryBankToServer не пушить чужий банк", async () => {
+    setMemoryBankOwner(USER_A);
+    writeMemoryEntries([SECRET]);
+    setMemoryBankOwner(USER_B);
+
+    await pushMemoryBankToServer([SECRET]);
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+  });
+
+  it("пуш біометрії під сесією B не несе факти A на сервер", async () => {
+    setMemoryBankOwner(USER_A);
+    writeMemoryEntries([SECRET]);
+    setMemoryBankOwner(USER_B);
+    setBiometricsOwner(USER_B);
+
+    await pushBiometricsToServer(FRESH);
+
+    expect(sentPayloads()).not.toContain(SECRET.fact);
+  });
+
+  it("перша правка B після протухлої сесії A не осаджує факти A у серверний профіль", async () => {
+    setMemoryBankOwner(USER_A);
+    writeMemoryEntries([SECRET]);
+
+    // B увійшов; reconcile ще не відпрацював (або серверного банку немає).
+    setMemoryBankOwner(USER_B);
+    setBiometricsOwner(USER_B);
+    writeMemoryEntries([FACT_B, ...readMemoryEntries()]);
+    await pushMemoryBankToServer(readMemoryEntries());
+
+    expect(readMemoryEntries()).toEqual([FACT_B]);
+    expect(sentPayloads()).not.toContain(SECRET.fact);
+    expect(readMemoryBankMeta().ownerId).toBe(USER_B);
+  });
+
+  it("reconcile банку: чужий ownerId і сервер без memoryBank → локальне очищено, пушу немає", async () => {
+    setMemoryBankOwner(USER_A);
+    writeMemoryEntries([SECRET]);
+
+    await reconcileMemoryBankWithServerProfile(NO_SERVER_ROW, USER_B);
+
+    expect(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)).toBe("[]");
+    expect(readMemoryEntries()).toEqual([]);
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    expect(readMemoryBankMeta().ownerId).toBe(USER_B);
+    expect(readMemoryBankMeta().updatedAt).toBe(MEMORY_BANK_META_EPOCH);
+  });
+
+  it("біометрія з чужим ownerId не читається і не пушиться", async () => {
+    setBiometricsOwner(USER_A);
+    writeBiometrics(FRESH);
+
+    setBiometricsOwner(USER_B);
+    expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
+
+    setMemoryBankOwner(USER_B);
+    await pushMemoryBankToServer([FACT_B]);
+    expect(sentPayloads()).not.toContain('"heightCm":178');
   });
 });

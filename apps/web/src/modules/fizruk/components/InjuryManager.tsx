@@ -38,7 +38,7 @@ import { useInjuries } from "../hooks/useInjuries";
  */
 export function InjuryManager() {
   const t = messages.fizruk.injuries;
-  const { active, activeSites, mark, clear } = useInjuries();
+  const { active, activeSites, markMany, clear } = useInjuries();
   const toast = useToast();
   const [selected, setSelected] = useState<InjurySiteId[]>([]);
   const [busy, setBusy] = useState(false);
@@ -68,7 +68,8 @@ export function InjuryManager() {
   const saveSelected = () => {
     setBusy(true);
     try {
-      for (const site of selected) mark(site);
+      // Одним записом: цикл `mark` у одному тіку лишав лише останню зону.
+      markMany(selected);
       setSelected([]);
       toast.success(t.savedToast);
     } catch {

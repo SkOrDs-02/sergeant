@@ -38,6 +38,8 @@ vi.mock("../../obs/metrics.js", () => ({
 }));
 
 import {
+  hasUnstorableText,
+  clampTextToBound,
   isWithinTextBound,
   NAME_MAX_LEN,
   NOTE_MAX_LEN,
@@ -210,6 +212,43 @@ describe("syncV2-core helpers", () => {
   });
 });
 
+describe("hasUnstorableText (data-17)", () => {
+  it("знаходить U+0000 у значенні, ключі, вкладеному обʼєкті й масиві", () => {
+    expect(hasUnstorableText({ a: "x\u0000y" })).toBe(true);
+    expect(hasUnstorableText({ "k\u0000": "ok" })).toBe(true);
+    expect(hasUnstorableText({ a: { b: [1, { c: "\u0000" }] } })).toBe(true);
+  });
+
+  it("знаходить одинокі сурогати (обрізаний емодзі)", () => {
+    const emoji = "🏃";
+    expect(hasUnstorableText({ a: emoji.slice(0, 1) })).toBe(true);
+    expect(hasUnstorableText({ a: emoji.slice(1) })).toBe(true);
+    expect(hasUnstorableText({ a: "біг " + emoji.slice(0, 1) })).toBe(true);
+    // сурогат, за яким іде НЕ низький сурогат
+    expect(hasUnstorableText({ a: "\ud83cx" })).toBe(true);
+  });
+
+  it("пускає валідний Unicode: кирилицю, повні емодзі, не-рядкові значення", () => {
+    expect(
+      hasUnstorableText({
+        name: "Пробіжка 🏃 🏃‍♂️ ✓",
+        n: 1,
+        b: false,
+        z: null,
+        list: ["a", 2],
+        nested: { ok: "fine" },
+      }),
+    ).toBe(false);
+    expect(hasUnstorableText({})).toBe(false);
+  });
+
+  it("глибоко вкладений payload не валить стек (обхід ітеративний)", () => {
+    let deep: Record<string, unknown> = { leaf: "ok" };
+    for (let i = 0; i < 50_000; i++) deep = { n: deep };
+    expect(hasUnstorableText(deep)).toBe(false);
+  });
+});
+
 describe("isWithinTextBound (pre-beta input-boundaries audit)", () => {
   it("accepts null/undefined — a non-string field already fell back upstream", () => {
     expect(isWithinTextBound(null)).toBe(true);
@@ -337,5 +376,18 @@ describe("parseOptionalTzOffsetMin (CodeRabbit PR #627)", () => {
   it("rejects an implausibly large value (curl bypassing the client ceiling)", () => {
     expect(parseOptionalTzOffsetMin(999_999)).toBe("invalid");
     expect(parseOptionalTzOffsetMin(Number.MAX_SAFE_INTEGER)).toBe("invalid");
+  });
+});
+
+describe("clampTextToBound", () => {
+  it("returns short text as is and cuts long text to the bound", () => {
+    expect(clampTextToBound("abc")).toBe("abc");
+    expect(clampTextToBound("a".repeat(300))).toBe("a".repeat(200));
+    expect(clampTextToBound("abcdef", 3)).toBe("abc");
+  });
+
+  it("drops a high surrogate left dangling at the cut", () => {
+    expect(clampTextToBound("ab😀cd", 3)).toBe("ab");
+    expect(clampTextToBound("a😀cd", 3)).toBe("a😀");
   });
 });

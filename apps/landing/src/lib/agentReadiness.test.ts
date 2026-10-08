@@ -78,6 +78,52 @@ describe("markdown-переговори", () => {
   });
 });
 
+describe("одна адреса на сторінку", () => {
+  // Аудит сайту 2026-10-08 (S1, S2, S14): www, шлях зі слешем і markdown-копії
+  // віддавали 200 поруч з основною адресою, і дублі тримав лише canonical.
+  const cfg = JSON.parse(read("vercel.json")) as {
+    trailingSlash?: boolean;
+    redirects: {
+      source: string;
+      destination: string;
+      permanent?: boolean;
+      has?: { type: string; value: string }[];
+    }[];
+    headers: { source: string; headers: { key: string; value: string }[] }[];
+  };
+
+  it("www веде на основний домен постійним редиректом, корінь теж", () => {
+    // Після деплою 2026-10-08 правило `/:path*` редиректило `www/hroshi`, а
+    // корінь `www/` віддавав 200, тобто головна лишалась дублем. Тепер корінь
+    // має власне правило, а решта шляхів – `(.*)`, що ловить і порожній шлях.
+    const www = cfg.redirects.filter((r) =>
+      r.has?.some((h) => h.type === "host" && h.value.startsWith("www.")),
+    );
+    const root = www.find((r) => r.source === "/");
+    const rest = www.find((r) => r.source === "/:path(.*)");
+    expect(root?.destination).toBe("https://sergeant.com.ua/");
+    expect(rest?.destination).toBe("https://sergeant.com.ua/:path");
+    expect(www.every((r) => r.permanent === true)).toBe(true);
+  });
+
+  it("шлях зі слешем у кінці редиректиться на шлях без нього", () => {
+    // Збігається з canonical і sitemap, які пишуть адреси без слеша.
+    expect(cfg.trailingSlash).toBe(false);
+  });
+
+  it("markdown-копії і llms-full.txt не потрапляють у пошуковий індекс", () => {
+    const noindexed = cfg.headers
+      .filter((h) =>
+        h.headers.some(
+          (x) => x.key === "X-Robots-Tag" && x.value === "noindex",
+        ),
+      )
+      .map((h) => h.source);
+    expect(noindexed).toContain(String.raw`/(.*)\.md`);
+    expect(noindexed).toContain("/llms-full.txt");
+  });
+});
+
 describe("крихти гайдів", () => {
   it("додаються централізовано, не в кожному гайді руками", () => {
     // Доданий маршрут інакше тихо лишається без крихт, і помітить це вже

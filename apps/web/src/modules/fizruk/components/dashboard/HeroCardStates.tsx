@@ -275,8 +275,9 @@ export function ActiveState({
     if (hasAnnouncedStartRef.current) return;
     hasAnnouncedStartRef.current = true;
     announce(`Тренування триває, ${formatElapsed(elapsedSec)}`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only announce, see comment above.
-  }, []);
+    // `hasAnnouncedStartRef` робить ефект одноразовим: `elapsedSec` тикає
+    // щосекунди, але повторні запуски одразу виходять.
+  }, [announce, elapsedSec]);
   const meta =
     state.itemsCount != null && state.itemsCount > 0
       ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`

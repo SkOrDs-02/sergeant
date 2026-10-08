@@ -25,9 +25,9 @@ import {
 } from "./diff/index.js";
 import { probeFizrukParity } from "./parity.js";
 import {
-  ackDualWrite,
   journalDualWrite,
   pendingDualWrites,
+  settleDualWriteEntry,
 } from "../../../../core/durability/dualWriteJournal.js";
 import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 
@@ -134,10 +134,15 @@ export function isFizrukDualWriteRegistered(): boolean {
 }
 
 /**
- * Run the dual-write pipeline for a `prev → next` LS-state transition.
+ * Run the dual-write pipeline for a `prev → next` LS-state transition and
+ * resolve with its terminal outcome.
  *
- * The function is `async` but the LS-write call site fires it
- * fire-and-forget through {@link triggerFizrukDualWrite}.
+ * AI-CONTEXT: запис іде ЖУРНАЛЬОВАНИМ шляхом (`journalDualWrite` до
+ * асинхронної межі, `settleDualWriteEntry` після), як `triggerFizrukDualWrite`.
+ * Єдиний чинний виклик поза тригером - відновлення з файлу
+ * (`fizrukStorage.ts`): воно йшло повз журнал, тож обірваний reload чи
+ * `skipped` лишали пристрій без шансу догнати сервер (аудит 2026-10-01,
+ * data-07).
  *
  * Every call records its terminal outcome through
  * `recordDualWriteOutcome("fizruk", …)` so the Stage 8 decision-gate
@@ -149,15 +154,25 @@ export async function dualWriteFizrukState(
   next: FizrukDualWriteState,
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
-  const outcome = ctx
-    ? await runFizrukOps(
-        ctx,
-        diffFizrukDualWriteOps(prev, next),
-        ctx.getNow(),
-        next,
-      )
-    : ({ status: "skipped", reason: "context-unset" } as const);
+  if (!ctx) {
+    const skipped = { status: "skipped", reason: "context-unset" } as const;
+    recordDualWriteOutcome("fizruk", skipped);
+    return skipped;
+  }
+  const ops = diffFizrukDualWriteOps(prev, next);
+  const clientTs = ctx.getNow();
+  const userId = ctx.getUserId();
+  const journalId =
+    ops.length > 0 && userId
+      ? journalDualWrite<FizrukJournalPayload>("fizruk", userId, {
+          ops,
+          clientTs,
+        })
+      : null;
+  const outboxSettled = outboxCheckpoint();
+  const outcome = await runFizrukOps(ctx, ops, clientTs, next);
   recordDualWriteOutcome("fizruk", outcome);
+  settleDualWriteEntry("fizruk", journalId, outcome, outboxSettled);
   return outcome;
 }
 
@@ -313,9 +328,7 @@ function enqueueFizrukRun(
       // «sqlite недоступна» лишає запис у журналі для наступного буту.
       // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
       // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
-      if (journalId && outcome.status === "applied") {
-        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
-      }
+      settleDualWriteEntry("fizruk", journalId, outcome, outboxSettled);
     })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {

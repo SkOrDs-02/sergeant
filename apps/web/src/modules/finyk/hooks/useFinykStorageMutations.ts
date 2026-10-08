@@ -1,6 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { hubKeys } from "@shared/lib/api/queryKeys";
+import { generatePrefixedId } from "@sergeant/shared";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import {
+  limitBudgetCategoryIds,
+  normalizeLimitBudget,
+} from "@sergeant/finyk-domain/domain/budget";
 import { stripCategoryEmoji } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import {
   trackEvent,
@@ -26,6 +32,13 @@ import type {
   LinkedTxMeta,
   LinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import { linkKeyAliases } from "@sergeant/finyk-domain/domain/debtLinkKeys";
+import {
+  collectManualExpenseLinks,
+  restoreManualExpenseLinks,
+  stripManualExpenseLinks,
+  type ManualExpenseLinkSnapshot,
+} from "./manualExpenseDebtLinks";
 
 /**
  * Усі мутаційні методи Finyk-storage. Чисті по відношенню до React-стану:
@@ -52,6 +65,8 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     setMonoDebtLinkedTxIds,
     setCustomCategories,
     manualExpenses,
+    manualDebts,
+    receivables,
     setManualExpenses,
     setExcludedStatTxIds,
     setDismissedRecurring,
@@ -67,10 +82,12 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
 
   const addManualExpense = (
     expense: Partial<ManualExpense> & { id?: unknown },
+    /** Привʼязки до боргів, зняті `removeManualExpense` (undo) — `data-24`. */
+    restoredLinks?: readonly ManualExpenseLinkSnapshot[],
   ) => {
     const isIncome = expense.kind === "income";
     const entry: ManualExpense = {
-      id: expense?.id != null ? String(expense.id) : Date.now().toString(),
+      id: expense?.id != null ? String(expense.id) : generatePrefixedId("mx"),
       // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock fallback for a missing entry date, not a Kyiv day-boundary computation.
       date: expense.date || new Date().toISOString(),
       description: expense.description || "",
@@ -79,6 +96,20 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       kind: isIncome ? "income" : "expense",
     };
     setManualExpenses((prev) => [entry, ...prev]);
+    if (restoredLinks && restoredLinks.length > 0) {
+      const forDebts = restoredLinks.filter((l) => l.type === "debt");
+      const forRecv = restoredLinks.filter((l) => l.type === "receivable");
+      if (forDebts.length > 0) {
+        setManualDebts((items) =>
+          restoreManualExpenseLinks(items, forDebts, entry.id),
+        );
+      }
+      if (forRecv.length > 0) {
+        setReceivables((items) =>
+          restoreManualExpenseLinks(items, forRecv, entry.id),
+        );
+      }
+    }
     invalidateFinykPreview();
     // Product analytics: payload intentionally minimal (category + flag
     // whether a custom description was provided) — no amounts, no text.
@@ -131,15 +162,30 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
    * web і server деплояться окремо, тож старий сервер із чинним правилом
    * ще може відповідати цьому клієнту.
    */
-  const restoreManualExpense = (snapshot: Partial<ManualExpense>) => {
+  const restoreManualExpense = (
+    snapshot: Partial<ManualExpense>,
+    removedLinks?: readonly ManualExpenseLinkSnapshot[],
+  ) => {
     const { id: _discardedId, ...withoutId } = snapshot;
     void _discardedId;
-    addManualExpense(withoutId);
+    addManualExpense(withoutId, removedLinks);
   };
 
-  const removeManualExpense = (id: string) => {
+  /**
+   * Видалити ручний запис і зняти його привʼязки з усіх пасивів та
+   * дебіторок (обидві форми ключа, `data-24`). Повертає знімок зняттих
+   * привʼязок — його передають у `restoreManualExpense` /
+   * `addManualExpense` для undo.
+   */
+  const removeManualExpense = (id: string): ManualExpenseLinkSnapshot[] => {
     const removed = manualExpenses.find((e) => e.id === id);
+    const removedLinks = [
+      ...collectManualExpenseLinks(manualDebts, "debt", id),
+      ...collectManualExpenseLinks(receivables, "receivable", id),
+    ];
     setManualExpenses((prev) => prev.filter((e) => e.id !== id));
+    setManualDebts((items) => stripManualExpenseLinks(items, id));
+    setReceivables((items) => stripManualExpenseLinks(items, id));
     invalidateFinykPreview();
     trackEvent(
       removed?.kind === "income"
@@ -147,6 +193,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         : ANALYTICS_EVENTS.EXPENSE_DELETED,
       { source: "manual" },
     );
+    return removedLinks;
   };
 
   const editManualExpense = (
@@ -223,34 +270,39 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         ...((item["txLinks"] as Record<string, LinkedTxMeta> | undefined) ??
           {}),
       };
+      // Ручний запис має дві форми ключа (`X` / `manual_X`, `debtLinkKeys`):
+      // відвʼязування знімає обидві, привʼязування лишає одну (`data-24`).
+      const aliases = linkKeyAliases(txId);
       if (role === null) {
-        const wasAuto = txLinks[txId]?.auto === true;
-        delete txLinks[txId];
+        const autoKey = aliases.find((k) => txLinks[k]?.auto === true);
+        for (const k of aliases) delete txLinks[k];
         const next: T = {
           ...item,
-          linkedTxIds: linked.filter((x) => x !== txId),
+          linkedTxIds: linked.filter((x) => !aliases.includes(x)),
           txLinks,
         };
-        if (type === "debt" && wasAuto) {
+        if (type === "debt" && autoKey !== undefined) {
           const dismissed =
             (item["autoLinkDismissedTxIds"] as string[] | undefined) || [];
-          if (!dismissed.includes(txId)) {
+          if (!dismissed.includes(autoKey)) {
             (next as Record<string, unknown>)["autoLinkDismissedTxIds"] = [
               ...dismissed,
-              txId,
+              autoKey,
             ];
           }
         }
         return next;
       }
+      for (const k of aliases) if (k !== txId) delete txLinks[k];
       txLinks[txId] = {
         role,
         amount: Math.abs(amountUAH),
         ...(meta?.auto ? { auto: true } : {}),
       };
+      const others = linked.filter((x) => x === txId || !aliases.includes(x));
       return {
         ...item,
-        linkedTxIds: linked.includes(txId) ? linked : [...linked, txId],
+        linkedTxIds: others.includes(txId) ? others : [...others, txId],
         txLinks,
       };
     };
@@ -466,8 +518,20 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       }
       return out;
     });
+    // Комбінований ліміт читається через `limitBudgetCategoryIds` (пара
+    // `categoryId` + `categoryIds`), а не лише за першою категорією:
+    // фільтр за `b.categoryId` знищував ліміт разом з іншими категоріями,
+    // якщо видалена стояла першою, і лишав мертвий id, якщо не першою.
+    // Ліміт зникає лише тоді, коли після зняття id категорій не лишилось.
     setBudgets((bs) =>
-      bs.filter((b) => b.type !== "limit" || b.categoryId !== id),
+      bs.flatMap((b): Budget[] => {
+        if (b.type !== "limit") return [b];
+        const all = limitBudgetCategoryIds(b);
+        if (!all.includes(id)) return [b];
+        const ids = all.filter((c) => c !== id);
+        if (ids.length === 0) return [];
+        return [{ ...normalizeLimitBudget({ ...b, categoryIds: ids }) }];
+      }),
     );
   };
 

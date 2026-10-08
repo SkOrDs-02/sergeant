@@ -17,7 +17,9 @@ describe("syncV2 wire reason/type registries", () => {
     // міграції 134 і не стає 500-кою.
     // Міграція 146: +10 причин на решту полів веб-форми заміру (жир, шия,
     // передпліччя, стегно, литка, ліва/права сторони біцепса).
-    expect(APPLY_REJECT_REASONS).toHaveLength(75);
+    // Аудит 2026-10-01 (rel-01): +3 причини розкладу звички
+    // (`invalid_recurrence`, `invalid_start_date`, `invalid_end_date`).
+    expect(APPLY_REJECT_REASONS).toHaveLength(78);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );
@@ -52,6 +54,8 @@ describe("syncV2 wire reason/type registries", () => {
       // Запис у `sync_op_log` живе під savepoint-ом `op_log_write`; його
       // помилка відхиляє один оп, а не валить батч 500-кою.
       "oplog_write_failed",
+      // `U+0000` / одинокий сурогат у `row` відсікається ДО apply (data-17).
+      "invalid_text_encoding",
     ]);
     expect(new Set(ENGINE_REJECT_REASONS).size).toBe(
       ENGINE_REJECT_REASONS.length,

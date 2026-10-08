@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-12-02.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-12-10.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -341,6 +341,8 @@ LLM-ендпоінт `POST /api/internal/categorize` з будь-якої точ
 ### B28 — 10 МБ тіла парситься до автентифікації, зі стисненням ✅ виправлено (частково)
 
 > **Закрито 2026-09-29 у частині стиснення:** `inflate: false` на AI-правилах [`bodySizePolicy.ts`](../../../../apps/server/src/http/bodySizePolicy.ts) (фото, чеки, скрін, chat, transcribe, coach memory) → gzip-тіло дає 415 без розпаковки. Сам факт парсингу до `requireSession` (буферизація до 10 МБ нестисненого) лишається: перенесення парсерів після auth — окреме архітектурне рішення.
+>
+> **Доповнення (rel-04, аудит 2026-10-01):** `inflate: false` тепер стоїть і на правилах понад 128 КБ поза AI (sync v1/v2, statement/preview, import/commit, backup-upload) та на default-правилі `/`. Клієнти (web, mobile, mobile-shell, api-client) тіла не стискають; вебхуки Monobank/Telegram/LiqPay/Stripe/Plata не надсилають `Content-Encoding`.
 
 `applyBodySizePolicy(app)` монтується на рівні застосунку
 ([`app.ts:147`](../../../../apps/server/src/app.ts)), а роутери — на `:169`. Тобто

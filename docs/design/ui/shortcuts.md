@@ -1,6 +1,6 @@
 # Keyboard shortcuts registry
 
-> **Last touched:** 2026-09-16 by @claude (рішення власника: `N` і `Cmd+Z` реалізовано, `Cmd+K` має одного власника, пошук хаба — режим палітри). **Next review:** 2026-12-22.
+> **Last touched:** 2026-10-04 by @claude (шорткати вимкнені під замком застосунку, sec-13; раніше 2026-09-16, рішення власника: `N` і `Cmd+Z` реалізовано, `Cmd+K` має одного власника, пошук хаба — режим палітри). **Next review:** 2026-12-22.
 > **Status:** Active.
 
 Канонічний реєстр клавіатурних шорткатів `apps/web` + browser-conflict
@@ -54,6 +54,14 @@
 `useKeyboardShortcutsModal` (`document`; `RootLayout` викликає його
 «side-effect only», тобто цей слухач лише `preventDefault()`-ить). Не
 шкодить, але зайвий.
+
+**Під замком застосунку шорткатів немає.** `RootLayout` передає в
+`useHubKeyboardShortcuts` `disabled: appLock.state !== "idle"` (`checking`,
+`locked`, `setup`, `change`): хук нічого не викликає, не гасить подію і
+скидає `G`-акорд. Дерево застосунку під замком змонтоване, і без цього
+гейта `Ctrl+K` / `?` / `Ctrl+/` відкривали пошук чи діалоги з даними поверх
+екрана PIN, щойно фокус залишав приховане поле (аудит 2026-10-01, `sec-13` /
+`priv-15`). Оверлей `AppLock` стоїть на `z-300`, вище за `HubSearch` (`z-200`).
 
 ## Global
 

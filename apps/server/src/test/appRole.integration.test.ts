@@ -1,4 +1,4 @@
-// Гейт на міграцію 153: runtime-роль `sergeant_app` має рівно ті права, які
+// Гейт на міграцію 154: runtime-роль `sergeant_app` має рівно ті права, які
 // потрібні застосунку, і НЕ обходить RLS.
 //
 // Чому це тест, а не лише рунбук: політики Стадії 4 діють лише на роль без
@@ -71,7 +71,7 @@ async function outcome(p: pg.Pool, sql: string): Promise<string> {
   }
 }
 
-describe("міграція 153 - роль sergeant_app", () => {
+describe("міграція 154 - роль sergeant_app", () => {
   it("enableAppRole без прапорця нічого не робить", async () => {
     if (!admin || !harness) return;
     const saved = process.env["DATABASE_URL"];
@@ -118,20 +118,20 @@ describe("міграція 153 - роль sergeant_app", () => {
     await app.query(`DELETE FROM "user" WHERE id IN ('role-u1', 'role-u2')`);
   });
 
-  it("таблиця, створена суперюзером ПІСЛЯ 153, теж доступна (default privileges)", async () => {
+  it("таблиця, створена суперюзером ПІСЛЯ 154, теж доступна (default privileges)", async () => {
     if (!admin || !app) return;
     await admin.query(
-      `CREATE TABLE after_153_probe (id SERIAL PRIMARY KEY, v TEXT)`,
+      `CREATE TABLE after_154_probe (id SERIAL PRIMARY KEY, v TEXT)`,
     );
     try {
-      await app.query(`INSERT INTO after_153_probe (v) VALUES ('a')`);
-      await app.query(`UPDATE after_153_probe SET v = 'b'`);
-      expect((await app.query(`SELECT v FROM after_153_probe`)).rows[0].v).toBe(
+      await app.query(`INSERT INTO after_154_probe (v) VALUES ('a')`);
+      await app.query(`UPDATE after_154_probe SET v = 'b'`);
+      expect((await app.query(`SELECT v FROM after_154_probe`)).rows[0].v).toBe(
         "b",
       );
-      await app.query(`DELETE FROM after_153_probe`);
+      await app.query(`DELETE FROM after_154_probe`);
     } finally {
-      await admin.query(`DROP TABLE after_153_probe`);
+      await admin.query(`DROP TABLE after_154_probe`);
     }
   });
 
@@ -142,7 +142,7 @@ describe("міграція 153 - роль sergeant_app", () => {
       `CREATE TABLE IF NOT EXISTS schema_migrations (
          name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`,
     );
-    // Міграція 153 вже відпрацювала до появи леджера, тож гранти ставить
+    // Міграція 154 вже відпрацювала до появи леджера, тож гранти ставить
     // той самий REVOKE-блок, який раннер на проді застосовує до наявної
     // таблиці: відтворюємо його явно.
     await admin.query(
@@ -150,7 +150,7 @@ describe("міграція 153 - роль sergeant_app", () => {
     );
     const mig = await import("node:fs/promises").then((f) =>
       f.readFile(
-        new URL("../migrations/153_sergeant_app_role.sql", import.meta.url),
+        new URL("../migrations/154_sergeant_app_role.sql", import.meta.url),
         "utf8",
       ),
     );

@@ -341,6 +341,10 @@ function DropdownMenuPanel({
     contentKey: width,
   });
 
+  // Булевий прапорець, а не `coords`: ефект фокусу нижче не мусить
+  // перезапускатись на кожен ресайз/скрол (вони оновлюють `coords`).
+  const positioned = coords !== null;
+
   const position: CSSProperties = {
     top: coords?.top ?? 0,
     left: coords?.left ?? 0,
@@ -352,15 +356,17 @@ function DropdownMenuPanel({
         : null),
   };
 
-  // Focus the currently active menu item.
+  // Focus the currently active menu item. Поки панель непозиціонована, вона
+  // `visibility: hidden`, а `focus()` на прихованому елементі — no-op: тому
+  // чекаємо `positioned` і фокусуємо вже видиму панель (ux-09).
   useEffect(() => {
     const panel = panelRef.current;
-    if (!panel || openSubmenuId) return;
+    if (!panel || !positioned || openSubmenuId) return;
     const target = panel.querySelector<HTMLElement>(
       `[data-menu-index="${focusedIndex}"]`,
     );
     target?.focus({ preventScroll: false });
-  }, [focusedIndex, openSubmenuId]);
+  }, [focusedIndex, openSubmenuId, positioned]);
 
   // Outside click closes. `enabled` не потрібен: панель монтується лише
   // коли меню відкрите. onClose(false) — без повернення фокуса на тригер.

@@ -416,6 +416,27 @@ export function safeWriteSS(key: string, value: string): boolean {
 }
 
 /**
+ * Enumerate every key currently in sessionStorage. Returns an empty array on
+ * missing/unavailable/throwing storage; never throws. Needed by the logout
+ * purge (`purgeAppOwnedSessionStorage`), which has to find app-owned keys
+ * without hard-coding each tab-scoped slot.
+ */
+export function safeListSSKeys(): string[] {
+  const ss = resolveSessionStorage();
+  if (!ss) return [];
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < ss.length; i += 1) {
+      const key = ss.key(i);
+      if (key !== null) keys.push(key);
+    }
+    return keys;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Remove a key from sessionStorage. Best-effort; returns `false` only when
  * storage is unavailable or the remove threw; never throws.
  */

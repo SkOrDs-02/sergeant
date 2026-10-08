@@ -1,17 +1,18 @@
 # Ops
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-18.
+> **Last touched:** 2026-10-03 by @claude (Renovate-runbook прибрано: лишився тільки Dependabot, ADR-0103). **Next review:** 2027-01-01.
 > **Status:** Active
 
-Operational maintainer-runbook-и для recurring-чергових процесів (dependency
-hygiene, scheduled scans, weekly housekeeping). Доповнюють incident-flow runbooks
+Operational maintainer-runbook-и для recurring-чергових процесів (scheduled
+scans, weekly housekeeping). Доповнюють incident-flow runbooks
 у [`docs/start/instructions/`](../../start/instructions/README.md): тут — рутина, там — incident-handling.
+Рутина оновлення залежностей (PR Dependabot) описана в
+[`dependabot-usage.md`](../../engineering/integrations/dependabot-usage.md).
 
 ## Документи
 
 | Документ                                             | Призначення                                                                                         |
 | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| [`renovate.md`](./renovate.md)                       | Понеділкова рутина review-у Renovate-PR-ів, monthly hygiene, Mend downtime escalation. ADR-0044.    |
 | [`docker-image-policy.md`](./docker-image-policy.md) | Політика runtime-образу Hub API (`Dockerfile.api`): distroless-база, CVE-бюджет Trivy, healthcheck. |
 
 ## Ops vs runbooks vs playbooks
@@ -24,7 +25,6 @@ hygiene, scheduled scans, weekly housekeeping). Доповнюють incident-fl
 
 ## Cross-links
 
-- ADR-0044 — [Renovate vs Dependabot](../../governance/adr/0044-renovate-vs-dependabot.md).
-- Contributor view of Renovate: [`docs/engineering/integrations/renovate-usage.md`](../../engineering/integrations/renovate-usage.md).
-- Renovate config: [`renovate.json`](../../../renovate.json).
+- ADR-0103 — [Dependabot — єдиний інструмент оновлення залежностей](../../governance/adr/0103-dependabot-only-dependency-updates.md) (замінив ADR-0044 «Renovate vs Dependabot»).
+- Робота з PR Dependabot (рев'ю, ігнор, security-PR): [`docs/engineering/integrations/dependabot-usage.md`](../../engineering/integrations/dependabot-usage.md).
 - Dependabot config: [`.github/dependabot.yml`](../../../.github/dependabot.yml).

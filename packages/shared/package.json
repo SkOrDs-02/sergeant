@@ -14,7 +14,9 @@
     "./data/pantryCategories": "./src/data/pantryCategories.ts",
     "./openapi": "./src/openapi/index.ts",
     "./test-utils": "./src/test-utils.ts",
-    "./lib/pii": "./src/lib/pii.ts"
+    "./lib/pii": "./src/lib/pii.ts",
+    "./lib/analyticsEvents": "./src/lib/analyticsEvents.ts",
+    "./lib/landingAttribution": "./src/lib/landingAttribution.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -27,7 +29,7 @@
   "dependencies": {
     "@sergeant/design-tokens": "workspace:*",
     "zod": "^4.3.6",
-    "zod-openapi": "^5.4.6"
+    "zod-openapi": "^6.0.2"
   },
   "devDependencies": {
     "@sergeant/config": "workspace:*",
@@ -38,6 +40,6 @@
     "cross-env": "^10.1.0",
     "fast-check": "^3.23.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }

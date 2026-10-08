@@ -35,7 +35,7 @@
  * по Kyiv-добі.
  */
 
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { withSubjectContext } from "../db.js";
 import { logger } from "../obs/logger.js";
 import {
@@ -110,7 +110,7 @@ export async function recordAnthropicUsageToDb(
   // у DEFAULT 0.
   const estCost = estimateAnthropicCostUsd(model, usage) ?? 0;
 
-  const day = toLocalISODate();
+  const day = toKyivISODate();
   const bucket = bucketFor(model);
   // input_tokens-колонка історично несе суму input+cache (writer-семантика
   // PR-12); зберігаємо її для обох рядків.
@@ -191,7 +191,7 @@ export async function recordAnthropicUsageToDb(
 
 /** Експорти для тестів (без зміни public surface). */
 export const __testing = {
-  todayKyiv: toLocalISODate,
+  todayKyiv: toKyivISODate,
   bucketFor,
   ANTHROPIC_BUCKET_PREFIX,
 };

@@ -46,6 +46,11 @@ export interface FinykBackup {
   monthlyPlan?: Record<string, unknown>;
   txCategories?: Record<string, unknown>;
   txSplits?: Record<string, unknown>;
+  /**
+   * Нотатки до банківських операцій (`txId → текст`, лише LS пристрою).
+   * Необовʼязкове поле: старі файли його не мають.
+   */
+  txNotes?: Record<string, string>;
   monoDebtLinkedTxIds?: Record<string, unknown>;
   networthHistory?: unknown[];
   customCategories?: unknown[];
@@ -138,6 +143,16 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     if (v) out[field] = v;
   }
 
+  const notes = needObj(obj["txNotes"], "txNotes");
+  if (notes) {
+    for (const note of Object.values(notes)) {
+      if (typeof note !== "string") {
+        throw new Error("Некоректний запис у txNotes");
+      }
+    }
+    out.txNotes = notes as Record<string, string>;
+  }
+
   if (obj["networthHistory"] !== undefined && obj["networthHistory"] !== null) {
     const nh = needArr(obj["networthHistory"], "networthHistory");
     if (nh) {
@@ -187,64 +202,4 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   }
 
   return out;
-}
-
-/**
- * Дані з ?sync= (компактні ключі b,s,a… або повний JSON бекапу).
- * Повертає те саме, що normalizeFinykBackup, для applyData.
- */
-export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
-  if (data == null || typeof data !== "object" || Array.isArray(data)) {
-    throw new Error("Некоректні дані синку");
-  }
-  const d = data as Record<string, unknown>;
-
-  const has = (k: string) => Object.prototype.hasOwnProperty.call(d, k);
-  const looksLikeFullBackup =
-    has("version") ||
-    has("budgets") ||
-    has("subscriptions") ||
-    has("manualExpenses") ||
-    has("manualAssets") ||
-    has("manualDebts") ||
-    has("receivables") ||
-    has("hiddenAccounts") ||
-    has("hiddenTxIds") ||
-    has("excludedStatTxIds") ||
-    has("monthlyPlan") ||
-    has("txCategories") ||
-    has("txSplits") ||
-    has("monoDebtLinkedTxIds") ||
-    has("networthHistory") ||
-    has("customCategories") ||
-    has("dismissedRecurring");
-
-  if (looksLikeFullBackup) {
-    const withVer = has("version") ? d : { ...d, version: 1 };
-    return normalizeFinykBackup(withVer);
-  }
-
-  const v = typeof d["v"] === "number" ? d["v"] : 1;
-  if (v < 1 || v > 99) {
-    throw new Error("Невідома версія синку");
-  }
-
-  const full: FinykBackup = { version: FINYK_BACKUP_VERSION };
-  if (has("b")) full.budgets = d["b"] as unknown[];
-  if (has("s")) full.subscriptions = d["s"] as unknown[];
-  if (has("a")) full.manualAssets = d["a"] as unknown[];
-  if (has("d")) full.manualDebts = d["d"] as unknown[];
-  if (has("r")) full.receivables = d["r"] as unknown[];
-  if (has("h")) full.hiddenAccounts = d["h"] as unknown[];
-  if (has("es")) full.excludedStatTxIds = d["es"] as unknown[];
-  if (has("mp")) full.monthlyPlan = d["mp"] as Record<string, unknown>;
-  if (has("tc")) full.txCategories = d["tc"] as Record<string, unknown>;
-  if (has("ts")) full.txSplits = d["ts"] as Record<string, unknown>;
-  if (has("md")) full.monoDebtLinkedTxIds = d["md"] as Record<string, unknown>;
-  if (has("nh")) full.networthHistory = d["nh"] as unknown[];
-  if (has("cc")) full.customCategories = d["cc"] as unknown[];
-  if (has("dr")) full.dismissedRecurring = d["dr"] as unknown[];
-  if (has("me")) full.manualExpenses = d["me"] as unknown[];
-
-  return normalizeFinykBackup(full);
 }

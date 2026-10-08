@@ -119,6 +119,25 @@ describe("addManualExpense", () => {
     );
   });
 
+  // Аудит data-01: id був `Date.now().toString()` — передбачуваний, збігається
+  // з чужим рядком на глобальному PK `finyk_manual_expenses`.
+  it("id нової витрати — mx_<uuid>, різний навіть у ту саму мілісекунду", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    try {
+      const { slots } = makeSlots();
+      const { result } = renderMutations(slots);
+      const a = result.current.addManualExpense({ amount: 1 });
+      const b = result.current.addManualExpense({ amount: 2 });
+      expect(a.id).not.toBe(b.id);
+      for (const id of [a.id, b.id]) {
+        expect(id).toMatch(/^mx_[0-9a-f]{8}-[0-9a-f]{4}-/);
+        expect(id).not.toContain("1777000000000");
+      }
+    } finally {
+      vi.mocked(Date.now).mockRestore();
+    }
+  });
+
   it("fires the first-expense funnel event once, then never again", () => {
     const { slots } = makeSlots();
     const { result } = renderMutations(slots);
@@ -396,6 +415,201 @@ describe("toggle helpers", () => {
   });
 });
 
+type LinkedDebtShape = {
+  linkedTxIds: string[];
+  txLinks: Record<string, unknown>;
+};
+
+describe("привʼязки ручного запису до боргу (data-24)", () => {
+  const expense = {
+    id: "X",
+    date: "2026-09-10T12:00:00.000Z",
+    description: "Платіж",
+    amount: 400,
+    category: "debt",
+  };
+
+  it("setLinkedTxRole(manual_X) прибирає спадкову сиру форму X і лишає один ключ", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["X", "keep"],
+          txLinks: { X: { role: "payment", amount: 400 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "manual_X", "debt", "payment", 400);
+
+    const debt = (state["manualDebts"] as LinkedDebtShape[])[0]!;
+    expect(debt.linkedTxIds).toEqual(["keep", "manual_X"]);
+    expect(Object.keys(debt.txLinks)).toEqual(["manual_X"]);
+  });
+
+  it("відвʼязування за однією формою знімає обидві, auto-ключ іде в dismissed", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["X", "manual_X"],
+          txLinks: {
+            X: { role: "payment", amount: 400 },
+            manual_X: { role: "payment", amount: 400, auto: true },
+          },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "manual_X", "debt", null);
+
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+      autoLinkDismissedTxIds: ["manual_X"],
+    });
+  });
+
+  it("removeManualExpense знімає привʼязки обох форм з боргів і дебіторок", () => {
+    const { slots, state } = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["manual_X", "other"],
+          txLinks: {
+            manual_X: { role: "payment", amount: 400 },
+            other: { role: "payment", amount: 10 },
+          },
+        },
+        {
+          id: "d2",
+          linkedTxIds: ["X"],
+          txLinks: { X: { role: "payment", amount: 400 } },
+        },
+      ],
+      receivables: [
+        {
+          id: "r1",
+          linkedTxIds: ["X", "manual_X"],
+          txLinks: {
+            X: { role: "payment", amount: 400 },
+            manual_X: { role: "payment", amount: 400 },
+          },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.removeManualExpense("X");
+
+    const [d1, d2] = state["manualDebts"] as {
+      linkedTxIds: string[];
+      txLinks: Record<string, unknown>;
+    }[];
+    expect(d1!.linkedTxIds).toEqual(["other"]);
+    expect(Object.keys(d1!.txLinks)).toEqual(["other"]);
+    expect(d2).toMatchObject({ linkedTxIds: [], txLinks: {} });
+    expect((state["receivables"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+    });
+  });
+
+  it("привʼязати manual_X, видалити X: привида не лишається", () => {
+    const first = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: [{ id: "d1", amount: 5000, linkedTxIds: [] }],
+    });
+    renderMutations(first.slots).result.current.setLinkedTxRole(
+      "d1",
+      "manual_X",
+      "debt",
+      "payment",
+      400,
+    );
+    // Новий рендер хука бачить оновлений стан, як справжній React.
+    const second = makeSlots(first.state);
+    renderMutations(second.slots).result.current.removeManualExpense("X");
+
+    const debt = (second.state["manualDebts"] as LinkedDebtShape[])[0]!;
+    expect(debt.linkedTxIds).not.toContain("manual_X");
+    expect(debt.linkedTxIds).not.toContain("X");
+    expect(debt.txLinks).toEqual({});
+  });
+
+  it("removeManualExpense без привʼязок не чіпає стан боргів (та сама референція)", () => {
+    const debts = [{ id: "d1", linkedTxIds: ["bank1"] }];
+    const { slots, state } = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: debts,
+    });
+    const { result } = renderMutations(slots);
+
+    expect(result.current.removeManualExpense("X")).toEqual([]);
+    expect(state["manualDebts"]).toBe(debts);
+  });
+
+  it("restoreManualExpense повертає привʼязку під manual_<новий id>", () => {
+    const first = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: [
+        {
+          id: "d1",
+          amount: 5000,
+          linkedTxIds: ["manual_X"],
+          txLinks: { manual_X: { role: "payment", amount: 400, auto: true } },
+        },
+      ],
+    });
+    const removedLinks = renderMutations(
+      first.slots,
+    ).result.current.removeManualExpense("X");
+    expect(removedLinks).toEqual([
+      {
+        type: "debt",
+        itemId: "d1",
+        role: "payment",
+        amount: 400,
+        auto: true,
+      },
+    ]);
+
+    const second = makeSlots(first.state);
+    renderMutations(second.slots).result.current.restoreManualExpense(
+      expense,
+      removedLinks,
+    );
+
+    const restored = (second.state["manualExpenses"] as { id: string }[])[0]!;
+    expect(restored.id).not.toBe("X");
+    const debt = (second.state["manualDebts"] as LinkedDebtShape[])[0]!;
+    expect(debt.linkedTxIds).toEqual([`manual_${restored.id}`]);
+    expect(debt.txLinks).toEqual({
+      [`manual_${restored.id}`]: { role: "payment", amount: 400, auto: true },
+    });
+  });
+
+  it("addManualExpense(snapshot, links) — шлях swipe-undo — теж повертає привʼязку", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [{ id: "d1", amount: 5000, linkedTxIds: [] }],
+    });
+    const { result } = renderMutations(slots);
+
+    const entry = result.current.addManualExpense(
+      { amount: 400, description: "Платіж", category: "debt" },
+      [{ type: "debt", itemId: "d1", role: "payment", amount: 400 }],
+    );
+
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [`manual_${entry.id}`],
+      txLinks: { [`manual_${entry.id}`]: { role: "payment", amount: 400 } },
+    });
+  });
+});
+
 describe("setSplitTx", () => {
   it("stores splits when there are >=2", () => {
     const { slots, state } = makeSlots();
@@ -626,5 +840,57 @@ describe("custom categories", () => {
     expect(splits[0]!["categoryId"]).toBe("other");
     // limit budget on c1 dropped, goal budget kept
     expect(state["budgets"]).toEqual([{ id: "b2", type: "goal" }]);
+  });
+  it("removeCustomCategory знімає id з комбінованих лімітів, а не видаляє їх цілком", () => {
+    const { slots, state } = makeSlots({
+      customCategories: [{ id: "c1", label: "Gone" }],
+      budgets: [
+        {
+          id: "b1",
+          type: "limit",
+          limit: 1000,
+          categoryId: "c1",
+          categoryIds: ["c1", "food"],
+        },
+        {
+          id: "b2",
+          type: "limit",
+          limit: 800,
+          categoryId: "restaurant",
+          categoryIds: ["restaurant", "c1"],
+        },
+        {
+          id: "b3",
+          type: "limit",
+          limit: 500,
+          categoryId: "c1",
+          categoryIds: ["c1"],
+        },
+        { id: "b4", type: "limit", limit: 300, categoryId: "transport" },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.removeCustomCategory("c1");
+
+    const budgets = state["budgets"] as Array<Record<string, unknown>>;
+    expect(budgets.map((b) => b["id"])).toEqual(["b1", "b2", "b4"]);
+    expect(budgets[0]).toMatchObject({
+      categoryIds: ["food"],
+      categoryId: "food",
+      limit: 1000,
+    });
+    expect(budgets[1]).toMatchObject({
+      categoryIds: ["restaurant"],
+      categoryId: "restaurant",
+      limit: 800,
+    });
+    // ліміт без видаленої категорії не чіпаємо
+    expect(budgets[2]).toEqual({
+      id: "b4",
+      type: "limit",
+      limit: 300,
+      categoryId: "transport",
+    });
   });
 });

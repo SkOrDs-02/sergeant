@@ -48,6 +48,12 @@ export interface UseInjuriesResult {
   activeSites: ReadonlySet<InjurySiteId>;
   /** Mark a zone as injured. No-op when the zone is already marked. */
   mark: (site: InjurySiteId, note?: string) => void;
+  /**
+   * Mark several zones in ONE write. Use this instead of looping `mark`:
+   * every `mark` call closes over the same `rows`, so a loop in one tick
+   * writes N overlapping states and sync keeps only the last zone.
+   */
+  markMany: (sites: readonly InjurySiteId[], note?: string) => void;
   /** Lift a mark, keeping it in history. */
   clear: (id: string) => void;
   /** Delete a mark outright — for "wrong zone", not for recovery. */
@@ -101,26 +107,47 @@ export function useInjuries(): UseInjuriesResult {
   const active = useMemo(() => all.filter((m) => !m.clearedAt), [all]);
   const activeSites = useMemo(() => activeInjurySites(all), [all]);
 
-  const mark = useCallback(
-    (site: InjurySiteId, note = "") => {
-      if (!isInjurySiteId(site)) return;
-      // Re-marking an already-active zone would create a second row that
-      // blocks the same thing — clearing one would then look like a no-op.
-      if (rows.some((r) => r.site === site && r.clearedAt === null)) return;
-      persist([
-        {
+  const markMany = useCallback(
+    (sites: readonly InjurySiteId[], note = "") => {
+      // Один виклик — один `next` і один `persist`. Цикл `mark()` у тому ж
+      // тіку брав би той самий застарілий `rows` N разів, а
+      // `fizrukDualWriteTransition` диффив би кожен виклик проти попереднього
+      // наміру: insert зони N + delete зони N-1, тобто лишалась лише остання
+      // зона (аудит 2026-10-01, data-36).
+      const taken = new Set<string>(
+        rows.filter((r) => r.clearedAt === null).map((r) => r.site),
+      );
+      // eslint-disable-next-line no-restricted-syntax -- instant, not a day key: «коли почалось» is a point in time the LWW sync compares directly; a Kyiv day boundary would lose the ordering between two marks made the same day
+      const startedAt = new Date().toISOString();
+      const added: CachedInjury[] = [];
+      for (const site of sites) {
+        if (!isInjurySiteId(site)) continue;
+        // Re-marking an already-active zone would create a second row that
+        // blocks the same thing — clearing one would then look like a no-op.
+        // `taken` also dedups repeats inside the same call.
+        if (taken.has(site)) continue;
+        taken.add(site);
+        added.push({
           id: injuryUid(),
           site,
-          // eslint-disable-next-line no-restricted-syntax -- instant, not a day key: «коли почалось» is a point in time the LWW sync compares directly; a Kyiv day boundary would lose the ordering between two marks made the same day
-          startedAt: new Date().toISOString(),
+          startedAt,
           clearedAt: null,
           note,
-        },
-        ...rows,
-      ]);
-      trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED, { count: 1 });
+        });
+      }
+      if (added.length === 0) return;
+      // Newest first: later sites in the call sit closer to the head.
+      persist([...added.reverse(), ...rows]);
+      trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED, {
+        count: added.length,
+      });
     },
     [rows, persist],
+  );
+
+  const mark = useCallback(
+    (site: InjurySiteId, note = "") => markMany([site], note),
+    [markMany],
   );
 
   const clear = useCallback(
@@ -140,5 +167,5 @@ export function useInjuries(): UseInjuriesResult {
     [rows, persist],
   );
 
-  return { all, active, activeSites, mark, clear, remove };
+  return { all, active, activeSites, mark, markMany, clear, remove };
 }

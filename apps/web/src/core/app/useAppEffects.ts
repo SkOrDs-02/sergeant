@@ -22,6 +22,8 @@ import {
   prefetchHubNavigationPages,
 } from "../lib/useRoutePrefetch";
 import { useHubChatOverlay } from "../hub/useHubChatOverlay";
+import { shouldShowOnboarding } from "../onboarding/onboardingGate";
+import { useStorageReady } from "../db/storageReady";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
@@ -51,6 +53,7 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   } = deps;
   const { hubView, setHubView } = ui;
   const { openChat } = useHubChatOverlay();
+  const storageReady = useStorageReady();
 
   // Prefetch hub-navigation pages first, then let heavier module chunks
   // follow on a later idle slot. Reports and Settings are primary tabs,
@@ -105,12 +108,22 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   // `ui` object — `useHubUIState` returns a fresh object every render,
   // so `[user, ui]` re-runs the effect on every parent render and
   // amplifies the race.
+  //
+  // 2026-10-08 (аудит ux-10): анонімові, якого `HubPage` сам веде на
+  // `/welcome` (`!user && shouldShowOnboarding()`), цей bounce не потрібен —
+  // `setHubView("dashboard")` навігує від застарілого `locationRef` з
+  // `replace: false` і повертає URL на «/» одразу після редиректу, тож
+  // «Назад» після виходу лишав порожній екран із «Перенаправлення…».
+  // Лишаємо один механізм. Рішення залежить від `shouldShowOnboarding()`,
+  // який до готовності сховища читає порожній pre-boot стор, тому чекаємо
+  // `storageReady` (так само, як `HubPage`).
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !storageReady) return;
     if (!user && hubView === "profile") {
+      if (shouldShowOnboarding()) return;
       setHubView("dashboard");
     }
-  }, [authLoading, user, hubView, setHubView]);
+  }, [authLoading, storageReady, user, hubView, setHubView]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {

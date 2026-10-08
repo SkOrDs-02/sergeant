@@ -67,6 +67,7 @@ describe("stripHealthContext", () => {
       "[Аналітичні інсайти]",
       "Найпродуктивніший день",
       "гіпертонія",
+      "горіхи",
       "1800 ккал",
       "Борщ",
     ]) {
@@ -80,8 +81,52 @@ describe("stripHealthContext", () => {
     expect(stripped).toContain("[Активні рекомендації]");
     expect(stripped).toContain("модуль: routine");
     expect(stripped).toContain("[Профіль користувача]");
-    expect(stripped).toContain("Алергії: горіхи");
     expect(stripped).toContain("Харчування: без глютену");
+  });
+
+  // priv-06: кожна health-категорія профілю (мітки = `CATEGORY_META` у web).
+  describe.each([
+    ["health", "Здоровʼя", "гіпертонія"],
+    ["health (апостроф ASCII)", "Здоров'я", "гіпертонія"],
+    ["allergy", "Алергії", "арахіс"],
+    ["diet", "Дієта", "вегетаріанка"],
+    ["training", "Тренування", "жим 100 кг"],
+    ["goal про вагу (рядок клієнта)", "Цілі (вага)", "схуднути до 70 кг"],
+  ])("категорія %s без згоди", (_name, label, fact) => {
+    it("рядок профілю не доходить до моделі", () => {
+      const out = stripHealthContext(
+        [
+          "[Профіль користувача]",
+          `  ${label}: ${fact}`,
+          "  Уподобання: кава",
+        ].join("\n"),
+      );
+      expect(out).not.toContain(fact);
+      expect(out).toContain("Уподобання: кава");
+    });
+  });
+
+  it("старий клієнт шле всі цілі одним рядком: вагові факти зрізаються, решта лишається", () => {
+    const out = stripHealthContext(
+      "[Профіль користувача]\n  Цілі: накопичити на відпустку; схуднути до 70 кг; вивчити Rust",
+    );
+    expect(out).toContain("Цілі: накопичити на відпустку; вивчити Rust");
+    expect(out).not.toContain("70 кг");
+  });
+
+  it("рядок цілей, де всі факти про вагу, зникає цілком", () => {
+    const out = stripHealthContext(
+      "[Профіль користувача]\n  Цілі: набрати вагу; 80 кг до літа\n[Звички] так",
+    );
+    expect(out).not.toContain("Цілі");
+    expect(out).toContain("[Звички] так");
+  });
+
+  it("цілі без ваги лишаються без змін", () => {
+    const line = "  Цілі: накопичити на відпустку; вивчити Rust";
+    expect(stripHealthContext(`[Профіль користувача]\n${line}`)).toContain(
+      line,
+    );
   });
 
   it("секція інсайтів закінчується на першому не-відступному рядку", () => {
@@ -263,7 +308,7 @@ describe("redactHealthToolResults / redactHealthToolCalls", () => {
     expect(briefing).not.toContain("тренувань");
     expect(briefing).not.toContain("Калорії");
     const profile = String(byId.get("t8"));
-    expect(profile).toContain("горіхи");
+    expect(profile).not.toContain("горіхи");
     expect(profile).not.toContain("гіпертонія");
   });
 
@@ -281,6 +326,107 @@ describe("redactHealthToolResults / redactHealthToolCalls", () => {
     expect(inputOf("t10")).toEqual({});
     expect(inputOf("t2")).toEqual({ limit: 3 });
     expect(inputOf("t4")).toEqual({ metrics: ["spending", "income"] });
+  });
+});
+
+// priv-06: my_profile / remember по кожній health-категорії.
+describe("redactHealthToolResults: health-категорії профілю (priv-06)", () => {
+  const redactOne = (
+    name: string,
+    input: Record<string, unknown>,
+    content: string,
+  ) =>
+    redactHealthToolResults(
+      [{ tool_use_id: "x", content }],
+      [{ type: "tool_use", id: "x", name, input }],
+    )[0]?.content;
+
+  describe.each(["health", "allergy", "diet", "training"])(
+    "категорія %s",
+    (category) => {
+      it("remember блокується", () => {
+        expect(
+          redactOne("remember", { fact: "щось", category }, "Запамʼятав: щось"),
+        ).toBe(HEALTH_CONSENT_REQUIRED_MESSAGE);
+      });
+      it("my_profile з фільтром категорії блокується (будь-який регістр)", () => {
+        expect(
+          redactOne(
+            "my_profile",
+            { category: ` ${category.toUpperCase()} ` },
+            "  - [X] секрет",
+          ),
+        ).toBe(HEALTH_CONSENT_REQUIRED_MESSAGE);
+      });
+      it("redactHealthToolCalls обнуляє вхід remember", () => {
+        const [b] = redactHealthToolCalls([
+          {
+            type: "tool_use",
+            id: "x",
+            name: "remember",
+            input: { fact: "щось", category },
+          },
+        ]) as Array<{ input: unknown }>;
+        expect(b?.input).toEqual({});
+      });
+    },
+  );
+
+  it("my_profile без фільтра: рядки всіх health-категорій і вагових цілей зникають", () => {
+    const out = String(
+      redactOne(
+        "my_profile",
+        {},
+        [
+          "Профіль користувача (8):",
+          "  - [Здоровʼя] гіпертонія (id:1)",
+          "  - [Алергії] арахіс (id:2)",
+          "  - [Дієта] вегетаріанка (id:3)",
+          "  - [Тренування] жим 100 кг (id:4)",
+          "  - [Цілі] схуднути до 70 кг (id:5)",
+          "  - [Цілі] накопичити на відпустку (id:6)",
+          "  - [Уподобання] кава (id:7)",
+        ].join("\n"),
+      ),
+    );
+    for (const leak of [
+      "гіпертонія",
+      "арахіс",
+      "вегетаріанка",
+      "жим",
+      "70 кг",
+    ]) {
+      expect(out).not.toContain(leak);
+    }
+    expect(out).toContain("накопичити на відпустку");
+    expect(out).toContain("кава");
+  });
+
+  it("remember category=goal блокується лише для факту про вагу", () => {
+    expect(
+      redactOne(
+        "remember",
+        { fact: "схуднути до 70 кг", category: "goal" },
+        "Запамʼятав: схуднути до 70 кг",
+      ),
+    ).toBe(HEALTH_CONSENT_REQUIRED_MESSAGE);
+    expect(
+      redactOne(
+        "remember",
+        { fact: "накопичити на відпустку", category: "goal" },
+        "Запамʼятав: накопичити на відпустку",
+      ),
+    ).toBe("Запамʼятав: накопичити на відпустку");
+  });
+
+  it("remember інших категорій проходить", () => {
+    expect(
+      redactOne(
+        "remember",
+        { fact: "любить каву", category: "preference" },
+        "Запамʼятав: любить каву",
+      ),
+    ).toBe("Запамʼятав: любить каву");
   });
 });
 

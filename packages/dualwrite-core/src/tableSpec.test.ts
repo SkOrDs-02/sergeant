@@ -131,6 +131,36 @@ describe("buildReconcileChildren", () => {
         AND id NOT IN (?,?)`,
     );
   });
+
+  it("default (без lwwGuard) не додає updated_at < ? — форма bind-ів для nutrition/mobile не змінюється", () => {
+    expect(buildReconcileChildren(spec, 0)).not.toContain("updated_at < ?");
+    expect(buildReconcileChildren(spec, 2)).not.toContain("updated_at < ?");
+  });
+
+  it("lwwGuard: keepCount 0 додає AND updated_at < ? (data-38)", () => {
+    const sql = buildReconcileChildren(spec, 0, { lwwGuard: true });
+    expect(sql).toBe(
+      `UPDATE nutrition_pantry_items
+        SET deleted_at = ?, updated_at = ?
+      WHERE pantry_id = ? AND user_id = ? AND deleted_at IS NULL
+        AND updated_at < ?`,
+    );
+  });
+
+  it("lwwGuard: keepCount > 0 додає AND updated_at < ? після NOT IN (data-38)", () => {
+    const sql = buildReconcileChildren(spec, 2, { lwwGuard: true });
+    expect(sql).toBe(
+      `UPDATE nutrition_pantry_items
+        SET deleted_at = ?, updated_at = ?
+      WHERE pantry_id = ?
+        AND user_id = ?
+        AND deleted_at IS NULL
+        AND id NOT IN (?,?)
+        AND updated_at < ?`,
+    );
+    // Кількість плейсхолдерів = 4 + keepCount + 1 (clientTs останній).
+    expect(sql.match(/\?/g)).toHaveLength(4 + 2 + 1);
+  });
 });
 
 /**

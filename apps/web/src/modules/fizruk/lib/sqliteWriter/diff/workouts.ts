@@ -1,9 +1,12 @@
 /**
  * Workout-shape diff for the Fizruk dual-write layer (Stage 4 baseline).
  *
- * Mirrors the SQLite `fizruk_workouts` row shape; nested arrays
- * (`items`, `groups`, `warmup`, `cooldown`) are compared by
- * reference because the hook produces a fresh shape on every persist.
+ * Mirrors the SQLite `fizruk_workouts` row shape. Scalar fields are
+ * compared with `===`; nested structures (`items`, `groups`, `warmup`,
+ * `cooldown`, `wellbeing`) are compared STRUCTURALLY, because
+ * `toWorkoutSnapshot` rebuilds fresh arrays/objects on every persist: a
+ * reference comparison made every history workout look changed and
+ * re-uploaded the whole history on each edit (audit 2026-10-01, rel-09).
  */
 
 import { diffArray } from "./diffArray";
@@ -89,10 +92,55 @@ function workoutChanged(
     prev.startedAt !== next.startedAt ||
     prev.endedAt !== next.endedAt ||
     prev.note !== next.note ||
-    prev.items !== next.items ||
-    prev.groups !== next.groups ||
-    prev.warmup !== next.warmup ||
-    prev.cooldown !== next.cooldown ||
-    prev.wellbeing !== next.wellbeing
+    // `?? null`: відсутній kcalBurned і `null` - те саме «оцінювати нічим».
+    (prev.kcalBurned ?? null) !== (next.kcalBurned ?? null) ||
+    !snapshotValueEqual(prev.items, next.items) ||
+    !snapshotValueEqual(prev.groups, next.groups) ||
+    !snapshotValueEqual(prev.warmup, next.warmup) ||
+    !snapshotValueEqual(prev.cooldown, next.cooldown) ||
+    !snapshotValueEqual(prev.wellbeing, next.wellbeing)
   );
+}
+
+/**
+ * Рекурсивне порівняння plain-даних снапшота (масиви, обʼєкти, примітиви).
+ * Порядок елементів масиву значущий (це порядок підходів/вправ), порядок
+ * ключів обʼєкта - ні. Ключ зі значенням `undefined` дорівнює відсутньому
+ * ключу: при серіалізації в рядок SQLite вони однакові. `NaN` дорівнює `NaN`,
+ * інакше таке поле давало б фантомний upsert на кожен цикл запису.
+ */
+function snapshotValueEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a === "number" && typeof b === "number") {
+    return Number.isNaN(a) && Number.isNaN(b);
+  }
+  if (
+    typeof a !== "object" ||
+    typeof b !== "object" ||
+    a === null ||
+    b === null
+  ) {
+    return false;
+  }
+  const aIsArray = Array.isArray(a);
+  if (aIsArray !== Array.isArray(b)) return false;
+  if (aIsArray) {
+    const arrA = a as readonly unknown[];
+    const arrB = b as readonly unknown[];
+    if (arrA.length !== arrB.length) return false;
+    for (let i = 0; i < arrA.length; i++) {
+      if (!snapshotValueEqual(arrA[i], arrB[i])) return false;
+    }
+    return true;
+  }
+  const objA = a as Record<string, unknown>;
+  const objB = b as Record<string, unknown>;
+  for (const key of Object.keys(objA)) {
+    if (!snapshotValueEqual(objA[key], objB[key])) return false;
+  }
+  for (const key of Object.keys(objB)) {
+    // Ключі, що є лише в `b`: різниця, якщо значення не `undefined`.
+    if (!(key in objA) && objB[key] !== undefined) return false;
+  }
+  return true;
 }

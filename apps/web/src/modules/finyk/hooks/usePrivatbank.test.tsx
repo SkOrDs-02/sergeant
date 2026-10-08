@@ -243,4 +243,25 @@ describe("usePrivatbank", () => {
     // Ключі мають зникнути незалежно від результату переносу.
     expect(localStorage.getItem("finyk_privat_token")).toBeNull();
   });
+
+  it("bootstrap біжить рівно раз: ре-рендери не повторюють status/перенос", async () => {
+    writeRaw("finyk_privat_id", "legacy-id");
+    writeRaw("finyk_privat_token", "legacy-token");
+    mockedStatus.mockResolvedValue({
+      connected: true,
+      merchantId: "legacy-id",
+    });
+
+    const { result, rerender } = renderHook(() => usePrivatbank());
+    await waitFor(() => {
+      expect(result.current.accounts).toHaveLength(1);
+    });
+    for (let i = 0; i < 3; i++) rerender();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockedStatus).toHaveBeenCalledTimes(1);
+    expect(mockedConnect).toHaveBeenCalledTimes(1);
+  });
 });

@@ -25,11 +25,27 @@ vi.mock("../syncEngine/enqueueOutboxUpsert.js", () => ({
   enqueueOutboxUpsert: vi.fn().mockResolvedValue({ id: 1, inserted: true }),
 }));
 
+// Готовність реальна лише для Фініка (його контекст реєструє `beforeEach`);
+// решта модулів тут замокана, тож для них гейт готовності пропускає.
+vi.mock("./hubBackupReadiness", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./hubBackupReadiness")>();
+  return {
+    ...actual,
+    getHubRestoreModuleBlock: (
+      m: Parameters<typeof actual.getHubRestoreModuleBlock>[0],
+    ) => (m !== "finyk" ? null : actual.getHubRestoreModuleBlock(m)),
+  };
+});
+
 const buildFizrukFullBackupPayload = vi.fn(() => ({ fizruk: true }));
-const applyFizrukFullBackupPayload = vi.fn();
+const applyFizrukFullBackupPayload = vi.fn(async (_v?: unknown) => ({
+  status: "applied" as const,
+  result: { applied: 1, errored: 0, skipped: 0 },
+}));
 vi.mock("../../modules/fizruk/lib/fizrukStorage", () => ({
   buildFizrukFullBackupPayload: () => buildFizrukFullBackupPayload(),
   applyFizrukFullBackupPayload: (v: unknown) => applyFizrukFullBackupPayload(v),
+  validateFizrukFullBackupPayload: () => ({}),
 }));
 
 const buildRoutineBackupPayload = vi.fn(() => ({ routine: true }));
@@ -37,6 +53,7 @@ const applyRoutineBackupPayload = vi.fn();
 vi.mock("../../modules/routine/lib/routineStorage", () => ({
   buildRoutineBackupPayload: () => buildRoutineBackupPayload(),
   applyRoutineBackupPayload: (v: unknown) => applyRoutineBackupPayload(v),
+  validateRoutineBackupPayload: () => {},
 }));
 
 const buildNutritionBackupPayload = vi.fn(() => ({ nutrition: true }));
@@ -44,6 +61,7 @@ const applyNutritionBackupPayload = vi.fn();
 vi.mock("../../modules/nutrition/domain/nutritionBackup", () => ({
   buildNutritionBackupPayload: () => buildNutritionBackupPayload(),
   applyNutritionBackupPayload: (v: unknown) => applyNutritionBackupPayload(v),
+  validateNutritionBackupPayload: () => {},
 }));
 
 import {
@@ -64,7 +82,17 @@ import {
   getCachedFinykSqliteState,
   refreshFinykSqliteState,
 } from "../../modules/finyk/lib/sqliteReader.js";
+import { DUAL_WRITE_JOURNAL_KEY } from "../durability/dualWriteJournal";
+import { enqueueOutboxUpsert } from "../syncEngine/enqueueOutboxUpsert.js";
 import { applyHubBackupPayload, buildHubBackupPayload } from "./hubBackup";
+
+/** Видалення, які імпорт поставив у outbox для сервера. */
+function enqueuedDeletes(): string[] {
+  return vi
+    .mocked(enqueueOutboxUpsert)
+    .mock.calls.filter(([, input]) => input.op === "delete")
+    .map(([, input]) => `${input.table}:${(input.row as { id?: string }).id}`);
+}
 
 const USER_ID = "u-roundtrip";
 
@@ -206,7 +234,7 @@ describe("Hub backup — коло експорт → очистка → імпо
     ).toBe(EXPENSES_TOTAL);
   });
 
-  it("замінює дані пристрою, а не зливає їх із бекапом", async () => {
+  it("режим «замінити»: прибирає те, чого немає у файлі, і ставить delete в outbox", async () => {
     await seedFinyk();
     await refreshFinykSqliteState(handle.client, USER_ID);
     const payload = buildHubBackupPayload();
@@ -232,7 +260,10 @@ describe("Hub backup — коло експорт → очистка → імпо
     await refreshFinykSqliteState(handle.client, USER_ID);
     expect(getCachedFinykSqliteState().manualExpenses).toHaveLength(4);
 
-    await applyHubBackupPayload(JSON.parse(JSON.stringify(payload)));
+    vi.mocked(enqueueOutboxUpsert).mockClear();
+    await applyHubBackupPayload(JSON.parse(JSON.stringify(payload)), {
+      mode: "replace",
+    });
     await refreshFinykSqliteState(handle.client, USER_ID);
 
     const cache = getCachedFinykSqliteState();
@@ -242,6 +273,133 @@ describe("Hub backup — коло експорт → очистка → імпо
       "me-3",
     ]);
     expect(cachedExpenseTotal()).toBe(EXPENSES_TOTAL);
+    expect(enqueuedDeletes()).toEqual(["finyk_manual_expenses:me-later"]);
+  });
+
+  // Аудит 2026-10-01, data-06: дефолтний режим не має видаляти нічого, чого
+  // немає у файлі, і не слати tombstone-и на сервер (раніше імпорт старого
+  // файлу гасив на сервері й на всіх пристроях усі пізніші витрати).
+  it("режим «додати» (дефолт): пізніша витрата лишається, жодного delete в outbox", async () => {
+    await seedFinyk();
+    await refreshFinykSqliteState(handle.client, USER_ID);
+    const payload = buildHubBackupPayload();
+    await dualWriteFinykState(EMPTY_FINYK_STATE, {
+      ...EMPTY_FINYK_STATE,
+      manualExpenses: [
+        ...EXPENSES.map((e) => ({ id: e.id, dataJson: JSON.stringify(e) })),
+        {
+          id: "me-later",
+          dataJson: JSON.stringify({
+            id: "me-later",
+            date: "2026-09-20",
+            description: "Пізніша витрата",
+            amount: 1000,
+          }),
+        },
+      ],
+    });
+    await refreshFinykSqliteState(handle.client, USER_ID);
+
+    vi.mocked(enqueueOutboxUpsert).mockClear();
+    await applyHubBackupPayload(JSON.parse(JSON.stringify(payload)));
+    await refreshFinykSqliteState(handle.client, USER_ID);
+
+    expect(
+      getCachedFinykSqliteState()
+        .manualExpenses.map((e) => e.id)
+        .sort(),
+    ).toEqual(["me-1", "me-2", "me-3", "me-later"]);
+    expect(enqueuedDeletes()).toEqual([]);
+  });
+
+  it("режим «додати»: додає лише відсутнє й не перезаписує наявний рядок", async () => {
+    await seedFinyk();
+    await refreshFinykSqliteState(handle.client, USER_ID);
+    const payload = buildHubBackupPayload();
+    // Нова витрата лише у файлі; me-1 на пристрої відредаговано після експорту.
+    const filePayload = JSON.parse(JSON.stringify(payload)) as {
+      finyk: { manualExpenses: Array<Record<string, unknown>> };
+    };
+    filePayload.finyk.manualExpenses.push({
+      id: "me-from-file",
+      date: "2026-08-01",
+      description: "З файлу",
+      amount: 5,
+    });
+    await dualWriteFinykState(EMPTY_FINYK_STATE, {
+      ...EMPTY_FINYK_STATE,
+      manualExpenses: EXPENSES.map((e) => ({
+        id: e.id,
+        dataJson: JSON.stringify(
+          e.id === "me-1" ? { ...e, description: "Кава (правка)" } : e,
+        ),
+      })),
+    });
+    await refreshFinykSqliteState(handle.client, USER_ID);
+
+    await applyHubBackupPayload(filePayload);
+    await refreshFinykSqliteState(handle.client, USER_ID);
+
+    const byId = new Map(
+      getCachedFinykSqliteState().manualExpenses.map((e) => [e.id, e]),
+    );
+    expect(byId.get("me-from-file")).toMatchObject({ amount: 5 });
+    expect(byId.get("me-1")).toMatchObject({ description: "Кава (правка)" });
+  });
+
+  // data-07: збій SQL не має маскуватись під успіх, а запис мусить
+  // лишитись у журналі для реплею (раніше restore ходив повз журнал).
+  it("збій SQL: імпорт кидає помилку, а запис лишається в журналі", async () => {
+    await seedFinyk();
+    await refreshFinykSqliteState(handle.client, USER_ID);
+    const payload = buildHubBackupPayload();
+    await wipeDevice();
+    localStorage.clear();
+    vi.spyOn(handle.client, "run").mockRejectedValue(new Error("SQLITE_BUSY"));
+
+    await expect(
+      applyHubBackupPayload(JSON.parse(JSON.stringify(payload))),
+    ).rejects.toThrow(/Частина даних Фініка не записалась/);
+
+    const journal = JSON.parse(
+      localStorage.getItem(DUAL_WRITE_JOURNAL_KEY) ?? "[]",
+    ) as Array<{ module: string }>;
+    expect(journal.map((e) => e.module)).toEqual(["finyk"]);
+  });
+
+  it("режим «додати»: наявний план місяця не перебивається файлом, «замінити» перебиває", async () => {
+    await seedFinyk();
+    await refreshFinykSqliteState(handle.client, USER_ID);
+    const file = {
+      kind: "hub-backup",
+      schemaVersion: 1,
+      finyk: { version: 3, monthlyPlan: { income: "1", expense: "1" } },
+    };
+
+    await applyHubBackupPayload(file);
+    await refreshFinykSqliteState(handle.client, USER_ID);
+    expect(getCachedFinykSqliteState().monthlyPlan).toEqual({
+      income: "42000",
+      expense: "20000",
+    });
+
+    await applyHubBackupPayload(file, { mode: "replace" });
+    await refreshFinykSqliteState(handle.client, USER_ID);
+    expect(getCachedFinykSqliteState().monthlyPlan).toEqual({
+      income: "1",
+      expense: "1",
+    });
+  });
+
+  it("холодний кеш: імпорт відмовляє, а не зливає мовчки", async () => {
+    clearFinykSqliteCache();
+    await expect(
+      applyHubBackupPayload({
+        kind: "hub-backup",
+        schemaVersion: 1,
+        finyk: { version: 3, budgets: [{ id: "b-1", limit: 500 }] },
+      }),
+    ).rejects.toThrow(/ще завантажуються/);
   });
 
   it("не чіпає зрізи, яких немає у файлі, і не гасить showBalance", async () => {

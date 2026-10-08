@@ -5,7 +5,7 @@
  */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { MealStrip, type MealStripSegment } from "./MealStrip";
+import { MealStrip, macroOverage, type MealStripSegment } from "./MealStrip";
 
 const FOUR_SEGMENTS: MealStripSegment[] = [
   { type: "breakfast", label: "Сніданок", kcal: 0, count: 0 },
@@ -388,5 +388,37 @@ describe("MealStrip", () => {
     const bar = container.querySelector('[role="img"][aria-label^="Білки"]');
     const fill = bar?.firstElementChild as HTMLElement;
     expect(fill.style.width).toBe("50%");
+  });
+});
+
+describe("macroOverage", () => {
+  it("0 рівно на нормі, +1 над нормою, 0 без норми", () => {
+    expect(macroOverage(124, 124)).toBe(0);
+    expect(macroOverage(125, 124)).toBe(1);
+    expect(macroOverage(129, 124)).toBe(5);
+    expect(macroOverage(50, 0)).toBe(0);
+  });
+
+  it("показує «+5 г» біля макро над нормою і не показує на нормі", () => {
+    const { rerender } = render(
+      <MealStrip
+        onPickMeal={vi.fn()}
+        segments={FOUR_SEGMENTS}
+        goalKcal={2000}
+        remainingLabel="лишилось на сніданок"
+        macros={[{ label: "Білки", consumed: 129, goal: 124, unit: "г" }]}
+      />,
+    );
+    expect(screen.getByText(/\+5\s*г/)).toBeInTheDocument();
+    rerender(
+      <MealStrip
+        onPickMeal={vi.fn()}
+        segments={FOUR_SEGMENTS}
+        goalKcal={2000}
+        remainingLabel="лишилось на сніданок"
+        macros={[{ label: "Білки", consumed: 124, goal: 124, unit: "г" }]}
+      />,
+    );
+    expect(screen.queryByText(/\+\d/)).toBeNull();
   });
 });

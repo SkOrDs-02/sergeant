@@ -9,6 +9,7 @@ import type {
   TxSplit,
 } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import type { ManualExpenseLinkSnapshot } from "../../hooks/manualExpenseDebtLinks";
 
 // Ukrainian one / few / many noun plural for "операція" (operation/transaction)
 // with grammatical case selector. Inline because the only consumers are the
@@ -34,8 +35,14 @@ export interface UseTransactionSelectionParams {
   overrideCategory: (id: string, catId: string | null) => void;
   setSplitTx: (id: string, splits: TxSplit[] | null) => void;
   setTxNote: (id: string, note: string | null) => void;
-  removeManualExpense: ((id: string) => void) | undefined;
-  addManualExpense: ((expense: Omit<ManualExpense, "id">) => void) | undefined;
+  removeManualExpense:
+    ((id: string) => ManualExpenseLinkSnapshot[] | void) | undefined;
+  addManualExpense:
+    | ((
+        expense: Omit<ManualExpense, "id">,
+        restoredLinks?: readonly ManualExpenseLinkSnapshot[],
+      ) => void)
+    | undefined;
   onEditManualExpense: ((id: string) => void) | undefined;
   toast: ReturnType<typeof useToast>;
 }
@@ -50,6 +57,10 @@ export interface UseTransactionSelectionResult {
   setBatchCatPicker: (v: boolean) => void;
   applyBatchCategory: (catId: string) => void;
   applyBatchHide: () => void;
+  /** `true`, коли вибрано хоча б одну операцію і всі вони вже приховані. */
+  allSelectedHidden: boolean;
+  /** Повертає вибрані приховані операції у список (зворотне до `applyBatchHide`). */
+  applyBatchUnhide: () => void;
   applyBatchExclude: () => void;
   /** Stable handler: TxRow → swipe-hide on real (non-manual) transactions. */
   stableSwipeHideTx: (id: string) => void;
@@ -220,10 +231,12 @@ export function useTransactionSelection({
       category: String(legacyCategory || tx.categoryId || "інше"),
       kind: isIncome ? "income" : "expense",
     };
-    removeManualExpense(String(manualId));
+    // Привʼязки до боргів, зняті разом із записом, повертаються під
+    // `manual_<newId>` (`data-24`): інакше undo гасив би борг уже без платежу.
+    const removedLinks = removeManualExpense(String(manualId)) ?? [];
     showUndoToast(toast, {
       msg: isIncome ? "Надходження видалено" : "Витрату видалено",
-      onUndo: () => addManualExpense(snapshot),
+      onUndo: () => addManualExpense(snapshot, removedLinks),
     });
   }, []);
 
@@ -283,6 +296,34 @@ export function useTransactionSelection({
     }
   }, [selectedIds, hiddenTxIds, hideTx, exitSelectMode, toast]);
 
+  // Перемикач «Приховати» ↔ «Показати» у тулбарі: коли ВСІ вибрані вже
+  // приховані, `applyBatchHide` нічого б не зробив (він пропускає приховані),
+  // тож приховану ручну/імпортовану операцію не було б чим повернути —
+  // аркуш ручного запису перемикача прихованості не має. `hideTx` — toggle,
+  // тому для показу той самий виклик, а undo ховає ці id назад.
+  const allSelectedHidden =
+    selectedIds.size > 0 &&
+    Array.from(selectedIds).every((id) => hiddenTxIds.includes(id));
+
+  const applyBatchUnhide = useCallback(() => {
+    const shownNow: string[] = [];
+    for (const id of selectedIds) {
+      if (hiddenTxIds.includes(id)) {
+        hideTx(id);
+        shownNow.push(id);
+      }
+    }
+    exitSelectMode();
+    if (shownNow.length > 0) {
+      showUndoToast(toast, {
+        msg: `Показано ${shownNow.length} ${pluralizeOps(shownNow.length, "acc")}`,
+        onUndo: () => {
+          for (const id of shownNow) hideTx(id);
+        },
+      });
+    }
+  }, [selectedIds, hiddenTxIds, hideTx, exitSelectMode, toast]);
+
   const applyBatchExclude = useCallback(() => {
     // Same toggle/snapshot pattern as applyBatchHide — capture the ids that
     // were newly excluded and call `toggleExcludeFromStats` again on undo.
@@ -320,6 +361,8 @@ export function useTransactionSelection({
     setBatchCatPicker,
     applyBatchCategory,
     applyBatchHide,
+    allSelectedHidden,
+    applyBatchUnhide,
     applyBatchExclude,
     stableSwipeHideTx,
     stableSwipeDeleteManual,

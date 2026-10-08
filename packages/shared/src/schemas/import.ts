@@ -26,6 +26,14 @@ import { AMOUNT_MINOR_MAX, boundedDayKeySchema } from "./bounds";
 export const IMPORT_SOURCES = ["bank_screenshot", "bank_statement"] as const;
 export type ImportSource = (typeof IMPORT_SOURCES)[number];
 
+/** Ліміт `description` рядка імпорту (скрін, превʼю виписки, commit). Сервер
+ * обрізає довші описи до цього числа ДО валідації відповіді: один рядок з
+ * «призначенням платежу» на 420 символів не мусить валити весь файл. */
+export const IMPORT_DESCRIPTION_MAX_LEN = 300;
+
+/** Ліміт назви банку у драфті скріна (`ImportScreenshotDraftSchema.bank`). */
+export const IMPORT_BANK_MAX_LEN = 120;
+
 export const ImportDirectionSchema = z.enum(["expense", "income"]);
 export type ImportDirection = z.infer<typeof ImportDirectionSchema>;
 
@@ -113,7 +121,7 @@ export const ImportScreenshotRowSchema = z.object({
     .nullable(),
   amountKopiykas: importAmountKopiykasSchema,
   direction: ImportDirectionSchema,
-  description: z.string().max(300),
+  description: z.string().max(IMPORT_DESCRIPTION_MAX_LEN),
   confidence: z.number().min(0).max(1),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
@@ -147,7 +155,7 @@ export const ImportScreenshotDraftSchema = z.object({
   docType: z.enum(IMPORT_SCREENSHOT_DOC_TYPES),
   /** Назва банку, якщо vision розпізнав логотип/бренд екрана; `null` —
    * невідомо/не банківський скрін. */
-  bank: z.string().max(120).nullable(),
+  bank: z.string().max(IMPORT_BANK_MAX_LEN).nullable(),
   rows: z.array(ImportScreenshotRowSchema).max(200),
   /** `.default()`, а не обовʼязкове поле: web і server деплояться окремо
    * (Vercel / Coolify), тож новий клієнт мусить пережити відповідь ще не
@@ -175,11 +183,18 @@ export type ImportDateFormat = (typeof IMPORT_DATE_FORMATS)[number];
 
 /** Колонки з CSV-заголовка (точний текст заголовка, як він прийшов у
  * попередньому `needsMapping: true` → `headers[]`), не індекси — стабільне
- * до перестановки колонок джерелом. */
+ * до перестановки колонок джерелом.
+ *
+ * `amountCol` без `creditCol` — одна колонка суми ЗІ ЗНАКОМ (мінус = витрата,
+ * плюс = надходження). З `creditCol` виписка має окремі колонки Дебет і
+ * Кредит (поширений український формат): `amountCol` = дебет (витрата),
+ * `creditCol` = кредит (надходження), у кожному рядку заповнена одна з двох. */
 export const ImportColumnMappingSchema = z
   .object({
     dateCol: z.string().min(1).max(200),
     amountCol: z.string().min(1).max(200),
+    /** Колонка надходжень (кредит), якщо вона окрема від `amountCol`. */
+    creditCol: z.string().min(1).max(200).optional(),
     descriptionCol: z.string().min(1).max(200),
     dateFormat: z.enum(IMPORT_DATE_FORMATS).optional(),
     decimalComma: z.boolean().optional(),
@@ -243,7 +258,7 @@ export const ImportStatementRowSchema = z.object({
   date: boundedDayKeySchema,
   amountKopiykas: importAmountKopiykasSchema,
   direction: ImportDirectionSchema,
-  description: z.string().max(300),
+  description: z.string().max(IMPORT_DESCRIPTION_MAX_LEN),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
   categoryHint: categoryHintSchema,
@@ -300,7 +315,7 @@ export const ImportCommitRowSchema = z
     date: boundedDayKeySchema,
     amountKopiykas: importAmountKopiykasSchema,
     direction: ImportDirectionSchema,
-    description: z.string().max(300),
+    description: z.string().max(IMPORT_DESCRIPTION_MAX_LEN),
     /** Обовʼязкова per row — клієнт дає, включно з income-категоріями
      * finyk (`manualIncomeCategories.ts`); сервер зберігає опаково,
      * так само як `ManualExpenseCreateSchema.category`. */

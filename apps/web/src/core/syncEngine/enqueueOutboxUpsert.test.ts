@@ -4,15 +4,34 @@
  * Tests use a minimal SqliteMigrationClient mock — no real SQLite is
  * required; the mock verifies the INSERT shape and idempotency logic.
  */
-import { describe, expect, it, vi } from "vitest";
+import Database from "better-sqlite3";
+import type { Database as BetterSqliteDatabase } from "better-sqlite3";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 
-import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import { runMigrations } from "@sergeant/db-schema/migrate/runner";
+import {
+  createSqliteAdapter,
+  type SqliteMigrationClient,
+} from "@sergeant/db-schema/migrate/sqlite";
+import {
+  FINYK_CLIENT_MIGRATIONS,
+  FINYK_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
+} from "@sergeant/db-schema/sqlite";
 
 import {
   enqueueOutboxUpsert,
   type OutboxUpsertInput,
 } from "./enqueueOutboxUpsert.js";
+
+// Тут перевіряється логіка самої черги на вже мігрованій схемі (моки й
+// реальний SQLite з прогнаними міграціями). Доведення схеми до кінця —
+// окремий контракт, `enqueueOutboxUpsert.schema.test.ts`.
+vi.mock("./outboxSchema.js", () => ({
+  ensureOutboxSchema: async () => {},
+}));
 
 const IDEM_KEY = "00000000-0000-0000-0000-000000000001";
 const USER_ID = "user-abc";
@@ -42,7 +61,7 @@ function makeInput(
 function makeMockClient(
   existingRows: { id: number }[],
   afterRows: { id: number }[],
-  dedupRows: { id: number; row: string; client_ts: string }[] = [],
+  dedupRows: { id: number; op: string; row: string; client_ts: string }[] = [],
 ): { client: SqliteMigrationClient; runMock: Mock; allMock: Mock } {
   // `all` is called up to three times: content-dedup lookup, idempotency
   // pre-check, then post-insert. Cast through unknown to satisfy the
@@ -74,7 +93,7 @@ describe("enqueueOutboxUpsert", () => {
     expect(allMock).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining("status = 'pending'"),
-      [USER_ID, "routine_entries", "insert"],
+      [USER_ID, "routine_entries"],
     );
     expect(allMock).toHaveBeenNthCalledWith(
       2,
@@ -153,7 +172,14 @@ describe("enqueueOutboxUpsert", () => {
       const { client, runMock } = makeMockClient(
         [],
         [],
-        [{ id: 42, row: JSON.stringify(pendingRow), client_ts: CLIENT_TS }],
+        [
+          {
+            id: 42,
+            op: "insert",
+            row: JSON.stringify(pendingRow),
+            client_ts: CLIENT_TS,
+          },
+        ],
       );
 
       // Simulates a double-click: same logical op, fresh random UUID.
@@ -182,7 +208,14 @@ describe("enqueueOutboxUpsert", () => {
       const { client, runMock } = makeMockClient(
         [],
         [],
-        [{ id: 42, row: JSON.stringify(priorRow), client_ts: priorClientTs }],
+        [
+          {
+            id: 42,
+            op: "insert",
+            row: JSON.stringify(priorRow),
+            client_ts: priorClientTs,
+          },
+        ],
       );
 
       const result = await enqueueOutboxUpsert(client, makeInput());
@@ -198,6 +231,7 @@ describe("enqueueOutboxUpsert", () => {
         [
           {
             id: 42,
+            op: "insert",
             row: JSON.stringify({ ...makeInput().row, name: "Water" }),
             client_ts: CLIENT_TS,
           },
@@ -208,11 +242,11 @@ describe("enqueueOutboxUpsert", () => {
 
       expect(result).toEqual({ id: 8, inserted: true, skipped: null });
       expect(runMock).toHaveBeenCalledOnce();
-      // still scoped the dedup lookup to this exact (user, table, op)
+      // the dedup lookup is scoped to (user, table) — not to `op` (data-14)
       expect(allMock).toHaveBeenNthCalledWith(
         1,
         expect.stringContaining("status = 'pending'"),
-        [USER_ID, "routine_entries", "insert"],
+        [USER_ID, "routine_entries"],
       );
     });
 
@@ -221,9 +255,16 @@ describe("enqueueOutboxUpsert", () => {
       const { client, runMock } = makeMockClient(
         [],
         [{ id: 8 }],
-        // dedup lookup is scoped by `op` in the SQL WHERE clause itself —
-        // simulate it correctly returning nothing for a different op.
-        [],
+        // the newest pending row is an `insert` with identical content, but
+        // the new call is a `delete` → the op differs, so it must be queued.
+        [
+          {
+            id: 42,
+            op: "insert",
+            row: JSON.stringify(sharedRow),
+            client_ts: CLIENT_TS,
+          },
+        ],
       );
 
       const result = await enqueueOutboxUpsert(
@@ -287,15 +328,19 @@ describe("enqueueOutboxUpsert", () => {
 
       const all = vi.fn(async (sql: string, params: unknown[] = []) => {
         if (sql.includes("status = 'pending'")) {
-          const [userId, table, op] = params as [string, string, string];
+          const [userId, table] = params as [string, string];
           const match = [...rows]
             .reverse()
-            .find(
-              (r) =>
-                r.user_id === userId && r.table_name === table && r.op === op,
-            );
+            .find((r) => r.user_id === userId && r.table_name === table);
           return match
-            ? [{ id: match.id, row: match.row, client_ts: match.client_ts }]
+            ? [
+                {
+                  id: match.id,
+                  op: match.op,
+                  row: match.row,
+                  client_ts: match.client_ts,
+                },
+              ]
             : [];
         }
         const [idemKey] = params as [string];
@@ -355,6 +400,203 @@ describe("enqueueOutboxUpsert", () => {
       // returns ITS id — it never inserts a second one.
       expect(skipped[0]!.id).toBe(inserted[0]!.id);
       expect(rows[0]!.id).toBe(inserted[0]!.id);
+    });
+  });
+});
+
+/**
+ * data-14: регресія на РЕАЛЬНОМУ SQLite з клієнтськими міграціями (а не на
+ * моку). Контент-дедуп колись шукав найновіший pending-рядок лише з тим
+ * самим `op`, тож у ланцюжку insert → delete → insert третій крок
+ * збігався з першим і ковтався (`inserted: false`): сервер лишався в
+ * протилежному до останньої дії користувача стані.
+ */
+describe("enqueueOutboxUpsert — toggle on/off/on on a real SQLite (data-14)", () => {
+  let db: BetterSqliteDatabase;
+  let client: SqliteMigrationClient;
+
+  function makeClient(raw: BetterSqliteDatabase): SqliteMigrationClient {
+    return {
+      exec(sql) {
+        raw.exec(sql);
+      },
+      run(sql, params) {
+        raw.prepare(sql).run(...((params ?? []) as unknown[]));
+      },
+      all(sql, params) {
+        const stmt = raw.prepare(sql);
+        return (
+          params ? stmt.all(...(params as unknown[])) : stmt.all()
+        ) as never;
+      },
+    };
+  }
+
+  /**
+   * `sync_op_outbox` ships with the routine client migrations (one shared
+   * on-device DB in production), so every set is applied on top of them.
+   */
+  async function migrate(
+    ...sets: ReadonlyArray<{
+      files: typeof ROUTINE_CLIENT_MIGRATIONS;
+      table: string;
+    }>
+  ): Promise<void> {
+    db = new Database(":memory:");
+    client = makeClient(db);
+    for (const { files, table } of sets) {
+      await runMigrations({
+        adapter: createSqliteAdapter(client),
+        files,
+        tableName: table,
+      });
+    }
+  }
+
+  function queue(): Array<{ id: number; op: string; status: string }> {
+    return db
+      .prepare(`SELECT id, op, status FROM sync_op_outbox ORDER BY id`)
+      .all() as Array<{ id: number; op: string; status: string }>;
+  }
+
+  afterEach(() => {
+    db.close();
+  });
+
+  describe("routine_entries", () => {
+    beforeEach(async () => {
+      await migrate({
+        files: ROUTINE_CLIENT_MIGRATIONS,
+        table: ROUTINE_MIGRATIONS_TABLE,
+      });
+    });
+
+    it("insert -> delete -> insert with the same payload queues all three ops in order", async () => {
+      const ts1 = "2026-10-01T08:00:00.000Z";
+      const ts2 = "2026-10-01T08:00:00.400Z";
+      const ts3 = "2026-10-01T08:00:01.000Z";
+      const insertRow = (ts: string) => ({
+        id: "h:2026-10-01",
+        user_id: USER_ID,
+        name: "Drink",
+        completed_at: ts,
+        created_at: ts,
+        deleted_at: null,
+      });
+
+      const first = await enqueueOutboxUpsert(client, {
+        userId: USER_ID,
+        table: "routine_entries",
+        op: "insert",
+        row: insertRow(ts1),
+        clientTs: ts1,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      const second = await enqueueOutboxUpsert(client, {
+        userId: USER_ID,
+        table: "routine_entries",
+        op: "delete",
+        row: { id: "h:2026-10-01", user_id: USER_ID },
+        clientTs: ts2,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      const third = await enqueueOutboxUpsert(client, {
+        userId: USER_ID,
+        table: "routine_entries",
+        op: "insert",
+        row: insertRow(ts3),
+        clientTs: ts3,
+        idempotencyKey: crypto.randomUUID(),
+      });
+
+      expect(first.inserted).toBe(true);
+      expect(second.inserted).toBe(true);
+      expect(third.inserted).toBe(true);
+      expect(new Set([first.id, second.id, third.id]).size).toBe(3);
+      expect(queue().map((r) => r.op)).toEqual(["insert", "delete", "insert"]);
+    });
+
+    it("a plain double-submit (two identical inserts in a row) is still deduplicated", async () => {
+      const row = {
+        id: "h:2026-10-01",
+        user_id: USER_ID,
+        name: "Drink",
+        completed_at: "2026-10-01T08:00:00.000Z",
+        created_at: "2026-10-01T08:00:00.000Z",
+        deleted_at: null,
+      };
+      const first = await enqueueOutboxUpsert(client, {
+        userId: USER_ID,
+        table: "routine_entries",
+        op: "insert",
+        row,
+        clientTs: "2026-10-01T08:00:00.000Z",
+        idempotencyKey: crypto.randomUUID(),
+      });
+      // second click a few ms later: own clientTs echoed into the timestamps
+      const retryTs = "2026-10-01T08:00:00.050Z";
+      const second = await enqueueOutboxUpsert(client, {
+        userId: USER_ID,
+        table: "routine_entries",
+        op: "insert",
+        row: { ...row, completed_at: retryTs, created_at: retryTs },
+        clientTs: retryTs,
+        idempotencyKey: crypto.randomUUID(),
+      });
+
+      expect(first.inserted).toBe(true);
+      expect(second).toEqual({ id: first.id, inserted: false, skipped: null });
+      expect(queue()).toHaveLength(1);
+    });
+  });
+
+  describe("finyk_hidden_transactions", () => {
+    beforeEach(async () => {
+      await migrate(
+        { files: ROUTINE_CLIENT_MIGRATIONS, table: ROUTINE_MIGRATIONS_TABLE },
+        { files: FINYK_CLIENT_MIGRATIONS, table: FINYK_MIGRATIONS_TABLE },
+      );
+    });
+
+    it("hide -> unhide -> hide queues all three ops in order", async () => {
+      const hideRow = { user_id: USER_ID, transaction_id: "tx-1" };
+      const call = (op: "insert" | "delete", clientTs: string) =>
+        enqueueOutboxUpsert(client, {
+          userId: USER_ID,
+          table: "finyk_hidden_transactions",
+          op,
+          row: hideRow,
+          clientTs,
+          idempotencyKey: crypto.randomUUID(),
+        });
+
+      const hide1 = await call("insert", "2026-10-01T09:00:00.000Z");
+      const unhide = await call("delete", "2026-10-01T09:00:00.400Z");
+      const hide2 = await call("insert", "2026-10-01T09:00:01.000Z");
+
+      expect(hide1.inserted).toBe(true);
+      expect(unhide.inserted).toBe(true);
+      expect(hide2.inserted).toBe(true);
+      expect(queue().map((r) => r.op)).toEqual(["insert", "delete", "insert"]);
+    });
+
+    it("a repeated hide right after hide is still deduplicated", async () => {
+      const hideRow = { user_id: USER_ID, transaction_id: "tx-1" };
+      const call = (clientTs: string) =>
+        enqueueOutboxUpsert(client, {
+          userId: USER_ID,
+          table: "finyk_hidden_transactions",
+          op: "insert",
+          row: hideRow,
+          clientTs,
+          idempotencyKey: crypto.randomUUID(),
+        });
+
+      const first = await call("2026-10-01T09:00:00.000Z");
+      const second = await call("2026-10-01T09:00:00.050Z");
+
+      expect(second).toEqual({ id: first.id, inserted: false, skipped: null });
+      expect(queue()).toHaveLength(1);
     });
   });
 });

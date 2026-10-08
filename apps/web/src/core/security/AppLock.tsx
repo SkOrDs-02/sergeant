@@ -313,6 +313,28 @@ export function AppLock({
     inertBackground: true,
   });
 
+  // AI-NOTE: оверлей замка на `z-300`, а не `z-modal` (200): глобальний
+  // пошук (`HubSearch`, `z-200`) і діалоги з подієвої шини стоять на 200 і
+  // йдуть пізніше в DOM, тож на рівних перекривали екран PIN (sec-13).
+  // Гарячі клавіші під замком вимикає `useHubKeyboardShortcuts({ disabled })`;
+  // шар лише страхує від діалогу, відкритого не клавішею.
+
+  // Холодний старт: креденшел ще перевіряється. Закриваємо екран
+  // непрозорою завісою, щоб дані не блимнули до екрана PIN. Без діалогу й
+  // фокус-пастки: це секунди-частки секунди, а не взаємодія.
+  if (state === "checking") {
+    return (
+      <div
+        className="fixed inset-0 z-300 bg-bg"
+        role="status"
+        aria-busy="true"
+        data-testid="app-lock-checking"
+      >
+        <span className="sr-only">{m.checking}</span>
+      </div>
+    );
+  }
+
   if (!visible) return null;
 
   const title =
@@ -324,7 +346,7 @@ export function AppLock({
 
   return (
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md motion-safe:animate-fade-in"
+      className="fixed inset-0 z-300 flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md motion-safe:animate-fade-in"
       role="presentation"
     >
       <div

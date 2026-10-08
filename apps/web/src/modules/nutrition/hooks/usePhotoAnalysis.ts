@@ -244,10 +244,12 @@ export function usePhotoAnalysis({
     },
   });
 
-  const analyzePhoto = useCallback(
-    () => analyzeMutation.mutate(),
-    [analyzeMutation],
-  );
+  // `mutate` у TanStack Query v5 стабільний (useCallback по observer), на
+  // відміну від самого обʼєкта `useMutation`, що новий щорендера. Залежимо
+  // від `mutate`, тож `analyzePhoto` має стабільну ідентичність — на це
+  // спираються effect-deps у PhotoStep.
+  const { mutate: analyze } = analyzeMutation;
+  const analyzePhoto = useCallback(() => analyze(), [analyze]);
 
   // ─── Refine photo ───────────────────────────────────────────────────────
   const refineMutation = useMutation({
@@ -285,6 +287,10 @@ export function usePhotoAnalysis({
       setPhotoResult(data?.result || null);
     },
     onError: (err) => {
+      // Refine кадру, якого сервер не аналізував цьому користувачу за 24 год,
+      // списує те саме тижневе відро фото, що й analyze (ADR-0100), тож і
+      // вичерпання відра тут веде на той самий пейвол.
+      if (isQuotaError(err, "AI_PHOTO_QUOTA")) onQuotaExceeded?.();
       setErr(formatNutritionError(err, failedCopy("уточнити оцінку")));
     },
     onSettled: () => {
@@ -293,10 +299,8 @@ export function usePhotoAnalysis({
     },
   });
 
-  const refinePhoto = useCallback(
-    () => refineMutation.mutate(),
-    [refineMutation],
-  );
+  const { mutate: refine } = refineMutation;
+  const refinePhoto = useCallback(() => refine(), [refine]);
 
   // Підсумок ЗАВЖДИ перераховується з позицій — тією самою
   // `sumMacrosNullable`, якою його рахує сервер. Тримати тут окрему

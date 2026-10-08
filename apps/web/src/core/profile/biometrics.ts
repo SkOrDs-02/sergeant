@@ -57,6 +57,7 @@
  *
  * Both directions converge on Last-Write-Wins via `weightUpdatedAt`.
  */
+import { LOCAL_ANON_USER_ID } from "../auth/localIdentity";
 import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
 // Durable-пара з тієї ж причини, що й у `memoryBank.ts` (аудит 2026-09-28, D2).
@@ -217,7 +218,29 @@ export const BIOMETRICS_DEFAULT: Biometrics = {
   updatedAt: EPOCH,
 };
 
+/**
+ * priv-02: `true`, коли локальна біометрика записана ІНШИМ залогіненим
+ * користувачем, ніж власник поточної сесії пристрою (плоский ключ на
+ * пристрій + сесія, що закінчилась без «Вийти»). `ownerId: null` (легасі,
+ * анонім) і невідомий власник сесії не вважаються чужими — міграція
+ * легасі-даних і стартовий рендер до спрацювання boot-ефекту лишаються як були.
+ */
+export function isBiometricsForeign(): boolean {
+  if (currentBiometricsOwner === null) return false;
+  const storedOwner = readBiometricsOwnerId();
+  // `local-anon` - явний маркер запису анонімної сесії цього пристрою; перший
+  // акаунт, що увійшов, успадковує його (рішення В1, 2026-10-08), тож він не
+  // чужий. Легасі `null` лишається окремим випадком вище/нижче, не змішувати.
+  return (
+    storedOwner !== null &&
+    storedOwner !== LOCAL_ANON_USER_ID &&
+    storedOwner !== currentBiometricsOwner
+  );
+}
+
 export function readBiometrics(): Biometrics {
+  // priv-02: чужу біометрику поточна сесія не бачить і не пушить на сервер.
+  if (isBiometricsForeign()) return BIOMETRICS_DEFAULT;
   return safeReadLSValidatedDurable(
     BIOMETRICS_KEY,
     BiometricsSchema,

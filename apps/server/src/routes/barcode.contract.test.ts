@@ -76,12 +76,19 @@ interface TestRes {
   body: unknown;
   status(code: number): TestRes;
   json(payload: unknown): TestRes;
+  headers: Record<string, string>;
+  setHeader(name: string, value: string): TestRes;
 }
 
 function makeRes(): TestRes & Response {
   const res: TestRes = {
     statusCode: 200,
     body: undefined,
+    headers: {},
+    setHeader(name: string, value: string) {
+      this.headers[name] = value;
+      return this;
+    },
     status(code: number) {
       this.statusCode = code;
       return this;
@@ -299,6 +306,7 @@ describe("contract: /api/barcode producer — error envelope", () => {
     await handler(makeReq("12345678901"), res);
 
     expect(res.statusCode).toBe(503);
+    expect(res.headers["Cache-Control"]).toBe("no-store");
     const parsed = BarcodeLookupErrorSchema.safeParse(res.body);
     expect(parsed.success).toBe(true);
     // Повідомлення мусить прямо знімати хибний висновок «продукту немає» —

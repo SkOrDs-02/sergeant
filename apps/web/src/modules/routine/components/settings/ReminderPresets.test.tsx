@@ -1,10 +1,45 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { useState } from "react";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  waitFor,
+} from "@testing-library/react";
 import { emptyHabitDraft } from "../../lib/routineDraftUtils";
 import type { HabitDraft } from "../../lib/types";
 import { ReminderPresets } from "./ReminderPresets";
+
+// Глобальний тумблер і дозвіл браузера керуються тестом; `updatePref` —
+// шпигун, щоб не лізти в SQLite-кеші.
+const routineMock = vi.hoisted(() => ({
+  prefs: { routineRemindersEnabled: false } as Record<string, unknown>,
+  updatePref: vi.fn(),
+}));
+const toastMock = vi.hoisted(() => ({ warning: vi.fn() }));
+
+vi.mock("../../hooks/useRoutineState", () => ({
+  useRoutineState: () => ({
+    routine: { prefs: routineMock.prefs },
+    setRoutine: vi.fn(),
+    updatePref: routineMock.updatePref,
+  }),
+}));
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({ warning: toastMock.warning }),
+}));
+
+function stubNotification(
+  permission: NotificationPermission,
+  requested: NotificationPermission = permission,
+) {
+  vi.stubGlobal("Notification", {
+    permission,
+    requestPermission: vi.fn().mockResolvedValue(requested),
+  });
+}
 
 function Harness({ initial }: { initial?: Partial<HabitDraft> }) {
   const [habitDraft, setHabitDraft] = useState<HabitDraft>({
@@ -17,7 +52,16 @@ function Harness({ initial }: { initial?: Partial<HabitDraft> }) {
 }
 
 describe("ReminderPresets", () => {
-  afterEach(cleanup);
+  beforeEach(() => {
+    routineMock.prefs = { routineRemindersEnabled: false };
+    routineMock.updatePref.mockClear();
+    toastMock.warning.mockClear();
+    stubNotification("granted");
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it("selects a reminder preset", () => {
     render(<Harness />);
@@ -70,5 +114,66 @@ describe("ReminderPresets", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Додати час" }));
 
     expect(screen.getByDisplayValue("12:00")).toBeInTheDocument();
+  });
+
+  describe("підказка про глобальний тумблер нагадувань (ux-05)", () => {
+    it("показує підказку й кнопку, коли час обрано, а тумблер вимкнений", () => {
+      render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+      expect(
+        screen.getByText("Нагадування вимкнені в налаштуваннях"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Увімкнути нагадування" }),
+      ).toBeInTheDocument();
+    });
+
+    it("не показує підказку, поки час не обрано", () => {
+      render(<Harness />);
+      expect(
+        screen.queryByRole("button", { name: "Увімкнути нагадування" }),
+      ).toBeNull();
+    });
+
+    it("клік при дозволі granted вмикає routineRemindersEnabled", async () => {
+      render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Увімкнути нагадування" }),
+      );
+      await waitFor(() =>
+        expect(routineMock.updatePref).toHaveBeenCalledWith(
+          "routineRemindersEnabled",
+          true,
+        ),
+      );
+      expect(toastMock.warning).not.toHaveBeenCalled();
+    });
+
+    it("при відмові в дозволі не вмикає тумблер, а показує попередження", async () => {
+      stubNotification("default", "denied");
+      render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Увімкнути нагадування" }),
+      );
+      await waitFor(() => expect(toastMock.warning).toHaveBeenCalledTimes(1));
+      expect(routineMock.updatePref).not.toHaveBeenCalled();
+    });
+
+    it("не показує підказку, коли тумблер увімкнений і дозвіл granted", () => {
+      routineMock.prefs = { routineRemindersEnabled: true };
+      render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+      expect(
+        screen.queryByRole("button", { name: "Увімкнути нагадування" }),
+      ).toBeNull();
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("показує підказку про дозвіл, коли тумблер увімкнений, а дозволу немає", () => {
+      routineMock.prefs = { routineRemindersEnabled: true };
+      stubNotification("denied");
+      render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+      expect(
+        screen.getByRole("button", { name: "Увімкнути нагадування" }),
+      ).toBeInTheDocument();
+    });
   });
 });

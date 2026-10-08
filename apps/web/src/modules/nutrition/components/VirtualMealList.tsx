@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useMemo } from "react";
+import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { VirtualList } from "@shared/components/ui/VirtualList";
@@ -21,6 +22,7 @@ interface VirtualMealListProps {
   selectedDate: string;
   onRemoveMeal?: ((date: string, meal: Meal) => void) | undefined;
   onEditMeal?: ((date: string, meal: Meal) => void) | undefined;
+  onCopyMeals?: ((type: MealTypeId) => void) | undefined;
 }
 
 type MealListItem =
@@ -33,6 +35,7 @@ export function VirtualMealList({
   selectedDate,
   onRemoveMeal,
   onEditMeal,
+  onCopyMeals,
 }: VirtualMealListProps) {
   const activeTypes = useMemo(
     () =>
@@ -82,6 +85,18 @@ export function VirtualMealList({
               <SectionHeading as="span" size="xs" variant="nutrition">
                 {meta.label}
               </SectionHeading>
+              {onCopyMeals && (
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  iconOnly
+                  onClick={() => onCopyMeals(item.type)}
+                  aria-label={`Скопіювати прийом: ${meta.label}`}
+                  className="ml-auto text-muted hover:text-text"
+                >
+                  <Icon name="more-horizontal" size="sm" aria-hidden />
+                </Button>
+              )}
             </div>
           );
         }

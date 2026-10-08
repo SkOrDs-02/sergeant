@@ -86,7 +86,7 @@ export function WorkoutFinishSheets({
   updateWorkout,
   onDone,
 }: WorkoutFinishSheetsProps) {
-  const { mark } = useInjuries();
+  const { markMany } = useInjuries();
   const { entries: dailyLogEntries, addEntry: addDailyLogEntry } =
     useDailyLog();
   const injuryCopy = messages.fizruk.injuries;
@@ -155,10 +155,15 @@ export function WorkoutFinishSheets({
                 size="xs"
                 variant="fizruk"
                 className="mb-2"
+                id="fizruk-wellbeing-energy"
               >
                 Енергія
               </SectionHeading>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div
+                role="group"
+                aria-labelledby="fizruk-wellbeing-energy"
+                className="grid grid-cols-5 gap-2"
+              >
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={`e${n}`}
@@ -185,10 +190,15 @@ export function WorkoutFinishSheets({
                 size="xs"
                 variant="fizruk"
                 className="mb-2"
+                id="fizruk-wellbeing-mood"
               >
                 Настрій
               </SectionHeading>
-              <div className="flex flex-wrap gap-2">
+              <div
+                role="group"
+                aria-labelledby="fizruk-wellbeing-mood"
+                className="grid grid-cols-5 gap-2"
+              >
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={`m${n}`}
@@ -404,9 +414,9 @@ export function WorkoutFinishSheets({
                 onClick={() => {
                   setSavingInjuries(true);
                   try {
-                    for (const site of finishFlash.injurySites) {
-                      if (isInjurySiteId(site)) mark(site);
-                    }
+                    // Одним записом: цикл `mark` у одному тіку лишав лише
+                    // останню зону (аудит data-36).
+                    markMany(finishFlash.injurySites.filter(isInjurySiteId));
                     setFinishFlash(
                       (current) => current && { ...current, step: "summary" },
                     );

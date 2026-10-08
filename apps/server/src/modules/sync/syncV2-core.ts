@@ -397,5 +397,101 @@ export function isWithinTextBound(
   return value.length <= maxLen;
 }
 
+/**
+ * Обрізає текст до `maxLen` UTF-16 code unit-ів (так само рахує
+ * `isWithinTextBound`) і не лишає на кінці половину сурогатної пари: хвіст
+ * із одиноким сурогатом `jsonb`/`text` не прийме (див. `hasUnstorableText`).
+ * Для денормалізованих копій display-рядків (напр. `routine_entries.name` -
+ * копія назви звички), де reject був би термінальним і назавжди губив би
+ * відмітку, а не лише відсікав зловмисний payload.
+ */
+export function clampTextToBound(
+  value: string,
+  maxLen: number = NAME_MAX_LEN,
+): string {
+  if (value.length <= maxLen) return value;
+  let end = maxLen;
+  const last = value.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return value.slice(0, end);
+}
+
+/**
+ * Рядок, якого не прийме `jsonb`/`text` у Postgres: містить `U+0000` або
+ * одинокий (непарний) UTF-16 сурогат. JSON.stringify пише такий сурогат як
+ * `\udXXX`-escape, а `jsonb` відкидає його ("Unicode low surrogate must
+ * follow a high surrogate"). Реалістичний тригер - назва, обрізана
+ * `.slice()` посеред емодзі (аудит 2026-10-01, `data-17`).
+ */
+const UNSTORABLE_TEXT_RE =
+  // eslint-disable-next-line no-control-regex -- U+0000 і є тим, що шукаємо.
+  /\u0000|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+/**
+ * `true`, якщо хоч один ключ чи рядкове значення в `row` (на будь-якій
+ * глибині) містить `U+0000` або одинокий сурогат. Такий оп відкидається ДО
+ * apply з reason `invalid_text_encoding`: тихо "лагодити" дані (замінювати
+ * символ) не можна, це мовчки змінило б те, що ввів користувач. Обхід
+ * ітеративний, без рекурсії, щоб глибоко вкладений payload не клав стек.
+ */
+export function hasUnstorableText(row: unknown): boolean {
+  const stack: unknown[] = [row];
+  while (stack.length > 0) {
+    const v = stack.pop();
+    if (typeof v === "string") {
+      if (UNSTORABLE_TEXT_RE.test(v)) return true;
+    } else if (Array.isArray(v)) {
+      for (const item of v) stack.push(item);
+    } else if (v !== null && typeof v === "object") {
+      for (const [k, val] of Object.entries(v)) {
+        if (UNSTORABLE_TEXT_RE.test(k)) return true;
+        stack.push(val);
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * SQLSTATE `23505` (`unique_violation`) від apply-функції. `pg` кладе код у
+ * `err.code`; інші помилки (deadlock `40P01`, lock timeout `55P03`, ...) сюди
+ * не потрапляють навмисно: їх ретрай змінив би контракт пушу (data-18).
+ */
+export function isUniqueViolation(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { code?: unknown }).code === "23505"
+  );
+}
+
+/**
+ * Виконує apply оп-а і ОДИН раз повторює його, якщо перша спроба впала з
+ * `23505` (data-18). Усі apply-функції роблять SELECT без блокування, а потім
+ * plain INSERT: коли два пристрої одночасно створюють той самий рядок, програвший
+ * INSERT чекає на коміт переможця і падає з `23505`. Без ретраю це ставало
+ * термінальним `rejected/apply_failed` (його ще й кешує `idempotency_key`), хоч
+ * новіша правка мала перемогти за LWW.
+ *
+ * Перед повтором відкочуємось до savepoint-а `op_apply` (його відкрив
+ * викликач і він лишається відкритим до запису в журнал). Під READ COMMITTED
+ * повторний SELECT уже бачить закомічений рядок переможця, тож далі працює
+ * штатна гілка: `applied`, `lww_conflict` або `fk_violation`. Друга `23505` чи
+ * будь-яка інша помилка летить до викликача й стає `apply_failed`, як і раніше.
+ */
+export async function applyWithUniqueViolationRetry<T>(
+  client: PoolClient,
+  attempt: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await attempt();
+  } catch (err: unknown) {
+    if (!isUniqueViolation(err)) throw err;
+    await client.query("ROLLBACK TO SAVEPOINT op_apply");
+    logger.info({ msg: "sync_v2_apply_unique_violation_retry" });
+    return await attempt();
+  }
+}
+
 export type { PoolClient };
 export type { SyncV2Op } from "../../http/schemas.js";

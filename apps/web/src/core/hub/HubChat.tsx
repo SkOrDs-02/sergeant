@@ -98,6 +98,7 @@ function HubChat({
     activeId,
     messages,
     setMessages,
+    updateSessionMessages,
     historyOpen,
     setHistoryOpen,
     detailsOpen,
@@ -110,6 +111,8 @@ function HubChat({
   const sendState = useChatSend({
     messages,
     setMessages,
+    activeId,
+    updateSessionMessages,
     initialMessage,
     autoSendInitial,
     preset,

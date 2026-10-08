@@ -419,6 +419,8 @@ interface PantryCardProps {
   placeSelector?: ReactNode;
 }
 
+const NO_ITEMS: PantryItemView[] = [];
+
 export function PantryCard({
   busy,
   parsePantry,
@@ -446,7 +448,14 @@ export function PantryCard({
   const [mode, setMode] = useState<PantryInputMode>("single");
   const [addOpen, setAddOpen] = useState(false);
 
-  const empty = effectiveItems.length === 0;
+  // «Порожня» = у коморі немає ЗБЕРЕЖЕНИХ позицій. `effectiveItems` для
+  // порожньої комори — це живий парс чернетки textarea («Списком»), тож
+  // рахувати `empty` по ньому означало, що перша ж літера робила комору
+  // «непорожньою»: інлайн-форма розмонтовувалась (фокус у `<body>`), а в
+  // списку зʼявлявся фантом із назвою цієї літери (аудит 2026-10-01, ux-12).
+  // Чернетка живе лише у формі: превʼю розбору — `PantryParsePreview`.
+  const empty = pantryItemsLength === 0;
+  const inventoryItems = empty ? NO_ITEMS : effectiveItems;
   // Питання про одиницю чи превʼю розбору, що лишились після закриття
   // аркуша, повертають форму інлайн: інакше вони ховались би за кнопкою,
   // а позиції так і не потрапили б у комору.
@@ -484,7 +493,7 @@ export function PantryCard({
             // картки вже каже, що це комора (підтверджено живим прогоном
             // 2026-09-16: поле було єдиним на екрані без назви).
             aria-label="Назва продукту"
-            placeholder="напр. лосось 300г"
+            placeholder="напр. лосось 300 г"
             // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
             autoFocus={!formInline}
             maxLength={NAME_MAX_LEN}
@@ -524,7 +533,7 @@ export function PantryCard({
             aria-label="Список продуктів"
             // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
             autoFocus={!formInline}
-            placeholder={'напр. "2 яйця, курка 500г, рис, огірки, сир"'}
+            placeholder={'напр. "2 яйця, курка 500 г, рис, огірки, сир"'}
             className="input-focus-nutrition flex-1 min-h-[96px] rounded-2xl bg-panel border border-line px-4 py-3 text-sm text-text placeholder:text-subtle"
             maxLength={NOTE_MAX_LEN}
             disabled={busy}
@@ -585,7 +594,7 @@ export function PantryCard({
       )}
 
       <InventoryCard
-        effectiveItems={effectiveItems}
+        effectiveItems={inventoryItems}
         editItemAt={editItemAt}
         removeItemAtOrByName={removeItemAtOrByName}
         pantryItemsLength={pantryItemsLength}

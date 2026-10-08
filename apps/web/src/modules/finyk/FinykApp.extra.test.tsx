@@ -507,7 +507,11 @@ describe("FinykApp (extra) — pwaAction='add_expense'", () => {
 
 // ── URL sync effect ───────────────────────────────────────────────────────────
 
-describe("FinykApp (extra) — URL sync effect", () => {
+describe("FinykApp (extra) — ?sync= у URL ігнорується (data-26)", () => {
+  // Регресія аудиту 2026-10-01: на маунті з `?sync=…` застосунок без
+  // підтвердження підміняв бюджети/план/категорії/приховані рахунки даними з
+  // URL і показував тост «синхронізовано». `loadFromUrl` лишено в моку як
+  // шпигуна: приймача більше нема, тож його ніхто не має викликати.
   beforeEach(() => {
     vi.stubGlobal("location", {
       search: "?sync=abc",
@@ -519,22 +523,12 @@ describe("FinykApp (extra) — URL sync effect", () => {
     vi.unstubAllGlobals();
   });
 
-  it("calls toast.success when loadFromUrl returns true", () => {
+  it("не викликає loadFromUrl і не показує жодного тоста", () => {
     storageMock.loadFromUrl.mockReturnValue(true);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(toastMock.success).toHaveBeenCalledWith(
-      "Налаштування синхронізовано.",
-    );
-  });
-
-  it("calls toast.error when loadFromUrl returns false", () => {
-    storageMock.loadFromUrl.mockReturnValue(false);
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(toastMock.error).toHaveBeenCalledWith(
-      "Не вдалось завантажити синк-дані",
-      undefined,
-      expect.objectContaining({ label: "Повторити" }),
-    );
+    expect(storageMock.loadFromUrl).not.toHaveBeenCalled();
+    expect(toastMock.success).not.toHaveBeenCalled();
+    expect(toastMock.error).not.toHaveBeenCalled();
   });
 });
 
@@ -611,20 +605,6 @@ describe("FinykApp (extra) — login overlay callbacks", () => {
   });
 });
 
-// ── SyncPill balance toggle ───────────────────────────────────────────────────
-
-describe("FinykApp (extra) — SyncPill balance toggle", () => {
-  it("clicking the eye button calls setShowBalance with the toggled value", () => {
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    const eyeButton = screen.getByRole("button", {
-      name: /приховати суми|показати суми/i,
-    });
-    fireEvent.click(eyeButton);
-    // showBalance was true; toggled → false
-    expect(storageMock.setShowBalance).toHaveBeenCalledWith(false);
-  });
-});
-
 // ── authError banner — onOpenSettings link ──────────────────────────────────
 
 // Регресія PR-F2 (аудит 2026-09-13, хвиля 3): CTA підписаний «Оновити
@@ -691,27 +671,18 @@ describe("FinykApp (extra) — settings button", () => {
   });
 });
 
-// ── EyeClosedIcon (showBalance=false) ────────────────────────────────────────
+// ── «Приховати суми» більше не в шапці ───────────────────────────────────────
 
-describe("FinykApp (extra) — EyeClosedIcon when showBalance=false", () => {
-  it("renders the hide-eye button aria-label when balance is hidden", () => {
+describe("FinykApp (extra) — hide-amounts control lives in Settings, not the header", () => {
+  // Перемикач переїхав у `core/settings/FinykSection.tsx` (анти-слоп раунд
+  // 4, Q5): у шапці на 375px він відбирав у назви модуля 44px. Поведінка
+  // самого перемикача тепер тестується в `FinykSection.test.tsx`.
+  it("renders no eye button in the header even when balance is hidden", () => {
     storageMock.showBalance = false;
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    // When showBalance=false, button label is "Показати суми"
-    const eyeButton = screen.getByRole("button", {
-      name: /показати суми/i,
-    });
-    expect(eyeButton).toBeInTheDocument();
-  });
-
-  it("clicking the eye button from hidden state calls setShowBalance(true)", () => {
-    storageMock.showBalance = false;
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    const eyeButton = screen.getByRole("button", {
-      name: /показати суми/i,
-    });
-    fireEvent.click(eyeButton);
-    expect(storageMock.setShowBalance).toHaveBeenCalledWith(true);
+    expect(
+      screen.queryByRole("button", { name: /показати суми|приховати суми/i }),
+    ).toBeNull();
   });
 });
 

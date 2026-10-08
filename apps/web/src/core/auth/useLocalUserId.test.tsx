@@ -48,4 +48,14 @@ describe("useLocalUserId", () => {
 
     expect(result.current).toBeNull();
   });
+
+  // logic-01: для акаунта у вікні видалення `me` віддає 403, `user` порожній,
+  // але сесія жива. Анонімний id тут писав би дані акаунта в анонімну партицію.
+  it("returns null for an account in the deletion window (session alive, user unknown)", () => {
+    useAuthMock.mockReturnValue({ user: null, status: "pending_deletion" });
+
+    const { result } = renderHook(() => useLocalUserId());
+
+    expect(result.current).toBeNull();
+  });
 });

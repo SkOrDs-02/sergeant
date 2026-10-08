@@ -2,7 +2,6 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 interface FoodHitRowProduct {
   name?: string | null;
@@ -18,11 +17,9 @@ interface FoodHitRowProduct {
 interface FoodHitRowProps {
   p: FoodHitRowProduct;
   /**
-   * Підпис зовнішньої бази («Open Food Facts», «USDA», «Сільпо») — коли
-   * заданий, рядок несе `Icon`-позначку зовнішнього джерела з цим
-   * `title`. Раніше це був boolean `externalSource` із зашитим
-   * OFF-підписом, але `FoodSearchProduct.source` тепер трьохзначний
-   * (`off | usda | silpo`) — підпис приходить від викликача.
+   * Підпис джерела («Open Food Facts», «USDA», «Сільпо», «Мій продукт») —
+   * коли заданий, рядок несе видимий бейдж із цим текстом. Англійську назву
+   * показуємо як є, без перекладу. Підпис приходить від викликача.
    */
   externalSourceLabel?: string | undefined;
   onPick: () => void;
@@ -44,12 +41,12 @@ export function FoodHitRow({
           <div className="text-style-label text-text truncate">
             {[p.name, p.brand].filter(Boolean).join(" · ")}
             {externalSourceLabel && (
-              <Icon
-                name="link"
-                size="xs"
-                className="ml-1 inline-block align-baseline text-subtle"
-                title={externalSourceLabel}
-              />
+              <span
+                data-testid="food-source-badge"
+                className="ml-1.5 inline-block align-baseline rounded-md bg-panelHi px-1.5 text-style-caption text-subtle"
+              >
+                {externalSourceLabel}
+              </span>
             )}
           </div>
           <Measure

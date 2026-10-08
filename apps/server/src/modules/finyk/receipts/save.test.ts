@@ -102,6 +102,12 @@ const itemDbRow = {
   sum_kopiykas: "3200",
 };
 
+/** `RETURNING created_at, updated_at` фолбек-витрати (data-16). */
+const manualExpenseDbRow = {
+  created_at: new Date("2026-01-15T10:00:00.000Z"),
+  updated_at: new Date("2026-01-15T10:00:00.000Z"),
+};
+
 /**
  * Диспетчер по SQL-тексту замість строгої черги `mockResolvedValueOnce` —
  * стійкіший до порядку викликів усередині `save.ts`, легше розширювати
@@ -134,6 +140,9 @@ function makeFakeClient(
       /INSERT INTO finyk_manual_expenses/.test(sql)
     ) {
       return overrides["insertManualExpense"](params);
+    }
+    if (/INSERT INTO sync_op_log/.test(sql)) {
+      return { rows: [], rowCount: 1 } as { rows: unknown[] };
     }
     if (
       overrides["insertLink"] &&
@@ -250,7 +259,7 @@ describe("saveReceiptHandler — новий чек, unmatched", () => {
     const client = makeFakeClient({
       insertReceipt: () => ({ rows: [receiptDbRow()] }),
       insertItems: () => ({ rows: [itemDbRow] }),
-      insertManualExpense: () => ({ rows: [] }),
+      insertManualExpense: () => ({ rows: [manualExpenseDbRow] }),
       insertLink: () => ({ rows: [] }),
     });
     mocks.connect.mockResolvedValue(client);
@@ -296,6 +305,71 @@ describe("saveReceiptHandler — новий чек, unmatched", () => {
     expect(linkCall?.params?.[1]).toBe(expenseCall!.params[0]);
   });
 
+  it("data-16: manual-гілка емітить insert-оп у sync_op_log тим самим client-ом, до COMMIT", async () => {
+    mocks.matchReceiptToMono.mockResolvedValueOnce({ kind: "none" });
+    const client = makeFakeClient({
+      insertReceipt: () => ({ rows: [receiptDbRow()] }),
+      insertItems: () => ({ rows: [itemDbRow] }),
+      insertManualExpense: () => ({ rows: [manualExpenseDbRow] }),
+      insertLink: () => ({ rows: [] }),
+    });
+    mocks.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await saveReceiptHandler(makeReq(baseSaveBody()), res);
+    expect(res.statusCode).toBe(201);
+
+    const expenseCall = client.calls.find((c) =>
+      c.sql.includes("INSERT INTO finyk_manual_expenses"),
+    );
+    const expenseId = expenseCall!.params[0] as string;
+    const opCall = client.calls.find((c) =>
+      c.sql.includes("INSERT INTO sync_op_log"),
+    );
+    expect(opCall).toBeDefined();
+    const [userId, tableName, keys, ops, rows, tss] = opCall!.params as [
+      string,
+      string,
+      string[],
+      string[],
+      string[],
+      string[],
+    ];
+    expect(userId).toBe("u1");
+    expect(tableName).toBe("finyk_manual_expenses");
+    expect(ops).toEqual(["insert"]);
+    expect(keys).toEqual([`srv:fme:${expenseId}`]);
+    const row = JSON.parse(rows[0]!) as Record<string, unknown>;
+    expect(row["id"]).toBe(expenseId);
+    expect(row["deleted_at"]).toBeNull();
+    expect((row["data_json"] as { amount: number }).amount).toBe(150);
+    expect(tss[0]).toBe("2026-01-15T10:00:00.000Z");
+
+    const idx = (re: RegExp) => client.calls.findIndex((c) => re.test(c.sql));
+    expect(idx(/INSERT INTO sync_op_log/)).toBeGreaterThan(
+      idx(/INSERT INTO finyk_manual_expenses/),
+    );
+    expect(idx(/INSERT INTO sync_op_log/)).toBeLessThan(idx(/^COMMIT/));
+  });
+
+  it("data-16: mono-гілка НЕ емітить оп manual-витрати", async () => {
+    mocks.matchReceiptToMono.mockResolvedValueOnce({
+      kind: "mono",
+      monoTxId: "mono-tx-1",
+    });
+    const client = makeFakeClient({
+      insertReceipt: () => ({ rows: [receiptDbRow()] }),
+      insertItems: () => ({ rows: [itemDbRow] }),
+      insertLink: () => ({ rows: [] }),
+    });
+    mocks.connect.mockResolvedValue(client);
+    const res = makeRes();
+    await saveReceiptHandler(makeReq(baseSaveBody()), res);
+    expect(
+      client.calls.some((c) => c.sql.includes("INSERT INTO sync_op_log")),
+    ).toBe(false);
+  });
+
   it("порожня назва магазину → fallback 'Невідомий магазин' ДО INSERT", async () => {
     mocks.matchReceiptToMono.mockResolvedValueOnce({ kind: "none" });
     let insertedStoreName: unknown;
@@ -305,7 +379,7 @@ describe("saveReceiptHandler — новий чек, unmatched", () => {
         return { rows: [receiptDbRow({ store_name: "Невідомий магазин" })] };
       },
       insertItems: () => ({ rows: [] }),
-      insertManualExpense: () => ({ rows: [] }),
+      insertManualExpense: () => ({ rows: [manualExpenseDbRow] }),
       insertLink: () => ({ rows: [] }),
     });
     mocks.connect.mockResolvedValue(client);
@@ -369,7 +443,7 @@ describe("saveReceiptHandler — ідемпотентність (повторн�
         rows: [receiptDbRow({ fiscal_num: null, source: "vision" })],
       }),
       insertItems: () => ({ rows: [] }),
-      insertManualExpense: () => ({ rows: [] }),
+      insertManualExpense: () => ({ rows: [manualExpenseDbRow] }),
       insertLink: () => ({ rows: [] }),
     });
     mocks.connect.mockResolvedValue(client);
@@ -471,7 +545,7 @@ describe("saveReceiptHandler — vision retry-дедуп через clientScanId
         };
       },
       insertItems: () => ({ rows: [] }),
-      insertManualExpense: () => ({ rows: [] }),
+      insertManualExpense: () => ({ rows: [manualExpenseDbRow] }),
       insertLink: () => ({ rows: [] }),
     });
     mocks.connect.mockResolvedValue(client);
@@ -505,7 +579,7 @@ describe("saveReceiptHandler — vision retry-дедуп через clientScanId
         rows: [receiptDbRow({ fiscal_num: null, source: "vision" })],
       }),
       insertItems: () => ({ rows: [] }),
-      insertManualExpense: () => ({ rows: [] }),
+      insertManualExpense: () => ({ rows: [manualExpenseDbRow] }),
       insertLink: () => ({ rows: [] }),
     });
     mocks.connect.mockResolvedValue(client);

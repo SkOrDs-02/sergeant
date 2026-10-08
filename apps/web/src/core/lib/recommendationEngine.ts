@@ -346,7 +346,7 @@ function buildRoutineRecs(): Rec[] {
       module: "routine",
       priority: 65,
       icon: "check",
-      title: `${remaining} ${pluralHabits(remaining)} ще не виконано сьогодні`,
+      title: `Сьогодні ще не виконано: ${remaining} ${pluralHabits(remaining)}`,
       body: "Вечір, ще не пізно закрити всі звички.",
       action: "routine",
     });

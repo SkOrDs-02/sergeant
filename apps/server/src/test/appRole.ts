@@ -2,7 +2,7 @@
  * Тест-хелпер: запуск інтеграційних тестів під runtime-роллю `sergeant_app`.
  *
  * Прод ходить у Postgres не-суперюзером `sergeant_app` (міграція
- * `153_sergeant_app_role.sql`), тож політики RLS (Стадія 4 спеки
+ * `154_sergeant_app_role.sql`), тож політики RLS (Стадія 4 спеки
  * `docs/work/specs/rls-ai-tables-and-isolation-gate.md`) на нього діють.
  * Контейнер же піднімає суперюзера `hub`, для якого RLS не існує. Під
  * прапорцем `SERGEANT_TEST_APP_ROLE=1` стенд:
@@ -34,7 +34,7 @@ export function buildAppRoleUri(superuserUri: string): string {
 }
 
 /**
- * Вмикає LOGIN для `sergeant_app` (роль створює міграція 153) і підміняє
+ * Вмикає LOGIN для `sergeant_app` (роль створює міграція 154) і підміняє
  * `DATABASE_URL`. Виклик ПІСЛЯ міграцій і ДО імпорту модулів застосунку.
  * Повертає URL застосунку, або `undefined`, якщо режим вимкнений.
  */

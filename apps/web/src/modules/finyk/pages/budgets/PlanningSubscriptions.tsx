@@ -104,8 +104,9 @@ export function PlanningSubscriptions({
       openSubscriptionForm();
     }
     prevSubscriptionSignal.current = openSubscriptionSignal;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `openSubscriptionForm` closes over stable setters from useAssetsState; re-running on its identity change would refire the signal spuriously.
-  }, [openSubscriptionSignal]);
+    // `openSubscriptionForm` не мемоізований (нова ідентичність щорендеру), але
+    // повторний запуск безпечний: `prevSubscriptionSignal` уже дорівнює сигналу.
+  }, [openSubscriptionSignal, openSubscriptionForm]);
 
   // Київські частини «сьогодні» — раз на монтування, як в `useOverviewData`.
   const [kyivToday] = useState(() => getKyivDateParts(Date.now()));

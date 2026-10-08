@@ -62,7 +62,7 @@ export const INJURY_ZONE_LABELS_UK: Record<InjuryZoneId, string> = {
   wrist: "Запʼясток",
   hip: "Кульшовий суглоб",
   knee: "Коліно",
-  ankle: "Гомілковостоп",
+  ankle: "Гомілковостопний суглоб",
   achilles: "Ахіллове сухожилля",
   "spine-lumbar": "Поперек",
   "spine-cervical": "Шийний відділ",

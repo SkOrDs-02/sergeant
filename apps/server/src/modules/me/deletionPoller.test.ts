@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import { ACCOUNT_DELETION_GRACE_DAYS } from "@sergeant/shared";
 
@@ -193,5 +193,75 @@ describe("getAccountDeletionWorkerStatus", () => {
     const status = await getAccountDeletionWorkerStatus(pool, 0);
 
     expect(status.enabled).toBe(false);
+  });
+});
+
+/**
+ * rel-19 (аудит 2026-10-01): без стартового тіку добивач видалень акаунтів
+ * вперше спрацьовував через годину після старту процесу, а деплоїв буває
+ * більше, ніж годин на добу - добивання зсувалось на години.
+ */
+describe("AccountDeletionPoller - стартовий тік (rel-19)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("після start() і startDelayMs (< intervalMs) claim виконано рівно один раз", async () => {
+    vi.useFakeTimers();
+    const { pool, client } = mockPool(["user-old-1"]);
+    const poller = new AccountDeletionPoller({
+      pool,
+      intervalMs: 3_600_000,
+      startDelayMs: 45_000,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(44_999);
+    expect(purgeUserData).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(purgeUserData).toHaveBeenCalledTimes(1);
+    expect(purgeUserData.mock.calls[0]?.[1]).toBe("user-old-1");
+    const claims = client.query.mock.calls.filter(
+      (c: unknown[]) =>
+        typeof c[0] === "string" &&
+        (c[0] as string).includes("FOR UPDATE SKIP LOCKED"),
+    );
+    expect(claims).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(purgeUserData).toHaveBeenCalledTimes(1);
+
+    await poller.stop();
+  });
+
+  it("stop() до стартового тіку гасить його", async () => {
+    vi.useFakeTimers();
+    const { pool } = mockPool(["user-old-1"]);
+    const poller = new AccountDeletionPoller({
+      pool,
+      intervalMs: 3_600_000,
+      startDelayMs: 45_000,
+    });
+
+    poller.start();
+    await poller.stop();
+    await vi.advanceTimersByTimeAsync(2 * 3_600_000);
+    expect(purgeUserData).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("startDelayMs: 0 вимикає стартовий тік", async () => {
+    vi.useFakeTimers();
+    const { pool } = mockPool(["user-old-1"]);
+    const poller = new AccountDeletionPoller({
+      pool,
+      intervalMs: 3_600_000,
+      startDelayMs: 0,
+    });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(3_599_999);
+    expect(purgeUserData).not.toHaveBeenCalled();
+
+    await poller.stop();
   });
 });

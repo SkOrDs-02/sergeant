@@ -59,15 +59,58 @@ describe("detectCsvProfile — mono", () => {
     expect(detected?.mapping.descriptionColIndex).toBe(1);
   });
 
-  it("dateFormat='DD.MM.YYYY', decimalComma=false", () => {
+  it("dateFormat='DD.MM.YYYY', decimalComma — автодетект (CSV, пересохранений в Excel uk-UA, дає кому)", () => {
     const detected = detectCsvProfile(MONO_HEADERS);
     expect(detected?.mapping.dateFormat).toBe("DD.MM.YYYY");
-    expect(detected?.mapping.decimalComma).toBe(false);
+    expect(detected?.mapping.decimalComma).toBeUndefined();
   });
 
-  it("currencyColIndex: null — mono amount-колонка вже гарантовано UAH", () => {
+  it("creditColIndex: null — автопрофілі читають суму зі знаком", () => {
+    expect(detectCsvProfile(MONO_HEADERS)?.mapping.creditColIndex).toBeNull();
+  });
+
+  it("currencyColIndex: null — у mono немає окремої колонки валюти картки", () => {
     const detected = detectCsvProfile(MONO_HEADERS);
     expect(detected?.mapping.currencyColIndex).toBeNull();
+  });
+
+  // data-32: валюта картки стоїть у дужках заголовка колонки суми.
+  const withAmountHeader = (amountHeader: string) =>
+    MONO_HEADERS.map((h, i) => (i === 3 ? amountHeader : h));
+
+  it.each(["Сума в валюті картки (USD)", "Сума в валюті картки (EUR)"])(
+    "«%s» → fileCurrencyNotUah (картка не гривнева)",
+    (amountHeader) => {
+      const detected = detectCsvProfile(withAmountHeader(amountHeader));
+      expect(detected?.profile).toBe("mono");
+      expect(detected?.mapping.fileCurrencyNotUah).toBe(true);
+    },
+  );
+
+  it.each([
+    "Сума в валюті картки (UAH)",
+    "Сума в валюті картки (uah)",
+    "Сума в валюті картки (грн)",
+    "Сума в валюті картки",
+  ])("«%s» → fileCurrencyNotUah не виставлено", (amountHeader) => {
+    const detected = detectCsvProfile(withAmountHeader(amountHeader));
+    expect(detected?.profile).toBe("mono");
+    expect(detected?.mapping.fileCurrencyNotUah).toBeUndefined();
+  });
+
+  it("валюта береться лише із заголовка суми: «(USD)» в іншій колонці не чіпає UAH-файл", () => {
+    const headers = MONO_HEADERS.map((h) =>
+      h === "Сума комісій (UAH)" ? "Сума комісій (USD)" : h,
+    );
+    expect(detectCsvProfile(headers)?.mapping.fileCurrencyNotUah).toBe(
+      undefined,
+    );
+  });
+
+  it("Privat24 не отримує fileCurrencyNotUah (його валютний фільтр — колонка)", () => {
+    expect(
+      detectCsvProfile(PRIVAT24_HEADERS)?.mapping.fileCurrencyNotUah,
+    ).toBeUndefined();
   });
 
   it("толерує регістр/пробіли в заголовку (не крихкий exact-match)", () => {
@@ -150,6 +193,7 @@ describe("resolveCustomMapping", () => {
     expect(resolved).toEqual({
       dateColIndex: 0,
       amountColIndex: 1,
+      creditColIndex: null,
       descriptionColIndex: 2,
       currencyColIndex: null,
       // Довільний CSV колонками категорії/MCC не розмічений — підказка
@@ -174,6 +218,37 @@ describe("resolveCustomMapping", () => {
     expect(resolved?.dateColIndex).toBe(0);
     expect(resolved?.amountColIndex).toBe(1);
     expect(resolved?.descriptionColIndex).toBe(2);
+  });
+
+  it("резолвить creditCol у creditColIndex (окремі колонки Дебет/Кредит)", () => {
+    const resolved = resolveCustomMapping(["Дата", "Опис", "Дебет", "Кредит"], {
+      dateCol: "Дата",
+      amountCol: "Дебет",
+      creditCol: " кредит ",
+      descriptionCol: "Опис",
+    });
+    expect(resolved?.amountColIndex).toBe(2);
+    expect(resolved?.creditColIndex).toBe(3);
+  });
+
+  it("creditCol, якого немає серед headers, → null; збіг з amountCol → сума зі знаком", () => {
+    const headers = ["Дата", "Опис", "Дебет", "Кредит"];
+    expect(
+      resolveCustomMapping(headers, {
+        dateCol: "Дата",
+        amountCol: "Дебет",
+        creditCol: "Надходження",
+        descriptionCol: "Опис",
+      }),
+    ).toBeNull();
+    expect(
+      resolveCustomMapping(headers, {
+        dateCol: "Дата",
+        amountCol: "Дебет",
+        creditCol: "Дебет",
+        descriptionCol: "Опис",
+      })?.creditColIndex,
+    ).toBeNull();
   });
 
   it("повертає null, якщо колонка mapping не знайдена серед headers", () => {

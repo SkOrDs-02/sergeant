@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-09-23 by @claude (deploy/rollback приведено до реального потоку: без GHCR, `pnpm deploy:api`/`deploy:web`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (Renovate PR-batch → PR Dependabot, ADR-0103). **Next review:** 2027-01-01.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -88,7 +88,7 @@ Surface-і та їх deploy targets:
 
 Тижневий ритуал:
 
-- **Вівторок** — Renovate PR-batch. [`docs/operations/observability/runbook.md §«Як обробити Renovate PR»`](../../operations/observability/runbook.md). Auto-merge label `automerge-eligible` для green CI; manual review для groups з ADR-0044.
+- **Вівторок** — PR Dependabot. [`docs/engineering/integrations/dependabot-usage.md`](../../engineering/integrations/dependabot-usage.md): автомерджу немає, кожен PR мерджиться вручну після зеленого CI; breaking change — [`docs/operations/observability/runbook.md` §«Як обробити PR Dependabot із breaking change»](../../operations/observability/runbook.md#як-обробити-pr-dependabot-із-breaking-change).
 - **Четвер** — backup smoke-test (на staging БД, не production): `pg_dump`-snapshot і restore-репетиція за кроками [`./database-backup-restore.md`](./database-backup-restore.md) § 1 «Pre-migration snapshot» і § 6 «Validation». _(Скрипта `pnpm db:backup` у репо немає — 2026-09-17.)_
 - **Неділя** — pre-week governance pass: `pnpm lint`, `pnpm docs:check-links`. Лежать у repo, не в CI.
 
@@ -101,11 +101,12 @@ git checkout -b hotfix/$(date +%s)-<short-description>
 # ... fix ...
 git commit -m "fix(<scope>): <subject>"  # див. AGENTS.md §5 для scope enum
 git push -u origin hotfix/...
-gh pr create --base main --title "fix(<scope>): <subject>" --body-file <(cat .github/PULL_REQUEST_TEMPLATE.md)
+gh pr create --base main --title "fix(<scope>): <subject>" --body-file <заповнений-шаблон>.md  # шаблон: .github/PULL_REQUEST_TEMPLATE.md
 
-# 2. CI має пройти. Якщо CI зелений + PR має одного approving reviewer →
-#    merge через "Squash and merge". Якщо approving reviewer відсутній і
-#    incident severity SEV-1/SEV-2:
+# 2. CI має пройти. Required-чеки `main` зелені → власник мерджить через
+#    "Squash and merge"; апрув не вимагається (AGENTS.md § Де живе код).
+#    Якщо required-чек червоний з причини поза фіксом і incident severity
+#    SEV-1/SEV-2:
 #    - адмін override через Settings → Branches (потрібні admin права на repo)
 #    - АБО merge through admin-bypass і одразу post у Telegram з посиланням на PR
 #    - повний flow → docs/start/instructions/hotfix-prod-regression.md
@@ -185,7 +186,7 @@ Decision-tree коли щось «не працює»:
 | Encryption key rotation                        | Раз на 90 днів        | [`./encryption-key-rotation.md`](./encryption-key-rotation.md)                                                                      |
 | API token rotation (Anthropic / Voyage / Mono) | Раз на 90 днів        | [`docs/start/instructions/rotate-secrets.md`](./rotate-secrets.md)                                                                  |
 | Monobank token re-bind (per-user)              | On-demand (юзер-flow) | `apps/server/src/modules/mono/connection.ts` — endpoint `POST /api/mono/connect` (route у `apps/server/src/routes/mono-webhook.ts`) |
-| Renovate PR-batch                              | Тижнева (вівторок)    | [`docs/operations/observability/runbook.md §Renovate`](../../operations/observability/runbook.md)                                   |
+| PR Dependabot                                  | Тижнева (вівторок)    | [`docs/engineering/integrations/dependabot-usage.md`](../../engineering/integrations/dependabot-usage.md)                           |
 | `pnpm docs:check-links`                        | Перед-merge per PR    | CI робить sам; локально для draft-PR-ів                                                                                             |
 | Disaster-recovery drill                        | Раз на 6 місяців      | [`docs/start/instructions/test-backup-restore.md`](./test-backup-restore.md)                                                        |
 | Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                                                                         |
@@ -387,7 +388,7 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 ## Cross-links
 
 - [AGENTS.md](../../../AGENTS.md) — repo policy, hard rules, scope enum, conventional-commit format.
-- [`docs/operations/observability/runbook.md`](../../operations/observability/runbook.md) — production incident-flow, alert-decoder, Renovate.
+- [`docs/operations/observability/runbook.md`](../../operations/observability/runbook.md) — production incident-flow, alert-decoder, PR Dependabot із breaking change.
 - [`docs/engineering/architecture/service-catalog.md`](../../engineering/architecture/service-catalog.md) — surface-by-surface deploy + healthcheck + rollback table.
 - [`docs/governance/security/disaster-recovery.md`](../../governance/security/disaster-recovery.md) — RPO/RTO targets, disaster classes.
 - [`docs/governance/governance/incident-severity-policy.md`](../../governance/governance/incident-severity-policy.md) — SEV-1/2/3/4 mapping.

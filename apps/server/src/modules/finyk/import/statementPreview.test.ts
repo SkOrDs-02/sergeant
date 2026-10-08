@@ -128,6 +128,101 @@ describe("statementPreviewHandler — mono autoprofile", () => {
   });
 });
 
+describe("statementPreviewHandler — mono: валютна картка в заголовку (data-32)", () => {
+  const monoCsv = (amountHeader: string, dataRows: string[]) =>
+    [
+      `Дата i час операції,Деталі операції,МСС,${amountHeader},Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції`,
+      ...dataRows,
+    ].join("\n");
+
+  const run = async (csv_text: string) => {
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text }), res);
+    expect(res.statusCode).toBe(200);
+    return res.body as {
+      profile: string;
+      needsMapping: boolean;
+      rows: Array<{ amountKopiykas: number }>;
+      skipped: Array<{ line: number; reason: string }>;
+    };
+  };
+
+  it("«(USD)»: Amazon -25.00 не імпортується як 25 грн — рядок йде в not_uah", async () => {
+    const body = await run(
+      monoCsv("Сума в валюті картки (USD)", [
+        "16.08.2026 12:00:00,Amazon,5999,-25.00,-25.00,USD,1,0.00,0.00,100.00",
+      ]),
+    );
+    expect(body.profile).toBe("mono");
+    expect(body.needsMapping).toBe(false);
+    expect(body.rows).toEqual([]);
+    expect(body.skipped).toEqual([{ line: 2, reason: "not_uah" }]);
+  });
+
+  it("«(EUR)»: Booking -120.50 теж not_uah, кожен непорожній рядок", async () => {
+    const body = await run(
+      monoCsv("Сума в валюті картки (EUR)", [
+        "16.08.2026 12:00:00,Booking,7011,-120.50,-120.50,EUR,1,0.00,0.00,900.00",
+        "17.08.2026 09:00:00,Зарплата,,300.00,300.00,EUR,1,0.00,0.00,1200.00",
+      ]),
+    );
+    expect(body.rows).toEqual([]);
+    expect(body.skipped).toEqual([
+      { line: 2, reason: "not_uah" },
+      { line: 3, reason: "not_uah" },
+    ]);
+  });
+
+  it("«(USD)» у XLSX-сітці (типізовані клітинки) теж not_uah", async () => {
+    const xlsx = makeXlsx({
+      sharedStrings: [
+        "Дата i час операції",
+        "Деталі операції",
+        "Сума в валюті картки (USD)",
+        "Amazon",
+      ],
+      rows: [
+        [
+          { kind: "shared", index: 0 },
+          { kind: "shared", index: 1 },
+          { kind: "shared", index: 2 },
+        ],
+        [
+          { kind: "date", serial: 46250 },
+          { kind: "shared", index: 3 },
+          { kind: "number", value: -25 },
+        ],
+      ],
+    });
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({ file_base64: xlsx.toString("base64") }),
+      res,
+    );
+    const body = res.body as {
+      profile: string;
+      rows: unknown[];
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.profile).toBe("mono");
+    expect(body.rows).toEqual([]);
+    expect(body.skipped).toEqual([{ line: 2, reason: "not_uah" }]);
+  });
+
+  it.each(["Сума в валюті картки (UAH)", "Сума в валюті картки"])(
+    "«%s»: рядки імпортуються як і раніше",
+    async (amountHeader) => {
+      const body = await run(
+        monoCsv(amountHeader, [
+          "16.08.2026 12:00:00,Сільпо,5411,-25.00,-25.00,UAH,1,0.00,0.00,100.00",
+        ]),
+      );
+      expect(body.rows.map((r) => r.amountKopiykas)).toEqual([2500]);
+      expect(body.skipped).toEqual([]);
+    },
+  );
+});
+
 describe("statementPreviewHandler — privat24 autoprofile", () => {
   it("детектить privat24, comma-decimal суми, not_uah skip для чужої валюти рахунку", async () => {
     const res = makeRes();
@@ -246,6 +341,202 @@ describe("statementPreviewHandler — невідомий формат", () => {
     const body = res.body as { needsMapping: boolean; profile: string | null };
     expect(body.needsMapping).toBe(true);
     expect(body.profile).toBeNull();
+  });
+});
+
+describe("statementPreviewHandler — окремі колонки Дебет/Кредит (logic-06)", () => {
+  const DEBIT_CREDIT_CSV = [
+    "Дата;Опис;Дебет;Кредит",
+    "21.09.2026;ДК-1 Сільпо;350,00;",
+    "22.09.2026;ДК-2 Зарплата;;30000,00",
+    "23.09.2026;ДК-3 Аптека;89,90;",
+  ].join("\n");
+
+  type PreviewBody = {
+    profile: string;
+    rows: Array<{
+      date: string;
+      amountKopiykas: number;
+      direction: string;
+      description: string;
+    }>;
+    skipped: Array<{ line: number; reason: string }>;
+  };
+
+  it("amountCol=дебет → витрата, creditCol=кредит → надходження, нічого не skip", async () => {
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        csv_text: DEBIT_CREDIT_CSV,
+        mapping: {
+          dateCol: "Дата",
+          amountCol: "Дебет",
+          creditCol: "Кредит",
+          descriptionCol: "Опис",
+          decimalComma: true,
+        },
+      }),
+      res,
+    );
+    const body = res.body as PreviewBody;
+    expect(body.profile).toBe("custom");
+    expect(
+      body.rows.map((r) => [r.description, r.direction, r.amountKopiykas]),
+    ).toEqual([
+      ["ДК-1 Сільпо", "expense", 35000],
+      ["ДК-2 Зарплата", "income", 3_000_000],
+      ["ДК-3 Аптека", "expense", 8990],
+    ]);
+    expect(body.skipped).toEqual([]);
+  });
+
+  it("обидві клітинки заповнені або обидві порожні → skip unparsed_amount; «0,00» = порожньо", async () => {
+    const csv = [
+      "Дата;Опис;Дебет;Кредит",
+      "21.09.2026;Обидві;10,00;20,00",
+      "22.09.2026;Жодної;;",
+      "23.09.2026;З нулем;50,00;0,00",
+      "24.09.2026;Сміття;abc;",
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        csv_text: csv,
+        mapping: {
+          dateCol: "Дата",
+          amountCol: "Дебет",
+          creditCol: "Кредит",
+          descriptionCol: "Опис",
+          decimalComma: true,
+        },
+      }),
+      res,
+    );
+    const body = res.body as PreviewBody;
+    expect(
+      body.rows.map((r) => [r.description, r.direction, r.amountKopiykas]),
+    ).toEqual([["З нулем", "expense", 5000]]);
+    expect(body.skipped).toEqual([
+      { line: 2, reason: "unparsed_amount" },
+      { line: 3, reason: "unparsed_amount" },
+      { line: 5, reason: "unparsed_amount" },
+    ]);
+  });
+
+  it("без creditCol поведінка незмінна: одна колонка = сума зі знаком", async () => {
+    const csv = [
+      "Дата;Опис;Сума",
+      "21.09.2026;Кава;-45,00",
+      "22.09.2026;Повернення;10,00",
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        csv_text: csv,
+        mapping: {
+          dateCol: "Дата",
+          amountCol: "Сума",
+          descriptionCol: "Опис",
+          decimalComma: true,
+        },
+      }),
+      res,
+    );
+    const body = res.body as PreviewBody;
+    expect(body.rows.map((r) => [r.direction, r.amountKopiykas])).toEqual([
+      ["expense", 4500],
+      ["income", 1000],
+    ]);
+  });
+});
+
+describe("statementPreviewHandler — роздільник десяткових (data-31)", () => {
+  const SERIAL_2026_08_16 = 46250;
+
+  it("XLSX-сітка з custom mapping і decimalComma:true не множить «-45.5» на 10", async () => {
+    const xlsx = makeXlsx({
+      sharedStrings: ["When", "What", "How much", "Taxi"],
+      rows: [
+        [
+          { kind: "shared", index: 0 },
+          { kind: "shared", index: 1 },
+          { kind: "shared", index: 2 },
+        ],
+        [
+          { kind: "date", serial: SERIAL_2026_08_16 },
+          { kind: "shared", index: 3 },
+          { kind: "number", value: -45.5 },
+        ],
+      ],
+    });
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        file_base64: xlsx.toString("base64"),
+        mapping: {
+          dateCol: "When",
+          amountCol: "How much",
+          descriptionCol: "What",
+          // Дефолт ColumnMapper. Для типізованих клітинок XLSX він хибний.
+          decimalComma: true,
+        },
+      }),
+      res,
+    );
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ amountKopiykas: number; direction: string }>;
+    };
+    expect(body.profile).toBe("custom");
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0]?.amountKopiykas).toBe(4550);
+    expect(body.rows[0]?.direction).toBe("expense");
+  });
+
+  it("mono-CSV, пересохранений в Excel (uk-UA, «;» і кома), дає копійки, а не ×100", async () => {
+    const csv = [
+      "Дата i час операції;Деталі операції;МСС;Сума в валюті картки (UAH);Сума в валюті операції;Валюта операції;Курс обміну;Сума комісій (UAH);Сума кешбеку (UAH);Залишок після операції",
+      "16.08.2026 12:00:00;Кав'ярня;5814;-95,50;-95,50;UAH;1;0;0;5000",
+      "17.08.2026 12:00:00;АТБ;5411;-1 234,56;-1 234,56;UAH;1;0;0;3000",
+      "18.08.2026 12:00:00;Оригінал;5411;-95.00;-95.00;UAH;1;0;0;2900",
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ amountKopiykas: number }>;
+      skipped: unknown[];
+    };
+    expect(body.profile).toBe("mono");
+    expect(body.rows.map((r) => r.amountKopiykas)).toEqual([
+      9550, 123456, 9500,
+    ]);
+    expect(body.skipped).toEqual([]);
+  });
+
+  it("«0x10» і «1e3» у колонці суми йдуть у skip unparsed_amount", async () => {
+    const csv = [
+      "Дата;Сума;Опис",
+      "21.09.2026;0x10;Hex",
+      "22.09.2026;1e3;Exp",
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        csv_text: csv,
+        mapping: { dateCol: "Дата", amountCol: "Сума", descriptionCol: "Опис" },
+      }),
+      res,
+    );
+    const body = res.body as {
+      rows: unknown[];
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.rows).toEqual([]);
+    expect(body.skipped).toEqual([
+      { line: 2, reason: "unparsed_amount" },
+      { line: 3, reason: "unparsed_amount" },
+    ]);
   });
 });
 
@@ -671,5 +962,123 @@ describe("statement/preview — категорія без колонки кат�
       "cafe", // МСС нульовий → ключове слово опису
       undefined, // жоден шар не спрацював — клієнт лишає дефолт
     ]);
+  });
+});
+
+// ───────── rel-20: один рядок поза схемою не валить увесь файл ───────────────
+// `ImportStatementPreviewResponseSchema.parse` на виході кидав ZodError → 500
+// для ВСІЄЇ виписки, якщо в одному рядку опис довший за 300 символів або сума
+// понад `AMOUNT_MINOR_MAX` (10 млн грн).
+
+describe("statement/preview — рядок поза межами схеми (rel-20)", () => {
+  const MONO_HEADER =
+    "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції";
+
+  it("опис довший за 300 символів обрізається, файл віддається 200", async () => {
+    const csv = [
+      MONO_HEADER,
+      `15.01.2026 14:32:10,${"п".repeat(396)},5411,-847.50,-847.50,UAH`,
+      "16.01.2026 09:00:00,Зарплата,,15000.00,15000.00,UAH",
+    ].join("\n");
+
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      rows: Array<{ description: string; amountKopiykas: number }>;
+      skipped: unknown[];
+    };
+    expect(body.rows).toHaveLength(2);
+    expect(body.rows[0]?.description).toHaveLength(300);
+    expect(body.rows[0]?.amountKopiykas).toBe(84750);
+    expect(body.skipped).toEqual([]);
+  });
+
+  it("опис рівно 300 символів не чіпається", async () => {
+    const csv = [
+      MONO_HEADER,
+      `15.01.2026 14:32:10,${"п".repeat(300)},5411,-1.00,-1.00,UAH`,
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+    const body = res.body as { rows: Array<{ description: string }> };
+    expect(body.rows[0]?.description).toBe("п".repeat(300));
+  });
+
+  it("сума понад 10 млн грн → skipped unparsed_amount, решта рядків є", async () => {
+    const csv = [
+      MONO_HEADER,
+      "15.01.2026 14:32:10,Нормальний,5411,-100.00,-100.00,UAH",
+      "16.01.2026 14:32:10,Завелика,,-12000000.00,-12000000.00,UAH",
+      "17.01.2026 14:32:10,Межа,,-10000000.00,-10000000.00,UAH",
+    ].join("\n");
+
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      rows: Array<{ description: string; amountKopiykas: number }>;
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.rows.map((r) => r.description)).toEqual(["Нормальний", "Межа"]);
+    expect(body.rows[1]?.amountKopiykas).toBe(1_000_000_000);
+    expect(body.skipped).toEqual([{ line: 3, reason: "unparsed_amount" }]);
+  });
+
+  it("рік поза вікном 1970..2100 → skipped unparsed_date, а не 500 (guard: межі дати тримає parseCalendarDateKey)", async () => {
+    const csv = [
+      MONO_HEADER,
+      "15.01.2026 14:32:10,Нормальний,5411,-100.00,-100.00,UAH",
+      "15.01.2206 14:32:10,Рік-друкарська-помилка,,-100.00,-100.00,UAH",
+      "15.01.1969 14:32:10,До епохи,,-100.00,-100.00,UAH",
+    ].join("\n");
+
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      rows: unknown[];
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.rows).toHaveLength(1);
+    expect(body.skipped).toEqual([
+      { line: 3, reason: "unparsed_date" },
+      { line: 4, reason: "unparsed_date" },
+    ]);
+  });
+
+  it("custom mapping: ті самі межі (шлях `profile: custom`)", async () => {
+    const csv = [
+      "Коли;Скільки;Що",
+      `2026-01-15;-12000000,00;Велика`,
+      `2026-01-16;-5,00;${"ж".repeat(500)}`,
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        csv_text: csv,
+        mapping: {
+          dateCol: "Коли",
+          amountCol: "Скільки",
+          descriptionCol: "Що",
+          dateFormat: "YYYY-MM-DD",
+          decimalComma: true,
+        },
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ description: string }>;
+      skipped: Array<{ line: number; reason: string }>;
+    };
+    expect(body.profile).toBe("custom");
+    expect(body.rows).toHaveLength(1);
+    expect(body.rows[0]?.description).toHaveLength(300);
+    expect(body.skipped).toEqual([{ line: 2, reason: "unparsed_amount" }]);
   });
 });

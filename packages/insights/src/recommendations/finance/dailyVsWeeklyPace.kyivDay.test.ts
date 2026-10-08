@@ -179,3 +179,24 @@ describe("evaluateDailyPace: «сьогодні» — це [початок, кі
     expectSameOnEveryDevice(c, SIGNAL_500);
   });
 });
+
+describe("evaluateDailyPace: канонічний excluded-set (logic-08)", () => {
+  it("ручна витрата з «Не враховувати» (manual_<id>) сьогоднішньою не є", () => {
+    const base = ctx("2025-06-18T18:00:00Z", PREV_WEEK, [
+      { id: "me-today", amount: 500, date: "2025-06-18T12:00:00.000Z" },
+    ]);
+    expectSameOnEveryDevice(base, SIGNAL_500);
+    expectSameOnEveryDevice(
+      { ...base, excludedTxIds: new Set(["manual_me-today"]) },
+      null,
+    );
+  });
+
+  it("виключена банківська витрата сьогодні не будить картку", () => {
+    const base = ctx("2025-06-18T18:00:00Z", [
+      ...PREV_WEEK,
+      tx("big", 500, "2025-06-18T09:00:00Z"),
+    ]);
+    expectSameOnEveryDevice({ ...base, excludedTxIds: new Set(["big"]) }, null);
+  });
+});

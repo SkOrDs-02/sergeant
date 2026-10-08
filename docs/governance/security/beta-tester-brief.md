@@ -1,11 +1,11 @@
 # Бета: що ми вже знаємо про свою безпеку
 
-> **Last touched:** 2026-10-02 by @claude. **Next review:** 2027-11-20.
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-11-26.
 > **Status:** Active
 
 Цей документ — для учасників закритої бети, зокрема для тих, хто дивитиметься на Sergeant професійним оком. Мета проста: не витрачати твою годину на речі, які ми вже знайшли самі. Усе нижче — відомі й свідомі рішення, а не сюрпризи.
 
-Якщо знайдеш щось поза цим списком — пиши через [security.txt](https://app.sergeant.com.ua/.well-known/security.txt), тобто у GitHub Security Advisories репозиторію. Публічний issue для вразливості, будь ласка, не відкривай.
+Якщо знайдеш щось поза цим списком — пиши через [security.txt](https://app.sergeant.com.ua/.well-known/security.txt), тобто приватним звітом у [GitHub Security Advisories](https://github.com/SkOrDs-02/sergeant/security/advisories/new); правила — у [`SECURITY.md`](../../../SECURITY.md). Публічний issue для вразливості, будь ласка, не відкривай.
 
 ## Що варто знати перед тим, як відкриєш DevTools
 

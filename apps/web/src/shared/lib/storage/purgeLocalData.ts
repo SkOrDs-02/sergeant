@@ -18,7 +18,18 @@
  *   - physical `localStorage` app keys, incl. the LS-only fallback copies that
  *     never travel through `webKVStore` and the `kvvfs-*` SQLite store;
  *   - the in-memory SQLite warm-cache (`resetKvStoreBoot`);
- *   - the React-Query IndexedDB persister snapshot (a cache of server data).
+ *   - the React-Query IndexedDB persister snapshot (a cache of server data);
+ *   - app-owned `sessionStorage` keys (priv-16). `logout()` navigates with
+ *     `location.assign` in the SAME tab, so the tab-scoped AI recipe-suggestion
+ *     cache (`nutrition_recipes_cache_v1`, keyed by pantry hash with no userId)
+ *     would otherwise be served to the next account signing in in that tab;
+ *   - the nutrition recipe-book IndexedDB store (data-09). Before sign-out
+ *     `flushPendingSyncOpsBeforeLogout` has already drained the outbox (and
+ *     warned about what cannot be drained), and recipes have a server copy
+ *     that the next pull restores into the user's SQLite partition, so the
+ *     store holds nothing the signed-out user could not recover — leaving it
+ *     would hand the previous user's recipes to the next person on a shared
+ *     device.
  *
  * Deliberately **out of scope** (see PR notes — owner decision):
  *   - the per-user OPFS SQLite DB file → handled by `wipeSqliteDb()` in
@@ -32,17 +43,22 @@
  *     key here would erase the anonymous visitor's rows too — see
  *     `docs/work/specs/anonymous-local-first-persistence.md`
  *     § «Відомий залишковий ризик»;
- *   - the authoritative nutrition IndexedDB stores (saved recipes, meal
- *     photos, food/barcode catalogue) and the `sync_meta` offline-op queue —
- *     clearing those risks losing un-synced local-first data, so they want a
- *     per-user partition (or flush-then-clear) rather than a blind wipe.
+ *   - the nutrition food/barcode catalogue IndexedDB stores (a product cache
+ *     plus user-added foods with no server copy), the meal photo thumbnail
+ *     store (`nutrition_meal_thumbs`: Blobs exist only on this device, the
+ *     server has no photo field, so a wipe loses the user's meal photos for
+ *     good) and the `sync_meta` offline-op queue — clearing those risks
+ *     losing un-synced local-first data, so they want a per-user partition
+ *     rather than a blind wipe. Thumbnails are keyed by the meal id, which
+ *     another account never requests, so leaving them leaks nothing visible.
  */
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 // eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; mirrors storageManager.ts.
 import { logger } from "../log";
-import { SERGEANT_STORE, dbDel } from "../idb/sergeantDb";
-import { resolveLsStore } from "./storage";
+import { SERGEANT_STORE, dbClear, dbDel } from "../idb/sergeantDb";
+import { resolveLsStore, safeListSSKeys, safeRemoveSS } from "./storage";
+import { reloadAllTypedStores } from "./typedStore";
 import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
 
 /**
@@ -107,6 +123,36 @@ export function purgeAppOwnedLocalStorage(): number {
 }
 
 /**
+ * `sessionStorage` keys that match the app-owned prefixes but must survive a
+ * purge. `sergeant.auth.pendingOAuthProvider` is the signup-attribution marker
+ * written right before the OAuth full-page redirect and read-once on landing:
+ * an identity-wipe (anon device whose previous owner was another user, then a
+ * Google/Apple login) can fire between the redirect and the read, and wiping it
+ * would silently drop the `SIGNUP_COMPLETED` event. It carries only a provider
+ * name and a timestamp, no user data. Literal mirrors `AuthContext.tsx`
+ * (importing it would pull the whole auth module into this lazy chunk).
+ */
+const SESSION_KEYS_TO_PRESERVE: ReadonlySet<string> = new Set([
+  "sergeant.auth.pendingOAuthProvider",
+]);
+
+/**
+ * Remove every app-owned key from `sessionStorage` (priv-16). Same allowlist as
+ * {@link purgeAppOwnedLocalStorage}: foreign keys and the chunk-reload cooldown
+ * (`__sergeant_chunk_reload_at`, no app prefix) are never matched. Returns the
+ * number of keys removed. Never throws.
+ */
+export function purgeAppOwnedSessionStorage(): number {
+  let removed = 0;
+  // `safeListSSKeys` returns a snapshot, so removing while iterating is safe.
+  for (const key of safeListSSKeys()) {
+    if (SESSION_KEYS_TO_PRESERVE.has(key)) continue;
+    if (isAppOwnedLocalStorageKey(key) && safeRemoveSS(key)) removed += 1;
+  }
+  return removed;
+}
+
+/**
  * Drop the React-Query IndexedDB persister snapshot. It is keyed by build-id
  * (not user-id), so the previous user's non-sensitive finyk / nutrition /
  * routine query data would otherwise warm-hydrate for the next user. It holds
@@ -115,6 +161,16 @@ export function purgeAppOwnedLocalStorage(): number {
  */
 export async function purgeQueryCacheSnapshot(): Promise<void> {
   await dbDel(SERGEANT_STORE.RQ_CACHE, STORAGE_KEYS.WEB_QUERY_CACHE);
+}
+
+/**
+ * Очистити книгу рецептів в IndexedDB (data-09). Викликається ПІСЛЯ flush черги
+ * синхронізації (див. модульний коментар), інакше стерлися б ще не вивантажені
+ * дані. Мініатюри страв (`nutrition_meal_thumbs`) НЕ чіпаємо: вони існують
+ * лише на пристрої, серверної копії немає, і стирання знищило б фото назавжди.
+ */
+export async function purgeNutritionIdbStores(): Promise<void> {
+  await dbClear(SERGEANT_STORE.NUTRITION_RECIPES);
 }
 
 /**
@@ -129,7 +185,15 @@ export async function purgeAppOwnedLocalData(): Promise<void> {
     logger.warn("[purgeLocalData] localStorage purge failed", err);
   }
   try {
+    purgeAppOwnedSessionStorage();
+  } catch (err) {
+    logger.warn("[purgeLocalData] sessionStorage purge failed", err);
+  }
+  try {
     resetKvStoreBoot();
+    // Активне сховище знову LS (SQLite-стор скинуто): typed-стори тримали б
+    // кеш попереднього користувача і підписку на вже відчеплений SQLite-стор.
+    reloadAllTypedStores();
   } catch (err) {
     logger.warn("[purgeLocalData] kv warm-cache reset failed", err);
   }
@@ -137,5 +201,10 @@ export async function purgeAppOwnedLocalData(): Promise<void> {
     await purgeQueryCacheSnapshot();
   } catch (err) {
     logger.warn("[purgeLocalData] query-cache snapshot purge failed", err);
+  }
+  try {
+    await purgeNutritionIdbStores();
+  } catch (err) {
+    logger.warn("[purgeLocalData] nutrition IDB purge failed", err);
   }
 }

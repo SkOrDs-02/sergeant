@@ -29,9 +29,17 @@ import {
   deleteSavedRecipe,
   listSavedRecipes,
   saveRecipeToBook,
-  scaleMacros,
   type SavedRecipe,
 } from "../lib/recipeBook";
+import {
+  buildRecipeLogEntry,
+  defaultServingGrams,
+  parseGramsInput,
+  supportsGramsLogging,
+  type LoggableRecipe,
+  type RecipeLogMode,
+} from "../lib/recipeLogging";
+import { RecipeBuilderSheet } from "./RecipeBuilderSheet";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import type { RecipeCacheEntry as StoredRecipeCacheEntry } from "../lib/recipeCache";
@@ -88,6 +96,15 @@ export function RecipesCard({
   const [savedBusy, setSavedBusy] = useState(true);
   const [savedError, setSavedError] = useState(false);
   const [portionById, setPortionById] = useState<Record<string, string>>({});
+  // Режим логування й грами живуть у стані картки, не в налаштуваннях: між
+  // рецептами і сесіями не запамʼятовуються.
+  const [logModeById, setLogModeById] = useState<Record<string, RecipeLogMode>>(
+    {},
+  );
+  const [gramsById, setGramsById] = useState<Record<string, string>>({});
+  const [builder, setBuilder] = useState<{ recipe: SavedRecipe | null } | null>(
+    null,
+  );
   const [deleteRecipeConfirm, setDeleteRecipeConfirm] =
     useState<SavedRecipe | null>(null);
   const [openSavedId, setOpenSavedId] = useState<string | null>(null);
@@ -127,6 +144,27 @@ export function RecipesCard({
     }
   }
 
+  async function removeSaved(removed: SavedRecipe) {
+    const deleted = await deleteSavedRecipe(removed.id);
+    await refreshSaved();
+    if (!deleted) {
+      toast.error("Не вдалося видалити рецепт", undefined, {
+        label: "Повторити",
+        onClick: () => void removeSaved(removed),
+      });
+      return;
+    }
+    showUndoToast(toast, {
+      msg: `Видалено рецепт «${removed.title}»`,
+      onUndo: () => {
+        void (async () => {
+          await saveRecipeToBook(removed);
+          await refreshSaved();
+        })();
+      },
+    });
+  }
+
   async function saveOne(r: RecipeLike) {
     const res = await saveRecipeToBook(r);
     if (res.ok) {
@@ -151,7 +189,22 @@ export function RecipesCard({
   ): Promise<void> {
     if (typeof addMealToLog !== "function") return;
     const key = String(idKey || r?.id || r?.title || "");
-    const macros = scaleMacros(r?.macros, parsePortionFactor(portionById[key]));
+    const mode = logModeById[key] ?? "portions";
+    const loggable = r as LoggableRecipe;
+    const grams = parseGramsInput(
+      gramsById[key] ?? String(defaultServingGrams(loggable)),
+    );
+    // Кнопка в такому стані вимкнена (SavedSection), це лише страховка.
+    if (mode === "grams" && supportsGramsLogging(loggable) && grams == null) {
+      return;
+    }
+    const entry = buildRecipeLogEntry(
+      loggable,
+      mode,
+      parsePortionFactor(portionById[key]),
+      grams,
+    );
+    const macros = entry.macros;
     const mealType = guessMealTypeIdNow();
     const label =
       MEAL_TYPES.find((x) => x.id === mealType)?.label || "Прийом їжі";
@@ -176,10 +229,25 @@ export function RecipesCard({
         carbs_g: macros.carbs_g ?? null,
       },
       source: "manual",
-      macroSource: "recipeAI",
+      macroSource: entry.macroSource,
       foodId: null,
-      amount_g: null,
+      amount_g: entry.amount_g,
     });
+  }
+
+  async function saveBuilt(recipe: SavedRecipe) {
+    const res = await saveRecipeToBook(recipe);
+    if (!res.ok) {
+      toast.error(res.error || "Не вдалося зберегти страву", undefined, {
+        label: "Повторити",
+        onClick: () => void saveBuilt(recipe),
+      });
+      return;
+    }
+    await refreshSaved();
+    setBuilder(null);
+    setSavedOpen(true);
+    toast.success(`Страву «${res.recipe.title}» збережено`);
   }
 
   return (
@@ -196,6 +264,12 @@ export function RecipesCard({
         setOpenSavedId={setOpenSavedId}
         portionById={portionById}
         setPortionById={setPortionById}
+        logModeById={logModeById}
+        setLogModeById={setLogModeById}
+        gramsById={gramsById}
+        setGramsById={setGramsById}
+        onNewDish={() => setBuilder({ recipe: null })}
+        onEdit={(r) => setBuilder({ recipe: r })}
         onAddToLog={(r, key) => void addRecipeAsMeal(r, key)}
         onDeleteClick={setDeleteRecipeConfirm}
         fmtMacro={fmtMacro}
@@ -217,6 +291,15 @@ export function RecipesCard({
         onAddToLog={(r, key) => void addRecipeAsMeal(r, key)}
       />
 
+      {builder && (
+        <RecipeBuilderSheet
+          initial={builder.recipe}
+          fmtMacro={fmtMacro}
+          onClose={() => setBuilder(null)}
+          onSave={(r) => void saveBuilt(r)}
+        />
+      )}
+
       <ConfirmDialog
         open={!!deleteRecipeConfirm}
         title="Видалити рецепт?"
@@ -225,19 +308,7 @@ export function RecipesCard({
         danger
         onConfirm={async () => {
           const removed = deleteRecipeConfirm;
-          if (removed?.id) {
-            await deleteSavedRecipe(removed.id);
-            await refreshSaved();
-            showUndoToast(toast, {
-              msg: `Видалено рецепт «${removed.title}»`,
-              onUndo: () => {
-                void (async () => {
-                  await saveRecipeToBook(removed);
-                  await refreshSaved();
-                })();
-              },
-            });
-          }
+          if (removed?.id) await removeSaved(removed);
           setDeleteRecipeConfirm(null);
         }}
         onCancel={() => setDeleteRecipeConfirm(null)}

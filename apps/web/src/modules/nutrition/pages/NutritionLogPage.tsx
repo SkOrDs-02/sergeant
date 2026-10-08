@@ -3,7 +3,11 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
-import type { Meal } from "@sergeant/nutrition-domain";
+import {
+  todayISODate,
+  type Meal,
+  type MealTypeId,
+} from "@sergeant/nutrition-domain";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { messages } from "@shared/i18n/uk";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -44,8 +48,10 @@ export function NutritionLogPage({
         onAddMeal={onOpenAddMeal}
         onAddMealFromSearch={(meal) => {
           const id = newMealId();
-          const dateForLog = log.selectedDate;
-          log.handleAddMeal({ ...meal, id });
+          // День запису віддає сам `handleAddMeal`: `log.selectedDate` цього
+          // рендеру міг відстати від годинника, і «Скасувати» не знайшло б
+          // запис.
+          const dateForLog = log.handleAddMeal({ ...meal, id });
           // Додавання миттєве і без підтвердження, тож тост мусить нести
           // «Скасувати» — як аркуш прийому (`NutritionApp`) і як видалення
           // нижче. Без цього помилковий тап по рядку пошуку коштував
@@ -67,6 +73,18 @@ export function NutritionLogPage({
         onEditMeal={(date: string, meal: Meal) => {
           setEditingMeal({ date, ...meal });
           log.setAddMealSheetOpen(true);
+        }}
+        onCopyMeals={(meals: Meal[], date: string, mealType: MealTypeId) => {
+          const ids = log.handleCopyMeals(meals, date, mealType);
+          if (ids.length === 0) return;
+          log.setSelectedDate(date);
+          showUndoToast(toast, {
+            msg:
+              date === todayISODate()
+                ? "Скопійовано на сьогодні"
+                : "Прийом скопійовано",
+            onUndo: () => ids.forEach((id) => log.handleRemoveMeal(date, id)),
+          });
         }}
         onDuplicateYesterday={log.duplicateYesterday}
         onTrimLog={log.trimLogToLastDays}

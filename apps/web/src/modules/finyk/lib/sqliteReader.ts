@@ -37,83 +37,16 @@ import {
   sanitizeMerchantRules,
   type MerchantRule,
 } from "@sergeant/finyk-domain/lib/merchantRules";
+import {
+  EMPTY_FINYK_SQLITE_CACHE,
+  getCachedFinykSqliteState,
+  setFinykSqliteCache,
+  type SqliteFinykCache,
+} from "./sqliteCacheState";
 
-export interface SqliteFinykCache {
-  /** Account ids hidden from balances (set membership). */
-  hiddenAccounts: string[];
-  /** Transaction ids hidden from feeds (set membership). */
-  hiddenTransactions: string[];
-  /** User budgets (parsed from `data_json`). */
-  budgets: Budget[];
-  /** Subscriptions (parsed from `data_json`). */
-  subscriptions: Subscription[];
-  /** Manual assets (parsed from `data_json`). */
-  manualAssets: ManualAsset[];
-  /** Manual debts (parsed from `data_json`). */
-  manualDebts: Debt[];
-  /** Receivables (parsed from `data_json`). */
-  receivables: Receivable[];
-  /** Custom categories (parsed from `data_json`). */
-  customCategories: CustomCategory[];
-  /** Manual expenses (parsed from `data_json`). */
-  manualExpenses: ManualExpense[];
-  /** Per-tx category overrides keyed by transactionId. */
-  txCategories: TxCategoriesMap;
-  /** Per-tx splits keyed by transactionId. */
-  txSplits: TxSplitsMap;
-  /** Per-tx mono-debt links keyed by transactionId. */
-  monoDebtLinkedTxIds: MonoDebtLinkedMap;
-  /** Time-series networth history (oldest → newest). */
-  networthHistory: NetworthEntry[];
-  /** Singleton monthly plan (parsed from `monthly_plan_json`). */
-  monthlyPlan: MonthlyPlan | null;
-  /** Singleton balance-visibility flag from prefs. */
-  showBalance: boolean | null;
-  /**
-   * Singleton list of Mono transaction ids excluded from statistics
-   * (parsed from `excluded_stat_tx_ids_json`). `null` until the first
-   * refresh completes — mirrors `monthlyPlan`/`showBalance` semantics.
-   */
-  excludedStatTxIds: string[] | null;
-  /**
-   * Singleton list of recurring-banner ids the user dismissed
-   * (parsed from `dismissed_recurring_json`).
-   */
-  dismissedRecurring: string[] | null;
-  /**
-   * Правила «Завжди так для цього магазину» (parsed from
-   * `prefs_json.merchantRules`). `null` — як і в сусідніх prefs-полів — до
-   * першого прогріву й коли рядка prefs ще немає: тоді слот лишає те, що має,
-   * а не затирає його порожнім списком.
-   */
-  merchantRules: MerchantRule[] | null;
-  /** ISO timestamp of the last successful refresh, or null. */
-  refreshedAt: string | null;
-}
-
-const EMPTY_CACHE: SqliteFinykCache = {
-  hiddenAccounts: [],
-  hiddenTransactions: [],
-  budgets: [],
-  subscriptions: [],
-  manualAssets: [],
-  manualDebts: [],
-  receivables: [],
-  customCategories: [],
-  manualExpenses: [],
-  txCategories: {},
-  txSplits: {},
-  monoDebtLinkedTxIds: {},
-  networthHistory: [],
-  monthlyPlan: null,
-  showBalance: null,
-  excludedStatTxIds: null,
-  dismissedRecurring: null,
-  merchantRules: null,
-  refreshedAt: null,
-};
-
-let cache: SqliteFinykCache = { ...EMPTY_CACHE };
+// Стан кешу живе в легкому `sqliteCacheState.ts` (eager-споживачі
+// імпортують звідти); тут — реекспорт для наявних імпортерів рідера.
+export { getCachedFinykSqliteState, type SqliteFinykCache };
 
 // DCRUD-007b: `cache` is published last-writer-wins, but refreshes run
 // concurrently — the boot refresh (slow: migrations + 14 SELECTs) is NOT
@@ -127,11 +60,6 @@ let cache: SqliteFinykCache = { ...EMPTY_CACHE };
 // later-started refresh always reads an equal-or-newer DB state.
 let refreshSeq = 0;
 let publishedSeq = 0;
-
-/** Returns the current cached finyk state (sync, zero-cost). */
-export function getCachedFinykSqliteState(): SqliteFinykCache {
-  return cache;
-}
 
 // -----------------------------------------------------------------------
 // Row interfaces — mirror the SQLite column shapes from the adapter.
@@ -422,9 +350,9 @@ export async function refreshFinykSqliteState(
     ? parseMerchantRules(prefsRow.prefs_json)
     : null;
 
-  if (seq <= publishedSeq) return cache;
+  if (seq <= publishedSeq) return getCachedFinykSqliteState();
   publishedSeq = seq;
-  cache = {
+  setFinykSqliteCache({
     hiddenAccounts: hiddenAccountRows.map((r) => r.account_id),
     hiddenTransactions: hiddenTransactionRows.map((r) => r.transaction_id),
     budgets,
@@ -445,8 +373,8 @@ export async function refreshFinykSqliteState(
     merchantRules,
     // eslint-disable-next-line no-restricted-syntax -- UTC-anchored refresh timestamp (updatedAt-style), not a Kyiv day boundary; pre-existing
     refreshedAt: new Date().toISOString(),
-  };
-  return cache;
+  });
+  return getCachedFinykSqliteState();
 }
 
 /** `finyk_prefs.prefs_json` → правила мерчантів; зіпсований JSON = порожньо. */
@@ -468,9 +396,32 @@ function safeStringArray(raw: string | null | undefined): string[] {
   return out;
 }
 
+/**
+ * Оптимістично накладає `partial` на ВЖЕ прогрітий кеш (холодний кеш не
+ * чіпає). Для chat-екшенів, що пишуть синхронно, а канонічний refresh іде
+ * асинхронно після apply: без патча два екшени одного ходу (наприклад,
+ * `set_monthly_plan{income}` і `set_monthly_plan{expense}`) читали б один
+ * і той самий застарілий кеш, і другий стирав би поле першого.
+ *
+ * Не бампає `refreshedAt` і не сповіщає UI: наступний канонічний refresh
+ * (він стартує пізніше й публікується останнім) перепише кеш істинним станом
+ * із SQLite, тож розбіжність, якщо запис не дійшов до бази, самовиліковується.
+ */
+export function patchFinykSqliteStateCache(
+  partial: Partial<SqliteFinykCache>,
+): void {
+  const cache = getCachedFinykSqliteState();
+  if (cache.refreshedAt === null) return;
+  setFinykSqliteCache({
+    ...cache,
+    ...partial,
+    refreshedAt: cache.refreshedAt,
+  });
+}
+
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearFinykSqliteCache(): void {
-  cache = { ...EMPTY_CACHE };
+  setFinykSqliteCache({ ...EMPTY_FINYK_SQLITE_CACHE });
   refreshSeq = 0;
   publishedSeq = 0;
 }
@@ -485,11 +436,11 @@ export function clearFinykSqliteCache(): void {
 export function __setFinykSqliteStateCacheForTests(
   partial: Partial<SqliteFinykCache>,
 ): void {
-  cache = {
-    ...EMPTY_CACHE,
+  setFinykSqliteCache({
+    ...EMPTY_FINYK_SQLITE_CACHE,
     ...partial,
     refreshedAt: partial.refreshedAt ?? "2026-01-01T00:00:00.000Z",
-  };
+  });
 }
 
 // Suppress unused-warning for the IdRow alias kept above for future

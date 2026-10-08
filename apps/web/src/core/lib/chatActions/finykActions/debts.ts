@@ -1,11 +1,12 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, @typescript-eslint/no-non-null-assertion --
-   Chat-action executors run outside React; storage key strings are used
-   directly here. Same pattern as queryFinykActions.ts. The non-null
-   assertion is pre-existing. */
-import { ls } from "../../hubChatUtils";
+/* eslint-disable @typescript-eslint/no-non-null-assertion --
+   The non-null assertion is pre-existing. Стан читається з SQLite warm
+   cache (`warmFinykCache`), а не з kv (data-08). */
 import { finykChatWrite } from "./dualWriteBridge";
+import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import { validatePositiveAmount } from "./amountValidation";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, generatePrefixedId } from "@sergeant/shared";
+import { calcDebtRemaining } from "@sergeant/finyk-domain/utils";
+import { triggerManualExpenseDeleteSqliteMirror } from "../../../../modules/finyk/lib/sqliteWriter";
 import type {
   CreateDebtAction,
   CreateReceivableAction,
@@ -15,14 +16,34 @@ import type {
   ChatActionResult,
 } from "../types";
 
+type ManualExpenseRow = {
+  id: string;
+  date: string;
+  description?: string;
+  amount: number;
+  category?: string;
+  type?: string;
+};
+
+/**
+ * Залишок боргу тим самим рахівником, що чат-контекст і UI. Транзакції не
+ * передаємо: платежі чату живуть у `txLinks` зі знімком суми, тож залишок
+ * не залежить від набору банківських транзакцій.
+ */
+function debtRemaining(debt: Debt): number {
+  return calcDebtRemaining({ ...debt, amount: Number(debt.totalAmount) || 0 });
+}
+
 export function createDebt(action: CreateDebtAction): ChatActionResult {
   const { name, amount, due_date, emoji } = action.input;
   const amountCheck = validatePositiveAmount(amount, "amount");
   if (!amountCheck.ok) return amountCheck.message;
   const amountN = amountCheck.value;
-  const debts = ls<Debt[]>("finyk_debts", []);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const debts = [...(cache.manualDebts as Debt[])];
   const newDebt: Debt = {
-    id: `d_${Date.now()}`,
+    id: generatePrefixedId("d"),
     name,
     totalAmount: amountN,
     dueDate: due_date || "",
@@ -35,7 +56,7 @@ export function createDebt(action: CreateDebtAction): ChatActionResult {
   return {
     result: `Борг "${name}" на ${formatNumberUk(amountN)} грн створено (id:${debtId})`,
     undo: () => {
-      const cur = ls<Debt[]>("finyk_debts", []);
+      const cur = warmFinykCache()?.manualDebts ?? [];
       const next = cur.filter((d) => d.id !== debtId);
       if (next.length !== cur.length) finykChatWrite("finyk_debts", next);
     },
@@ -49,9 +70,11 @@ export function createReceivable(
   const amountCheck = validatePositiveAmount(amount, "amount");
   if (!amountCheck.ok) return amountCheck.message;
   const amountN = amountCheck.value;
-  const recv = ls<Receivable[]>("finyk_recv", []);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const recv = [...(cache.receivables as Receivable[])];
   const newRecv: Receivable = {
-    id: `r_${Date.now()}`,
+    id: generatePrefixedId("r"),
     name,
     amount: amountN,
     linkedTxIds: [],
@@ -62,7 +85,7 @@ export function createReceivable(
   return {
     result: `Дебіторку "${name}" на ${formatNumberUk(amountN)} грн додано (id:${recvId})`,
     undo: () => {
-      const cur = ls<Receivable[]>("finyk_recv", []);
+      const cur = warmFinykCache()?.receivables ?? [];
       const next = cur.filter((r) => r.id !== recvId);
       if (next.length !== cur.length) finykChatWrite("finyk_recv", next);
     },
@@ -73,27 +96,27 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   const { debt_id, amount, note } = action.input;
   const id = String(debt_id || "").trim();
   if (!id) return "Потрібен debt_id.";
-  const debts = ls<Debt[]>("finyk_debts", []);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const debts = [...(cache.manualDebts as Debt[])];
   const idx = debts.findIndex((d) => d.id === id);
   if (idx < 0) return `Борг ${id} не знайдено.`;
 
   const debt = { ...debts[idx]! };
+  // Залишок рахуємо так само, як чат-контекст і UI (`txLinks` → сума).
+  // Борг із нульовим залишком не погашаємо вдруге: без цього «закрий мої
+  // борги» створювало б другу ручну витрату на ту саму суму.
+  if (debtRemaining(debt) <= 0 && Number(debt.totalAmount) > 0) {
+    return `Борг "${debt.name}" уже закрито.`;
+  }
   const payAmount =
     amount != null && Number.isFinite(Number(amount))
       ? Math.abs(Number(amount))
       : Number(debt.totalAmount) || 0;
   if (payAmount <= 0) return "Сума погашення має бути додатною.";
   const txId = `m_${crypto.randomUUID()}`;
-  const manualExpenses = ls<
-    Array<{
-      id: string;
-      date: string;
-      description?: string;
-      amount: number;
-      category?: string;
-      type?: string;
-    }>
-  >("finyk_manual_expenses_v1", []);
+  const debtId = debt.id;
+  const manualExpenses: ManualExpenseRow[] = [...cache.manualExpenses];
   const payEntry = {
     id: txId,
     date: new Date().toISOString(),
@@ -105,19 +128,46 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   manualExpenses.unshift(payEntry);
   finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   debt.linkedTxIds = [...(debt.linkedTxIds || []), txId];
-  const prevPaid = debt.linkedTxIds
-    .filter((lid) => lid !== txId)
-    .reduce((sum, lid) => {
-      const linked = manualExpenses.find((e: { id: string }) => e.id === lid);
-      return sum + (linked ? Math.abs(Number(linked.amount) || 0) : 0);
-    }, 0);
-  const totalPaid = prevPaid + payAmount;
-  const closed = totalPaid >= Number(debt.totalAmount);
-  if (closed) {
-    debts.splice(idx, 1);
-  } else {
-    debts[idx] = debt;
-  }
+  // Як у UI (`useFinykStorageMutations`): платіж пишемо знімком у `txLinks`,
+  // інакше ручна `m_…` не потрапляє в залишок на банк-only транзакціях
+  // чат-контексту, і «закритий» борг виглядає непогашеним.
+  debt.txLinks = {
+    ...(debt.txLinks ?? {}),
+    [txId]: { role: "payment", amount: payAmount },
+  };
+  const closed = debtRemaining(debt) <= 0;
+  // Борг НЕ видаляється навіть при повному погашенні: в UI погашений борг
+  // рахується за залишком і лишається в списку з історією платежів
+  // (logic-03). Видалення було незворотним і без підтвердження.
+  debts[idx] = debt;
   finykChatWrite("finyk_debts", debts);
-  return `Погашено ${formatNumberUk(payAmount)} грн з "${debt.name}"${closed ? ", борг закрито" : ""} (tx:${txId})`;
+  return {
+    result: `Погашено ${formatNumberUk(payAmount)} грн з "${debt.name}"${closed ? ", борг закрито" : ""} (tx:${txId})`,
+    // Undo знімає лише цей платіж: читає свіжий кеш (як undo createDebt),
+    // тож чужі зміни між дією й відкатом не затираються. Ідемпотентний.
+    undo: () => {
+      const fresh = warmFinykCache();
+      if (!fresh) return;
+      const curExpenses = fresh.manualExpenses as ManualExpenseRow[];
+      const nextExpenses = curExpenses.filter((e) => e.id !== txId);
+      if (nextExpenses.length !== curExpenses.length) {
+        finykChatWrite("finyk_manual_expenses_v1", nextExpenses);
+      }
+      triggerManualExpenseDeleteSqliteMirror(txId);
+      const curDebts = fresh.manualDebts as Debt[];
+      let debtsChanged = false;
+      const nextDebts = curDebts.map((d) => {
+        if (d.id !== debtId || !(d.linkedTxIds || []).includes(txId)) return d;
+        debtsChanged = true;
+        const { [txId]: _removed, ...restLinks } = d.txLinks ?? {};
+        const { txLinks: _prev, ...restDebt } = d;
+        return {
+          ...restDebt,
+          linkedTxIds: (d.linkedTxIds || []).filter((lid) => lid !== txId),
+          ...(Object.keys(restLinks).length > 0 ? { txLinks: restLinks } : {}),
+        };
+      });
+      if (debtsChanged) finykChatWrite("finyk_debts", nextDebts);
+    },
+  };
 }

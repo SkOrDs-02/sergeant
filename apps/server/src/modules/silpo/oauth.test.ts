@@ -30,6 +30,10 @@ import {
   refreshTokens,
   __silpoOAuthTestHooks,
 } from "./oauth.js";
+import {
+  SilpoOAuthHttpError,
+  isDefinitiveRefreshRejection,
+} from "./oauthErrors.js";
 
 const METADATA = {
   authorization_endpoint: "https://auth.silpo.ua/authorize",
@@ -313,5 +317,54 @@ describe("refreshTokens", () => {
     const sentBody = new URLSearchParams(tokenInit.body as string);
     expect(sentBody.get("grant_type")).toBe("refresh_token");
     expect(sentBody.get("refresh_token")).toBe("rt-1");
+  });
+});
+
+describe("refreshTokens — типізована помилка token-ендпоінта (rel-23)", () => {
+  beforeEach(() => {
+    __silpoOAuthTestHooks().clearMetadataCache();
+  });
+
+  async function refreshFailure(res: Response): Promise<unknown> {
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(METADATA))
+      .mockResolvedValueOnce(res);
+    return refreshTokens("rt-1").then(
+      () => {
+        throw new Error("очікували відмову");
+      },
+      (e: unknown) => e,
+    );
+  }
+
+  it("400 + {error:'invalid_grant'} → SilpoOAuthHttpError з кодом, остаточна відмова", async () => {
+    const err = await refreshFailure(
+      jsonResponse({ error: "invalid_grant" }, 400),
+    );
+    expect(err).toBeInstanceOf(SilpoOAuthHttpError);
+    expect(err).toMatchObject({ status: 400, oauthError: "invalid_grant" });
+    expect(isDefinitiveRefreshRejection(err)).toBe(true);
+  });
+
+  it("503 → статус у помилці, не остаточна відмова", async () => {
+    const err = await refreshFailure(new Response("down", { status: 503 }));
+    expect(err).toMatchObject({ status: 503, oauthError: null });
+    expect(isDefinitiveRefreshRejection(err)).toBe(false);
+  });
+
+  it("400 без тіла → остаточна, 400 з іншим кодом → ні", async () => {
+    expect(isDefinitiveRefreshRejection(new SilpoOAuthHttpError(400))).toBe(
+      true,
+    );
+    expect(
+      isDefinitiveRefreshRejection(
+        new SilpoOAuthHttpError(400, "temporarily_unavailable"),
+      ),
+    ).toBe(false);
+    expect(isDefinitiveRefreshRejection(new SilpoOAuthHttpError(429))).toBe(
+      false,
+    );
+    expect(isDefinitiveRefreshRejection(new Error("network"))).toBe(false);
   });
 });

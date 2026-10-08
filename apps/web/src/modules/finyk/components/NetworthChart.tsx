@@ -37,6 +37,11 @@ function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
   return <NetworthChartInner data={data} goalValue={goalValue} />;
 }
 
+// Геометрія viewBox — константи модуля (стабільні, тож не потрапляють у deps).
+const W = 300;
+const H = 80;
+const PAD = { left: 4, right: 4, top: 10, bottom: 20 };
+
 // Inner render body: `data` is guaranteed non-empty (length >= 2) here, so
 // every hook below runs unconditionally on every render of this component —
 // the length guard lives in the wrapper above, satisfying rules-of-hooks
@@ -51,9 +56,6 @@ function NetworthChartInner({
   const values = data.map((d) => d.networth);
   const { min, max, range } = seriesExtent(values);
 
-  const W = 300;
-  const H = 80;
-  const PAD = { left: 4, right: 4, top: 10, bottom: 20 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
 
@@ -137,10 +139,13 @@ function NetworthChartInner({
 
   // #1 — scrubbing
   const svgRef = useRef<SVGSVGElement>(null);
+  const pointCount = data.length;
   const xPositions = useMemo(
-    () => data.map((_, i) => px(i)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `px(i)` — стабільна проєкція; додавання в deps перераховувало б memo щорендеру
-    [data.length, W, PAD.left, PAD.right],
+    () =>
+      Array.from({ length: pointCount }, (_, i) =>
+        fractionX(PAD.left, i, pointCount, chartW),
+      ),
+    [pointCount, chartW],
   );
 
   const { activeIndex, scrubX, bind } = useChartScrub({

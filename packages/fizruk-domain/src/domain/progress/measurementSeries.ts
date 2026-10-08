@@ -74,7 +74,7 @@ export function buildMeasurementSeries(
  *
  * ADDITIVE-перевантаження (W1-WEIGHT-SOT, стадія 1): якщо передати третім
  * аргументом записи `fizruk_daily_log`, серія будується як **union** обох
- * сховищ ваги через {@link buildBodyWeightSeries} — з дедупом за Kyiv-днем.
+ * сховищ ваги через {@link buildBodyWeightSeries} — з дедупом за днем пристрою (ADR-0078).
  * Без третього аргументу поведінка **байт-у-байт стара**: тільки `entries`,
  * без дедупу за днем. Тому наявні виклики (mobile Progress,
  * `MeasurementsTrendCard`) не міняються.

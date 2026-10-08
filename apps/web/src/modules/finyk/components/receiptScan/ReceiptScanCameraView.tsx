@@ -36,7 +36,10 @@ export function ReceiptScanCameraView({
         </div>
       </div>
       {status ? (
-        <p className="text-center text-style-caption text-danger-strong dark:text-danger">
+        <p
+          role="alert"
+          className="text-center text-style-caption text-danger-strong dark:text-danger"
+        >
           {status}
         </p>
       ) : (

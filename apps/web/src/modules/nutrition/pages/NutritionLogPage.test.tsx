@@ -83,7 +83,7 @@ function makeLog(
     setSelectedDate: vi.fn(),
     addMealSheetOpen: false,
     setAddMealSheetOpen: vi.fn(),
-    handleAddMeal: vi.fn(),
+    handleAddMeal: vi.fn(() => "2025-01-01"),
     handleEditMeal: vi.fn(),
     handleRemoveMeal: vi.fn(),
     handleRestoreMeal: vi.fn(),
@@ -222,7 +222,9 @@ describe("NutritionLogPage", () => {
   // аркуша прийому і від видалення поруч. Помилковий тап коштував ручного
   // пошуку запису й видалення.
   it("додавання з пошуку дає тост зі «Скасувати», який знімає запис", async () => {
-    const handleAddMeal = vi.fn();
+    // Шапка відстала (`selectedDate` — вчора), а запис ліг у сьогодні:
+    // «Скасувати» мусить іти за днем із `handleAddMeal`.
+    const handleAddMeal = vi.fn((_meal: Partial<Meal>) => "2025-01-02");
     const handleRemoveMeal = vi.fn();
     const log = makeLog({ handleAddMeal, handleRemoveMeal });
 
@@ -256,7 +258,7 @@ describe("NutritionLogPage", () => {
     // видала сторінка, а не за `id` знайденого рядка.
     const addedId = (handleAddMeal.mock.calls[0]![0] as Meal).id;
     capturedOnUndo!();
-    expect(handleRemoveMeal).toHaveBeenCalledWith(log.selectedDate, addedId);
+    expect(handleRemoveMeal).toHaveBeenCalledWith("2025-01-02", addedId);
   });
 
   it("clicking 'Редагувати meal' calls setEditingMeal with date + meal fields", async () => {

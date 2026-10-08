@@ -2,7 +2,11 @@ import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
-import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
+import {
+  usePersist,
+  useReadonlyPersist,
+  reportSilentError,
+} from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
 import type {
@@ -35,7 +39,13 @@ const defaultMonthlyPlan: MonthlyPlan = {
 };
 
 export interface FinykStorageSlots {
-  /** SQLite-кеш прогрітий; до того слоти показують LS-знімок першого кадру. */
+  /**
+   * Слоти вже перекриті (overlay) знімком прогрітого SQLite-кешу; до того
+   * вони показують LS-знімок першого кадру. Це НЕ «кеш прогрітий»
+   * (`refreshedAt !== null`): `refreshedAt` ставиться всередині запису ще до
+   * закриття mutation-вікна, а overlay іде лише з наступним тіком читального
+   * гейта. У проміжку кеш уже теплий, а слоти ще ні.
+   */
   storageReady: boolean;
   hiddenAccounts: string[];
   setHiddenAccounts: Dispatch<SetStateAction<string[]>>;
@@ -142,10 +152,9 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     "finyk_tx_cats",
     {},
   );
-  const [txNotes, setTxNotes] = useReadonlyPersist<TxNotesMap>(
-    "finyk_tx_notes",
-    {},
-  );
+  // LS-only: нотатки не входять у SQLite dual-write, тож пишучий
+  // `usePersist` — єдиний писач ключа (аудит 2026-10-01, data-27).
+  const [txNotes, setTxNotes] = usePersist<TxNotesMap>("finyk_tx_notes", {});
   const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] =
     useReadonlyPersist<MonoDebtLinkedMap>("finyk_mono_debt_linked", {});
   const [networthHistory, setNetworthHistory] = useReadonlyPersist<
@@ -202,9 +211,15 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   // sync, so their own expenses stayed invisible after reload
   // (measured 2026-08-06).
   const [prevSqliteTick, setPrevSqliteTick] = useState(-1);
+  // Готовність = «overlay застосовано», а не «кеш прогрітий»: тільки в кадрі
+  // overlay слоти (зокрема `merchantRules`, яких немає в LS) несуть стан
+  // користувача, а не дефолти. Dual-write (`useFinykDualWriteSync`) і гейти UI
+  // читають саме це.
+  const [overlayApplied, setOverlayApplied] = useState(false);
   if (sqliteCacheTick !== prevSqliteTick) {
     setPrevSqliteTick(sqliteCacheTick);
     const cache = getCachedFinykSqliteState();
+    setOverlayApplied(cache.refreshedAt !== null);
     if (cache.refreshedAt !== null) {
       setHiddenAccounts(cache.hiddenAccounts);
       setHiddenTxIds(cache.hiddenTransactions);
@@ -237,8 +252,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
 
   return {
     // LS-знімок вище лише перший кадр: у `finyk_tx_cats` більше ніхто не
-    // пише, тож до прогріву SQLite категорії й приховані операції застарілі.
-    storageReady: getCachedFinykSqliteState().refreshedAt !== null,
+    // пише, тож до overlay категорії й приховані операції застарілі.
+    storageReady: overlayApplied,
     hiddenAccounts,
     setHiddenAccounts,
     budgets,

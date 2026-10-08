@@ -60,8 +60,10 @@ function escapeAttr(s: string): string {
 
 function greeting(recipientName: string | null): string {
   const trimmed = recipientName?.trim();
-  if (trimmed) return `Привіт, ${trimmed}!`;
-  return "Привіт!";
+  // Без оклику: канон копії (style-guide §7, гейт `copy.slop.test.ts`)
+  // тримає оклики на нулі, лист не виняток.
+  if (trimmed) return `Привіт, ${trimmed}.`;
+  return "Привіт.";
 }
 
 function htmlFooter(unsubscribeUrl: string): string {
@@ -123,9 +125,9 @@ function buildDay0(input: FtuxDripTemplateInput): FtuxDripTemplate {
   const text = [
     hello,
     "",
-    "Sergeant – це твій помічник для трекінгу витрат, звичок, тренувань і харчування. Чотири модулі в одному додатку, без зайвого галасу.",
+    "Sergeant рахує витрати, звички, тренування і харчування. Чотири модулі в одному застосунку, без зайвого галасу.",
     "",
-    "Що зробити зараз: відкрий додаток і додай перший запис у будь-якому модулі, навіть найдрібніший. Це достатньо, щоб панель почала працювати на тебе.",
+    "Що зробити зараз: відкрий застосунок і додай перший запис у будь-якому модулі, навіть найдрібніший. Це достатньо, щоб панель почала працювати на тебе.",
     "",
     `Перейти в Sergeant: ${input.appUrl}`,
     "",
@@ -135,8 +137,8 @@ function buildDay0(input: FtuxDripTemplateInput): FtuxDripTemplate {
   const html = wrapHtml(
     [
       `<p>${escapeHtml(hello)}</p>`,
-      `<p>Sergeant – це твій помічник для трекінгу витрат, звичок, тренувань і харчування. Чотири модулі в одному додатку, без зайвого галасу.</p>`,
-      `<p><strong>Що зробити зараз:</strong> відкрий додаток і додай перший запис у будь-якому модулі, навіть найдрібніший. Це достатньо, щоб панель почала працювати на тебе.</p>`,
+      `<p>Sergeant рахує витрати, звички, тренування і харчування. Чотири модулі в одному застосунку, без зайвого галасу.</p>`,
+      `<p><strong>Що зробити зараз:</strong> відкрий застосунок і додай перший запис у будь-якому модулі, навіть найдрібніший. Це достатньо, щоб панель почала працювати на тебе.</p>`,
       ctaButton(input.appUrl, "Перейти в Sergeant"),
       htmlFooter(input.unsubscribeUrl),
     ].join(""),

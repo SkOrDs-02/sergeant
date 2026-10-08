@@ -253,8 +253,13 @@ export const FloatingActionButton = memo(function FloatingActionButton({
       className={cn(
         positionClasses[position],
         "z-50 flex flex-col-reverse items-center gap-3",
-        "transition-[transform,opacity] duration-slow ease-standard",
-        hidden && "translate-y-24 opacity-0 pointer-events-none",
+        "transition-[transform,opacity,visibility] duration-slow ease-standard",
+        // Ховаємо повністю за межі екрана (кнопка + 6rem відступу + safe-area),
+        // а не на 96px вниз: ця відстань рівно дорівнює відступу над навбаром,
+        // тож прихований FAB лягав на навбар і перехоплював тап у «Меню».
+        // `invisible` прибирає його з hit-test і з геометрії після переходу.
+        hidden &&
+          "invisible translate-y-[calc(100%+7rem+env(safe-area-inset-bottom,0px))] opacity-0 pointer-events-none",
         className,
       )}
     >

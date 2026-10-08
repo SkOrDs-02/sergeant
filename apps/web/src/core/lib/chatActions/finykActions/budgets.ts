@@ -1,17 +1,19 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executors run outside React; storage key strings are used
-   directly here. Same pattern as queryFinykActions.ts. */
-import { ls } from "../../hubChatUtils";
+// Chat-action executors run outside React. Стан читається з SQLite warm
+// cache (`warmFinykCache`), а не з kv — див. warmCache.ts (data-08).
 import { finykChatWrite } from "./dualWriteBridge";
+import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
-import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import {
   finykCategoryExists,
   normalizeFinykId,
   unknownCategoryMessage,
 } from "./entityLookup";
 import { validatePositiveAmount } from "./amountValidation";
-import { formatNumberUk, toLocalISODate } from "@sergeant/shared";
+import {
+  formatNumberUk,
+  generatePrefixedId,
+  toKyivISODate,
+} from "@sergeant/shared";
 import type {
   SetBudgetLimitAction,
   SetMonthlyPlanAction,
@@ -33,10 +35,10 @@ function buildAiContribution(saved: number): GoalContribution[] {
   if (saved <= 0) return [];
   return [
     {
-      id: `contrib_${Date.now()}`,
+      id: generatePrefixedId("contrib"),
       amountUah: saved,
 
-      date: toLocalISODate(new Date()),
+      date: toKyivISODate(new Date()),
       note: "Через Сержанта",
     },
   ];
@@ -50,12 +52,12 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
   const limitCheck = validatePositiveAmount(limit, "limit");
   if (!limitCheck.ok) return limitCheck.message;
   const limitN = limitCheck.value;
-  const budgets = ls<Budget[]>("finyk_budgets", []);
-  // B39: reversible overwrite (canon §8 / founder decision) — snapshot the
-  // ENTIRE array before mutating, since entries are mutated in place below
-  // and `ls()` re-parses storage on every call (so re-reading after the
-  // write would return the already-mutated state, not the previous one).
-  const prevBudgets = structuredClone(budgets);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  // B39: reversible overwrite (canon §8 / founder decision). `cache.budgets`
+  // лишається недоторканим знімком (undo), мутації йдуть у глибокій копії.
+  const prevBudgets = cache.budgets as Budget[];
+  const budgets = structuredClone(prevBudgets);
   const idx = budgets.findIndex(
     (b) => b.type === "limit" && b.categoryId === categoryId,
   );
@@ -67,7 +69,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
     }
   } else {
     budgets.push({
-      id: `b_${Date.now()}`,
+      id: generatePrefixedId("b"),
       type: "limit",
       categoryId,
       limit: limitN,
@@ -76,8 +78,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
     });
   }
   finykChatWrite("finyk_budgets", budgets);
-  const customC = getCachedFinykSqliteState().customCategories;
-  const cat = resolveExpenseCategoryMeta(categoryId, customC);
+  const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
   const periodLabel =
     period === "week"
       ? "на тиждень"
@@ -104,11 +105,17 @@ export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
     ["expense", expense, "expense"],
     ["savings", savings, "savings"],
   ];
-  const cur = ls<MonthlyPlan>("finyk_monthly_plan", {});
-  // B39: reversible overwrite — snapshot the previous plan before writing
-  // the merged one; `undo` writes it back verbatim.
-  const prevPlan = structuredClone(cur);
-  const next: MonthlyPlan = { ...cur };
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  // data-08: база — канонічний план із SQLite (там його пише UI, у т.ч. з
+  // іншого пристрою), а не порожній kv: інакше частковий виклик стирав решту
+  // полів, а undo — увесь план.
+  // B39: reversible overwrite — знімок попереднього плану беремо звідти ж;
+  // `undo` пише його назад дослівно.
+  const prevPlan: MonthlyPlan = structuredClone(
+    (cache.monthlyPlan ?? {}) as MonthlyPlan,
+  );
+  const next: MonthlyPlan = { ...prevPlan };
   for (const [key, raw, label] of fields) {
     if (raw == null || raw === "") continue;
     const check = validatePositiveAmount(raw, label);
@@ -131,11 +138,12 @@ export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
 export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
   const input = action.input;
   const scope = input.scope;
-  const budgets = ls<Budget[]>("finyk_budgets", []);
-  // B39: reversible overwrite — snapshot BEFORE either branch mutates an
-  // entry in place. Taken unconditionally (validation returns below don't
-  // write anything, so the snapshot is simply unused in that path).
-  const prevBudgets = structuredClone(budgets);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  // B39: reversible overwrite — `cache.budgets` лишається недоторканим
+  // знімком, обидві гілки мутують глибоку копію.
+  const prevBudgets = cache.budgets as Budget[];
+  const budgets = structuredClone(prevBudgets);
   if (scope === "limit") {
     const categoryId = normalizeFinykId(input.category_id);
     if (!categoryId) return "Для scope='limit' потрібен category_id.";
@@ -151,15 +159,14 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       (budgets[idx] as BudgetLimit).limit = limitN;
     } else {
       budgets.push({
-        id: `b_${Date.now()}`,
+        id: generatePrefixedId("b"),
         type: "limit",
         categoryId,
         limit: limitN,
       });
     }
     finykChatWrite("finyk_budgets", budgets);
-    const customC = getCachedFinykSqliteState().customCategories;
-    const cat = resolveExpenseCategoryMeta(categoryId, customC);
+    const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
     const result = `Ліміт ${cat?.label || categoryId} оновлено: ${formatNumberUk(limitN)}\u202F₴`;
     return {
       result,
@@ -175,10 +182,9 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     );
     if (!targetCheck.ok) return targetCheck.message;
     const target = targetCheck.value;
-    const saved =
-      input.saved_amount != null && Number.isFinite(Number(input.saved_amount))
-        ? Number(input.saved_amount)
-        : 0;
+    const savedProvided =
+      input.saved_amount != null && Number.isFinite(Number(input.saved_amount));
+    const saved = savedProvided ? Number(input.saved_amount) : 0;
     const idx = budgets.findIndex(
       (b) =>
         b.type === "goal" &&
@@ -188,10 +194,13 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       const g = budgets[idx] as BudgetGoal;
       g.targetAmount = target;
       g.name = goalName;
-      g.contributions = buildAiContribution(saved);
+      // Без saved_amount лог поповнень цілі лишається як є (logic-03):
+      // раніше `buildAiContribution(0)` стирав його в []. Семантика
+      // «абсолютна сума при переданому saved_amount» не змінена.
+      if (savedProvided) g.contributions = buildAiContribution(saved);
     } else {
       budgets.push({
-        id: `b_${Date.now()}`,
+        id: generatePrefixedId("b"),
         type: "goal",
         name: goalName,
         targetAmount: target,
@@ -200,7 +209,10 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       });
     }
     finykChatWrite("finyk_budgets", budgets);
-    const result = `Ціль "${goalName}" оновлено: ${formatNumberUk(saved)}/${formatNumberUk(target)}\u202F₴`;
+    const result =
+      idx >= 0 && !savedProvided
+        ? `Ціль "${goalName}" оновлено: ціль ${formatNumberUk(target)}\u202F₴, накопичене не змінено`
+        : `Ціль "${goalName}" оновлено: ${formatNumberUk(saved)}/${formatNumberUk(target)}\u202F₴`;
     return {
       result,
       undo: () => finykChatWrite("finyk_budgets", prevBudgets),

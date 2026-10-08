@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-09-17 by @claude (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -34,7 +34,7 @@
 | `PORT`                  | `3000`                                      | Express слухає 3000.                                                                                                                                                                                                                                                                                                                                            |
 | `VITE_API_PROXY_TARGET` | `http://127.0.0.1:3000`                     | У dev режимі Vite проксує `/api/*` на бекенд. Має співпадати з `PORT`.                                                                                                                                                                                                                                                                                          |
 
-> **`DATABASE_URL` vs `MIGRATE_DATABASE_URL` і роль `sergeant_app` (з міграції 153).** Прод ходив у Postgres суперюзером `postgres` (Superuser + Bypass RLS), для якого RLS не існує. Міграція `153_sergeant_app_role.sql` створює рантайм-роль `sergeant_app` (NOLOGIN, без пароля). Після того, як власник вмикає їй LOGIN, `MIGRATE_DATABASE_URL` лишається за `postgres` (міграції потребують DDL і власника таблиць), а `DATABASE_URL` перемикається на `sergeant_app`. **Порядок обов'язковий: спершу `MIGRATE_DATABASE_URL`, потім `DATABASE_URL`**, інакше міграції підуть під `sergeant_app` і впадуть. `DATABASE_URL_POOL` (pgBouncer, якщо з'явиться): юзер `sergeant_app` має бути і в його `userlist`/auth-конфігу. `DATABASE_URL_REPLICA`: юзер `sergeant_app` має існувати і на репліці. Покроковий рунбук: [`rls-ai-tables-and-isolation-gate.md` § Рунбук власника](../../work/specs/rls-ai-tables-and-isolation-gate.md#рунбук-власника-перемикання-на-роль-sergeant_app).
+> **`DATABASE_URL` vs `MIGRATE_DATABASE_URL` і роль `sergeant_app` (з міграції 154).** Прод ходив у Postgres суперюзером `postgres` (Superuser + Bypass RLS), для якого RLS не існує. Міграція `154_sergeant_app_role.sql` створює рантайм-роль `sergeant_app` (NOLOGIN, без пароля). Після того, як власник вмикає їй LOGIN, `MIGRATE_DATABASE_URL` лишається за `postgres` (міграції потребують DDL і власника таблиць), а `DATABASE_URL` перемикається на `sergeant_app`. **Порядок обов'язковий: спершу `MIGRATE_DATABASE_URL`, потім `DATABASE_URL`**, інакше міграції підуть під `sergeant_app` і впадуть. `DATABASE_URL_POOL` (pgBouncer, якщо з'явиться): юзер `sergeant_app` має бути і в його `userlist`/auth-конфігу. `DATABASE_URL_REPLICA`: юзер `sergeant_app` має існувати і на репліці. Покроковий рунбук: [`rls-ai-tables-and-isolation-gate.md` § Рунбук власника](../../work/specs/rls-ai-tables-and-isolation-gate.md#рунбук-власника-перемикання-на-роль-sergeant_app).
 
 ---
 
@@ -46,12 +46,21 @@
 
 ### `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES` _(optional)_
 
-Список нативних deep-link схем, яким Better Auth довіряє для OAuth callback / cross-origin sign-in. Доповнює `localhost:*` у `getTrustedOrigins()`.
+Список нативних deep-link схем, яким Better Auth довіряє для OAuth callback / `redirectTo` скидання пароля / cross-origin sign-in. Доповнює `localhost:*` у `getTrustedOrigins()`.
 
-- **Без змінної у production**: тільки `sergeant://` (схема опублікованої RN-аппки, [`apps/mobile/app.config.ts`](../../../apps/mobile/app.config.ts)).
-- **Без змінної у dev**: ще додається `exp://` (Expo Go).
+- **Без змінної у production**: **порожньо** — жодна нативна схема не довіряється (sec-08, аудит 2026-10-01). Мобільний RN-контур на паузі ([ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md)), а custom scheme може заявити будь-який застосунок на пристрої і забрати токен скидання пароля з `redirectTo=sergeant://…`. Веб і Capacitor-shell ходять `https`-origin-ами (`ALLOWED_ORIGINS`), `sergeant://` їм не потрібен (схема shell — `com.sergeant.shell://`, у Better Auth не передається).
+- **Без змінної у dev/test**: `sergeant://` і `exp://` (Expo Go), щоб `apps/mobile` працював локально.
 - **`exp://` НЕ bound до конкретної аппки** — будь-який Expo Go застосунок на пристрої може її claim-ити, тому у production воно заборонене (закриває [hardening-карту H5](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/H5-trusted-origins-exp-scheme.md)).
-- Якщо змінну задати — вона **повністю** замінює дефолти (немає merge-режиму). Приклад: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant-staging://`.
+- Якщо змінну задати — вона **повністю** замінює дефолти (немає merge-режиму). Щоб свідомо повернути схему RN-аппки у проді: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant://`. Приклад staging: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant-staging://`.
+
+### `AUTH_EXPO_PLUGIN_ENABLED` _(optional)_
+
+`true` / `1` або `false` / `0`. Вмикає Better Auth `expo()` плагін (`@better-auth/expo`): анонімний `GET /api/auth/expo-authorization-proxy` і підміну `Origin` з заголовка `expo-origin` для `apps/mobile`.
+
+- **Без змінної у production**: плагін **вимкнено**, `/api/auth/expo-authorization-proxy` відповідає `404` (sec-08, аудит 2026-10-01: ендпоінт був open redirect з підписаною `state`-кукою, тобто давав OAuth login CSRF). Мобільний RN-контур на паузі, [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md).
+- **Без змінної у dev/test**: плагін увімкнено, щоб `apps/mobile` працював локально.
+- **`bearer()` не залежить від змінної**: його використовує Capacitor-shell (`apps/mobile-shell`, заголовок `set-auth-token`).
+- Умова зняття і реєстр: [`feature-flags.md` § 3.2](../architecture/feature-flags.md).
 
 ### `RESEND_API_KEY`, `RESEND_FROM` _(key required in production)_
 
@@ -399,6 +408,10 @@ Graceful shutdown.
 
 Інтервал comment-frame у `/api/chat` SSE-стрімі. **Default**: `15000` ms — щоб проксі/браузер не різав з'єднання за idle timeout.
 
+### `SYNC_V2_STREAM_ENABLED` _(optional, default `false`)_
+
+Рубильник `GET /api/v2/sync/stream` (SSE живих sync-ops). **Default `false`** → маршрут відповідає `404` (навіть без сесії), доки немає клієнта-споживача (Фаза 3, `sync-client-wiring.md`). Приймає `true/false/1/0`. Читається з `process.env` на кожному запиті (`modules/sync/syncV2StreamGuard.ts`), тож зміна у Coolify діє після рестарту контейнера, а тест перемикає її без ре-імпорту. Коли ввімкнено: сесія перевіряється в БД на кожному heartbeat (`SYNC_V2_STREAM_HEARTBEAT_MS` = 25 с), зʼєднання живе до 15 хв (`SYNC_V2_STREAM_MAX_AGE_MS`), не більше 3 одночасних стрімів на юзера (`SYNC_V2_STREAM_MAX_PER_USER`, новий витісняє найстаріший). Аудит 2026-10-01, sec-09. Реєстр прапорців: [`feature-flags.md`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
+
 ### `ALLOWED_ORIGIN_REGEX` _(optional)_
 
 Одинокий regex (без прапорців), який повинен матчити допустимі origin-и. Використовується **на доповнення** до `ALLOWED_ORIGINS` (не замість). Приклад: `^https://pr-\d+\.preview\.example\.com$`.
@@ -560,7 +573,7 @@ Bearer-токен для `/api/internal/*` у [`internalFetch.ts`](../../../apps
 
 ### Server-side (AI Observability — ініціатива 0025)
 
-- `POSTHOG_AI_OBSERVABILITY_KEY=phc_…` _(optional; тумблер)_ — Project ingestion key для `$ai_generation`-подій з центрального AI-клієнта ([`apps/server/src/lib/posthogAi.ts`](../../../apps/server/src/lib/posthogAi.ts), викликається з `lib/anthropic.ts` і `lib/llm/provider.ts`) через `posthog-node`. Може дорівнювати `POSTHOG_PROJECT_API_KEY`, але змінна окрема навмисно: **задано → AI-івенти шлються, не задано → не шлються взагалі** (dev/test). Host — `POSTHOG_HOST` або EU Cloud за замовчуванням. У події лише метадані: модель, провайдер (`anthropic`/`openrouter`), токени (вкл. cache), кост з `estimateAnthropicCostUsd`, латентність, `$ai_is_error`/`$ai_http_status`, `feature` (= `endpoint`), `SYSTEM_PROMPT_VERSION`; `distinctId` = Better Auth userId або `server`. **Контент промптів/відповідей не відправляється за конструкцією** (allowlist у типі `AiGenerationEvent`; Hard Rule #21). Fail-open: збій SDK → `logger.warn`, AI-виклик не ламається. Реєстр тумблерів: [`feature-flags.md § 3.3`](../architecture/feature-flags.md#33-інфраструктура-і-спостережуваність); спека: [`0025-posthog-ai-observability.md`](../../work/specs/initiatives/0025-posthog-ai-observability.md).
+- `POSTHOG_AI_OBSERVABILITY_KEY=phc_…` _(optional; тумблер)_ — Project ingestion key для `$ai_generation`-подій з центрального AI-клієнта ([`apps/server/src/lib/posthogAi.ts`](../../../apps/server/src/lib/posthogAi.ts), викликається з `lib/anthropic.ts` і `lib/llm/provider.ts`) через `posthog-node`. Може дорівнювати `POSTHOG_PROJECT_API_KEY`, але змінна окрема навмисно: **задано → AI-івенти шлються, не задано → не шлються взагалі** (dev/test). Host — `POSTHOG_HOST` або EU Cloud за замовчуванням. У події лише метадані: модель, провайдер (`anthropic`/`openrouter`), токени (вкл. cache), кост з `estimateAnthropicCostUsd`, латентність, `$ai_is_error`/`$ai_http_status`, `feature` (= `endpoint`), `SYSTEM_PROMPT_VERSION`; `distinctId` = Better Auth userId лише за `user_preferences.analytics = true`, інакше (і без userId, і при збої перевірки) `server` + `$process_person_profile: false`. **Контент промптів/відповідей не відправляється за конструкцією** (allowlist у типі `AiGenerationEvent`; Hard Rule #21). Fail-open: збій SDK → `logger.warn`, AI-виклик не ламається. Реєстр тумблерів: [`feature-flags.md § 3.3`](../architecture/feature-flags.md#33-інфраструктура-і-спостережуваність); спека: [`0025-posthog-ai-observability.md`](../../work/specs/initiatives/0025-posthog-ai-observability.md).
 
 ---
 

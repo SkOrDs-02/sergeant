@@ -19,7 +19,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Pool } from "pg";
 
-import { LogArchivePoller, DEFAULT_ARCHIVE_TABLES } from "./archivePoller.js";
+import {
+  LogArchivePoller,
+  DEFAULT_ARCHIVE_TABLES,
+  SYNC_OP_LOG_REJECTED_RETENTION_DAYS,
+} from "./archivePoller.js";
 
 interface MockQueryShape {
   rows: ReadonlyArray<{ id: string } & Record<string, unknown>>;
@@ -416,6 +420,7 @@ describe("LogArchivePoller", () => {
       "openclaw_invocations",
       "tg_alert_acks",
       "n8n_webhook_events",
+      "sync_op_log",
     ]);
     expect(
       DEFAULT_ARCHIVE_TABLES.find((t) => t.table === "openclaw_invocations")
@@ -429,5 +434,159 @@ describe("LogArchivePoller", () => {
       DEFAULT_ARCHIVE_TABLES.find((t) => t.table === "n8n_webhook_events")
         ?.timestampColumn,
     ).toBe("received_at");
+    expect(
+      DEFAULT_ARCHIVE_TABLES.find((t) => t.table === "sync_op_log")
+        ?.timestampColumn,
+    ).toBe("server_ts");
+  });
+
+  // data-48: ретеншен `sync_op_log` покриває ЛИШЕ відхилені оп-и. Рядки
+  // `applied` - це курсор pull, їх видаляти не можна.
+  describe("sync_op_log: лише rejected", () => {
+    const okFetch = () =>
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => "",
+      } as unknown as Response);
+
+    it("SELECT і DELETE несуть предикат status = 'rejected', TTL 30 днів, без колонки row", async () => {
+      const rows = [
+        {
+          id: "7",
+          server_ts: "2026-01-01T00:00:00Z",
+          status: "rejected",
+          reject_reason: "table_not_allowed",
+        },
+      ];
+      const pool = makePool({
+        ...emptyTables,
+        sync_op_log: { rows, rowCount: rows.length },
+      });
+      const poller = new LogArchivePoller({
+        pool,
+        enabled: true,
+        retentionDays: 90, // глобальний TTL інший - sync_op_log має свій
+        bucket: "test-bucket",
+        gcsDeps: { getAccessToken: async () => "tok", fetchImpl: okFetch() },
+        now: () => new Date("2026-05-15T03:00:00Z"),
+      });
+
+      const result = await poller.runOnce();
+      expect(result.archived["sync_op_log"]).toBe(1);
+
+      const calls = (pool.query as ReturnType<typeof vi.fn>).mock.calls;
+      const select = calls.find(
+        (c) =>
+          String(c[0]).startsWith("SELECT") &&
+          String(c[0]).includes("FROM sync_op_log"),
+      );
+      expect(select).toBeDefined();
+      const selectSql = String(select![0]);
+      expect(selectSql).toContain("AND status = 'rejected'");
+      // payload `row` не тягнемо (у старих відхилених рядків він до 256 КБ).
+      expect(selectSql).not.toMatch(/SELECT \*/);
+      expect(selectSql).not.toMatch(/\brow\b/);
+      expect(select![1]).toEqual([SYNC_OP_LOG_REJECTED_RETENTION_DAYS, 1000]);
+      expect(SYNC_OP_LOG_REJECTED_RETENTION_DAYS).toBe(30);
+
+      // DELETE теж обмежений предикатом: навіть хибний id-список не зачепить
+      // `applied`-рядок.
+      const del = calls.find((c) =>
+        String(c[0]).startsWith("DELETE FROM sync_op_log"),
+      );
+      expect(del).toBeDefined();
+      expect(String(del![0])).toContain("AND status = 'rejected'");
+      expect(del![1]).toEqual([["7"]]);
+    });
+
+    it("інші таблиці беруть глобальний retentionDays і SELECT *", async () => {
+      const pool = makePool(emptyTables);
+      const poller = new LogArchivePoller({
+        pool,
+        enabled: true,
+        retentionDays: 90,
+        bucket: "test-bucket",
+        gcsDeps: { getAccessToken: async () => "tok", fetchImpl: okFetch() },
+      });
+      await poller.runOnce();
+
+      const calls = (pool.query as ReturnType<typeof vi.fn>).mock.calls;
+      const other = calls.find((c) =>
+        String(c[0]).includes("FROM openclaw_invocations"),
+      );
+      expect(String(other![0])).toMatch(/SELECT \*/);
+      expect(String(other![0])).not.toContain("status = 'rejected'");
+      expect(other![1]).toEqual([90, 1000]);
+    });
+  });
+});
+
+/**
+ * rel-19 (аудит 2026-10-01): без стартового тіку архів логів вперше
+ * спрацьовував через годину після старту процесу, а контейнер рестартує на
+ * кожен деплой.
+ */
+describe("LogArchivePoller - стартовий тік (rel-19)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function makePoller(startDelayMs?: number): LogArchivePoller {
+    return new LogArchivePoller({
+      pool: makePool(emptyTables),
+      enabled: true,
+      retentionDays: 30,
+      bucket: "test-bucket",
+      intervalMs: 3_600_000,
+      startDelayMs,
+    });
+  }
+
+  it("після start() і startDelayMs (< intervalMs) runOnce викликано рівно один раз", async () => {
+    vi.useFakeTimers();
+    const poller = makePoller(45_000);
+    const runOnce = vi
+      .spyOn(poller, "runOnce")
+      .mockResolvedValue({ archived: {}, failed: {} });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(44_999);
+    expect(runOnce).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(runOnce).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(runOnce).toHaveBeenCalledTimes(1);
+
+    await poller.stop();
+  });
+
+  it("stop() до стартового тіку гасить його", async () => {
+    vi.useFakeTimers();
+    const poller = makePoller(45_000);
+    const runOnce = vi
+      .spyOn(poller, "runOnce")
+      .mockResolvedValue({ archived: {}, failed: {} });
+
+    poller.start();
+    await poller.stop();
+    await vi.advanceTimersByTimeAsync(2 * 3_600_000);
+    expect(runOnce).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("startDelayMs: 0 вимикає стартовий тік", async () => {
+    vi.useFakeTimers();
+    const poller = makePoller(0);
+    const runOnce = vi
+      .spyOn(poller, "runOnce")
+      .mockResolvedValue({ archived: {}, failed: {} });
+
+    poller.start();
+    await vi.advanceTimersByTimeAsync(3_599_999);
+    expect(runOnce).not.toHaveBeenCalled();
+
+    await poller.stop();
   });
 });

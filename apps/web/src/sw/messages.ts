@@ -66,8 +66,14 @@ export function handleSwMessage(event: ExtendableMessageEvent): void {
   if (type === "CLEAR_SW_CACHES") {
     const requestId =
       (data as { requestId?: string } | undefined)?.requestId || null;
+    // rel-12: скоуп за замовчуванням `"user"` — без явного `"all"` precache
+    // і ілюстрації вправ не чіпаємо (старий клієнт без `scope` теж сюди).
+    const scope =
+      (data as { scope?: string } | undefined)?.scope === "all"
+        ? "all"
+        : "user";
     event.waitUntil(
-      clearAppCaches()
+      clearAppCaches(scope)
         .then((result) => {
           try {
             event.source?.postMessage?.({

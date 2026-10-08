@@ -3,11 +3,24 @@
  * Status: Active
  */
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
 import { digestKeys } from "@shared/lib/api/queryKeys";
-import { todayISODate } from "@sergeant/nutrition-domain";
+import {
+  cloneMealsForCopy,
+  moveLogEntry,
+  todayISODate,
+  type MealTypeId,
+} from "@sergeant/nutrition-domain";
+import { useDeviceDay } from "@shared/hooks/useDeviceDayKey";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
@@ -72,8 +85,36 @@ export function useNutritionLog() {
   // ADR-0078: активний день журналу — день ПРИСТРОЮ, не Kyiv. Це і є ключ,
   // під яким запис лягає в лог, тож усе, що читає "сьогодні" з того самого
   // логу (LogCard, Dashboard, quick-chips), мусить рахувати той самий день.
-  const [selectedDate, setSelectedDate] = useState<string>(() =>
-    todayISODate(),
+  //
+  // AI-CONTEXT: день не заморожується на момент монтування. PWA лишають
+  // відкритою через північ, і заморожений `selectedDate` клав ранковий
+  // сніданок у вчорашній день, а дашборд (він рахує "сьогодні" щоренду)
+  // показував "0 прийомів". Тому стан — це ЯВНИЙ вибір користувача
+  // (`pickedDate`), а коли вибору нема (`null`), активний день іде за
+  // `useDeviceDayKey()`, який сам перевертається на межі доби (таймер +
+  // `visibilitychange`). Явно обраний день (стрілки, пошук, deep-link) не
+  // чіпаємо. Вибір "сьогодні" теж зберігається як `null` — це "стежити за
+  // сьогодні", а не прибити вчорашню дату після півночі.
+  const { dayKey: deviceDay, refresh: refreshDeviceDay } = useDeviceDay();
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const selectedDate = pickedDate ?? deviceDay;
+  const setSelectedDate: Dispatch<SetStateAction<string>> = useCallback(
+    (next) => {
+      setPickedDate((prev) => {
+        const today = todayISODate();
+        const value = typeof next === "function" ? next(prev ?? today) : next;
+        return value === today ? null : value;
+      });
+    },
+    [],
+  );
+  // День, під яким запис ляже ЗАРАЗ. Таймер і `visibilitychange` не
+  // гарантовані (ноутбук проспав ніч), тож `selectedDate` зі стану може
+  // відставати від годинника; запис і «Скасувати» мусять іти з ОДНОГО
+  // значення — цього. Без явного вибору це сьогодні за годинником.
+  const getActiveDate = useCallback(
+    () => pickedDate ?? todayISODate(),
+    [pickedDate],
   );
   const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
   const [storageErr, setStorageErr] = useState("");
@@ -138,17 +179,25 @@ export function useNutritionLog() {
 
   /**
    * Add a meal to the currently selected date and close the add-meal sheet.
+   * Повертає день, під яким запис ЛЯГ: викликач бере його для «Скасувати»
+   * (`handleRemoveMeal`) і ключа в тості, а не `selectedDate` зі свого
+   * рендеру, який міг відстати від годинника.
    */
-  const handleAddMeal = (meal: Partial<Meal>) => {
-    setNutritionLog((log) => addLogEntry(log, selectedDate, meal));
+  const handleAddMeal = (meal: Partial<Meal>): string => {
+    // День береться в момент збереження: вкладка могла перетнути північ,
+    // а таймер `useDeviceDay` ще не встиг перерендерити хук.
+    const targetDate = getActiveDate();
+    // Екран перевертається разом із записом, а не лишається на вчора.
+    refreshDeviceDay();
+    setNutritionLog((log) => addLogEntry(log, targetDate, meal));
     setAddMealSheetOpen(false);
     // Момент рахується з поточного стану хука, а не всередині оновлювача:
     // оновлювач React кличе пізніше і може кликати двічі. `addLogEntry`
     // тут чистий, тож «після» для моменту збігається з тим, що ляже в лог.
     recordMealMoment(
       nutritionLog,
-      addLogEntry(nutritionLog, selectedDate, meal),
-      selectedDate,
+      addLogEntry(nutritionLog, targetDate, meal),
+      targetDate,
     );
     // Телеметрія (Хвиля 2, `nutrition_meal_logged`). Fire-and-forget поза
     // state-updater-ом: `setNutritionLog` — оновлювач, і сайд-ефект у ньому
@@ -170,6 +219,7 @@ export function useNutritionLog() {
       has_macros: Boolean(meal?.macros),
       ...readSignalContext("nutrition"),
     });
+    return targetDate;
   };
 
   const handleEditMeal = (
@@ -179,6 +229,37 @@ export function useNutritionLog() {
     if (!meal?.id) return;
     setNutritionLog((log) => updateLogEntry(log, date, meal));
     setAddMealSheetOpen(false);
+  };
+
+  /**
+   * Перенос запису на інший день. `toDate` приходить з поля дати (`YYYY-MM-DD`
+   * без часової зони), тож ключ той самий, що й у нового запису (ADR-0078).
+   */
+  const handleMoveMeal = (
+    fromDate: string,
+    toDate: string,
+    meal: Partial<Meal> & { id?: string },
+  ) => {
+    if (!meal?.id) return;
+    setNutritionLog((log) => moveLogEntry(log, fromDate, toDate, meal));
+    setAddMealSheetOpen(false);
+  };
+
+  /**
+   * Копія записів в інший день і/або прийом. Повертає id клонів для «Скасувати».
+   */
+  const handleCopyMeals = (
+    meals: readonly Meal[],
+    toDate: string,
+    mealType?: MealTypeId,
+  ): string[] => {
+    const clones = cloneMealsForCopy(meals, mealType);
+    if (clones.length === 0) return [];
+    setNutritionLog((log) =>
+      clones.reduce((acc, c) => addLogEntry(acc, toDate, c), log),
+    );
+    setAddMealSheetOpen(false);
+    return clones.map((c) => c.id);
   };
 
   /**
@@ -227,8 +308,10 @@ export function useNutritionLog() {
    * Copy all meals from the previous day into the currently selected date.
    */
   const duplicateYesterday = useCallback(() => {
-    setNutritionLog((log) => duplicatePreviousDayMeals(log, selectedDate));
-  }, [selectedDate, setNutritionLog]);
+    const date = getActiveDate();
+    refreshDeviceDay();
+    setNutritionLog((log) => duplicatePreviousDayMeals(log, date));
+  }, [getActiveDate, refreshDeviceDay, setNutritionLog]);
 
   /**
    * Replace the entire log with data parsed from a JSON string.
@@ -305,11 +388,14 @@ export function useNutritionLog() {
     nutritionLog,
     setNutritionLog,
     selectedDate,
+    getActiveDate,
     setSelectedDate,
     addMealSheetOpen,
     setAddMealSheetOpen,
     handleAddMeal,
     handleEditMeal,
+    handleMoveMeal,
+    handleCopyMeals,
     handleRemoveMeal,
     handleRestoreMeal,
     storageErr,
