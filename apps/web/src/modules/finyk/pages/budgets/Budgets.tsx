@@ -50,6 +50,7 @@ import { readSignalContext } from "../../../../core/observability/valueSignalAtt
 import { BudgetsLimitsSection } from "./BudgetsLimitsSection";
 import { BudgetsGoalsSection } from "./BudgetsGoalsSection";
 import { useProactiveAdvice } from "./useProactiveAdvice";
+import { useBankHistoryTx } from "../../hooks/useBankHistoryTx";
 import type { NewBudgetDraft } from "../../components/budgets/AddBudgetForm";
 import type {
   Budget,
@@ -171,7 +172,9 @@ export function Budgets({
   onAddSubscription,
 }: BudgetsProps) {
   const toast = useToast();
-  const { realTx, loadingTx, jars = [] } = mono;
+  const { realTx: networkTx, loadingTx, jars = [] } = mono;
+  // Мережа дає лише поточний місяць: історію для вікон лімітів добирає дзеркало.
+  const realTx = useBankHistoryTx(networkTx);
   const {
     budgets,
     setBudgets,
@@ -226,7 +229,9 @@ export function Budgets({
    * budget looked at on a Wednesday 2-го числа starts on Monday of the
    * previous month, and `one_time` starts at `budget.createdAt`, arbitrarily
    * far back. Pre-clamping to the current month silently drops those rows and
-   * understates spend against the limit.
+   * understates spend against the limit. Для цього `realTx` вище доповнено
+   * дзеркалом (`useBankHistoryTx`): мережа після відповіді тримає лише
+   * поточний місяць, і без дзеркала вікна тижня/разового ліміту порожніли.
    */
   const allStatTx = useMemo(
     () => filterStatTransactions(allTx, excludedTxIds),

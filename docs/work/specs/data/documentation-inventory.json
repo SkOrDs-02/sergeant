@@ -662,7 +662,7 @@
       "canonical_owner": "docs/engineering/development/README.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/engineering/integrations/dependabot-usage.md",
       "new_path": "docs/engineering/integrations/dependabot-usage.md",
       "action": "keep",
       "genre": "reference",
@@ -702,13 +702,6 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/engineering/integrations/README.md"
-    },
-    {
-      "old_path": "docs/engineering/integrations/renovate-usage.md",
-      "new_path": "https://github.com/Skords-01/Sergeant/blob/9f00b365836adf9395a4b08acdc4e856403062cf/docs/engineering/integrations/renovate-usage.md",
-      "action": "remove",
-      "genre": "reference",
-      "canonical_owner": "https://github.com/Skords-01/Sergeant/blob/9f00b365836adf9395a4b08acdc4e856403062cf/docs/engineering/integrations/renovate-usage.md"
     },
     {
       "old_path": "docs/engineering/integrations/voyage-pgvector.md",
@@ -1614,7 +1607,7 @@
       "canonical_owner": "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/governance/adr/0103-dependabot-only-dependency-updates.md",
       "new_path": "docs/governance/adr/0103-dependabot-only-dependency-updates.md",
       "action": "keep",
       "genre": "adr",
@@ -2452,13 +2445,6 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/operations/ops/README.md"
-    },
-    {
-      "old_path": "docs/operations/ops/renovate.md",
-      "new_path": "https://github.com/Skords-01/Sergeant/blob/db318e58a6a2788ecbb51debcebae65c9fd4dc41/docs/operations/ops/renovate.md",
-      "action": "remove",
-      "genre": "reference",
-      "canonical_owner": "https://github.com/Skords-01/Sergeant/blob/db318e58a6a2788ecbb51debcebae65c9fd4dc41/docs/operations/ops/renovate.md"
     },
     {
       "old_path": "docs/operations/postmortems/INDEX.md",
@@ -3476,7 +3462,7 @@
       "canonical_owner": "docs/work/specs/anonymous-local-first-persistence.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/anonymous-migration-fast-path.md",
       "new_path": "docs/work/specs/anonymous-migration-fast-path.md",
       "action": "keep",
       "genre": "active-work",
@@ -3847,7 +3833,7 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "new_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "action": "keep",
       "genre": "active-work",
@@ -4449,6 +4435,13 @@
       "canonical_owner": "docs/work/specs/nutrition-plan-cross-device.md"
     },
     {
+      "old_path": "docs/work/specs/nutrition-recipe-builder.md",
+      "new_path": "docs/work/specs/nutrition-recipe-builder.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/nutrition-recipe-builder.md"
+    },
+    {
       "old_path": "docs/work/specs/pantry-categorization-ai.md",
       "new_path": "docs/work/specs/pantry-categorization-ai.md",
       "action": "keep",
@@ -4510,6 +4503,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/model-eval-2026-08-25.md"
+    },
+    {
+      "old_path": "docs/work/specs/planning/nutrition-my-products.md",
+      "new_path": "docs/work/specs/planning/nutrition-my-products.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/nutrition-my-products.md"
     },
     {
       "old_path": "docs/work/specs/planning/product-brainstorm-2026-07.md",
