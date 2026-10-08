@@ -82,6 +82,21 @@ export async function goto(page: Page, route: string): Promise<void> {
       );
   };
   page.on("requestfailed", onFailed);
+  // Запити, що стартували й не завершились: з них видно, на чому висить парсер.
+  const pending = new Map<import("@playwright/test").Request, number>();
+  const t0 = Date.now();
+  const onRequest = (r: import("@playwright/test").Request) => {
+    if (!r.url().includes("/api/")) pending.set(r, Date.now() - t0);
+  };
+  const onDone = (r: import("@playwright/test").Request) => pending.delete(r);
+  page.on("request", onRequest);
+  page.on("requestfinished", onDone);
+  page.on("requestfailed", onDone);
+  const stopTracking = () => {
+    page.off("request", onRequest);
+    page.off("requestfinished", onDone);
+    page.off("requestfailed", onDone);
+  };
   try {
     await page.goto(route, { waitUntil: "domcontentloaded" });
   } catch (err) {
@@ -132,10 +147,16 @@ export async function goto(page: Page, route: string): Promise<void> {
       })
       .catch((e: unknown) => ({ error: String(e) }));
     console.log(
-      `[boot-white-screen] ${route} ${JSON.stringify(snapshot)} failed=${JSON.stringify(failed)}`,
+      `[boot-white-screen] ${route} ${JSON.stringify(snapshot)} failed=${failed.length} pending=${JSON.stringify(
+        [...pending].map(
+          ([r, at]) =>
+            `${at}ms ${r.resourceType()} ${new URL(r.url()).pathname}${r.serviceWorker() ? " (sw)" : ""}`,
+        ),
+      )}`,
     );
     await page.reload({ waitUntil: "domcontentloaded" });
     page.off("requestfailed", onFailed);
+    stopTracking();
     const recovered = await expect
       .poll(rootChildren, { timeout: 15_000 })
       .toBeGreaterThan(0)
@@ -149,6 +170,7 @@ export async function goto(page: Page, route: string): Promise<void> {
     );
   }
   page.off("requestfailed", onFailed);
+  stopTracking();
   await expect(
     page.getByRole("link", { name: "Перейти до основного вмісту" }),
   ).toBeAttached();
