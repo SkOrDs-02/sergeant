@@ -43,6 +43,7 @@
  *      `nutrition_shopping_list`; mirrors the `prefs-upsert` singleton
  *      pattern. Stage 11 / PR #070n-dualwrite.
  */
+import { computePantryDelta } from "./diff.pantryDelta.js";
 import {
   diffGoalPeriodRestoreOps,
   type GoalPeriodRestoreOp,
@@ -172,6 +173,17 @@ export interface PantryUpsertOp {
    * бази і не має права видаляти живі позиції на справжній.
    */
   readonly keepMissing?: boolean;
+  /**
+   * rel-10: id позицій, які треба поставити в sync-outbox (нові або змінені
+   * відносно `prev`). Відсутнє - повний upsert усіх позицій (перший знімок,
+   * реплей, op без `prev`). Локальний SQLite-upsert від цього поля не залежить.
+   */
+  readonly changedItemIds?: readonly string[];
+  /**
+   * rel-10: чи змінились `name`/`text` самого місця. Разом із `changedItemIds`
+   * вирішує, чи ставити в outbox рядок `nutrition_pantries`.
+   */
+  readonly pantryFieldsChanged?: boolean;
 }
 
 export interface PantryDeleteOp {
@@ -338,7 +350,16 @@ export function diffNutritionDualWriteOps(
     next.pantries,
     (p) => p.id,
     pantryChanged,
-    (p) => ops.push({ kind: "pantry-upsert", pantry: p }),
+    (p, prevPantry) =>
+      ops.push(
+        prevPantry
+          ? {
+              kind: "pantry-upsert",
+              pantry: p,
+              ...computePantryDelta(prevPantry, p),
+            }
+          : { kind: "pantry-upsert", pantry: p },
+      ),
     (id) => ops.push({ kind: "pantry-delete", pantryId: id }),
   );
 
@@ -530,7 +551,7 @@ function diffArray<T extends { readonly id: string }>(
   next: readonly T[],
   getId: (item: T) => string,
   hasChanged: (prev: T, next: T) => boolean,
-  onUpsert: (item: T) => void,
+  onUpsert: (item: T, prevItem?: T) => void,
   onDelete: (id: string) => void,
 ): void {
   const prevMap = new Map<string, T>();
@@ -547,7 +568,7 @@ function diffArray<T extends { readonly id: string }>(
     if (!prevItem) {
       onUpsert(nextItem);
     } else if (prevItem !== nextItem && hasChanged(prevItem, nextItem)) {
-      onUpsert(nextItem);
+      onUpsert(nextItem, prevItem);
     }
   }
 
@@ -599,10 +620,10 @@ function macrosEqual(
 }
 
 /**
- * Pantry change detection: top-level fields + items reference. The
- * adapter always re-upserts the full items list when a pantry-upsert
- * is emitted, so a child-only mutation only requires the items array
- * reference to change (which the LS write layer already does).
+ * Pantry change detection: top-level fields + items value compare. The
+ * adapter re-upserts the full items list into local SQLite when a
+ * pantry-upsert is emitted, but since rel-10 only the items listed in the
+ * op's `changedItemIds` (see `diff.pantryDelta.ts`) go to the sync outbox.
  */
 function pantryChanged(
   prev: NutritionPantrySnapshot,

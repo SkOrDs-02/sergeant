@@ -315,9 +315,6 @@ export function Overview({
 
                   <BudgetAlertsList
                     budgetAlerts={d.budgetAlerts}
-                    statTx={d.statTx}
-                    txCategories={d.txCategories}
-                    txSplits={d.txSplits}
                     customCategories={d.customCategories}
                     onOpenLimit={(categoryId) =>
                       navigate(

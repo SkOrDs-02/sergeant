@@ -327,7 +327,14 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
       makeState({ pantries: [before] }),
       makeState({ pantries: [after] }),
     );
-    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: after }]);
+    expect(ops).toEqual([
+      {
+        kind: "pantry-upsert",
+        pantry: after,
+        changedItemIds: [],
+        pantryFieldsChanged: true,
+      },
+    ]);
   });
 
   it("емітить pantry-upsert при зміні text", () => {
@@ -337,7 +344,14 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
       makeState({ pantries: [before] }),
       makeState({ pantries: [after] }),
     );
-    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: after }]);
+    expect(ops).toEqual([
+      {
+        kind: "pantry-upsert",
+        pantry: after,
+        changedItemIds: [],
+        pantryFieldsChanged: true,
+      },
+    ]);
   });
 
   it("НЕ емітить pantry-upsert при зміні лише референсу items (value-рівні) — анти-резурекція DCRUD-007", () => {
@@ -363,7 +377,14 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
       makeState({ pantries: [before] }),
       makeState({ pantries: [after] }),
     );
-    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: after }]);
+    expect(ops).toEqual([
+      {
+        kind: "pantry-upsert",
+        pantry: after,
+        changedItemIds: ["it1"],
+        pantryFieldsChanged: false,
+      },
+    ]);
   });
 
   it("емітить pantry-upsert при видаленні item зі списку", () => {
@@ -380,7 +401,14 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
       makeState({ pantries: [before] }),
       makeState({ pantries: [after] }),
     );
-    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: after }]);
+    expect(ops).toEqual([
+      {
+        kind: "pantry-upsert",
+        pantry: after,
+        changedItemIds: [],
+        pantryFieldsChanged: false,
+      },
+    ]);
   });
 
   it("не емітить pantry-upsert, коли items — той самий референс", () => {

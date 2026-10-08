@@ -366,7 +366,10 @@ function withoutImplicitPantryDeletes(
   ops: readonly NutritionDualWriteOp[],
 ): readonly NutritionDualWriteOp[] {
   return ops.map((op) =>
-    op.kind === "pantry-upsert" ? { ...op, keepMissing: true } : op,
+    op.kind === "pantry-upsert"
+      ? // rel-10: реплей лишається повною заміною в outbox - дельту знімаємо.
+        { kind: op.kind, pantry: op.pantry, keepMissing: true }
+      : op,
   );
 }
 

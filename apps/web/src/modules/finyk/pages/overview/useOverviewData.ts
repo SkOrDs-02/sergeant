@@ -15,12 +15,10 @@ import type { useUnifiedFinanceData } from "../../hooks/useUnifiedFinanceData";
 
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
 import {
-  getLimitBudgets,
+  calcLimitUsages,
   isBudgetAlert,
   getCurrentMonthContext,
-  limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain/budget";
-import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import { dailySpendSeries } from "@sergeant/finyk-domain/lib/dailySpendSeries";
 import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
 import {
@@ -33,6 +31,7 @@ import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
 import { useRecurringHistory } from "../../hooks/useRecurringHistory";
+import { useBankHistoryTx } from "../../hooks/useBankHistoryTx";
 import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 type StorageLike = ReturnType<typeof useStorage>;
@@ -118,18 +117,20 @@ export function useOverviewData({
   // ADR-0078 стосується особистих сутностей, не фінансових періодів).
   const todayKey = getKyivDayKey(nowMs);
 
-  // Той самий потік, що годує місячні агрегати нижче, але БЕЗ місячного
-  // clamp-у: інсайт-хуки мають власні вікна (`useCoffeeLimitInsight`
-  // порівнює два місяці), тож звузити тут означало б їх зламати. Виключення
-  // застосовані, бо картка ліміту в `BudgetAlertsList` теж їх застосовує -
-  // на одному екрані два числа про ті самі гроші мають збігатись.
+  // Історія для лімітів і міжмісячних інсайтів: мережевий `realTx` (поточний
+  // місяць) плюс SQLite-дзеркало (`useBankHistoryTx`), БЕЗ місячного clamp-у:
+  // тижневий ліміт на межі місяців, разовий ліміт зі старим `createdAt` і
+  // `useCoffeeLimitInsight` (два місяці) мають власні вікна, тож звузити тут
+  // означало б їх зламати. Виключення застосовані, бо картка ліміту на
+  // Плануванні теж їх застосовує: два числа про ті самі гроші мають збігатись.
+  const historyTx = useBankHistoryTx(realTx);
   const insightTx = useMemo(
     () =>
       filterStatTransactions(
-        withManualExpenses(realTx, manualExpenses),
+        withManualExpenses(historyTx, manualExpenses),
         excludedTxIds,
       ),
-    [realTx, manualExpenses, excludedTxIds],
+    [historyTx, manualExpenses, excludedTxIds],
   );
   // Правила «Завжди так для цього магазину» (2026-10-01). Бюджетні агрегати
   // й інсайти нижче читають категорію з мапи `txCategories`, тож віддаємо їм
@@ -255,8 +256,6 @@ export function useOverviewData({
   }, [nonUahManualAssetCount]);
   const networth = assetsSummary.networth + privatTotal - privatDebt;
 
-  const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
-
   useEffect(() => {
     if (loadingTx && realTx.length === 0) return;
     // Audit 05 F8: the prior `networth !== 0` guard silently dropped the
@@ -311,24 +310,21 @@ export function useOverviewData({
     onNavigate?.("budgets");
   }, [dismissFirstInsight, onNavigate]);
 
+  // Один прохід `calcLimitUsages` з вікном періоду кожного ліміту (місяць,
+  // тиждень з понеділка, разовий від `createdAt`) по повній історії: та сама
+  // арифметика, що на картці ліміту в Плануванні й у хабі. Рахунок по
+  // місячному `statTx` ігнорував `period` і показував для тижневого ліміту
+  // витрати всього місяця. Готові `pctRaw`/`overLimit` віддаються
+  // `BudgetAlertsList` як є, без другого обчислення.
   const budgetAlerts = useMemo(
     () =>
-      // `calcLimitCategorySpent`, а не `calcCategorySpent`: та сама
-      // bucket-агрегація ручної таксономії, що й на картці ліміту, плюс
-      // сума по ВСІХ категоріях мульти-категорійного ліміту.
-      limitBudgets.filter((b) =>
-        isBudgetAlert(
-          calcLimitCategorySpent(
-            statTx,
-            limitBudgetCategoryIds(b),
-            txCategories,
-            txSplits,
-            customCategories,
-          ),
-          b.limit,
-        ),
-      ),
-    [limitBudgets, statTx, txCategories, txSplits, customCategories],
+      calcLimitUsages(budgets, insightTx, {
+        txCategories,
+        txSplits,
+        customCategories,
+        now: new Date(nowMs),
+      }).filter((usage) => isBudgetAlert(usage.spent, usage.limit)),
+    [budgets, insightTx, txCategories, txSplits, customCategories, nowMs],
   );
 
   // Підписки / борги / «мені винні» як один розклад — спільний хук із
