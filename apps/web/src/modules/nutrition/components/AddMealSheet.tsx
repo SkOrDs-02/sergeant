@@ -593,6 +593,7 @@ export function AddMealSheet({
   const title = (
     <AddMealSheetTitle
       step={step}
+      editing={Boolean(initialMeal?.id)}
       canBacktrack={canBacktrack}
       onBacktrack={handleBacktrack}
     />
