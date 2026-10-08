@@ -212,7 +212,7 @@ export default function ZvychkyPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/routine.webp"
-            alt="Екран Рутини: звички за сьогодні, тижнева стрічка днів і лічильник серії"
+            alt="Денний звіт Рутини: пʼять виконаних звичок і пропуск «10 000 кроків» із причиною «У дорозі», який не ламає серію"
             width={414}
             height={896}
             loading="lazy"

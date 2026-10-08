@@ -304,7 +304,7 @@ export default function HroshiPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/finyk.webp"
-            alt="Екран Фініка: бюджет дня, витрати і надходження за сьогодні"
+            alt="Огляд Фініка: на сьогодні лишилось 462 ₴ у межах плану, витрати й надходження за день і графік капіталу"
             width={414}
             height={896}
             loading="lazy"
