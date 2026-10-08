@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   SyncEngineFlushOnReconnect,
@@ -88,16 +88,82 @@ describe("createSyncEngineWriterRuntime", () => {
     expect(scheduler.start).toHaveBeenCalledTimes(1);
   });
 
-  it("flushes immediately on enqueue notifications", async () => {
-    const deps = makeDeps();
-    const runtime = createSyncEngineWriterRuntime(deps);
-    runtime.start();
+  describe("notifyEnqueued — коалесинг (rel-08)", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
 
-    runtime.notifyEnqueued();
-    await Promise.resolve();
+    it("20 enqueue-ів за 500 мс дають один flushNow після вікна тиші", async () => {
+      vi.useFakeTimers();
+      const deps = makeDeps();
+      const runtime = createSyncEngineWriterRuntime(deps);
+      runtime.start();
+      const scheduler = firstMockResult(vi.mocked(deps.createScheduler));
 
-    const scheduler = firstMockResult(vi.mocked(deps.createScheduler));
-    expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
+      for (let i = 0; i < 20; i += 1) {
+        runtime.notifyEnqueued();
+        await vi.advanceTimersByTimeAsync(25);
+      }
+      // Усередині вікна тиші (1,5 с) push ще не йшов.
+      expect(scheduler.flushNow).not.toHaveBeenCalled();
+
+      // Останній enqueue був 25 мс тому: до кінця вікна лишається 1 475 мс.
+      await vi.advanceTimersByTimeAsync(1_474);
+      expect(scheduler.flushNow).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(1);
+      expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
+
+      // Подальший час тихий: стеля-таймер серії скинуто, повторів нема.
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
+    });
+
+    it("безперервне введення не відкладає push довше за стелю 5 с", async () => {
+      vi.useFakeTimers();
+      const deps = makeDeps();
+      const runtime = createSyncEngineWriterRuntime(deps);
+      runtime.start();
+      const scheduler = firstMockResult(vi.mocked(deps.createScheduler));
+
+      // Enqueue кожну секунду: тиша 1,5 с ніколи не настає.
+      for (let t = 0; t < 4_000; t += 1_000) {
+        runtime.notifyEnqueued();
+        await vi.advanceTimersByTimeAsync(1_000);
+      }
+      expect(scheduler.flushNow).not.toHaveBeenCalled();
+
+      runtime.notifyEnqueued();
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
+    });
+
+    it("явний flushNow лишається негайним", async () => {
+      vi.useFakeTimers();
+      const deps = makeDeps();
+      const runtime = createSyncEngineWriterRuntime(deps);
+      runtime.start();
+      const scheduler = firstMockResult(vi.mocked(deps.createScheduler));
+
+      runtime.notifyEnqueued();
+      await runtime.flushNow();
+
+      expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
+    });
+
+    it("stop() скасовує відкладений push", async () => {
+      vi.useFakeTimers();
+      const deps = makeDeps();
+      const runtime = createSyncEngineWriterRuntime(deps);
+      runtime.start();
+      const scheduler = firstMockResult(vi.mocked(deps.createScheduler));
+
+      runtime.notifyEnqueued();
+      runtime.stop();
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      expect(scheduler.flushNow).not.toHaveBeenCalled();
+    });
   });
 
   it("reports tick completions as Sentry breadcrumbs without row payloads", () => {
