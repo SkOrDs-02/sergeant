@@ -12,6 +12,7 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 import { CONFIDENCE } from "../content/confidenceLevels";
 import { THREADS_URL, TELEGRAM_BOT_URL } from "../lib/links";
+import { ORGANIZATION_ID } from "../lib/jsonLd";
 
 /**
  * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
@@ -148,47 +149,63 @@ export default function HomePage() {
     // його багатшим за назву й ціну: без description і featureList відповідь
     // спирається лише на applicationCategory. url і logo – відносні, бо домен
     // знає лише білд (див. lib/jsonLd.ts).
+    //
+    // `WebSite` поруч: з нього Google бере назву сайту у видачі, а без нього
+    // показує домен (аудит сайту 2026-10-08, S9). `@id` організації
+    // дописує `enrichJsonLd` (lib/jsonLd.ts), той самий, що на всіх сторінках.
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: "Sergeant",
-      url: "/",
-      inLanguage: "uk",
-      applicationCategory: "LifestyleApplication",
-      // Лише веб: мобільний застосунок існує, але його публічний вихід
-      // відкладено (рішення §10.1 спеки site-ia), а схему читають без контексту.
-      operatingSystem: "Web",
-      description: ROUTE_META["/"].description,
-      featureList: [
-        "Гроші: чотири входи витрат – синхронізація Monobank, фото чека, виписка файлом, ручна форма",
-        "Тіло: щоденник тренувань, тоннаж і рекорди",
-        "Звички: серія, яку не обнуляє пропуск із причиною",
-        "Їжа: КБЖВ зі штрихкоду, фото страви та української бази продуктів",
-        "Звʼязки між сферами, підписані рівнем впевненості",
-      ],
-      offers: { "@type": "Offer", price: 0, priceCurrency: "UAH" },
-      publisher: {
-        "@type": "Organization",
-        name: "Sergeant",
-        url: "/",
-        logo: "/apple-touch-icon.png",
-        // Єдиний публічний профіль поза сайтом. Без sameAs модель бачить
-        // організацію лише за назвою, і «хто це робить» лишається без опори.
-        sameAs: [THREADS_URL],
-        // Канал звʼязку машинним текстом: агент, що зважує «кому писати»,
-        // інакше не має жодної адреси, крім кнопки в футері. Пошти й
-        // телефону тут немає навмисно — їх у продукту публічно немає, а
-        // вигадані реквізити читає саме той, хто перевіряє легітимність.
-        contactPoint: [
-          {
-            "@type": "ContactPoint",
-            contactType: "customer support",
-            url: TELEGRAM_BOT_URL,
-            availableLanguage: ["uk"],
-            areaServed: "UA",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "/#website",
+          name: "Sergeant",
+          url: "/",
+          inLanguage: "uk",
+          publisher: { "@id": ORGANIZATION_ID },
+        },
+        {
+          "@type": "SoftwareApplication",
+          name: "Sergeant",
+          url: "/",
+          inLanguage: "uk",
+          applicationCategory: "LifestyleApplication",
+          // Лише веб: мобільний застосунок існує, але його публічний вихід
+          // відкладено (рішення §10.1 спеки site-ia), а схему читають без контексту.
+          operatingSystem: "Web",
+          description: ROUTE_META["/"].description,
+          featureList: [
+            "Гроші: чотири входи витрат – синхронізація Monobank, фото чека, виписка файлом, ручна форма",
+            "Тіло: щоденник тренувань, тоннаж і рекорди",
+            "Звички: серія, яку не обнуляє пропуск із причиною",
+            "Їжа: КБЖВ зі штрихкоду, фото страви та української бази продуктів",
+            "Звʼязки між сферами, підписані рівнем впевненості",
+          ],
+          offers: { "@type": "Offer", price: 0, priceCurrency: "UAH" },
+          publisher: {
+            "@type": "Organization",
+            name: "Sergeant",
+            url: "/",
+            logo: "/apple-touch-icon.png",
+            // Єдиний публічний профіль поза сайтом. Без sameAs модель бачить
+            // організацію лише за назвою, і «хто це робить» лишається без опори.
+            sameAs: [THREADS_URL],
+            // Канал звʼязку машинним текстом: агент, що зважує «кому писати»,
+            // інакше не має жодної адреси, крім кнопки в футері. Пошти й
+            // телефону тут немає навмисно — їх у продукту публічно немає, а
+            // вигадані реквізити читає саме той, хто перевіряє легітимність.
+            contactPoint: [
+              {
+                "@type": "ContactPoint",
+                contactType: "customer support",
+                url: TELEGRAM_BOT_URL,
+                availableLanguage: ["uk"],
+                areaServed: "UA",
+              },
+            ],
           },
-        ],
-      },
+        },
+      ],
     },
   });
 

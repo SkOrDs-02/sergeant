@@ -33,8 +33,8 @@ export default function GuideOhlyadDnyaPage() {
     ...ROUTE_META["/guides/ohlyad-dnya"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "HowTo",
-      name: "Як бачити тренування і планові платежі поруч зі звичками",
+      "@type": "Article",
+      headline: "Як бачити тренування і планові платежі поруч зі звичками",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/ohlyad-dnya"].lastmod,
       author: AUTHOR_JSON_LD,

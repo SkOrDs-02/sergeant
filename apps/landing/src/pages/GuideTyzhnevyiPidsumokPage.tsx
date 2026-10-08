@@ -21,8 +21,8 @@ export default function GuideTyzhnevyiPidsumokPage() {
     ...ROUTE_META["/guides/tyzhnevyi-pidsumok"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "HowTo",
-      name: "Коли приходить звіт тижня і як отримати його вручну",
+      "@type": "Article",
+      headline: "Коли приходить звіт тижня і як отримати його вручну",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/tyzhnevyi-pidsumok"].lastmod,
       author: AUTHOR_JSON_LD,

@@ -54,6 +54,9 @@ export default function SiteFooter() {
             <a href="/about" className={link}>
               Про проєкт
             </a>
+            <a href="/contact" className={link}>
+              Звʼязок
+            </a>
           </div>
           <div className="flex flex-col">
             <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">

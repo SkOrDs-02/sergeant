@@ -190,9 +190,9 @@ for (const [vw, tag] of [
     ["/ruchna-robota", "Article"],
     ["/vyhid", "Article"],
     ["/guides/kilka-bankiv", "Article"],
-    ["/guides/pauza-i-propusk", "HowTo"],
-    ["/guides/ohlyad-dnya", "HowTo"],
-    ["/guides/tyzhnevyi-pidsumok", "HowTo"],
+    ["/guides/pauza-i-propusk", "Article"],
+    ["/guides/ohlyad-dnya", "Article"],
+    ["/guides/tyzhnevyi-pidsumok", "Article"],
     ["/stan", "Article"],
     ["/about", "AboutPage"],
     ["/guides/monobank", "Article"],
@@ -206,6 +206,9 @@ for (const [vw, tag] of [
       `${route} має JSON-LD ${type}`,
       kinds.some((k) => k.includes(type)),
     );
+    // Пререндер кладе рівно один блок; другий означав би, що клієнт
+    // дописав дубль поверх нього (аудит сайту 2026-10-08, S4).
+    ok(`${route} має рівно один блок JSON-LD`, kinds.length === 1);
     const rb = await page.locator('meta[name="robots"]').count();
     if (route !== "/beta")
       ok(

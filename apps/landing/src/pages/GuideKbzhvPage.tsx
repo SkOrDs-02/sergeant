@@ -3,7 +3,7 @@ import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
-import { AUTHOR_NAME } from "../content/author";
+import { AUTHOR_JSON_LD, AUTHOR_NAME } from "../content/author";
 
 const SITUATIONS = [
   {
@@ -47,6 +47,8 @@ export default function GuideKbzhvPage() {
       name: "Як рахувати КБЖВ, коли в базі немає українських продуктів",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/kbzhv"].lastmod,
+      author: AUTHOR_JSON_LD,
+      publisher: { "@type": "Organization", name: "Sergeant" },
       step: STEPS.map((text, i) => ({
         "@type": "HowToStep",
         position: i + 1,

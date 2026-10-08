@@ -6,7 +6,19 @@
   "ignoreCommand": "npx --yes turbo@2 query affected --base=\"$VERCEL_GIT_PREVIOUS_SHA\" --packages @sergeant/landing --exit-code || exit 1",
   "outputDirectory": "dist",
   "framework": "vite",
+  "trailingSlash": false,
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.sergeant.com.ua"
+        }
+      ],
+      "destination": "https://sergeant.com.ua/:path*",
+      "permanent": true
+    },
     {
       "source": "/guides/kbzhu",
       "destination": "/guides/kbzhv",
@@ -62,6 +74,24 @@
         {
           "key": "Vary",
           "value": "Accept"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.md",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/llms-full.txt",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     }
