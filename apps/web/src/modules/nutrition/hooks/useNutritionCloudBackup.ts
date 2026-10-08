@@ -12,6 +12,11 @@ import {
   buildNutritionBackupPayload,
 } from "../domain/nutritionBackup";
 import {
+  applyNutritionBackupFoods,
+  buildNutritionBackupFoods,
+} from "../domain/nutritionBackupFoods";
+import { readNutritionBackupRecipes } from "../domain/nutritionBackupSections";
+import {
   decryptBlobToJson,
   encryptJsonToBlob,
 } from "../lib/nutritionCloudBackup";
@@ -87,7 +92,16 @@ export function useNutritionCloudBackup({
 
   const uploadMutation = useMutation({
     mutationFn: async ({ pass }: { pass: string }) => {
-      const payload = buildNutritionBackupPayload();
+      const base = buildNutritionBackupPayload();
+      const recipes = await readNutritionBackupRecipes();
+      const payload = {
+        ...base,
+        data: {
+          ...base.data,
+          foods: await buildNutritionBackupFoods(),
+          ...(recipes ? { recipes } : {}),
+        },
+      };
       const blob = await encryptJsonToBlob(payload, pass);
       return nutritionApi.backupUpload({ blob });
     },
@@ -153,6 +167,7 @@ export function useNutritionCloudBackup({
         // Хвіст запису (IDB-дзеркало рецептів, відмова секції) і черга
         // dual-write мають завершитись до reload, інакше він обірве запис.
         await applyNutritionBackupPayload(payload);
+        await applyNutritionBackupFoods(payload);
         await nutritionDualWriteIdle();
       } catch (err) {
         setErr(formatNutritionError(err, "Не вдалося відновити бекап"));

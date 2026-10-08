@@ -2,7 +2,11 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { normalizeNutritionPrefs } from "@sergeant/nutrition-domain";
+import {
+  normalizeNutritionPrefs,
+  normalizeWaterLog,
+  type WaterLog,
+} from "@sergeant/nutrition-domain";
 import type { Pantry, PantryItemSource } from "@sergeant/nutrition-domain";
 import {
   addMissingBy,
@@ -25,6 +29,8 @@ import {
   type NutritionLog,
   type NutritionPrefs,
 } from "../lib/nutritionStorage";
+import { loadWaterLog, saveWaterLog } from "../lib/waterStorage";
+import type { FoodProduct } from "../lib/foodDb/foodDb";
 import {
   applyNutritionBackupSections,
   parseNutritionBackupSections,
@@ -34,9 +40,11 @@ import {
 
 export const NUTRITION_BACKUP_KIND = "hub-nutrition-backup";
 /**
- * v2 (аудит 2026-10-01, data-35): позиції комори несуть `sources` і зʼявились
- * необовʼязкові секції `recipes`, `shoppingList`, `waterLog`, `goalPeriods`.
- * Файли v1 імпортуються як і раніше: відсутня секція відповідних даних не чіпає.
+ * 2: додано `water` (журнал води) і `foods` (власні продукти), а також
+ * `sources` у позиціях комори і необовʼязкові секції `recipes`,
+ * `shoppingList`, `goalPeriods` (аудит 2026-10-01, data-35). Файли версії 1
+ * без цих полів імпортуються як раніше: відсутнє поле означає «нічого
+ * відновлювати», а не «очистити».
  */
 export const NUTRITION_BACKUP_SCHEMA_VERSION = 2;
 
@@ -62,6 +70,13 @@ export interface NutritionBackupData extends NutritionBackupSections {
   activePantryId: string;
   prefs: NutritionPrefs;
   log: NutritionLog | Record<string, unknown>;
+  /** Дата → мл. Додано у версії 2. */
+  water?: WaterLog;
+  /**
+   * Власні продукти з IndexedDB (без вбудованої бази). Додано у версії 2;
+   * заповнюється окремо через `buildNutritionBackupFoods`, бо читання IDB async.
+   */
+  foods?: FoodProduct[];
 }
 
 export interface NutritionBackupPayload {
@@ -236,6 +251,7 @@ export function buildNutritionBackupPayload(): NutritionBackupPayload {
       activePantryId: activePantryId || "home",
       prefs: normalizePrefs(prefs),
       log: log && typeof log === "object" && !Array.isArray(log) ? log : {},
+      water: loadWaterLog(),
       ...readNutritionBackupSections(),
     },
   };
@@ -310,7 +326,7 @@ export function applyNutritionBackupPayload(
     parseNutritionBackupPayload(payload);
 
   if (mode === "merge") {
-    mergeNutritionBackup({ pantries, log: data["log"] });
+    mergeNutritionBackup({ pantries, log: data["log"], water: data["water"] });
     return applyNutritionBackupSections(sections, mode);
   }
 
@@ -341,6 +357,7 @@ export function applyNutritionBackupPayload(
   ) {
     persistNutritionLog(normalizeNutritionLog(data["log"]), NUTRITION_LOG_KEY);
   }
+  if (data["water"] != null) saveWaterLog(data["water"]);
   return applyNutritionBackupSections(sections, mode);
 }
 
@@ -354,6 +371,7 @@ export function applyNutritionBackupPayload(
 function mergeNutritionBackup(file: {
   pantries: NutritionBackupPantry[];
   log: unknown;
+  water: unknown;
 }): void {
   const currentPantries = loadPantries(
     NUTRITION_PANTRIES_KEY,
@@ -372,6 +390,20 @@ function mergeNutritionBackup(file: {
     [...merged, ...(added as Pantry[])],
     loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY),
   );
+
+  if (file.water != null) {
+    const currentWater = loadWaterLog();
+    const incomingWater = normalizeWaterLog(file.water);
+    const missing = Object.keys(incomingWater).filter(
+      (day) => !(day in currentWater),
+    );
+    if (missing.length > 0) {
+      saveWaterLog({
+        ...currentWater,
+        ...Object.fromEntries(missing.map((d) => [d, incomingWater[d]])),
+      });
+    }
+  }
 
   const incomingLog =
     file.log && typeof file.log === "object" && !Array.isArray(file.log)

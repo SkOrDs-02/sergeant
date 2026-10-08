@@ -3,31 +3,35 @@
  * Status: Active
  *
  * Аудит 2026-10-01, data-35: секції бекапу Їжі, яких не було у файлі v1 -
- * рецепти, список покупок, журнал води й журнал цілей КБЖВ. Усі чотири
- * необовʼязкові: файл без секції не чіпає відповідні дані (так і лишаються
- * файли v1).
+ * рецепти, список покупок і журнал цілей КБЖВ (вода й власні продукти живуть
+ * окремо: `data.water` у `nutritionBackup.ts`, `data.foods` у
+ * `nutritionBackupFoods.ts`). Усі необовʼязкові: файл без секції не чіпає
+ * відповідні дані (так і лишаються файли v1).
  *
- * Експорт читає sync-кеш SQLite (як решта `buildNutritionBackupPayload`);
- * `buildHubBackupPayload` синхронний, тож `listSavedRecipes` (async) тут не
- * підходить, а книга поточного користувача й так живе в `cache.recipes`.
+ * Список покупок і журнал цілей експорт читає із sync-кешу SQLite (як решта
+ * `buildNutritionBackupPayload`). Рецепти - ні: книга, яку бачить користувач,
+ * це кеш ПЛЮС його власні записи IndexedDB (`recipeBook.ts`), а IDB читається
+ * лише async. Синхронний кеш пропустив би рецепти, що є тільки в IDB (легасі-
+ * міграція, щойно збережений рецепт), і `replace` потім видалив би їх з IDB, бо
+ * «їх немає у файлі». Тому секція `recipes` додається окремо async-кроком
+ * `withNutritionRecipes` (як `withNutritionFoods`), а синхронний
+ * `buildNutritionBackupPayload` її НЕ віддає: забутий виклик дає файл без
+ * секції, тобто нічого не чіпає, а не неповний файл.
  *
  * Семантика імпорту (`BackupRestoreMode`):
- *  - `replace`: рецепти, список покупок і вода замінюються секцією файлу;
+ *  - `replace`: рецепти й список покупок замінюються секцією файлу;
  *  - `merge`: додається лише відсутнє (рецепти за id, позиції списку за id й
- *    назвою в категорії, вода лише за днями, яких ще нема);
+ *    назвою в категорії);
  *  - журнал цілей append-only, тож в обох режимах лише доповнюється за id.
  */
 import {
   normalizeShoppingList,
-  normalizeWaterLog,
   type GoalPeriod,
   type ShoppingList,
-  type WaterLog,
 } from "@sergeant/nutrition-domain";
 import type { BackupRestoreMode } from "@shared/lib/backup/restoreMode";
 import {
   persistNutritionShoppingList,
-  persistNutritionWaterLog,
   loadNutritionGoalPeriods,
 } from "../lib/nutritionStorage";
 import {
@@ -35,20 +39,20 @@ import {
   restoreNutritionRecipes,
 } from "../lib/nutritionRestoreStorage";
 import {
+  listSavedRecipesOrThrow,
   mirrorRestoredRecipesToIdb,
   normalizeRecipeForSave,
   type SavedRecipe,
 } from "../lib/recipeBook";
 import { loadShoppingList } from "../lib/shoppingListStorage";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
-import { loadWaterLog } from "../lib/waterStorage";
+import { getNutritionDualWriteUserId } from "../lib/sqliteWriter/index";
 
 export type NutritionBackupGoalPeriod = Omit<GoalPeriod, "deletedAt">;
 
 export interface NutritionBackupSections {
   recipes?: SavedRecipe[];
   shoppingList?: ShoppingList;
-  waterLog?: WaterLog;
   goalPeriods?: NutritionBackupGoalPeriod[];
 }
 
@@ -67,16 +71,15 @@ function isPlainObject(x: unknown): x is Record<string, unknown> {
 }
 
 /**
- * Секції з кешу SQLite. Холодний кеш (`refreshedAt === null`) віддає порожні
- * дефолти, які в режимі replace стерли б справжні дані, тож тоді секцій немає.
+ * Синхронні секції з кешу SQLite (без рецептів, див. шапку). Холодний кеш
+ * (`refreshedAt === null`) віддає порожні дефолти, які в режимі replace стерли б
+ * справжні дані, тож тоді секцій немає.
  */
 export function readNutritionBackupSections(): NutritionBackupSections {
   const cache = getCachedNutritionSqliteState();
   if (cache.refreshedAt === null) return {};
   return {
-    recipes: [...cache.recipes].sort((a, b) => a.id.localeCompare(b.id)),
     shoppingList: loadShoppingList(),
-    waterLog: loadWaterLog(),
     goalPeriods: loadNutritionGoalPeriods()
       .filter((p) => p.deletedAt == null)
       .map(({ deletedAt: _deletedAt, ...period }) => period),
@@ -152,6 +155,43 @@ function normalizeBackupRecipe(x: unknown): SavedRecipe | null {
   };
 }
 
+/**
+ * Уся книга рецептів, яку бачить користувач (кеш + власні записи IDB), для
+ * секції `recipes`. `undefined` - секції не буде (файл тоді рецептів не чіпає):
+ * кеш не прогрітий або власник невідомий, тобто книгу не видно повністю, і
+ * порожній список у replace стер би справжню. Збій читання IDB (сховище
+ * недоступне) лишає кеш: записів IDB у такому разі немає.
+ */
+export async function readNutritionBackupRecipes(): Promise<
+  SavedRecipe[] | undefined
+> {
+  const cache = getCachedNutritionSqliteState();
+  if (cache.refreshedAt === null || !getNutritionDualWriteUserId()) {
+    return undefined;
+  }
+  let book: SavedRecipe[];
+  try {
+    book = await listSavedRecipesOrThrow(Number.MAX_SAFE_INTEGER);
+  } catch {
+    book = cache.recipes;
+  }
+  return [...book].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** Дописує `recipes` у секцію `nutrition` вже зібраного Hub-бекапу. */
+export async function withNutritionRecipes<T extends { nutrition: unknown }>(
+  hubPayload: T,
+): Promise<T> {
+  const nutrition = hubPayload.nutrition as { data?: object } | undefined;
+  if (!nutrition?.data) return hubPayload;
+  const recipes = await readNutritionBackupRecipes();
+  if (!recipes) return hubPayload;
+  return {
+    ...hubPayload,
+    nutrition: { ...nutrition, data: { ...nutrition.data, recipes } },
+  };
+}
+
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
   const seen = new Set<string>();
   return items.filter((i) => (seen.has(i.id) ? false : !!seen.add(i.id)));
@@ -175,9 +215,6 @@ export function parseNutritionBackupSections(
   }
   if (isPlainObject(data["shoppingList"])) {
     out.shoppingList = normalizeShoppingList(data["shoppingList"]);
-  }
-  if (isPlainObject(data["waterLog"])) {
-    out.waterLog = normalizeWaterLog(data["waterLog"]);
   }
   const goalPeriods = data["goalPeriods"];
   if (Array.isArray(goalPeriods)) {
@@ -229,21 +266,6 @@ function mergeShoppingLists(
 }
 
 /**
- * Вода для режиму merge: до поточного журналу додаються лише дні, яких у ньому
- * ще нема (вже записаний день, навіть інший за обсягом, лишається). `null` -
- * додавати нічого.
- */
-function mergeWaterLogs(
-  current: WaterLog,
-  incoming: WaterLog,
-): WaterLog | null {
-  const missing = Object.entries(incoming).filter(([day]) => !(day in current));
-  return missing.length > 0
-    ? { ...Object.fromEntries(missing), ...current }
-    : null;
-}
-
-/**
  * Записує секції через наявні dual-write `persist*`. Усі синхронні записи
  * відбуваються ДО першого `await` (виклик синхронний аж до дзеркала IDB), тож
  * `nutritionDualWriteIdle()` у викликача бачить їх. Reject - якщо хоч один
@@ -276,13 +298,6 @@ export async function applyNutritionBackupSections(
       ? sections.shoppingList
       : mergeShoppingLists(loadShoppingList(), sections.shoppingList);
     if (next && !persistNutritionShoppingList(next)) failed = true;
-  }
-
-  if (sections.waterLog) {
-    const next = replace
-      ? sections.waterLog
-      : mergeWaterLogs(loadWaterLog(), sections.waterLog);
-    if (next && !persistNutritionWaterLog(next)) failed = true;
   }
 
   if (sections.goalPeriods) {

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.3.0",
+  "current": "8.3.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -754,6 +754,14 @@
       "releasedAt": "2026-10-08",
       "changes": [
         "bump from 8.2.0 -> 8.3.0 (minor): docs/skills/agents drift audit — CI/autodeploy (ADR-0102), ENTRYPOINT migrations, required checks, e2e inventory, qa counts, ai-owner file map; rule 26 touched only in its historical section (no rule change, so not major)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.3.1": {
+      "releasedAt": "2026-10-08",
+      "changes": [
+        "bump from 8.3.0 -> 8.3.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

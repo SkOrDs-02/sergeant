@@ -2768,7 +2768,7 @@ Live: <scratch>/agents/verify-server-static-gap-finyk-import-receipts-correctnes
 
 ### `data-32` [medium] Профіль mono ігнорує валюту картки «(USD)/(EUR)» у заголовку: виписки валютних карток імпортуються як гривні
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-32-mono-csv-currency
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: finyk import (csvProfiles)
 - **Де:** apps/server/src/modules/finyk/import/csvProfiles.ts:113-190
 - **Першопричина:** detectMonoProfile шукає підрядок «сума в валюті картки», ставить currencyColIndex:null і спирається на хибне припущення, що картка завжди гривнева; спека розглядає лише Privat24-рахунки у валюті.
@@ -2977,7 +2977,7 @@ Harness: finyk versions 999 and 4 accepted, 0/-1/1000 rejected; routine schemaVe
 
 ### `data-35` [medium] Бекап «всього Hub» неповний і з втратами: немає рецептів, списку покупок, води й періодів цілей, а restore стирає історію покупок комори (sources)
 
-- **Стан:** виправлено в гілці claude/fix-data-35-nutrition-backup-complete (власні продукти foodDb - NE1, окрема задача)
+- **Стан:** виправлено в гілці claude/fix-data-35-nutrition-backup-complete (власні продукти foodDb і вода `data.water` додав окремо `main`, 2207eb038; ця гілка зливає схему v2 з ними)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап Їжі (nutritionBackup)
 - **Де:** apps/web/src/modules/nutrition/domain/nutritionBackup.ts:71-89,146-226; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:262-312,485-511; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:603; apps/web/src/core/hub/HubBackupPanel.tsx:177,189-193
 - **Першопричина:** normalizePantryItem на експорті й імпорті лишає лише name, qty, unit і notes, тож PantryItem.sources і ambiguousQty губляться, а extractPantrySnapshots пише sources = null поверх наявних. Payload Їжі не містить nutrition_recipes, nutrition_shopping_list, nutrition_water_log і nutrition_goal_periods.

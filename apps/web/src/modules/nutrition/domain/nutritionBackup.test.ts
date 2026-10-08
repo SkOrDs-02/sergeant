@@ -16,6 +16,7 @@ vi.mock("../lib/sqliteWriter/index", async () => {
     ...actual,
     triggerNutritionDualWrite: (...args: unknown[]) => triggerSpy(...args),
     isNutritionDualWriteRegistered: () => true,
+    getNutritionDualWriteUserId: () => "user-1",
   };
 });
 
@@ -38,6 +39,7 @@ import {
   NUTRITION_BACKUP_KIND,
   NUTRITION_BACKUP_SCHEMA_VERSION,
 } from "./nutritionBackup";
+import { withNutritionRecipes } from "./nutritionBackupSections";
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -212,6 +214,17 @@ function allOps() {
 
 const allOpKinds = (): string[] => allOps().map((op) => op.kind);
 
+/**
+ * Експорт так, як його збирають усі три шляхи застосунку: синхронна частина +
+ * async-секція рецептів (книга кеш + IDB), далі через JSON як файл на диску.
+ */
+async function exportNutritionFile() {
+  const { nutrition } = await withNutritionRecipes({
+    nutrition: buildNutritionBackupPayload(),
+  });
+  return viaFile(nutrition);
+}
+
 /** Файл так, як він доїжджає з диска: через JSON. */
 const viaFile = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
 
@@ -303,7 +316,7 @@ describe("nutrition backup — повнота (data-35)", () => {
     triggerSpy.mockImplementation(reduceIntoCache);
   });
 
-  it("експорт v2 несе sources позицій комори і нові секції", () => {
+  it("експорт v2 несе sources позицій комори і нові секції", async () => {
     __setNutritionSqliteCacheForTests({
       pantries: MILK_PANTRY as never,
       recipes: [RECIPE] as never,
@@ -314,28 +327,34 @@ describe("nutrition backup — повнота (data-35)", () => {
         { ...PERIOD, id: "gp::retracted", deletedAt: "2026-03-02T00:00:00Z" },
       ] as never,
     });
-    const p = buildNutritionBackupPayload();
+    const p = await exportNutritionFile();
     expect(p.schemaVersion).toBe(NUTRITION_BACKUP_SCHEMA_VERSION);
     expect(NUTRITION_BACKUP_SCHEMA_VERSION).toBe(2);
     expect(p.data.pantries[0]!.items[0]!.sources).toEqual(SOURCES);
     expect(p.data.recipes).toEqual([RECIPE]);
-    expect(p.data.waterLog).toEqual({ "2026-09-01": 1500 });
+    // Вода лишається в `data.water` (формат main), окремої `waterLog` нема.
+    expect(p.data.water).toEqual({ "2026-09-01": 1500 });
+    expect("waterLog" in p.data).toBe(false);
     // Ретрактована сходинка у файл не потрапляє.
     expect(p.data.goalPeriods).toEqual([PERIOD]);
   });
 
-  it("холодний кеш не дає секцій, які стерли б дані при replace", () => {
+  it("холодний кеш не дає секцій, які стерли б дані при replace", async () => {
     __setNutritionSqliteCacheForTests({ refreshedAt: null });
-    const { data } = buildNutritionBackupPayload();
+    const { data } = await exportNutritionFile();
     expect(data.recipes).toBeUndefined();
     expect(data.shoppingList).toBeUndefined();
-    expect(data.waterLog).toBeUndefined();
     expect(data.goalPeriods).toBeUndefined();
+  });
+
+  it("синхронний buildNutritionBackupPayload рецептів не віддає: забутий async-крок не дає неповного файлу", () => {
+    __setNutritionSqliteCacheForTests({ recipes: [RECIPE] as never });
+    expect(buildNutritionBackupPayload().data.recipes).toBeUndefined();
   });
 
   it("round-trip export → import (replace) лишає sources байт-у-байт", async () => {
     __setNutritionSqliteCacheForTests({ pantries: MILK_PANTRY as never });
-    const file = viaFile(buildNutritionBackupPayload());
+    const file = await exportNutritionFile();
     await applyNutritionBackupPayload(file, "replace");
 
     const restored = getCachedNutritionSqliteState().pantries[0]!.items[0]!;
@@ -386,7 +405,7 @@ describe("nutrition backup — повнота (data-35)", () => {
       goalPeriods: [{ ...PERIOD, deletedAt: null }] as never,
     });
     const shoppingBefore = loadShoppingList();
-    const file = viaFile(buildNutritionBackupPayload());
+    const file = await exportNutritionFile();
 
     // Пристрій B: прогрітий, але порожній.
     __setNutritionSqliteCacheForTests({});
@@ -414,7 +433,7 @@ describe("nutrition backup — повнота (data-35)", () => {
       waterLog: { "2026-08-01": 100 },
     });
     await applyNutritionBackupPayload(
-      v2File({ recipes: [RECIPE], waterLog: { "2026-09-01": 1500 } }),
+      v2File({ recipes: [RECIPE], water: { "2026-09-01": 1500 } }),
       "replace",
     );
     const after = getCachedNutritionSqliteState();
@@ -474,7 +493,7 @@ describe("nutrition backup — повнота (data-35)", () => {
           { ...RECIPE, title: "Інша назва" },
           { ...RECIPE, id: "rcp_2", title: "Нова" },
         ],
-        waterLog: { "2026-09-01": 999, "2026-09-02": 50 },
+        water: { "2026-09-01": 999, "2026-09-02": 50 },
         shoppingList: {
           categories: [
             {
@@ -536,13 +555,13 @@ describe("nutrition backup — повнота (data-35)", () => {
   });
 
   it("відхилений запис секції не мовчить: промис падає, а решта секцій записується", async () => {
-    // Початковий pull не завершено, локального рядка води немає: гейт
-    // `persistNutritionWaterLog` відмовляє.
+    // Початковий pull не завершено, локального рядка списку немає: гейт
+    // `persistNutritionShoppingList` відмовляє.
     __resetInitialPullStateForTests();
     __setNutritionSqliteCacheForTests({});
     await expect(
       applyNutritionBackupPayload(
-        v2File({ recipes: [RECIPE], waterLog: { "2026-09-01": 1500 } }),
+        v2File({ recipes: [RECIPE], shoppingList: SHOPPING }),
         "replace",
       ),
     ).rejects.toThrow("Частина даних Їжі не записалась");

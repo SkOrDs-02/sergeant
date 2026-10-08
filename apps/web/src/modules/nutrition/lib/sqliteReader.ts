@@ -28,6 +28,10 @@ import type {
 import { normalizeShoppingList } from "@sergeant/nutrition-domain";
 import type { NullableMacros } from "@sergeant/shared";
 import type { SavedRecipe } from "./recipeBook";
+import {
+  normalizeCookedWeightG,
+  normalizeRecipeComponents,
+} from "./recipeComponentsNormalize";
 
 export interface SqliteNutritionCache {
   /** Nutrition log keyed by date string (YYYY-MM-DD). */
@@ -225,14 +229,21 @@ function rowToPantry(
   };
 }
 
-function rowToRecipe(row: RecipeRow): SavedRecipe | null {
+export function rowToRecipe(row: RecipeRow): SavedRecipe | null {
   const data = safeParseJson<Record<string, unknown> | null>(
     row.data_json,
     null,
   );
   if (!data || typeof data !== "object") return null;
+  const components = normalizeRecipeComponents(data["components"]);
   return {
     id: row.id,
+    ...(components
+      ? {
+          components,
+          cookedWeightG: normalizeCookedWeightG(data["cookedWeightG"]),
+        }
+      : {}),
     title: typeof data["title"] === "string" ? data["title"] : (row.name ?? ""),
     timeMinutes:
       typeof data["timeMinutes"] === "number" ? data["timeMinutes"] : null,

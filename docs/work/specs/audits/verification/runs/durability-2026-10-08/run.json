@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "id": "durability-2026-10-08",
+  "status": "closed",
+  "createdAt": "2026-10-08T17:13:56.558Z",
+  "kind": "live",
+  "metadata": {
+    "executor": "Claude Code (cloud session)",
+    "commit": "5a9667c824508c07c119bd51421deceb0b52c66d",
+    "dirty": false,
+    "deployment": "local vite preview (VERCEL=1 prod build) + local API (pnpm dev) + local PostgreSQL 16 / pgvector 0.8.0 (154/154 migrations)",
+    "environment": "Linux cloud container; Node 22.22.0; no Docker (psql shim for harness)",
+    "baseUrl": "http://127.0.0.1:4173",
+    "browser": "Chromium 141 headless-shell via Playwright (symlinked to pinned path)",
+    "viewport": "1280x720 Desktop Chrome",
+    "timezone": "UTC",
+    "flags": {
+      "externalIntegrations": false,
+      "coopCoep": true
+    },
+    "seedRevision": "data-durability.spec.ts runs q554x (before fix) / shdpa (after fix)",
+    "accounts": ["verify-disposable-a", "verify-disposable-c"],
+    "ai": {
+      "mode": "none",
+      "model": "n/a",
+      "configuration": "AI scenarios not in this run",
+      "budgetUsd": 0
+    },
+    "baseline": null
+  },
+  "scenarios": [
+    {
+      "id": "SYNC-fresh-device-pull",
+      "revision": 1,
+      "title": "Pull на новому пристрої",
+      "suite": "data",
+      "modules": ["sync", "finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["sync-same-user-device-a", "sync-same-user-device-b"],
+      "source": "docs/work/specs/audits/2026-09-01-product-audit/accounts.md#6-пастка-storagestate--новий-пристрій",
+      "preconditions": "Той самий одноразовий користувач; витрата створена у чистому context A; підтверджено успішний push до входу у context B.",
+      "steps": [
+        "Відкрити новий browser context без storageState.",
+        "Увійти тим самим логіном у чистому context B без storageState.",
+        "Дочекатися pull та відкрити транзакції."
+      ],
+      "expected": ["Витрата відображається один раз; outbox не зростає."],
+      "evidence": ["screenshot другого контексту", "мережевий trace sync"],
+      "cleanup": "Видалити disposable акаунти.",
+      "pitfalls": "storageState не моделює інший пристрій."
+    },
+    {
+      "id": "SYNC-offline-conflict-isolation",
+      "revision": 1,
+      "title": "Offline queue, LWW conflict, logout purge й user isolation",
+      "suite": "data",
+      "modules": ["sync", "web", "server"],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "docs/engineering/architecture/domain-invariants.md",
+      "preconditions": "Два contexts одного user для conflict; два окремих users для isolation; контроль мережі.",
+      "steps": [
+        "Offline створити три доменні записи, повернути online й дочекатися drain.",
+        "Змінити ту саму сутність з двох devices з контрольними timestamps.",
+        "Перевірити cross-user IDOR, logout purge, stale session 401 і fresh login."
+      ],
+      "expected": [
+        "Outbox переходить pending→0 без дубля; server і обидва devices сходяться.",
+        "LWW результат відповідає контракту й не губить сторонні поля.",
+        "User B не читає дані A; logout очищає локальні дані/keys."
+      ],
+      "evidence": [
+        "sync push/pull traces",
+        "op/timestamp table",
+        "local storage/OPFS inventory без секретів",
+        "401/404 statuses"
+      ],
+      "cleanup": "Видалити disposable users/contexts після збереження redacted evidence.",
+      "pitfalls": "Cross-device — один user; isolation — два users. Не стартувати B до підтвердженого push A."
+    },
+    {
+      "id": "DATA-durability-live",
+      "revision": 1,
+      "title": "Живучість записів: reload, перенос аноніма, офлайн, пристрої, вкладки, вихід",
+      "suite": "data",
+      "modules": [
+        "sync",
+        "web",
+        "finyk",
+        "nutrition",
+        "routine",
+        "fizruk",
+        "ai-memory"
+      ],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "apps/web/tests/verification-live/data-durability.spec.ts",
+      "preconditions": "Локальний API на :3000 з окремою БД, прод-білд web (VERCEL=1, VITE_API_BASE_URL=http://127.0.0.1:3000) через vite preview на :4173; див. local-environment.md.",
+      "steps": [
+        "Запустити `pnpm -C apps/web exec playwright test -c playwright.verify.config.ts data-durability` з VERIFY_RESULTS і PW_VERIFY_OUT.",
+        "Фази P1-P9: reload аноніма, перенос в акаунт, новий пристрій, офлайн-черга, правки з B, LWW-конфлікт, дві вкладки, вихід із незбереженим, ізоляція користувачів.",
+        "Звести результати скриптом-зведенням JSONL (кожна перевірка = рядок pass/fail з деталлю)."
+      ],
+      "expected": [
+        "Кожен запис у чотирьох модулях і памʼяті профілю переживає reload, доїжджає на сервер і на другий пристрій рівно один раз.",
+        "Після виходу інший користувач не бачить ні локальних, ні серверних даних попереднього."
+      ],
+      "evidence": [
+        "verify-results JSONL",
+        "скріншоти fail-*.png",
+        "SQL-лічильники рядків на сервері"
+      ],
+      "cleanup": "Тимчасова БД перевірки видаляється або лишається ізольованою; прод не зачіпається.",
+      "pitfalls": "P7: Playwright емулює фокус для кожної сторінки, тож повернення до вкладки харнес моделює подією focus, а не bringToFront. Рідкісний білий екран (B1) на одній навігації каскадом валить наступні кроки фази; дивись fail-*.png перед висновками. Прод-варіанти: prod-anon-smoke без акаунта; prod-account-smoke створює акаунт, тож його запускає лише людина."
+    }
+  ],
+  "attempts": [
+    {
+      "id": "d-before",
+      "scenarioId": "DATA-durability-live",
+      "status": "fail",
+      "actual": "Прогін q554x на main (до фіксу): P1–P7 зелені, P8 — 3 fail (немає «Є незбережені записи», «Залишитись» недосяжне, F3 не на сервері), P9 не стартував каскадом. Окремий проб: свіжа реєстрація без аноніма → витрата 60+ с не доїжджає на сервер, після reload доїжджає.",
+      "evidence": [
+        {
+          "path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl",
+          "type": "structured-result",
+          "sha256": "a424ae16b9e967832b8f715fd7a3d3c8687e6d5059fcf65773eeed5dc6ddbc92"
+        }
+      ],
+      "metrics": {
+        "checksPass": 83,
+        "checksFail": 3
+      },
+      "findingIds": [
+        "DURABILITY-20261008-LOGOUT-1",
+        "DURABILITY-20261008-SIGNUP-1",
+        "DURABILITY-20261008-BOOT-1",
+        "DURABILITY-20261008-OFFLINE-1"
+      ],
+      "at": "2026-10-08T17:14:44.286Z",
+      "reason": ""
+    },
+    {
+      "id": "d-fresh-device",
+      "scenarioId": "SYNC-fresh-device-pull",
+      "status": "pass",
+      "actual": "P3 харнесу (прогін shdpa): чистий context B без storageState, вхід тим самим логіном — витрата F1, продукт, звичка, вага й памʼять видно; KV-налаштування лишились локальними. Рядки на сервері рівно по 1 (P2).",
+      "evidence": [
+        {
+          "path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl",
+          "type": "structured-result",
+          "sha256": "6ca824284f4e05a3bd9318abb98b4d8e2ee881a49656ed09b9a867ea1fcdc099"
+        }
+      ],
+      "metrics": {},
+      "findingIds": ["PILOT-20260905-SYNC-1"],
+      "at": "2026-10-08T17:14:45.194Z",
+      "reason": ""
+    },
+    {
+      "id": "d-offline-isolation",
+      "scenarioId": "SYNC-offline-conflict-isolation",
+      "status": "not-run",
+      "reason": "Частково покрито харнесом (P4 офлайн-черга без дублів, P6 LWW, P9 logout purge й ізоляція — усе pass), але cross-user IDOR, stale session 401 і інвентар OPFS/localStorage не виконувались.",
+      "actual": "Окремо не проганявся; див. reason.",
+      "evidence": [],
+      "metrics": {},
+      "findingIds": [],
+      "at": "2026-10-08T17:14:46.139Z"
+    },
+    {
+      "id": "d-after",
+      "scenarioId": "DATA-durability-live",
+      "status": "pass",
+      "actual": "Прогін shdpa на гілці фіксу (коміти ac4420f5, 5a9667c8): P1–P9 9/9, 96 перевірок pass / 0 fail. P8: діалог показано, «Залишитись» лишає сесію, F3 на сервері після мережі. P9: перший запис C після реєстрації без аноніма на сервері.",
+      "evidence": [
+        {
+          "path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl",
+          "type": "structured-result",
+          "sha256": "6ca824284f4e05a3bd9318abb98b4d8e2ee881a49656ed09b9a867ea1fcdc099"
+        }
+      ],
+      "metrics": {
+        "checksPass": 96,
+        "checksFail": 0
+      },
+      "findingIds": [
+        "DURABILITY-20261008-LOGOUT-1",
+        "DURABILITY-20261008-SIGNUP-1"
+      ],
+      "at": "2026-10-08T17:14:47.124Z",
+      "reason": ""
+    }
+  ],
+  "closedAt": "2026-10-08T17:15:11.396Z",
+  "outcome": "incomplete"
+}

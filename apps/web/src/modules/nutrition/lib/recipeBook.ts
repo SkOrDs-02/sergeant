@@ -9,6 +9,11 @@ import {
   openSergeantDb,
 } from "../../../shared/lib/idb/sergeantDb";
 import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
+import type { RecipeComponent } from "@sergeant/nutrition-domain";
+import {
+  normalizeCookedWeightG,
+  normalizeRecipeComponents,
+} from "./recipeComponentsNormalize";
 import {
   removeNutritionRecipe,
   upsertNutritionRecipe,
@@ -37,6 +42,10 @@ export interface SavedRecipe {
   steps: string[];
   tips: string[];
   macros: NullableMacros;
+  /** Склад зі знімком продукту; є лише в рецептів, зібраних вручну. */
+  components?: RecipeComponent[];
+  /** Вага всієї готової страви, г; має сенс лише разом із `components`. */
+  cookedWeightG?: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -114,9 +123,16 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
     raw["id"] && String(raw["id"]).trim()
       ? String(raw["id"]).trim()
       : generatePrefixedId("rcp");
+  const components = normalizeRecipeComponents(raw["components"]);
   return {
     id,
     title,
+    ...(components
+      ? {
+          components,
+          cookedWeightG: normalizeCookedWeightG(raw["cookedWeightG"]),
+        }
+      : {}),
     timeMinutes:
       raw["timeMinutes"] != null ? clampNonNegative(raw["timeMinutes"]) : null,
     servings:
