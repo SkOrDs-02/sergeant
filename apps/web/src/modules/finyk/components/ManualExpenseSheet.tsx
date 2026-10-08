@@ -75,6 +75,7 @@ import { useManualCategoryHydration } from "./useManualCategoryHydration";
 import { ManualExpenseKindTabs } from "./ManualExpenseKindTabs";
 import { ManualExpenseDateSection } from "./ManualExpenseDateSection";
 import { ManualExpenseFooter } from "./ManualExpenseFooter";
+import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { DebtTxLinkSection } from "./DebtTxLinkSection";
 import { decideManualDebtLink } from "./manualDebtLink";
 
@@ -668,7 +669,7 @@ export function ManualExpenseSheet({
           setManualDebts &&
           setLinkedTxRole && (
             <DebtTxLinkSection
-              txId={expenseId}
+              txId={manualLinkKey(expenseId)}
               txAmountKop={Math.round(
                 Math.abs(initialExpense?.amount ?? 0) * 100,
               )}

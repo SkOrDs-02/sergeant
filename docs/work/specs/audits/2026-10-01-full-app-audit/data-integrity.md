@@ -2197,7 +2197,7 @@ recordBodyWeight.ts:52-60 (`if (weightKg < min || weightKg > max) return;`). app
 
 ### `data-24` [medium] Привʼязки платежів до боргу рахуються двічі або лишаються після видалення платежу: залишок боргу й капітал неправильні
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-24-debt-payment-links
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (борги, debtEngine, useDebtAutoLink)
 - **Де:** apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx:194,663-674; apps/web/src/modules/finyk/components/DebtTxLinkSection.tsx:145-160; packages/finyk-domain/src/domain/transactions.ts:350; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:135-150; packages/finyk-domain/src/domain/debtEngine.ts:148-150; apps/web/src/modules/finyk/pages/AssetsDebtTxPicker.tsx:278-281
 - **Першопричина:** Аркуш витрати пише привʼязку за сирим id, а пікер і useDebtAutoLink — за manual_&lt;id&gt;, тож один платіж має два ключі. removeManualExpense не чистить linkedTxIds і txLinks пасивів та дебіторок, getDebtPaid бере суму зі знімка txLinks незалежно від того, чи транзакція існує, а restoreManualExpense відкидає id.
