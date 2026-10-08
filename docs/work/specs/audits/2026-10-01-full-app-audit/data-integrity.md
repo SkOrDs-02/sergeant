@@ -2814,7 +2814,7 @@ node <scratch>/agents/verify-server-static-gap-finyk-import-receipts-correctness
 
 ### `data-33` [medium] Закриті банки Monobank ніколи не прибираються з mono_jar, і їхній останній баланс назавжди потрапляє в капітал
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-33-closed-mono-jars
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: mono (jars, read) + finyk-domain (aggregates)
 - **Де:** apps/server/src/modules/mono/jars.ts:29-94; apps/server/src/modules/mono/read.ts:93-117; packages/finyk-domain/src/domain/assets/aggregates.ts:85-94
 - **Першопричина:** upsertJars лише вставляє чи оновлює банки з поточного client-info і виходить раніше при порожньому jars[]; DELETE чи деактивації mono_jar немає ніде, а jarsHandler і sumJarsUAH беруть усі рядки без фільтра за last_seen_at.
