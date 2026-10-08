@@ -4,6 +4,7 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { emptyHabitDraft } from "../../lib/routineDraftUtils";
 import type { HabitDraft, RoutineState } from "../../lib/types";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { HabitForm } from "./HabitForm";
 
 vi.mock("@shared/components/ui/VoiceMicButton", () => ({
@@ -19,13 +20,17 @@ const routine = {
 function Harness() {
   const [draft, setDraft] = useState<HabitDraft>(() => emptyHabitDraft());
 
+  // ReminderPresets викликає `useToast` (інлайн-підказка про тумблер
+  // нагадувань), тож, як і в застосунку, форма живе під `ToastProvider`.
   return (
-    <HabitForm
-      routine={routine}
-      habitDraft={draft}
-      setHabitDraft={setDraft}
-      editingId={null}
-    />
+    <ToastProvider>
+      <HabitForm
+        routine={routine}
+        habitDraft={draft}
+        setHabitDraft={setDraft}
+        editingId={null}
+      />
+    </ToastProvider>
   );
 }
 
