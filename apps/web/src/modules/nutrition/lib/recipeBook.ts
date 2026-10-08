@@ -221,6 +221,59 @@ export async function saveRecipeToBook(
   }
 }
 
+/**
+ * data-35: дзеркалить відновлення книги з бекапу в IndexedDB. SQLite-кеш
+ * оновлює `restoreNutritionRecipes`, але читання книги зливає кеш з власними
+ * записами IDB (новіший `updatedAt` перемагає), тож без цього дзеркала
+ * рецепт, видалений відновленням, воскрес би з IDB, а старіша версія з файлу
+ * програла б новішій копії в IDB. `prune` (режим replace) прибирає з IDB власні
+ * записи, яких немає у файлі. Best effort: збій IDB не скасовує запис у SQLite.
+ */
+export async function mirrorRestoredRecipesToIdb(
+  recipes: readonly SavedRecipe[],
+  { prune }: { prune: boolean },
+): Promise<void> {
+  try {
+    const owner = getNutritionDualWriteUserId();
+    if (!owner) return;
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return;
+    const keep = new Set(recipes.map((r) => r.id));
+    const removed = new Set<string>();
+    if (prune) {
+      for (const r of cachedRecipesOfCurrentUser()) {
+        if (!keep.has(r.id)) removed.add(r.id);
+      }
+      const readTx = db.transaction(STORE, "readonly");
+      const stored = await new Promise<StoredRecipe[]>((resolve, reject) => {
+        const req = readTx.objectStore(STORE).getAll();
+        req.onsuccess = () =>
+          resolve(
+            Array.isArray(req.result) ? (req.result as StoredRecipe[]) : [],
+          );
+        req.onerror = () => reject(req.error);
+      });
+      for (const r of stored) {
+        if (r.ownerId === owner && !keep.has(r.id)) removed.add(r.id);
+      }
+    }
+    const tx = db.transaction(STORE, "readwrite");
+    const store = tx.objectStore(STORE);
+    for (const r of recipes) {
+      recentlyDeleted.delete(tombstoneKey(owner, r.id));
+      store.put({ ...r, ownerId: owner });
+    }
+    for (const id of removed) {
+      recentlyDeleted.add(tombstoneKey(owner, id));
+      store.delete(id);
+    }
+    await txDone(tx);
+  } catch {
+    // Дзеркало вторинне: джерело істини книги - SQLite-кеш.
+  }
+}
+
 function readStoredRecipe(
   db: IDBDatabase,
   key: string,

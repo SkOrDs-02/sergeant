@@ -16,6 +16,7 @@ import {
   encryptJsonToBlob,
 } from "../lib/nutritionCloudBackup";
 import { formatNutritionError } from "../lib/nutritionErrors";
+import { nutritionDualWriteIdle } from "../lib/sqliteWriter/index";
 import type {
   BackupPasswordDialogState,
   RestoreConfirmState,
@@ -44,7 +45,7 @@ export interface UseNutritionCloudBackupResult {
   uploadCloudBackup: () => void;
   downloadCloudBackup: () => void;
   handleBackupPasswordConfirm: (pass: string) => void;
-  applyRestorePayload: (payload: unknown) => void;
+  applyRestorePayload: (payload: unknown) => Promise<void>;
 }
 
 export function useNutritionCloudBackup({
@@ -145,11 +146,22 @@ export function useNutritionCloudBackup({
     ],
   );
 
-  const applyRestorePayload = useCallback((payload: unknown) => {
-    if (!payload) return;
-    applyNutritionBackupPayload(payload);
-    window.location.reload();
-  }, []);
+  const applyRestorePayload = useCallback(
+    async (payload: unknown) => {
+      if (!payload) return;
+      try {
+        // Хвіст запису (IDB-дзеркало рецептів, відмова секції) і черга
+        // dual-write мають завершитись до reload, інакше він обірве запис.
+        await applyNutritionBackupPayload(payload);
+        await nutritionDualWriteIdle();
+      } catch (err) {
+        setErr(formatNutritionError(err, "Не вдалося відновити бекап"));
+        return;
+      }
+      window.location.reload();
+    },
+    [setErr],
+  );
 
   return {
     uploadCloudBackup,
