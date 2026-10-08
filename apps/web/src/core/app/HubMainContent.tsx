@@ -104,6 +104,14 @@ export interface HubMainContentProps {
   inFtuxSession?: boolean;
 }
 
+/** Канонічний порядок вкладок хабу для напрямку slide-анімації (#11). */
+const HUB_TAB_ORDER: readonly HubView[] = [
+  "dashboard",
+  "reports",
+  "profile",
+  "settings",
+];
+
 export const HubMainContent = memo(function HubMainContent({
   onOpenModule,
   iosVisible,
@@ -197,12 +205,6 @@ export const HubMainContent = memo(function HubMainContent({
   // Switching to a tab that is further right → slide-in from the right;
   // switching left → slide-in from the left. This mirrors the spatial model
   // of a physical tab strip, matching the user's mental map.
-  const HUB_TAB_ORDER: HubView[] = [
-    "dashboard",
-    "reports",
-    "profile",
-    "settings",
-  ];
   const prevHubViewForAnim = useRef<HubView>(hubView);
   const [slideClass, setSlideClass] = useState<string>("");
 
@@ -218,8 +220,6 @@ export const HubMainContent = memo(function HubMainContent({
     // the same tab doesn't re-trigger the enter keyframe.
     const id = setTimeout(() => setSlideClass(""), 260);
     return () => clearTimeout(id);
-    // HUB_TAB_ORDER is a module-level constant — no dep needed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `HUB_TAB_ORDER` — module-level константа, dep не потрібен
   }, [hubView]);
 
   const handleRefresh = useCallback(async () => {
