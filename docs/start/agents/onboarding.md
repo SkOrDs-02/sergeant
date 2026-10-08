@@ -33,7 +33,7 @@ CI hard-rules ловляться різними механізмами. Стар
 
 | Симптом                                                    | Куди дивитися                                                                                                                                                                                                                                    |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../governance/governance/hard-rules.json) ↔ [`rules/*.md`](../../governance/governance/rules/). Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                |
+| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../governance/governance/hard-rules.json) ↔ [`rules/*.md`](../../governance/governance/rules/) ↔ `CONTRIBUTING.md` § Hard rules. Прогнати `pnpm hard-rules:list` побачиш точне правило.               |
 | `sergeant-design/no-raw-local-storage`                     | Використовуй storage-wrapper з `@shared/storage` (`ls`, `lsSet`, `safeReadLS`) замість сирого `localStorage`. Plugin: [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design).                              |
 | `sergeant-design/rq-keys-only-from-factory` (Hard Rule #2) | RQ-ключі лише з центральних фабрик `apps/web/src/shared/lib/api/queryKeys.ts` — не inline `queryKey: [...]`.                                                                                                                                     |
 | `sergeant-design/no-cyrillic-jsx-literal`                  | Кириличний literal у JSX поза allowlist — див. [`docs/design/i18n/readiness.md`](../../design/i18n/readiness.md).                                                                                                                                |
@@ -86,7 +86,7 @@ CI hard-rules ловляться різними механізмами. Стар
 pnpm lint                    # ESLint flat config + custom plugin
 pnpm typecheck               # TypeScript per-app
 pnpm lint:skills             # SKILL.md shape + skills-lock SHA-256
-pnpm lint:hard-rules-registry  # hard-rules.json ↔ AGENTS.md ↔ rules/*.md
+pnpm lint:hard-rules-registry  # hard-rules.json ↔ AGENTS.md ↔ rules/*.md ↔ CONTRIBUTING.md
 pnpm docs:check-playbook-schema  # якщо торкався playbook'ів
 pnpm docs:check-links        # якщо доді/змінив internal лінки
 ```
