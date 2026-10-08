@@ -649,6 +649,7 @@ export function AddMealSheet({
                     foodBusy,
                     offBusy,
                     foodErr,
+                    searchSettled: search.searchSettled,
                     setPickedFood,
                     setPickedGrams,
                   }}
