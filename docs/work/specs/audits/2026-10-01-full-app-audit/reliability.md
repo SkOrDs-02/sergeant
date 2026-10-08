@@ -458,7 +458,7 @@ amplify-n20.json (statusMs=8, push ms 653/495) vs amplify-control-n0.json (push 
 
 ### `rel-06` [medium] Журнал синку росте без меж: rejected-оп зберігаються з повним row, retention і байтової межі pull немає
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-06-routine-text-bound (не писати row для rejected — виправлено раніше в 3836a8dd6; text bound для routine_entries у цій гілці: id понад 200 символів дає rejected/text_too_long, name обрізається до 200 (не reject: це копія назви звички, а термінальний reject губив би відмітку); лишилось: байтовий бюджет сторінки pull з next_cursor, квота обсягу, retention sync_op_log — рішення власника, ADR-0065)
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: sync v2
 - **Де:** apps/server/src/modules/sync/syncV2.ts:443-462,653-711; packages/shared/src/schemas/api.ts:1164-1169; apps/server/src/http/bodySizePolicy.ts:155-168; apps/server/src/modules/sync/routine/applySync.ts
 - **Першопричина:** syncV2 пише в sync_op_log кожен оп з повним row до 256 КБ, зокрема rejected з table_not_allowed і довільною назвою таблиці. Журнал ніхто не чистить: ADR-0065 досі Proposed. Pull обмежений лише кількістю рядків (до 500), тож одна сторінка сягає ~128 МБ і кілька разів матеріалізується в пам'яті. routine_entries.name і id не мають text bound.
