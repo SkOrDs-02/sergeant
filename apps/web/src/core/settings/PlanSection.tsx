@@ -21,7 +21,7 @@ import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
  *   • Бейдж плану (Free / Premium).
  *   • Trial-дату (`status === "trialing"` → `currentPeriodEnd` = trial-end),
  *     дату наступного списання (`active`), warning при `canceled`/`past_due`.
- *   • CTA: «Перейти на Premium» (→ `/pricing?source=settings`) для Free;
+ *   • CTA: «Дивитися плани» (→ `/pricing?source=settings`) для Free;
  *     для legacy `provider === "stripe"` — «Керувати підпискою»
  *     (→ `/api/billing/portal` → Stripe Customer Portal);
  *     для LiqPay/Plata — «Скасувати Premium» (власний cancel, порталу нема).
@@ -109,7 +109,7 @@ export function PlanSection() {
   // `usePlan` віддає `plan: "free"` як дефолт, ПОКИ запит у польоті — це
   // прямо задокументовано в його типі. Тобто до відповіді сервера платний
   // користувач бачив бейдж «Free», абзац «Ти на безкоштовному тарифі…» і
-  // кнопку «Перейти на Premium», яка вела його на /pricing (аудит
+  // кнопку «Дивитися плани», яка вела його на /pricing (аудит
   // 2026-09-16, WF-19). `isLoading` у цьому файлі вже читався — але лише
   // задля підпису «Завантаження…» поруч; самі твердження його ігнорували.
   // Плейсхолдер замість назви тарифу — бо «ще не знаю» це не «Free».
@@ -328,7 +328,7 @@ export function PlanSection() {
               className="gap-2"
             >
               <Icon name="sergeant" size="md" />
-              Перейти на Premium
+              Дивитися плани
             </Button>
           )}
         </div>

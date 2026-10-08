@@ -161,7 +161,7 @@ describe("TrialBanner (спека access-tiers)", () => {
     expect(banner.getAttribute("data-trial-banner-variant")).toBe("inline");
     expect(banner.textContent).toContain("2 дні");
     expect(
-      screen.getByRole("button", { name: /Перейти на Premium/ }),
+      screen.getByRole("button", { name: /Дивитися плани/ }),
     ).toBeTruthy();
   });
 
@@ -223,7 +223,7 @@ describe("TrialBanner (спека access-tiers)", () => {
       </Wrapper>,
     );
     const cta = await screen.findByRole("button", {
-      name: /Перейти на Premium/,
+      name: /Дивитися плани/,
     });
     fireEvent.click(cta);
     expect(locations.at(-1)).toBe("/pricing?source=trial_banner");

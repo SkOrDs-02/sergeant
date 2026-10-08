@@ -20,9 +20,12 @@ const STEP_TITLES: Record<string, string> = {
 };
 
 const FALLBACK_TITLE = "Додати прийом їжі";
+const EDIT_TITLE = "Редагувати прийом";
 
 interface AddMealSheetTitleProps {
   step: string;
+  /** Редагування наявного прийому: заголовок не обіцяє «додати». */
+  editing?: boolean;
   /** Стрілка «назад» показується лише там, де backtrack справді можливий. */
   canBacktrack: boolean;
   onBacktrack: () => void;
@@ -30,6 +33,7 @@ interface AddMealSheetTitleProps {
 
 export function AddMealSheetTitle({
   step,
+  editing = false,
   canBacktrack,
   onBacktrack,
 }: AddMealSheetTitleProps) {
@@ -45,7 +49,7 @@ export function AddMealSheetTitle({
           <Icon name="chevron-left" size="lg" />
         </button>
       )}
-      <span className="truncate">{STEP_TITLES[step] ?? FALLBACK_TITLE}</span>
+      <span className="truncate">{editing ? EDIT_TITLE : (STEP_TITLES[step] ?? FALLBACK_TITLE)}</span>
     </div>
   );
 }

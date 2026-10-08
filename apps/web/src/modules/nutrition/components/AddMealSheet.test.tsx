@@ -1330,6 +1330,14 @@ describe("AddMealSheet — source step branches", () => {
     expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
   });
 
+  it("titles the sheet «Редагувати прийом» when editing an existing meal", () => {
+    renderSheet({
+      initialMeal: { id: "m1", name: "Борщ", mealType: "lunch" },
+    });
+    expect(screen.getByText("Редагувати прийом")).toBeInTheDocument();
+    expect(screen.queryByText("Додати прийом їжі")).not.toBeInTheDocument();
+  });
+
   it("auto-advances to fill when a pantry item is picked", () => {
     renderSheet({
       mealTemplates: [template],
