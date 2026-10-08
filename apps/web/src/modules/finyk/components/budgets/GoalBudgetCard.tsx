@@ -117,13 +117,42 @@ function GoalBudgetCardComponent({
   // Список поповнень згорнутий за замовчуванням (design decision #2).
   const [historyOpen, setHistoryOpen] = useState(false);
 
+  // Сума цілі редагується в ЛОКАЛЬНІЙ чернетці й потрапляє в стан бюджетів
+  // (а отже і на синхронізацію) лише на «Зберегти». Раніше `onChangeTarget`
+  // летів на кожен символ: після першої цифри «4» з «40 00» pct рахувався
+  // від недописаної суми, спрацьовувало святкування й забирало фокус.
+  // Чернетка ініціалізується при вході в редагування (патерн «стан із
+  // пропів під час рендера», без ефекту й зайвого кадру зі старою сумою).
+  const [draftTarget, setDraftTarget] = useState<number | null>(
+    budget.targetAmount > 0 ? budget.targetAmount : null,
+  );
+  const [wasEditing, setWasEditing] = useState(isEditing);
+  if (wasEditing !== isEditing) {
+    setWasEditing(isEditing);
+    if (isEditing) {
+      setDraftTarget(budget.targetAmount > 0 ? budget.targetAmount : null);
+    }
+  }
+  const draftTargetValid =
+    draftTarget !== null && Number.isFinite(draftTarget) && draftTarget > 0;
+
+  const handleSave = () => {
+    if (!draftTargetValid) return;
+    onChangeTarget?.(draftTarget);
+    onSave();
+  };
+
   useEffect(() => {
+    // Святкуємо лише від ЗБЕРЕЖЕНОГО стану: у режимі редагування картка
+    // показує чернетку, а не ціль, тож «досягнення» тут було б хибним, а
+    // дедуп-ключ спалився б назавжди.
+    if (isEditing) return;
     if (pct < 100) return;
     const celebrationId = `finyk:goal-completed:${budget.id}`;
     if (isNudgeDismissed(webKVStore, celebrationId)) return;
     dismissNudge(webKVStore, celebrationId);
     goalCompleted(budget.name ?? "Ціль закрито", saved, "₴", "finyk");
-  }, [pct, budget.id, budget.name, saved, goalCompleted]);
+  }, [isEditing, pct, budget.id, budget.name, saved, goalCompleted]);
 
   const contribAmountNum = Number(contribAmount);
   const contribAmountValid =
@@ -166,8 +195,8 @@ function GoalBudgetCardComponent({
                 id={targetId}
                 size="sm"
                 placeholder="Напр. 20 000 ₴"
-                value={budget.targetAmount || ""}
-                onValueChange={(next) => onChangeTarget?.(next ?? 0)}
+                value={draftTarget ?? ""}
+                onValueChange={setDraftTarget}
               />
             </div>
             {jars.length > 0 && (
@@ -189,7 +218,12 @@ function GoalBudgetCardComponent({
               onChange={(e) => onChangeDate?.(e.target.value)}
             />
             <div className="flex gap-2">
-              <Button className="flex-1" size="sm" onClick={onSave}>
+              <Button
+                className="flex-1"
+                size="sm"
+                onClick={handleSave}
+                disabled={!draftTargetValid}
+              >
                 Зберегти
               </Button>
               <Button
