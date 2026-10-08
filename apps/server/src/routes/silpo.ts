@@ -23,6 +23,11 @@ import {
   consumeAuthorizationState,
   exchangeCode,
 } from "../modules/silpo/oauth.js";
+import {
+  clearOAuthBindingCookie,
+  setOAuthBindingCookie,
+  verifyOAuthBinding,
+} from "../modules/silpo/oauthBinding.js";
 import { persistTokens, silpoKeyRing } from "../modules/silpo/tokenStore.js";
 import { diagnoseSilpo } from "../modules/silpo/diagnose.js";
 import { AppError, ExternalServiceError } from "../obs/errors.js";
@@ -118,7 +123,9 @@ export async function connectHandler(
   }
 
   try {
-    const { url } = await buildAuthorizationUrl({ userId, redirectUri });
+    const { url, state } = await buildAuthorizationUrl({ userId, redirectUri });
+    // sec-15: привʼязуємо state до цього браузера (див. `oauthBinding.ts`).
+    setOAuthBindingCookie(res, state, redirectUri.startsWith("https://"));
     res.redirect(302, url);
   } catch (err) {
     logger.warn({
@@ -162,6 +169,19 @@ export async function callbackHandler(
     return;
   }
 
+  // sec-15: ДО споживання state перевіряємо, що колбек приніс той самий
+  // браузер, що зробив `/connect`. Без цього чужий authorize-URL, пересланий
+  // жертві, зберіг би токени жертви на userId ініціатора. Чужий state не
+  // споживаємо: це не наш flow, і його власник завершить його сам.
+  if (!verifyOAuthBinding(req, state)) {
+    logger.warn({ msg: "silpo_callback_binding_mismatch" });
+    redirectToSettings(res, "error", "invalid_state");
+    return;
+  }
+  const secureCookie = callbackRedirectUri()?.startsWith("https://") ?? false;
+  // Кука своє відслужила за будь-якого подальшого результату.
+  clearOAuthBindingCookie(res, secureCookie);
+
   const pending = await consumeAuthorizationState(state);
   if (!pending) {
     // Unknown, expired or already-consumed state — the only hard gate here.
@@ -181,19 +201,26 @@ export async function callbackHandler(
   // `requireSession()` тут робила фічу непрацездатною для всіх, віддаючи
   // 401-JSON у вкладку замість екрана налаштувань.
   //
-  // Безпеку тримає сам `state`: 24 байти ентропії, TTL 10 хвилин,
-  // згорає одним атомарним `DELETE ... RETURNING` (тобто replay
-  // неможливий), і приходить він лише на наш redirect_uri по TLS.
-  // Звірки з `req.user` тут свідомо НЕМАЄ — і не тому, що «лінь». Роут
-  // стоїть до `requireSession()`, тож `req.user` не заповнюється ніколи, і
-  // будь-яка така умова була б мертвим кодом, що вдає захист.
+  // Звірки з `req.user` тут свідомо НЕМАЄ: роут стоїть до `requireSession()`,
+  // тож `req.user` не заповнюється ніколи, і така умова була б мертвим
+  // кодом, що вдає захист.
   //
-  // Класична вимога «state має бути привʼязаний до сесії» захищає від
-  // account-linking CSRF: зловмисник підсовує жертві СВІЙ `code`, щоб його
-  // акаунт провайдера прилип до її профілю. Тут ця атака не працює за
-  // побудовою: власника визначає `state`, а не браузер, який приніс запит.
-  // Підсунутий чужий `state` привʼяже токени до акаунта того, хто цей
-  // `state` замовив, — тобто до самого зловмисника, а не до жертви.
+  // Але одного `state` для визначення власника НЕДОСТАТНЬО (sec-15,
+  // RFC 9700 § 4.7). `state` видно в `Location` будь-якого `/connect`:
+  // зловмисник під своєю сесією забирає свій authorize-URL і пересилає його
+  // жертві (свіжий можна генерувати на льоту, TTL 10 хв не заважає). Жертва
+  // погоджується на справжній сторінці Сільпо, колбек обмінює ЇЇ `code` і
+  // кладе ЇЇ токени на userId зловмисника, а той читає чеки й керує кошиком
+  // жертви. Тобто підсунутий чужий `state` шкодить саме жертві; колишній
+  // висновок «привʼяже до самого зловмисника, отже нешкідливо» був хибним.
+  //
+  // Тому `state` привʼязаний до браузера: `/connect` ставить HttpOnly
+  // SameSite=Lax куку з `sha256(state)` (Path=/api/silpo/callback, 10 хв), а
+  // перевірка вище, ДО споживання state, вимагає її збігу. Кука є лише в
+  // браузері, який зробив `/connect`; у браузер жертви зловмисник її
+  // підкласти не може, тож пересланий URL закінчується `invalid_state`, а
+  // токени не зберігаються. Replay того самого state неможливий: він
+  // згорає одним атомарним `DELETE ... RETURNING`.
   const userId = pending.userId;
 
   const ring = silpoKeyRing();

@@ -115,6 +115,15 @@ vi.mock("../http/index.js", () => ({
 
 import { createSilpoRouter } from "./silpo.js";
 import { AppError, ExternalServiceError } from "../obs/errors.js";
+import {
+  SILPO_OAUTH_BINDING_COOKIE,
+  hashStateForBinding,
+} from "../modules/silpo/oauthBinding.js";
+
+/** Заголовок `Cookie`, який браузер, що зробив `/connect` з цим state, поверне на колбек. */
+function bindingCookie(state: string): string {
+  return `${SILPO_OAUTH_BINDING_COOKIE}=${hashStateForBinding(state)}`;
+}
 
 function appWith(): express.Express {
   const app = express();
@@ -237,6 +246,31 @@ describe("GET /api/silpo/connect", () => {
     });
   });
 
+  it("sec-15: ставить HttpOnly SameSite=Lax куку-привʼязку зі sha256(state)", async () => {
+    mocks.buildAuthorizationUrl.mockResolvedValue({
+      url: "https://auth.silpo.ua/authorize?state=abc",
+      state: "abc",
+    });
+
+    const res = await request(appWith())
+      .get("/api/silpo/connect")
+      .set("x-test-user-id", "user-1");
+
+    const setCookie = ([] as string[]).concat(res.headers["set-cookie"] ?? []);
+    const binding = setCookie.find((c) =>
+      c.startsWith(`${SILPO_OAUTH_BINDING_COOKIE}=`),
+    );
+    expect(binding).toBeDefined();
+    expect(binding).toContain(`=${hashStateForBinding("abc")};`);
+    expect(binding).toContain("HttpOnly");
+    expect(binding).toContain("SameSite=Lax");
+    expect(binding).toContain("Path=/api/silpo/callback");
+    expect(binding).toContain("Secure"); // callback-URL у тесті https
+    expect(binding).toMatch(/Max-Age=600/);
+    // Сам state у куку НЕ потрапляє (він bearer-секрет flow).
+    expect(binding).not.toContain("=abc;");
+  });
+
   it("503s when PUBLIC_API_BASE_URL is not configured", async () => {
     mocks.envState.PUBLIC_API_BASE_URL = "";
     const res = await request(appWith())
@@ -263,6 +297,7 @@ describe("GET /api/silpo/callback", () => {
 
     const res = await request(appWith())
       .get("/api/silpo/callback?code=abc&state=xyz")
+      .set("Cookie", bindingCookie("xyz"))
       .set("x-test-user-id", "user-1");
 
     expect(res.status).toBe(302);
@@ -281,6 +316,7 @@ describe("GET /api/silpo/callback", () => {
 
     const res = await request(appWith())
       .get("/api/silpo/callback?code=abc&state=bogus")
+      .set("Cookie", bindingCookie("bogus"))
       .set("x-test-user-id", "user-1");
 
     expect(res.status).toBe(302);
@@ -313,9 +349,9 @@ describe("GET /api/silpo/callback", () => {
       expires_in: 3600,
     });
 
-    const res = await request(appWith()).get(
-      "/api/silpo/callback?code=abc&state=xyz",
-    );
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=abc&state=xyz")
+      .set("Cookie", bindingCookie("xyz"));
 
     expect(res.status).toBe(302);
     expect(res.headers["location"]).toBe(
@@ -342,9 +378,8 @@ describe("GET /api/silpo/callback", () => {
     // Та перевірка знята: роут стоїть до requireSession(), тож req.user не
     // заповнюється, і умова була б мертвим кодом, що вдає захист.
     //
-    // Account-linking CSRF це не відкриває: підсунутий жертві чужий state
-    // привʼяже токени до акаунта ЗАМОВНИКА цього state (тобто самого
-    // зловмисника), а не до профілю жертви. Нижче — саме цей інваріант.
+    // Це не діра, бо state привʼязаний до браузера кукою (див. блок
+    // "sec-15" нижче): без куки ініціатора колбек токени не збереже.
     mocks.consumeAuthorizationState.mockResolvedValue({
       userId: "state-owner",
       codeVerifier: "verifier",
@@ -359,6 +394,7 @@ describe("GET /api/silpo/callback", () => {
 
     const res = await request(appWith())
       .get("/api/silpo/callback?code=abc&state=xyz")
+      .set("Cookie", bindingCookie("xyz"))
       .set("x-test-user-id", "someone-else");
 
     expect(res.status).toBe(302);
@@ -373,6 +409,107 @@ describe("GET /api/silpo/callback", () => {
       expect.anything(),
       expect.anything(),
     );
+  });
+});
+
+describe("GET /api/silpo/callback: sec-15, state привʼязаний до браузера", () => {
+  function primeHappyPath(): void {
+    mocks.consumeAuthorizationState.mockResolvedValue({
+      userId: "attacker",
+      codeVerifier: "verifier",
+      redirectUri: "https://api.example.com/api/silpo/callback",
+    });
+    mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
+    mocks.exchangeCode.mockResolvedValue({
+      access_token: "at",
+      refresh_token: "rt",
+      expires_in: 3600,
+    });
+  }
+
+  it("валідний state БЕЗ куки (жертва відкрила чужий authorize-URL) -> invalid_state, токени НЕ збережено", async () => {
+    primeHappyPath();
+
+    const res = await request(appWith()).get(
+      "/api/silpo/callback?code=victim-code&state=xyz",
+    );
+
+    expect(res.status).toBe(302);
+    expect(res.headers["location"]).toBe(
+      "https://app.example.com/settings?silpo=error&reason=invalid_state",
+    );
+    expect(mocks.exchangeCode).not.toHaveBeenCalled();
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("кука від ІНШОГО state -> invalid_state, токени НЕ збережено, state не споживається", async () => {
+    primeHappyPath();
+
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=victim-code&state=xyz")
+      .set("Cookie", bindingCookie("other-flow"));
+
+    expect(res.status).toBe(302);
+    expect(res.headers["location"]).toBe(
+      "https://app.example.com/settings?silpo=error&reason=invalid_state",
+    );
+    expect(mocks.consumeAuthorizationState).not.toHaveBeenCalled();
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("сторонні cookie поруч і сміттєве значення привʼязки -> відмова", async () => {
+    primeHappyPath();
+
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=victim-code&state=xyz")
+      .set("Cookie", `a=b; ${SILPO_OAUTH_BINDING_COOKIE}=garbage; c=d`);
+
+    expect(res.headers["location"]).toContain("reason=invalid_state");
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("повний round-trip: Set-Cookie з /connect -> колбек з цією кукою -> connected, кука стирається", async () => {
+    mocks.buildAuthorizationUrl.mockResolvedValue({
+      url: "https://auth.silpo.ua/authorize?state=roundtrip",
+      state: "roundtrip",
+    });
+    const connect = await request(appWith())
+      .get("/api/silpo/connect")
+      .set("x-test-user-id", "user-1");
+    const setCookie = ([] as string[]).concat(
+      connect.headers["set-cookie"] ?? [],
+    );
+    const cookieHeader = (setCookie[0] ?? "").split(";")[0] ?? "";
+
+    mocks.consumeAuthorizationState.mockResolvedValue({
+      userId: "user-1",
+      codeVerifier: "verifier",
+      redirectUri: "https://api.example.com/api/silpo/callback",
+    });
+    mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
+    mocks.exchangeCode.mockResolvedValue({
+      access_token: "at",
+      refresh_token: "rt",
+      expires_in: 3600,
+    });
+
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=abc&state=roundtrip")
+      .set("Cookie", cookieHeader);
+
+    expect(res.headers["location"]).toBe(
+      "https://app.example.com/settings?silpo=connected",
+    );
+    expect(mocks.persistTokens).toHaveBeenCalledWith(
+      "user-1",
+      expect.anything(),
+      expect.anything(),
+    );
+    const cleared = ([] as string[])
+      .concat(res.headers["set-cookie"] ?? [])
+      .find((c) => c.startsWith(`${SILPO_OAUTH_BINDING_COOKIE}=;`));
+    expect(cleared).toBeDefined();
+    expect(cleared).toContain("Path=/api/silpo/callback");
   });
 });
 
