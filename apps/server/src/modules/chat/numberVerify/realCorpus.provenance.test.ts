@@ -19,7 +19,7 @@ import { EVAL_DOC_SCENARIOS } from "./fixtures/evalDocScenarios.js";
 
 const REPO_ROOT = new URL("../../../../../../", import.meta.url);
 const CASSETTE_DIR = new URL(
-  "../../../__fixtures__/tool-eval/cassettes/",
+  "../../../__fixtures__/number-verify/cassettes-2026-10-01/",
   import.meta.url,
 );
 const CHAT_DIR = new URL("../", import.meta.url);

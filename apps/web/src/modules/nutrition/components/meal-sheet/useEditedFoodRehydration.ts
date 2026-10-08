@@ -75,6 +75,7 @@ export function useEditedFoodRehydration({
         brand: food.brand,
         defaultGrams: food.defaultGrams,
         per100: food.per100,
+        portions: food.portions,
       });
       setRehydratedId(editedFoodId);
     });

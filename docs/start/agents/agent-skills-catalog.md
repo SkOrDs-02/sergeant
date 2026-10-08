@@ -18,7 +18,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 
 Якщо скіл виносить довгі довідкові блоки у `references/` (3-tier progressive disclosure), дотримуйся [`skill-authoring-guide.md`](./skill-authoring-guide.md): naming `{prefix}-{name}.md` і обов'язковий frontmatter (`title`, `impact` із закритого набору, `impactDescription`, `tags`), який валідує `check-skill-shape.mjs` у складі `pnpm lint:skills`.
 
-Гейти введено initiative-ою [`0009-agent-os-hardening`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
+Гейти введено initiative-ою [`0009-agent-os-hardening`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). Ті самі перевірки входять у ланцюжок `pnpm lint`, тож на PR їх гейтить required-джоба `check` у `ci.yml`; `skill-freshness.yml` біжить лише щотижня і вручну. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
 
 ## Active Skills
 
@@ -36,7 +36,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-server-api`](../../../.agents/skills/sergeant-server-api/SKILL.md)                             | `apps/server`, `packages/api-client`                             | Bigint coercion, contract triplet, day-key rules (ADR-0078: device-local for personal entities, Kyiv for reports/financial periods) |
 | [`sergeant-backend-architecture`](../../../.agents/skills/sergeant-backend-architecture/SKILL.md)         | Backend architecture, CQRS, Temporal, Saga, service boundaries   | Flat Express 5 monolith, module-per-domain, sync-vs-queue decision, no layered scaffolding (blocks Clean/Hexagonal/CQRS/Saga)       |
 | [`sergeant-data-and-migrations`](../../../.agents/skills/sergeant-data-and-migrations/SKILL.md)           | SQL, Postgres, migrations, rollout safety                        | Generator usage, sequential numbering, two-phase DROP                                                                               |
-| [`sergeant-mobile-expo`](../../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`                               | Expo Router boundaries, NativeWind, MMKV, no DOM leakage                                                                            |
+| [`sergeant-mobile-expo`](../../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`                               | Expo Router boundaries, NativeWind, MMKV, no DOM leakage; контур на паузі (ADR-0094)                                                |
 | [`sergeant-module-finyk`](../../../.agents/skills/sergeant-module-finyk/SKILL.md)                         | Задачі в модулі finyk (бюджети, транзакції, готівка)             | Канон + журнал рішень finyk, копійки як number, заморожене минуле (ADR-0079)                                                        |
 | [`sergeant-module-nutrition`](../../../.agents/skills/sergeant-module-nutrition/SKILL.md)                 | Задачі в модулі nutrition (їжа, калорії, комора)                 | Канон + журнал рішень nutrition, append-only комора (ADR-0077), device-local день (ADR-0078)                                        |
 | [`sergeant-module-fizruk`](../../../.agents/skills/sergeant-module-fizruk/SKILL.md)                       | Задачі в модулі fizruk (тренування, відновлення, травми)         | Канон + журнал рішень fizruk, зонна травма-модель (ADR-0083), вага тіла — джерело істини (ADR-0080)                                 |
@@ -66,21 +66,21 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 
 ## Preferred Routing by Scenario
 
-| Scenario                                     | Start with                                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Add a new web feature or screen              | `sergeant-feature-delivery` + `sergeant-web-ui`                                       |
-| Fix a broken API response                    | `sergeant-bugfix-and-regression` + `sergeant-server-api`                              |
-| Design a new backend module or workflow      | `sergeant-backend-architecture` + `sergeant-server-api`                               |
-| Add a DB column safely                       | `sergeant-feature-delivery` + `sergeant-data-and-migrations`                          |
-| Review PR touching server + `api-client`     | `sergeant-review-and-merge` + `sergeant-server-api`                                   |
-| Add or change a HubChat tool                 | `sergeant-feature-delivery` + `sergeant-module-ai`                                    |
-| Change product behavior inside one module    | `sergeant-module-<finyk\|nutrition\|fizruk\|routine\|ai>` + surface skill             |
-| Write or debug a Playwright E2E test         | `sergeant-e2e-testing`                                                                |
-| Run a security review or pnpm audit          | `sergeant-security-audit`                                                             |
-| Reduce tech debt, dead code, ESLint baseline | `sergeant-tech-debt`                                                                  |
-| Port a screen from web to Expo               | `sergeant-feature-delivery` + `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` |
-| Change auth or cookies                       | `better-auth-best-practices` and only then the touched surface skill                  |
-| Ship env or deploy changes                   | `sergeant-deploy-and-observability`                                                   |
+| Scenario                                                                  | Start with                                                                            |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Add a new web feature or screen                                           | `sergeant-feature-delivery` + `sergeant-web-ui`                                       |
+| Fix a broken API response                                                 | `sergeant-bugfix-and-regression` + `sergeant-server-api`                              |
+| Design a new backend module or workflow                                   | `sergeant-backend-architecture` + `sergeant-server-api`                               |
+| Add a DB column safely                                                    | `sergeant-feature-delivery` + `sergeant-data-and-migrations`                          |
+| Review PR touching server + `api-client`                                  | `sergeant-review-and-merge` + `sergeant-server-api`                                   |
+| Add or change a HubChat tool                                              | `sergeant-feature-delivery` + `sergeant-module-ai`                                    |
+| Change product behavior inside one module                                 | `sergeant-module-<finyk\|nutrition\|fizruk\|routine\|ai>` + surface skill             |
+| Write or debug a Playwright E2E test                                      | `sergeant-e2e-testing`                                                                |
+| Run a security review or pnpm audit                                       | `sergeant-security-audit`                                                             |
+| Reduce tech debt, dead code, ESLint baseline                              | `sergeant-tech-debt`                                                                  |
+| Port a screen from web to Expo (пауза ADR-0094 — спершу рішення власника) | `sergeant-feature-delivery` + `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` |
+| Change auth or cookies                                                    | `better-auth-best-practices` and only then the touched surface skill                  |
+| Ship env or deploy changes                                                | `sergeant-deploy-and-observability`                                                   |
 
 ## Codex Agent Helpers
 

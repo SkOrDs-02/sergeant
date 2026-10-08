@@ -254,8 +254,9 @@ describe("connectHandler", () => {
 
     expect(res.statusCode).toBe(200);
     // 1 connection upsert + 1 account upsert + 1 jar upsert
-    // + 1 реконсиляція заглушок-привидів (міграція 119) = 4 DB calls
-    expect(dbQuery).toHaveBeenCalledTimes(4);
+    // + 1 прибирання закритих банок (data-33)
+    // + 1 реконсиляція заглушок-привидів (міграція 119) = 5 DB calls
+    expect(dbQuery).toHaveBeenCalledTimes(5);
     const jarUpsertCall = dbQuery.mock.calls.find((c) =>
       String(c[0]).includes("INSERT INTO mono_jar"),
     );
@@ -292,6 +293,41 @@ describe("connectHandler", () => {
       String(c[0]).includes("INSERT INTO mono_jar"),
     );
     expect(jarUpsertCall).toBeUndefined();
+  });
+
+  it("connect with explicit empty jars[]: prunes all jars; without jars field: no DELETE", async () => {
+    const accounts = [{ id: "acc_1", currencyCode: 980, balance: 100000 }];
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ accounts, jars: [] }),
+    });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+
+    await connectHandler(
+      makeReq({ token: "valid_personal_token_12345" }),
+      makeRes(),
+    );
+    const del = dbQuery.mock.calls.find((c) =>
+      String(c[0]).includes("DELETE FROM mono_jar"),
+    );
+    expect(del?.[1]).toEqual(["user_1", []]);
+
+    dbQuery.mockClear();
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ accounts }),
+    });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+    await connectHandler(
+      makeReq({ token: "valid_personal_token_12345" }),
+      makeRes(),
+    );
+    expect(
+      dbQuery.mock.calls.some((c) =>
+        String(c[0]).includes("DELETE FROM mono_jar"),
+      ),
+    ).toBe(false);
   });
 
   it("throws ExternalServiceError(502) when webhook registration fails", async () => {

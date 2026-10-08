@@ -12,7 +12,10 @@ import { HUB_MODULE_IDS } from "@shared/lib/modules/hubNav";
 // PWA manifest `name` (vite.config.js). Some sub-routes were observed losing
 // the static title (browser falling back to the URL), so `RootLayout` keeps
 // it pinned to this value on every navigation.
-export const APP_TITLE = "Sergeant · Твій персональний хаб життя";
+// «Твій персональний хаб життя» знято 2026-10-08 (анти-слоп раунд 4, A5):
+// формула підходить будь-якому all-in-one застосунку. Тепер та сама, що на
+// сайті: перелік того, що продукт рахує.
+export const APP_TITLE = "Sergeant · гроші, тренування, звички і їжа";
 
 // Per-route document titles. `RootLayout` resolves the active pathname against
 // this map on every navigation and falls back to `APP_TITLE` for anything not
@@ -28,7 +31,7 @@ export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/sign-in": "Sergeant · Вхід",
   "/reset-password": "Sergeant · Скидання пароля",
   "/verify-email": "Sergeant · Підтвердження email",
-  "/welcome": "Sergeant · Ласкаво просимо",
+  "/welcome": "Sergeant · З чого почати",
   // Немає запису для "/settings" (L-1, 2026-08-08): цей pathname більше
   // ніколи не є ОСІЛОЮ локацією — `core/settings/route.tsx` редиректить
   // з нього синхронно в ефекті одразу після монтування, тож

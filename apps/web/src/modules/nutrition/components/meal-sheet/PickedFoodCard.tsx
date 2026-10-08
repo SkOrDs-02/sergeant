@@ -15,7 +15,7 @@
  * Status: Active
  * Last validated: 2026-08-22
  */
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -32,6 +32,8 @@ import {
   type MealFormState,
 } from "./mealFormUtils";
 import { useWheelGrams } from "./useWheelGrams";
+import { PortionQuantityField, PortionUnitPicker } from "./PortionUnitControls";
+import { pickInitialUnit, readLastUnit } from "./portionUnits";
 import type { PickedFood } from "./FoodPickerSection";
 
 /** Ідентичність «цей продукт під цією вагою» для гарда перерахунку. */
@@ -61,6 +63,8 @@ interface PickedFoodCardProps {
    * перерахунок вмикається.
    */
   skipInitialRescale?: boolean | undefined;
+  /** Повідомляє обрану одиницю продукту з порціями (памʼять «остання одиниця»). */
+  onUnitChange?: ((foodId: string, unitId: string) => void) | undefined;
 }
 
 export function PickedFoodCard({
@@ -70,7 +74,28 @@ export function PickedFoodCard({
   setPickedGrams,
   onChangeProduct,
   skipInitialRescale = false,
+  onUnitChange,
 }: PickedFoodCardProps) {
+  const portions = pickedFood.portions ?? [];
+  const foodId = pickedFood.id != null ? String(pickedFood.id) : "";
+  const [unitId, setUnitId] = useState(() =>
+    pickInitialUnit(
+      portions,
+      foodId ? readLastUnit(foodId) : null,
+      skipInitialRescale,
+    ),
+  );
+  const portion = portions.find((p) => p.id === unitId) ?? null;
+  // Одиниця за замовчуванням - порція з кількістю 1: вага мусить їй
+  // відповідати, інакше поле показувало б «0,33 скибки». Один раз на старті.
+  const [startPortion] = useState(portion);
+  useEffect(() => {
+    if (startPortion) setPickedGrams(String(startPortion.grams));
+  }, [startPortion, setPickedGrams]);
+  useEffect(() => {
+    if (foodId && portions.length > 0) onUnitChange?.(foodId, unitId);
+  }, [foodId, portions.length, unitId, onUnitChange]);
+
   // R2-UI-18 · On touch devices the numeric grams field pops the OS numpad
   // over half the sheet; a scroll-snap wheel keeps the value inline. Desktop
   // keeps the precise +/− stepper + numeric field (arbitrary grams).
@@ -192,94 +217,116 @@ export function PickedFoodCard({
         <ProductNutrientsRow nutrients={pickedFood.nutrients} />
       )}
 
+      {portions.length > 0 && (
+        <div className="px-4 pb-2">
+          <PortionUnitPicker
+            portions={portions}
+            unitId={unitId}
+            onChange={setUnitId}
+          />
+        </div>
+      )}
+
       {/* Порція з кроками */}
       <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
         <div className="text-style-caption text-subtle font-semibold shrink-0">
           Скільки зʼїв
         </div>
-        {coarsePointer ? (
-          <WheelPicker
-            values={wheel.values}
-            value={wheel.value}
-            onChange={(g) => setPickedGrams(String(g))}
-            aria-label="Грами"
-            formatValue={(g) => `${g} г`}
-            className="w-[92px]"
+        {portion ? (
+          <PortionQuantityField
+            portion={portion}
+            grams={pickedGrams}
+            setGrams={setPickedGrams}
           />
         ) : (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              aria-label="Зменшити"
-              onClick={() => {
-                const cur = Number(pickedGrams) || 100;
-                setPickedGrams(String(Math.max(1, cur - (cur > 50 ? 10 : 5))));
-              }}
-              className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
-            >
-              −
-            </button>
-            <div className="relative">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={gramsDraft.value}
-                onChange={gramsDraft.onChange}
+          <>
+            {coarsePointer ? (
+              <WheelPicker
+                values={wheel.values}
+                value={wheel.value}
+                onChange={(g) => setPickedGrams(String(g))}
                 aria-label="Грами"
-                className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                formatValue={(g) => `${g} г`}
+                className="w-[92px]"
               />
-              {/* AI-NOTE: «г» лишається сирим `text-xs`, і це не
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-label="Зменшити"
+                  onClick={() => {
+                    const cur = Number(pickedGrams) || 100;
+                    setPickedGrams(
+                      String(Math.max(1, cur - (cur > 50 ? 10 : 5))),
+                    );
+                  }}
+                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                >
+                  −
+                </button>
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={gramsDraft.value}
+                    onChange={gramsDraft.onChange}
+                    aria-label="Грами"
+                    className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  {/* AI-NOTE: «г» лишається сирим `text-xs`, і це не
                   недогляд проходу типографіки. Це одиниця, приліплена
                   до числа, а не текст: її кегль має відноситись до
                   кегля числа в полі, а не до текстової ролі. Рівно так
                   само влаштований символ валюти в `Money` — 0.72em від
                   суми, а не окрема роль. */}
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
-                г
-              </span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
+                    г
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Збільшити"
+                  onClick={() => {
+                    const cur = Number(pickedGrams) || 100;
+                    // Та сама стеля, що й для набраного вручну: інакше
+                    // `MAX_PORTION_GRAMS` тримає лише один із двох шляхів
+                    // вводу, і межа проти зайвого нуля обходиться кнопкою.
+                    setPickedGrams(
+                      String(
+                        Math.min(MAX_PORTION_GRAMS, cur + (cur >= 50 ? 10 : 5)),
+                      ),
+                    );
+                  }}
+                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                >
+                  +
+                </button>
+              </div>
+            )}
+            {/* Швидкі порції */}
+            <div className="flex gap-1 flex-wrap">
+              {[50, 100, 150, 200].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setPickedGrams(String(g))}
+                  className={cn(
+                    "px-2 py-0.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
+                    // На coarse pointer степер підмінює `WheelPicker`, а ці
+                    // чіпи лишаються — тобто стають найдрібнішим тапабельним
+                    // контролом картки. 44×44 тут не опційні.
+                    "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
+                    Number(pickedGrams) === g
+                      ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
+                      : "bg-panelHi text-subtle border-line hover:border-nutrition/40",
+                  )}
+                >
+                  {g}
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              aria-label="Збільшити"
-              onClick={() => {
-                const cur = Number(pickedGrams) || 100;
-                // Та сама стеля, що й для набраного вручну: інакше
-                // `MAX_PORTION_GRAMS` тримає лише один із двох шляхів
-                // вводу, і межа проти зайвого нуля обходиться кнопкою.
-                setPickedGrams(
-                  String(
-                    Math.min(MAX_PORTION_GRAMS, cur + (cur >= 50 ? 10 : 5)),
-                  ),
-                );
-              }}
-              className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
-            >
-              +
-            </button>
-          </div>
+          </>
         )}
-        {/* Швидкі порції */}
-        <div className="flex gap-1 flex-wrap">
-          {[50, 100, 150, 200].map((g) => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => setPickedGrams(String(g))}
-              className={cn(
-                "px-2 py-0.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
-                // На coarse pointer степер підмінює `WheelPicker`, а ці
-                // чіпи лишаються — тобто стають найдрібнішим тапабельним
-                // контролом картки. 44×44 тут не опційні.
-                "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
-                Number(pickedGrams) === g
-                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
-                  : "bg-panelHi text-subtle border-line hover:border-nutrition/40",
-              )}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/*

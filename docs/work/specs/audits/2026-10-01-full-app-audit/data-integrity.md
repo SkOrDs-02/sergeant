@@ -1511,7 +1511,7 @@ I could not refute the mechanism and reproduced the loss myself. But the impact 
 
 ### `data-14` [medium] Контент-дедуп outbox ковтає останню дію в чергуванні check→uncheck→check (hide→show→hide, delete→undo→delete): сервер і інші пристрої лишаються в протилежному стані
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-14-outbox-dedup-toggle
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine (enqueueOutboxUpsert)
 - **Де:** apps/web/src/core/syncEngine/enqueueOutboxUpsert.ts:76-80,151-160,212-272; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:190-255; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:148-244
 - **Першопричина:** findDuplicatePending порівнює новий оп лише з найновішим pending-рядком того самого (user_id, table, op) і вирізає з порівняння поля, рівні clientTs. Проміжний оп іншого типу не враховується, тож третій крок збігається з першим і не ставиться в чергу, всупереч власному коментарю модуля й AI-CONTEXT серверного applySync про toggle→untoggle→toggle.
@@ -1761,7 +1761,7 @@ w4_nul.mjs: 'A insert w/ NUL extra: 200 ["rejected:oplog_write_failed"]; DB rout
 
 ### `data-18` [medium] Гонка першого INSERT того самого id з двох пристроїв: новіший запис отримує термінальний apply_failed, перемагає старіший
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-18-first-insert-race (syncV2 повторює apply один раз після 23505, тож гонка першого INSERT більше не дає apply_failed; лишилось: retryable-статус для 40P01/55P03/57014 і ON CONFLICT у самих apply-функціях)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync apply-функції (routine, finyk, nutrition, fizruk)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:353-368,399-421; apps/server/src/modules/sync/routine/applySync.ts:63-120; apps/server/src/modules/sync/finyk/applySync.ts:40-85,182-195,419-436; apps/server/src/modules/sync/nutrition/applySync.ts:123,265,379,467,552; apps/server/src/modules/sync/fizruk/applySync.ts:90-115,247-270,392-405
 - **Першопричина:** Apply-функції роблять SELECT без блокування, а потім plain INSERT без ON CONFLICT; друга транзакція ловить 23505, і syncV2 перетворює будь-який виняток (зокрема deadlock і lock/statement timeout) на rejected apply_failed, який кешується за idempotency_key і для клієнта термінальний.
@@ -2768,7 +2768,7 @@ Live: <scratch>/agents/verify-server-static-gap-finyk-import-receipts-correctnes
 
 ### `data-32` [medium] Профіль mono ігнорує валюту картки «(USD)/(EUR)» у заголовку: виписки валютних карток імпортуються як гривні
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-32-mono-csv-currency
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: finyk import (csvProfiles)
 - **Де:** apps/server/src/modules/finyk/import/csvProfiles.ts:113-190
 - **Першопричина:** detectMonoProfile шукає підрядок «сума в валюті картки», ставить currencyColIndex:null і спирається на хибне припущення, що картка завжди гривнева; спека розглядає лише Privat24-рахунки у валюті.
@@ -2814,7 +2814,7 @@ node <scratch>/agents/verify-server-static-gap-finyk-import-receipts-correctness
 
 ### `data-33` [medium] Закриті банки Monobank ніколи не прибираються з mono_jar, і їхній останній баланс назавжди потрапляє в капітал
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-33-closed-mono-jars
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: mono (jars, read) + finyk-domain (aggregates)
 - **Де:** apps/server/src/modules/mono/jars.ts:29-94; apps/server/src/modules/mono/read.ts:93-117; packages/finyk-domain/src/domain/assets/aggregates.ts:85-94
 - **Першопричина:** upsertJars лише вставляє чи оновлює банки з поточного client-info і виходить раніше при порожньому jars[]; DELETE чи деактивації mono_jar немає ніде, а jarsHandler і sumJarsUAH беруть усі рядки без фільтра за last_seen_at.
@@ -3178,7 +3178,7 @@ apps/web/src/modules/fizruk/lib/pendingRetroEnd.ts:16-26 (sessionStorage by desi
 
 ### `data-38` [medium] Після аварійного закриття браузера пристрій втрачає останні правки, які вже прийняв сервер, і ніколи їх не підтягує
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-38-fizruk-crash-recovery (LWW-умова `updated_at < ?` у reconcile/каскаді fizruk через `lwwGuard` у buildReconcileChildren; лишилось: самовідновлення через pull без фільтра origin_device_id або reconcile за хешем, постановка видалень дочірніх рядків в outbox, LWW у nutrition-копії - data-10/data-40)
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** web: Фізрук dual-write + dualwrite-core + server: sync pull
 - **Де:** packages/dualwrite-core/src/tableSpec.ts:196-215; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.sql.ts:315-340; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:311,386; apps/server/src/modules/sync/syncV2.ts:659
 - **Першопричина:** За аналізом верифікатора після краша поверх новішої правки застосовується старіший знімок (у локальній БД підходи s5/s6 мають tombstone зі старшою міткою, ніж правка s0-s4): reconcile дочірніх рядків (buildReconcileChildren, softDeleteRemovedChildren) soft-delete-ить без LWW-перевірки. Pull виключає власні оп-и пристрою (origin_device_id IS DISTINCT FROM), тож самовідновлення немає.

@@ -1614,6 +1614,13 @@
       "canonical_owner": "docs/governance/adr/0103-dependabot-only-dependency-updates.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/governance/adr/0104-goal-period-extended-before-first-step.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0104-goal-period-extended-before-first-step.md"
+    },
+    {
       "old_path": "docs/governance/adr/README.md",
       "new_path": "docs/governance/adr/README.md",
       "action": "keep",
@@ -3826,6 +3833,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "new_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "action": "keep",
@@ -3985,6 +3999,34 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/README.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json"
     },
     {
       "old_path": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/handoff.md",
@@ -4421,11 +4463,25 @@
       "canonical_owner": "docs/work/specs/nutrition-hero-day-strip.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/nutrition-norm-without-login.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/nutrition-norm-without-login.md"
+    },
+    {
       "old_path": "docs/work/specs/nutrition-plan-cross-device.md",
       "new_path": "docs/work/specs/nutrition-plan-cross-device.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/nutrition-plan-cross-device.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/nutrition-recipe-builder.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/nutrition-recipe-builder.md"
     },
     {
       "old_path": "docs/work/specs/pantry-categorization-ai.md",
@@ -4489,6 +4545,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/model-eval-2026-08-25.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/planning/nutrition-my-products.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/nutrition-my-products.md"
     },
     {
       "old_path": "docs/work/specs/planning/product-brainstorm-2026-07.md",

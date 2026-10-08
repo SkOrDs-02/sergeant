@@ -43,7 +43,7 @@ test("@critical welcome auth CTA leaves the onboarding gate open until sign-in c
 
   await expect(page).toHaveURL(/\/sign-in$/);
   await expect(
-    page.getByRole("heading", { name: "З поверненням" }),
+    page.getByRole("heading", { name: "Вхід в акаунт" }),
   ).toBeVisible();
   await expect.poll(() => documentScrollTop(page)).toBe(0);
 

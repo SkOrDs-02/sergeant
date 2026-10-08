@@ -242,6 +242,39 @@ describe("callMcpTool", () => {
     if (!result.ok) expect(result.error.kind).toBe("auth_required");
   });
 
+  it("число 401/403 всередині id товару — це tool_error, а не auth_required (rel-23)", async () => {
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          jsonrpc: "2.0",
+          id: 2,
+          result: {
+            isError: true,
+            content: [
+              { type: "text", text: "Товар 3401567 відсутній у філії" },
+            ],
+          },
+        }),
+      );
+
+    const result = await callMcpTool({
+      accessToken: "token-abc",
+      toolName: "silpo_get_product_details",
+      schema,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        kind: "tool_error",
+        message: "Товар 3401567 відсутній у філії",
+      },
+    });
+  });
+
   it("a refusal with no text still refuses instead of masquerading as drift", async () => {
     const mock = fetchMock();
     mock
@@ -346,6 +379,100 @@ describe("429 backoff", () => {
       },
     });
     expect(mock).toHaveBeenCalledTimes(3); // retryDelaysMs has 3 entries in this suite
+  });
+});
+
+describe("дедлайн викликача (AbortSignal) — rel-22", () => {
+  /** fetch, що ніколи не відповідає сам: завершується лише з сигналом. */
+  function hangingFetch(): Mock {
+    const mock = fetchMock();
+    mock.mockImplementation(
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+          });
+        }),
+    );
+    return mock;
+  }
+
+  it("аборт зовнішнього сигналу на першій спробі: рівно 1 HTTP-запит, без ретраїв", async () => {
+    __silpoMcpTestHooks().setRetryDelaysMs([0, 0, 0]);
+    const mock = hangingFetch();
+    const deadline = new AbortController();
+
+    const pending = mcpInitialize("token-abc", deadline.signal);
+    deadline.abort();
+    const result = await pending;
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.kind).toBe("upstream_unavailable");
+    expect(mock).toHaveBeenCalledTimes(1);
+  });
+
+  it("5+ абортів поспіль не відкривають breaker для решти користувачів", async () => {
+    const mock = hangingFetch();
+
+    for (let i = 0; i < 6; i++) {
+      const deadline = new AbortController();
+      const pending = mcpInitialize("token-abc", deadline.signal);
+      deadline.abort();
+      await pending;
+    }
+    expect(mock).toHaveBeenCalledTimes(6);
+
+    // Здоровий виклик без сигналу проходить до fetch, а не впирається в
+    // "circuit open".
+    mock.mockReset();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }));
+    const healthy = await mcpInitialize("token-abc");
+    expect(healthy.ok).toBe(true);
+    expect(mock).toHaveBeenCalledTimes(2);
+  });
+
+  it("вже скасований сигнал: жодного HTTP-запиту", async () => {
+    const mock = fetchMock();
+    const result = await callMcpTool({
+      accessToken: "token-abc",
+      toolName: "silpo_find_products_batch",
+      schema: z.object({}).passthrough(),
+      signal: AbortSignal.abort(),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(mock).not.toHaveBeenCalled();
+  });
+
+  it("аборт між ретраями (429) зупиняє наступні спроби", async () => {
+    __silpoMcpTestHooks().setRetryDelaysMs([0, 0, 0]);
+    const deadline = new AbortController();
+    const mock = fetchMock();
+    mock.mockImplementation(async () => {
+      deadline.abort();
+      return new Response("slow down", { status: 429 });
+    });
+
+    const result = await mcpInitialize("token-abc", deadline.signal);
+
+    expect(result.ok).toBe(false);
+    expect(mock).toHaveBeenCalledTimes(1);
+  });
+
+  it("notifications/initialized не шлеться, якщо сигнал сплив після initialize", async () => {
+    const deadline = new AbortController();
+    const mock = fetchMock();
+    mock.mockImplementationOnce(async () => {
+      const res = jsonResponse(INIT_RESULT, { sessionId: "sess-1" });
+      deadline.abort();
+      return res;
+    });
+
+    await mcpInitialize("token-abc", deadline.signal);
+
+    expect(mock).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -18,6 +18,7 @@ import {
 } from "@sergeant/nutrition-domain";
 import { isMealTypeId, mealTypeFromLabel } from "../lib/mealTypes";
 import { formatLogDateSubline } from "../lib/formatLogDateSubline";
+import { CopyMealSheet } from "./CopyMealSheet";
 import { DayLogSheet } from "./DayLogSheet";
 import { LogCardSearch } from "./LogCardSearch";
 import { LogCardWeeklyTable } from "./LogCardWeeklyTable";
@@ -32,6 +33,7 @@ interface LogCardProps {
   onAddMealFromSearch?: (meal: Meal, date?: string) => void;
   onRemoveMeal?: (date: string, meal: Meal) => void;
   onEditMeal?: (date: string, meal: Meal) => void;
+  onCopyMeals?: (meals: Meal[], date: string, mealType: MealTypeId) => void;
   onDuplicateYesterday?: () => void;
   onTrimLog?: (keepDays: number) => void;
 }
@@ -69,11 +71,13 @@ export function LogCard({
   onAddMealFromSearch,
   onRemoveMeal,
   onEditMeal,
+  onCopyMeals,
   onDuplicateYesterday,
   onTrimLog,
 }: LogCardProps) {
   const [duplicateConfirm, setDuplicateConfirm] = useState(false);
   const [trimConfirm, setTrimConfirm] = useState(false);
+  const [copyType, setCopyType] = useState<MealTypeId | null>(null);
 
   const dayData = log[selectedDate];
   const meals = dayData?.meals || [];
@@ -165,6 +169,7 @@ export function LogCard({
             selectedDate={selectedDate}
             onRemoveMeal={onRemoveMeal}
             onEditMeal={onEditMeal}
+            onCopyMeals={onCopyMeals ? setCopyType : undefined}
           />
         )}
 
@@ -201,6 +206,16 @@ export function LogCard({
 
         <LogCardAnalytics log={log} selectedDate={selectedDate} />
       </div>
+
+      <CopyMealSheet
+        key={copyType ?? "closed"}
+        mealType={copyType}
+        onClose={() => setCopyType(null)}
+        onCopy={(date, mealType) => {
+          if (copyType) onCopyMeals?.(groups[copyType] ?? [], date, mealType);
+          setCopyType(null);
+        }}
+      />
 
       <ConfirmDialog
         open={duplicateConfirm}

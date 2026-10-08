@@ -12,7 +12,7 @@ One module name: `finyk`, `nutrition`, `fizruk`, `routine`, or `hub-coach`. No n
 
 1. Read the canon `docs/product/modules/<module>.md` fully, including `§ Журнал рішень`.
 2. Read the existing audit `docs/work/specs/audits/product-knowledge-<module>.md` — its known gaps are your baseline; only report NEW drift or gaps that got fixed/worsened since.
-3. Locate the module code: web `apps/web/src/modules/<module>/`, server `apps/server/src/modules/` (finyk, nutrition; AI layer = chat/mono/digest/ai-memory; fizruk/routine have NO server dir), domain `packages/<module>-domain/`.
+3. Locate the module code: web `apps/web/src/modules/<module>/`, server `apps/server/src/modules/` (finyk, nutrition; AI layer = chat/digest/ai-memory; `mono/` is the Monobank integration; fizruk/routine have NO server dir), domain `packages/<module>-domain/`.
 4. For each checkable canon claim (invariants, entity semantics, boundaries, journal decisions), grep/read the code and classify: **confirmed** / **diverged** (canon says X, code does Y) / **unverifiable statically**.
 5. `[ІНТЕРВ'Ю]` sections are founder's words: code diverging from them is a FINDING to report, never an error in the canon.
 

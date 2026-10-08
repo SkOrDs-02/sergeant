@@ -53,6 +53,7 @@ function createGuard(opts?: {
   redis?: AnthropicBudgetRedisClient | null;
   monthlyBudgetUsd?: () => number;
   readSpendUsd?: (day: string) => Promise<number>;
+  startDelayMs?: number;
 }): AnthropicBudgetGuard {
   return new AnthropicBudgetGuard({
     readSpendUsd: (day) => Promise.resolve(spendByDay.get(day) ?? defaultSpend),
@@ -153,7 +154,8 @@ describe("AnthropicBudgetGuard - production wiring", () => {
 
     guard.start();
     guard.start();
-    expect(vi.getTimerCount()).toBe(1);
+    // Інтервальний цикл + одноразовий стартовий тік (rel-19).
+    expect(vi.getTimerCount()).toBe(2);
 
     guard.stop();
     guard.stop();
@@ -661,5 +663,93 @@ describe("AnthropicBudgetGuard — monthly projection", () => {
     recordSpendOn("2026-05-14", 2); // свіжа витрата, проєкція знову пробила б
     await guard.runBudgetCheckTick();
     expect(captures.filter((c) => c.threshold === "monthly")).toHaveLength(1);
+  });
+});
+
+/**
+ * rel-19 (аудит 2026-10-01): guard мав лише `setInterval`, тож після кожного
+ * рестарту (а деплоїв кілька на день) він не бачив пробиття бюджету цілий
+ * інтервал. Без стартового тіку тут 0 читань витрати після `startDelayMs`.
+ */
+describe("AnthropicBudgetGuard - стартовий тік (rel-19)", () => {
+  it("після start() і startDelayMs (< інтервалу) витрату прочитано рівно один раз", async () => {
+    vi.useFakeTimers();
+    const readSpendUsd = vi.fn().mockResolvedValue(0);
+    const guard = createGuard({
+      redis: null,
+      readSpendUsd,
+      startDelayMs: 5_000,
+    });
+
+    guard.start();
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(readSpendUsd).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(readSpendUsd).toHaveBeenCalledTimes(1);
+    // Інтервал за замовчуванням 5 хв - далі стартовий тік не повторюється.
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(readSpendUsd).toHaveBeenCalledTimes(1);
+
+    guard.stop();
+  });
+
+  it("пробиття бюджету на старті ловиться стартовим тіком, а не через інтервал", async () => {
+    vi.useFakeTimers();
+    const captures: AnthropicBudgetCaptureInput[] = [];
+    recordSpend(5.5);
+    const guard = createGuard({
+      redis: null,
+      capture: (input) => captures.push(input),
+      startDelayMs: 5_000,
+    });
+
+    guard.start();
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(captures.some((c) => c.threshold === "hard")).toBe(true);
+
+    guard.stop();
+  });
+
+  it("без startDelayMs стартовий тік має jitter у межах 5-15 с", async () => {
+    vi.useFakeTimers();
+    const readSpendUsd = vi.fn().mockResolvedValue(0);
+    const guard = createGuard({ redis: null, readSpendUsd });
+
+    guard.start();
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(readSpendUsd).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(10_001);
+    expect(readSpendUsd).toHaveBeenCalledTimes(1);
+
+    guard.stop();
+  });
+
+  it("stop() до стартового тіку гасить його", async () => {
+    vi.useFakeTimers();
+    const readSpendUsd = vi.fn().mockResolvedValue(0);
+    const guard = createGuard({
+      redis: null,
+      readSpendUsd,
+      startDelayMs: 5_000,
+    });
+
+    guard.start();
+    guard.stop();
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(readSpendUsd).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("startDelayMs: 0 вимикає стартовий тік", async () => {
+    vi.useFakeTimers();
+    const readSpendUsd = vi.fn().mockResolvedValue(0);
+    const guard = createGuard({ redis: null, readSpendUsd, startDelayMs: 0 });
+
+    guard.start();
+    expect(vi.getTimerCount()).toBe(1);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(readSpendUsd).not.toHaveBeenCalled();
+
+    guard.stop();
   });
 });

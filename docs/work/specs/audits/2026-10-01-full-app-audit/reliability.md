@@ -1195,7 +1195,7 @@ verify-server-static-ai-layer/coachmem-v2.mjs (юзер audit_pool152): POST /ap
 
 ### `rel-19` [medium] Фонові полери не мають першого тіку: годинні задачі зсуваються після кожного деплою, а добова звірка Plata не виконується ніколи
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-19-worker-first-tick (стартовий тік у п'яти полерах і годинний slow tick Plata за `updated_at`; lastRunAt Plata у /health/workers та алерт на застарілий lastRunAt лишились)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: background workers
 - **Де:** apps/server/src/modules/billing/plataSync.ts:47,293-300; apps/server/src/modules/gdpr/cleanupPoller.ts:105-113; apps/server/src/modules/me/deletionPoller.ts:118-126; apps/server/src/modules/webhooks/retentionPoller.ts:72; apps/server/src/modules/logRetention/archivePoller.ts:175; apps/server/src/obs/anthropicBudgetGuard.ts:381; apps/server/src/index.ts:220-264
 - **Першопричина:** GDPR-cleanup, добивач видалень акаунтів, retention, архів логів, budget guard і Plata роблять лише setInterval і не запускають тік на старті, на відміну від SilpoSyncPoller. Slow-tick Plata — 24-годинний таймер процесу, який скидається кожним рестартом, а деплої йдуть кілька разів на день.
@@ -1317,7 +1317,7 @@ cd apps/server && node --import tsx <scratch>/agents/verify-server-static-gap-fi
 
 ### `rel-21` [medium] Пошук їжі: збій Open Food Facts чи USDA видається за «нічого не знайдено» і публічно кешується до 10 хв
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-21-22-23-food-search-silpo
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition food-search / barcode
 - **Де:** apps/server/src/modules/nutrition/food-search.ts:110,130,218-224; apps/server/src/routes/food-search.ts; apps/server/src/routes/barcode.ts
 - **Першопричина:** fetchOFF і fetchUSDA на !r.ok повертають [], а виклики обгорнуті в .catch(() =&gt; []), тож таймаут чи 503 не відрізнити від порожнього результату. cachingMiddleware стоїть перед лімітером і хендлером і безумовно ставить public, max-age=300, stale-while-revalidate=300, зокрема на 4xx і 5xx barcode.
@@ -1361,7 +1361,7 @@ x5_food.mjs: /api/food-search?q=apple 200 126ms `public, max-age=300, stale-whil
 
 ### `rel-22` [medium] Пошук їжі для підключених до Сільпо: гілка Сільпо без дедлайну і з 12-18 HTTP-запитами на кожне натискання
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-21-22-23-food-search-silpo (лишилось: кеш initialize-сесії, серверний кеш per user+query, мінімальна довжина запиту, 429 у breaker і Retry-After, ліміт розміру тіла MCP-відповіді)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: Сільпо MCP / food-search
 - **Де:** apps/server/src/modules/nutrition/food-search.ts:146,214-234; apps/server/src/modules/silpo/foodSource.ts:464-518; apps/server/src/modules/silpo/mcpClient.ts:96-98,178-211,255-330,408-436
 - **Першопричина:** AbortSignal.timeout(8000) передається лише в OFF і USDA, а searchSilpoProducts стоїть у тому самому Promise.all без сигналу. Кожен callMcpTool робить initialize, notifications/initialized і tools/call з власними ретраями по 15 с, і етапи йдуть послідовно. 429 не відкриває breaker, Retry-After ігнорується, розмір відповіді не обмежено.
@@ -1406,7 +1406,7 @@ food-search.ts:146 створює `AbortSignal.timeout(8000)` (NUTRITION_AI_TIME
 
 ### `rel-23` [medium] Здорове підключення Сільпо переводиться в reauth_required через хибну класифікацію помилок
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-21-22-23-food-search-silpo (повтор refresh з backoff свідомо не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Сільпо OAuth/MCP
 - **Де:** apps/server/src/modules/silpo/mcpClient.ts:475-488,554-558; apps/server/src/modules/silpo/tokenStore.ts:382-422,524-555; apps/server/src/modules/silpo/oauth.ts:58-101,281-320
 - **Першопричина:** looksLikeAuthRefusal застосовує регекс /unauthor|...|401|403|token|expired|сесі|авториз|токен/i до будь-якого тексту isError, тож бізнес-відмови на кшталт «Товар 3401567 відсутній» чи «Promo period expired» стають auth_required. Якщо відмова повторюється після refresh, ставиться reauth_required. performRefresh так само ловить будь-який виняток (таймаут, 5xx, 429, збій discovery чи БД) і безумовно викликає markReauthRequired, без retry.

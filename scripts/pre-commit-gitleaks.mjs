@@ -12,14 +12,14 @@
 //     staged changes. A finding fails the commit. `.gitleaksignore` at
 //     repo root is honoured automatically by gitleaks itself.
 //   - If `gitleaks` is NOT installed: fail closed (exit 1) with an
-//     install hint. Skipping the only scan that exists is not a safe
-//     default.
+//     install hint. CI scans only after the push, so a skipped local scan
+//     is not a safe default.
 //
 // Hard Rule #7 still applies: do NOT pass `--no-verify`. Use the
 // `SERGEANT_SKIP_GITLEAKS=1` env var only for documented break-glass
 // scenarios (e.g. committing a vetted false-positive that must enter
 // `.gitleaksignore` in the same commit) - it prints a loud warning
-// because nothing downstream will catch what it skips.
+// because CI catches what it skips only after the secret is pushed.
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -81,8 +81,7 @@ function main() {
         "",
         `⚠️  [pre-commit-gitleaks] ${SKIP_ENV}=1 - secret scan SKIPPED.`,
         "  Only CI will scan it, after the secret is already pushed.",
-        "  Use this",
-        "  only for a documented break-glass case, never as a habit.",
+        "  Use this only for a documented break-glass case, never as a habit.",
         "",
       ].join("\n"),
     );
@@ -94,9 +93,9 @@ function main() {
       [
         "",
         "🔴 [pre-commit-gitleaks] gitleaks is not installed - commit blocked.",
-        "  There is no CI on this repo to catch what this hook skips (no",
-        "  bitbucket-pipelines.yml; GitHub Actions do not run - see AGENTS.md",
-        '  § "Де живе код"), so this is the only secret scan that exists.',
+        "  CI (`ci.yml` job `secret-scan`) scans only after the push, when the",
+        "  secret is already in the remote history - this hook is the only scan",
+        "  that runs before it.",
         "  Install gitleaks:",
         INSTALL_HINT,
         "  Or, for a documented one-off exception, set SERGEANT_SKIP_GITLEAKS=1.",

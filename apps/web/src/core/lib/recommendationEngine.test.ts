@@ -818,7 +818,7 @@ describe("generateRecommendations", () => {
     const recs = generateRecommendations();
     const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
     expect(eveningRec).toBeDefined();
-    expect(eveningRec!.title).toContain("1 звичка ще не виконано");
+    expect(eveningRec!.title).toContain("ще не виконано: 1 звичка");
     expect(eveningRec!.priority).toBe(65);
   });
 
@@ -931,7 +931,7 @@ describe("generateRecommendations", () => {
       const recs = generateRecommendations();
       const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
       expect(eveningRec).toBeDefined();
-      expect(eveningRec!.title).toBe(`${n} ${form} ще не виконано сьогодні`);
+      expect(eveningRec!.title).toBe(`Сьогодні ще не виконано: ${n} ${form}`);
     },
   );
 

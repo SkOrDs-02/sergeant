@@ -312,15 +312,20 @@ export const INJURY_DELETE_SQL = buildDelete({
 });
 
 // Cascade soft-delete of items/sets when a whole workout is deleted.
+// LWW-захист (data-38): bind-и `[ts, ts, workoutId, userId, ts]` — реплей
+// старішого знімка з журналу не гасить рядки, оновлені новішою правкою.
 export const WORKOUT_ITEMS_CASCADE_SQL = buildReconcileChildren(
   { table: "fizruk_workout_items", parentColumn: "workout_id" },
   0,
+  { lwwGuard: true },
 );
 
 // -----------------------------------------------------------------------
 // softDeleteRemovedChildren — soft-deletes children no longer in the
 // parent's array (e.g. items removed from a workout, sets removed from
-// an item).
+// an item). З LWW-захистом (`updated_at < clientTs`, data-38): без нього
+// реплей старішого знімка з WAL-журналу після краша ставив tombstone зі
+// старою міткою на підходи, яких новіша правка вже відродила.
 // -----------------------------------------------------------------------
 
 export async function softDeleteRemovedChildren(
@@ -335,12 +340,16 @@ export async function softDeleteRemovedChildren(
   const sql = buildReconcileChildren(
     { table: tableName, parentColumn: parentCol },
     keepIds.length,
+    { lwwGuard: true },
   );
-  if (keepIds.length === 0) {
-    await client.run(sql, [clientTs, clientTs, parentId, userId]);
-    return;
-  }
-  await client.run(sql, [clientTs, clientTs, parentId, userId, ...keepIds]);
+  await client.run(sql, [
+    clientTs,
+    clientTs,
+    parentId,
+    userId,
+    ...keepIds,
+    clientTs,
+  ]);
 }
 
 // -----------------------------------------------------------------------

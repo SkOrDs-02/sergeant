@@ -13,6 +13,7 @@ import {
   rankFirstActionCandidates,
   type FirstActionRanking,
   formatNumberUk,
+  NARROW_NBSP,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 // AI-CONTEXT: `uk.ts`, не `uk.core` — аркуш живе в лінивому чанку хаба, тож
@@ -106,7 +107,7 @@ function rankPrimary(picks: string[]): FirstActionRanking {
 function getGoalAwareDesc(moduleId: string, fallback: string): string {
   const goals = getOnboardingGoals(webKVStore);
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}${NARROW_NBSP}₴ і додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
     return `${goals.fizrukWeeklyGoal}× на тиждень, починай із розминки.`;
@@ -119,7 +120,7 @@ function getGoalAwareDesc(moduleId: string, fallback: string): string {
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
     const goalLabels: Record<string, string> = COPY.goalLabels;
-    return `${goalLabels[goals.nutritionGoal]}, залогай перший прийом їжі.`;
+    return `${goalLabels[goals.nutritionGoal]}, запиши перший прийом їжі.`;
   }
   return fallback;
 }

@@ -17,6 +17,7 @@ import {
   clearNutritionSqliteCache,
 } from "@nutrition/lib/sqliteReader";
 import type { Rec } from "../../lib/recommendationEngine";
+import { formatNumberUk } from "@sergeant/shared";
 
 // Фінік: контекст витрат підміняємо цілком — правило «закрито» потребує
 // лише суми за сьогодні, а не всього всесвіту `bank + manual`.
@@ -149,7 +150,7 @@ describe("computeClosedToday", () => {
           module: "nutrition",
           label: "Їжа",
           statement: "у коридорі цілі",
-          value: "2000 ккал",
+          value: `${formatNumberUk(2000)} ккал`,
         },
       ]);
     });

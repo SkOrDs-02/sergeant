@@ -677,7 +677,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/menus2.mjs desktop; menus4.
 
 ### `ux-10` [medium] Після виходу з акаунта «Назад» лишає порожній екран на «/» із застряглим «Перенаправлення…»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-10-logout-back-redirect
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth / навігація
 - **Де:** apps/web/src/core/app/HubPage.tsx:127-128; apps/web/src/core/app/RedirectTo.tsx; apps/web/src/core/app/useAppEffects.ts:108-113; apps/web/src/core/hooks/useHubUIState.ts:88-103
 - **Першопричина:** Для аноніма /?tab=profile одночасно обробляють два механізми. HubPage рендерить RedirectTo(/welcome), а useAppEffects у ту саму мить робить navigate на «/» за застарілим locationRef (replace:false). Уже змонтований RedirectTo з тим самим to свій ефект повторно не запускає, тож на «/» лишається лише sr-only «Перенаправлення…».
@@ -991,7 +991,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/tabs.mjs ; kb-meal2.mjs ; �
 
 ### `ux-17` [medium] Сканер штрих-коду на десктопі й у ландшафті вилазить за верх екрана: заголовок і «Закрити сканер» недосяжні, а помилка камери не оголошується
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-17-barcode-scanner-viewport
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / сканер штрихкоду
 - **Де:** apps/web/src/modules/nutrition/components/BarcodeScanner.tsx:163-215; apps/web/src/modules/finyk/components/receiptScan/ReceiptScanCameraView.tsx:38-41
 - **Першопричина:** Оверлей BarcodeScanner має класи fixed inset-0 items-end, панель w-full без max-height і overflow, а відео w-full aspect-video. На широкому вʼюпорті панель стає вищою за екран і зсувається вгору. Статус і помилка камери рендеряться як &lt;p&gt; без role і aria-live; так само в ReceiptScanCameraView.

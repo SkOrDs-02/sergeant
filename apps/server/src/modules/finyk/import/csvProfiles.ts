@@ -34,10 +34,18 @@ export interface ResolvedColumnMapping {
    * Фази 2 явно не вгадує валюту для довільних CSV — див. `not_uah` нижче
    * і `docs/work/specs/initiatives/0022-import-from-external-trackers.md`
    * § Відкриті рішення №4). `null` — рядки цього профілю не фільтруються
-   * за валютою (mono: amount-колонка вже гарантовано UAH за побудовою
-   * картки, currency-check дав би ХИБНИЙ skip для закордонних покупок
-   * UAH-карткою — див. коментар нижче). */
+   * за валютою (mono: окремої колонки валюти картки немає, а currency-check
+   * по «валюті операції» дав би ХИБНИЙ skip для закордонних покупок
+   * UAH-карткою; валютну картку mono ловить `fileCurrencyNotUah`). */
   currencyColIndex: number | null;
+  /** Внутрішній прапорець (у контракт `@sergeant/shared` не йде): валюта
+   * КАРТКИ прочитана з дужок у заголовку колонки суми («Сума в валюті
+   * картки (USD)») і це не гривня. Тоді вся виписка — у чужій валюті, а
+   * сума в колонці — не гривні, тож `statementPreview.ts` відправляє
+   * кожен рядок даних у `skipped` із `not_uah`, замість того щоб записати
+   * $25 як 25 ₴. `undefined` (або `false`) — валюту не прочитано чи це
+   * гривня. Конвертації за курсом немає (канон: «Multi-currency без FX»). */
+  fileCurrencyNotUah?: boolean;
   /** `undefined` — немає фіксованого формату, `parseCalendarDateKey`
    * автодетектить (ISO `-` роздільник vs `DD.MM.YYYY` `.` роздільник) на
    * кожен рядок окремо. Автопрофілі (mono/Privat24) завжди задають
@@ -117,15 +125,35 @@ function findFirstColumnIndex(
 }
 
 /**
+ * Код валюти в дужках заголовка колонки суми: «сума в валюті картки (usd)»
+ * → `usd`. Заголовок уже нормалізований (нижній регістр). Три літери — ISO
+ * 4217 (`usd`, `eur`) або кириличне «грн».
+ */
+const HEADER_CURRENCY_RE = /\(([a-zа-яіїєґ]{3})\)/;
+
+/** Чи заголовок колонки суми явно каже, що валюта картки НЕ гривня. Немає
+ * дужок із кодом — `false` (не вгадуємо), «(uah)»/«(грн)» — `false`. */
+function headerDeclaresNonUahCurrency(normalizedHeader: string): boolean {
+  const code = HEADER_CURRENCY_RE.exec(normalizedHeader)?.[1];
+  return code !== undefined && !isUahCurrencyValue(code);
+}
+
+/**
  * mono: "Виписка" з кабінету — comma-delimited, дата+час `DD.MM.YYYY
  * HH:MM:SS`, сума в UAH-колонці dot-decimal, без роздільника тисяч у
  * типовому одноденному експорті. Amount-колонка обрана як "сума в валюті
- * КАРТКИ (UAH)", НЕ "сума в валюті операції" — картка сама по собі
- * UAH-деномінована, тож ця колонка вже конвертована в UAH банком
- * незалежно від валюти мерчанта; фільтр по "валюта операції" помилково
- * скипав би легітимні закордонні покупки UAH-карткою — тому
- * `currencyColIndex: null` для цього профілю (жоден `not_uah` skip з mono
- * не походить).
+ * КАРТКИ", НЕ "сума в валюті операції": для гривневої картки вона вже
+ * конвертована в UAH банком незалежно від валюти мерчанта, а фільтр по
+ * "валюта операції" помилково скипав би легітимні закордонні покупки
+ * UAH-карткою — тому `currencyColIndex: null` (окремої колонки валюти
+ * картки в mono-виписці немає).
+ *
+ * АЛЕ картка буває й валютною (USD/EUR), і її валюта стоїть у ЗАГОЛОВКУ
+ * колонки суми: «Сума в валюті картки (USD)». Тоді сума — долари, а не
+ * гривні; без перевірки $25 імпортувалось би як 25 ₴ (занижено у ~40 разів,
+ * data-32). Такий файл помічається `fileCurrencyNotUah`, і кожен його рядок
+ * іде в `not_uah` (UAH-only, без FX — те саме, що для валютного рахунку
+ * Privat24). Заголовок без дужок чи з «(UAH)» поведінки не міняє.
  */
 function detectMonoProfile(
   normalizedHeaders: string[],
@@ -152,6 +180,9 @@ function detectMonoProfile(
     creditColIndex: null,
     descriptionColIndex,
     currencyColIndex: null,
+    ...(headerDeclaresNonUahCurrency(normalizedHeaders[amountColIndex] ?? "")
+      ? { fileCurrencyNotUah: true }
+      : {}),
     // mono власної категорії не друкує, але друкує MCC — і це той самий
     // каталог, яким категоризується mono-вебхук у проді.
     categoryColIndex: null,

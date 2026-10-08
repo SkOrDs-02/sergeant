@@ -16,18 +16,20 @@
  *
  * Поля режиму «з упаковки» рендерить справжній `PackageEntryStep` — той
  * самий компонент, що й на однойменному кроці. Дублювати його поля тут
- * означало б два місця з валідацією, стелею порції та `upsertFood`, які
- * розійшлись би з першою ж правкою.
+ * означало б два місця з валідацією та стелею порції, які розійшлись би
+ * з першою ж правкою.
  *
  * Status: Active
  * Last validated: 2026-08-22
  */
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import type { PickedFood } from "./FoodPickerSection";
 import { PackageEntryStep } from "./PackageEntryStep";
+import { MyFoodsSheet } from "../MyFoodsSheet";
 
 type Basis = "per100" | "portion";
 
@@ -48,6 +50,7 @@ export function ManualEntryTab({
   onWholeMeal,
 }: ManualEntryTabProps) {
   const [basis, setBasis] = useState<Basis>("per100");
+  const [myFoodsOpen, setMyFoodsOpen] = useState(false);
 
   return (
     <div className="space-y-3">
@@ -93,6 +96,21 @@ export function ManualEntryTab({
           })}
         </div>
       </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        className="min-h-[44px] w-full"
+        onClick={() => setMyFoodsOpen(true)}
+      >
+        {messages.nutrition.myFoods.open}
+      </Button>
+      {/* Вище за аркуш запису (120): список відкривається поверх нього. */}
+      <MyFoodsSheet
+        open={myFoodsOpen}
+        onClose={() => setMyFoodsOpen(false)}
+        zIndex={130}
+      />
 
       {basis === "per100" ? (
         <PackageEntryStep onCreated={onCreated} />

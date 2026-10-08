@@ -25,7 +25,7 @@ Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з репо
 - Не пиши raw `localStorage`-виклики там, де є проєктні врапери; використовуй `ls`, `lsSet`, `safeReadLS` або типовані storage-хелпери.
 - Не вигадуй inline React Query-ключі; використовуй центральні key-фабрики.
 - Тримай accessibility і responsive-поведінку як first-class, особливо в PWA-shell.
-- **Типографіка (дизайн-конвенція — tokens + review, ex-Hard Rules #11–13, retired ADR-0081):** використовуй виключно семантичні утиліти `.text-style-caption`, `.text-style-body`, `.text-style-headline` (мінімум 12px). `text-2xs` — deprecated у продуктовому UI (лишається для chart axis ticks), замінюй на `text-style-caption`. Raw palette hex в `className` — заборонено.
+- **Типографіка (дизайн-конвенція — tokens + review, ex-Hard Rule #16, raw hex — ex-#11; retired ADR-0081):** використовуй виключно семантичні утиліти `.text-style-caption`, `.text-style-body`, `.text-style-headline` (мінімум 12px). `text-2xs` — deprecated у продуктовому UI (лишається для chart axis ticks), замінюй на `text-style-caption`. Raw palette hex в `className` — заборонено.
 
   BAD: `className="text-2xs text-gray-400"` → GOOD: `className="text-style-caption text-content-secondary"`
 

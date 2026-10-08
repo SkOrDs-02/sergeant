@@ -1,7 +1,9 @@
 /**
  * Реальні текстові відповіді з касет стенду вибору інструментів
- * (`apps/server/src/__fixtures__/tool-eval/cassettes/*.json`, модель
- * `google/gemini-3.7-flash`, запис 2026-10-01). Узято всі відповіді, де є
+ * (`google/gemini-3.7-flash`, запис 2026-10-01). Робочі касети стенду
+ * перезаписуються при кожній зміні реєстру `TOOLS`, тож корпус читає
+ * заморожену копію того запису:
+ * `apps/server/src/__fixtures__/number-verify/cassettes-2026-10-01/*.json`. Узято всі відповіді, де є
  * хоч одна цифра: 14 з 20 текстових блоків двох касет. Тексти й
  * `fedResult` скопійовано дослівно; `textLine`/`fedLine` - номери рядків у
  * файлі касети. Питання користувача лежить у `userSrc` (файл:рядок кейса).
@@ -19,7 +21,8 @@
 
 import type { CassetteAnswer } from "./types.js";
 
-export const CASSETTE_DIR = "apps/server/src/__fixtures__/tool-eval/cassettes/";
+export const CASSETTE_DIR =
+  "apps/server/src/__fixtures__/number-verify/cassettes-2026-10-01/";
 
 export const CASSETTE_ANSWERS: readonly CassetteAnswer[] = [
   {

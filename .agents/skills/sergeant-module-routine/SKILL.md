@@ -29,6 +29,6 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 
 ## Роутинг далі
 
-- Технічні правила поверхні: `sergeant-web-ui`; зміни sync-шляху — `sergeant-module-sync` (з PR-B цієї ініціативи) або `sergeant-server-api`.
+- Технічні правила поверхні: `sergeant-web-ui`; зміни sync-шляху — `sergeant-module-sync` або `sergeant-server-api`.
 - Делегування виконання: агент `routine-owner` (`.claude/agents/routine-owner.md`). Межа: owner працює **всередині одного модуля**; крос-поверхневу фічу по стадіях веде `sergeant-deliver-squad`.
 - Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).
