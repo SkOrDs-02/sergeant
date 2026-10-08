@@ -25,6 +25,7 @@
 import type { Rule } from "../types.js";
 import {
   financeExcludedTxIds,
+  isManualExpenseExcluded,
   type FinanceContext,
 } from "../financeContext.js";
 import {
@@ -82,6 +83,7 @@ export function evaluateDailyPace(ctx: FinanceContext): DailyPaceSignal | null {
   let todayManual = 0;
   let prev7Manual = 0;
   for (const me of ctx.manualExpenses) {
+    if (isManualExpenseExcluded(excludedTxIds, me)) continue;
     const ts = new Date(me.date).getTime();
     if (!Number.isFinite(ts)) continue;
     const abs = Math.abs(Number(me.amount) || 0);

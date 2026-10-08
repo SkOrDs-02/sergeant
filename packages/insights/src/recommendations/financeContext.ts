@@ -60,6 +60,14 @@ export interface FinanceContext {
   customCategories: CustomCategory[];
   hiddenTxIds: Set<string>;
   transferIds: Set<string>;
+  /**
+   * Канонічний excluded-set Фініка (`buildFinykExcludedTxIds` по bank+manual:
+   * приховані, перекази, дебіторка, «виключити зі статистики», пари
+   * «Скасування»). Id ручних записів у ньому — `manual_<id>`, як у всесвіті
+   * витрат. Коли заданий, `financeExcludedTxIds` повертає саме його, а
+   * `hiddenTxIds`/`transferIds` лишаються для сумісності (logic-08).
+   */
+  excludedTxIds?: ReadonlySet<string>;
   /** Спліт-мапа транзакцій (id → частини за категоріями), для getTxStatAmount/calcFinykPeriodAggregate. */
   txSplits?: TxSplitsLike;
   thisMonthTx: Transaction[];
@@ -86,9 +94,34 @@ export function txTimeMs(tx: Transaction): number {
 // ponytail: alias for existing callers (noTxRecent.ts, apps/web) — rename them to txTimeMs when next touched.
 export const txTimestamp = txTimeMs;
 
-/** Обʼєднаний excluded-set (сховані + перекази) для банк-агрегаторів витрат. */
+/**
+ * Excluded-set для банк-агрегаторів витрат: канонічний `excludedTxIds`, коли
+ * білдер контексту його поклав, інакше — сховані + перекази (старий вузький
+ * набір для контекстів без канонічного).
+ */
 export function financeExcludedTxIds(
-  ctx: Pick<FinanceContext, "hiddenTxIds" | "transferIds">,
+  ctx: Pick<FinanceContext, "hiddenTxIds" | "transferIds" | "excludedTxIds">,
 ): Set<string> {
+  if (ctx.excludedTxIds) return new Set(ctx.excludedTxIds);
   return new Set([...ctx.hiddenTxIds, ...ctx.transferIds]);
+}
+
+/**
+ * Id ручної витрати у всесвіті витрат Фініка: `manualExpenseToTransaction`
+ * (finyk-domain) кладе `manual_<id>`, і саме під цим id вона потрапляє в
+ * excluded-set, коли її сховали чи позначили «Не враховувати».
+ */
+export function manualExpenseTxId(
+  me: Pick<ManualExpense, "id">,
+): string | null {
+  return me.id ? `manual_${me.id}` : null;
+}
+
+/** Чи ручну витрату виключено зі статистики (за тим самим набором, що й банк). */
+export function isManualExpenseExcluded(
+  excluded: ReadonlySet<string>,
+  me: Pick<ManualExpense, "id">,
+): boolean {
+  const id = manualExpenseTxId(me);
+  return id !== null && excluded.has(id);
 }
