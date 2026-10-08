@@ -261,7 +261,7 @@ describe("NutritionPantryPage", () => {
   });
 
   it("порожня комора лишає вибір місця окремою карткою над формою", () => {
-    renderPantryPage({ pantrySubTab: "items", pantry: { effectiveItems: [] } });
+    renderPantryPage({ pantrySubTab: "items", pantry: { pantryItems: [] } });
     // Компактний варіант у шапці списку порожня `PantryCard` не рендерить
     // (тут вона замокана), тож перевіряється лише окрема картка.
     expect(screen.getByText("Місце перегляду")).toBeTruthy();

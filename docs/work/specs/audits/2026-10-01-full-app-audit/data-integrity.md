@@ -2859,7 +2859,7 @@ grep for mono_jar across apps/server/src finds only the INSERT/UPSERT in jars.ts
 
 ### `data-34` [medium] Бекап застосовується без попередньої валідації: збій пізнішого модуля лишає Фінік уже заміненим, битий зріз Фізрука стирає записи, майбутні версії файлу приймаються
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-34-backup-validate-first (лишилось: `version` секції Фініка приймається до 999, типи елементів усередині масивів Фініка й Фізрука не перевіряються, міжмодульного відкату при збої самого запису немає)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап (hubBackup, fizrukStorage, routine-domain, finyk-domain)
 - **Де:** apps/web/src/core/hub/hubBackup.ts:27-28,124-182; apps/web/src/core/hub/HubBackupPanel.tsx:22,88-99; apps/web/src/modules/fizruk/lib/fizrukStorage.ts:218-330; packages/fizruk-domain/src/lib/backupSerialization.ts:11-23; packages/routine-domain/src/storage.ts:270-292; packages/finyk-domain/src/backup.ts:17,97-100
 - **Першопричина:** applyHubBackupPayload застосовує модулі послідовно і пише Фінік до перевірки Рутини; isHubBackupPayload перевіряє лише kind і typeof schemaVersion. parseJsonArray на непарсабельному зрізі Фізрука повертає [], applyFizrukFullBackupPayload не перевіряє kind і schemaVersion, а normalizeRoutineState протягує сирі поля з файлу.

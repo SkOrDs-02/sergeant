@@ -31,27 +31,35 @@ vi.mock("../../modules/finyk/lib/finykBackup", () => ({
 }));
 
 const buildFizrukFullBackupPayload = vi.fn(() => ({ fizruk: true }));
+const validateFizrukFullBackupPayload = vi.fn((_v: unknown) => ({}));
 const applyFizrukFullBackupPayload = vi.fn(
   async (_v: unknown, _mode?: unknown): Promise<TestOutcome> => APPLIED,
 );
 vi.mock("../../modules/fizruk/lib/fizrukStorage", () => ({
   buildFizrukFullBackupPayload: () => buildFizrukFullBackupPayload(),
+  validateFizrukFullBackupPayload: (v: unknown) =>
+    validateFizrukFullBackupPayload(v),
   applyFizrukFullBackupPayload: (v: unknown, mode: unknown) =>
     applyFizrukFullBackupPayload(v, mode),
 }));
 
 const buildRoutineBackupPayload = vi.fn(() => ({ routine: true }));
+const validateRoutineBackupPayload = vi.fn();
 const applyRoutineBackupPayload = vi.fn();
 vi.mock("../../modules/routine/lib/routineStorage", () => ({
   buildRoutineBackupPayload: () => buildRoutineBackupPayload(),
+  validateRoutineBackupPayload: (v: unknown) => validateRoutineBackupPayload(v),
   applyRoutineBackupPayload: (v: unknown, mode: unknown) =>
     applyRoutineBackupPayload(v, mode),
 }));
 
 const buildNutritionBackupPayload = vi.fn(() => ({ nutrition: true }));
+const validateNutritionBackupPayload = vi.fn();
 const applyNutritionBackupPayload = vi.fn();
 vi.mock("../../modules/nutrition/domain/nutritionBackup", () => ({
   buildNutritionBackupPayload: () => buildNutritionBackupPayload(),
+  validateNutritionBackupPayload: (v: unknown) =>
+    validateNutritionBackupPayload(v),
   applyNutritionBackupPayload: (v: unknown, mode: unknown) =>
     applyNutritionBackupPayload(v, mode),
 }));
@@ -329,5 +337,67 @@ describe("applyHubBackupPayload — режими і чесний результ�
     await expect(
       applyHubBackupPayload(finykPayload()),
     ).resolves.toBeUndefined();
+  });
+});
+
+// Аудит 2026-10-01, data-34: спершу перевірка всіх секцій, потім записи.
+describe("applyHubBackupPayload — validate-all до першого запису", () => {
+  const withFinyk = (over: Record<string, unknown> = {}) =>
+    validPayload({ finyk: { accounts: [], version: 1 }, ...over });
+
+  it("відхилений зріз Рутини, Фізрука чи Їжі кидає ДО запису Фініка", async () => {
+    validateRoutineBackupPayload.mockImplementationOnce(() => {
+      throw new Error("routine bad");
+    });
+    await expect(applyHubBackupPayload(withFinyk())).rejects.toThrow(
+      "routine bad",
+    );
+
+    validateFizrukFullBackupPayload.mockImplementationOnce(() => {
+      throw new Error("fizruk bad");
+    });
+    await expect(applyHubBackupPayload(withFinyk())).rejects.toThrow(
+      "fizruk bad",
+    );
+
+    validateNutritionBackupPayload.mockImplementationOnce(() => {
+      throw new Error("nutrition bad");
+    });
+    await expect(applyHubBackupPayload(withFinyk())).rejects.toThrow(
+      "nutrition bad",
+    );
+
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
+    expect(applyRoutineBackupPayload).not.toHaveBeenCalled();
+    expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
+    expect(applyNutritionBackupPayload).not.toHaveBeenCalled();
+  });
+
+  it("битий Фінік кидає, не зачепивши інших модулів", async () => {
+    normalizeFinykBackup.mockImplementationOnce(() => {
+      throw new Error("finyk bad");
+    });
+    await expect(applyHubBackupPayload(withFinyk())).rejects.toThrow(
+      "finyk bad",
+    );
+    expect(applyRoutineBackupPayload).not.toHaveBeenCalled();
+    expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
+  });
+
+  it("не готовий пізніший модуль кидає ДО запису Фініка", async () => {
+    isHubRestoreModuleReady.mockImplementation((m) => m !== "nutrition");
+    await expect(applyHubBackupPayload(withFinyk())).rejects.toThrow(
+      /ще завантажуються/,
+    );
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
+    expect(applyRoutineBackupPayload).not.toHaveBeenCalled();
+    expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
+  });
+
+  it("schemaVersion новіший за підтримуваний відхиляється людським текстом", async () => {
+    await expect(
+      applyHubBackupPayload(withFinyk({ schemaVersion: 2 })),
+    ).rejects.toThrow("Файл з новішої версії застосунку, онови сторінку");
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
   });
 });
