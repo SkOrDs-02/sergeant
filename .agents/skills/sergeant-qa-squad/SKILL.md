@@ -9,7 +9,7 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 
 Цей skill запускає **4 QA агентів** паралельно — кожен тестує одну surface незалежно. Дає per-surface видимість (яка саме surface зламалась?), чого не дає `pnpm check` як агрегований pass/fail.
 
-**Покриття — усі 17 workspace-ів:** `qa-server` (apps/server), `qa-web` (apps/web **+ apps/landing**), `qa-mobile` (apps/mobile + apps/mobile-shell), `qa-packages` (11 пакетів із тестами). `packages/eslint-plugin-sergeant-design` не має `test`-скрипта — звітується як **not run**, ніколи як passed.
+**Покриття — усі 18 workspace-ів:** `qa-server` (apps/server), `qa-web` (apps/web **+ apps/landing**), `qa-mobile` (apps/mobile + apps/mobile-shell), `qa-packages` (12 пакетів із тестами). `packages/eslint-plugin-sergeant-design` не має `test`-скрипта — звітується як **not run**, ніколи як passed.
 
 > **Чому `qa-packages` окремо.** Contract-тести `packages/api-client` — це рантайм-доказ Hard Rule #3. Без цього runner-а вони виконувались лише всередині агрегованого `pnpm check`, тож поламаний контракт був невидимий для per-surface QA. Failure у `shared` чи `*-domain` зазвичай **пояснює** одночасний червоний у web і mobile — синтез має називати причину, а не чотири симптоми.
 
@@ -33,7 +33,7 @@ Spawn 4 teammates using these subagent definitions:
 1. qa-server   — runs apps/server tests and typecheck
 2. qa-web      — runs apps/web AND apps/landing tests and typecheck
 3. qa-mobile   — runs apps/mobile + apps/mobile-shell unit tests and typecheck
-4. qa-packages — runs the 11 packages/* workspaces, incl. api-client contract tests
+4. qa-packages — runs the 12 packages/* workspaces, incl. api-client contract tests
 
 All surfaces run independently. Ask each to report to the lead when done.
 ```
@@ -82,7 +82,7 @@ Run all 4 in parallel as subagents (Claude Code: via the Agent tool). Collect al
 
 ## Поза межами цього squad-у
 
-QA squad — це **tests + typecheck**. Він НЕ покриває: web e2e/Playwright (→ `sergeant-e2e-testing`), Detox (потрібен девайс), bundle-бюджети і Lighthouse (→ CI-гейти `size-limit` / `check-eager-bundle.mjs` / `Lighthouse CI`, див. `sergeant-deploy-and-observability`), відповідність Hard Rules у дифі (→ `sergeant-review-squad`). Якщо потрібне «зелено перед звітом про готовність» — фінальний гейт це `sergeant-verify-before-done`, не цей squad.
+QA squad — це **tests + typecheck**. Він НЕ покриває: web e2e/Playwright (→ `sergeant-e2e-testing`), Detox (потрібен девайс), bundle-бюджети і Lighthouse (→ `size-limit` / `check-eager-bundle.mjs` / `Lighthouse CI`, щотижня і вручну, не на PR; див. `sergeant-deploy-and-observability`), відповідність Hard Rules у дифі (→ `sergeant-review-squad`). Якщо потрібне «зелено перед звітом про готовність» — фінальний гейт це `sergeant-verify-before-done`, не цей squad.
 
 ## Playbooks
 

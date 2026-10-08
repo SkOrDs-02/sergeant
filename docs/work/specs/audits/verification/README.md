@@ -1,6 +1,6 @@
 # Прогони повторюваної верифікації
 
-> **Last touched:** 2026-09-17 by @claude (лічильники реєстру → вказівник на `findings.json`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-08 by @claude (прогін `durability-2026-10-08`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Тут зберігаються JSON-прогони, `handoff.md` і [єдиний реєстр відкритих знахідок](./findings.json). Методики та картки — у [бібліотеці](../../../../engineering/testing/verification/README.md). Старі аудити лишаються доказом походження; нові статуси ведуться тут.
@@ -10,3 +10,5 @@
 Команди: `pnpm verification list`, `init`, `record`, `validate`, `report`, `compare`, `close`. Прогін не вважається успішним, якщо в його останніх сценаріях лишилися `blocked`, `not-run` або `fail`.
 
 Поточний реєстр — [`findings.json`](./findings.json): імпортовані історичні записи (джерела й кількість на момент імпорту — [`migration.md`](./migration.md)) плюс знахідки live-пілота; чисел тут не дублюємо, рахуй по файлу. Baseline-пара: `pilot-2026-09-05-a` → `pilot-2026-09-05-b`; обидва закриті як `incomplete`, докладні наступні кроки — в їхніх `handoff.md`. Докази пілота навмисно живуть поза git на локальному тестовому хості; повний `validate` перевіряє їх checksum, CI використовує `--catalog-only`.
+
+Прогін `durability-2026-10-08` (живий харнес `data-durability`, хмарний стенд без Docker) закрито як `incomplete`: `SYNC-offline-conflict-isolation` покрито лише частково. Він знайшов і виправив два баги втрати записів (`DURABILITY-20261008-LOGOUT-1`, `-SIGNUP-1`) і завів два відкриті (`-BOOT-1`, `-OFFLINE-1`). Докази (JSONL харнесу до і після фіксу) лежать у теці прогону в git, тож повний `validate` проходить і поза локальним хостом.

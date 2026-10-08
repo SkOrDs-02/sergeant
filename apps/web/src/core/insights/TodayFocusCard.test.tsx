@@ -441,7 +441,7 @@ describe("TodayFocusCard", () => {
     const focus = {
       id: "routine_evening_reminder",
       module: "routine" as const,
-      title: "2 звичок ще не виконано",
+      title: "Сьогодні ще не виконано: 2 звички",
       body: "Вечір, ще не пізно",
       icon: "✅",
       action: "routine",

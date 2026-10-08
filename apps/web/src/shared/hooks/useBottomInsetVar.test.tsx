@@ -46,6 +46,25 @@ describe("useBottomInsetVar", () => {
     expect(document.documentElement.style.getPropertyValue(VAR)).toBe("");
   });
 
+  it("active true → false знімає змінну", () => {
+    window.innerHeight = 800;
+    const view = render(<Probe top={732} />);
+    view.rerender(<Probe top={732} active={false} />);
+    expect(document.documentElement.style.getPropertyValue(VAR)).toBe("");
+  });
+
+  it("неактивний екземпляр, що змонтувався поруч, не стирає значення активного", () => {
+    window.innerHeight = 800;
+    const view = render(<Probe top={700} />);
+    view.rerender(
+      <>
+        <Probe top={700} />
+        <Probe top={732} active={false} />
+      </>,
+    );
+    expect(document.documentElement.style.getPropertyValue(VAR)).toBe("100px");
+  });
+
   it("елемент за межами вʼюпорта дає 0, а не відʼємне значення", () => {
     window.innerHeight = 800;
     render(<Probe top={900} />);

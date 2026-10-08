@@ -62,26 +62,38 @@ describe("resolveEffectiveGoal — базова сходинка", () => {
 });
 
 describe("resolveEffectiveGoal — дата ДО найранішого періоду", () => {
-  const periods = [period({ id: "p1", effectiveFrom: "2026-03-01" })];
+  const periods = [
+    period({ id: "p1", effectiveFrom: "2026-03-01", kcal: 2100 }),
+    period({ id: "p2", effectiveFrom: "2026-04-01", kcal: 1800 }),
+  ];
 
-  it("віддає origin 'unknown', а НЕ найранішу ціль", () => {
-    // Простягнути перший період назад означало б ту саму ретроактивну
-    // брехню, лише переставлену на початок історії.
+  it("віддає найранішу ціль з origin 'extended' (ADR-0091, поправка)", () => {
     const goal = resolveEffectiveGoal(periods, "2026-02-28");
-    expect(goal.origin).toBe("unknown");
-    expect(goal.sourcePeriodId).toBeNull();
-    expect(goal.effectiveFrom).toBeNull();
+    expect(goal.origin).toBe("extended");
+    expect(goal.kcal).toBe(2100);
+    expect(goal.sourcePeriodId).toBe("p1");
+    expect(goal.effectiveFrom).toBe("2026-03-01");
   });
 
-  it("віддає null у КОЖНОМУ полі, а не нулі", () => {
-    // `0` пофарбував би день у провал; `null` каже консюмеру «не малюй
-    // відсоток».
-    const goal = resolveEffectiveGoal(periods, "2026-02-28");
-    expect(goal.kcal).toBeNull();
-    expect(goal.proteinG).toBeNull();
-    expect(goal.fatG).toBeNull();
-    expect(goal.carbsG).toBeNull();
-    expect(goal.waterMl).toBeNull();
+  it("день між двома сходинками лишається за лівою сходинкою", () => {
+    const goal = resolveEffectiveGoal(periods, "2026-03-20");
+    expect(goal.origin).toBe("manual");
+    expect(goal.sourcePeriodId).toBe("p1");
+  });
+
+  it("мʼяко видалена перша сходинка не розтягується", () => {
+    const withDeleted = [
+      period({
+        id: "gone",
+        effectiveFrom: "2026-01-01",
+        kcal: 999,
+        deletedAt: "2026-01-02T00:00:00.000Z",
+      }),
+      ...periods,
+    ];
+    const goal = resolveEffectiveGoal(withDeleted, "2025-12-01");
+    expect(goal.sourcePeriodId).toBe("p1");
+    expect(goal.kcal).toBe(2100);
   });
 
   it("порожній журнал — теж 'unknown', а не виняток", () => {
@@ -264,7 +276,7 @@ describe("resolveEffectiveGoalsForRange", () => {
     expect(map.get("2026-05-10")!.kcal).toBe(1800);
   });
 
-  it("дні до найранішої сходинки — 'unknown', решта тижня жива", () => {
+  it("дні до найранішої сходинки — 'extended', решта тижня жива", () => {
     // Саме та ситуація, у якій опиниться стадія 3 після backfill-у:
     // частина тижня відома, частина ні.
     const map = resolveEffectiveGoalsForRange(
@@ -272,8 +284,9 @@ describe("resolveEffectiveGoalsForRange", () => {
       "2026-05-01",
       "2026-05-07",
     );
-    expect(map.get("2026-05-01")!.origin).toBe("unknown");
-    expect(map.get("2026-05-03")!.origin).toBe("unknown");
+    expect(map.get("2026-05-01")!.origin).toBe("extended");
+    expect(map.get("2026-05-01")!.kcal).toBe(2400);
+    expect(map.get("2026-05-03")!.origin).toBe("extended");
     expect(map.get("2026-05-04")!.origin).toBe("manual");
   });
 
@@ -374,7 +387,7 @@ describe("goal rows for retrospective consumers", () => {
         "2026-05-02",
         "2026-05-03",
       ]),
-    ).toEqual([null, 2400, 2400, 1800]);
+    ).toEqual([2400, 2400, 2400, 1800]);
   });
 
   it("preserves caller order and returns null for invalid day keys", () => {
@@ -401,10 +414,11 @@ describe("goal rows for retrospective consumers", () => {
     expect(after).toEqual(before);
   });
 
-  it("returns no aggregate verdict when any day has unknown history", () => {
-    expect(
-      averageKcalGoalForDays(periods, ["2026-04-30", "2026-05-01"]),
-    ).toBeNull();
+  it("returns no aggregate verdict only for an empty journal", () => {
+    expect(averageKcalGoalForDays(periods, ["2026-04-30", "2026-05-01"])).toBe(
+      2400,
+    );
+    expect(averageKcalGoalForDays([], ["2026-05-01"])).toBeNull();
     expect(averageKcalGoalForDays(periods, ["2026-05-01", "2026-05-02"])).toBe(
       2400,
     );

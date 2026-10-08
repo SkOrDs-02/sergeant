@@ -28,7 +28,7 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeReadLS: safeReadLSMock,
   webKVStore: { onChange: onChangeMock },
 }));
-vi.mock("../../modules/finyk/lib/sqliteReader", () => ({
+vi.mock("../../modules/finyk/lib/sqliteCacheState", () => ({
   getCachedFinykSqliteState: () => finykCacheState.cache,
 }));
 

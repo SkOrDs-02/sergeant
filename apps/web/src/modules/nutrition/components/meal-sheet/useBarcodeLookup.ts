@@ -133,6 +133,7 @@ export function useBarcodeLookup({
           fat_g: p.fat_100g || 0,
           carbs_g: p.carbs_100g || 0,
         },
+        portions: [],
         updatedAt: Date.now(),
       };
       // Нутрієнти йдуть повз `fakeFood` навмисно: той типізований як

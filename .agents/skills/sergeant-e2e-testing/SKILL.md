@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # E2E Testing (Playwright) у Sergeant
 
-Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/`, split into 7 dirs: `smoke/` (auth and critical path), `a11y/` (axe-core accessibility snapshots), `fixtures/` (shared seed data — not a spec lane), `ledger/` (Finyk ledger flows), `mobile/` (44px touch-target audit, `pnpm --filter @sergeant/web e2e:mobile` — local-only, **not** wired into CI), `profiles/` (user-profile flows), and `utils/` (shared helpers — not a spec lane). Each spec lane has its own Playwright config: `playwright.config.ts` (base — a11y, self-managed build+preview `webServer`), `playwright.smoke.config.ts` (boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`), `playwright.ledger.config.ts`, `playwright.mobile.config.ts`, `playwright.profiles.config.ts`, `playwright.pwa-regression.config.ts`, and `playwright.visual.config.ts` — 7 config files total.
+Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/`, split into 7 dirs: `smoke/` (auth and critical path), `a11y/` (axe-core accessibility snapshots), `fixtures/` (shared seed data — not a spec lane), `ledger/` (Finyk ledger flows), `mobile/` (44px touch-target audit, `pnpm --filter @sergeant/web e2e:mobile` — CI-джоба щопонеділка і вручну, не на PR), `profiles/` (user-profile flows), and `utils/` (shared helpers — not a spec lane). Each spec lane has its own Playwright config: `playwright.config.ts` (base — a11y, self-managed build+preview `webServer`), `playwright.smoke.config.ts` (boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`), `playwright.ledger.config.ts`, `playwright.mobile.config.ts`, `playwright.profiles.config.ts`, `playwright.pwa-regression.config.ts`, `playwright.visual.config.ts`, plus `playwright.audit.config.ts`, `playwright.sweep.config.ts` and `playwright.verify.config.ts` — 10 config files total.
 
 ## 8 Golden Rules
 
@@ -40,7 +40,8 @@ pnpm --filter @sergeant/web e2e:mobile     # 44px touch-target audit (playwright
 pnpm --filter @sergeant/web e2e:profiles   # profiles lane (playwright.profiles.config.ts)
 pnpm --filter @sergeant/web test:a11y      # accessibility suite (playwright.config.ts, base config)
 pnpm --filter @sergeant/web test:visual    # visual regression (playwright.visual.config.ts, Argos)
-pnpm --filter @sergeant/web exec playwright test --config playwright.ledger.config.ts          # ledger lane (no dedicated script)
+pnpm --filter @sergeant/web e2e:ledger      # ledger lane (playwright.ledger.config.ts)
+pnpm --filter @sergeant/web e2e:seed-rich   # rich seed for manual/verification runs
 pnpm --filter @sergeant/web exec playwright test --config playwright.pwa-regression.config.ts   # PWA regression lane (no dedicated script)
 pnpm --filter @sergeant/web exec playwright test --ui        # interactive UI mode (local debug)
 pnpm --filter @sergeant/web exec playwright test --trace on  # force-enable traces locally
