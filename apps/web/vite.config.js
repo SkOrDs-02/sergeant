@@ -362,6 +362,16 @@ export default defineConfig(({ mode }) => {
               // фічей, які асистент насправді надсилає у чат. Економія —
               // ~25 KB brotli з eager-preload-у (`vendor-markdown` chunk
               // зник, разом із транзитивами в `vendor`-у).
+              // `@tanstack/virtual-core` (~5.5 kB brotli) — лише довгі списки
+              // (`VirtualList`), жоден із них не рендериться до першого
+              // екрана. Доки він жив у `vendor-react-query`, той чанк eager
+              // через QueryClient і віртуалізація їхала разом із ним
+              // (замір 2026-10-08, `attribute-eager-chunks.mjs`).
+              if (
+                id.includes("/node_modules/@tanstack/virtual-core/") ||
+                id.includes("/node_modules/@tanstack/react-virtual/")
+              )
+                return "vendor-virtual";
               // React Query + persist-client (~40 KB gzip). Використовується
               // у багатьох async chunk-ах, але стек великий — окремий
               // chunk дозволяє кешувати його між deploy-ами незалежно
@@ -385,16 +395,27 @@ export default defineConfig(({ mode }) => {
                 id.includes("/node_modules/defu/")
               )
                 return "vendor-auth";
-              // `zod` + `@hookform/resolvers/zod` (~12 KB gzip). Schema-
-              // валідатори тягнуться у багатьох async chunk-ах
-              // (auth, profile, finyk, fizruk, settings) — окремий
+              // `react-hook-form` (~9 kB brotli) — лише форми (`useApiForm`,
+              // ручні витрати у Фініку), усі в лінивих екранах. До
+              // 2026-10-08 RHF падав у catch-all `vendor`, а той eager
+              // через `tailwind-merge`/Capacitor, тож форми їхали до першого
+              // екрана (замір: `scripts/ci/attribute-eager-chunks.mjs`).
+              if (id.includes("/node_modules/react-hook-form/"))
+                return "vendor-forms";
+              // AI-DANGER: `@hookform/resolvers` НЕ можна класти ні у
+              // `vendor-forms`, ні у `vendor-zod`. Rolldown затягує в групу
+              // залежності її модулів: у `vendor-forms` резолвер притягнув
+              // `zod/v4/core/util`, і eager `vendor-zod` почав імпортувати
+              // `vendor-forms` (той став eager); у `vendor-zod` резолвер
+              // імпортує RHF, і `vendor-forms` знову eager. Без групи
+              // Rolldown кладе його поруч зі споживачами (лінивий `forms`).
+              if (id.includes("/node_modules/@hookform/")) return undefined;
+              // `zod` (~17 kB brotli). Schema-валідатори тягнуться у
+              // багатьох async chunk-ах (auth, profile, finyk, fizruk,
+              // settings) і в eager `@sergeant/shared/schemas` — окремий
               // chunk dedupe-ить байт-у-байт між ними і не роздуває
               // загальний vendor.
-              if (
-                id.includes("/node_modules/zod/") ||
-                id.includes("/node_modules/@hookform/")
-              )
-                return "vendor-zod";
+              if (id.includes("/node_modules/zod/")) return "vendor-zod";
               // Capacitor runtime + native плагіни (ML Kit / community
               // barcode scanner, @capacitor/preferences для bearer-storage,
               // @capacitor/status-bar, /splash-screen, /keyboard, /app)
