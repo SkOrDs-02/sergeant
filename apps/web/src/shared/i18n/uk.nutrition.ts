@@ -430,6 +430,48 @@ export const nutritionPageMessages = {
     packageCta: "Маю етикетку на 100 г",
   },
 
+  // Менеджер власних продуктів і власні порції (спека nutrition-my-products).
+  myFoods: {
+    open: "Мої продукти",
+    title: "Мої продукти",
+    editTitle: "Редагувати продукт",
+    emptyBody:
+      "Тут зʼявляться продукти, які ти додаси сам. Створити продукт можна під час запису прийому: вкладка «Своє», далі «З упаковки».",
+    kcalPer100: "ккал / 100 г",
+    portionsCount: "порцій: {n}",
+    editAction: "Змінити",
+    editAria: "Редагувати {name}",
+    deleteAction: "Видалити",
+    deleteAria: "Видалити {name}",
+    deleteKeep: "Залишити",
+    deleteTitle: "Видалити «{name}»?",
+    deleteTitleFallback: "Видалити продукт?",
+    deleteBody:
+      "Записи в щоденнику лишаться з їхніми числами. Перерахувати їх від ваги вже не вийде.",
+    save: "Зберегти",
+    cancel: "Скасувати",
+    existingUnchanged: "Записи, які вже є, не зміняться.",
+    nameLabel: "Назва продукту",
+    namePlaceholder: "Равіолі з сиром",
+  },
+
+  portionRows: {
+    heading: "Порції",
+    hint: "Необовʼязково: скибка, батон, пачка. Тоді при записі можна вводити кількість штук.",
+    nameLabel: "Назва",
+    gramsLabel: "Грами",
+    namePlaceholder: "скибка",
+    remove: "Прибрати",
+    add: "Додати порцію",
+  },
+
+  portionUnit: {
+    label: "Одиниця",
+    grams: "г",
+    decrease: "Зменшити",
+    increase: "Збільшити",
+  },
+
   pantryPortion: {
     label: "Вага порції, г",
     description: "Стільки буде списано з комори після збереження.",

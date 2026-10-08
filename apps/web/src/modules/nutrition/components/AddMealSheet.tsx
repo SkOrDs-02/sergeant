@@ -52,6 +52,7 @@ import {
   currentTime,
   emptyForm,
   gramsOrDefault,
+  macrosAreAllEmpty,
   macrosToFormFields,
   upsertMealTemplate,
   type MealFormState,
@@ -63,6 +64,7 @@ import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
 import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
+import { useSavePickedFood } from "./meal-sheet/useSavePickedFood";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
@@ -85,23 +87,6 @@ import type { QuickChip } from "../hooks/useNutritionQuickChips";
  */
 export const MAX_KCAL_PER_MEAL = 10_000;
 export const MAX_MACRO_GRAMS = 2_000;
-
-/**
- * True when every macro field is null or 0 — mirrors the `hasPhotoMacros`
- * predicate below (photo AI returns all-null macros when it can't
- * identify the food). A meal saved with all-empty macros won't move the
- * daily stats at all, so `handleSave` routes through a confirm step
- * instead of blocking the save outright (founder decision: warn, don't
- * block).
- */
-function macrosAreAllEmpty(macros: {
-  kcal: number | null;
-  protein_g: number | null;
-  fat_g: number | null;
-  carbs_g: number | null;
-}): boolean {
-  return !Object.values(macros).some((v) => v != null && v !== 0);
-}
 
 /**
  * Грами порції з поля вводу; 100 г — дефолт, коли поле порожнє або зіпсоване.
@@ -173,6 +158,7 @@ export function AddMealSheet({
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("100");
+  const savePicked = useSavePickedFood();
   const [sourceTab, setSourceTab] = useState<SourceTabId>("search");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
   const [date, setDate] = useState("");
@@ -457,6 +443,7 @@ export function AddMealSheet({
   }
 
   function finalizeSave(meals: Meal[], template: MealSaveTemplate) {
+    savePicked.persist(pickedFood);
     if (fromPantryItem && onConsumePantryItem) {
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
@@ -512,8 +499,8 @@ export function AddMealSheet({
     setStep("fill");
   }
 
-  // Крок «з упаковки» → «fill»: продукт уже збережено в локальну базу,
-  // лишається звʼязати його з прийомом. Макроси форми не чіпаємо тут —
+  // Крок «з упаковки» → «fill»: продукт ще не в базі (його пише
+  // `finalizeSave`), лишається звʼязати його з прийомом. Макроси форми не чіпаємо тут —
   // їх порахує `PickedFoodCard` під вагу порції.
   function handlePackageCreated(product: PickedFood, grams: string) {
     setAppliedPhoto(null);
@@ -720,6 +707,7 @@ export function AddMealSheet({
                 setPickedGrams={setPickedGrams}
                 onChangeProduct={handleChangeProduct}
                 skipInitialRescale={editedFood.rehydrated}
+                onUnitChange={savePicked.onUnitChange}
               />
             ) : fromPantryItem ? (
               <PantryPortionField

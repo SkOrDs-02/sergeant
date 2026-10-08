@@ -36,6 +36,15 @@ const LEGACY_STORE_BARCODES = "barcodes";
 const STORE_PRODUCTS = SERGEANT_STORE.NUTRITION_FOODS;
 const STORE_BARCODES = SERGEANT_STORE.NUTRITION_BARCODES;
 
+/** Власна порція продукту: «1 скибка = 30 г». */
+export interface FoodPortion {
+  id: string;
+  name: string;
+  grams: number;
+}
+
+export type FoodOrigin = "user" | "seed";
+
 export interface FoodProduct {
   id: string;
   name: string;
@@ -43,6 +52,13 @@ export interface FoodProduct {
   norm: string;
   defaultGrams: number;
   per100: Macros;
+  /** Власні порції; порожній масив - лише грами. */
+  portions: FoodPortion[];
+  /**
+   * Звідки продукт: створила людина чи вбудований. Відсутнє в записах до
+   * менеджера власних продуктів, `listUserFoods` класифікує їх за `norm`.
+   */
+  origin?: FoodOrigin | undefined;
   updatedAt: number;
 }
 
@@ -53,6 +69,8 @@ export interface FoodProductInput {
   norm?: unknown;
   defaultGrams?: unknown;
   per100?: unknown;
+  portions?: unknown;
+  origin?: unknown;
   updatedAt?: unknown;
 }
 
@@ -78,6 +96,37 @@ function normalizeMacros(per100: unknown): Macros {
     fat_g: clampNonNegative(m["fat_g"]),
     carbs_g: clampNonNegative(m["carbs_g"]),
   };
+}
+
+/** Межа назви порції («скибка», «батон»). */
+export const PORTION_NAME_MAX_LEN = 24;
+/** Стеля грамів однієї порції; та сама, що для ваги запису. */
+export const PORTION_MAX_GRAMS = 10_000;
+
+/**
+ * Приводить сире значення зі сховища до списку валідних порцій: відсутнє чи
+ * не-масив стає `[]`, елементи з порожньою назвою чи грамами поза межами
+ * відкидаються. Міграції сховища немає: старі продукти читаються цим же шляхом.
+ */
+export function normalizePortions(raw: unknown): FoodPortion[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FoodPortion[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const name = String(r["name"] ?? "").trim();
+    const grams = Number(r["grams"]);
+    if (!name || name.length > PORTION_NAME_MAX_LEN) continue;
+    if (!Number.isFinite(grams) || grams <= 0 || grams > PORTION_MAX_GRAMS)
+      continue;
+    const id = r["id"] != null ? String(r["id"]).trim() : "";
+    out.push({ id: id || generatePrefixedId("portion"), name, grams });
+  }
+  return out;
+}
+
+function withPortions(p: FoodProduct): FoodProduct {
+  return { ...p, portions: normalizePortions(p.portions) };
 }
 
 const ensureMigrated = (): Promise<void> =>
@@ -153,6 +202,8 @@ export function makeFoodProduct(partial: unknown): FoodProduct {
     norm,
     defaultGrams: defaultGrams > 0 ? defaultGrams : 100,
     per100: normalizeMacros(p.per100),
+    portions: normalizePortions(p.portions),
+    origin: p.origin === "seed" ? "seed" : "user",
     updatedAt: Date.now(),
   };
 }
@@ -174,7 +225,9 @@ export async function ensureSeedFoods(): Promise<boolean> {
 
     if (count === 0) {
       return await replaceAllFoodsFromList(
-        seeds.map((x) => makeFoodProduct({ name: x.name, per100: x.per100 })),
+        seeds.map((x) =>
+          makeFoodProduct({ name: x.name, per100: x.per100, origin: "seed" }),
+        ),
       );
     }
 
@@ -186,7 +239,11 @@ export async function ensureSeedFoods(): Promise<boolean> {
     for (const seed of seeds) {
       if (byNorm.has(normText(seed.name))) continue;
       await upsertFood(
-        makeFoodProduct({ name: seed.name, per100: seed.per100 }),
+        makeFoodProduct({
+          name: seed.name,
+          per100: seed.per100,
+          origin: "seed",
+        }),
       );
     }
     return true;
@@ -210,6 +267,7 @@ export async function listFoods(limit = 500): Promise<FoodProduct[]> {
     });
     await txDone(tx);
     return items
+      .map(withPortions)
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
       .slice(0, Math.max(1, Number(limit) || 500));
   } catch {
@@ -245,7 +303,7 @@ export async function getFoodById(
       r.onerror = () => reject(r.error);
     });
     await txDone(tx);
-    return found;
+    return found ? withPortions(found) : null;
   } catch {
     return null;
   }
@@ -292,6 +350,54 @@ export async function upsertFood(product: unknown): Promise<UpsertFoodResult> {
     return { ok: true, product: p };
   } catch {
     return { ok: false, error: "Не вдалося зберегти продукт" };
+  }
+}
+
+/**
+ * Продукти, які створила людина (для менеджера «Мої продукти» і бекапу).
+ * Записи без `origin` (до менеджера) вважаються вбудованими, якщо `norm`
+ * збігається з назвою одного зі `SEED_FOODS_UK`, інакше своїми.
+ */
+export async function listUserFoods(): Promise<FoodProduct[]> {
+  const seedNorms = new Set(
+    (await loadSeedFoods()).map((s) => normText(s.name)),
+  );
+  const all = await listFoods(100000);
+  return all
+    .map((f) => ({
+      ...f,
+      origin:
+        f.origin ??
+        (seedNorms.has(normText(f.norm || f.name)) ? "seed" : "user"),
+    }))
+    .filter((f) => f.origin === "user");
+}
+
+/**
+ * Видаляє продукт і його штрихкоди в одній транзакції. Записи щоденника
+ * лишаються: макроси в них знімок.
+ */
+export async function deleteFood(id: string): Promise<boolean> {
+  const key = String(id ?? "").trim();
+  if (!key) return false;
+  try {
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
+    const tx = db.transaction([STORE_PRODUCTS, STORE_BARCODES], "readwrite");
+    tx.objectStore(STORE_PRODUCTS).delete(key);
+    const barcodes = tx.objectStore(STORE_BARCODES);
+    const cursorReq = barcodes.openCursor();
+    cursorReq.onsuccess = () => {
+      const cursor = cursorReq.result;
+      if (!cursor) return;
+      if (cursor.value === key) cursor.delete();
+      cursor.continue();
+    };
+    await txDone(tx);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -352,19 +458,10 @@ export async function lookupFoodByBarcode(
       r.onerror = () => reject(r.error);
     });
     await txDone(tx);
-    return product || null;
+    return product ? withPortions(product) : null;
   } catch {
     return null;
   }
-}
-
-/** Продукти, яких немає у вбудованій базі: те, що людина додала сама (для бекапу). */
-export async function listCustomFoods(): Promise<FoodProduct[]> {
-  const seedNorms = new Set(
-    (await loadSeedFoods()).map((s) => normText(s.name)),
-  );
-  const all = await listFoods(100000);
-  return all.filter((f) => !seedNorms.has(normText(f.norm || f.name)));
 }
 
 /** Додає продукти зі списку, яких ще немає за `id` чи нормалізованою назвою. */
