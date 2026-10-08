@@ -1195,7 +1195,7 @@ verify-server-static-ai-layer/coachmem-v2.mjs (юзер audit_pool152): POST /ap
 
 ### `rel-19` [medium] Фонові полери не мають першого тіку: годинні задачі зсуваються після кожного деплою, а добова звірка Plata не виконується ніколи
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-19-worker-first-tick (стартовий тік у п'яти полерах і годинний slow tick Plata за `updated_at`; lastRunAt Plata у /health/workers та алерт на застарілий lastRunAt лишились)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: background workers
 - **Де:** apps/server/src/modules/billing/plataSync.ts:47,293-300; apps/server/src/modules/gdpr/cleanupPoller.ts:105-113; apps/server/src/modules/me/deletionPoller.ts:118-126; apps/server/src/modules/webhooks/retentionPoller.ts:72; apps/server/src/modules/logRetention/archivePoller.ts:175; apps/server/src/obs/anthropicBudgetGuard.ts:381; apps/server/src/index.ts:220-264
 - **Першопричина:** GDPR-cleanup, добивач видалень акаунтів, retention, архів логів, budget guard і Plata роблять лише setInterval і не запускають тік на старті, на відміну від SilpoSyncPoller. Slow-tick Plata — 24-годинний таймер процесу, який скидається кожним рестартом, а деплої йдуть кілька разів на день.
