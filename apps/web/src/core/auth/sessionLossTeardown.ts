@@ -30,7 +30,7 @@ export async function teardownLocalStateAfterSessionLoss(): Promise<void> {
     logger.warn("[auth.sessionLoss] local-first data purge failed", err);
   }
   try {
-    await swClearCaches();
+    await swClearCaches("user");
   } catch (err) {
     logger.warn("[auth.sessionLoss] swClearCaches failed", err);
   }

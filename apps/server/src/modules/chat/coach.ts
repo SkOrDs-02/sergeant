@@ -202,6 +202,19 @@ function mergeMemory(
 }
 
 /**
+ * Стеля довжини однієї кореляції (і підпису тижня) у промптах. Схема
+ * `CoachMemoryPostSchema` вже не пускає довші рядки, але в `coach_memory`
+ * лежать блоби, збережені до rel-18 (аудит 2026-10-01: кореляція на 2 МБ), —
+ * без обрізання на читанні вони й далі їхали б у system кожного першого туру.
+ */
+const CORRELATION_MAX_CHARS = 500;
+const WEEK_LABEL_MAX_CHARS = 80;
+
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/**
  * Найсвіжіші дедупльовані кореляції з тижневих дайджестів (найновіші тижні
  * першими). Спільна вибірка для weekly-insight prompt-у (`buildMemorySummary`)
  * і `/api/chat` surfacing-у (`getCoachCorrelationsBlock`) — обидва хочуть той
@@ -214,7 +227,9 @@ function pickRecentCorrelations(
   const seen = new Set<string>();
   const picked: string[] = [];
   for (const d of digests) {
-    for (const c of d.correlations || []) {
+    for (const raw of d.correlations || []) {
+      if (typeof raw !== "string") continue;
+      const c = clip(raw, CORRELATION_MAX_CHARS);
       if (seen.has(c)) continue;
       seen.add(c);
       picked.push(c);
@@ -312,7 +327,10 @@ export async function getCoachCorrelationsBlock(
     if (!latest) return "";
     const picked = pickRecentCorrelations(digests, CHAT_CORRELATIONS_MAX);
     if (picked.length === 0) return "";
-    const asOf = latest.weekRange || latest.weekKey;
+    const asOf = clip(
+      String(latest.weekRange || latest.weekKey),
+      WEEK_LABEL_MAX_CHARS,
+    );
     return [
       "",
       // Джерело й стандарт стоять у самому тексті блоку (спека

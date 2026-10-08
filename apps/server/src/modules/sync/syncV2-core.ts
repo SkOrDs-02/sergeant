@@ -398,6 +398,25 @@ export function isWithinTextBound(
 }
 
 /**
+ * Обрізає текст до `maxLen` UTF-16 code unit-ів (так само рахує
+ * `isWithinTextBound`) і не лишає на кінці половину сурогатної пари: хвіст
+ * із одиноким сурогатом `jsonb`/`text` не прийме (див. `hasUnstorableText`).
+ * Для денормалізованих копій display-рядків (напр. `routine_entries.name` -
+ * копія назви звички), де reject був би термінальним і назавжди губив би
+ * відмітку, а не лише відсікав зловмисний payload.
+ */
+export function clampTextToBound(
+  value: string,
+  maxLen: number = NAME_MAX_LEN,
+): string {
+  if (value.length <= maxLen) return value;
+  let end = maxLen;
+  const last = value.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return value.slice(0, end);
+}
+
+/**
  * Рядок, якого не прийме `jsonb`/`text` у Postgres: містить `U+0000` або
  * одинокий (непарний) UTF-16 сурогат. JSON.stringify пише такий сурогат як
  * `\udXXX`-escape, а `jsonb` відкидає його ("Unicode low surrogate must

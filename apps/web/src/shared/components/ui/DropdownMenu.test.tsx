@@ -5,7 +5,13 @@
  * (item / submenu / separator / label).
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent, act, screen } from "@testing-library/react";
+import {
+  render,
+  fireEvent,
+  act,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import {
   DropdownMenu,
   nextFocusableIndex,
@@ -101,6 +107,45 @@ describe("DropdownMenu", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Alpha" }));
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("ставить фокус на menuitem, лише коли панель уже visible (ux-09), Esc повертає фокус на тригер", async () => {
+    // Браузер ігнорує focus() на visibility:hidden; jsdom — ні, тому
+    // фіксуємо visibility панелі в момент кожного виклику focus().
+    const seen: { role: string | null; visibility: string }[] = [];
+    const realFocus = HTMLElement.prototype.focus;
+    const spy = vi
+      .spyOn(HTMLElement.prototype, "focus")
+      .mockImplementation(function (this: HTMLElement, ...args) {
+        const panel = this.closest<HTMLElement>('[role="menu"]');
+        if (panel) {
+          seen.push({
+            role: this.getAttribute("role"),
+            visibility: getComputedStyle(panel).visibility,
+          });
+        }
+        return realFocus.apply(this, args);
+      });
+    try {
+      renderMenu();
+      const trigger = screen.getByRole("button", { name: "Open" });
+      fireEvent.click(trigger);
+
+      const menuitemFocuses = seen.filter((s) => s.role === "menuitem");
+      expect(menuitemFocuses.length).toBeGreaterThan(0);
+      expect(menuitemFocuses.every((s) => s.visibility === "visible")).toBe(
+        true,
+      );
+      expect(document.activeElement?.getAttribute("role")).toBe("menuitem");
+
+      fireEvent.keyDown(document.activeElement as HTMLElement, {
+        key: "Escape",
+      });
+      expect(screen.queryByRole("menu")).toBeNull();
+      await waitFor(() => expect(document.activeElement).toBe(trigger));
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("closes on Escape", () => {

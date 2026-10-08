@@ -29,6 +29,12 @@ export function parseSignedAmountKopiykas(
     normalized = s.replace(",", ".");
   }
 
+  // Лише простий десятковий запис. `Number()` приймає і «0x10» (16), і
+  // «1e3» (1000), і «Infinity»: у виписці це службовий текст, а не сума, і
+  // мовчки зроблена з нього «сума» гірша за skip `unparsed_amount` (data-31).
+  // Довгий дробовий хвіст («12.300000000000001» з типізованої XLSX-клітинки)
+  // свідомо проходить: `Math.round` нижче його зводить до копійок.
+  if (!/^[+-]?\d+(\.\d+)?$/.test(normalized)) return null;
   const n = Number(normalized);
   if (!Number.isFinite(n)) return null;
   return Math.round(n * 100);

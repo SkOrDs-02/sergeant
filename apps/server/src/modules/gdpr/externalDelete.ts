@@ -107,15 +107,26 @@ async function deleteExternalResource(
 /**
  * `DELETE https://api.stripe.com/v1/customers/{id}` (ADR-6.3 table). Basic
  * auth with the secret key as username, empty password — Stripe's REST
- * convention. Skipped when `STRIPE_SECRET_KEY` is unset OR the queue row
- * has no `stripe_customer_id` (user never had a Stripe subscription).
+ * convention.
+ *
+ * Two distinct "nothing to call" cases, deliberately NOT merged:
+ *   - no `stripe_customer_id` (user never had a Stripe subscription — e.g.
+ *     LiqPay/Plata or free) → `"not_found"`: there is nothing to delete at
+ *     the vendor, so the worker completes the row and redacts the email
+ *     (ADR-0016 §5: PII is held only until vendor-cleanup is done). This
+ *     check runs BEFORE the key check — it does not depend on config.
+ *   - customer id present but `STRIPE_SECRET_KEY` unset → `"skipped"`: a
+ *     real customer exists, the row waits for an operator to set the key.
  */
 export async function deleteStripeCustomer(
   customerId: string | null | undefined,
   options: DeleteOptions & { secretKey?: string | undefined } = {},
 ): Promise<VendorDeleteResult> {
+  if (!customerId) {
+    return { outcome: "not_found" };
+  }
   const secretKey = options.secretKey ?? process.env["STRIPE_SECRET_KEY"];
-  if (!secretKey || !customerId) {
+  if (!secretKey) {
     return { outcome: "skipped" };
   }
   const auth = Buffer.from(`${secretKey}:`).toString("base64");

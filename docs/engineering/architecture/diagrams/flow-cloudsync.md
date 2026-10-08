@@ -1,6 +1,6 @@
 # Flow — Sync v2 push/pull
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-26.
+> **Last touched:** 2026-10-04 by @claude. **Next review:** 2026-12-26.
 > **Status:** Active
 
 Sync v2: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції з `sync_op_outbox` та пушить на сервер; pull тягне зміни інших пристроїв. CloudSync v1 (`POST /api/sync`) знятий (ADR-0047); sunset-middleware прибрано після 90-денного вікна, тож роут відповідає звичайним `404`.
@@ -54,7 +54,7 @@ sequenceDiagram
 ## Тригери push
 
 - `notifyEnqueued()` — кожен domain write автоматично повідомляє engine.
-- Debounce (≈200 ms після останнього `notifyEnqueued()`) → один batch декількох ops.
+- Trailing debounce (1,5 с після останнього `notifyEnqueued()`, але не довше 5 с від першого в серії) → один batch декількох ops (rel-08: раніше кожен запис давав окремий push і вичерпував ліміт `api:v2:sync` 60/хв).
 - Manual: `SyncEngineWriterRuntime.flushNow()` — для тестів і ручного тригера (наприклад, перед logout).
 - `SyncEngineFlushOnReconnect` — автоматичний flush при `window.addEventListener('online')`.
 
@@ -87,13 +87,14 @@ sequenceDiagram
 
 ## Failure handling
 
-| Failure       | Behaviour                                             | Recovery                                  |
-| ------------- | ----------------------------------------------------- | ----------------------------------------- |
-| Offline       | ops лишаються `pending` у outbox                      | flush при `online` event                  |
-| 5xx / timeout | ops позначаються `pending` (retry з backoff)          | exp.backoff у `SyncEnginePushScheduler`   |
-| 401           | drop payload, force re-auth                           | redirect до /login                        |
-| `rejected`    | op позначається `dead_letter`                         | `recoverAllDeadLetters()` / manual replay |
-| `duplicate`   | no-op (idempotent), позначається `duplicate` у outbox | —                                         |
+| Failure       | Behaviour                                                                           | Recovery                                  |
+| ------------- | ----------------------------------------------------------------------------------- | ----------------------------------------- |
+| Offline       | ops лишаються `pending` у outbox                                                    | flush при `online` event                  |
+| 5xx / timeout | ops позначаються `pending` (retry з backoff)                                        | exp.backoff у `SyncEnginePushScheduler`   |
+| 429 / 503     | ops лишаються `pending`, `attempts` НЕ росте, `next_retry_at` = now + `Retry-After` | наступний тік після `Retry-After`         |
+| 401           | drop payload, force re-auth                                                         | redirect до /login                        |
+| `rejected`    | op позначається `dead_letter`                                                       | `recoverAllDeadLetters()` / manual replay |
+| `duplicate`   | no-op (idempotent), позначається `duplicate` у outbox                               | —                                         |
 
 ## Спостережуваність
 

@@ -161,12 +161,14 @@ const { appLockPropsRef } = vi.hoisted(() => ({
 }));
 vi.mock("../security/AppLock", () => ({
   AppLock: (props: {
+    state: string;
     onSetupCancel: () => void;
     onChangeCancel: () => void;
   }) => {
     appLockPropsRef.current = props;
     return (
       <>
+        <span data-testid="app-lock-state">{props.state}</span>
         <button
           type="button"
           data-testid="app-lock-cancel"
@@ -236,6 +238,18 @@ function ShellProbe() {
       <div data-testid="auth-loading">{String(authLoading)}</div>
     </>
   );
+}
+
+/**
+ * Гарячі клавіші вимкнені, поки App Lock не `idle` (sec-13): холодний старт
+ * починається з `checking`. Тести, що тиснуть клавіші, чекають кінця перевірки.
+ */
+async function renderIdleAt(path = "/") {
+  const view = renderAt(path);
+  await waitFor(() =>
+    expect(screen.getByTestId("app-lock-state")).toHaveTextContent("idle"),
+  );
+  return view;
 }
 
 function renderAt(path = "/") {
@@ -505,24 +519,24 @@ describe("RootLayout", () => {
     setFlagSpy.mockRestore();
   });
 
-  it("opens hub search directly when already on the hub", () => {
-    renderAt("/");
+  it("opens hub search directly when already on the hub", async () => {
+    await renderIdleAt("/");
     expect(screen.getByTestId("active-module")).toHaveTextContent("null");
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.getByTestId("search-open")).toHaveTextContent("true");
     expect(screen.getByTestId("pathname")).toHaveTextContent("/");
   });
 
-  it("returns to the hub before opening search from inside a module", () => {
-    renderAt("/finyk");
+  it("returns to the hub before opening search from inside a module", async () => {
+    await renderIdleAt("/finyk");
     expect(screen.getByTestId("active-module")).toHaveTextContent("finyk");
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.getByTestId("pathname")).toHaveTextContent("/");
     expect(screen.getByTestId("search-open")).toHaveTextContent("true");
   });
 
-  it("routes G-chord keyboard navigation to the hub and to module openers", () => {
-    renderAt("/finyk");
+  it("routes G-chord keyboard navigation to the hub and to module openers", async () => {
+    await renderIdleAt("/finyk");
     expect(screen.getByTestId("active-module")).toHaveTextContent("finyk");
 
     fireEvent.keyDown(window, { key: "g" });
@@ -535,8 +549,8 @@ describe("RootLayout", () => {
     expect(screen.getByTestId("pathname")).toHaveTextContent("/nutrition");
   });
 
-  it("toggles shortcutsOpen via the real '?' keyboard shortcut", () => {
-    renderAt("/");
+  it("toggles shortcutsOpen via the real '?' keyboard shortcut", async () => {
+    await renderIdleAt("/");
     expect(screen.getByTestId("shortcuts-open")).toHaveTextContent("false");
     fireEvent.keyDown(window, { key: "?", shiftKey: true });
     expect(screen.getByTestId("shortcuts-open")).toHaveTextContent("true");
@@ -544,9 +558,9 @@ describe("RootLayout", () => {
 
   // ── Рішення власника 2026-09-16: Cmd+K має одного власника ──────────────
 
-  it("Cmd+K opens the command palette instead of hub search once hub_command_palette is on", () => {
+  it("Cmd+K opens the command palette instead of hub search once hub_command_palette is on", async () => {
     featureFlags.setFlag("hub_command_palette", true);
-    renderAt("/");
+    await renderIdleAt("/");
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.getByTestId("palette-open")).toHaveTextContent("true");
     expect(screen.getByTestId("search-open")).toHaveTextContent("false");
@@ -564,15 +578,15 @@ describe("RootLayout", () => {
 
   // ── N — «створити» в поточному контексті ─────────────────────────────────
 
-  it("N on the hub opens search with an empty query (the quick-add actions)", () => {
-    renderAt("/");
+  it("N on the hub opens search with an empty query (the quick-add actions)", async () => {
+    await renderIdleAt("/");
     fireEvent.keyDown(window, { key: "n" });
     expect(screen.getByTestId("search-open")).toHaveTextContent("true");
     expect(screen.getByTestId("search-query")).toHaveTextContent("");
   });
 
-  it("N inside a module dispatches that module's primary create intent", () => {
-    renderAt("/nutrition");
+  it("N inside a module dispatches that module's primary create intent", async () => {
+    await renderIdleAt("/nutrition");
     const listener = vi.fn();
     window.addEventListener(HUB_OPEN_MODULE_EVENT, listener);
     fireEvent.keyDown(window, { key: "n" });
@@ -585,8 +599,8 @@ describe("RootLayout", () => {
 
   // ── Cmd+Z — «Повернути» з видимого undo-тоста ────────────────────────────
 
-  it("Cmd+Z fires the undo of the youngest visible undo toast and dismisses it", () => {
-    renderAt("/");
+  it("Cmd+Z fires the undo of the youngest visible undo toast and dismisses it", async () => {
+    await renderIdleAt("/");
     const onUndo = vi.fn();
     const onRetry = vi.fn();
     const toast = undoProbe.get("toast");

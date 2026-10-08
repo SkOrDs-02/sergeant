@@ -29,11 +29,14 @@ vi.mock("@shared/lib", () => ({
 
 import { PWASection } from "./PWASection";
 
+const unregisterMock = vi.fn();
+const getRegistrationMock = vi.fn();
+
 function ensureServiceWorker(present: boolean) {
   if (present) {
     Object.defineProperty(navigator, "serviceWorker", {
       configurable: true,
-      value: {},
+      value: { getRegistration: getRegistrationMock },
     });
   } else if ("serviceWorker" in navigator) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,6 +47,8 @@ function ensureServiceWorker(present: boolean) {
 describe("PWASection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    unregisterMock.mockResolvedValue(true);
+    getRegistrationMock.mockResolvedValue({ unregister: unregisterMock });
     ensureServiceWorker(true);
   });
 
@@ -137,13 +142,71 @@ describe("PWASection", () => {
     await vi.waitFor(() => {
       expect(swMocks.swClearCaches).toHaveBeenCalledTimes(1);
     });
-    expect(toastMocks.success).toHaveBeenCalledWith(
-      "Кеш PWA скинуто. Перезавантажую…",
-      4000,
-    );
+    // rel-12: ручне скидання шле скоуп "all" (прекеш теж), а не дефолтний "user".
+    expect(swMocks.swClearCaches).toHaveBeenCalledWith("all");
+    // Тост і reload — після `getRegistration()` + `unregister()`.
+    await vi.waitFor(() => {
+      expect(toastMocks.success).toHaveBeenCalledWith(
+        "Кеш PWA скинуто. Перезавантажую…",
+        4000,
+      );
+    });
 
     vi.advanceTimersByTime(300);
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  // rel-12: після "all" прекеш порожній, і Workbox сам його не відновить.
+  // Без `unregister()` активний SW лишається без ассетів до наступного деплою.
+  it("знімає реєстрацію SW після очищення і лише тоді перезавантажує", async () => {
+    vi.useFakeTimers();
+    swMocks.swClearCaches.mockResolvedValue({ ok: true, deleted: [] });
+    const reload = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...window.location, reload },
+    });
+
+    render(<PWASection />);
+    fireEvent.click(screen.getByText("Скинути кеш PWA"));
+    fireEvent.click(screen.getByText("Скинути та перезавантажити"));
+
+    await vi.waitFor(() => {
+      expect(unregisterMock).toHaveBeenCalledTimes(1);
+    });
+    vi.advanceTimersByTime(300);
+    expect(reload).toHaveBeenCalledTimes(1);
+    expect(swMocks.swClearCaches.mock.invocationCallOrder[0]).toBeLessThan(
+      unregisterMock.mock.invocationCallOrder[0]!,
+    );
+    expect(unregisterMock.mock.invocationCallOrder[0]).toBeLessThan(
+      reload.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("не перезавантажує, якщо зняття реєстрації SW впало", async () => {
+    vi.useFakeTimers();
+    swMocks.swClearCaches.mockResolvedValue({ ok: true, deleted: [] });
+    unregisterMock.mockRejectedValue(new Error("unregister failed"));
+    const reload = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...window.location, reload },
+    });
+
+    render(<PWASection />);
+    fireEvent.click(screen.getByText("Скинути кеш PWA"));
+    fireEvent.click(screen.getByText("Скинути та перезавантажити"));
+
+    await vi.waitFor(() => {
+      expect(toastMocks.error).toHaveBeenCalledWith(
+        "Не вдалося скинути кеш PWA",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      );
+    });
+    vi.advanceTimersByTime(1000);
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it("toasts an error when clearing the cache fails", async () => {
