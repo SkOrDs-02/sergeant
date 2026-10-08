@@ -9,14 +9,19 @@
 // Bitbucket забрав обидві половини одразу: воркфлоу не виконується, `gh` з
 // Bitbucket не працює. Реєстр тихо став на 2026-09-17, і жоден гейт цього не
 // показав, бо `--check` звіряє лише реєстр ↔ блоки ↔ схему, тобто ФОРМУ, а не
-// ПОВНОТУ (аудит DG-3). Тепер джерело метаданих - Bitbucket API, а тригером
-// служить `pre-push` хук, який після пуша повідомляє про відставання.
+// ПОВНОТУ (аудит DG-3). 2026-09-23..29 джерелом був Bitbucket API.
+//
+// З 2026-09-29 код знову на GitHub (ADR-0101), і з 2026-10-08 основне
+// джерело метаданих — GitHub REST API через `fetch` (токен `GITHUB_TOKEN` /
+// `GH_TOKEN` із середовища). Тригер — знову `pr-backlinks.yml` після мержу,
+// за змінною репо `PR_LEDGER_ON_GITHUB`. Bitbucket лишається архівним
+// джерелом за `--host bitbucket`.
 //
 // Modes:
-//   --sync                  — дочитати з Bitbucket усі MERGED PR, яких ще
-//                             немає в реєстрі, і перебудувати блоки. Робочий
-//                             режим: саме його радить `pre-push`.
-//   --pr <NUMBER>           — те саме для одного PR (бекфіл, точкова правка).
+//   --sync                  — дочитати всі змерджені PR, яких ще немає в
+//                             реєстрі, і перебудувати блоки. Бекфіл:
+//                             `--sync --since YYYY-MM-DD`.
+//   --pr <NUMBER>           — те саме для одного PR (так кличе воркфлоу).
 //   --stale                 — нічого не пише: рахує, скількох змерджених PR
 //                             бракує в реєстрі. Exit 0 завжди, число у stdout.
 //   --rebuild-blocks        — перерендерити блоки з поточного реєстру
@@ -24,6 +29,9 @@
 //   --check                 — як `--rebuild-blocks`, але нічого не пише;
 //                             exit 1 на розбіжності блоків або порушенні
 //                             схеми. Це крок `pnpm lint`.
+//
+// Опції мережевих режимів: `--host github|bitbucket` (типово github),
+// `--since YYYY-MM-DD` (лише PR, змерджені від дати; для --sync/--stale).
 //
 // Phase 5 of Initiative 0014. See ADR-0061 for the storage strategy.
 
@@ -398,13 +406,153 @@ async function rebuildAllBlocks(ledger, { write = true } = {}) {
   return diffs;
 }
 
-// ── PR fetcher (Bitbucket API) ──────────────────────────────────────────────
+// ── PR sources ──────────────────────────────────────────────────────────────
+//
+// Джерело метаданих — обʼєкт з однаковим контрактом для обох хостів:
+//
+//   { host, slug,
+//     getPR(n)                 → { number, title, merged_at, author,
+//                                  merge_commit, url, paths },
+//     listMerged(limit, since) → { prs: [{ number, merged_at }], capped } }
+//
+// `paths` — ПОВНИЙ список змінених файлів (звірений `assertCompleteFileList`),
+// `merged_at` — ISO без мілісекунд. Писач далі не знає, звідки прийшли дані.
+// `merge_commit` і `url` у реєстр не пишуться (схема `prEntry` їх не має,
+// посилання будується з host+repo), але джерело їх віддає для логу.
+//
+// Основний хост з 2026-09-29 — GitHub (ADR-0101). Bitbucket лишається
+// архівним джерелом за прапорцем `--host bitbucket`: PR #1..#105 жили там.
+
+const GH_API = "https://api.github.com";
+
+/**
+ * Токен GitHub з середовища: `GITHUB_TOKEN` (Actions) або `GH_TOKEN`
+ * (локально: `GH_TOKEN=$(gh auth token)`). Не аргументом: у командному рядку
+ * токена бути не повинно. `null`, якщо немає — репо публічне, тож анонімні
+ * запити працюють, але з лімітом 60 на годину.
+ */
+export function readGitHubToken(env = process.env) {
+  return env["GITHUB_TOKEN"] || env["GH_TOKEN"] || null;
+}
+
+/** Чи є в заголовку `Link` посилання `rel="next"`. */
+export function hasNextLink(linkHeader) {
+  return typeof linkHeader === "string" && /rel="next"/.test(linkHeader);
+}
+
+function normalizeISO(raw) {
+  if (!raw) return null;
+  return new Date(raw).toISOString().replace(/\.\d+Z$/, "Z");
+}
+
+/**
+ * GitHub REST. `fetchImpl` інжектується заради тестів — мережі в них немає.
+ *
+ * Список файлів посторінковий (100 на сторінку, стеля API — 3000 файлів), і
+ * зупинка на першій сторінці — рівно та тиха дірка, через яку колись повз
+ * реєстр проїхав #1081. Тому сторінки йдуть до кінця за `Link: rel="next"`,
+ * а підсумок звіряється з `changed_files` самого PR: PR, більший за стелю
+ * API, валить прогін, а не записується неповним.
+ */
+export function githubSource({ slug, token, fetchImpl = globalThis.fetch }) {
+  async function ghGet(path) {
+    const headers = {
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "sergeant-pr-ledger",
+    };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetchImpl(`${GH_API}/repos/${slug}/${path}`, {
+      headers,
+    });
+    if (!res.ok) {
+      throw new Error(`GitHub API ${res.status} на ${path.split("?")[0]}`);
+    }
+    return {
+      data: await res.json(),
+      next: hasNextLink(res.headers?.get?.("link")),
+    };
+  }
+
+  async function changedPaths(prNumber, expected) {
+    const paths = [];
+    for (let page = 1; ; page++) {
+      const { data, next } = await ghGet(
+        `pulls/${prNumber}/files?per_page=100&page=${page}`,
+      );
+      // Перейменований файл несе новий шлях у `filename`, старий — у
+      // `previous_filename`; видалений — свій шлях у `filename`.
+      for (const f of data ?? []) if (f.filename) paths.push(f.filename);
+      if (!next) break;
+    }
+    assertCompleteFileList(paths.length, expected, prNumber);
+    return paths;
+  }
+
+  return {
+    host: "github",
+    slug,
+    async getPR(prNumber) {
+      const { data } = await ghGet(`pulls/${prNumber}`);
+      if (!data.merged_at) {
+        throw new Error(`PR #${prNumber} не змерджений (state=${data.state}).`);
+      }
+      return {
+        number: data.number,
+        title: data.title,
+        merged_at: normalizeISO(data.merged_at),
+        // На GitHub логін — справжній хендл, тож PII-міркування з
+        // Bitbucket-гілки (див. `bitbucketAuthor`) тут не діє.
+        author: `@${data.user?.login || "unknown"}`,
+        merge_commit: data.merge_commit_sha ?? null,
+        url: data.html_url ?? `https://github.com/${slug}/pull/${prNumber}`,
+        paths: await changedPaths(prNumber, data.changed_files),
+      };
+    },
+    /**
+     * Змерджені PR, найсвіжіші за оновленням першими. GitHub не фільтрує
+     * «merged» на сервері, тож беремо `closed` і відсіюємо `merged_at == null`.
+     * `since` (YYYY-MM-DD) обрізає хвіст: `updated_at >= merged_at`, тож щойно
+     * сторінка дійшла до оновлених раніше за `since`, змерджених пізніше вже
+     * не буде.
+     */
+    async listMerged(limit, since = null) {
+      const out = [];
+      let more = false;
+      for (let page = 1; ; page++) {
+        const { data, next } = await ghGet(
+          `pulls?state=closed&sort=updated&direction=desc&per_page=100&page=${page}`,
+        );
+        let reachedSince = false;
+        for (const pr of data ?? []) {
+          if (since && (pr.updated_at ?? "").slice(0, 10) < since) {
+            reachedSince = true;
+            break;
+          }
+          if (!pr.merged_at) continue;
+          const merged_at = normalizeISO(pr.merged_at);
+          if (since && merged_at.slice(0, 10) < since) continue;
+          out.push({ number: pr.number, merged_at });
+        }
+        more = next && !reachedSince;
+        if (!more || out.length >= limit) break;
+      }
+      return {
+        prs: out.slice(0, limit),
+        capped: out.length > limit || (out.length >= limit && more),
+      };
+    },
+  };
+}
 
 // Токен живе в `.env` ОСНОВНОГО клону, а не worktree, і не передається
 // аргументом: у командному рядку його бути не повинно. Той самий шлях і те саме
-// міркування, що в `scripts/deploy-api.mjs` і `scripts/pre-push-merged-pr.mjs`.
+// міркування, що в `scripts/deploy-api.mjs`.
 const ENV_PATH = "D:\\Sergeant\\.env";
 const BB_API = "https://api.bitbucket.org/2.0/repositories";
+// Архівний дім 2026-09-23..29 (ADR-0101). Не `currentRepoSlug()`: той тепер
+// повертає GitHub-слуг, а номери Bitbucket-PR живуть лише тут.
+export const BITBUCKET_ARCHIVE_SLUG = "skords01/sergeant";
 
 export function readBitbucketToken(envPath = ENV_PATH) {
   const line = readFileSync(envPath, "utf8")
@@ -413,21 +561,11 @@ export function readBitbucketToken(envPath = ENV_PATH) {
   const token = line?.slice("BITBUCKET_TOKEN=".length).trim();
   if (!token) {
     throw new Error(
-      `BITBUCKET_TOKEN не знайдено в ${envPath}. Без нього реєстр не оновити: ` +
-        `метадані PR живуть лише в Bitbucket API (gh з Bitbucket не працює).`,
+      `BITBUCKET_TOKEN не знайдено в ${envPath}. Без нього архівні ` +
+        `Bitbucket-PR не дочитати (gh з Bitbucket не працює).`,
     );
   }
   return token;
-}
-
-async function bbGet(token, path) {
-  const res = await fetch(`${BB_API}/${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error(`Bitbucket API ${res.status} на ${path.split("?")[0]}`);
-  }
-  return res.json();
 }
 
 /**
@@ -444,9 +582,9 @@ async function bbGet(token, path) {
  * Тому неповний список — це помилка, а не привід тихо продовжити:
  * гейт, який не може виконати свою роботу, мусить сказати про це вголос.
  *
- * Bitbucket має ту саму пастку під іншим іменем: `diffstat` посторінковий, і
- * зупинка на першій сторінці дала б той самий тихий недолік. Тому лічильник
- * звіряється з полем `size` відповіді.
+ * Обидва хости мають ту саму пастку: GitHub `pulls/<n>/files` і Bitbucket
+ * `diffstat` посторінкові, а GitHub ще й ріже список на 3000 файлах. Тому
+ * лічильник звіряється з `changed_files` (GitHub) або `size` (Bitbucket).
  */
 export function assertCompleteFileList(fetched, expected, prNumber) {
   if (!Number.isInteger(expected)) return;
@@ -458,151 +596,177 @@ export function assertCompleteFileList(fetched, expected, prNumber) {
   );
 }
 
-/** Усі шляхи, змінені в PR. Ходить по сторінках `diffstat` до кінця. */
-async function fetchChangedPaths(token, slug, prNumber) {
-  const paths = [];
-  let expected = null;
-  let page = 1;
-  for (;;) {
-    const data = await bbGet(
-      token,
-      `${slug}/pullrequests/${prNumber}/diffstat?pagelen=100&page=${page}`,
-    );
-    if (expected === null) expected = data.size ?? null;
-    for (const v of data.values ?? []) {
-      // `new` порожній у видалених файлів, `old` — у доданих.
-      const p = v.new?.path ?? v.old?.path;
-      if (p) paths.push(p);
-    }
-    if (!data.next) break;
-    page += 1;
-  }
-  assertCompleteFileList(paths.length, expected, prNumber);
-  return paths;
-}
-
-/** Bitbucket не має `merged_at`; час мержу — це `closed_on`. */
-function normalizeMergedAt(pr) {
-  const raw = pr.closed_on ?? pr.updated_on;
-  if (!raw) return null;
-  return new Date(raw).toISOString().replace(/\.\d+Z$/, "Z");
-}
-
 /**
- * Автор у формі `@handle`.
+ * Автор Bitbucket-PR у формі `@handle`.
  *
  * Bitbucket логіна в цій відповіді не віддає: поля `nickname` немає навіть у
- * явному `fields=`, є лише `display_name` - і там лежить СПРАВЖНЄ ІМʼЯ власника
- * («Стахов Дмитрий»), а не хендл. Те саме в git: мерж-коміти, створені
- * Bitbucket-ом, несуть реальне імʼя і в `%an`, і в `%cn`.
+ * явному `fields=`, є лише `display_name` - і там лежить СПРАВЖНЄ ІМʼЯ власника,
+ * а не хендл. Те саме в git: мерж-коміти, створені Bitbucket-ом, несуть
+ * реальне імʼя і в `%an`, і в `%cn`.
  *
  * Тому display_name сюди не пишемо. Поле `author` ніде не рендериться (блок
  * показує лише номер, заголовок і дату), тож PII у трекованому файлі дало б
  * рівно нуль користі - а AGENTS.md § Deployment прямо просить такого не
  * комітити. Замість цього беремо слуг робочого простору з `repo`: він і так
  * лежить у репо відкритим текстом, має форму хендла і для цього репо правдивий,
- * бо PR-и тут створює лише власник.
+ * бо PR-и тут створював лише власник.
  *
- * `nickname` теж не рятує: у цьому репо він приходить як «Стахов Дмитрий», бо
- * Bitbucket за замовчуванням дорівнює його display_name. Відрізнити хендл від
- * імені програмно не вийде (одне слово буває і тим, і тим), тож ніяких здогадів:
- * для Bitbucket пишемо слуг робочого простору завжди.
- *
- * Обмеження свідоме: зʼявиться другий автор - усі його PR підпишуться слугом
- * робочого простору. Тоді сюди треба буде тягти `account_id`, а не справжні
- * імена.
+ * `nickname` теж не рятує: у цьому репо він дорівнює display_name. Відрізнити
+ * хендл від імені програмно не вийде (одне слово буває і тим, і тим), тож
+ * ніяких здогадів: для Bitbucket пишемо слуг робочого простору завжди.
  */
-function normalizeAuthor(slug) {
+function bitbucketAuthor(slug) {
   const workspace = slug?.split("/")[0];
   return `@${workspace || "unknown"}`;
 }
 
-async function fetchPRMetadata(prNumber, { token, slug }) {
-  const data = await bbGet(
-    token,
-    `${slug}/pullrequests/${prNumber}` +
-      `?fields=id,title,state,closed_on,updated_on`,
-  );
-  if (data.state !== "MERGED") {
-    throw new Error(`PR #${prNumber} не змерджений (state=${data.state}).`);
+export function bitbucketSource({ slug, token, fetchImpl = globalThis.fetch }) {
+  async function bbGet(path) {
+    const res = await fetchImpl(`${BB_API}/${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      throw new Error(`Bitbucket API ${res.status} на ${path.split("?")[0]}`);
+    }
+    return res.json();
   }
-  const paths = await fetchChangedPaths(token, slug, prNumber);
-  const touchedDocs = paths.filter((p) => isCanonicalDocPath(p)).sort();
-  console.log(
-    `PR #${prNumber}: ${paths.length} changed file(s), ` +
-      `${touchedDocs.length} canonical doc(s).`,
-  );
+
+  /** Усі шляхи, змінені в PR. Ходить по сторінках `diffstat` до кінця. */
+  async function changedPaths(prNumber) {
+    const paths = [];
+    let expected = null;
+    for (let page = 1; ; page++) {
+      const data = await bbGet(
+        `${slug}/pullrequests/${prNumber}/diffstat?pagelen=100&page=${page}`,
+      );
+      if (expected === null) expected = data.size ?? null;
+      for (const v of data.values ?? []) {
+        // `new` порожній у видалених файлів, `old` — у доданих.
+        const p = v.new?.path ?? v.old?.path;
+        if (p) paths.push(p);
+      }
+      if (!data.next) break;
+    }
+    assertCompleteFileList(paths.length, expected, prNumber);
+    return paths;
+  }
+
+  // Bitbucket не має `merged_at`; час мержу — це `closed_on`.
+  const mergedAt = (pr) => normalizeISO(pr.closed_on ?? pr.updated_on);
+
   return {
-    number: data.id,
-    title: data.title,
-    merged_at: normalizeMergedAt(data),
-    author: normalizeAuthor(slug),
     host: "bitbucket",
-    repo: slug,
-    touchedDocs,
+    slug,
+    async getPR(prNumber) {
+      const data = await bbGet(
+        `${slug}/pullrequests/${prNumber}` +
+          `?fields=id,title,state,closed_on,updated_on,merge_commit.hash`,
+      );
+      if (data.state !== "MERGED") {
+        throw new Error(`PR #${prNumber} не змерджений (state=${data.state}).`);
+      }
+      return {
+        number: data.id,
+        title: data.title,
+        merged_at: mergedAt(data),
+        author: bitbucketAuthor(slug),
+        merge_commit: data.merge_commit?.hash ?? null,
+        url: `https://bitbucket.org/${slug}/pull-requests/${prNumber}`,
+        paths: await changedPaths(prNumber),
+      };
+    },
+    async listMerged(limit, since = null) {
+      const out = [];
+      let more = false;
+      for (let page = 1; ; page++) {
+        const data = await bbGet(
+          `${slug}/pullrequests?q=${encodeURIComponent('state="MERGED"')}` +
+            `&sort=-updated_on&pagelen=50&page=${page}` +
+            `&fields=next,values.id,values.closed_on,values.updated_on`,
+        );
+        for (const pr of data.values ?? []) {
+          const merged_at = mergedAt(pr);
+          if (since && (merged_at ?? "").slice(0, 10) < since) continue;
+          out.push({ number: pr.id, merged_at });
+        }
+        more = Boolean(data.next);
+        if (!more || out.length >= limit) break;
+      }
+      return {
+        prs: out.slice(0, limit),
+        capped: out.length > limit || (out.length >= limit && more),
+      };
+    },
   };
 }
 
-/**
- * Змерджені PR, найсвіжіші першими. `limit` — стеля на кількість, і якщо вона
- * спрацювала, викликач про це каже вголос: тихо обрізаний список тут означав би
- * рівно ту саму ваду, проти якої стоїть `assertCompleteFileList`.
- */
-async function listMergedPRs(token, slug, limit) {
-  const out = [];
-  let page = 1;
-  for (;;) {
-    const data = await bbGet(
-      token,
-      `${slug}/pullrequests?q=${encodeURIComponent('state="MERGED"')}` +
-        `&sort=-updated_on&pagelen=50&page=${page}` +
-        `&fields=next,values.id,values.title,values.state,values.closed_on,values.updated_on`,
-    );
-    out.push(...(data.values ?? []));
-    if (!data.next || out.length >= limit) break;
-    page += 1;
-  }
-  return { prs: out.slice(0, limit), capped: out.length > limit };
+/** Метадані одного змердженого PR у формі запису реєстру. */
+export async function fetchPRMetadata(prNumber, source) {
+  const pr = await source.getPR(prNumber);
+  const touchedDocs = pr.paths.filter((p) => isCanonicalDocPath(p)).sort();
+  console.log(
+    `PR #${pr.number} (${pr.url}, merge ${pr.merge_commit?.slice(0, 8) ?? "?"}): ` +
+      `${pr.paths.length} changed file(s), ${touchedDocs.length} canonical doc(s).`,
+  );
+  return {
+    number: pr.number,
+    title: pr.title,
+    merged_at: pr.merged_at,
+    author: pr.author,
+    host: source.host,
+    repo: source.slug,
+    touchedDocs,
+  };
 }
 
 /**
  * PR, які вже дивились і які не торкнулись жодного канонічного документа.
  *
  * Без цього списку `--stale` рахував би їх вічно: більшість PR канонічних доків
- * не чіпає, запису в реєстрі не отримує - і кожен наступний пуш нагадував би
- * про ті самі одинадцять «пропущених». Нагадування, яке не можна погасити, за
- * тиждень читається як шум і перестає працювати.
+ * не чіпає, запису в реєстрі не отримує - і кожен наступний прогін нагадував би
+ * про ті самі «пропущені». Нагадування, яке не можна погасити, за тиждень
+ * читається як шум і перестає працювати.
  *
  * Зберігаємо саме перелік оглянутих, а не «найбільший оглянутий номер»: PR
  * зі старішим номером може змерджитись пізніше за новіший, і відсічка по
  * максимуму тихо проковтнула б його - рівно той клас пропуску, проти якого це
  * правило й існує.
+ *
+ * Ключ групи: `bitbucket` для архіву (як писалось з 2026-09-23) і
+ * `github:<owner>/<repo>` для GitHub. Номер унікальний лише в межах репо, а
+ * GitHub-репо в історії вже кілька: група лише за хостом після наступного
+ * переїзду тихо вважала б нові PR #1..#N «уже оглянутими».
  */
-function examinedSet(ledger, host) {
-  return new Set(ledger.examined?.[host] ?? []);
+export function examinedKey(host, slug) {
+  return host === "bitbucket" ? "bitbucket" : `${host}:${slug}`;
 }
 
-function markExamined(ledger, host, numbers) {
+function examinedSet(ledger, key) {
+  return new Set(ledger.examined?.[key] ?? []);
+}
+
+function markExamined(ledger, key, numbers) {
   if (numbers.length === 0) return false;
-  const before = examinedSet(ledger, host);
+  const before = examinedSet(ledger, key);
   const after = new Set([...before, ...numbers]);
   if (after.size === before.size) return false;
   ledger.examined = {
     ...(ledger.examined ?? {}),
-    [host]: [...after].sort((a, b) => a - b),
+    [key]: [...after].sort((a, b) => a - b),
   };
   return true;
 }
 
 /** Змерджені PR, яких ще немає в реєстрі і яких ще не дивились. */
-async function findMissingPRs(ledger, { token, slug, limit }) {
+async function findMissingPRs(ledger, source, { limit, since }) {
   const known = new Set(ledger.prs.map((p) => entryKey(p)));
-  const examined = examinedSet(ledger, "bitbucket");
-  const { prs, capped } = await listMergedPRs(token, slug, limit);
+  const examined = examinedSet(ledger, examinedKey(source.host, source.slug));
+  const { prs, capped } = await source.listMerged(limit, since);
   const missing = prs.filter(
     (pr) =>
-      !known.has(entryKey({ number: pr.id, host: "bitbucket", repo: slug })) &&
-      !examined.has(pr.id),
+      !known.has(
+        entryKey({ number: pr.number, host: source.host, repo: source.slug }),
+      ) && !examined.has(pr.number),
   );
   missing.reverse();
   return { missing, capped, scanned: prs.length };
@@ -634,8 +798,8 @@ function upsertPR(ledger, entry) {
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
-function parseArgs(argv) {
-  const out = { mode: null, prNumber: null };
+export function parseArgs(argv) {
+  const out = { mode: null, prNumber: null, host: "github", since: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--check") out.mode = "check";
@@ -650,9 +814,39 @@ function parseArgs(argv) {
       }
       out.mode = "pr";
       out.prNumber = n;
+    } else if (a === "--host") {
+      const v = argv[++i];
+      if (!KNOWN_HOSTS.has(v)) {
+        throw new Error(`--host must be github or bitbucket (got ${v})`);
+      }
+      out.host = v;
+    } else if (a === "--since") {
+      const v = argv[++i];
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v ?? "")) {
+        throw new Error(`--since requires YYYY-MM-DD (got ${v})`);
+      }
+      out.since = v;
     }
   }
   return out;
+}
+
+/** Джерело метаданих за `--host`. Токен — лише з середовища або `.env`. */
+function sourceFor(host) {
+  if (host === "bitbucket") {
+    return bitbucketSource({
+      slug: BITBUCKET_ARCHIVE_SLUG,
+      token: readBitbucketToken(),
+    });
+  }
+  const token = readGitHubToken();
+  if (!token) {
+    console.error(
+      "pr-ledger: GITHUB_TOKEN/GH_TOKEN не задано — анонімні запити (60/год). " +
+        "Локально: GH_TOKEN=$(gh auth token).",
+    );
+  }
+  return githubSource({ slug: currentRepoSlug(), token });
 }
 
 async function main() {
@@ -660,11 +854,14 @@ async function main() {
   if (!args.mode) {
     console.error(
       "Usage:\n" +
-        "  --sync             дочитати з Bitbucket усі змерджені PR, яких немає в реєстрі\n" +
+        "  --sync             дочитати всі змерджені PR, яких немає в реєстрі\n" +
         "  --pr <NUMBER>      те саме для одного PR\n" +
         "  --stale            скільки PR бракує (нічого не пише, exit 0)\n" +
         "  --rebuild-blocks   перерендерити блоки з поточного реєстру\n" +
-        "  --check            звірити реєстр ↔ блоки ↔ схему (крок pnpm lint)",
+        "  --check            звірити реєстр ↔ блоки ↔ схему (крок pnpm lint)\n" +
+        "Опції для --sync/--pr/--stale:\n" +
+        "  --host github|bitbucket   джерело (типово github; bitbucket — архів)\n" +
+        "  --since YYYY-MM-DD        лише PR, змерджені від цієї дати",
     );
     process.exit(2);
   }
@@ -708,32 +905,42 @@ async function main() {
     return;
   }
 
-  const token = readBitbucketToken();
-  const slug = currentRepoSlug();
+  const source = sourceFor(args.host);
+  const scan = { limit: SYNC_LIMIT, since: args.since };
+  const sinceNote = args.since ? `, змерджених від ${args.since}` : "";
 
   if (args.mode === "stale") {
-    const { missing, capped, scanned } = await findMissingPRs(ledger, {
-      token,
-      slug,
-      limit: SYNC_LIMIT,
-    });
+    const { missing, capped, scanned } = await findMissingPRs(
+      ledger,
+      source,
+      scan,
+    );
     console.log(String(missing.length));
     if (missing.length > 0) {
       console.error(
-        `pr-ledger: ${missing.length} змерджених PR з ${scanned} перевірених немає в реєстрі` +
+        `pr-ledger: ${missing.length} змерджених PR (${source.host}:${source.slug}${sinceNote}) ` +
+          `з ${scanned} перевірених немає в реєстрі` +
           `${capped ? ` (скан обрізано на ${SYNC_LIMIT})` : ""}: ` +
-          missing.map((p) => `#${p.id}`).join(", "),
+          missing.map((p) => `#${p.number}`).join(", "),
       );
     }
     return;
   }
 
   if (args.mode === "sync" || args.mode === "pr") {
-    const targets =
-      args.mode === "pr"
-        ? [{ id: args.prNumber }]
-        : (await findMissingPRs(ledger, { token, slug, limit: SYNC_LIMIT }))
-            .missing;
+    let targets;
+    if (args.mode === "pr") {
+      targets = [{ number: args.prNumber }];
+    } else {
+      const found = await findMissingPRs(ledger, source, scan);
+      if (found.capped) {
+        console.error(
+          `pr-ledger: скан обрізано на ${SYNC_LIMIT} PR — запусти ще раз ` +
+            `або звузь --since.`,
+        );
+      }
+      targets = found.missing;
+    }
 
     if (targets.length === 0) {
       console.log("pr-ledger: усі змерджені PR уже в реєстрі.");
@@ -743,7 +950,7 @@ async function main() {
     let upserted = 0;
     const withoutDocs = [];
     for (const target of targets) {
-      const entry = await fetchPRMetadata(target.id, { token, slug });
+      const entry = await fetchPRMetadata(target.number, source);
       if (entry.touchedDocs.length === 0) {
         // Нічого канонічного не торкнувся — це не пропуск, а нормальний стан
         // для більшості PR. Запису немає навмисно: реєстр індексує саме
@@ -755,7 +962,11 @@ async function main() {
       if (upsertPR(ledger, entry)) upserted += 1;
     }
 
-    const marked = markExamined(ledger, "bitbucket", withoutDocs);
+    const marked = markExamined(
+      ledger,
+      examinedKey(source.host, source.slug),
+      withoutDocs,
+    );
     if (upserted > 0 || marked) writeLedger(ledger);
     console.log(
       `pr-ledger: ${upserted} запис(ів) додано або оновлено, ` +

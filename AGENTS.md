@@ -1,6 +1,6 @@
 ﻿# Agents in Sergeant
 
-> **Last touched:** 2026-10-01 by @claude (дашборд свіжості більше не комітиться, § See also). **Next review:** 2027-01-09.
+> **Last touched:** 2026-10-08 by @claude (писач реєстру PR знову читає GitHub, § Де живе код). **Next review:** 2027-01-09.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -237,7 +237,7 @@ Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-0
 
 `pre-push` хук на кожному пуші освіжає `main` у **трунку** `D:\Sergeant` ([`scripts/lib/refresh-trunk-main.mjs`](./scripts/lib/refresh-trunk-main.mjs)). Уся робота йде через worktree, тож у трунк не заходять місяцями, а залежить від нього більше, ніж здається: `core.hooksPath` указує на `.husky/_` саме трунку, тобто застарілий трунк означає застарілі хуки в усіх worktree. Помилка тут мовчазна і пуш не зупиняє.
 
-Реєстр PR (Hard Rule #26) зараз не дописується сам: писач `update-pr-backlinks.mjs` уміє читати лише Bitbucket API, а `pr-backlinks.yml` вимкнено змінною репо `PR_LEDGER_ON_GITHUB`. Деталі в [правилі 26](./docs/governance/governance/rules/26-pr-ledger-update-on-merge.md).
+Реєстр PR (Hard Rule #26): писач `update-pr-backlinks.mjs` з 2026-10-08 знову читає GitHub REST API (Bitbucket лишився архівним `--host bitbucket`), а `pr-backlinks.yml` після мержу відкриває follow-up PR, але лише за змінної репо `PR_LEDGER_ON_GITHUB=true`. Доки її не ввімкнено, реєстр сам не дописується. Бекфіл і деталі в [правилі 26](./docs/governance/governance/rules/26-pr-ledger-update-on-merge.md).
 
 ## Verification before PR
 

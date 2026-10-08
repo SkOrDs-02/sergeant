@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.3.1",
+  "current": "8.4.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -762,6 +762,14 @@
       "releasedAt": "2026-10-08",
       "changes": [
         "bump from 8.3.0 -> 8.3.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.4.0": {
+      "releasedAt": "2026-10-08",
+      "changes": [
+        "bump from 8.3.1 -> 8.4.0 (minor): писач реєстру PR (Hard Rule #26) знову читає GitHub REST API (Bitbucket - архівний --host bitbucket, бекфіл --since); у rules/26 і hard-rules.json змінено лише опис механізму, саме правило й скоуп не змінились, тож не major (скрипт пропонував 9.0.0)"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

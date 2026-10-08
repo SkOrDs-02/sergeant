@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-09-30 by @claude
+> **Last validated:** 2026-10-08 by @claude
 > **Next review:** 2027-04-12
 > **Status:** Active
 
@@ -45,17 +45,23 @@ C10 і неіснуючий дефект PDF-експорту в M3. Кожна 
 
 ## Enforced by
 
-- **convention** — `pnpm docs:sync-pr-ledger` дочитує метадані змерджених PR з Bitbucket API і перебудовує блоки. Покриває лише архівні Bitbucket-PR (2026-09-23..29).
-- **ci** — `pnpm docs:check-pr-ledger` (крок `pnpm lint`) звіряє реєстр ↔ блоки ↔ схему. Exit 1 на будь-якому дрейфі.
-- **Повнота зараз не стережеться (з 2026-09-30).** Код повернувся на GitHub ([ADR-0102](../../adr/0102-github-actions-ci-and-autodeploy.md)), а писач реєстру вміє читати лише Bitbucket. Нагадування в `pre-push` прибрано разом із перевіркою змердженого PR на Bitbucket, а [`pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) вимкнено змінною репозиторію `PR_LEDGER_ON_GITHUB`: без неї він упав би на відсутньому `BITBUCKET_TOKEN`. Повернути автоматику = навчити фетчер GitHub API (як було до 2026-09-23) і ввімкнути змінну.
+- **workflow** — [`pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) після мержу PR, що торкнувся канонічної теки, кличе `update-pr-backlinks.mjs --pr <N>` і відкриває follow-up PR `docs/pr-backlinks-<N>`. Працює лише за змінної репозиторію `PR_LEDGER_ON_GITHUB=true`; вмикає її власник.
+- **convention** — `pnpm docs:sync-pr-ledger` дочитує метадані змерджених PR з GitHub REST API (токен `GITHUB_TOKEN` або `GH_TOKEN` із середовища) і перебудовує блоки. Архівні Bitbucket-PR (2026-09-23..29) — тим самим скриптом із `--host bitbucket`.
+- **ci** — `pnpm docs:check-pr-ledger` (крок `pnpm lint`) звіряє реєстр ↔ блоки ↔ схему. Exit 1 на будь-якому дрейфі. Мережі не торкається.
 
-### Повернення на GitHub (2026-09-30)
+### Повернення на GitHub (2026-09-30 → 2026-10-08)
 
-До моменту, поки фетчер не читає GitHub, PR, що торкаються канонічних доків, у реєстр не потрапляють самі. Це відома дірка, а не зелений гейт: `--check` і далі звіряє лише форму.
+2026-09-30 код повернувся на GitHub ([ADR-0102](../../adr/0102-github-actions-ci-and-autodeploy.md)), а писач реєстру вмів читати лише Bitbucket. Нагадування в `pre-push` прибрали разом із перевіркою змердженого PR на Bitbucket, а `pr-backlinks.yml` вимкнули змінною `PR_LEDGER_ON_GITHUB`: без неї він упав би на відсутньому `BITBUCKET_TOKEN`. Тиждень PR, що торкались канонічних доків, у реєстр самі не потрапляли.
+
+З 2026-10-08 типове джерело писача — GitHub REST API через `fetch`, без нових залежностей і без `gh` (`--host github`, слуг з `GITHUB_REPOSITORY` або `origin`). Дані ті самі, що з Bitbucket: номер, заголовок, час мержу, автор, мерж-коміт, посилання і **повний** список файлів — посторінково за `Link: rel="next"` і зі звіркою з `changed_files` (стеля API — 3000 файлів; більший PR валить прогін, а не записується неповним). Оглянуті PR без канонічних доків групуються в `examined` під ключем `github:<owner>/<repo>`, бо номер унікальний лише в межах репо.
+
+Доки змінна `PR_LEDGER_ON_GITHUB` не ввімкнена, повноту реєстру автоматично ніщо не стереже: `--check` і далі звіряє лише форму. Перевірити вручну — `GH_TOKEN=$(gh auth token) node scripts/ci/update-pr-backlinks.mjs --stale --since 2026-09-30`.
+
+**Обмеження follow-up PR.** PR і push, створені `GITHUB_TOKEN`, не запускають інших воркфлоу, тож required-чеки `main` на follow-up PR самі не стартують. Без зміни конфігу — закрити й знову відкрити PR руками; постійний шлях — PAT або GitHub App token замість `GITHUB_TOKEN` (деталі в шапці воркфлоу).
 
 ### Чому механізм змінився (2026-09-23)
 
-До переїзду на Bitbucket правило тримали дві речі, і обидві померли одночасно: воркфлоу [`pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) (`pull_request_target: closed` + `merged == true`), який після мержу відкривав follow-up PR, і `gh pr view` усередині писача. Станом на 2026-09-23 GitHub-акаунти були заблоковані, Bitbucket pipelines не було, а `gh` з Bitbucket не працює (GitHub знову основний хост з 2026-09-29, [ADR-0101](../../adr/0101-github-primary-host-ci-returns.md); писач досі читає лише Bitbucket API, див. вище).
+До переїзду на Bitbucket правило тримали дві речі, і обидві померли одночасно: воркфлоу [`pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) (`pull_request_target: closed` + `merged == true`), який після мержу відкривав follow-up PR, і `gh pr view` усередині писача. Станом на 2026-09-23 GitHub-акаунти були заблоковані, Bitbucket pipelines не було, а `gh` з Bitbucket не працює (GitHub знову основний хост з 2026-09-29, [ADR-0101](../../adr/0101-github-primary-host-ci-returns.md); з 2026-10-08 писач знову читає GitHub, див. вище).
 
 Реєстр тихо став на 2026-09-17: за наступний тиждень 27 комітів торкнулись канонічних доків, і жоден не записався. **Гейт при цьому лишався зеленим**, бо `--check` звіряє форму (реєстр ↔ блоки ↔ схема), а не повноту. Це та сама вада, що двічі глушила правило раніше, тільки з третього боку: перевірка, яка не може побачити пропущений запис, не відрізняє повний реєстр від порожнього.
 
@@ -118,10 +124,25 @@ See [ADR-0061](../../adr/0061-pr-backlink-storage.md) for the storage rationale 
 видно у вкладці Actions за прогоном `PR backlinks`, далі звичайний шлях:
 
 ```bash
-node scripts/ci/update-pr-backlinks.mjs --pr <PR_NUMBER>
+GH_TOKEN=$(gh auth token) node scripts/ci/update-pr-backlinks.mjs --pr <PR_NUMBER>
 ```
 
-Requires `gh` CLI on PATH. Commit the resulting `docs/governance/pr-ledger/index.json` + in-doc block changes via a regular PR.
+Токен потрібен лише заради ліміту (репо публічне: без токена 60 запитів на годину). Зміни `docs/governance/pr-ledger/index.json` і блоків комітяться звичайним PR.
+
+### Бекфіл PR, змерджених поки писач стояв (з 2026-09-30)
+
+З трунку на свіжому `main`, з гілки під PR:
+
+```bash
+# 1. Скільки бракує (нічого не пише, exit 0; число в stdout, номери в stderr):
+GH_TOKEN=$(gh auth token) node scripts/ci/update-pr-backlinks.mjs --stale --since 2026-09-30
+# 2. Дочитати їх і перебудувати блоки:
+GH_TOKEN=$(gh auth token) node scripts/ci/update-pr-backlinks.mjs --sync --since 2026-09-30
+# 3. Офлайн-звірка форми перед комітом:
+node scripts/ci/update-pr-backlinks.mjs --check
+```
+
+`--since` обрізає скан за датою мержу; без нього `--sync` бере до 200 найсвіжіших змерджених PR і вважає пропущеними також старі PR цього репо, яких реєстр свідомо не містить. PR, які вже є в реєстрі (#1233, #1283 записано вручну), не дублюються: ключ — `host` + `repo` + `number`. Перед комітом переглянь діф: правило індексує зміст, а не рухи файлів, тож масові переїзди (як #1021 і #1081 вище) прибери з реєстру руками.
 
 ## Tracking
 
