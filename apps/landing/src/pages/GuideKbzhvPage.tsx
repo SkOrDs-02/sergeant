@@ -113,7 +113,7 @@ export default function GuideKbzhvPage() {
         </section>
 
         <section>
-          <h2 className={h2}>Чотири кроки, які робиш один раз</h2>
+          <h2 className={h2}>Чотири кроки на старті</h2>
           <ol className="mt-5 flex flex-col gap-3.5">
             {STEPS.map((step, i) => (
               <li

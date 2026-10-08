@@ -98,7 +98,15 @@ export default function DataPage() {
           </p>
           <p className={p}>
             Памʼять Сержанта, тобто факти, які він запамʼятав про тебе, можна
-            переглянути і видалити по одному запису в налаштуваннях.
+            переглянути і видалити по одному запису в налаштуваннях. Що Сержант
+            уміє і скільки це коштує, зібрано на{" "}
+            <a
+              href="/pomichnyk"
+              className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              сторінці Сержанта
+            </a>
+            .
           </p>
         </section>
 
@@ -122,9 +130,9 @@ export default function DataPage() {
           <h2 className={h2}>Забрати і стерти</h2>
           <p className={p}>
             Дані експортуються у відкритому форматі, акаунт видаляєш сам, без
-            листів у підтримку. Експорт сьогодні живе двома файлами: акаунтські
-            дані окремо від даних модулів. Як це працює і що буде, якщо продукт
-            зупиниться, розписано{" "}
+            листів у підтримку. Експорт сьогодні живе двома файлами: серверний
+            із профілю і локальний бекап із пристрою. Як це працює і що буде,
+            якщо продукт зупиниться, розписано{" "}
             <a
               href="/vyhid"
               className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
@@ -135,7 +143,7 @@ export default function DataPage() {
           </p>
           <p className={p}>
             {NO_SALE_CLAIM}; куди вони їдуть заради роботи AI, сказано вище.
-            Питання про свої дані став у Telegram-бот, відповідаю сам.
+            Питання про свої дані пиши в Telegram-бот, відповідаю сам.
           </p>
         </section>
       </div>

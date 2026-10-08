@@ -5,6 +5,7 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
 import { EXPORT_CLAIM } from "../content/exportClaim";
+import { NO_SALE_CLAIM } from "../content/noSaleClaim";
 import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 const link =
@@ -36,8 +37,7 @@ const QA: { q: string; why: string; sergeant: ReactNode }[] = [
   {
     q: "Де сервери і хто оператор",
     why: "Юрисдикція визначає правила поводження з даними, а імʼя оператора має бути написане на сайті звичайним текстом.",
-    sergeant:
-      "Європа, Hetzner. Частина даних живе локально на твоєму пристрої, продажу чи передачі стороннім немає.",
+    sergeant: `Сервери в Європі (Hetzner). Продукт робить одна людина, ${AUTHOR_NAME}; юридичної особи поки немає, про це на сторінці «Звʼязок». Частина даних живе локально на твоєму пристрої. ${NO_SALE_CLAIM}; щоб працював Сержант, частина даних їде до стороннього AI-провайдера.`,
   },
   {
     q: "Чи можна забрати свої дані",
@@ -54,9 +54,9 @@ const QA: { q: string; why: string; sergeant: ReactNode }[] = [
         <a href="/guides/monobank" className={link}>
           гайді про підключення
         </a>
-        , повна таблиця доступів – на сторінці{" "}
+        , решта доступів і сховище – на сторінці{" "}
         <a href="/data" className={link}>
-          Твої дані
+          «Твої дані»
         </a>
         .
       </>

@@ -43,7 +43,7 @@ export function ModulesSection() {
     <section id="modules" className="scroll-mt-16">
       <div className="mx-auto w-full max-w-6xl px-5 pb-9 pt-16 sm:px-8">
         <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-balance text-foreground-strong sm:text-3xl">
-          Чотири модулі, які бачать одне одного
+          Чотири модулі, які бачать один одного
         </h2>
         <p className="mt-4 max-w-2xl leading-relaxed text-muted">
           Витрати приходять з Monobank і чеків, їжа – зі штрихкоду чи фото,

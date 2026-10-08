@@ -83,7 +83,7 @@ export default function GuideChekyPage() {
         <section>
           <h2 className={h2}>Що чек додає до банківської виписки</h2>
           <div className="mt-5 grid grid-cols-[minmax(0,1fr)_150px]">
-            <span className="border-b border-cardline-strong py-2.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+            <span className="border-b border-cardline-strong py-2.5 pr-4 text-xs font-semibold uppercase tracking-wide text-subtle">
               Дані
             </span>
             <span className="border-b border-cardline-strong py-2.5 text-xs font-semibold uppercase tracking-wide text-subtle">
@@ -91,7 +91,7 @@ export default function GuideChekyPage() {
             </span>
             {SOURCES.map((row) => (
               <div key={row.data} className="contents">
-                <span className="border-b border-cardline py-3.5 text-sm text-foreground">
+                <span className="border-b border-cardline py-3.5 pr-4 text-sm text-foreground">
                   {row.data}
                 </span>
                 <span
@@ -146,7 +146,7 @@ export default function GuideChekyPage() {
             ))}
           </ol>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
-            Довгі чеки з великої закупки краще знімати двома кадрами з
+            Довгі чеки великої закупівлі краще знімати двома кадрами з
             перекриттям, ніж одним здалеку: дрібний шрифт з відстані
             розпізнається гірше за все.
           </p>
@@ -156,7 +156,7 @@ export default function GuideChekyPage() {
           <h2 className={h2}>Окремий випадок: Сільпо</h2>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
             Якщо привʼязати картку лояльності Сільпо, чеки цієї мережі приходять
-            самі – фотографувати їх не треба, лишається підтвердити розбивку.
+            самі – фотографувати їх не треба, лишається підтвердити розбиття.
             Для мережі, у якій ти буваєш щотижня, це знімає більшу частину
             ручної роботи, а на фото лишаються поодинокі магазини, ринок і
             готівкові покупки.

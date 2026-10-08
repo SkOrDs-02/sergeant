@@ -3,6 +3,7 @@ import { renderToString } from "react-dom/server";
 import { ROUTES } from "./App";
 import NotFoundPage from "./pages/NotFoundPage";
 import { takeSsgJsonLd } from "./lib/ssgJsonLd";
+import { CurrentRouteContext } from "./lib/currentRoute";
 import { absolutizeJsonLd, enrichJsonLd, withBreadcrumb } from "./lib/jsonLd";
 
 /**
@@ -21,7 +22,9 @@ export function render(
   const Page = ROUTES[path] ?? NotFoundPage;
   const html = renderToString(
     <StrictMode>
-      <Page />
+      <CurrentRouteContext.Provider value={path}>
+        <Page />
+      </CurrentRouteContext.Provider>
     </StrictMode>,
   );
   const jsonLd = withBreadcrumb(

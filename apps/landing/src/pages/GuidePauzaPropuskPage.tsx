@@ -86,7 +86,7 @@ export default function GuidePauzaPropuskPage() {
                 Відкрий картку звички
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                У модулі Звички натисни на саму звичку, щоб розкрити її деталі.
+                У Рутині натисни на саму звичку, щоб розкрити її деталі.
                 Потрібна секція називається «Пауза».
               </p>
             </li>

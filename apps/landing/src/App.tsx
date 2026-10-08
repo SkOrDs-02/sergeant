@@ -32,6 +32,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "./lib/analytics";
+import { CurrentRouteContext } from "./lib/currentRoute";
 
 /**
  * Маршрути сайту. Лендінг лишається MPA-простим: без client-side router,
@@ -121,5 +122,9 @@ export default function App() {
   }, []);
 
   const Page = ROUTES[pathname] ?? NotFoundPage;
-  return <Page />;
+  return (
+    <CurrentRouteContext.Provider value={pathname}>
+      <Page />
+    </CurrentRouteContext.Provider>
+  );
 }
