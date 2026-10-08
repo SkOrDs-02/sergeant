@@ -38,7 +38,9 @@ interface SourceTabsProps {
 
 export function SourceTabs({ active, onChange }: SourceTabsProps) {
   // Роль `tablist` обіцяє стрілки; без хука обіцянка була порожня.
-  const onTabKeyDown = useTablistArrowKeys();
+  // `manual`: вкладка «Скан» сама відкриває камеру, тож стрілка лише
+  // переносить фокус, а вкладку вибирає Enter/Space (WCAG 3.2.1, ux-16).
+  const onTabKeyDown = useTablistArrowKeys(true, "manual");
   return (
     <div
       role="tablist"

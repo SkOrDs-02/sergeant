@@ -1,4 +1,10 @@
-import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+  type RefObject,
+} from "react";
 
 export interface DialogFocusTrapOptions {
   onEscape?: (() => void) | undefined;
@@ -36,6 +42,17 @@ const keyboardStack: symbol[] = [];
  * triggers a modal and dismisses it is dropped on `<body>` and has to
  * re-traverse the whole page to get back to where they were.
  *
+ * AI-CONTEXT: знімок «попереднього фокуса» робиться в `useLayoutEffect`, а
+ * не в `useEffect` разом з рештою пастки. Layout-ефекти всього коміту
+ * відпрацьовують ДО будь-якого passive-ефекту, тож власний автофокус
+ * компонента в `useEffect` (HubSearch: `useSearchEngine` ставить
+ * `inputRef.current?.focus()`) більше не випереджає знімок. Раніше
+ * `previouslyFocused` ставав самим інпутом пошуку, який потім
+ * розмонтовувався, і фокус після закриття падав на `<body>` (аудит
+ * 2026-10-01, ux-08). Якщо фокус на момент відкриття вже всередині панелі
+ * (нативний `autoFocus` дочірнього елемента), знімок не береться: це не
+ * тригер.
+ *
  * If the previously focused element is no longer in the DOM when the
  * dialog closes (e.g. a sheet that unmounts its own trigger), we quietly
  * skip the restore instead of throwing.
@@ -72,6 +89,26 @@ export function useDialogFocusTrap(
     onEscapeRef.current = onEscape;
   }, [onEscape]);
 
+  // Хто мав фокус у момент відкриття. Окремий ref від `previouslyFocusedRef`:
+  // той обнуляється cleanup-ом основного ефекту (відновлення фокуса), а цей
+  // живе, поки діалог відкритий.
+  const openerRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!open) {
+      openerRef.current = null;
+      return;
+    }
+    // Skip body itself — restoring focus to <body> is identical to losing
+    // focus entirely.
+    const active = document.activeElement;
+    openerRef.current =
+      active instanceof HTMLElement &&
+      active !== document.body &&
+      !containerRef.current?.contains(active)
+        ? active
+        : null;
+  }, [open, containerRef]);
+
   useEffect(() => {
     if (!open) return;
     const panel = containerRef.current;
@@ -83,12 +120,9 @@ export function useDialogFocusTrap(
     // вузлом переплутало б старий запис із новим.
     const trapToken = Symbol("dialog-focus-trap");
 
-    // Snapshot the currently-focused element so we can restore focus
-    // after the dialog closes. Skip body itself — restoring focus to
-    // <body> is identical to losing focus entirely.
-    const active = document.activeElement;
-    previouslyFocusedRef.current =
-      active instanceof HTMLElement && active !== document.body ? active : null;
+    // Element, що мав фокус при відкритті (знімок у `useLayoutEffect`
+    // вище, до автофокусів компонента), отримає фокус назад на закритті.
+    previouslyFocusedRef.current = openerRef.current;
 
     const getFocusable = (): HTMLElement[] =>
       Array.from(
