@@ -633,7 +633,7 @@ w16-keyboard.mjs: `tab order: [INPUT#auth-email, BUTTON#[Забули парол
 
 ### `ux-09` [medium] DropdownMenu не працює з клавіатури: після відкриття фокус лишається на тригері, Esc і стрілки не діють, після Tab меню висить відкритим
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-ux-09-dropdown-keyboard (e2e на /routine/habits не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: shared DropdownMenu
 - **Де:** apps/web/src/shared/components/ui/DropdownMenu.tsx:335-363; споживачі: apps/web/src/modules/routine/components/habits/HabitListItem.tsx:109, finyk ImportReminderBanner.tsx, AssetsTable.tsx, budgets/Budgets.tsx, fizruk SessionTopBar.tsx, SessionExerciseFocus.tsx, WorkoutItemRestPresets.tsx, apps/web/src/core/profile/MemoryBankSection.tsx
 - **Першопричина:** Ефект початкового фокуса в DropdownMenuPanel спрацьовує один раз на монтуванні, коли панель ще має visibility:hidden (coords==null), і focus() на прихованому елементі нічого не робить. Повторно ефект не запускається, бо focusedIndex не змінюється.
