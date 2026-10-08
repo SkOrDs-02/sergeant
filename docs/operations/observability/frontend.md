@@ -620,6 +620,10 @@ ErrorBoundary в критичному шляху без витягування S
 
 - **"Спробувати ще"** — `retryRev++` як React `key` → force remount піддерева.
 - **"До вибору модуля"** — `onBackToHub` callback.
+- **Збій чанка** (`isChunkLoadError`) — `componentDidCatch` робить одне
+  охоронюване `reloadOnceForChunkError()`, а замість "Спробувати ще" показується
+  "Перезавантажити" (`window.location.reload()`): модуль — singleton
+  `React.lazy`, що кешує відхилений `import()`, тож ремаунт не допомагає.
 
 Обгортайте кожен lazy-loaded модуль (Фінік, Фізрук, Рутина, Нутриція), щоб
 краш одного не зносив навігацію.
