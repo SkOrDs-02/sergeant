@@ -30,19 +30,48 @@ function hashIp(ip: string | undefined): string | undefined {
   return createHash("sha256").update(ip).digest("hex").slice(0, 16);
 }
 
+/**
+ * Проби платформи (Coolify, healthcheck образу) б'ють сюди кожні кілька
+ * секунд. Рядка в access-log для них не пишемо, і в `http_requests_total` /
+ * `http_errors_total` вони теж не йдуть: тисячі успішних проб розбавляли б
+ * частку 5xx у burn-rate SLO. Але латентність проби — це рівно те, що міряє
+ * SLO `/health` p95 (`job:health_p95_5m` → `BackendHealthP95High`), тож у
+ * гістограму вони потрапляють. До 2026-10-08 ранній `return` пропускав і
+ * гістограму, і алерт не мав даних саме від проб.
+ */
+const PROBE_PATHS = new Set(["/livez", "/readyz", "/health"]);
+
+function observeProbeLatency(req: Request, res: Response, path: string): void {
+  const start = process.hrtime.bigint();
+  res.on("finish", () => {
+    try {
+      httpRequestDurationMs.observe(
+        {
+          method: req.method,
+          path,
+          status_class: statusClass(res.statusCode),
+        },
+        elapsedMs(start),
+      );
+    } catch {
+      /* metrics must never break a request */
+    }
+  });
+}
+
 export function requestLogMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
   const url = req.originalUrl || "";
-  // Не спамимо логи запитами на статику/health.
-  if (
-    url.startsWith("/assets/") ||
-    url === "/livez" ||
-    url === "/readyz" ||
-    url === "/health"
-  ) {
+  // Не спамимо логи запитами на статику.
+  if (url.startsWith("/assets/")) {
+    next();
+    return;
+  }
+  if (PROBE_PATHS.has(url)) {
+    observeProbeLatency(req, res, url);
     next();
     return;
   }
