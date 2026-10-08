@@ -90,3 +90,10 @@ export const SHEET_FOOTER_INSET_VAR = "--sgt-sheet-footer-inset";
  * трендів Журналу).
  */
 export const FAB_INSET_VAR = "--sgt-fab-inset";
+
+/**
+ * Банер згоди на аналітику (`AnalyticsConsentBanner`). Публікує сам банер,
+ * доки змонтований; `FloatingActionButton` піднімається над ним, щоб кнопка
+ * «Ні, дякую» не опинялась під FAB.
+ */
+export const CONSENT_BANNER_INSET_VAR = "--sgt-consent-banner-inset";
