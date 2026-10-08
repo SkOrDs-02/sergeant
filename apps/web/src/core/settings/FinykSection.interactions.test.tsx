@@ -161,6 +161,7 @@ describe("FinykSection interactions", () => {
     vi.clearAllMocks();
     apiState.isPro = true;
     storageMock.customCategories = [];
+    storageMock.budgets = [];
     backfillState.status = null;
     localStorage.clear();
     sessionStorage.clear();
@@ -249,7 +250,6 @@ describe("FinykSection interactions", () => {
     fireEvent.click(await screen.findByText("Видалити"));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("зараз їх: 2");
-    storageMock.budgets = [];
   });
 
   it("does not remove a custom category when the confirmation is cancelled", async () => {
