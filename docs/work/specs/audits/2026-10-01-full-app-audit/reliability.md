@@ -1106,7 +1106,7 @@ grep -rn 'PLAN_TEMPLATE_STORAGE_KEY|hub_goals' apps packages (excluding dist): o
 
 ### `rel-17` [medium] Розрив з'єднання не скасовує upstream-виклики LLM і Groq: req.on('close') реєструється запізно
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-17-18-llm-abort-input-limits
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat / transcribe
 - **Де:** apps/server/src/modules/chat/chat.ts:205-206,409-417; apps/server/src/modules/chat/chatStream.ts:436-445; apps/server/src/modules/transcribe/transcribe.ts:146-150
 - **Першопричина:** Слухач req.on('close') додається в хендлері після async middleware (requireSession, requireAiQuota). У Node 22 IncomingMessage емітить 'close' одразу після того, як тіло дочитано, тож на момент реєстрації подія вже минула і clientAbort ніколи не спрацьовує.
@@ -1151,7 +1151,7 @@ verify-server-static-ai-layer/reqclose-v2.mjs, варіант prod-shape: handle
 
 ### `rel-18` [medium] Розмір входу в LLM фактично не обмежений: tool_calls_raw і кореляції коуча обходять ліміт context
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-17-18-llm-abort-input-limits
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat / coach
 - **Де:** packages/shared/src/schemas/api.ts:460,491,505,554,1131-1145; apps/server/src/http/bodySizePolicy.ts:171-181; apps/server/src/modules/chat/chat.ts:617-626,734-742; apps/server/src/modules/chat/coach.ts:127,304-325
 - **Першопричина:** ToolUseBlockSchema.input і ToolSearchToolResultBlockSchema.content мають тип z.unknown() без ліміту. chat.ts кладе tool_calls_raw як є в повідомлення синтезу, повз context.max(40000) і повз обрізання tool_results. CoachMemoryPostSchema приймає кореляції без меж (блоб до 5 МБ), а getCoachCorrelationsBlock без обрізання дописує їх у system кожного першого туру.
