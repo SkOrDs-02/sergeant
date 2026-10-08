@@ -27,7 +27,7 @@ export interface EvalDocAnswer {
 }
 
 export interface CassetteAnswer {
-  /** Файл касети в `__fixtures__/tool-eval/cassettes/`. */
+  /** Файл касети в `__fixtures__/number-verify/cassettes-2026-10-01/`. */
   file: string;
   caseName: string;
   turn: number;
