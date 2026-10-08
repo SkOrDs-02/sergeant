@@ -173,6 +173,28 @@ export async function goto(page: Page, route: string): Promise<void> {
         ),
     );
     console.log(`[boot-white-screen-sw] ${route} ${JSON.stringify(swProbe)}`);
+    // Скільки TCP-зʼєднань браузер тримає до хоста застосунку і в якому стані
+    // (HTTP/1.1 дає ≤6 на хост: усі зайняті = решта запитів стоїть у черзі).
+    try {
+      const { readFileSync } = await import("node:fs");
+      const port = Number(new URL(page.url()).port || 80)
+        .toString(16)
+        .toUpperCase()
+        .padStart(4, "0");
+      const states: Record<string, number> = {};
+      for (const line of readFileSync("/proc/net/tcp", "utf8")
+        .split("\n")
+        .slice(1)) {
+        const cols = line.trim().split(/\s+/);
+        if (cols.length < 4 || !cols[2]?.endsWith(`:${port}`)) continue;
+        states[cols[3] ?? "?"] = (states[cols[3] ?? "?"] ?? 0) + 1;
+      }
+      console.log(
+        `[boot-white-screen-tcp] ${route} to-port=${port} ${JSON.stringify(states)}`,
+      );
+    } catch (e) {
+      console.log(`[boot-white-screen-tcp] ${route} n/a ${String(e)}`);
+    }
     console.log(
       `[boot-white-screen] ${route} ${JSON.stringify(snapshot)} failed=${failed.length} pending=${JSON.stringify(
         [...pending].map(
