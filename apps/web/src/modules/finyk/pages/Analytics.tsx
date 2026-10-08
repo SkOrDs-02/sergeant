@@ -741,7 +741,9 @@ export function Analytics({
             вище, тож у незавершеному місяці це теж «ті ж дні». */}
         <Section
           title={
-            isCurrentMonth ? "Топ продавці: зміна за ті ж дні" : "Топ продавці"
+            isCurrentMonth
+              ? "Найбільші витрати: зміна за ті ж дні"
+              : "Найбільші витрати"
           }
         >
           {pageLoading ? (
