@@ -7,8 +7,11 @@
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion -- pre-existing burndown: localDateKey/daysBetween/startOfWeek read host-local date parts (kyiv-time Theme 1) and a few non-null assertions sit on already-Array.isArray-guarded index lookups; both pre-existing and out of scope for this tombstone read-source fix. */
 import { buildFinanceContext } from "./recommendations/financeContext";
+import {
+  buildRoutineRecs,
+  buildWeeklyHabitPctText,
+} from "./recommendations/routineRecs";
 import { Recommendations } from "@sergeant/insights";
-import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
   loadNutritionGoalPeriods,
@@ -18,12 +21,7 @@ import { resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
-import {
-  formatNumberUk,
-  pluralDays,
-  pluralHabits,
-  pluralUa,
-} from "@sergeant/shared";
+import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import {
@@ -294,81 +292,6 @@ function buildFizrukRecs(): Rec[] {
   return recs;
 }
 
-function buildRoutineRecs(): Rec[] {
-  const recs: Rec[] = [];
-  // `hub_routine_v1` is tombstoned — read the canonical SQLite warm cache.
-  const state = loadRoutineState();
-
-  const habits = state.habits.filter((h) => !h.archived);
-  const completions = state.completions;
-  const today = localDateKey();
-
-  const todayDone = habits.filter(
-    (h) =>
-      Array.isArray(completions[h.id]) && completions[h.id]!.includes(today),
-  ).length;
-  const total = habits.length;
-
-  if (total === 0) return recs;
-
-  let streak = 0;
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  for (let i = 0; i < 365; i++) {
-    const dk = localDateKey(d);
-    const allDone = habits.every(
-      (h) =>
-        Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk),
-    );
-    if (!allDone) break;
-    streak++;
-    d.setDate(d.getDate() - 1);
-  }
-
-  const MILESTONE_STREAKS = [3, 7, 14, 30, 60, 100];
-  if (MILESTONE_STREAKS.includes(streak)) {
-    recs.push({
-      id: `routine_streak_${streak}`,
-      module: "routine",
-      priority: 80,
-      icon: "flame",
-      title: `${streak} ${pluralDays(streak)} поспіль`,
-      body: "Серія тримається. Продовжуй у тому ж темпі.",
-      action: "routine",
-    });
-  }
-
-  const hour = new Date().getHours();
-  if (hour >= 18 && todayDone < total) {
-    const remaining = total - todayDone;
-    recs.push({
-      id: "routine_evening_reminder",
-      module: "routine",
-      priority: 65,
-      icon: "check",
-      title: `Сьогодні ще не виконано: ${remaining} ${pluralHabits(remaining)}`,
-      body: "Вечір, ще не пізно закрити всі звички.",
-      action: "routine",
-    });
-  }
-
-  // Серія в зоні ризику: пізній вечір + є серія + сьогодні не всі виконано
-  if (hour >= 21 && streak >= 7 && todayDone < total) {
-    const remaining = total - todayDone;
-    recs.push({
-      id: "routine_streak_at_risk",
-      module: "routine",
-      priority: 95,
-      icon: "alert",
-      title: `Серія ${streak} ${pluralDays(streak)} може перерватись`,
-      body: `Залишилось ${remaining} ${pluralHabits(remaining)} на сьогодні.`,
-      action: "routine",
-    });
-  }
-
-  return recs;
-}
-
 /** Ціль вважається заданою лише якщо це додатне число. `0` — не ціль. */
 function positiveTarget(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0
@@ -501,26 +424,9 @@ function buildWeeklyDigestRecs(): Rec[] {
     return t >= monPrev && t <= sunPrev;
   }).length;
 
-  // Звички — `hub_routine_v1` is tombstoned; read the canonical SQLite cache.
-  const routineState = loadRoutineState();
-  let habitPctText = "";
-  const habits = routineState.habits.filter((h) => !h.archived);
-  const completions = routineState.completions;
-  if (habits.length > 0) {
-    let done = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monPrev);
-      d.setDate(monPrev.getDate() + i);
-      const dk = localDateKey(d);
-      for (const h of habits) {
-        if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk))
-          done++;
-      }
-    }
-    const total = habits.length * 7;
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    habitPctText = `звички ${pct}%`;
-  }
+  // Звички — лише заплановані дні (логіка в `recommendations/routineRecs.ts`),
+  // а не `habits.length * 7`: число збігається зі Звітами й дайджестом.
+  const habitPctText = buildWeeklyHabitPctText(monPrev, now);
 
   // Витрати минулого тижня — канонічний конвеєр, той самий, що обслуговує
   // тижневий дайджест і Hub-Reports (`readFinykStatsContext` → всесвіт

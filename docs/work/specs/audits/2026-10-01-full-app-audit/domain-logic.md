@@ -758,7 +758,7 @@ domain_check.mts: 18.09, Flex 3 відмічено 14,15,16, Daily G і MWF S в
 
 ### `logic-12` [medium] Рекомендації хабу про звички ігнорують розклад: «N звичок ще не виконано» і понеділковий відсоток з наївним знаменником
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-12-hub-habit-recs
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: хаб (recommendationEngine)
 - **Де:** apps/web/src/core/lib/recommendationEngine.ts:296-365 (buildRoutineRecs), 505-521 (buildWeeklyDigestRecs); apps/web/src/core/hub/hubReports.aggregation.ts:302; apps/web/src/core/insights/useWeeklyDigest.ts:377
 - **Першопричина:** buildRoutineRecs рахує total = habits.length і серію через habits.every(...includes(dk)) для кожного дня. buildWeeklyDigestRecs бере знаменник habits.length × 7. Жодна з функцій не враховує habitScheduledOnDate, паузи, startDate, once чи flexible, хоча модуль, Звіти й дайджест рахують через calcRoutinePeriodCompletion / calcRoutineDayProgress.
