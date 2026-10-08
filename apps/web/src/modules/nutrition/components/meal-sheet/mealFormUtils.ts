@@ -263,3 +263,20 @@ export function upsertMealTemplate(
     40,
   );
 }
+
+/**
+ * True when every macro field is null or 0 — mirrors the `hasPhotoMacros`
+ * predicate below (photo AI returns all-null macros when it can't
+ * identify the food). A meal saved with all-empty macros won't move the
+ * daily stats at all, so `handleSave` routes through a confirm step
+ * instead of blocking the save outright (founder decision: warn, don't
+ * block).
+ */
+export function macrosAreAllEmpty(macros: {
+  kcal: number | null;
+  protein_g: number | null;
+  fat_g: number | null;
+  carbs_g: number | null;
+}): boolean {
+  return !Object.values(macros).some((v) => v != null && v !== 0);
+}
