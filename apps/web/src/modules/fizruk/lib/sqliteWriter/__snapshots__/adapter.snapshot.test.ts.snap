@@ -456,19 +456,6 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   {
     "params": [
       "u1",
-      "fizruk_daily_log",
-      "insert",
-      "{"id":"d1","user_id":"u1","entry_at":"2026-06-20T21:00:00.000Z","weight_kg":82.5,"sleep_hours":7.5,"energy_level":4,"mood":3,"note":"ok","created_at":"2026-06-23T00:00:00.000Z"}",
-      "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000010",
-    ],
-    "sql": "INSERT OR IGNORE INTO sync_op_outbox
-       (user_id, table_name, op, row, client_ts, idempotency_key)
-     VALUES (?, ?, ?, ?, ?, ?)",
-  },
-  {
-    "params": [
-      "u1",
       "{"month":"2026-06"}",
       "2026-06-23T00:00:00.000Z",
     ],
@@ -505,6 +492,31 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   },
   {
     "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "tpl2",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE fizruk_workout_templates
+        SET deleted_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ? AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "fizruk_daily_log",
+      "insert",
+      "{"id":"d1","user_id":"u1","entry_at":"2026-06-20T21:00:00.000Z","weight_kg":82.5,"sleep_hours":7.5,"energy_level":4,"mood":3,"note":"ok","created_at":"2026-06-23T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000010",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
       "u1",
       "fizruk_daily_log",
       "delete",
@@ -515,18 +527,6 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
      VALUES (?, ?, ?, ?, ?, ?)",
-  },
-  {
-    "params": [
-      "2026-06-23T00:00:00.000Z",
-      "2026-06-23T00:00:00.000Z",
-      "tpl2",
-      "u1",
-      "2026-06-23T00:00:00.000Z",
-    ],
-    "sql": "UPDATE fizruk_workout_templates
-        SET deleted_at = ?, updated_at = ?
-      WHERE id = ? AND user_id = ? AND updated_at < ?",
   },
   {
     "params": [

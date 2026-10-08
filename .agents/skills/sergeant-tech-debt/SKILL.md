@@ -16,12 +16,12 @@ Technical debt in Sergeant has a taxonomy: the **17 active hard rules** (numbere
 `eslint.baseline.js` is the shared flat-config slice consumed by the root `eslint.config.js` (stack-pulse PR-31 phase-1 extraction) — it holds the monorepo-wide rule set, not a list of grandfathered violations.
 
 ```bash
-pnpm lint                                   # full gate: a long `&&` chain of ~30 checks, ESLint is only one link
+pnpm lint                                   # full gate: a long `&&` chain of ~70 checks, ESLint is only one link
 turbo run lint -- --fix                     # auto-fix across workspaces
 pnpm --filter @sergeant/web lint --fix      # auto-fix one workspace
 ```
 
-> ⚠️ **Never `pnpm lint --fix`.** Root `lint` is a `&&`-chain, so pnpm appends `--fix` to the **last** command in the chain (an OpenAPI type check), not to ESLint. It looks like it worked and fixes nothing.
+> ⚠️ **Never `pnpm lint --fix`.** Root `lint` is a `&&`-chain, so pnpm appends `--fix` to the **last** command in the chain (a `node --test` script), not to ESLint. It looks like it worked and fixes nothing.
 
 All react-hooks v7 rules (`set-state-in-effect`, `preserve-manual-memoization`, `purity`, `refs`, `immutability`, `static-components`, `use-memo`) are enforced as `error` — Initiative 0021 closed 2026-07-10 (PR #177) after clearing the monorepo. Do not downgrade a rule in `eslint.baseline.js` to silence a finding; fix the code. If a rule genuinely needs a scoped exception, use a file-scoped override with an inline justification.
 

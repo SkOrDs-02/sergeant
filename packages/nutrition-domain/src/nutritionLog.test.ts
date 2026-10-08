@@ -102,6 +102,9 @@ describe("normalizeMeal", () => {
     expect(normalizeMeal({ macroSource: "recipeAI" }, 0).macroSource).toBe(
       "recipeAI",
     );
+    expect(normalizeMeal({ macroSource: "recipe" }, 0).macroSource).toBe(
+      "recipe",
+    );
     expect(normalizeMeal({ macroSource: "manual" }, 0).macroSource).toBe(
       "manual",
     );

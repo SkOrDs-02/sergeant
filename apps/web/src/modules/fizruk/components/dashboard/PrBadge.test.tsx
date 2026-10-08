@@ -36,7 +36,7 @@ describe("PrBadge", () => {
         pr={{ exerciseName: "Присідання", weightKg: 82.5, daysAgo: 0 }}
       />,
     );
-    expect(screen.getByText(/82\.5/)).toBeInTheDocument();
+    expect(screen.getByText(/82,5/)).toBeInTheDocument();
   });
 
   it("truncates a long single-token exercise name", () => {

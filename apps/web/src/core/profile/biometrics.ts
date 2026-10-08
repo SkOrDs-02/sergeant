@@ -57,6 +57,7 @@
  *
  * Both directions converge on Last-Write-Wins via `weightUpdatedAt`.
  */
+import { LOCAL_ANON_USER_ID } from "../auth/localIdentity";
 import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
 // Durable-пара з тієї ж причини, що й у `memoryBank.ts` (аудит 2026-09-28, D2).
@@ -227,7 +228,14 @@ export const BIOMETRICS_DEFAULT: Biometrics = {
 export function isBiometricsForeign(): boolean {
   if (currentBiometricsOwner === null) return false;
   const storedOwner = readBiometricsOwnerId();
-  return storedOwner !== null && storedOwner !== currentBiometricsOwner;
+  // `local-anon` - явний маркер запису анонімної сесії цього пристрою; перший
+  // акаунт, що увійшов, успадковує його (рішення В1, 2026-10-08), тож він не
+  // чужий. Легасі `null` лишається окремим випадком вище/нижче, не змішувати.
+  return (
+    storedOwner !== null &&
+    storedOwner !== LOCAL_ANON_USER_ID &&
+    storedOwner !== currentBiometricsOwner
+  );
 }
 
 export function readBiometrics(): Biometrics {

@@ -282,7 +282,7 @@ export function WorkoutsHome({
                 <div className="flex-1 min-w-0">
                   <div className="text-style-label text-text">Планування</div>
                   <div className="text-style-caption text-subtle mt-0.5">
-                    Відкрити календар тренувань у Routine
+                    Відкрити календар тренувань у Рутині
                   </div>
                 </div>
                 <Icon

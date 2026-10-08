@@ -73,12 +73,9 @@ export function PrBadge({ pr }: PrBadgeProps) {
   if (!isPrBadgeVisible(pr)) return null;
 
   const exerciseShort = shortExerciseName(pr.exerciseName);
-  // Round to one decimal so "82.5" stays exact but "80" doesn't show
-  // a trailing ".0". Kopiykas-style: kg are the user-facing unit, the
-  // decimal exists only when meaningful.
-  const weightLabel = Number.isInteger(pr.weightKg)
-    ? fmtLoose(pr.weightKg)
-    : `${Math.round(pr.weightKg * 10) / 10}`;
+  // `fmtLoose` округлює до одного знака без хвостового «,0» і ставить
+  // українську кому: «82,5», а не «82.5», як у решті модуля.
+  const weightLabel = fmtLoose(pr.weightKg);
 
   return (
     <div

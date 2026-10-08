@@ -307,6 +307,34 @@ describe("flushPendingSyncOpsBeforeLogout", () => {
     expect(result).toEqual({ pending: 2, unknown: false });
   });
 
+  it("still asks the user when delivery throws offline (getSession → `Failed to fetch`)", async () => {
+    // Живий прогін 2026-10-08 (P8 `data-durability`): офлайн `drain` резолвить
+    // юзера через `getSession()`, а той кидає мережевий `TypeError` крізь
+    // `flushNow()`. Загальний `catch` перетворював це на `unknown: true`, діалог
+    // не показувався, і logout стирав чергу разом із записом.
+    const runtime = startRuntime();
+    await enqueue("op-1");
+    vi.spyOn(runtime, "flushNow").mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+
+    const result = await flushPendingSyncOpsBeforeLogout();
+
+    expect(result).toEqual({ pending: 1, unknown: false });
+  });
+
+  it("still asks the user when reviving dead letters throws (left > 0 is already known)", async () => {
+    const runtime = startRuntime();
+    await enqueue("op-1");
+    vi.spyOn(runtime, "recoverAllDeadLetters").mockRejectedValue(
+      new TypeError("Failed to fetch"),
+    );
+
+    const result = await flushPendingSyncOpsBeforeLogout();
+
+    expect(result).toEqual({ pending: 1, unknown: false });
+  });
+
   it("fails open when the outbox cannot be read — logout must never be blocked", async () => {
     sqliteState.client = {
       ...client,

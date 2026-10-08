@@ -66,7 +66,8 @@ export function normalizeMeal(m: unknown, idx: number): Meal {
     rawMacroSource === "manual" ||
     rawMacroSource === "productDb" ||
     rawMacroSource === "photoAI" ||
-    rawMacroSource === "recipeAI"
+    rawMacroSource === "recipeAI" ||
+    rawMacroSource === "recipe"
       ? (rawMacroSource as MealMacroSource)
       : source === "photo"
         ? "photoAI"

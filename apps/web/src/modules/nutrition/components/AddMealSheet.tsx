@@ -52,6 +52,7 @@ import {
   currentTime,
   emptyForm,
   gramsOrDefault,
+  macrosAreAllEmpty,
   macrosToFormFields,
   upsertMealTemplate,
   type MealFormState,
@@ -63,13 +64,13 @@ import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
 import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
+import { useSavePickedFood } from "./meal-sheet/useSavePickedFood";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
-import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
-import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
-import { SourceTabs, type SourceTabId } from "./meal-sheet/SourceTabs";
-import { BarcodeSection } from "./meal-sheet/BarcodeSection";
+import type { SourceTabId } from "./meal-sheet/SourceTabs";
+import { SourceStep } from "./meal-sheet/SourceStep";
+import { RememberForRepeat } from "./meal-sheet/RememberForRepeat";
 import { AddMealSheetTitle } from "./meal-sheet/AddMealSheetTitle";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
@@ -86,23 +87,6 @@ import type { QuickChip } from "../hooks/useNutritionQuickChips";
  */
 export const MAX_KCAL_PER_MEAL = 10_000;
 export const MAX_MACRO_GRAMS = 2_000;
-
-/**
- * True when every macro field is null or 0 — mirrors the `hasPhotoMacros`
- * predicate below (photo AI returns all-null macros when it can't
- * identify the food). A meal saved with all-empty macros won't move the
- * daily stats at all, so `handleSave` routes through a confirm step
- * instead of blocking the save outright (founder decision: warn, don't
- * block).
- */
-function macrosAreAllEmpty(macros: {
-  kcal: number | null;
-  protein_g: number | null;
-  fat_g: number | null;
-  carbs_g: number | null;
-}): boolean {
-  return !Object.values(macros).some((v) => v != null && v !== 0);
-}
 
 /**
  * Грами порції з поля вводу; 100 г — дефолт, коли поле порожнє або зіпсоване.
@@ -174,6 +158,7 @@ export function AddMealSheet({
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("100");
+  const savePicked = useSavePickedFood();
   const [sourceTab, setSourceTab] = useState<SourceTabId>("search");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
   const [date, setDate] = useState("");
@@ -458,6 +443,7 @@ export function AddMealSheet({
   }
 
   function finalizeSave(meals: Meal[], template: MealSaveTemplate) {
+    savePicked.persist(pickedFood);
     if (fromPantryItem && onConsumePantryItem) {
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
@@ -513,8 +499,8 @@ export function AddMealSheet({
     setStep("fill");
   }
 
-  // Крок «з упаковки» → «fill»: продукт уже збережено в локальну базу,
-  // лишається звʼязати його з прийомом. Макроси форми не чіпаємо тут —
+  // Крок «з упаковки» → «fill»: продукт ще не в базі (його пише
+  // `finalizeSave`), лишається звʼязати його з прийомом. Макроси форми не чіпаємо тут —
   // їх порахує `PickedFoodCard` під вагу порції.
   function handlePackageCreated(product: PickedFood, grams: string) {
     setAppliedPhoto(null);
@@ -636,100 +622,55 @@ export function AddMealSheet({
         zIndex={120}
       >
         {step === "source" ? (
-          <>
-            {onCopyYesterday && yesterdayMeals.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                className="mb-3 w-full min-h-[44px]"
-                onClick={onCopyYesterday}
-              >
-                Як учора ({yesterdayMeals.length})
-              </Button>
-            )}
-            <SourceTabs active={sourceTab} onChange={setSourceTab} />
-
-            {sourceTab === "search" && (
-              <div
-                role="tabpanel"
-                id="source-panel-search"
-                aria-labelledby="source-tab-search"
-              >
-                <SearchTabPanel
-                  mealTemplates={mealTemplates}
-                  setForm={setForm}
-                  setPrefs={setPrefs}
-                  onTemplateSelected={() => setStep("fill")}
-                  onEditTemplate={(t) => setEditingTemplateId(t.id)}
-                  quickChips={quickChips}
-                  onQuickAddMeal={onQuickAddMeal}
-                  onQuickAdded={onClose}
-                  pantryItems={pantryItems}
-                  sourcePick={sourcePick}
-                  fromPantryItem={fromPantryItem}
-                  setFromPantryItem={setFromPantryItem}
-                  picker={{
-                    foodQuery,
-                    setFoodQuery,
-                    foodHits,
-                    offHits,
-                    foodBusy,
-                    offBusy,
-                    foodErr,
-                    searchSettled: search.searchSettled,
-                    setPickedFood,
-                    setPickedGrams,
-                  }}
-                />
-              </div>
-            )}
-
-            {sourceTab === "scan" && (
-              <div
-                role="tabpanel"
-                id="source-panel-scan"
-                aria-labelledby="source-tab-scan"
-              >
-                <BarcodeSection
-                  barcodeStatus={barcodeStatus}
-                  setBarcodeStatus={setBarcodeStatus}
-                  barcodeNotice={barcodeNotice}
-                  onDismissBarcodeNotice={() => setBarcodeNotice(null)}
-                  onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
-                  onUsePhotoForBarcode={() => setSourceTab("photo")}
-                  onManualEntryForBarcode={() => {
-                    setBarcodeNotice(null);
-                    setSourceTab("manual");
-                  }}
-                  setScannerOpen={setScannerOpen}
-                  actionLabel="Сканувати ще раз"
-                />
-              </div>
-            )}
-
-            {sourceTab === "photo" && (
-              <div
-                role="tabpanel"
-                id="source-panel-photo"
-                aria-labelledby="source-tab-photo"
-              >
-                <PhotoStep onApply={handlePhotoApply} />
-              </div>
-            )}
-
-            {sourceTab === "manual" && (
-              <div
-                role="tabpanel"
-                id="source-panel-manual"
-                aria-labelledby="source-tab-manual"
-              >
-                <ManualEntryTab
-                  onCreated={handlePackageCreated}
-                  onWholeMeal={() => setStep("fill")}
-                />
-              </div>
-            )}
-          </>
+          <SourceStep
+            yesterdayMeals={yesterdayMeals}
+            onCopyYesterday={onCopyYesterday}
+            sourceTab={sourceTab}
+            onTabChange={setSourceTab}
+            search={{
+              mealTemplates,
+              setForm,
+              setPrefs,
+              onTemplateSelected: () => setStep("fill"),
+              onEditTemplate: (t) => setEditingTemplateId(t.id),
+              quickChips,
+              onQuickAddMeal,
+              onQuickAdded: onClose,
+              pantryItems,
+              sourcePick,
+              fromPantryItem,
+              setFromPantryItem,
+              picker: {
+                foodQuery,
+                setFoodQuery,
+                foodHits,
+                offHits,
+                foodBusy,
+                offBusy,
+                foodErr,
+                searchSettled: search.searchSettled,
+                setPickedFood,
+                setPickedGrams,
+              },
+            }}
+            barcode={{
+              barcodeStatus,
+              setBarcodeStatus,
+              barcodeNotice,
+              onDismissBarcodeNotice: () => setBarcodeNotice(null),
+              onRetryBarcodeLookup: () => void handleBarcodeLookup(barcode),
+              onUsePhotoForBarcode: () => setSourceTab("photo"),
+              onManualEntryForBarcode: () => {
+                setBarcodeNotice(null);
+                setSourceTab("manual");
+              },
+              setScannerOpen,
+              actionLabel: "Сканувати ще раз",
+            }}
+            onPhotoApply={handlePhotoApply}
+            onPackageCreated={handlePackageCreated}
+            onWholeMeal={() => setStep("fill")}
+          />
         ) : step === "photo" ? (
           <PhotoStep onApply={handlePhotoApply} />
         ) : step === "package" ? (
@@ -766,6 +707,7 @@ export function AddMealSheet({
                 setPickedGrams={setPickedGrams}
                 onChangeProduct={handleChangeProduct}
                 skipInitialRescale={editedFood.rehydrated}
+                onUnitChange={savePicked.onUnitChange}
               />
             ) : fromPantryItem ? (
               <PantryPortionField
@@ -811,30 +753,10 @@ export function AddMealSheet({
             ) : (
               !initialMeal?.id &&
               typeof setPrefs === "function" && (
-                <label className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border border-line bg-panelHi p-3">
-                  <input
-                    type="checkbox"
-                    aria-label="Запамʼятати для повтору"
-                    checked={rememberForRepeat}
-                    onChange={(event) =>
-                      setRememberForRepeat(event.currentTarget.checked)
-                    }
-                    className="mt-0.5 h-5 w-5 shrink-0 accent-nutrition-strong"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-style-label text-text">
-                      Запамʼятати для повтору
-                    </span>
-                    {/* AI-NOTE: кегль тут навмисний — це підказка під
-                        контролом («Запамʼятати для повтору»), а не текст,
-                        який читають окремо; `text-style-body` зрівняв би
-                        її з підписом самого чекбокса. */}
-                    <span className="mt-0.5 block text-style-caption text-muted">
-                      Назва, тип прийому та КБЖВ зʼявляться серед швидких
-                      прийомів.
-                    </span>
-                  </span>
-                </label>
+                <RememberForRepeat
+                  checked={rememberForRepeat}
+                  onChange={setRememberForRepeat}
+                />
               )
             )}
 
