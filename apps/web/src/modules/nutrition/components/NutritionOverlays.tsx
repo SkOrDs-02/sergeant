@@ -4,6 +4,7 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import {
+  addDaysISODate,
   todayISODate,
   type Meal,
   type MealTypeId,
@@ -55,6 +56,7 @@ interface NutritionOverlaysProps {
   wrappedSaveMeal: (
     meal: Meal,
     photoFile?: File | null,
+    newDate?: string,
   ) => void | Promise<void>;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
@@ -134,6 +136,16 @@ export function NutritionOverlays({
     ? mealsByTypeForDay(log.nutritionLog, mealTypeSheetDate)[openMealTypeSheet]
     : [];
 
+  // «Як учора» на порожньому прийомі: лише коли сегмент hero відкрив форму з
+  // обраним типом, а не FAB і не редагування.
+  const yesterdayMeals =
+    log.addMealSheetOpen && addMealInitialMealType && !editingMeal
+      ? mealsByTypeForDay(
+          log.nutritionLog,
+          addDaysISODate(log.getActiveDate(), -1),
+        )[addMealInitialMealType]
+      : [];
+
   return (
     <>
       <PantryManagerSheet
@@ -197,17 +209,33 @@ export function NutritionOverlays({
           log.setAddMealSheetOpen(false);
           setEditingMeal(null);
         }}
-        onSave={(meal, photoFile) => {
+        onSave={(meal, photoFile, newDate) => {
           // Позначка ДО консюмерського шляху: подію емітить закриття шита
           // (перехід `open` → false), і воно прилітає вже після цього
           // виклику. Без позначки збережений запис пішов би в статистику
           // як `abandoned`.
           markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
-          return wrappedSaveMeal(meal, photoFile);
+          return wrappedSaveMeal(meal, photoFile, newDate);
         }}
         initialStep={addMealInitialStep}
         initialMealType={addMealInitialMealType}
         initialMeal={editingMeal}
+        initialDate={editingMeal?.date}
+        yesterdayMeals={yesterdayMeals}
+        onCopyYesterday={() => {
+          if (!addMealInitialMealType) return;
+          const activeDate = log.getActiveDate();
+          const ids = log.handleCopyMeals(
+            yesterdayMeals,
+            activeDate,
+            addMealInitialMealType,
+          );
+          showUndoToast(toast, {
+            msg: "Скопійовано з учора",
+            onUndo: () =>
+              ids.forEach((id) => log.handleRemoveMeal(activeDate, id)),
+          });
+        }}
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}
         pantryItems={pantry.effectiveItems}

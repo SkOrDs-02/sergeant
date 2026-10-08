@@ -805,6 +805,58 @@ describe("AddMealSheet — source step (with templates)", () => {
     ).toBeNull();
   });
 
+  describe("перенос запису на іншу дату", () => {
+    const editProps = {
+      initialDate: "2026-05-10",
+      initialMeal: {
+        id: "m1",
+        name: "Суп",
+        mealType: "lunch" as const,
+        time: "13:00",
+        macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 40 },
+      },
+    };
+
+    it("змінена дата їде третім аргументом onSave", () => {
+      const onSave = vi.fn();
+      renderSheet({ ...editProps, onSave });
+      fireEvent.change(screen.getByLabelText("Дата запису"), {
+        target: { value: "2026-05-09" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "m1" }),
+        null,
+        "2026-05-09",
+      );
+    });
+
+    it("без зміни дати третього аргументу немає", () => {
+      const onSave = vi.fn();
+      renderSheet({ ...editProps, onSave });
+      fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
+      expect(onSave.mock.calls[0]![2]).toBeUndefined();
+    });
+
+    it("поля дати немає при створенні запису", () => {
+      renderSheet();
+      expect(screen.queryByLabelText("Дата запису")).toBeNull();
+    });
+  });
+
+  it("«Як учора» копіює вчорашній прийом одним тапом і не показується без записів", () => {
+    const onCopyYesterday = vi.fn();
+    const yesterdayMeals = [
+      { id: "y1", name: "Сирники", mealType: "breakfast" },
+    ] as never;
+    const { unmount } = renderSheet({ yesterdayMeals, onCopyYesterday });
+    fireEvent.click(screen.getByRole("button", { name: /Як учора/ }));
+    expect(onCopyYesterday).toHaveBeenCalledTimes(1);
+    unmount();
+    renderSheet({ yesterdayMeals: [], onCopyYesterday });
+    expect(screen.queryByRole("button", { name: /Як учора/ })).toBeNull();
+  });
+
   it("selecting a template via MealTemplatesRow advances to fill step", () => {
     renderSheet({
       mealTemplates: [

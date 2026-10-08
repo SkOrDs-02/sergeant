@@ -449,12 +449,25 @@ export default function NutritionApp({
   );
 
   const wrappedSaveMeal = useCallback(
-    async (meal: Meal, photoFile?: File | null) => {
+    async (meal: Meal, photoFile?: File | null, newDate?: string) => {
       const isEdit = !!editingMeal?.id;
       if (isEdit && editingMeal && editingMeal.date) {
-        log.handleEditMeal(editingMeal.date, meal);
+        const fromDate = editingMeal.date;
+        if (newDate && newDate !== fromDate) {
+          // Спершу правки в самому записі, потім переїзд на інший день.
+          log.handleEditMeal(fromDate, meal);
+          log.handleMoveMeal(fromDate, newDate, meal);
+          const [y, m, d] = newDate.split("-");
+          toast.success(`Страву перенесено на ${d}.${m}.${y}.`, undefined, {
+            label: "Скасувати",
+            kind: "undo",
+            onClick: () => log.handleMoveMeal(newDate, fromDate, meal),
+          });
+        } else {
+          log.handleEditMeal(fromDate, meal);
+          toast.success("Страву оновлено.");
+        }
         setEditingMeal(null);
-        toast.success("Страву оновлено.");
       } else {
         // День — той, під яким запис ЛЯГ (повертає `handleAddMeal`), а не
         // `log.selectedDate` цього рендеру: він міг відстати від годинника.

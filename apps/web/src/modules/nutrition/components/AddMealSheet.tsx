@@ -29,6 +29,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { DateField } from "@shared/components/ui/DateField";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { clampText } from "@shared/lib/text/limits";
@@ -114,7 +116,12 @@ interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
   /** `photoFile` — оригінал фото для мініатюри, коли страва прийшла з AI-аналізу. */
-  onSave: (meal: Meal, photoFile?: File | null) => void;
+  onSave: (meal: Meal, photoFile?: File | null, newDate?: string) => void;
+  /** День редагованого запису; з ним у формі зʼявляється поле «Дата» (перенос). */
+  initialDate?: string | undefined;
+  /** Записи цього ж прийому за вчора: непорожньо = на кроці джерела є «Як учора». */
+  yesterdayMeals?: readonly Meal[] | undefined;
+  onCopyYesterday?: (() => void) | undefined;
   /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
   initialStep?: "source" | "photo" | undefined;
   /**
@@ -153,6 +160,9 @@ export function AddMealSheet({
   initialStep,
   initialMealType,
   initialMeal,
+  initialDate,
+  yesterdayMeals = [],
+  onCopyYesterday,
   mealTemplates = [],
   setPrefs,
   pantryItems = [],
@@ -166,6 +176,7 @@ export function AddMealSheet({
   const [pickedGrams, setPickedGrams] = useState("100");
   const [sourceTab, setSourceTab] = useState<SourceTabId>("search");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
+  const [date, setDate] = useState("");
   // Four-step flow: "source" (pick a source — template / pantry / food
   // search / barcode / photo / manual), "photo" (AI analysis inside the
   // sheet), "package" (manual per-100 g entry from a label) and "fill"
@@ -238,6 +249,7 @@ export function AddMealSheet({
   if (open && !prevOpen) {
     setPrevOpen(true);
     setDraftId(newMealId());
+    setDate(initialDate ?? "");
     if (initialMeal?.id) {
       const mac = initialMeal.macros ?? {
         kcal: null,
@@ -465,7 +477,12 @@ export function AddMealSheet({
     // додав, тож людина може відмінити одну хибну позицію з N, не чіпаючи
     // решту. Сигнатура `onSave(meal, file)` лишається незмінною — жоден
     // консюмер поза цим файлом не знає про розбивку на кілька рядків.
-    meals.forEach((meal) => onSave(meal, appliedPhoto?.file ?? null));
+    // Дата йде лише коли її справді змінили: порожнє поле (стерте) не переносить.
+    const movedTo =
+      initialMeal?.id && initialDate && date && date !== initialDate
+        ? date
+        : undefined;
+    meals.forEach((meal) => onSave(meal, appliedPhoto?.file ?? null, movedTo));
   }
 
   function handleConfirmEmptyMacrosSave() {
@@ -620,6 +637,16 @@ export function AddMealSheet({
       >
         {step === "source" ? (
           <>
+            {onCopyYesterday && yesterdayMeals.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                className="mb-3 w-full min-h-[44px]"
+                onClick={onCopyYesterday}
+              >
+                Як учора ({yesterdayMeals.length})
+              </Button>
+            )}
             <SourceTabs active={sourceTab} onChange={setSourceTab} />
 
             {sourceTab === "search" && (
@@ -712,6 +739,24 @@ export function AddMealSheet({
             <MealTypePicker mealType={form.mealType} setForm={setForm} />
 
             <NameTimeRow form={form} field={field} setForm={setForm} />
+
+            {initialMeal?.id && initialDate && (
+              <div className="mb-4">
+                <SectionHeading
+                  as="div"
+                  size="xs"
+                  variant="nutrition"
+                  className="mb-1"
+                >
+                  Дата
+                </SectionHeading>
+                <DateField
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  aria-label="Дата запису"
+                />
+              </div>
+            )}
 
             {pickedFood ? (
               <PickedFoodCard
