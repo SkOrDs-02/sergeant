@@ -1,6 +1,6 @@
 # Куди виходять дані: сторонні обробники AI
 
-> **Last touched:** 2026-09-17 by @claude (додано OpenRouter і Groq — реєстр виходів за периметр розширено 2026-09-16). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-05 by @claude (фото чека й скріна банку Фініка в реєстрі, нотіс перед першим фото); 2026-09-17 by @claude (додано OpenRouter і Groq — реєстр виходів за периметр розширено 2026-09-16). **Next review:** 2026-12-16.
 > **Status:** Active.
 > **Scope:** усі шляхи, якими дані користувача виходять за периметр до
 > сторонніх AI-провайдерів. Логи, Sentry і телеметрія — окремий документ:
@@ -27,6 +27,8 @@
 | **OpenRouter** → Anthropic ¹ | Тижневий звіт із транзакціями                                  | щотижневий дайджест                         |
 | **OpenRouter** → Anthropic ¹ | Опис транзакції                                                | автокатегоризація + збагачення Mono         |
 | **OpenRouter** → Anthropic ¹ | **Фото страви цілком**                                         | аналіз і уточнення фото в модулі харчування |
+| **OpenRouter** → Anthropic ¹ | **Фото чека цілком**                                           | сканування чека (один чек і пачка) у Фініку |
+| **OpenRouter** → Anthropic ¹ | **Скрін банкінгу цілком**                                      | імпорт операцій зі скріна в Фініку          |
 | **Groq**                     | **Аудіо цілком** (голосове повідомлення)                       | транскрипція голосу (Whisper)               |
 | **Voyage AI**                | Текст факту пам'яті AI                                         | запис факту та пошуковий запит по пам'яті   |
 
@@ -71,7 +73,11 @@
   тарілкою потрапляє чек із адресою, чужа рука, екран телефона.
   Технічного рішення немає. Замість нього — одноразове попередження
   перед першим фото
-  ([`PhotoAnalyzeCard.tsx`](../../../apps/web/src/modules/nutrition/components/PhotoAnalyzeCard.tsx)).
+  ([`PhotoAnalyzeCard.tsx`](../../../apps/web/src/modules/nutrition/components/PhotoAnalyzeCard.tsx)
+  у Харчуванні; у Фініку для чека й скріна банку —
+  [`FinykPhotoPrivacyNotice.tsx`](../../../apps/web/src/modules/finyk/components/receiptScan/FinykPhotoPrivacyNotice.tsx),
+  ack окремий: `sergeant.finyk.photoPrivacyAck.v1`). До підтвердження аналіз
+  фото не стартує.
 - **Аудіо не маскується.** Groq отримує запис цілком; маскується вже
   текстовий результат транскрипції (див. `lib/groq.ts` у реєстрі
   `llmRedactionCoverage.test.ts`).

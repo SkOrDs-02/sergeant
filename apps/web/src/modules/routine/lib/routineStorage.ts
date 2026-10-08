@@ -491,14 +491,25 @@ export function buildRoutineBackupPayload() {
   };
 }
 
+/** Елемент списку Рутини має бути обʼєктом з непорожнім рядковим `id`. */
+function hasStringId(v: unknown): boolean {
+  return (
+    v !== null &&
+    typeof v === "object" &&
+    typeof (v as { id?: unknown }).id === "string" &&
+    (v as { id: string }).id !== ""
+  );
+}
+
 /**
- * `mode` — див. `BackupRestoreMode`. Дефолт `replace` лишає поведінку
- * наявних викликів; Hub-імпорт передає режим явно (дефолт панелі — `merge`).
+ * Чиста фаза «validate all» імпорту (аудит 2026-10-01, data-34): нічого не
+ * читає зі сховища й не пише, повертає нормалізований стан із файлу.
+ *
+ * Звичка, категорія чи тег без `id` (зокрема `null`) не потрапляє в стан:
+ * `normalizeHabit(null)` повертає `null`, а `ensureHabitOrder` далі кидав
+ * сирий `TypeError`, уже ПІСЛЯ того як Hub записав Фінік.
  */
-export function applyRoutineBackupPayload(
-  parsed: unknown,
-  mode: BackupRestoreMode = "replace",
-): void {
+function parseRoutineBackupPayload(parsed: unknown): RoutineState {
   if (
     !parsed ||
     typeof parsed !== "object" ||
@@ -508,8 +519,46 @@ export function applyRoutineBackupPayload(
   ) {
     throw new Error("Некоректний файл резервної копії Рутини.");
   }
-  const d = (parsed as { data: unknown }).data;
-  const incoming = normalizeRoutineState(d);
+  const d = (parsed as { data: Record<string, unknown> }).data;
+  for (const [field, label] of [
+    ["habits", "звичку"],
+    ["categories", "категорію"],
+    ["tags", "тег"],
+  ] as const) {
+    const list = d[field];
+    if (Array.isArray(list) && !list.every(hasStringId)) {
+      throw new Error(
+        `Пошкоджений файл: розділ Рутини містить ${label} без ідентифікатора. Експортуй копію ще раз.`,
+      );
+    }
+  }
+  const notes = d["completionNotes"];
+  if (
+    notes !== null &&
+    typeof notes === "object" &&
+    !Object.values(notes).every((v) => typeof v === "string")
+  ) {
+    throw new Error(
+      "Пошкоджений файл: розділ Рутини містить нотатку не рядком. Експортуй копію ще раз.",
+    );
+  }
+  return normalizeRoutineState(d);
+}
+
+/** Фаза «validate all» Hub-імпорту: кидає на битому файлі, нічого не пишучи. */
+export function validateRoutineBackupPayload(parsed: unknown): void {
+  parseRoutineBackupPayload(parsed);
+}
+
+/**
+ * `mode` — див. `BackupRestoreMode`. Дефолт `replace` лишає поведінку
+ * наявних викликів; Hub-імпорт передає режим явно (дефолт панелі — `merge`).
+ */
+export function applyRoutineBackupPayload(
+  parsed: unknown,
+  mode: BackupRestoreMode = "replace",
+): void {
+  const incoming = parseRoutineBackupPayload(parsed);
   const merged =
     mode === "merge"
       ? mergeRoutineStateAddMissing(loadRoutineState(), incoming)

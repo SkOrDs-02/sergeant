@@ -32,8 +32,8 @@ export default function GuidePauzaPropuskPage() {
     ...ROUTE_META["/guides/pauza-i-propusk"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "HowTo",
-      name: "Як заявити паузу і пояснити пропуск, щоб серія не обнулилась",
+      "@type": "Article",
+      headline: "Як заявити паузу і пояснити пропуск, щоб серія не обнулилась",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/pauza-i-propusk"].lastmod,
       author: AUTHOR_JSON_LD,
@@ -49,7 +49,7 @@ export default function GuidePauzaPropuskPage() {
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
         <div>
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Гайди · Звички
+            Гайди <span className="font-sans">·</span> Звички
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
             Як заявити паузу і пояснити пропуск, щоб серія не обнулилась
@@ -86,7 +86,7 @@ export default function GuidePauzaPropuskPage() {
                 Відкрий картку звички
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                У модулі Звички натисни на саму звичку, щоб розкрити її деталі.
+                У Рутині натисни на саму звичку, щоб розкрити її деталі.
                 Потрібна секція називається «Пауза».
               </p>
             </li>

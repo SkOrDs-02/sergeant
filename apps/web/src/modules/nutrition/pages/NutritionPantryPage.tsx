@@ -93,8 +93,10 @@ export function NutritionPantryPage({
         {pantrySubTab === "items" ? (
           <>
             {/* Порожня комора лишає вибір місця окремою карткою над формою;
-                наповнена переносить його в шапку списку. */}
-            {pantry.effectiveItems.length === 0 && (
+                наповнена переносить його в шапку списку. «Порожня» - за
+                збереженими позиціями, а не за живим парсом чернетки
+                (`effectiveItems`): інакше картка зникала б з першою літерою. */}
+            {pantry.pantryItems.length === 0 && (
               <NutritionPantrySelector pantry={pantry} busy={busy} />
             )}
             <PantryCard

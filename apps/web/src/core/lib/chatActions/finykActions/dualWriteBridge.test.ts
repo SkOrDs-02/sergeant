@@ -152,21 +152,31 @@ describe("finykChatWrite: місячний план", () => {
 });
 
 describe("mark_debt_paid поверх боргу з UI (наскрізно через міст)", () => {
-  it("закритий борг видаляється, виплата додається, kv не потрібен", () => {
+  it("закритий борг лишається (logic-03), виплата додається, kv не потрібен", () => {
     seedFinykCache({ manualDebts: [uiDebt] });
     const out = markDebtPaid({
       name: "mark_debt_paid",
       input: { debt_id: "d_ui", amount: 1000 },
-    }) as string;
-    expect(out).toContain("борг закрито");
+    });
+    expect(typeof out === "object" ? out.result : out).toContain(
+      "борг закрито",
+    );
 
     const calls = mirror.mirrorFinykChatDualWrite.mock
       .calls as unknown as Array<Parameters<typeof diffFinykDualWriteOps>>;
     const allOps = calls.flatMap(([prev, next]) =>
       diffFinykDualWriteOps(prev, next),
     );
-    expect(allOps).toContainEqual(
+    // Борг не видаляється: оновлюється запис (linkedTxIds із платежем).
+    expect(allOps).not.toContainEqual(
       expect.objectContaining({ kind: "blob-delete", id: "d_ui" }),
+    );
+    expect(allOps).toContainEqual(
+      expect.objectContaining({
+        kind: "blob-upsert",
+        table: "finyk_debts",
+        entry: expect.objectContaining({ id: "d_ui" }),
+      }),
     );
     expect(allOps).toContainEqual(
       expect.objectContaining({

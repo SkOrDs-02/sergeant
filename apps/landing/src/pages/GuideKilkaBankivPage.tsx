@@ -33,7 +33,7 @@ export default function GuideKilkaBankivPage() {
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
         <div>
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Гайди · Фінанси
+            Гайди <span className="font-sans">·</span> Фінанси
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
             Як звести витрати докупи, якщо карти в кількох банках
@@ -124,7 +124,7 @@ export default function GuideKilkaBankivPage() {
           <ul className="mt-5 flex flex-col gap-3">
             {[
               "Балансу другої карти в реальному часі: виписка показує період, що минув.",
-              "Категорій там, де опис нічого не каже: якщо у виписці немає ні категорії, ні коду операції, а в описі лише набір цифр, підказки не буде.",
+              "Категорій там, де опис нічого не каже: якщо у виписці немає ні категорії, ні коду категорії від банку, а в описі лише набір цифр, підказки не буде.",
             ].map((item) => (
               <li
                 key={item}

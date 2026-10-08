@@ -55,7 +55,7 @@ export function RestTimerOverlay({
     };
     // Keyed on `isActive` only (see comment above) — not exhaustive on
     // purpose.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed на `isActive`, не на `restTimer`: ±15/±30 замінюють обʼєкт, але не мають повторно оголошувати «старт»
   }, [isActive]);
 
   useEffect(() => {

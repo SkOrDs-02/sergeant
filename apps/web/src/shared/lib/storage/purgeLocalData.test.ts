@@ -28,6 +28,7 @@ import {
   isAppOwnedLocalStorageKey,
   purgeAppOwnedLocalData,
   purgeAppOwnedLocalStorage,
+  purgeAppOwnedSessionStorage,
 } from "./purgeLocalData";
 
 describe("isAppOwnedLocalStorageKey", () => {
@@ -153,5 +154,49 @@ describe("purgeAppOwnedLocalData — nutrition IndexedDB (data-09)", () => {
     );
     // Каталог продуктів не привʼязаний до акаунта й не стирається наосліп.
     expect(await dbGet(SERGEANT_STORE.NUTRITION_FOODS, "food_x")).toBeDefined();
+  });
+});
+
+describe("purgeAppOwnedLocalData — sessionStorage (priv-16)", () => {
+  beforeEach(() => sessionStorage.clear());
+  afterEach(() => sessionStorage.clear());
+
+  it("стирає кеш AI-пропозицій рецептів і лишає сторонні ключі", async () => {
+    sessionStorage.setItem(
+      "nutrition_recipes_cache_v1",
+      JSON.stringify({ abc: { recipes: [{ title: "SECRET-X-suggest" }] } }),
+    );
+    sessionStorage.setItem("fizruk_pending_retro_end_v1", "{}");
+    sessionStorage.setItem("__sergeant_chunk_reload_at", "1000");
+    sessionStorage.setItem("ph_session_marker", "1");
+
+    await purgeAppOwnedLocalData();
+
+    expect(sessionStorage.getItem("nutrition_recipes_cache_v1")).toBeNull();
+    expect(sessionStorage.getItem("fizruk_pending_retro_end_v1")).toBeNull();
+    // Сторонні та неапповські ключі лишаються.
+    expect(sessionStorage.getItem("ph_session_marker")).toBe("1");
+    expect(sessionStorage.getItem("__sergeant_chunk_reload_at")).toBe("1000");
+  });
+
+  it("лишає маркер OAuth-реєстрації, який має пережити identity-wipe до читання", () => {
+    sessionStorage.setItem(
+      "sergeant.auth.pendingOAuthProvider",
+      "google:1700000000000",
+    );
+    sessionStorage.setItem("sergeant.v2.routine.streakExposure", "{}");
+
+    expect(purgeAppOwnedSessionStorage()).toBe(1);
+
+    expect(sessionStorage.getItem("sergeant.auth.pendingOAuthProvider")).toBe(
+      "google:1700000000000",
+    );
+    expect(
+      sessionStorage.getItem("sergeant.v2.routine.streakExposure"),
+    ).toBeNull();
+  });
+
+  it("є no-op на порожньому сховищі", () => {
+    expect(purgeAppOwnedSessionStorage()).toBe(0);
   });
 });

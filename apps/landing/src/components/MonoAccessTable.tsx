@@ -23,7 +23,7 @@ const ACCESS_TABLE = [
 export default function MonoAccessTable() {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_130px]">
-      <span className="border-b border-cardline-strong py-2.5 text-xs font-semibold uppercase tracking-wide text-subtle">
+      <span className="border-b border-cardline-strong py-2.5 pr-4 text-xs font-semibold uppercase tracking-wide text-subtle">
         Дані
       </span>
       <span className="border-b border-cardline-strong py-2.5 text-xs font-semibold uppercase tracking-wide text-subtle">
@@ -31,7 +31,7 @@ export default function MonoAccessTable() {
       </span>
       {ACCESS_TABLE.map((row) => (
         <div key={row.data} className="contents">
-          <span className="border-b border-cardline py-3.5 text-sm text-foreground">
+          <span className="border-b border-cardline py-3.5 pr-4 text-sm text-foreground">
             {row.data}
           </span>
           <span

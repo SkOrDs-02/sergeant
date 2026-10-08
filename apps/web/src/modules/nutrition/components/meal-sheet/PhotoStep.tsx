@@ -113,7 +113,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     // `photo.analyzePhoto` навмисно поза deps: його ідентичність
     // змінюється щорендера (обгортка над mutation.mutate), а повторний
     // запуск для того самого кадру відсікає ref вище.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `photo.analyzePhoto` перестворюється щорендера; повтор для того ж кадру відсікає ref
   }, [previewUrl, canAutoAnalyze]);
 
   // Вхід у крок — це вже жест «хочу дати фото», тож одразу відкриваємо
@@ -137,9 +137,9 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         pickerRafRef.current = null;
       }
     };
-    // Mount-only: автовідкриття піккера — одноразовий жест входу в крок.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authenticated]);
+    // `photo.fileRef` — стабільний ref (useRef у usePhotoAnalysis), тож у deps
+    // він не перезапускає автовідкриття піккера.
+  }, [authenticated, photo.fileRef]);
 
   // Кнопка «Аналізувати» — запасний вихід, не основний шлях. Авто-ефект
   // вище вже запускає аналіз сам, тож показувати її на щасливому шляху

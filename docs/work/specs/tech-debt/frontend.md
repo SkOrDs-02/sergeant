@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-09-17 by @claude (звірка всіх відкритих пунктів реєстру з HEAD). **Next review:** 2026-12-16.
+> **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 6; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число, яке цей файл наводить. Головне: **жоден лічильник із записаних не збігся з фактом**, і половина розійшлась у бік зростання, тобто реєстр систематично відстає.
@@ -1534,9 +1534,22 @@ raw-файлів не перетинає **effective** 600 — інакше ESLi
 ---
 
 <details>
-<summary>5. `eslint-disable react-hooks/exhaustive-deps` — web 15 / mobile 10 (розгорнути)</summary>
+<summary>5. `eslint-disable react-hooks/exhaustive-deps` — web 6 / mobile 10 (розгорнути)</summary>
 
-### 5. `eslint-disable react-hooks/exhaustive-deps` — знову відкрито (переміряно 2026-09-17: web 15, mobile 10)
+### 5. `eslint-disable react-hooks/exhaustive-deps` — знову відкрито (переміряно 2026-10-08: web 6, mobile 10)
+
+**Вигорання 2026-10-08: web 15 → 6.** Девʼять сайтів знято без зміни поведінки,
+шість лишено зі свідомим інваріантом і WHY у самій директиві
+(`AppLockSettings`, `useTweenedValues`, `PhotoStep` ×1, `RestTimerOverlay`,
+`BodyAtlas`, `usePrivatbank`). Що зроблено: `HUB_TAB_ORDER` і геометрію
+`NetworthChart` винесено на рівень модуля; `reset` з `bulkReceipts`
+деструктуровано (стабільний `useCallback`); `announce` (стабільний у провайдері)
+і `photo.fileRef` додано в deps із guard-ref; для «тік»-memo
+(`useActiveFizrukWorkout`, `useHubDashboardState`, `CrossModuleLinksSection`)
+застосовано патерн `void tick`. Поштучна таблиця — у каталозі. Нижче —
+знімок 2026-09-17, лишений як історія.
+
+_(знімок 2026-09-17: web 15, mobile 10)_
 
 Web production disables було знято повністю (wave 4 → 0), але це **більше не так**:
 `grep -rn "eslint-disable.*exhaustive-deps" apps/web/src` дає **15**
@@ -2190,14 +2203,14 @@ Ref: PR-6.F (sergeant-audit-devin.md).
 i18n-ключ `validation.fieldRequired` (`uk.ts`/`en.ts`, нуль читачів);
 legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `variant="destructive"`).
 
-**Перенесено на 2026-12-01 — і це не «ще трохи», а три різні причини:**
+**Перенесено на 2026-12-01 — і це не «ще трохи», а різні причини.** `pushApi.subscribe`/`unsubscribe` знято разом із серверним роутом 2026-09-23 ([backend.md § Legacy web-push HTTP](./backend.md)), звірено 2026-10-08:
 
-| Маркер                                                                            | Чому не знято 2026-09-03                                                                                                                                      | Що розблокує                                                   |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `CardVariant` / `Card.variant` (`shared/components/ui/Card.tsx`)                  | **30** call-site-ів `<Card variant="…">` у `apps/web/src` (переміряно 2026-09-17; було записано ~68 — codemod подешевшав удвічі, але все одно окремий PR)     | codemod `variant` → `module` + `prominence`, один PR           |
-| 5 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                     | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати | рішення власника про долю legacy LS-даних                      |
-| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)            | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                              | те саме рішення                                                |
-| `pushApi.subscribe` / `unsubscribe` (`packages/api-client/src/endpoints/push.ts`) | звірено 2026-09-17 — усе ще так: `packages/api-client/src/endpoints/push.ts:91,99,137-140`, серверний proxy живий (`apps/server/src/routes/push.ts:78,85`)    | PR під `sergeant-module-push`: клієнт + хуки + серверний proxy |
+| Маркер                                                                                  | Чому не знято 2026-09-03                                                                                                                                                                       | Що розблокує                                         |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `CardVariant` / `Card.variant` (`shared/components/ui/Card.tsx`)                        | **30** call-site-ів `<Card variant="…">` у `apps/web/src` (переміряно 2026-09-17; було записано ~68 — codemod подешевшав удвічі, але все одно окремий PR)                                      | codemod `variant` → `module` + `prominence`, один PR |
+| 5 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                           | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати                                  | рішення власника про долю legacy LS-даних            |
+| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)                  | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                                                               | те саме рішення                                      |
+| `ButtonVariantLegacy` + проп `Button.module` (`shared/components/ui/Button.tsx:76,249`) | плоскі варіанти і `module` замінені парою `variant` × `tone`; `@removeBy 2026-12-01` стояв у коді, але трекер його не згадував (знайдено аудитом 2026-10-08, кількість call-site-ів не міряли) | міграція call-site-ів на `variant` × `tone`          |
 
 Урок для наступного разу той самий, що й у `_runner-report.md` (червень): маркер
 із датою без власника перетворюється на «September crunch». Перенесені дати тут
