@@ -194,7 +194,9 @@ describe("setupAutoUpdate", () => {
       now: () => fakeNow,
     });
 
-    // First sighting at t=0 starts the timer.
+    // First sighting is only a baseline; the API redeploying under the
+    // live tab (id changes) at t=0 starts the timer.
+    ctrl.reportServerBuildId("0000000");
     ctrl.reportServerBuildId("def5678");
     expect(events).toEqual([]);
 
@@ -223,7 +225,8 @@ describe("setupAutoUpdate", () => {
       buildIdMismatchPromptMs: 60 * 60 * 1000,
     });
 
-    ctrl.reportServerBuildId("def5678");
+    ctrl.reportServerBuildId("0000000");
+    ctrl.reportServerBuildId("def5678"); // redeploy mid-session → timer armed
     // Server rolls back / matches client → state must clear.
     ctrl.reportServerBuildId("abc1234");
 
@@ -264,9 +267,58 @@ describe("setupAutoUpdate", () => {
       buildIdMismatchPromptMs: 60 * 60 * 1000,
     });
 
+    ctrl.reportServerBuildId("1111111");
     ctrl.reportServerBuildId("0d42e91");
 
     await vi.advanceTimersByTimeAsync(60 * 60 * 1000 + 1);
+    expect(events).toEqual(["ready"]);
+    ctrl.dispose();
+  });
+
+  // Регресія (sec-19): Coolify почав віддавати `X-Server-Build-Id`
+  // (SOURCE_COMMIT), а веб і API деплояться незалежно: коміт лише в
+  // `apps/server` лишає веб на A, а API на B назавжди. Наївне «сервер ≠
+  // клієнт» давало б плашку «нова версія» в кожній сесії довшій за годину
+  // (перезавантаження не помагало б: бандл той самий).
+  it("does NOT prompt when the server id differs from the client but never changes (API on B, web on A)", async () => {
+    installServiceWorkerMock();
+    const events: string[] = [];
+    window.addEventListener("pwa-update-ready", () => events.push("ready"));
+    let fakeNow = 0;
+    const ctrl = setupAutoUpdate({
+      clientBuildId: "aaaaaaa1234567890aaaaaaa1234567890aaaaaa",
+      buildIdMismatchPromptMs: 60 * 60 * 1000,
+      now: () => fakeNow,
+    });
+
+    // Every API response in a long session carries the same B.
+    for (let i = 0; i < 10; i++) {
+      ctrl.reportServerBuildId("bbbbbbb");
+      fakeNow += 30 * 60 * 1000;
+      await vi.advanceTimersByTimeAsync(30 * 60 * 1000);
+    }
+    expect(events).toEqual([]);
+    expect(window.__pwaUpdateReady).toBeUndefined();
+    ctrl.dispose();
+  });
+
+  it("prompts only after the server id changes mid-session and stays different past the grace window", async () => {
+    installServiceWorkerMock();
+    const events: string[] = [];
+    window.addEventListener("pwa-update-ready", () => events.push("ready"));
+    const ctrl = setupAutoUpdate({
+      clientBuildId: "aaaaaaa1234567890aaaaaaa1234567890aaaaaa",
+      buildIdMismatchPromptMs: 60 * 60 * 1000,
+    });
+
+    ctrl.reportServerBuildId("bbbbbbb"); // baseline
+    await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000);
+    expect(events).toEqual([]);
+
+    ctrl.reportServerBuildId("ccccccc"); // API redeployed under the tab
+    await vi.advanceTimersByTimeAsync(59 * 60 * 1000);
+    expect(events).toEqual([]);
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
     expect(events).toEqual(["ready"]);
     ctrl.dispose();
   });

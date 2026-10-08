@@ -81,8 +81,8 @@ export const dbPoolAcquireDurationSeconds = new client.Histogram({
 //      pod (labels are constant for the process lifetime).
 //
 // Sources are read at module load (process.env is frozen for our purposes
-// after dotenv-flow). On Coolify/ghcr the SHA is baked into the image as
-// `GIT_SHA` by `Dockerfile.api` (build-arg from `deploy-api.yml`). `SENTRY_RELEASE` is the canonical release tag
+// after dotenv-flow). On Coolify (build from the repo, ADR-0102) the SHA is baked into the image as
+// `GIT_SHA` by `Dockerfile.api` (falls back to Coolify's `SOURCE_COMMIT`). `SENTRY_RELEASE` is the canonical release tag
 // if both Sentry-cli and a per-deploy SHA are present (Sentry-cli precedence). Empty
 // strings collapse to `"unknown"` so PromQL queries never see an empty
 // label value (which Prometheus treats as label absence — breaks joins).
@@ -98,11 +98,13 @@ appBuildInfo
     version: env.npm_package_version || "unknown",
     commit: (
       env.GIT_SHA ||
+      env.SOURCE_COMMIT ||
       env.GIT_COMMIT ||
       env.VERCEL_GIT_COMMIT_SHA ||
       "unknown"
     ).slice(0, 12),
-    release: env.SENTRY_RELEASE || env.GIT_SHA || "unknown",
+    release:
+      env.SENTRY_RELEASE || env.GIT_SHA || env.SOURCE_COMMIT || "unknown",
     env: env.NODE_ENV || "development",
     node_version: process.version,
   })
