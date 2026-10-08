@@ -859,7 +859,7 @@ Script v3-export.mjs, output in v3-out.txt, run as idorA, who owns receipts 23 (
 
 ### `priv-13` [medium] Черга GDPR-очищення безстроково зберігає email видалених користувачів: рядок stripe без customer_id ніколи не завершується
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-13-gdpr-queue-email (рядок stripe без customer_id тепер завершується з email = NULL; лишилось рішення власника за ADR-0016 п.5: стеля waitingOnConfig і редагування email в exhausted-рядках; sentry/resend без токенів досі чекають конфіг)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: GDPR cleanup worker
 - **Де:** apps/server/src/modules/gdpr/externalDelete.ts:113-120; apps/server/src/modules/gdpr/cleanupWorker.ts:178-181, 220-231, 279-318; apps/server/src/modules/gdpr/cleanupQueue.ts
 - **Першопричина:** deleteStripeCustomer повертає 'skipped' в обох випадках: коли немає ключа і коли немає stripe_customer_id. cleanupWorker трактує 'skipped' для всіх сервісів, крім posthog, як «чекаємо конфіг» і переносить рядок на годину вперед. Email обнуляється лише при завершенні, тож для більшості користувачів (без Stripe) рядок з email живе вічно. Exhausted-рядки email теж зберігають.
