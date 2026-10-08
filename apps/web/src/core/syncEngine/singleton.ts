@@ -316,15 +316,13 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
     { apiClient },
     sentry,
     dbSchema,
-    { runMigrations },
-    { createSqliteAdapter },
+    { migrateOutboxSchema },
   ] = await Promise.all([
     import("../db/sqlite"),
     import("@shared/api"),
     import("../observability/sentry"),
     import("@sergeant/db-schema/sqlite"),
-    import("@sergeant/db-schema/migrate/runner"),
-    import("@sergeant/db-schema/migrate/sqlite"),
+    import("./outboxSchema"),
   ]);
 
   // `sync_op_outbox` лежить у `ROUTINE_CLIENT_MIGRATIONS` (історично —
@@ -399,11 +397,10 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
         });
       }
 
-      await runMigrations({
-        adapter: createSqliteAdapter(client),
-        files: dbSchema.ROUTINE_CLIENT_MIGRATIONS,
-        tableName: dbSchema.ROUTINE_MIGRATIONS_TABLE,
-      });
+      // Спільний серіалізований мігратор, а не власний `runMigrations`: на
+      // свіжій партиції ті самі файли одночасно ганяють бут Рутини й перший
+      // запис у чергу (`outboxSchema.ts`).
+      await migrateOutboxSchema(client);
 
       // Post-migration smoke check: if `sync_op_outbox` is still missing
       // after the runner returned, something deeper than the
