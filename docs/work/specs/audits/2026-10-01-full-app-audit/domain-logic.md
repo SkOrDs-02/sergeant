@@ -333,7 +333,7 @@ Live API (v8-v9-api.mjs, user verify-gapfinyk2-v1) with f2-debit-credit-cp1251.c
 
 ### `logic-07` [medium] Ліміти рахуються по-різному на Огляді, Плануванні й хабі: період і глибина історії не збігаються
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-07-limits-period
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (Огляд, Планування)
 - **Де:** apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:120-133, 176-179, 314-331; apps/web/src/modules/finyk/pages/overview/BudgetAlertsList.tsx:46-56; apps/web/src/modules/finyk/pages/budgets/Budgets.tsx:209-235, 283-290; apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts:160-179, 257-267; apps/web/src/modules/finyk/hooks/useCoffeeLimitInsight.ts:100-117
 - **Першопричина:** Єдиного обчислення використання ліміту на всіх поверхнях немає. Алерти Огляду (budgetAlerts, BudgetAlertsList) порівнюють будь-який ліміт, зокрема тижневий і разовий, з витратами за весь київський місяць і ігнорують period. Сторінка Планування накладає період правильно, але бере realTx, який після мережевого запиту містить лише поточний місяць, тож тиждень на межі місяців і старі разові ліміти недораховуються.
@@ -409,7 +409,7 @@ useMonobankWebhook.ts:160-172 запитує транзакції лише за 
 
 ### `logic-08` [medium] Фінансові картки хабу рахують інший «всесвіт» витрат, ніж Фінік і звіт тижня
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-08-hub-finance-universe
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: хаб / insights (FinanceContext)
 - **Де:** apps/web/src/core/lib/recommendations/financeContext.ts:55-110; packages/insights/src/recommendations/financeContext.ts:90-95; packages/insights/src/recommendations/finance/spendingVelocity.ts:40-58; packages/insights/src/recommendations/finance/dailyVsWeeklyPace.ts; packages/finyk-domain/src/domain/weekReport.ts:5-8
 - **Першопричина:** buildFinanceContext виключає лише hidden і перекази з мапи txCategories (financeExcludedTxIds), а не канонічний buildFinykExcludedTxIds (excludedStat, дебіторка, пари «Скасування», tx-level перекази). Ручні витрати додаються без фільтра excluded/hidden, а canonicalMonthSpend не має верхньої межі, тож рахує й записи, датовані наперед.

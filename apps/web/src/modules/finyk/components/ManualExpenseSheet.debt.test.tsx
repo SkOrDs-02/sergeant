@@ -73,11 +73,36 @@ describe("ManualExpenseSheet — місток до пасиву", () => {
     );
     expect(setLinkedTxRole).toHaveBeenCalledWith(
       "d1",
-      "m1",
+      "manual_m1",
       "debt",
       "payment",
       1000,
     );
+  });
+
+  it("пише привʼязку під канонічним ключем manual_<id>, не сирим id (data-24)", () => {
+    // Пікер боргів та авто-привʼязка працюють з `manual_<id>`; сирий ключ
+    // давав два ключі на один платіж і подвійний залік у боргу.
+    const { setLinkedTxRole } = renderSheet();
+    fireEvent.click(screen.getByRole("button", { name: "Обрати пасив" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Кредитка ПриватБанк/ }),
+    );
+    expect(setLinkedTxRole).toHaveBeenCalledTimes(1);
+    expect(setLinkedTxRole.mock.calls[0]?.[1]).toBe("manual_m1");
+  });
+
+  it("бачить спадкову сиру привʼязку і знімає саме її (data-24)", () => {
+    const legacy: Debt = {
+      ...DEBT,
+      linkedTxIds: ["m1"],
+      txLinks: { m1: { role: "payment", amount: 1000 } },
+    };
+    const { setLinkedTxRole } = renderSheet({ manualDebts: [legacy] });
+    // Не пропонує привʼязати вдруге.
+    expect(screen.queryByRole("button", { name: "Обрати пасив" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Відвʼязати/ }));
+    expect(setLinkedTxRole).toHaveBeenCalledWith("d1", "m1", "debt", null);
   });
 
   it("розділений запис привʼязує саме боргову частку", () => {
@@ -95,7 +120,7 @@ describe("ManualExpenseSheet — місток до пасиву", () => {
     );
     expect(setLinkedTxRole).toHaveBeenCalledWith(
       "d1",
-      "m1",
+      "manual_m1",
       "debt",
       "payment",
       150,

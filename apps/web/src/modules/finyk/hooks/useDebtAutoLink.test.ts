@@ -211,4 +211,43 @@ describe("useDebtAutoLink — Level 2 авто-привʼязка (2026-09-11)",
 
     expect(setLinkedTxRole).not.toHaveBeenCalled();
   });
+
+  it("спадкова сира привʼязка X блокує авто-привʼязку manual_X іншого боргу (data-24)", () => {
+    const setLinkedTxRole = vi.fn();
+    const debtA: Debt = {
+      id: "d1",
+      amount: 5000,
+      linkedTxIds: ["m1"],
+      txLinks: { m1: { role: "payment", amount: 500 } },
+    };
+    const debtB: Debt = {
+      id: "d2",
+      amount: 3000,
+      autoLinkKeyword: "кредит",
+      linkedTxIds: [],
+    };
+    const transactions = [TX("manual_m1", -50000, "Кредит Приват")];
+
+    renderHook(() =>
+      useDebtAutoLink([debtA, debtB], transactions, setLinkedTxRole),
+    );
+
+    expect(setLinkedTxRole).not.toHaveBeenCalled();
+  });
+
+  it("спадкова сира привʼязка X власного боргу не дає привʼязати manual_X вдруге (data-24)", () => {
+    const setLinkedTxRole = vi.fn();
+    const debt: Debt = {
+      id: "d1",
+      amount: 5000,
+      autoLinkKeyword: "кредит",
+      linkedTxIds: ["m1"],
+      txLinks: { m1: { role: "payment", amount: 500 } },
+    };
+    const transactions = [TX("manual_m1", -50000, "Кредит Приват")];
+
+    renderHook(() => useDebtAutoLink([debt], transactions, setLinkedTxRole));
+
+    expect(setLinkedTxRole).not.toHaveBeenCalled();
+  });
 });

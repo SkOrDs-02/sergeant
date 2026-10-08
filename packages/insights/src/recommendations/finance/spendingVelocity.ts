@@ -14,6 +14,7 @@
 import type { Rule } from "../types.js";
 import {
   financeExcludedTxIds,
+  isManualExpenseExcluded,
   type FinanceContext,
 } from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
@@ -50,6 +51,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
       }).totalSpent;
       let manual = 0;
       for (const me of ctx.manualExpenses) {
+        if (isManualExpenseExcluded(excludedTxIds, me)) continue;
         const ts = new Date(me.date).getTime();
         if (ts >= startMs && ts < endMs) {
           manual += Math.abs(Number(me.amount) || 0);
