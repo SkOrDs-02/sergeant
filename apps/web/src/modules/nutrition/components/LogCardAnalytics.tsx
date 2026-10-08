@@ -14,6 +14,7 @@ import {
   mealTypeBreakdown,
   topMeals,
 } from "../lib/nutritionStats";
+import { compareWeekToPrevious } from "../lib/weekCompare";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import {
@@ -54,6 +55,10 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
         statsRows.map((r) => r.date),
       ),
     [log, statsRows],
+  );
+  const weekCompare = useMemo(
+    () => compareWeekToPrevious(log, selectedDate),
+    [log, selectedDate],
   );
   const statsTop = useMemo(
     () => topMeals(log, selectedDate, statsRange, 8),
@@ -121,6 +126,13 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
             sublabel={`за ${statsAvg.daysLogged} ${pluralUa(statsAvg.daysLogged, ACTIVE_DAYS_FORMS)}`}
             size="md"
           />
+          <p className="text-style-label text-muted" data-testid="week-compare">
+            {weekCompare.kind === "none"
+              ? "Тиждень проти минулого: немає з чим порівняти"
+              : weekCompare.deltaKcal === 0
+                ? `Тиждень проти минулого: без змін (минулого ${weekCompare.prevAvgKcal} ккал)`
+                : `Тиждень проти минулого: ${weekCompare.deltaKcal > 0 ? "▲ +" : "▼ −"}${Math.abs(weekCompare.deltaKcal)} ккал (минулого ${weekCompare.prevAvgKcal} ккал)`}
+          </p>
           <p className="flex flex-wrap items-baseline gap-x-1.5 text-style-label text-muted">
             {[
               { key: "protein_g", label: "Білки", v: statsAvg.avgProtein },

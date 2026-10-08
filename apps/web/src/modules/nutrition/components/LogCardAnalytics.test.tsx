@@ -13,6 +13,9 @@ vi.mock("../lib/nutritionStats", () => ({
   topMeals: vi.fn(),
   mealTypeBreakdown: vi.fn(),
 }));
+vi.mock("../lib/weekCompare", () => ({
+  compareWeekToPrevious: vi.fn(),
+}));
 vi.mock("@sergeant/nutrition-domain", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("@sergeant/nutrition-domain")>();
@@ -25,6 +28,7 @@ import {
   mealTypeBreakdown,
   topMeals,
 } from "../lib/nutritionStats";
+import { compareWeekToPrevious } from "../lib/weekCompare";
 import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
 
@@ -46,6 +50,9 @@ beforeEach(() => {
   });
   top.mockReturnValue([]);
   breakdown.mockReturnValue({});
+  (compareWeekToPrevious as ReturnType<typeof vi.fn>).mockReturnValue({
+    kind: "none",
+  });
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -133,5 +140,34 @@ describe("LogCardAnalytics", () => {
     expect(screen.getAllByText(flatMatch("за 1 активний день")).length).toBe(1);
     expect(screen.queryByText(/Сер\./)).not.toBeInTheDocument();
     expect(screen.queryByText(/активн\./)).not.toBeInTheDocument();
+  });
+
+  it("shows the week-over-week delta, or says there is nothing to compare", () => {
+    getRows.mockReturnValue([{ kcal: 1800 }]);
+    avg.mockReturnValue({
+      avgKcal: 1800,
+      avgProtein: 90,
+      avgFat: 55,
+      avgCarbs: 200,
+      daysLogged: 1,
+    });
+    const compare = compareWeekToPrevious as ReturnType<typeof vi.fn>;
+    const { rerender } = render(
+      <LogCardAnalytics log={log} selectedDate="2026-06-20" />,
+    );
+    expect(screen.getByTestId("week-compare")).toHaveTextContent(
+      "немає з чим порівняти",
+    );
+    compare.mockReturnValue({
+      kind: "compared",
+      prevAvgKcal: 2100,
+      deltaKcal: -150,
+    });
+    rerender(
+      <LogCardAnalytics log={{} as NutritionLog} selectedDate="2026-06-20" />,
+    );
+    expect(screen.getByTestId("week-compare")).toHaveTextContent(
+      "▼ −150 ккал (минулого 2100 ккал)",
+    );
   });
 });
