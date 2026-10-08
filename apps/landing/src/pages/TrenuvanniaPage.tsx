@@ -204,6 +204,23 @@ export default function TrenuvanniaPage() {
       </section>
 
       <section className="mt-14 border-t-2 border-foreground-strong pt-8">
+        <h2 className={h2}>Як це виглядає</h2>
+        <figure className="mt-6 max-w-[320px]">
+          <img
+            src="/screens/fizruk.webp"
+            alt="Завершене тренування у Фізруку: девʼять вправ, 25 підходів, обʼєм 11 702 кг×повторення, самопочуття і нотатка до тренування"
+            width={414}
+            height={896}
+            loading="lazy"
+            className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
+          />
+          <figcaption className="mt-2.5 text-xs text-subtle">
+            Фізрук: підсумок тренування з підходами. Екран бети з демо-даними.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section className="mt-14 border-t-2 border-foreground-strong pt-8">
         <h2 className={h2}>Чого модуль поки не робить</h2>
         <ul className="mt-6 flex max-w-2xl flex-col gap-3">
           {NOT_YET.map((item) => (

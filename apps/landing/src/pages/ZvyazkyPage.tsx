@@ -155,21 +155,21 @@ export default function ZvyazkyPage() {
       <section className="mt-14 border-t-2 border-foreground-strong pt-8">
         <h2 className={h2}>Як це виглядає</h2>
         <p className={body}>
-          Головний екран збирає всі чотири сфери в одному місці, і з цих даних
-          рахуються звʼязки.
+          Звʼязки живуть на окремій вкладці хаба. Кожен підписаний рівнем
+          впевненості і кількістю днів, на яких він тримається.
         </p>
         <figure className="mt-6 max-w-[320px]">
           <img
-            src="/screens/hub.webp"
-            alt="Головний екран Sergeant: картки чотирьох модулів із даними дня і серією"
+            src="/screens/zvyazky.webp"
+            alt="Вкладка «Звʼязки»: звички й самопочуття на рівні «тримається стабільно» за 46 спостережень, тренування і їжа на рівні «поки що збіг»"
             width={414}
             height={896}
             loading="lazy"
             className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
           />
           <figcaption className="mt-2.5 text-xs text-subtle">
-            Головний екран: усі чотири сфери на одному екрані. Екран бети з
-            демо-даними.
+            Вкладка «Звʼязки»: два звʼязки з різними рівнями впевненості. Екран
+            бети з демо-даними.
           </figcaption>
         </figure>
       </section>
