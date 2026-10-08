@@ -119,7 +119,7 @@
     "sergeant-module-sync": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "cc9cb3aa580516c68107cb91714d55c687bc2ccd8a4de5a9b0ab3dd3e36a6e36"
+      "computedHash": "926e07b540b11ee9c37ed4e88a600cbabc734c7815f54ff7d06d821be3dfa4be"
     },
     "sergeant-monorepo-boundaries": {
       "source": "local",

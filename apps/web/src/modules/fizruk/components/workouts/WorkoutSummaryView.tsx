@@ -44,6 +44,7 @@ import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
 import { WorkoutMomentLine } from "./WorkoutMomentLine";
+import { isSetDone } from "./WorkoutSetRow";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
@@ -56,7 +57,10 @@ export interface WorkoutSummaryViewProps {
 /** One-line "what happened" caption for a single exercise entry. */
 function formatItemDetail(item: WorkoutItem, rpeLabel: string): string {
   if (item.type === "strength") {
-    const sets = item.sets || [];
+    // Порожній рядок, який сесія створює сама, не результат: без цього
+    // фільтра пропущена вправа друкувалась як «0×0», хоча плитка
+    // «Підходів» його вже не рахує.
+    const sets = (item.sets || []).filter(isSetDone);
     if (sets.length === 0) return "—";
     return sets
       .map((s) => {

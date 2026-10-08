@@ -228,7 +228,7 @@ export const ModuleNutrition: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="nutrition" size={120} />,
     title: "Що ти їси насправді?",
-    description: "Залогай перший прийом їжі й отримай чесну картину.",
+    description: "Запиши перший прийом їжі, і тут зʼявляться калорії за день.",
     action: (
       <Button variant="nutrition" size="md">
         Додати їжу

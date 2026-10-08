@@ -6,12 +6,10 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
 import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, RefObject, SetStateAction } from "react";
-import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
 import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { messages } from "@shared/i18n/uk";
-import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import { useAverageWorkoutKcalPerDay } from "../../../core/profile/useAverageWorkoutKcal";
@@ -19,6 +17,7 @@ import {
   NUTRITION_GOALS,
   computeNutritionTargetsFromBiometrics,
   resolveEffectiveWeightKg,
+  weeklyRateDeficitKcal,
   type NutritionGoalId,
   type NutritionTargets,
 } from "../lib/tdee";
@@ -27,14 +26,19 @@ import {
   type MissingBiometricsField,
 } from "../../../core/profile/biometrics";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import { MyNormSheet } from "./MyNormSheet";
 
 const TDEE_COPY = messages.nutritionTdee;
 
-const TDEE_GOAL_LABELS: Record<NutritionGoalId, string> = {
-  cutting: TDEE_COPY.goalCutting,
-  maintenance: TDEE_COPY.goalMaintenance,
-  bulking: TDEE_COPY.goalBulking,
-};
+function goalLabels(weeklyRateKg: number): Record<NutritionGoalId, string> {
+  return {
+    cutting: TDEE_COPY.goalCuttingRate
+      .replace("{rate}", String(weeklyRateKg).replace(".", ","))
+      .replace("{kcal}", String(weeklyRateDeficitKcal(weeklyRateKg))),
+    maintenance: TDEE_COPY.goalMaintenance,
+    bulking: TDEE_COPY.goalBulking,
+  };
+}
 
 const MISSING_FIELD_LABEL: Record<MissingBiometricsField, string> = {
   heightCm: TDEE_COPY.missingHeight,
@@ -122,6 +126,11 @@ export function DailyPlanGoalSelectors({
 }: DailyPlanGoalSelectorsProps) {
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [normOpen, setNormOpen] = useState(false);
+  const goalLabelById = useMemo(
+    () => goalLabels(prefs.weeklyRateKg),
+    [prefs.weeklyRateKg],
+  );
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuLeft = useClampedMenuLeft(menuOpen, menuRef);
 
@@ -154,12 +163,13 @@ export function DailyPlanGoalSelectors({
         undefined,
         fizrukWeightKg,
         workoutKcal,
+        prefs.weeklyRateKg,
       );
       if (!t) return null;
       result[goal] = t;
     }
     return result as Record<NutritionGoalId, NutritionTargets>;
-  }, [biometrics, fizrukWeightKg, workoutKcal]);
+  }, [biometrics, fizrukWeightKg, workoutKcal, prefs.weeklyRateKg]);
 
   // Той самий fizruk-фолбек, що й у computeNutritionTargetsFromBiometrics
   // вище, — інакше юзер із реальним fizruk-зважуванням, але порожнім
@@ -239,7 +249,7 @@ export function DailyPlanGoalSelectors({
           )}
         >
           {activeGoal
-            ? `Пресет: ${TDEE_GOAL_LABELS[activeGoal]}`
+            ? `Пресет: ${goalLabelById[activeGoal]}`
             : "Підказати з пресету"}
           <span
             aria-hidden
@@ -277,7 +287,7 @@ export function DailyPlanGoalSelectors({
                       )}
                     >
                       <div className="text-style-label">
-                        {TDEE_GOAL_LABELS[goal]}
+                        {goalLabelById[goal]}
                       </div>
                       <div className="text-style-caption text-subtle mt-0.5">
                         <Measure value={targets.kcal} unit="ккал" /> · Б{" "}
@@ -295,17 +305,20 @@ export function DailyPlanGoalSelectors({
             ) : (
               <div className="px-3 py-2 text-style-caption text-subtle border-b border-line">
                 <div className="text-text">{missingHint}</div>
-                <Link
-                  to={PROFILE_PATH}
+                <button
+                  type="button"
                   // Тач-таргет: сам текст має 16px висоти, чого мало для
                   // пальця (WCAG 2.5.5). `inline-flex` + px-флор під coarse
                   // pointer — той самий прийом, що в `Button`/`Input`
                   // (браузерний аудит 2026-08-26: було 108×16).
                   className="mt-1 inline-flex items-center pointer-coarse:min-h-[44px] text-nutrition-strong dark:text-nutrition underline"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setNormOpen(true);
+                  }}
                 >
                   {TDEE_COPY.profileLink}
-                </Link>
+                </button>
               </div>
             )}
             <button
@@ -339,6 +352,7 @@ export function DailyPlanGoalSelectors({
           </div>
         )}
       </div>
+      <MyNormSheet open={normOpen} onClose={() => setNormOpen(false)} />
     </div>
   );
 }

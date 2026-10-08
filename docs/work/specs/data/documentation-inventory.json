@@ -3994,6 +3994,34 @@
       "canonical_owner": "docs/work/specs/audits/verification/README.md"
     },
     {
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/handoff.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl",
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-after-fix.jsonl"
+    },
+    {
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl",
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/harness-before-fix.jsonl"
+    },
+    {
+      "old_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json",
+      "new_path": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json"
+    },
+    {
       "old_path": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/handoff.md",
       "new_path": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/handoff.md",
       "action": "keep",
@@ -4426,6 +4454,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/nutrition-hero-day-strip.md"
+    },
+    {
+      "old_path": "docs/work/specs/nutrition-norm-without-login.md",
+      "new_path": "docs/work/specs/nutrition-norm-without-login.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/nutrition-norm-without-login.md"
     },
     {
       "old_path": "docs/work/specs/nutrition-plan-cross-device.md",
