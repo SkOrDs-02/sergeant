@@ -1,0 +1,87 @@
+{"at":"2026-10-08T16:01:46.382Z","run":"q554x","phase":"meta","check":"run=q554x db=sergeant_verify email=verify_q554x@example.com","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:01:47.518Z","run":"q554x","phase":"P1-anon-reload","check":"анонімність: /api/me","verdict":"pass","detail":"HTTP 401"}
+{"at":"2026-10-08T16:01:52.930Z","run":"q554x","phase":"P1-anon-reload","check":"finyk: створити витрату","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:01:56.025Z","run":"q554x","phase":"P1-anon-reload","check":"nutrition: створити продукт у коморі","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:01:59.459Z","run":"q554x","phase":"P1-anon-reload","check":"routine: створити звичку","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:02.453Z","run":"q554x","phase":"P1-anon-reload","check":"fizruk: запис ваги","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:02.465Z","run":"q554x","phase":"P1-anon-reload","check":"SW activated перед reload","verdict":"pass","detail":"controlling"}
+{"at":"2026-10-08T16:02:03.781Z","run":"q554x","phase":"P1-anon-reload","check":"finyk після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:04.758Z","run":"q554x","phase":"P1-anon-reload","check":"nutrition після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:05.726Z","run":"q554x","phase":"P1-anon-reload","check":"routine після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:06.687Z","run":"q554x","phase":"P1-anon-reload","check":"fizruk після reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:07.254Z","run":"q554x","phase":"P1-anon-reload","check":"profile: сторінка доступна аноніму?","verdict":"pass","detail":"http://127.0.0.1:4173/sign-in"}
+{"at":"2026-10-08T16:02:11.451Z","run":"q554x","phase":"P2-anon-to-account","check":"тост «Дані перенесено»","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:11.468Z","run":"q554x","phase":"P2-anon-to-account","check":"userId=X5uDlnOnssOipUGTVninGYmALbRJXjDM","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:11.521Z","run":"q554x","phase":"P2-anon-to-account","check":"server: finyk F1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:02:11.574Z","run":"q554x","phase":"P2-anon-to-account","check":"server: nutrition N1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:02:11.630Z","run":"q554x","phase":"P2-anon-to-account","check":"server: routine R1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:02:11.680Z","run":"q554x","phase":"P2-anon-to-account","check":"server: fizruk Z1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:02:15.735Z","run":"q554x","phase":"P2-anon-to-account","check":"profile: додати факт у памʼять","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:15.791Z","run":"q554x","phase":"P2-anon-to-account","check":"server: profile M1","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:02:19.217Z","run":"q554x","phase":"P2-anon-to-account","check":"KV без дзеркала: обрати вкладку «Статистика»","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:20.628Z","run":"q554x","phase":"P2-anon-to-account","check":"UI після reload: finyk","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:22.634Z","run":"q554x","phase":"P2-anon-to-account","check":"UI після reload: routine","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:24.045Z","run":"q554x","phase":"P2-anon-to-account","check":"UI після reload: memory","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:25.434Z","run":"q554x","phase":"P2-anon-to-account","check":"UI після reload: KV-вкладка Рутини на місці","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:34.285Z","run":"q554x","phase":"P3-device-B-pull","check":"B: finyk F1","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:35.671Z","run":"q554x","phase":"P3-device-B-pull","check":"B: nutrition N1","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:36.967Z","run":"q554x","phase":"P3-device-B-pull","check":"B: routine R1","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:38.292Z","run":"q554x","phase":"P3-device-B-pull","check":"B: fizruk 81.2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:39.732Z","run":"q554x","phase":"P3-device-B-pull","check":"B: memory M1","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:43.208Z","run":"q554x","phase":"P3-device-B-pull","check":"B: KV-вкладка Рутини лишилась локальною на A","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:02:56.067Z","run":"q554x","phase":"P3-device-B-pull","check":"B: KV-вкладка Рутини переживає reload","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:00.673Z","run":"q554x","phase":"P4-offline","check":"offline: finyk F2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:04.513Z","run":"q554x","phase":"P4-offline","check":"offline: nutrition N2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:08.457Z","run":"q554x","phase":"P4-offline","check":"offline: routine R2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:11.865Z","run":"q554x","phase":"P4-offline","check":"offline: fizruk Z2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:15.502Z","run":"q554x","phase":"P4-offline","check":"offline: memory M2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:15.517Z","run":"q554x","phase":"P4-offline","check":"offline: індикатор черги видно","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:15.570Z","run":"q554x","phase":"P4-offline","check":"server НЕ має F2 поки офлайн","verdict":"pass","detail":"server rows=0"}
+{"at":"2026-10-08T16:03:15.868Z","run":"q554x","phase":"P4-offline","check":"offline reload: застосунок відкривається","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:17.042Z","run":"q554x","phase":"P4-offline","check":"offline reload: finyk F2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:18.495Z","run":"q554x","phase":"P4-offline","check":"offline reload: nutrition N2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:19.868Z","run":"q554x","phase":"P4-offline","check":"offline reload: routine R2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:21.147Z","run":"q554x","phase":"P4-offline","check":"offline reload: fizruk 82.3","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:22.483Z","run":"q554x","phase":"P4-offline","check":"offline reload: memory M2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:23.375Z","run":"q554x","phase":"P4-offline","check":"online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:23.432Z","run":"q554x","phase":"P4-offline","check":"server: finyk F2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:03:23.491Z","run":"q554x","phase":"P4-offline","check":"server: nutrition N2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:03:23.564Z","run":"q554x","phase":"P4-offline","check":"server: routine R2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:03:23.631Z","run":"q554x","phase":"P4-offline","check":"server: fizruk Z2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:03:23.697Z","run":"q554x","phase":"P4-offline","check":"server: memory M2","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:03:23.762Z","run":"q554x","phase":"P4-offline","check":"server: F2 без дубля","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:26.194Z","run":"q554x","phase":"P4-offline","check":"B після reload: finyk F2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:27.787Z","run":"q554x","phase":"P4-offline","check":"B після reload: nutrition N2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:29.197Z","run":"q554x","phase":"P4-offline","check":"B після reload: routine R2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:32.136Z","run":"q554x","phase":"P4-offline","check":"B після reload: fizruk 82.3","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:33.593Z","run":"q554x","phase":"P4-offline","check":"B після reload: memory M2","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:37.731Z","run":"q554x","phase":"P5-edit-delete-propagation","check":"B: перейменувати F1","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:41.395Z","run":"q554x","phase":"P5-edit-delete-propagation","check":"B: видалити R1","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:41.510Z","run":"q554x","phase":"P5-edit-delete-propagation","check":"B: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:41.598Z","run":"q554x","phase":"P5-edit-delete-propagation","check":"server: F1-ed є","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:03:41.685Z","run":"q554x","phase":"P5-edit-delete-propagation","check":"server: R1 soft-deleted","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:44.732Z","run":"q554x","phase":"P5-edit-delete-propagation","check":"A: бачить F1-ed","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:45.416Z","run":"q554x","phase":"P5-edit-delete-propagation","check":"A: R1 зник","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:50.994Z","run":"q554x","phase":"P6-lww-conflict","check":"A offline: R2 → R2-A","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:56.523Z","run":"q554x","phase":"P6-lww-conflict","check":"B offline (пізніше): R2 → R2-B","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:57.398Z","run":"q554x","phase":"P6-lww-conflict","check":"A online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:58.271Z","run":"q554x","phase":"P6-lww-conflict","check":"B online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:03:58.378Z","run":"q554x","phase":"P6-lww-conflict","check":"server: переміг пізніший запис (R2-B)","verdict":"pass","detail":"Vq554x R2-B"}
+{"at":"2026-10-08T16:04:01.091Z","run":"q554x","phase":"P6-lww-conflict","check":"A сходиться до R2-B","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:02.395Z","run":"q554x","phase":"P6-lww-conflict","check":"B сходиться до R2-B","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:02.877Z","run":"q554x","phase":"P6-lww-conflict","check":"A: R2-A більше не видно","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:04.063Z","run":"q554x","phase":"P7-two-tabs","check":"tab2: екран «уже відкрито в іншій вкладці»","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:04.508Z","run":"q554x","phase":"P7-two-tabs","check":"tab2: «Працювати тут» переносить роботу","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:04.540Z","run":"q554x","phase":"P7-two-tabs","check":"tab1: тепер заблокована","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:10.456Z","run":"q554x","phase":"P7-two-tabs","check":"tab2: створити витрату F4","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:15.733Z","run":"q554x","phase":"P7-two-tabs","check":"tab2: створити звичку R4","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:18.838Z","run":"q554x","phase":"P7-two-tabs","check":"tab1 розблокувалась, коли до неї повернулись","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:21.052Z","run":"q554x","phase":"P7-two-tabs","check":"tab1 після reload: F4","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:22.949Z","run":"q554x","phase":"P7-two-tabs","check":"tab1 після reload: R4","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:04:23.019Z","run":"q554x","phase":"P7-two-tabs","check":"server: F4","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:04:23.075Z","run":"q554x","phase":"P7-two-tabs","check":"server: R4","verdict":"pass","detail":"server rows=1"}
+{"at":"2026-10-08T16:05:02.760Z","run":"q554x","phase":"P8-logout-pending","check":"offline: F3","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:05:19.366Z","run":"q554x","phase":"P8-logout-pending","check":"показано «Є незбережені записи»","verdict":"fail","detail":"Error: expect(locator).toBeVisible() failed |  | Locator: getByText('Є незбережені записи') | shot=/tmp/claude-0/-home-user-sergeant/d70e4904-69b1-4c92-b1bd-68ec0372863b/scratchpad/pw-durability/fail-01.png"}
+{"at":"2026-10-08T16:05:39.418Z","run":"q554x","phase":"P8-logout-pending","check":"«Залишитись» лишає сесію","verdict":"fail","detail":"TimeoutError: locator.click: Timeout 20000ms exceeded. | Call log: |   - waiting for getByRole('button', { name: 'Залишитись' }) | shot=/tmp/claude-0/-home-user-sergeant/d70e4904-69b1-4c92-b1bd-68ec0372863b/scratchpad/pw-durability/fail-02.png"}
+{"at":"2026-10-08T16:05:39.458Z","run":"q554x","phase":"P8-logout-pending","check":"online: черга спорожніла","verdict":"pass","detail":""}
+{"at":"2026-10-08T16:06:23.902Z","run":"q554x","phase":"P8-logout-pending","check":"server: F3","verdict":"fail","detail":"Error: expect(received).toBe(expected) // Object.is equality |  | Expected: 1 | shot=/tmp/claude-0/-home-user-sergeant/d70e4904-69b1-4c92-b1bd-68ec0372863b/scratchpad/pw-durability/fail-03.png"}
