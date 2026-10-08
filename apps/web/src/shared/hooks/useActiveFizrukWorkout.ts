@@ -78,15 +78,15 @@ export function useActiveFizrukWorkout(): string | null {
     };
   }, []);
 
-  const { id, stale } = useMemo(
-    () => readActiveId(),
+  const { id, stale } = useMemo(() => {
     // Both entries are version tokens for the external stores the read
     // touches — the SQLite warm cache and the localStorage pointer. The read
-    // takes no arguments, so the rule cannot see that they are the whole
-    // point of re-running it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- ефект перезапускається саме на «тік» після запису, який правило не бачить
-    [sqliteTick, storageEpoch],
-  );
+    // takes no arguments, so they are marked as used explicitly: they are the
+    // whole point of re-running it.
+    void sqliteTick;
+    void storageEpoch;
+    return readActiveId();
+  }, [sqliteTick, storageEpoch]);
 
   // Dropping the dead pointer is a write, so it stays out of render.
   useEffect(() => {

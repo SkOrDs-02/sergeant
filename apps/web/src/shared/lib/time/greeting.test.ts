@@ -132,4 +132,29 @@ describe("formatKyivNominativeDate", () => {
     const result = formatKyivNominativeDate();
     expect(result).toContain(",");
   });
+
+  it("renders the exact nominative weekday and genitive month (2026-01-15)", () => {
+    setKyivHour(12);
+    // 2026-01-15 is a Thursday; weekday nominative + capitalized, month genitive.
+    expect(formatKyivNominativeDate()).toBe("Четвер, 15 січня");
+  });
+
+  it("uses the Kyiv calendar month, not the next/previous one", () => {
+    vi.setSystemTime(new Date("2026-07-04T09:00:00Z")); // Saturday, Kyiv 12:00
+    expect(formatKyivNominativeDate()).toBe("Субота, 4 липня");
+  });
+
+  it("returns an empty string when Intl formatting throws", () => {
+    setKyivHour(12);
+    const spy = vi
+      .spyOn(Date.prototype, "toLocaleDateString")
+      .mockImplementation(() => {
+        throw new RangeError("boom");
+      });
+    try {
+      expect(formatKyivNominativeDate()).toBe("");
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });

@@ -120,6 +120,15 @@ function pageHtml(route, meta) {
       // Локальний білд без SITE_URL: absoluteUrlMeta тегів не додав.
       html = html.replace("</head>", `  ${ogImage}\n    ${twImage}\n  </head>`);
     }
+    // Per-route картинка показує заголовок і опис маршруту
+    // (`generate-og.mjs`), тож і alt той самий. Спільний alt з index.html
+    // описував og.png головної і на 27 сторінках брехав про картинку
+    // (аудит сайту 2026-10-08, S11).
+    html = replaceTag(
+      html,
+      tag('property="og:image:alt"'),
+      `<meta property="og:image:alt" content="${esc(meta.title)}" />`,
+    );
   }
 
   // На початок `<head>`, а не перед `</head>`: у кінці preload опиняється

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import ROUTE_META_JSON from "./routeMeta.json";
-import { absolutizeJsonLd, withBreadcrumb } from "./jsonLd";
+import { absolutizeJsonLd, enrichJsonLd, withBreadcrumb } from "./jsonLd";
 import { reportSsgJsonLd } from "./ssgJsonLd";
 
 /**
@@ -39,9 +39,12 @@ function upsertMeta(name: string, content: string) {
 
 /**
  * Per-page SEO. Статичний HTML кожного маршруту вже несе title, description
- * і JSON-LD – їх кладе білд (`postbuild-seo.mjs` + `prerender.mjs`). Цей хук
- * тримає те саме для клієнтської навігації, коли сторінка змінюється без
- * перезавантаження і краулер із виконанням JS дивиться на живий DOM.
+ * і JSON-LD – їх кладе білд (`postbuild-seo.mjs` + `prerender.mjs`). Клієнтської
+ * навігації на сайті немає (App.tsx: кожен перехід – повне завантаження), тож
+ * у проді хук лише підтверджує title і description. JSON-LD він дописує тільки
+ * туди, де пререндеру не було (dev-сервер): до 2026-10-08 вставка йшла завжди,
+ * і краулер із виконанням JS бачив на кожній сторінці два однакові блоки,
+ * зокрема два `FAQPage` на /pytannya (аудит сайту 2026-10-08, S4).
  */
 export function usePageMeta({ title, description, noindex, jsonLd }: PageMeta) {
   // SSG-прохід (entry-server): ефекти не виконуються, тож jsonLd сторінки
@@ -55,14 +58,20 @@ export function usePageMeta({ title, description, noindex, jsonLd }: PageMeta) {
     upsertMeta("description", description);
     if (noindex) upsertMeta("robots", "noindex");
 
-    if (jsonLd) {
+    const prerendered = document.head.querySelector(
+      'script[type="application/ld+json"]',
+    );
+    if (jsonLd && !prerendered) {
       const script = document.createElement("script");
       script.type = "application/ld+json";
       // Той самий прохід, що й у SSG: url і logo пишуться відносними, а в
       // розмітку мають потрапити абсолютними.
       script.textContent = JSON.stringify(
         absolutizeJsonLd(
-          withBreadcrumb(jsonLd, window.location.pathname),
+          withBreadcrumb(
+            enrichJsonLd(jsonLd, window.location.pathname),
+            window.location.pathname,
+          ),
           window.location.origin,
         ),
       );

@@ -1594,7 +1594,7 @@ psql: `select table_name, op, row from sync_op_log where row->>'id' in (select r
 
 ### `priv-27` [low] Лендінг шле в PostHog незадекларовані $$heatmap і $web_vitals і вантажить три віддалені скрипти: збором керує remote config спільного проєкту
 
-- **Стан:** відкрито
+- **Стан:** закрито 2026-10-08 ([аудит сайту](../2026-10-08-site-audit.md) T2/T3, PR #1414)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** landing: аналітика
 - **Де:** apps/landing/src/lib/analytics.ts:1-12, 48-70; apps/landing/src/pages/PrivacyPage.tsx:44-50
 - **Першопричина:** posthog.init лендінга не задає enable_heatmaps, capture_performance, capture_dead_clicks і disable_surveys. Тому поведінку визначає config.js проєкту PostHog, спільного з apps/web: там увімкнено heatmaps з captureMode 'all' і web_vitals.
@@ -1644,7 +1644,7 @@ node <scratch>/agents/client-static-landing-shell-mobile/landing-ph.mjs (route-�
 
 ### `priv-28` [low] Політика лендінга стверджує, що код у deep link зникає і візит неможливо пов'язати з людиною, хоча ref зберігається поруч із Telegram-ідентичністю
 
-- **Стан:** відкрито
+- **Стан:** закрито 2026-10-08 ([аудит сайту](../2026-10-08-site-audit.md) T2/T3, PR #1414)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** landing + server: Telegram waitlist
 - **Де:** apps/landing/src/pages/PrivacyPage.tsx:45-58; apps/server/src/modules/telegram/waitlistBot.ts:305-318; apps/server/src/routes/telegram-webhook.ts:299-318; apps/landing/src/components/TelegramCta.tsx:56-63
 - **Першопричина:** Бот безстроково записує start_payload = &lt;placement&gt;_&lt;ref&gt; у telegram_waitlist разом із chat_id, username і first_name, а той самий ref іде в PostHog-подіях лендінга. Зшивання «лендінг ↔ Telegram» закладене дизайном атрибуції, а текст політики писали під анонімну модель.

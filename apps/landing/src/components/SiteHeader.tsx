@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Wordmark from "./Wordmark";
+import { useCurrentRoute } from "../lib/currentRoute";
 
 /**
  * У шапці стоїть тільки те, що відповідає на «що це вміє», плюс єдина дія.
@@ -41,6 +42,7 @@ const MOBILE_GROUPS = [
       { href: "/stan", label: "Доповідь про стан" },
       { href: "/pytannya", label: "Питання" },
       { href: "/about", label: "Про проєкт" },
+      { href: "/contact", label: "Звʼязок" },
     ],
   },
   // Третя група – питання довіри, а не другорядна юридика: людина, що
@@ -59,6 +61,9 @@ const MOBILE_GROUPS = [
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const current = useCurrentRoute();
+  const currentProps = (href: string) =>
+    href === current ? ({ "aria-current": "page" } as const) : {};
   const headerRef = useRef<HTMLElement>(null);
 
   // Відкрите меню має закриватись і без повторного тапу по бургеру:
@@ -81,10 +86,10 @@ export default function SiteHeader() {
   }, [open]);
 
   const navLink =
-    "transition hover:text-foreground-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+    "inline-flex min-h-11 items-center underline-offset-8 transition hover:text-foreground-strong aria-[current=page]:text-foreground-strong aria-[current=page]:underline aria-[current=page]:decoration-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
   const mobileNavLink =
-    "flex min-h-11 items-center border-t border-cardline text-base font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+    "flex min-h-11 items-center border-t border-cardline text-base font-semibold text-foreground underline-offset-4 aria-[current=page]:underline aria-[current=page]:decoration-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
   return (
     <header
@@ -93,26 +98,36 @@ export default function SiteHeader() {
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
         <Wordmark />
+        {/* Десктопна шапка з `lg`, а не з `md`: на 768–1023 шість пунктів і
+            кнопка не вміщались, і логотип злипався з «Гроші» (аудит сайту
+            2026-10-08, V1). На планшеті працює бургер. */}
         <nav
           aria-label="Головна навігація"
-          className="hidden items-center gap-7 text-sm font-semibold text-foreground md:flex"
+          className="hidden items-center gap-7 text-sm font-semibold text-foreground lg:flex print:hidden"
         >
           {PAGE_ITEMS.map((item) => (
-            <a key={item.href} href={item.href} className={navLink}>
+            <a
+              key={item.href}
+              href={item.href}
+              className={navLink}
+              {...currentProps(item.href)}
+            >
               {item.label}
             </a>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 print:hidden">
           <a
             href="/beta"
-            className="hidden min-h-11 items-center bg-foreground-strong px-5 py-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink md:inline-flex"
+            {...currentProps("/beta")}
+            className="hidden min-h-11 items-center bg-foreground-strong px-5 py-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:inline-flex"
           >
             Стати в чергу
           </a>
           <a
             href="/beta"
-            className="inline-flex min-h-11 items-center bg-foreground-strong px-4 py-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink md:hidden"
+            {...currentProps("/beta")}
+            className="inline-flex min-h-11 items-center bg-foreground-strong px-4 py-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:hidden"
           >
             У чергу
           </a>
@@ -122,7 +137,7 @@ export default function SiteHeader() {
             aria-label={open ? "Закрити меню" : "Відкрити меню"}
             aria-controls="mobile-nav"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong transition hover:bg-cardline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink md:hidden"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong transition hover:bg-cardline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:hidden"
           >
             <svg
               width="22"
@@ -147,7 +162,7 @@ export default function SiteHeader() {
           <nav
             id="mobile-nav"
             aria-label="Мобільна навігація"
-            className="absolute left-0 right-0 top-full z-10 flex flex-col gap-0 border-b-2 border-foreground-strong bg-background px-5 pb-4 shadow-lg sm:px-8 md:hidden"
+            className="absolute left-0 right-0 top-full z-10 flex flex-col gap-0 border-b-2 border-foreground-strong bg-background px-5 pb-4 shadow-lg sm:px-8 lg:hidden"
           >
             {MOBILE_GROUPS.map((group) => (
               <div key={group.label} className="flex flex-col">
@@ -160,19 +175,13 @@ export default function SiteHeader() {
                     href={item.href}
                     className={mobileNavLink}
                     onClick={() => setOpen(false)}
+                    {...currentProps(item.href)}
                   >
                     {item.label}
                   </a>
                 ))}
               </div>
             ))}
-            <a
-              href="/beta"
-              onClick={() => setOpen(false)}
-              className="mt-4 inline-flex min-h-12 items-center justify-center bg-foreground-strong px-5 py-2.5 font-display text-xs font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-            >
-              Стати в чергу
-            </a>
           </nav>
         )}
       </div>

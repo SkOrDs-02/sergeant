@@ -5,6 +5,7 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
 import { EXPORT_CLAIM } from "../content/exportClaim";
+import { NO_SALE_CLAIM } from "../content/noSaleClaim";
 import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 const link =
@@ -36,8 +37,7 @@ const QA: { q: string; why: string; sergeant: ReactNode }[] = [
   {
     q: "Де сервери і хто оператор",
     why: "Юрисдикція визначає правила поводження з даними, а імʼя оператора має бути написане на сайті звичайним текстом.",
-    sergeant:
-      "Європа, Hetzner. Частина даних живе локально на твоєму пристрої, продажу чи передачі стороннім немає.",
+    sergeant: `Сервери в Європі (Hetzner). Продукт робить одна людина, ${AUTHOR_NAME}; юридичної особи поки немає, про це на сторінці «Звʼязок». Частина даних живе локально на твоєму пристрої. ${NO_SALE_CLAIM}; щоб працював Сержант, частина даних їде до стороннього AI-провайдера.`,
   },
   {
     q: "Чи можна забрати свої дані",
@@ -54,9 +54,9 @@ const QA: { q: string; why: string; sergeant: ReactNode }[] = [
         <a href="/guides/monobank" className={link}>
           гайді про підключення
         </a>
-        , повна таблиця доступів – на сторінці{" "}
+        , решта доступів і сховище – на сторінці{" "}
         <a href="/data" className={link}>
-          Твої дані
+          «Твої дані»
         </a>
         .
       </>
@@ -102,7 +102,7 @@ export default function GuideBankBezpekaPage() {
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
         <div>
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Гайди · Фінанси
+            Гайди <span className="font-sans">·</span> Фінанси
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
             Чи безпечно давати застосунку доступ до банку: що перевірити перед

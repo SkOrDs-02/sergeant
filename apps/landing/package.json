@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/postbuild-seo.mjs && node scripts/prerender.mjs",
+    "content:hashes": "node scripts/update-content-hashes.mjs",
     "dev": "vite --port 3100 --host 0.0.0.0",
     "lighthouse": "lhci autorun --config=lighthouserc.json",
     "lint": "eslint --cache .",

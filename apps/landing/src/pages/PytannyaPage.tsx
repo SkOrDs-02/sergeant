@@ -5,6 +5,10 @@ import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 import TelegramCta from "../components/TelegramCta";
 import UpdatedOn from "../components/UpdatedOn";
 
+/** Перша половина питань – ліва колонка, друга – права; на телефоні одна за одною. */
+const HALF = Math.ceil(FAQ_ITEMS.length / 2);
+const FAQ_COLUMNS = [FAQ_ITEMS.slice(0, HALF), FAQ_ITEMS.slice(HALF)];
+
 export default function PytannyaPage() {
   usePageMeta({
     ...ROUTE_META["/pytannya"],
@@ -28,7 +32,7 @@ export default function PytannyaPage() {
       </h1>
       <p className="mt-5 max-w-xl leading-relaxed text-muted">
         Коротко про те, що питають найчастіше. Якщо твого питання тут немає,
-        напиши в Telegram, і воно тут зʼявиться.
+        напиши в Telegram.
       </p>
       <p className="mt-3 text-sm text-subtle">
         Оновлено{" "}
@@ -38,39 +42,46 @@ export default function PytannyaPage() {
         />
       </p>
 
+      {/* Дві незалежні колонки, а не сітка: у сітці відкрита відповідь
+          розтягувала весь рядок і лишала діру в сусідній колонці, а Tab
+          ходив зигзагом (аудит сайту 2026-10-08, V9). */}
       <div className="mt-10 grid gap-x-12 sm:grid-cols-2">
-        {FAQ_ITEMS.map((item) => (
-          <details
-            key={item.q}
-            name="faq"
-            className="group border-t border-cardline"
-            onToggle={(e) => {
-              if (e.currentTarget.open)
-                track(ANALYTICS_EVENTS.LANDING_FAQ_OPENED, {
-                  question: item.q,
-                  locale: LANDING_LOCALE,
-                });
-            }}
-          >
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-bold text-foreground-strong transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&::-webkit-details-marker]:hidden">
-              <h2>{item.q}</h2>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-                className="shrink-0 stroke-foreground-strong transition-transform group-open:rotate-45 motion-reduce:transition-none"
-                strokeWidth="2"
-                strokeLinecap="round"
+        {FAQ_COLUMNS.map((column, i) => (
+          <div key={i}>
+            {column.map((item) => (
+              <details
+                key={item.q}
+                name="faq"
+                className="group border-t border-cardline"
+                onToggle={(e) => {
+                  if (e.currentTarget.open)
+                    track(ANALYTICS_EVENTS.LANDING_FAQ_OPENED, {
+                      question: item.q,
+                      locale: LANDING_LOCALE,
+                    });
+                }}
               >
-                <path d="M8 2 v12 M2 8 h12" />
-              </svg>
-            </summary>
-            <p className="max-w-2xl pb-5 text-sm leading-relaxed text-muted">
-              {item.a}
-            </p>
-          </details>
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-bold text-foreground-strong transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&::-webkit-details-marker]:hidden">
+                  <h2>{item.q}</h2>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                    className="shrink-0 stroke-foreground-strong transition-transform group-open:rotate-45 motion-reduce:transition-none"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <path d="M8 2 v12 M2 8 h12" />
+                  </svg>
+                </summary>
+                <p className="max-w-2xl pb-5 text-sm leading-relaxed text-muted">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
         ))}
       </div>
 

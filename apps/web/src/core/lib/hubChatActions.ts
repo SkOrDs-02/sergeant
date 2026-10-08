@@ -192,10 +192,39 @@ export function executeAction(action: ChatAction): string {
  * routine — `routinePersistence`; їхнє підтвердження довговічності, як і раніше,
  * чекається паралельно в `settle`, а не блокує наступні виклики.
  */
+/** Стеля очікування черги Їжі між діями батча (мс). */
+export const NUTRITION_IDLE_TIMEOUT_MS = 10_000;
+
+/**
+ * Текст для дій, які батч не виконав, бо черга Їжі не звільнилась за
+ * {@link NUTRITION_IDLE_TIMEOUT_MS}: наступна дія читала б застарілий знімок.
+ */
+const NUTRITION_QUEUE_STALLED =
+  "Дію не виконано: попередній запис Їжі ще зберігається. " +
+  "Скажи про це користувачу й попроси повторити за кілька секунд. " +
+  "НЕ стверджуй, що дію виконано.";
+
+/** `true`, якщо черга Їжі звільнилась вчасно; `false` на тайм-ауті. */
+async function waitNutritionIdle(): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      nutritionDualWriteIdle().then(() => true),
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), NUTRITION_IDLE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 export async function executeActions(
   actions: ReadonlyArray<ChatAction>,
 ): Promise<ExecutedActionResult[]> {
   const pending: Promise<ExecutedActionResult>[] = [];
+  // Черга Їжі зависла: решта sync-дій батча не виконується (див. waitNutritionIdle).
+  let nutritionStalled = false;
   for (const action of actions) {
     const startedAt = performance.now();
     const withLatency = (r: Omit<ExecutedActionResult, "latencyMs">) => ({
@@ -236,10 +265,25 @@ export async function executeActions(
       );
       continue;
     }
+    if (nutritionStalled) {
+      pending.push(
+        Promise.resolve(
+          withLatency({
+            name: action.name,
+            result: NUTRITION_QUEUE_STALLED,
+            ok: false,
+          }),
+        ),
+      );
+      continue;
+    }
     const { value: out } = captureRoutineWrites(() => dispatch(action));
     // Мутація Їжі лишила запис у черзі dual-write → дочекатися, поки кеш його
-    // побачить, і лише тоді віддати керування наступній дії батча.
-    if (hasPendingNutritionDualWrites()) await nutritionDualWriteIdle();
+    // побачить, і лише тоді віддати керування наступній дії батча. Очікування
+    // обмежене: завислий SQLite не має вішати весь хід чату.
+    if (hasPendingNutritionDualWrites() && !(await waitNutritionIdle())) {
+      nutritionStalled = true;
+    }
     pending.push(settle(action.name, out, out.ok).then(withLatency));
   }
   return Promise.all(pending);

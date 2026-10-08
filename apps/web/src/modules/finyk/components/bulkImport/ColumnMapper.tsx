@@ -104,7 +104,13 @@ export function ColumnMapper({
             id="col-amount"
             aria-describedby="col-amount-hint"
             value={amountCol}
-            onChange={(e) => setAmountCol(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setAmountCol(next);
+              // Одна колонка не може бути і дебетом, і кредитом: сервер тоді
+              // мовчки читав би її як суму зі знаком.
+              if (next === creditCol) setCreditCol("");
+            }}
           >
             {headers.map((h) => (
               <option key={h} value={h}>
@@ -127,11 +133,13 @@ export function ColumnMapper({
             onChange={(e) => setCreditCol(e.target.value)}
           >
             <option value="">немає</option>
-            {headers.map((h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
-            ))}
+            {headers
+              .filter((h) => h !== amountCol)
+              .map((h) => (
+                <option key={h} value={h}>
+                  {h}
+                </option>
+              ))}
           </Select>
         </div>
         <div>

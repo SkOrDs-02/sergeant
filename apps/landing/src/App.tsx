@@ -32,6 +32,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "./lib/analytics";
+import { CurrentRouteContext } from "./lib/currentRoute";
 
 /**
  * Маршрути сайту. Лендінг лишається MPA-простим: без client-side router,
@@ -107,19 +108,22 @@ export default function App() {
   usePageview(pathname);
 
   useEffect(() => {
-    // Якірні переходи (/#faq) мають довезти до секції. Нативний скрол по хешу
-    // відбувається ДО маунта React-контенту і промахується, тож докручуємо
-    // самі після першого кадру.
+    // Якірні переходи (/#faq) мають довезти до секції. Докручуємо самі після
+    // першого кадру на випадок, коли нативний скрол по хешу промахнувся
+    // (dev-сервер без пререндеру). Без хеша скрол не чіпаємо: до 2026-10-08
+    // тут стояв `scrollTo(0, 0)`, і людину, що встигла проскролити до
+    // виконання JS, кидало нагору (аудит сайту 2026-10-08, F1).
     const hash = window.location.hash.slice(1);
-    if (!hash) {
-      window.scrollTo(0, 0);
-      return;
-    }
+    if (!hash) return;
     requestAnimationFrame(() => {
       document.getElementById(hash)?.scrollIntoView();
     });
   }, []);
 
   const Page = ROUTES[pathname] ?? NotFoundPage;
-  return <Page />;
+  return (
+    <CurrentRouteContext.Provider value={pathname}>
+      <Page />
+    </CurrentRouteContext.Provider>
+  );
 }

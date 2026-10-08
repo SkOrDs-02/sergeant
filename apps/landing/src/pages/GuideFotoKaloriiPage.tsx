@@ -4,6 +4,7 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
 import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
+import { FREE_LIMITS } from "../content/freeLimitsClaim";
 
 const VISION = [
   {
@@ -20,7 +21,7 @@ const VISION = [
   },
   {
     what: "Олія і вершкове масло",
-    how: "Майже ніяк. Ложка олії важить 120 ккал, і на знімку її не існує.",
+    how: "Майже ніяк. Ложка олії – це близько 120 ккал, і на знімку її не існує.",
   },
   {
     what: "Соус чи заправка",
@@ -40,7 +41,7 @@ const STEPS = [
 ];
 
 const SHORT_ANSWER =
-  "Оцінити можна, і за секунди: модель впізнає страву й дає стартові КБЖВ. Слабке місце: те, чого на знімку фізично немає, вага порції, олія зі сковорідки, цукор у соусі. Тому Сержант не зупиняється на кадрі: коли непевний, він ставить одне-три короткі уточнення і перераховує цифри з твоїх відповідей. А для страв, які ти їси щодня, точність добирають ваги або збережений рецепт.";
+  "Оцінити можна, і за секунди: модель впізнає страву й дає стартові КБЖВ. Слабке місце: те, чого на знімку фізично немає, вага порції, олія зі сковорідки, цукор у соусі. Тому Сержант не зупиняється на кадрі: коли непевний, він ставить до трьох коротких уточнень і перераховує цифри з твоїх відповідей. А для страв, які ти їси щодня, точність добирають ваги або збережений рецепт.";
 
 const link =
   "font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
@@ -76,7 +77,7 @@ export default function GuideFotoKaloriiPage() {
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
         <div>
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Гайди · Харчування
+            Гайди <span className="font-sans">·</span> Харчування
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
             Чи можна порахувати калорії страви з фото – і наскільки це точно
@@ -122,8 +123,8 @@ export default function GuideFotoKaloriiPage() {
             Фото сильне в питанні «що це» і слабке в «скільки».
           </p>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
-            Оцінку Сержант дає одразу, а коли непевний, ставить одне-три короткі
-            питання: скільки грамів у порції, чи була олія, який соус.
+            Оцінку Сержант дає одразу, а коли непевний, ставить до трьох
+            коротких питань: скільки грамів у порції, чи була олія, який соус.
             Відповідаєш одним рядком, і цифри перераховуються. Це закриває рівно
             ті рядки таблиці, де фото сліпе.
           </p>
@@ -171,10 +172,10 @@ export default function GuideFotoKaloriiPage() {
             </li>
           </ol>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
-            Чим частіше ти їси страву, тим вище варто піднятися списком. Борщ,
-            який ти вариш кожні десять днів, заслуговує на рецепт, випадковий
-            обід у кафе піде з фото. Чому пошук спотикається на українських
-            продуктах, розібрано в{" "}
+            Чим частіше ти їси страву, тим вище варто піднятися списком. Страва,
+            яку ти вариш регулярно, заслуговує на рецепт, випадковий обід у кафе
+            піде з фото. Чому пошук спотикається на українських продуктах,
+            розібрано в{" "}
             <a href="/guides/kbzhv" className={link}>
               гайді про КБЖВ
             </a>
@@ -218,8 +219,9 @@ export default function GuideFotoKaloriiPage() {
 
         <section>
           <p className="text-sm text-subtle">
-            AI-розпізнавання фото входить у платний план, штрихкод і ручний
-            запис безкоштовні назавжди. Як влаштоване Харчування –{" "}
+            У безкоштовному плані {FREE_LIMITS.aiPhoto} фото на тиждень, Premium
+            знімає ліміт; штрихкод і ручний запис безкоштовні назавжди. Як
+            влаштоване Харчування –{" "}
             <a href="/yizha" className={link}>
               на сторінці модуля
             </a>

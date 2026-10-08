@@ -7,7 +7,7 @@
 >
 > | Твердження                                                                                                                  | Факт на HEAD (2026-09-17)                                                                                                                                                               |
 > | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-> | Jest test-файлів **148**                                                                                                    | **187** (`find apps/mobile -name '*.test.ts*'` без `node_modules`) — +39 за два місяці попри заморозку гейтів                                                                           |
+> | Jest test-файлів **148**                                                                                                    | **193** (`find apps/mobile -name '*.test.ts*'` без `node_modules`) — +45 відносно 148 (2026-07-20) попри заморозку гейтів                                                               |
 > | `apps/mobile-shell` — **11** test-файлів                                                                                    | **11** ✅                                                                                                                                                                               |
 > | Raw >600 monitor: 3 файли (`routine/…/adapter.ts` 735, `nutrition/…/adapter.ts` 636, `core/dashboard/HubDashboard.tsx` 604) | **2 файли**: `routine/lib/sqliteWriter/adapter.ts` **711**, `nutrition/lib/sqliteWriter/adapter.ts` **649**. `HubDashboard.tsx` вийшов зі списку — **під 600 raw**, рядок прибрано      |
 > | production `: any` / `as unknown as` / `@ts-ignore` = 0                                                                     | **0** ✅ — усі 13 grep-збігів у `apps/mobile/src` це JSDoc-згадки («any thrown error», «without unsafe `as unknown as` double-casts»), не код                                           |
@@ -99,7 +99,7 @@
 | Великі файли (>600 LOC)                  | **Низький / monitor**   | **0** files >600 **effective** LOC. Raw>600 monitor: два sqliteWriter-адаптери (`HubDashboard` вийшов зі списку 2026-09-17 — див. §5).                              |
 | TODO/FIXME маркери                       | **Низький**             | Settings Phase 6 + RoutineSection **closed**; ~4 live blocked (hub Phase 8, HubReports billing/H4, expo-print).                                                     |
 | Observability (Sentry RN)                | **Середній**            | Code ready; DSN provisioning — M7 `external-infra`.                                                                                                                 |
-| Tests — Jest                             | **OK**                  | **187** test-файлів (переміряно 2026-09-17; було 148). Skipped/`xit` — 0. Coverage floor lines **30**.                                                              |
+| Tests — Jest                             | **OK**                  | **193** test-файли (переміряно 2026-10-08; було 148/187). Skipped/`xit` — 0. Coverage floor lines **30**.                                                           |
 | Capacitor coverage                       | **OK**                  | **11** test-файлів у `apps/mobile-shell` (boundary + native bridge supplements).                                                                                    |
 | TypeScript-version drift                 | **OK**                  | `~6.0.3` aligned. Expo SDK 52→53 — M9 `dep-blocked`.                                                                                                                |
 
@@ -252,7 +252,7 @@ Phase 12 scaffold уже готовий.
 > (блок «Оновлено 2026-08-25»). Не заводь PR на «полагодити Detox» чи
 > «підняти mobile coverage», доки заморозку не знято.
 
-- **148 test-файлів** у `apps/mobile` (Jest 29 + `jest-expo` preset; re-audit 2026-07-20).
+- **193 test-файли** у `apps/mobile` (Jest 29 + `jest-expo` preset; переміряно 2026-10-08, було 148/187).
 - **Coverage floor:** lines **30** (`coverage-thresholds.json`) — **без CI-виміру**: `test:coverage:ci` виключає `@sergeant/mobile`, тому floor не гейтить нічого (заморожено, див. шапку).
 - **Detox E2E:** 13 сьютів, лейни лише за `workflow_dispatch` (заморожено, див. шапку).
 - **Skipped tests:** 0.
