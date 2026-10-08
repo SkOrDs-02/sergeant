@@ -18,6 +18,7 @@ import { logger as webLogger } from "@shared/lib";
 
 import { insertGoalPeriod } from "./adapter.goalPeriods.js";
 import { appendPantryEvent } from "./adapter.pantryEvents.js";
+import { itemIdsDivergingFromSqlite } from "./adapter.pantryReconcile.js";
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 
@@ -396,14 +397,23 @@ async function upsertPantry(
   // upsert незмінного рядка бампив би `updated_at` до `clientTs` без пушу, і
   // pull-оп іншого пристрою з міткою між старим `updated_at` та `clientTs`
   // відсікався б як stale (`isStaleLocal`): пристрій назавжди розходився б із
-  // сервером. Незмінена позиція за визначенням дорівнює `prev`, а `prev` - це
-  // warm-кеш, прочитаний із SQLite, тож рядок там уже є з тими самими
-  // значеннями (зсув `sort_order` входить у дельту). Реплей (`keepMissing`) і op
-  // без `changedItemIds` лишаються повним upsert-ом, як раніше.
-  const changedItems =
-    !keepMissing && delta?.changedItemIds
-      ? new Set(delta.changedItemIds)
-      : null;
+  // сервером. Дельта з `prev` не довіряється сама: id у `prev` похідні від
+  // позиції в кеші і можуть не збігатись із id рядків SQLite, а позиція, якої
+  // там немає під цим id, інакше потрапила б під soft-delete нижче. Тому до неї
+  // додається все, що в SQLite відсутнє або відрізняється. Реплей
+  // (`keepMissing`) і op без `changedItemIds` лишаються повним upsert-ом.
+  let changedItems: Set<string> | null = null;
+  if (!keepMissing && delta?.changedItemIds) {
+    changedItems = new Set(delta.changedItemIds);
+    for (const id of await itemIdsDivergingFromSqlite(
+      client,
+      p.id,
+      userId,
+      p.items ?? [],
+    )) {
+      changedItems.add(id);
+    }
+  }
   const enqueuePantryRow =
     !changedItems ||
     delta?.pantryFieldsChanged !== false ||
