@@ -1,3 +1,4 @@
+import type { Request, Response } from "express";
 import type { PoolClient } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -10,10 +11,13 @@ import {
   truncateIntegrationTables,
   type IntegrationHarness,
 } from "../../../test/createIntegrationApp.js";
-import { applyRoutineEntries } from "./applySync.js";
 
 let harness: IntegrationHarness | undefined;
 let dockerAvailable = false;
+// Динамічні імпорти: `db.js` (його тягне й `applySync.js` через `syncV2-core`)
+// читає DATABASE_URL при першому load, а виставляє його `bootIntegrationHarness`.
+let applyRoutineEntries: typeof import("./applySync.js").applyRoutineEntries;
+let syncV2Push: typeof import("../syncV2.js").syncV2Push;
 
 function routineEntryOp(
   kind: SyncV2Op["op"],
@@ -37,6 +41,8 @@ async function withClient<T>(
 beforeAll(async () => {
   try {
     harness = await bootIntegrationHarness({ app: false });
+    ({ applyRoutineEntries } = await import("./applySync.js"));
+    ({ syncV2Push } = await import("../syncV2.js"));
     dockerAvailable = true;
   } catch (e) {
     if (process.env["CI"]) throw e;
@@ -195,6 +201,113 @@ describe("applyRoutineEntries integration", () => {
           t3.toISOString(),
         );
       });
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
+
+  // data-18: гонка першого INSERT того самого id з двох пристроїв. Пристрій A
+  // вставив рядок і ще не закомітився; пристрій B (НОВІШИЙ client_ts) бачить
+  // порожній SELECT, його INSERT блокується на unique-індексі й після коміту A
+  // падає з 23505. Без ретраю в syncV2 B отримував термінальний
+  // `rejected/apply_failed`, і новіша правка губилась назавжди.
+  it(
+    "first-insert race: newer push wins instead of apply_failed (data-18)",
+    async (ctx) => {
+      if (!harness || !dockerAvailable) return ctx.skip();
+      const pool = harness.pool;
+
+      const id = "10000000-0000-4000-8000-0000000000d8";
+      const olderTs = new Date("2026-07-23T08:00:00.000Z");
+      const newerTs = new Date("2026-07-23T09:00:00.000Z");
+      const rowFor = (name: string, ts: Date) => ({
+        id,
+        user_id: "routine-user",
+        name,
+        completed_at: ts.toISOString(),
+      });
+
+      const clientA = await pool.connect();
+      try {
+        // A: вставка без коміту - утримує запис у unique-індексі PK.
+        await clientA.query("BEGIN");
+        await expect(
+          applyRoutineEntries(
+            clientA,
+            routineEntryOp("insert", rowFor("OLDER", olderTs)),
+            "routine-user",
+            olderTs,
+          ),
+        ).resolves.toEqual({ status: "applied" });
+
+        // B: справжній пуш, його INSERT зависає на транзакції A.
+        let body: unknown;
+        const res = {
+          status() {
+            return res;
+          },
+          json(payload: unknown) {
+            body = payload;
+            return res;
+          },
+        } as unknown as Response;
+        const req = {
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert",
+                row: rowFor("NEWER", newerTs),
+                client_ts: newerTs.toISOString(),
+                idempotency_key: "data-18-device-b",
+              },
+            ],
+          },
+          query: {},
+          headers: { "x-origin-device-id": "device-b" },
+          user: { id: "routine-user" },
+        } as unknown as Request;
+        const pushB = syncV2Push(req, res);
+
+        // Чекаємо, поки B справді впреться в lock A (а не просто стартує).
+        const deadline = Date.now() + 15_000;
+        for (;;) {
+          const waiting = await pool.query(
+            `SELECT 1 FROM pg_locks WHERE locktype = 'transactionid' AND NOT granted`,
+          );
+          if (waiting.rowCount) break;
+          if (Date.now() > deadline) {
+            throw new Error("push B never blocked on A's uncommitted insert");
+          }
+          await new Promise((r) => setTimeout(r, 25));
+        }
+
+        await clientA.query("COMMIT");
+        await pushB;
+
+        expect(body).toMatchObject({
+          accepted: 1,
+          results: [{ idempotency_key: "data-18-device-b", status: "applied" }],
+        });
+
+        const stored = await pool.query<{ name: string }>(
+          `SELECT name FROM routine_entries WHERE id = $1`,
+          [id],
+        );
+        expect(stored.rows).toEqual([{ name: "NEWER" }]);
+
+        const log = await pool.query<{
+          status: string;
+          reject_reason: string | null;
+        }>(
+          `SELECT status, reject_reason FROM sync_op_log
+            WHERE user_id = $1 AND idempotency_key = $2`,
+          ["routine-user", "data-18-device-b"],
+        );
+        expect(log.rows).toEqual([{ status: "applied", reject_reason: null }]);
+      } finally {
+        await clientA.query("ROLLBACK").catch(() => {});
+        clientA.release();
+      }
     },
     INTEGRATION_TIMEOUT_MS,
   );
