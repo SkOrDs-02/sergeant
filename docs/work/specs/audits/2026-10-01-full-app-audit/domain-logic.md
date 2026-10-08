@@ -288,7 +288,7 @@ cd /home/user/sergeant && node --import tsx <scratch>/agents/client-static-domai
 
 ### `logic-06` [medium] Виписки з окремими колонками Дебет/Кредит імпортуються навпаки: витрати стають доходом «Зарплата», надходження губляться
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-06-data-31-statement-import (перемикач напряму рядка в BulkReviewTable відкладено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+server: Фінік / імпорт виписок
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:100; apps/web/src/modules/finyk/components/bulkImport/bulkImportRows.ts:184-192; apps/server/src/modules/finyk/import/statementPreview.ts:89-102
 - **Першопричина:** ColumnMapper дає обрати лише одну «Колонку суми (витрати)», а ImportColumnMappingSchema не має поля знаку чи напряму. statementPreview.ts читає значення як суму зі знаком (signed &lt; 0 → expense). Тому додатна колонка Дебет стає доходом, а порожні клітинки відкидаються як unparsed_amount. У таблиці перевірки напрям рядка не редагується.

@@ -60,4 +60,24 @@ describe("parseSignedAmountKopiykas", () => {
   it("округлює копійки від float-дрейфу", () => {
     expect(parseSignedAmountKopiykas("10.1")).toBe(1010);
   });
+
+  it("відкидає hex, експоненту й Infinity замість мовчазної «суми» (data-31)", () => {
+    expect(parseSignedAmountKopiykas("0x10")).toBeNull();
+    expect(parseSignedAmountKopiykas("1e3")).toBeNull();
+    expect(parseSignedAmountKopiykas("-1E3")).toBeNull();
+    expect(parseSignedAmountKopiykas("Infinity")).toBeNull();
+    expect(
+      parseSignedAmountKopiykas("0x10", { decimalComma: true }),
+    ).toBeNull();
+    expect(
+      parseSignedAmountKopiykas("1e3", { decimalComma: false }),
+    ).toBeNull();
+  });
+
+  it("лишає прийнятними звичайні десяткові, знак і float-хвіст з XLSX", () => {
+    expect(parseSignedAmountKopiykas("+1000.5")).toBe(100050);
+    expect(parseSignedAmountKopiykas("-45.5")).toBe(-4550);
+    expect(parseSignedAmountKopiykas("12.300000000000001")).toBe(1230);
+    expect(parseSignedAmountKopiykas("1 234,56 грн")).toBe(123456);
+  });
 });

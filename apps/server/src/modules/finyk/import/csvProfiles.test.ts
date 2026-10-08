@@ -59,10 +59,14 @@ describe("detectCsvProfile — mono", () => {
     expect(detected?.mapping.descriptionColIndex).toBe(1);
   });
 
-  it("dateFormat='DD.MM.YYYY', decimalComma=false", () => {
+  it("dateFormat='DD.MM.YYYY', decimalComma — автодетект (CSV, пересохранений в Excel uk-UA, дає кому)", () => {
     const detected = detectCsvProfile(MONO_HEADERS);
     expect(detected?.mapping.dateFormat).toBe("DD.MM.YYYY");
-    expect(detected?.mapping.decimalComma).toBe(false);
+    expect(detected?.mapping.decimalComma).toBeUndefined();
+  });
+
+  it("creditColIndex: null — автопрофілі читають суму зі знаком", () => {
+    expect(detectCsvProfile(MONO_HEADERS)?.mapping.creditColIndex).toBeNull();
   });
 
   it("currencyColIndex: null — mono amount-колонка вже гарантовано UAH", () => {
@@ -150,6 +154,7 @@ describe("resolveCustomMapping", () => {
     expect(resolved).toEqual({
       dateColIndex: 0,
       amountColIndex: 1,
+      creditColIndex: null,
       descriptionColIndex: 2,
       currencyColIndex: null,
       // Довільний CSV колонками категорії/MCC не розмічений — підказка
@@ -174,6 +179,37 @@ describe("resolveCustomMapping", () => {
     expect(resolved?.dateColIndex).toBe(0);
     expect(resolved?.amountColIndex).toBe(1);
     expect(resolved?.descriptionColIndex).toBe(2);
+  });
+
+  it("резолвить creditCol у creditColIndex (окремі колонки Дебет/Кредит)", () => {
+    const resolved = resolveCustomMapping(["Дата", "Опис", "Дебет", "Кредит"], {
+      dateCol: "Дата",
+      amountCol: "Дебет",
+      creditCol: " кредит ",
+      descriptionCol: "Опис",
+    });
+    expect(resolved?.amountColIndex).toBe(2);
+    expect(resolved?.creditColIndex).toBe(3);
+  });
+
+  it("creditCol, якого немає серед headers, → null; збіг з amountCol → сума зі знаком", () => {
+    const headers = ["Дата", "Опис", "Дебет", "Кредит"];
+    expect(
+      resolveCustomMapping(headers, {
+        dateCol: "Дата",
+        amountCol: "Дебет",
+        creditCol: "Надходження",
+        descriptionCol: "Опис",
+      }),
+    ).toBeNull();
+    expect(
+      resolveCustomMapping(headers, {
+        dateCol: "Дата",
+        amountCol: "Дебет",
+        creditCol: "Дебет",
+        descriptionCol: "Опис",
+      })?.creditColIndex,
+    ).toBeNull();
   });
 
   it("повертає null, якщо колонка mapping не знайдена серед headers", () => {
