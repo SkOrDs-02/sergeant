@@ -664,7 +664,7 @@ syncOpRetry.ts:16-24 («a human triage path … decides»); singleton.ts:689-697
 
 ### `rel-09` [medium] Будь-яка правка активного тренування перезаливає на сервер усю історію тренувань
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-09-fizruk-workouts-diff
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук dual-write
 - **Де:** apps/web/src/modules/fizruk/lib/fizrukDualWriteState.ts:301-321; apps/web/src/modules/fizruk/lib/sqliteWriter/diff/workouts.ts:85-97; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:257-321
 - **Першопричина:** toWorkoutSnapshot щоразу створює нові масиви items і groups, а workoutChanged порівнює prev.items !== next.items за посиланням. Тож diff вважає зміненим кожне тренування і ставить у outbox workout, усі його items і всі sets з історії.
