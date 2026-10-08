@@ -106,7 +106,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           module="nutrition"
           icon={<Icon name="trending-up" size="lg" />}
           title="Ще немає трендів"
-          description="Залогуй кілька прийомів їжі, і тут зʼявляться середні калорії, макро та графік за днями."
+          description="Запиши кілька прийомів їжі, і тут зʼявляться середні калорії, макро та графік за днями."
         />
       ) : (
         <>
