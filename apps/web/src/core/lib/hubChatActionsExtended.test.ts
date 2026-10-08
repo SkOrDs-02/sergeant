@@ -397,8 +397,14 @@ describe("mark_debt_paid", () => {
       input: { debt_id: "d_rent" },
     });
     expect(msg).toContain("закрито");
-    const debts = readLS<Array<{ id: string }>>("finyk_debts", []);
-    expect(debts).toHaveLength(0);
+    // logic-03: погашений борг не видаляється, у ньому лишається посилання
+    // на платіж (UI рахує погашення за залишком).
+    const debts = readLS<Array<{ id: string; linkedTxIds: string[] }>>(
+      "finyk_debts",
+      [],
+    );
+    expect(debts).toHaveLength(1);
+    expect(debts[0]!.linkedTxIds).toHaveLength(1);
     const tx = readLS<Array<{ amount: number; type: string }>>(
       "finyk_manual_expenses_v1",
       [],

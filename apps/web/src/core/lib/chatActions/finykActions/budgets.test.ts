@@ -428,6 +428,39 @@ describe("updateBudget", () => {
     });
   });
 
+  // logic-03: без saved_amount `buildAiContribution(0)` стирав лог поповнень
+  // наявної цілі в []. Тепер лог лишається як є.
+  it("logic-03: update_budget(goal) без saved_amount зберігає наявні contributions", () => {
+    const contributions = [
+      { id: "c1", amountUah: 3000, date: "2026-09-01", note: "вручну" },
+      { id: "c2", amountUah: 2000, date: "2026-09-15" },
+    ];
+    seedCache({
+      budgets: [
+        {
+          id: "g1",
+          type: "goal",
+          name: "Авто",
+          targetAmount: 50000,
+          savedAmount: 0,
+          contributions,
+        },
+      ],
+    });
+    const out = updateBudget(
+      ub({ scope: "goal", name: "Авто", target_amount: 80000 }),
+    );
+    assertUndoable(out);
+    const saved = writes.get("finyk_budgets") as Array<{
+      targetAmount: number;
+      contributions: unknown[];
+    }>;
+    expect(saved[0]!.targetAmount).toBe(80000);
+    expect(saved[0]!.contributions).toEqual(contributions);
+    // Підсумок не вдає, що накопичено 0.
+    expect(out.result).not.toContain("0/80");
+  });
+
   it("rejects an unknown scope", () => {
     expect(updateBudget(ub({ scope: "weird" }))).toContain("Невідомий scope");
   });
