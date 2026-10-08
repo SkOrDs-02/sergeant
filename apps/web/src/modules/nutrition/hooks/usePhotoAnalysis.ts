@@ -244,10 +244,12 @@ export function usePhotoAnalysis({
     },
   });
 
-  const analyzePhoto = useCallback(
-    () => analyzeMutation.mutate(),
-    [analyzeMutation],
-  );
+  // `mutate` у TanStack Query v5 стабільний (useCallback по observer), на
+  // відміну від самого обʼєкта `useMutation`, що новий щорендера. Залежимо
+  // від `mutate`, тож `analyzePhoto` має стабільну ідентичність — на це
+  // спираються effect-deps у PhotoStep.
+  const { mutate: analyze } = analyzeMutation;
+  const analyzePhoto = useCallback(() => analyze(), [analyze]);
 
   // ─── Refine photo ───────────────────────────────────────────────────────
   const refineMutation = useMutation({
@@ -297,10 +299,8 @@ export function usePhotoAnalysis({
     },
   });
 
-  const refinePhoto = useCallback(
-    () => refineMutation.mutate(),
-    [refineMutation],
-  );
+  const { mutate: refine } = refineMutation;
+  const refinePhoto = useCallback(() => refine(), [refine]);
 
   // Підсумок ЗАВЖДИ перераховується з позицій — тією самою
   // `sumMacrosNullable`, якою його рахує сервер. Тримати тут окрему
