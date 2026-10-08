@@ -125,10 +125,16 @@ export function macroFieldsEdited(
 
 /**
  * Походження КБЖВ для збереження. Прийом із `foodId`, чий продукт не вдалося
- * відновити (`hasPickedFood: false`), лишається `productDb` лише поки КБЖВ не
- * чіпали. Після ручної правки це вже не значення з бази: інакше запис ніс би
- * `productDb` з макросами, що не відповідають ні базі, ні `amount_g`
- * (аудит 2026-10-01, ux-13).
+ * відновити (`hasPickedFood: false`), лишається `productDb` лише тоді, коли
+ * він уже був `productDb` і КБЖВ не чіпали. Після ручної правки це вже не
+ * значення з бази: інакше запис ніс би `productDb` з макросами, що не
+ * відповідають ні базі, ні `amount_g` (аудит 2026-10-01, ux-13).
+ *
+ * AI-DANGER: `foodId` сам по собі не доказ походження. Ручна правка КБЖВ
+ * лишає `foodId` (`effectiveFoodId` в `AddMealSheet`), тож `manual`-прийом з
+ * `foodId` і нечіпаною формою (змінили лише час чи назву) без перевірки
+ * `initialMeal.macroSource` тихо ставав би `productDb` і знімав гард
+ * `useEditedFoodRehydration`, який не відновлює такі прийоми заради ручних цифр.
  */
 export function resolveMacroSource(args: {
   fromPhoto: boolean;
@@ -136,6 +142,7 @@ export function resolveMacroSource(args: {
   form: Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g">;
   initialMeal: {
     foodId?: string | null | undefined;
+    macroSource?: string | null | undefined;
     macros?: Parameters<typeof macrosToFormFields>[0] | null | undefined;
   };
 }): MealMacroSource {
@@ -143,7 +150,9 @@ export function resolveMacroSource(args: {
   if (fromPhoto) return "photoAI";
   if (hasPickedFood) return "productDb";
   const keepsDb =
-    !!initialMeal.foodId && !macroFieldsEdited(form, initialMeal.macros);
+    !!initialMeal.foodId &&
+    initialMeal.macroSource === "productDb" &&
+    !macroFieldsEdited(form, initialMeal.macros);
   return keepsDb ? "productDb" : "manual";
 }
 

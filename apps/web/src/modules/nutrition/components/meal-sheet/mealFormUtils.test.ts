@@ -5,7 +5,13 @@ import {
   getDayMacros,
 } from "@sergeant/nutrition-domain";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
-import { currentTime, emptyForm, macroToFieldString } from "./mealFormUtils";
+import {
+  currentTime,
+  emptyForm,
+  macroToFieldString,
+  macrosToFormFields,
+  resolveMacroSource,
+} from "./mealFormUtils";
 
 // mealTypeByNow comes from @sergeant/nutrition-domain via the mealTypes re-export.
 // We stub it so tests are not hour-sensitive.
@@ -163,5 +169,54 @@ describe("macroToFieldString: сума позицій = підсумок дня"
       .map((g) => Math.round(macrosForGrams(per100, g).protein_g))
       .reduce((a, b) => a + b, 0);
     expect(roundedSum).not.toBe(Math.round(day.protein_g * 10) / 10);
+  });
+});
+
+describe("resolveMacroSource", () => {
+  const macros = { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 };
+  const form = {
+    ...emptyForm(),
+    ...macrosToFormFields(macros),
+  };
+  const base = { fromPhoto: false, hasPickedFood: false, form };
+
+  it("нечіпаний productDb-прийом із foodId лишається productDb", () => {
+    expect(
+      resolveMacroSource({
+        ...base,
+        initialMeal: { foodId: "food_x", macroSource: "productDb", macros },
+      }),
+    ).toBe("productDb");
+  });
+
+  it("правка КБЖВ знімає productDb", () => {
+    expect(
+      resolveMacroSource({
+        ...base,
+        form: { ...form, kcal: "250" },
+        initialMeal: { foodId: "food_x", macroSource: "productDb", macros },
+      }),
+    ).toBe("manual");
+  });
+
+  // Ревʼю ux-13: `foodId` переживає ручну правку, тож без перевірки
+  // початкового `macroSource` наступне збереження без правки КБЖВ піднімало б
+  // `manual` назад до `productDb`.
+  it("manual-прийом із foodId лишається manual без правки КБЖВ", () => {
+    expect(
+      resolveMacroSource({
+        ...base,
+        initialMeal: { foodId: "food_x", macroSource: "manual", macros },
+      }),
+    ).toBe("manual");
+  });
+
+  it("photoAI і обраний продукт мають пріоритет", () => {
+    expect(
+      resolveMacroSource({ ...base, fromPhoto: true, initialMeal: {} }),
+    ).toBe("photoAI");
+    expect(
+      resolveMacroSource({ ...base, hasPickedFood: true, initialMeal: {} }),
+    ).toBe("productDb");
   });
 });

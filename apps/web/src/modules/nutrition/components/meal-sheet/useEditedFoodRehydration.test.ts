@@ -260,6 +260,35 @@ describe("useEditedFoodRehydration", () => {
       expect(result.current.rehydrated).toBe(false);
     });
 
+    // Відома межа ланки 3 (див. шапку хука): рядок `productDb`, збережений до
+    // фіксу ux-13 з ручно виправленими КБЖВ, неможливо відрізнити від прийому
+    // з бази. Етикета виводиться з ручних цифр, тож вага потім масштабує їх
+    // пропорційно. Тест фіксує це поводження, щоб воно не змінилось мовчки.
+    it("старий рядок productDb з ручними КБЖВ відновлюється з per100 з порції", async () => {
+      getFoodById.mockResolvedValue(null);
+      const setPickedFood = vi.fn();
+      const { result } = renderHook(() =>
+        useEditedFoodRehydration({
+          open: true,
+          meal: {
+            id: "m1",
+            name: "Гречка",
+            foodId: "food_legacy",
+            macroSource: "productDb",
+            amount_g: 150,
+            // 200 ккал на 150 г — ручна цифра, не добуток каталожного per100.
+            macros: { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 },
+          },
+          setPickedFood,
+        }),
+      );
+
+      await waitFor(() => expect(result.current.rehydrated).toBe(true));
+      const picked = setPickedFood.mock.calls[0]![0];
+      expect(picked.per100.kcal).toBeCloseTo(133.33, 1);
+      expect(picked.defaultGrams).toBe(150);
+    });
+
     it("`per100FromMeal` відхиляє нульову вагу й порожні макроси", () => {
       expect(per100FromMeal(0, { kcal: 100 })).toBeNull();
       expect(per100FromMeal(null, { kcal: 100 })).toBeNull();
