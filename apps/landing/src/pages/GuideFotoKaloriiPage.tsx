@@ -77,7 +77,7 @@ export default function GuideFotoKaloriiPage() {
       <article className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 pb-20 pt-12 sm:px-8 sm:pt-16">
         <div>
           <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-subtle">
-            Гайди · Харчування
+            Гайди <span className="font-sans">·</span> Харчування
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight text-balance text-foreground-strong sm:text-4xl">
             Чи можна порахувати калорії страви з фото – і наскільки це точно

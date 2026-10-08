@@ -56,7 +56,13 @@ const ok = (name, pass, extra = "") =>
     `${pass ? "PASS" : "FAIL"}  ${name}${extra ? " — " + extra : ""}`,
   );
 
-const browser = await chromium.launch();
+// `PW_CHROMIUM_PATH` – та сама ручка, що в playwright.config.ts: контейнерні
+// середовища постачають власний Chromium іншої ревізії.
+const browser = await chromium.launch(
+  process.env.PW_CHROMIUM_PATH
+    ? { executablePath: process.env.PW_CHROMIUM_PATH }
+    : {},
+);
 
 async function newPage(viewport) {
   const ctx = await browser.newContext({ viewport });
@@ -89,10 +95,15 @@ for (const [vw, tag] of [
       path: path.join(OUT, `${tag}${name}.png`),
       fullPage: true,
     });
+    // Невідомий шлях віддає справжній 404, як Vercel (vite.config.ts,
+    // `vercelLikePreview`), і браузер логує це як помилку ресурсу.
+    const real = errors.filter(
+      (e) => !(route.includes("404") && e.includes("status of 404")),
+    );
     ok(
       `${tag} ${route} без console/page errors`,
-      errors.length === 0,
-      errors.join("; ").slice(0, 160),
+      real.length === 0,
+      real.join("; ").slice(0, 160),
     );
     ok(`${tag} ${route} без горизонтального скролу`, await noHScroll(page));
     const title = await page.title();
@@ -138,11 +149,11 @@ for (const [vw, tag] of [
   ok("desktop нав Звʼязки → /zvyazky", page.url().endsWith("/zvyazky"));
 
   await page
-    .getByLabel("Футер")
-    .getByRole("link", { name: "Про Sergeant" })
+    .getByLabel("Посилання сайту")
+    .getByRole("link", { name: "Про проєкт" })
     .click();
   await page.waitForURL("**/about");
-  ok("футер Про Sergeant → /about", page.url().endsWith("/about"));
+  ok("футер Про проєкт → /about", page.url().endsWith("/about"));
 
   await page.getByRole("link", { name: "Стати в чергу" }).first().click();
   await page.waitForURL("**/beta");
@@ -162,13 +173,24 @@ for (const [vw, tag] of [
     page.url(),
   );
 
-  // TelegramCta: правильний деплінк з payload-ом
+  // TelegramCta: у розмітці лише місце кнопки, токен народжується на кліку
+  // (аудит сайту 2026-10-08, F1: токен у пререндері був спільним для всіх і
+  // ламав гідрацію). Перехід у Telegram гаситься після обробника React.
   await page.goto(BASE + "/beta", { waitUntil: "networkidle" });
-  const href = await page
-    .getByRole("link", { name: /Стати в чергу в Telegram/ })
-    .getAttribute("href");
+  const cta = page.locator('a[href^="https://t.me/"]').first();
+  const staticHref = await cta.getAttribute("href");
   ok(
-    "beta TelegramCta несе placement beta_<ref>",
+    "beta TelegramCta у розмітці несе лише placement",
+    /^https:\/\/t\.me\/.+\?start=beta$/.test(staticHref ?? ""),
+    staticHref ?? "null",
+  );
+  await page.evaluate(() =>
+    window.addEventListener("click", (e) => e.preventDefault()),
+  );
+  await cta.click();
+  const href = await cta.getAttribute("href");
+  ok(
+    "beta TelegramCta після кліку несе beta_<ref>",
     /^https:\/\/t\.me\/.+\?start=beta_[a-z0-9]{16}$/.test(href ?? ""),
     href ?? "null",
   );
@@ -195,7 +217,7 @@ for (const [vw, tag] of [
     ["/guides/tyzhnevyi-pidsumok", "Article"],
     ["/stan", "Article"],
     ["/about", "AboutPage"],
-    ["/guides/monobank", "Article"],
+    ["/guides/monobank", "HowTo"],
     ["/guides", "ItemList"],
   ]) {
     await page.goto(BASE + route, { waitUntil: "networkidle" });

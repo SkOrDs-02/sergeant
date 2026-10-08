@@ -123,7 +123,7 @@ export default function HroshiPage() {
   return (
     <SiteLayout mainClassName="mx-auto w-full max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
       <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-finyk">
-        Модуль · Фінік
+        Модуль <span className="font-sans">·</span> Фінік
       </p>
       <h1 className="mt-4 font-display text-4xl font-extrabold uppercase leading-[1.06] tracking-tight text-foreground-strong sm:text-5xl">
         Облік витрат без ручного вводу кожної покупки

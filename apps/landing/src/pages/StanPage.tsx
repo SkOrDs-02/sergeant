@@ -11,7 +11,7 @@ import { MOBILE_CLAIM } from "../content/mobileClaim";
  * частина змісту. `STATUS_UPDATED` мусить збігатися з `lastmod` запису
  * `/stan` у routeMeta і з датою в рядку-містку на головній.
  */
-export const STATUS_UPDATED = "2026-09-17";
+export const STATUS_UPDATED = "2026-10-08";
 
 const NOW = [
   "Автосинхронізація фінансів через Monobank",

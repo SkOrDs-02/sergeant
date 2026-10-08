@@ -67,14 +67,15 @@ export default function ZvychkyPage() {
   return (
     <SiteLayout mainClassName="mx-auto w-full max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
       <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-routine-strong">
-        Модуль · Рутина
+        Модуль <span className="font-sans">·</span> Рутина
       </p>
       <h1 className="mt-4 font-display text-4xl font-extrabold uppercase leading-[1.06] tracking-tight text-foreground-strong sm:text-5xl">
         Звички, де один пропуск не обнуляє серію
       </h1>
       <p className="mt-5 max-w-2xl text-lg leading-relaxed text-pretty text-muted">
-        Захворів, поїхав, свідомо взяв вихідний: день можна назвати тим, чим він
-        був. Серія це переживає, а відсоток виконання дня і тижня такий день у
+        Рутина – трекер звичок, який памʼятає, чому ти пропустив день. Захворів,
+        поїхав, свідомо взяв вихідний: день можна назвати тим, чим він був.
+        Серія це переживає, а відсоток виконання дня і тижня такий день у
         знаменник не бере.
       </p>
       <p className="mt-3 text-sm text-subtle">

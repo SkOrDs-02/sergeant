@@ -66,17 +66,17 @@ export default function YizhaPage() {
   return (
     <SiteLayout mainClassName="mx-auto w-full max-w-6xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
       <p className="font-display text-xs font-medium uppercase tracking-[0.12em] text-nutrition">
-        Модуль · Харчування
+        Модуль <span className="font-sans">·</span> Харчування
       </p>
       <h1 className="mt-4 font-display text-4xl font-extrabold uppercase leading-[1.06] tracking-tight text-foreground-strong sm:text-5xl">
         Харчування: що рахує код, а що вгадує модель
       </h1>
       <p className="mt-5 max-w-2xl text-lg leading-relaxed text-pretty text-muted">
-        Підрахунок їжі ламається на пошуку: третини полиці немає в жодній
-        міжнародній базі, а те, що є, часто лежить без білків і жирів.
-        Харчування має власну українську базу, штрихкод, збережені страви і фото
-        з уточненнями. Далі – звідки береться кожне число і де модуль каже
-        «приблизно».
+        Лічильник калорій найчастіше ламається на пошуку: третини полиці немає в
+        жодній міжнародній базі, а те, що є, часто лежить без білків і жирів.
+        Харчування рахує калорії і КБЖВ по власній українській базі, штрихкоду,
+        збережених стравах і фото з уточненнями. Далі – звідки береться кожне
+        число і де модуль каже «приблизно».
       </p>
       <p className="mt-3 text-sm text-subtle">
         Оновлено{" "}

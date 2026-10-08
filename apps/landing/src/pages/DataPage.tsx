@@ -115,7 +115,7 @@ export default function DataPage() {
           <p className={p}>
             Дані застосунку живуть на серверах у Європі (Hetzner), частина
             працює локально на твоєму пристрої. Сам сайт не ставить кукі і не
-            будує профілів: аналітика отримує кілька анонімних подій. Деталі – у{" "}
+            будує профілів; що бачать аналітика сайту і бот черги, описано в{" "}
             <a
               href="/privacy"
               className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
