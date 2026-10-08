@@ -8,8 +8,6 @@ import { vi } from "vitest";
 const saveBiometrics = vi.fn();
 const addEntry = vi.fn();
 const patchProfileNutritionPrefs = vi.fn(() => true);
-const toastSuccess = vi.fn();
-const toastError = vi.fn();
 
 function ageThirtyBirthDate(): string {
   const d = new Date();
@@ -43,9 +41,6 @@ vi.mock("../../../core/profile/useLatestBodyWeight", () => ({
 vi.mock("../../../core/profile/useAverageWorkoutKcal", () => ({
   useAverageWorkoutKcalPerDay: () => 0,
 }));
-vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({ success: toastSuccess, error: toastError, info: vi.fn() }),
-}));
 vi.mock("../lib/nutritionStorage", () => ({
   loadLatestNutritionPrefs: () => ({
     adaptiveGoalIntent: "maintenance",
@@ -58,7 +53,15 @@ vi.mock("../lib/nutritionStorage", () => ({
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { MyNormSheet } from "./MyNormSheet";
+
+const renderSheet = (onClose: () => void = () => {}) =>
+  render(
+    <ToastProvider>
+      <MyNormSheet open onClose={onClose} />
+    </ToastProvider>,
+  );
 
 const text = (el: HTMLElement) => (el.textContent ?? "").replace(/\s/gu, " ");
 
@@ -66,7 +69,7 @@ afterEach(() => vi.clearAllMocks());
 
 describe("MyNormSheet", () => {
   it("показує норму з розкладом формули: 1590 ккал, сидячий x 1,2, дефіцит 550", () => {
-    render(<MyNormSheet open onClose={() => {}} />);
+    renderSheet();
     fireEvent.click(screen.getByRole("tab", { name: "Схуднення" }));
 
     const body = text(document.body);
@@ -79,7 +82,7 @@ describe("MyNormSheet", () => {
   it("гість без мережі зберігає вагу: addEntry рівно раз, норма йде в prefs", () => {
     vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(false);
     const onClose = vi.fn();
-    render(<MyNormSheet open onClose={onClose} />);
+    renderSheet(onClose);
     fireEvent.click(screen.getByRole("tab", { name: "Схуднення" }));
     fireEvent.change(screen.getByLabelText("Поточна вага (кг)"), {
       target: { value: "79" },
@@ -102,7 +105,7 @@ describe("MyNormSheet", () => {
   });
 
   it("цільова вага дає орієнтовну дату цілі", () => {
-    render(<MyNormSheet open onClose={() => {}} />);
+    renderSheet();
     fireEvent.click(screen.getByRole("tab", { name: "Схуднення" }));
     fireEvent.change(screen.getByLabelText(/Цільова вага/u), {
       target: { value: "75" },
