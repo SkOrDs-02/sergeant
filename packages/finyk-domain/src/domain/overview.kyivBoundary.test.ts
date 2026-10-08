@@ -3,6 +3,8 @@
 // на льоту, а модуль `overview.ts` дат при імпорті не створює.
 process.env["TZ"] = "America/Los_Angeles";
 
+import { isMainThread } from "node:worker_threads";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -18,7 +20,13 @@ const NOW = new Date("2026-09-30T22:30:00Z");
 
 describe("overview × межа місяця за Києвом", () => {
   it("хост ще у вересні, а пристрій бачить київський день", () => {
-    expect(NOW.getMonth()).toBe(8); // sanity: TZ справді не київський
+    // Sanity: TZ справді не київський. Стандартний `vitest run` (forks) має
+    // main thread, де запис `process.env.TZ` чинний. Stryker vitest-runner
+    // примусово ганяє тести у worker-потоці (`pool: "threads"`), де зміна TZ
+    // ігнорується і лишається `TZ=Europe/Kyiv` з `mutation:core`; там
+    // перевіряємо фактичний стан, а решта тестів файлу лишаються як є
+    // (UTC-30.09 vs Київ-01.10 усе одно відрізняє київську добу від UTC).
+    expect(NOW.getMonth()).toBe(isMainThread ? 8 : 9);
   });
 
   it("getNextBillingDate: 30-те вже минуло за Києвом → наступний місяць", () => {
