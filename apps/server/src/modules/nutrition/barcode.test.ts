@@ -383,6 +383,9 @@ describe("barcode handler", () => {
       await handler(req, res);
       expect(res.statusCode).toBe(503);
       expect(global.fetch).toHaveBeenCalledTimes(3);
+      // rel-21: роутер ставить публічний кеш ДО хендлера, тож «спробуй за
+      // хвилину» не повинен жити в браузері/CDN — 503 перекриває його сам.
+      expect(res.headers["Cache-Control"]).toBe("no-store");
     });
 
     it("OFF повертає !ok (HTTP 500) → cascade продовжує на USDA", async () => {

@@ -424,6 +424,7 @@ async function fetchProductDetails(
   accessToken: string,
   ctx: SilpoBranchContext,
   slug: string,
+  signal?: AbortSignal,
 ): Promise<NormalizedSilpoProduct | null> {
   const result = await callMcpTool({
     accessToken,
@@ -436,6 +437,7 @@ async function fetchProductDetails(
       timeslotEnd: ctx.timeslotEnd,
     },
     schema: DetailsEnvelopeSchema,
+    signal,
   });
   if (!result.ok) {
     logger.warn({
@@ -461,9 +463,10 @@ async function fetchProductDetails(
 function makeFetchSilpoSearch(
   userId: string,
   query: string,
+  signal?: AbortSignal,
 ): (accessToken: string) => Promise<McpResult<SilpoSearchProduct[]>> {
   return async (accessToken) => {
-    const ctx = await resolveBranchContext(userId, accessToken);
+    const ctx = await resolveBranchContext(userId, accessToken, signal);
     if (!ctx.ok) return ctx;
 
     const batch = await callMcpTool({
@@ -478,6 +481,7 @@ function makeFetchSilpoSearch(
         limit: SEARCH_BATCH_LIMIT,
       },
       schema: BatchEnvelopeSchema,
+      signal,
     });
     if (!batch.ok) return batch;
 
@@ -504,7 +508,7 @@ function makeFetchSilpoSearch(
     const detailed = await Promise.all(
       withSlug
         .slice(0, SEARCH_DETAILS_LIMIT)
-        .map((h) => fetchProductDetails(accessToken, ctx.data, h.slug)),
+        .map((h) => fetchProductDetails(accessToken, ctx.data, h.slug, signal)),
     );
 
     const products = detailed
@@ -528,7 +532,7 @@ function makeFetchSilpoSearch(
 export async function searchSilpoProducts(
   userId: string | null | undefined,
   query: string,
-  deps: { query?: QueryFn } = {},
+  deps: { query?: QueryFn; signal?: AbortSignal | undefined } = {},
 ): Promise<SilpoSearchProduct[]> {
   try {
     if (!userId) return [];
@@ -536,8 +540,8 @@ export async function searchSilpoProducts(
 
     const call = await callWithFreshAccessToken(
       userId,
-      makeFetchSilpoSearch(userId, query),
-      { query: deps.query ?? defaultQuery },
+      makeFetchSilpoSearch(userId, query, deps.signal),
+      { query: deps.query ?? defaultQuery, signal: deps.signal },
     );
     if (!call.ok) {
       logger.warn({
