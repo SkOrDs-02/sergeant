@@ -21,6 +21,7 @@ import {
   extractWorkoutTemplateSnapshots,
   peekFizrukDualWriteState,
 } from "./fizrukDualWriteState";
+import { diffFizrukDualWriteOps } from "./sqliteWriter/diff/index.js";
 
 beforeEach(() => {
   mockRegistered.mockReset();
@@ -363,5 +364,67 @@ describe("peekFizrukDualWriteState", () => {
     expect(state!.dailyLog).toEqual([]);
     expect(state!.monthlyPlan).toBeNull();
     expect(state!.workoutTemplates).toEqual([]);
+  });
+});
+
+describe("extractWorkoutSnapshots × diffFizrukDualWriteOps (rel-09)", () => {
+  // Регресія аудиту 2026-10-01: `toWorkoutSnapshot` щоразу будує нові масиви,
+  // а diff порівнював їх за посиланням - тож кожне тренування історії стало
+  // upsert-ом на будь-яку правку. Тут обидва боки збираються ДВОМА окремими
+  // викликами екстрактора з однакових даних, як це робить persist.
+  const makeWorkouts = (thirdWeightKg: number) =>
+    ["w1", "w2", "w3"].map((id) => ({
+      id,
+      startedAt: "2026-09-0" + id.slice(1) + "T10:00:00Z",
+      endedAt: "2026-09-0" + id.slice(1) + "T11:00:00Z",
+      items: [
+        {
+          id: id + "-i1",
+          exerciseId: "bench",
+          nameUk: "Жим",
+          primaryGroup: "chest",
+          musclesPrimary: ["pec"],
+          musclesSecondary: ["tri"],
+          type: "strength",
+          sets: [
+            {
+              weightKg: id === "w3" ? thirdWeightKg : 50,
+              reps: 5,
+              rpe: 8,
+            },
+          ],
+        },
+      ],
+      groups: [{ id: id + "-g1", itemIds: [id + "-i1"] }],
+      warmup: [{ id: id + "-c1", done: true, label: "stretch" }],
+      cooldown: null,
+      note: "",
+      wellbeing: { energy: 4, mood: 5 },
+      kcalBurned: 200,
+    }));
+
+  const state = (workouts: ReturnType<typeof makeWorkouts>) => ({
+    ...EMPTY_FIZRUK_DUAL_WRITE_STATE,
+    workouts: extractWorkoutSnapshots(workouts as never),
+  });
+
+  it("не емітить жодних оп-ів, коли історія не змінилась", () => {
+    const ops = diffFizrukDualWriteOps(
+      state(makeWorkouts(50)),
+      state(makeWorkouts(50)),
+    );
+    expect(ops).toEqual([]);
+  });
+
+  it("зміна ваги одного сету дає рівно один workout-upsert", () => {
+    const ops = diffFizrukDualWriteOps(
+      state(makeWorkouts(50)),
+      state(makeWorkouts(55)),
+    );
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toMatchObject({
+      kind: "workout-upsert",
+      workout: { id: "w3" },
+    });
   });
 });

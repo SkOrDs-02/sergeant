@@ -144,9 +144,13 @@ export default async function transcribeHandler(
   if (!capCheck.ok) return;
 
   // Прокидаємо abort при client-disconnect, щоб не платити за марний upstream.
+  // `res` 'close', не `req` 'close' (rel-17): на `req` подія спрацьовує, щойно
+  // тіло дочитано, тобто до цього рядка (після async-мідлвар і
+  // `assertTranscribeUsdCap`). `writableFinished` відрізняє штатне завершення
+  // від обриву сокета.
   const abortController = new AbortController();
-  req.on("close", () => {
-    if (!res.writableEnded) abortController.abort();
+  res.on("close", () => {
+    if (!res.writableFinished) abortController.abort();
   });
 
   try {

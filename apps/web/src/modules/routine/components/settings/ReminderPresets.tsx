@@ -1,8 +1,14 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
 import { TimeField } from "@shared/components/ui/TimeField";
+import { Button } from "@shared/components/ui/Button";
+import { useRoutineState } from "../../hooks/useRoutineState";
+import {
+  readNotificationPermission,
+  useRoutineRemindersToggle,
+} from "../../hooks/useRoutineRemindersToggle";
 import { ROUTINE_THEME as C } from "../../lib/routineConstants";
 import {
   REMINDER_PRESETS,
@@ -20,6 +26,19 @@ export function ReminderPresets({
   setHabitDraft,
 }: ReminderPresetsProps) {
   const times = habitDraft.reminderTimes || [];
+  // Чипи нижче лише складають розклад. Доставку вмикає глобальний тумблер
+  // `routineRemindersEnabled` (дефолт false, канон §9) плюс дозвіл браузера —
+  // без підказки людина обирає «Ранок» і чекає сповіщення, яке не прийде.
+  const { routine, updatePref } = useRoutineState();
+  const setReminders = useRoutineRemindersToggle(updatePref);
+  // Дозвіл читається під час рендеру; лічильник лише перемальовує підказку
+  // після відповіді на запит (відмова не змінює prefs, тож інакше не було б
+  // жодного ре-рендеру).
+  const [, setAskCount] = useState(0);
+  const prefEnabled = routine.prefs?.routineRemindersEnabled === true;
+  const permission = readNotificationPermission();
+  const showDeliveryHint =
+    times.length > 0 && (!prefEnabled || permission !== "granted");
   // Збіг за частиною доби, а не за точним часом: правка 08:00 → 11:00 має
   // перевести підсвітку на «День», а не погасити її. Розбір — у
   // `matchReminderPreset`.
@@ -123,6 +142,30 @@ export function ReminderPresets({
           </IconButton>
         </div>
       ))}
+      {showDeliveryHint && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-line bg-panelHi px-3 py-2"
+        >
+          <p className="text-style-caption text-muted min-w-0 flex-1">
+            {prefEnabled
+              ? "Браузер не дозволяє сповіщення, тож нагадування не прийдуть"
+              : "Нагадування вимкнені в налаштуваннях"}
+          </p>
+          <Button
+            type="button"
+            variant="soft"
+            tone="routine"
+            size="sm"
+            onClick={async () => {
+              await setReminders(true);
+              setAskCount((n) => n + 1);
+            }}
+          >
+            Увімкнути нагадування
+          </Button>
+        </div>
+      )}
       {times.length < 5 && times.length > 0 && (
         <button
           type="button"

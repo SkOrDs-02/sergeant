@@ -36,6 +36,25 @@ describe("resolveSentryRelease (L9)", () => {
     ).toBe("abc123");
   });
 
+  it("падає на SOURCE_COMMIT (Coolify) коли немає GIT_SHA, перед Vercel/GitHub", () => {
+    expect(resolveSentryRelease({ SOURCE_COMMIT: "abcdef1234" })).toBe(
+      "abcdef1234",
+    );
+    expect(
+      resolveSentryRelease({
+        GIT_SHA: "gitsha",
+        SOURCE_COMMIT: "coolify",
+      }),
+    ).toBe("gitsha");
+    expect(
+      resolveSentryRelease({
+        SOURCE_COMMIT: "coolify",
+        VERCEL_GIT_COMMIT_SHA: "vercel",
+        GITHUB_SHA: "github",
+      }),
+    ).toBe("coolify");
+  });
+
   it("падає на Vercel SHA коли немає GIT_SHA", () => {
     expect(
       resolveSentryRelease({

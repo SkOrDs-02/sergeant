@@ -28,6 +28,7 @@ function setup(
     active: [],
     activeSites: new Set(),
     mark,
+    markMany: vi.fn(),
     clear,
     remove: vi.fn(),
     ...over,

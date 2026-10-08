@@ -141,6 +141,7 @@ describe("AuthContext: teardown після втрати сесії (priv-02)", (
     await waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
     expect(purgeMock).toHaveBeenCalledTimes(1);
     expect(swClearCachesMock).toHaveBeenCalledTimes(1);
+    expect(swClearCachesMock).toHaveBeenCalledWith("user");
     expect(swSetActiveUserMock).toHaveBeenCalledWith(null);
     expect(clearPersistedQueryCacheMock).toHaveBeenCalledTimes(1);
     // Без сесії flush неможливий: партицію попередника не стираємо.
@@ -163,6 +164,7 @@ describe("AuthContext: teardown після втрати сесії (priv-02)", (
     await waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
     expect(purgeMock).toHaveBeenCalledTimes(1);
     expect(swClearCachesMock).toHaveBeenCalledTimes(1);
+    expect(swClearCachesMock).toHaveBeenCalledWith("user");
     expect(swSetActiveUserMock).toHaveBeenCalledWith(null);
     expect(wipeSqliteDbMock).not.toHaveBeenCalled();
   });
@@ -228,5 +230,55 @@ describe("AuthContext: teardown після втрати сесії (priv-02)", (
     await new Promise((r) => setTimeout(r, 20));
     expect(purgeMock).not.toHaveBeenCalled();
     expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  // priv-08: SW_SET_USER шлеться лише на зміну `user.id`; новий контролер
+  // (оновлений/перший SW) мусить отримати активного користувача повторно.
+  it("controllerchange повторно шле SW_SET_USER з поточним user.id", async () => {
+    const sw = new EventTarget();
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: sw,
+    });
+    try {
+      signedIn(USER_X);
+      const { unmount } = renderHook(() => useAuth(), { wrapper: wrapper() });
+      await waitFor(() =>
+        expect(swSetActiveUserMock).toHaveBeenCalledWith(USER_X.id),
+      );
+      const callsBefore = swSetActiveUserMock.mock.calls.length;
+
+      sw.dispatchEvent(new Event("controllerchange"));
+
+      await waitFor(() =>
+        expect(swSetActiveUserMock.mock.calls.length).toBe(callsBefore + 1),
+      );
+      expect(swSetActiveUserMock).toHaveBeenLastCalledWith(USER_X.id);
+
+      unmount();
+      sw.dispatchEvent(new Event("controllerchange"));
+      expect(swSetActiveUserMock.mock.calls.length).toBe(callsBefore + 1);
+    } finally {
+      delete (navigator as unknown as { serviceWorker?: unknown })
+        .serviceWorker;
+    }
+  });
+
+  it("controllerchange без користувача нічого не шле", async () => {
+    const sw = new EventTarget();
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: sw,
+    });
+    try {
+      failed(http(500));
+      renderHook(() => useAuth(), { wrapper: wrapper() });
+      sw.dispatchEvent(new Event("controllerchange"));
+      await new Promise((r) => setTimeout(r, 20));
+      expect(swSetActiveUserMock).not.toHaveBeenCalled();
+    } finally {
+      delete (navigator as unknown as { serviceWorker?: unknown })
+        .serviceWorker;
+    }
   });
 });

@@ -2262,6 +2262,59 @@
       }
     },
     {
+      "description": "a POST /api/v1/finyk/import/statement/preview request (debit/credit mapping)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; CSV has separate debit and credit columns"
+        }
+      ],
+      "request": {
+        "body": {
+          "csv_text": "Дата;Опис;Дебет;Кредит\n21.09.2026;Сільпо;350,00;\n22.09.2026;Зарплата;;30000,00",
+          "mapping": {
+            "amountCol": "Дебет",
+            "creditCol": "Кредит",
+            "dateCol": "Дата",
+            "decimalComma": true,
+            "descriptionCol": "Опис"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/statement/preview"
+      },
+      "response": {
+        "body": {
+          "needsMapping": false,
+          "profile": "custom",
+          "rows": [
+            {
+              "amountKopiykas": 35000,
+              "date": "2026-09-21",
+              "description": "Сільпо",
+              "direction": "expense"
+            },
+            {
+              "amountKopiykas": 3000000,
+              "date": "2026-09-22",
+              "description": "Зарплата",
+              "direction": "income"
+            }
+          ],
+          "skipped": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/finyk/import/statement/preview request (mono autoprofile)",
       "providerStates": [
         {
