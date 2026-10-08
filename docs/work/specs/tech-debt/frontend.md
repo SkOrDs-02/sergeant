@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 6; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
+> **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 1; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число, яке цей файл наводить. Головне: **жоден лічильник із записаних не збігся з фактом**, і половина розійшлась у бік зростання, тобто реєстр систематично відстає.
@@ -1534,20 +1534,25 @@ raw-файлів не перетинає **effective** 600 — інакше ESLi
 ---
 
 <details>
-<summary>5. `eslint-disable react-hooks/exhaustive-deps` — web 6 / mobile 10 (розгорнути)</summary>
+<summary>5. `eslint-disable react-hooks/exhaustive-deps` — web 1 / mobile 10 (розгорнути)</summary>
 
-### 5. `eslint-disable react-hooks/exhaustive-deps` — знову відкрито (переміряно 2026-10-08: web 6, mobile 10)
+### 5. `eslint-disable react-hooks/exhaustive-deps` — майже закрито (переміряно 2026-10-08: web 1, mobile 10)
 
-**Вигорання 2026-10-08: web 15 → 6.** Девʼять сайтів знято без зміни поведінки,
-шість лишено зі свідомим інваріантом і WHY у самій директиві
-(`AppLockSettings`, `useTweenedValues`, `PhotoStep` ×1, `RestTimerOverlay`,
-`BodyAtlas`, `usePrivatbank`). Що зроблено: `HUB_TAB_ORDER` і геометрію
-`NetworthChart` винесено на рівень модуля; `reset` з `bulkReceipts`
-деструктуровано (стабільний `useCallback`); `announce` (стабільний у провайдері)
-і `photo.fileRef` додано в deps із guard-ref; для «тік»-memo
-(`useActiveFizrukWorkout`, `useHubDashboardState`, `CrossModuleLinksSection`)
-застосовано патерн `void tick`. Поштучна таблиця — у каталозі. Нижче —
-знімок 2026-09-17, лишений як історія.
+**Вигорання 2026-10-08: web 15 → 1.** Хвиля 5 (15 → 6): девʼять сайтів знято
+без зміни поведінки — `HUB_TAB_ORDER` і геометрію `NetworthChart` винесено на
+рівень модуля; `reset` з `bulkReceipts` деструктуровано; `announce` і
+`photo.fileRef` додано в deps; для «тік»-memo (`useActiveFizrukWorkout`,
+`useHubDashboardState`, `CrossModuleLinksSection`) застосовано `void tick`.
+**Хвиля 6 (6 → 1):** стабілізовано джерела нестабільності в корені —
+`analyzePhoto`/`refinePhoto` через `mutate`, `fetchTransactions`/`loadAccounts`/
+`hydrate` через `useCallback` (`usePrivatbank`; логіки Privat24 не чіпали),
+`state`/`hasPin` деструктуровано з `useAppLock` (`AppLockSettings`), новий
+`useLatestRef` для `RestTimerOverlay` і `BodyAtlas`. Кожне зняття має тест
+одноразовості поруч із кодом. **Лишився один виняток —
+`shared/hooks/useTweenedValues.ts`:** cleanup читає `values` із рендера старту
+tween, і зняття директиви змінило б початок наступного tween; еквівалентність
+не доведена, тому директиву з WHY не чіпали. Поштучна таблиця — у каталозі.
+Нижче — знімок 2026-09-17, лишений як історія.
 
 _(знімок 2026-09-17: web 15, mobile 10)_
 
