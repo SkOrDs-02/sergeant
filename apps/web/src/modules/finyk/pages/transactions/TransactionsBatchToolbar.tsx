@@ -93,7 +93,7 @@ export function TransactionsBatchToolbar({
                 {allSelectedHidden ? (
                   <>
                     <strong className="text-text">Показати</strong>: поверне
-                    приховані операції у звичайний список і в підсумки.
+                    приховані операції у звичайний список.
                   </>
                 ) : (
                   <>
