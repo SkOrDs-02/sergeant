@@ -42,6 +42,21 @@ describe("FoodHitRow", () => {
     expect(screen.getByText(/Bread, cheese/)).toBeInTheDocument();
   });
 
+  it("keeps the badge outside the truncated name and non-shrinking", () => {
+    render(
+      <ul>
+        <FoodHitRow
+          p={{ name: "Хліб Тестовий Зерновий", brand: "Кулиничі" }}
+          externalSourceLabel="Open Food Facts"
+          onPick={vi.fn()}
+        />
+      </ul>,
+    );
+    const badge = screen.getByTestId("food-source-badge");
+    expect(badge).toHaveClass("shrink-0");
+    expect(badge.closest(".truncate")).toBeNull();
+  });
+
   it("handles missing brand", () => {
     render(
       <ul>
