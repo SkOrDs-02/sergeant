@@ -3840,6 +3840,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-08-anti-slop-round4-research.md"
     },
     {
+      "old_path": "docs/work/specs/audits/2026-10-08-redesign-v3-gap-memo.md",
+      "new_path": "docs/work/specs/audits/2026-10-08-redesign-v3-gap-memo.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-08-redesign-v3-gap-memo.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "new_path": "docs/work/specs/audits/2026-10-08-site-audit.md",
       "action": "keep",
@@ -4573,6 +4580,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/README.md"
+    },
+    {
+      "old_path": "docs/work/specs/planning/redesign-v3.md",
+      "new_path": "docs/work/specs/planning/redesign-v3.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/redesign-v3.md"
     },
     {
       "old_path": "docs/work/specs/planning/sync-client-wiring-playbook.md",

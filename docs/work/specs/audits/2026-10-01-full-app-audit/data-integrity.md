@@ -2108,7 +2108,7 @@ How the loss happens:
 
 ### `data-23` [medium] Чат-екзекутори обходять серверні межі: create_transaction на будь-яку 400 пише локально з поясненням «сервер недоступний», а log_weight, log_measurement і log_meal не мають меж
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-23-chat-server-bounds (лишилось: Idempotency-Key/client id у POST /manual-expenses, межі решти мутаторів у toolCallSchema, серверна валідація data_json у sync; add_asset, recurring_expense та log_meal/log_water без стелі)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (serverActions, toolCallSchema, nutritionActions, fizrukActions)
 - **Де:** apps/web/src/core/lib/chatActions/serverActions.ts:183-250; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:28-71; apps/web/src/core/lib/chatActions/nutritionActions.ts:66-111,419-437; apps/web/src/core/lib/chatActions/fizrukActions/measurements.ts:13-62; apps/web/src/core/hub/chat/toolCallSchema.ts:41-337
 - **Першопричина:** serverActions ловить будь-яку помилку голим catch і йде в локальний fallback без MAX_AMOUNT, ліміту опису й межі дати, а sync потім доносить запис у ту саму таблицю. Аргументи інших мутаторів не валідуються спільними примітивами меж: toolCallSchema покриває близько 20 мутаторів лише numOrStr без діапазонів.

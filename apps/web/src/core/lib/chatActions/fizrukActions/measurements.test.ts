@@ -265,3 +265,36 @@ describe("logMeasurement", () => {
     });
   });
 });
+
+// data-23: сервер (`applyMisc.ts`) реджектить УВЕСЬ рядок заміру, якщо будь-яке
+// поле поза `MEASUREMENT_BOUNDS`; клієнт мусить відмовити до запису.
+describe("logMeasurement · межі MEASUREMENT_BOUNDS", () => {
+  it.each([
+    ["waist_cm", 500, "Талія"],
+    ["body_fat_pct", 0.15, "Відсоток жиру"],
+    ["neck_cm", 5, "Шия"],
+    ["bicep_l_cm", 400, "Лівий біцепс"],
+    ["weight_kg", 1000, "Вага"],
+  ])("%s=%s → відмова, нічого не пишемо", (key, value, label) => {
+    const result = logMeasurement(
+      makeAction({ [key]: value } as LogMeasurementAction["input"]),
+    );
+    expect(result).toContain(`${label} має бути від`);
+    expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+    expect(mockRecordBodyWeight).not.toHaveBeenCalled();
+  });
+
+  it("одне поле поза межами відхиляє весь виклик, навіть якщо інші валідні", () => {
+    const result = logMeasurement(makeAction({ waist_cm: 90, chest_cm: 999 }));
+    expect(result).toContain("Груди має бути від");
+    expect(mockTriggerDualWrite).not.toHaveBeenCalled();
+  });
+
+  it("значення на межах приймаються", () => {
+    const result = logMeasurement(
+      makeAction({ waist_cm: 300, body_fat_pct: 1, weight_kg: 20 }),
+    );
+    expect(result).toContain("waistCm=300");
+    expect(mockTriggerDualWrite).toHaveBeenCalledOnce();
+  });
+});
