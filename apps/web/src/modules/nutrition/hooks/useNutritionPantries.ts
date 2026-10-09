@@ -468,8 +468,9 @@ export function useNutritionPantries({
       }),
     );
     // W1-PANTRY-APPEND стадія 2 — audit E-2: це саме той шлях, який ADR-0077
-    // закриває. 'consume' несе РЕАЛЬНО списану дельту (та сама `deduct`, що
-    // й пішла у `qty` вище), а не вигадану — batch-страва все одно дасть
+    // закриває. 'consume' несе РЕАЛЬНО списану дельту (`deducted` = qty до
+    // мінус qty після; при вичерпанні — сира перевитрата), а не вигадану —
+    // batch-страва все одно дасть
     // N подій на N логів, і це навмисно ВИДИМО, а не приховано (ADR §6).
     if (deductedQty != null) {
       appendNutritionPantryEvent({

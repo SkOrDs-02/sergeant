@@ -708,7 +708,7 @@ psql по user dIm64MnZQlIhT5MHzwEsDHftBLz8sUwJ: client_ts 04:47:21.085 n=18 (w4
 
 ### `rel-10` [medium] Кожна зміна комори перезаписує всі позиції місця: O(n²) sync-оп і порожня комора на новому пристрої
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-10-pantry-dualwrite-diff (квадратичний обсяг оп-ів: у outbox ідуть лише нові/змінені позиції; лишилось: стабільні id позицій і поелементні операції — data-40, стан «синхронізую» на першому pull замість порожньої комори, Retry-After у push)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Харчування (комора) dual-write
 - **Та сама першопричина, що й** [`data-40`](./data-integrity.md#data-40): Обидва випливають з моделі комори «переписати весь список місця» з позиційними id: rel-10 дає O(n²) оп-ів і 429, data-40 тихі втрати при паралельних правках. Стабільні UUID позицій і поелементні операції закривають обидва (і полегшують data-10).
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:560-566; apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts; apps/web/src/core/syncEngine/syncEngineReader.ts:195-206

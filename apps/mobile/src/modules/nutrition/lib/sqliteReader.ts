@@ -22,6 +22,7 @@ import { normalizeShoppingList } from "@sergeant/nutrition-domain";
 import type { NullableMacros } from "@sergeant/shared";
 
 import type { SavedRecipe } from "./recipeBookStore";
+import { recipeCompositionFields } from "@sergeant/nutrition-domain";
 
 export interface SqliteNutritionCache {
   /** Nutrition log keyed by date string (YYYY-MM-DD). */
@@ -218,6 +219,7 @@ function rowToRecipe(row: RecipeRow): SavedRecipe | null {
   return {
     id: row.id,
     title: typeof data.title === "string" ? data.title : (row.name ?? ""),
+    ...recipeCompositionFields(data),
     timeMinutes: typeof data.timeMinutes === "number" ? data.timeMinutes : null,
     servings: typeof data.servings === "number" ? data.servings : null,
     ingredients: Array.isArray(data.ingredients)

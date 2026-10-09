@@ -1,0 +1,37 @@
+// @vitest-environment jsdom
+import { vi } from "vitest";
+
+vi.mock("../auth/AuthContext", () => ({
+  useAuth: () => ({ status: "unauthenticated", user: null }),
+}));
+vi.mock("@shared/api", () => ({ meApi: { updatePreferences: vi.fn() } }));
+
+import { render } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { describe, expect, it } from "vitest";
+import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { CONSENT_BANNER_INSET_VAR } from "@shared/hooks/useBottomInsetVar";
+import AnalyticsConsentBanner from "./AnalyticsConsentBanner";
+
+describe("AnalyticsConsentBanner + FloatingActionButton", () => {
+  it("банер публікує інсет, а FAB піднімається над ним", () => {
+    const { container, unmount } = render(
+      <MemoryRouter>
+        <FloatingActionButton aria-label="Додати" onClick={() => {}} />
+        <AnalyticsConsentBanner />
+      </MemoryRouter>,
+    );
+
+    expect(
+      document.documentElement.style.getPropertyValue(CONSENT_BANNER_INSET_VAR),
+    ).not.toBe("");
+    const fab = container.querySelector("button[aria-label='Додати']")
+      ?.parentElement as HTMLElement;
+    expect(fab.className).toContain(`var(${CONSENT_BANNER_INSET_VAR}`);
+
+    unmount();
+    expect(
+      document.documentElement.style.getPropertyValue(CONSENT_BANNER_INSET_VAR),
+    ).toBe("");
+  });
+});

@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { BudgetAlertsList } from "./BudgetAlertsList";
+import { calcLimitUsages } from "@sergeant/finyk-domain/domain/budget";
 import type {
   LimitBudget,
   Transaction,
@@ -13,7 +14,7 @@ function makeTx(id: string, amount: number): Transaction {
   return {
     id,
     amount,
-    time: Date.now(),
+    time: Math.floor(Date.now() / 1000),
     description: "",
   } as unknown as Transaction;
 }
@@ -27,16 +28,19 @@ function makeBudget(limit: number): LimitBudget {
   } as unknown as LimitBudget;
 }
 
+/** Стан лімітів так, як його дає `useOverviewData.budgetAlerts`. */
+function usages(
+  budgets: LimitBudget[],
+  txs: Transaction[],
+  txCategories: Record<string, string> = {},
+) {
+  return calcLimitUsages(budgets, txs, { txCategories });
+}
+
 describe("BudgetAlertsList", () => {
   it("renders nothing when there are no alerts", () => {
     const { container } = render(
-      <BudgetAlertsList
-        budgetAlerts={[]}
-        statTx={[]}
-        txCategories={{}}
-        txSplits={{}}
-        onOpenLimit={vi.fn()}
-      />,
+      <BudgetAlertsList budgetAlerts={[]} onOpenLimit={vi.fn()} />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -46,10 +50,7 @@ describe("BudgetAlertsList", () => {
     const tx = makeTx("t1", -70000); // 700 ₴
     const { container } = render(
       <BudgetAlertsList
-        budgetAlerts={[makeBudget(1000)]}
-        statTx={[tx]}
-        txCategories={{ t1: CATEGORY }}
-        txSplits={{}}
+        budgetAlerts={usages([makeBudget(1000)], [tx], { t1: CATEGORY })}
         onOpenLimit={vi.fn()}
       />,
     );
@@ -62,10 +63,7 @@ describe("BudgetAlertsList", () => {
     const onOpenLimit = vi.fn();
     const { container } = render(
       <BudgetAlertsList
-        budgetAlerts={[makeBudget(1000)]}
-        statTx={[tx]}
-        txCategories={{ t1: CATEGORY }}
-        txSplits={{}}
+        budgetAlerts={usages([makeBudget(1000)], [tx], { t1: CATEGORY })}
         onOpenLimit={onOpenLimit}
       />,
     );
@@ -83,15 +81,17 @@ describe("BudgetAlertsList", () => {
       <BudgetAlertsList
         budgetAlerts={[
           {
-            id: "b-unknown",
-            type: "limit",
-            categoryId: unknownId,
-            limit: 0,
-          } as unknown as LimitBudget,
+            ...usages([makeBudget(1000)], [])[0]!,
+            budget: {
+              id: "b-unknown",
+              type: "limit",
+              categoryId: unknownId,
+              limit: 0,
+            } as unknown as LimitBudget,
+            pctRaw: 0,
+            overLimit: false,
+          },
         ]}
-        statTx={[]}
-        txCategories={{}}
-        txSplits={{}}
         onOpenLimit={vi.fn()}
       />,
     );

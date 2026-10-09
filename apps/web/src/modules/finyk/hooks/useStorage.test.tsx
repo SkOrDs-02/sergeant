@@ -29,6 +29,7 @@ import {
 } from "../lib/monoMirrorReader";
 import { notifyFinykMonoMirrorRefresh } from "../lib/monoMirrorGate";
 import { useStorage } from "./useStorage";
+import { flushPendingWrites } from "../lib/finykStorage";
 
 function wrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({
@@ -227,5 +228,24 @@ describe("useStorage composition root", () => {
       result.current.saveNetworthSnapshot(100500);
     });
     expect(result.current.networthHistory.length).toBe(countAfterFirst);
+  });
+});
+
+describe("useStorage — нотатки до операцій (аудит 2026-10-01, data-27)", () => {
+  it("setTxNote переживає unmount і повторний mount (запис у LS)", () => {
+    const first = renderHook(() => useStorage(), { wrapper });
+    act(() => {
+      first.result.current.setTxNote("tx-1", "  кава з Олею  ");
+    });
+    // Debounce-запис у LS: скидаємо чергу так, як це робить pagehide.
+    flushPendingWrites();
+    first.unmount();
+
+    expect(
+      JSON.parse(localStorage.getItem("finyk_tx_notes") ?? "null"),
+    ).toEqual({ "tx-1": "кава з Олею" });
+
+    const second = renderHook(() => useStorage(), { wrapper });
+    expect(second.result.current.txNotes).toEqual({ "tx-1": "кава з Олею" });
   });
 });

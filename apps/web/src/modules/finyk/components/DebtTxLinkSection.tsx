@@ -55,6 +55,7 @@ import type {
   LinkedTxRole,
   SetLinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import { findLinkedKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
@@ -142,9 +143,15 @@ export function DebtTxLinkSection({
         // операції — фінансовий період, тож ADR-0078 віддає її Києву.
         timeZone: KYIV_TIME_ZONE,
       });
-  const linkedDebt = manualDebts.find((d) =>
-    (d.linkedTxIds || []).includes(txId),
+  // Шукаємо привʼязку за обома формами ключа ручного запису (`manual_X` і
+  // спадкове сире `X`), інакше стара сира привʼязка лишалась невидимою і
+  // секція пропонувала привʼязати вдруге (`data-24`).
+  const linkedDebt = manualDebts.find(
+    (d) => findLinkedKey(d.linkedTxIds, txId) !== undefined,
   );
+  const linkedKey = linkedDebt
+    ? (findLinkedKey(linkedDebt.linkedTxIds, txId) ?? txId)
+    : txId;
 
   const linkExisting = (debtId: string) => {
     setLinkedTxRole(debtId, txId, "debt", txRole, amountUAH);
@@ -172,7 +179,7 @@ export function DebtTxLinkSection({
   };
 
   if (linkedDebt) {
-    const isAuto = linkedDebt.txLinks?.[txId]?.auto === true;
+    const isAuto = linkedDebt.txLinks?.[linkedKey]?.auto === true;
     return (
       <div className="rounded-2xl border border-line bg-panel p-3 flex items-center justify-between gap-3">
         <p className="text-style-caption text-subtle">
@@ -183,7 +190,9 @@ export function DebtTxLinkSection({
           variant="ghost"
 
           size="xs"
-          onClick={() => setLinkedTxRole(linkedDebt.id, txId, "debt", null)}
+          onClick={() =>
+            setLinkedTxRole(linkedDebt.id, linkedKey, "debt", null)
+          }
         >
           {shared.unlink}
         </Button>
