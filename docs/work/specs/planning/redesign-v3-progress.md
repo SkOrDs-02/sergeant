@@ -9,7 +9,7 @@
 | --- | ------------------------ | ------------ | --------- | ----------------------------------------------------------- |
 | PR0 | `claude/redesign-v3-pr0` | #1494        | merged    | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                   |
 | PR1 | `claude/redesign-v3-pr1` | #1495        | merged    | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36 |
-| PR2 | `claude/redesign-v3-pr2` | (див. нижче) | draft     | 3, 11, 15, 16; частково 26-29                               |
+| PR2 | `claude/redesign-v3-pr2` | #1497        | draft     | 3, 11, 15, 16; частково 26-29                               |
 | PR3 | `claude/redesign-v3-pr3` |              | не почато |                                                             |
 | PR4 | `claude/redesign-v3-pr4` |              | не почато |                                                             |
 | PR5 | `claude/redesign-v3-pr5` |              | не почато |                                                             |
@@ -130,7 +130,7 @@
 - Застарілі пропи `Card` (`variant`, `module`, `elevation`), `EmptyState` (`icon`, `illustration`, `examplePreview`) і тести контрасту `hero-ink #fdf9f3` на старих градієнтах прибирає PR7.
 - `size-limit` червоний (+12,35 kB): рішення про стелю за власником, або далі прибирати мертве (`--hero-grad-*`, `--hero-ink-*` градієнти тепер декор).
 
-## Фікс після PR1 (`claude/redesign-v3-pr1-e2e-fix`)
+## Фікс після PR1 (`claude/redesign-v3-pr1-e2e-fix`, #1496)
 
 PR1 змерджено 2026-10-09 16:30 (`76e546aa0`) з червоними `check` і `Critical-flow E2E`. Причини, усі від PR1:
 
