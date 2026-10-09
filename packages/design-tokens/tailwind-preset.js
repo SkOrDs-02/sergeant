@@ -101,6 +101,9 @@ const preset = {
         bg: "rgb(var(--c-bg) / <alpha-value>)",
         panel: "rgb(var(--c-panel) / <alpha-value>)",
         panelHi: "rgb(var(--c-panel-hi) / <alpha-value>)",
+        // Мова H: доріжка й активний сегмент `Segmented` (iOS-форма).
+        track: "rgb(var(--c-track) / <alpha-value>)",
+        segment: "rgb(var(--c-segment) / <alpha-value>)",
         line: "rgb(var(--c-line) / <alpha-value>)",
         text: "rgb(var(--c-text) / <alpha-value>)",
         muted: "rgb(var(--c-muted) / <alpha-value>)",
@@ -192,17 +195,14 @@ const preset = {
         "module-accent-strong":
           "rgb(var(--module-accent-strong-rgb) / <alpha-value>)",
 
-        // Hero-surface text — «Чорнило» v3.1 § 3. Content nested inside a
-        // `prominence="hero"` Card sits on a saturated module gradient in
-        // BOTH themes (light: the new `--hero-grad-*` anchor; dark: the
-        // `--hero-ink-*` near-black fill from § 2) — the surface is always
-        // dark enough to need light text, so this is one flat colour with
-        // no `.dark` flip. Always full opacity as TEXT (owner decision
-        // 2026-10-01, contrast audit A9: no `text-hero-ink/NN` — any alpha
-        // mixes the gradient into the ink and fails AA); hierarchy comes from
-        // size and weight. Alpha stays legal only for decor (`bg-`, `border-`,
-        // `stroke-hero-ink/NN`).
-        "hero-ink": "#fdf9f3",
+        // Hero-surface text. Мова H (redesign v3): hero - тинт модуля
+        // (`bg-{m}-tint`), світлий у світлій темі й темний у темній, тож
+        // текст на ньому - звичайне чорнило теми, а не світлий колір під
+        // насичений градієнт, як було до v3. Пару «чорнило на тинті ≥ 7:1»
+        // тримає `contrast.test.js` (мова H). Як TEXT лише повна
+        // непрозорість (аудит A9, 2026-10-01); альфа легальна для декору
+        // (`bg-`, `border-`, `stroke-hero-ink/NN`).
+        "hero-ink": "rgb(var(--c-text) / <alpha-value>)",
 
         // ═══════════════════════════════════════════════════════════════════
         // BRAND COLORS — Neutral hub chrome (warm stone)
@@ -376,6 +376,10 @@ const preset = {
           // Fallback — світлий тир, щоб платформа без змінних (mobile)
           // рендерила -800.
           edge: `rgb(var(--c-finyk-ink, ${hexToRgbTriple(accentStrongHex.finyk)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - мова H.2 (redesign v3): одна тинтована
+          // поверхня на екран і ярлик на ній. Текст і числа на тинті чорнилом.
+          tint: "rgb(var(--c-finyk-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-finyk-tint-label) / <alpha-value>)",
         },
 
         /** Фізрук — Cyan fitness tracker (v2 redesign 2026-05; was teal). */
@@ -421,6 +425,9 @@ const preset = {
           "soft-fg": "rgb(var(--c-fizruk-soft-fg) / <alpha-value>)",
           // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
           edge: `rgb(var(--c-fizruk-ink, ${hexToRgbTriple(accentStrongHex.fizruk)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - див. `finyk.tint`.
+          tint: "rgb(var(--c-fizruk-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-fizruk-tint-label) / <alpha-value>)",
           // `tile` + `tile-border` — subtle stat-tile wash on the
           // fizruk hero gradient (Wave 2a). Light=teal-800,
           // dark=white. Apply with the registered opacity scale,
@@ -470,6 +477,9 @@ const preset = {
           "soft-fg": "rgb(var(--c-routine-soft-fg) / <alpha-value>)",
           // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
           edge: `rgb(var(--c-routine-ink, ${hexToRgbTriple(accentStrongHex.routine)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - див. `finyk.tint`.
+          tint: "rgb(var(--c-routine-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-routine-tint-label) / <alpha-value>)",
         },
 
         /** Харчування — Fresh lime nutrition tracker */
@@ -492,6 +502,9 @@ const preset = {
           "soft-fg": "rgb(var(--c-nutrition-soft-fg) / <alpha-value>)",
           // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
           edge: `rgb(var(--c-nutrition-ink, ${hexToRgbTriple(accentStrongHex.nutrition)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - див. `finyk.tint`.
+          tint: "rgb(var(--c-nutrition-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-nutrition-tint-label) / <alpha-value>)",
         },
 
         // ═══════════════════════════════════════════════════════════════════
@@ -704,6 +717,8 @@ const preset = {
       // ═══════════════════════════════════════════════════════════════════
       boxShadow: {
         // Semantic elevation scale (preferred for new code).
+        // Мова H: єдина тінь на контенті - активний сегмент.
+        segment: "0 1px 2px rgba(0, 0, 0, 0.1)",
         e0: "var(--shadow-e0)",
         e1: "var(--shadow-e1)",
         e2: "var(--shadow-e2)",
@@ -1254,31 +1269,44 @@ const preset = {
         // широка за наслідками: з 19 місць із цією роллю лише 4 містять
         // слова (IntroSlide, ResetPasswordPage, VerifyEmailPage,
         // LegalDocumentView) — решта числа, де різниця майже невидима.
+        // Мова H (redesign v3, 2026-10-09): hero 40 / 700 / −0,03 em / line 1,
+        // фіксовано. Спека `redesign-v3.md § Токени` перекриває калібрування
+        // трекінгу 2026-08-05 вище.
         ".text-style-display": {
-          fontSize: "clamp(2.5rem, 2rem + 2.5vw, 4rem)",
+          fontSize: "2.5rem",
           lineHeight: "1",
-          fontWeight: "800",
-          letterSpacing: "-0.012em",
+          fontWeight: "700",
+          letterSpacing: "-0.03em",
         },
         // v2 hero display — Manrope-800 weight, tight leading.
         // Slot: Finyk balance reveal, Expensa amount hero (Phase 6.2),
         // Workout Win celebration headline (Phase 4.4 W2).
         // Separate from `.text-style-display` so existing display call-sites
         // keep their 700 weight; this opts you into the 800 hero look.
+        // Мова H: заголовок екрана модуля 26 / 700 / −0,03 em.
         ".text-style-headline": {
-          fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
+          fontSize: "1.625rem",
           lineHeight: "1.15",
           fontWeight: "700",
-          letterSpacing: "-0.02em",
+          letterSpacing: "-0.03em",
+        },
+        // Size-variant `headline`: заголовок екрана хаба (дата) 30 px. Лише
+        // для `HubHeader`, не для сторінкового коду.
+        ".text-style-headline-lg": {
+          fontSize: "1.875rem",
+          lineHeight: "1.15",
+          fontWeight: "700",
+          letterSpacing: "-0.03em",
         },
         // Back-compat alias — `.text-style-hero` was the prior name for
         // the page-H1 / hero-stat slot. New code should reach for
         // `.text-style-headline`; existing call-sites keep working.
+        // Мова H: заголовок секції 20 / 700 / −0,02 em.
         ".text-style-title": {
-          fontSize: "clamp(1.125rem, 1.054rem + 0.357vw, 1.375rem)",
-          lineHeight: "1.3",
-          fontWeight: "600",
-          letterSpacing: "-0.01em",
+          fontSize: "1.25rem",
+          lineHeight: "1.25",
+          fontWeight: "700",
+          letterSpacing: "-0.02em",
         },
         ".text-style-body": {
           fontSize: "clamp(0.9375rem, 0.920rem + 0.089vw, 1rem)",
@@ -1356,11 +1384,18 @@ const preset = {
         // call-site-ів заради синоніма, а «overline» у типографіці — це
         // рядок НАД заголовком, не «великі літери». Капс у це імʼя вклали
         // ми самі.
+        //
+        // Мова H (redesign v3, 2026-10-09) повертає капс: ярлик 12 / 600 /
+        // caps / +0,06 em (`redesign-v3.md § Токени`, канон рядів H.1 / H.2).
+        // Ярлик тепер короткий (одне-два слова над числом), а не кікер над
+        // секцією, тож ціна силуету, описана вище, мала. Смужку `SectionHeading`
+        // знято.
         ".text-style-overline": {
           fontSize: "0.75rem",
           lineHeight: "1.4",
           fontWeight: "600",
-          letterSpacing: "0.005em",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
         },
         ".text-style-code": {
           fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
