@@ -30,10 +30,9 @@ export interface FirstEntryCelebrationCopy {
   /** Single-line subtext under the headline. ≤ 90 chars. */
   subtext: string;
   /**
-   * «Що далі» tip — concrete, module-specific next-step promise (B-11).
+   * «Що далі» tip — concrete, module-specific next step (B-11), stated as
+   * a fact, not a promise or a pep talk (redesign v3, catalogue item 19).
    * ≤ 110 chars so it fits comfortably below the headline on phones.
-   * Must reference the value the user is *buying* by continuing
-   * (тренди / прогрес / автоматизм / баланс БЖВ), never the mechanic.
    */
   nextStepTip: string;
   /**
@@ -52,45 +51,36 @@ export const FIRST_ENTRY_CELEBRATIONS: Record<
 > = {
   finyk: {
     headline: "Перша витрата записана",
-    subtext:
-      "Тепер бюджет – твій. Ще кілька записів, і Sergeant покаже тренди.",
-    nextStepTip:
-      "Додай ще 2-3 витрати, Sergeant покаже категорії, де гроші тікають швидше.",
+    subtext: "Витрата вже в історії операцій і в бюджеті місяця.",
+    nextStepTip: "Після кількох витрат в Аналізі Фініка зʼявляться категорії.",
     primaryCtaLabel: "Записати ще витрату",
   },
   fizruk: {
     headline: "Перше тренування у щоденнику",
     subtext:
-      "Тепер це твоя історія. Стабільно 2-3 рази на тиждень, і прогрес буде видно.",
-    nextStepTip:
-      "Заплануй наступне тренування, і ритм утвердиться за два-три тижні.",
+      "Тренування вже в журналі, відновлення мʼязів рахується від нього.",
+    nextStepTip: "Наступне тренування можна запланувати в календарі Фізрука.",
     primaryCtaLabel: "Запланувати наступне",
   },
   routine: {
     headline: "Звичка стартувала",
-    // Outcome-first frame (S6.6 / B-4): сказати, що користувач *купує*
-    // регулярністю — автоматизм без сили волі — а не просто розповісти
-    // про мехнику ("Streak зʼявиться", «Серія днів: 0»). Поріг 30 синхро-
-    // нізований з `ROUTINE_TARGET_DAYS` у `ValueProgressBar.tsx`; якщо
-    // число почне дрейфувати — винесемо в спільну константу. Audit-guard
-    // у `onboardingCelebrations.test.ts` блокує повернення слова
-    // «Streak / Серія» у subtext (mechanism-first regression).
-    subtext: "Перший день у банку. Через 30 підряд це стає автоматичним.",
-    nextStepTip:
-      "Завтра я нагадаю про звичку, два дні підряд і мозок підхопить.",
+    // Факт без оцінки (редизайн v3, каталог п. 19): що сталося з відміткою.
+    // Audit-guard у `onboardingCelebrations.test.ts` блокує повернення
+    // «Streak / Серія» у subtext (рахунок серії в перший день читався як 0).
+    subtext: "Сьогоднішня відмітка вже в календарі звички.",
+    nextStepTip: "Нагадування про звичку вмикається в її налаштуваннях.",
     primaryCtaLabel: "Налаштувати нагадування",
   },
   nutrition: {
     headline: "Перший прийом їжі залогований",
-    subtext: "КБЖВ почав рахуватися. Кілька днів, і побачиш свій баланс.",
-    nextStepTip: "Залогуй обід чи вечерю, побачиш баланс БЖВ за день.",
+    subtext: "Калорії й БЖВ прийому вже в денному балансі.",
+    nextStepTip: "Додай обід чи вечерю, і баланс БЖВ за день стане повним.",
     primaryCtaLabel: "Додати ще прийом",
   },
   default: {
     headline: "Перший запис",
-    subtext: "Це вже твої дані. Sergeant працює для тебе.",
-    nextStepTip:
-      "Додай ще запис у будь-якому розділі, Sergeant почне звʼязувати дані.",
+    subtext: "Запис збережено.",
+    nextStepTip: "Записи з різних розділів звʼязуються на вкладці «Звʼязки».",
     primaryCtaLabel: "Продовжити",
   },
 };
