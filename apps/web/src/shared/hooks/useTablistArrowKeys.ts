@@ -31,10 +31,22 @@
  * через `closest('[role="tablist"]')`, тож контейнер може малювати хто
  * завгодно.
  *
- * **Активація автоматична** (`target.click()`), як у WAI-ARIA за
- * замовчуванням і як уже роблять обидва примітиви: фокус і вибір ходять
- * разом. Хук нічого не знає про моделі даних call-site-у, тож `onClick`
- * вкладки лишається єдиним місцем, де описана реакція на вибір.
+ * **Активація за замовчуванням автоматична** (`activation: 'auto'`,
+ * `target.click()`), як у WAI-ARIA за замовчуванням і як уже роблять обидва
+ * примітиви: фокус і вибір ходять разом. Хук нічого не знає про моделі даних
+ * call-site-у, тож `onClick` вкладки лишається єдиним місцем, де описана
+ * реакція на вибір.
+ *
+ * **Коли `'auto'` шкодить — `activation: 'manual'`.** APG радить автоматичну
+ * активацію лише тоді, коли панель зʼявляється миттєво і без зміни
+ * контексту. Якщо активація вкладки має побічний ефект (навігація на інший
+ * маршрут, відкриття камери, файловий піккер), просте переміщення фокуса
+ * стрілкою порушує WCAG 3.2.1 (On Focus): рейок модулів переводив у сусідній
+ * модуль, а вкладка «Скан» у шторці їжі відкривала камеру з запитом дозволу
+ * (аудит 2026-10-01, ux-16). У `'manual'` стрілки/Home/End ЛИШЕ переносять
+ * фокус, а вибір робить Enter/Space на сфокусованій вкладці (нативний `click`
+ * кнопки). Обирай `'manual'` для рядів із побічним ефектом; для ряду, що
+ * лише перемикає видиму панель, лишай `'auto'`.
  *
  * **Межа: лише горизонтальний ряд.** Усі поточні call-site-и — рядки, тож
  * `ArrowUp`/`ArrowDown` навмисно не чіпаємо: у вертикальному tablist вони
@@ -48,12 +60,21 @@ import type { KeyboardEvent } from "react";
 const HANDLED_KEYS = ["ArrowLeft", "ArrowRight", "Home", "End"] as const;
 
 /**
+ * `'auto'` — фокус і вибір разом (стрілка викликає `click()` вкладки);
+ * `'manual'` — стрілка лише переносить фокус, вибирає Enter/Space.
+ */
+export type TablistActivation = "auto" | "manual";
+
+/**
  * @param enabled Вимикає обробку, не змінюючи порядку хуків (напр. поки
  *   ряд прихований). За замовчуванням увімкнено.
+ * @param activation Режим активації, див. докстрінг файлу. За замовчуванням
+ *   `'auto'`.
  * @returns Обробник для `onKeyDown` КОЖНОЇ кнопки з `role="tab"`.
  */
 export function useTablistArrowKeys<T extends HTMLElement = HTMLButtonElement>(
   enabled = true,
+  activation: TablistActivation = "auto",
 ): (event: KeyboardEvent<T>) => void {
   return useCallback(
     (event: KeyboardEvent<T>) => {
@@ -99,8 +120,8 @@ export function useTablistArrowKeys<T extends HTMLElement = HTMLButtonElement>(
       const target = tabs[to];
       if (!target) return;
       target.focus();
-      target.click();
+      if (activation === "auto") target.click();
     },
-    [enabled],
+    [enabled, activation],
   );
 }

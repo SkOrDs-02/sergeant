@@ -1,4 +1,10 @@
-import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+  type RefObject,
+} from "react";
 
 export interface DialogFocusTrapOptions {
   onEscape?: (() => void) | undefined;
@@ -36,6 +42,26 @@ const keyboardStack: symbol[] = [];
  * triggers a modal and dismisses it is dropped on `<body>` and has to
  * re-traverse the whole page to get back to where they were.
  *
+ * AI-CONTEXT: знімок «попереднього фокуса» робиться в `useLayoutEffect`, а
+ * не в `useEffect` разом з рештою пастки. Layout-ефекти всього коміту
+ * відпрацьовують ДО будь-якого passive-ефекту, тож власний автофокус
+ * компонента в `useEffect` (HubSearch: `useSearchEngine` ставить
+ * `inputRef.current?.focus()`) більше не випереджає знімок. Раніше
+ * `previouslyFocused` ставав самим інпутом пошуку, який потім
+ * розмонтовувався, і фокус після закриття падав на `<body>` (аудит
+ * 2026-10-01, ux-08). Якщо фокус на момент відкриття вже всередині панелі
+ * (нативний `autoFocus` дочірнього елемента), знімок не береться: це не
+ * тригер.
+ *
+ * Ранній знімок не замінює пізній повністю. Коли один діалог закривається,
+ * а інший відкривається в ТОМУ САМОМУ коміті (пункт FAB-меню -> аркуш,
+ * Popover -> ConfirmDialog), layout-ефект нового діалогу відпрацьовує
+ * раніше за passive-cleanup старого, який і повертає фокус на свій тригер:
+ * ранній знімок тоді порожній (сфокусований пункт меню вже розмонтовано).
+ * Тому passive-ефект знімає ще й `late` (після тих cleanup-ів), а ціль
+ * відновлення — перший ПІДКЛЮЧЕНИЙ елемент зі пари [early, late], що
+ * перевіряється в момент закриття.
+ *
  * If the previously focused element is no longer in the DOM when the
  * dialog closes (e.g. a sheet that unmounts its own trigger), we quietly
  * skip the restore instead of throwing.
@@ -65,12 +91,30 @@ export function useDialogFocusTrap(
 ): void {
   const { onEscape, inertBackground } = options;
   const onEscapeRef = useRef(onEscape);
-  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   // Keep the latest onEscape callable without re-running the trap effect.
   useEffect(() => {
     onEscapeRef.current = onEscape;
   }, [onEscape]);
+
+  // Хто мав фокус у момент відкриття (ранній знімок, до автофокусів
+  // компонента).
+  const openerRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!open) {
+      openerRef.current = null;
+      return;
+    }
+    // Skip body itself — restoring focus to <body> is identical to losing
+    // focus entirely.
+    const active = document.activeElement;
+    openerRef.current =
+      active instanceof HTMLElement &&
+      active !== document.body &&
+      !containerRef.current?.contains(active)
+        ? active
+        : null;
+  }, [open, containerRef]);
 
   useEffect(() => {
     if (!open) return;
@@ -83,12 +127,20 @@ export function useDialogFocusTrap(
     // вузлом переплутало б старий запис із новим.
     const trapToken = Symbol("dialog-focus-trap");
 
-    // Snapshot the currently-focused element so we can restore focus
-    // after the dialog closes. Skip body itself — restoring focus to
-    // <body> is identical to losing focus entirely.
-    const active = document.activeElement;
-    previouslyFocusedRef.current =
-      active instanceof HTMLElement && active !== document.body ? active : null;
+    // Два знімки «хто мав фокус до відкриття»; на закритті береться перший
+    // із них, що ще підключений до DOM (див. AI-CONTEXT у докстрінгу):
+    //  - `early` — з `useLayoutEffect` вище, до автофокусів компонента;
+    //  - `late` — тут, у passive-ефекті, ПІСЛЯ cleanup-ів попередніх
+    //    ефектів цього коміту (пастка меню, що закривається в тому самому
+    //    коміті, вже повернула фокус на свій тригер).
+    const early = openerRef.current;
+    const lateActive = document.activeElement;
+    const late =
+      lateActive instanceof HTMLElement &&
+      lateActive !== document.body &&
+      !panel.contains(lateActive)
+        ? lateActive
+        : null;
 
     const getFocusable = (): HTMLElement[] =>
       Array.from(
@@ -202,13 +254,12 @@ export function useDialogFocusTrap(
       // target lives in the subtree we just inerted, and `.focus()` is a
       // no-op on an element inside an `inert` subtree.
       if (inertRoot) unregisterInertRoot(inertRoot);
-      const el = previouslyFocusedRef.current;
-      previouslyFocusedRef.current = null;
-      if (!el) return;
       // The trigger may have unmounted while the dialog was open
       // (e.g. tapping a card button that is re-rendered into a new
-      // position). Guard against focusing an orphaned node.
-      if (!el.isConnected) return;
+      // position). Guard against focusing an orphaned node: ранній знімок
+      // відпадає на користь пізнього, якщо вже не підключений.
+      const el = early?.isConnected ? early : late?.isConnected ? late : null;
+      if (!el) return;
       try {
         el.focus({ preventScroll: true });
       } catch {

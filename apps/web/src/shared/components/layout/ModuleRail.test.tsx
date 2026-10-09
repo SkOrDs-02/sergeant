@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 const { hapticTap, openHubModule, openHubSettingsSection } = vi.hoisted(() => ({
   hapticTap: vi.fn(),
@@ -83,5 +84,47 @@ describe("ModuleRail", () => {
     for (const tab of screen.getAllByRole("tab")) {
       expect(tab.className).toContain("pointer-coarse:h-11");
     }
+  });
+
+  it("стрілка лише переносить фокус між комірками і не веде в модуль (WCAG 3.2.1)", () => {
+    // Раніше ArrowRight викликав `click()` сусідньої комірки, тобто
+    // `openHubModule`: просте переміщення фокуса переводило в інший модуль.
+    render(<ModuleRail active="finyk" source="module_switcher" />);
+    const finyk = screen.getByRole("tab", { name: /Фінік/ });
+    finyk.focus();
+    fireEvent.keyDown(finyk, { key: "ArrowRight" });
+
+    expect(document.activeElement).toBe(
+      screen.getByRole("tab", { name: /Фізрук/ }),
+    );
+    expect(openHubModule).not.toHaveBeenCalled();
+    expect(hapticTap).not.toHaveBeenCalled();
+  });
+
+  it("Home/End теж не активують комірку", () => {
+    render(<ModuleRail active="finyk" source="module_switcher" />);
+    const finyk = screen.getByRole("tab", { name: /Фінік/ });
+    finyk.focus();
+    fireEvent.keyDown(finyk, { key: "End" });
+    expect(document.activeElement).toBe(
+      screen.getByRole("tab", { name: /Їжа/ }),
+    );
+    expect(openHubModule).not.toHaveBeenCalled();
+  });
+
+  it("Enter на сфокусованій комірці відкриває модуль", async () => {
+    const user = userEvent.setup();
+    render(<ModuleRail active={null} source="module_rail" />);
+    screen.getByRole("tab", { name: /Фінік/ }).focus();
+    await user.keyboard("{ArrowRight}");
+    expect(openHubModule).not.toHaveBeenCalled();
+
+    await user.keyboard("{Enter}");
+    expect(openHubModule).toHaveBeenCalledTimes(1);
+    expect(openHubModule).toHaveBeenCalledWith(
+      "fizruk",
+      undefined,
+      "module_rail",
+    );
   });
 });

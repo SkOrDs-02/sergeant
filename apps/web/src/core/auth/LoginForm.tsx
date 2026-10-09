@@ -11,6 +11,10 @@ import { messages } from "@shared/i18n/uk";
 import { useAuth } from "./AuthContext";
 import { loginSchema, type LoginValues } from "./authSchemas";
 import { FieldError, PasswordVisibilityToggle } from "./authFormPrimitives";
+import { restoreFocusIfLost } from "./restoreFocusIfLost";
+
+// id блоку з помилкою входу: на нього вказує `aria-describedby` поля пароля.
+const LOGIN_ERROR_ID = "auth-login-error";
 
 interface LoginFormProps {
   onForgotPassword: (currentEmail: string) => void;
@@ -30,6 +34,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
     register,
     submit,
     watch,
+    setFocus,
     formState: { errors },
     isSubmitting,
   } = useApiForm<LoginValues, boolean>({
@@ -42,6 +47,11 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
         // показується (рендер `serverError` свідомо не приводимо).
         // Реальний текст помилки відображається через `authError`
         // нижче, бо він утримує локалізоване повідомлення Better Auth.
+        //
+        // Фокус повертаємо в пароль: кнопка сабміту на час запиту
+        // `disabled`, і браузер скидає з неї фокус на <body>. Поля лише
+        // `readOnly`, тож `setFocus` працює ще до кінця сабміту.
+        restoreFocusIfLost(() => setFocus("password"));
         throw new Error("");
       }
       return ok;
@@ -56,6 +66,12 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
   // повертає live-значення інпута; `formState.defaultValues` тримало б лише
   // початкові дефолти ("") і ніколи б не оновлювалось під час набору.
   const emailValue = watch("email") ?? "";
+
+  // Помилка входу (401 тощо) стосується пари email+пароль; позначаємо поле
+  // пароля невалідним і привʼязуємо до нього текст помилки (role=alert нижче).
+  // Поки відкрита панель «Забули пароль», помилку не показуємо, тож і
+  // aria-invalid/aria-describedby не ставимо, щоб не вказувати в порожнечу.
+  const loginError = authError && !showForgot ? authError : null;
 
   return (
     <form onSubmit={submit} noValidate className="space-y-4">
@@ -76,7 +92,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
           error={!!errors.email}
           aria-invalid={!!errors.email}
           aria-describedby={errors.email ? "auth-email-error" : undefined}
-          disabled={isSubmitting}
+          readOnly={isSubmitting}
           {...register("email")}
         />
         <FieldError id="auth-email-error" message={errors.email?.message} />
@@ -105,10 +121,16 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
             placeholder="Пароль"
             autoComplete="current-password"
             className="pr-12"
-            error={!!errors.password}
-            aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? "auth-pw-error" : undefined}
-            disabled={isSubmitting}
+            error={!!errors.password || !!loginError}
+            aria-invalid={!!errors.password || !!loginError}
+            aria-describedby={
+              errors.password
+                ? "auth-pw-error"
+                : loginError
+                  ? LOGIN_ERROR_ID
+                  : undefined
+            }
+            readOnly={isSubmitting}
             {...register("password")}
           />
           <PasswordVisibilityToggle
@@ -123,12 +145,13 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
           (translateAuthError). Не робимо `serverError` з useApiForm,
           щоб не дублювати джерело істини — auth context сам володіє
           серверною помилкою (login + Google + reset). */}
-      {authError && !showForgot && (
+      {loginError && (
         <div
+          id={LOGIN_ERROR_ID}
           role="alert"
           className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
         >
-          {authError}
+          {loginError}
         </div>
       )}
 
