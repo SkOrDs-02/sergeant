@@ -35,6 +35,7 @@ import type {
   Debt,
   SetLinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import { expandLinkedKeys } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import {
   matchDebtAutoLinkTxIds,
   type AutoLinkableTx,
@@ -60,7 +61,10 @@ export function useDebtAutoLink(
     // привʼязана (хоч руками) до боргу А, лишалась кандидатом для боргу Б.
     // Одна транзакція гасить максимум один борг — інакше та сама сума
     // віднімається двічі.
-    const linkedElsewhere = new Set(
+    //
+    // Обидві форми ключа ручного запису (`X` і `manual_X`) — спадкова сира
+    // привʼязка з аркуша витрати інакше лишалась невидимою (`data-24`).
+    const linkedElsewhere = expandLinkedKeys(
       manualDebts.flatMap((debt) => debt.linkedTxIds ?? []),
     );
 

@@ -66,7 +66,7 @@ describe("useNutritionPantries.consumePantryItem (F15 uom-conversion)", () => {
     vi.clearAllMocks();
   });
 
-  it("г: списує грами 1:1, округлює до 0.1", () => {
+  it("г: списує грами 1:1", () => {
     seedPantries([{ name: "рис", qty: 500, unit: "г", notes: null }]);
     const result = renderHarness();
     act(() => result.current.consumePantryItem("рис", 120));
@@ -77,14 +77,21 @@ describe("useNutritionPantries.consumePantryItem (F15 uom-conversion)", () => {
     seedPantries([{ name: "рис", qty: 1, unit: "кг", notes: null }]);
     const result = renderHarness();
     act(() => result.current.consumePantryItem("рис", 250));
-    expect(activeItems(result)[0]).toMatchObject({ qty: 0.8, unit: "кг" });
+    expect(activeItems(result)[0]).toMatchObject({ qty: 0.75, unit: "кг" });
+  });
+
+  it("кг: порція 40 г із 0.5 кг зменшує залишок (data-41, не губиться округленням)", () => {
+    seedPantries([{ name: "сир", qty: 0.5, unit: "кг", notes: null }]);
+    const result = renderHarness();
+    act(() => result.current.consumePantryItem("сир", 40));
+    expect(activeItems(result)[0]?.qty).toBeCloseTo(0.46, 9);
   });
 
   it("мл: списує через густину молока (1.03 г/мл)", () => {
     seedPantries([{ name: "молоко", qty: 500, unit: "мл", notes: null }]);
     const result = renderHarness();
     act(() => result.current.consumePantryItem("молоко", 200));
-    // 500 - 200/1.03 = 305.8 (округлено до 0.1)
+    // 500 - 200/1.03 = 305.8 (округлено до 0.001)
     expect(activeItems(result)[0]?.qty).toBeCloseTo(305.8, 1);
   });
 

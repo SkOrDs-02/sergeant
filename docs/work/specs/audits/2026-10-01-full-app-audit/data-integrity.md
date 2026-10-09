@@ -2197,7 +2197,7 @@ recordBodyWeight.ts:52-60 (`if (weightKg < min || weightKg > max) return;`). app
 
 ### `data-24` [medium] Привʼязки платежів до боргу рахуються двічі або лишаються після видалення платежу: залишок боргу й капітал неправильні
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-24-debt-payment-links
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (борги, debtEngine, useDebtAutoLink)
 - **Де:** apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx:194,663-674; apps/web/src/modules/finyk/components/DebtTxLinkSection.tsx:145-160; packages/finyk-domain/src/domain/transactions.ts:350; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:135-150; packages/finyk-domain/src/domain/debtEngine.ts:148-150; apps/web/src/modules/finyk/pages/AssetsDebtTxPicker.tsx:278-281
 - **Першопричина:** Аркуш витрати пише привʼязку за сирим id, а пікер і useDebtAutoLink — за manual_&lt;id&gt;, тож один платіж має два ключі. removeManualExpense не чистить linkedTxIds і txLinks пасивів та дебіторок, getDebtPaid бере суму зі знімка txLinks незалежно від того, чи транзакція існує, а restoreManualExpense відкидає id.
@@ -2428,7 +2428,7 @@ Verifier runs: pw_synclink_cold.mjs (key verify-cs-outbox-synclink) produced toa
 
 ### `data-27` [medium] Нотатки до банківських транзакцій не зберігаються ніде: зникають на reload, не синхронізуються й не потрапляють у бекап
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-27-tx-notes-persist (нотатки пишуться в LS і входять у бекап; синк між пристроями лишився follow-up-ом з міграцією і рішенням власника)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (txNotes)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:58-61,145-148; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-73; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:367-375; apps/web/src/modules/finyk/lib/sqliteWriter/extract.ts:183-198
 - **Першопричина:** txNotes оголошено через useReadonlyPersist, який лише читає LS на першому кадрі й нічого не пише, а dual-write стан (extractFinykDualWriteState) і бекап (FINYK_BACKUP_STORAGE_KEYS) txNotes не містять.
@@ -3345,7 +3345,7 @@ vb/04-concurrent.mjs, користувач vrf-nutri-conc-1. Сервер до �
 
 ### `data-41` [medium] Комора: списання менше 50 г з позиції в кг чи л губиться округленням, а журнал подій фіксує списання
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-41-pantry-consume-rounding
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/nutrition-domain (pantryConsume) + web: useNutritionPantries
 - **Де:** packages/nutrition-domain/src/pantryConsume.ts:131-137; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:458-486
 - **Першопричина:** pantryConsume у гілці без варіантів округлює залишок до 0.1 одиниці позиції (100 г чи мл для кг і л), але повертає нерозкруглений deducted, який хук пише в журнал як consume.

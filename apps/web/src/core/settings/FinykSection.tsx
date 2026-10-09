@@ -138,7 +138,7 @@ export function FinykSection() {
           <SettingsSubGroup title="Показ сум">
             <ToggleRow
               label="Приховувати суми"
-              description="Баланс, бюджети й аналітика показують «••••» замість чисел. Операції лишаються видимими."
+              description="Баланс, бюджети, аналітика й суми на головному екрані показують «••••» замість чисел. Операції в Фініку лишаються видимими."
               checked={!showBalance}
               onChange={(hide) => setShowBalance(!hide)}
             />
