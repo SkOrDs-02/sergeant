@@ -590,12 +590,13 @@ export default function App({
               (e) => String(e.id) === String(id),
             );
             const isIncome = snapshot?.kind === "income";
-            storage.removeManualExpense(id);
+            const removedLinks = storage.removeManualExpense(id);
             setEditingManualExpenseId(null);
             if (snapshot) {
               showUndoToast(toast, {
                 msg: isIncome ? "Надходження видалено" : "Витрату видалено",
-                onUndo: () => storage.restoreManualExpense(snapshot),
+                onUndo: () =>
+                  storage.restoreManualExpense(snapshot, removedLinks),
               });
             } else {
               toast.success("Витрату видалено");

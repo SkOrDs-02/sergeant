@@ -50,11 +50,12 @@ export function FoodFields({
       </label>
       <div className="grid grid-cols-2 gap-2">
         {MACRO_FIELDS.map(([key, label, placeholder]) => (
-          <label key={key} className="block">
+          <label key={key} className="block" htmlFor={`${idPrefix}-${key}`}>
             <span className="mb-1 block text-style-caption text-text">
               {label}
             </span>
             <Input
+              id={`${idPrefix}-${key}`}
               value={draft[key]}
               onChange={(event) => set({ [key]: event.target.value })}
               inputMode="decimal"

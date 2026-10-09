@@ -395,3 +395,58 @@ describe("spendingVelocityRule — однакові відрізки кален�
     );
   });
 });
+
+describe("spendingVelocityRule — канонічний excluded-set (logic-08)", () => {
+  const spendingAtIso = (id: string, uah: number, iso: string): Transaction =>
+    spending(id, uah, new Date(iso).getTime());
+
+  it("виключені ноги (ноутбук, пара «Скасування») не роздувають темп", () => {
+    const c = ctx({
+      transactions: [
+        spendingAtIso("silpo", 800, "2025-06-16T10:00:00Z"),
+        spendingAtIso("laptop", 30_000, "2025-06-17T10:00:00Z"),
+        spendingAtIso("uklon", 1500, "2025-06-17T11:00:00Z"),
+        income(
+          "uklon-refund",
+          1500,
+          new Date("2025-06-17T12:00:00Z").getTime(),
+        ),
+        spendingAtIso("prev", 2000, "2025-06-10T10:00:00Z"),
+      ],
+      excludedTxIds: new Set(["laptop", "uklon", "uklon-refund"]),
+    });
+    const rec = spendingVelocityRule.evaluate(c)[0];
+    expect(rec?.id).toBe("spending_velocity_low");
+    expect(rec?.title).toBe("Витрати на 60% нижче ніж минулого тижня");
+  });
+
+  it("ручна витрата, чий id (manual_<id>) у excluded, у темп не йде", () => {
+    const c = ctx({
+      transactions: [
+        spendingAtIso("silpo", 800, "2025-06-16T10:00:00Z"),
+        spendingAtIso("prev", 2000, "2025-06-10T10:00:00Z"),
+      ],
+      manualExpenses: [
+        { id: "m1", amount: 30_000, date: "2025-06-17T10:00:00Z" },
+      ],
+      excludedTxIds: new Set(["manual_m1"]),
+    });
+    expect(spendingVelocityRule.evaluate(c)[0]?.id).toBe(
+      "spending_velocity_low",
+    );
+  });
+
+  it("без excludedTxIds лишається старий вузький набір (hidden + перекази)", () => {
+    const c = ctx({
+      transactions: [
+        spendingAtIso("silpo", 800, "2025-06-16T10:00:00Z"),
+        spendingAtIso("hidden", 30_000, "2025-06-17T10:00:00Z"),
+        spendingAtIso("prev", 2000, "2025-06-10T10:00:00Z"),
+      ],
+      hiddenTxIds: new Set(["hidden"]),
+    });
+    expect(spendingVelocityRule.evaluate(c)[0]?.id).toBe(
+      "spending_velocity_low",
+    );
+  });
+});
