@@ -29,11 +29,6 @@ import {
 
 const WEEKDAYS_UK = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] as const;
 
-// Abbreviated "today" for the chip cap. Kept as a co-located constant rather
-// than a catalog key: `messages` (uk.ts) is already at the 600-line cap
-// (Hard Rule #18), and this matches the sibling WEEKDAYS_UK inline pattern.
-const TODAY_SHORT = "Сьог";
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Скільки днів назад малює стрічка, коли викликач не сказав інакше. */
@@ -151,7 +146,7 @@ export function DateScrubber({
                 selected ? "text-bg/80" : "text-muted",
               )}
             >
-              {isToday ? TODAY_SHORT : label}
+              {isToday ? messages.period.today : label}
             </span>
             <span className="text-style-body tabular-nums leading-none">
               {day}
