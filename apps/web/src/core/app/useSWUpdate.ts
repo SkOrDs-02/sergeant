@@ -9,6 +9,7 @@ import {
   reloadOnce,
   reloadUnlessBlocked,
   type ReloadDeferredDetail,
+  type ReloadDeferredReason,
 } from "./swReload";
 
 declare global {
@@ -38,6 +39,16 @@ const IDLE_POLL_INTERVAL_MS = 1_000; // 1 second
  * воркер тримають (rel-14: до 5 хв lame-duck).
  */
 const CONTROLLER_CHANGE_TIMEOUT_MS = 3_000;
+
+const DEFERRED_RELOAD_COPY: Record<ReloadDeferredReason, string> = {
+  "unsaved-input": "Оновлення готове. Перезавантаж, коли збережеш введене",
+  "other-tab":
+    "Застосунок оновлено в іншій вкладці. Перезавантаж, коли будеш готовий",
+  // chunk-recovery (`chunkReload.ts`) не став тихо перезавантажувати вкладку
+  // з незбереженим вводом.
+  "stale-chunk":
+    "Частину застосунку не вдалося завантажити: вийшла нова версія. Перезавантаж, коли збережеш введене",
+};
 
 export function useSWUpdate() {
   const toast = useToast();
@@ -252,9 +263,7 @@ export function useSWUpdate() {
       if (deferredShown.has(reason)) return;
       deferredShown.add(reason);
       toastRef.current.info(
-        reason === "unsaved-input"
-          ? "Оновлення готове. Перезавантаж, коли збережеш введене"
-          : "Застосунок оновлено в іншій вкладці. Перезавантаж, коли будеш готовий",
+        DEFERRED_RELOAD_COPY[reason] ?? DEFERRED_RELOAD_COPY["other-tab"],
         null,
         {
           label: "Перезавантажити",

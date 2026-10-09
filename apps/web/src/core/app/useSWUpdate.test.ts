@@ -42,6 +42,7 @@ import {
   registerDirtyState,
   resetDirtyStateForTests,
 } from "@shared/lib/ui/dirtyState";
+import { reloadOnceForChunkError } from "../lib/chunkReload";
 import {
   PWA_RELOAD_DEFERRED_EVENT,
   handleNeedReload,
@@ -654,5 +655,55 @@ describe("useSWUpdate — defer-while-busy", () => {
       restore();
       delete window.__pwaUpdateSW;
     });
+  });
+});
+
+// data-45: chunk-recovery (stale-чанк у вкладці, що не оновилась) не має тихо
+// перезавантажувати вкладку з відкритою формою; замість цього useSWUpdate
+// показує тост з ручним «Перезавантажити». Справжній `chunkReload`.
+describe("useSWUpdate — chunk-recovery проти незбереженого вводу", () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    mockIsHubStreaming.mockReturnValue(false);
+    mockToastInfo.mockReset();
+    resetSwReloadForTests();
+    resetDirtyStateForTests();
+    sessionStorage.clear();
+    queryClient = new QueryClient();
+    delete window.__pwaUpdateReady;
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+    resetDirtyStateForTests();
+  });
+
+  it("форма відкрита: reload немає, тост stale-chunk з ручною кнопкою; без форми reload є", async () => {
+    const { reloadSpy, restore } = stubServiceWorker({ waiting: false });
+    renderHook(() => useSWUpdate(), { wrapper: makeWrapper(queryClient) });
+
+    const release = registerDirtyState();
+    await act(async () => {
+      expect(reloadOnceForChunkError(1_000)).toBe(false);
+      await Promise.resolve();
+    });
+
+    expect(reloadSpy).not.toHaveBeenCalled();
+    expect(mockToastInfo).toHaveBeenCalledOnce();
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      expect.stringContaining("Частину застосунку не вдалося завантажити"),
+      null,
+      expect.objectContaining({ label: "Перезавантажити" }),
+    );
+
+    const action = mockToastInfo.mock.calls[0]?.[2] as { onClick: () => void };
+    release();
+    act(() => {
+      action.onClick();
+    });
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    restore();
   });
 });

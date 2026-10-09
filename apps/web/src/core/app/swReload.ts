@@ -47,11 +47,25 @@ export function reloadOnce(win: Window = window): void {
 /** Подія «reload відкладено»: `useSWUpdate` показує тост замість reload. */
 export const PWA_RELOAD_DEFERRED_EVENT = "pwa-reload-deferred";
 
-/** Чому reload відкладено: оновлення прийняли в іншій вкладці / є незбережений ввід. */
-export type ReloadDeferredReason = "other-tab" | "unsaved-input";
+/**
+ * Чому reload відкладено: оновлення прийняли в іншій вкладці / є незбережений
+ * ввід / ліниво підвантажений чанк зі старим хешем дав 404 (`chunkReload.ts`),
+ * а в цій вкладці є що втрачати.
+ */
+export type ReloadDeferredReason =
+  "other-tab" | "unsaved-input" | "stale-chunk";
 
 export interface ReloadDeferredDetail {
   reason: ReloadDeferredReason;
+}
+
+/** Повідомити `useSWUpdate`, що reload відкладено (тост з ручною кнопкою). */
+export function deferReload(win: Window, reason: ReloadDeferredReason): void {
+  win.dispatchEvent(
+    new CustomEvent<ReloadDeferredDetail>(PWA_RELOAD_DEFERRED_EVENT, {
+      detail: { reason },
+    }),
+  );
 }
 
 /**
@@ -65,11 +79,7 @@ export function reloadUnlessBlocked(
   isMutating?: () => boolean,
 ): boolean {
   if (isForcedReloadBlocked(isMutating)) {
-    win.dispatchEvent(
-      new CustomEvent<ReloadDeferredDetail>(PWA_RELOAD_DEFERRED_EVENT, {
-        detail: { reason: "unsaved-input" },
-      }),
-    );
+    deferReload(win, "unsaved-input");
     return false;
   }
   reloadOnce(win);
@@ -88,11 +98,7 @@ export function handleNeedReload(
     reloadUnlessBlocked(win, isMutating);
     return;
   }
-  win.dispatchEvent(
-    new CustomEvent<ReloadDeferredDetail>(PWA_RELOAD_DEFERRED_EVENT, {
-      detail: { reason: "other-tab" },
-    }),
-  );
+  deferReload(win, "other-tab");
 }
 
 /** Лише для тестів. */

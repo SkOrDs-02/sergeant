@@ -26,6 +26,7 @@ import "@shared/lib/adapters/fileImport";
 import "@shared/hooks/useVisualKeyboardInset";
 import { ErrorBoundary } from "./core/ErrorBoundary.jsx";
 import { installChunkLoadRecover } from "./core/lib/chunkReload.js";
+import { hasMutationsInFlight, setMutationProbe } from "./core/app/updateGate";
 import {
   addSentryBreadcrumb,
   captureException,
@@ -90,6 +91,11 @@ const ReactQueryDevtools = import.meta.env.DEV
 // на `Failed to fetch dynamically imported module`. Має стояти максимально
 // рано — щоб упіймати rejection-и на найперших lazy-import-ах.
 installChunkLoadRecover();
+// Chunk-recovery reload (`chunkReload.ts`) не має обривати мутацію в польоті:
+// `QueryClient` живе тут, тож пробу реєструємо звідси.
+setMutationProbe(() =>
+  hasMutationsInFlight(() => queryClient.getMutationCache()),
+);
 
 interface ErrorFallbackProps {
   error: Error;
@@ -386,7 +392,6 @@ if (
 
   import("virtual:pwa-register").then(async ({ registerSW }) => {
     const { handleNeedReload } = await import("./core/app/swReload");
-    const { hasMutationsInFlight } = await import("./core/app/updateGate");
     const updateSW = registerSW({
       // data-45 / rel-14: без власного `onNeedReload` слухач `controlling` з
       // `vite-plugin-pwa` перезавантажує КОЖНУ вкладку, де піднімали плашку,
