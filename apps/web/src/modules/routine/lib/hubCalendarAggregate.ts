@@ -1,8 +1,4 @@
-import { safeReadLS } from "@shared/lib/storage/storage";
-import {
-  MONTHLY_PLAN_STORAGE_KEY,
-  TEMPLATES_STORAGE_KEY,
-} from "@sergeant/fizruk-domain";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
   dateKeyFromDate,
   enumerateDateKeys,
@@ -30,31 +26,27 @@ export {
   FIZRUK_GROUP_LABEL,
 };
 
-export function loadMonthlyPlanDays() {
-  const p = safeReadLS<{ days?: Record<string, { templateId?: string }> }>(
-    MONTHLY_PLAN_STORAGE_KEY,
-    {},
-  );
-  return typeof p?.days === "object" && p.days ? p.days : {};
+// Писачі Фізрука (useMonthlyPlan, useWorkoutTemplates) пишуть лише в SQLite
+// через dual-write, LS-дзеркала прибрані (teardown Phase 3), тож читаємо
+// знімок із SQLite-кешу. Порожній (ще не прогрітий) кеш дає порожній план;
+// календар перемальовується по `useFizrukSqliteReadTick` (див.
+// `useRoutineDerivedData`).
+export function loadMonthlyPlanDays(): Record<string, { templateId?: string }> {
+  const days = getCachedFizrukSqliteState().monthlyPlan?.days;
+  return typeof days === "object" && days ? days : {};
 }
 
 export function loadTemplateNameById() {
   const map = new Map<string, string>();
-  const arr = safeReadLS<Array<{ id?: string; name?: string }>>(
-    TEMPLATES_STORAGE_KEY,
-    [],
-  );
-  if (Array.isArray(arr)) {
-    for (const t of arr) {
-      if (t?.id && t?.name) map.set(t.id, String(t.name));
-    }
+  for (const t of getCachedFizrukSqliteState().workoutTemplates) {
+    if (t?.id && t?.name) map.set(t.id, String(t.name));
   }
   return map;
 }
 
 /**
  * Тонкий web-адаптер над pure `buildHubCalendarEvents` з
- * `@sergeant/routine-domain`: підтягує з localStorage Fizruk-план,
+ * `@sergeant/routine-domain`: підтягує з SQLite-кешу Fizruk-план,
  * імена шаблонів тренувань і події підписок Фініка, решту роботи
  * робить pure-builder.
  */
