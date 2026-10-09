@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-12
+ * Last validated: 2026-10-08
  * Status: Active
  *
  * Гейт проти повернення тихої дірки в Hard Rule #26: список файлів PR
@@ -11,8 +11,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   assertCompleteFileList,
+  bitbucketSource,
   CANONICAL_DOC_ROOTS,
   entryKey,
+  examinedKey,
+  fetchPRMetadata,
+  githubSource,
+  hasNextLink,
+  parseArgs,
+  readGitHubToken,
 } from "../update-pr-backlinks.mjs";
 
 test("повний список проходить мовчки", () => {
@@ -147,5 +154,303 @@ test("scope у hard-rules.json збігається з CANONICAL_DOC_ROOTS", () 
     fromRegistry,
     scriptRoots(),
     "скоуп правила #26 розійшовся з тим, що насправді сканує гейт",
+  );
+});
+
+/**
+ * GitHub-фетчер (з 2026-10-08). Мережі в тестах немає: `fetch` підмінено
+ * таблицею «шлях → відповідь», і будь-який непередбачений запит валить тест,
+ * а не йде в інтернет.
+ */
+const SLUG = "SkOrDs-02/sergeant";
+
+function mockFetch(routes) {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, init });
+    const path = url.replace(`https://api.github.com/repos/${SLUG}/`, "");
+    if (!(path in routes)) throw new Error(`неочікуваний запит: ${url}`);
+    const r = routes[path];
+    const status = r.status ?? 200;
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => r.body,
+      headers: { get: (h) => (h.toLowerCase() === "link" ? r.link : null) },
+    };
+  };
+  return { fetchImpl, calls };
+}
+
+const NEXT = '<https://api.github.com/x?page=2>; rel="next"';
+const ADR = "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md";
+const LIST = "pulls?state=closed&sort=updated&direction=desc&per_page=100";
+
+const PR_1300 = {
+  number: 1300,
+  title: "docs(docs): оновити ADR",
+  state: "closed",
+  merged_at: "2026-10-02T10:11:12Z",
+  merge_commit_sha: "abc123def4567890",
+  html_url: `https://github.com/${SLUG}/pull/1300`,
+  user: { login: "SkOrDs-02" },
+  changed_files: 3,
+};
+
+test("githubSource.getPR: метадані, токен у заголовку, файли з усіх сторінок", async () => {
+  const { fetchImpl, calls } = mockFetch({
+    "pulls/1300": { body: PR_1300 },
+    "pulls/1300/files?per_page=100&page=1": {
+      body: [{ filename: ADR }, { filename: "apps/web/src/main.tsx" }],
+      link: NEXT,
+    },
+    "pulls/1300/files?per_page=100&page=2": {
+      body: [
+        {
+          filename: "docs/start/instructions/new.md",
+          previous_filename: "docs/start/instructions/old.md",
+        },
+      ],
+    },
+  });
+  const src = githubSource({ slug: SLUG, token: "t0k", fetchImpl });
+  const pr = await src.getPR(1300);
+  assert.deepEqual(pr, {
+    number: 1300,
+    title: "docs(docs): оновити ADR",
+    merged_at: "2026-10-02T10:11:12Z",
+    author: "@SkOrDs-02",
+    merge_commit: "abc123def4567890",
+    url: `https://github.com/${SLUG}/pull/1300`,
+    paths: [ADR, "apps/web/src/main.tsx", "docs/start/instructions/new.md"],
+  });
+  assert.equal(calls.length, 3);
+  assert.equal(calls[0].init.headers.Authorization, "Bearer t0k");
+});
+
+test("githubSource.getPR: без токена заголовка Authorization немає", async () => {
+  const { fetchImpl, calls } = mockFetch({
+    "pulls/1300": { body: { ...PR_1300, changed_files: 0 } },
+    "pulls/1300/files?per_page=100&page=1": { body: [] },
+  });
+  await githubSource({ slug: SLUG, token: null, fetchImpl }).getPR(1300);
+  assert.equal(calls[0].init.headers.Authorization, undefined);
+});
+
+test("githubSource.getPR: обрізаний список файлів — помилка, а не тихий нуль", async () => {
+  const { fetchImpl } = mockFetch({
+    "pulls/1300": { body: { ...PR_1300, changed_files: 3500 } },
+    "pulls/1300/files?per_page=100&page=1": { body: [{ filename: ADR }] },
+  });
+  await assert.rejects(
+    githubSource({ slug: SLUG, token: "t", fetchImpl }).getPR(1300),
+    /fetched 1 changed file\(s\) but the API reports 3500/,
+  );
+});
+
+test("githubSource.getPR: незмерджений PR і HTTP-помилка падають уголос", async () => {
+  const unmerged = mockFetch({
+    "pulls/7": { body: { ...PR_1300, number: 7, merged_at: null } },
+  });
+  await assert.rejects(
+    githubSource({
+      slug: SLUG,
+      token: "t",
+      fetchImpl: unmerged.fetchImpl,
+    }).getPR(7),
+    /не змерджений/,
+  );
+  const denied = mockFetch({ "pulls/8": { status: 403, body: {} } });
+  await assert.rejects(
+    githubSource({
+      slug: SLUG,
+      token: "t",
+      fetchImpl: denied.fetchImpl,
+    }).getPR(8),
+    /GitHub API 403 на pulls\/8/,
+  );
+});
+
+test("fetchPRMetadata з GitHub дає запис реєстру тієї ж форми, що й Bitbucket", async () => {
+  const { fetchImpl } = mockFetch({
+    "pulls/1300": { body: PR_1300 },
+    "pulls/1300/files?per_page=100&page=1": {
+      body: [
+        { filename: ADR },
+        { filename: "docs/governance/adr/README.md" },
+        { filename: "apps/web/src/main.tsx" },
+      ],
+    },
+  });
+  const entry = await fetchPRMetadata(
+    1300,
+    githubSource({ slug: SLUG, token: "t", fetchImpl }),
+  );
+  assert.deepEqual(entry, {
+    number: 1300,
+    title: "docs(docs): оновити ADR",
+    merged_at: "2026-10-02T10:11:12Z",
+    author: "@SkOrDs-02",
+    host: "github",
+    repo: SLUG,
+    touchedDocs: [ADR],
+  });
+});
+
+test("githubSource.listMerged: лише змерджені, зупинка на --since", async () => {
+  const pr = (number, merged_at, updated_at) => ({
+    number,
+    merged_at,
+    updated_at,
+  });
+  const { fetchImpl, calls } = mockFetch({
+    [`${LIST}&page=1`]: {
+      body: [
+        pr(1400, "2026-10-07T09:00:00.000Z", "2026-10-07T09:00:00Z"),
+        pr(1399, null, "2026-10-06T09:00:00Z"),
+        // Оновлений після --since, але змерджений до нього — відсіюється.
+        pr(1100, "2026-09-12T09:00:00Z", "2026-10-05T09:00:00Z"),
+      ],
+      link: NEXT,
+    },
+    [`${LIST}&page=2`]: {
+      body: [
+        pr(1250, "2026-09-30T20:00:00Z", "2026-09-30T20:00:00Z"),
+        pr(1200, "2026-09-29T08:00:00Z", "2026-09-29T08:00:00Z"),
+      ],
+      link: NEXT,
+    },
+  });
+  const src = githubSource({ slug: SLUG, token: "t", fetchImpl });
+  const { prs, capped } = await src.listMerged(200, "2026-09-30");
+  assert.deepEqual(prs, [
+    { number: 1400, merged_at: "2026-10-07T09:00:00Z" },
+    { number: 1250, merged_at: "2026-09-30T20:00:00Z" },
+  ]);
+  assert.equal(capped, false);
+  // Третьої сторінки не просили: #1200 оновлено раніше за --since.
+  assert.equal(calls.length, 2);
+});
+
+test("githubSource.listMerged: стеля скану позначається як capped", async () => {
+  const body = [10, 9, 8].map((number) => ({
+    number,
+    merged_at: "2026-10-01T00:00:00Z",
+    updated_at: "2026-10-01T00:00:00Z",
+  }));
+  const { fetchImpl } = mockFetch({
+    [`${LIST}&page=1`]: { body, link: NEXT },
+  });
+  const { prs, capped } = await githubSource({
+    slug: SLUG,
+    token: "t",
+    fetchImpl,
+  }).listMerged(2);
+  assert.equal(prs.length, 2);
+  assert.equal(capped, true);
+});
+
+test("hasNextLink і readGitHubToken", () => {
+  assert.equal(hasNextLink(NEXT), true);
+  assert.equal(hasNextLink('<https://x>; rel="last"'), false);
+  assert.equal(hasNextLink(null), false);
+  assert.equal(readGitHubToken({ GITHUB_TOKEN: "a", GH_TOKEN: "b" }), "a");
+  assert.equal(readGitHubToken({ GH_TOKEN: "b" }), "b");
+  assert.equal(readGitHubToken({}), null);
+});
+
+test("examined групується за репо для GitHub і лишається `bitbucket` для архіву", () => {
+  assert.equal(examinedKey("bitbucket", "skords01/sergeant"), "bitbucket");
+  assert.equal(examinedKey("github", SLUG), `github:${SLUG}`);
+  assert.notEqual(
+    examinedKey("github", SLUG),
+    examinedKey("github", "zaebal-beep/sergeant"),
+  );
+});
+
+test("parseArgs: типовий хост github, --host і --since валідуються", () => {
+  assert.deepEqual(parseArgs(["--sync"]), {
+    mode: "sync",
+    prNumber: null,
+    host: "github",
+    since: null,
+  });
+  const a = parseArgs([
+    "--sync",
+    "--host",
+    "bitbucket",
+    "--since",
+    "2026-09-30",
+  ]);
+  assert.equal(a.host, "bitbucket");
+  assert.equal(a.since, "2026-09-30");
+  assert.throws(() => parseArgs(["--host", "gitlab"]), /--host/);
+  assert.throws(() => parseArgs(["--since", "30.09.2026"]), /--since/);
+});
+
+test("listMerged: ліміт рахує лише потрібні PR, а не найсвіжіші", async () => {
+  // Найсвіжіші вже в реєстрі; повторний запуск мусить дійти до старіших
+  // пропущених, а не обрізатись на тих самих записаних (CodeRabbit, #1458).
+  const mk = (number) => ({
+    number,
+    merged_at: "2026-10-05T00:00:00Z",
+    updated_at: "2026-10-05T00:00:00Z",
+  });
+  const { fetchImpl } = mockFetch({
+    [`${LIST}&page=1`]: { body: [mk(10), mk(9), mk(8)], link: NEXT },
+    [`${LIST}&page=2`]: { body: [mk(7), mk(6)], link: null },
+  });
+  const recorded = new Set([10, 9, 8]);
+  const { prs, capped, scanned } = await githubSource({
+    slug: SLUG,
+    token: "t",
+    fetchImpl,
+  }).listMerged(2, null, (n) => !recorded.has(n));
+  assert.deepEqual(
+    prs.map((p) => p.number),
+    [7, 6],
+  );
+  assert.equal(capped, false);
+  assert.equal(scanned, 5);
+});
+
+test("bitbucketSource: сторінки беруться з `next`, а не рахуються", async () => {
+  const BB = "https://api.bitbucket.org/2.0/repositories";
+  const NEXT_URL = `${BB}/skords01/sergeant/pullrequests?cursor=opaque-2`;
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    const body = url.startsWith(NEXT_URL)
+      ? { values: [{ id: 2, closed_on: "2026-09-25T00:00:00Z" }] }
+      : {
+          values: [{ id: 3, closed_on: "2026-09-26T00:00:00Z" }],
+          next: NEXT_URL,
+        };
+    return { ok: true, status: 200, json: async () => body };
+  };
+  const { prs } = await bitbucketSource({
+    slug: "skords01/sergeant",
+    token: "t",
+    fetchImpl,
+  }).listMerged(50);
+  assert.deepEqual(
+    prs.map((p) => p.number),
+    [3, 2],
+  );
+  assert.equal(calls[1], NEXT_URL);
+});
+
+test("--since відкидає неіснуючу календарну дату", () => {
+  assert.equal(
+    parseArgs(["--sync", "--since", "2026-09-30"]).since,
+    "2026-09-30",
+  );
+  assert.throws(
+    () => parseArgs(["--sync", "--since", "2026-02-30"]),
+    /YYYY-MM-DD/,
+  );
+  assert.throws(
+    () => parseArgs(["--sync", "--since", "2026-13-01"]),
+    /YYYY-MM-DD/,
   );
 });
