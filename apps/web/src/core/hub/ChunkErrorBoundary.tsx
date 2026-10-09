@@ -28,6 +28,12 @@ interface ChunkErrorBoundaryState {
  * so a persistently broken chunk can't loop the tab. If that guard refuses the
  * automatic reload, the manual card below lets the user trigger one.
  *
+ * Unlike `ModuleErrorBoundary` / `ErrorBoundary` this boundary only replaces
+ * its own `<Suspense>` chunk, so a form elsewhere on the page survives. That is
+ * why it keeps the default unsaved-input gate of `reloadOnceForChunkError`
+ * (data-45): a dirty tab gets the "reload when you've saved" toast instead of
+ * a silent reload.
+ *
  * Non-chunk errors are re-thrown so the app-level ErrorBoundary owns them —
  * this boundary is deliberately narrow.
  */

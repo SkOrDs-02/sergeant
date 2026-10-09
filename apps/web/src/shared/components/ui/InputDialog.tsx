@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import { z } from "zod";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
 import { useVisualKeyboardInset } from "@sergeant/shared";
@@ -97,6 +98,8 @@ export function InputDialog({
 
   useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
   useBodyScrollLock(open);
+  // Поле вводу відкритого діалогу — незбережений ввід (data-45).
+  useRegisterDirtyState(open);
 
   // Діалог із єдиним полем вводу — клавіатура тут відкривається завжди
   // (див. автофокус нижче), тож обидві половини keyboard-геометрії

@@ -2,6 +2,7 @@ import { useId, useRef, type ReactNode, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
@@ -104,6 +105,8 @@ export function Modal({
   const useSheet = coarse && !hideClose && Boolean(title);
 
   useBodyScrollLock(open && !useSheet);
+  // Sheet-гілка реєструється сама; тут лише центрована (data-45).
+  useRegisterDirtyState(open && !useSheet);
   // Only the centered branch needs its own history entry — the coarse-pointer
   // branch delegates to <Sheet>, which owns one already.
   useHistoryDismiss(open && !useSheet, onClose);

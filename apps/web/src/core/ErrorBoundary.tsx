@@ -60,7 +60,12 @@ export class ErrorBoundary extends Component<
     // module` після деплою (нові хеші чанків), пробуємо одноразовий
     // `location.reload()` — cooldown через sessionStorage страхує від
     // нескінченного циклу, якщо це не stale-кеш, а реальна поломка.
-    if (isChunkLoadError(error) && reloadOnceForChunkError()) {
+    // Гейт незбереженого вводу вимкнено: цей boundary сам розмонтує дерево
+    // (data-45), відмова не вбереже форму, а лише відніме авто-відновлення.
+    if (
+      isChunkLoadError(error) &&
+      reloadOnceForChunkError(undefined, { guardUnsavedInput: false })
+    ) {
       return { error: null, copied: false };
     }
     return { error, copied: false };

@@ -6,6 +6,7 @@ import {
   setVisualKeyboardInsetAdapter,
 } from "@sergeant/shared";
 import { Sheet } from "./Sheet";
+import { hasDirtyState } from "../../lib/ui/dirtyState";
 
 afterEach(() => {
   cleanup();
@@ -279,5 +280,31 @@ describe("Sheet", () => {
     const dialog = getByRole("dialog");
     expect(dialog.style.marginBottom).toBe("280px");
     expect(dialog.style.maxHeight).toContain("100dvh - 280px");
+  });
+
+  // data-45: відкритий аркуш не дає тихому idle-reload сервіс-воркера
+  // знищити незбережений ввід.
+  it("реєструє брудний стан, поки відкритий, і знімає на close/unmount", () => {
+    expect(hasDirtyState()).toBe(false);
+    const { rerender, unmount } = render(
+      <Sheet open onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+    expect(hasDirtyState()).toBe(true);
+    rerender(
+      <Sheet open={false} onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+    expect(hasDirtyState()).toBe(false);
+    rerender(
+      <Sheet open onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+    expect(hasDirtyState()).toBe(true);
+    unmount();
+    expect(hasDirtyState()).toBe(false);
   });
 });
