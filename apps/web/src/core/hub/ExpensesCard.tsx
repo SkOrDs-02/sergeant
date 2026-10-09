@@ -15,6 +15,10 @@ import { toKyivISODate } from "@sergeant/shared";
 import { readFinykStatsContext } from "@finyk/utils";
 import { compareAmounts } from "@sergeant/finyk-domain/domain/selectors";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
+import {
+  HIDDEN_AMOUNT_MASK,
+  isFinykBalanceHidden,
+} from "@finyk/lib/balanceVisibility";
 import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
@@ -37,12 +41,14 @@ function BarChart({
   colorClass,
   maxValue,
   unit = "",
+  hidden = false,
 }: {
   data: Record<string, number>;
   dates: string[];
   colorClass: string;
   maxValue?: number;
   unit?: string;
+  hidden?: boolean;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const vals = dates.map((d) => data[d] ?? 0);
@@ -61,7 +67,12 @@ function BarChart({
   const step = labelStep(dates.length);
   const formatLabel = (dateStr: string) => formatChartLabel(dateStr, isWeek);
   const formatTooltip = (dateStr: string, value: number) =>
-    formatChartTooltip(dateStr, value, unit);
+    hidden
+      ? formatChartTooltip(dateStr, 0, "").replace(
+          /:.*$/,
+          `: ${HIDDEN_AMOUNT_MASK}`,
+        )
+      : formatChartTooltip(dateStr, value, unit);
 
   const selectedDate = selected !== null ? dates[selected] : undefined;
   const selectedVal = selected !== null ? vals[selected] : undefined;
@@ -152,8 +163,18 @@ function BarChart({
  * читалось як дефект. Агрегат картки — цілі гривні (`calcFinykSpendingByDate`
  * округлює по днях), тож копійки тут `× 100`: точніших значень картка не має.
  */
-function SpendingDelta({ cur, prev }: { cur: number; prev: number }) {
+function SpendingDelta({
+  cur,
+  prev,
+  hidden,
+}: {
+  cur: number;
+  prev: number;
+  hidden: boolean;
+}) {
   const { pct } = compareAmounts(Math.round(cur * 100), Math.round(prev * 100));
+  // Абсолютна дельта в гривнях теж сума; відсоток суми не розкриває.
+  if (hidden && pct === null) return null;
   return (
     <DeltaChip
       cur={cur}
@@ -194,6 +215,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // `/finyk/*` it looked fine only because that route had already
   // warmed the same module-level cache before this card ever mounted.
   const sqliteCacheTick = useFinykSqliteReadTick();
+  const hidden = isFinykBalanceHidden();
 
   const { cur, prev, prevAny, dates, partial } = useMemo(() => {
     void bump; // storage-write tick
@@ -257,11 +279,21 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
               <span className="text-style-body font-bold text-text">–</span>
             ) : (
               <>
-                <Money
-                  amount={cur.total}
-                  className="text-style-body font-bold text-text"
+                {hidden ? (
+                  <span className="text-style-body font-bold text-text">
+                    {HIDDEN_AMOUNT_MASK}
+                  </span>
+                ) : (
+                  <Money
+                    amount={cur.total}
+                    className="text-style-body font-bold text-text"
+                  />
+                )}
+                <SpendingDelta
+                  cur={cur.total}
+                  prev={prev.total}
+                  hidden={hidden}
                 />
-                <SpendingDelta cur={cur.total} prev={prev.total} />
               </>
             )}
           </span>
@@ -292,17 +324,23 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
-            <Money
-              amount={cur.total}
-              className="text-style-headline text-text"
-            />
-            <SpendingDelta cur={cur.total} prev={prev.total} />
+            {hidden ? (
+              <span className="text-style-headline text-text">
+                {HIDDEN_AMOUNT_MASK}
+              </span>
+            ) : (
+              <Money
+                amount={cur.total}
+                className="text-style-headline text-text"
+              />
+            )}
+            <SpendingDelta cur={cur.total} prev={prev.total} hidden={hidden} />
           </div>
           <p className="text-style-caption text-muted">
             {partial
               ? messages.hub.reportPreviousToDate
               : messages.hub.reportPrevious}{" "}
-            <Money amount={prev.total} />
+            {hidden ? HIDDEN_AMOUNT_MASK : <Money amount={prev.total} />}
           </p>
           <BarChart
             key={`${period}-${offset}`}
@@ -310,6 +348,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             dates={dates}
             colorClass="bg-chart-finyk"
             unit=" ₴"
+            hidden={hidden}
           />
         </>
       )}

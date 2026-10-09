@@ -49,19 +49,45 @@ describe("usePrPendingInsight", () => {
     expect(result.current).toBeNull();
   });
 
-  it("fires a retrospective insight when the last session was near PR", () => {
-    // Best ever 100kg; the most recent completed session also hit ~96kg (>95%).
+  it("fires a retrospective insight when the last session was just below an earlier PR", () => {
+    // Попередній рекорд 100 кг; останнє тренування 96 кг (≥ 95 %, < 100 %).
     const workouts = [
+      strengthWorkout("w-recent", "2024-01-05T11:00:00Z", "bench", 96),
       strengthWorkout("w-old", "2024-01-01T11:00:00Z", "bench", 100),
-      strengthWorkout("w-recent", "2024-01-05T11:00:00Z", "bench", 100),
     ];
     const { result } = renderHook(() =>
       usePrPendingInsight({ workouts, loaded: true, activeWorkoutId: null }),
     );
     expect(result.current).not.toBeNull();
     expect(result.current!.id).toBe("fizruk-pr-pending");
-    expect(result.current!.title).toContain("Жим лежачи");
-    expect(result.current!.subtitle).toContain("102,5");
+    expect(result.current!.title).toBe("Рекорд близько");
+    expect(result.current!.subtitle).toBe("Спробуй 102,5 кг: Жим лежачи");
+  });
+
+  it("stays silent after the very first workout: its own weight is not «close to» itself", () => {
+    const { result } = renderHook(() =>
+      usePrPendingInsight({
+        workouts: [
+          strengthWorkout("w1", "2024-01-02T11:00:00Z", "bench", 62.5),
+        ],
+        loaded: true,
+        activeWorkoutId: null,
+      }),
+    );
+    expect(result.current).toBeNull();
+  });
+
+  it("stays silent when the last session matched or beat the earlier record", () => {
+    for (const kg of [100, 105]) {
+      const workouts = [
+        strengthWorkout("w-recent", "2024-01-05T11:00:00Z", "bench", kg),
+        strengthWorkout("w-old", "2024-01-01T11:00:00Z", "bench", 100),
+      ];
+      const { result } = renderHook(() =>
+        usePrPendingInsight({ workouts, loaded: true, activeWorkoutId: null }),
+      );
+      expect(result.current).toBeNull();
+    }
   });
 
   it("prefers the active workout when its weight is near PR", () => {

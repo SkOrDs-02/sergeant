@@ -21,6 +21,10 @@ import { resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
+import {
+  isFinykBalanceHidden,
+  maskAmountsInText,
+} from "@finyk/lib/balanceVisibility";
 import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
@@ -496,9 +500,20 @@ export function generateRecommendations(): Rec[] {
   ];
   all.sort((a, b) => b.priority - a.priority);
   const seen = new Set<string>();
-  return all.filter((r) => {
-    if (seen.has(r.id)) return false;
-    seen.add(r.id);
-    return true;
-  });
+  const hidden = isFinykBalanceHidden();
+  return all
+    .filter((r) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    })
+    .map((r) =>
+      hidden
+        ? {
+            ...r,
+            title: maskAmountsInText(r.title, hidden),
+            body: maskAmountsInText(r.body, hidden),
+          }
+        : r,
+    );
 }

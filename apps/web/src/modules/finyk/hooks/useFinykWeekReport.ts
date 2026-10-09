@@ -9,11 +9,12 @@ import { buildWeekReport } from "@sergeant/finyk-domain/domain/weekReport";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/utils";
 import { messages } from "@shared/i18n/uk";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { isFinykBalanceHidden, maskAmount } from "../lib/balanceVisibility";
 import { useFinykStatTransactions } from "./useFinykStatTransactions";
 
 const copy = messages.finyk.weekReport;
-const money = (hryvnias: number) =>
-  `${formatNumberUk(Math.round(hryvnias))}${NARROW_NBSP}₴`;
+const money = (hryvnias: number, hidden: boolean) =>
+  maskAmount(`${formatNumberUk(Math.round(hryvnias))}${NARROW_NBSP}₴`, hidden);
 const fill = (tpl: string, vars: Record<string, string | number>) =>
   tpl.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
 
@@ -31,6 +32,7 @@ export function useFinykWeekReport(enabled = true): string[] {
   // Денний ключ у залежностях: вкладка хабу, відкрита через північ,
   // зсуває вікно тижня на першому ж рендері, а не лише зі зміною даних.
   const dayKey = getKyivDayKey();
+  const hidden = isFinykBalanceHidden();
   return useMemo(() => {
     void dayKey;
     if (!enabled) return [];
@@ -46,8 +48,8 @@ export function useFinykWeekReport(enabled = true): string[] {
     if (report.total) {
       const { spentMinor, prevMinor, delta } = report.total;
       const vars = {
-        spent: money(spentMinor / 100),
-        prev: money(prevMinor / 100),
+        spent: money(spentMinor / 100, hidden),
+        prev: money(prevMinor / 100, hidden),
         change:
           delta.pct === null
             ? ""
@@ -72,7 +74,7 @@ export function useFinykWeekReport(enabled = true): string[] {
       lines.push(
         fill(copy.top, {
           category: report.top.label,
-          amount: money(report.top.spentMinor / 100),
+          amount: money(report.top.spentMinor / 100, hidden),
         }),
       );
     }
@@ -83,7 +85,7 @@ export function useFinykWeekReport(enabled = true): string[] {
           category: label,
           change:
             delta.pct === null
-              ? `+${money(delta.diffMinor / 100)}`
+              ? `+${money(delta.diffMinor / 100, hidden)}`
               : `+${Math.round(delta.pct)}${NARROW_NBSP}%`,
         }),
       );
@@ -98,9 +100,9 @@ export function useFinykWeekReport(enabled = true): string[] {
         ) || budget.categoryId;
       const vars = {
         category,
-        spent: money(spent),
-        limit: money(limit),
-        forecast: money(forecast ?? spent),
+        spent: money(spent, hidden),
+        limit: money(limit, hidden),
+        forecast: money(forecast ?? spent, hidden),
         days: daysUntilOver ?? 0,
         unit: pluralDays(daysUntilOver ?? 0),
       };
@@ -118,6 +120,7 @@ export function useFinykWeekReport(enabled = true): string[] {
     return lines;
   }, [
     dayKey,
+    hidden,
     enabled,
     statTransactions,
     budgets,

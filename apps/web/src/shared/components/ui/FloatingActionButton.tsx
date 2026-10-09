@@ -235,13 +235,14 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // we round up to 96 to keep clearance on smaller iPhones where the
   // nav's own safe-area-pb stacks below the inner height. Pre-fix
   // (~24px) the FAB clipped the navbar on every module screen.
+  // Над банером згоди (`--sgt-consent-banner-inset`) FAB піднімається: інакше
+  // він лягає на «Ні, дякую». Без банера змінної немає, діє 6rem.
+  const ABOVE =
+    "bottom-[max(calc(6rem+env(safe-area-inset-bottom,0px)),calc(var(--sgt-consent-banner-inset,0px)+0.75rem))]";
   const positionClasses: Record<string, string> = {
-    "bottom-right":
-      "fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] right-[max(1.25rem,env(safe-area-inset-right,0px))]",
-    "bottom-center":
-      "fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2",
-    "bottom-left":
-      "fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] left-[max(1.25rem,env(safe-area-inset-left,0px))]",
+    "bottom-right": `fixed ${ABOVE} right-[max(1.25rem,env(safe-area-inset-right,0px))]`,
+    "bottom-center": `fixed ${ABOVE} left-1/2 -translate-x-1/2`,
+    "bottom-left": `fixed ${ABOVE} left-[max(1.25rem,env(safe-area-inset-left,0px))]`,
   };
 
   const styles = sizeStyles[size];

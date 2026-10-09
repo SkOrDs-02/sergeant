@@ -13,7 +13,7 @@
 import type { RecipeComponent } from "@sergeant/nutrition-domain";
 import { normalizeMacrosNullable, type NullableMacros } from "@sergeant/shared";
 
-import { recipeCompositionFields } from "./recipeComponentsNormalize";
+import { recipeCompositionFields } from "@sergeant/nutrition-domain";
 
 import {
   isNutritionDualWriteRegistered,
