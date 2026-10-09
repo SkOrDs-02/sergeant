@@ -36,7 +36,11 @@ export function RouteErrorElement() {
   const chunkError = isChunkLoadError(error);
 
   useEffect(() => {
-    if (chunkError) reloadOnceForChunkError();
+    // Гейт незбереженого вводу вимкнено (data-45): `errorElement` уже замінив
+    // піддерево маршруту карткою, форми там немає, відмова нічого б не вбереже.
+    if (chunkError) {
+      reloadOnceForChunkError(undefined, { guardUnsavedInput: false });
+    }
   }, [chunkError]);
 
   if (chunkError) {

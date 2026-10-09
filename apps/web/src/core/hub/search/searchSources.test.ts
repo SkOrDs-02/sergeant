@@ -18,6 +18,10 @@ import {
   __setFinykMonoMirrorCacheForTests,
   clearFinykMonoMirrorCache,
 } from "@finyk/lib/monoMirrorReader";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "@finyk/lib/sqliteReader";
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
 
@@ -35,6 +39,7 @@ beforeEach(() => {
   clearFizrukSqliteCache();
   clearNutritionSqliteCache();
   clearFinykMonoMirrorCache();
+  clearFinykSqliteCache();
 });
 
 function finykHit(results: Hit[]): Hit | undefined {
@@ -98,21 +103,40 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
   });
 
   it("scores a title-prefix match above a subtitle-only match", () => {
-    localStorage.setItem(
-      "finyk_subs",
-      JSON.stringify([
+    // Підписки живуть у SQLite-кеші Фініка (LS `finyk_subs` — tombstone).
+    __setFinykSqliteStateCacheForTests({
+      subscriptions: [
         // "netflix" appears in the title → prefix/title bonus.
         { id: "sub-a", name: "Netflix", amount: 25_900 },
         // "netflix" appears only as a free word inside another title, so the
         // higher-scoring one must sort first.
         { id: "sub-b", name: "Подарунок netflix другу", amount: 50_000 },
-      ]),
-    );
+      ] as never[],
+    });
     const results = performSearch("netflix");
     const subs = results.filter((r) => r.id.startsWith("finyk_sub_"));
     expect(subs).toHaveLength(2);
     expect(subs[0]!.title).toBe("Netflix");
     expect(subs[0]!._score).toBeGreaterThan(subs[1]!._score);
+  });
+
+  it("знаходить підписку Фініка з SQLite-кешу при порожньому localStorage (logic-09)", () => {
+    __setFinykSqliteStateCacheForTests({
+      subscriptions: [
+        { id: "sub-spotify", name: "Spotify", amount: 9_900 },
+      ] as never[],
+    });
+    expect(localStorage.getItem("finyk_subs")).toBeNull();
+    const hit = performSearch("spotify").find((r) =>
+      r.id.startsWith("finyk_sub_"),
+    );
+    expect(hit).toBeDefined();
+    expect(hit!.title).toBe("Spotify");
+
+    clearFinykSqliteCache();
+    expect(
+      performSearch("spotify").some((r) => r.id.startsWith("finyk_sub_")),
+    ).toBe(false);
   });
 
   it("matches a Routine habit by name and skips non-matches", () => {

@@ -5,6 +5,7 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { flatMatch } from "@shared/testing/numberText";
 import { WorkoutSummaryView } from "./WorkoutSummaryView";
@@ -30,6 +31,7 @@ describe("WorkoutSummaryView", () => {
         workout={makeWorkout()}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.getByText("Тренування завершено")).toBeInTheDocument();
@@ -61,6 +63,7 @@ describe("WorkoutSummaryView", () => {
         workout={workout}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
@@ -99,6 +102,7 @@ describe("WorkoutSummaryView", () => {
         workout={workout}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.queryByText(/0×0/)).not.toBeInTheDocument();
@@ -129,6 +133,7 @@ describe("WorkoutSummaryView", () => {
         workout={workout}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
@@ -161,6 +166,7 @@ describe("WorkoutSummaryView", () => {
         workout={workout}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.getByText("80×8 · RPE 7, 80×6")).toBeInTheDocument();
@@ -172,6 +178,7 @@ describe("WorkoutSummaryView", () => {
         workout={makeWorkout()}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.queryByText(/Самопочуття/)).not.toBeInTheDocument();
@@ -181,6 +188,7 @@ describe("WorkoutSummaryView", () => {
         workout={makeWorkout({ wellbeing: { energy: 4, mood: 5 } })}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.getByText(/Самопочуття/)).toBeInTheDocument();
@@ -194,6 +202,7 @@ describe("WorkoutSummaryView", () => {
         workout={makeWorkout()}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.queryByText("Нотатка")).not.toBeInTheDocument();
@@ -203,6 +212,7 @@ describe("WorkoutSummaryView", () => {
         workout={makeWorkout({ note: "Важко на присіданнях" })}
         onRepeat={vi.fn()}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(screen.getByText("Нотатка")).toBeInTheDocument();
@@ -216,6 +226,7 @@ describe("WorkoutSummaryView", () => {
         workout={makeWorkout()}
         onRepeat={onRepeat}
         onClose={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     screen.getByRole("button", { name: /повторити це тренування/i }).click();
@@ -233,9 +244,35 @@ describe("WorkoutSummaryView", () => {
         workout={makeWorkout()}
         onRepeat={vi.fn()}
         onClose={onClose}
+        onDelete={vi.fn()}
       />,
     );
     screen.getByRole("button", { name: "Повернутись до тренувань" }).click();
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // ux-11 (аудит 2026-10-01): свайп в історії — touch-only; на сторінці
+  // підсумку мусить бути кнопка, доступна з клавіатури (WCAG 2.1.1).
+  it("has a keyboard-reachable «Видалити тренування» button that calls onDelete on Enter", async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
+    const del = screen.getByRole("button", { name: "Видалити тренування" });
+
+    // Tab-ом із початку сторінки: back → «Повторити» → «Видалити».
+    await user.tab();
+    await user.tab();
+    await user.tab();
+    expect(del).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(onDelete).toHaveBeenCalledTimes(1);
   });
 });

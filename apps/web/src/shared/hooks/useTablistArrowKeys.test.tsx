@@ -8,7 +8,10 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { useTablistArrowKeys } from "./useTablistArrowKeys";
+import {
+  useTablistArrowKeys,
+  type TablistActivation,
+} from "./useTablistArrowKeys";
 
 const onSelect = vi.fn();
 
@@ -16,12 +19,14 @@ function Harness({
   enabled = true,
   disabledIds = [],
   selected = "a",
+  activation,
 }: {
   enabled?: boolean;
   disabledIds?: string[];
   selected?: string;
+  activation?: TablistActivation;
 }) {
-  const onTabKeyDown = useTablistArrowKeys(enabled);
+  const onTabKeyDown = useTablistArrowKeys(enabled, activation);
   return (
     <div role="tablist" aria-label="Проба">
       {["a", "b", "c"].map((id) => (
@@ -161,5 +166,56 @@ describe("useTablistArrowKeys", () => {
     press("a", "ArrowRight");
     expect(document.activeElement).toBe(tab("a"));
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  describe("activation: 'manual'", () => {
+    it("ArrowRight переносить фокус, але не активує сусідню вкладку", () => {
+      // Без режиму `manual` хук кликав `click()` на кожну стрілку: у рейку
+      // модулів це була навігація, у шторці їжі — відкриття камери.
+      render(<Harness activation="manual" />);
+      tab("a").focus();
+      press("a", "ArrowRight");
+      expect(document.activeElement).toBe(tab("b"));
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("ArrowLeft, Home і End теж лише переносять фокус", () => {
+      render(<Harness activation="manual" selected="b" />);
+      tab("b").focus();
+      press("b", "ArrowLeft");
+      expect(document.activeElement).toBe(tab("a"));
+      press("a", "End");
+      expect(document.activeElement).toBe(tab("c"));
+      press("c", "Home");
+      expect(document.activeElement).toBe(tab("a"));
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("загортання і пропуск вимкнених працюють так само", () => {
+      render(<Harness activation="manual" selected="c" disabledIds={["a"]} />);
+      tab("c").focus();
+      press("c", "ArrowRight");
+      expect(document.activeElement).toBe(tab("b"));
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("стрілка все ще гасить дефолт браузера (скрол)", () => {
+      render(<Harness activation="manual" />);
+      tab("a").focus();
+      const event = new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        bubbles: true,
+        cancelable: true,
+      });
+      tab("a").dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it("явне activation='auto' поводиться як дефолт", () => {
+      render(<Harness activation="auto" />);
+      tab("a").focus();
+      press("a", "ArrowRight");
+      expect(onSelect).toHaveBeenCalledWith("b");
+    });
   });
 });

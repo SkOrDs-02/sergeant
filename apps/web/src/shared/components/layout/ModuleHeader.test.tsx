@@ -136,7 +136,7 @@ describe("ModuleSwitcher", () => {
   // неактивних + жодного onKeyDown = неактивні модулі недосяжні з
   // клавіатури взагалі (Tab пропускає, стрілки не працюють). Знахідка
   // PR-C5, аудит 2026-09-13. Половини мусять їхати разом.
-  it("стрілки ходять по модулях і перемикають їх", () => {
+  it("стрілки ходять по модулях, але не перемикають їх (ручна активація)", () => {
     render(<ModuleSwitcher active="finyk" />);
     const tablist = screen.getByRole("tablist");
     const tabs = within(tablist).getAllByRole("tab");
@@ -147,6 +147,11 @@ describe("ModuleSwitcher", () => {
     fireEvent.keyDown(first, { key: "ArrowRight" });
 
     expect(document.activeElement).toBe(second);
+    // Активація комірки — навігація, тож стрілка її не робить (ux-16,
+    // WCAG 3.2.1); модуль відкриває Enter/Space на сфокусованій комірці.
+    expect(openHubModule).not.toHaveBeenCalled();
+
+    fireEvent.click(second);
     expect(openHubModule).toHaveBeenCalledTimes(1);
   });
 

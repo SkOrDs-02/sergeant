@@ -320,7 +320,7 @@ describe("SessionView — dock during rest", () => {
   it("turns the dock into the rest timer with the next-set hint, ±15 and skip", () => {
     const { setRestTimer } = renderView(
       { focusItemId: "b" },
-      { remaining: 83, total: 90 },
+      { remaining: 83, total: 90, endsAt: Date.now() + 83_000 },
     );
     const dock = screen.getByTestId("rest-timer");
     expect(dock).toHaveTextContent("1:23");
@@ -495,14 +495,22 @@ describe("SessionView — меню вправи у фокусі", () => {
 });
 
 describe("SessionView — арифметика відпочинку", () => {
+  const NOW = 1_800_000_000_000;
+  afterEach(() => vi.restoreAllMocks());
+
   it("додає секунди й тягне загальну тривалість за собою, не опускаючись нижче 1 с", () => {
+    // Апдейтер рахує від `Date.now()`; фіксуємо годинник, щоб `endsAt`
+    // у фікстурах був детермінованим.
+    vi.spyOn(Date, "now").mockReturnValue(NOW);
+    const timer = (remaining: number, total: number): RestTimerState => ({
+      remaining,
+      total,
+      endsAt: NOW + remaining * 1000,
+    });
     // `setRestTimer` тут — мок, тож сам апдейтер не виконується. Дістаємо
     // його з виклику і проганяємо вручну: саме він тримає інваріанти
     // «не менше 1 с» і «total не меншає».
-    const { setRestTimer } = renderView(
-      { focusItemId: "b" },
-      { remaining: 83, total: 90 },
-    );
+    const { setRestTimer } = renderView({ focusItemId: "b" }, timer(83, 90));
     const mock = setRestTimer as unknown as ReturnType<typeof vi.fn>;
     const updaterOf = (label: string) => {
       mock.mockClear();
@@ -516,16 +524,20 @@ describe("SessionView — арифметика відпочинку", () => {
     // перевіряти ним підлогу «−15» означає перевіряти не те (знахідка
     // рев'ю 2026-09-11).
     const plus = updaterOf("Додати 15 секунд");
-    expect(plus({ remaining: 83, total: 90 })).toEqual({
+    // Зсув рухає `endsAt` разом із `remaining` — інакше перерахунок за
+    // годинником скасував би його (logic-10).
+    expect(plus(timer(83, 90))).toEqual({
       remaining: 98,
       total: 98,
+      endsAt: NOW + 98_000,
     });
 
     const minus = updaterOf("Відняти 15 секунд");
     // Віднімаємо більше, ніж лишилось: підлога 1 с, а `total` не меншає.
-    expect(minus({ remaining: 5, total: 90 })).toEqual({
+    expect(minus(timer(5, 90))).toEqual({
       remaining: 1,
       total: 90,
+      endsAt: NOW + 1000,
     });
     // Таймера немає — апдейтер не вигадує стан.
     expect(minus(null)).toBeNull();

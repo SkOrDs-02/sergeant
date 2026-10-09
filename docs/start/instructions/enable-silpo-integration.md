@@ -1,6 +1,6 @@
 # Playbook: Enable / Operate Silpo Integration
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-16. _(Trigger в один рядок — генератор INDEX бере лише перший.)_
+> **Last touched:** 2026-10-08 by @claude. **Next review:** 2026-12-16. _(Trigger в один рядок — генератор INDEX бере лише перший.)_
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -93,21 +93,68 @@ JSON `{"code":"UNAUTHORIZED"}` у вкладці замість екрана н�
 | `BETTER_AUTH_URL`     | `https://sergeant.vercel.app` — тут живе кука сесії             |
 | `PUBLIC_API_BASE_URL` | `https://api.167-233-98-92.sslip.io` — сюди веде `redirect_uri` |
 
-`apps/web/vercel.json` не проксіює `/api/*` на бекенд (rewrite ловить усе,
-КРІМ `/api/` і `/.well-known/`), тож це два різні сайти. Повернення від
-Сільпо — top-level навігація на api-домен, де куки сесії немає **ні в кого**.
-Роут стояв під router-level `requireSession()`, і той віддавав 401 ще до
-хендлера.
+Сам `apps/web/vercel.json` `/api/*` не проксіює (rewrite ловить усе, КРІМ
+`/api/` і `/.well-known/`), але це робить Edge Middleware
+`apps/web/middleware.ts` через `BACKEND_URL` (див.
+[railway-vercel.md](../../engineering/integrations/railway-vercel.md)): тому
+сесія й куки живуть на веб-хості, а `redirect_uri` вказує на api-хост. Це два
+різні сайти. Повернення від Сільпо - top-level навігація на api-домен, де куки
+сесії немає **ні в кого**. Роут стояв під router-level `requireSession()`, і
+той віддавав 401 ще до хендлера.
 
 Полагоджено тим, що `GET /api/silpo/callback` реєструється ДО
-`requireSession()`, а власника бере зі `state` (`silpo_oauth_state`,
-міграція 126) — він і був носієм контексту з самого початку. Решта роутів
-сесію вимагають як раніше.
+`requireSession()` (замість нього `optionalSession()`), а власника бере зі
+`state` (`silpo_oauth_state`, міграція 126). Решта роутів сесію вимагають
+як раніше.
 
 **Що це означає для ops:** якщо колись міняється `PUBLIC_API_BASE_URL` або
-зʼявляється проксі `/api/*` через фронт — DCR треба перереєструвати
-(ACTION B), бо `redirect_uri` вшитий у `client_id`. Сесія на колбеку не
-потрібна за жодного з варіантів.
+зʼявляється проксі `/api/*` через фронт - DCR треба перереєструвати
+(ACTION B), бо `redirect_uri` вшитий у `client_id`. Сесія на api-хості
+колбеку не потрібна за жодного з варіантів (див. relay нижче).
+
+### Привʼязка власника токенів до сесії браузера (sec-15, аудит 2026-10-01)
+
+Колбек без звірки бере власника токенів зі `state`, а `state` видно в
+`Location` будь-якого `/connect`. Без привʼязки зловмисник міг переслати
+жертві СВІЙ authorize-URL: жертва погоджувалась на справжній сторінці
+Сільпо, і її токени лягали на акаунт зловмисника (чеки, кошик).
+
+Як працює тепер (без нового екрана і без міграції):
+
+1. `GET /api/silpo/callback` на api-хості (сесії немає) нічого не споживає:
+   робить `302` на `${WEB_APP_URL}/api/silpo/callback?code&state&silpo_relay=1`.
+   Той самий шлях, тож `redirect_uri` у DCR не міняється.
+2. Веб-хост проксує запит на бекенд зі своїми куками. Колбек бачить сесію й
+   вимагає `pending.userId === користувач сесії`, інакше
+   `?silpo=error&reason=invalid_state`, токени не зберігаються. Без сесії:
+   `reason=session_expired` (повторного relay немає, маркер `silpo_relay`).
+3. Додатково `/connect` ставить куку `silpo_oauth_binding` (`sha256(state)`,
+   `HttpOnly`, `SameSite=Lax`, `Secure` при https `PUBLIC_API_BASE_URL`,
+   `Path=/api/silpo/callback`, 10 хв, без `Domain`), а колбек ДО споживання
+   `state` вимагає її збігу. Кука host-only: вона їде на хост, що віддав
+   `/connect` (веб-хост), тому перевірка стоїть саме після relay.
+
+**Передумови для ops (перевір до вмикання):**
+
+- Хост, через який браузер відкриває `/connect` (веб-origin з Vercel-проксі
+  `BACKEND_URL`, а при заданому `VITE_API_BASE_URL` - той api-хост), має
+  бути або origin `PUBLIC_API_BASE_URL` (сесія є одразу на колбеку), або
+  `WEB_APP_URL` (relay). Інакше (напр. `/connect` на `api.sergeant.com.ua`, а
+  `redirect_uri` вшито на sslip) сесія до колбека не дістанеться, і всі
+  отримають `session_expired`. Сервер гучно кричить про це в лог на
+  `/connect`: `silpo_connect_host_mismatch` (error). Лікування: ре-DCR на
+  потрібний хост (ACTION B) і відповідний `PUBLIC_API_BASE_URL`.
+- `WEB_APP_URL` (або перший запис `ALLOWED_ORIGINS`) = веб-хост, який
+  проксує `/api/*`. Саме туди йде relay і `/settings`-редирект.
+- Прод-топологію цього PR не перевіряли наживо: пройди чекліст
+  `Verification` нижче на власному акаунті до того, як вмикати для інших.
+
+**Діагностика:** у логах `silpo_callback_session_missing` - сесії немає на
+хості relay (протухла, інший браузер, або розбіжність хостів, див. вище); `silpo_callback_session_mismatch` - сесія іншого користувача, ніж
+власник `state` (спроба атаки або чужий акаунт у браузері);
+`silpo_callback_binding_mismatch` - кука з `/connect` не доїхала (інший
+браузер/профіль, вимкнені куки). Людині в усіх трьох випадках - повторити
+«Звʼязати Сільпо» в тому самому браузері.
 
 ## ACTION B: ре-реєстрація DCR (спільний client_id затротлено/забанено)
 
@@ -231,6 +278,13 @@ WHERE user_id = '<user_id>';` — чек свіжіший за це значен
 - [ ] «Зв'язати Сільпо» веде на `auth.silpo.ua` і повертає зі статусом
       `connected` (а не на localhost — інакше DCR зроблено зі старим
       `redirect_uri`, див. ACTION A крок 3).
+- [ ] Привʼязка `state` (sec-15), двома браузерами: відповідь `/connect`
+      несе куку `silpo_oauth_binding` (`HttpOnly`, `SameSite=Lax`,
+      `Path=/api/silpo/callback`); повне проходження в одному браузері дає
+      `connected` (це й перевіряє, що relay api-хост -> веб-хост працює на
+      прод-топології); відкриття того самого authorize-URL у браузері БЕЗ
+      сесії дає `reason=session_expired`, а під ІНШИМ акаунтом -
+      `reason=invalid_state`, обидва без збережених токенів.
 - [ ] «Оновити чеки» витягує чеки; у банківській транзакції «Сільпо»
       з'явилась секція «Чек» з позиціями.
 - [ ] «Розбити за чеком» дає спліт, сума частин збігається з сумою

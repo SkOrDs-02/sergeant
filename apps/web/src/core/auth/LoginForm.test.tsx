@@ -125,4 +125,81 @@ describe("LoginForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Показати пароль" }));
     expect(password.type).toBe("text");
   });
+
+  it("після невдалого входу фокус повертається в поле пароля, а не на body", async () => {
+    loginMock.mockImplementation(async () => {
+      authErrorState = "Неправильний email або пароль.";
+      return false;
+    });
+    const { rerender } = render(
+      <LoginForm onForgotPassword={vi.fn()} showForgot={false} />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "alice@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Пароль"), {
+      target: { value: "wrong" },
+    });
+    // Людина натиснула кнопку мишею/тапом: фокус на кнопці, яка на час
+    // запиту стає disabled.
+    const submit = screen.getByRole("button", { name: /^Увійти$/ });
+    submit.focus();
+    fireEvent.click(submit);
+
+    await waitFor(() => expect(loginMock).toHaveBeenCalled());
+    rerender(<LoginForm onForgotPassword={vi.fn()} showForgot={false} />);
+
+    const password = screen.getByLabelText("Пароль") as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(password));
+    expect(password.disabled).toBe(false);
+    expect(password.readOnly).toBe(false);
+  });
+
+  it("поля лише readOnly (не disabled) на час запиту, щоб не губити фокус", async () => {
+    let resolveLogin: (ok: boolean) => void = () => {};
+    loginMock.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveLogin = resolve;
+        }),
+    );
+    render(<LoginForm onForgotPassword={vi.fn()} showForgot={false} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "alice@example.com" },
+    });
+    const password = screen.getByLabelText("Пароль") as HTMLInputElement;
+    fireEvent.change(password, { target: { value: "secret123" } });
+    password.focus();
+    fireEvent.submit(password.closest("form") as HTMLFormElement);
+
+    await waitFor(() => expect(password.readOnly).toBe(true));
+    expect(password.disabled).toBe(false);
+    expect((screen.getByLabelText("Email") as HTMLInputElement).disabled).toBe(
+      false,
+    );
+    expect(document.activeElement).toBe(password);
+
+    resolveLogin(true);
+    await waitFor(() => expect(password.readOnly).toBe(false));
+  });
+
+  it("помилка входу: пароль aria-invalid і описаний текстом role=alert", () => {
+    authErrorState = "Неправильний email або пароль.";
+    render(<LoginForm onForgotPassword={vi.fn()} showForgot={false} />);
+
+    const password = screen.getByLabelText("Пароль");
+    const alert = screen.getByRole("alert");
+    expect(password.getAttribute("aria-invalid")).toBe("true");
+    expect(alert.id).toBeTruthy();
+    expect(password.getAttribute("aria-describedby")).toBe(alert.id);
+  });
+
+  it("без помилки входу пароль не позначений невалідним", () => {
+    render(<LoginForm onForgotPassword={vi.fn()} showForgot={false} />);
+    const password = screen.getByLabelText("Пароль");
+    expect(password.getAttribute("aria-invalid")).toBe("false");
+    expect(password.getAttribute("aria-describedby")).toBeNull();
+  });
 });

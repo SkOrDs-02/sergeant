@@ -17,6 +17,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Label } from "@shared/components/ui/FormField";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useApiForm } from "@shared/forms";
+import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { messages } from "@shared/i18n/uk";
 import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { cn } from "@shared/lib/ui/cn";
@@ -228,6 +229,11 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
     moodScore,
     note,
   });
+
+  // Форма стоїть на сторінці, не в `Sheet`: без реєстрації тихий reload
+  // оновлення стер би неподаний замір (оцінки енергії/настрою — кнопки, їх
+  // трекер полів не бачить).
+  useRegisterDirtyState(!isEntryEmpty);
 
   const energyGroupRef = useRef<HTMLDivElement | null>(null);
   const moodGroupRef = useRef<HTMLDivElement | null>(null);

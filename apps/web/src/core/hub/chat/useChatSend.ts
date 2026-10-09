@@ -4,6 +4,7 @@ import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
+import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { billingKeys, chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { safeReadLS } from "@shared/lib/storage/storage";
@@ -192,6 +193,9 @@ export function useChatSend({
   });
 
   const [input, setInput] = useState("");
+  // Непорожній композер — незбережений ввід: тихий idle-reload сервіс-воркера
+  // його не знищує (data-45, `core/app/autoUpdate.ts`).
+  useRegisterDirtyState(input.trim() !== "");
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);

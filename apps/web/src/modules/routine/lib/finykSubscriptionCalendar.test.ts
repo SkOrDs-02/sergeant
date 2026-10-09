@@ -22,10 +22,9 @@ type AmountLookup = (sub: Subscription) => {
 
 const deps = vi.hoisted(() => ({
   groupLabel: "Фінік · підписки",
-  storageKeys: {
-    FINYK_SUBS: "finyk_subs",
-  },
-  safeReadLS: vi.fn(),
+  getCachedFinykSqliteState: vi.fn(() => ({
+    subscriptions: [] as unknown[],
+  })),
   buildPure: vi.fn(
     (range: CalendarRange, subs: Subscription[], getAmount: AmountLookup) =>
       subs.map((sub) => {
@@ -62,12 +61,8 @@ const deps = vi.hoisted(() => ({
   })),
 }));
 
-vi.mock("@shared/lib/storage/storage", () => ({
-  safeReadLS: deps.safeReadLS,
-}));
-
-vi.mock("@sergeant/shared", () => ({
-  STORAGE_KEYS: deps.storageKeys,
+vi.mock("@finyk/lib/sqliteReader", () => ({
+  getCachedFinykSqliteState: () => deps.getCachedFinykSqliteState(),
 }));
 
 vi.mock("@sergeant/finyk-domain/domain/subscriptionUtils", () => ({
@@ -86,7 +81,8 @@ vi.mock("../../finyk/lib/monoMirrorReader", () => ({
 
 describe("finykSubscriptionCalendar", () => {
   beforeEach(() => {
-    deps.safeReadLS.mockReset();
+    deps.getCachedFinykSqliteState.mockReset();
+    deps.getCachedFinykSqliteState.mockReturnValue({ subscriptions: [] });
     deps.buildPure.mockClear();
     deps.getAmountMeta.mockClear();
     deps.getMirrorState.mockReset();
@@ -101,24 +97,19 @@ describe("finykSubscriptionCalendar", () => {
     expect(FINYK_SUB_GROUP_LABEL).toBe(deps.groupLabel);
   });
 
-  it("returns an empty list when storage is missing or empty (no preset injection)", () => {
+  it("returns an empty list when the SQLite cache has no subscriptions (no preset injection)", () => {
     // Fresh installs must NOT inherit the preset catalog — the old
     // `DEFAULT_SUBSCRIPTIONS` fallback put 7 foreign subscriptions into
     // new visitors' calendars (live-deploy audit 2026-06-11).
-    deps.safeReadLS.mockReturnValueOnce(null);
-
     expect(loadFinykSubscriptionsFromStorage()).toEqual([]);
-    expect(deps.safeReadLS).toHaveBeenCalledWith(
-      deps.storageKeys.FINYK_SUBS,
-      null,
-    );
 
-    deps.safeReadLS.mockReturnValueOnce([]);
-
+    deps.getCachedFinykSqliteState.mockReturnValue({
+      subscriptions: undefined as unknown as unknown[],
+    });
     expect(loadFinykSubscriptionsFromStorage()).toEqual([]);
   });
 
-  it("returns stored subscriptions when storage has a non-empty array", () => {
+  it("returns subscriptions from the SQLite cache when it has a non-empty array", () => {
     const stored = [
       {
         id: "spotify",
@@ -127,7 +118,7 @@ describe("finykSubscriptionCalendar", () => {
         currency: "USD",
       },
     ];
-    deps.safeReadLS.mockReturnValueOnce(stored);
+    deps.getCachedFinykSqliteState.mockReturnValue({ subscriptions: stored });
 
     expect(loadFinykSubscriptionsFromStorage()).toBe(stored);
   });
@@ -164,9 +155,8 @@ describe("finykSubscriptionCalendar", () => {
     };
     const txs = [{ id: "tx-notion", amount: -12345 }];
 
-    deps.safeReadLS.mockImplementation((key: string) => {
-      if (key === deps.storageKeys.FINYK_SUBS) return [storedSub];
-      return null;
+    deps.getCachedFinykSqliteState.mockReturnValue({
+      subscriptions: [storedSub],
     });
     deps.getMirrorState.mockReturnValue({
       transactions: txs,

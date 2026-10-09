@@ -180,7 +180,9 @@ export function ModuleRail({
 }: ModuleRailProps) {
   // Roving tabindex + стрілки: без стрілок неактивні комірки були б
   // недосяжні з клавіатури взагалі (знахідка PR-C5, аудит 2026-09-13).
-  const onTabKeyDown = useTablistArrowKeys();
+  // `manual`: активація комірки — це навігація (`openHubModule`), тож стрілка
+  // лише переносить фокус, а в модуль веде Enter/Space (WCAG 3.2.1, ux-16).
+  const onTabKeyDown = useTablistArrowKeys(true, "manual");
   // На хабі жодна комірка не активна — Tab має зупинятись на першій.
   const tabStop = active ?? MODULE_RAIL_ORDER[0];
   return (

@@ -496,7 +496,7 @@ The exclusion half belongs to the class in docs/work/specs/audits/unification-mo
 
 ### `logic-09` [medium] Крос-модульні дані читаються з localStorage-ключів, у які після переходу на SQLite ніхто не пише: календар Рутини, контекст HubChat і пошук бачать порожнечу
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-09-crossmodule-readers
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Рутина / хаб (крос-модульні читачі)
 - **Де:** apps/web/src/modules/routine/lib/hubCalendarAggregate.ts:33-80; apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts:15-25; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-77; apps/web/src/core/lib/hubChatContext/readAllData.ts:34-47; apps/web/src/core/hub/search/searchSources.ts:64; packages/shared/src/lib/storageKeys.ts:191-194
 - **Першопричина:** Писачі UI (useMonthlyPlan, useWorkoutTemplates, підписки Фініка) пишуть лише в SQLite через dual-write, а LS-дзеркала прибрані. Читачі ж досі беруть safeReadLS: hubCalendarAggregate читає 'fizruk_monthly_plan_v1' і 'fizruk_workout_templates_v1', finykSubscriptionCalendar читає 'finyk_subs' (tombstone). Так само працюють readAllData (контекст HubChat) і searchSources (пошук хабу) для бюджетів, боргів, дебіторки, підписок і власних категорій.
@@ -572,7 +572,7 @@ apps/web/src/modules/fizruk/hooks/useMonthlyPlan.ts:73-90 (saveState → лиш�
 
 ### `logic-10` [medium] Таймер відпочинку рахує тіки setInterval, а не реальний час: на заблокованому телефоні стоїть, після reload зникає
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-10-rest-timer-wallclock (лишилось: персист `endsAt` між reload/убитим PWA (sessionStorage/SQLite) і Notification/Web Push у фоні — окремі рішення)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (тренування)
 - **Де:** apps/web/src/modules/fizruk/hooks/useWorkoutsLifecycle.ts:107-131; apps/web/src/modules/fizruk/context/RestTimerProvider.tsx:24-38; apps/web/src/modules/fizruk/hooks/useFizrukRestSound.ts:64-67
 - **Першопричина:** useRestTimerCountdown на кожен тік робить remaining − 1. Стан містить лише {remaining, total} без моменту закінчення, досинхронізації на visibilitychange немає, і живе він тільки в useState. Сигнал завершення (звук і телеметрія) викликається всередині updater-а setRestTimer, тобто сайд-ефектом у чистій функції.
@@ -758,7 +758,7 @@ domain_check.mts: 18.09, Flex 3 відмічено 14,15,16, Daily G і MWF S в
 
 ### `logic-12` [medium] Рекомендації хабу про звички ігнорують розклад: «N звичок ще не виконано» і понеділковий відсоток з наївним знаменником
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-logic-12-hub-habit-recs
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: хаб (recommendationEngine)
 - **Де:** apps/web/src/core/lib/recommendationEngine.ts:296-365 (buildRoutineRecs), 505-521 (buildWeeklyDigestRecs); apps/web/src/core/hub/hubReports.aggregation.ts:302; apps/web/src/core/insights/useWeeklyDigest.ts:377
 - **Першопричина:** buildRoutineRecs рахує total = habits.length і серію через habits.every(...includes(dk)) для кожного дня. buildWeeklyDigestRecs бере знаменник habits.length × 7. Жодна з функцій не враховує habitScheduledOnDate, паузи, startDate, once чи flexible, хоча модуль, Звіти й дайджест рахують через calcRoutinePeriodCompletion / calcRoutineDayProgress.

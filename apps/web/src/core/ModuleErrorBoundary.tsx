@@ -56,7 +56,12 @@ export default class ModuleErrorBoundary extends Component<
   override componentDidCatch(error: Error) {
     // Авто-відновлення: одне охоронюване перезавантаження підтягує свіжий
     // HTML і хеші чанків. Коли guard відмовляє — render() дає ручну кнопку.
-    if (isChunkLoadError(error)) reloadOnceForChunkError();
+    // Гейт незбереженого вводу вимкнено (data-45): `getDerivedStateFromError`
+    // уже підмінив дерево модуля карткою помилки, форма зникла, і відмова не
+    // повернула б її, а лише лишила б ручне «Перезавантажити».
+    if (isChunkLoadError(error)) {
+      reloadOnceForChunkError(undefined, { guardUnsavedInput: false });
+    }
   }
 
   private handleReload = () => {

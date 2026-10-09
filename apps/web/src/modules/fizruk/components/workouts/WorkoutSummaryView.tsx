@@ -52,6 +52,12 @@ export interface WorkoutSummaryViewProps {
   onRepeat: () => void;
   /** PR-Z1 — the only non-"start a new workout" way out of this screen. */
   onClose: () => void;
+  /**
+   * ux-11 — видалення завершеного тренування з клавіатури/миші (свайп в
+   * історії — touch-only). Батько видаляє запис, показує undo-тост і веде
+   * назад до списку; тут лише кнопка.
+   */
+  onDelete: () => void;
 }
 
 /** One-line "what happened" caption for a single exercise entry. */
@@ -85,6 +91,7 @@ export function WorkoutSummaryView({
   workout,
   onRepeat,
   onClose,
+  onDelete,
 }: WorkoutSummaryViewProps) {
   const copy = messages.fizruk.workoutSummary;
   const summary = summarizeWorkoutForFinish(workout);
@@ -198,6 +205,19 @@ export function WorkoutSummaryView({
         onClick={onRepeat}
       >
         <Icon name="refresh-cw" size="md" aria-hidden /> {copy.repeatCta}
+      </Button>
+
+      {/* ux-11: свайп в історії — touch-only жест (WCAG 2.1.1 / 2.5.1), тож
+          завершене тренування видаляється ще й цією кнопкою. Захист від
+          помилкового тапу — undo-тост, а не діалог (unified undo policy). */}
+      <Button
+        variant="soft"
+        tone="danger"
+        className="w-full h-12 mt-2"
+        type="button"
+        onClick={onDelete}
+      >
+        {copy.deleteCta}
       </Button>
     </Card>
   );
