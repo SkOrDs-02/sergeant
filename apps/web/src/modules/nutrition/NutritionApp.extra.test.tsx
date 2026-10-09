@@ -652,6 +652,6 @@ describe("NutritionApp — statusText and err banners", () => {
     });
     const notice = screen.getByRole("alert");
     expect(notice).toHaveTextContent("Помилка мережі");
-    expect(notice.className).toContain("text-danger-ink");
+    expect(notice.className).toContain("text-danger-strong");
   });
 });

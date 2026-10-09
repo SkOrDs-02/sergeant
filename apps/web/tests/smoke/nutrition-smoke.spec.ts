@@ -70,15 +70,12 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
 
   // Аналіз фото живе ВКЛАДКОЮ кроку джерела (не окремим кроком), і оскільки
   // CTA-картку зі стартової прибрано (2026-08-17, дубль входу), шлях у
-  // модулі один: FAB → «Звідки страва?» → вкладка «Фото».
+  // модулі один: «Додати страву» → «Джерело страви» → вкладка «Фото».
   //
-  // Заголовок аркуша тут лишається «Звідки страва?» — саме тому, що крок не
+  // Заголовок аркуша тут лишається «Джерело страви» — саме тому, що крок не
   // покидається; перевіряти його як ознаку фото більше не можна. Ознака —
   // сам підпис картки аналізу.
-  await page
-    .getByRole("button", { name: /Додати прийом їжі/ })
-    .first()
-    .click();
+  await page.getByRole("button", { name: "Додати страву" }).click();
   const photoSheet = page.getByRole("dialog");
   await expect(photoSheet).toBeVisible({ timeout: 10_000 });
   await photoSheet.getByRole("tab", { name: /Фото/ }).click();

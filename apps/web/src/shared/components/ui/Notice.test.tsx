@@ -9,7 +9,7 @@ describe("Notice (мова H)", () => {
   it.each([
     ["muted", "text-muted"],
     ["ink", "text-text"],
-    ["danger", "text-danger-ink"],
+    ["danger", "text-danger-strong"],
   ] as const)("tone=%s дає %s без боксу й заливки", (tone, cls) => {
     render(
       <Notice tone={tone} role="alert">
