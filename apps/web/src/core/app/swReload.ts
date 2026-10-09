@@ -8,10 +8,18 @@
  * власний `onNeedReload`, а рішення «чи ця вкладка ініціювала оновлення»
  * живе тут.
  *
+ * Reload під оновлення SW ніколи не відбувається «мовчки» поверх
+ * незбереженого вводу: і `controllerchange` з `applyUpdate`, і `onNeedReload`
+ * проходять через {@link reloadUnlessBlocked}. Пізня активація (старий воркер
+ * тримав lame-duck до 5 хв) прилітає тоді, коли користувач уже давно
+ * працює далі, — клік «Оновити» цього reload не виправдовує.
+ *
  * Прапорець — module-level (одна вкладка = один JS-контекст), у
  * `sessionStorage` його свідомо немає: він потрібен лише на час життя
  * поточної сторінки.
  */
+
+import { isForcedReloadBlocked } from "./updateGate";
 
 let localUpdateRequested = false;
 let reloading = false;
@@ -36,19 +44,55 @@ export function reloadOnce(win: Window = window): void {
   win.location.reload();
 }
 
-/** Подія для вкладок, які оновлення НЕ ініціювали: тост замість reload. */
+/** Подія «reload відкладено»: `useSWUpdate` показує тост замість reload. */
 export const PWA_RELOAD_DEFERRED_EVENT = "pwa-reload-deferred";
+
+/** Чому reload відкладено: оновлення прийняли в іншій вкладці / є незбережений ввід. */
+export type ReloadDeferredReason = "other-tab" | "unsaved-input";
+
+export interface ReloadDeferredDetail {
+  reason: ReloadDeferredReason;
+}
+
+/**
+ * Reload, якщо в цій вкладці немає чого втрачати (відкрита форма, непорожнє
+ * поле, стрім HubChat, мутації в польоті — {@link isForcedReloadBlocked}).
+ * Інакше — подія відкладення, тост з ручним «Перезавантажити». Повертає
+ * `true`, якщо reload запущено.
+ */
+export function reloadUnlessBlocked(
+  win: Window = window,
+  isMutating?: () => boolean,
+): boolean {
+  if (isForcedReloadBlocked(isMutating)) {
+    win.dispatchEvent(
+      new CustomEvent<ReloadDeferredDetail>(PWA_RELOAD_DEFERRED_EVENT, {
+        detail: { reason: "unsaved-input" },
+      }),
+    );
+    return false;
+  }
+  reloadOnce(win);
+  return true;
+}
 
 /**
  * Обробник `onNeedReload` для `registerSW`: reload лише у вкладці, що
  * ініціювала оновлення; в інших — подія, яку показує `useSWUpdate` тостом.
  */
-export function handleNeedReload(win: Window = window): void {
+export function handleNeedReload(
+  win: Window = window,
+  isMutating?: () => boolean,
+): void {
   if (isLocalUpdateRequested()) {
-    reloadOnce(win);
+    reloadUnlessBlocked(win, isMutating);
     return;
   }
-  win.dispatchEvent(new CustomEvent(PWA_RELOAD_DEFERRED_EVENT));
+  win.dispatchEvent(
+    new CustomEvent<ReloadDeferredDetail>(PWA_RELOAD_DEFERRED_EVENT, {
+      detail: { reason: "other-tab" },
+    }),
+  );
 }
 
 /** Лише для тестів. */

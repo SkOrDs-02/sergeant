@@ -41,6 +41,7 @@
 
 import { isForcedReloadBlocked } from "./updateGate";
 import { markLocalUpdateRequested } from "./swReload";
+import { installTypedInputTracker } from "@shared/lib/ui/dirtyState";
 
 declare global {
   interface Window {
@@ -182,6 +183,9 @@ export function setupAutoUpdate(
   const doc: Document = opts.documentRef ?? win.document;
   const nav: Navigator = opts.navigatorRef ?? win.navigator;
   if (!("serviceWorker" in nav)) return NOOP_DISPOSE;
+  // Реєстр брудного стану бачить і інлайн-поля (не лише Sheet/Modal): без
+  // цього слухача тихий reload стирав би форму просто на сторінці.
+  const uninstallInputTracker = installTypedInputTracker(doc);
 
   const updateIntervalMs = opts.updateIntervalMs ?? DEFAULT_UPDATE_INTERVAL_MS;
   const idleSkipWaitingMs =
@@ -386,6 +390,7 @@ export function setupAutoUpdate(
       intervalHandle = null;
       cancelMismatchTimer();
       doc.removeEventListener("visibilitychange", onVisibilityChange);
+      uninstallInputTracker();
     },
     reportServerBuildId,
   };

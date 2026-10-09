@@ -39,6 +39,10 @@ vi.mock("@shared/hooks/useToast", () => ({
 // Import AFTER mocks are registered.
 import { useSWUpdate } from "./useSWUpdate";
 import {
+  registerDirtyState,
+  resetDirtyStateForTests,
+} from "@shared/lib/ui/dirtyState";
+import {
   PWA_RELOAD_DEFERRED_EVENT,
   handleNeedReload,
   resetSwReloadForTests,
@@ -129,6 +133,7 @@ describe("useSWUpdate — defer-while-busy", () => {
     mockToastInfo.mockReset();
     mockToastSuccess.mockReset();
     resetSwReloadForTests();
+    resetDirtyStateForTests();
 
     queryClient = new QueryClient({
       defaultOptions: {
@@ -514,5 +519,140 @@ describe("useSWUpdate — defer-while-busy", () => {
 
     restore();
     delete window.__pwaUpdateSW;
+  });
+
+  // rel-14 / data-45: пізній controllerchange (старий воркер тримав
+  // lame-duck) не має стирати форму, відкриту ПІСЛЯ кліку «Оновити».
+  describe("пізня активація проти незбереженого вводу", () => {
+    async function clickUpdateAndWaitStatusToast() {
+      window.__pwaUpdateSW = vi.fn();
+      const stub = stubServiceWorker({ waiting: true });
+      const hook = renderHook(() => useSWUpdate(), {
+        wrapper: makeWrapper(queryClient),
+      });
+      await act(async () => {
+        hook.result.current.applyUpdate();
+        await flushMicrotasks();
+      });
+      act(() => {
+        vi.advanceTimersByTime(3_000);
+      });
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        "Застосовую оновлення…",
+        null,
+        expect.anything(),
+      );
+      mockToastInfo.mockClear();
+      return stub;
+    }
+
+    it("пізній controllerchange при відкритій формі: reload не викликається, тост з ручним «Перезавантажити»", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      const unregister = registerDirtyState(); // користувач відкрив аркуш
+      act(() => {
+        fireControllerChange();
+        // `onNeedReload` з vite-plugin-pwa приходить слідом у тому ж тіку.
+        handleNeedReload();
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledOnce();
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Оновлення готове"),
+        null,
+        expect.objectContaining({ label: "Перезавантажити" }),
+      );
+
+      // Користувач сам вирішує: «Перезавантажити» з тоста працює.
+      const action = mockToastInfo.mock.calls[0]?.[2] as {
+        onClick: () => void;
+      };
+      unregister();
+      act(() => {
+        action.onClick();
+      });
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("пізній controllerchange без брудного стану: reload рівно один раз", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      act(() => {
+        fireControllerChange();
+        handleNeedReload();
+      });
+
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+      expect(mockToastInfo).not.toHaveBeenCalled();
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("пізній controllerchange під час стріму HubChat: reload відкладено", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      mockIsHubStreaming.mockReturnValue(true);
+      act(() => {
+        fireControllerChange();
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledOnce();
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("пізній controllerchange при мутації в польоті (QueryClient хука): reload відкладено", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      vi.spyOn(queryClient, "getMutationCache").mockReturnValue(
+        makeMutationCache(1) as ReturnType<QueryClient["getMutationCache"]>,
+      );
+      act(() => {
+        fireControllerChange();
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledOnce();
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("мутація в польоті блокує reload з onNeedReload", async () => {
+      window.__pwaUpdateSW = vi.fn();
+      const { reloadSpy, restore } = stubServiceWorker({ waiting: true });
+      const { result } = renderHook(() => useSWUpdate(), {
+        wrapper: makeWrapper(queryClient),
+      });
+      await act(async () => {
+        result.current.applyUpdate();
+        await flushMicrotasks();
+      });
+
+      act(() => {
+        handleNeedReload(window, () => true);
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Оновлення готове"),
+        null,
+        expect.anything(),
+      );
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
   });
 });

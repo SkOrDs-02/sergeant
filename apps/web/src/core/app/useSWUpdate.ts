@@ -7,6 +7,8 @@ import {
   PWA_RELOAD_DEFERRED_EVENT,
   markLocalUpdateRequested,
   reloadOnce,
+  reloadUnlessBlocked,
+  type ReloadDeferredDetail,
 } from "./swReload";
 
 declare global {
@@ -79,8 +81,10 @@ export function useSWUpdate() {
    * reload не наставав). Підписуємось одноразово на `controllerchange` і
    * перезавантажуємо самі, один раз (`reloadOnce`). Якщо за 3 с
    * `controllerchange` не прийшов — не мовчимо, а показуємо статус-тост з
-   * ручним «Перезавантажити»; слухач лишається, щоб пізня активація все одно
-   * перезавантажила вкладку, де натиснули «Оновити».
+   * ручним «Перезавантажити». Слухач лишається, щоб пізня активація не
+   * загубилась, але reload на ній іде через `reloadUnlessBlocked`: до того
+   * часу користувач міг відкрити форму, і пізня активація не має її стерти —
+   * тоді замість reload з'являється тост «Оновлення готове» з ручною кнопкою.
    */
   const pendingApplyRef = useRef(false);
   const applyUpdate = useCallback(() => {
@@ -121,7 +125,9 @@ export function useSWUpdate() {
         if (timerId !== null) clearTimeout(timerId);
         timerId = null;
         pendingApplyRef.current = false;
-        reloadOnce();
+        reloadUnlessBlocked(window, () =>
+          hasMutationsInFlight(() => queryClientRef.current.getMutationCache()),
+        );
       };
       sw.addEventListener("controllerchange", onControllerChange);
       timerId = setTimeout(() => {
@@ -233,11 +239,22 @@ export function useSWUpdate() {
       scheduleOrShowUpdateToast();
     };
 
-    // data-45: оновлення прийняли в ІНШІЙ вкладці. Мовчазний reload тут
-    // знищував би незбережені форми, тому лише повідомляємо.
-    const onReloadDeferred = () => {
+    // data-45: reload відкладено — або оновлення прийняли в ІНШІЙ вкладці,
+    // або в цій є незбережений ввід (пізня активація). Мовчазний reload тут
+    // знищував би форми, тому лише повідомляємо. `controllerchange` з
+    // `applyUpdate` і `onNeedReload` з vite-plugin-pwa спрацьовують разом, тож
+    // тост на кожну причину — один.
+    const deferredShown = new Set<string>();
+    const onReloadDeferred = (event: Event) => {
+      const reason =
+        (event as CustomEvent<ReloadDeferredDetail | undefined>).detail
+          ?.reason ?? "other-tab";
+      if (deferredShown.has(reason)) return;
+      deferredShown.add(reason);
       toastRef.current.info(
-        "Застосунок оновлено в іншій вкладці. Перезавантаж, коли будеш готовий",
+        reason === "unsaved-input"
+          ? "Оновлення готове. Перезавантаж, коли збережеш введене"
+          : "Застосунок оновлено в іншій вкладці. Перезавантаж, коли будеш готовий",
         null,
         {
           label: "Перезавантажити",

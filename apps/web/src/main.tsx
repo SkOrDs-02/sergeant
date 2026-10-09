@@ -386,13 +386,18 @@ if (
 
   import("virtual:pwa-register").then(async ({ registerSW }) => {
     const { handleNeedReload } = await import("./core/app/swReload");
+    const { hasMutationsInFlight } = await import("./core/app/updateGate");
     const updateSW = registerSW({
       // data-45 / rel-14: без власного `onNeedReload` слухач `controlling` з
       // `vite-plugin-pwa` перезавантажує КОЖНУ вкладку, де піднімали плашку,
       // разом з їхніми незбереженими формами. Reload — лише у вкладці, що
       // натиснула «Оновити» (або прийняла idle-оновлення); решта отримує тост.
+      // Reload і в ній проходить через реєстр незбереженого вводу: пізня
+      // активація не має стирати форму, відкриту після кліку «Оновити».
       onNeedReload() {
-        handleNeedReload();
+        handleNeedReload(window, () =>
+          hasMutationsInFlight(() => queryClient.getMutationCache()),
+        );
       },
       onNeedRefresh() {
         window.__pwaUpdateReady = true;
@@ -410,7 +415,6 @@ if (
     // response interceptor via `subscribeServerBuildIdObservers`.
     try {
       const { setupAutoUpdate } = await import("./core/app/autoUpdate");
-      const { hasMutationsInFlight } = await import("./core/app/updateGate");
       const { subscribeServerBuildId } =
         await import("@shared/api/serverBuildIdBus");
       const ctrl = setupAutoUpdate({

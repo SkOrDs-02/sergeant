@@ -29,12 +29,99 @@ export function registerDirtyState(): () => void {
   };
 }
 
-/** `true`, якщо хоч одне джерело зараз тримає незбережений ввід. */
+/**
+ * `true`, якщо хоч одне джерело зараз тримає незбережений ввід: явна
+ * реєстрація (аркуш, діалог, композер) АБО текстове поле на сторінці, у яке
+ * людина вже вводила і яке досі не порожнє (див. {@link installTypedInputTracker}).
+ */
 export function hasDirtyState(): boolean {
-  return active.size > 0;
+  return active.size > 0 || hasTypedInput();
+}
+
+// --- Трекер вводу в інлайн-поля -------------------------------------------
+//
+// AI-CONTEXT: форми, що рендеряться прямо на сторінці (заміри в «Тілі»,
+// «Профіль», токен Monobank, підходи активного тренування), не лежать в
+// `Sheet`/`Modal`, тож явна реєстрація їх не покриває, а їх більше сорока.
+// Замість того щоб чіпати кожну, слухаємо `input` на рівні документа: поле,
+// у яке людина вводила і яке досі підключене й не порожнє, вважається
+// незбереженим вводом. Свідомо консервативно: збережене, але досі змонтоване
+// поле (імʼя в профілі після «Збережено») теж рахується, доки сторінку не
+// покинули. Ціна хибного спрацювання — лише відкладений тихий reload (лишається
+// ручний тост), ціна хибного пропуску — втрачена форма.
+
+type TypedField = HTMLInputElement | HTMLTextAreaElement;
+
+/** Типи `<input>`, у які вводять текст/число (решта — перемикачі, кнопки, файли). */
+const TEXT_INPUT_TYPES = new Set([
+  "",
+  "text",
+  "number",
+  "email",
+  "tel",
+  "url",
+  "password",
+]);
+
+const typedFields = new Set<TypedField>();
+const trackedDocs = new Map<Document, (event: Event) => void>();
+
+function asTrackedField(target: EventTarget | null): TypedField | null {
+  const el = target as Element | null;
+  const tag = el?.tagName;
+  if (tag === "TEXTAREA") {
+    const field = el as HTMLTextAreaElement;
+    return field.readOnly || field.disabled ? null : field;
+  }
+  if (tag === "INPUT") {
+    const field = el as HTMLInputElement;
+    if (field.readOnly || field.disabled) return null;
+    // `search` свідомо не рахуємо: пошукові рядки не несуть роботи, яку шкода втратити.
+    return TEXT_INPUT_TYPES.has(field.type) ? field : null;
+  }
+  return null;
+}
+
+function hasTypedInput(): boolean {
+  for (const field of typedFields) {
+    if (!field.isConnected) {
+      typedFields.delete(field);
+      continue;
+    }
+    if (field.value.trim() !== "") return true;
+  }
+  return false;
+}
+
+/**
+ * Почати стежити за вводом у текстові поля документа (`input` у capture-фазі).
+ * Ідемпотентно для одного документа; повертає функцію зняття. Викликає
+ * `setupAutoUpdate` — єдиний споживач; сам по собі трекер нічого не робить, доки
+ * хтось не спитає `hasDirtyState()`.
+ */
+export function installTypedInputTracker(doc: Document = document): () => void {
+  if (!trackedDocs.has(doc)) {
+    const onInput = (event: Event) => {
+      const field = asTrackedField(event.target);
+      if (field) typedFields.add(field);
+    };
+    doc.addEventListener("input", onInput, { capture: true, passive: true });
+    trackedDocs.set(doc, onInput);
+  }
+  return () => {
+    const handler = trackedDocs.get(doc);
+    if (!handler) return;
+    doc.removeEventListener("input", handler, { capture: true });
+    trackedDocs.delete(doc);
+  };
 }
 
 /** Лише для тестів: скинути реєстр між кейсами. */
 export function resetDirtyStateForTests(): void {
   active.clear();
+  typedFields.clear();
+  for (const [doc, handler] of trackedDocs) {
+    doc.removeEventListener("input", handler, { capture: true });
+  }
+  trackedDocs.clear();
 }
