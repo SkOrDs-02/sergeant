@@ -180,7 +180,15 @@ function isClientRejection(status: number): boolean {
 
 function rejectedByServerMessage(err: ApiError): string {
   const detail = err.serverMessage?.trim().slice(0, 200);
-  return `Сервер відхилив витрату${detail ? `: ${detail}` : ` (HTTP ${err.status})`}. Нічого не записано; виправ дані й спробуй ще раз.`;
+  const reason = detail ? `: ${detail}` : ` (HTTP ${err.status})`;
+  // Порада правити дані — лише на валідаційну відмову; 429/403 тощо — не про дані.
+  const hint =
+    err.status === 400 || err.status === 422
+      ? "виправ дані й спробуй ще раз"
+      : err.status === 429
+        ? "забагато запитів, спробуй трохи пізніше"
+        : "спробуй ще раз пізніше";
+  return `Сервер відхилив витрату${reason}. Нічого не записано; ${hint}.`;
 }
 
 /**

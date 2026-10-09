@@ -88,6 +88,16 @@ describe("create_transaction · відмова сервера 4xx", () => {
     createManualExpense.mockRejectedValueOnce(httpError(422));
     const out = await run({ amount: 500 });
     expect(out).toContain("HTTP 422");
+    expect(out).toContain("виправ дані");
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
+
+  it("429 → відмова без поради правити дані, без локального запису", async () => {
+    createManualExpense.mockRejectedValueOnce(httpError(429));
+    const out = await run({ amount: 500 });
+    expect(out).toContain("Сервер відхилив витрату");
+    expect(out).toContain("забагато запитів");
+    expect(out).not.toContain("виправ дані");
     expect(mockWrite).not.toHaveBeenCalled();
   });
 });
