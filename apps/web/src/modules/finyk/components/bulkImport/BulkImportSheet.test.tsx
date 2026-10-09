@@ -742,6 +742,54 @@ describe("BulkImportSheet — commit + undo", () => {
   });
 });
 
+describe("BulkImportSheet — кап commit-у (ux-07)", () => {
+  async function reachReviewWith(count: number) {
+    previewImportStatementMock.mockResolvedValue({
+      profile: "mono",
+      needsMapping: false,
+      rows: Array.from({ length: count }, (_, i) => ({
+        date: "2026-08-01",
+        amountKopiykas: 100 + i,
+        direction: "expense",
+        description: `BIG-${i}`,
+      })),
+      skipped: [],
+    });
+    renderSheet();
+    await act(async () => {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
+        target: { files: [new File(["x"], "big.csv", { type: "text/csv" })] },
+      });
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Імпортувати" }),
+      ).toBeInTheDocument(),
+    );
+  }
+
+  it("1001 вибраний рядок: кнопка заблокована, підказка видна, commit не йде", async () => {
+    await reachReviewWith(1001);
+
+    const button = screen.getByRole("button", { name: "Імпортувати" });
+    expect(button).toBeDisabled();
+    expect(screen.getByText(/За раз можна імпортувати до/)).toHaveTextContent(
+      /вибрано 1.001\./,
+    );
+    fireEvent.click(button);
+    expect(commitImportMock).not.toHaveBeenCalled();
+  });
+
+  it("рівно 1000 вибраних: кнопка активна, підказки немає", async () => {
+    await reachReviewWith(1000);
+
+    expect(screen.getByRole("button", { name: "Імпортувати" })).toBeEnabled();
+    expect(
+      screen.queryByText(/За раз можна імпортувати до/),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("BulkImportSheet — попередження «Куди їде фото» (priv-11)", () => {
   // Рішення власника 2026-07-26: до ack скрін банку не їде в AI; після
   // тапу в нотісі аналіз іде для вже вибраного файлу.

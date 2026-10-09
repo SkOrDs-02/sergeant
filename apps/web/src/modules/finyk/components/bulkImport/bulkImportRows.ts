@@ -15,6 +15,7 @@
  * недетерміновано). Мітка поводиться як `transferLikely`: бейдж + знята
  * галочка, рішення за людиною.
  */
+import { formatNumberUk, IMPORT_COMMIT_MAX_ROWS } from "@sergeant/shared";
 import type {
   ImportCommitRow,
   ImportDirection,
@@ -193,6 +194,24 @@ export function updateRowField(
 
 export function selectedRowCount(rows: readonly BulkReviewRow[]): number {
   return rows.reduce((n, r) => n + (r.selected ? 1 : 0), 0);
+}
+
+/**
+ * Чи вибрано більше рядків, ніж приймає один commit. Сервер відхиляє
+ * `rows.length > IMPORT_COMMIT_MAX_ROWS` як VALIDATION («Некоректні дані
+ * запиту»), а превʼю пропускає до 10 000 рядків, тож без цієї перевірки
+ * велика виписка доходила до кнопки «Імпортувати» і падала без підказки
+ * (аудит 2026-10-01, ux-07). Клієнтської нарізки на кілька commit-ів тут
+ * свідомо немає: кожен commit має свій batchId для undo, а розріз групи
+ * однакових рядків між запитами ламає нумерацію повторів (data-29).
+ */
+export function exceedsCommitCap(rows: readonly BulkReviewRow[]): boolean {
+  return selectedRowCount(rows) > IMPORT_COMMIT_MAX_ROWS;
+}
+
+/** Пояснення під кнопкою «Імпортувати», коли вибрано забагато рядків. */
+export function commitCapMessage(selectedCount: number): string {
+  return `За раз можна імпортувати до ${formatNumberUk(IMPORT_COMMIT_MAX_ROWS)} рядків, а вибрано ${formatNumberUk(selectedCount)}. Зніми частину галочок або розбий виписку на коротші періоди.`;
 }
 
 /** Вибрані рядки → `ImportCommitRow[]` (спека § API-контракт Фази 2). */

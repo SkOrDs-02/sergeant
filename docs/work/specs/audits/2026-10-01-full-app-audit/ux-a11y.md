@@ -482,7 +482,7 @@ grep found no EMAIL_VERIFICATION_REQUIRED handling in apps/web/src or packages/a
 
 ### `ux-07` [medium] Виписка на 1000+ рядків проходить прев'ю, але «Імпортувати» падає з «Некоректні дані запиту»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-ux-07-import-large-statement (кнопка блокується понад 1000 вибраних рядків з поясненням; клієнтська нарізка на кілька commit-ів лишилась follow-up-ом після data-29)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+shared: Фінік / імпорт виписок
 - **Де:** packages/shared/src/schemas/import.ts:315; apps/server/src/modules/finyk/import/statementPreview.ts (MAX_PREVIEW_DATA_ROWS); apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx:330-343
 - **Першопричина:** Прев'ю приймає до MAX_PREVIEW_DATA_ROWS=10 000 рядків, а схема commit обмежує rows значенням IMPORT_COMMIT_MAX_ROWS=1000. Коментар у схемі передбачає кілька commit-ів, але BulkImportSheet.handleCommit шле все одним запитом, а кнопка блокується лише тоді, коли не вибрано жодного рядка.
