@@ -194,10 +194,10 @@ export default function CrossModuleLinksSection() {
   return (
     <section className="space-y-3">
       <div className="space-y-1">
-        <SectionHeading as="h2" size="xs">
+        <SectionHeading as="h2" size="lg">
           {messages.crossModuleLink.sectionTitle}
         </SectionHeading>
-        <p className="text-style-body text-muted leading-relaxed">
+        <p className="text-style-label text-muted">
           {messages.crossModuleLink.sectionHint}
         </p>
       </div>
@@ -232,8 +232,8 @@ export default function CrossModuleLinksSection() {
           )}
         </div>
       ) : smallData ? (
-        <div className="space-y-2 rounded-2xl border border-dashed border-line bg-panel p-4">
-          <p className="text-style-label font-bold text-text">
+        <div className="space-y-1">
+          <p className="text-style-body font-semibold text-text">
             {messages.crossModuleLink.smallDataTitle}
           </p>
           <p className="text-style-body leading-relaxed text-muted">

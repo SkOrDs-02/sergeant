@@ -245,7 +245,7 @@ export function PersonalInfoSection({
             onClick={() => fileRef.current?.click()}
             aria-label="Змінити аватар"
             className={cn(
-              "relative w-20 h-20 rounded-3xl overflow-hidden",
+              "relative w-20 h-20 rounded-full overflow-hidden",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             )}
           >
@@ -256,7 +256,7 @@ export function PersonalInfoSection({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="text-style-headline w-full h-full flex items-center justify-center bg-brand-500/15 text-brand-strong">
+              <div className="text-style-headline w-full h-full flex items-center justify-center bg-panel text-text">
                 {initial}
               </div>
             )}
@@ -296,17 +296,10 @@ export function PersonalInfoSection({
           </p>
           <div className="flex items-center justify-center gap-1.5 mt-0.5 flex-wrap">
             <p className="text-style-label text-muted truncate">{user.email}</p>
-            {user.emailVerified ? (
-              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-brand-500/10 text-brand-strong text-style-caption font-medium">
-                <Icon name="check" size={10} strokeWidth={3} />
-                Підтверджено
-              </span>
-            ) : (
-              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-warning/10 text-warning-strong dark:text-warning text-style-caption font-medium">
-                <Icon name="alert" size={10} strokeWidth={2.5} />
-                Не підтверджено
-              </span>
-            )}
+            {/* Мова H: статус пошти текстом, без чипа й іконки. */}
+            <span className="shrink-0 text-style-label text-muted">
+              · {user.emailVerified ? "підтверджено" : "не підтверджено"}
+            </span>
           </div>
 
           {/* Avatar remove */}
@@ -351,9 +344,8 @@ export function PersonalInfoSection({
       <div className="divide-y divide-line/60">
         {/* Unverified email banner */}
         {!user.emailVerified && user.email && (
-          <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
-            <Icon name="alert" size={15} className="text-warning shrink-0" />
-            <p className="text-style-caption text-warning-strong dark:text-warning flex-1">
+          <div className="px-4 py-3 flex items-center gap-3">
+            <p className="text-style-label font-semibold text-text flex-1">
               Email не підтверджено, перевір свою поштову скриньку
             </p>
             <Button

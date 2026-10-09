@@ -8,54 +8,19 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
-import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
-import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
+import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
-
-interface ChevronIconProps {
-  expanded: boolean;
-}
-
-function ChevronIcon({ expanded }: ChevronIconProps) {
-  return (
-    <Icon
-      name="chevron-right"
-      size="md"
-      className={cn(
-        "transition-transform duration-base shrink-0",
-        expanded && "rotate-90",
-      )}
-    />
-  );
-}
 
 /** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
 type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
 
-/** Module accent for the header glyph (text colour only — the tinted
- *  badge is gone, see the comment at the render site).
- *
- *  Раніше тут стояло «Hard Rule #12» — правило retired
- *  [ADR-0081](../../../../../docs/governance/adr/0081-repository-simplification.md):
- *  module-accent containment лишається чинною конвенцією, але тримається
- *  design tokens і ревʼю, а не ESLint-гейтом. Посилання на неіснуючий номер
- *  правила прибрано (§6 боргу, аудит Профілю/Налаштувань 2026-08-08) — саме
- *  той клас коментаря, що пережив свій механізм. */
-const MODULE_ICON_BG: Record<SettingsModule, string> = {
-  finyk: "text-finyk",
-  fizruk: "text-fizruk",
-  routine: "text-routine",
-  nutrition: "text-nutrition",
-};
-
 export interface SettingsGroupProps {
   title: string;
-  /** Optional design-system icon shown in the section badge. */
+  /** @deprecated мова H: рядок без іконки. @removeBy 2026-12-01 */
   icon?: string;
-  /** Module accent for the icon badge. Requires `icon` to be set. */
+  /** @deprecated мова H: рядок без акценту модуля. @removeBy 2026-12-01 */
   module?: SettingsModule;
   children: ReactNode;
   defaultOpen?: boolean;
@@ -149,8 +114,6 @@ export const SettingsGroupDefaultOpenContext =
  */
 export function SettingsGroup({
   title,
-  icon,
-  module,
   children,
   defaultOpen = false,
   anchorId,
@@ -191,26 +154,14 @@ export function SettingsGroup({
     queueMicrotask(() => setOpen(true));
   }, [contextDefaultOpen]);
 
-  // Scoped module bg class — uses registered token pair, never raw RGB
-  // (конвенція module-accent containment, ex-Hard Rule #12, retired
-  // ADR-0081 — див. коментар над `MODULE_ICON_BG`). Guard with ?. so
-  // noUncheckedIndexedAccess is satisfied.
-  const moduleBg = module != null ? (MODULE_ICON_BG[module] ?? "") : "";
   const contentRef = useInertWhileCollapsed(open);
 
+  // Мова H (redesign v3, H-settings): секція це рядок на hairline, без
+  // картки, тіні, іконки й шеврона; стан розкриття несе `aria-expanded`.
+  // Пропи `icon` і `module` лишились для call-site-ів, PR7 їх прибирає.
+
   return (
-    <Card
-      prominence="glass"
-      radius="lg"
-      padding="none"
-      // `shadow-e1` drop-shadow: the glass surface's own `shadow-card-v2`
-      // is an inset top-highlight only (no drop shadow), so near-white
-      // (0.82α) section cards floated flat on the warm light-theme page
-      // and read as borderless (user report 2026-06-22). A real elevation
-      // lifts them off the background; on dark surfaces the shadow is
-      // naturally imperceptible and the glass hairline carries separation.
-      className="overflow-hidden shadow-e1"
-    >
+    <section className="-mt-px border-y border-line first:mt-0">
       {/* Дефект №5 (адверсарне ревʼю 2026-08-08): найближчий заголовок вище
           — sr-only `<h1>Налаштування</h1>` на рівні сторінки; сама секція
           малювала заголовок як `<span>` усередині кнопки, тобто не
@@ -255,29 +206,9 @@ export function SettingsGroup({
             onUserToggle?.(next);
           }}
           aria-expanded={open}
-          className={cn(
-            "w-full px-4 py-4 flex items-center justify-between gap-3",
-            "hover:bg-surface-strong-glass active:bg-surface-soft-glass transition-colors",
-            open && "bg-surface-soft-glass",
-          )}
+          className="flex min-h-[52px] w-full items-center text-left focus-ring"
         >
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Гліф у рядку назви, без тонованого квадрата (огляд 2026-09-04,
-                той самий хід, що `BentoCard` 2026-09-03): icon-in-tinted-
-                square — T5 з анти-слоп аудиту, і 14 таких квадратів поспіль
-                робили сторінку стосом однакових плиток. Модульний акцент
-                лишається на самому гліфі. */}
-            {icon && (
-              <Icon
-                name={icon}
-                size="lg"
-                className={cn("shrink-0", moduleBg || "text-muted")}
-                aria-hidden
-              />
-            )}
-            <span className="text-style-title text-text">{title}</span>
-          </div>
-          <ChevronIcon expanded={open} />
+          <span className="text-style-body font-medium text-text">{title}</span>
         </button>
       </h2>
       <div
@@ -288,12 +219,10 @@ export function SettingsGroup({
         )}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-line/60 px-4 py-5 space-y-6">
-            {children}
-          </div>
+          <div className="space-y-6 pb-5 pt-1">{children}</div>
         </div>
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -473,8 +402,8 @@ export interface SectionSkeletonProps {
  * Stable height-placeholder for a `<Suspense>`-deferred `<SettingsGroup>`
  * (Initiative 0017 Sprint 1.1 — per-section lazy in HubSettingsPage).
  *
- * Shape mirrors the expanded-state `<SettingsGroup>` chrome —
- * icon badge slot + title bar + chevron — so the swap from fallback to
+ * Shape mirrors the `<SettingsGroup>` hairline row (title only), so the
+ * swap from fallback to
  * real section is visually a no-op for the user. Shimmer (not pulse)
  * matches the "premium loading" feel chosen by the design tokens, and
  * collapses to a static block under `prefers-reduced-motion: reduce`
@@ -493,23 +422,14 @@ export function SectionSkeleton({
 }: SectionSkeletonProps) {
   const style: CSSProperties = { minHeight: `${minH}px` };
   return (
-    <Card
-      prominence="glass"
-      radius="lg"
-      padding="none"
-      className="overflow-hidden"
+    <div
+      className="-mt-px flex items-center border-y border-line first:mt-0"
       role="status"
       aria-label={ariaLabel ?? messages.loaders.loadingSection}
       aria-busy="true"
       style={style}
     >
-      <div className="w-full px-4 py-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Skeleton shimmer className="w-9 h-9 rounded-xl shrink-0" />
-          <SkeletonText shimmer className="w-1/3 max-w-[180px]" />
-        </div>
-        <Skeleton shimmer className="w-4 h-4 rounded-sm shrink-0" />
-      </div>
-    </Card>
+      <SkeletonText shimmer className="w-1/3 max-w-[180px]" />
+    </div>
   );
 }

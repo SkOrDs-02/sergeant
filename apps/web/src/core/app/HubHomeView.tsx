@@ -10,7 +10,6 @@ import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
 import { MemoryOnlyStorageBanner } from "../durability/MemoryOnlyStorageBanner";
@@ -176,10 +175,6 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubHeader
         onOpenSearch={() => ui.setSearchOpen(true)}
-        user={user}
-        authLoading={authLoading}
-        onShowAuth={onOpenAuth}
-        hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
         activeTab={ui.hubView}
       />

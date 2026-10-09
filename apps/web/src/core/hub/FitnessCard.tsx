@@ -5,8 +5,6 @@
  */
 import { ReportSheet } from "./ReportSheet";
 import { useMemo, useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
@@ -195,27 +193,14 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
         type="button"
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
-        className={cn(
-          "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
-        )}
+        className="flex min-h-11 w-full items-center gap-3 text-left focus-ring"
       >
-        <Icon
-          name="dumbbell"
-          size="lg"
-          className="shrink-0 text-fizruk"
-          aria-hidden
-        />
-        <SectionHeading
-          as="span"
-          size="xs"
-          className="flex-1 min-w-0 text-muted truncate"
-        >
+        <span className="min-w-0 flex-1 truncate text-style-body font-medium text-text">
           Тренування
-        </SectionHeading>
+        </span>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <span className="text-style-body font-bold text-text">
+            <span className="text-style-body tnum text-text">
               {empty ? "–" : `${formattedCurrent} трен.`}
             </span>
             {!empty && (
@@ -227,23 +212,6 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
             )}
           </span>
         )}
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className={cn(
-            "shrink-0 text-muted transition-transform",
-            collapsed ? "-rotate-90" : "rotate-0",
-          )}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
       </button>
       {!collapsed && empty && (
         <p className="text-style-body text-muted">

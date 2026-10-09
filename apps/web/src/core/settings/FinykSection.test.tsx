@@ -252,22 +252,6 @@ describe("FinykSection", () => {
   // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
   // без `module="finyk"` іконка секції рендериться нейтрально-сірою.
   // Перевіряємо, що бейдж іконки несе саме finyk-акцент.
-  it("renders the section glyph with the finyk module accent (без тонованого квадрата, огляд 2026-09-04)", async () => {
-    mockedSyncState.mockResolvedValue({
-      status: "disconnected",
-      webhookActive: false,
-      lastEventAt: null,
-      lastBackfillAt: null,
-      accountsCount: 0,
-    });
-    const { container } = renderWithProviders();
-    await waitFor(() => {
-      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
-    });
-    const badge = container.querySelector(`.text-${"finyk"}`);
-    expect(badge).not.toBeNull();
-  });
-
   // Правила «Завжди так для цього магазину» (рішення власника 2026-10-01):
   // керування живе тут, у Налаштуваннях → Фінік.
   it("показує підрозділ «Правила категорій» з порожнім станом, поки правил нема", async () => {

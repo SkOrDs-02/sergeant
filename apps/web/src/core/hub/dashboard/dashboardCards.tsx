@@ -5,7 +5,6 @@
 import { useEffect, useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
-import { StreakBadge } from "@shared/components/ui/StreakFlame";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import {
   STORAGE_KEYS,
@@ -99,12 +98,11 @@ export function StreakIndicator() {
 
   if (streak < 2) return null;
 
+  // Мова H: факт одним рядком, без пігулки, іконки й тіні.
   return (
-    <StreakBadge
-      streak={streak}
-      label={`${pluralDays(streak)} поспіль`}
-      className="shadow-sm"
-    />
+    <p className="text-style-label tnum text-muted">
+      {streak} {pluralDays(streak)} поспіль
+    </p>
   );
 }
 

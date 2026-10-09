@@ -16,7 +16,7 @@ export type NoticeTone = "muted" | "ink" | "danger";
 const TONE: Record<NoticeTone, string> = {
   muted: "text-muted",
   ink: "text-text font-semibold",
-  danger: "text-danger-ink font-semibold",
+  danger: "text-danger-strong font-semibold",
 };
 
 export interface NoticeProps extends HTMLAttributes<HTMLDivElement> {

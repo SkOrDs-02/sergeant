@@ -61,44 +61,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("SettingsGroup — icon prop", () => {
-  it("renders an <Icon> when `icon` is provided", () => {
-    render(
-      <SettingsGroup title="Профіль" icon="user">
-        <div>child</div>
-      </SettingsGroup>,
-    );
-
-    const icons = screen.getAllByTestId("icon");
-    // First icon belongs to the icon badge; second is the ChevronIcon.
-    const badgeIcon = icons.find((el) => el.dataset["name"] === "user");
-    expect(badgeIcon).toBeTruthy();
-    expect(badgeIcon?.dataset["size"]).toBe("20");
-  });
-
-  it("colours the header glyph with the module accent, without a tinted badge (огляд 2026-09-04)", () => {
+describe("SettingsGroup", () => {
+  it("мова H: рядок секції без іконки, бейджа й шеврона", () => {
     render(
       <SettingsGroup title="Фінанси" icon="wallet" module="finyk">
         <div>child</div>
       </SettingsGroup>,
     );
-
-    const glyph = document.querySelector('[data-name="wallet"]');
-    expect(glyph).toBeTruthy();
-    expect(glyph?.className).toContain("text-finyk");
-    expect(document.querySelector("span.bg-finyk-soft")).toBeNull();
-  });
-
-  it("uses the muted glyph colour when no module is given", () => {
-    render(
-      <SettingsGroup title="Загальне" icon="settings">
-        <div>child</div>
-      </SettingsGroup>,
-    );
-
-    const glyph = document.querySelector('[data-name="settings"]');
-    expect(glyph?.className).toContain("text-muted");
-    expect(document.querySelector("span.bg-surface-soft-glass")).toBeNull();
+    expect(screen.queryAllByTestId("icon")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: "Фінанси" })).toBeInTheDocument();
   });
 
   it("expands children on button click", () => {

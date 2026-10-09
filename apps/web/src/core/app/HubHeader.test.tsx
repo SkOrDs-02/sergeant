@@ -1,7 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { User } from "@sergeant/shared";
 
 const mockKyivParts = vi.hoisted(() => ({
   fn: vi.fn(() => ({ year: 2026, month: 6, day: 24, hour: 9 })),
@@ -43,8 +42,6 @@ import { emitHubBus } from "@shared/lib/modules/hubBus";
 function baseProps() {
   return {
     onOpenSearch: vi.fn(),
-    user: null as User | null,
-    onShowAuth: vi.fn(),
   };
 }
 
@@ -63,8 +60,7 @@ describe("HubHeader", () => {
   afterEach(() => cleanup());
 
   it("мова H: H1 головної - сьогоднішня дата, без привітання", () => {
-    const user = { name: "Іван Петренко" } as User;
-    render(<HubHeader {...baseProps()} user={user} />);
+    render(<HubHeader {...baseProps()} />);
     expect(screen.getByTestId("hub-header-title")).toHaveTextContent(
       "Середа, 24 червня",
     );
@@ -92,24 +88,8 @@ describe("HubHeader", () => {
     expect(props.onOpenSearch).toHaveBeenCalledTimes(1);
   });
 
-  it("shows the sign-in button for guests and calls onShowAuth", () => {
-    const props = baseProps();
-    render(<HubHeader {...props} />);
-    const signIn = screen.getByRole("button", { name: "Увійти в акаунт" });
-    fireEvent.click(signIn);
-    expect(props.onShowAuth).toHaveBeenCalledTimes(1);
-  });
-
-  it("hides the sign-in button when a user is present", () => {
-    const user = { name: "Іван" } as User;
-    render(<HubHeader {...baseProps()} user={user} />);
-    expect(
-      screen.queryByRole("button", { name: "Увійти в акаунт" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("hides the sign-in button when hideAuthButton is set", () => {
-    render(<HubHeader {...baseProps()} hideAuthButton />);
+  it("мова H: дві іконки в шапці, вхід для аноніма живе у tab bar", () => {
+    render(<HubHeader {...baseProps()} />);
     expect(
       screen.queryByRole("button", { name: "Увійти в акаунт" }),
     ).not.toBeInTheDocument();

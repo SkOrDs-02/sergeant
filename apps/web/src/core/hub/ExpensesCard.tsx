@@ -5,8 +5,6 @@
 import { ReportSheet } from "./ReportSheet";
 import { useMemo, useState } from "react";
 import { messages } from "@shared/i18n/uk";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
@@ -255,24 +253,11 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         type="button"
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
-        className={cn(
-          "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
-        )}
+        className="flex min-h-11 w-full items-center gap-3 text-left focus-ring"
       >
-        <Icon
-          name="credit-card"
-          size="lg"
-          className="shrink-0 text-finyk"
-          aria-hidden
-        />
-        <SectionHeading
-          as="span"
-          size="xs"
-          className="flex-1 min-w-0 text-muted truncate"
-        >
+        <span className="min-w-0 flex-1 truncate text-style-body font-medium text-text">
           {messages.finyk.reportHeading}
-        </SectionHeading>
+        </span>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             {empty ? (
@@ -298,23 +283,6 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             )}
           </span>
         )}
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className={cn(
-            "shrink-0 text-muted transition-transform",
-            collapsed ? "-rotate-90" : "rotate-0",
-          )}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
       </button>
       {!collapsed && empty && (
         <p className="text-style-body text-muted">

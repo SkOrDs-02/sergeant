@@ -64,7 +64,7 @@ vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
     mocks.openHubSettingsSection(...args),
 }));
 
-vi.mock("../insights/TodayFocusCard", () => ({
+vi.mock("../insights/dashboardFocus", () => ({
   // `useNowItems` (вісь дії) імпортує ключ сховища звідси — без нього
   // мок кидає на імпорті.
   HUB_RECS_DISMISSED_KEY: "hub_recs_dismissed_v1",

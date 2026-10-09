@@ -1,27 +1,21 @@
 /**
- * Купа «Зараз» — перша з двох куп осі дії (A1, спека `hub-action-axis.md`).
+ * Купа «Зараз» — перша з двох куп осі дії (A1, спека `hub-action-axis.md`),
+ * у формі мови H (redesign v3): кожен пункт це рядок 56 px на hairline —
+ * чекбокс 22 px, назва 16 / 600, підзаголовок 14 другим сірим, праворуч
+ * дрібна дія 36 px із назвою-результатом. Без смужки, чипа «Сержант» і «×».
  *
- * Джерело — `useNowItems` (обидва ранкери в одному списку). Cap за рішенням
- * власника 2026-09-17: **3 розгорнуто + «ще N»**. Перший рядок — hero з
- * інлайн-дією (той самий `TodayFocusCard`, що й раніше), ще два — рядками,
- * хвіст згорнутий і сам ніколи не розгортається, а розгорнутий згортається
- * назад тим самим перемикачем («ще N» ↔ «Згорнути»); рядок із
- * `severity: "danger"` завжди пробивається в трійку. Число 3 — `DEFAULT_CAP`
- * з `useAllInsights`, винесений на екран, не нова константа.
+ * Cap за рішенням власника 2026-09-17: **3 розгорнуто + «ще N»**; рядок із
+ * `severity: "danger"` завжди пробивається в трійку. Чекбокс закриває пункт
+ * до кінця доби, і він переходить у «Закрито» (`ClosedTodayPile`).
  *
- * Порожня купа — один рядок «Сьогодні все закрито», без CTA: у тихий день
- * винагорода живе в купі «Закрито сьогодні» нижче, не тут. Якщо ж вона порожня
- * лише тому, що рядки відкладено («✕» діє до кінця доби, рішення власника
- * 2026-10-01), замість цього — «Відкладено N · показати» з поверненням.
+ * Стан купи приходить пропом `now` з `HubDashboard`: «Закрито» читає той
+ * самий стан.
  *
- * Last validated: 2026-09-17
+ * Last validated: 2026-10-09
  * Status: Active
  */
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@shared/lib/ui/cn";
-import { Button } from "@shared/components/ui/Button";
-import { Icon, ICON_NAMES } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
@@ -29,10 +23,11 @@ import {
   isHubModuleId,
   type HubModuleAction,
 } from "@shared/lib/modules/hubNav";
-import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
+import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { coreMessages } from "@shared/i18n/uk.core";
-import { TodayFocusCard } from "../../insights/TodayFocusCard";
-import { useNowItems } from "./useNowItems";
+import { MODULE_OPEN_CTA } from "../../insights/dashboardFocus";
+import { ANALYTICS_EVENTS, trackEvent } from "../../observability/analytics";
+import type { UseNowItemsResult } from "./useNowItems";
 import { usePublishHubDayCount } from "./hubDayCounts";
 import type { NowItem } from "./nowItems";
 import { ChecklistNowRows, type ChecklistNowProps } from "./ChecklistNowRows";
@@ -53,19 +48,36 @@ export function promoteDanger(
   return [...danger, ...rest].slice(0, cap);
 }
 
+/** Назва-результат дії рядка: «Додати витрату», «Відкрити Рутину». */
+export function actionLabel(item: NowItem): string {
+  const a = item.action;
+  if (a.kind === "module_action") {
+    return (
+      getModulePrimaryAction(a.module)?.label ??
+      MODULE_OPEN_CTA[a.module] ??
+      coreMessages.hub.nowPile.doIt
+    );
+  }
+  if (a.kind === "open_module") {
+    return MODULE_OPEN_CTA[a.module] ?? coreMessages.hub.nowPile.open;
+  }
+  if (a.kind === "open_week_report") {
+    return coreMessages.hub.nowPile.openWeekReport;
+  }
+  return coreMessages.hub.nowPile.open;
+}
+
 /**
  * Куди веде рядок. `open_module` іде через проп із головної (той самий
  * `openInsightTarget`, що обслуговував акордеон): він знає про hash, але
- * лише для id МОДУЛЯ — `openModule` мовчки ігнорує все інше (колись тут
- * значилось «і про `reports`», і саме тому понеділкова картка мала мертву
- * кнопку). Вид хабу, не модуль, — це окремі види дії: `open_week_report`
- * (подія шини) і `navigate` (`/?tab=reports`). Імперативна дія — через шину з
- * джерелом `now_pile`, як і hero з `today_focus_cta`.
+ * лише для id МОДУЛЯ. Вид хабу, не модуль, — це окремі види дії:
+ * `open_week_report` (подія шини) і `navigate` (`/?tab=reports`).
+ * Імперативна дія — через шину з джерелом `now_pile`.
  */
 function useRunAction(onOpenTarget: (module: string, hash?: string) => void) {
   const navigate = useNavigate();
   return useCallback(
-    (item: NowItem) => {
+    (item: NowItem, source: "today_focus_cta" | "now_pile") => {
       const a = item.action;
       switch (a.kind) {
         case "module_action":
@@ -73,7 +85,7 @@ function useRunAction(onOpenTarget: (module: string, hash?: string) => void) {
             openHubModuleWithAction(
               a.module,
               a.action as HubModuleAction,
-              "now_pile",
+              source,
             );
           }
           return;
@@ -82,8 +94,8 @@ function useRunAction(onOpenTarget: (module: string, hash?: string) => void) {
           return;
         case "open_week_report":
           // Слухач — `HubInsightsBlock`: розгортає блок і веде до рядків
-          // «Тиждень у цифрах». Коли блок вимкнено в налаштуваннях,
-          // `useNowItems` підміняє дію ще до цього місця.
+          // тижня. Коли блок вимкнено в налаштуваннях, `useNowItems`
+          // підміняє дію ще до цього місця.
           emitHubBus("openWeekReport", undefined);
           return;
         case "navigate":
@@ -101,130 +113,71 @@ function useRunAction(onOpenTarget: (module: string, hash?: string) => void) {
   );
 }
 
-const SEVERITY_ACCENT = {
-  danger: "bg-danger",
-  warning: "bg-warning",
-  info: "bg-info",
-  success: "bg-success",
-} as const;
-
-function accentOf(item: NowItem): string {
-  const s = item.severity;
-  return s === "danger" || s === "warning" || s === "success"
-    ? SEVERITY_ACCENT[s]
-    : SEVERITY_ACCENT.info;
-}
-
 interface NowRowProps {
   item: NowItem;
   onRun: (item: NowItem) => void;
-  onAskAi: ((item: NowItem) => void) | null;
-  askAiDisabled: boolean;
-  onDismiss: (item: NowItem) => void;
+  onCheck: (item: NowItem) => void;
 }
 
-/** Рядок купи нижче за hero: заголовок, дія, чип «AI», відкинути. */
-function NowRow({
-  item,
-  onRun,
-  onAskAi,
-  askAiDisabled,
-  onDismiss,
-}: NowRowProps) {
-  const runLabel =
-    item.action.kind === "module_action"
-      ? coreMessages.hub.nowPile.doIt
-      : item.action.kind === "open_week_report"
-        ? coreMessages.hub.nowPile.openWeekReport
-        : coreMessages.hub.nowPile.open;
+function NowRow({ item, onRun, onCheck }: NowRowProps) {
+  const label = actionLabel(item);
   return (
-    <div
-      data-testid="now-row"
-      className="relative flex gap-3 rounded-xl border border-line bg-bg px-3 py-2.5"
-    >
-      <div
-        className={cn(
-          "absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full",
-          accentOf(item),
-        )}
-        aria-hidden
-      />
-      <div className="pl-1 flex-1 min-w-0">
-        <p className="text-style-label text-text leading-snug">
-          {item.icon && ICON_NAMES.includes(item.icon) && (
-            <Icon
-              name={item.icon}
-              size="sm"
-              className="inline-block mr-1 align-middle"
-              aria-hidden
-            />
-          )}
-          {item.title}
-        </p>
-        {item.body && (
-          <p className="text-style-caption text-muted mt-0.5 leading-relaxed">
-            {item.body}
-          </p>
-        )}
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onRun(item)}
-            // Кожен рядок мав однакову назву «Зробити»/«Відкрити», і в
-            // списку кнопок скрінрідера їх не можна було розрізнити.
-            aria-label={`${runLabel}: ${item.title}`}
-            className="inline-flex items-center gap-1 touch-target rounded-lg focus-ring text-style-label font-semibold text-text hover:text-primary transition-colors"
-          >
-            {runLabel}
-            <Icon name="chevron-right" size="xs" strokeWidth={2.5} />
-          </button>
-          {onAskAi && item.askAiPrompt && (
-            <button
-              type="button"
-              onClick={() => onAskAi(item)}
-              disabled={askAiDisabled}
-              aria-label={
-                askAiDisabled
-                  ? coreMessages.hub.nowPile.askAiLimit
-                  : coreMessages.hub.nowPile.askAi
-              }
-              className={cn(
-                "touch-target inline-flex items-center gap-1 px-2 rounded-xl text-style-caption font-semibold focus-ring",
-                askAiDisabled
-                  ? "bg-panelHi text-muted cursor-not-allowed"
-                  : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
-              )}
-            >
-              {coreMessages.hub.nowPile.askAiChip}
-            </button>
-          )}
-        </div>
-      </div>
-      <Button
-        variant="ghost"
-        size="xs"
-        iconOnly
-        onClick={() => onDismiss(item)}
-        aria-label={coreMessages.hub.nowPile.dismiss}
-        className="shrink-0 -mr-1 -mt-1 text-muted hover:text-text"
+    <li data-testid="now-row" className="flex min-h-14 items-center gap-3 py-2">
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={false}
+        aria-label={`${coreMessages.hub.nowPile.check}: ${item.title}`}
+        onClick={() => onCheck(item)}
+        className="-m-[11px] flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-ring"
       >
-        <Icon name="close" size="sm" />
-      </Button>
-    </div>
+        <span
+          aria-hidden
+          className="h-[22px] w-[22px] rounded-[5px] border-2 border-control"
+        />
+      </button>
+      <span className="min-w-0 flex-1 pl-2">
+        <span
+          className={
+            item.severity === "danger"
+              ? "block text-style-body font-semibold leading-snug text-danger-strong"
+              : "block text-style-body font-semibold leading-snug text-text"
+          }
+        >
+          {item.title}
+        </span>
+        {item.body && (
+          <span className="mt-0.5 block text-style-label text-muted">
+            {item.body}
+          </span>
+        )}
+      </span>
+      <button
+        type="button"
+        onClick={() => onRun(item)}
+        // Кілька рядків можуть мати однакову дію («Відкрити Фінік»), і в
+        // списку кнопок скрінрідера їх не можна було б розрізнити.
+        aria-label={`${label}: ${item.title}`}
+        className="h-9 max-w-[45%] shrink-0 truncate rounded-[7px] border border-border-strong px-3 text-style-label font-semibold text-text hover:bg-panel focus-ring touch-target"
+      >
+        {label}
+      </button>
+    </li>
   );
 }
 
 export interface NowPileProps {
+  /** Стан купи з `useNowItems`, піднятий у `HubDashboard`. */
+  now: UseNowItemsResult;
   /** `openInsightTarget` з `useHubDashboardState` — id модуля й, за потреби, hash усередині нього. */
   onOpenTarget: (module: string, hash?: string) => void;
   /** Незроблені кроки онбордингу - рядки над рештою купи. */
   checklist?: ChecklistNowProps | undefined;
 }
 
-export function NowPile({ onOpenTarget, checklist }: NowPileProps) {
-  const { items, dismiss, postponed, restorePostponed } = useNowItems();
-  const run = useRunAction(onOpenTarget);
-  const askAiDisabled = useAskAiQuotaExhausted();
+export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
+  const { items, check } = now;
+  const runAction = useRunAction(onOpenTarget);
   const [tailOpen, setTailOpen] = useState(false);
   const total = items.length + (checklist?.steps.length ?? 0);
   usePublishHubDayCount("now", total);
@@ -237,120 +190,60 @@ export function NowPile({ onOpenTarget, checklist }: NowPileProps) {
     () => items.filter((i) => !visible.includes(i)),
     [items, visible],
   );
-  const [hero, ...rows] = visible;
 
-  const askAi = useCallback((item: NowItem) => {
-    if (!item.askAiPrompt) return;
-    emitHubBus("openChat", { message: item.askAiPrompt, autoSend: false });
-  }, []);
+  // Подія і джерело колишньої картки «Зараз» лишаються на верхньому рядку:
+  // дашборди осі дії рахують саме їх (`analyticsEvents.hubAxis.ts`).
+  const run = useCallback(
+    (item: NowItem) => {
+      const top = item === visible[0];
+      if (top) {
+        trackEvent(ANALYTICS_EVENTS.TODAY_FOCUS_CTA_CLICKED, {
+          rec_id: item.id,
+          module: item.module,
+          kind: "primary",
+          has_pwa_action: item.action.kind === "module_action",
+        });
+      }
+      runAction(item, top ? "today_focus_cta" : "now_pile");
+    },
+    [runAction, visible],
+  );
+
+  const hasChecklist = Boolean(checklist && checklist.steps.length > 0);
+  const rows = tailOpen ? [...visible, ...tail] : visible;
 
   return (
-    <section aria-labelledby="now-pile-heading" className="space-y-2">
-      <div className="flex items-baseline justify-between px-0.5">
-        <SectionHeading as="h2" id="now-pile-heading" size="xs" variant="muted">
-          {coreMessages.hub.nowPile.heading}
-        </SectionHeading>
-        <span className="text-style-caption font-bold text-muted" aria-hidden>
-          {total}
-        </span>
-      </div>
+    <section aria-labelledby="now-pile-heading">
+      <SectionHeading as="h2" size="lg" id="now-pile-heading" meta={total}>
+        {coreMessages.hub.nowPile.heading}
+      </SectionHeading>
 
-      {checklist && checklist.steps.length > 0 && (
-        <ChecklistNowRows {...checklist} />
+      {rows.length === 0 && !hasChecklist ? (
+        <p data-testid="now-empty" className="mt-2 text-style-body text-muted">
+          {coreMessages.hub.nowPile.empty}
+        </p>
+      ) : (
+        <ul className="mt-2 divide-y divide-line border-y border-line">
+          {hasChecklist && checklist && <ChecklistNowRows {...checklist} />}
+          {rows.map((item) => (
+            <NowRow key={item.id} item={item} onRun={run} onCheck={check} />
+          ))}
+        </ul>
       )}
 
-      {!hero ? (
-        // «Все закрито» лише коли справді нічого не було. Якщо порожньо через
-        // «✕» сьогодні — чесно кажемо, скільки відкладено, і даємо повернути.
-        postponed > 0 ? (
-          <button
-            type="button"
-            data-testid="now-postponed"
-            onClick={restorePostponed}
-            className="w-full touch-target rounded-xl focus-ring border border-line bg-bg px-3 py-3 text-left text-style-body text-muted hover:bg-panelHi transition-colors"
-          >
-            {coreMessages.hub.nowPile.postponed} {postponed} ·{" "}
-            <span className="font-semibold text-text">
-              {coreMessages.hub.nowPile.showPostponed}
-            </span>
-          </button>
-        ) : checklist && checklist.steps.length > 0 ? null : (
-          <p
-            data-testid="now-empty"
-            className="rounded-xl border border-line bg-bg px-3 py-3 text-style-body text-muted"
-          >
-            {coreMessages.hub.nowPile.empty}
-          </p>
-        )
-      ) : (
-        <>
-          <TodayFocusCard
-            focus={{
-              id: hero.id,
-              module: hero.module,
-              severity: hero.severity,
-              title: hero.title,
-              body: hero.body,
-              icon: hero.icon,
-              // `onAction` нижче ігнорує аргумент і виконує дію рядка — тут
-              // це лише маркер «є куди йти» для картки.
-              action:
-                hero.action.kind === "open_module" ? hero.action.module : "hub",
-              pwaAction:
-                hero.action.kind === "module_action"
-                  ? (hero.action.action as HubModuleAction)
-                  : undefined,
-            }}
-            onAction={() => run(hero)}
-            // Без цього hero-кнопка тижневої картки казала б «Відкрити
-            // Фінік» і вела в звіт на цій же сторінці.
-            primaryLabel={
-              hero.action.kind === "open_week_report"
-                ? coreMessages.hub.nowPile.openWeekReport
-                : undefined
-            }
-            onDismiss={() => dismiss(hero)}
-            onAskAi={hero.askAiPrompt ? () => askAi(hero) : undefined}
-            askAiDisabled={askAiDisabled}
-            kicker={false}
-          />
-          {rows.map((item) => (
-            <NowRow
-              key={item.id}
-              item={item}
-              onRun={run}
-              onAskAi={askAi}
-              askAiDisabled={askAiDisabled}
-              onDismiss={dismiss}
-            />
-          ))}
-          {tailOpen &&
-            tail.map((item) => (
-              <NowRow
-                key={item.id}
-                item={item}
-                onRun={run}
-                onAskAi={askAi}
-                askAiDisabled={askAiDisabled}
-                onDismiss={dismiss}
-              />
-            ))}
-          {/* Один перемикач на обидва стани: після розгортання він стоїть
-              під хвостом і веде назад («Згорнути»). Той самий DOM-вузол у
-              обох станах — фокус клавіатури не губиться при перемиканні. */}
-          {tail.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setTailOpen((open) => !open)}
-              aria-expanded={tailOpen}
-              className="w-full touch-target rounded-xl focus-ring border border-dashed border-line px-3 text-style-caption font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
-            >
-              {tailOpen
-                ? coreMessages.actions.collapse
-                : `${coreMessages.hub.nowPile.more} ${tail.length}`}
-            </button>
-          )}
-        </>
+      {/* Один перемикач на обидва стани: той самий DOM-вузол, тож фокус
+          клавіатури не губиться при перемиканні. */}
+      {tail.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setTailOpen((open) => !open)}
+          aria-expanded={tailOpen}
+          className="mt-1 min-h-11 text-style-label font-semibold text-muted hover:text-text focus-ring"
+        >
+          {tailOpen
+            ? coreMessages.actions.collapse
+            : `${coreMessages.hub.nowPile.more} ${tail.length}`}
+        </button>
       )}
     </section>
   );

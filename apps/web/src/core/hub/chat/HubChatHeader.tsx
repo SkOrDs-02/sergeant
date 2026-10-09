@@ -61,29 +61,10 @@ export function HubChatHeader({
         trigger={
           <span
             aria-label="Деталі Сержанта"
-            className="flex items-center gap-2.5 min-w-0 w-full px-1.5 py-1 -mx-1.5 rounded-xl hover:bg-panelHi transition-colors cursor-pointer select-none"
+            className="flex min-h-11 w-full min-w-0 cursor-pointer select-none items-center gap-2.5 rounded-lg"
           >
-            <span
-              className={cn(
-                "relative w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0",
-                contextState.status === "building" &&
-                  "motion-safe:animate-pulse",
-              )}
-              aria-hidden
-            >
-              <Icon name="sergeant" size="md" className="text-brand-500" />
-              <span
-                className={cn(
-                  "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-bg",
-                  contextState.status === "ready"
-                    ? "bg-brand-500"
-                    : contextState.status === "building"
-                      ? "bg-warning"
-                      : "bg-line",
-                )}
-                aria-hidden
-              />
-            </span>
+            {/* Мова H (H-chat): назва без аватара-бейджа й точки статусу;
+                статус контексту живе в поповері нижче. */}
             {/* Назва не стискається. На 393px шапка пакувала лічильник,
                 «Нова» і «×» проти заголовка, і той обрізався до «Ас…»
                 (scrollWidth 85 vs clientWidth 43 — browser QA 2026-08-23).
@@ -165,16 +146,15 @@ export function HubChatHeader({
         <button
           type="button"
           onClick={onClearChat}
-          className="h-9 min-h-[44px] min-w-[44px] shrink-0 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          className="flex min-h-11 min-w-11 shrink-0 items-center px-2 text-style-label-lg font-semibold text-text focus-ring"
           aria-label="Нова бесіда"
         >
-          <Icon name="plus" size="sm" />
           Нова
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="w-9 h-9 min-h-[44px] min-w-[44px] shrink-0 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text focus-ring"
           aria-label="Закрити чат"
         >
           <Icon name="close" size="md" />

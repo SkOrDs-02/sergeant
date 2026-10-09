@@ -6,7 +6,6 @@
  */
 
 import type { getOnboardingGoals } from "@sergeant/shared";
-import { TodayFocusCard } from "../insights/TodayFocusCard";
 import { SoftAuthPromptCard } from "../onboarding/SoftAuthPromptCard";
 import { FirstActionHeroCard } from "../onboarding/FirstActionSheet";
 import { CrossModulePreview } from "./CrossModulePreview";
@@ -24,7 +23,6 @@ import { ValueProgressBar } from "./ValueProgressBar";
 import { StreakIndicator } from "./dashboard/dashboardCards";
 import type { DashboardModuleId } from "./hub.types";
 import type { useOnboardingState } from "../onboarding/useOnboardingState";
-import type { Rec } from "@sergeant/shared";
 
 export interface HubHeroBlockProps {
   onOpenModule: (module: string) => void;
@@ -37,8 +35,6 @@ export interface HubHeroBlockProps {
   dismissReengagement: () => void;
   crossModulePreviewSource: DashboardModuleId | null;
   dismissCrossModulePreview: () => void;
-  focus: Rec | null;
-  dismiss: (id: string) => void;
   primaryModule: "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
   /** Незроблені кроки онбордингу (рядки «Зараз»). */
   checklist?: ChecklistNowProps | undefined;
@@ -46,12 +42,12 @@ export interface HubHeroBlockProps {
   goals: ReturnType<typeof getOnboardingGoals>;
   hasValueBar: boolean;
   /**
-   * Вісь дії (спека `hub-action-axis.md`): замість однієї картки «Зараз»
-   * hero-слот займає ціла купа «Зараз» (`NowPile`). Резолвер одного hero
-   * не змінюється — FirstAction / SoftAuth / re-engagement перемагають так
-   * само; купа стає лише на місце `TodayFocusCard`.
+   * Вісь дії (спека `hub-action-axis.md`): hero-слот займає купа «Зараз»
+   * (`NowPile`). FirstAction / SoftAuth / re-engagement перемагають так
+   * само; без них слот займає купа (redesign v3 зняв картку «Зараз»), а
+   * `null` — коли новачку купі нема чого показати.
    */
-  nowPile?: React.ReactNode | undefined;
+  nowPile: React.ReactNode;
 }
 
 export function HubHeroBlock({
@@ -65,8 +61,6 @@ export function HubHeroBlock({
   dismissReengagement,
   crossModulePreviewSource,
   dismissCrossModulePreview,
-  focus,
-  dismiss,
   primaryModule,
   checklist,
   activeModules,
@@ -91,16 +85,8 @@ export function HubHeroBlock({
         sessionDays={sessionDays}
       />
     );
-  } else if (nowPile) {
-    hero = nowPile;
   } else {
-    hero = (
-      <TodayFocusCard
-        focus={focus}
-        onAction={onOpenModule}
-        onDismiss={dismiss}
-      />
-    );
+    hero = nowPile;
   }
 
   if (reengagementIsHero) {
@@ -128,12 +114,17 @@ export function HubHeroBlock({
       {hero}
       {/* Кроки онбордингу живуть у купі «Зараз». Коли hero-слот зайняв
           інший герой (FTUX, soft-auth), вони стоять окремою секцією «Зараз». */}
-      {checklist && hero !== nowPile && (
+      {checklist && (!nowPile || hero !== nowPile) && (
         <section aria-labelledby="checklist-now-heading" className="space-y-2">
-          <SectionHeading as="h2" id="checklist-now-heading" size="lg">
+          <SectionHeading as="h2" size="lg" id="checklist-now-heading">
             {coreMessages.hub.nowPile.heading}
           </SectionHeading>
-          <ChecklistNowRows {...checklist} />
+          <ul
+            data-testid="checklist-now"
+            className="divide-y divide-line border-y border-line"
+          >
+            <ChecklistNowRows {...checklist} />
+          </ul>
         </section>
       )}
       {!hasRealEntry &&

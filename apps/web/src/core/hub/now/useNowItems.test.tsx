@@ -29,7 +29,7 @@ vi.mock("@nutrition/hooks/useNutritionInsights", () => ({
 // Після моків — щоб хук підхопив підмінені джерела.
 const { useNowItems } = await import("./useNowItems");
 const { HUB_RECS_DISMISSED_KEY } =
-  await import("../../insights/TodayFocusCard");
+  await import("../../insights/dashboardFocus");
 
 const INSIGHTS_DISMISSED_KEY = "sergeant.v2.insights.dismissed";
 
@@ -110,7 +110,7 @@ describe("useNowItems", () => {
     ]);
   });
 
-  it("dismiss близнюка пише ОБИДВА сховища і ховає рядок негайно", () => {
+  it("check близнюка пише ОБИДВА сховища і ховає рядок негайно", () => {
     generateRecommendationsMock.mockReturnValue([
       rec("nutrition_protein_low", 68),
     ]);
@@ -119,7 +119,7 @@ describe("useNowItems", () => {
     const { result } = renderHook(() => useNowItems());
     expect(result.current.items).toHaveLength(1);
 
-    act(() => result.current.dismiss(result.current.items[0]!));
+    act(() => result.current.check(result.current.items[0]!));
 
     expect(result.current.items).toEqual([]);
     const recs = JSON.parse(
@@ -156,13 +156,13 @@ describe("useNowItems", () => {
     expect(result.current.items).toEqual([]);
   });
 
-  it("dismiss рядка без Rec-походження не чіпає сховище рекомендацій", () => {
+  it("check рядка без Rec-походження не чіпає сховище рекомендацій", () => {
     nutritionMock.mockReturnValue([
       insight("nutrition-streak-7-days-2026-W38"),
     ]);
     const { result } = renderHook(() => useNowItems());
 
-    act(() => result.current.dismiss(result.current.items[0]!));
+    act(() => result.current.check(result.current.items[0]!));
 
     expect(localStorage.getItem(HUB_RECS_DISMISSED_KEY)).toBeNull();
     expect(
@@ -172,7 +172,7 @@ describe("useNowItems", () => {
     ).toEqual(["nutrition-streak-7-days-2026-W38"]);
   });
 
-  describe("«✕» діє до кінця поточної доби (рішення власника 2026-10-01)", () => {
+  describe("закриття чекбоксом діє до кінця поточної доби (рішення власника 2026-10-01)", () => {
     // Локальні компоненти: межа доби — годинник пристрою (ADR-0078).
     const NOON = new Date(2026, 9, 1, 12, 0, 0);
     const YESTERDAY = new Date(2026, 8, 30, 21, 0, 0).getTime();
@@ -199,7 +199,7 @@ describe("useNowItems", () => {
       expect(result.current.items.map((i) => i.id)).toEqual([
         "fizruk_long_break",
       ]);
-      expect(result.current.postponed).toBe(0);
+      expect(result.current.checked).toEqual([]);
     });
 
     it("відкинутий вчора інсайт повертається так само", () => {
@@ -243,7 +243,7 @@ describe("useNowItems", () => {
         rec("fizruk_long_break", 80, "fizruk"),
       ]);
       const { result, rerender } = renderHook(() => useNowItems());
-      act(() => result.current.dismiss(result.current.items[0]!));
+      act(() => result.current.check(result.current.items[0]!));
       expect(result.current.items).toEqual([]);
 
       vi.setSystemTime(new Date(2026, 9, 1, 23, 58, 0));
@@ -255,10 +255,10 @@ describe("useNowItems", () => {
       expect(result.current.items.map((i) => i.id)).toEqual([
         "fizruk_long_break",
       ]);
-      expect(result.current.postponed).toBe(0);
+      expect(result.current.checked).toEqual([]);
     });
 
-    it("postponed рахує відкладені сьогодні рядки; restorePostponed повертає їх з обох сховищ", () => {
+    it("checked віддає закриті сьогодні рядки; uncheck повертає їх з обох сховищ", () => {
       generateRecommendationsMock.mockReturnValue([
         rec("nutrition_protein_low", 68),
         rec("fizruk_long_break", 80, "fizruk"),
@@ -268,21 +268,23 @@ describe("useNowItems", () => {
 
       const { result } = renderHook(() => useNowItems());
       expect(result.current.items).toHaveLength(2);
-      expect(result.current.postponed).toBe(0);
+      expect(result.current.checked).toEqual([]);
 
       act(() => {
-        for (const item of result.current.items) result.current.dismiss(item);
+        for (const item of result.current.items) result.current.check(item);
       });
       expect(result.current.items).toEqual([]);
-      expect(result.current.postponed).toBe(2);
+      expect(result.current.checked).toHaveLength(2);
 
-      act(() => result.current.restorePostponed());
+      act(() => {
+        for (const item of result.current.checked) result.current.uncheck(item);
+      });
 
       expect(result.current.items.map((i) => i.id).sort()).toEqual([
         "fizruk_long_break",
         "nutrition_protein_low",
       ]);
-      expect(result.current.postponed).toBe(0);
+      expect(result.current.checked).toEqual([]);
       // Обидва сховища очищені від id повернутих рядків.
       expect(
         JSON.parse(localStorage.getItem(HUB_RECS_DISMISSED_KEY) ?? "{}"),
@@ -292,7 +294,7 @@ describe("useNowItems", () => {
       ).toEqual({});
     });
 
-    it("restorePostponed не чіпає відкидання, якого цей список не бачить", () => {
+    it("uncheck не чіпає закриття, якого цей список не бачить", () => {
       generateRecommendationsMock.mockReturnValue([
         rec("fizruk_long_break", 80, "fizruk"),
       ]);
@@ -302,9 +304,9 @@ describe("useNowItems", () => {
         JSON.stringify({ other_rule: NOON.getTime() }),
       );
       const { result } = renderHook(() => useNowItems());
-      act(() => result.current.dismiss(result.current.items[0]!));
+      act(() => result.current.check(result.current.items[0]!));
 
-      act(() => result.current.restorePostponed());
+      act(() => result.current.uncheck(result.current.checked[0]!));
 
       expect(
         Object.keys(

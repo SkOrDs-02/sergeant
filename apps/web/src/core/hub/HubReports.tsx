@@ -48,7 +48,7 @@ const CrossModuleLinksSection = lazy(
 function CardSkeleton() {
   return (
     <div
-      className="h-[56px] animate-pulse bg-panel border border-line rounded-2xl"
+      className="h-11 animate-pulse rounded-lg bg-panel"
       role="status"
       aria-label={messages.loaders.loadingSection}
       aria-busy="true"
@@ -255,7 +255,7 @@ export function HubReports() {
       */}
       {insights.length > 0 && (
         <section className="space-y-1">
-          <SectionHeading as="h2" size="xs">
+          <SectionHeading as="h2" size="lg">
             Закономірності
           </SectionHeading>
           <p className="text-style-caption text-muted">
@@ -279,7 +279,7 @@ export function HubReports() {
       <section className="space-y-3">
         <SectionHeading
           as="h2"
-          size="xs"
+          size="lg"
           action={
             <Segmented<Period>
               size="sm"
@@ -328,7 +328,7 @@ export function HubReports() {
         {/* Картка модуля, який людина вимкнула, не рендериться взагалі —
             не «порожній стан», не «підключити». Вимкнений модуль не має
             що звітувати, і рядок про це був би шумом, а не інформацією. */}
-        <div className="grid grid-cols-1 gap-3">
+        <div className="divide-y divide-line border-y border-line">
           {shows("fizruk") && (
             <ChunkErrorBoundary minH={56}>
               <Suspense fallback={<CardSkeleton />}>
@@ -377,7 +377,6 @@ export function HubReports() {
             (`useFeatureGate`). */}
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" onClick={handleExportPdf}>
-            <Icon name="download" size="md" aria-hidden />
             Експортувати PDF
           </Button>
         </div>

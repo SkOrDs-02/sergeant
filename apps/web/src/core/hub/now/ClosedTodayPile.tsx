@@ -1,35 +1,24 @@
 /**
- * Купа «Закрито сьогодні» — друга купа осі дії (A1, спека
- * `hub-action-axis.md`). Одне твердження на активний модуль, ≤4 рядки;
- * правило «закрито» — у `closedToday.ts`. Порожня купа не рендериться:
+ * Купа «Закрито» — друга купа осі дії (A1, спека `hub-action-axis.md`), у
+ * формі мови H (redesign v3): заголовок `muted`, рядки 34 px — чекбокс-on
+ * 18 px, назва 600, факт другим сірим. Порожня купа не рендериться:
  * «закрито 0» — це не стан, а відсутність.
  *
- * Тап по рядку відкриває модуль через проп із головної (джерело
- * `hub_dashboard`): рядок — не двері (двері — рейок), а твердження, яке
- * можна перевірити.
+ * Три джерела рядків: твердження модулів (`closedToday.ts`, одне на
+ * активний модуль; тап відкриває модуль), зроблені кроки онбордингу і
+ * пункти «Зараз», закриті сьогодні чекбоксом (тап повертає пункт у «Зараз»).
  *
- * Last validated: 2026-09-17
+ * Last validated: 2026-10-09
  * Status: Active
  */
-import { useMemo } from "react";
-import type { DashboardModuleId } from "@sergeant/shared";
-import { cn } from "@shared/lib/ui/cn";
+import { useMemo, type ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Icon } from "@shared/components/ui/Icon";
 import { coreMessages } from "@shared/i18n/uk.core";
 import { computeClosedToday } from "./closedToday";
 import { usePublishHubDayCount } from "./hubDayCounts";
 import type { ChecklistNowProps } from "./ChecklistNowRows";
+import type { NowItem } from "./nowItems";
 import type { Rec } from "../../lib/recommendationEngine";
-
-// Приглушене чорнило модуля на кремовій панелі — той самий вибір `-strong`
-// у світлій темі, що й у `PILL_ACCENT` (`dashboardCards.tsx`).
-const MODULE_INK: Record<DashboardModuleId, string> = {
-  finyk: "text-finyk-strong dark:text-finyk",
-  fizruk: "text-fizruk-strong dark:text-fizruk-300",
-  routine: "text-routine-strong dark:text-routine",
-  nutrition: "text-nutrition-strong dark:text-nutrition",
-};
 
 export interface ClosedTodayPileProps {
   activeModules: readonly string[];
@@ -39,7 +28,48 @@ export interface ClosedTodayPileProps {
   storageBump?: number | undefined;
   /** Зроблені кроки онбордингу: рядки «Закрито», поки триває вікно. */
   checklistDone?: ChecklistNowProps | undefined;
+  /** Пункти «Зараз», закриті сьогодні чекбоксом. */
+  checked?: readonly NowItem[] | undefined;
+  /** Повертає закритий пункт у «Зараз». */
+  onUncheck?: ((item: NowItem) => void) | undefined;
 }
+
+function CheckOn() {
+  return (
+    <span
+      aria-hidden
+      className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] bg-text text-bg"
+    >
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M5 12 L10 17 L19 7" />
+      </svg>
+    </span>
+  );
+}
+
+function RowBody({ name, fact }: { name: string; fact?: ReactNode }) {
+  return (
+    <>
+      <CheckOn />
+      <span className="min-w-0 flex-1 truncate text-style-body">
+        <span className="font-semibold text-text">{name}</span>
+        {fact ? <span className="ml-2 text-muted">{fact}</span> : null}
+      </span>
+    </>
+  );
+}
+
+const ROW =
+  "flex min-h-[34px] w-full items-center gap-2.5 text-left focus-ring touch-target";
 
 export function ClosedTodayPile({
   activeModules,
@@ -47,86 +77,66 @@ export function ClosedTodayPile({
   onOpenModule,
   storageBump,
   checklistDone,
+  checked = [],
+  onUncheck,
 }: ClosedTodayPileProps) {
   const items = useMemo(() => {
     void storageBump; // storage-write tick — перерахувати після запису
     return computeClosedToday({ activeModules, recs });
   }, [activeModules, recs, storageBump]);
   const doneSteps = checklistDone?.steps ?? [];
-  usePublishHubDayCount("closed", items.length + doneSteps.length);
-  if (items.length === 0 && doneSteps.length === 0) return null;
+  const count = items.length + doneSteps.length + checked.length;
+  usePublishHubDayCount("closed", count);
+  if (count === 0) return null;
 
   return (
-    <section aria-labelledby="closed-pile-heading" className="space-y-2">
-      <div className="flex items-baseline justify-between px-0.5">
-        <SectionHeading
-          as="h2"
-          id="closed-pile-heading"
-          size="xs"
-          variant="muted"
-        >
-          {coreMessages.hub.closedPile.heading}
-        </SectionHeading>
-        <span className="text-style-caption font-bold text-muted" aria-hidden>
-          {items.length + doneSteps.length}
-        </span>
-      </div>
-      <ul className="space-y-1.5">
-        {checklistDone &&
-          doneSteps.map((step) => (
-            <li
-              key={step.id}
-              data-testid="closed-checklist-row"
-              className="flex items-center gap-3 px-3 py-2"
-            >
-              <Icon
-                name="check"
-                size="sm"
-                strokeWidth={2.5}
-                className={cn("shrink-0", MODULE_INK[checklistDone.moduleId])}
-                aria-hidden
-              />
-              <span className="flex-1 min-w-0 text-style-label text-text leading-snug">
-                {step.label}
-              </span>
-            </li>
-          ))}
+    <section aria-labelledby="closed-pile-heading">
+      <SectionHeading
+        as="h2"
+        size="lg"
+        variant="muted"
+        id="closed-pile-heading"
+        meta={count}
+      >
+        {coreMessages.hub.closedPile.heading}
+      </SectionHeading>
+      <ul className="mt-1">
         {items.map((item) => (
           <li key={item.module}>
             <button
               type="button"
               data-testid="closed-row"
               onClick={() => onOpenModule(item.module)}
-              className={cn(
-                "w-full flex items-center gap-3 rounded-xl border border-line bg-bg px-3 py-2 text-left touch-target",
-                "hover:bg-panelHi transition-colors focus-ring",
-              )}
+              className={ROW}
             >
-              <Icon
-                name="check"
-                size="sm"
-                strokeWidth={2.5}
-                className={cn("shrink-0", MODULE_INK[item.module])}
-                aria-hidden
+              <RowBody
+                name={item.label}
+                fact={
+                  item.value
+                    ? `${item.statement} · ${item.value}`
+                    : item.statement
+                }
               />
-              <span className="flex-1 min-w-0">
-                <span className="block text-style-label text-text leading-snug">
-                  {item.label}
-                </span>
-                <span className="block text-style-caption text-muted leading-snug">
-                  {item.statement}
-                </span>
-              </span>
-              {item.value && (
-                <span
-                  className={cn(
-                    "shrink-0 text-style-label font-bold tabular-nums",
-                    MODULE_INK[item.module],
-                  )}
-                >
-                  {item.value}
-                </span>
-              )}
+            </button>
+          </li>
+        ))}
+        {doneSteps.map((step) => (
+          <li key={step.id} data-testid="closed-checklist-row" className={ROW}>
+            <RowBody name={step.label} />
+          </li>
+        ))}
+        {checked.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked
+              data-testid="closed-now-row"
+              aria-label={`${coreMessages.hub.closedPile.uncheck}: ${item.title}`}
+              onClick={() => onUncheck?.(item)}
+              className={ROW}
+            >
+              <RowBody name={item.title} />
             </button>
           </li>
         ))}

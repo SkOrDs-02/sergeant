@@ -27,6 +27,7 @@ import { onHubBus } from "@shared/lib/modules/hubBus";
 import { useHubNavigation } from "../../hooks/useHubNavigation";
 import { writeHubPrefsBag } from "../../settings/hubPrefs";
 import { NowPile } from "./NowPile";
+import { useNowItems } from "./useNowItems";
 
 // Побічні ефекти навігації (аналітика, «нещодавні модулі») — не предмет цього
 // тесту; лишаємо справжні `openModule` / `isHubModuleId` / `emitHubBus`.
@@ -43,9 +44,11 @@ vi.mock("../../observability/analytics", () => ({
 function Harness() {
   const nav = useHubNavigation();
   const location = useLocation();
+  const now = useNowItems();
   return (
     <>
       <NowPile
+        now={now}
         onOpenTarget={(module, hash) =>
           hash ? nav.openModule(module, { hash }) : nav.openModule(module)
         }
@@ -114,9 +117,7 @@ describe("weekly_digest_*: «Відкрити» щось робить", () => {
 
   it("картка «Підсумок минулого тижня» є в купі «Зараз»", () => {
     renderHub();
-    expect(
-      screen.getByRole("heading", { name: "Підсумок минулого тижня" }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Підсумок минулого тижня")).toBeInTheDocument();
   });
 
   /**

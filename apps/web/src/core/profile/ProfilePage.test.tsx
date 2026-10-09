@@ -189,16 +189,16 @@ describe("ProfilePage", () => {
       expect(emails.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("shows verified badge when emailVerified is true", () => {
+    it("статус пошти текстом: підтверджено", () => {
       renderPage();
-      const badges = screen.getAllByText("Підтверджено");
-      expect(badges.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("· підтверджено")).toBeInTheDocument();
     });
 
-    it("hides verified badge when emailVerified is false", () => {
+    it("статус пошти текстом: не підтверджено", () => {
       mockUser.emailVerified = false;
       renderPage();
-      expect(screen.queryByText("Підтверджено")).not.toBeInTheDocument();
+      expect(screen.getByText("· не підтверджено")).toBeInTheDocument();
+      expect(screen.queryByText("· підтверджено")).not.toBeInTheDocument();
     });
 
     it("shows initial letter when no avatar image", () => {
