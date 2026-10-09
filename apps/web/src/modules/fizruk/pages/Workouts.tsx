@@ -339,7 +339,6 @@ export function Workouts({
                   endWorkout={o.endWorkout}
                   summarizeWorkoutForFinish={o.summarizeWorkoutForFinish}
                   deleteWorkout={o.deleteWorkout}
-                  restoreWorkout={o.restoreWorkout}
                   onRepeatWorkout={o.repeatWorkout}
                   onClose={() => onNavigate?.("workouts")}
                 />

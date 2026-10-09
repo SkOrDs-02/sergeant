@@ -22,10 +22,10 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { messages } from "@shared/i18n/uk";
 import { isLightWorkout, type Workout } from "@sergeant/fizruk-domain";
+import { deleteWorkoutWithUndo } from "../../lib/deleteWorkoutWithUndo";
 
 export interface WorkoutHistoryListProps {
   workouts: readonly Workout[];
@@ -121,13 +121,14 @@ export function WorkoutHistoryList({
     (id: string) => {
       const snapshot = (workouts || []).find((w) => w.id === id);
       if (!snapshot) return;
-      deleteWorkout(id);
-      showUndoToast(toast, {
-        msg: copy.deletedToast,
-        onUndo: () => restoreWorkout?.(snapshot),
+      deleteWorkoutWithUndo({
+        toast,
+        workout: snapshot,
+        deleteWorkout,
+        restoreWorkout,
       });
     },
-    [workouts, deleteWorkout, restoreWorkout, toast, copy.deletedToast],
+    [workouts, deleteWorkout, restoreWorkout, toast],
   );
 
   const listHeight = Math.min(
