@@ -41,7 +41,7 @@ describe("OnboardingWizard — goal-first A/B (PR-13)", () => {
     // Legacy welcome has the «Розпочати …» CTA on the `outcome`
     // hero arm and shows module rows; the goal-first headline must
     // not appear.
-    expect(screen.queryByText(/Що для тебе зараз важливо/i)).toBeNull();
+    expect(screen.queryByText(/Головна ціль/i)).toBeNull();
     expect(
       screen.getByRole("button", { name: /Розпочати/i }),
     ).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe("OnboardingWizard — goal-first A/B (PR-13)", () => {
 
     render(<OnboardingWizard onDone={() => {}} />);
 
-    expect(screen.getByText("Що для тебе зараз важливо?")).toBeInTheDocument();
+    expect(screen.getByText("Головна ціль")).toBeInTheDocument();
     expect(
       screen.getByTestId("goal-first-outcome-spend-less"),
     ).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe("OnboardingWizard — goal-first A/B (PR-13)", () => {
     // Goal-first screen unmounts; legacy welcome takes over with
     // its CTA visible. Skip stays a one-way transition, so the
     // outcome cards must be gone.
-    expect(screen.queryByText("Що для тебе зараз важливо?")).toBeNull();
+    expect(screen.queryByText("Головна ціль")).toBeNull();
     expect(
       screen.getByRole("button", { name: /Розпочати/i }),
     ).toBeInTheDocument();

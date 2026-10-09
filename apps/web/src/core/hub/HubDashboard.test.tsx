@@ -428,7 +428,7 @@ describe("HubDashboard — вісь дії", () => {
     expect(screen.getByTestId("now-empty")).toBeInTheDocument();
     expect(screen.queryByTestId("today-focus-card")).toBeNull();
     // Акордеон під віссю — лише порада й звіт.
-    expect(screen.getByText("Порада й звіт тижня")).toBeInTheDocument();
+    expect(screen.getByText("Порада й тиждень")).toBeInTheDocument();
   });
 
   it("тап по комірці рейка відкриває модуль із джерелом module_rail", () => {
@@ -491,6 +491,6 @@ describe("HubDashboard — вісь дії", () => {
     );
     renderDashboard();
     expect(screen.getByTestId("now-empty")).toBeInTheDocument();
-    expect(screen.getByText("Порада й звіт тижня")).toBeInTheDocument();
+    expect(screen.getByText("Порада й тиждень")).toBeInTheDocument();
   });
 });

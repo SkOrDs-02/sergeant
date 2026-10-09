@@ -71,7 +71,7 @@ describe("useProteinLowInsight", () => {
     });
     expect(result.current?.title).toContain("30");
     expect(result.current?.title).toContain("120");
-    expect(result.current?.subtitle).toBe("Час додати джерело білка?");
+    expect(result.current?.subtitle).toBe("Додати джерело білка");
   });
 
   it("softens the subtitle instead of silencing the nudge when the day is mostly photoAI-estimated (nutrition audit E-5)", () => {
@@ -80,6 +80,6 @@ describe("useProteinLowInsight", () => {
       useProteinLowInsight(log, { dailyTargetProtein_g: 120 } as never),
     );
     expect(result.current?.subtitle).toContain("білка малувато");
-    expect(result.current?.subtitle).not.toBe("Час додати джерело білка?");
+    expect(result.current?.subtitle).not.toBe("Додати джерело білка");
   });
 });

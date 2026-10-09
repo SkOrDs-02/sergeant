@@ -63,7 +63,7 @@ export function useRestDayOverdueInsight(
       id: "fizruk-rest-day-overdue",
       module: "fizruk",
       title: `${days} ${pluralDays(days)} без тренування`,
-      subtitle: "Час повернутися?",
+      subtitle: "Почати тренування",
       // AI-DANGER: питання мусить казати те саме, що й заголовок. Тут стояв
       // текст «N днів поспіль БЕЗ ДНЯ ВІДНОВЛЕННЯ» — протилежний зміст:
       // заголовок каже «ти не тренувався», а питання питало, коли поставити

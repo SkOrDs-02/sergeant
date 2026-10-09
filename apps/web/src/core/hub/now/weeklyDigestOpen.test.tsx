@@ -146,7 +146,7 @@ describe("weekly_digest_*: «Відкрити» щось робить", () => {
     expect(effectsOfClick()).toEqual(["openWeekReport"]);
   });
 
-  it("блок «Порада й звіт тижня» вимкнено: веде у вкладку «Звіти», а не нікуди", () => {
+  it("блок «Порада й тиждень» вимкнено: веде у вкладку «Звіти», а не нікуди", () => {
     writeHubPrefsBag({ showInsights: false });
     renderHub();
     act(() => {

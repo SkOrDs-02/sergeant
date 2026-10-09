@@ -50,7 +50,7 @@ export const fizrukPageMessages = {
     pickerEmpty:
       "Нічого не знайшли. Спробуй інше слово або заведи своє заняття.",
     newActivityName: "Назва заняття",
-    newActivityNamePlaceholder: "Наприклад, TRX у моєму залі",
+    newActivityNamePlaceholder: "Назва активності",
     newActivityCategory: "Категорія",
     newActivityEffort: "Наскільки важке",
     newActivityEffortHint:
@@ -183,7 +183,7 @@ export const fizrukPageMessages = {
     note: "Нотатка",
     time: "Час",
     noteTitle: "Нотатки до тренування",
-    notePlaceholder: "Напр. важко на присіданнях, болить коліно",
+    notePlaceholder: "Нотатка",
     noteHint: "необовʼязково",
     warmupAdd: "Додати",
     // Той самий родовий відмінок, що й `setsGenitive*`: «0 з 1 вправи»,
@@ -268,10 +268,10 @@ export const fizrukPageMessages = {
   // Аркуш готовності перед стартом тренування
   // (спека docs/work/specs/fizruk-readiness-check.md).
   readiness: {
-    title: "Як ти сьогодні?",
-    subtitle: "Два питання, і підказка ваги врахує твій стан.",
-    sleepLabel: "Як спалось?",
-    sorenessLabel: "Як почуваються мʼязи?",
+    title: "Самопочуття",
+    subtitle: "Дві оцінки, і підказка ваги врахує твій стан.",
+    sleepLabel: "Сон",
+    sorenessLabel: "Мʼязи",
     scaleLow: "погано",
     scaleHigh: "добре",
     submit: "Готово",
@@ -589,7 +589,7 @@ export const fizrukPageMessages = {
     markedSuffix: "уже позначено",
     today: "сьогодні",
     yesterday: "вчора",
-    finishTitle: "Щось болить?",
+    finishTitle: "Біль після тренування",
     finishDescription:
       "Опційно познач одну або кілька зон: мʼяз, суглоб чи відділ хребта. Медичних порад тут немає: позначка лише прибирає позначене з порад з відновлення.",
     skip: "Нічого не позначати",

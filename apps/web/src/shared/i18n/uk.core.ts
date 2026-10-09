@@ -243,29 +243,11 @@ export const coreMessages = {
     chatOfflineNotice:
       "Сержант недоступний без інтернету. Дані модулів видно офлайн, але відповіді Сержанта потребують підключення.",
 
-    // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
-    // тільки-но відкрив чат і ще нічого не написав, замість пустого
-    // scroll-area-я показуємо короткий title + 4 chip-suggestion-и, які
-    // префілять composer (не шлють одразу — залишаємо контроль за
-    // користувачем). Suggestion-и охоплюють по одному запиту з кожного
-    // основного модуля (finyk / fizruk / nutrition / routine), щоб
-    // first-time-user одразу бачив, що тут можна питати, а не залишався
-    // з blank-page-effect-ом.
-    chatEmptyTitle: "Запитай щось, я допоможу",
-    chatEmptyDescription:
-      "Тапни на підказку, текст вставиться у поле, і ти зможеш відредагувати його перед відправкою.",
-    chatEmptyDescriptionSignedOut: "Ось про що можна спитати, коли увійдеш.",
     // Розкриття «це AI» — вимога EU AI Act ст. 50(1), чинна з 2026-08-02:
     // людину повідомляють, що вона взаємодіє з AI, не пізніше першого
-    // контакту. `ChatEmpty` — рівно та поверхня: вона рендериться, поки в
-    // сесії немає жодного повідомлення, тобто ДО першої репліки.
+    // контакту, тож рядок стоїть над стрічкою чату безумовно (`HubChatBody`).
     chatEmptyAiDisclosure:
       "Відповідає AI, а не людина. Може помилятися, тож важливе перевіряй.",
-    chatEmptyAriaLabel: "Підказки для початку чату",
-    chatEmptySuggestionFinyk: "Скільки я витратив цього тижня?",
-    chatEmptySuggestionFizruk: "Як мої тренування?",
-    chatEmptySuggestionNutrition: "Що я їв сьогодні?",
-    chatEmptySuggestionRoutine: "Стан моїх звичок",
 
     // HubReports per-domain cards (NutritionCard / RoutineCard) — shared
     // inline labels for the lazy-loaded report charts.
@@ -368,7 +350,7 @@ export const coreMessages = {
     // frame the outcome-first variant of the welcome screen, and
     // `goalFirstSkipLabel` is the tertiary escape hatch back to the
     // legacy module-checklist welcome.
-    goalFirstHeading: "Що для тебе зараз важливо?",
+    goalFirstHeading: "Головна ціль",
     goalFirstSubtitle: "Обери головне, Сержант підбере розділ, з якого почати.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",

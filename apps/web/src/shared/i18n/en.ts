@@ -331,17 +331,8 @@ export const messagesEn: Partial<{
     chatOfflineNotice:
       "The assistant is unavailable without internet. Module data is visible offline, but\n          AI responses require a connection.",
 
-    chatEmptyTitle: "Ask me anything, I'm here to help",
-    chatEmptyDescription:
-      "Tap a suggestion, it fills the input so you can edit it before sending.",
-    chatEmptyDescriptionSignedOut: "Here is what you can ask once you sign in.",
     chatEmptyAiDisclosure:
       "You are talking to an AI, not a person. It can be wrong, so double-check anything important.",
-    chatEmptyAriaLabel: "Chat starter suggestions",
-    chatEmptySuggestionFinyk: "How much did I spend this week?",
-    chatEmptySuggestionFizruk: "How are my workouts going?",
-    chatEmptySuggestionNutrition: "What did I eat today?",
-    chatEmptySuggestionRoutine: "Status of my habits",
 
     reportNoData: "No data",
     reportChartAria: "Chart",

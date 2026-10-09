@@ -166,7 +166,7 @@ export function HabitForm({
               "routine-touch-field min-w-0 flex-1",
               errors?.name && "border-danger",
             )}
-            placeholder="Напр. Пити воду, медитувати, ранкова пробіжка"
+            placeholder="Назва звички"
             maxLength={NAME_MAX_LEN}
             showCharCount={false}
             aria-invalid={errors?.name ? true : undefined}

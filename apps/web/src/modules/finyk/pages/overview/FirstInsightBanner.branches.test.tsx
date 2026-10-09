@@ -29,7 +29,7 @@ describe("FirstInsightBanner (branches)", () => {
 
   it("renders headline and helper copy", () => {
     render(<FirstInsightBanner onSetBudget={vi.fn()} onDismiss={vi.fn()} />);
-    expect(screen.getByText("Ось куди йдуть твої гроші")).toBeInTheDocument();
+    expect(screen.getByText("Бюджету ще немає")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Поставити бюджет" }),
     ).toBeInTheDocument();

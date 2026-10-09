@@ -87,7 +87,7 @@ export function HubInsightsBlock({
 }: HubInsightsBlockProps) {
   // Р23: звіт тижня з локальних даних. Він не чекає мережі, тож і підпис
   // згорнутого блоку, поки AI-порада вантажиться чи недоступна, говорить
-  // фактом, а не «Готую пораду Сержанта…».
+  // фактом.
   const weekReport = useFinykWeekReport(finykActive);
   const weekHeadline = weekReport[0];
   // «Відкрити звіт тижня» з картки про темп витрат: розгорнути блок і
@@ -114,11 +114,11 @@ export function HubInsightsBlock({
       onOpenChange={onInsightsOpenChange}
       openSignal={openSignal}
       revealRef={weekReportRef}
-      title="Порада й звіт тижня"
+      title="Порада й тиждень"
       collapsedIcon="sergeant"
       collapsedSubtitle={
         coachLoading
-          ? (weekHeadline ?? "Готую пораду Сержанта…")
+          ? (weekHeadline ?? "Порада Сержанта на день")
           : coachError
             ? // AI-порада недоступна (anon/quota/мережа). Не лякаємо
               // «збоєм» — показуємо звіт тижня, інакше спокійний нейтральний

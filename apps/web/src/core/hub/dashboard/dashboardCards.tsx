@@ -253,7 +253,7 @@ export function MotivationalFooter() {
 
   if (entryCount === 0) return null;
 
-  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}. Продовжуй.`;
+  const message = `${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}`;
 
   return (
     <p className="text-style-caption text-subtle text-center py-8">{message}</p>

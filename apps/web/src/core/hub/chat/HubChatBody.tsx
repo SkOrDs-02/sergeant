@@ -7,7 +7,6 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { ChatMessage, TypingIndicator } from "../../components/ChatMessage";
 import type { HubChatSession } from "../hubChatSessions";
-import { ChatEmpty } from "./ChatEmpty";
 // Аліас: проп цього компонента теж зветься `messages` (стрічка повідомлень).
 import { messages as uiCopy } from "@shared/i18n/uk";
 
@@ -20,13 +19,6 @@ export interface HubChatBodyProps {
   onSpeak: () => void;
   /** Cancel the in-flight chat request — wired to the inline cancel pill. */
   onCancel: () => void;
-  /**
-   * PR-26: викликається при тапі на suggestion-chip у `<ChatEmpty>`.
-   * Parent (HubChat) пробрасує `setInput` + setTimeout-focus, як це
-   * робить `<ChatQuickActions onPrefill>` у composer-і. Гостю не
-   * передається: поля для вставки в нього немає.
-   */
-  onPickSuggestion?: ((text: string) => void) | undefined;
 }
 
 /**
@@ -36,10 +28,6 @@ export interface HubChatBodyProps {
  * they scroll up more than `STICK_THRESHOLD_PX` to re-read history,
  * streamed deltas no longer yank the view back (F12). Sending a new
  * user message re-sticks (signal: user just sent → wants to see reply).
- *
- * Якщо `messages.length === 0` — рендерить `<ChatEmpty>` як
- * empty-state-placeholder з 4 chip-suggestion-ами, що префілять
- * composer (PR-26 / §A12).
  */
 const STICK_THRESHOLD_PX = 32;
 
@@ -48,7 +36,6 @@ export function HubChatBody({
   loading,
   onSpeak,
   onCancel,
-  onPickSuggestion,
 }: HubChatBodyProps) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
@@ -70,8 +57,6 @@ export function HubChatBody({
     stickToBottomRef.current =
       el.scrollTop + el.clientHeight >= el.scrollHeight - STICK_THRESHOLD_PX;
   };
-
-  const isEmpty = messages.length === 0 && !loading;
 
   // Текст останньої завершеної відповіді асистента — рівно те, що треба
   // прочитати вголос після того, як стрім завершився.
@@ -124,30 +109,19 @@ export function HubChatBody({
       </span>
       {/*
         AI-DANGER: розкриття «це AI» (EU AI Act ст. 50(1), чинна з 2026-08-02)
-        мусить стояти ТУТ, а не всередині `ChatEmpty`.
+        мусить стояти ТУТ, над стрічкою, і БЕЗУМОВНО.
 
-        Доти воно жило в порожньому стані, і припущення було, що порожній стан
-        видно до першої репліки. Насправді `normalizeStoredMessages`
-        (`core/lib/hubChatUtils.ts`) ПІДСТАВЛЯЛА привітальну репліку щоразу,
-        коли збережений масив порожній, тож `messages.length === 0` було
-        недосяжне за побудовою, `ChatEmpty` не рендерився ніколи, і
-        обовʼязкове розкриття не показувалось жодного разу (browser-QA
-        2026-09-02).
-
-        PR-A7 (`2026-09-13-product-full-review.md`) прибрав цю підстановку:
-        порожній стан тепер ДОСЯЖНИЙ (нова сесія, очищена сесія,
-        відновлення після пошкодженого сховища), і `ChatEmpty` рендериться.
-        Рядок нижче лишається БЕЗУМОВНИМ навмисно, а не тому, що знову
-        покладаємось на `isEmpty`: він стоїть над стрічкою і видно його з
-        першого кадру незалежно від того, чи є повідомлення, — так
-        розкриття не залежить від жодної майбутньої зміни в
-        `normalizeStoredMessages`. Прибираєш звідси або знову вішаєш на
-        умову — повертаєш порушення.
+        Доти воно жило в порожньому стані чату, а `normalizeStoredMessages`
+        (`core/lib/hubChatUtils.ts`) підставляла привітальну репліку щоразу,
+        коли збережений масив порожній, тож порожній стан не рендерився
+        ніколи, і обовʼязкове розкриття не показувалось жодного разу
+        (browser-QA 2026-09-02). Рядок видно з першого кадру незалежно від
+        того, чи є повідомлення. Прибираєш звідси або вішаєш на умову —
+        повертаєш порушення.
       */}
       <p className="text-style-caption text-subtle leading-snug text-pretty text-center px-2">
         {uiCopy.hub.chatEmptyAiDisclosure}
       </p>
-      {isEmpty && <ChatEmpty onPickSuggestion={onPickSuggestion} />}
       {messages.map((m) => (
         <ChatMessage key={m.id} message={m} onSpeak={onSpeak} />
       ))}

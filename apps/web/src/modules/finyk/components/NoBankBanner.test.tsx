@@ -12,9 +12,9 @@ describe("NoBankBanner", () => {
 
   it("renders the headline and explainer copy", () => {
     render(<NoBankBanner onConnect={() => {}} onContinueManually={() => {}} />);
-    expect(screen.getByText("Без банку?")).toBeInTheDocument();
+    expect(screen.getByText("Monobank не підключено")).toBeInTheDocument();
     // Explainer copy is split across whitespace; match with a fragment.
-    expect(screen.getByText(/Записуй витрати вручну/i)).toBeInTheDocument();
+    expect(screen.getByText(/записуються вручну/i)).toBeInTheDocument();
   });
 
   it("invokes onConnect when «Підключити Monobank» is clicked", () => {

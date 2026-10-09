@@ -225,7 +225,7 @@ export function PantryManagerSheet({
                 }
               }}
               placeholder={
-                pantryForm.mode === "rename" ? "Нова назва" : "напр. Балкон"
+                pantryForm.mode === "rename" ? "Нова назва" : "Назва місця"
               }
               disabled={busy}
               aria-label={

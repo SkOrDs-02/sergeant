@@ -23,7 +23,7 @@ export const finykPageMessages = {
   },
   /** Пікер привʼязки транзакцій до пасиву / дебіторки (§ 4a канону). */
   debtTxLink: {
-    roleSheetTitle: "Чим є ця операція?",
+    roleSheetTitle: "Тип операції",
     noDescription: "Без опису",
     suggestedHint: "· схоже на це",
     unlink: "Зняти привʼязку",
@@ -235,10 +235,10 @@ export const finykPageMessages = {
     noDebtsHint: "Спершу створи пасив в Активах.",
     createNew: "Створити новий пасив",
     createTitle: "Новий пасив із цієї операції",
-    namePlaceholder: "Назва пасиву (кредит, борг)",
+    namePlaceholder: "Назва пасиву",
     create: "Створити",
     cancel: "Скасувати",
-    pickTitle: "Який це пасив?",
+    pickTitle: "Обери пасив",
     unlink: "Відвʼязати",
   },
   /**
@@ -247,7 +247,7 @@ export const finykPageMessages = {
    */
   debtAutoLink: {
     fieldLabel: "Автопривʼязка платежів за словом в описі",
-    placeholder: "Наприклад, ПриватБанк",
+    placeholder: "Слово з опису",
     hint: "Кожну майбутню витрату з таким словом в описі привʼяжу як сплату автоматично.",
     matchesFoundPrefix: "Знайдено збігів:",
     noMatches: "Збігів не знайдено",
@@ -314,7 +314,7 @@ export const finykPageMessages = {
   // не знайшов (або яку людина сама розлінкувала).
   silpoReceiptPicker: {
     cta: "Прикріпити чек",
-    title: "Який це чек?",
+    title: "Обери чек",
     description:
       "Чеки без пари, найближчі за датою – зверху. Прикріплення скасовує й попереднє «Це не той чек».",
     loading: "Шукаю чеки…",
@@ -469,7 +469,7 @@ export const finykPageMessages = {
   // Києвом, і порівнюються однакові відрізки (рішення власника 2026-10-01):
   // ті самі числа, що називає картка «Витрати на N% вище ніж минулого тижня».
   weekReport: {
-    heading: "Тиждень у цифрах",
+    heading: "Витрати тижня",
     empty: "На цьому тижні записів ще немає",
     totalMore:
       "За тиждень витрачено {spent}, на {change} більше, ніж за ті самі дні минулого тижня ({prev})",

@@ -106,7 +106,7 @@ export function RoutineStatsPanel({
 
       <Card as="section" radius="lg" aria-label="Зведена статистика">
         <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
-          Зведення · {range.hint}
+          Виконання · {range.hint}
         </SectionHeading>
         {/* F1 (анти-слоп аудит 2026-09-01): три однакові плитки «число +
             підпис» — це та сама stat-граматика, що й тайли хабу й

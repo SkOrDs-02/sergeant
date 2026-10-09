@@ -160,7 +160,7 @@ function LimitBudgetCardComponent({
             <MoneyInput
               id={limitId}
               size="sm"
-              placeholder="Напр. 5 000 ₴"
+              placeholder="Сума"
               value={budget.limit}
               onValueChange={(next) => onChangeLimit?.(next ?? 0)}
             />

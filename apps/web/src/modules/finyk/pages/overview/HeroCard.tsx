@@ -187,11 +187,10 @@ const HeroCardImpl = function HeroCard({
              вигаданого числа — прямий шлях задати план. */
           <div>
             <p className="text-style-headline text-hero-ink leading-tight">
-              Скільки можна витрачати на день?
+              Денний бюджет не задано
             </p>
             <p className="text-style-label text-hero-ink mt-1 leading-snug">
-              Задай місячний план витрат, і я рахуватиму денний бюджет із
-              урахуванням підписок і боргів.
+              Він рахується з місячного плану витрат, підписок і боргів.
             </p>
             {onSetPlan ? (
               <button

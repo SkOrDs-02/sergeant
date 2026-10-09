@@ -155,7 +155,7 @@ describe("FirstActionHeroCard extended coverage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Navigate preset" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByText("З чого хочеш почати?")).toBeInTheDocument();
+    expect(screen.getByText("Перший запис")).toBeInTheDocument();
     expect(firstActionMocks.clearFirstActionPending).not.toHaveBeenCalled();
     expect(onDismiss).not.toHaveBeenCalled();
   });

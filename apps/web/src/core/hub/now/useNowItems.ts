@@ -82,7 +82,7 @@ export function useNowItems(): UseNowItemsResult {
   // `useDashboardFocus`; мемоізувати нема на чому, масив щоразу новий.
   const recs = generateRecommendations();
 
-  // Цільовий блок «Порада й звіт тижня» вимикається в налаштуваннях: тоді
+  // Цільовий блок «Порада й тиждень» вимикається в налаштуваннях: тоді
   // «Відкрити» з тижневої картки веде в модуль, а з крос-модульної (понеділковий
   // «Підсумок минулого тижня») — у вкладку «Звіти» (`withoutWeekReportTarget`).
   const [showInsights] = useHubPref<boolean>("showInsights", true);

@@ -290,7 +290,7 @@ describe("MonthlyPlanCard", () => {
       daysLeft: 5,
     });
 
-    expect(screen.getByText(/Орієнтовний фінплан/)).toBeInTheDocument();
+    expect(screen.getByText(/Чорновик плану на місяць/)).toBeInTheDocument();
     expect(
       screen.getAllByText(
         // Ті самі нерозривні пробіли, що й вище: U+2212 як мінус,

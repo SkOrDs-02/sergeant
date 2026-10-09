@@ -70,7 +70,7 @@ export function ItemEditSheet({
           onChange={(e) =>
             setItemEdit((s) => ({ ...s, name: e.target.value, err: "" }))
           }
-          placeholder="напр. Молоко"
+          placeholder="Назва"
           maxLength={NAME_MAX_LEN}
           showCharCount={false}
           aria-label="Назва"
@@ -93,7 +93,7 @@ export function ItemEditSheet({
               setItemEdit((s) => ({ ...s, qty: e.target.value, err: "" }))
             }
             inputMode="decimal"
-            placeholder="напр. 2.5"
+            placeholder="Кількість"
             maxLength={12}
             showCharCount={false}
             aria-label="Кількість"

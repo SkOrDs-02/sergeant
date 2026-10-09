@@ -184,7 +184,7 @@ function GoalBudgetCardComponent({
               <Input
                 id={nameId}
                 size="sm"
-                placeholder="Напр. На відпустку"
+                placeholder="Назва"
                 value={budget.name || ""}
                 onChange={(e) => onChangeName?.(e.target.value)}
               />
@@ -194,7 +194,7 @@ function GoalBudgetCardComponent({
               <MoneyInput
                 id={targetId}
                 size="sm"
-                placeholder="Напр. 20 000 ₴"
+                placeholder="Сума"
                 value={draftTarget ?? ""}
                 onValueChange={setDraftTarget}
               />
@@ -213,7 +213,7 @@ function GoalBudgetCardComponent({
               id={dateId}
               size="sm"
               label="Дата завершення"
-              emptyLabel="Напр. 31.12.2026"
+              emptyLabel="Дата"
               value={budget.targetDate || ""}
               onChange={(e) => onChangeDate?.(e.target.value)}
             />
@@ -331,7 +331,7 @@ function GoalBudgetCardComponent({
                   <MoneyInput
                     id={contribAmountId}
                     size="sm"
-                    placeholder="Напр. 500 ₴"
+                    placeholder="Сума"
                     value={contribAmount}
                     onValueChange={(next) =>
                       setContribAmount(next == null ? "" : String(next))
@@ -343,7 +343,7 @@ function GoalBudgetCardComponent({
                   <Input
                     id={contribNoteId}
                     size="sm"
-                    placeholder="Напр. Готівка"
+                    placeholder="Нотатка"
                     value={contribNote}
                     onChange={(e) => setContribNote(e.target.value)}
                   />

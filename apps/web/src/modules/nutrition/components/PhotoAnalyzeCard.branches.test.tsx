@@ -152,9 +152,7 @@ describe("PhotoAnalyzeCard", () => {
     );
 
     expect(screen.getByText("Уточнення")).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("напр. третє: не булочка, а сирник"),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Виправлення")).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
         name: "Перерахувати з урахуванням уточнень",
@@ -172,7 +170,7 @@ describe("PhotoAnalyzeCard", () => {
       />,
     );
 
-    const note = screen.getByLabelText("Що не так? Опиши своїми словами");
+    const note = screen.getByLabelText("Що виправити");
     // 500 — стеля `qna[].answer` у `RefinePhotoSchema`; без неї довгий
     // текст їхав би на сервер і повертався 400 вже після аналізу.
     expect(note).toHaveAttribute("maxLength", "500");

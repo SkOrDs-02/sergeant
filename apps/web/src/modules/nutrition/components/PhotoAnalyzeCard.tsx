@@ -401,7 +401,7 @@ export function PhotoAnalyzeCard({
                   value={portionGrams}
                   onChange={(e) => setPortionGrams(e.target.value)}
                   inputMode="decimal"
-                  placeholder="напр. 320"
+                  placeholder="Грами"
                   disabled={busy}
                 />
               </div>
@@ -424,15 +424,15 @@ export function PhotoAnalyzeCard({
 
             <div>
               <div className="text-style-caption text-muted mb-1">
-                Що не так? Опиши своїми словами
+                Що виправити
               </div>
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={2}
                 maxLength={PHOTO_NOTE_MAX_LENGTH}
-                aria-label="Що не так? Опиши своїми словами"
-                placeholder="напр. третє: не булочка, а сирник"
+                aria-label="Що виправити"
+                placeholder="Виправлення"
                 disabled={busy}
               />
             </div>

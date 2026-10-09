@@ -161,7 +161,7 @@ describe("ShoppingListCard", () => {
 
   it("navigates to Finyk analytics from the spend link", () => {
     render(<ShoppingListCard {...baseProps()} />);
-    fireEvent.click(screen.getByText(/Скільки витратив/));
+    fireEvent.click(screen.getByText("Витрати на їжу за місяць"));
     expect(openHubModule).toHaveBeenCalledWith("finyk", "/analytics");
   });
 });
@@ -179,7 +179,7 @@ describe("ShoppingListCard — manual add", () => {
   it("calls onAddItem with the trimmed name and clears the input", () => {
     const onAddItem = vi.fn();
     render(<ShoppingListCard {...baseProps({ onAddItem })} />);
-    const input = screen.getByPlaceholderText("напр. хліб");
+    const input = screen.getByPlaceholderText("Товар");
     fireEvent.change(input, { target: { value: "  Хліб  " } });
     fireEvent.click(screen.getByText("Додати"));
     expect(onAddItem).toHaveBeenCalledWith({ name: "  Хліб  " });
@@ -189,7 +189,7 @@ describe("ShoppingListCard — manual add", () => {
   it("adds a manual item on Enter", () => {
     const onAddItem = vi.fn();
     render(<ShoppingListCard {...baseProps({ onAddItem })} />);
-    const input = screen.getByPlaceholderText("напр. хліб");
+    const input = screen.getByPlaceholderText("Товар");
     fireEvent.change(input, { target: { value: "Молоко" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onAddItem).toHaveBeenCalledWith({ name: "Молоко" });
@@ -198,7 +198,7 @@ describe("ShoppingListCard — manual add", () => {
   it("does not call onAddItem for a whitespace-only value", () => {
     const onAddItem = vi.fn();
     render(<ShoppingListCard {...baseProps({ onAddItem })} />);
-    const input = screen.getByPlaceholderText("напр. хліб");
+    const input = screen.getByPlaceholderText("Товар");
     fireEvent.change(input, { target: { value: "   " } });
     expect(screen.getByText("Додати")).toBeDisabled();
     fireEvent.keyDown(input, { key: "Enter" });

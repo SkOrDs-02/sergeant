@@ -236,7 +236,7 @@ describe("WorkoutFinishSheets — injury step", () => {
   // суглобів і обидві кнопки дій.
   it("показує суглоби без розкриття, а мʼязи — за ним", () => {
     renderSheets(makeFlash({ step: "injury" }));
-    expect(screen.getByText("Щось болить?")).toBeInTheDocument();
+    expect(screen.getByText("Біль після тренування")).toBeInTheDocument();
 
     expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Поперек" })).toBeInTheDocument();
@@ -301,10 +301,12 @@ describe("WorkoutFinishSheets — injury step", () => {
   it("тримає шапку і рядок дій липкими, а скрол — у межах аркуша", () => {
     renderSheets(makeFlash({ step: "injury" }));
 
-    const dialog = screen.getByRole("dialog", { name: "Щось болить?" });
+    const dialog = screen.getByRole("dialog", {
+      name: "Біль після тренування",
+    });
     expect(dialog.className).toContain("overscroll-contain");
 
-    const header = screen.getByText("Щось болить?").parentElement;
+    const header = screen.getByText("Біль після тренування").parentElement;
     expect(header?.className).toContain("sticky");
 
     const actionsRow = screen.getByRole("button", {

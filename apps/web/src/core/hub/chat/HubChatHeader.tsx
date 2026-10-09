@@ -9,7 +9,6 @@ import {
   PopoverDivider,
   PopoverItem,
 } from "@shared/components/ui/Popover";
-import { Tooltip } from "@shared/components/ui/Tooltip";
 import { ChatUsageCounter } from "./ChatUsageCounter";
 
 export interface HubChatHeaderProps {
@@ -163,17 +162,15 @@ export function HubChatHeader({
           тримати 44px floor. */}
       <div className="flex items-center gap-1 min-w-0">
         <ChatUsageCounter />
-        <Tooltip content="Почати нову бесіду" placement="bottom-center">
-          <button
-            type="button"
-            onClick={onClearChat}
-            className="h-9 min-h-[44px] min-w-[44px] shrink-0 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
-            aria-label="Нова бесіда"
-          >
-            <Icon name="plus" size="sm" />
-            Нова
-          </button>
-        </Tooltip>
+        <button
+          type="button"
+          onClick={onClearChat}
+          className="h-9 min-h-[44px] min-w-[44px] shrink-0 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          aria-label="Нова бесіда"
+        >
+          <Icon name="plus" size="sm" />
+          Нова
+        </button>
         <button
           type="button"
           onClick={onClose}

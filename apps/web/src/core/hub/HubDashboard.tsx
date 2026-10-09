@@ -146,7 +146,7 @@ export function HubDashboard({
       {/* G4 — App-lock soft-prompt. Self-hides via LS dismissal. */}
       <PrivacyLockBanner />
 
-      {/* GROUP 2 — «Порада й звіт тижня» (post-first-entry). Завжди
+      {/* GROUP 2 — «Порада й тиждень» (post-first-entry). Завжди
           згорнутий за замовчуванням: порада коуча, nudge і звіт тижня
           живуть під одним pill, який користувач розгортає на вимогу.
           Інсайти й рекомендації — у купі «Зараз». */}

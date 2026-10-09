@@ -29,11 +29,9 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         <Icon name="lightbulb" size="lg" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-style-label text-text">
-          Ось куди йдуть твої гроші
-        </div>
+        <div className="text-style-label text-text">Бюджету ще немає</div>
         <div className="text-style-body text-muted mt-0.5">
-          Хочеш поставити бюджет, і бачити, коли починаєш виходити за рамки?
+          З бюджетом видно, коли витрати виходять за межу.
         </div>
         {/* `Button`, а не ручні кнопки: той дає кільце фокусу, `-strong`
             заливку без розбавлення на hover і 44px на coarse-pointer. */}

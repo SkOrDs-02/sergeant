@@ -46,11 +46,10 @@ export function NoBankBanner({
             {/* Не heading: банер рендериться перед `h1` сторінки, тож будь-який
               рівень тут ламав би структуру заголовків. Як лендмарк він уже
               підписаний через `role="region"` + `aria-label` вище. */}
-            <p className="text-style-label text-text">Без банку?</p>
+            <p className="text-style-label text-text">Monobank не підключено</p>
             <p className="text-style-body text-muted mt-1 leading-snug">
-              Записуй витрати вручну, або підключи Monobank, щоб операції
-              підтягувались автоматично. Якщо не зараз, нагадаю за тиждень.
-              Підключити можна й з Налаштувань.
+              З Monobank операції підтягуються самі, без нього витрати
+              записуються вручну.
             </p>
           </div>
         </div>

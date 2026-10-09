@@ -123,9 +123,7 @@ export function ChatInput({
         ref={inputRef}
         className="input-focus-finyk flex-1 bg-panel border border-line rounded-2xl px-4 py-3 text-style-body text-text placeholder:text-subtle disabled:opacity-50"
         placeholder={
-          online
-            ? "Запитай або попроси змінити щось…"
-            : "Немає зʼєднання, Сержант офлайн"
+          online ? "Напиши Сержанту" : "Немає зʼєднання, Сержант офлайн"
         }
         value={input}
         onChange={(e) => setInput(e.target.value)}

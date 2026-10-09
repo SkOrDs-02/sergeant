@@ -144,7 +144,7 @@ export function WorkoutCatalogSection({
       <div className="relative mb-3">
         <Input
           {...searchFieldProps("workout-catalog-search")}
-          placeholder="Пошук (жим, підтягування, спина…)"
+          placeholder="Пошук вправи"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />

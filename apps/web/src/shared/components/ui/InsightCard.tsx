@@ -95,7 +95,7 @@ export interface InsightCardProps {
   id: InsightId;
   /** Bold signal headline ("Витрати на каву ↑ 34%"). */
   title: string;
-  /** Subtitle / recommended action ("Встановити ліміт?"). */
+  /** Subtitle / recommended action ("Встановити ліміт"). */
   subtitle: string;
   /** CTA glyph — defaults to → arrow. */
   ctaLabel?: string;
