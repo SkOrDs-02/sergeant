@@ -18,7 +18,7 @@
 
 ## Загальне для всіх PR
 
-- **PR створюється через Bitbucket API PowerShell-ом**, не `gh pr create`: `gh` з Bitbucket не працює (рецепт у корені `AGENTS.md § Де живе код`). Стан PR перевіряється тим самим API (`GET /2.0/repositories/skords01/sergeant/pullrequests/<id>`, поле `state`), а не `gh pr view`. Це розходження промпту з репо, не спеки.
+- **Код живе на GitHub `SkOrDs-02/sergeant`** (на 2026-10-09 `origin` пушить у GitHub і hetzner, мержі в `main` це GitHub PR), тож PR створюється `gh pr create --draft --body-file`, стан перевіряється `gh pr view <n> --json state,mergedAt`. Розділ `AGENTS.md § Де живе код` про Bitbucket на цю дату відстає. У сесії PR0 `gh pr create` заблокував класифікатор дозволів агента; PR створював власник.
 - Скріншоти до/після йдуть у чат сесії, не в тіло PR.
 
 ## PR0 · копі
