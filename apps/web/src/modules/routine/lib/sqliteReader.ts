@@ -117,8 +117,14 @@ export async function refreshSqliteCompletions(
   // Найперший boot-refresh нового акаунта чекає, поки відкриється sqlite-wasm
   // (секунди), і читає базу, куди відмітка ще не дійшла (rel-15, відтворено
   // 2026-10-08: `rows=0`, `moved=true`, кеш 1→0, кільце 0/1). Розбір —
-  // `./localWriteWindow.ts`.
-  if (routineLocalWritesMoved(localWrites)) return cache;
+  // `./localWriteWindow.ts`. Гвард лише на ТЕПЛИЙ кеш (`refreshedAt` звіряється
+  // тут, після читання: write-through міг прогріти кеш, поки йшло читання):
+  // у холодному захищати нічого, а реплей журналу на старті відкриває вікно
+  // запису без write-through, тож відкинутий знімок лишив би історію відміток
+  // порожньою на всю сесію.
+  if (cache.refreshedAt !== null && routineLocalWritesMoved(localWrites)) {
+    return cache;
+  }
   completionsPublishedSeq = seq;
   // eslint-disable-next-line no-restricted-syntax -- `refreshedAt` — це UTC-мітка «коли кеш прогріли», а не доменний день: вона порівнюється лише сама з собою (warm/cold гейт), тож київська межа доби до неї не застосовна
   cache = { completions, refreshedAt: new Date().toISOString() };
@@ -190,8 +196,12 @@ export async function refreshSqliteRoutineState(
   if (seq <= statePublishedSeq) return stateCache;
   // Знімок, прочитаний доки локальний запис у польоті, причинно старший за
   // оптимістичний стан — публікувати його означає затерти щойно створене
-  // нулем. Розбір і заміри — `./localWriteWindow.ts`.
-  if (routineLocalWritesMoved(localWrites)) return stateCache;
+  // нулем. Розбір і заміри — `./localWriteWindow.ts`. Лише для теплого кеша:
+  // холодному (реплей журналу на старті, write-through-у не було) нічого
+  // захищати, а відкинутий знімок лишив би звички порожніми.
+  if (stateCache.refreshedAt !== null && routineLocalWritesMoved(localWrites)) {
+    return stateCache;
+  }
   statePublishedSeq = seq;
   stateCache = {
     habits,

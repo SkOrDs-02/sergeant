@@ -302,6 +302,81 @@ describe("sqliteReader: оновлення кеша не затирає запи
     });
   });
 
+  it("completions: write-through посеред читання холодного кеша теж захищений", async () => {
+    clearSqliteCompletionsCache();
+
+    beginRoutineLocalWrite();
+    const client = {
+      all: vi.fn(async () => {
+        // Людина відмічає, поки boot-refresh чекає на базу: кеш холодний
+        // на старті читання, але теплий до публікації.
+        setCachedSqliteCompletions({ h1: ["2026-10-02"] });
+        return [] as never;
+      }),
+    } as never;
+    await refreshSqliteCompletions(client, "u1");
+    endRoutineLocalWrite();
+
+    expect(getCachedSqliteCompletions().completions).toEqual({
+      h1: ["2026-10-02"],
+    });
+  });
+
+  // Реплей журналу на старті відкриває вікно запису без write-through
+  // (`startRoutineRun` з `next = null`). Кеш холодний: відкинутий знімок
+  // лишив би історію відміток порожньою на всю сесію.
+  it("completions: холодний кеш приймає знімок і в вікні реплею журналу", async () => {
+    clearSqliteCompletionsCache();
+
+    beginRoutineLocalWrite();
+    await refreshSqliteCompletions(
+      makeClient({ routine_entries: [{ id: "h1:2026-10-02" }] }),
+      "u1",
+    );
+    endRoutineLocalWrite();
+
+    const cache = getCachedSqliteCompletions();
+    expect(cache.refreshedAt).not.toBeNull();
+    expect(cache.completions).toEqual({ h1: ["2026-10-02"] });
+  });
+
+  it("стан: холодний кеш приймає знімок і в вікні реплею журналу", async () => {
+    beginRoutineLocalWrite();
+    await refreshSqliteRoutineState(
+      makeClient({
+        routine_habits: [
+          { id: "h2", name: "Читання", emoji: "", tag_ids_json: "[]" },
+        ],
+      }),
+      "u1",
+    );
+    endRoutineLocalWrite();
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
+    expect(getCachedSqliteRoutineState().refreshedAt).not.toBeNull();
+  });
+
+  it("boot під реплеєм журналу: обидва кеші прогріті, а не лише стан", async () => {
+    clearSqliteCompletionsCache();
+    const client = makeClient({
+      routine_habits: [
+        { id: "h1", name: "Вода", emoji: "", tag_ids_json: "[]" },
+      ],
+      routine_entries: [{ id: "h1:2026-10-02" }],
+    });
+
+    beginRoutineLocalWrite();
+    await refreshSqliteCompletions(client, "u1");
+    endRoutineLocalWrite();
+    await refreshSqliteRoutineState(client, "u1");
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
+    expect(getCachedSqliteCompletions().refreshedAt).not.toBeNull();
+    expect(getCachedSqliteCompletions().completions).toEqual({
+      h1: ["2026-10-02"],
+    });
+  });
+
   it("публікує знімок, коли локальних записів не було", async () => {
     await refreshSqliteRoutineState(
       makeClient({
