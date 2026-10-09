@@ -7,7 +7,7 @@ import {
   normalizeWaterLog,
   type WaterLog,
 } from "@sergeant/nutrition-domain";
-import type { Pantry } from "@sergeant/nutrition-domain";
+import type { Pantry, PantryItemSource } from "@sergeant/nutrition-domain";
 import {
   addMissingBy,
   type BackupRestoreMode,
@@ -31,10 +31,18 @@ import {
 } from "../lib/nutritionStorage";
 import { loadWaterLog, saveWaterLog } from "../lib/waterStorage";
 import type { FoodProduct } from "../lib/foodDb/foodDb";
+import {
+  applyNutritionBackupSections,
+  parseNutritionBackupSections,
+  readNutritionBackupSections,
+  type NutritionBackupSections,
+} from "./nutritionBackupSections";
 
 export const NUTRITION_BACKUP_KIND = "hub-nutrition-backup";
 /**
- * 2: додано `water` (журнал води) і `foods` (власні продукти). Файли версії 1
+ * 2: додано `water` (журнал води) і `foods` (власні продукти), а також
+ * `sources` у позиціях комори і необовʼязкові секції `recipes`,
+ * `shoppingList`, `goalPeriods` (аудит 2026-10-01, data-35). Файли версії 1
  * без цих полів імпортуються як раніше: відсутнє поле означає «нічого
  * відновлювати», а не «очистити».
  */
@@ -45,6 +53,8 @@ export interface NutritionBackupPantryItem {
   qty: number | null;
   unit: string | null;
   notes: string | null;
+  /** Варіанти покупок позиції; відсутнє = «не знаю» (не стирає наявні). */
+  sources?: PantryItemSource[];
 }
 
 export interface NutritionBackupPantry {
@@ -54,7 +64,7 @@ export interface NutritionBackupPantry {
   items: NutritionBackupPantryItem[];
 }
 
-export interface NutritionBackupData {
+export interface NutritionBackupData extends NutritionBackupSections {
   stateSchemaVersion: 1;
   pantries: NutritionBackupPantry[];
   activePantryId: string;
@@ -91,6 +101,50 @@ function optionalPositiveNumber(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+/**
+ * Мінімальна валідація варіантів покупок. Якщо хоч один запис зіпсований,
+ * масив відкидається ЦІЛКОМ (`undefined`): частина варіантів порушила б
+ * інваріант «сума варіантів = кількість позиції», а `undefined` (на відміну від
+ * `null`) не затирає наявні варіанти при відновленні.
+ */
+function normalizePantryItemSources(
+  raw: unknown,
+): PantryItemSource[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: PantryItemSource[] = [];
+  for (const s of raw as unknown[]) {
+    if (!s || typeof s !== "object") return undefined;
+    const r = s as Record<string, unknown>;
+    const name = typeof r["name"] === "string" ? r["name"].trim() : "";
+    const unit = typeof r["unit"] === "string" ? r["unit"].trim() : "";
+    const qty = r["qty"];
+    if (!name || !unit) return undefined;
+    if (typeof qty !== "number" || !Number.isFinite(qty) || qty <= 0) {
+      return undefined;
+    }
+    const addedAt = r["addedAt"];
+    if (addedAt != null && typeof addedAt !== "string") return undefined;
+    const item: PantryItemSource = {
+      name,
+      qty,
+      unit,
+      addedAt: addedAt ?? null,
+    };
+    // `packCount` / `packGrams` їдуть як є: це підказки відображення, не
+    // частина інваріанта кількості.
+    for (const key of ["packCount", "packGrams"] as const) {
+      const v = r[key];
+      if (v === undefined) continue;
+      if (v !== null && (typeof v !== "number" || !Number.isFinite(v))) {
+        return undefined;
+      }
+      item[key] = v;
+    }
+    out.push(item);
+  }
+  return out;
+}
+
 function normalizePantryItem(x: unknown): NutritionBackupPantryItem | null {
   if (!x || typeof x !== "object") return null;
   const rec = x as Record<string, unknown>;
@@ -108,7 +162,8 @@ function normalizePantryItem(x: unknown): NutritionBackupPantryItem | null {
     rec["notes"] == null || rec["notes"] === ""
       ? null
       : safeString(rec["notes"], "").trim();
-  return { name, qty, unit, notes };
+  const sources = normalizePantryItemSources(rec["sources"]);
+  return { name, qty, unit, notes, ...(sources ? { sources } : {}) };
 }
 
 function normalizePantry(x: unknown): NutritionBackupPantry | null {
@@ -201,6 +256,7 @@ export function buildNutritionBackupPayload(): NutritionBackupPayload {
       prefs: normalizePrefs(prefs),
       log: log && typeof log === "object" && !Array.isArray(log) ? log : {},
       water: loadWaterLog(),
+      ...readNutritionBackupSections(),
     },
   };
 }
@@ -214,6 +270,7 @@ function parseNutritionBackupPayload(payload: unknown): {
   pantries: NutritionBackupPantry[];
   activePantryId: string;
   prefs: NutritionPrefs;
+  sections: NutritionBackupSections;
 } {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Некоректний бекап харчування.");
@@ -241,7 +298,13 @@ function parseNutritionBackupPayload(payload: unknown): {
   if (log && typeof log === "object" && !Array.isArray(log)) {
     normalizeNutritionLog(log);
   }
-  return { data, pantries, activePantryId, prefs };
+  return {
+    data,
+    pantries,
+    activePantryId,
+    prefs,
+    sections: parseNutritionBackupSections(data),
+  };
 }
 
 /** Фаза «validate all» Hub-імпорту: кидає на битому файлі, нічого не пишучи. */
@@ -254,17 +317,21 @@ export function validateNutritionBackupPayload(payload: unknown): void {
  * наявних викликів (хмарний бекап); Hub-імпорт передає режим явно, і його
  * дефолт — `merge`: додати відсутнє, нічого не видаляючи на пристрої й
  * на сервері (аудит 2026-10-01, data-06).
+ *
+ * Валідація і записи комори/prefs/журналу синхронні (кидає на битому файлі до
+ * першого запису); повернений проміс - хвіст секцій data-35 (IDB-дзеркало
+ * рецептів, відмова запису) і його ОБОВʼЯЗКОВО чекати перед перезавантаженням.
  */
 export function applyNutritionBackupPayload(
   payload: unknown,
   mode: BackupRestoreMode = "replace",
-): void {
-  const { data, pantries, activePantryId, prefs } =
+): Promise<void> {
+  const { data, pantries, activePantryId, prefs, sections } =
     parseNutritionBackupPayload(payload);
 
   if (mode === "merge") {
     mergeNutritionBackup({ pantries, log: data["log"], water: data["water"] });
-    return;
+    return applyNutritionBackupSections(sections, mode);
   }
 
   // Stage 8 PR #057n-tombstone: writes go through the dual-write
@@ -295,6 +362,7 @@ export function applyNutritionBackupPayload(
     persistNutritionLog(normalizeNutritionLog(data["log"]), NUTRITION_LOG_KEY);
   }
   if (data["water"] != null) saveWaterLog(data["water"]);
+  return applyNutritionBackupSections(sections, mode);
 }
 
 /**
