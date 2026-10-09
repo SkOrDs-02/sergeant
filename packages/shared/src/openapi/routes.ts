@@ -2069,7 +2069,9 @@ export const paths: ZodOpenApiPathsObject = {
       summary: "OAuth callback від Silpo (302 redirect на /settings)",
       description:
         "Server-only — браузер потрапляє сюди після Silpo consent screen, " +
-        "жоден клієнт не викликає цей шлях напряму.",
+        "жоден клієнт не викликає цей шлях напряму. Без сесії на цьому хості " +
+        "робить один 302-relay на веб-origin (`?silpo_relay=1`), де сесія є; " +
+        "власник токенів = користувач сесії (sec-15).",
       tags: ["silpo"],
       security: cookieOrBearer,
       responses: {
