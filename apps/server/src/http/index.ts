@@ -59,6 +59,7 @@ export * as schemas from "./schemas.js";
 export { setModule } from "./setModule.js";
 export {
   requireFreshSession,
+  optionalSession,
   requireSession,
   requireSessionSoft,
 } from "./requireSession.js";

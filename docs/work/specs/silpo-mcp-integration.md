@@ -625,11 +625,26 @@ state не брали: `state` мусить згорати рівно один �
 Це рішення стосувалось лише сховища. Привʼязки state до браузера воно не
 давало, і аудит 2026-10-01 (sec-15) знайшов діру: `state` видно в
 `Location` чужого `/connect`, тож пересланий жертві authorize-URL клав її
-токени на акаунт зловмисника (RFC 9700 § 4.7). Закрито окремою кукою-
-привʼязкою `silpo_oauth_binding` = `sha256(state)` (`HttpOnly`,
-`SameSite=Lax`, `Path=/api/silpo/callback`, 10 хв), яку `/connect` ставить, а
-колбек звіряє timing-safe ДО споживання `state`. Сховище state не
-змінювалось, міграції немає (`modules/silpo/oauthBinding.ts`). `code_verifier` лежить
+токени на акаунт зловмисника (RFC 9700 § 4.7). Закрито двома шарами, без
+нового екрана і без міграції:
+
+1. **Власник токенів = користувач сесії браузера, що приніс колбек**, а не
+   той, чий `user_id` лежить у `state`. Колбек приземляється на
+   `PUBLIC_API_BASE_URL`, а сесія живе на веб-хості (Vercel-проксі
+   `/api/*`, `apps/web/middleware.ts`) - це різні сайти, тож без сесії колбек
+   робить один relay (`302`) на `${WEB_APP_URL}/api/silpo/callback` з тим
+   самим `code`/`state`/`error` і маркером `silpo_relay=1` (без нього
+   другого relay немає). `redirect_uri`, зареєстрований у DCR, не
+   змінюється. На хості сесії `pending.userId` мусить дорівнювати
+   користувачу сесії, інакше `invalid_state`, `code` не обмінюється.
+   Без сесії взагалі: `reason=session_expired`.
+2. **Кука-привʼязка** `silpo_oauth_binding` = `sha256(state)` (`HttpOnly`,
+   `SameSite=Lax`, `Path=/api/silpo/callback`, 10 хв): `/connect` ставить її
+   на тому ж хості, де є сесія, а колбек звіряє timing-safe ДО споживання
+   `state`. Defense in depth.
+
+Сховище state не змінювалось (`routes/silpoCallback.ts`,
+`modules/silpo/oauthBinding.ts`). `code_verifier` лежить
 відкритим текстом навмисно — сам по собі він нічого не відмикає (доводить
 володіння `code`, який приходить на наш redirect по TLS), живе ≤10 хвилин
 і згорає при першому використанні; повне обґрунтування — у коментарі

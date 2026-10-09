@@ -1,11 +1,14 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
-import { env } from "../env/env.js";
 import { query } from "../db.js";
 import { logger } from "../obs/logger.js";
-import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
+import {
+  optionalSession,
+  rateLimitExpress,
+  requireSession,
+  setModule,
+} from "../http/index.js";
 import { parseQuery, parseBody } from "../http/validate.js";
-import { getWebAppOrigin } from "../auth/verificationMail.js";
 import {
   SilpoDisconnectResponseSchema,
   SilpoReceiptDetailDtoSchema,
@@ -18,17 +21,8 @@ import {
   SilpoUnlinkResponseSchema,
   SilpoWipeResponseSchema,
 } from "../http/schemas.js";
-import {
-  buildAuthorizationUrl,
-  consumeAuthorizationState,
-  exchangeCode,
-} from "../modules/silpo/oauth.js";
-import {
-  clearOAuthBindingCookie,
-  setOAuthBindingCookie,
-  verifyOAuthBinding,
-} from "../modules/silpo/oauthBinding.js";
-import { persistTokens, silpoKeyRing } from "../modules/silpo/tokenStore.js";
+import { buildAuthorizationUrl } from "../modules/silpo/oauth.js";
+import { setOAuthBindingCookie } from "../modules/silpo/oauthBinding.js";
 import { diagnoseSilpo } from "../modules/silpo/diagnose.js";
 import { AppError, ExternalServiceError } from "../obs/errors.js";
 import {
@@ -43,6 +37,11 @@ import {
   getUserId,
   type AuthedRequest,
 } from "../modules/silpo/routeHelpers.js";
+import {
+  callbackHandler,
+  callbackRedirectUri,
+  warnIfConnectHostUnreachable,
+} from "./silpoCallback.js";
 import {
   cartApplyHandler,
   cartClearHandler,
@@ -69,39 +68,17 @@ import {
  * проді — окремий ops-крок із власним DCR-клієнтом
  * (`docs/start/instructions/enable-silpo-integration.md`).
  *
- * Сесію вимагають УСІ роути, крім `GET /api/silpo/callback`: він
- * реєструється до router-level `requireSession()`, бо приземляється на
- * PUBLIC_API_BASE_URL, де куки сесії (домен BETTER_AUTH_URL) немає ні в
- * кого. Контекст користувача там приходить зі `state`.
+ * Сесію вимагають УСІ роути, крім `GET /api/silpo/callback`
+ * (`routes/silpoCallback.ts`): він реєструється до router-level
+ * `requireSession()`, бо приземляється на PUBLIC_API_BASE_URL, де куки сесії
+ * може не бути (інцидент 2026-08-25). Замість `requireSession()` стоїть
+ * `optionalSession()` + relay на хост сесії + звірка власника зі `state`.
  *
  * Every route also carries its own `rateLimitExpress` bucket (CodeQL
  * "missing rate limiting" finding, review round) — unlike `finyk`/
  * `nutrition`, this router has no single broad `r.use(...)` bucket covering
  * `/api/silpo/*`, so each `r.get`/`r.post` below needs an explicit limiter.
  */
-
-function callbackRedirectUri(): string | null {
-  return env.PUBLIC_API_BASE_URL
-    ? `${env.PUBLIC_API_BASE_URL}/api/silpo/callback`
-    : null;
-}
-
-/** Redirects the browser back to the web Settings page with a `?silpo=` status flag. Falls back to a JSON body when the web origin cannot be resolved (misconfigured deploy — see `getWebAppOrigin`). */
-function redirectToSettings(
-  res: Response,
-  status: "connected" | "error",
-  reason?: string,
-): void {
-  const webOrigin = getWebAppOrigin();
-  if (!webOrigin) {
-    res.status(status === "connected" ? 200 : 400).json({ status, reason });
-    return;
-  }
-  const url = new URL("/settings", webOrigin);
-  url.searchParams.set("silpo", status);
-  if (reason) url.searchParams.set("reason", reason);
-  res.redirect(302, url.toString());
-}
 
 // ────────────────────────────── Connect / callback ───────────────────────────
 
@@ -122,6 +99,8 @@ export async function connectHandler(
     return;
   }
 
+  warnIfConnectHostUnreachable(req);
+
   try {
     const { url, state } = await buildAuthorizationUrl({ userId, redirectUri });
     // sec-15: привʼязуємо state до цього браузера (див. `oauthBinding.ts`).
@@ -136,127 +115,6 @@ export async function connectHandler(
       error: "Не вдалося розпочати підключення до Сільпо",
       code: "SILPO_UPSTREAM_ERROR",
     });
-  }
-}
-
-export async function callbackHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-
-  const {
-    code,
-    state,
-    error: oauthError,
-  } = req.query as {
-    code?: string;
-    state?: string;
-    error?: string;
-  };
-
-  if (oauthError) {
-    redirectToSettings(res, "error", "denied");
-    return;
-  }
-  if (
-    !code ||
-    typeof code !== "string" ||
-    !state ||
-    typeof state !== "string"
-  ) {
-    redirectToSettings(res, "error", "invalid_request");
-    return;
-  }
-
-  // sec-15: ДО споживання state перевіряємо, що колбек приніс той самий
-  // браузер, що зробив `/connect`. Без цього чужий authorize-URL, пересланий
-  // жертві, зберіг би токени жертви на userId ініціатора. Чужий state не
-  // споживаємо: це не наш flow, і його власник завершить його сам.
-  if (!verifyOAuthBinding(req, state)) {
-    logger.warn({ msg: "silpo_callback_binding_mismatch" });
-    redirectToSettings(res, "error", "invalid_state");
-    return;
-  }
-  const secureCookie = callbackRedirectUri()?.startsWith("https://") ?? false;
-  // Кука своє відслужила за будь-якого подальшого результату.
-  clearOAuthBindingCookie(res, secureCookie);
-
-  const pending = await consumeAuthorizationState(state);
-  if (!pending) {
-    // Unknown, expired or already-consumed state — the only hard gate here.
-    redirectToSettings(res, "error", "invalid_state");
-    return;
-  }
-
-  // `state` — НОСІЙ контексту, не просто nonce: `user_id` лежить у
-  // `silpo_oauth_state` (міграція 126), записаний на `/connect`, де сесія
-  // ще була. Саме тому цей роут навмисно НЕ під `requireSession()`.
-  //
-  // Причина не в тому, що сесія «може протухнути за 10 хвилин». Колбек
-  // приземляється на PUBLIC_API_BASE_URL (api.167-233-98-92.sslip.io), а
-  // сесія Better Auth живе у контексті BETTER_AUTH_URL
-  // (sergeant.vercel.app) — це РІЗНІ сайти, і Vercel не проксіює /api/*
-  // на бекенд. Тобто на колбеку сесії немає НІКОЛИ й ні в кого: вимога
-  // `requireSession()` тут робила фічу непрацездатною для всіх, віддаючи
-  // 401-JSON у вкладку замість екрана налаштувань.
-  //
-  // Звірки з `req.user` тут свідомо НЕМАЄ: роут стоїть до `requireSession()`,
-  // тож `req.user` не заповнюється ніколи, і така умова була б мертвим
-  // кодом, що вдає захист.
-  //
-  // Але одного `state` для визначення власника НЕДОСТАТНЬО (sec-15,
-  // RFC 9700 § 4.7). `state` видно в `Location` будь-якого `/connect`:
-  // зловмисник під своєю сесією забирає свій authorize-URL і пересилає його
-  // жертві (свіжий можна генерувати на льоту, TTL 10 хв не заважає). Жертва
-  // погоджується на справжній сторінці Сільпо, колбек обмінює ЇЇ `code` і
-  // кладе ЇЇ токени на userId зловмисника, а той читає чеки й керує кошиком
-  // жертви. Тобто підсунутий чужий `state` шкодить саме жертві; колишній
-  // висновок «привʼяже до самого зловмисника, отже нешкідливо» був хибним.
-  //
-  // Тому `state` привʼязаний до браузера: `/connect` ставить HttpOnly
-  // SameSite=Lax куку з `sha256(state)` (Path=/api/silpo/callback, 10 хв), а
-  // перевірка вище, ДО споживання state, вимагає її збігу. Кука є лише в
-  // браузері, який зробив `/connect`; у браузер жертви зловмисник її
-  // підкласти не може, тож пересланий URL закінчується `invalid_state`, а
-  // токени не зберігаються. Replay того самого state неможливий: він
-  // згорає одним атомарним `DELETE ... RETURNING`.
-  const userId = pending.userId;
-
-  const ring = silpoKeyRing();
-  if (!ring) {
-    redirectToSettings(res, "error", "config_missing");
-    return;
-  }
-
-  try {
-    const tokens = await exchangeCode({
-      code,
-      codeVerifier: pending.codeVerifier,
-      redirectUri: pending.redirectUri,
-    });
-    if (!tokens.refresh_token) {
-      // Migration 123 has NOT NULL refresh_token_* columns — a code
-      // exchange without one is unusable and must not be persisted.
-      logger.warn({ msg: "silpo_callback_missing_refresh_token" });
-      redirectToSettings(res, "error", "missing_refresh_token");
-      return;
-    }
-    await persistTokens(userId, ring, {
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiresAtMs: tokens.expires_in
-        ? Date.now() + tokens.expires_in * 1000
-        : null,
-    });
-    logger.info({ msg: "silpo.connected" });
-    redirectToSettings(res, "connected");
-  } catch (err) {
-    logger.warn({
-      msg: "silpo_callback_exchange_failed",
-      err: err instanceof Error ? err.message : String(err),
-    });
-    redirectToSettings(res, "error", "exchange_failed");
   }
 }
 
@@ -602,7 +460,8 @@ export function createSilpoRouter(): Router {
   // `/callback` реєструється ДО router-level `requireSession()` — порядок
   // тут і є механізмом: Express виконує middleware у порядку реєстрації,
   // тож усе нижче `r.use(requireSession())` вимагає сесію, а цей роут — ні
-  // (чому саме — розписано в `callbackHandler`).
+  // (чому саме — розписано в `silpoCallback.ts`). Замість `requireSession()` тут
+  // `optionalSession()`: сесія лише читається, рішення за хендлером.
   //
   // Той самий bucket/limit, що й у `connect`: це ДРУГА половина одного
   // authorization_code round-trip, частіше за `connect` він не викликається.
@@ -613,6 +472,7 @@ export function createSilpoRouter(): Router {
       limit: 10,
       windowMs: 60_000,
     }),
+    optionalSession(),
     callbackHandler,
   );
 
