@@ -52,7 +52,7 @@ describe("MerchantList", () => {
   });
 
   // PR-F3 (founder-UX audit wave 6, «Чесність показників»): the list never
-  // accepted `showBalance`, so «Топ продавці» amounts stayed visible after
+  // accepted `showBalance`, so «Найбільші витрати» amounts stayed visible after
   // «Приховати суми» on Overview.
   it("masks merchant amounts when showBalance=false", () => {
     render(

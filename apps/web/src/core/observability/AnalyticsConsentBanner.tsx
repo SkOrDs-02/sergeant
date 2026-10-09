@@ -2,8 +2,13 @@
  * @status Active
  * @owner @Skords-01
  */
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
+import {
+  CONSENT_BANNER_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { messages } from "@shared/i18n/uk";
 import { LEGAL_PRIVACY_PATH } from "../app/appPaths";
 import { useAnalyticsConsentChoice } from "./useAnalyticsConsentChoice";
@@ -34,9 +39,12 @@ const copy = messages.privacy.analyticsConsent;
  */
 export default function AnalyticsConsentBanner() {
   const { choose, saving } = useAnalyticsConsentChoice();
+  const bannerRef = useRef<HTMLElement>(null);
+  useBottomInsetVar(bannerRef, CONSENT_BANNER_INSET_VAR);
 
   return (
     <section
+      ref={bannerRef}
       aria-labelledby="analytics-consent-title"
       data-testid="analytics-consent-banner"
       className="fixed inset-x-3 z-40 mx-auto max-w-md rounded-2xl border border-line bg-panel p-4 shadow-e2"
