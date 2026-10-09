@@ -50,6 +50,7 @@ export * from "./nutritionPantries.js";
 export * from "./pantryPlacement.js";
 export * from "./nutritionLog.js";
 export * from "./recipeComponents.js";
+export * from "./recipeComposition.js";
 export * from "./quickStats.js";
 // Модель тижневого ккал-графіка (стеля осі, лінія цілі, порожні дні) —
 // спільна для web-`WeekKcalCard` і mobile-`WeekKcalChart`, щоб дзеркала не

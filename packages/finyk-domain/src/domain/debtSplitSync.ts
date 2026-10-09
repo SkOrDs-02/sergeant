@@ -25,6 +25,7 @@
  * дав би правильне число ціною невидимої зміни чужих даних.
  */
 import type { Debt } from "./debtEngine.js";
+import { findLinkedKey } from "./debtLinkKeys.js";
 
 /** Категорія-кошик витрат-боргів; нею гейтиться секція привʼязки платежу. */
 export const DEBT_CATEGORY_ID = "debt";
@@ -90,8 +91,12 @@ function findPaymentDebt(
   txId: string,
 ): { debt: Debt; amountUAH: number } | null {
   for (const debt of debts) {
-    if (!(debt.linkedTxIds ?? []).includes(txId)) continue;
-    const meta = debt.txLinks?.[txId];
+    // Ручний запис привʼязаний під `manual_<id>`, а редактор спліту
+    // віддає сирий id (і спадкові привʼязки теж сирі) — шукаємо обидві
+    // форми (`debtLinkKeys`, `data-24`).
+    const key = findLinkedKey(debt.linkedTxIds, txId);
+    if (key === undefined) continue;
+    const meta = debt.txLinks?.[key];
     if (meta?.role !== "payment") continue;
     return { debt, amountUAH: Math.abs(Number(meta.amount) || 0) };
   }

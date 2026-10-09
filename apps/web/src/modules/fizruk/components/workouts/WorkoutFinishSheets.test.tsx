@@ -7,7 +7,6 @@
  * nutrition nudge.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { flatMatch } from "@shared/testing/numberText";
 import {
   render,
   screen,
@@ -347,17 +346,20 @@ describe("WorkoutFinishSheets — summary step collapsed", () => {
 });
 
 describe("WorkoutFinishSheets — summary step expanded", () => {
-  it("renders 'Завершено' heading and stat tiles", () => {
-    renderSheets(makeFlash({ step: "summary", collapsed: false }));
+  it("renders the 'Завершено' heading without metrics: the summary page under it shows them", () => {
+    renderSheets(
+      makeFlash({
+        step: "summary",
+        collapsed: false,
+        savedWellbeing: { energy: 3, mood: 4 },
+      }),
+    );
     expect(screen.getByText("Завершено")).toBeInTheDocument();
-    expect(screen.getByText("Час")).toBeInTheDocument();
-    expect(screen.getByText("Вправ")).toBeInTheDocument();
-    expect(screen.getByText("Обʼєм")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
-    // PR-Z3 (аудит 2026-09-13, хвиля 6): "кг" читалось як маса тіла, хоча
-    // це `вага_кг × повторення` — канонічний підпис "кг×повт" (уніфіковано
-    // з `WorkoutSummaryView` / `RecentWorkoutsSection`).
-    expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
+    expect(screen.getByText("Тренування виконано")).toBeInTheDocument();
+    expect(screen.queryByText("Час")).not.toBeInTheDocument();
+    expect(screen.queryByText("Обʼєм")).not.toBeInTheDocument();
+    expect(screen.queryByText(/кг×повт/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Самопочуття:/)).not.toBeInTheDocument();
   });
 
   it("clicking 'Закрити' calls setFinishFlash(null)", () => {
@@ -402,32 +404,5 @@ describe("WorkoutFinishSheets — summary step expanded", () => {
       screen.getByRole("button", { name: /Додати білок після тренування/ }),
     );
     expect(openHubModule).toHaveBeenCalledWith("nutrition", "log");
-  });
-
-  it("shows savedWellbeing section when energy and mood were saved", () => {
-    renderSheets(
-      makeFlash({
-        step: "summary",
-        collapsed: false,
-        savedWellbeing: { energy: 3, mood: 4 },
-      }),
-    );
-    expect(screen.getByText(/Самопочуття:/)).toBeInTheDocument();
-    expect(screen.getByText(/енергія 3\/5/)).toBeInTheDocument();
-    expect(screen.getByText(/настрій 4\/5/)).toBeInTheDocument();
-  });
-
-  it("hides savedWellbeing section when not set", () => {
-    renderSheets(
-      makeFlash({ step: "summary", collapsed: false, savedWellbeing: null }),
-    );
-    expect(screen.queryByText(/Самопочуття:/)).not.toBeInTheDocument();
-  });
-
-  it("shows '—' for tonnage when tonnageKg is 0", () => {
-    renderSheets(
-      makeFlash({ step: "summary", collapsed: false, tonnageKg: 0 }),
-    );
-    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });

@@ -38,12 +38,14 @@ export function FoodHitRow({
         onClick={onPick}
       >
         <div className="flex items-center justify-between gap-2">
-          <div className="text-style-label text-text truncate">
-            {[p.name, p.brand].filter(Boolean).join(" · ")}
+          <div className="flex min-w-0 items-baseline gap-1.5">
+            <span className="min-w-0 truncate text-style-label text-text">
+              {[p.name, p.brand].filter(Boolean).join(" · ")}
+            </span>
             {externalSourceLabel && (
               <span
                 data-testid="food-source-badge"
-                className="ml-1.5 inline-block align-baseline rounded-md bg-panelHi px-1.5 text-style-caption text-subtle"
+                className="shrink-0 rounded-md bg-panelHi px-1.5 text-style-caption text-subtle"
               >
                 {externalSourceLabel}
               </span>
