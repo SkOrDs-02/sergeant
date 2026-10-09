@@ -44,6 +44,7 @@ import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
 import { recordWorkoutMoment } from "../../lib/workoutMoments";
 import { deleteWorkoutWithUndo } from "../../lib/deleteWorkoutWithUndo";
+import { restoreWorkoutDetached } from "../../lib/restoreWorkoutDetached";
 
 /**
  * Local view state used to drive the post-finish flash card. The shape merges
@@ -98,7 +99,6 @@ interface WorkoutJournalSectionProps {
     w: Workout | null | undefined,
   ) => WorkoutFinishSummary | null;
   deleteWorkout: (id: string) => void;
-  restoreWorkout: (workout: Workout) => void;
   /** 02-A item 4 — starts a new session from the read-only summary. */
   onRepeatWorkout: (workout: Workout) => void;
   /** Navigates back to `/fizruk/workouts` (used by every exit path here). */
@@ -125,7 +125,6 @@ export function WorkoutJournalSection({
   endWorkout,
   summarizeWorkoutForFinish,
   deleteWorkout,
-  restoreWorkout,
   onRepeatWorkout,
   onClose,
 }: WorkoutJournalSectionProps) {
@@ -166,12 +165,13 @@ export function WorkoutJournalSection({
         onClose={onClose}
         onDelete={() => {
           // ux-11: той самий шлях, що й свайп в історії, — видалення з
-          // undo-тостом; потім назад до списку (сторінки вже нема).
+          // undo-тостом; потім назад до списку (сторінки вже нема). Undo НЕ
+          // через хук сесії: `onClose()` розмонтує його, а тост лишиться.
           deleteWorkoutWithUndo({
             toast,
             workout: activeWorkout,
             deleteWorkout,
-            restoreWorkout,
+            restoreWorkout: restoreWorkoutDetached,
           });
           onClose();
         }}
@@ -314,7 +314,8 @@ export function WorkoutJournalSection({
           onDeleteWorkout={() => {
             // Unified undo: snapshot the active workout, run the
             // soft-delete immediately, then surface a 5 s undo toast
-            // that re-inserts via `restoreWorkout`. Replaces the old
+            // that re-inserts via `restoreWorkoutDetached` (хук сесії
+            // розмонтується разом із `onClose()`, тож його restore не годиться). Replaces the old
             // `ConfirmDialog` step — the toast is the only safety
             // net. Per the unified undo policy, `ConfirmDialog` is
             // reserved for non-reversible actions.
@@ -324,7 +325,7 @@ export function WorkoutJournalSection({
             onClose();
             showUndoToast(toast, {
               msg: messages.fizruk.workoutHistory.deletedToast,
-              onUndo: () => restoreWorkout(snapshot),
+              onUndo: () => restoreWorkoutDetached(snapshot),
             });
           }}
           onCollapse={onClose}

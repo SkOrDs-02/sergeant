@@ -58,6 +58,13 @@ vi.mock("../workouts/WorkoutSummaryView", () => ({
   ),
 }));
 
+// Undo не залежить від хука сесії (він розмонтується разом з `onClose()`),
+// тож компонент кличе модульний restore, а не проп.
+vi.mock("../../lib/restoreWorkoutDetached", () => ({
+  restoreWorkoutDetached: vi.fn(),
+}));
+
+import { restoreWorkoutDetached } from "../../lib/restoreWorkoutDetached";
 import { WorkoutJournalSection } from "./WorkoutJournalSection";
 
 // ToastProvider сам тости не малює (це робить ToastContainer) — мінімальний
@@ -119,7 +126,6 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     endWorkout: vi.fn(),
     summarizeWorkoutForFinish: vi.fn(() => null),
     deleteWorkout: vi.fn(),
-    restoreWorkout: vi.fn(),
     onRepeatWorkout: vi.fn(),
     onClose: vi.fn(),
     ...overrides,
@@ -192,7 +198,6 @@ describe("WorkoutJournalSection – ended workout renders the read-only summary"
       endedAt: new Date().toISOString(),
     });
     const deleteWorkout = vi.fn();
-    const restoreWorkout = vi.fn();
     const onClose = vi.fn();
     navigator.vibrate = vi.fn();
     renderWithToast(
@@ -200,7 +205,6 @@ describe("WorkoutJournalSection – ended workout renders the read-only summary"
         {...baseProps({
           activeWorkout: ended,
           deleteWorkout,
-          restoreWorkout,
           onClose,
         })}
       />,
@@ -212,7 +216,7 @@ describe("WorkoutJournalSection – ended workout renders the read-only summary"
     expect(screen.getByText("Тренування видалено")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Повернути" }));
-    expect(restoreWorkout).toHaveBeenCalledWith(ended);
+    expect(restoreWorkoutDetached).toHaveBeenCalledWith(ended);
   });
 });
 
@@ -224,5 +228,25 @@ describe("WorkoutJournalSection – in-flight workout renders the editable panel
     );
     expect(screen.getByTestId("active-panel")).toBeTruthy();
     expect(screen.queryByTestId("summary-view")).toBeNull();
+  });
+
+  // Той самий розмонтований-хук ризик, що й у підсумку: скасування сесії
+  // веде на список, тож «Повернути» мусить іти модульним restore.
+  it("discarding the active session undoes through the detached restore", () => {
+    const active = makeWorkout({ id: "w-active" });
+    const deleteWorkout = vi.fn();
+    navigator.vibrate = vi.fn();
+    renderWithToast(
+      <WorkoutJournalSection
+        {...baseProps({ activeWorkout: active, deleteWorkout })}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Видалити тренування" }),
+    );
+    expect(deleteWorkout).toHaveBeenCalledWith("w-active");
+
+    fireEvent.click(screen.getByRole("button", { name: "Повернути" }));
+    expect(restoreWorkoutDetached).toHaveBeenCalledWith(active);
   });
 });

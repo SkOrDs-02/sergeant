@@ -64,7 +64,6 @@ function baseProps(
       tonnageKg: 0,
     })),
     deleteWorkout: vi.fn(),
-    restoreWorkout: vi.fn(),
     onRepeatWorkout: vi.fn(),
     onClose: vi.fn(),
     ...overrides,

@@ -21,8 +21,21 @@
  * вкладку чи PWA закривають: iOS вивантажує PWA у фоні разом із
  * sessionStorage. Слот зникав, `endWorkout` брав «зараз», і ретро-тренування
  * на 27 вер. виходило тривалістю 111 годин (аудит 2026-10-01, data-37).
- * localStorage цей перезапуск переживає; префікс `fizruk_` стирає
- * `purgeAppOwnedLocalData` при виході з акаунта.
+ * localStorage цей перезапуск переживає.
+ *
+ * **Чому саме `*LSDurable`, а не `safeWriteLS`.** Звичайний `safeWriteLS`
+ * після завантаження SQLite KV-стору (`bootstrapKvStore`) пише у warm-cache,
+ * а в OPFS SQLite — асинхронно, fire-and-forget; фізичного `localStorage` на
+ * цьому шляху немає. Якщо PWA згортають і вбивають до того, як upsert
+ * долетів, слот зникає — той самий симптом data-37, лише вікно вужче.
+ * Durable-варіанти (`storage.ts`, «Boot-critical durable helpers») додатково
+ * синхронно пишуть дзеркало у фізичний `localStorage`; читання береться
+ * звідти першим, а `bootstrapKvStore` засіває warm-cache з нього ж.
+ *
+ * **Вихід з акаунта.** `purgeAppOwnedLocalData` стирає фізичний
+ * `localStorage` за префіксом `fizruk_` (саме те дзеркало), скидає
+ * warm-cache, а рядки SQLite KV вичищає `wipeSqliteDb()` по `user_id`, тож
+ * слот не переходить до наступного користувача пристрою.
  *
  * **Чому не поле в сутності.** Це не властивість тренування, а незавершений
  * намір користувача. Поле означало б колонку, міграцію і синк-контракт заради
@@ -35,9 +48,9 @@
  * введеного кінця; саме тому він durable.
  */
 import {
-  safeReadStringLS,
-  safeRemoveLS,
-  safeWriteLS,
+  safeReadStringLSDurable,
+  safeRemoveLSDurable,
+  safeWriteStringLSDurable,
 } from "@shared/lib/storage/storage";
 
 // Анотація нижче — інлайн, і саме тому: gitleaks зіставляє `gitleaks:allow`
@@ -53,11 +66,11 @@ interface PendingRetroEnd {
 
 /** Слот один: два ретро-тренування одночасно заповнювати неможливо. */
 export function setPendingRetroEnd(workoutId: string, endedAt: string): void {
-  safeWriteLS(KEY, JSON.stringify({ workoutId, endedAt }));
+  safeWriteStringLSDurable(KEY, JSON.stringify({ workoutId, endedAt }));
 }
 
 function read(): PendingRetroEnd | null {
-  const raw = safeReadStringLS(KEY);
+  const raw = safeReadStringLSDurable(KEY);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<PendingRetroEnd>;
@@ -85,12 +98,12 @@ export function peekPendingRetroEnd(workoutId: string): string | null {
 export function takePendingRetroEnd(workoutId: string): string | null {
   const pending = read();
   if (!pending || pending.workoutId !== workoutId) return null;
-  safeRemoveLS(KEY);
+  safeRemoveLSDurable(KEY);
   return pending.endedAt;
 }
 
 /** Ретро викинули, не завершивши — мітка не має пережити його. */
 export function clearPendingRetroEnd(workoutId: string): void {
   const pending = read();
-  if (pending && pending.workoutId === workoutId) safeRemoveLS(KEY);
+  if (pending && pending.workoutId === workoutId) safeRemoveLSDurable(KEY);
 }
