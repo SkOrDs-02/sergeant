@@ -1,5 +1,10 @@
 import { calcFinykPeriodAggregate } from "./spending.js";
-import type { SpendingTxLike, TxSplitsLike } from "./transactions.js";
+import {
+  getTxStatAmount,
+  txTimeMs,
+  type SpendingTxLike,
+  type TxSplitsLike,
+} from "./transactions.js";
 
 interface QuickStatsTx extends SpendingTxLike {
   time?: number;
@@ -24,6 +29,32 @@ export interface FinykQuickStats {
   todaySpent: number;
   /** Rounded UAH left of the monthly expense plan, or `null` when no plan is set. */
   budgetLeft: number | null;
+  /**
+   * Today's spends for the hub's cumulative day line: `[minutes since the
+   * Kyiv day start, UAH]`, in time order. Same exclusion and split rules
+   * as `todaySpent`, so the line ends exactly at it.
+   */
+  todayPoints: Array<[number, number]>;
+}
+
+function todaySpendPoints(
+  transactions: QuickStatsTx[] | null | undefined,
+  excludedTxIds: Set<string> | string[],
+  txSplits: TxSplitsLike,
+  start: number,
+  end: number,
+): Array<[number, number]> {
+  const excluded = new Set(excludedTxIds);
+  const points: Array<[number, number]> = [];
+  for (const tx of transactions ?? []) {
+    if (!tx || excluded.has(tx.id) || (tx.amount ?? 0) >= 0) continue;
+    const ms = txTimeMs(tx.time);
+    if (!Number.isFinite(ms) || ms < start || ms >= end) continue;
+    const amt = getTxStatAmount(tx, txSplits);
+    if (!Number.isFinite(amt) || amt <= 0) continue;
+    points.push([Math.floor((ms - start) / 60_000), Math.round(amt)]);
+  }
+  return points.sort((a, b) => a[0] - b[0]);
 }
 
 /**
@@ -61,5 +92,13 @@ export function computeFinykQuickStats({
         )
       : null;
 
-  return { todaySpent, budgetLeft };
+  const todayPoints = todaySpendPoints(
+    transactions,
+    excludedTxIds,
+    txSplits,
+    todayStartMs,
+    todayEndMs,
+  );
+
+  return { todaySpent, budgetLeft, todayPoints };
 }
