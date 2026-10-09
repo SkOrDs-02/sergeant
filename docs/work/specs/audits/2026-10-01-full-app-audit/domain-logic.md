@@ -572,7 +572,7 @@ apps/web/src/modules/fizruk/hooks/useMonthlyPlan.ts:73-90 (saveState → лиш�
 
 ### `logic-10` [medium] Таймер відпочинку рахує тіки setInterval, а не реальний час: на заблокованому телефоні стоїть, після reload зникає
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-10-rest-timer-wallclock (лишилось: персист `endsAt` між reload/убитим PWA (sessionStorage/SQLite) і Notification/Web Push у фоні — окремі рішення)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (тренування)
 - **Де:** apps/web/src/modules/fizruk/hooks/useWorkoutsLifecycle.ts:107-131; apps/web/src/modules/fizruk/context/RestTimerProvider.tsx:24-38; apps/web/src/modules/fizruk/hooks/useFizrukRestSound.ts:64-67
 - **Першопричина:** useRestTimerCountdown на кожен тік робить remaining − 1. Стан містить лише {remaining, total} без моменту закінчення, досинхронізації на visibilitychange немає, і живе він тільки в useState. Сигнал завершення (звук і телеметрія) викликається всередині updater-а setRestTimer, тобто сайд-ефектом у чистій функції.

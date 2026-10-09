@@ -10,6 +10,7 @@ import {
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import { startRestTimerState } from "../../lib/restTimer";
 
 export interface WorkoutItemRestPresetsProps {
   catLabel: string;
@@ -50,7 +51,7 @@ export function WorkoutItemRestPresets({
     label: `${sec} ${rt.presetsSecondsShort}`,
     onSelect: () => {
       if (exerciseId) setDefaultForExercise?.(exerciseId, sec);
-      setRestTimer({ remaining: sec, total: sec });
+      setRestTimer(startRestTimerState(sec));
     },
   }));
 
@@ -66,7 +67,7 @@ export function WorkoutItemRestPresets({
         tone="fizruk"
         size="md"
         className="h-11 min-h-[44px]"
-        onClick={() => setRestTimer({ remaining: defSec, total: defSec })}
+        onClick={() => setRestTimer(startRestTimerState(defSec))}
         title={`${rt.presetsRecommendedTitle} ${catLabel.toLowerCase()}`}
       >
         <Icon name="clock" size="sm" aria-hidden />

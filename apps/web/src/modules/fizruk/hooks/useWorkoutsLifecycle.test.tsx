@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { useState } from "react";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
 import {
   useActiveWorkoutIdPersistence,
@@ -8,6 +9,8 @@ import {
   useRestTimerCountdown,
   useStaleActiveWorkoutCleanup,
 } from "./useWorkoutsLifecycle";
+import type { RestTimerState } from "./useFizrukRestSound";
+import { startRestTimerState } from "../lib/restTimer";
 
 describe("useActiveWorkoutIdPersistence", () => {
   beforeEach(() => localStorage.clear());
@@ -134,43 +137,131 @@ describe("useStaleActiveWorkoutCleanup", () => {
 });
 
 describe("useRestTimerCountdown", () => {
-  beforeEach(() => vi.useFakeTimers());
+  const T0 = new Date("2026-10-08T10:00:00Z").getTime();
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(T0);
+  });
   afterEach(() => vi.useRealTimers());
 
-  it("decrements remaining each second", () => {
-    const setRestTimer = vi.fn();
-    const mark = vi.fn();
-    renderHook(() =>
-      useRestTimerCountdown({ remaining: 3, total: 3 }, setRestTimer, mark),
-    );
-    act(() => vi.advanceTimersByTime(1000));
-    const updater = setRestTimer.mock.calls[0]![0] as (
-      r: { remaining: number; total: number } | null,
-    ) => unknown;
-    expect(updater({ remaining: 3, total: 3 })).toEqual({
-      remaining: 2,
-      total: 3,
+  /** Хост зі справжнім станом: updater-и setRestTimer виконуються. */
+  function setup(sec: number, mark = vi.fn()) {
+    const hook = renderHook(() => {
+      const [restTimer, setRestTimer] = useState<RestTimerState | null>(() =>
+        startRestTimerState(sec),
+      );
+      useRestTimerCountdown(restTimer, setRestTimer, mark);
+      return { restTimer, setRestTimer };
     });
+    return { ...hook, mark };
+  }
+
+  it("counts down by wall-clock on each tick", () => {
+    const { result } = setup(3);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(result.current.restTimer?.remaining).toBe(2);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(result.current.restTimer?.remaining).toBe(1);
   });
 
-  it("fires markCompletedNaturally and returns null on the final tick", () => {
-    const setRestTimer = vi.fn();
+  it("recomputes from endsAt after the clock jumped without any tick (locked screen)", () => {
+    // Регресія logic-10: інтервал не тікав (екран заблоковано), а
+    // годинник пішов уперед на 60 с. Без фіксу `remaining - 1` давав 89.
+    const { result } = setup(90);
+    act(() => {
+      vi.setSystemTime(T0 + 60_000);
+    });
+    // Жодного тіку ще не було — стан досі «90».
+    expect(result.current.restTimer?.remaining).toBe(90);
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(result.current.restTimer?.remaining).toBe(30);
+  });
+
+  it("recomputes on pageshow", () => {
+    const { result } = setup(90);
+    act(() => {
+      vi.setSystemTime(T0 + 45_000);
+      window.dispatchEvent(new Event("pageshow"));
+    });
+    expect(result.current.restTimer?.remaining).toBe(45);
+  });
+
+  it("recomputes on the next tick without visibilitychange", () => {
+    const { result } = setup(90);
+    act(() => {
+      vi.setSystemTime(T0 + 60_000);
+    });
+    act(() => vi.advanceTimersByTime(1000));
+    // 60 с стрибка + 1 с тіку (фейкові таймери зсувають годинник на
+    // 1000 мс поверх setSystemTime): ceil(29) = 29. Без фіксу було б 89.
+    expect(result.current.restTimer?.remaining).toBe(29);
+  });
+
+  it("fires the end-cue exactly once and clears the timer when the clock jumps past the end", () => {
+    const { result, mark } = setup(90);
+    act(() => {
+      vi.setSystemTime(T0 + 200_000);
+      // Усе, що може спрацювати разом: подія видимості, pageshow і тік.
+      document.dispatchEvent(new Event("visibilitychange"));
+      window.dispatchEvent(new Event("pageshow"));
+    });
+    act(() => vi.advanceTimersByTime(5000));
+    expect(mark).toHaveBeenCalledTimes(1);
+    expect(result.current.restTimer).toBeNull();
+  });
+
+  it("fires markCompletedNaturally once when the countdown reaches 0 on its own", () => {
+    const { result, mark } = setup(2);
+    act(() => vi.advanceTimersByTime(1000));
+    expect(mark).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(mark).toHaveBeenCalledTimes(1);
+    expect(result.current.restTimer).toBeNull();
+    act(() => vi.advanceTimersByTime(5000));
+    expect(mark).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps updaters pure: the end-cue is not called inside the setRestTimer updater", () => {
     const mark = vi.fn();
-    renderHook(() =>
-      useRestTimerCountdown({ remaining: 1, total: 3 }, setRestTimer, mark),
-    );
+    const setRestTimer = vi.fn();
+    const timer = startRestTimerState(5);
+    renderHook(() => useRestTimerCountdown(timer, setRestTimer, mark));
     act(() => vi.advanceTimersByTime(1000));
     const updater = setRestTimer.mock.calls[0]![0] as (
-      r: { remaining: number; total: number } | null,
+      r: RestTimerState | null,
     ) => unknown;
-    expect(updater({ remaining: 1, total: 3 })).toBeNull();
-    expect(mark).toHaveBeenCalled();
+    // Двічі, як у StrictMode — побічних ефектів немає.
+    updater(timer);
+    updater(timer);
+    expect(mark).not.toHaveBeenCalled();
   });
 
-  it("no-ops for a null or finished timer", () => {
+  it("removes its listeners and interval on unmount", () => {
+    const removeDoc = vi.spyOn(document, "removeEventListener");
+    const removeWin = vi.spyOn(window, "removeEventListener");
+    const { unmount, mark } = setup(5);
+    unmount();
+    expect(removeDoc).toHaveBeenCalledWith(
+      "visibilitychange",
+      expect.any(Function),
+    );
+    expect(removeWin).toHaveBeenCalledWith("pageshow", expect.any(Function));
+    act(() => {
+      vi.setSystemTime(T0 + 60_000);
+      vi.advanceTimersByTime(3000);
+    });
+    expect(mark).not.toHaveBeenCalled();
+  });
+
+  it("no-ops for a null timer", () => {
     const setRestTimer = vi.fn();
     renderHook(() => useRestTimerCountdown(null, setRestTimer, vi.fn()));
-    act(() => vi.advanceTimersByTime(2000));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
     expect(setRestTimer).not.toHaveBeenCalled();
   });
 });

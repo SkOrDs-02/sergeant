@@ -15,6 +15,7 @@ import {
   REST_CATEGORY_LABELS,
 } from "../../hooks/useRestSettings";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import { startRestTimerState } from "../../lib/restTimer";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseWorkoutSetSpeech } from "@sergeant/shared";
 import {
@@ -166,7 +167,7 @@ export function WorkoutItemCard({
 
   const startRest = () => {
     if (activeWorkout.endedAt || restSec == null) return;
-    setRestTimer({ remaining: restSec, total: restSec });
+    setRestTimer(startRestTimerState(restSec));
   };
 
   const showTypeSwitcher = !isReadOnly && !(it.type === "strength" && anyDone);
