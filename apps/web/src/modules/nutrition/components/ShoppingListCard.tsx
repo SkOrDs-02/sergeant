@@ -614,7 +614,7 @@ export function ShoppingListCard({
           className="w-full text-style-caption text-muted hover:text-text transition-colors pt-1 flex items-center justify-center gap-1.5"
         >
           <Icon name="wallet" size="sm" aria-hidden />
-          <span>Скільки витратив на їжу цього місяця?</span>
+          <span>Витрати на їжу за місяць</span>
           <span aria-hidden>→</span>
         </button>
       </div>

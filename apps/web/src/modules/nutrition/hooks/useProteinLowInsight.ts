@@ -60,7 +60,7 @@ export function useProteinLowInsight(
       title: `Білку: ${consumed} з ${goal}г`,
       subtitle: isMostlyEstimated
         ? messages.nutrition.proteinLowEstimated.subtitle
-        : `Час додати джерело білка?`,
+        : `Додати джерело білка`,
       askAiPrompt: `Сьогодні білка ${consumed} г із цілі ${goal} г, уже вечір. Що реально додати з простого, щоб добрати хоча б до ${Math.round(goal * 0.8)} г?`,
       action: { type: "navigate", path: "/nutrition/log" },
       // Hub surface promoted post-Phase 5e: end-of-day protein gap is an

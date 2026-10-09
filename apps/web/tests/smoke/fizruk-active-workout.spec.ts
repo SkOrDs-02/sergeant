@@ -88,7 +88,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // роботи. Тут його свідомо ПРОПУСКАЄМО: цей тест про потік
   // «старт → підхід → перезавантаження → фініш», а без відповіді підказка
   // поводиться рівно так, як до появи фічі.
-  const readiness = page.getByRole("dialog", { name: "Як ти сьогодні?" });
+  const readiness = page.getByRole("dialog", { name: "Самопочуття" });
   await expect(readiness).toBeVisible();
   // «Пропустити» — у футері аркуша, рівно там, де стоїть трей тостів; див.
   // `settleToasts` про те, чому тост під курсором не зникає сам.
@@ -101,9 +101,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   await page.getByRole("button", { name: "Додати вправу" }).first().click();
   const catalog = page.getByRole("dialog", { name: "Додати вправу" });
   await expect(catalog).toBeVisible();
-  await catalog
-    .getByPlaceholder("Пошук (жим, підтягування, спина…)")
-    .fill("Жим штанги лежачи");
+  await catalog.getByPlaceholder("Пошук вправи").fill("Жим штанги лежачи");
   // Локатор навмисно привʼязаний до `aria-controls="catalog-panel-*"`, а не
   // до «перша кнопка на сторінці з aria-expanded=false». Стара форма зламалась
   // від НАШОЇ Ж зміни: фікс V-8 з аудиту Фізрука переніс «Видалити» в
@@ -182,7 +180,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // Крок «Самопочуття» аркуша `WorkoutFinishSheets` — його «Пропустити».
   await page.getByRole("button", { name: "Пропустити" }).click();
   await expect(
-    page.getByRole("dialog", { name: "Щось болить?" }),
+    page.getByRole("dialog", { name: "Біль після тренування" }),
   ).toBeVisible();
   // Крок травм має власну копію — «Нічого не позначати», не «Пропустити»
   // (`messages.fizruk.injuries.skip`). Формулювання свідоме: позначити травму

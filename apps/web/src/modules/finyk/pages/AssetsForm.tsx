@@ -85,7 +85,7 @@ export function SubscriptionForm({
           // прийняти його за логін (див. `searchFieldProps.ts`). Побічно
           // знімає й автокапіталізацію — «netflix» не має ставати «Netflix».
           {...searchFieldProps("subscription-keyword-search")}
-          placeholder="Наприклад, netflix"
+          placeholder="Слово з опису"
           maxLength={NAME_MAX_LEN}
           showCharCount={false}
           value={newSub.keyword}
@@ -496,7 +496,7 @@ export function DebtForm({
           ref={debtNameInputRef as React.Ref<HTMLInputElement>}
           aria-label="Назва пасиву (кредит, борг)"
           className="flex-1"
-          placeholder="Назва пасиву (кредит, борг)"
+          placeholder="Назва пасиву"
           maxLength={NAME_MAX_LEN}
           showCharCount={false}
           value={newDebt.name}

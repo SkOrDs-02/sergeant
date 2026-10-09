@@ -498,7 +498,7 @@ function AddBudgetFormComponent({
               <Label htmlFor={limitNameId}>{"Назва (необовʼязково)"}</Label>
               <Input
                 id={limitNameId}
-                placeholder="Напр. Їжа"
+                placeholder="Назва"
                 maxLength={NAME_MAX_LEN}
                 disabled={isSubmitting}
                 {...limitForm.register("label")}
@@ -512,7 +512,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={limitAmountId}>Ліміт</Label>
             <Input
               id={limitAmountId}
-              placeholder="Напр. 5 000 ₴"
+              placeholder="Сума"
               type="text"
               inputMode="decimal"
               autoComplete="off"
@@ -595,7 +595,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={goalNameId}>Назва цілі</Label>
             <Input
               id={goalNameId}
-              placeholder="Напр. На відпустку"
+              placeholder="Назва"
               maxLength={NAME_MAX_LEN}
               aria-invalid={goalNameError ? true : undefined}
               disabled={isSubmitting}
@@ -614,7 +614,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={goalAmountId}>Сума цілі</Label>
             <Input
               id={goalAmountId}
-              placeholder="Напр. 20 000 ₴"
+              placeholder="Сума"
               type="text"
               inputMode="decimal"
               autoComplete="off"
@@ -651,7 +651,7 @@ function AddBudgetFormComponent({
               // 2026-07-24 supersedes the earlier round-2 M1 call to skip
               // an external label — every form field now gets a visible
               // label + example placeholder.
-              emptyLabel="Напр. 31.12.2026"
+              emptyLabel="Дата"
               value={goalTargetDate}
               className="w-full"
               disabled={isSubmitting}

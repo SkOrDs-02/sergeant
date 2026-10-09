@@ -139,25 +139,25 @@ export const MEMORY_MANUAL_STEPS = [
     category: "goal",
     label: "Фокус",
     prompt: "Що для тебе зараз найважливіше?",
-    placeholder: "Наприклад: хочу стабільно тренуватись 3 рази на тиждень",
+    placeholder: "Відповідь",
   },
   {
     category: "preference",
     label: "Вподобання",
     prompt: "Які вподобання, правила або обмеження варто враховувати?",
-    placeholder: "Наприклад: не люблю ранкові тренування",
+    placeholder: "Відповідь",
   },
   {
     category: "training",
     label: "Типовий день",
     prompt: "Як зараз виглядає твій типовий день або тиждень?",
-    placeholder: "Наприклад: сидяча робота, вечорами є 30 хвилин",
+    placeholder: "Відповідь",
   },
   {
     category: "other",
     label: "Нагадування",
     prompt: "Як тобі зручніше отримувати нагадування та поради?",
-    placeholder: "Наприклад: коротко, без тиску, ближче до вечора",
+    placeholder: "Відповідь",
   },
 ] as const;
 

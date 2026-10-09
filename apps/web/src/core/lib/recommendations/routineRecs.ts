@@ -93,7 +93,7 @@ export function buildRoutineRecs(): Rec[] {
       priority: 80,
       icon: "flame",
       title: `${streak} ${pluralDays(streak)} поспіль`,
-      body: "Серія тримається. Продовжуй у тому ж темпі.",
+      body: "Усі звички виконано щодня без пропусків.",
       action: "routine",
     });
   }
@@ -108,7 +108,7 @@ export function buildRoutineRecs(): Rec[] {
       priority: 65,
       icon: "check",
       title: `Сьогодні ще не виконано: ${remaining} ${pluralHabits(remaining)}`,
-      body: "Вечір, ще не пізно закрити всі звички.",
+      body: "Відмітити можна до кінця дня.",
       action: "routine",
     });
   }

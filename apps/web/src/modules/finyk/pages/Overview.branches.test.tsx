@@ -225,7 +225,7 @@ describe("Overview page (branches)", () => {
     renderOverview({
       mono: buildMono({ realTx: [mkTx("t1", -2500)] }),
     });
-    expect(screen.getByText("Ось куди йдуть твої гроші")).toBeInTheDocument();
+    expect(screen.getByText("Бюджету ще немає")).toBeInTheDocument();
   });
 
   it("hides first-insight banner after localStorage seen-key is set", () => {
@@ -233,7 +233,7 @@ describe("Overview page (branches)", () => {
     renderOverview({
       mono: buildMono({ realTx: [mkTx("t1", -2500)] }),
     });
-    expect(screen.queryByText("Ось куди йдуть твої гроші")).toBeNull();
+    expect(screen.queryByText("Бюджету ще немає")).toBeNull();
   });
 
   it("navigates to budgets from insight CTA", () => {

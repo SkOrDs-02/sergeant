@@ -32,7 +32,7 @@ describe("shouldFetchCoachInsight — гейт AI-квоти коуча (PR-A1)"
     expect(shouldFetchCoachInsight(true, true, false)).toBe(false);
   });
 
-  it("забороняє запит, коли блок «Порада й звіт тижня» вимкнено в налаштуваннях дашборда", () => {
+  it("забороняє запит, коли блок «Порада й тиждень» вимкнено в налаштуваннях дашборда", () => {
     expect(shouldFetchCoachInsight(true, false, true)).toBe(false);
   });
 

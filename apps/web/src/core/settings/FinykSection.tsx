@@ -174,9 +174,7 @@ export function FinykSection() {
               type="text"
               value={newCategoryLabel}
               onChange={(event) => setNewCategoryLabel(event.target.value)}
-              placeholder={
-                newCategoryKind === "income" ? "Напр. Підробіток" : "Напр. Хобі"
-              }
+              placeholder={"Назва категорії"}
               maxLength={80}
               className={catInputClass}
               onKeyDown={(event) => {

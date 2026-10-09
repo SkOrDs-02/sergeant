@@ -44,7 +44,7 @@ export function SourceTabs({ active, onChange }: SourceTabsProps) {
   return (
     <div
       role="tablist"
-      aria-label="Звідки страва"
+      aria-label="Джерело страви"
       className="mb-4 grid grid-cols-4 gap-1 rounded-2xl bg-panelHi p-1"
     >
       {TABS.map((t) => {

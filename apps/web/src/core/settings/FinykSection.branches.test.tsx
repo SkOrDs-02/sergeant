@@ -311,7 +311,7 @@ describe("FinykSection branch gaps", () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     const input = (await screen.findByPlaceholderText(
-      "Напр. Хобі",
+      "Назва категорії",
     )) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "Спорт" } });
     fireEvent.click(screen.getByText("Додати"));

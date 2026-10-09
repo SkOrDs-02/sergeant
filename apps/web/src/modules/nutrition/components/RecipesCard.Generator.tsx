@@ -129,7 +129,7 @@ export function GeneratorCard({
             onChange={(e) =>
               setPrefs((p) => ({ ...p, exclude: e.target.value }))
             }
-            placeholder="напр. арахіс, гриби"
+            placeholder="Продукти"
             disabled={busy}
           />
         </div>

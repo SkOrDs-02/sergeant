@@ -58,7 +58,7 @@ export function useTodoEveningInsight(routine: RoutineState): Insight | null {
       id: "routine-todo-evening",
       module: "routine",
       title: `${pendingNames.length} ${pluralHabits(pendingNames.length)} чекають`,
-      subtitle: "Закрити сьогоднішнє?",
+      subtitle: "Відмітити до кінця дня",
       askAiPrompt: `Вечір, а зі звичок сьогодні не відмічені: ${pendingNames.join(", ")}. Допоможи вирішити, що з цього ще реально зробити, а що чесно перенести.`,
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",

@@ -56,9 +56,7 @@ test("@critical nutrition: today dashboard → add-meal CTA opens sheet", async 
   // stays on "source" (title "Звідки страва?"). Either means the sheet opened.
   const addMealDialog = page.getByRole("dialog");
   await expect(addMealDialog).toBeVisible({ timeout: 10_000 });
-  await expect(addMealDialog).toContainText(
-    /Звідки страва\?|Додати прийом їжі/,
-  );
+  await expect(addMealDialog).toContainText(/Джерело страви|Додати прийом їжі/);
 
   expect(errors, "Uncaught page errors on nutrition CTA happy path").toEqual(
     [],

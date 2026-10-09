@@ -290,7 +290,7 @@ describe("FinykSection extra branches", () => {
   it("adds a category via the button even when Enter guard is skipped", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    const input = await screen.findByPlaceholderText("Назва категорії");
     // An Enter on empty input should NOT call add (guard: newCategoryLabel.trim())
     // We can verify the button path clears the input on each add cycle.
     fireEvent.change(input, { target: { value: "Test" } });
@@ -368,7 +368,7 @@ describe("FinykSection extra branches", () => {
   it("does not crash when Enter is pressed on empty category input", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    const input = await screen.findByPlaceholderText("Назва категорії");
     // Guard: newCategoryLabel.trim() must be truthy
     fireEvent.keyDown(input, { key: "Enter" });
     // Component stays stable

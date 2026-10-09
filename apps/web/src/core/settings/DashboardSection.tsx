@@ -21,7 +21,7 @@ import { useHubPref } from "./hubPrefs";
 export function DashboardSection() {
   // Головна за віссю дії (спека `hub-action-axis.md`, рішення власника
   // 2026-09-17): купи й рейок не вимикаються, тож у «Вигляді» лишаються два
-  // тумблери — «Порада й звіт тижня» і «Мотиваційний підпис».
+  // тумблери — «Порада й тиждень» і «Мотиваційний підпис».
   const [showInsights, setShowInsights] = useHubPref<boolean>(
     "showInsights",
     true,
@@ -75,14 +75,14 @@ export function DashboardSection() {
           <ThemeSwitcher className="w-full" />
         </div>
         <ToggleRow
-          label="Порада й звіт тижня"
+          label="Порада й тиждень"
           description="Згорнутий блок із порадою Сержанта та звітом тижня внизу головної."
           checked={showInsights !== false}
           onChange={setShowInsights}
         />
         <ToggleRow
-          label="Мотиваційний підпис"
-          description="Короткий заохочувальний рядок у самому низу головної."
+          label="Лічильник записів"
+          description="Скільки записів у тебе всього, у самому низу головної."
           checked={showMotivational !== false}
           onChange={setShowMotivational}
         />

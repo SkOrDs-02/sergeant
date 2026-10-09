@@ -144,7 +144,7 @@ describe("GeneratorCard", () => {
     });
     expect(currentPrefs).toMatchObject({ timeMinutes: 0 });
 
-    fireEvent.change(screen.getByPlaceholderText("напр. арахіс, гриби"), {
+    fireEvent.change(screen.getByPlaceholderText("Продукти"), {
       target: { value: "арахіс" },
     });
     expect(currentPrefs).toMatchObject({ exclude: "арахіс" });

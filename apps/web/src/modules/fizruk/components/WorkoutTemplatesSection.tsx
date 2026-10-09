@@ -206,7 +206,7 @@ export function WorkoutTemplatesSection({
           <Label htmlFor={nameId}>Назва шаблону</Label>
           <Input
             id={nameId}
-            placeholder="Напр. Push day, Ноги (без назви: «Мій шаблон»)"
+            placeholder="Назва шаблону"
             value={name}
             onChange={(e) => setName(e.target.value)}
             aria-label="Назва шаблону"

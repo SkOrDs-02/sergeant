@@ -57,7 +57,7 @@ export function HabitLeadersBlock({
   return (
     <Card radius="lg">
       <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
-        Лідери та аутсайдери (30 днів)
+        Найстабільніша й найслабша · 30 днів
       </SectionHeading>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div className="rounded-xl border border-routine-line/40 dark:border-routine-border-dark/20 bg-routine-surface/30 dark:bg-routine-surface-dark/8 p-3">

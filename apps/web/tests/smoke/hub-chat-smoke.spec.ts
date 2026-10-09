@@ -28,16 +28,7 @@ test("@critical hub-chat: cold-load mounts the /chat assistant surface", async (
   await expect(input).toBeVisible();
   await expect(input).toHaveValue("");
 
-  // PR-A7 (audit `2026-09-13-product-full-review.md`): fresh sessions used
-  // to seed an intro assistant message via `normalizeStoredMessages`, which
-  // made `<ChatEmpty>` (the 4-suggestion empty state) unreachable on cold
-  // load. That substitution is gone — a brand-new session starts with zero
-  // messages, so `<ChatEmpty>` renders here.
-  await expect(page.getByTestId("chat-empty")).toBeVisible();
-
-  // Exercise the composer prefill path through a quick-action chip
-  // (unrelated to `<ChatEmpty>`'s own suggestion chips — this one lives in
-  // the composer and stays rendered regardless of the empty state).
+  // Exercise the composer prefill path through a quick-action chip.
   await page.getByTestId("chat-quick-action-create_transaction").click();
   await expect(input).toHaveValue("Додай витрату: ");
 

@@ -550,7 +550,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("shows 'Звідки страва?' heading when opened with templates", () => {
+  it("shows 'Джерело страви' heading when opened with templates", () => {
     renderSheet({
       mealTemplates: [
         {
@@ -561,7 +561,7 @@ describe("AddMealSheet — source step (with templates)", () => {
         },
       ],
     });
-    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
   });
 
   it("розводить пошук і штрихкод по різних вкладках", () => {
@@ -623,7 +623,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     // Поля етикетки рендеряться ПРЯМО у вкладці, без переходу на окремий
     // крок: заради цього вкладки й робились — менше стрибків маршрутом.
     expect(screen.getByTestId("package-step")).toBeInTheDocument();
-    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
     expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
 
@@ -820,7 +820,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     renderSheet({ mealTemplates: [] });
     fireEvent.click(screen.getByTestId("pick-food"));
     fireEvent.click(screen.getByTestId("change-product"));
-    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
     expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
   });
 
@@ -931,9 +931,9 @@ describe("AddMealSheet — source step (with templates)", () => {
 describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", () => {
   it("starts at source step even when there are no templates or recent meals", () => {
     renderSheet({ mealTemplates: [] });
-    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
     expect(
-      screen.getByRole("tablist", { name: "Звідки страва" }),
+      screen.getByRole("tablist", { name: "Джерело страви" }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
@@ -1358,7 +1358,7 @@ describe("AddMealSheet — source step branches", () => {
     renderSheet({ mealTemplates: [template] });
     goToWholeMeal();
     fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
-    expect(screen.getByText("Звідки страва?")).toBeInTheDocument();
+    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
   });
 });
 

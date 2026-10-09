@@ -98,7 +98,7 @@ export function AddExerciseSheet({
           <Label htmlFor={nameId}>Назва (укр) *</Label>
           <Input
             id={nameId}
-            placeholder="Напр. Присідання зі штангою"
+            placeholder="Назва вправи"
             value={form.nameUk}
             onChange={(e) => {
               setForm((f) => ({ ...f, nameUk: e.target.value }));
@@ -250,7 +250,7 @@ export function AddExerciseSheet({
           </Label>
           <Input
             id={descriptionId}
-            placeholder="Напр. Тримай спину рівною, коліна не виходять за носки"
+            placeholder="Опис"
             value={form.description}
             onChange={(e) =>
               setForm((f) => ({ ...f, description: e.target.value }))

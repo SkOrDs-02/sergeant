@@ -202,7 +202,7 @@ export const nutritionPageMessages = {
     collapseLabel: "Сховати покупки",
     variantsHeading: "Покупки",
     unknownAddedAt: "без дати",
-    consumeTitle: "З чого списати?",
+    consumeTitle: "Списати з покупки",
     consumeDescription:
       "У цій позиції кілька покупок. Обери, з якої списати, або лишай найстарішу: вона псується першою.",
     consumeOldestCta: "З найстарішої",
@@ -289,7 +289,7 @@ export const nutritionPageMessages = {
    */
   shoppingListManualAdd: {
     inputLabel: "Назва товару для списку покупок",
-    placeholder: "напр. хліб",
+    placeholder: "Товар",
     addCta: "Додати",
   },
 
@@ -496,7 +496,7 @@ export const nutritionPageMessages = {
     titleEdit: "Редагувати страву",
     description: "Склади страву з продуктів і грамів, КБЖВ порахується само.",
     nameLabel: "Назва",
-    namePlaceholder: "напр. Гречка з філе",
+    namePlaceholder: "Назва страви",
     nameAria: "Назва страви",
     gramsAriaPrefix: "Грами:",
     gramUnit: "г",

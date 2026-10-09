@@ -38,7 +38,7 @@ const CHOICE = {
 describe("PantryVariantChoiceSheet", () => {
   it("не рендериться без вибору — тихе списання лишається тихим", () => {
     render(<PantryVariantChoiceSheet choice={null} onResolve={vi.fn()} />);
-    expect(screen.queryByText("З чого списати?")).toBeNull();
+    expect(screen.queryByText("Списати з покупки")).toBeNull();
   });
 
   it("показує кожен варіант із датою покупки і кількістю", () => {

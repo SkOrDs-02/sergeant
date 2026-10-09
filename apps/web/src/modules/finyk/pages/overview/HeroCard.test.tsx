@@ -236,9 +236,7 @@ describe("HeroCard", () => {
 
     it("renders the set-a-plan CTA instead of a fabricated number", () => {
       render(<HeroCard {...noPlanProps} onSetPlan={() => {}} />);
-      expect(
-        screen.getByText("Скільки можна витрачати на день?"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Денний бюджет не задано")).toBeInTheDocument();
       expect(screen.queryByText("₴/день")).not.toBeInTheDocument();
       expect(
         screen.queryByText(/Лишилось на сьогодні/),
@@ -259,9 +257,7 @@ describe("HeroCard", () => {
         screen.queryByRole("button", { name: "Задати план" }),
       ).not.toBeInTheDocument();
       // The explanatory copy still stands in for the missing number.
-      expect(
-        screen.getByText("Скільки можна витрачати на день?"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Денний бюджет не задано")).toBeInTheDocument();
     });
   });
 

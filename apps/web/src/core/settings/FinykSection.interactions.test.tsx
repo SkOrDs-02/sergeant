@@ -184,7 +184,7 @@ describe("FinykSection interactions", () => {
   it("adds a custom category via the Додати button", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    const input = await screen.findByPlaceholderText("Назва категорії");
     fireEvent.change(input, { target: { value: "Хобі" } });
     fireEvent.click(screen.getByText("Додати"));
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Хобі");
@@ -194,7 +194,7 @@ describe("FinykSection interactions", () => {
   it("adds a custom category via the Enter key", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    const input = await screen.findByPlaceholderText("Назва категорії");
     fireEvent.change(input, { target: { value: "Подорожі" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Подорожі");
@@ -204,7 +204,7 @@ describe("FinykSection interactions", () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     fireEvent.click(await screen.findByRole("button", { name: "Надходження" }));
-    const input = screen.getByPlaceholderText("Напр. Підробіток");
+    const input = screen.getByPlaceholderText("Назва категорії");
     fireEvent.change(input, { target: { value: "Оренда" } });
     fireEvent.click(screen.getByText("Додати"));
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Оренда", {

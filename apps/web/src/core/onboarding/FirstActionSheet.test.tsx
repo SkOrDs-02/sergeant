@@ -28,7 +28,7 @@ describe("FirstActionHeroCard", () => {
   it("asks the user to choose when no modules were picked", () => {
     render(<FirstActionHeroCard />);
 
-    expect(screen.getByText("З чого хочеш почати?")).toBeInTheDocument();
+    expect(screen.getByText("Перший запис")).toBeInTheDocument();
     expect(
       screen.getByText(/Routine не відкриється автоматично/),
     ).toBeInTheDocument();
@@ -48,7 +48,7 @@ describe("FirstActionHeroCard", () => {
 
     render(<FirstActionHeroCard />);
 
-    expect(screen.getByText("З чого хочеш почати?")).toBeInTheDocument();
+    expect(screen.getByText("Перший запис")).toBeInTheDocument();
     expect(screen.getByText(/порядок не важить/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
   });

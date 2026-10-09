@@ -194,7 +194,6 @@ export function AssistantAdviceCard({
                 aria-label={messages.sergeant.adviceLoadingAria}
                 className="space-y-2 py-0.5 motion-safe:animate-pulse"
               >
-                <span className="sr-only">Готую пораду…</span>
                 <SkeletonText className="h-3.5 w-full" pulse={false} />
                 <SkeletonText className="h-3.5 w-11/12" pulse={false} />
                 <SkeletonText className="h-3.5 w-4/5" pulse={false} />

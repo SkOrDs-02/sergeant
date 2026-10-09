@@ -426,15 +426,15 @@ function MonthlyPlanCardComponent({
               {firstRunHint && (
                 <FirstRunHintBanner
                   variant="finyk"
-                  title="Орієнтовний фінплан, постав і поправиш"
-                  description="Це чорновик: вкажи орієнтовний дохід, витрати і накопичення на місяць. Сюди ти зможеш повернутись будь-коли, щоб перерахувати."
+                  title="Чорновик плану на місяць"
+                  description="Дохід, витрати й накопичення можна змінити будь-коли."
                   onDismiss={onDismissFirstRunHint ?? (() => {})}
                 />
               )}
               <PlanAmountField
                 id={incomeId}
                 label="План доходу"
-                placeholder="Напр. 40 000 ₴"
+                placeholder="Сума"
                 value={monthlyPlan?.income ?? ""}
                 onCommit={(income) =>
                   onChangeMonthlyPlan((p) => ({ ...p, income }))
@@ -443,7 +443,7 @@ function MonthlyPlanCardComponent({
               <PlanAmountField
                 id={expenseId}
                 label="План витрат"
-                placeholder="Напр. 25 000 ₴"
+                placeholder="Сума"
                 value={monthlyPlan?.expense ?? ""}
                 onCommit={(expense) =>
                   onChangeMonthlyPlan((p) => ({ ...p, expense }))
@@ -452,7 +452,7 @@ function MonthlyPlanCardComponent({
               <PlanAmountField
                 id={savingsId}
                 label="План накопичень"
-                placeholder="Напр. 10 000 ₴"
+                placeholder="Сума"
                 value={monthlyPlan?.savings ?? ""}
                 onCommit={(savings) =>
                   onChangeMonthlyPlan((p) => ({ ...p, savings }))

@@ -360,7 +360,7 @@ test("@critical pantry: списання з позиції на два варі�
   // `getByLabel`, а не `getByText`: заголовок аркуша дублюється у sr-only
   // live-region, і пошук за текстом дає strict-mode violation на двох
   // збігах.
-  const choice = page.getByLabel("З чого списати?");
+  const choice = page.getByLabel("Списати з покупки");
   await expect(choice).toBeVisible({ timeout: 60_000 });
   await expect(choice.getByText("Молоко Яготинське 2.6% 900г")).toBeVisible();
   await expect(choice.getByText("Молоко Галичина 1%")).toBeVisible();

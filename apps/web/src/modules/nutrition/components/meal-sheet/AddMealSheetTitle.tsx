@@ -14,7 +14,7 @@
 import { Icon } from "@shared/components/ui/Icon";
 
 const STEP_TITLES: Record<string, string> = {
-  source: "Звідки страва?",
+  source: "Джерело страви",
   photo: "Аналіз фото страви",
   package: "Продукт з упаковки",
 };
