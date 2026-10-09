@@ -2,7 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction, ReactNode } from "react";
 import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
 import {
@@ -88,6 +88,10 @@ export function NutritionMenuPage({
   wrappedSaveMeal,
   selectedDate,
 }: NutritionMenuPageProps) {
+  // Перший запуск одноразовий: людина вже на сторінці плану, підказки немає.
+  useEffect(() => {
+    if (firstRunHint) onDismissFirstRunHint();
+  }, [firstRunHint, onDismissFirstRunHint]);
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   return (
     <SectionErrorBoundary key="page-menu" title="Не вдалось показати «Меню»">
@@ -148,8 +152,6 @@ export function NutritionMenuPage({
                 weekPlanRaw={weekPlanRaw}
                 weekPlanBusy={weekPlanBusy}
                 fetchWeekPlan={fetchWeekPlan}
-                firstRunHint={firstRunHint}
-                onDismissFirstRunHint={onDismissFirstRunHint}
               />
             )}
           </DataState>

@@ -3,7 +3,7 @@
 //
 // Храповик канонічного UI-API в `apps/web/src`.
 //
-// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Шість метрик, усі — «скільки місць вживає
+// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Одинадцять метрик, усі — «скільки місць вживає
 // НЕканонічний спосіб зробити те, що має канонічний»:
 //
 //   1. `legacyButton`  — легасі-варіанти `<Button>` (`primary`, `secondary`,
@@ -27,6 +27,34 @@
 //      ієрархію тримають кегль і вага. Декор (`bg-`/`border-`/`stroke-
 //      hero-ink/NN`) метрика не чіпає.
 //
+//   7. `hoverMotion` — `hover:scale-*`, `active:scale-*`, `hover:-translate-y-*`,
+//      `hover:shadow-glow*` (з будь-яким префіксом-варіантом: `group-hover:`,
+//      `md:hover:` тощо). Рух на hover/press не входить у канон.
+//   8. `enterMotion` — вхідна анімація: класи `animate-stagger-in`, `page-enter`
+//      і JSX-використання `<StaggerChild`. Саму обгортку (імпорт, визначення)
+//      не рахуємо, лише call-site-и.
+//   9. `glass` — `backdrop-blur-*` (будь-який суфікс, включно з голим
+//      `backdrop-blur`).
+//  10. `bigRadius` — `rounded-xl|2xl|3xl|full` і їхні сторонні форми
+//      (`rounded-t-2xl`, `rounded-tl-xl`, `rounded-ss-full`, …), з будь-яким
+//      префіксом-варіантом. `rounded-full` легальний лише у файлах з
+//      `ROUNDED_FULL_ALLOWLIST` (список шляхів нижче, причина на кожен).
+//      Allowlist ПОФАЙЛОВИЙ, а не порядковий: у такому файлі дозволено ВСІ
+//      `rounded-full`, зате `rounded-xl|2xl|3xl` рахуються скрізь. Порядковий
+//      allowlist (за `// ui-canon-allow`) відхилено: це ще один спосіб
+//      обійти гейт одним коментарем.
+//  11. `kicker` — проп `eyebrow` (кікер) на `<SectionHeading`. Назва пропа в
+//      `SectionHeading.tsx` саме `eyebrow` (супутні `eyebrowTone|As|Id` не
+//      рахуються: без `eyebrow` вони безглузді). Скануємо РІВНО тег
+//      `<SectionHeading`, як метрику кнопки.
+//
+// Нові метрики 7-11 (CSS не скануємо: там ВИЗНАЧЕННЯ утиліт) стартують зі
+// стелі = факт на момент заведення, потім лише вниз. Без запису в
+// `.tech-debt/ui-canon-budget.json` гейт падає голосно (exit 1, «немає
+// baseline»), а не приймає поточне значення: стартове число вписується
+// `--update` не вміє (воно лише ЗНИЖУЄ), тож перший baseline нових ключів
+// пишеться руками разом з абзацом у `rationale`.
+//
 // Додаєш метрику — це рівно пʼять місць (константа канону → гілка скану →
 // ключ у лічильниках → число + абзац у бюджеті → вивід і тести), і обовʼязково
 // break-тест. Покроково: docs/start/instructions/unify-ui-to-canon.md.
@@ -49,7 +77,7 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
@@ -87,6 +115,28 @@ export const ICON_SIZE_TOKENS = {
   20: "lg",
   24: "xl",
 };
+
+/**
+ * Файли, де `rounded-full` легальний (форма об'єкта кругла за змістом, а не
+ * за смаком). Шляхи від кореня репо, з прямими слешами. Новий запис - лише з
+ * причиною.
+ */
+export const ROUNDED_FULL_ALLOWLIST = [
+  // аватар: круг і бейдж статусу на ньому
+  "apps/web/src/shared/components/ui/Avatar.tsx",
+  // спінер: кругле кільце
+  "apps/web/src/shared/components/ui/Spinner.tsx",
+  // індикатор pull-to-refresh: круглий спінер
+  "apps/web/src/shared/components/ui/PullToRefreshIndicator.tsx",
+  // чекбокс-кружок і конфеті-крапки
+  "apps/web/src/shared/components/ui/AnimatedCheckbox.tsx",
+  // перемикач: трек і кругла ручка
+  "apps/web/src/shared/components/ui/Switch.tsx",
+  // кружки звичок у місячній сітці Рутини
+  "apps/web/src/modules/routine/components/RoutineCalendarMonthGrid.tsx",
+  // скелет аватарів/кілець модулів
+  "apps/web/src/shared/components/ui/ModulePageLoader.tsx",
+];
 
 export const LEGACY_BUTTON_VARIANTS = [
   "primary",
@@ -414,6 +464,58 @@ export function scanSource(relPath, src) {
     });
   }
 
+  // ── 7-11. рух, скло, радіуси, кікер ──
+  // Без `blankComments` була б та сама фантомна згадка в докстрінгах; рядки
+  // не гасимо: класи живуть у `className="…"`.
+  const norm = relPath.replaceAll("\\", "/");
+  const simple = (metric, re, detail) => {
+    for (const x of ringSrc.matchAll(re)) {
+      hits.push({
+        metric,
+        file: relPath,
+        line: lineOf(x.index),
+        detail: detail(x[0]),
+      });
+    }
+  };
+  simple(
+    "hoverMotion",
+    /(?:hover|active):(?:scale|-translate-y|shadow-glow)[\w.[\]/-]*/g,
+    (t) => `${t} - рух/glow на hover/press поза каноном`,
+  );
+  simple(
+    "enterMotion",
+    /animate-stagger-in|page-enter|<StaggerChild(?![\w])/g,
+    (t) => `${t} - вхідна анімація поза каноном`,
+  );
+  simple("glass", /backdrop-blur[\w[\]-]*/g, (t) => `${t} - скло поза каноном`);
+  const radiusRe =
+    /(?<![\w-])rounded-(?:(?:tl|tr|bl|br|ss|se|es|ee|t|r|b|l|s|e)-)?(xl|2xl|3xl|full)(?![\w-])/g;
+  const fullOk = ROUNDED_FULL_ALLOWLIST.includes(norm);
+  for (const x of ringSrc.matchAll(radiusRe)) {
+    if (x[1] === "full" && fullOk) continue;
+    hits.push({
+      metric: "bigRadius",
+      file: relPath,
+      line: lineOf(x.index),
+      detail: `${x[0]} - великий радіус поза каноном (rounded-full лише з ROUNDED_FULL_ALLOWLIST)`,
+    });
+  }
+  const headingRe = /<SectionHeading(?![\w])/g;
+  while ((m = headingRe.exec(ringSrc))) {
+    const end = tagEnd(ringSrc, m.index + m[0].length);
+    if (end < 0) continue;
+    if (/\seyebrow(?=[=\s/>{])/.test(ringSrc.slice(m.index, end + 1))) {
+      hits.push({
+        metric: "kicker",
+        file: relPath,
+        line: lineOf(m.index),
+        detail: "проп `eyebrow` (кікер) на <SectionHeading> поза каноном",
+      });
+    }
+    headingRe.lastIndex = end + 1;
+  }
+
   return hits;
 }
 
@@ -473,6 +575,11 @@ export function counts(hits) {
     numericIconSize: 0,
     cyrillicJsxAllowlist: 0,
     heroInkAlpha: 0,
+    hoverMotion: 0,
+    enterMotion: 0,
+    glass: 0,
+    bigRadius: 0,
+    kicker: 0,
   };
   for (const h of hits) out[h.metric]++;
   return out;
@@ -526,7 +633,12 @@ function main() {
       `неканонічної непрозорості ${now.offCanonRingOpacity} (бюджет ${budget.budgets.offCanonRingOpacity}), ` +
       `числових розмірів іконок ${now.numericIconSize} (бюджет ${budget.budgets.numericIconSize}), ` +
       `файлів у allowlist кирилиці ${now.cyrillicJsxAllowlist} (бюджет ${budget.budgets.cyrillicJsxAllowlist}), ` +
-      `альфи на геро-чорнилі ${now.heroInkAlpha} (бюджет ${budget.budgets.heroInkAlpha}).`,
+      `альфи на геро-чорнилі ${now.heroInkAlpha} (бюджет ${budget.budgets.heroInkAlpha}), ` +
+      `hover/press-руху ${now.hoverMotion} (бюджет ${budget.budgets.hoverMotion}), ` +
+      `вхідної анімації ${now.enterMotion} (бюджет ${budget.budgets.enterMotion}), ` +
+      `скла ${now.glass} (бюджет ${budget.budgets.glass}), ` +
+      `великих радіусів ${now.bigRadius} (бюджет ${budget.budgets.bigRadius}), ` +
+      `кікерів ${now.kicker} (бюджет ${budget.budgets.kicker}).`,
   );
 
   const over = Object.keys(now).filter((k) => now[k] > budget.budgets[k]);
@@ -563,6 +675,6 @@ function main() {
   return 1;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   process.exit(main());
 }

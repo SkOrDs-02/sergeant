@@ -7,44 +7,27 @@ import { cn } from "@shared/lib/ui/cn";
 import { useShortcutGlyph } from "@shared/hooks";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
-import { BrandLogo } from "./BrandLogo";
 import { messages } from "@shared/i18n/uk";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import type { User } from "@sergeant/shared";
-import {
-  formatKyivNominativeDate,
-  getKyivGreeting,
-} from "@shared/lib/time/greeting";
+import { formatKyivNominativeDate } from "@shared/lib/time/greeting";
+import { coreMessages } from "@shared/i18n/uk.core";
+import { useHubDayCounts } from "../hub/now/hubDayCounts";
 import { NotificationBell, type HubNotification } from "./NotificationBell";
 import type { HubView } from "../hooks/useHubUIState";
 
-// PR-H2 (аудит 2026-09-13 хвиля 5): привітання — єдиний видимий текст на
-// всіх чотирьох вкладках хаба, і назва вкладки живе лише в sr-only `<h1>`
-// (1×1 px), тобто людина не бачить, де вона — «Налаштування» виглядають як
-// ще один екран хаба. Дашборд лишається без підпису (привітання й так read
-// as «Головна» — це домашній екран), решта трьох отримують видиму назву
-// ПІД привітанням, а не замість нього: привітання — навмисний ink-якір
-// «мови Папір» (див. коментар нижче над Row 2), підпис лише додає
-// орієнтир, не конкурує з ним за вагу.
+// Мова H (redesign v3): H1 вкладки «Головна» - сьогоднішня дата, решти
+// вкладок - їхня назва. Привітання за часом доби знято (каталог п. 1).
 const HUB_TAB_TITLES: Partial<Record<HubView, string>> = {
   reports: messages.nav.reports,
   profile: messages.nav.profile,
   settings: messages.nav.settings,
 };
 
-// WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
-// Material 3 / iOS HIG — 48 dp / 44 pt як thumb-comfort бейзлайн. На мобільному
-// (палець, без хіт-зони курсору) робимо 48 пкс; ≥sm — 44 пкс достатньо.
-// Focus-ring: суцільний brand-500 (без /45 альфи), щоб гарантовано холдити
-// ≥3:1 контраст до bg в dark-mode (alpha на panelHi-підкладках просідала).
-// Sergeant v2 redesign (2026-05, PR-5) — icon button radius tightened
-// `rounded-2xl` (16 px) → `rounded-xl` (12 px) per handoff spec. The
-// 12 px CONTROL tier matches Button/Badge sizing and aligns the header
-// chrome with the new floating-glass HubBottomNav pill (which uses
-// `rounded-3xl` on the outer container).
+// Дві кнопки-іконки 44 px праворуч: Сержант і пошук. Радіус 8, як у кнопок.
 const ICON_BUTTON_CLS =
-  "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "w-11 h-11 flex items-center justify-center rounded-lg text-text hover:bg-panel transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 interface HubHeaderProps {
   onOpenSearch: () => void;
@@ -71,45 +54,40 @@ export function HubHeader({
   notifications,
   activeTab,
 }: HubHeaderProps) {
-  const greetingText = useMemo(() => {
-    const base = getKyivGreeting();
-    const name = user?.name?.split(" ")[0];
-    return name ? `${base}, ${name}` : base;
-  }, [user?.name]);
-
   const dateStr = useMemo(() => formatKyivNominativeDate(), []);
   const { modK } = useShortcutGlyph();
   const tabTitle = activeTab ? HUB_TAB_TITLES[activeTab] : undefined;
+  const counts = useHubDayCounts();
 
   return (
     <header
       className={cn(
         "px-5 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full",
-        "shrink-0 z-40 pt-6 pb-2.5",
+        "shrink-0 z-40 pt-6 pb-2",
       )}
     >
-      {/* ── Row 1: Mark + Wordmark + Action icons ─────────────── */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <BrandLogo as="span" size="lg" variant="mark" />
-          {/* На вузьких екранах wordmark не вміщається поруч із 4-кнопковим
-              action-кластером і обрізався до «Sergea…» (design-audit F6) —
-              нижче sm лишаємо тільки mark — стандартний mobile-патерн
-              header-а. */}
-          <span className="sr-only sm:not-sr-only sm:block truncate text-style-title leading-tight font-extrabold tracking-tight text-text select-none">
-            Sergeant
-          </span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {/* `<p>`, не `<h1>`: семантичний h1 кожної вкладки вже стоїть у
+              контенті (sr-only), другий інвертував би структуру заголовків. */}
+          <p
+            data-testid="hub-header-title"
+            className="text-style-headline-lg text-text"
+          >
+            {tabTitle ?? dateStr}
+          </p>
+          {!tabTitle && counts.now !== null && (
+            <p className="mt-1 text-style-label tnum text-muted">
+              {coreMessages.hub.daySummary.now} {counts.now} ·{" "}
+              {coreMessages.hub.daySummary.closed} {counts.closed ?? 0}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
           <span data-sync-status-slot className="contents" />
-          {/* Global AI-assistant entry. Lives in the hub top-bar so it is
-              reachable from every hub tab and does not depend on the
-              dashboard-only FTUX-gated FAB (which vanished on the empty
-              home + on the reports/profile tabs — user report 2026-07-03).
-              Brand-tinted so it reads as the primary AI affordance rather
-              than neutral chrome. Opens the chat bottom-sheet via the hub
-              bus, same contract as the module-shell assistant buttons. */}
+          {/* Один явний вхід до Сержанта на хабі: відкриває аркуш чату через
+              шину, той самий контракт, що й у шапці модуля. */}
           <Tooltip
             content={messages.nav.openAssistant}
             placement="bottom-center"
@@ -121,13 +99,7 @@ export function HubHeader({
                 emitHubBus("openChat", { message: null, autoSend: false });
               }}
               aria-label={messages.nav.openAssistant}
-              className={cn(
-                "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl",
-                // Той самий темний варіант, що в активній пігулці нижньої
-                // навігації: статичний stone-800 зливався з темним тлом.
-                "bg-brand-strong text-white hover:bg-brand-strong/90 dark:bg-brand-400 dark:text-bg dark:hover:bg-brand-400/90 transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-              )}
+              className={ICON_BUTTON_CLS}
             >
               <Icon name="sergeant" size="lg" />
             </button>
@@ -147,16 +119,10 @@ export function HubHeader({
             </button>
           </Tooltip>
 
+          {/* Дзвоник рендериться лише коли є системне сповіщення (оновлення
+              застосунку, встановлення PWA). */}
           <NotificationBell notifications={notifications ?? []} />
 
-          {/* Меню «⋯» (тема + рядок приватності) знято оглядом 2026-09-04:
-              тема живе в Налаштуваннях → «Головна» → «Вигляд» разом із
-              рештою вигляду, рядок приватності лише відкривав секцію
-              «Дані та приватність». Шапка: Сержант · Пошук · Дзвоник
-              (+ «Увійти» для гостя) — у межах A3 (≤5 контролів). */}
-
-          {/* Sign-in entry-point for guests only. Signed-in users reach
-              their account via the `Профіль` bottom-nav tab. */}
           {!user && !authLoading && !hideAuthButton && onShowAuth && (
             <Tooltip content="Увійти" placement="bottom-center">
               <button
@@ -171,48 +137,6 @@ export function HubHeader({
           )}
         </div>
       </div>
-
-      {/* ── Row 2: Greeting · date (hidden when shrunk) ───────── */}
-      {/* Раніше тут було ще rows-2 з підписом «ОПЕРАТИВНИЙ ЦЕНТР» — */}
-      {/* він дублював wordmark «Sergeant» зверху. Лишаємо лише */}
-      {/* greeting+date, бо це справжній сигнальний шар (час доби, */}
-      {/* персональне звернення), а тег «оперативний центр» — */}
-      {/* брендовий шум, який забирав вертикальний простір. */}
-      {/* Мова «Папір» П2/П3: на світлій темі хаб не мав композиційного
-          якоря — привітання шепотіло `text-sm text-muted`, і найсильнішим
-          елементом екрана випадково ставав демо-банер. Привітання стає
-          ink-якорем (display-вага), дата — mono-мета: число живе в
-          JetBrains Mono, як усі технічні значення Sergeant. */}
-      <p className="mt-2 ms-[3px] flex flex-wrap items-baseline gap-x-2">
-        {/* Роль, не розмір (D8-sweep, Р1): привітання — це H1 хаба,
-            якір екрана з мови «Папір» (П2), а не заголовок секції.
-            `truncate` живе лише на привітанні: довге імʼя не повинно
-            зʼїдати дату — вона переноситься на новий рядок замість
-            того, щоб зникати разом з привітанням на вузьких екранах. */}
-        <span className="text-style-headline text-text truncate min-w-0">
-          {greetingText}
-        </span>
-        {dateStr && (
-          <span className="flex items-baseline gap-x-2">
-            <span className="text-subtle" aria-hidden="true">
-              ·
-            </span>
-            <span className="font-mono text-style-caption text-muted tabular-nums">
-              {dateStr}
-            </span>
-          </span>
-        )}
-      </p>
-      {tabTitle && (
-        // Видимий орієнтир вкладки (PR-H2): без нього привітання лишається
-        // єдиним видимим текстом верхніх 200px на Налаштуваннях/Профілі/
-        // Звʼязках, і скрін виглядає як ще одна картка хаба, не окрема
-        // сторінка. `text-style-label` навмисно слабший за привітання —
-        // це підпис, а не другий якір.
-        <p className="mt-0.5 ms-[3px] text-style-label text-muted">
-          {tabTitle}
-        </p>
-      )}
     </header>
   );
 }

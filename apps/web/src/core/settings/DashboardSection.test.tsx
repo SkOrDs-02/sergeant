@@ -86,15 +86,15 @@ describe("DashboardSection", () => {
     expect(screen.queryByText("Показувати підказки")).not.toBeInTheDocument();
   });
 
-  it("під віссю дії лишає два тумблери вигляду: «Порада й тиждень» і «Лічильник записів»", () => {
+  it("під віссю дії лишає один тумблер вигляду: «Порада й тиждень»", () => {
     renderSection();
     openSection();
     expect(
       screen.getByRole("switch", { name: "Порада й тиждень" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("switch", { name: "Лічильник записів" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("switch", { name: "Лічильник записів" }),
+    ).toBeNull();
     expect(screen.queryByText("Чистий режим")).toBeNull();
     expect(screen.queryByText("Адаптивний порядок")).toBeNull();
     expect(screen.queryByText("Картка «Сьогодні»")).toBeNull();

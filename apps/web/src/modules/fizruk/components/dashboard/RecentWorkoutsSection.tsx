@@ -72,19 +72,7 @@ export function RecentWorkoutsSection({
   onSeeAll,
 }: RecentWorkoutsSectionProps) {
   return (
-    // П3 «край і зріз»: список завершених тренувань — це журнал звітів
-    // (дата, тривалість, тоннаж), тест «існує як аркуш» проходить, тож
-    // `edge="stub"`. Скло (`prominence="glass"`) прибрано навмисно: скло й
-    // документ — дві різні мови для тієї самої поверхні (прозора площина
-    // проти паперового аркуша), і вони конфліктують. Обрано документ —
-    // саме він несе продуктовий смисл цієї секції; прозорість тут була
-    // суто декоративною.
-    <Card
-      as="section"
-      edge="stub"
-      padding="none"
-      aria-label="Останні тренування"
-    >
+    <Card as="section" padding="none" aria-label="Останні тренування">
       <div className="p-4">
         <div className="flex items-baseline justify-between gap-2 mb-3">
           <SectionHeading as="h2" size="xs" variant="fizruk">

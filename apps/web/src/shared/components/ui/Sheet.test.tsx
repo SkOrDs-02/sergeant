@@ -72,7 +72,7 @@ describe("Sheet", () => {
     );
     // Sheet is portaled to <body>, so query against the document, not the
     // RTL container (which only owns the mount wrapper).
-    const handleSelector = 'div[aria-hidden][class*="rounded-full"]';
+    const handleSelector = 'div[aria-hidden][class*="w-9"]';
     expect(document.body.querySelector(handleSelector)).not.toBeNull();
     rerender(
       <Sheet open onClose={() => {}} title="T" hideHandle>

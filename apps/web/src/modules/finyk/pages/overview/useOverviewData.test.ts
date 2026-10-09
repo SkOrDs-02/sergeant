@@ -5,13 +5,13 @@
  * The hook computes ~25 derived values from the mono data slice and finyk
  * storage. We supply stub objects for both inputs and verify the pure
  * derivations: networth, spent, income, budget alerts, projection ratios,
- * debt/receivable totals, and the first-insight banner flag.
+ * debt/receivable totals, and the hasAnyData flag.
  *
  * We do NOT test effects that write back to storage (saveNetworthSnapshot)
  * or fire analytics — those are side-effecting branches exercised by e2e.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, renderHook } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import { useOverviewData } from "./useOverviewData";
 import type { UseOverviewDataParams } from "./useOverviewData";
@@ -563,46 +563,7 @@ describe("useOverviewData", () => {
     });
   });
 
-  describe("first-insight banner", () => {
-    it("showFirstInsight is true when the seen-key is absent from localStorage", () => {
-      localStorage.removeItem("finyk_first_insight_seen_v1");
-      const { result } = renderHook(() =>
-        useOverviewData({
-          mono: buildMono(),
-          storage: buildStorage(),
-        }),
-      );
-      expect(result.current.showFirstInsight).toBe(true);
-    });
-
-    it("showFirstInsight is false when budgets already exist", () => {
-      // Підказка кличе поставити бюджет; людині з бюджетами вона лише
-      // відсуває першу цифру огляду вниз.
-      localStorage.removeItem("finyk_first_insight_seen_v1");
-      const { result } = renderHook(() =>
-        useOverviewData({
-          mono: buildMono(),
-          storage: buildStorage({
-            budgets: [
-              { id: "b1", type: "limit", categoryId: "food", limit: 5000 },
-            ] as UseOverviewDataParams["storage"]["budgets"],
-          }),
-        }),
-      );
-      expect(result.current.showFirstInsight).toBe(false);
-    });
-
-    it("showFirstInsight is false when the seen-key is present", () => {
-      localStorage.setItem("finyk_first_insight_seen_v1", "1");
-      const { result } = renderHook(() =>
-        useOverviewData({
-          mono: buildMono(),
-          storage: buildStorage(),
-        }),
-      );
-      expect(result.current.showFirstInsight).toBe(false);
-    });
-
+  describe("hasAnyData", () => {
     it("hasAnyData is true when manualExpenses has entries", () => {
       const manualExpenses = [
         {
@@ -643,22 +604,6 @@ describe("useOverviewData", () => {
         }),
       );
       expect(result.current.hasAnyData).toBe(false);
-    });
-
-    it("handleSetBudgetFromInsight dismisses the banner and navigates to budgets", () => {
-      const onNavigate = vi.fn();
-      const { result } = renderHook(() =>
-        useOverviewData({
-          mono: buildMono(),
-          storage: buildStorage(),
-          onNavigate,
-        }),
-      );
-
-      act(() => result.current.handleSetBudgetFromInsight());
-
-      expect(result.current.showFirstInsight).toBe(false);
-      expect(onNavigate).toHaveBeenCalledWith("budgets");
     });
   });
 
@@ -804,7 +749,6 @@ describe("useOverviewData", () => {
       expect(keys).toContain("income");
       expect(keys).toContain("budgetAlerts");
       expect(keys).toContain("plannedFlows");
-      expect(keys).toContain("showFirstInsight");
       expect(keys).toContain("hasAnyData");
       expect(keys).toContain("dayBudget");
       expect(keys).toContain("projectedSpend");

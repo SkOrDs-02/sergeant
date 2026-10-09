@@ -1009,3 +1009,61 @@ describe("@sergeant/design-tokens — `fizruk-surface`: темна пара за
     expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
   });
 });
+
+// Мова H (redesign v3, PR1): пари з таблиці `redesign-v3.md § Токени`, як їх
+// реально малює `theme.css`. Тинт модуля несе текст лише чорнилом, у hue лише
+// ярлик, тому гейт міряє саме ці дві ролі на тинті.
+describe("@sergeant/design-tokens — мова H: сторінка, панель, тинт", () => {
+  const CSS = THEME_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
+  // Тіла всіх блоків із точним селектором: `:root` у файлі кілька.
+  const blocks = (selector) =>
+    CSS.split("}")
+      .map((chunk) => chunk.split("{").slice(-2))
+      .filter(
+        ([head, body]) =>
+          body !== undefined &&
+          head.trim().split("\n").pop().trim() === selector,
+      )
+      .map(([, body]) => body);
+  const read = (selector, name) => {
+    for (const body of blocks(selector)) {
+      const d = new RegExp(`${name}:\\s*(\\d+\\s+\\d+\\s+\\d+)\\s*;`).exec(
+        body,
+      );
+      if (d) return rgbTripleToHex(d[1]);
+    }
+    throw new Error(`${name} не знайдено в ${selector}`);
+  };
+  const MODULES = ["finyk", "fizruk", "routine", "nutrition"];
+
+  for (const theme of [":root", ".dark"]) {
+    const tag = theme === ":root" ? "світла" : "темна";
+    it(`${tag}: чорнило на сторінці й панелі ≥ 7:1`, () => {
+      for (const bg of ["--c-bg", "--c-panel"]) {
+        expect(
+          contrastRatio(read(theme, "--c-text"), read(theme, bg)),
+        ).toBeGreaterThanOrEqual(7);
+      }
+    });
+    it(`${tag}: другий і третій сірий на сторінці, панелі й полі ≥ 4.5:1`, () => {
+      for (const fg of ["--c-muted", "--c-subtle"]) {
+        for (const bg of ["--c-bg", "--c-panel", "--c-panel-hi"]) {
+          const r = contrastRatio(read(theme, fg), read(theme, bg));
+          expect(r, `${fg} на ${bg} → ${r.toFixed(2)}`).toBeGreaterThanOrEqual(
+            4.5,
+          );
+        }
+      }
+    });
+    for (const m of MODULES) {
+      it(`${tag}: ${m} - чорнило і ярлик на тинті ≥ 4.5:1`, () => {
+        const tint = read(theme, `--c-${m}-tint`);
+        expect(
+          contrastRatio(read(theme, "--c-text"), tint),
+        ).toBeGreaterThanOrEqual(7);
+        const r = contrastRatio(read(theme, `--c-${m}-tint-label`), tint);
+        expect(r, `${m} ярлик → ${r.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+});

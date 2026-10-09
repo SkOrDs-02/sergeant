@@ -1,8 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { messages } from "@shared/i18n/uk";
-import { Banner } from "@shared/components/ui/Banner";
-import { Icon } from "@shared/components/ui/Icon";
+import { Notice } from "@shared/components/ui/Notice";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
 import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
@@ -63,17 +62,9 @@ export function ExperimentalSection() {
     // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
     <SettingsGroup title={settingsSectionTitle("experimental")} icon="tool">
       <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
-      <Banner variant="warning" role="note" className="flex items-start gap-3">
-        <Icon
-          name="alert-triangle"
-          size="md"
-          className="text-warning-strong dark:text-warning shrink-0 mt-0.5"
-          aria-hidden
-        />
-        <p className="text-style-caption text-text leading-snug">
-          {copy.warningBanner}
-        </p>
-      </Banner>
+      <Notice tone="ink" role="note">
+        {copy.warningBanner}
+      </Notice>
       {!acknowledged && (
         <div className="flex items-start gap-3 text-text">
           <input

@@ -20,18 +20,15 @@ import {
   WORKOUT_BANNER_INSET_VAR,
 } from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon, type IconName } from "./Icon";
+import { Icon } from "./Icon";
 // AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
 // каталог тягне з собою десять модульних файлів плюс en-копію
 // (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 
-// «Чорнило» v3.1 § 5 — hybrid toast, not a full saturated fill. Base is the
-// same `surface-hi` (#3a302b dark / #f6f5f2 light) + `text-ink` for every
-// type; only the left stripe, icon, and Undo-action carry the semantic
-// colour. Error additionally gets a full-perimeter `danger/35` border
-// instead of the neutral `line/8` hairline. Colour-coding reads from the
-// stripe + icon alone — a saturated fill is no longer needed.
+// Мова H (redesign v3): один рядок факту на плаваючій поверхні. Без
+// кольорової смужки ліворуч і без іконки; тип читається з тексту, помилку
+// додатково тримає бордер `danger`.
 const BASE = "bg-panelHi text-ink";
 
 const BORDER: Record<ToastType, string> = {
@@ -49,27 +46,6 @@ const ACCENT_TEXT: Record<ToastType, string> = {
   error: "text-danger-strong dark:text-red-400",
   warning: "text-warning-strong dark:text-amber-400",
   info: "text-info-strong dark:text-sky-400",
-};
-
-const ACCENT_STRIPE: Record<ToastType, string> = {
-  success: "bg-success-strong dark:bg-emerald-400",
-  error: "bg-danger-strong dark:bg-red-400",
-  warning: "bg-warning-strong dark:bg-amber-400",
-  info: "bg-info-strong dark:bg-sky-400",
-};
-
-const ICON_WRAP: Record<ToastType, string> = {
-  success: "motion-safe:animate-check-pop",
-  error: "",
-  warning: "",
-  info: "",
-};
-
-const ICON_NAME: Record<ToastType, IconName> = {
-  success: "check",
-  error: "x-circle",
-  warning: "alert-triangle",
-  info: "alert-circle",
 };
 
 /**
@@ -244,7 +220,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
         // Elevation e5 — toast tier. Toasts are the top-most
         // ephemeral surface; the tray sits on `z-toast` (300), above
         // modals/sheets (200) even when both stacks are visible.
-        "text-style-label pointer-events-auto w-full pl-5 pr-4 py-3 rounded-2xl shadow-e5 relative overflow-hidden",
+        "text-style-label pointer-events-auto w-full px-4 py-3 rounded-xl shadow-e5 relative overflow-hidden",
         "flex items-center gap-2.5 outline-none",
         "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "touch-pan-y", // allow vertical scroll, capture horizontal swipe
@@ -271,27 +247,6 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
       data-toast-id={toast.id}
       data-toast-type={toast.type}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "absolute left-0 top-0 bottom-0 w-[3px]",
-          ACCENT_STRIPE[toast.type],
-        )}
-      />
-      <span
-        className={cn(
-          "shrink-0 inline-flex items-center justify-center",
-          ACCENT_TEXT[toast.type],
-          ICON_WRAP[toast.type],
-        )}
-      >
-        <Icon
-          name={ICON_NAME[toast.type]}
-          size="md"
-          strokeWidth={2.5}
-          aria-hidden
-        />
-      </span>
       <span className="min-w-0 flex-1 leading-snug">
         {toast.msg}
         {toast.repeat > 1 && (
@@ -301,7 +256,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
           // вежу з ідентичних тостів.
           <span
             className={cn(
-              "ml-1.5 inline-block align-middle rounded-full px-1.5 py-px",
+              "ml-1.5 inline-block align-middle rounded-md px-1.5 py-px",
               "text-style-caption font-semibold bg-line/15",
               ACCENT_TEXT[toast.type],
             )}
@@ -322,7 +277,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
             }
           }}
           className={cn(
-            "shrink-0 px-2.5 py-1 rounded-xl bg-line/10 hover:bg-line/20 transition-colors font-semibold",
+            "shrink-0 px-2.5 py-1 rounded-lg bg-line/10 hover:bg-line/20 transition-colors font-semibold",
             ACCENT_TEXT[toast.type],
             "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
           )}
@@ -335,7 +290,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
           type="button"
           onClick={() => dismiss(toast.id)}
           className={cn(
-            "shrink-0 px-2.5 py-1 rounded-xl text-muted hover:text-text hover:bg-line/10 transition-colors font-semibold",
+            "shrink-0 px-2.5 py-1 rounded-lg text-muted hover:text-text hover:bg-line/10 transition-colors font-semibold",
             "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
           )}
         >

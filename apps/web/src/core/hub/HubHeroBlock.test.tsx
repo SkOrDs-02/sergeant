@@ -42,18 +42,6 @@ vi.mock("../onboarding/ReEngagementCard", () => ({
     </button>
   ),
 }));
-vi.mock("../onboarding/ModuleChecklist", () => ({
-  ModuleChecklist: ({ onAction }: { onAction: (action: string) => void }) => (
-    <>
-      <button type="button" onClick={() => onAction("log")}>
-        checklist
-      </button>
-      <button type="button" onClick={() => onAction("view_analytics")}>
-        checklist-view-analytics
-      </button>
-    </>
-  ),
-}));
 vi.mock("../onboarding/OnboardingProgress", () => ({
   OnboardingProgress: () => <div>onboarding progress</div>,
 }));
@@ -100,7 +88,6 @@ function renderHero(overrides: Partial<HubHeroProps> = {}) {
   const props: HubHeroProps = {
     onOpenModule: vi.fn(),
     onShowAuth: vi.fn(),
-    user: null,
     hasRealEntry: false,
     sessionDays: 2,
     entryCount: 1,
@@ -112,7 +99,6 @@ function renderHero(overrides: Partial<HubHeroProps> = {}) {
     focus: null,
     dismiss: vi.fn(),
     primaryModule: undefined,
-    showChecklist: false,
     activeModules: [],
     goals: {
       finykBudget: null,
@@ -191,41 +177,45 @@ describe("HubHeroBlock", () => {
     const { props } = renderHero({
       hasRealEntry: true,
       crossModulePreviewSource: "finyk",
-      showChecklist: true,
       primaryModule: "routine",
+      checklist: {
+        moduleId: "routine",
+        steps: [
+          {
+            id: "s1",
+            label: "Крок",
+            done: false,
+            provenByData: false,
+            action: "log_meal",
+          },
+        ],
+      },
     });
-    fireEvent.click(screen.getByText("checklist"));
-    expect(openActionMock).toHaveBeenCalledWith("routine", "log");
+    fireEvent.click(screen.getByRole("button", { name: "Зробити: Крок" }));
+    expect(openActionMock).toHaveBeenCalledWith("routine", "log_meal");
     expect(hasViewedFinykAnalytics()).toBe(false);
     fireEvent.click(screen.getByText("cross preview"));
     expect(props.dismissCrossModulePreview).toHaveBeenCalled();
   });
 
-  // Цей тест раніше стверджував ПРОТИЛЕЖНЕ — що тап ставить відмітку, —
-  // і був неправильний разом із кодом. Диспатч `view_analytics` не
-  // відкриває аналітику: `useAppEffects` передає далі лише `module`, тож
-  // Фінік стає на дефолтній сторінці (огляд). Відмітка ж засувалась
-  // НАЗАВЖДИ, тобто чекліст зараховував крок, якого не було, — рівно той
-  // дефект, що його F3 закривав (знахідка рев'ю до PR #1106). Тепер
-  // відмітку ставить сам екран аналітики на маунті; тут перевіряємо, що
-  // тап цього НЕ робить.
-  it("does not mark analytics viewed on tap — navigation alone is not proof", () => {
-    // Модуль `useChecklistSignals` НЕ мокаємо навмисно: перевіряти, що
-    // викликали стаб, означало б перевіряти власну підміну. Тут читається
-    // справжній наслідок — той самий предикат, яким чекліст потім
-    // визначає, чи крок виконано.
+  it("checklist row navigates without marking the step done", () => {
+    renderHero({
+      primaryModule: "finyk",
+      checklist: {
+        moduleId: "finyk",
+        steps: [
+          {
+            id: "s2",
+            label: "Аналітика",
+            done: false,
+            provenByData: false,
+            action: "view_analytics",
+          },
+        ],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Зробити: Аналітика" }));
     expect(hasViewedFinykAnalytics()).toBe(false);
-    renderHero({ showChecklist: true, primaryModule: "finyk" });
-    fireEvent.click(screen.getByText("checklist-view-analytics"));
-    expect(hasViewedFinykAnalytics()).toBe(false);
-    // Навігація при цьому таки диспатчиться — тап лишається навігацією.
     expect(openActionMock).toHaveBeenCalledWith("finyk", "view_analytics");
-  });
-
-  it("does not mark analytics viewed for view_analytics on a non-finyk module", () => {
-    renderHero({ showChecklist: true, primaryModule: "routine" });
-    fireEvent.click(screen.getByText("checklist-view-analytics"));
-    expect(hasViewedFinykAnalytics()).toBe(false);
-    expect(openActionMock).toHaveBeenCalledWith("routine", "view_analytics");
   });
 });

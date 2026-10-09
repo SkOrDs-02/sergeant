@@ -68,9 +68,9 @@ describe("ServerErrorPage", () => {
     }).not.toThrow();
   });
 
-  it("renders the server error illustration", () => {
+  it("мова H: ілюстрацію server error не рендерить", () => {
     render(<ServerErrorPage />);
-    expect(screen.getByTestId("server-error-illustration")).toBeInTheDocument();
+    expect(screen.queryByTestId("server-error-illustration")).toBeNull();
   });
 
   it("renders inside a main landmark element", () => {

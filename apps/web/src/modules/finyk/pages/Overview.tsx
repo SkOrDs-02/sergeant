@@ -10,7 +10,6 @@ import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
 
-import { FirstInsightBanner } from "./overview/FirstInsightBanner";
 import { FinykInsightsBlock } from "../components/FinykInsightsBlock";
 import { HeroCard } from "./overview/HeroCard";
 import { OverviewTextRows } from "./overview/OverviewTextRows";
@@ -25,15 +24,8 @@ import { webKVStore } from "@shared/lib/storage/storage";
 import { MonoStalenessBanner } from "./overview/MonoStalenessBanner";
 import { LocalOnlyDataBanner } from "../../../core/durability/LocalOnlyDataBanner";
 import { useMonoStaleness } from "./overview/useMonoStaleness";
-import { ImportReminderBanner } from "./overview/ImportReminderBanner";
-import { useImportReminder } from "./overview/useImportReminder";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId";
-import { useFlag } from "../../../core/lib/featureFlags";
-import {
-  ANALYTICS_EVENTS,
-  trackEvent,
-} from "../../../core/observability/analytics";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -52,8 +44,6 @@ interface OverviewProps {
    */
   onOpenAuth: () => void;
   showBalance?: boolean;
-  /** Відкриває аркуш масового імпорту — той самий, що дія FAB. */
-  onOpenBulkImport?: (() => void) | undefined;
   /**
    * Відкриває Налаштування Hub на секції Фініка (`FinykWebhookServiceSection`
    * — саме там живе форма перепідключення токена). Без нього CTA staleness-
@@ -82,7 +72,6 @@ export function Overview({
   onNavigate,
   onOpenAuth,
   showBalance = true,
-  onOpenBulkImport,
   onOpenSettings,
 }: OverviewProps) {
   const navigate = useNavigate();
@@ -110,30 +99,14 @@ export function Overview({
     webhookActive: webhookSyncState?.webhookActive ?? false,
   });
 
-  // Плашка «залий документи» (спека finyk-import-reminders.md). Той самий
-  // предикат, яким `LocalOnlyDataBanner` вирішує показ, служить тут двом
-  // цілям: у незасинхронізованого користувача немає серверної історії
-  // імпортів (питати нема про що), і саме його банер має пріоритет над
-  // цією плашкою.
   const localUserId = useLocalUserId();
   const isSynced = localUserId !== null && isSyncableUserId(localUserId);
-  const importRemindersEnabled = useFlag("finyk_import_reminder");
-  const importReminder = useImportReminder({
-    enabled: isSynced && importRemindersEnabled,
-  });
 
-  // Бюджет плашок угорі Огляду — рівно одна. Порядок за незворотністю
-  // втрати: «дані можуть зникнути назавжди» > «банк мовчить» > «картина
-  // неповна» > FTUX-підказка. Четверта плашка перетворила б верх сторінки
-  // на стіну попереджень, де не читають жодної.
+  // Над Оглядом щонайбільше один системний сигнал: «дані можуть зникнути
+  // назавжди» важливіше за «банк мовчить».
   const showLocalOnlyBanner = localUserId !== null && !isSynced;
   const showStalenessBanner =
     !showLocalOnlyBanner && monoStaleness.stale && monoStaleness.days !== null;
-  const showImportReminder =
-    !showLocalOnlyBanner &&
-    !showStalenessBanner &&
-    importReminder.reminder !== null &&
-    onOpenBulkImport !== undefined;
 
   const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
     data: d.loadingTx && d.realTx.length === 0 ? undefined : d.realTx,
@@ -202,32 +175,6 @@ export function Overview({
                 />
               )}
 
-              {showImportReminder && importReminder.reminder && (
-                <ImportReminderBanner
-                  source={importReminder.reminder.source}
-                  daysSince={importReminder.reminder.daysSince}
-                  expectedIntervalDays={
-                    importReminder.reminder.expectedIntervalDays
-                  }
-                  onAddDocuments={() => {
-                    trackEvent(ANALYTICS_EVENTS.FINYK_IMPORT_REMINDER_CLICKED, {
-                      source: importReminder.reminder?.source,
-                      daysSince: importReminder.reminder?.daysSince,
-                    });
-                    onOpenBulkImport?.();
-                  }}
-                  onSnooze={importReminder.snooze}
-                  onMute={importReminder.mute}
-                />
-              )}
-
-              {d.showFirstInsight && d.hasAnyData && (
-                <FirstInsightBanner
-                  onSetBudget={d.handleSetBudgetFromInsight}
-                  onDismiss={d.dismissFirstInsight}
-                />
-              )}
-
               {!d.hasAnyData ? (
                 // Рішення founder-а 2026-07-25: перший вхід у finyk — порожній
                 // екран із ненавʼязливими підказками. До цього новачок бачив
@@ -265,7 +212,6 @@ export function Overview({
                     onOpenDay={(dayKey) =>
                       navigate(`/finyk/transactions?date=${dayKey}`)
                     }
-                    suppressMonthStripHint={d.showFirstInsight}
                   />
 
                   <OverviewTextRows

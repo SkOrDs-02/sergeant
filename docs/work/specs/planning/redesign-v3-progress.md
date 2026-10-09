@@ -1,20 +1,20 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-09 by @claude (PR0 копі). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-09 by @claude (PR1 токени й примітиви). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
 
-| PR  | Гілка                    | Bitbucket PR | Стан      | Позиції каталогу § 2                      |
-| --- | ------------------------ | ------------ | --------- | ----------------------------------------- |
-| PR0 | `claude/redesign-v3-pr0` | #1494        | open      | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37 |
-| PR1 | `claude/redesign-v3-pr1` |              | не почато |                                           |
-| PR2 | `claude/redesign-v3-pr2` |              | не почато |                                           |
-| PR3 | `claude/redesign-v3-pr3` |              | не почато |                                           |
-| PR4 | `claude/redesign-v3-pr4` |              | не почато |                                           |
-| PR5 | `claude/redesign-v3-pr5` |              | не почато |                                           |
-| PR6 | `claude/redesign-v3-pr6` |              | не почато |                                           |
-| PR7 | `claude/redesign-v3-pr7` |              | не почато |                                           |
+| PR  | Гілка                    | Bitbucket PR | Стан      | Позиції каталогу § 2                                        |
+| --- | ------------------------ | ------------ | --------- | ----------------------------------------------------------- |
+| PR0 | `claude/redesign-v3-pr0` | #1494        | merged    | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                   |
+| PR1 | `claude/redesign-v3-pr1` | #1495        | draft     | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36 |
+| PR2 | `claude/redesign-v3-pr2` |              | не почато |                                                             |
+| PR3 | `claude/redesign-v3-pr3` |              | не почато |                                                             |
+| PR4 | `claude/redesign-v3-pr4` |              | не почато |                                                             |
+| PR5 | `claude/redesign-v3-pr5` |              | не почато |                                                             |
+| PR6 | `claude/redesign-v3-pr6` |              | не почато |                                                             |
+| PR7 | `claude/redesign-v3-pr7` |              | не почато |                                                             |
 
 ## Загальне для всіх PR
 
@@ -65,3 +65,67 @@
 - Для Vitest у цьому worktree спершу `pnpm --filter @sergeant/db-schema build` (інакше 7 файлів SQLite падають на старій схемі). Хук `guard-heavy-commands` блокує `pnpm build` без `SERGEANT_HEAVY_OK=1`; для команд верифікації спеки префікс ставити.
 - Скріншоти знімались тимчасовим Playwright-спеком (`tests/__shots__/shots.spec.ts` + `playwright.shots.config.ts`, у репо не закомічено): `applyScenario(page, world, path)` із `tests/utils/scenario.ts`, preview-білд із `VITE_E2E_SEED=true`, перед кадром клік «Ні, дякую» на банері згоди. «До» знято тим самим білдом після `git checkout origin/main -- apps/web/src packages/shared/src` і поверненням `git checkout HEAD -- ...` (видалені файли після цього прибрати з індексу).
 - Ярлик у шапці чату `ChatUsageCounter` («0/20 дій») PR0 не чіпав: це квота, а не стартер.
+
+## PR1 · токени, примітиви, гейти, доки
+
+**Стан на старті (2026-10-09).** PR0 змерджено 2026-10-09 10:12 (`e3bc5e0d5`). Джоба `check` на PR0 була червоною не від копі: `check-dead-doc-links` тест вимагає baseline рівно факту, а борг упав 240 → 239 (`--update` у PR1).
+
+**Суперечності спеки з кодом, винесені власнику до початку роботи.**
+
+1. `Banner.tsx` «зняти як клас; 18 місць». Примітив `Banner` у коді це статусний бокс (15 call-site-ів, переважно попередження й помилки: `StatusPage`, `StorageErrorBanner`, `HubBackupPanel`, налаштування інтеграцій, попередження плану Їжі). Окремо існують 16 компонентів `*Banner`, із них частина наджі (`NoBankBanner`, `FirstInsightBanner`, `FirstRunHintBanner`, `ImportReminderBanner`, `IOSInstallBanner`, `PrivacyLockBanner`, `TrialBanner`), а частина системні сигнали, зняття яких міняє поведінку (`OfflineBanner`, `StorageErrorBanner`, `MemoryOnlyStorageBanner`, `LocalOnlyDataBanner`, `MonoStalenessBanner`, `FinykManualExpenseConflictBanner`, `ActiveWorkoutBanner`, `AuthErrorBanner`).
+2. Список «Видалити разом із call-site-ами» в § Примітиви (PR1) містить `TodaySummaryStrip`, `ModuleChecklist`, `CategoryPieChart`, а їхні заміни (панель модулів, пункти онбордингу в «Зараз», бари Аналізу) спека описує в § Хаб (PR2) і § Модулі (PR3). Видалити в PR1 без заміни означає втратити навігацію в модулі з хаба й онбординг до PR2.
+
+**Рішення власника 2026-10-09 по цих двох пунктах.**
+
+1. Наджі видаляються (`NoBankBanner`, `FirstInsightBanner`, `FirstRunHintBanner`, `ImportReminderBanner`, `IOSInstallBanner`, `PrivacyLockBanner`, `TrialBanner`). Системні сигнали лишаються з тією самою поведінкою, але `Banner.tsx` видаляється, а сигнал стає одним рядком факту за H.1 (текст у небезпеці або другому сірому, без боксу й іконки) через малий примітив `Notice`.
+2. Заміни підтягуються в PR1: панель модулів замість `TodaySummaryStrip`, кроки `ModuleChecklist` як пункти «Зараз» із власним `kind`, бари Аналізу замість `CategoryPieChart`. PR2 і PR3 тоді не повторюють цю роботу, а доводять форму решти екрана.
+
+**Що зроблено.**
+
+- Токени мови H: сторінка, панель, чорнило, три сірі, hairline, контур, небезпека в `theme.css` і `inkTheme`; тинт і ярлик тинту на модуль (`--c-{m}-tint`, `--c-{m}-tint-label`), доріжка й сегмент `Segmented`; тіні карток і скло v2-простору знято (v2-змінні переписано на ті самі значення, щоб старі call-site-и не світились). Ролі типографіки: display 40, headline 26, новий headline-lg 30, title 20, overline 12 капсом.
+- `hero-ink` у пресеті тепер чорнило теми (`rgb(var(--c-text))`), а не світлий `#fdf9f3`: hero став тинтом, і білий текст на світлому тинті не читався (знайдено на скріншоті Фініка).
+- Примітиви: `Button` (радіус 8, без scale/glow/тіні, solid = чорнило, outline = контур), `Card` (`panel` / `hero` з `tone` / `receipt` / `ghost`; проп `edge` знято, `receipt` лише в чеку), `SectionHeading` (overline без риски, `muted`, `meta`, без `eyebrow`), `Segmented` (iOS-форма), `EmptyState` (без іконки, ілюстрації й «Прикладу»), `Sheet` (непрозорий, без варіанта скла), `Toast` (без смуги й іконки), `ModuleHeader` (без перемикача модулів і ряду пігулок), `HubHeader` (дата + «зараз N · закрито M», Сержант і пошук), `HubBottomNav` (непрозорий, hairline, без пігулки).
+- Нові примітиви: `Notice` (рядок факту, тони muted / ink / danger) замість `Banner`, `AddActionBar` (outline на всю ширину над tab bar) замість FAB.
+- Видалено: `Banner`, `FloatingActionButton`, `ModuleRail`, `StaggerChild`, `MotivationalFooter`, `TodaySummaryStrip`, `ModuleChecklist`, `FirstRunHintBanner`, `CategoryPieChart`, наджі `NoBankBanner`, `FirstInsightBanner`, `ImportReminderBanner`, `IOSInstallBanner`, `PrivacyLockBanner`, `TrialBanner` разом з їхніми хуками й тестами.
+- Заміни, підтягнуті з PR2 / PR3 (рішення власника 2026-10-09): `ModulePanel` (4 рядки з баром) замість рейка, кроки онбордингу як рядки «Зараз» / «Закрито» (`useChecklistNow`, `ChecklistNowRows`), `CategoryBars` (бари з привидом минулого місяця) замість donut.
+- Системні сигнали (`StatusPage`, сховище, бекап, інтеграції, попередження плану Їжі, Mono застарів, конфлікт ручної витрати, локальні дані) стали `Notice` з тією самою поведінкою.
+- Гейт `check-ui-canon-ratchet.mjs`: пʼять нових метрик (hover/press-рух, вхідна анімація, скло, великі радіуси, кікери) з break-тестами; baseline у `.tech-debt/ui-canon-budget.json`. `contrast.test.js`: пари мови H (чорнило на сторінці й панелі ≥ 7, сірі ≥ 4,5, чорнило й ярлик на тинті).
+- Доки: `anti-slop-strategy.md` (§ 3.10 «Мова H», матеріал звужено до чека, § 5 вісь хаба), канони `finyk.md` і `hub-coach.md` (журнал), мемо розриву (колонка «Закрито в PR»), `unify-ui-to-canon.md`.
+
+**Позиції каталогу.** Закрито: 1, 2, 4, 5, 6, 7, 10, 12, 17, 30. Частково: 9 (форма `Segmented`, розведення ролей далі), 13 (бари Аналізу; решта Фініка в PR3), 24-27 (іконки зняті з `Notice`, `Toast`, `EmptyState`; рядки модулів далі), 31-34 (scale, glow, скло, тіні в примітивах; хвіст у модулях під храповиком), 36 (контроли згоди через `Button`).
+
+**Верифікація** (2026-10-09, до коміту).
+
+| Команда                                      | Результат                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm --filter @sergeant/design-tokens test` | exit 0, 363 тести                                                                                                                                                                                                                                                                                                                        |
+| `pnpm --filter @sergeant/web typecheck`      | exit 0                                                                                                                                                                                                                                                                                                                                   |
+| `pnpm --filter @sergeant/web test`           | повний прогін: 1358 / 1361 файлів зелені, 6 тестів червоні; із них `Budgets.branches` виправлено (тест банера, якого більше немає), `ReceiptScanSheet` і `hubChatActions.ok` падали лише під навантаженням повного прогону (таймаут 20 с) і зелені поодинці (33 і 6 тестів). Файли, змінені після прогону, перепрогнано поодинці: зелені |
+| `node scripts/check-ui-canon-ratchet.mjs`    | exit 0, кожна метрика на baseline                                                                                                                                                                                                                                                                                                        |
+| `pnpm design:check-md`                       | exit 0                                                                                                                                                                                                                                                                                                                                   |
+| `pnpm lint:specs`                            | exit 0                                                                                                                                                                                                                                                                                                                                   |
+| `pnpm --filter @sergeant/web build`          | exit 0                                                                                                                                                                                                                                                                                                                                   |
+| `size-limit`                                 | **exit 1**: JS 1,52 MB, перевищення 12,35 kB (на `main` 24,5 kB, на PR0 22,58 kB; PR1 зменшує розрив на ~10 kB). CSS 36,71 kB ≤ 40 kB. Eager у межах бюджету                                                                                                                                                                             |
+| `pnpm --filter @sergeant/web e2e:mobile`     | 39 / 41 з першого разу; `MANUAL_EXPENSE` клікав меню FAB (спек оновлено на «Додати витрату»), `settings privacy hash` флейк. Перепрогін обох: 2 passed                                                                                                                                                                                   |
+
+Скріншоти 390×844 до (`main`) і після, світла й темна, сідер `VITE_E2E_SEED=true`: `/` (post-FTUX, світ `finyk-month`), `/finyk`, `/finyk/analytics`, `/routine` (`routine-streaks`), `/nutrition/log` (`empty`), `/fizruk` (`fizruk-active-session`). Надіслано в чат сесії.
+
+**Відхилення від спеки і чому.**
+
+- `EmptyState` лишає `description`, `hint` і `eyebrow` текстом: сторінки помилок (404, офлайн) несуть у них зміст, без них тексту не лишалось.
+- Підпис таба 12 px (`text-style-caption`), а не 10: нижня межа типографіки репо 12 px.
+- Видима дата в шапці хаба розмічена `<p>`, а не `<h1>`: семантичний `<h1>` кожної вкладки вже стоїть у контенті (sr-only), другий `h1` ламав порядок заголовків.
+- Solid-кнопки в тоні модуля лишаються на `-strong` (800), а не 700: інакше білий текст не тримає 4,5:1 на частині модулів.
+- У Фініку поруч із «Додати витрату» дві дрібніші outline-дії «Чек» і «Імпорт» (раніше в меню FAB як «Сканувати чек» і «Додати документи»): без них сканер і масовий імпорт лишались би без входу. «Документи» скорочено до «Імпорт», бо на 390 px головна кнопка переносилась на два рядки.
+- Overline капсом перекриває рішення 2026-08-06 про мінускульні кікери (спека § Типографіка).
+- Прапорець `finyk_import_reminder` і ключ `FINYK_BANK_BANNER_DISMISSED_AT_KEY` лишились без споживача: прибирання реєстру прапорців і ключів сховища в PR7.
+- `ActiveWorkoutBanner` і `OfflineBanner` лишились як chrome (не наджі): поведінку не чіпали.
+- E2E smoke-специ (`finyk-smoke`, `deep-module-crud`, `anonymous-*`, `module-navigation-expanded`, `nutrition-smoke`) і `mobile-ui-audit` переведено з FAB на кнопки `add-action-bar`; локально smoke не ганявся (потрібен Postgres), вердикт за CI `Critical-flow E2E`.
+
+**Наступному PR (PR2).**
+
+- «Зараз» ще рендерить картку-нудж (`DailyNudge`, лаймовий бокс зі смугою) і стару форму рядків інсайтів; спека PR2 дає рядки з чекбоксом і дією, без чипа «Сержант» і «×». Рядки чекліста (`ChecklistNowRows`) уже в цій формі, їх і брати за зразок.
+- Hero хаба «Витрати сьогодні · ще N» не зроблено; рядок «зараз N · закрито M» уже рахує `hubDayCounts`.
+- Модульний нав (`ModuleBottomNav`) досі з пігулкою активного таба: § Примітиви PR1 його не називає, тож це PR3 разом із рештою модулів. Там само `MonthStrip` Фініка (білі смуги на світлому тинті), плашка синку, CTA hero Фізрука.
+- Застарілі пропи `Card` (`variant`, `module`, `elevation`), `EmptyState` (`icon`, `illustration`, `examplePreview`) і тести контрасту `hero-ink #fdf9f3` на старих градієнтах прибирає PR7.
+- `size-limit` червоний (+12,35 kB): рішення про стелю за власником, або далі прибирати мертве (`--hero-grad-*`, `--hero-ink-*` градієнти тепер декор).

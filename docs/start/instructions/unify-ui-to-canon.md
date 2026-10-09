@@ -1,6 +1,6 @@
 # Playbook: Звести дублікати UI до канону і закріпити храповиком
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-12.
+> **Last touched:** 2026-10-09 by @claude (метрики 7-11: рух, скло, радіуси, кікер). **Next review:** 2027-01-12.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -81,6 +81,8 @@ rg -n --stats 'focus-visible:ring-focus' apps/web/src   # для нової, щ�
 | ---------------- | ------------------------------------------------------------------------ |
 | `0`              | **заборона на повернення** — форма зведена повністю                      |
 | `N > 0`          | **стеля над боргом** — міграція свідомо поза скоупом, але рости не можна |
+
+Метрики 7-11 (redesign v3) ловлять патерни поза каноном: `hoverMotion` (`hover:`/`active:scale`, `hover:-translate-y`, `hover:shadow-glow`), `enterMotion` (`animate-stagger-in`, `page-enter`, `<StaggerChild`), `glass` (`backdrop-blur*`), `bigRadius` (`rounded-xl|2xl|3xl|full` і сторонні форми; `rounded-full` дозволений лише у файлах `ROUNDED_FULL_ALLOWLIST` у скрипті, причина на кожен запис), `kicker` (проп `eyebrow` на `<SectionHeading`). CSS не скануються. Нові ключі гейт без baseline не приймає (exit 1): стартове число впиши в JSON руками разом з абзацом у `rationale`, `--update` лише знижує.
 
 ### 6. Оновити baseline і журнал
 

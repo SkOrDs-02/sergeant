@@ -19,8 +19,8 @@ import { NutritionStartPage } from "./pages/NutritionStartPage";
 import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
-import { Banner } from "@shared/components/ui/Banner";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { Notice } from "@shared/components/ui/Notice";
+import { AddActionBar } from "@shared/components/ui/AddActionBar";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -516,7 +516,7 @@ export default function NutritionApp({
                 state), so this banner only carries the flows without an
                 in-place anchor: pantry list parsing, recipe/day-plan
                 fetches, … */}
-              {statusText && <Banner className="mb-4">{statusText}</Banner>}
+              {statusText && <Notice className="mb-4">{statusText}</Notice>}
               {denial && (
                 <AccessDenialNotice
                   denial={denial}
@@ -525,8 +525,8 @@ export default function NutritionApp({
                 />
               )}
               {err && (
-                <Banner
-                  variant="danger"
+                <Notice
+                  tone="danger"
                   className="mb-4 flex items-start justify-between gap-3"
                   role="alert"
                 >
@@ -539,12 +539,12 @@ export default function NutritionApp({
                   >
                     ×
                   </button>
-                </Banner>
+                </Notice>
               )}
               {storageBanner && (
-                <Banner variant="warning" className="mb-4">
+                <Notice tone="ink" className="mb-4">
                   {storageBanner}
-                </Banner>
+                </Notice>
               )}
 
               {/* `grid-cols-[minmax(0,1fr)]`, а не дефолтна колонка `auto`:
@@ -647,12 +647,7 @@ export default function NutritionApp({
         </SwipePages>
 
         {(activePage === "start" || activePage === "log") && (
-          <FloatingActionButton
-            variant="v2-nutrition"
-            icon="plus"
-            onClick={handleOpenAddMeal}
-            aria-label="Додати прийом їжі"
-          />
+          <AddActionBar label="Додати страву" onClick={handleOpenAddMeal} />
         )}
 
         <NutritionBottomNav

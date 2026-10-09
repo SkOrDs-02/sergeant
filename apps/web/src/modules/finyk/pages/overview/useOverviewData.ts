@@ -2,12 +2,8 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { ucFirst } from "@shared/lib/ui/ucFirst";
-import {
-  trackEvent,
-  ANALYTICS_EVENTS,
-} from "../../../../core/observability/analytics";
 import { calcFinykSpendingTotal } from "../../utils";
 import { useFlowSchedule } from "./useFlowSchedule";
 import type { useStorage } from "../../hooks/useStorage";
@@ -25,7 +21,6 @@ import {
   filterStatTransactions,
   withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
@@ -47,11 +42,7 @@ export interface UseOverviewDataParams {
   onNavigate?: ((page: string) => void) | undefined;
 }
 
-export function useOverviewData({
-  mono,
-  storage,
-  onNavigate,
-}: UseOverviewDataParams) {
+export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
   const {
     realTx,
     loadingTx,
@@ -286,29 +277,7 @@ export function useOverviewData({
     saveNetworthSnapshot,
   ]);
 
-  // First-insight banner
   const hasAnyData = manualExpenses.length > 0 || realTx.length > 0;
-  const [firstInsightUnseen, setShowFirstInsight] = useState(
-    () => safeReadStringLS("finyk_first_insight_seen_v1", null) === null,
-  );
-  // Підказка веде ставити бюджет. Людині, у якої бюджети вже є, вона лише
-  // забирає місце над першою цифрою огляду (критика екранів 2026-09-25).
-  const showFirstInsight = firstInsightUnseen && budgets.length === 0;
-  const insightFiredRef = useRef(false);
-  useEffect(() => {
-    if (insightFiredRef.current) return;
-    if (!showFirstInsight || !hasAnyData) return;
-    insightFiredRef.current = true;
-    safeWriteLS("finyk_first_insight_seen_v1", "1");
-    trackEvent(ANALYTICS_EVENTS.FIRST_INSIGHT_SEEN, {
-      source: manualExpenses.length > 0 ? "manual" : "bank",
-    });
-  }, [showFirstInsight, hasAnyData, manualExpenses.length]);
-  const dismissFirstInsight = useCallback(() => setShowFirstInsight(false), []);
-  const handleSetBudgetFromInsight = useCallback(() => {
-    dismissFirstInsight();
-    onNavigate?.("budgets");
-  }, [dismissFirstInsight, onNavigate]);
 
   // Один прохід `calcLimitUsages` з вікном періоду кожного ліміту (місяць,
   // тиждень з понеділка, разовий від `createdAt`) по повній історії: та сама
@@ -552,9 +521,6 @@ export function useOverviewData({
     customCategories,
     plannedFlows,
     // First-insight banner
-    showFirstInsight,
     hasAnyData,
-    handleSetBudgetFromInsight,
-    dismissFirstInsight,
   };
 }

@@ -16,6 +16,7 @@ import { formatReceiptError } from "../lib/receiptErrors";
 import { Icon } from "@shared/components/ui/Icon";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { Badge } from "@shared/components/ui/Badge";
+import { Card } from "@shared/components/ui/Card";
 import { Money } from "@shared/components/ui/Money";
 
 export interface ReceiptItemsSectionProps {
@@ -30,9 +31,11 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
   });
 
   return (
-    <section
+    <Card
+      as="section"
+      prominence="receipt"
+      padding="sm"
       aria-labelledby="receipt-items-title"
-      className="rounded-2xl border border-line bg-panel p-3"
     >
       <div className="flex items-center justify-between gap-2">
         <h3
@@ -98,7 +101,7 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
           Позиції не розпізнано, лише сума й магазин.
         </p>
       ) : null}
-    </section>
+    </Card>
   );
 }
 

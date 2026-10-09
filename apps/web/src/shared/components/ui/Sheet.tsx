@@ -99,16 +99,6 @@ export interface SheetProps {
   panelClassName?: string | undefined;
   /** Optional className on the scroll region. */
   bodyClassName?: string | undefined;
-  /**
-   * Sergeant v2 — surface prominence. `default` keeps the legacy
-   * opaque `bg-panel` + `shadow-e4` shell; `glass` opts into the v2
-   * translucent floating-glass shell (alpha-baked `bg-surface-glass`
-   * + `backdrop-blur-md` + `shadow-nav` + `rounded-t-2xl`) so the
-   * mesh / hero gradient underneath reads through. Choose `glass`
-   * for any v2 sheet that sits above a `MeshBackground` shell.
-   * Default stays `default` so existing call-sites are unchanged.
-   */
-  variant?: "default" | "glass";
 }
 
 export function Sheet({
@@ -127,7 +117,6 @@ export function Sheet({
   closeLabel = "Закрити",
   panelClassName,
   bodyClassName,
-  variant = "default",
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -300,7 +289,7 @@ export function Sheet({
         type="button"
         onClick={onClose}
         aria-label={closeLabel}
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40"
       />
       <div
         ref={panelRef}
@@ -319,12 +308,12 @@ export function Sheet({
           // pushing the composer off-screen and making the inner scroll feel
           // stuck (mobile-audit A2).
           "relative w-full max-w-lg flex flex-col max-h-[90dvh] motion-safe:animate-slide-up",
-          variant === "glass"
-            ? "bg-surface-glass motion-safe:backdrop-blur-md border-t border-surface-line rounded-t-2xl shadow-nav"
-            : "bg-panel border-t border-line rounded-t-3xl shadow-e4",
+          // Мова H: непрозорий аркуш кольору сторінки з тінню плаваючого;
+          // `glass` лишився як API, але скла більше немає.
+          "bg-bg rounded-t-xl shadow-e4",
           // Повноекранна панель стоїть на краях вʼюпорта: закруглення й
           // верхня лінія на межі зі статус-баром читаються як артефакт.
-          fullScreen && "rounded-none border-t-0",
+          fullScreen && "rounded-none",
           panelClassName,
         )}
       >
@@ -341,10 +330,7 @@ export function Sheet({
             {...swipe.bind}
             role="presentation"
           >
-            <div
-              className="w-12 h-sheet-handle bg-line/70 rounded-full"
-              aria-hidden
-            />
+            <div className="h-1 w-9 rounded-sm bg-subtle" aria-hidden />
           </div>
         )}
         {hideHeader ? (
@@ -360,10 +346,7 @@ export function Sheet({
             {...swipe.bind}
           >
             <div className="min-w-0 flex-1">
-              <div
-                id={titleId}
-                className="text-style-title font-extrabold text-text leading-tight"
-              >
+              <div id={titleId} className="text-style-title text-text">
                 {title}
               </div>
               {description && (
@@ -379,9 +362,9 @@ export function Sheet({
                 onClick={onClose}
                 aria-label={closeLabel}
                 className={cn(
-                  "flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full",
-                  "bg-panelHi text-muted hover:text-text transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+                  "flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg",
+                  "text-muted hover:text-text hover:bg-panel transition-colors",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
                 )}
               >
                 <Icon name="close" size="md" aria-hidden />

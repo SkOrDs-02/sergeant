@@ -184,8 +184,10 @@ test.describe("@critical deep module CRUD browser loop", () => {
 
     // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка
     // «Додати», дія «Додати витрату» — menuitem усередині фану.
-    await page.getByRole("button", { name: "Додати", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Додати витрату" }).click();
+    await page
+      .getByTestId("add-action-bar")
+      .getByRole("button", { name: "Додати витрату" })
+      .click();
     const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
     await expect(createDialog).toBeVisible();
     await page.getByLabel("Сума ₴").fill("123");
@@ -386,7 +388,8 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/routine", { waitUntil: "domcontentloaded" });
 
     await page
-      .getByRole("button", { name: "Додати звичку", exact: true })
+      .getByTestId("add-action-bar")
+      .getByRole("button", { name: "Нова звичка" })
       .click();
     const createDialog = page.getByRole("dialog", { name: "Нова звичка" });
     await expect(createDialog).toBeVisible();

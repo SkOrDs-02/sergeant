@@ -323,6 +323,10 @@ export const messagesEn: Partial<{
     closedPile: {
       heading: "Closed today",
     },
+    daySummary: {
+      now: "now",
+      closed: "closed",
+    },
     moduleRail: "Modules",
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
@@ -354,7 +358,6 @@ export const messagesEn: Partial<{
 
   onboarding: {
     pickerAllOnHint: "Everything is on, switch off what you will not use.",
-    hideChecklist: "Hide checklist",
 
     capabilitiesGroupTitle: "Capabilities",
     tourLaunchLabel: "What the app can do",

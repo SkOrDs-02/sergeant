@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import { FirstEntryCelebrationModal } from "../onboarding/FirstEntryCelebrationModal";
-import { MotivationalFooter, StaggerChild } from "./dashboard/dashboardCards";
 import { HubHeroBlock } from "./HubHeroBlock";
 import {
   HubInsightsBlock,
@@ -13,11 +12,11 @@ import {
 } from "./HubInsightsBlock";
 import { useHubDashboardState } from "./useHubDashboardState";
 import type { HubDashboardProps } from "./hub.types";
-import { PrivacyLockBanner } from "../security/PrivacyLockBanner";
 import { useHubPref } from "../settings/hubPrefs";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { useAuthOptional } from "../auth/AuthContext";
-import { ModuleRail } from "@shared/components/layout/ModuleRail";
+import { ModulePanel } from "./ModulePanel";
+import { useChecklistNow } from "./now/useChecklistNow";
 import { NowPile } from "./now/NowPile";
 import { ClosedTodayPile } from "./now/ClosedTodayPile";
 
@@ -69,20 +68,25 @@ export function HubDashboard({
     authStatus: auth?.status,
   });
   const [showInsights] = useHubPref<boolean>("showInsights", true);
-  const [showMotivational] = useHubPref<boolean>("showMotivational", true);
+  const checklistModule =
+    s.showChecklist && s.primaryModule ? s.primaryModule : null;
+  const checklistSteps = useChecklistNow(checklistModule);
+  const checklistOpen =
+    checklistModule && checklistSteps.open.length > 0
+      ? { moduleId: checklistModule, steps: checklistSteps.open }
+      : undefined;
+  const checklistDone =
+    checklistModule && checklistSteps.done.length > 0
+      ? { moduleId: checklistModule, steps: checklistSteps.done }
+      : undefined;
 
-  // Hero-слот: FTUX-hero (OutcomeCard / чекліст / soft-auth) для новачка,
-  // купа «Зараз» для людини з реальними записами. Виносимо у змінну, щоб
-  // не дублювати довгий props-список між гілками.
-  const hero = (
-    // Keep the hero in normal document flow. A transform changes paint
-    // position without reserving the translated space, so when modules are
-    // rendered first the focus card can slide over their bottom edge.
-    <StaggerChild index={s.hasRealEntry ? 1 : 0}>
+  // Мова H (redesign v3): hero-слот («Зараз» або FTUX-hero) → панель
+  // модулів → «Закрито». Блоки зʼявляються без stagger-анімації.
+  return (
+    <div className="space-y-7">
       <HubHeroBlock
         onOpenModule={onOpenModule}
         onShowAuth={onShowAuth}
-        user={user}
         hasRealEntry={s.hasRealEntry}
         sessionDays={s.sessionDays}
         entryCount={s.entryCount}
@@ -94,87 +98,59 @@ export function HubDashboard({
         focus={s.focus}
         dismiss={s.dismiss}
         primaryModule={s.primaryModule}
-        showChecklist={s.showChecklist}
+        checklist={checklistOpen}
         activeModules={s.activeModules}
         goals={s.goals}
         hasValueBar={s.hasValueBar}
         nowPile={
           s.hasRealEntry ? (
-            <NowPile onOpenTarget={s.openInsightTarget} />
+            <NowPile
+              onOpenTarget={s.openInsightTarget}
+              checklist={checklistOpen}
+            />
           ) : undefined
         }
       />
-    </StaggerChild>
-  );
 
-  // Вісь дії: безумовний вхід у модуль — рейок під шапкою, той самий
-  // компонент, що й перемикач усередині модулів. Неактивні модулі
-  // приглушені, не сховані. Замінює сітку плиток цілком.
-  const rail = (
-    <StaggerChild index={0}>
-      <ModuleRail
-        active={null}
-        source="module_rail"
+      <ModulePanel
         activeModules={s.activeModules}
-      />
-    </StaggerChild>
-  );
-
-  // Друга купа — одне твердження на активний модуль (`closedToday.ts`).
-  const closedPile = (
-    <StaggerChild index={2}>
-      <ClosedTodayPile
-        activeModules={s.activeModules}
-        // Усі активні рекомендації, не відфільтровані відкиданням: сховану
-        // картку `budget_over_*` рядок Фініка все одно мусить враховувати.
-        recs={s.allRecs}
-        onOpenModule={onOpenModule}
         storageBump={s.storageBump}
       />
-    </StaggerChild>
-  );
 
-  return (
-    <div className="space-y-4">
-      {/* Вісь дії: рейок → «Зараз» (у hero-слоті) → «Закрито сьогодні».
-          Новачок без запису бачить FTUX-hero і рейок; куп немає, доки
-          немає запису (рішення власника 2026-09-17). */}
-      {rail}
-      {hero}
-      {s.hasRealEntry && closedPile}
-
-      {/* G4 — App-lock soft-prompt. Self-hides via LS dismissal. */}
-      <PrivacyLockBanner />
-
-      {/* GROUP 2 — «Порада й тиждень» (post-first-entry). Завжди
-          згорнутий за замовчуванням: порада коуча, nudge і звіт тижня
-          живуть під одним pill, який користувач розгортає на вимогу.
-          Інсайти й рекомендації — у купі «Зараз». */}
-      {s.hasRealEntry && showInsights && (
-        <StaggerChild index={3}>
-          <HubInsightsBlock
-            finykActive={s.activeModules.includes("finyk")}
-            insightsDefaultOpen={false}
-            insightsOpen={insightsOpen}
-            onInsightsOpenChange={setInsightsOpen}
-            coachLoading={s.coachLoading}
-            coachError={s.coachError}
-            coachInsightText={s.coachInsightText}
-            coachAdviceId={s.coachAdviceId}
-            coachRefresh={s.coachRefresh}
-            digestFresh={s.digestFresh}
-            activeNudge={s.activeNudge}
-            reengagementShow={s.reengagement.show}
-            sessionDays={s.sessionDays}
-            dismissNudge={s.dismissNudge}
-            digestExpanded={s.digestExpanded}
-            setDigestExpanded={s.setDigestExpanded}
-            showDigestFooter={s.showDigestFooter}
-          />
-        </StaggerChild>
+      {s.hasRealEntry && (
+        <ClosedTodayPile
+          activeModules={s.activeModules}
+          // Усі активні рекомендації, не відфільтровані відкиданням: сховану
+          // картку `budget_over_*` рядок Фініка все одно мусить враховувати.
+          recs={s.allRecs}
+          onOpenModule={onOpenModule}
+          storageBump={s.storageBump}
+          checklistDone={checklistDone}
+        />
       )}
 
-      {showMotivational && <MotivationalFooter />}
+      {/* «Порада й тиждень» (post-first-entry), згорнутий за замовчуванням. */}
+      {s.hasRealEntry && showInsights && (
+        <HubInsightsBlock
+          finykActive={s.activeModules.includes("finyk")}
+          insightsDefaultOpen={false}
+          insightsOpen={insightsOpen}
+          onInsightsOpenChange={setInsightsOpen}
+          coachLoading={s.coachLoading}
+          coachError={s.coachError}
+          coachInsightText={s.coachInsightText}
+          coachAdviceId={s.coachAdviceId}
+          coachRefresh={s.coachRefresh}
+          digestFresh={s.digestFresh}
+          activeNudge={s.activeNudge}
+          reengagementShow={s.reengagement.show}
+          sessionDays={s.sessionDays}
+          dismissNudge={s.dismissNudge}
+          digestExpanded={s.digestExpanded}
+          setDigestExpanded={s.setDigestExpanded}
+          showDigestFooter={s.showDigestFooter}
+        />
+      )}
 
       <FirstEntryCelebrationModal
         open={s.celebration.open}

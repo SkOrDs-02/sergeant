@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
-import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import {
   FIRST_REAL_ENTRY_KEY,
-  MODULE_CHECKLISTS,
   STORAGE_KEYS,
   VIBE_PICKS_KEY,
   type Rec,
@@ -24,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     dismiss: vi.fn(),
   },
   digestFresh: false,
+  checklistCalls: [] as (string | null)[],
   openHubModule: vi.fn(),
   openHubModuleWithAction: vi.fn(),
   openHubSettingsSection: vi.fn(),
@@ -104,10 +103,8 @@ vi.mock("../insights/WeeklyDigestCard", () => ({
 }));
 
 vi.mock("./dashboard/dashboardCards", () => ({
-  StaggerChild: ({ children }: { children: ReactNode }) => <>{children}</>,
   StreakIndicator: () => null,
   AssistantAdviceCard: () => null,
-  MotivationalFooter: () => <p data-testid="motivational-footer" />,
   WeeklyDigestFooter: ({
     fresh,
     onExpand,
@@ -152,19 +149,14 @@ vi.mock("../onboarding/FirstActionSheet", () => ({
   ),
 }));
 
-// Stub `ModuleChecklist` — its rendered «Фінік: Перші кроки» heading and
-// per-step buttons collided with the bento «Фінік» button under
-// `getByRole("button", { name: /Фінік/i })`. The post-S3.5 single-hero
-// rule shows the checklist whenever `hasRealEntry && sessionDays <= 7`,
-// which is the default beforeEach state. The dedicated S3.5 test below
-// asserts the checklist appears via its own title selector — other tests
-// only need to know it does not pollute the bento buttons.
-vi.mock("../onboarding/ModuleChecklist", () => ({
-  ModuleChecklist: ({ moduleId }: { moduleId: string }) => (
-    <div data-testid={`module-checklist-${moduleId}`}>
-      {MODULE_CHECKLISTS[moduleId as keyof typeof MODULE_CHECKLISTS]?.title}
-    </div>
-  ),
+// Кроки онбордингу тепер пункти «Зараз» (redesign v3). Хук сигналів ходить
+// у React Query, тож стабимо сам `useChecklistNow` і фіксуємо, для якого
+// модуля дашборд відкрив вікно онбордингу (`null` = вікно закрите).
+vi.mock("./now/useChecklistNow", () => ({
+  useChecklistNow: (moduleId: string | null) => {
+    mocks.checklistCalls.push(moduleId);
+    return { open: [], done: [] };
+  },
 }));
 
 vi.mock("../onboarding/SoftAuthPromptCard", () => ({
@@ -263,6 +255,7 @@ describe("HubDashboard", () => {
     mocks.openHubModuleWithAction.mockClear();
     mocks.openHubSettingsSection.mockClear();
     mocks.coachInsightCalls.length = 0;
+    mocks.checklistCalls.length = 0;
   });
 
   afterEach(() => {
@@ -282,7 +275,7 @@ describe("HubDashboard", () => {
     // entry points. Stacking the checklist on top would split user
     // attention into two competing «do these N steps» surfaces.
     expect(screen.queryByTestId("today-focus-card")).toBeNull();
-    expect(screen.queryByText(MODULE_CHECKLISTS.finyk.title)).toBeNull();
+    expect(mocks.checklistCalls.at(-1)).toBeNull();
     expect(screen.queryByTestId("assistant-advice-card")).toBeNull();
     expect(screen.queryByTestId("weekly-digest-footer")).toBeNull();
   });
@@ -295,7 +288,7 @@ describe("HubDashboard", () => {
 
     renderDashboard();
 
-    expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
+    expect(mocks.checklistCalls.at(-1)).toBe("finyk");
   });
 
   it("hides the checklist for an established account on a fresh device", () => {
@@ -307,7 +300,7 @@ describe("HubDashboard", () => {
 
     renderDashboard({ user: userAged(200) });
 
-    expect(screen.queryByText(MODULE_CHECKLISTS.finyk.title)).toBeNull();
+    expect(mocks.checklistCalls.at(-1)).toBeNull();
   });
 
   it("still shows the checklist for a genuinely new account", () => {
@@ -315,7 +308,7 @@ describe("HubDashboard", () => {
 
     renderDashboard({ user: userAged(2) });
 
-    expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
+    expect(mocks.checklistCalls.at(-1)).toBe("finyk");
   });
 
   it("shows the weekly digest footer and expands the report summary inline", () => {
@@ -421,9 +414,9 @@ describe("HubDashboard — вісь дії", () => {
     vi.useRealTimers();
   });
 
-  it("з реальним записом: рейок, купа «Зараз», купа «Закрито»; сітки немає", () => {
+  it("з реальним записом: панель модулів, купа «Зараз», купа «Закрито»; сітки немає", () => {
     renderDashboard();
-    expect(screen.getByTestId("module-rail")).toBeInTheDocument();
+    expect(screen.getByTestId("module-panel")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Зараз" })).toBeInTheDocument();
     expect(screen.getByTestId("now-empty")).toBeInTheDocument();
     expect(screen.queryByTestId("today-focus-card")).toBeNull();
@@ -431,9 +424,11 @@ describe("HubDashboard — вісь дії", () => {
     expect(screen.getByText("Порада й тиждень")).toBeInTheDocument();
   });
 
-  it("тап по комірці рейка відкриває модуль із джерелом module_rail", () => {
+  it("тап по рядку панелі відкриває модуль із джерелом module_rail", () => {
     renderDashboard();
-    fireEvent.click(screen.getByRole("tab", { name: /Фізрук/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Перейти до модуля Фізрук" }),
+    );
     expect(mocks.openHubModule).toHaveBeenCalledWith(
       "fizruk",
       undefined,
@@ -441,11 +436,11 @@ describe("HubDashboard — вісь дії", () => {
     );
   });
 
-  it("новачок без запису: FTUX-hero і рейок, куп немає", () => {
+  it("новачок без запису: FTUX-hero і панель модулів, куп немає", () => {
     localStorage.removeItem(FIRST_REAL_ENTRY_KEY);
     localStorage.removeItem("hub_first_real_entry_done_v1");
     renderDashboard();
-    expect(screen.getByTestId("module-rail")).toBeInTheDocument();
+    expect(screen.getByTestId("module-panel")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Зараз" })).toBeNull();
     expect(screen.queryByTestId("now-empty")).toBeNull();
   });

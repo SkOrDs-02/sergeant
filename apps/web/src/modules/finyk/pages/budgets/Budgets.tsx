@@ -121,13 +121,11 @@ export interface BudgetsProps {
   focusLimitCategoryId?: string | null;
   /**
    * When true, the embedded `MonthlyPlanCard` auto-opens its inline
-   * editor and renders a `<FirstRunHintBanner />` framing the
-   * income/expense/savings inputs as the canonical home of the user's
-   * monthly plan. Set on the user's first Finyk entry by `FinykApp`
-   * via `useModuleFirstRun`.
+   * editor once. Set on the user's first Finyk entry by `FinykApp` via
+   * `useModuleFirstRun`.
    */
   monthlyPlanFirstRunHint?: boolean;
-  /** Dismiss callback for the first-run hint banner. */
+  /** Позначає перший запуск як побачений, щойно редактор відкрився сам. */
   onDismissMonthlyPlanFirstRunHint?: () => void;
   /**
    * Блок «майбутнього» між планом і лімітами: найближчі платежі, підказки
@@ -171,6 +169,10 @@ export function Budgets({
   planningSlot,
   onAddSubscription,
 }: BudgetsProps) {
+  // Перший запуск одноразовий: редактор плану відкрився сам, і цього досить.
+  useEffect(() => {
+    if (monthlyPlanFirstRunHint) onDismissMonthlyPlanFirstRunHint?.();
+  }, [monthlyPlanFirstRunHint, onDismissMonthlyPlanFirstRunHint]);
   const toast = useToast();
   const { realTx: networkTx, loadingTx, jars = [] } = mono;
   // Мережа дає лише поточний місяць: історію для вікон лімітів добирає дзеркало.
@@ -538,7 +540,6 @@ export function Budgets({
               daysLeft={daysLeft2}
               forecastExpense={forecastExpense}
               firstRunHint={monthlyPlanFirstRunHint}
-              onDismissFirstRunHint={onDismissMonthlyPlanFirstRunHint}
             />
 
             {planningSlot}

@@ -203,7 +203,7 @@ describe("ConfirmDialog", () => {
 
     expect(
       screen.getByRole("button", { name: "Зберегти" }).className,
-    ).toContain("bg-brand-strong");
+    ).toContain("bg-text");
   });
 });
 

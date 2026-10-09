@@ -273,28 +273,8 @@ export function BankTransactionDetailsSheet({
       }
     >
       <div className="space-y-5">
-        {/*
-          Квитанція операції — власний матеріал (анти-слоп П3, рішення
-          власника 2026-08-06). Найпряміший випадок із усіх: банківська
-          операція В ЖИТТІ і є відривний талон, тож `edge-stub` тут не
-          метафора, а те саме, чим річ є. Решта секцій шторки лишаються
-          звичайними картками навмисно — матеріал позначає ФАКТ операції,
-          а не форму редагування під ним.
-
-          AI-DANGER: `edge-lift` мусить бути на БАТЬКУ. Маска `edge-stub`
-          зрізає тінь на своєму вузлі — і `box-shadow`, і `drop-shadow`
-          однаково (заміряно; див. `.edge-lift` у `tailwind-preset.js`).
-
-          Чому не проп `Card edge="stub"` (борг 1, інвентар 2026-08-07):
-          поверхня тут — `bg-panelHi` (підняте тло квитанції над
-          звичайним `bg-panel` шторки), а жодна `prominence` в `Card`
-          такого фону не дає — всі опираються на `bg-panel`. Переведення
-          означало б або підмінити фон, або тягти новий `prominence`
-          заради одного місця; клас лишається сирим (allowlisted у
-          `edgeMaterial.test.ts`).
-        */}
-        <div className="edge-lift">
-          <section className="edge-stub border border-line bg-panelHi p-4">
+        <div>
+          <section className="rounded-xl bg-panel p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-style-label text-text break-words">

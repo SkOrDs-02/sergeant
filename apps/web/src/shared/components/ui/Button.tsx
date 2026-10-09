@@ -109,30 +109,12 @@ export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 // into the resolver — keeping them flat guarantees byte-identical output
 // across the legacy and canonical entry points.
 const variants: Record<ButtonVariantLegacy, string> = {
-  // Core variants. Hub primary = NEUTRAL stone "ink on paper" (design-audit
-  // M1): stone-800 fill + white text in light; inverted light-stone chip +
-  // dark ink in dark. No coloured accent glow — the hub carries no module
-  // hue, so a saturated halo would read as a fifth accent. Module buttons
-  // (finyk/fizruk/…) keep their luminescent tier-400 fill + accent glow
-  // below. `primary-ink` remains the alternative near-black ink primary.
-  primary:
-    "bg-brand-strong text-white shadow-sm hover:bg-brand-900 hover:shadow-md active:bg-brand-900 active:scale-[0.98] dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-200",
-  // `secondary` is the neutral outline button. Its fill is `bg-panel`
-  // (white in light / warm-charcoal in dark) — the SAME token as the
-  // card & sheet surfaces it most often sits on, so the fill alone
-  // can't separate it from its container, and swapping the fill can't
-  // fix it either: a white fill pops on the cream page but cards are
-  // white, while a cream fill pops on white cards but the page is cream
-  // (the two contexts are inverted). Separation therefore comes from the
-  // boundary + elevation, not the fill: `border-border-strong` is the
-  // heavier outline companion (clears ~3:1 on the dark panel where the
-  // shadow is invisible), and `shadow-e1` is the warm-tuned drop + inset
-  // top-highlight that makes the white chip read as raised on a white
-  // card. Hover lifts to `shadow-e2`, matching the interactive-Card
-  // elevation contract. AI-CONTEXT: do not revert to `border-line` /
-  // `shadow-sm` — that is the "white button on white card" regression.
+  // Мова H (redesign v3): `primary` = чорнило на сторінці (у темній
+  // сторінка на чорнилі, бо токени перевертаються), `secondary` = outline
+  // 1 px `border-strong` без тіні. Межу outline-кнопки дає обвід, не заливка.
+  primary: "bg-text text-bg hover:bg-text/90 active:bg-text/80",
   secondary:
-    "bg-panel text-text border border-border-strong shadow-e1 hover:bg-panelHi hover:border-brand-200 hover:shadow-e2 active:scale-[0.98]",
+    "bg-transparent text-text border border-border-strong hover:bg-panel active:bg-panelHi",
   // AI-CONTEXT: `ghost` — НЕ «стриманий secondary». Без бордера й заливки
   // його межу мусить давати РАМКА контейнера, в якому він стоїть. Сусідство
   // з гучною кнопкою межі не замінює — рішення власника 2026-09-15 після
@@ -153,27 +135,21 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // Заливку ведемо тією ж конвенцією, що й soft-варіанти модулів: акцент
   // на низькій прозорості, текст лишається `danger-soft-fg`.
   danger:
-    "bg-danger-soft text-danger-soft-fg border border-danger/30 hover:bg-danger/15 hover:border-danger/50 active:scale-[0.98] dark:bg-danger/15 dark:border-danger/40 dark:hover:bg-danger/25",
-  destructive:
-    "bg-danger-strong text-white shadow-sm hover:brightness-110 hover:shadow-[0_0_0_3px_rgba(239,68,68,0.15)] active:scale-[0.98]",
+    "bg-danger-soft text-danger-soft-fg border border-danger/30 hover:bg-danger/15 hover:border-danger/50 dark:bg-danger/15 dark:border-danger/40 dark:hover:bg-danger/25",
+  destructive: "bg-danger-strong text-white hover:brightness-110",
   success:
-    "bg-brand-soft text-brand-soft-fg border border-brand-soft-border/50 hover:bg-brand-soft-hover active:scale-[0.98]",
+    "bg-brand-soft text-brand-soft-fg border border-brand-soft-border/50 hover:bg-brand-soft-hover",
 
-  // Module-specific branded buttons. Light keeps the AA-safe `-strong`
-  // fill + white text. Dark «Чорнило» (spec § 4): the button is the
-  // luminescent tier-400 module accent (`dark:bg-{module}` → theme-aware
-  // accent) with an ink foreground (`dark:text-bg` → #14100e) and a resting
-  // accent glow instead of a drop shadow — depth reads as light, not
-  // elevation. Text over the accent is ink, never white (Rule #9 needs no
-  // `-strong` companion here).
+  // Модульні суцільні кнопки: лише в hero-контексті модуля. Світла - `-strong`
+  // заливка під білим текстом, темна - тир 400 під чорнилом сторінки.
   finyk:
-    "bg-finyk-strong text-white shadow-sm hover:bg-teal-900 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-finyk dark:text-bg",
+    "bg-finyk-strong text-white hover:bg-teal-900 active:bg-teal-900 dark:bg-finyk dark:text-bg",
   fizruk:
-    "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg",
+    "bg-fizruk-strong text-white hover:bg-cyan-900 active:bg-cyan-900 dark:bg-fizruk dark:text-bg",
   routine:
-    "bg-routine-strong text-white shadow-sm hover:bg-rose-800 hover:shadow-glow-rose active:bg-rose-900 active:scale-[0.98] dark:bg-routine dark:text-bg",
+    "bg-routine-strong text-white hover:bg-rose-800 active:bg-rose-900 dark:bg-routine dark:text-bg",
   nutrition:
-    "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98] dark:bg-nutrition dark:text-bg",
+    "bg-nutrition-strong text-white hover:bg-lime-900 dark:bg-nutrition dark:text-bg",
 
   // Soft module variants (for secondary actions within modules).
   // Dark mode keeps the saturated accent at low opacity for the FILL so the
@@ -187,44 +163,39 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // single class (see `--c-<m>-soft-fg` in theme.css). Readability wins
   // over the blend aesthetic.
   "finyk-soft":
-    "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk/15 border border-finyk-ring/50 dark:border-finyk/30 hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.98]",
+    "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk/15 border border-finyk-ring/50 dark:border-finyk/30 hover:bg-brand-100 dark:hover:bg-finyk/25",
   "fizruk-soft":
-    "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk/15 border border-fizruk-ring/50 dark:border-fizruk/30 hover:bg-cyan-100 dark:hover:bg-fizruk/25 active:scale-[0.98]",
+    "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk/15 border border-fizruk-ring/50 dark:border-fizruk/30 hover:bg-cyan-100 dark:hover:bg-fizruk/25",
   "routine-soft":
-    "bg-routine-surface text-routine-soft-fg dark:bg-routine/15 border border-routine-ring/50 dark:border-routine/30 hover:bg-rose-100 dark:hover:bg-routine/25 active:scale-[0.98]",
+    "bg-routine-surface text-routine-soft-fg dark:bg-routine/15 border border-routine-ring/50 dark:border-routine/30 hover:bg-rose-100 dark:hover:bg-routine/25",
   "nutrition-soft":
-    "bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition/15 border border-nutrition-ring/50 dark:border-nutrition/30 hover:bg-lime-100 dark:hover:bg-nutrition/25 active:scale-[0.98]",
+    "bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition/15 border border-nutrition-ring/50 dark:border-nutrition/30 hover:bg-lime-100 dark:hover:bg-nutrition/25",
 
   // Sergeant v2 inverted primary — see `ButtonVariant` JSDoc above.
   // `bg-ink-strong` is emerald-900 in light + white in dark (HC: pure
   // #000 / #fff). `text-bg-base` is the corresponding warm-cream / dark
   // base, so the contrast inverts cleanly with the theme.
   "primary-ink":
-    "bg-ink-strong text-bg-base shadow-sm hover:opacity-90 hover:shadow-glow active:opacity-80 active:scale-[0.98]",
+    "bg-ink-strong text-bg-base hover:opacity-90 active:opacity-80",
 };
 
-// RADIUS — every Button size lives in the CONTROL tier (12 px, rounded-xl)
-// per the 3-tier system documented in `tailwind-preset.js`. The previous
-// scale climbed through CARD (md/lg → 16 px) and HERO (xl → 24 px), which
-// made tall CTAs read as panels rather than controls and broke the
-// "all buttons are CONTROL" mental model. The xl button — at h-14 the
-// only one that actually feels card-sized — bumps to CARD radius (16 px)
-// so it does not compress to a near-pill on a 56 px square (icon-only xl).
+// RADIUS - мова H (redesign v3): 8 px для всіх розмірів, `xl` теж. Рух лише
+// на зміні стану: ні тіні, ні масштабу на hover / active.
 const sizes: Record<ButtonSize, string> = {
-  xs: "h-8 px-3 text-style-label font-medium rounded-xl gap-1.5",
-  sm: "h-9 px-3.5 text-style-label font-medium rounded-xl gap-1.5",
-  md: "h-11 px-5 text-style-label font-semibold rounded-xl gap-2",
-  lg: "h-12 px-6 text-style-label-lg font-semibold rounded-xl gap-2",
-  xl: "h-14 px-8 text-style-label-lg font-bold rounded-2xl gap-2.5",
+  xs: "h-8 px-3 text-style-label font-medium rounded-lg gap-1.5",
+  sm: "h-9 px-3.5 text-style-label font-medium rounded-lg gap-1.5",
+  md: "h-11 px-5 text-style-label font-semibold rounded-lg gap-2",
+  lg: "h-12 px-6 text-style-label-lg font-semibold rounded-lg gap-2",
+  xl: "h-14 px-8 text-style-label-lg font-bold rounded-lg gap-2.5",
 };
 
 // Icon-only button sizes
 const iconSizes: Record<ButtonSize, string> = {
-  xs: "h-8 w-8 rounded-xl",
-  sm: "h-9 w-9 rounded-xl",
-  md: "h-11 w-11 rounded-xl",
-  lg: "h-12 w-12 rounded-xl",
-  xl: "h-14 w-14 rounded-2xl",
+  xs: "h-8 w-8 rounded-lg",
+  sm: "h-9 w-9 rounded-lg",
+  md: "h-11 w-11 rounded-lg",
+  lg: "h-12 w-12 rounded-lg",
+  xl: "h-14 w-14 rounded-lg",
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -405,8 +376,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           // Base styles
           "inline-flex items-center justify-center touch-manipulation",
-          "motion-safe:transition-all motion-safe:duration-base motion-safe:ease-smooth",
-          "motion-reduce:transition-none motion-reduce:active:scale-100!",
+          "motion-safe:transition-colors motion-safe:duration-base motion-safe:ease-smooth",
+          "motion-reduce:transition-none",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
           // Touch / coarse pointer: WCAG 2.5.5 / HIG ≥44×44px for compact controls.

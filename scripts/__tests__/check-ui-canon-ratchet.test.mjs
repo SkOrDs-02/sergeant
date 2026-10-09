@@ -23,6 +23,7 @@ import {
   blankComments,
   CANON_RING_OPACITY,
   counts,
+  ROUNDED_FULL_ALLOWLIST,
   ICON_SIZE_TOKENS,
   maskedRanges,
   scanSource,
@@ -252,11 +253,16 @@ test("allowlist не масивом — голосна помилка, а не �
   assert.throws(() => allowlistHits({ files: [] }), /масивом/);
 });
 
-test("лічильник знає про всі шість метрик — інакше baseline-гейт не побачить нову", () => {
+test("лічильник знає про всі одинадцять метрик — інакше baseline-гейт не побачить нову", () => {
   assert.deepEqual(Object.keys(counts([])).sort(), [
+    "bigRadius",
     "cyrillicJsxAllowlist",
+    "enterMotion",
+    "glass",
     "handRolledFocusRing",
     "heroInkAlpha",
+    "hoverMotion",
+    "kicker",
     "legacyButton",
     "numericIconSize",
     "offCanonRingOpacity",
@@ -353,4 +359,70 @@ test("згадка класу в коментарі не рахується як
     only(`// було text-hero-ink/70, стало повна непрозорість`, "heroInkAlpha"),
     [],
   );
+});
+
+// ── 7-11. рух, скло, радіуси, кікер: break-тести (заборонений патерн
+//      червонить гейт, канонічний - ні) ──
+
+test("hoverMotion: scale/translate/glow на hover і press ловляться", () => {
+  const src = `
+    <a className="hover:scale-[1.02] active:scale-95" />
+    <a className="group-hover:-translate-y-0.5 md:hover:shadow-glow-finyk" />
+    <a className="hover:bg-panel hover:shadow-card" />`;
+  assert.equal(only(src, "hoverMotion").length, 4);
+});
+
+test("enterMotion: stagger/page-enter/StaggerChild ловляться", () => {
+  const src = `
+    <div className="animate-stagger-in page-enter" />
+    <StaggerChild index={1}>x</StaggerChild>
+    <StaggerChildren />`;
+  assert.equal(only(src, "enterMotion").length, 3);
+});
+
+test("glass: backdrop-blur з будь-яким суфіксом ловиться", () => {
+  const src = `<div className="backdrop-blur backdrop-blur-md supports-[backdrop-filter]:backdrop-blur-[6px]" />`;
+  assert.equal(only(src, "glass").length, 3);
+});
+
+test("bigRadius: xl/2xl/3xl/full і сторонні форми ловляться, md/lg - ні", () => {
+  const src = `
+    <a className="rounded-xl rounded-2xl sm:rounded-3xl rounded-t-2xl rounded-tl-xl" />
+    <a className="rounded-full" />
+    <a className="rounded-md rounded-lg rounded-sm rounded-[10px]" />`;
+  assert.equal(only(src, "bigRadius").length, 6);
+});
+
+test("bigRadius: rounded-full дозволений лише у файлах allowlist, xl - ніколи", () => {
+  const allowed = ROUNDED_FULL_ALLOWLIST[0];
+  const hits = scanSource(
+    allowed,
+    `<i className="rounded-full rounded-2xl" />`,
+  ).filter((h) => h.metric === "bigRadius");
+  assert.equal(hits.length, 1, "rounded-2xl рахується і в allowlist-файлі");
+  assert.match(hits[0].detail, /rounded-2xl/);
+  assert.equal(only(`<i className="rounded-full" />`, "bigRadius").length, 1);
+});
+
+test("kicker: проп eyebrow на SectionHeading ловиться, чужий компонент - ні", () => {
+  const src = `
+    <SectionHeading eyebrow="Огляд" size="lg">Заголовок</SectionHeading>
+    <SectionHeading eyebrowTone="muted">x</SectionHeading>
+    <SectionHeading size="xs">Без кікера</SectionHeading>
+    <EmptyState eyebrow="Помилка" title="x" />
+    <ModuleHeader eyebrow="ЖУРНАЛ" />`;
+  assert.equal(only(src, "kicker").length, 1);
+});
+
+test("нові метрики не читають згадки в коментарях", () => {
+  const src = `// було hover:scale-105 backdrop-blur rounded-2xl <StaggerChild
+    export const X = 1;`;
+  for (const m of ["hoverMotion", "enterMotion", "glass", "bigRadius"]) {
+    assert.deepEqual(only(src, m), [], m);
+  }
+});
+
+test("CSS не сканується новими метриками - там визначення утиліт", () => {
+  const css = ".x { @apply backdrop-blur-md rounded-2xl hover:scale-105; }";
+  assert.deepEqual(scanSource("apps/web/src/styles/u.css", css), []);
 });

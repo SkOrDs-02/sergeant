@@ -3,7 +3,7 @@ import { downloadJson } from "@sergeant/shared";
 import type { BackupRestoreMode } from "@shared/lib/backup/restoreMode";
 import { useAuthOptional } from "../auth/AuthContext";
 import { outboxCheckpoint } from "../syncEngine/outboxCheckpoint";
-import { Banner } from "@shared/components/ui/Banner";
+import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
@@ -234,11 +234,11 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         вписував сам. Тримай його як приватний, у менеджері паролів чи
         зашифрованій хмарі, не пересилай у відкритих чатах.
       </p>
-      <Banner variant="warning" className="text-style-body leading-relaxed">
+      <Notice tone="ink">
         {signedIn
           ? "Ручні витрати, борги, підписки й бюджети синхронізуються з твоїм акаунтом, тож є на всіх твоїх пристроях. Банк відновлюється сам, а ручні дані з файлу ні. Експорт лишається страховкою на випадок, якщо плануєш міняти телефон чи чистити дані."
           : "Без входу в акаунт ручні витрати, борги, підписки й бюджети живуть лише на цьому пристрої, банк відновлюється сам, а це ні. Зроби експорт, якщо плануєш міняти телефон чи чистити дані."}
-      </Banner>
+      </Notice>
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="ghost"

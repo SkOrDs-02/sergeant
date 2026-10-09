@@ -5,18 +5,10 @@
  * Точка входу в чек-скан v1 і масове ведення (Фаза 2) — спека
  * `docs/work/specs/receipt-scan.md` § Флоу v1 / § Фаза 2.
  *
- * UX-РІШЕННЯ (задокументовано в звіті web-agent-а PR #818, розходиться з
- * буквальним текстом спеки "кнопка ... поруч із «+ Витрата» на сторінці
- * транзакцій"): існуючий `FloatingActionButton` у `FinykApp.tsx` уже й
- * так глобальний для ВСІХ сторінок модуля (не лише "Операції"), а не
- * привʼязаний до сторінки транзакцій. Замість другої, сторінко-локальної
- * кнопки — розширено ТОЙ САМИЙ FAB до fan-menu (`actions`, вже готова
- * можливість `FloatingActionButton`) з трьома діями: «Додати витрату»
- * (наявна поведінка), «Сканувати чек» (одне чи кілька фото — батч живе
- * там, бета-фідбек №2 2026-08-18), «Додати документи» (скрін/CSV). Це
- * найменш-інвазивний шлях (мінус друга кнопка, мінус друга copy-поверхня)
- * і дає доступ до сканування з БУДЬ-ЯКОЇ сторінки модуля — строго ширше
- * покриття, ніж буквальна вимога спеки.
+ * Мова H (redesign v3): круглий FAB із fan-menu знято. Головна дія -
+ * закріплена кнопка-outline «Додати витрату» над tab bar, поруч дві
+ * дрібніші «Чек» і «Імпорт»; усі три доступні з будь-якої сторінки
+ * модуля, як і раніше.
  *
  * Обидва sheet-и — ліниві (`lazyReceiptSheets.ts`, той самий
  * `lazyImport` патерн, що `pages/lazyPages.ts`) і монтуються лише коли
@@ -31,7 +23,8 @@
  * тап взагалі нічого не зробив.
  */
 import { Suspense, useState } from "react";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { AddActionBar } from "@shared/components/ui/AddActionBar";
+import { Button } from "@shared/components/ui/Button";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { useToast } from "@shared/hooks/useToast";
@@ -105,30 +98,29 @@ export function FinykScanEntryPoints({
 
   return (
     <>
-      <FloatingActionButton
-        variant="v2-finyk"
-        icon="plus"
-        aria-label="Додати"
-        actions={[
-          {
-            id: "expense",
-            icon: "plus",
-            label: "Додати витрату",
-            onClick: onAddExpense,
-          },
-          {
-            id: "scan-receipt",
-            icon: "scanner",
-            label: "Сканувати чек",
-            onClick: () => requireAccount(() => setShowReceiptScan(true)),
-          },
-          {
-            id: "bulk-import",
-            icon: "upload",
-            label: "Додати документи",
-            onClick: () => requireAccount(() => onBulkImportOpenChange(true)),
-          },
-        ]}
+      <AddActionBar
+        label="Додати витрату"
+        onClick={onAddExpense}
+        extra={
+          <>
+            <Button
+              variant="outline"
+              size="lg"
+              className="shrink-0 px-4"
+              onClick={() => requireAccount(() => setShowReceiptScan(true))}
+            >
+              Чек
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="shrink-0 px-4"
+              onClick={() => requireAccount(() => onBulkImportOpenChange(true))}
+            >
+              Імпорт
+            </Button>
+          </>
+        }
       />
 
       {showReceiptScan && (

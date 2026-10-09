@@ -66,9 +66,9 @@ describe("NotFoundPage", () => {
     expect(screen.getByRole("button", { name: /Назад/i })).toBeInTheDocument();
   });
 
-  it("renders the not-found illustration", () => {
+  it("мова H: ілюстрацію not-found не рендерить", () => {
     renderNotFound();
-    expect(screen.getByTestId("not-found-illustration")).toBeInTheDocument();
+    expect(screen.queryByTestId("not-found-illustration")).toBeNull();
   });
 
   it("renders inside a main landmark element", () => {

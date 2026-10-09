@@ -619,11 +619,12 @@ export const moduleSurfaces = {
  */
 export const inkTheme = {
   surface: {
-    bg: "#14100e", // page background — тепле вугілля
-    surface: "#2a231f", // cards and nav — 1.22:1 над фоном (крок 2, 2026-09-12)
-    surfaceHi: "#3a302b", // fields / hover — 1.21:1 над карткою, 1.48:1 над фоном
-    line: "rgba(255, 255, 255, 0.14)", // calm but traceable boundary
-    lineStrong: "rgba(255, 255, 255, 0.22)", // major section divider
+    // Мова H (redesign v3, 2026-10-09): холодний графіт замість теплого вугілля.
+    bg: "#0e1116", // сторінка
+    surface: "#171c23", // панель
+    surfaceHi: "#1f252e", // поле вводу й hover на панелі
+    line: "#262c35", // hairline між рядками
+    lineStrong: "#343b45", // обвід кнопки outline
   },
   text: {
     strong: "#f2f6f2", // display / headings — 17.33:1 on bg
@@ -668,8 +669,8 @@ export const inkTheme = {
  * тримає `theme.controlFocus.test.ts`. Міняєш значення — перерахуй обидві теми.
  */
 export const controlEdge = {
-  light: "#7c756e",
-  dark: "#827b77",
+  light: "#7d7d81",
+  dark: "#6b7480",
 };
 
 /** Status/semantic colors — consistent across app. */

@@ -3,8 +3,7 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
-import { Banner } from "@shared/components/ui/Banner";
-import { Icon } from "@shared/components/ui/Icon";
+import { Notice } from "@shared/components/ui/Notice";
 import {
   ATWATER_KCAL_PER_G,
   type NutritionPrefs,
@@ -36,9 +35,6 @@ export function MacroKcalWarning({
   const tone = overshoot
     ? "border-danger/40 bg-danger/10"
     : "border-warning/40 bg-warning/10";
-  const iconTone = overshoot
-    ? "text-danger-strong dark:text-danger"
-    : "text-warning-strong dark:text-warning";
 
   return (
     <div
@@ -51,12 +47,6 @@ export function MacroKcalWarning({
       data-testid="macro-kcal-warning"
     >
       <div className="flex items-start gap-2">
-        <Icon
-          name={overshoot ? "alert-triangle" : "info"}
-          size="sm"
-          className={cn("shrink-0", iconTone)}
-          aria-hidden
-        />
         <p className="text-text leading-snug">
           {overshoot ? (
             <>
@@ -158,20 +148,14 @@ export function MissingMacrosHint({
   );
 
   return (
-    <Banner
-      variant="warning"
+    <Notice
+      tone="ink"
       role="status"
       aria-live="polite"
       className="mt-3 text-style-caption space-y-2"
       data-testid="missing-macros-hint"
     >
       <div className="flex items-start gap-2">
-        <Icon
-          name="info"
-          size="sm"
-          className="shrink-0 text-warning-strong dark:text-warning"
-          aria-hidden
-        />
         <p className="text-text leading-snug">
           Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
           що тобі важливо: білок, жир чи вуглеводи. Підстав середні стартові
@@ -200,7 +184,7 @@ export function MissingMacrosHint({
           {suggestedCarbs}
         </button>
       </div>
-    </Banner>
+    </Notice>
   );
 }
 
@@ -208,26 +192,20 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
   const issues = calcGoalRangeIssues(prefs);
   if (issues.length === 0) return null;
   return (
-    <Banner
-      variant="warning"
+    <Notice
+      tone="ink"
       role="status"
       aria-live="polite"
       className="mt-3 text-style-caption space-y-1"
       data-testid="goal-range-warning"
     >
       <div className="flex items-start gap-2">
-        <Icon
-          name="alert-triangle"
-          size="sm"
-          className="shrink-0 text-warning-strong dark:text-warning"
-          aria-hidden
-        />
         <ul className="text-text leading-snug space-y-0.5 list-disc pl-4">
           {issues.map((issue) => (
             <li key={`${issue.field}-${issue.kind}`}>{issue.message}</li>
           ))}
         </ul>
       </div>
-    </Banner>
+    </Notice>
   );
 }

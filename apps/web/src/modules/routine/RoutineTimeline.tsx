@@ -7,7 +7,7 @@
  * (initiative 0001).
  */
 
-import { Banner } from "@shared/components/ui/Banner";
+import { Notice } from "@shared/components/ui/Notice";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
@@ -87,8 +87,8 @@ export function RoutineTimeline({
         <div className="max-w-4xl mx-auto w-full pt-4 space-y-4">
           <h1 className="sr-only">Рутина</h1>
           {storageErrorMsg && (
-            <Banner
-              variant="danger"
+            <Notice
+              tone="danger"
               role="alert"
               className="flex items-start justify-between gap-3"
             >
@@ -101,7 +101,7 @@ export function RoutineTimeline({
               >
                 Закрити
               </button>
-            </Banner>
+            </Notice>
           )}
           <RoutineCalendarProvider
             data={calendarData}

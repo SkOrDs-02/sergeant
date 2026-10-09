@@ -62,26 +62,18 @@ describe("HubHeader", () => {
 
   afterEach(() => cleanup());
 
-  it("renders the morning greeting for a 09:00 Kyiv hour", () => {
-    render(<HubHeader {...baseProps()} />);
-    expect(screen.getByText(/Доброго ранку/)).toBeInTheDocument();
-  });
-
-  it("personalises the greeting with the user's first name", () => {
+  it("мова H: H1 головної - сьогоднішня дата, без привітання", () => {
     const user = { name: "Іван Петренко" } as User;
     render(<HubHeader {...baseProps()} user={user} />);
-    expect(screen.getByText(/Доброго ранку, Іван/)).toBeInTheDocument();
+    expect(screen.getByTestId("hub-header-title")).toHaveTextContent(
+      "Середа, 24 червня",
+    );
+    expect(screen.queryByText(/Доброго|Доброї|Іван/)).toBeNull();
   });
 
-  it("picks the night greeting before 05:00", () => {
-    mockKyivParts.fn.mockReturnValue({
-      year: 2026,
-      month: 6,
-      day: 24,
-      hour: 3,
-    });
+  it("рядок «зараз · закрито» не рендериться, поки купи не змонтовані", () => {
     render(<HubHeader {...baseProps()} />);
-    expect(screen.getByText(/Доброї ночі/)).toBeInTheDocument();
+    expect(screen.queryByText(/зараз/)).toBeNull();
   });
 
   it("opens the assistant chat via the hub bus", () => {

@@ -52,7 +52,7 @@ describe("RoutineActions", () => {
     const onOpenQuickAddHabit = vi.fn();
     renderActions({ onOpenQuickAddHabit });
 
-    fireEvent.click(screen.getByRole("button", { name: /Додати звичку/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Нова звичка" }));
     expect(onOpenQuickAddHabit).toHaveBeenCalledTimes(1);
   });
 

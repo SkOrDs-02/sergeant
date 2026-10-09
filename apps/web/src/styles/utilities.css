@@ -418,8 +418,8 @@
 
 @utility bottom-nav-shell {
   /* Docked flush against the screen bottom in both browser and PWA
-     standalone — no horizontal insets, flat bottom, rounded only at the
-     top (rounded-t-3xl). The panel background (bg-panel) extends into the
+     standalone — no horizontal insets, square corners. The background
+     (bg-bg) extends into the
      safe-area strip via padding-bottom, so there's no page-coloured dead
      space below the labels and the nav never floats above the home
      indicator. One navigation shape everywhere
@@ -449,7 +449,9 @@
      mode (owner repro 2026-07-13). The normal-flow root owns the full PWA
      height; this nav's own background and safe-area padding paint its edge. */
   position: relative;
-  border-radius: 1.5rem 1.5rem 0 0;
+  /* Мова H (redesign v3): непрозорий нав без скруглення, межу дає hairline
+     зверху (`border-t border-line` на компоненті). */
+  border-radius: 0;
   padding-top: 0.375rem;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }

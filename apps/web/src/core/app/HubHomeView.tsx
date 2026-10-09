@@ -45,9 +45,6 @@ export interface HubHomeViewProps {
   canInstall: boolean;
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
-  iosVisible: boolean;
-  onDismissIosForever: () => void;
-  onSnoozeIos: () => void;
   updateAvailable: boolean;
   onApplyUpdate: () => void;
   openModule: HubNavigation["openModule"];
@@ -69,9 +66,6 @@ export function HubHomeView(props: HubHomeViewProps) {
     canInstall,
     onInstall,
     onDismissInstall,
-    iosVisible,
-    onDismissIosForever,
-    onSnoozeIos,
     updateAvailable,
     onApplyUpdate,
     openModule,
@@ -194,9 +188,6 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubMainContent
         onOpenModule={openFromDashboard}
-        iosVisible={iosVisible}
-        onDismissIosForever={onDismissIosForever}
-        onSnoozeIos={onSnoozeIos}
         hubView={ui.hubView}
         user={user}
         onShowAuth={onOpenAuth}

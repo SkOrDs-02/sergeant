@@ -8,7 +8,6 @@ import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import {
   kcalFromMacros,
   type NutritionPrefs,
@@ -64,15 +63,7 @@ interface DailyPlanCardProps {
   weekPlanRaw?: string;
   weekPlanBusy?: boolean;
   fetchWeekPlan: () => void | Promise<void>;
-  /**
-   * When true, render a `<FirstRunHintBanner />` above the goal
-   * inputs framing the kcal/Б/Ж/В row as the canonical «домівка»
-   * for nutrition goals. Set on the user's first Nutrition entry by
-   * `NutritionApp` via `useModuleFirstRun`.
-   */
-  firstRunHint?: boolean;
   /** Dismiss callback for the first-run hint banner. */
-  onDismissFirstRunHint?: () => void;
 }
 
 export function DailyPlanCard({
@@ -90,8 +81,6 @@ export function DailyPlanCard({
   weekPlanRaw,
   weekPlanBusy,
   fetchWeekPlan,
-  firstRunHint,
-  onDismissFirstRunHint,
 }: DailyPlanCardProps) {
   const hasTargets = prefs.dailyTargetKcal != null;
 
@@ -126,14 +115,6 @@ export function DailyPlanCard({
       </div>
 
       <div className="mt-4 space-y-4">
-        {firstRunHint && (
-          <FirstRunHintBanner
-            variant="nutrition"
-            title="Цілі на день поки орієнтовні"
-            description="Постав ккал і Б/Ж/В або візьми пресет. Змінити можна будь-коли тут же."
-            onDismiss={onDismissFirstRunHint ?? (() => {})}
-          />
-        )}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
             <div className="text-style-caption text-muted">Цілі на день</div>
