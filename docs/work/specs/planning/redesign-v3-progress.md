@@ -7,7 +7,7 @@
 
 | PR  | Гілка                    | Bitbucket PR | Стан      | Позиції каталогу § 2                      |
 | --- | ------------------------ | ------------ | --------- | ----------------------------------------- |
-| PR0 | `claude/redesign-v3-pr0` | див. нижче   | open      | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37 |
+| PR0 | `claude/redesign-v3-pr0` | #1494        | open      | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37 |
 | PR1 | `claude/redesign-v3-pr1` |              | не почато |                                           |
 | PR2 | `claude/redesign-v3-pr2` |              | не почато |                                           |
 | PR3 | `claude/redesign-v3-pr3` |              | не почато |                                           |
@@ -18,7 +18,7 @@
 
 ## Загальне для всіх PR
 
-- **Код живе на GitHub `SkOrDs-02/sergeant`** (на 2026-10-09 `origin` пушить у GitHub і hetzner, мержі в `main` це GitHub PR), тож PR створюється `gh pr create --draft --body-file`, стан перевіряється `gh pr view <n> --json state,mergedAt`. Розділ `AGENTS.md § Де живе код` про Bitbucket на цю дату відстає. У сесії PR0 `gh pr create` заблокував класифікатор дозволів агента; PR створював власник.
+- **Код живе на GitHub `SkOrDs-02/sergeant`** (на 2026-10-09 `origin` пушить у GitHub і hetzner, мержі в `main` це GitHub PR), тож PR створюється `gh pr create --draft --body-file`, стан перевіряється `gh pr view <n> --json state,mergedAt`. Розділ `AGENTS.md § Де живе код` про Bitbucket на цю дату відстає. У сесії PR0 перший `gh pr create` заблокував класифікатор дозволів агента; після дозволу власника PR створено (#1494).
 - Скріншоти до/після йдуть у чат сесії, не в тіло PR.
 
 ## PR0 · копі
