@@ -190,6 +190,18 @@ describe("reloadOnceForChunkError", () => {
       expect(reloadSpy).toHaveBeenCalledTimes(1);
     });
 
+    it("guardUnsavedInput: false (boundary сам розмонтував форму): reload є, подія відкладення не шлеться", async () => {
+      registerDirtyState();
+
+      expect(reloadOnceForChunkError(1_000, { guardUnsavedInput: false })).toBe(
+        true,
+      );
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+      await Promise.resolve();
+      expect(deferred).toEqual([]);
+    });
+
     it("відмова не зʼїдає бюджет cooldown/MAX_RELOADS", () => {
       const release = registerDirtyState();
       for (let i = 0; i < MAX_RELOADS + 2; i += 1) {
