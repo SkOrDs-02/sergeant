@@ -1,5 +1,4 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -23,7 +22,6 @@ import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../../hooks/useInjuries";
 import { useDailyLog } from "../../hooks/useDailyLog";
 import { planWellbeingHandoff } from "../../lib/wellbeingBridge";
-import { WorkoutStatTile } from "./WorkoutStatTile";
 // `FinishFlashState` живе у `../../pages/Workouts.types` (там `useState`
 // setter, що ходить між обома sheet-ами). Імпортуємо звідти, щоб не дублювати
 // оголошення (aislop `ai-slop/duplicate-type-declaration`).
@@ -481,47 +479,9 @@ export function WorkoutFinishSheets({
                   <Icon name="close" size="md" aria-hidden />
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                <WorkoutStatTile
-                  label="Час"
-                  value={formatDurShort(finishFlash.durationSec)}
-                />
-                <WorkoutStatTile
-                  label="Вправ"
-                  value={finishFlash.items}
-                  size="lg"
-                />
-                <WorkoutStatTile
-                  label="Обʼєм"
-                  value={
-                    finishFlash.tonnageKg > 0 ? (
-                      // PR-Z3 (аудит 2026-09-13, хвиля 6): "кг" читалось як
-                      // маса, а це `вага_кг × повторення` — канонічний
-                      // варіант "кг×повт", як у `WorkoutSummaryView` і
-                      // `WeeklyVolumeChart`.
-                      <Measure
-                        value={Math.round(finishFlash.tonnageKg)}
-                        unit="кг×повт"
-                      />
-                    ) : (
-                      "—"
-                    )
-                  }
-                />
-              </div>
+              {/* Метрики (час, вправи, обʼєм, самопочуття) показує сторінка
+                  підсумку просто під цією карткою; тут вони дублювались. */}
             </div>
-            {finishFlash.savedWellbeing &&
-              (finishFlash.savedWellbeing.energy ||
-                finishFlash.savedWellbeing.mood) && (
-                <div className="px-4 py-2.5 bg-panel border-b border-line flex items-center gap-3 text-style-caption text-subtle">
-                  <span>Самопочуття:</span>
-                  <span className="font-semibold text-text">
-                    енергія {finishFlash.savedWellbeing.energy ?? "—"}/5
-                    {" · "}
-                    настрій {finishFlash.savedWellbeing.mood ?? "—"}/5
-                  </span>
-                </div>
-              )}
             <div className="flex flex-col gap-2 p-3 bg-panel">
               {/* Cross-module nudge → Nutrition. Inline (not a toast)
                   because the finish-sheet itself is the natural moment

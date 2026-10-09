@@ -2,23 +2,27 @@
  * Last validated: 2026-10-08
  * Status: Active
  *
- * Валідація складу рецепта і ваги готової страви для mobile. Дзеркало
- * `apps/web/src/modules/nutrition/lib/recipeComponentsNormalize.ts`; обидва
- * нормалізатори (`normalizeSavedRecipe` і `rowToRecipe`) мусять пропускати
- * нові поля, інакше вони зникають при збереженні чи читанні з кешу.
+ * Валідація складу рецепта і ваги готової страви. Спільна для web
+ * (`recipeBook.ts`, `sqliteReader.ts`) і mobile (`recipeBookStore.ts`,
+ * `sqliteReader.ts`): усі нормалізатори мусять пропускати нові поля, інакше
+ * вони зникають при збереженні чи на першому ж читанні з кешу.
  */
-import type { RecipeComponent } from "@sergeant/nutrition-domain";
 import { normalizeMacrosNullable } from "@sergeant/shared";
+import type { RecipeComponent } from "./recipeComponents.js";
 
+/** Та сама стеля, що в `ingredients`. */
 const MAX_COMPONENTS = 80;
-const MAX_PORTION_GRAMS = 10_000;
+
+/** Стеля грамів для порції, компонента і ваги готової страви. */
+export const MAX_PORTION_GRAMS = 10_000;
 
 function validGrams(v: unknown): number | null {
   const n = typeof v === "number" ? v : Number.NaN;
   return Number.isFinite(n) && n > 0 && n <= MAX_PORTION_GRAMS ? n : null;
 }
 
-function normalizeRecipeComponents(
+/** Невалідний компонент відкидається; порожній результат дає `undefined`. */
+export function normalizeRecipeComponents(
   raw: unknown,
 ): RecipeComponent[] | undefined {
   if (!Array.isArray(raw)) return undefined;
@@ -39,6 +43,11 @@ function normalizeRecipeComponents(
     if (out.length >= MAX_COMPONENTS) break;
   }
   return out.length > 0 ? out : undefined;
+}
+
+/** Невалідна вага не помилка збереження: рецепт лишається в режимі порцій. */
+export function normalizeCookedWeightG(raw: unknown): number | null {
+  return validGrams(raw);
 }
 
 /** Склад і вага разом: вага без складу відкидається, невалідна вага стає `null`. */
