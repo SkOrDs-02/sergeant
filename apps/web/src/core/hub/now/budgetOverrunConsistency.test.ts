@@ -32,7 +32,7 @@ vi.mock("@finyk/lib/monoMirrorReader", () => {
 const { generateRecommendations } =
   await import("../../lib/recommendationEngine");
 const { computeClosedToday } = await import("./closedToday");
-const { useDashboardFocus } = await import("../../insights/TodayFocusCard");
+const { useDashboardFocus } = await import("../../insights/dashboardFocus");
 
 // 24 вересня 2026, 04:15 за Києвом: записи датасету v2 внесено о 04:00-04:30.
 const NOW = new Date("2026-09-24T01:15:00Z");

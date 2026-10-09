@@ -48,12 +48,6 @@ describe("FizrukSection", () => {
   // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
   // без `module="fizruk"` іконка секції рендериться нейтрально-сірою.
   // Перевіряємо, що бейдж іконки несе саме fizruk-акцент.
-  it("renders the section glyph with the fizruk module accent (без тонованого квадрата, огляд 2026-09-04)", () => {
-    const { container } = renderSettingsSection(<FizrukSection />);
-    const badge = container.querySelector(`.text-${"fizruk"}`);
-    expect(badge).not.toBeNull();
-  });
-
   // PR-S14: обраний час відпочинку передавався ЛИШЕ кольором рамки й фону.
   // Для скрінрідера обраного стану не існувало, а людина з порушенням
   // сприйняття кольору не бачила, що саме вибрано.

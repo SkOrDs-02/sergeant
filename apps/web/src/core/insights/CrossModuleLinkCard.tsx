@@ -404,12 +404,9 @@ export function CrossModuleLinkCard({
   const [daysOpen, setDaysOpen] = useState(false);
 
   return (
-    <div
-      className={cn(
-        "rounded-2xl border bg-panel p-4",
-        tier === null ? "border-dashed border-line" : "border-line",
-      )}
-    >
+    // Мова H (redesign v3): звʼязок стоїть на сторінці без боксу; ступінь
+    // і доказова смуга лишаються, міняється лише форма.
+    <div>
       {tier === null ? (
         <SilentBody poleA={poleA} poleB={poleB} observations={observations} />
       ) : (

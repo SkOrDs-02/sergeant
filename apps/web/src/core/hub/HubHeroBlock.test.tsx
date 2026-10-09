@@ -14,13 +14,6 @@ vi.mock("../lib/featureFlags", () => ({ useFlag: flagMock }));
 vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModuleWithAction: openActionMock,
 }));
-vi.mock("../insights/TodayFocusCard", () => ({
-  TodayFocusCard: ({ onAction }: { onAction: (module: string) => void }) => (
-    <button type="button" onClick={() => onAction("routine")}>
-      today focus
-    </button>
-  ),
-}));
 vi.mock("../onboarding/SoftAuthPromptCard", () => ({
   SoftAuthPromptCard: ({ onOpenAuth }: { onOpenAuth: () => void }) => (
     <button type="button" onClick={onOpenAuth}>
@@ -96,8 +89,7 @@ function renderHero(overrides: Partial<HubHeroProps> = {}) {
     dismissReengagement: vi.fn(),
     crossModulePreviewSource: null,
     dismissCrossModulePreview: vi.fn(),
-    focus: null,
-    dismiss: vi.fn(),
+    nowPile: null,
     primaryModule: undefined,
     activeModules: [],
     goals: {
@@ -142,6 +134,7 @@ describe("HubHeroBlock", () => {
     ["today focus", { showFirstAction: false, showSoftAuth: false }],
   ])("selects the %s hero", (label, state) => {
     renderHero({
+      nowPile: <p>today focus</p>,
       onboardingState: {
         ...defaultOnboardingState,
         ...state,

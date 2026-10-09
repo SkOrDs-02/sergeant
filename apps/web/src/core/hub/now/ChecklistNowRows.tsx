@@ -22,11 +22,12 @@ export interface ChecklistNowProps {
 /**
  * Незроблені кроки онбордингу як рядки «Зараз» (мова H): чекбокс 22 px,
  * назва 16 / 600, праворуч дрібна дія outline. Тап лише навігація (F3):
- * крок закривають дані, не кнопка.
+ * крок закривають дані, не кнопка. Віддає `<li>`, список дає викликач,
+ * щоб кроки й пункти купи стояли в одному списку на hairline.
  */
 export function ChecklistNowRows({ moduleId, steps }: ChecklistNowProps) {
   return (
-    <ul data-testid="checklist-now" className="divide-y divide-line">
+    <>
       {steps.map((step) => (
         <li
           key={step.id}
@@ -57,6 +58,6 @@ export function ChecklistNowRows({ moduleId, steps }: ChecklistNowProps) {
           )}
         </li>
       ))}
-    </ul>
+    </>
   );
 }

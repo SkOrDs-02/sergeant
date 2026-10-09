@@ -4,7 +4,8 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { Icon } from "@shared/components/ui/Icon";
+import { Notice } from "@shared/components/ui/Notice";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
@@ -46,7 +47,9 @@ function ProfileGroup({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-style-overline text-muted px-1">{title}</h2>
+      <SectionHeading as="h2" size="lg">
+        {title}
+      </SectionHeading>
       {children}
     </section>
   );
@@ -117,12 +120,9 @@ export function ProfilePage() {
     <div className="flex flex-col gap-4 pt-3 pb-6">
       <h1 className="sr-only">{messages.nav.profile}</h1>
       {!online && (
-        <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3">
-          <Icon name="wifi-off" size="md" className="text-warning shrink-0" />
-          <p className="text-style-label text-warning-strong dark:text-warning">
-            Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.
-          </p>
-        </div>
+        <Notice tone="ink">
+          Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.
+        </Notice>
       )}
 
       <PersonalInfoSection user={user} online={online} onRefresh={refresh} />
@@ -132,12 +132,11 @@ export function ProfilePage() {
           type="button"
           variant="ghost"
           size="sm"
-          className="gap-2 text-muted"
+          className="text-muted"
           disabled={loggingOut}
           loading={loggingOut}
           onClick={() => setConfirmingLogout(true)}
         >
-          <Icon name="log-out" size="md" />
           {loggingOut ? messages.loadingActions.exiting : "Вийти"}
         </Button>
       </div>
@@ -148,7 +147,6 @@ export function ProfilePage() {
           title="Пароль"
           defaultOpen={false}
           headingSize="md"
-          collapsedIcon="lock"
           collapsedSubtitle="Зміна пароля"
         >
           <ChangePasswordSection online={online} />
@@ -159,7 +157,6 @@ export function ProfilePage() {
           title="Активні сесії"
           defaultOpen={false}
           headingSize="md"
-          collapsedIcon="monitor"
           collapsedSubtitle="Пристрої з доступом до акаунта"
         >
           <SessionsSection online={online} />
@@ -170,7 +167,6 @@ export function ProfilePage() {
           title="Блокування застосунку"
           defaultOpen={false}
           headingSize="md"
-          collapsedIcon="shield"
           collapsedSubtitle="PIN при відкритті на цьому пристрої"
         >
           <Card radius="lg" padding="md">
@@ -185,7 +181,6 @@ export function ProfilePage() {
           title="Памʼять"
           defaultOpen={false}
           headingSize="md"
-          collapsedIcon="brain"
           // V-11 (2026-08-09): підпис називає ДЖЕРЕЛО фактів; серверний
           // список тепер стоїть у цій же секції нижче, тож двох входів
           // більше немає.
@@ -202,7 +197,6 @@ export function ProfilePage() {
           title="Біометрія"
           defaultOpen={false}
           headingSize="md"
-          collapsedIcon="activity"
           collapsedSubtitle="Зріст, вага, активність для розрахунку калорій"
         >
           <BiometricsSection online={online} />
@@ -217,7 +211,6 @@ export function ProfilePage() {
           title="Видалення акаунта"
           defaultOpen={false}
           headingSize="md"
-          collapsedIcon="alert-triangle"
           collapsedSubtitle="Незворотні дії"
         >
           <DangerZoneSection

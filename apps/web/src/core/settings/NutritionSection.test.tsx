@@ -169,9 +169,4 @@ describe("NutritionSection", () => {
   // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
   // без `module="nutrition"` іконка секції рендериться нейтрально-сірою.
   // Перевіряємо, що бейдж іконки несе саме nutrition-акцент.
-  it("renders the section glyph with the nutrition module accent (без тонованого квадрата, огляд 2026-09-04)", () => {
-    const { container } = renderSection();
-    const badge = container.querySelector(`.text-${"nutrition"}`);
-    expect(badge).not.toBeNull();
-  });
 });

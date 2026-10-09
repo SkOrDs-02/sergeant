@@ -34,6 +34,10 @@ describe("writeFinykQuickStatsSnapshot", () => {
     expect(JSON.parse(payload)).toEqual({
       todaySpent: 1250,
       budgetLeft: 3750,
+      todayPoints: [[719, 1250]],
+      // 29 липня: лишається 3 дні включно з сьогодні, на початок доби весь
+      // план 5000 ще вільний → floor(5000 / 3).
+      dayPlan: 1666,
     });
     expect(localStorage.getItem(STORAGE_KEYS.FINYK_QUICK_STATS)).toBe(payload);
     expect(updated).toHaveBeenCalledTimes(1);

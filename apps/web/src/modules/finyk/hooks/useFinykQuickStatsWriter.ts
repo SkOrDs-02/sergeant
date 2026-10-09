@@ -2,7 +2,10 @@ import { useEffect } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { computeFinykQuickStats } from "@sergeant/finyk-domain/utils";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
-import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
+import {
+  calculateSafeToSpendPerDay,
+  getLimitBudgets,
+} from "@sergeant/finyk-domain/domain/budget";
 import type {
   Transaction,
   TxSplitsMap,
@@ -38,10 +41,16 @@ function kyivWindows(nowMs: number) {
   const todayEnd =
     parseKyivDate(getKyivDayKey(todayStart + 25 * 60 * 60 * 1000))?.getTime() ??
     todayStart + 24 * 60 * 60 * 1000;
-  const [year, month] = todayKey.split("-");
+  const [year, month, day] = todayKey.split("-").map(Number) as [
+    number,
+    number,
+    number,
+  ];
   const monthStart =
-    parseKyivDate(`${year}-${month}-01`)?.getTime() ?? todayStart;
-  return { todayStart, todayEnd, monthStart };
+    parseKyivDate(`${todayKey.slice(0, 7)}-01`)?.getTime() ?? todayStart;
+  // Сьогодні входить у решту днів: план дня рахується на його початок.
+  const daysLeft = new Date(Date.UTC(year, month, 0)).getUTCDate() - day + 1;
+  return { todayStart, todayEnd, monthStart, daysLeft };
 }
 
 /**
@@ -59,17 +68,28 @@ export function writeFinykQuickStatsSnapshot({
   limitsCount = 0,
   nowMs = Date.now(),
 }: FinykQuickStatsSnapshotInput): string {
-  const { todayStart, todayEnd, monthStart } = kyivWindows(nowMs);
+  const { todayStart, todayEnd, monthStart, daysLeft } = kyivWindows(nowMs);
+  const stats = computeFinykQuickStats({
+    transactions,
+    excludedTxIds,
+    txSplits,
+    planExpense,
+    todayStartMs: todayStart,
+    todayEndMs: todayEnd,
+    monthStartMs: monthStart,
+  });
+  // План дня для hero хаба (redesign v3): залишок плану на початок доби,
+  // поділений на дні, що лишились, включно з сьогодні.
+  const dayPlan =
+    stats.budgetLeft === null
+      ? null
+      : calculateSafeToSpendPerDay(
+          stats.budgetLeft + stats.todaySpent,
+          daysLeft,
+        );
   const payload = JSON.stringify({
-    ...computeFinykQuickStats({
-      transactions,
-      excludedTxIds,
-      txSplits,
-      planExpense,
-      todayStartMs: todayStart,
-      todayEndMs: todayEnd,
-      monthStartMs: monthStart,
-    }),
+    ...stats,
+    ...(dayPlan !== null ? { dayPlan } : {}),
     ...(limitsCount > 0 ? { limitsCount } : {}),
   });
 

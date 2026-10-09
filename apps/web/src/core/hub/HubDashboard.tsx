@@ -17,7 +17,9 @@ import { safeReadLS } from "@shared/lib/storage/storage";
 import { useAuthOptional } from "../auth/AuthContext";
 import { ModulePanel } from "./ModulePanel";
 import { useChecklistNow } from "./now/useChecklistNow";
+import { useNowItems } from "./now/useNowItems";
 import { NowPile } from "./now/NowPile";
+import { HubSpendHero } from "./HubSpendHero";
 import { ClosedTodayPile } from "./now/ClosedTodayPile";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
@@ -68,6 +70,7 @@ export function HubDashboard({
     authStatus: auth?.status,
   });
   const [showInsights] = useHubPref<boolean>("showInsights", true);
+  const now = useNowItems();
   const checklistModule =
     s.showChecklist && s.primaryModule ? s.primaryModule : null;
   const checklistSteps = useChecklistNow(checklistModule);
@@ -80,10 +83,14 @@ export function HubDashboard({
       ? { moduleId: checklistModule, steps: checklistSteps.done }
       : undefined;
 
-  // Мова H (redesign v3): hero-слот («Зараз» або FTUX-hero) → панель
-  // модулів → «Закрито». Блоки зʼявляються без stagger-анімації.
+  // Мова H (redesign v3): hero «Витрати сьогодні» → «Зараз» (або FTUX-hero)
+  // → панель модулів → «Закрито». Блоки зʼявляються без stagger-анімації.
   return (
     <div className="space-y-7">
+      {s.activeModules.includes("finyk") && (
+        <HubSpendHero storageBump={s.storageBump} />
+      )}
+
       <HubHeroBlock
         onOpenModule={onOpenModule}
         onShowAuth={onShowAuth}
@@ -95,20 +102,21 @@ export function HubDashboard({
         dismissReengagement={s.dismissReengagement}
         crossModulePreviewSource={s.crossModulePreviewSource}
         dismissCrossModulePreview={s.dismissCrossModulePreview}
-        focus={s.focus}
-        dismiss={s.dismiss}
         primaryModule={s.primaryModule}
         checklist={checklistOpen}
         activeModules={s.activeModules}
         goals={s.goals}
         hasValueBar={s.hasValueBar}
+        // Новачок без записів і без пунктів не бачить порожньої купи:
+        // «все закрито» було б неправдою про день, якого ще не було.
         nowPile={
-          s.hasRealEntry ? (
+          s.hasRealEntry || now.items.length > 0 || checklistOpen ? (
             <NowPile
+              now={now}
               onOpenTarget={s.openInsightTarget}
               checklist={checklistOpen}
             />
-          ) : undefined
+          ) : null
         }
       />
 
@@ -126,6 +134,8 @@ export function HubDashboard({
           onOpenModule={onOpenModule}
           storageBump={s.storageBump}
           checklistDone={checklistDone}
+          checked={now.checked}
+          onUncheck={now.uncheck}
         />
       )}
 

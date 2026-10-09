@@ -2,21 +2,21 @@
  * Last validated: 2026-10-09
  * Status: Active
  *
- * Оболонка звітної картки хабу: панель мови H (redesign v3), без бордера й
- * тіні. Матеріал «край і зріз» лишився тільки на чеку Фініка.
+ * Оболонка звітного рядка хабу (мова H, H-reports): рядок на hairline,
+ * розгорнутий показує графік під собою. Без панелі, бордера й тіні.
  */
 import type { ReactNode } from "react";
 
 export interface ReportSheetProps {
-  /** Згорнутий стан картки — впливає лише на щільність падінга. */
+  /** Згорнутий стан рядка — впливає лише на відступ під розгорнутим. */
   collapsed: boolean;
   children: ReactNode;
 }
 
 export function ReportSheet({ collapsed, children }: ReportSheetProps) {
   return (
-    <div className="rounded-xl bg-panel">
-      <div className={collapsed ? "p-3" : "p-4 space-y-3"}>{children}</div>
+    <div className={collapsed ? "py-0.5" : "space-y-3 pb-4 pt-0.5"}>
+      {children}
     </div>
   );
 }

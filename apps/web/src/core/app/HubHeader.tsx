@@ -10,7 +10,6 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { messages } from "@shared/i18n/uk";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { hapticTap } from "@shared/lib/adapters/haptic";
-import type { User } from "@sergeant/shared";
 import { formatKyivNominativeDate } from "@shared/lib/time/greeting";
 import { coreMessages } from "@shared/i18n/uk.core";
 import { useHubDayCounts } from "../hub/now/hubDayCounts";
@@ -31,10 +30,6 @@ const ICON_BUTTON_CLS =
 
 interface HubHeaderProps {
   onOpenSearch: () => void;
-  user: User | null;
-  authLoading?: boolean;
-  onShowAuth?: () => void;
-  hideAuthButton?: boolean;
   /** System notifications (SW update / PWA install) surfaced in the bell. */
   notifications?: readonly HubNotification[];
   /**
@@ -47,10 +42,6 @@ interface HubHeaderProps {
 
 export function HubHeader({
   onOpenSearch,
-  user,
-  authLoading,
-  onShowAuth,
-  hideAuthButton = false,
   notifications,
   activeTab,
 }: HubHeaderProps) {
@@ -121,20 +112,9 @@ export function HubHeader({
 
           {/* Дзвоник рендериться лише коли є системне сповіщення (оновлення
               застосунку, встановлення PWA). */}
+          {/* Вхід для аноніма живе у вкладці tab bar, не тут (мова H: дві
+              іконки в шапці). */}
           <NotificationBell notifications={notifications ?? []} />
-
-          {!user && !authLoading && !hideAuthButton && onShowAuth && (
-            <Tooltip content="Увійти" placement="bottom-center">
-              <button
-                type="button"
-                onClick={onShowAuth}
-                aria-label="Увійти в акаунт"
-                className={ICON_BUTTON_CLS}
-              >
-                <Icon name="user" size="lg" />
-              </button>
-            </Tooltip>
-          )}
         </div>
       </div>
     </header>
