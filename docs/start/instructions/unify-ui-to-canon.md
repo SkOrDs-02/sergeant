@@ -1,6 +1,6 @@
 # Playbook: Звести дублікати UI до канону і закріпити храповиком
 
-> **Last touched:** 2026-10-09 by @claude (метрики 7-11: рух, скло, радіуси, кікер). **Next review:** 2027-01-12.
+> **Last touched:** 2026-10-09 by @test. **Next review:** 2027-01-12.
 > **Status:** Active
 > **Runtime-specific:** no
 
