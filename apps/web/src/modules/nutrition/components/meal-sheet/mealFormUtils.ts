@@ -108,6 +108,54 @@ export function macrosToFormFields(mac: {
   };
 }
 
+/**
+ * Чи людина змінила КБЖВ відносно збереженого прийому. Порівнюємо рядки полів
+ * форми, а не числа: `macrosToFormFields` — та сама функція, що наповнила
+ * форму при відкритті, тож неторкнуті поля збігаються точно.
+ */
+export function macroFieldsEdited(
+  form: Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g">,
+  initialMacros: Parameters<typeof macrosToFormFields>[0] | null | undefined,
+): boolean {
+  const initial = macrosToFormFields(initialMacros ?? {});
+  return (["kcal", "protein_g", "fat_g", "carbs_g"] as const).some(
+    (key) => form[key] !== initial[key],
+  );
+}
+
+/**
+ * Походження КБЖВ для збереження. Прийом із `foodId`, чий продукт не вдалося
+ * відновити (`hasPickedFood: false`), лишається `productDb` лише тоді, коли
+ * він уже був `productDb` і КБЖВ не чіпали. Після ручної правки це вже не
+ * значення з бази: інакше запис ніс би `productDb` з макросами, що не
+ * відповідають ні базі, ні `amount_g` (аудит 2026-10-01, ux-13).
+ *
+ * AI-DANGER: `foodId` сам по собі не доказ походження. Ручна правка КБЖВ
+ * лишає `foodId` (`effectiveFoodId` в `AddMealSheet`), тож `manual`-прийом з
+ * `foodId` і нечіпаною формою (змінили лише час чи назву) без перевірки
+ * `initialMeal.macroSource` тихо ставав би `productDb` і знімав гард
+ * `useEditedFoodRehydration`, який не відновлює такі прийоми заради ручних цифр.
+ */
+export function resolveMacroSource(args: {
+  fromPhoto: boolean;
+  hasPickedFood: boolean;
+  form: Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g">;
+  initialMeal: {
+    foodId?: string | null | undefined;
+    macroSource?: string | null | undefined;
+    macros?: Parameters<typeof macrosToFormFields>[0] | null | undefined;
+  };
+}): MealMacroSource {
+  const { fromPhoto, hasPickedFood, form, initialMeal } = args;
+  if (fromPhoto) return "photoAI";
+  if (hasPickedFood) return "productDb";
+  const keepsDb =
+    !!initialMeal.foodId &&
+    initialMeal.macroSource === "productDb" &&
+    !macroFieldsEdited(form, initialMeal.macros);
+  return keepsDb ? "productDb" : "manual";
+}
+
 export interface MealFormPhotoResult {
   dishName?: string | null;
   macros?: Partial<NullableMacros> | null;
@@ -262,21 +310,4 @@ export function upsertMealTemplate(
     0,
     40,
   );
-}
-
-/**
- * True when every macro field is null or 0 — mirrors the `hasPhotoMacros`
- * predicate below (photo AI returns all-null macros when it can't
- * identify the food). A meal saved with all-empty macros won't move the
- * daily stats at all, so `handleSave` routes through a confirm step
- * instead of blocking the save outright (founder decision: warn, don't
- * block).
- */
-export function macrosAreAllEmpty(macros: {
-  kcal: number | null;
-  protein_g: number | null;
-  fat_g: number | null;
-  carbs_g: number | null;
-}): boolean {
-  return !Object.values(macros).some((v) => v != null && v !== 0);
 }

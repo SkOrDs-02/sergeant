@@ -22,17 +22,25 @@ import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
 import type { Macros } from "../macros";
 
 export interface SeedFood {
+  /**
+   * Стабільний ключ корпусу. Клієнтська база кладе його в `id` як
+   * `gen_<slug>` — той самий id, що віддає серверний пошук, тож прийом,
+   * доданий з seed-продукту, однаково відновлюється на будь-якому пристрої
+   * (аудит 2026-10-01, ux-13). Необовʼязковий: тестові сіди його не мають.
+   */
+  slug?: string;
   name: string;
   per100: Macros;
 }
 
 /**
- * Локальна форма: клієнтській базі потрібні лише назва й макроси.
- * `slug`, `category`, `aliases` і `alcohol_g` — серверні поля; на клієнті
+ * Локальна форма: клієнтській базі потрібні slug, назва й макроси.
+ * `category`, `aliases` і `alcohol_g` — серверні поля; на клієнті
  * пошук іде по `norm`, який `foodDb` рахує сам тим самим
  * `buildProductSearchKey`, що й сервер.
  */
 export const SEED_FOODS_UK: SeedFood[] = GENERIC_FOODS.map((food) => ({
+  slug: food.slug,
   name: food.name,
   per100: {
     kcal: food.per100.kcal,
