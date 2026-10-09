@@ -233,7 +233,6 @@ export function NutritionDashboard({
       <Card
         prominence="hero"
         module="nutrition"
-        edge="rule"
         padding="none"
         className="min-w-0"
       >

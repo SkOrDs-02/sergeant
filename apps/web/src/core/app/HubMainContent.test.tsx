@@ -59,14 +59,6 @@ vi.mock("../profile/ProfilePage", () => ({
   ProfilePage: () => <section data-testid="profile-page" />,
 }));
 
-vi.mock("./IOSInstallBanner", () => ({
-  IOSInstallBanner: () => <section data-testid="ios-install-banner" />,
-}));
-
-vi.mock("../billing/TrialBanner", () => ({
-  TrialBanner: () => <section data-testid="trial-banner" />,
-}));
-
 // Реальний банер читає `useLocalUserId` → `useAuth`, а цей набір рендерить
 // HubMainContent голим, без AuthProvider. Власна логіка показу покрита в
 // `core/durability/LocalOnlyDataBanner.test.tsx`; тут перевіряємо лише те,
@@ -129,9 +121,6 @@ function props(
 ): HubMainContentProps {
   return {
     onOpenModule: vi.fn(),
-    iosVisible: false,
-    onDismissIosForever: vi.fn(),
-    onSnoozeIos: vi.fn(),
     hubView: "dashboard",
     user: null,
     onShowAuth: vi.fn(),
@@ -156,12 +145,9 @@ describe("HubMainContent iOS install banner", () => {
 
   afterEach(() => cleanup());
 
-  it("suppresses the iOS install banner while the user is in FTUX", () => {
-    renderWithClient(
-      <HubMainContent {...props({ iosVisible: true, inFtuxSession: true })} />,
-    );
+  it("тримає один сигнал на екрані в FTUX", () => {
+    renderWithClient(<HubMainContent {...props({ inFtuxSession: true })} />);
 
-    expect(screen.queryByTestId("ios-install-banner")).toBeNull();
     expect(screen.getByTestId("hub-dashboard")).toBeInTheDocument();
     // Перша сесія тримає рівно один сигнал на екрані — CTA першої дії.
     expect(screen.queryByTestId("local-only-banner")).toBeNull();
@@ -190,12 +176,6 @@ describe("HubMainContent iOS install banner", () => {
     ).toBeTruthy();
   });
 
-  it("shows the iOS install banner outside FTUX when iosVisible is set", () => {
-    renderWithClient(<HubMainContent {...props({ iosVisible: true })} />);
-
-    expect(screen.getByTestId("ios-install-banner")).toBeInTheDocument();
-  });
-
   it("renders dashboard chrome and forwards dashboard actions", () => {
     const onOpenModule = vi.fn();
     const onShowAuth = vi.fn();
@@ -204,7 +184,6 @@ describe("HubMainContent iOS install banner", () => {
       <HubMainContent {...props({ onOpenModule, onShowAuth })} />,
     );
 
-    expect(screen.getByTestId("trial-banner")).toBeInTheDocument();
     fireEvent.click(screen.getByText("open module"));
     fireEvent.click(screen.getByText("show auth"));
 

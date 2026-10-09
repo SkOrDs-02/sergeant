@@ -53,12 +53,7 @@ export function DayLogSheet({
   onCopyMeals,
 }: DayLogSheetProps) {
   return (
-    <Card
-      as="section"
-      edge="stub"
-      padding="none"
-      aria-label={`Записи за ${selectedDate}`}
-    >
+    <Card as="section" padding="none" aria-label={`Записи за ${selectedDate}`}>
       <div className="p-4 flex flex-col gap-3">
         {/*
           Смуга стоїть НАД журналом, а не замість нього (анти-слоп П1,

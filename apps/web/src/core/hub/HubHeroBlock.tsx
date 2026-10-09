@@ -5,27 +5,30 @@
  * (FirstAction, SoftAuth, or TodayFocus). Re-engagement overrides all.
  */
 
-import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import type { getOnboardingGoals } from "@sergeant/shared";
 import { TodayFocusCard } from "../insights/TodayFocusCard";
 import { SoftAuthPromptCard } from "../onboarding/SoftAuthPromptCard";
 import { FirstActionHeroCard } from "../onboarding/FirstActionSheet";
 import { CrossModulePreview } from "./CrossModulePreview";
 import { ReEngagementCard } from "../onboarding/ReEngagementCard";
-import { ModuleChecklist } from "../onboarding/ModuleChecklist";
+import {
+  ChecklistNowRows,
+  type ChecklistNowProps,
+} from "./now/ChecklistNowRows";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { coreMessages } from "@shared/i18n/uk.core";
 import { OnboardingProgress } from "../onboarding/OnboardingProgress";
 import { useFlag } from "../lib/featureFlags";
 import { OutcomeCard } from "./OutcomeCard";
 import { ValueProgressBar } from "./ValueProgressBar";
 import { StreakIndicator } from "./dashboard/dashboardCards";
-import type { DashboardModuleId, User } from "./hub.types";
+import type { DashboardModuleId } from "./hub.types";
 import type { useOnboardingState } from "../onboarding/useOnboardingState";
 import type { Rec } from "@sergeant/shared";
 
 export interface HubHeroBlockProps {
   onOpenModule: (module: string) => void;
   onShowAuth: () => void;
-  user: User | null;
   hasRealEntry: boolean;
   sessionDays: number;
   entryCount: number;
@@ -37,7 +40,8 @@ export interface HubHeroBlockProps {
   focus: Rec | null;
   dismiss: (id: string) => void;
   primaryModule: "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
-  showChecklist: boolean;
+  /** Незроблені кроки онбордингу (рядки «Зараз»). */
+  checklist?: ChecklistNowProps | undefined;
   activeModules: readonly string[];
   goals: ReturnType<typeof getOnboardingGoals>;
   hasValueBar: boolean;
@@ -53,7 +57,6 @@ export interface HubHeroBlockProps {
 export function HubHeroBlock({
   onOpenModule,
   onShowAuth,
-  user,
   hasRealEntry,
   sessionDays,
   entryCount,
@@ -65,7 +68,7 @@ export function HubHeroBlock({
   focus,
   dismiss,
   primaryModule,
-  showChecklist,
+  checklist,
   activeModules,
   goals,
   hasValueBar,
@@ -123,26 +126,15 @@ export function HubHeroBlock({
         <StreakIndicator />
       )}
       {hero}
-      {showChecklist && primaryModule && (
-        <ModuleChecklist
-          moduleId={primaryModule}
-          accountCreatedAt={user?.createdAt ?? null}
-          onAction={(action) => {
-            // AI-DANGER: тут НЕ МОЖНА ставити відмітку «крок виконано».
-            // Був саме такий рядок для `view_analytics`, і він брехав:
-            // тап лише відкриває модуль (`FinykApp` веде дію на її
-            // сторінку), а людина може піти звідти, нічого не зробивши.
-            // Відмітка ж ставилась постійно, тобто чекліст зараховував
-            // крок, якого не сталося, рівно той дефект, що його F3 і
-            // закривав (знахідка рев'ю до PR #1106). Тап - це чиста
-            // навігація; відмітку ставить САМ екран аналітики на маунті
-            // (`modules/finyk/pages/Analytics.tsx`).
-            openHubModuleWithAction(
-              primaryModule as Parameters<typeof openHubModuleWithAction>[0],
-              action as Parameters<typeof openHubModuleWithAction>[1],
-            );
-          }}
-        />
+      {/* Кроки онбордингу живуть у купі «Зараз». Коли hero-слот зайняв
+          інший герой (FTUX, soft-auth), вони стоять окремою секцією «Зараз». */}
+      {checklist && hero !== nowPile && (
+        <section aria-labelledby="checklist-now-heading" className="space-y-2">
+          <SectionHeading as="h2" id="checklist-now-heading" size="lg">
+            {coreMessages.hub.nowPile.heading}
+          </SectionHeading>
+          <ChecklistNowRows {...checklist} />
+        </section>
       )}
       {!hasRealEntry &&
         (outcomeCardEnabled ? (

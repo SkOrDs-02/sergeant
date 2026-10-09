@@ -172,7 +172,7 @@ describe("Modal", () => {
       );
       expect(
         screen.getByRole("dialog", { name: "Touch sheet" }).className,
-      ).toContain("rounded-t-3xl");
+      ).toContain("rounded-t-xl");
     } finally {
       window.matchMedia = originalMatchMedia;
     }

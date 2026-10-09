@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Banner } from "@shared/components/ui/Banner";
+import { Notice, type NoticeTone } from "@shared/components/ui/Notice";
 import { logger } from "@shared/lib";
 import { formatRelativeUk } from "@shared/lib/format/relativeTime.uk";
 import { messages } from "@shared/i18n/uk";
@@ -195,14 +195,14 @@ function OverallBanner({
   timestamp: string;
 }): JSX.Element {
   const headline = OVERALL_HEADLINE[status];
-  const variant: "success" | "warning" | "danger" =
+  const tone: NoticeTone =
     status === "operational"
-      ? "success"
+      ? "muted"
       : status === "degraded"
-        ? "warning"
+        ? "ink"
         : "danger";
   return (
-    <Banner variant={variant} data-testid="status-overall">
+    <Notice tone={tone} data-testid="status-overall">
       <div className="flex items-center justify-between gap-3">
         <span className="font-semibold">{headline}</span>
         {/* No raw `opacity-80` here: axe flagged this span at 3.96:1 on
@@ -215,7 +215,7 @@ function OverallBanner({
           {messages.publicStatus.timestampPrefix} {formatRelativeUk(timestamp)}
         </span>
       </div>
-    </Banner>
+    </Notice>
   );
 }
 
@@ -310,7 +310,7 @@ function ErrorCard({
   onRetry: () => void;
 }): JSX.Element {
   return (
-    <Banner variant="danger" data-testid="status-error">
+    <Notice tone="danger" data-testid="status-error">
       <div className="flex flex-col gap-2">
         <span className="font-semibold">
           {messages.publicStatus.errorTitle}
@@ -326,7 +326,7 @@ function ErrorCard({
           {messages.publicStatus.errorRetry}
         </button>
       </div>
-    </Banner>
+    </Notice>
   );
 }
 

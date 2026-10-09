@@ -87,23 +87,16 @@ describe("HubBottomNav", () => {
     expect(dashboard).toHaveAttribute("aria-selected", "false");
   });
 
-  it("позначає активний таб суцільною заливкою (border-transparent), решту — без неї", () => {
+  it("мова H: активний таб чорнилом без пігулки, решта третім сірим", () => {
     renderNav({ hubView: "settings" });
 
     const settings = screen.getByRole("tab", { name: /Налаштування/ });
-    const settingsPill = settings.firstElementChild as HTMLElement;
-    // Fix spec v2 § 1: light mirrors dark — solid emerald fill + ink-on-
-    // cream foreground, not an outline. `text-bg` is theme-aware, so one
-    // bare class covers both themes' foreground.
-    expect(settingsPill.className).toContain("bg-brand-strong");
-    expect(settingsPill.className).toContain("dark:bg-brand-400");
-    expect(settingsPill.className).toContain("text-bg");
-
+    expect(settings.className).toContain("text-text");
+    expect((settings.firstElementChild as HTMLElement).className).not.toMatch(
+      /bg-|rounded/,
+    );
     const home = screen.getByRole("tab", { name: /Головна/ });
-    const homePill = home.firstElementChild as HTMLElement;
-    expect(homePill.className).toContain("bg-transparent");
-    expect(homePill.className).not.toContain("bg-brand-strong");
-    expect(homePill.className).not.toContain("dark:bg-brand-400");
+    expect(home.className).toContain("text-subtle");
   });
 
   // Founder-аудит R1 (2026-09-11): контейнер раніше розкладав таби через
@@ -172,20 +165,13 @@ describe("HubBottomNav", () => {
     expect(onChange).toHaveBeenCalledWith("settings");
   });
 
-  it("renders as a bottom-nav-shell — inset, rounded, framed", () => {
+  it("непрозорий нав із hairline зверху, без скла", () => {
     renderNav({});
     const nav = screen.getByRole("navigation");
-    const settingsTab = screen.getByRole("tab", { name: /Налаштування/ });
-
-    // bottom-nav-shell utility (utilities.css) handles floating-pill
-    // layout in browser mode and edge-to-edge dock in PWA standalone.
-    // The styles are applied via CSS (not Tailwind classes), so we
-    // assert the utility class name and the co-applied surface classes.
     expect(nav.className).toContain("bottom-nav-shell");
-    expect(nav.className).toContain("bg-panel");
-    expect(nav.className).toContain("border");
-    expect(settingsTab.className).toContain("justify-center");
-    expect(settingsTab.firstElementChild).toHaveClass("rounded-2xl", "py-1");
+    expect(nav.className).toContain("bg-bg");
+    expect(nav.className).toContain("border-t");
+    expect(nav.className).not.toMatch(/blur|shadow/);
   });
 
   it("tablist semantics: кожен таб має aria-controls", () => {

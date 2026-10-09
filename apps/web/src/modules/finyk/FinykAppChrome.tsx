@@ -93,22 +93,17 @@ export function AuthErrorBanner({
   // ішла його перегенеровувати.
   const needsAccount =
     authError === messages.finyk.monoConnectErrors.accountRequired;
-  // Offset clears the in-flow ModuleHeader stack: safe-area-pt + 68px title
-  // row (min-h-[68px], ModuleHeader.tsx) + ~40px ModuleSwitcher row.
+  // Offset clears the in-flow ModuleHeader: safe-area-pt + 68px title row
+  // (min-h-[68px], ModuleHeader.tsx).
   return (
     <div
       role="alert"
-      className="fixed top-[calc(108px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
+      className="fixed top-[calc(68px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
     >
-      <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
-        <Icon
-          name="alert-triangle"
-          size={18}
-          className="shrink-0 mt-0.5 text-warning-strong dark:text-warning"
-          aria-hidden
-        />
+      {/* Мова H: плаваюча поверхня без іконки, тінь як у тоста. */}
+      <div className="bg-bg rounded-xl px-4 py-3 flex items-start gap-3 shadow-e4">
         <div className="flex-1 min-w-0">
-          <p className="text-style-label text-text">
+          <p className="text-style-label font-semibold text-text">
             {needsAccount ? "Потрібен вхід" : "Токен потребує оновлення"}
           </p>
           <p className="text-style-caption text-muted mt-0.5">{authError}</p>

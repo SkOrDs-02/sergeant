@@ -318,16 +318,8 @@ export function Measurements() {
 
         {!latest && <AddMeasurementForm addEntry={addEntry} />}
 
-        {/*
-          П3 «край і зріз»: «Останній запис» і журнал «Історія» нижче
-          виглядають як стос, але не є ним — між картками стоїть той самий
-          `space-y-3`, що й між усіма іншими секціями сторінки (формою
-          додавання, статами). Стос вимагає СУМІЖНОСТІ: тут її немає, тож
-          `rule`/`perf` неправдиво стверджували б неперервність. Кожна
-          картка лишається самодостатнім аркушем — `edge="stub"`.
-        */}
         {latest && (
-          <Card edge="stub" padding="none">
+          <Card padding="none">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -387,7 +379,7 @@ export function Measurements() {
           заради скруглення рядків під `rounded-2xl`, а край скасовує
           скруглення взагалі — та сама правка, що в `WeeklyDigestCard`.
         */}
-        <Card edge="stub" padding="none">
+        <Card padding="none">
           <div className="px-4 py-3 bg-panelHi border-b border-line">
             <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.history}

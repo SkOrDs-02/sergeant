@@ -52,8 +52,8 @@ import { FinykScanEntryPoints } from "./FinykScanEntryPoints";
 import type { ManualExpenseWriteThroughStorage } from "../hooks/manualExpenseWriteThrough";
 
 /**
- * Аркуш масового імпорту контрольований ззовні (його відкривають два
- * входи: FAB тут і плашка нагадування в Огляді), тож тест тримає той стан
+ * Аркуш масового імпорту контрольований ззовні (`FinykApp` тримає його
+ * стан), тож тест тримає той стан
  * так само, як `FinykApp` — інакше перевірявся б не той контракт, який
  * компонент насправді має.
  */
@@ -102,43 +102,32 @@ function renderEntryPoints(onAddExpense = vi.fn(), onOpenAuth = vi.fn()) {
   return { onAddExpense, onOpenAuth };
 }
 
-function openFabMenu() {
-  fireEvent.click(screen.getByRole("button", { name: "Додати" }));
-}
-
 afterEach(() => {
   useAuthOptionalMock.mockReturnValue(null);
 });
 
 describe("FinykScanEntryPoints", () => {
-  it("renders the FAB trigger with neither sheet mounted; the fan-menu is closed by default", () => {
+  it("renders the add bar with all three actions and neither sheet mounted", () => {
     renderEntryPoints();
-    expect(screen.getByRole("button", { name: "Додати" })).toBeInTheDocument();
-    expect(screen.queryByText("Додати витрату")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Додати витрату" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Чек" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Імпорт" })).toBeInTheDocument();
     expect(screen.queryByTestId("receipt-scan-sheet")).not.toBeInTheDocument();
     expect(screen.queryByTestId("bulk-import-sheet")).not.toBeInTheDocument();
   });
 
-  it("tapping the FAB expands the fan-menu with all three actions", () => {
-    renderEntryPoints();
-    openFabMenu();
-    expect(screen.getByText("Додати витрату")).toBeInTheDocument();
-    expect(screen.getByText("Сканувати чек")).toBeInTheDocument();
-    expect(screen.getByText("Додати документи")).toBeInTheDocument();
-  });
-
   it("«Додати витрату» calls onAddExpense directly (no sheet mount)", () => {
     const { onAddExpense } = renderEntryPoints();
-    openFabMenu();
     fireEvent.click(screen.getByText("Додати витрату"));
     expect(onAddExpense).toHaveBeenCalled();
     expect(screen.queryByTestId("receipt-scan-sheet")).not.toBeInTheDocument();
   });
 
-  it("«Сканувати чек» mounts ReceiptScanSheet lazily, closing unmounts it", async () => {
+  it("«Чек» mounts ReceiptScanSheet lazily, closing unmounts it", async () => {
     renderEntryPoints();
-    openFabMenu();
-    fireEvent.click(screen.getByText("Сканувати чек"));
+    fireEvent.click(screen.getByRole("button", { name: "Чек" }));
     await waitFor(() =>
       expect(screen.getByTestId("receipt-scan-sheet")).toBeInTheDocument(),
     );
@@ -150,10 +139,9 @@ describe("FinykScanEntryPoints", () => {
     );
   });
 
-  it("«Додати документи» mounts BulkImportSheet lazily, closing unmounts it", async () => {
+  it("«Імпорт» mounts BulkImportSheet lazily, closing unmounts it", async () => {
     renderEntryPoints();
-    openFabMenu();
-    fireEvent.click(screen.getByText("Додати документи"));
+    fireEvent.click(screen.getByRole("button", { name: "Імпорт" }));
     await waitFor(() =>
       expect(screen.getByTestId("bulk-import-sheet")).toBeInTheDocument(),
     );
@@ -168,20 +156,18 @@ describe("FinykScanEntryPoints", () => {
   // передати — анонім тапав дію, яка виглядала робочою. `onOpenAuth`
   // тепер обовʼязковий пропс (TS не дає зібрати виклик без обробника);
   // цей тест підтверджує, що анонімний гейт справді його викликає.
-  it("анонім, який тапає «Сканувати чек», отримує onOpenAuth — без мовчазного no-op", () => {
+  it("анонім, який тапає «Чек», отримує onOpenAuth — без мовчазного no-op", () => {
     useAuthOptionalMock.mockReturnValue({ user: null });
     const { onOpenAuth } = renderEntryPoints();
-    openFabMenu();
-    fireEvent.click(screen.getByText("Сканувати чек"));
+    fireEvent.click(screen.getByRole("button", { name: "Чек" }));
     expect(onOpenAuth).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("receipt-scan-sheet")).not.toBeInTheDocument();
   });
 
-  it("анонім, який тапає «Додати документи», теж отримує onOpenAuth", () => {
+  it("анонім, який тапає «Імпорт», теж отримує onOpenAuth", () => {
     useAuthOptionalMock.mockReturnValue({ user: null });
     const { onOpenAuth } = renderEntryPoints();
-    openFabMenu();
-    fireEvent.click(screen.getByText("Додати документи"));
+    fireEvent.click(screen.getByRole("button", { name: "Імпорт" }));
     expect(onOpenAuth).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("bulk-import-sheet")).not.toBeInTheDocument();
   });

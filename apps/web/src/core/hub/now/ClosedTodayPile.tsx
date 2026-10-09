@@ -18,6 +18,8 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { coreMessages } from "@shared/i18n/uk.core";
 import { computeClosedToday } from "./closedToday";
+import { usePublishHubDayCount } from "./hubDayCounts";
+import type { ChecklistNowProps } from "./ChecklistNowRows";
 import type { Rec } from "../../lib/recommendationEngine";
 
 // Приглушене чорнило модуля на кремовій панелі — той самий вибір `-strong`
@@ -35,6 +37,8 @@ export interface ClosedTodayPileProps {
   onOpenModule: (module: string) => void;
   /** Тік сховища з батька — перерахувати після запису в модулі. */
   storageBump?: number | undefined;
+  /** Зроблені кроки онбордингу: рядки «Закрито», поки триває вікно. */
+  checklistDone?: ChecklistNowProps | undefined;
 }
 
 export function ClosedTodayPile({
@@ -42,12 +46,15 @@ export function ClosedTodayPile({
   recs,
   onOpenModule,
   storageBump,
+  checklistDone,
 }: ClosedTodayPileProps) {
   const items = useMemo(() => {
     void storageBump; // storage-write tick — перерахувати після запису
     return computeClosedToday({ activeModules, recs });
   }, [activeModules, recs, storageBump]);
-  if (items.length === 0) return null;
+  const doneSteps = checklistDone?.steps ?? [];
+  usePublishHubDayCount("closed", items.length + doneSteps.length);
+  if (items.length === 0 && doneSteps.length === 0) return null;
 
   return (
     <section aria-labelledby="closed-pile-heading" className="space-y-2">
@@ -61,10 +68,29 @@ export function ClosedTodayPile({
           {coreMessages.hub.closedPile.heading}
         </SectionHeading>
         <span className="text-style-caption font-bold text-muted" aria-hidden>
-          {items.length}
+          {items.length + doneSteps.length}
         </span>
       </div>
       <ul className="space-y-1.5">
+        {checklistDone &&
+          doneSteps.map((step) => (
+            <li
+              key={step.id}
+              data-testid="closed-checklist-row"
+              className="flex items-center gap-3 px-3 py-2"
+            >
+              <Icon
+                name="check"
+                size="sm"
+                strokeWidth={2.5}
+                className={cn("shrink-0", MODULE_INK[checklistDone.moduleId])}
+                aria-hidden
+              />
+              <span className="flex-1 min-w-0 text-style-label text-text leading-snug">
+                {step.label}
+              </span>
+            </li>
+          ))}
         {items.map((item) => (
           <li key={item.module}>
             <button

@@ -45,13 +45,10 @@ export interface HubShellValue {
   shortcutsOpen: boolean;
   onCloseShortcuts: () => void;
 
-  // PWA install (from usePwaInstall + useIosInstallBanner)
+  // PWA install (from usePwaInstall)
   canInstall: boolean;
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
-  iosVisible: boolean;
-  onDismissIosForever: () => void;
-  onSnoozeIos: () => void;
 
   // SW update (from useSWUpdate)
   updateAvailable: boolean;

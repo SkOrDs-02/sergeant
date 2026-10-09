@@ -232,6 +232,11 @@ export const coreMessages = {
     closedPile: {
       heading: "Закрито сьогодні",
     },
+    // Рядок під датою в шапці хаба: «зараз 3 · закрито 2».
+    daySummary: {
+      now: "зараз",
+      closed: "закрито",
+    },
     // Рейок модулів (`ModuleRail`) — eager і на хабі, і в шапках модулів.
     moduleRail: "Модулі",
     overlayTitle: "Сержант",
@@ -323,7 +328,6 @@ export const coreMessages = {
     // знімає вибір, а не додає — підпис робить це чесним.
     pickerAllOnHint: "Увімкнено все, зніми те, чим не користуватимешся.",
     // Round 16 — onboarding-specific labels.
-    hideChecklist: "Сховати чекліст",
 
     // Пресет-шит FTUX: запис не дійшов до сховища. Спека
     // `anonymous-local-first-persistence.md` («Похідне правило») вимагає

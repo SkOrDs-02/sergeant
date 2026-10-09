@@ -1,16 +1,7 @@
 /** @vitest-environment jsdom */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ToastProvider } from "@shared/hooks/useToast";
 import type { OnboardingOutcomeCopy } from "@sergeant/shared";
-
-const checklistSignalsMock = vi.hoisted(() => ({
-  value: {} as Record<string, boolean>,
-}));
-
-vi.mock("./useChecklistSignals", () => ({
-  useChecklistSignals: () => checklistSignalsMock.value,
-}));
 
 const firstActionMocks = vi.hoisted(() => ({
   picks: [] as string[],
@@ -107,17 +98,9 @@ vi.mock("../observability/analytics", async () => {
 // з'їдав слот у cap-і `vi.mock` (5 на файл), не даючи жодного сигналу:
 // жоден тест тут не перевіряє виклики haptic.
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { ReactNode } from "react";
-
 import { trackEvent } from "../observability/analytics";
 import { FirstActionHeroCard } from "./FirstActionSheet";
-import {
-  FirstRunHintBanner,
-  type FirstRunHintBannerVariant,
-} from "./FirstRunHintBanner";
 import { GoalFirstScreen } from "./GoalFirstScreen";
-import { ModuleChecklist } from "./ModuleChecklist";
 import { ReEngagementCard } from "./ReEngagementCard";
 
 describe("FirstActionHeroCard extended coverage", () => {
@@ -188,128 +171,6 @@ describe("FirstActionHeroCard extended coverage", () => {
 
     expect(firstActionMocks.clearFirstActionPending).toHaveBeenCalledTimes(1);
     expect(onDismiss).toHaveBeenCalledTimes(1);
-  });
-});
-
-// ModuleChecklist probes Monobank sync-state for the "Підключити
-// Monobank" step, so it needs the QueryClient the Hub gives it in
-// production.
-function renderChecklist(ui: ReactNode) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={client}>
-      <ToastProvider>{ui}</ToastProvider>
-    </QueryClientProvider>,
-  );
-}
-
-describe("ModuleChecklist extended coverage", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    checklistSignalsMock.value = {};
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    cleanup();
-    localStorage.clear();
-    vi.useRealTimers();
-  });
-
-  it("collapses, expands, fires step actions (as navigation, not completion), and dismisses", () => {
-    const onAction = vi.fn();
-    renderChecklist(<ModuleChecklist moduleId="finyk" onAction={onAction} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    expect(
-      screen.queryByRole("button", { name: "Додати першу витрату" }),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    // F3 (2026-09-11): a step row is a plain navigation `<button>` now —
-    // never `role="checkbox"` — so a tap forwards the action but does
-    // NOT check the step off (no signal proved it here).
-    const addExpense = screen.getByRole("button", {
-      name: "Додати першу витрату",
-    });
-    fireEvent.click(addExpense);
-
-    expect(onAction).toHaveBeenCalledWith("add_expense");
-    expect(addExpense).not.toHaveAttribute("aria-checked");
-    expect(
-      JSON.parse(localStorage.getItem("finyk_checklist_v1") ?? "{}"),
-    ).toMatchObject({ completedSteps: [] });
-
-    fireEvent.click(screen.getByRole("button", { name: "Сховати чекліст" }));
-    expect(screen.queryByText("Фінік: перші кроки")).not.toBeInTheDocument();
-  });
-
-  it("hides when every step is proven by real signals", () => {
-    checklistSignalsMock.value = {
-      create_habit: true,
-      complete_habit: true,
-      three_day_streak: true,
-    };
-    renderChecklist(<ModuleChecklist moduleId="routine" />);
-
-    expect(screen.queryByText("Рутина: Перші кроки")).not.toBeInTheDocument();
-  });
-});
-
-describe("FirstRunHintBanner", () => {
-  afterEach(() => cleanup());
-
-  it("renders variant metadata, custom CTA copy, and dismisses", () => {
-    const onDismiss = vi.fn();
-    render(
-      <FirstRunHintBanner
-        variant="nutrition"
-        title="Ціль живе тут"
-        description="Постав початкову калорійність у меню."
-        ctaLabel="Добре"
-        onDismiss={onDismiss}
-        className="test-banner"
-      />,
-    );
-
-    expect(screen.getByRole("status")).toHaveAttribute(
-      "data-variant",
-      "nutrition",
-    );
-    expect(screen.getByText("Ціль живе тут")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Добре" }));
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-  });
-
-  // Перелік варіантів тримає ТИП, а не літерал у тесті. Доти тут стояв
-  // захардкоджений `["finyk", "routine"]`, і коли варіант `routine` пішов
-  // разом із мертвим банером Рутини (PR-R11), розійшовся саме тест. Ключ
-  // `Record<…, true>` дає зворотний зв'язок в обидва боки: зайвий варіант
-  // не збереться, а НОВИЙ варіант без рядка тут — теж не збереться.
-  const EVERY_VARIANT: Record<FirstRunHintBannerVariant, true> = {
-    nutrition: true,
-    finyk: true,
-  };
-
-  it("uses the default CTA label for every supported variant", () => {
-    for (const variant of Object.keys(
-      EVERY_VARIANT,
-    ) as FirstRunHintBannerVariant[]) {
-      const { unmount } = render(
-        <FirstRunHintBanner
-          variant={variant}
-          title={`Title ${variant}`}
-          description={`Description ${variant}`}
-          onDismiss={vi.fn()}
-        />,
-      );
-      expect(
-        screen.getByRole("button", { name: "Зрозуміло" }),
-      ).toBeInTheDocument();
-      unmount();
-    }
   });
 });
 

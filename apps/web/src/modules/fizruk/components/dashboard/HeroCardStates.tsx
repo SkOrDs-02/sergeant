@@ -42,7 +42,6 @@ function HeroShell({
       as="section"
       prominence="hero"
       module="fizruk"
-      edge="rule"
       padding="none"
       className="relative overflow-hidden"
       aria-label={ariaLabel}

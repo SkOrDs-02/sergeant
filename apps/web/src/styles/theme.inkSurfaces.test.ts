@@ -93,8 +93,8 @@ describe("theme.css — ink-поверхні не розходяться з inkT
     expect(dark[variable]).toEqual(hexToColour(hex));
   });
 
-  it("`--c-ring-offset` дорівнює панелі — обведення сідає на картку", () => {
-    expect(dark["--c-ring-offset"]).toEqual(dark["--c-panel"]);
+  it("`--c-ring-offset` дорівнює сторінці - мова H: контроли стоять на сторінці", () => {
+    expect(dark["--c-ring-offset"]).toEqual(dark["--c-bg"]);
   });
 });
 
@@ -120,38 +120,15 @@ describe("theme.css — прев'ю-блок у 1:1 із `.dark`", () => {
   });
 });
 
-describe("theme.css — межі `.dark` перебазовані на панель", () => {
-  // `tokens.js` оголошує межі як АЛЬФУ над поверхнею (`line`
-  // rgba(255,255,255,.14), `lineStrong` .22), а `.dark` шипить суцільні
-  // триплети — тобто зійтися «значення до значення» вони не можуть, і
-  // тому їх ніщо не звіряло. Наслідок: коли крок 2 підняв панель, межа
-  // лишилась на старому `#3b332e` і ПОСЛАБШАЛА (1.394 → 1.250 до картки),
-  // хоча мета кроку — зробити бордер підсиленням, а не єдиним сепаратором.
-  //
-  // Гейт звіряє те, що звірити МОЖНА: суцільна межа мусить дорівнювати
-  // композиту заявленої альфи над панеллю. Тоді на картці — де межі й
-  // стоять — шипиться рівно те, що оголошено.
-  //
-  // `--c-panel` тут не `!`-стверджуємо: `noUncheckedIndexedAccess` (Hard
-  // Rule #19) правильно каже, що ключ може бути відсутній, і зникла панель
-  // мусить читатись як назване падіння гейта, а не як `TypeError` у
-  // хелпері за два кадри від причини.
-  const composite = (alpha: number) => {
-    const panel = dark["--c-panel"];
-    if (!panel) return "(немає --c-panel у `.dark`)";
-    return panel.rgb
-      .split(" ")
-      .map(Number)
-      .map((v) => String(Math.round(v + (255 - v) * alpha)))
-      .join(" ");
-  };
-
-  it("`--c-line` = біле 14% над панеллю", () => {
-    expect(dark["--c-line"]?.rgb).toEqual(composite(0.14));
+describe("theme.css — межі `.dark` = inkTheme", () => {
+  it("`--c-line` = `inkTheme.surface.line`", () => {
+    expect(dark["--c-line"]).toEqual(hexToColour(inkTheme.surface.line));
   });
 
-  it("`--c-border-strong` = біле 22% над панеллю", () => {
-    expect(dark["--c-border-strong"]?.rgb).toEqual(composite(0.22));
+  it("`--c-border-strong` = `inkTheme.surface.lineStrong`", () => {
+    expect(dark["--c-border-strong"]).toEqual(
+      hexToColour(inkTheme.surface.lineStrong),
+    );
   });
 
   it.each(["--c-divider", "--c-scrollbar-thumb"])(
@@ -171,12 +148,17 @@ describe("theme.css — back-compat glass-аліаси сидять на тій 
   // бордер + glow, не прозорість). Вони лишились, щоб наявні call-sites
   // `bg-surface-glass*` резолвились без переписування компонентів, — але
   // саме тому мусять віддавати РІВНО панель, і непрозоро.
-  it.each([
-    "--surface-glass",
-    "--surface-strong-glass",
-    "--surface-soft-glass",
-  ])("`.dark` %s = `--c-panel` і повністю непрозорий", (variable) => {
-    expect(dark[variable]).toEqual(withAlpha(dark["--c-panel"], 1));
+  it.each(["--surface-glass", "--surface-soft-glass"])(
+    "`.dark` %s = `--c-panel` і повністю непрозорий",
+    (variable) => {
+      expect(dark[variable]).toEqual(withAlpha(dark["--c-panel"], 1));
+    },
+  );
+
+  it("`.dark` --surface-strong-glass = `--c-bg`: нав непрозорий на сторінці", () => {
+    expect(dark["--surface-strong-glass"]).toEqual(
+      withAlpha(dark["--c-bg"], 1),
+    );
   });
 
   it("`html.hc.dark` тримає пару panel / panel-hi з власними альфами", () => {

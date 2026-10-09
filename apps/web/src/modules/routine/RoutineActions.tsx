@@ -8,7 +8,7 @@
  */
 
 import type { Dispatch, SetStateAction } from "react";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { AddActionBar } from "@shared/components/ui/AddActionBar";
 import { messages } from "@shared/i18n/uk";
 import { HabitQuickCreateDialog } from "./components/HabitQuickCreateDialog";
 import { RoutineBottomNav } from "./components/RoutineBottomNav";
@@ -41,11 +41,9 @@ export function RoutineActions({
       {/* fab-and-manual-income spec §5-6: replaces the old center-docked
           nav FAB with the shared component, placed/styled identically to
           the other 3 modules. */}
-      <FloatingActionButton
-        variant="v2-routine"
-        icon="plus"
+      <AddActionBar
+        label={messages.routine.addHabitFab}
         onClick={onOpenQuickAddHabit}
-        aria-label={messages.routine.addHabitFab}
       />
       <RoutineBottomNav mainTab={mainTab} onSelectTab={setMainTab} />
       <HabitQuickCreateDialog

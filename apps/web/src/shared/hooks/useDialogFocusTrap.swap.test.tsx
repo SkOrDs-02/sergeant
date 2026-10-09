@@ -3,15 +3,16 @@
  * Status: Active
  *
  * Регресія до фіксу ux-08: коли один діалог закривається, а інший
- * відкривається в ТОМУ САМОМУ коміті (пункт FAB-меню -> аркуш), знімок
+ * відкривається в ТОМУ САМОМУ коміті (пункт меню -> аркуш), знімок
  * «хто мав фокус» у layout-ефекті нового діалогу відпрацьовує раніше за
- * passive-cleanup пастки меню, яка повертає фокус на FAB. Сфокусований
+ * passive-cleanup пастки меню, яка повертає фокус на тригер. Сфокусований
  * пункт меню на той момент уже розмонтовано, тож ранній знімок порожній;
  * без пізнього знімка фокус після закриття аркуша падав на `<body>`.
- * Реальні FloatingActionButton і Sheet, мокається лише haptic.
+ * Меню - мінімальний діалог на тому самому хуку (FAB-меню, де сценарій
+ * виник, знято редизайном v3); Sheet реальний, мокається лише haptic.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   cleanup,
   fireEvent,
@@ -19,28 +20,42 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { __resetDialogInertForTests } from "./useDialogFocusTrap";
+import {
+  __resetDialogInertForTests,
+  useDialogFocusTrap,
+} from "./useDialogFocusTrap";
 
 vi.mock("../lib/adapters/haptic", () => ({ hapticTap: vi.fn() }));
 
-import { FloatingActionButton } from "../components/ui/FloatingActionButton";
 import { Sheet } from "../components/ui/Sheet";
 
+function Menu({ open, onPick }: { open: boolean; onPick: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useDialogFocusTrap(open, ref);
+  if (!open) return null;
+  return (
+    <div ref={ref} role="menu">
+      <button type="button" role="menuitem" onClick={onPick}>
+        Додати витрату
+      </button>
+    </div>
+  );
+}
+
 function Host() {
+  const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState(false);
   return (
     <div>
-      <FloatingActionButton
-        icon="plus"
-        aria-label="Додати"
-        actions={[
-          {
-            id: "expense",
-            icon: "plus",
-            label: "Додати витрату",
-            onClick: () => setSheet(true),
-          },
-        ]}
+      <button type="button" onClick={() => setMenu(true)}>
+        Додати
+      </button>
+      <Menu
+        open={menu}
+        onPick={() => {
+          setMenu(false);
+          setSheet(true);
+        }}
       />
       <Sheet open={sheet} onClose={() => setSheet(false)} title="Нова витрата">
         <button type="button">Зберегти</button>
@@ -55,7 +70,7 @@ describe("useDialogFocusTrap — swap меню -> аркуш в одному к�
     __resetDialogInertForTests();
   });
 
-  it("після закриття аркуша фокус повертається на тригер меню (FAB)", async () => {
+  it("після закриття аркуша фокус повертається на тригер меню", async () => {
     render(<Host />);
     const fab = screen.getByRole("button", { name: "Додати" });
     fab.focus();

@@ -82,11 +82,11 @@
        сторінка одного кольору, mesh-фон іншого, і жоден тест цього не
        ловить. Міняй парою. Те саме стосується `--c-panel-hi` і
        `--surface-soft-glass`. */
-    --c-bg: 236 235 231; /* #ecebe7 — беж без жовтого (рішення власника Б1, 2026-08-07) */
+    --c-bg: 251 251 250; /* #fbfbfa - сторінка, мова H (redesign v3) */
 
     /* Cards/panels — pure white for contrast */
-    --c-panel: 255 255 255; /* #ffffff — white cards (spec § 5 surface) */
-    --c-panel-hi: 246 245 242; /* #f6f5f2 — warm hover/input bg (Б1) */
+    --c-panel: 242 242 240; /* #f2f2f0 - панель: групує список або блок, без бордера й тіні */
+    --c-panel-hi: 255 255 255; /* #ffffff - поле вводу й hover на панелі */
 
     /* Borders — warm gray with cream undertone */
     /* AI-CONTEXT (2026-10-01, аудит контрасту й поверхонь, A8): було
@@ -97,7 +97,7 @@
        світлою: 1.57 проти білої картки, 1.25 проти столу хаба, 1.23-1.28 проти
        столів модулів. Це «тихий» контур картки й роздільник, а НЕ межа
        контролу: поле вводу чи перемикач мають 3:1 і беруть `--c-control`. */
-    --c-line: 210 206 197; /* #d2cec5 — warm border (було #e2e0da, 2026-10-01) */
+    --c-line: 227 227 224; /* #e3e3e0 - hairline: роздільник рядків, верх tab bar */
 
     /* Text hierarchy — «Чорнило» light pair (spec § 5): green-ink tiers,
        the tonal inverse of the dark ink text. Spec's #98a09a — це тон
@@ -116,10 +116,25 @@
        запасу на ще один крок тонування. Гейт — `contrast.test.js`,
        і він тепер перевіряє обидва тони проти СТОЛУ І ЗОНИ, а не лише
        проти білого. */
-    --c-text: 15 23 19; /* #0f1713 — green near-black (spec § 5 fg-strong) */
-    --c-muted: 83 92 86; /* #535c56 — green medium gray (spec § 5 muted), ≥4.78:1 на столі й зоні */
-    --c-subtle: 96 90 84; /* #605a54 — tertiary, ≥4.69:1 на столі, зоні, panel/panel-hi/bg */
-    --c-primary: 15 23 19; /* #0f1713 — ink (same as text) */
+    --c-text: 28 28 30; /* #1c1c1e - чорнило: увесь текст і всі числа */
+    --c-muted: 85 85 90; /* #55555a - другий сірий: підзаголовки рядків, підписи 14 px; 6.61:1 на панелі */
+    --c-subtle: 110 110 115; /* #6e6e73 - третій сірий і ярлики; 4.52:1 на панелі, 4.90 на сторінці */
+    --c-primary: 28 28 30; /* = --c-text */
+    --c-track: 233 233 230; /* #e9e9e6 - доріжка Segmented */
+    --c-segment: 255 255 255; /* активний сегмент */
+
+    /* Тинт модуля (мова H.2): рівно одна поверхня на екран у hue модуля,
+       hero або блок «сьогодні». Текст і числа на тинті завжди чорнилом; у
+       hue лише ярлик (`-tint-label`, ≥4.5:1 на тинті), бар і лінія чарта.
+       Пари гейтить `contrast.test.js` (`moduleTint`). */
+    --c-finyk-tint: 232 243 241; /* #e8f3f1 */
+    --c-finyk-tint-label: 76 107 102; /* #4c6b66 */
+    --c-fizruk-tint: 231 240 241; /* #e7f0f1 */
+    --c-fizruk-tint-label: 74 102 112; /* #4a6670 */
+    --c-routine-tint: 247 232 236; /* #f7e8ec */
+    --c-routine-tint-label: 122 74 88; /* #7a4a58 */
+    --c-nutrition-tint: 237 240 230; /* #edf0e6 */
+    --c-nutrition-tint-label: 86 102 52; /* #566634 */
 
     /* ═══════════════════════════════════════════════════════════════════
        ELEVATION SCALE — e0..e5
@@ -155,7 +170,7 @@
     /* Legacy shadow aliases — forwarded onto the new scale so old call
        sites (`shadow-card` / `shadow-float` / `shadow-soft`) keep
        working unchanged. New code should prefer `shadow-eN`. */
-    --shadow-card: var(--shadow-e1);
+    --shadow-card: none; /* мова H: контент без тіні */
     --shadow-float: var(--shadow-e3);
     --shadow-soft: var(--shadow-e4);
 
@@ -268,13 +283,13 @@
 
     --c-success-ink: 6 95 70; /* emerald-800 — 6.44:1 на #ecebe7 / 7.68:1 на білому */
     --c-warning-ink: 146 64 14; /* amber-800   — 5.94:1 на #ecebe7 / 7.09:1 на білому */
-    --c-danger-ink: 153 27 27; /* red-800     — 6.97:1 на #ecebe7 / 8.31:1 на білому */
+    --c-danger-ink: 184 40 26; /* #b8281a - небезпека: 6.04:1 на сторінці, 5.58 на панелі */
     --c-info-ink: 7 89 133; /* sky-800      — 6.34:1 на #ecebe7 / 7.56:1 на білому */
 
     /* Semantic border tokens — alias `line` for back-compat, add a stronger
        divider for inputs/separators that need extra weight. */
     --c-border: var(--c-line);
-    --c-border-strong: 195 189 177; /* #c3bdb1 — stronger warm divider (було #ddd3c5; піднято слідом за `--c-line`, щоб не перевернути ієрархію weak < line < strong) */
+    --c-border-strong: 201 201 197; /* #c9c9c5 - обвід кнопки outline */
 
     /* ───────────────────────────────────────────────────────────────────
        SEMANTIC A11Y / STATES — focus, selection, caret, scrollbar,
@@ -290,7 +305,7 @@
        extra-punch focus on busy surfaces. */
     --c-ring: 15 118 110; /* teal-700 — primary keyboard-focus ring */
     --c-ring-strong: 17 94 89; /* teal-800 — WCAG-AA companion, solid */
-    --c-ring-offset: 255 255 255; /* white — matches panel; pair with `ring-offset-panel`/`ring-offset-bg` */
+    --c-ring-offset: 251 251 250; /* = --c-bg */
 
     /* ІНДИКАТОР ФОКУСУ — суцільний колір (аудит 2026-10-01, A1/A2).
        Колір `--c-ring` мав запас, убивала його АЛЬФА: `ring-focus/45` дає
@@ -309,7 +324,7 @@
        #7c756e дає ≥3.13 проти КОЖНОЇ світлої поверхні (біла картка 4.54, panelHi
        4.16, фон 3.80, стіл хаба 3.60, зона хаба — найтемніша — 3.13). Для
        сіток і карток лишається `--c-line`; цей токен лише для контролів. */
-    --c-control: 124 117 110; /* #7c756e */
+    --c-control: 125 125 129; /* #7d7d81 - межа поля вводу, 3:1 проти кожної поверхні */
 
     /* Selection — global `::selection` wash. Soft teal tint with a
        deeper teal foreground so links/code stay readable when selected. */
@@ -323,18 +338,18 @@
     /* Scrollbar — warm-neutral thumb on cream track. The hover step is
        one shade deeper so the affordance stays visible on every
        overflow surface. */
-    --c-scrollbar-track: 246 245 242; /* panel-hi (Б1; було 250 247 241 — дрейф на 1 проти --c-panel-hi) */
-    --c-scrollbar-thumb: 221 211 197; /* #ddd3c5 — warm beige */
-    --c-scrollbar-thumb-hover: 180 174 169; /* #b4aea9 — warm muted on hover */
+    --c-scrollbar-track: 242 242 240; /* = --c-panel */
+    --c-scrollbar-thumb: 201 201 197; /* #c9c9c5 */
+    --c-scrollbar-thumb-hover: 160 160 156; /* #a0a09c */
 
     /* Dividers — three weights mirroring `border-strong` / `border` /
        a new hairline. `divider` is the default split between rows in
        a list / card; `-weak` is a feather-light separator inside a
        single-surface group; `-strong` is the prominent split between
        major sections that the eye should anchor to. */
-    --c-divider-weak: 245 238 228; /* #f5eee4 — feather hairline */
-    --c-divider: 210 206 197; /* matches --c-line */
-    --c-divider-strong: 195 189 177; /* matches --c-border-strong */
+    --c-divider-weak: 236 236 233; /* між панеллю і hairline */
+    --c-divider: 227 227 224; /* = --c-line */
+    --c-divider-strong: 201 201 197; /* = --c-border-strong */
 
     /* Soft status backgrounds — tinted surfaces for banners/badges/cards.
        These resolve automatically between light & dark themes, eliminating
@@ -475,10 +490,10 @@
        фактично рахувалися проти білого (fizruk 7.5 і nutrition 6.64 —
        це рівно контраст на #ffffff), тож орієнтуватися на них було не
        можна. Бар стоїть на фоні сторінки — міряємо там. */
-    --c-chart-finyk: 17 94 89; /* teal-800 — 6.36:1 vs bg (2026-07: was emerald-700) */
-    --c-chart-fizruk: 21 94 117; /* cyan-800 — 6.09:1 vs bg */
-    --c-chart-routine: 141 66 86; /* rose-800 — 5.78:1 vs bg (2026-08-07: was rose-700, 4.43 — єдиний тир, що вибивався) */
-    --c-chart-nutrition: 70 98 18; /* lime-800 — 5.84:1 vs bg */
+    --c-chart-finyk: 15 118 110; /* teal-700 - hue модуля в даних, 5.29:1 на сторінці */
+    --c-chart-fizruk: 14 116 144; /* cyan-700 - 5.17:1 на сторінці */
+    --c-chart-routine: 192 80 110; /* #c0506e - бар і лінія (не текст), 4.40:1 на сторінці */
+    --c-chart-nutrition: 86 124 15; /* lime-700 - 4.73:1 на сторінці */
 
     /* Chart STATUS colors — same contract as `--c-chart-{module}` above,
        for `statusColors.*` reused as chart LINE strokes/gradients (1RM
@@ -624,19 +639,19 @@
     color-scheme: dark;
 
     /* Page background — «Чорнило» ink base */
-    --c-bg: 20 16 14; /* #14100e — ink base */
+    --c-bg: 14 17 22; /* #0e1116 - сторінка, мова H */
 
     /* Cards/panels — solid ink surface. `panel-hi` lifts one tint step so
        hover and input backgrounds separate from the base surface. */
-    --c-panel: 42 35 31; /* #2a231f — cards and nav, 1.22:1 над фоном */
-    --c-panel-hi: 58 48 43; /* #3a302b — fields and hover, 1.21:1 над карткою */
+    --c-panel: 23 28 35; /* #171c23 - панель */
+    --c-panel-hi: 31 37 46; /* #1f252e - поле вводу й hover на панелі */
 
     /* Border — ink hairline ≈ white/6% over the surface. Depth is carried by
        accent borders + glow, so the neutral edge stays quiet. */
-    --c-line: 72 66 62; /* #48423e — біле 14% над панеллю (= `line` у tokens.js), 1.56:1 до картки */
+    --c-line: 38 44 53; /* #262c35 - hairline */
 
     /* Text hierarchy — ink tiers (spec § 1). */
-    --c-text: 242 246 242; /* #f2f6f2 — display / headings, 17.33:1 on bg */
+    --c-text: 230 232 235; /* #e6e8eb - чорнило, 15.41:1 на сторінці */
     /* AI-CONTEXT (2026-08-21): обидва приглушені тири підняті на щабель.
        Старий `subtle` #5f6b64 давав 3.22:1 на картці — і це не «поріг для
        великого тексту», бо послаблення WCAG до 3:1 діє від 18.66px bold /
@@ -647,15 +662,27 @@
        власник (репорт тестера: «сірі літери погано видно»). `muted`
        піднято слідом, щоб драбина лишилась із трьома щаблями.
        Значення дзеркалять `inkTheme.text` у tokens.js. */
-    --c-muted: 163 174 166; /* #a3aea6 — meta, 6.74:1 on surface, 5.60 on panel-hi */
-    --c-subtle: 152 164 156; /* #98a49c — hints, 5.98:1 on surface, 4.96 on panel-hi (крок 2 підняв із #8a968e) */
-    --c-primary: 242 246 242; /* reversed */
+    --c-muted: 170 178 187; /* #aab2bb - другий сірий, 7.98:1 на панелі */
+    --c-subtle: 139 148 158; /* #8b949e - третій сірий і ярлики, 5.57:1 на панелі, 5.01 на panel-hi */
+    --c-primary: 230 232 235; /* reversed */
+    --c-track: 31 37 46; /* #1f252e */
+    --c-segment: 46 54 65; /* #2e3641 */
+
+    /* Тинт модуля, темна: hue ≈ 10 % на #0e1116. */
+    --c-finyk-tint: 18 36 34; /* #122422 */
+    --c-finyk-tint-label: 127 179 172; /* #7fb3ac */
+    --c-fizruk-tint: 16 36 44; /* #10242c */
+    --c-fizruk-tint-label: 127 176 189; /* #7fb0bd */
+    --c-routine-tint: 38 27 33; /* #261b21 */
+    --c-routine-tint-label: 215 154 168; /* #d79aa8 */
+    --c-nutrition-tint: 30 38 25; /* #1e2619 */
+    --c-nutrition-tint-label: 169 191 128; /* #a9bf80 */
 
     /* «Чорнило» module accents — dark tier-400 (luminescent), the
        counterpart of the light strong tier in `:root` (spec § 5). */
     --c-finyk-accent: 45 212 191; /* #2dd4bf — teal-400 (2026-07: was emerald-400 #34d399) */
     --c-fizruk-accent: 34 211 238; /* #22d3ee — cyan-400 */
-    --c-routine-accent: 246 141 164; /* #f68da4 — rose-400 */
+    --c-routine-accent: 251 113 133; /* #fb7185 - тир 400 рампи rose, мова H */
     --c-nutrition-accent: 176 230 54; /* #b0e636 — lime-400 */
 
     /* Bottom-nav glow — dark override. `:root` only defines the light-tier
@@ -721,7 +748,7 @@
        наступний не шукав його заново. */
     --shadow-e0: none;
 
-    --shadow-e1: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --shadow-e1: none; /* мова H: контент без тіні */
     --shadow-e2: inset 0 1px 0 rgba(255, 255, 255, 0.04);
     --shadow-e3: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     --shadow-e4: inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -737,7 +764,7 @@
     /* Prominent divider — ink `line-strong` ≈ white/12% (spec § 1). Reads a
        step above `--c-line` for major section splits; the AAA divider for
        low-vision users lives in `html.hc.dark`. */
-    --c-border-strong: 89 83 80; /* #595350 — біле 22% над панеллю (= `lineStrong`), 2.04:1 до картки */
+    --c-border-strong: 52 59 69; /* #343b45 - обвід кнопки outline */
 
     /* Dark-theme A11y / states overrides. Focus ring shifts to teal-400
        so it clears ≥3:1 against the warm-charcoal panel (`--c-panel` = #2a231f).
@@ -747,8 +774,8 @@
     /* Межа контролу в «Чорнилі»: #827b77 → 3.72 на картці `#2a231f`, 3.08 на
        `panelHi` `#3a302b` (поле всередині панелі), 4.55 на фоні `#14100e`.
        Темний `--c-line` (#48423e) дає там 1.56 / 1.30 / 1.91. */
-    --c-control: 130 123 119; /* #827b77 */
-    --c-ring-offset: 42 35 31; /* panel — matches `--c-panel` */
+    --c-control: 107 116 128; /* #6b7480 - межа поля вводу, 3:1 проти поверхонь */
+    --c-ring-offset: 14 17 22; /* = --c-bg */
     /* `--c-accent` mirrors `--c-ring` — same reason: the light-tier teal-700
        (`:root` value) reads ~3.4:1 on the ink surface, sub-AA for
        `text-accent`/`bg-accent` (107 call sites). Dark flips to the
@@ -761,12 +788,12 @@
     --c-selection-bg: 17 94 89; /* teal-800 */
     --c-selection-fg: 204 251 241; /* teal-100 */
     --c-caret: 45 212 191; /* teal-400 — visible in dark inputs */
-    --c-scrollbar-track: 42 35 31; /* panel */
-    --c-scrollbar-thumb: 72 66 62; /* matches --c-line */
+    --c-scrollbar-track: 23 28 35; /* panel */
+    --c-scrollbar-thumb: 38 44 53; /* matches --c-line */
     --c-scrollbar-thumb-hover: 95 107 100; /* #5f6b64 — 2.78:1 до треку. AI-NOTE: цей коментар казав «matches --c-subtle» і був неправдою з 2026-08-21 (subtle тоді пішов із #5f6b64 на #8a968e, а це значення лишилось). Свідомо НЕ зводимо з `--c-subtle`: чинний #98a49c дав би 5.98:1, тобто смуга прокрутки світилася б яскравіше за підписи. Світла тема тримає 2.20:1 — це той самий порядок. */
-    --c-divider-weak: 23 31 27; /* between panel and line */
-    --c-divider: 72 66 62; /* matches --c-line */
-    --c-divider-strong: 89 83 80; /* matches --c-border-strong */
+    --c-divider-weak: 30 36 44; /* між панеллю і hairline */
+    --c-divider: 38 44 53; /* = --c-line */
+    --c-divider-strong: 52 59 69; /* = --c-border-strong */
     --c-success-soft: 6 95 70; /* slightly brighter emerald-900 */
     --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
     --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */
@@ -795,7 +822,7 @@
     --c-brand-ink: 214 211 209; /* stone-300 — 10.38:1 на #2a231f (= `--c-brand-soft-fg` цього ж блоку) */
     --c-finyk-ink: 45 212 191; /* teal-400 — 8.30:1 на #2a231f */
     --c-fizruk-ink: 34 211 238; /* cyan-400 — 8.55:1 на #2a231f */
-    --c-routine-ink: 246 141 164; /* rose-400 — 6.82:1 на #2a231f */
+    --c-routine-ink: 251 113 133; /* #fb7185 - 7.03:1 на сторінці */
     --c-nutrition-ink: 176 230 54; /* lime-400 — 10.46:1 на #2a231f */
 
     --c-success-ink: 52 211 153; /* = statusInkHex.success */
@@ -887,7 +914,7 @@
        Sync with `:root` chart vars + `chart-{module}` Tailwind palette. */
     --c-chart-finyk: 45 212 191; /* teal-400 (2026-07: was emerald-400) */
     --c-chart-fizruk: 34 211 238; /* cyan-400 */
-    --c-chart-routine: 246 141 164; /* rose-400 */
+    --c-chart-routine: 251 113 133; /* #fb7185 */
     --c-chart-nutrition: 176 230 54; /* lime-400 */
 
     /* Chart STATUS colors (dark) — brighter -400 tier, mirrors the
@@ -928,7 +955,7 @@
        а в рядках сесії стоять обидва. Числа проти `#262f30`: `text` 12.56,
        `muted` 5.98, `subtle` 5.30, `soft-fg` 9.46, `-ink` 7.59, `danger-ink`
        4.96; гейт — `contrast.test.js` § `fizruk-surface`. */
-    --c-fizruk-surface: 38 47 48; /* #262f30 — cyan-700 @15% над panel */
+    --c-fizruk-surface: 22 41 51; /* #162933 - cyan-700 @15% над panel */
     --c-routine-surface-dark: 235 118 145; /* rose-500 */
     --c-routine-border-dark: 235 118 145; /* rose-500 */
     --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel */
@@ -977,23 +1004,23 @@
      ═══════════════════════════════════════════════════════════════════════ */
   [data-theme-preview="dark"] {
     color-scheme: dark;
-    --c-bg: 20 16 14; /* #14100e — ink base */
-    --c-panel: 42 35 31; /* #2a231f — = `.dark` */
-    --c-panel-hi: 58 48 43; /* #3a302b — = `.dark` */
-    --c-line: 72 66 62; /* #48423e — = `.dark`; до 2026-09-12 тут стояло зелене #1f2a25 з доби до «Чорнила» */
-    --c-text: 242 246 242; /* #f2f6f2 */
-    --c-muted: 163 174 166; /* #a3aea6 */
-    --c-subtle: 152 164 156; /* #98a49c */
-    --c-primary: 242 246 242;
+    --c-bg: 14 17 22; /* = `.dark` */
+    --c-panel: 23 28 35; /* = `.dark` */
+    --c-panel-hi: 31 37 46; /* = `.dark` */
+    --c-line: 38 44 53; /* = `.dark` */
+    --c-text: 230 232 235;
+    --c-muted: 170 178 187;
+    --c-subtle: 139 148 158;
+    --c-primary: 230 232 235;
     --c-border: var(--c-line);
-    --c-border-strong: 89 83 80; /* #595350 — = `.dark`; до 2026-09-12 — зелене #4a544e */
-    --c-control: 130 123 119; /* = `.dark` */
+    --c-border-strong: 52 59 69; /* = `.dark` */
+    --c-control: 107 116 128; /* = `.dark` */
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
     --c-brand-soft: 41 37 36; /* stone-800 — neutral hub (design-audit M1) */
     --c-brand-soft-border: 68 64 60; /* stone-700 */
     /* = `.dark` `--shadow-e1`: лише inset-край (див. розбір там). */
-    --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    --shadow-card: none;
   }
 
   [data-theme-preview="hc-light"] {
@@ -1310,16 +1337,16 @@
   :root {
     /* Background base — «Чорнило» light pair (spec § 5): warm beige with a
        faint green-ink undertone, matching the legacy `--c-bg`. */
-    --c-bg-base: 236 235 231; /* #ecebe7 — ink-light page bg (Б1; парний до --c-bg вище) */
+    --c-bg-base: 251 251 250; /* #fbfbfa - парний до --c-bg */
 
     /* Ink (text) — «Чорнило» light pair (spec § 5): green-ink body + display
        tiers (display drops the emerald tint for a near-black green ink).
        `--c-subtle-v2` stays put — it is already a ≥12px hint tier and spec's
        #98a09a would only lower its contrast. */
-    --c-ink: 23 32 27; /* #17201b — body text (spec § 5 fg) */
-    --c-ink-strong: 15 23 19; /* #0f1713 — display / headings (spec § 5 fg-strong) */
-    --c-muted-v2: 83 92 86; /* #535c56 — meta, captions (spec § 5 muted); дзеркало --c-muted вище */
-    --c-subtle-v2: 138 138 130; /* #8a8a82 — hints */
+    --c-ink: 28 28 30; /* #1c1c1e - чорнило */
+    --c-ink-strong: 28 28 30; /* #1c1c1e */
+    --c-muted-v2: 85 85 90; /* дзеркало --c-muted */
+    --c-subtle-v2: 110 110 115; /* дзеркало --c-subtle */
 
     /* Glass surfaces — alpha BAKED IN by design intent. Do not use
        Tailwind opacity modifiers on these tokens. */
@@ -1327,24 +1354,24 @@
        border + shadow, not translucency). Back-compat aliases so existing
        `bg-surface-glass*` call sites resolve to the solid light surface
        without a per-component rewrite (mirrors the `.dark` step-2 treatment). */
-    --surface-glass: rgba(255, 255, 255, 1); /* #ffffff — solid card */
-    --surface-strong-glass: rgba(255, 255, 255, 1); /* #ffffff — navs, pills */
-    --surface-soft-glass: rgba(
-      246,
-      245,
-      242,
+    --surface-glass: rgba(242, 242, 240, 1); /* = --c-panel */
+    --surface-strong-glass: rgba(
+      251,
+      251,
+      250,
       1
-    ); /* #f6f5f2 — surface-hi tint (Б1; парний до --c-panel-hi) */
+    ); /* = --c-bg: нав і пігулки непрозорі */
+    --surface-soft-glass: rgba(242, 242, 240, 1); /* = --c-panel */
     /* Card hairline — warm dark edge so glass cards read against the cream
        mesh background (and against each other) in light mode. The white
        inset highlight that sells the "glass" look lives in --shadow-card-v2,
        so the border can be a real visible edge here. Previously
        rgba(255,255,255,0.55) — invisible white-on-cream (user report). */
-    --surface-line: rgba(20, 40, 30, 0.12);
+    --surface-line: rgba(227, 227, 224, 1); /* = --c-line */
 
     /* Hairlines — soft + strong dividers tuned for glass surfaces. */
-    --line-v2: rgba(0, 0, 0, 0.06);
-    --line-strong-v2: rgba(0, 0, 0, 0.1);
+    --line-v2: rgba(227, 227, 224, 1); /* = --c-line */
+    --line-strong-v2: rgba(201, 201, 197, 1); /* = --c-border-strong */
 
     /* Стіл і зона (рішення власника 2026-09-03; замінили mesh).
        Радіальних свічень більше нема: одна emerald-пляма в куті (усе, що
@@ -1358,8 +1385,8 @@
        packages/design-tokens/tokens.js; contrast.test.js тримає
        `--c-subtle` ≥4.5:1 на кожному столі, тому стіл майже не темніший
        за `--c-bg` і різниться лише hue. */
-    --module-desk-rgb: 231 229 223; /* #e7e5df — hub desk */
-    --module-zone-rgb: 218 214 206; /* #dad6ce — hub zone */
+    --module-desk-rgb: 251 251 250; /* = --c-bg: стіл модуля знято (мова H) */
+    --module-zone-rgb: 251 251 250; /* = --c-bg: зону знято */
     /* Shared by `.bg-mesh` and the root canvas. iOS standalone can expose
        the canvas below a full-height child while safe-area geometry settles;
        using the exact same colour prevents that region from becoming a
@@ -1368,12 +1395,9 @@
     --app-mesh-background: rgb(var(--module-desk-rgb));
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
-    --shadow-card-v2:
-      0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 4px 14px rgba(20, 40, 30, 0.09);
-    --shadow-pill:
-      0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 26px rgba(20, 40, 30, 0.12);
-    --shadow-nav:
-      0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 12px 32px rgba(20, 40, 30, 0.12);
+    --shadow-card-v2: none; /* мова H: контент без тіні */
+    --shadow-pill: none;
+    --shadow-nav: none; /* нав непрозорий, hairline зверху */
     --shadow-fab: 0 8px 22px rgba(15, 118, 110, 0.45);
 
     /* Hero gradients — «Чорнило» v3.1 § 3 brand anchor: the SAME saturated
@@ -1423,41 +1447,38 @@
 
   .dark {
     /* «Чорнило» ink base — the solid surface under the mesh glows. */
-    --c-bg-base: 20 16 14; /* #14100e — ink base */
+    --c-bg-base: 14 17 22; /* #0e1116 */
 
     /* Ink text scale (spec § 1). */
-    --c-ink: 231 240 234; /* #e7f0ea — body */
-    --c-ink-strong: 242 246 242; /* #f2f6f2 — display / headings */
-    --c-muted-v2: 163 174 166; /* #a3aea6 — meta (дзеркало --c-muted) */
-    --c-subtle-v2: 152 164 156; /* #98a49c — hints (дзеркало --c-subtle) */
+    --c-ink: 230 232 235; /* #e6e8eb */
+    --c-ink-strong: 230 232 235;
+    --c-muted-v2: 170 178 187; /* дзеркало --c-muted */
+    --c-subtle-v2: 139 148 158; /* дзеркало --c-subtle */
 
     /* Glass → solid ink surface. `--surface-glass*` and `backdrop-blur` are
        deprecated under «Чорнило» (spec § Рішення): depth is surface tint +
        accent border + glow, not translucency. These stay as back-compat
        aliases so existing `bg-surface-glass*` call sites resolve to the solid
        ink surface without a per-component rewrite. */
-    --surface-glass: rgba(42, 35, 31, 1); /* #2a231f = `--c-panel` */
-    --surface-strong-glass: rgba(42, 35, 31, 1); /* #2a231f — navs, pills */
-    --surface-soft-glass: rgba(42, 35, 31, 1); /* #2a231f — tinted bg */
-    --surface-line: rgba(255, 255, 255, 0.06); /* ink hairline */
+    --surface-glass: rgba(23, 28, 35, 1); /* = --c-panel */
+    --surface-strong-glass: rgba(14, 17, 22, 1); /* = --c-bg */
+    --surface-soft-glass: rgba(23, 28, 35, 1); /* = --c-panel */
+    --surface-line: rgba(38, 44, 53, 1); /* = --c-line */
 
-    --line-v2: rgba(255, 255, 255, 0.06); /* ink hairline (white/6%) */
-    --line-strong-v2: rgba(255, 255, 255, 0.12); /* ink divider (white/12%) */
+    --line-v2: rgba(38, 44, 53, 1); /* = --c-line */
+    --line-strong-v2: rgba(52, 59, 69, 1); /* = --c-border-strong */
 
     /* Стіл і зона, темна: стіл один для всіх — ink base; зона — 7%
        tier-400 акценту модуля на ньому (модульні значення в
        `.dark [data-module-accent=…]` нижче). Свічень немає: глибина в
        «Чорнилі» — tint + accent border, не glow (DESIGN.md § Темна тема). */
-    --module-desk-rgb: 20 16 14; /* #14100e — ink base */
-    --module-zone-rgb: 31 27 25; /* #1f1b19 — hub zone, white/4.5% */
+    --module-desk-rgb: 14 17 22; /* = --c-bg */
+    --module-zone-rgb: 14 17 22; /* = --c-bg */
 
     /* Shadows dark — much stronger outer drops + faint bright inset. */
-    --shadow-card-v2:
-      0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 4px 14px rgba(0, 0, 0, 0.3);
-    --shadow-pill:
-      0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 10px 26px rgba(0, 0, 0, 0.4);
-    --shadow-nav:
-      0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 12px 32px rgba(0, 0, 0, 0.4);
+    --shadow-card-v2: none;
+    --shadow-pill: none;
+    --shadow-nav: none;
     --shadow-fab: 0 8px 24px rgba(45, 212, 191, 0.4); /* teal-400 — unified with light/hc teal (was orphan emerald-400, 2026-08 design-audit T5) */
 
     /* Hero gradients unchanged — same hex pairs read fine on dark. */
@@ -1510,9 +1531,9 @@
 
   html.hc.dark {
     /* Dark HC — same mesh OFF + opaque glass strategy, ink colours. */
-    --surface-glass: rgba(42, 35, 31, 1); /* matches --c-panel (#2a231f) */
-    --surface-strong-glass: rgba(58, 48, 43, 1); /* = --c-panel-hi (#3a302b) */
-    --surface-soft-glass: rgba(42, 35, 31, 0.95);
+    --surface-glass: rgba(23, 28, 35, 1); /* = --c-panel (#171c23) */
+    --surface-strong-glass: rgba(31, 37, 46, 1); /* = --c-panel-hi (#1f252e) */
+    --surface-soft-glass: rgba(23, 28, 35, 0.95);
     --surface-line: rgba(255, 255, 255, 0.7);
 
     --c-ink-strong: 255 255 255;
@@ -1575,38 +1596,22 @@
   }
 }
 
-[data-module-accent="finyk"] {
-  --module-desk-rgb: 228 233 230; /* #e4e9e6 */
-  --module-zone-rgb: 211 227 222; /* #d3e3de */
-}
 [data-module-accent="fizruk"] {
-  --module-desk-rgb: 227 232 234; /* #e3e8ea */
-  --module-zone-rgb: 207 223 228; /* #cfdfe4 */
-}
-[data-module-accent="routine"] {
-  --module-desk-rgb: 234 227 229; /* #eae3e5 */
-  --module-zone-rgb: 239 216 221; /* #efd8dd */
+  --module-desk-rgb: 251 251 250;
+  --module-zone-rgb: 251 251 250;
 }
 [data-module-accent="nutrition"] {
-  --module-desk-rgb: 230 233 224; /* #e6e9e0 */
-  --module-zone-rgb: 221 229 201; /* #dde5c9 */
+  --module-desk-rgb: 251 251 250;
+  --module-zone-rgb: 251 251 250;
 }
 
-.dark [data-module-accent="finyk"] {
-  --module-desk-rgb: 20 16 14;
-  --module-zone-rgb: 22 30 26; /* #161e1a — teal-400 / 7% */
-}
 .dark [data-module-accent="fizruk"] {
-  --module-desk-rgb: 20 16 14;
-  --module-zone-rgb: 21 30 30; /* #151e1e — cyan-400 / 7% */
-}
-.dark [data-module-accent="routine"] {
-  --module-desk-rgb: 20 16 14;
-  --module-zone-rgb: 36 25 24; /* #241918 — rose-400 / 7% */
+  --module-desk-rgb: 14 17 22;
+  --module-zone-rgb: 14 17 22;
 }
 .dark [data-module-accent="nutrition"] {
-  --module-desk-rgb: 20 16 14;
-  --module-zone-rgb: 31 31 17; /* #1f1f11 — lime-400 / 7% */
+  --module-desk-rgb: 14 17 22;
+  --module-zone-rgb: 14 17 22;
 }
 
 html.hc [data-module-accent] {

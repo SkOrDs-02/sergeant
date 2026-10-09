@@ -270,12 +270,9 @@ describe("MonthlyPlanCard", () => {
     });
   });
 
-  it("starts open for first-run hints and handles an over-budget plan", () => {
-    const onDismissFirstRunHint = vi.fn();
-
+  it("starts open on first run and handles an over-budget plan", () => {
     renderMonthlyPlan({
       firstRunHint: true,
-      onDismissFirstRunHint,
       monthlyPlan: null,
       planIncome: 0,
       planExpense: 5000,
@@ -290,7 +287,6 @@ describe("MonthlyPlanCard", () => {
       daysLeft: 5,
     });
 
-    expect(screen.getByText(/Чорновик плану на місяць/)).toBeInTheDocument();
     expect(
       screen.getAllByText(
         // Ті самі нерозривні пробіли, що й вище: U+2212 як мінус,

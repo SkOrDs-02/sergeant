@@ -15,6 +15,7 @@
 import { memo } from "react";
 
 import { Button } from "@shared/components/ui/Button";
+import { Notice } from "@shared/components/ui/Notice";
 import { messages } from "@shared/i18n/uk";
 import { pluralize } from "../../../../core/hub/useHubDashboardState";
 
@@ -33,25 +34,20 @@ function MonoStalenessBannerComponent({
   const dayWord = pluralize(days, copy.days.one, copy.days.few, copy.days.many);
 
   return (
-    <div
+    <Notice
+      tone="ink"
       role="status"
-      className="rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3"
+      action={
+        onReconnect && (
+          <Button size="sm" variant="outline" onClick={onReconnect}>
+            {copy.cta}
+          </Button>
+        )
+      }
     >
-      <p className="text-style-body text-text">
-        {`${copy.title} ${days} ${dayWord}.`}
-      </p>
-      <p className="text-style-caption text-muted mt-1">{copy.hint}</p>
-      {onReconnect && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="mt-3"
-          onClick={onReconnect}
-        >
-          {copy.cta}
-        </Button>
-      )}
-    </div>
+      <p>{`${copy.title} ${days} ${dayWord}.`}</p>
+      <p className="mt-0.5 font-normal text-muted">{copy.hint}</p>
+    </Notice>
   );
 }
 

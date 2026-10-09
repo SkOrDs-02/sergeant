@@ -11,6 +11,7 @@
 import { useId } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@shared/components/ui/Badge";
+import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { DateField } from "@shared/components/ui/DateField";
@@ -94,7 +95,7 @@ export function ReceiptReviewForm({
   const handleAddItem = () => setDraft((d) => addBlankDraftItem(d));
 
   return (
-    <div className="space-y-4">
+    <Card prominence="receipt" className="space-y-4">
       {draft.source === "vision" && (
         <Badge
           variant="warning"
@@ -220,6 +221,6 @@ export function ReceiptReviewForm({
           </p>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

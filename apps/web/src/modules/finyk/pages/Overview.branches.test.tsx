@@ -4,13 +4,7 @@
  * balance masking, and background refresh message.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  act,
-  cleanup,
-} from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -220,33 +214,14 @@ describe("Overview page (branches)", () => {
     expect(screen.getByText("sync failed")).toBeInTheDocument();
   });
 
-  it("shows first-insight banner when unseen and data exists", () => {
+  it("не показує наджа першого інсайту навіть для нового користувача з даними", () => {
+    // Банер «Бюджету ще немає» знято (redesign v3, рішення власника
+    // 2026-10-09: наджі геть).
     localStorage.removeItem("finyk_first_insight_seen_v1");
-    renderOverview({
-      mono: buildMono({ realTx: [mkTx("t1", -2500)] }),
-    });
-    expect(screen.getByText("Бюджету ще немає")).toBeInTheDocument();
-  });
-
-  it("hides first-insight banner after localStorage seen-key is set", () => {
-    localStorage.setItem("finyk_first_insight_seen_v1", "1");
     renderOverview({
       mono: buildMono({ realTx: [mkTx("t1", -2500)] }),
     });
     expect(screen.queryByText("Бюджету ще немає")).toBeNull();
-  });
-
-  it("navigates to budgets from insight CTA", () => {
-    localStorage.removeItem("finyk_first_insight_seen_v1");
-    const onNavigate = vi.fn();
-    renderOverview({
-      mono: buildMono({ realTx: [mkTx("t1", -2500)] }),
-      onNavigate,
-    });
-    act(() => {
-      fireEvent.click(screen.getByRole("button", { name: "Поставити бюджет" }));
-    });
-    expect(onNavigate).toHaveBeenCalledWith("budgets");
   });
 
   it("masks balances when showBalance is false", () => {

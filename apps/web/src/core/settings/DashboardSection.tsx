@@ -20,14 +20,10 @@ import { useHubPref } from "./hubPrefs";
 
 export function DashboardSection() {
   // Головна за віссю дії (спека `hub-action-axis.md`, рішення власника
-  // 2026-09-17): купи й рейок не вимикаються, тож у «Вигляді» лишаються два
-  // тумблери — «Порада й тиждень» і «Мотиваційний підпис».
+  // 2026-09-17): купи й панель модулів не вимикаються, тож у «Вигляді»
+  // лишається тумблер «Порада й тиждень».
   const [showInsights, setShowInsights] = useHubPref<boolean>(
     "showInsights",
-    true,
-  );
-  const [showMotivational, setShowMotivational] = useHubPref<boolean>(
-    "showMotivational",
     true,
   );
   const toast = useToast();
@@ -80,18 +76,12 @@ export function DashboardSection() {
           checked={showInsights !== false}
           onChange={setShowInsights}
         />
-        <ToggleRow
-          label="Лічильник записів"
-          description="Скільки записів у тебе всього, у самому низу головної."
-          checked={showMotivational !== false}
-          onChange={setShowMotivational}
-        />
       </SettingsSubGroup>
       <SettingsSubGroup title="Розділи на головній">
         <p className="text-style-body text-subtle leading-snug">
           Які розділи показувати на головній. Неактивні розділи лишаються в
-          рейку приглушеними і не потрапляють у «Закрито сьогодні». Принаймні
-          один має залишатися активним.
+          панелі модулів приглушеними і не потрапляють у «Закрито сьогодні».
+          Принаймні один має залишатися активним.
         </p>
         {/* Огляд 2026-09-04: тут стояв нативний чекбокс 16px, тоді як
             решта «увімкнути/вимкнути» на сторінці — `Switch`. Один

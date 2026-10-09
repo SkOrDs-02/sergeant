@@ -9,15 +9,15 @@ vi.mock("@shared/api", () => ({ meApi: { updatePreferences: vi.fn() } }));
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { AddActionBar } from "@shared/components/ui/AddActionBar";
 import { CONSENT_BANNER_INSET_VAR } from "@shared/hooks/useBottomInsetVar";
 import AnalyticsConsentBanner from "./AnalyticsConsentBanner";
 
-describe("AnalyticsConsentBanner + FloatingActionButton", () => {
-  it("банер публікує інсет, а FAB піднімається над ним", () => {
+describe("AnalyticsConsentBanner + AddActionBar", () => {
+  it("банер публікує інсет, а кнопка дії піднімається над ним", () => {
     const { container, unmount } = render(
       <MemoryRouter>
-        <FloatingActionButton aria-label="Додати" onClick={() => {}} />
+        <AddActionBar label="Додати" onClick={() => {}} />
         <AnalyticsConsentBanner />
       </MemoryRouter>,
     );
@@ -25,8 +25,9 @@ describe("AnalyticsConsentBanner + FloatingActionButton", () => {
     expect(
       document.documentElement.style.getPropertyValue(CONSENT_BANNER_INSET_VAR),
     ).not.toBe("");
-    const fab = container.querySelector("button[aria-label='Додати']")
-      ?.parentElement as HTMLElement;
+    const fab = container.querySelector(
+      "[data-testid='add-action-bar']",
+    ) as HTMLElement;
     expect(fab.className).toContain(`var(${CONSENT_BANNER_INSET_VAR}`);
 
     unmount();

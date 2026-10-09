@@ -16,11 +16,7 @@
  * Тому тут пінимо не лише числа, а й ЛОКАЦІЮ правил.
  */
 import { readFileSync } from "node:fs";
-import {
-  brandColors,
-  controlEdge,
-  moduleSurfaces,
-} from "@sergeant/design-tokens/tokens";
+import { brandColors, controlEdge } from "@sergeant/design-tokens/tokens";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync(new URL("./theme.css", import.meta.url), "utf8");
@@ -66,6 +62,7 @@ function contrast(a: string, b: string): number {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
+const MODULES = ["finyk", "fizruk", "routine", "nutrition"] as const;
 const root = variablesFor(":root");
 const dark = { ...root, ...variablesFor(".dark") };
 
@@ -74,11 +71,9 @@ const LIGHT_SURFACES: Record<string, string> = {
   "c-panel": root["c-panel"]!,
   "c-panel-hi": root["c-panel-hi"]!,
   "c-bg": root["c-bg"]!,
+  // Мова H: стіл і зону модуля знято, єдина тонована поверхня - тинт.
   ...Object.fromEntries(
-    Object.entries(moduleSurfaces).flatMap(([name, s]) => [
-      [`${name} desk`, hexToTriplet(s.light.desk)],
-      [`${name} zone`, hexToTriplet(s.light.zone)],
-    ]),
+    MODULES.map((m) => [`${m} tint`, root[`c-${m}-tint`]!]),
   ),
 };
 const DARK_SURFACES: Record<string, string> = {
@@ -86,10 +81,7 @@ const DARK_SURFACES: Record<string, string> = {
   "c-panel-hi": dark["c-panel-hi"]!,
   "c-bg": dark["c-bg"]!,
   ...Object.fromEntries(
-    Object.entries(moduleSurfaces).map(([name, s]) => [
-      `${name} zone`,
-      hexToTriplet(s.dark.zone),
-    ]),
+    MODULES.map((m) => [`${m} tint`, dark[`c-${m}-tint`]!]),
   ),
 };
 
@@ -145,14 +137,7 @@ describe("--c-focus-solid (суцільний колір індикатора ф
       );
     });
     for (const [name, surface] of [
-      [
-        `${module} desk (light)`,
-        hexToTriplet(moduleSurfaces[module].light.desk),
-      ],
-      [
-        `${module} zone (light)`,
-        hexToTriplet(moduleSurfaces[module].light.zone),
-      ],
+      [`${module} tint (light)`, root[`c-${module}-tint`]!],
       ["c-panel (light)", LIGHT_SURFACES["c-panel"]!],
     ] as const) {
       it(`light: ${module}-ink проти ${name} ≥ 3:1`, () => {
@@ -162,7 +147,7 @@ describe("--c-focus-solid (суцільний колір індикатора ф
       });
     }
     for (const [name, surface] of [
-      [`${module} zone (dark)`, hexToTriplet(moduleSurfaces[module].dark.zone)],
+      [`${module} tint (dark)`, dark[`c-${module}-tint`]!],
       ["c-panel (dark)", DARK_SURFACES["c-panel"]!],
       ["c-panel-hi (dark)", DARK_SURFACES["c-panel-hi"]!],
     ] as const) {
@@ -278,21 +263,14 @@ describe("Switch: трек і бігунок — стани розрізняют
   });
 });
 
-describe("світла `--c-line`: контур картки читається на столі", () => {
-  // Аудит A8: `#e2e0da` давав 1.05 проти столу хаба — межа картки на столі
-  // була невидима. Паритет із темною (1.56 проти картки): ≥1.5 / ≥1.2.
-  it("проти картки ≥ 1.5:1", () => {
-    expect(contrast(root["c-line"]!, root["c-panel"]!)).toBeGreaterThanOrEqual(
-      1.5,
+describe("світла `--c-line`: hairline між рядками", () => {
+  // Мова H: панель без бордера, `--c-line` лише роздільник рядків на
+  // сторінці й верх tab bar.
+  it("проти сторінки ≥ 1.15:1", () => {
+    expect(contrast(root["c-line"]!, root["c-bg"]!)).toBeGreaterThanOrEqual(
+      1.15,
     );
   });
-  for (const [name, s] of Object.entries(moduleSurfaces)) {
-    it(`проти столу ${name} ≥ 1.15:1`, () => {
-      expect(
-        contrast(root["c-line"]!, hexToTriplet(s.light.desk)),
-      ).toBeGreaterThanOrEqual(1.15);
-    });
-  }
   it("ієрархія weak < line < strong збережена (strong темніша за line)", () => {
     expect(luminance(root["c-border-strong"]!)).toBeLessThan(
       luminance(root["c-line"]!),

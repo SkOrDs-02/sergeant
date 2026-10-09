@@ -13,9 +13,6 @@
 export { Badge } from "./Badge";
 export type { BadgeProps, BadgeSize, BadgeTone, BadgeVariant } from "./Badge";
 
-export { Banner } from "./Banner";
-export type { BannerProps, BannerVariant } from "./Banner";
-
 export { Button } from "./Button";
 export type {
   ButtonProps,
@@ -256,13 +253,10 @@ export type {
   AnimationStyle,
 } from "./AnimatedList";
 
-export { FloatingActionButton } from "./FloatingActionButton";
-export type {
-  FloatingActionButtonProps,
-  FABAction,
-  FABSize,
-  FABVariant,
-} from "./FloatingActionButton";
+export { AddActionBar } from "./AddActionBar";
+export type { AddActionBarProps } from "./AddActionBar";
+export { Notice } from "./Notice";
+export type { NoticeProps, NoticeTone } from "./Notice";
 
 export {
   KeyboardAccessory,

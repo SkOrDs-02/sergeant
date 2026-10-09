@@ -3,9 +3,7 @@ import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
-import { readRaw, writeRaw } from "./lib/finykStorage";
-import { FINYK_BANK_BANNER_DISMISSED_AT_KEY } from "@sergeant/finyk-domain/storage-keys";
-import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
+import { enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -18,9 +16,6 @@ import {
   ModuleHeaderSettingsButton,
   SwipePages,
 } from "@shared/components/layout";
-import { NoBankBanner } from "./components/NoBankBanner";
-import { shouldShowNoBankBanner } from "./components/NoBankBanner.visibility";
-import { useBankBannerClock } from "./hooks/useBankBannerClock";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useToast } from "@shared/hooks/useToast";
@@ -151,17 +146,6 @@ export default function App({
   const [quickAddDescription, setQuickAddDescription] = useState<string | null>(
     null,
   );
-  const [manualOnly, setManualOnly] = useState(
-    () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
-  );
-  // Закриття банера «підключити банк» ховає його на 7 днів, а не назавжди
-  // (рішення власника 2026-09-30); `manualOnly` лишається постійним вибором.
-  const [bankBannerDismissedAt, setBankBannerDismissedAt] = useState<
-    number | null
-  >(() => {
-    const n = Number(readRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, ""));
-    return Number.isFinite(n) && n > 0 ? n : null;
-  });
   // Комбінований пікер «Запланувати» на Плануванні (founder-UX audit
   // round 2, F2): `Budgets` і `PlanningSubscriptions` мають КОЖЕН свій
   // `useAssetsState`-інстанс, тож пункт «Підписка» з пікера в `Budgets` не
@@ -260,18 +244,6 @@ export default function App({
     setShowLoginOverlay(false);
   }
 
-  // Умова живе окремою чистою функцією поруч із самим банером — розбір
-  // чому саме там, і що означає `inDemo`, у її докстрінгу (PR-F5).
-  const bankBannerNow = useBankBannerClock(page, bankBannerDismissedAt);
-  const showNoBankBanner = shouldShowNoBankBanner({
-    hasConnectedProvider,
-    manualOnly,
-    manualExpenseCount: (storage.manualExpenses || []).length,
-    dismissedAt: bankBannerDismissedAt,
-    now: bankBannerNow,
-    page,
-  });
-
   // Page render helpers
   const renderPage = () => {
     if (page === "overview") {
@@ -286,7 +258,6 @@ export default function App({
             onNavigate={navigate}
             onOpenAuth={onOpenAuth}
             showBalance={showBalance}
-            onOpenBulkImport={() => setShowBulkImport(true)}
             onOpenSettings={onOpenSettings}
           />
         </SectionErrorBoundary>
@@ -502,17 +473,6 @@ export default function App({
           }
         />
 
-        {showNoBankBanner && (
-          <NoBankBanner
-            onConnect={() => setShowLoginOverlay(true)}
-            onContinueManually={() => {
-              const now = Date.now();
-              writeRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, String(now));
-              setBankBannerDismissedAt(now);
-            }}
-          />
-        )}
-
         <FinykManualExpenseConflictBanner />
 
         <SwipePages
@@ -636,7 +596,6 @@ export default function App({
               onConnect={(token) => connect(token)}
               onContinueWithoutBank={() => {
                 enableFinykManualOnly();
-                setManualOnly(true);
                 setShowLoginOverlay(false);
               }}
               onBackToHub={() => setShowLoginOverlay(false)}

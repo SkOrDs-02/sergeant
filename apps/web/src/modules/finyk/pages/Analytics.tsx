@@ -23,7 +23,7 @@ import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { filterToKyivFirstDays, filterToKyivMonth } from "../lib/monthWindow";
 import { isMonoNotConnectedError } from "../lib/monoBankErrors";
 import { useAnalytics } from "../hooks/useAnalytics";
-import { CategoryPieChart } from "../components/charts/lazy";
+import { CategoryBars } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
 import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
@@ -465,12 +465,11 @@ export function Analytics({
     [storage, activeTx, prevTx, prevKey, monthCache],
   );
 
-  const { summary, distribution, distributionTotal, topMerchants } =
-    useAnalytics({
-      mono: analyticsMono,
-      storage: analyticsStorage,
-      prevTx: prevKey in monthCache ? prevTx : null,
-    });
+  const { summary, distribution, topMerchants } = useAnalytics({
+    mono: analyticsMono,
+    storage: analyticsStorage,
+    prevTx: prevKey in monthCache ? prevTx : null,
+  });
 
   const comparison = useMemo(() => {
     if (!(prevKey in monthCache)) return null;
@@ -692,10 +691,9 @@ export function Analytics({
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>
-              <CategoryPieChart
+              <CategoryBars
                 data={distribution}
-                total={distributionTotal}
-                className=""
+                previous={categoryDeltas}
                 showBalance={showBalance}
                 {...(onSelectCategory
                   ? {

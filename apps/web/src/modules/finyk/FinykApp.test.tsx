@@ -11,7 +11,7 @@
  * between `FinykApp` and its children, or the real Monobank data flow.
  *
  * This version renders the REAL component tree — real `useMonobank`
- * (`useMonobankWebhook`), real `useStorage`, real `NoBankBanner`, real
+ * (`useMonobankWebhook`), real `useStorage`, real
  * `FinykLoginScreen`, real lazy-loaded pages (`Overview`/`Transactions`/
  * `Budgets`/`Analytics`/`Assets`), real `ModuleBottomNav`, real
  * `AuthProvider`/`ApiClientProvider`/`ToastProvider` — wired to a real
@@ -28,7 +28,6 @@
  */
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import {
-  act,
   configure,
   fireEvent,
   render,
@@ -158,7 +157,7 @@ function navButton(label: string) {
 }
 
 describe("FinykApp — shell + default page (real component tree)", () => {
-  it("renders the module chrome, the real Overview page, and the no-bank banner for a disconnected visitor", async () => {
+  it("renders the module chrome and the real Overview page for a disconnected visitor, without a no-bank nudge", async () => {
     renderApp();
 
     // Chrome: header module title (also present in a module-switcher chip,
@@ -172,13 +171,11 @@ describe("FinykApp — shell + default page (real component tree)", () => {
     // Real bottom nav landmark.
     expect(bottomNav()).toBeInTheDocument();
 
-    // Real `NoBankBanner` (not connected, not manual-only yet).
+    // Наджа «підключи банк» немає (redesign v3, рішення власника
+    // 2026-10-09): підключення живе в налаштуваннях і PWA-дії.
     expect(
-      screen.getByRole("button", { name: "Підключити Monobank" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Не зараз" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Підключити Monobank" }),
+    ).not.toBeInTheDocument();
 
     // Real `Overview` page (sr-only page heading, not a stubbed testid).
     expect(
@@ -286,16 +283,9 @@ describe("FinykApp — real page routing via the bottom nav", () => {
   });
 });
 
-describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLoginScreen)", () => {
-  it("opens the real login overlay when NoBankBanner's Connect is clicked", async () => {
-    renderApp();
-    expect(
-      screen.queryByRole("dialog", { name: "Підключення Monobank" }),
-    ).not.toBeInTheDocument();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Підключити Monobank" }),
-    );
+describe("FinykApp — connect flow (real FinykLoginScreen)", () => {
+  it("opens the real login overlay on the connect_bank PWA action", async () => {
+    renderApp({ onOpenAuth: NOOP_AUTH, pwaAction: "connect_bank" });
 
     const dialog = await screen.findByRole("dialog", {
       name: "Підключення Monobank",
@@ -304,69 +294,6 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
     expect(
       within(dialog).getByPlaceholderText("Встав токен Mono API"),
     ).toBeInTheDocument();
-  });
-
-  it("hides the NoBankBanner on dismiss, writes a timestamp and keeps manual-only unset", async () => {
-    renderApp();
-    await userEvent.click(screen.getByRole("button", { name: "Не зараз" }));
-
-    expect(
-      screen.queryByRole("button", { name: "Підключити Monobank" }),
-    ).not.toBeInTheDocument();
-    expect(
-      Number(window.localStorage.getItem("finyk_bank_banner_dismissed_at_v1")),
-    ).toBeGreaterThan(0);
-    expect(window.localStorage.getItem("finyk_manual_only_v1")).toBeNull();
-  });
-
-  it("shows the NoBankBanner again 7 days after dismiss, not before", async () => {
-    const t0 = Date.now();
-    const nowSpy = vi.spyOn(Date, "now");
-    nowSpy.mockReturnValue(t0);
-    const first = renderApp();
-    await userEvent.click(screen.getByRole("button", { name: "Не зараз" }));
-    first.unmount();
-
-    nowSpy.mockReturnValue(t0 + 6 * 24 * 60 * 60 * 1000);
-    const second = renderApp();
-    expect(
-      screen.queryByRole("button", { name: "Підключити Monobank" }),
-    ).not.toBeInTheDocument();
-    second.unmount();
-
-    nowSpy.mockReturnValue(t0 + 7 * 24 * 60 * 60 * 1000);
-    renderApp();
-    expect(
-      screen.getByRole("button", { name: "Підключити Monobank" }),
-    ).toBeInTheDocument();
-    nowSpy.mockRestore();
-  });
-
-  it("shows the banner on the SAME mounted instance once the 7-day snooze elapses", async () => {
-    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
-    try {
-      renderApp();
-      fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
-      expect(
-        screen.queryByRole("button", { name: "Підключити Monobank" }),
-      ).not.toBeInTheDocument();
-
-      act(() => {
-        vi.advanceTimersByTime(7 * 24 * 60 * 60 * 1000 - 1000);
-      });
-      expect(
-        screen.queryByRole("button", { name: "Підключити Monobank" }),
-      ).not.toBeInTheDocument();
-
-      act(() => {
-        vi.advanceTimersByTime(1000);
-      });
-      expect(
-        screen.getByRole("button", { name: "Підключити Monobank" }),
-      ).toBeInTheDocument();
-    } finally {
-      vi.useRealTimers();
-    }
   });
 });
 
@@ -483,11 +410,8 @@ describe("FinykApp — a rejected Mono token surfaces the real authError banner"
       ),
     );
 
-    renderApp();
+    renderApp({ onOpenAuth: NOOP_AUTH, pwaAction: "connect_bank" });
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Підключити Monobank" }),
-    );
     const dialog = await screen.findByRole("dialog", {
       name: "Підключення Monobank",
     });

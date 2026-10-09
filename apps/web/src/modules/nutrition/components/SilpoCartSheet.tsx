@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { Banner } from "@shared/components/ui/Banner";
+import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
@@ -66,18 +66,12 @@ function ErrorBanner({
   const text = errorCopy(kind);
   if (!text) return null;
   return (
-    <Banner
-      variant="warning"
+    <Notice
+      tone="ink"
       role="alert"
       aria-live="assertive"
       className="flex items-start gap-2.5"
     >
-      <Icon
-        name="alert-triangle"
-        size="md"
-        className="mt-0.5 shrink-0 text-warning"
-        aria-hidden
-      />
       <div className="min-w-0 flex-1">
         <p className="text-style-body text-text">{text}</p>
         {/* not_connected/reauth_required вирішуються в Налаштуваннях, не
@@ -93,7 +87,7 @@ function ErrorBanner({
           </button>
         )}
       </div>
-    </Banner>
+    </Notice>
   );
 }
 
@@ -185,12 +179,6 @@ function CartRow({
   if (row.unmatched) {
     return (
       <li className="flex items-start gap-2.5 px-1 py-2 rounded-xl">
-        <Icon
-          name="alert-triangle"
-          size="md"
-          className="mt-0.5 shrink-0 text-subtle"
-          aria-hidden
-        />
         <div className="min-w-0 flex-1">
           <div className="text-style-label text-text truncate">{row.query}</div>
           <div className="text-style-caption text-subtle">{COPY.unmatched}</div>
@@ -293,12 +281,6 @@ function SuccessView({
   return (
     <div role="status" aria-live="polite" className="grid gap-4">
       <div className="flex items-center gap-2.5">
-        <Icon
-          name="check-circle"
-          size="lg"
-          className="text-success shrink-0"
-          aria-hidden
-        />
         <p className="text-style-label text-text">{COPY.successTitle}</p>
       </div>
       <ul className="grid gap-1 rounded-2xl border border-line bg-bg p-3">

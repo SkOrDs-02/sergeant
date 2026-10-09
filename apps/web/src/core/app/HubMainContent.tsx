@@ -17,10 +17,8 @@ import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
-import { IOSInstallBanner } from "./IOSInstallBanner";
 import { LocalOnlyDataBanner } from "../durability/LocalOnlyDataBanner";
 import { HubBannerBudgetProvider } from "../hub/bannerBudget";
-import { TrialBanner } from "../billing";
 
 /**
  * Mounts only after the parent Suspense boundary resolves. Inside a
@@ -95,9 +93,6 @@ export interface HubMainContentProps {
     id: string | null | undefined,
     opts?: OpenModuleOptions,
   ) => void;
-  iosVisible: boolean;
-  onDismissIosForever: () => void;
-  onSnoozeIos: () => void;
   hubView: HubView;
   user: User | null;
   onShowAuth: () => void;
@@ -114,9 +109,6 @@ const HUB_TAB_ORDER: readonly HubView[] = [
 
 export const HubMainContent = memo(function HubMainContent({
   onOpenModule,
-  iosVisible,
-  onDismissIosForever,
-  onSnoozeIos,
   hubView,
   user,
   onShowAuth,
@@ -230,25 +222,8 @@ export const HubMainContent = memo(function HubMainContent({
     ]);
   }, [queryClient]);
 
-  // SW-update + PWA-install chrome banners moved to the header bell
-  // (`NotificationBell`) as part of the C · Контроль home redesign — they
-  // were the loudest inline «шум» above the dashboard. The iOS-install
-  // banner keeps its inline placement (bespoke step-by-step instructions
-  // that don't compress into a bell row). Suppressed during the FTUX
-  // session so the one signal on screen stays the FirstAction CTA.
-  const showIos = !inFtuxSession && iosVisible;
-
   return (
     <>
-      {!inFtuxSession && <TrialBanner />}
-
-      {showIos && (
-        <IOSInstallBanner
-          onDismissForever={onDismissIosForever}
-          onSnooze={onSnoozeIos}
-        />
-      )}
-
       <PullToRefresh
         as="main"
         id="main"

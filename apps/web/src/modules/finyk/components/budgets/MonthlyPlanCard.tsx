@@ -9,7 +9,6 @@ import { Icon } from "@shared/components/ui/Icon";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Money } from "@shared/components/ui/Money";
-import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
 // each persisted as the canonical dot-form value (string while editing,
@@ -87,13 +86,10 @@ interface MonthlyPlanCardProps {
   forecastExpense?: number | null | undefined;
   /**
    * When true, the card auto-opens and auto-enters the edit form on
-   * mount and renders a `<FirstRunHintBanner />` framing the inputs as
-   * the canonical «домівка» for the user's monthly plan. Set on the
-   * user's first Finyk entry by `FinykApp` via `useModuleFirstRun`.
+   * mount. Set on the user's first Finyk entry by `FinykApp` via
+   * `useModuleFirstRun`.
    */
   firstRunHint?: boolean | undefined;
-  /** Dismiss callback for the first-run hint banner. */
-  onDismissFirstRunHint?: (() => void) | undefined;
 }
 
 // Unified monthly-plan block: Plan/Fact/Δ table for income, expense and
@@ -119,7 +115,6 @@ function MonthlyPlanCardComponent({
   daysLeft,
   forecastExpense,
   firstRunHint,
-  onDismissFirstRunHint,
 }: MonthlyPlanCardProps) {
   // First-run path force-opens both the card body and the inline
   // editor so the user lands directly on the inputs they need to fill
@@ -423,14 +418,6 @@ function MonthlyPlanCardComponent({
 
           {editing && (
             <div className="space-y-2 border-t border-line pt-3">
-              {firstRunHint && (
-                <FirstRunHintBanner
-                  variant="finyk"
-                  title="Чорновик плану на місяць"
-                  description="Дохід, витрати й накопичення можна змінити будь-коли."
-                  onDismiss={onDismissFirstRunHint ?? (() => {})}
-                />
-              )}
               <PlanAmountField
                 id={incomeId}
                 label="План доходу"

@@ -3,7 +3,7 @@
  * Coverage tests for the Analytics page.
  *
  * Analytics receives `mono` + `storage` adapters as props, so we drive it with
- * plain stubs — no providers needed. We mock the lazy CategoryPieChart so the
+ * plain stubs — no providers needed. We mock the lazy CategoryBars so the
  * Suspense boundary resolves synchronously, and verify: initial render,
  * month navigation (prev/next + disabled next on current month), prior-month
  * fetch + comparison section, fetch-error + retry, manual-expense merge, and
@@ -27,8 +27,10 @@ import { hasViewedFinykAnalytics } from "../../../core/onboarding/useChecklistSi
 
 // Mock the lazy chart so Suspense resolves immediately and we don't pull recharts.
 vi.mock("../components/charts/lazy", () => ({
-  CategoryPieChart: ({ total }: { total?: number }) => (
-    <div data-testid="pie">pie total {total}</div>
+  CategoryBars: ({ data = [] }: { data?: { spent: number }[] }) => (
+    <div data-testid="category-bars">
+      bars total {data.reduce((sum, d) => sum + d.spent, 0)}
+    </div>
   ),
 }));
 
@@ -149,7 +151,7 @@ describe("Analytics page", () => {
     expect(screen.getByLabelText("Наступний місяць")).toBeDisabled();
   });
 
-  it("renders the pie chart when there is category distribution", async () => {
+  it("renders category bars when there is category distribution", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     const realTx = [mkTx("a", -10000, now), mkTx("b", -5000, now)];
     await act(async () => {
@@ -157,7 +159,7 @@ describe("Analytics page", () => {
         <Analytics mono={buildMono({ realTx })} storage={buildStorage()} />,
       );
     });
-    expect(await screen.findByTestId("pie")).toBeInTheDocument();
+    expect(await screen.findByTestId("category-bars")).toBeInTheDocument();
   });
 
   it("renders skeleton placeholders while current-month transactions load", async () => {
@@ -308,7 +310,9 @@ describe("Analytics page", () => {
       );
     });
     // Лише червневі 100 грн у розподілі — травневі 9 000 грн поза вікном.
-    expect(await screen.findByTestId("pie")).toHaveTextContent("pie total 100");
+    expect(await screen.findByTestId("category-bars")).toHaveTextContent(
+      "bars total 100",
+    );
   });
 
   it("merges manual expenses for the selected month", async () => {
@@ -333,8 +337,8 @@ describe("Analytics page", () => {
         />,
       );
     });
-    // manual expense produces category distribution → pie renders
-    expect(await screen.findByTestId("pie")).toBeInTheDocument();
+    // manual expense produces category distribution → bars render
+    expect(await screen.findByTestId("category-bars")).toBeInTheDocument();
   });
 
   it("показує помилку завантаження банку навіть коли в місяці є ручна витрата", async () => {
@@ -400,8 +404,8 @@ describe("Analytics page", () => {
   // PR-F3 (founder-UX audit wave 6, «Чесність показників»): `Analytics`
   // never accepted `showBalance` at all — the Overview toggle that hides
   // money left every figure here (summary, comparison, top merchants)
-  // visible one swipe away. `CategoryPieChart` is mocked above, so its own
-  // masking is covered separately in `CategoryPieChart.test.tsx`.
+  // visible one swipe away. `CategoryBars` is mocked above, so its own
+  // masking is covered separately in `CategoryBars.test.tsx`.
   it("masks Summary, Comparison, and Merchant amounts when showBalance=false", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);

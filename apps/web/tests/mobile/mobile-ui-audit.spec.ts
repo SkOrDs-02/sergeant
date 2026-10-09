@@ -79,8 +79,7 @@ test.describe("mobile coarse-pointer UI audit", () => {
     await seedFTUX(page, "post-ftux");
     await page.goto("/finyk", { waitUntil: "domcontentloaded" });
 
-    await page.getByRole("button", { name: "Додати", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Додати витрату" }).click();
+    await page.getByRole("button", { name: "Додати витрату" }).click();
 
     const dateField = page.getByLabel("Дата", { exact: true });
     await page.getByText("Інша дата").click();

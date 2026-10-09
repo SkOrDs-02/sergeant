@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { Notice } from "@shared/components/ui/Notice";
 import { useFinykManualExpenseConflicts } from "../lib/conflicts/useFinykManualExpenseConflicts";
 import { dismissAllFinykManualExpenseConflicts } from "../lib/conflicts/store";
 
@@ -64,42 +64,31 @@ export function FinykManualExpenseConflictBanner({
     form === "one" ? "конфлікт" : form === "few" ? "конфлікти" : "конфліктів";
 
   return (
-    <div
+    <Notice
+      tone="ink"
       role="status"
       aria-live="polite"
       aria-label="Конфлікти синхронізації витрат"
-      className="mx-3 mt-3 mb-1 rounded-2xl border border-warning/30 bg-warning/10 p-4 shadow-card"
+      className="mx-4 mt-3 mb-1"
       data-testid="finyk-manual-expense-conflict-banner"
-    >
-      <div className="flex items-start gap-3">
-        <span
-          className="shrink-0 w-9 h-9 rounded-xl bg-warning/20 text-warning flex items-center justify-center"
-          aria-hidden
-        >
-          <Icon name="alert-triangle" size={18} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-style-label text-text">
-            {conflicts.length} {noun} синхронізації
-          </h3>
-          <p className="text-style-body text-muted mt-1 leading-snug">
-            На іншому пристрої цю витрату вже змінено. Хмарна версія
-            актуальніша, потягни вниз, щоб оновити, або відхили попередження,
-            якщо не критично.
-          </p>
-        </div>
-      </div>
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+      action={
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="flex-1 min-h-[40px]"
           onClick={handleDismissAll}
         >
           Відхилити попередження
         </Button>
-      </div>
-    </div>
+      }
+    >
+      <h3>
+        {conflicts.length} {noun} синхронізації
+      </h3>
+      <p className="mt-0.5 font-normal text-muted">
+        На іншому пристрої цю витрату вже змінено. Хмарна версія актуальніша,
+        потягни вниз, щоб оновити, або відхили попередження, якщо не критично.
+      </p>
+    </Notice>
   );
 }

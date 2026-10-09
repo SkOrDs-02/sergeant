@@ -48,40 +48,27 @@ describe("Button", () => {
     expect(ref.current?.textContent).toBe("Ok");
   });
 
-  it("applies variant classes (primary → bg-brand-strong text-white)", () => {
+  it("primary = чорнило на сторінці (мова H), темна перевертається токенами", () => {
     const { getByRole } = render(<Button variant="primary">Go</Button>);
     const cls = getByRole("button").className;
-    // `bg-brand-strong` (= emerald-700) clears WCAG AA against text-white
-    // — see docs/design/archive/brand-palette-wcag-aa-proposal.md.
-    expect(cls).toContain("bg-brand-strong");
-    expect(cls).toContain("text-white");
+    expect(cls).toContain("bg-text");
+    expect(cls).toContain("text-bg");
+    expect(cls).not.toContain("dark:");
   });
 
-  it("primary hover/active are monotonically darker than the -strong base", () => {
-    // Regression guard: the primary base is `bg-brand-strong` (= stone-800).
-    // Both hover and active must go *darker* (stone-900) so the interaction
-    // never inverts. Pin the progression so a lighter hover can't creep back.
-    const { getByRole } = render(<Button variant="primary">Go</Button>);
-    const cls = getByRole("button").className;
-    expect(cls).toContain("hover:bg-brand-900");
-    expect(cls).toContain("active:bg-brand-900");
-    expect(cls).not.toContain("hover:bg-brand-600");
-    expect(cls).not.toContain("active:bg-brand-700");
-  });
-
-  it("hub-level primary is neutral stone ink-on-paper with no coloured accent glow (design-audit M1)", () => {
-    // No `module` — this is the hub-chrome primary. The hub is a neutral
-    // parent, so its primary is hueless: stone fill + white in light, an
-    // inverted light-stone chip + dark ink in dark. Crucially it must NOT
-    // carry a coloured accent glow, which would read as a fifth accent and
-    // break module-accent containment (Hard Rule #12).
-    const { getByRole } = render(<Button variant="primary">Go</Button>);
-    const cls = getByRole("button").className;
-    expect(cls).toContain("dark:bg-brand-100");
-    expect(cls).toContain("dark:text-brand-900");
-    expect(cls).not.toContain("dark:shadow-glow-accent-emerald");
-    expect(cls).not.toContain("shadow-glow");
-  });
+  it.each(["xs", "sm", "md", "lg", "xl"] as const)(
+    "%s: радіус 8 px, без тіні, масштабу й glow",
+    (size) => {
+      const { getByRole } = render(
+        <Button size={size} variant="finyk">
+          Go
+        </Button>,
+      );
+      const cls = getByRole("button").className;
+      expect(cls).toContain("rounded-lg");
+      expect(cls).not.toMatch(/rounded-(xl|2xl)|scale|shadow|glow/);
+    },
+  );
 
   it.each([
     // finyk's registered `teal` scale tops out at 900 (no 950 tier), so
@@ -144,11 +131,7 @@ describe("Button", () => {
       },
     );
 
-    it("module primary carries the calm dark treatment (accent fill + ink + elevation)", () => {
-      // Light keeps `-strong` + white; dark swaps to the luminescent
-      // tier-400 accent (`dark:bg-{module}`) + ink text (`dark:text-bg`)
-      // + a quiet elevation shadow (base `shadow-sm`; DESIGN.md forbids
-      // `dark:shadow-*`). Resting glow is deliberately absent.
+    it("module primary: темна - тир 400 під чорнилом сторінки, без тіні", () => {
       const { getByRole } = render(
         <Button module="routine" variant="primary">
           Go
@@ -157,9 +140,7 @@ describe("Button", () => {
       const cls = getByRole("button").className;
       expect(cls).toContain("dark:bg-routine");
       expect(cls).toContain("dark:text-bg");
-      expect(cls).toContain("shadow-sm");
-      expect(cls).not.toMatch(/dark:shadow-/);
-      expect(cls).not.toContain("dark:shadow-glow-accent-rose");
+      expect(cls).not.toMatch(/shadow/);
     });
 
     it.each([
@@ -222,15 +203,13 @@ describe("Button", () => {
   });
 
   describe("orthogonal variant × tone API", () => {
-    it("solid/neutral renders the neutral stone primary", () => {
+    it("solid/neutral renders the ink primary", () => {
       const { getByRole } = render(
         <Button variant="solid" tone="neutral">
           Go
         </Button>,
       );
-      const cls = getByRole("button").className;
-      expect(cls).toContain("bg-brand-strong");
-      expect(cls).toContain("text-white");
+      expect(getByRole("button").className).toContain("bg-text");
     });
 
     it("solid/danger renders the destructive treatment", () => {
@@ -264,7 +243,7 @@ describe("Button", () => {
       );
       const cls = getByRole("button").className;
       expect(cls).toContain("border-border-strong");
-      expect(cls).toContain("shadow-e1");
+      expect(cls).toContain("bg-transparent");
     });
 
     it("solid/ink renders the inverted ink primary", () => {

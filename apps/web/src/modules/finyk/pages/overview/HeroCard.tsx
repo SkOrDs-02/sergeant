@@ -105,7 +105,6 @@ const HeroCardImpl = function HeroCard({
     <Card
       prominence="hero"
       module="finyk"
-      edge="rule"
       padding="none"
       className="relative overflow-hidden"
     >

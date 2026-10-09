@@ -33,7 +33,9 @@ import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { coreMessages } from "@shared/i18n/uk.core";
 import { TodayFocusCard } from "../../insights/TodayFocusCard";
 import { useNowItems } from "./useNowItems";
+import { usePublishHubDayCount } from "./hubDayCounts";
 import type { NowItem } from "./nowItems";
+import { ChecklistNowRows, type ChecklistNowProps } from "./ChecklistNowRows";
 
 /** Скільки рядків видно без «ще N». */
 export const NOW_PILE_VISIBLE = 3;
@@ -215,13 +217,17 @@ function NowRow({
 export interface NowPileProps {
   /** `openInsightTarget` з `useHubDashboardState` — id модуля й, за потреби, hash усередині нього. */
   onOpenTarget: (module: string, hash?: string) => void;
+  /** Незроблені кроки онбордингу - рядки над рештою купи. */
+  checklist?: ChecklistNowProps | undefined;
 }
 
-export function NowPile({ onOpenTarget }: NowPileProps) {
+export function NowPile({ onOpenTarget, checklist }: NowPileProps) {
   const { items, dismiss, postponed, restorePostponed } = useNowItems();
   const run = useRunAction(onOpenTarget);
   const askAiDisabled = useAskAiQuotaExhausted();
   const [tailOpen, setTailOpen] = useState(false);
+  const total = items.length + (checklist?.steps.length ?? 0);
+  usePublishHubDayCount("now", total);
 
   const visible = useMemo(
     () => promoteDanger(items, NOW_PILE_VISIBLE),
@@ -245,9 +251,13 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
           {coreMessages.hub.nowPile.heading}
         </SectionHeading>
         <span className="text-style-caption font-bold text-muted" aria-hidden>
-          {items.length}
+          {total}
         </span>
       </div>
+
+      {checklist && checklist.steps.length > 0 && (
+        <ChecklistNowRows {...checklist} />
+      )}
 
       {!hero ? (
         // «Все закрито» лише коли справді нічого не було. Якщо порожньо через
@@ -264,7 +274,7 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
               {coreMessages.hub.nowPile.showPostponed}
             </span>
           </button>
-        ) : (
+        ) : checklist && checklist.steps.length > 0 ? null : (
           <p
             data-testid="now-empty"
             className="rounded-xl border border-line bg-bg px-3 py-3 text-style-body text-muted"

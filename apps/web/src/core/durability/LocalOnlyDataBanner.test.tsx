@@ -96,9 +96,8 @@ describe("LocalOnlyDataBanner", () => {
     useLocalUserIdMock.mockReturnValue("local-anon");
     render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
     const button = screen.getByRole("button", { name: "Увійти" });
-    // `ghost` = `bg-transparent` (Button.tsx) — найтихіший варіант, без
-    // заливки й рамки.
-    expect(button.className).not.toMatch(/bg-transparent/);
+    // `ghost` - найтихіший варіант, без рамки; кнопка входу має обвід outline.
+    expect(button.className).toContain("border-border-strong");
   });
 
   it("кнопка бекапу зʼявляється лише коли є куди її повісити", () => {

@@ -2,7 +2,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { EmptyState, ModuleEmptyState } from "./EmptyState";
-import { Icon } from "./Icon";
 import { Button } from "./Button";
 
 afterEach(cleanup);
@@ -41,34 +40,20 @@ describe("EmptyState — a11y", () => {
     expect(status!.getAttribute("aria-live")).toBe("off");
   });
 
-  it("icon-обгортка має aria-hidden='true' — декоративна графіка не дублюється у SR", () => {
-    const { container } = render(
-      <EmptyState icon={<Icon name="plus" />} title="Список звичок порожній" />,
-    );
-    // Шукаємо саме wrapper-div, який тримає іконку (всередині нього — <svg>).
-    const iconWrapper = container.querySelector(
-      '[role="status"] > [aria-hidden="true"]',
-    );
-    expect(iconWrapper).not.toBeNull();
-    expect(iconWrapper!.querySelector("svg")).not.toBeNull();
-  });
-
-  it("illustration-обгортка має aria-hidden='true' (тіж декоративний дублікат)", () => {
-    const { container } = render(
+  it("мова H: icon, illustration і examplePreview не рендеряться, hint лишається текстом", () => {
+    const { container, queryByText } = render(
       <EmptyState
-        illustration={
-          <svg width={120} height={120} aria-hidden="true">
-            <rect width="120" height="120" />
-          </svg>
-        }
-        title="Жодної операції"
+        icon={<svg data-testid="ico" />}
+        illustration={<svg data-testid="ill" />}
+        title="Записів немає"
+        hint="Підказка"
+        examplePreview={<span>Приклад-рядок</span>}
       />,
     );
-    const illustrationWrapper = container.querySelector(
-      '[role="status"] > [aria-hidden="true"]',
-    );
-    expect(illustrationWrapper).not.toBeNull();
-    expect(illustrationWrapper!.querySelector("svg")).not.toBeNull();
+    expect(container.querySelector("svg")).toBeNull();
+    expect(queryByText("Підказка")).not.toBeNull();
+    expect(queryByText("Приклад-рядок")).toBeNull();
+    expect(queryByText("Записів немає")!.className).toContain("font-semibold");
   });
 
   it("action-кнопка рендериться без autofocus — фокус не перехоплюється на mount", () => {
@@ -116,19 +101,6 @@ describe("EmptyState — a11y", () => {
     const status = container.querySelector('[role="status"]');
     expect(status).not.toBeNull();
     expect(status!.getAttribute("aria-live")).toBe("polite");
-  });
-
-  it("hint живе у `text-muted`-токені (не raw text-gray-*)", () => {
-    const { getByText } = render(
-      <EmptyState
-        title="Готовий до першої цілі?"
-        hint="Підключи Monobank, і операції приїдуть самі"
-      />,
-    );
-    const hint = getByText("Підключи Monobank, і операції приїдуть самі");
-    // muted, не subtle: 12px normal-weight потребує 4.5:1, dark subtle дає 3.33:1
-    expect(hint.className).toContain("text-muted");
-    expect(hint.className).not.toMatch(/text-gray-/);
   });
 });
 

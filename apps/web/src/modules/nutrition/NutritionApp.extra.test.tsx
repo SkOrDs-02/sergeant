@@ -385,20 +385,6 @@ vi.mock("./pages/NutritionMenuPage", () => ({
   NutritionMenuPage: () => <div data-testid="nutrition-menu-page" />,
 }));
 
-vi.mock("@shared/components/ui/Banner", () => ({
-  Banner: ({
-    children,
-    variant,
-  }: {
-    children: React.ReactNode;
-    variant?: string;
-  }) => (
-    <div data-testid="banner" data-variant={variant ?? "default"}>
-      {children}
-    </div>
-  ),
-}));
-
 vi.mock("@shared/components/layout", () => ({
   MeshBackground: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="mesh-background">{children}</div>
@@ -512,14 +498,14 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
 
   it("a later plain add-meal open resets the sheet back to the source step", () => {
     // Регресія залишкового кроку: після входу через фото-шорткат звичайний
-    // FAB «Додати прийом їжі» не має відкривати sheet на кроці фото.
+    // «Додати страву» не має відкривати sheet на кроці фото.
     render(<NutritionApp />, { wrapper: QueryWrapper });
     openMealPhoto();
     expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
       "data-initial-step",
       "photo",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Додати прийом їжі" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати страву" }));
     expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
       "data-initial-step",
       "source",
@@ -659,14 +645,13 @@ describe("NutritionApp — statusText and err banners", () => {
     expect(screen.getByText("Операція успішна")).toBeInTheDocument();
   });
 
-  it("shows a danger banner when setErr is called by a hook", () => {
+  it("shows a danger notice when setErr is called by a hook", () => {
     render(<NutritionApp />, { wrapper: QueryWrapper });
     act(() => {
       capturedSetErr("Помилка мережі");
     });
-    const banner = screen
-      .getByText("Помилка мережі")
-      .closest("[data-testid='banner']");
-    expect(banner).toHaveAttribute("data-variant", "danger");
+    const notice = screen.getByRole("alert");
+    expect(notice).toHaveTextContent("Помилка мережі");
+    expect(notice.className).toContain("text-danger-ink");
   });
 });

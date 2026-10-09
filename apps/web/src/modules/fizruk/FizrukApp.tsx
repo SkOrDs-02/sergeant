@@ -9,7 +9,7 @@ import {
   SwipePages,
 } from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { AddActionBar } from "@shared/components/ui/AddActionBar";
 import { Modal } from "@shared/components/ui/Modal";
 import { Button } from "@shared/components/ui/Button";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
@@ -319,11 +319,9 @@ export default function FizrukApp({
           }
         />
         {showFab && (
-          <FloatingActionButton
-            variant="v2-fizruk"
-            icon="play"
+          <AddActionBar
+            label={messages.fizruk.resumeWorkoutFab}
             onClick={handleFabClick}
-            aria-label={messages.fizruk.resumeWorkoutFab}
           />
         )}
       </ModuleShell>

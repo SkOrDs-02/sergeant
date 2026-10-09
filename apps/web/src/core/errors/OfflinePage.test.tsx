@@ -93,9 +93,9 @@ describe("OfflinePage", () => {
     expect(btn).not.toBeDisabled();
   });
 
-  it("renders the offline illustration", () => {
+  it("мова H: ілюстрацію offline не рендерить", () => {
     render(<OfflinePage />);
-    expect(screen.getByTestId("offline-illustration")).toBeInTheDocument();
+    expect(screen.queryByTestId("offline-illustration")).toBeNull();
   });
 
   it("renders inside a main landmark element", () => {
