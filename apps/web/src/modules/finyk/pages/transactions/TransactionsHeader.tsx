@@ -55,7 +55,7 @@ export function TransactionsHeader({
         <button
           onClick={() => goMonth(-1)}
           aria-label="Попередній місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-panel transition-colors"
         >
           <Icon name="chevron-left" size="sm" />
         </button>
@@ -64,7 +64,7 @@ export function TransactionsHeader({
           onClick={() => goMonth(1)}
           disabled={isCurrentMonth}
           aria-label="Наступний місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-panel transition-colors disabled:opacity-30"
         >
           <Icon name="chevron-right" size="sm" />
         </button>
@@ -79,7 +79,7 @@ export function TransactionsHeader({
             )}
             <button
               onClick={exitSelectMode}
-              className="text-xs px-3 py-2 rounded-full border border-primary/40 bg-primary/8 text-primary min-h-[36px] font-semibold"
+              className="text-style-caption px-3 py-2 rounded-lg border border-line bg-line/40 text-text min-h-[36px] font-semibold"
             >
               Скасувати
             </button>
@@ -90,8 +90,8 @@ export function TransactionsHeader({
               <button
                 onClick={() => setShowHidden((v) => !v)}
                 className={cn(
-                  "text-xs px-3 py-2 rounded-full border border-line transition-colors min-h-[36px]",
-                  showHidden ? "text-primary border-primary" : "text-subtle",
+                  "text-style-caption px-3 py-2 rounded-lg border border-line transition-colors min-h-[36px]",
+                  showHidden ? "text-text border-primary" : "text-subtle",
                 )}
               >
                 {showHidden ? (
@@ -121,7 +121,7 @@ export function TransactionsHeader({
             {onExportCsv && exportCount > 0 && (
               <button
                 onClick={onExportCsv}
-                className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                className="w-11 h-11 flex items-center justify-center rounded-lg border border-line text-subtle hover:text-text hover:border-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 title={`Вивантажити ${exportCount} у CSV`}
                 aria-label={`Вивантажити операції у CSV: ${exportCount}`}
               >
@@ -130,7 +130,7 @@ export function TransactionsHeader({
             )}
             <button
               onClick={() => setSelectMode(true)}
-              className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-lg border border-line text-subtle hover:text-text hover:border-muted transition-colors"
               title="Вибрати кілька"
               aria-label="Режим вибору"
             >

@@ -129,7 +129,7 @@ export function TransferSuggestionCard({
             ))}
           </div>
         </div>
-        <span className="text-style-label tabular-nums text-finyk-strong dark:text-finyk shrink-0">
+        <span className="text-style-label tabular-nums text-text text-text shrink-0">
           {showBalance ? <Money amount={amountUah} tone="inherit" /> : "••••"}
         </span>
       </div>
@@ -143,20 +143,14 @@ export function TransferSuggestionCard({
           type="button"
           size="sm"
           variant="solid"
-          tone="finyk"
           onClick={onConfirm}
+          tone="ink"
         >
           {isCreditCardRepayment
             ? messages.finyk.transferSuggestion.creditRepaymentConfirm
             : messages.finyk.transferSuggestion.confirm}
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          tone="neutral"
-          onClick={onReject}
-        >
+        <Button type="button" size="sm" variant="outline" onClick={onReject}>
           {isCreditCardRepayment
             ? messages.finyk.transferSuggestion.creditRepaymentReject
             : messages.finyk.transferSuggestion.reject}

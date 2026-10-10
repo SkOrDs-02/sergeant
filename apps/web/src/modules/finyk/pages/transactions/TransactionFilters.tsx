@@ -104,23 +104,24 @@ export function TransactionFilters({
         aria-label={messages.finyk.transactionsFilterLabel}
         aria-orientation="horizontal"
         onKeyDown={onKeyDown}
-        className="flex gap-1 whitespace-nowrap"
+        className="flex gap-1 whitespace-nowrap rounded-[10px] bg-track p-0.5"
       >
         {filters.map((f) => (
-          // Фільтр — це той самий `Button`, що й решта контролів модуля:
-          // обраний — solid у тоні Фініка, решта — outline з hairline
-          // модуля. Власна розмітка пігулки прибрана (анти-слоп, chip-scroller
-          // як дефолтний фільтр); 44px на coarse pointer дає сам Button.
+          // Neutral segmented track; toolbar semantics and keyboard flow stay intact.
           <Button
             key={f.id}
             data-pill
             size="xs"
-            variant={filter === f.id ? "solid" : "outline"}
-            tone={filter === f.id ? "finyk" : "neutral"}
+            variant="ghost"
             onClick={() => onChangeFilter(f.id)}
             aria-pressed={filter === f.id}
             tabIndex={f.id === activeId ? 0 : -1}
-            className={cn("shrink-0", filter !== f.id && "border-finyk/40")}
+            className={cn(
+              "shrink-0 rounded-lg",
+              filter === f.id
+                ? "bg-segment text-text shadow-segment"
+                : "text-muted",
+            )}
           >
             {f.label}
           </Button>
@@ -139,8 +140,7 @@ export function TransactionFilters({
           */
           <Button
             size="xs"
-            variant="soft"
-            tone="finyk"
+            variant="outline"
             onClick={() => onChangeFilter("all")}
             className="shrink-0"
           >

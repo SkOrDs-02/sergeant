@@ -13,11 +13,7 @@ import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import {
-  CATEGORY_ICON_MAP,
-  SPLIT_INPUT_CLASS,
-  stripLeadingEmoji,
-} from "./txRowHelpers";
+import { SPLIT_INPUT_CLASS, stripLeadingEmoji } from "./txRowHelpers";
 
 interface SplitCategoryOption {
   id: string;
@@ -52,7 +48,7 @@ function SplitAmountInput({
       inputMode="decimal"
       value={draft.value}
       onChange={draft.onChange}
-      className="input-focus-finyk w-24 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-right text-text"
+      className="focus-ring w-24 text-style-caption h-9 rounded-xl border border-line bg-panel px-2 text-right text-text"
       placeholder="₴"
       aria-label="Сума частки"
     />
@@ -105,23 +101,12 @@ export function TxRowSplitEditor({
               "flex items-center gap-2 text-left",
             )}
           >
-            <Icon
-              name={CATEGORY_ICON_MAP[sp.categoryId] ?? "tag"}
-              size={15}
-              aria-hidden
-            />
             <span className="truncate">
               {stripLeadingEmoji(
                 splitCategoryOptions.find((c) => c.id === sp.categoryId)
                   ?.label ?? sp.categoryId,
               )}
             </span>
-            <Icon
-              name="chevron-down"
-              size={13}
-              className="ml-auto"
-              aria-hidden
-            />
           </button>
           {splitCategoryPicker === i && (
             <div
@@ -146,17 +131,12 @@ export function TxRowSplitEditor({
                     setSplitCategoryPicker(null);
                   }}
                   className={cn(
-                    "flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2 text-left text-style-caption",
+                    "flex min-h-[44px] w-full items-center gap-2 rounded-lg px-2 text-left text-style-caption",
                     category.id === sp.categoryId
-                      ? "bg-primary/10 text-primary"
-                      : "text-text hover:bg-panelHi",
+                      ? "bg-line/40 text-text"
+                      : "text-text hover:bg-panel",
                   )}
                 >
-                  <Icon
-                    name={CATEGORY_ICON_MAP[category.id] ?? "tag"}
-                    size="md"
-                    aria-hidden
-                  />
                   {stripLeadingEmoji(category.label)}
                 </button>
               ))}
@@ -194,7 +174,7 @@ export function TxRowSplitEditor({
       >
         {Math.abs(remaining) < 0.01 ? (
           <span className="inline-flex items-center gap-1">
-            <Icon name="check" size={13} aria-hidden /> Суми збігаються
+            Суми збігаються
           </span>
         ) : (
           `Залишок: ${formatMoney(remaining, { minFractionDigits: 2 })}`
@@ -210,26 +190,26 @@ export function TxRowSplitEditor({
             },
           ])
         }
-        className="text-style-caption text-primary/70 hover:text-primary transition-colors"
+        className="text-style-caption text-text hover:text-text transition-colors"
       >
         + Додати частину
       </button>
       <div className="flex gap-2 pt-1">
         <Button
           variant="solid"
-          tone="finyk"
 
           size="xs"
           onClick={onSave}
           disabled={Math.abs(remaining) >= 0.01}
           className="flex-1"
+          tone="ink"
         >
           Зберегти
         </Button>
         {existingSplitsCount > 0 && (
           <button
             onClick={onDelete}
-            className="text-style-caption py-2 px-3 rounded-xl border border-danger/30 text-danger-strong dark:text-danger hover:text-danger transition-colors"
+            className="text-style-caption py-2 px-3 rounded-lg border border-danger/30 text-danger-strong dark:text-danger hover:text-danger transition-colors"
           >
             Видалити
           </button>
@@ -238,7 +218,7 @@ export function TxRowSplitEditor({
           type="button"
           aria-label="Закрити редактор розподілу"
           onClick={onClose}
-          className="py-2 px-3 rounded-xl border border-line text-subtle hover:text-text transition-colors"
+          className="py-2 px-3 rounded-lg border border-line text-subtle hover:text-text transition-colors"
         >
           <Icon name="close" size="sm" aria-hidden />
         </button>

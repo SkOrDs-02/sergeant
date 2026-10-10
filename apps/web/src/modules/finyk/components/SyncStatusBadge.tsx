@@ -48,16 +48,6 @@ function SyncStatusBadgeComponent({
   const isLoading = status === "loading" || loading;
   const isSuccess = status === "success";
 
-  const dotClass = isLoading
-    ? "bg-warning motion-safe:animate-pulse"
-    : isError
-      ? "bg-danger"
-      : isPartial
-        ? "bg-warning"
-        : isSuccess
-          ? "bg-success"
-          : "bg-subtle/40";
-
   const label = isLoading
     ? "Синхронізація…"
     : isError
@@ -71,18 +61,14 @@ function SyncStatusBadgeComponent({
   const ts = formatTs(lastUpdated);
 
   return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-xl px-3 py-2 text-style-caption border",
-        isError
-          ? "bg-danger/10 border-danger/30"
-          : isPartial
-            ? "bg-warning/10 border-warning/30"
-            : "bg-panel border-line",
-      )}
-    >
-      <span className={cn("w-2 h-2 rounded-full shrink-0", dotClass)} />
-      <span role="status" className="text-text font-medium">
+    <div className="flex items-center gap-2 text-style-caption">
+      <span
+        role="status"
+        className={cn(
+          "font-medium",
+          isError || isPartial ? "text-danger-strong" : "text-muted",
+        )}
+      >
         {label}
       </span>
       {ts && <span className="text-subtle ml-auto tabular-nums">{ts}</span>}
@@ -91,7 +77,7 @@ function SyncStatusBadgeComponent({
           type="button"
           onClick={onRetry}
           disabled={isLoading}
-          className="ml-1 px-2 py-1 rounded-xl focus-ring bg-panel border border-line text-style-caption text-text hover:bg-panelHi transition-colors disabled:opacity-50"
+          className="ml-1 px-2 py-1 rounded-lg focus-ring bg-panel border border-line text-style-caption text-text hover:bg-panel transition-colors disabled:opacity-50"
         >
           {messages.actions.retry}
         </button>

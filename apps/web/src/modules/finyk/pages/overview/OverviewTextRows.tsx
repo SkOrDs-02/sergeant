@@ -6,8 +6,6 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { messages } from "@shared/i18n/uk";
 
 export interface OverviewTextRowsProps {
-  todaySpent: number;
-  todayIncome: number;
   /** Дохід МІСЯЦЯ (не сьогоднішній) — рядок «Місяць». */
   income: number;
   /**
@@ -23,26 +21,12 @@ export interface OverviewTextRowsProps {
   recurringInThisMonth: number;
   unknownOutCount: number;
   showBalance: boolean;
-  onOpenToday: () => void;
 }
 
-/**
- * Два текстові рядки під hero — усе, що лишилось від `TodaySummaryCard` і
- * `MonthPulseCard` після їх видалення (спека `finyk-hero-month-strip.md`
- * § Рішення дизайну, п.3 — F1 анти-слоп-аудиту).
- *
- * Обидва рядки лежать в ОДНІЙ нейтральній картці (рішення власника
- * 2026-09-03: голий текст на тлі сторінки читався як недороблений). Це не
- * повернення F1: там кожен показник мав власний бокс, тут бокс один на
- * два рядки, hero-число лишається єдиним display-числом екрана.
- *
- * Витрати місяця й відсоток плану сюди НЕ повертаються — вони живуть у
- * футері стрічки hero (`HeroCard`), щоб те саме число не дублювалось у
- * двох контейнерах.
+/** Month income, forecast and scheduled cash flows on one neutral panel.
+ * Daily operations live in TodayOperations; month expenses live in HeroCard.
  */
 const OverviewTextRowsImpl = function OverviewTextRows({
-  todaySpent,
-  todayIncome,
   income,
   showMonthForecast,
   projectedSpend,
@@ -52,7 +36,6 @@ const OverviewTextRowsImpl = function OverviewTextRows({
   recurringInThisMonth,
   unknownOutCount,
   showBalance,
-  onOpenToday,
 }: OverviewTextRowsProps) {
   // Той самий контракт, що й колишній `MonthPulseCard.showForecastBlock` /
   // `showForecastNumber` — переносимо ОБИДВІ умови, інакше прогноз зникає
@@ -65,34 +48,6 @@ const OverviewTextRowsImpl = function OverviewTextRows({
 
   return (
     <Card variant="default" radius="lg" padding="md" className="space-y-3">
-      <button
-        type="button"
-        onClick={onOpenToday}
-        className="focus-ring flex w-full items-center justify-between gap-3 rounded-xl text-left"
-        aria-label={messages.finyk.todaySummary.openAria}
-      >
-        <div className="min-w-0">
-          <p className="text-style-caption text-muted">
-            {messages.finyk.todaySummary.title}
-          </p>
-          <p className="text-style-label text-text tabular-nums">
-            {showBalance ? (
-              <>
-                <Money amount={-todaySpent} />
-                <span> · </span>
-                <Money amount={todayIncome} signed />
-              </>
-            ) : (
-              "••••"
-            )}
-          </p>
-        </div>
-        <span className="text-style-caption text-finyk-strong dark:text-finyk inline-flex shrink-0 items-center gap-0.5">
-          {messages.finyk.todaySummary.operations}
-          <Icon name="chevron-right" size="xs" />
-        </span>
-      </button>
-
       <div>
         <div className="flex items-center gap-1">
           <p className="text-style-caption text-muted">
@@ -107,7 +62,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
               aria-label={messages.finyk.monthRow.currencyInfoAria}
               // 24px на fine-pointer (WCAG 2.5.8): голий 16px-гліф був
               // нижче мінімуму; coarse підхоплює глобальна сітка 44px.
-              className="inline-flex min-h-6 min-w-6 items-center justify-center text-muted hover:text-text focus-ring rounded-full"
+              className="inline-flex min-h-6 min-w-6 items-center justify-center text-muted hover:text-text focus-ring rounded-lg"
             >
               <Icon name="info" size="sm" />
             </button>

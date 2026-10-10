@@ -1,8 +1,8 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { messages } from "@shared/i18n/uk";
-import { CategoryIconChip } from "../../components/CategoryIconChip";
+
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import { resolveExpenseCategoryMeta } from "../../utils";
 import {
@@ -54,19 +54,14 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
             onClick={() => onOpenLimit(b.categoryId)}
             aria-label={`${catLabel}: ${pct}%. Відкрити ліміт у плануванні`}
             className={cn(
-              "w-full rounded-2xl px-4 py-3 flex items-center justify-between border text-left",
+              "w-full rounded-lg px-4 py-3 flex items-center justify-between border text-left",
               "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               over
-                ? "bg-danger/8 border-danger/20 hover:bg-danger/10"
-                : "bg-warning/8 border-warning/20 hover:bg-warning/10",
+                ? "bg-panel border-danger/20 hover:bg-panel"
+                : "bg-panel border-warning/20 hover:bg-panel",
             )}
           >
             <span className="flex items-center gap-2 min-w-0">
-              <CategoryIconChip
-                categoryId={b.categoryId}
-                customCategories={customCategories}
-                size={24}
-              />
               <span className="text-style-label truncate">{catLabel}</span>
             </span>
             <span
@@ -79,10 +74,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
             >
               {pct}%{" "}
               {over ? (
-                <>
-                  <Icon name="alert-triangle" size={13} aria-hidden />
-                  {messages.finyk.budgetOverLimit}
-                </>
+                <>{messages.finyk.budgetOverLimit}</>
               ) : (
                 messages.finyk.budgetOverSixtyPercent
               )}

@@ -1,3 +1,6 @@
+import { messages } from "@shared/i18n";
+import { txEpochMs } from "../../lib/monthWindow";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 /**
  * Last validated: 2026-05-19
  * Status: Active
@@ -9,7 +12,7 @@ import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
+
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
   DataState,
@@ -58,6 +61,7 @@ function ListPlaceholder() {
  */
 function DayCardShell({
   stackPosition,
+  today = false,
   inset = false,
   children,
 }: {
@@ -65,6 +69,7 @@ function DayCardShell({
    * Позиція слайсу в стосі дня: визначає, які кути панелі скруглені.
    */
   stackPosition: "top" | "middle" | "bottom" | "single";
+  today?: boolean;
   inset?: boolean;
   children: ReactNode;
 }) {
@@ -76,17 +81,12 @@ function DayCardShell({
       {/* Мова H: день операцій - панель; верх і низ стосу дня скруглені. */}
       <div
         className={cn(
-          "bg-panel",
+          today ? "bg-finyk-tint" : "bg-panel",
           roundTop && "rounded-t-xl",
           roundBottom && "rounded-b-xl",
         )}
       >
-        {inset && (
-          <div
-            aria-hidden
-            className="ml-[3.4rem] mr-3 border-t border-line/45"
-          />
-        )}
+        {inset && <div aria-hidden className="mx-3 border-t border-line" />}
         {children}
       </div>
     </div>
@@ -327,9 +327,8 @@ export function TransactionList({
   //     the surface still feels owned by the module.
   const emptyFallback =
     activeTx.length === 0 && hasTransactionsOutsideMonth ? (
-      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+      <div className="rounded-xl border border-dashed border-line bg-panel">
         <EmptyState
-          illustration={<FinykEmptyIllustration size={80} />}
           title="Цей місяць ще порожній"
           description={
             // `monthLabel` is nominative ("серпень 2026 р.") — keep it after
@@ -350,18 +349,16 @@ export function TransactionList({
         />
       </div>
     ) : activeTx.length === 0 ? (
-      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+      <div className="rounded-xl border border-dashed border-line bg-panel">
         <EmptyState
-          illustration={<FinykEmptyIllustration size={80} />}
           title="Операцій ще немає"
           description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
           module="finyk"
         />
       </div>
     ) : (
-      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+      <div className="rounded-xl border border-dashed border-line bg-panel">
         <EmptyState
-          illustration={<FinykEmptyIllustration size={80} />}
           title="Немає операцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
           module="finyk"
@@ -370,8 +367,10 @@ export function TransactionList({
     );
 
   const content = (
-    <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-      <h1 className="sr-only">Операції</h1>
+    <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad">
+      <h1 className="text-style-title text-text mb-4">
+        {messages.finykRedesign.transactionsTitle}
+      </h1>
       {header}
       <DataState
         query={txQuery}
@@ -417,6 +416,7 @@ export function TransactionList({
                   const hasTotal = summary.statCount > 0;
                   return (
                     <DayCardShell
+                      today={key === getKyivDayKey()}
                       stackPosition={row.standalone ? "single" : "top"}
                     >
                       <TransactionDayHeader
@@ -436,6 +436,9 @@ export function TransactionList({
                 const rowTx = t as TxRowTx;
                 return (
                   <DayCardShell
+                    today={
+                      getKyivDayKey(txEpochMs(row.tx) ?? 0) === getKyivDayKey()
+                    }
                     stackPosition={row.lastInGroup ? "bottom" : "middle"}
                     inset={!row.firstInGroup}
                   >

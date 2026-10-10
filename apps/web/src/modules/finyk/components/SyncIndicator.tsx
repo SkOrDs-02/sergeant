@@ -52,7 +52,7 @@ export function getSyncTone(
     return {
       dot: "bg-muted",
       text: "не підключено",
-      pill: "bg-panelHi     text-muted   border-line",
+      pill: "bg-panel     text-muted   border-line",
       icon: "wifi-off",
       needsAttention: true,
     };
@@ -61,7 +61,7 @@ export function getSyncTone(
     return {
       dot: "bg-danger",
       text: "не синхронізовано",
-      pill: "bg-danger-soft  text-danger-soft-fg  border-danger/20",
+      pill: "bg-panel  text-danger-strong  border-danger/20",
       icon: "alert-circle",
       needsAttention: true,
     };
@@ -70,7 +70,7 @@ export function getSyncTone(
     return {
       dot: "bg-warning",
       text: "частково",
-      pill: "bg-warning/10   text-warning-strong dark:text-warning border-warning/20",
+      pill: "bg-panel   text-warning-strong dark:text-warning border-warning/20",
       icon: "alert-triangle",
       needsAttention: true,
     };
@@ -79,7 +79,7 @@ export function getSyncTone(
     return {
       dot: "bg-muted",
       text: "оновлення",
-      pill: "bg-panelHi     text-muted   border-line",
+      pill: "bg-panel     text-muted   border-line",
       icon: "refresh-cw",
       needsAttention: true,
     };
@@ -88,7 +88,7 @@ export function getSyncTone(
     return {
       dot: "bg-success",
       text: "ок",
-      pill: "bg-success/10  text-success-strong dark:text-success border-success/20",
+      pill: "bg-panel  text-success-strong dark:text-success border-success/20",
       icon: "check-circle",
       needsAttention: false,
     };
@@ -96,7 +96,7 @@ export function getSyncTone(
   return {
     dot: "bg-subtle/40",
     text: "очікування",
-    pill: "bg-panelHi     text-muted   border-line",
+    pill: "bg-panel     text-muted   border-line",
     icon: "pause-circle",
     needsAttention: true,
   };

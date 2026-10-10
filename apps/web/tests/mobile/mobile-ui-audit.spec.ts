@@ -90,7 +90,7 @@ test.describe("mobile coarse-pointer UI audit", () => {
     // Той самий аркуш обслуговує і надходження — вкладка міняє таксономію
     // категорій, а не розкладку дати, але перевірка дешева, а регресія
     // рівно тут і була б непомітною.
-    await page.getByRole("tab", { name: "Надходження" }).click();
+    await page.getByRole("radio", { name: "Надходження" }).click();
     await auditPage(page, "MANUAL_INCOME");
   });
 

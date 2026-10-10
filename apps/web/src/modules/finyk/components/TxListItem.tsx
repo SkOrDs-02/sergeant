@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { TxRow, type TxRowTx } from "./TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
@@ -66,7 +66,7 @@ function TxListItemImpl({
     <div
       className={cn(
         "px-1 sm:px-2 relative",
-        selectMode && selected && "bg-primary/8",
+        selectMode && selected && "bg-line/40",
       )}
     >
       {selectMode && (
@@ -84,16 +84,7 @@ function TxListItemImpl({
             selected ? "bg-primary border-primary" : "border-muted bg-panel",
           )}
           aria-hidden
-        >
-          {selected && (
-            <Icon
-              name="check"
-              size={10}
-              strokeWidth={3}
-              className="text-white"
-            />
-          )}
-        </span>
+        ></span>
       )}
       <div className={cn(selectMode && "pl-8", "relative")}>
         <SwipeToAction
