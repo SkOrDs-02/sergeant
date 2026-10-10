@@ -37,20 +37,15 @@ import {
   resolveStartupDelayMs,
   scheduleStartupTick,
 } from "../../lib/pollerStartupTick.js";
-import { BillingConfigurationError } from "./provider.js";
+import { MONOPAY_BASE, getPlataToken as getToken } from "./plataRemote.js";
+import {
+  cancelSupersededRecurrence,
+  findSupersededRecurrence,
+} from "./supersede.js";
 
-// `plata.ts` імпортує з цього модуля (`reconcileBySubscriptionId`) — власний
-// маленький `getToken`/`MONOPAY_BASE` тут, а не імпорт із `plata.ts`, щоб не
-// заводити циклічний import між двома файлами.
-export const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
-
-function getToken(): string {
-  const token = env.PLATA_TOKEN;
-  if (!token) {
-    throw new BillingConfigurationError("PLATA_TOKEN is not set");
-  }
-  return token;
-}
+// `plata.ts` імпортує з цього модуля (`reconcileBySubscriptionId`), тож
+// спільні `getToken`/`MONOPAY_BASE` живуть у листку `plataRemote.ts`, а не в
+// `plata.ts`: так між двома файлами не виникає циклічного import-у.
 
 const FAST_TICK_MS = 5 * 60 * 1000;
 /**
@@ -104,25 +99,58 @@ async function applyActive(
   const nextChargeDate = statusResp.nextChargeDate
     ? new Date(statusResp.nextChargeDate)
     : null;
-  await pool.query(
-    `UPDATE plata_subscription
-        SET confirmed_at = COALESCE(confirmed_at, NOW()), updated_at = NOW()
-      WHERE user_id = $1`,
-    [row.user_id],
-  );
-  await pool.query(
-    `INSERT INTO subscriptions
-       (user_id, provider, plan, status, provider_subscription_id, current_period_end)
-     VALUES ($1, 'plata', 'pro', 'active', $2, $3)
-     ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
-       plan = 'pro',
-       status = 'active',
-       provider = 'plata',
-       provider_subscription_id = EXCLUDED.provider_subscription_id,
-       current_period_end = EXCLUDED.current_period_end,
-       updated_at = NOW()`,
-    [row.user_id, row.subscription_id, nextChargeDate],
-  );
+  // Одна транзакція: якщо в користувача вже є ІНША жива рекурентка (інший
+  // провайдер чи інший subscriptionId Plata), її скасовують на боці провайдера
+  // перед COMMIT, а відмова відкочує активацію разом із `confirmed_at` -
+  // швидкий тік і вебхук повторять спробу (аудит data-21).
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const previous = await findSupersededRecurrence(client, row.user_id, {
+      provider: "plata",
+      subscriptionId: row.subscription_id,
+    });
+    await client.query(
+      `UPDATE plata_subscription
+          SET confirmed_at = COALESCE(confirmed_at, NOW()), updated_at = NOW()
+        WHERE subscription_id = $1`,
+      [row.subscription_id],
+    );
+    // `cancel_at_period_end` скидаємо, коли `provider_subscription_id`
+    // змінився: прапорець належав СТАРІЙ підписці (аудит data-20). Той самий
+    // id (поновлення) прапорець зберігає - скасована підписка не оживає.
+    await client.query(
+      `INSERT INTO subscriptions
+         (user_id, provider, plan, status, provider_subscription_id, current_period_end)
+       VALUES ($1, 'plata', 'pro', 'active', $2, $3)
+       ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
+         plan = 'pro',
+         status = 'active',
+         cancel_at_period_end = CASE
+           WHEN subscriptions.provider = 'plata'
+            AND subscriptions.provider_subscription_id IS NOT DISTINCT FROM
+                EXCLUDED.provider_subscription_id
+           THEN subscriptions.cancel_at_period_end
+           ELSE FALSE
+         END,
+         provider = 'plata',
+         provider_subscription_id = EXCLUDED.provider_subscription_id,
+         current_period_end = EXCLUDED.current_period_end,
+         updated_at = NOW()`,
+      [row.user_id, row.subscription_id, nextChargeDate],
+    );
+    if (previous) await cancelSupersededRecurrence(client, previous);
+    await client.query("COMMIT");
+  } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* ignore rollback error */
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
   billingRecurringChargeTotal.inc({ provider: "plata", result: "charged" });
 }
 
@@ -142,16 +170,24 @@ async function applyActive(
  * частковий унікальний індекс → 23505, який `reconcileSubscription` ковтає
  * своїм catch — і дунінг тихо не застосовувався взагалі.
  */
-async function applyPastDue(pool: Pool, userId: string): Promise<void> {
+async function applyPastDue(
+  pool: Pool,
+  userId: string,
+  subscriptionId: string,
+): Promise<void> {
+  // Скоуп - ЛИШЕ рядок, що тримає саме цю підписку: у користувача може бути
+  // кілька plata-підписок (1:N, data-21), і невдача НЕоплаченого другого
+  // checkout-у не має переводити в дунінг живу першу.
   const { rows } = await pool.query<{
     current_period_end: Date | string | null;
   }>(
     `SELECT current_period_end FROM subscriptions
       WHERE user_id = $1 AND provider = 'plata'
+        AND provider_subscription_id = $2
         AND status IN ('active', 'trialing', 'past_due')
       ORDER BY updated_at DESC
       LIMIT 1`,
-    [userId],
+    [userId, subscriptionId],
   );
   const currentPeriodEnd = rows[0]?.current_period_end
     ? new Date(rows[0].current_period_end)
@@ -163,17 +199,19 @@ async function applyPastDue(pool: Pool, userId: string): Promise<void> {
       `UPDATE subscriptions
           SET status = 'past_due', updated_at = NOW()
         WHERE user_id = $1 AND provider = 'plata'
+          AND provider_subscription_id = $2
           AND status IN ('active', 'trialing', 'past_due')`,
-      [userId],
+      [userId, subscriptionId],
     );
   } else {
     const graceUntil = new Date(Date.now() + GRACE_DAYS * 24 * 60 * 60 * 1000);
     await pool.query(
       `UPDATE subscriptions
-          SET status = 'past_due', current_period_end = $2, updated_at = NOW()
+          SET status = 'past_due', current_period_end = $3, updated_at = NOW()
         WHERE user_id = $1 AND provider = 'plata'
+          AND provider_subscription_id = $2
           AND status IN ('active', 'trialing', 'past_due')`,
-      [userId, graceUntil],
+      [userId, subscriptionId, graceUntil],
     );
   }
   billingRecurringChargeTotal.inc({ provider: "plata", result: "past_due" });
@@ -187,10 +225,13 @@ async function applyPastDue(pool: Pool, userId: string): Promise<void> {
  * успішної відповіді й застосування: якщо fetch чи запис впали, штампа
  * немає і рядок буде перезвірено наступним годинним тіком.
  */
-async function markReconciled(pool: Pool, userId: string): Promise<void> {
+async function markReconciled(
+  pool: Pool,
+  subscriptionId: string,
+): Promise<void> {
   await pool.query(
-    `UPDATE plata_subscription SET updated_at = NOW() WHERE user_id = $1`,
-    [userId],
+    `UPDATE plata_subscription SET updated_at = NOW() WHERE subscription_id = $1`,
+    [subscriptionId],
   );
 }
 
@@ -204,13 +245,13 @@ export async function reconcileSubscription(
     if (!statusResp) return;
     const failureDescription = statusResp.walletData?.failureDescription;
     if (failureDescription) {
-      await applyPastDue(pool, row.user_id);
-      await markReconciled(pool, row.user_id);
+      await applyPastDue(pool, row.user_id, row.subscription_id);
+      await markReconciled(pool, row.subscription_id);
       return;
     }
     if (statusResp.status && ACTIVE_STATUSES.has(statusResp.status)) {
       await applyActive(pool, row, statusResp);
-      await markReconciled(pool, row.user_id);
+      await markReconciled(pool, row.subscription_id);
       return;
     }
     // Невідомий/порожній статус, без ознаки невдачі — безпечний дефолт:
@@ -220,7 +261,7 @@ export async function reconcileSubscription(
       subscriptionId: row.subscription_id,
       status: statusResp.status ?? null,
     });
-    await markReconciled(pool, row.user_id);
+    await markReconciled(pool, row.subscription_id);
   } catch (err) {
     logger.error({
       msg: "plata_sync_reconcile_error",
@@ -235,13 +276,22 @@ export async function reconcileBySubscriptionId(
   pool: Pool,
   subscriptionId: string,
 ): Promise<void> {
-  const { rows } = await pool.query<{ user_id: string }>(
-    `SELECT user_id FROM plata_subscription WHERE subscription_id = $1`,
+  const { rows } = await pool.query<{
+    user_id: string;
+    superseded_at: Date | string | null;
+  }>(
+    `SELECT user_id, superseded_at FROM plata_subscription WHERE subscription_id = $1`,
     [subscriptionId],
   );
   const row = rows[0];
   if (!row) {
     logger.warn({ msg: "plata_webhook_unresolved", subscriptionId });
+    return;
+  }
+  // Підписку ми самі скасували як замінену новою: вона не має ані
+  // активуватись, ані переоцінюватись (monobank міг ще показувати `active`).
+  if (row.superseded_at) {
+    logger.info({ msg: "plata_webhook_superseded_ignored", subscriptionId });
     return;
   }
   await reconcileSubscription(pool, {
@@ -260,6 +310,7 @@ export async function runFastTick(pool: Pool): Promise<PlataSyncResult> {
     `SELECT user_id, subscription_id
        FROM plata_subscription
       WHERE confirmed_at IS NULL
+        AND superseded_at IS NULL
         AND created_at > NOW() - make_interval(secs => $1)`,
     [FAST_WINDOW_MS / 1000],
   );
@@ -277,8 +328,12 @@ export async function runSlowTick(pool: Pool): Promise<PlataSyncResult> {
   const { rows } = await pool.query<PlataSubscriptionRow>(
     `SELECT ps.user_id, ps.subscription_id
        FROM plata_subscription ps
-       JOIN subscriptions s ON s.user_id = ps.user_id AND s.provider = 'plata'
+       JOIN subscriptions s
+         ON s.user_id = ps.user_id
+        AND s.provider = 'plata'
+        AND s.provider_subscription_id = ps.subscription_id
       WHERE s.status IN ('active', 'past_due')
+        AND ps.superseded_at IS NULL
         AND ps.updated_at < NOW() - INTERVAL '24 hours'`,
   );
   for (const row of rows) await reconcileSubscription(pool, row);

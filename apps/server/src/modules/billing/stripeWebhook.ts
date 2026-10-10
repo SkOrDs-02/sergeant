@@ -19,6 +19,10 @@ import {
   emitSubscriptionRenewed,
   emitSubscriptionStarted,
 } from "./stripeLifecycle.js";
+import {
+  cancelSupersededRecurrence,
+  findSupersededRecurrence,
+} from "./supersede.js";
 
 async function insertWebhookEvent(
   client: PoolClient,
@@ -111,6 +115,16 @@ async function upsertCheckoutCompleted(
   const sessionId = getStripeObjectString(object, "id");
   if (!userId || !sessionId) return;
 
+  const stripeSubscriptionId = getStripeObjectString(object, "subscription");
+  // Живу рекурентку іншого провайдера (чи інший Stripe id) не перезаписуємо
+  // мовчки: запамʼятовуємо ДО upsert-у й скасовуємо нижче (аудит data-21).
+  const previous = await findSupersededRecurrence(client, userId, {
+    provider: "stripe",
+    subscriptionId: stripeSubscriptionId,
+  });
+
+  // `cancel_at_period_end` скидаємо, коли підписка інша (провайдер чи id), -
+  // прапорець належав старій (аудит data-20).
   await client.query(
     `INSERT INTO subscriptions
        (user_id, provider, plan, status, provider_customer_id, provider_subscription_id)
@@ -118,6 +132,13 @@ async function upsertCheckoutCompleted(
      ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
        plan = EXCLUDED.plan,
        status = EXCLUDED.status,
+       cancel_at_period_end = CASE
+         WHEN subscriptions.provider = 'stripe'
+          AND subscriptions.provider_subscription_id IS NOT DISTINCT FROM
+              COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id)
+         THEN subscriptions.cancel_at_period_end
+         ELSE FALSE
+       END,
        provider = EXCLUDED.provider,
        provider_customer_id = COALESCE(EXCLUDED.provider_customer_id, subscriptions.provider_customer_id),
        provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
@@ -126,9 +147,10 @@ async function upsertCheckoutCompleted(
       userId,
       normalizePlan(),
       getStripeObjectString(object, "customer"),
-      getStripeObjectString(object, "subscription"),
+      stripeSubscriptionId,
     ],
   );
+  if (previous) await cancelSupersededRecurrence(client, previous);
 }
 
 async function upsertSubscriptionEvent(
