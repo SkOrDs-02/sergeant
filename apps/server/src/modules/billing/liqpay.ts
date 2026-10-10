@@ -40,8 +40,11 @@ import {
   unsubscribeLiqPayOrder,
 } from "./liqpayRemote.js";
 import {
-  cancelSupersededRecurrence,
   findSupersededRecurrence,
+  isSupersededRecurrence,
+  recordSupersededRecurrence,
+  settleSupersededRecurrence,
+  type PreviousRecurrence,
 } from "./supersede.js";
 
 // Транспорт (`data`/`signature`) живе в `liqpayRemote.ts`; ре-експорт лишає
@@ -233,33 +236,44 @@ async function hasCancellationEvent(
   return rows.length > 0;
 }
 
-/** Обробка одного верифікованого callback-у. Виконується всередині транзакції. */
+/**
+ * Обробка одного верифікованого callback-у. Виконується всередині транзакції.
+ *
+ * @returns замінену рекурентку, яку треба скасувати у провайдера ПІСЛЯ COMMIT
+ *   (див. `supersede.ts`), або `null`.
+ *
+ * Скасування (`unsubscribe`/`reversed`) і невдале списання скоуплені на
+ * `order_id` callback-у: у користувача може бути кілька order_id (нова
+ * підписка замінила стару), і термінальна подія СТАРОГО order_id не має гасити
+ * рядок НОВОГО. Рядок без order_id (NULL) гаситься як і раніше.
+ */
 async function applyLiqPayCallback(
   client: PoolClient,
   { userId, orderId, status, action }: LiqPayCallbackContext,
-): Promise<void> {
+): Promise<PreviousRecurrence | null> {
   const isCancel = action === "unsubscribe" || status === "reversed";
   if (isCancel) {
     await client.query(
       `UPDATE subscriptions
           SET status = 'canceled', updated_at = NOW()
         WHERE user_id = $1 AND provider = 'liqpay'
+          AND (provider_subscription_id = $2 OR provider_subscription_id IS NULL)
           AND status IN ('active', 'trialing', 'past_due')`,
-      [userId],
+      [userId, orderId],
     );
-    return;
+    return null;
   }
 
   if (PENDING_STATUSES.has(status)) {
     // 3DS-очікування — фінальний callback прийде окремо.
-    return;
+    return null;
   }
 
   if (status === "sandbox" && !sandboxPaymentsAccepted()) {
     // Тестовий платіж на бойових ключах — не оплата. Нічого не міняємо:
     // провалити його в гілку `past_due` нижче означало б збити живу підписку.
     logger.warn({ msg: "liqpay_sandbox_status_on_live_keys", orderId });
-    return;
+    return null;
   }
 
   if (SUCCESS_STATUSES.has(status) || status === "sandbox") {
@@ -269,7 +283,17 @@ async function applyLiqPayCallback(
         orderId,
         status,
       });
-      return;
+      return null;
+    }
+    // Підписку замінила нова (supersede.ts): це запізніле списання по вже
+    // заміненій рекуренції. Воно не має ні оживляти її, ні витісняти нову;
+    // скасування старої добʼє ретрай.
+    if (await isSupersededRecurrence(client, "liqpay", orderId)) {
+      logger.warn({
+        msg: "liqpay_success_for_superseded_order_ignored",
+        status,
+      });
+      return null;
     }
     // Наступне списання LiqPay робить сам через місяць (action:regular).
     const periodEnd = new Date();
@@ -305,10 +329,12 @@ async function applyLiqPayCallback(
          updated_at = NOW()`,
       [userId, orderId, periodEnd],
     );
-    // Скасування попередньої рекурентки - ОСТАННІМ кроком транзакції: відмова
-    // провайдера відкочує і дедуп-рядок, тож ретрай callback-а повторить усе.
-    if (previous) await cancelSupersededRecurrence(client, previous);
-    return;
+    // Намір скасувати попередню рекурентку пишемо в цю ж транзакцію; сам
+    // виклик LiqPay/іншого провайдера йде після COMMIT і активацію не
+    // відкочує (supersede.ts).
+    return previous
+      ? recordSupersededRecurrence(client, userId, previous)
+      : null;
   }
 
   // Решта (`failure`, `error`) — невдале списання. Якщо це рекурентка на
@@ -317,9 +343,11 @@ async function applyLiqPayCallback(
   await client.query(
     `UPDATE subscriptions
         SET status = 'past_due', updated_at = NOW()
-      WHERE user_id = $1 AND provider = 'liqpay' AND status = 'active'`,
-    [userId],
+      WHERE user_id = $1 AND provider = 'liqpay' AND status = 'active'
+        AND (provider_subscription_id = $2 OR provider_subscription_id IS NULL)`,
+    [userId, orderId],
   );
+  return null;
 }
 
 export const liqpayProvider: BillingProvider = {
@@ -410,6 +438,7 @@ export const liqpayProvider: BillingProvider = {
     // назавжди, LiqPay на ретраї отримував 200, підписка не активувалась
     // ніколи — а гроші вже списані. ROLLBACK знімає і дедуп-рядок, тож
     // ретрай провайдера справді повторює роботу.
+    let toCancel: PreviousRecurrence | null = null;
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -426,7 +455,12 @@ export const liqpayProvider: BillingProvider = {
         return;
       }
 
-      await applyLiqPayCallback(client, { userId, orderId, status, action });
+      toCancel = await applyLiqPayCallback(client, {
+        userId,
+        orderId,
+        status,
+        action,
+      });
       await client.query("COMMIT");
     } catch (err) {
       try {
@@ -438,6 +472,7 @@ export const liqpayProvider: BillingProvider = {
     } finally {
       client.release();
     }
+    if (toCancel) await settleSupersededRecurrence(pool, toCancel);
   },
 
   async cancelSubscription(

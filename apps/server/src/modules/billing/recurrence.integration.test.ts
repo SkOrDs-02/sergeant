@@ -10,8 +10,9 @@
  *     ставить прапорець;
  *   - data-21: мапінг Plata 1:N, вебхук по будь-якому id резолвиться,
  *     активація другої підписки скасовує першу (між провайдерами теж),
- *     відмова скасування відкочує активацію, запізнілий вебхук по замінених не
- *     воскрешає її; 409 ALREADY_SUBSCRIBED / CHECKOUT_PENDING;
+ *     відмова скасування НЕ відкочує активацію (черга + ретрай), запізнілий
+ *     вебхук/термінальна подія замінених не воскрешає й не гасить нову;
+ *     409 ALREADY_SUBSCRIBED / CHECKOUT_PENDING;
  *   - міграція 154: форма PK, backfill, down -> up.
  *
  * Мережа (monobank, LiqPay, Stripe) замінена `fetch`-стабом: тест перевіряє
@@ -74,7 +75,8 @@ import {
 import { errorHandler } from "../../http/errorHandler.js";
 import { createBillingRouter } from "../../routes/billing.js";
 import { plataProvider } from "./plata.js";
-import { reconcileBySubscriptionId } from "./plataSync.js";
+import { reconcileBySubscriptionId, runSlowTick } from "./plataSync.js";
+import { retryPendingCancellations } from "./supersede.js";
 import { liqpayProvider, encodeData, encodeOrderId } from "./liqpay.js";
 import { assertCheckoutAllowed } from "./checkoutGuard.js";
 import { processStripeWebhook } from "./stripeWebhook.js";
@@ -134,6 +136,8 @@ interface FetchPlan {
   plataStatus?: Record<string, string>;
   /** HTTP-статус `subscription/edit`. */
   plataEditStatus?: number;
+  /** HTTP-статус `subscription/remove` (default 200). */
+  plataRemoveStatus?: number;
   /** Тіло відповіді LiqPay `/api/request`. */
   liqpayBody?: unknown;
   /** HTTP-статус Stripe cancel. */
@@ -163,7 +167,7 @@ function stubFetch(plan: FetchPlan = {}) {
       return new Response("", { status: plan.plataEditStatus ?? 200 });
     }
     if (url.includes("/subscription/remove")) {
-      return new Response("", { status: 200 });
+      return new Response("", { status: plan.plataRemoveStatus ?? 200 });
     }
     if (url.includes("liqpay.ua/api/request")) {
       return Response.json(plan.liqpayBody ?? { result: "ok" });
@@ -254,6 +258,21 @@ async function plataRow(id: string) {
     [id],
   );
   return rows[0];
+}
+
+async function pendingRow(provider: string, id: string) {
+  const { rows } = await harness.pool.query<{
+    attempts: number;
+    resolved_at: Date | null;
+  }>(
+    `SELECT attempts, resolved_at FROM billing_pending_cancellation
+      WHERE provider = $1 AND provider_subscription_id = $2`,
+    [provider, id],
+  );
+  const row = rows[0];
+  return row
+    ? { attempts: row.attempts, resolved: row.resolved_at !== null }
+    : null;
 }
 
 function liqpayCallback(orderId: string, status = "success") {
@@ -511,26 +530,162 @@ describe("data-21: Plata user -> subscriptionId 1:N", () => {
     expect((await plataRow("sub_p"))?.superseded_at).not.toBeNull();
   });
 
-  it("відмова скасувати стару підписку відкочує активацію нової: ретрай повторить усе", async (ctx) => {
+  it("відмова скасувати стару підписку НЕ відкочує активацію нової: запис у черзі, ретрай добиває", async (ctx) => {
     if (!dockerAvailable) return ctx.skip();
     stubFetch({ plataEditStatus: 500 });
     await seedLive({ provider: "plata", subscriptionId: "sub_a" });
     await seedPlataMapping("sub_a", { confirmed: true, ageMinutes: 30 });
     await seedPlataMapping("sub_b");
 
-    // reconcileSubscription ковтає помилку (логує), стан має лишитись старим.
     await reconcileBySubscriptionId(harness.pool, "sub_b");
+
+    // Людина заплатила за B: Pro є, хоч A скасувати не вдалось.
+    expect((await liveRow())[0]?.provider_subscription_id).toBe("sub_b");
+    expect((await plataRow("sub_b"))?.confirmed_at).not.toBeNull();
+    // Стара позначена замінюваною одразу (запізнілий вебхук її не воскресить)...
+    expect((await plataRow("sub_a"))?.superseded_at).not.toBeNull();
+    // ...а скасування лишилось у черзі.
+    expect(await pendingRow("plata", "sub_a")).toMatchObject({
+      attempts: 1,
+      resolved: false,
+    });
+
+    // monobank відновився: ретрай-полер (пауза між спробами вже минула).
+    const fetchMock = stubFetch({ plataEditStatus: 200 });
+    await harness.pool.query(
+      `UPDATE billing_pending_cancellation SET last_attempt_at = NOW() - INTERVAL '2 hours'`,
+    );
+    await expect(retryPendingCancellations(harness.pool)).resolves.toEqual({
+      processed: 1,
+    });
+    expect(editedIds(fetchMock)).toEqual(["sub_a"]);
+    expect(await pendingRow("plata", "sub_a")).toMatchObject({
+      attempts: 2,
+      resolved: true,
+    });
+    expect((await liveRow())[0]?.provider_subscription_id).toBe("sub_b");
+  });
+
+  it("ретрай поважає паузу між спробами й не чіпає закриті записи", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    stubFetch({ plataEditStatus: 500 });
+    await seedLive({ provider: "plata", subscriptionId: "sub_a" });
+    await seedPlataMapping("sub_a", { confirmed: true, ageMinutes: 30 });
+    await seedPlataMapping("sub_b");
+    await reconcileBySubscriptionId(harness.pool, "sub_b");
+
+    // Щойно була спроба - ще рано.
+    await expect(retryPendingCancellations(harness.pool)).resolves.toEqual({
+      processed: 0,
+    });
+  });
+
+  it("стара LiqPay-підписка вже мертва (lapsed past_due, order_not_found): нова Plata все одно активується", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    // Період і grace минули, але рядок лишився 'past_due' - вічний, нічого його
+    // не знімає (getUserPlan). Це і є "живий рядок" для findSupersededRecurrence.
+    const oldOrder = encodeOrderId(USER);
+    await seedLive({
+      provider: "liqpay",
+      subscriptionId: oldOrder,
+      status: "past_due",
+      periodEnd: "2020-01-01T00:00:00Z",
+    });
+    const fetchMock = stubFetch({
+      liqpayBody: { result: "error", err_code: "order_not_found" },
+    });
+    await seedPlataMapping("sub_paid");
+
+    await reconcileBySubscriptionId(harness.pool, "sub_paid");
 
     const [row] = await liveRow();
-    expect(row?.provider_subscription_id).toBe("sub_a");
-    expect((await plataRow("sub_b"))?.confirmed_at).toBeNull();
-    expect((await plataRow("sub_a"))?.superseded_at).toBeNull();
+    expect(row).toMatchObject({
+      provider: "plata",
+      provider_subscription_id: "sub_paid",
+      status: "active",
+    });
+    expect((await plataRow("sub_paid"))?.confirmed_at).not.toBeNull();
+    expect(
+      urlsOf(fetchMock).filter((u) => u.includes("liqpay.ua/api/request")),
+    ).toHaveLength(1);
+    // "Підписки вже нема" - це успіх, а не борг у черзі.
+    expect(await pendingRow("liqpay", oldOrder)).toMatchObject({
+      resolved: true,
+    });
+  });
 
-    // monobank відновився: наступний тік проходить.
-    stubFetch({ plataEditStatus: 200 });
-    await reconcileBySubscriptionId(harness.pool, "sub_b");
+  it("стара Plata-підписка: monobank 400 на edit і на remove - нова LiqPay активується, борг у черзі", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    stubFetch({ plataEditStatus: 400, plataRemoveStatus: 400 });
+    await seedLive({
+      provider: "plata",
+      subscriptionId: "sub_dead",
+      status: "past_due",
+      periodEnd: "2020-01-01T00:00:00Z",
+    });
+    await seedPlataMapping("sub_dead", { confirmed: true, ageMinutes: 9999 });
+
+    const order = encodeOrderId(USER);
+    await liqpayProvider.processWebhook(harness.pool, liqpayCallback(order));
+
+    const [row] = await liveRow();
+    expect(row).toMatchObject({
+      provider: "liqpay",
+      provider_subscription_id: order,
+      status: "active",
+    });
+    expect(await pendingRow("plata", "sub_dead")).toMatchObject({
+      attempts: 1,
+      resolved: false,
+    });
+  });
+
+  it("старий провайдер без ключів (BillingConfigurationError): нова підписка активується, борг у черзі", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    stubFetch();
+    const oldOrder = encodeOrderId(USER);
+    await seedLive({ provider: "liqpay", subscriptionId: oldOrder });
+    mockEnv["LIQPAY_PUBLIC_KEY"] = undefined;
+    mockEnv["LIQPAY_PRIVATE_KEY"] = undefined;
+    await seedPlataMapping("sub_new");
+
+    await reconcileBySubscriptionId(harness.pool, "sub_new");
+
+    expect((await liveRow())[0]?.provider_subscription_id).toBe("sub_new");
+    expect(await pendingRow("liqpay", oldOrder)).toMatchObject({
+      resolved: false,
+    });
+  });
+
+  it("slow tick підбирає оплачений, але непідтверджений checkout поза вікном швидкого тіку", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    const fetchMock = stubFetch();
+    // У subscriptions тримається A; B оплачено, але вебхук/швидкий тік не
+    // дійшли за першу годину, тож джойн по provider_subscription_id його не бачить.
+    await seedLive({ provider: "plata", subscriptionId: "sub_a" });
+    await seedPlataMapping("sub_a", { confirmed: true, ageMinutes: 9999 });
+    await seedPlataMapping("sub_b", { ageMinutes: 180 });
+
+    await expect(runSlowTick(harness.pool)).resolves.toMatchObject({
+      processed: 1,
+    });
+
     expect((await liveRow())[0]?.provider_subscription_id).toBe("sub_b");
-    expect((await plataRow("sub_a"))?.superseded_at).not.toBeNull();
+    expect(editedIds(fetchMock)).toEqual(["sub_a"]);
+    expect((await plataRow("sub_b"))?.confirmed_at).not.toBeNull();
+  });
+
+  it("slow tick не чіпає старі покинуті checkout-и (старші за вікно) і замінені", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    const fetchMock = stubFetch();
+    await seedPlataMapping("sub_ancient", { ageMinutes: 60 * 24 * 10 });
+    await seedPlataMapping("sub_old_superseded", { ageMinutes: 180 });
+    await harness.pool.query(
+      `UPDATE plata_subscription SET superseded_at = NOW() WHERE subscription_id = 'sub_old_superseded'`,
+    );
+
+    await expect(runSlowTick(harness.pool)).resolves.toEqual({ processed: 0 });
+    expect(urlsOf(fetchMock)).toEqual([]);
   });
 
   it("reverse trial (manual) активація не шле нічого провайдерам", async (ctx) => {
@@ -660,6 +815,181 @@ describe("data-21: гейт checkout-у", () => {
   });
 });
 
+// ── термінальні події ЗАМІНЕНОЇ підписки не чіпають нову ─────────────────
+
+describe("data-21: подія замінених Stripe/LiqPay-підписок не гасить нову", () => {
+  const stripeCheckout = (id: string, sub: string) => ({
+    id,
+    type: "checkout.session.completed",
+    data: {
+      object: {
+        id: `cs_${id}`,
+        client_reference_id: USER,
+        customer: "cus_1",
+        subscription: sub,
+        metadata: { plan: "pro" },
+      },
+    },
+  });
+  const stripeSubEvent = (
+    id: string,
+    type: string,
+    sub: string,
+    status: string,
+    extra: Record<string, unknown> = {},
+  ) => ({
+    id,
+    type,
+    data: {
+      object: {
+        id: sub,
+        status,
+        customer: "cus_1",
+        metadata: { user_id: USER },
+        current_period_end: 4_000_000_000,
+        ...extra,
+      },
+    },
+  });
+  const send = (event: { id: string }) =>
+    processStripeWebhook(
+      harness.pool,
+      event as never,
+      Buffer.from(JSON.stringify(event)),
+    );
+
+  it("Stripe A -> B: customer.subscription.updated/deleted по sub_A лишають B активною", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    const fetchMock = stubFetch();
+    await seedLive({ provider: "stripe", subscriptionId: "sub_A" });
+
+    await send(stripeCheckout("evt_chk_b", "sub_B"));
+    expect(
+      urlsOf(fetchMock).filter((u) => u.includes("/subscriptions/sub_A")),
+    ).toHaveLength(1);
+    expect((await liveRow())[0]?.provider_subscription_id).toBe("sub_B");
+
+    // Те, що Stripe шле САМ після cancel_at_period_end на A, а в кінці
+    // періоду - deleted. Раніше перша підміняла id/прапорець у рядку B,
+    // друга гасила B.
+    await send(
+      stripeSubEvent(
+        "evt_a_upd",
+        "customer.subscription.updated",
+        "sub_A",
+        "active",
+        {
+          cancel_at_period_end: true,
+        },
+      ),
+    );
+    await send(
+      stripeSubEvent(
+        "evt_a_del",
+        "customer.subscription.deleted",
+        "sub_A",
+        "canceled",
+      ),
+    );
+
+    const rows = await liveRow();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      provider: "stripe",
+      provider_subscription_id: "sub_B",
+      status: "active",
+      cancel_at_period_end: false,
+    });
+
+    // Власні події B працюють як завжди.
+    await send(
+      stripeSubEvent(
+        "evt_b_del",
+        "customer.subscription.deleted",
+        "sub_B",
+        "canceled",
+      ),
+    );
+    expect(await liveRow()).toHaveLength(0);
+  });
+
+  it("Stripe: subscription.updated чужої підписки не перебиває живий рядок іншого провайдера", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    stubFetch();
+    const order = encodeOrderId(USER);
+    await seedLive({ provider: "liqpay", subscriptionId: order });
+
+    await send(
+      stripeSubEvent(
+        "evt_x_upd",
+        "customer.subscription.updated",
+        "sub_X",
+        "active",
+      ),
+    );
+
+    expect((await liveRow())[0]).toMatchObject({
+      provider: "liqpay",
+      provider_subscription_id: order,
+    });
+  });
+
+  it("LiqPay X -> Y: unsubscribe/reversed/failure та запізніле списання по X не чіпають Y", async (ctx) => {
+    if (!dockerAvailable) return ctx.skip();
+    const fetchMock = stubFetch();
+    const orderX = encodeOrderId(USER);
+    const orderY = encodeOrderId(USER);
+    await seedLive({ provider: "liqpay", subscriptionId: orderX });
+
+    await liqpayProvider.processWebhook(harness.pool, liqpayCallback(orderY));
+    expect(
+      urlsOf(fetchMock).filter((u) => u.includes("liqpay.ua/api/request")),
+    ).toHaveLength(1);
+    expect((await liveRow())[0]?.provider_subscription_id).toBe(orderY);
+
+    const cb = (order: string, status: string, action: string) =>
+      encodeData({
+        order_id: order,
+        status,
+        action,
+        payment_id: `pay_${Math.random().toString(16).slice(2)}`,
+      });
+    // Підтвердження скасування X, повернення платежу X, невдале списання X.
+    await liqpayProvider.processWebhook(
+      harness.pool,
+      cb(orderX, "unsubscribed", "unsubscribe"),
+    );
+    await liqpayProvider.processWebhook(
+      harness.pool,
+      cb(orderX, "reversed", "regular"),
+    );
+    await liqpayProvider.processWebhook(
+      harness.pool,
+      cb(orderX, "failure", "regular"),
+    );
+    // Запізніле УСПІШНЕ списання по вже заміненій X не витісняє Y.
+    await liqpayProvider.processWebhook(
+      harness.pool,
+      cb(orderX, "success", "regular"),
+    );
+
+    const rows = await liveRow();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      provider: "liqpay",
+      provider_subscription_id: orderY,
+      status: "active",
+    });
+
+    // Власний unsubscribe Y працює як завжди.
+    await liqpayProvider.processWebhook(
+      harness.pool,
+      cb(orderY, "unsubscribed", "unsubscribe"),
+    );
+    expect(await liveRow()).toHaveLength(0);
+  });
+});
+
 // ── міграція 154 ─────────────────────────────────────────────────────────
 
 describe("міграція 154: plata_subscription 1:N", () => {
@@ -686,6 +1016,10 @@ describe("міграція 154: plata_subscription 1:N", () => {
           AND indexname = 'plata_subscription_user_id_idx'`,
     );
     expect(idx.rowCount).toBe(1);
+    const queue = await harness.pool.query(
+      `SELECT to_regclass('billing_pending_cancellation') AS t`,
+    );
+    expect(queue.rows[0]?.t).toBe("billing_pending_cancellation");
   });
 
   it("backfill повертає id живої plata-підписки, якого немає в мапінгу; повторний прогін ідемпотентний", async (ctx) => {

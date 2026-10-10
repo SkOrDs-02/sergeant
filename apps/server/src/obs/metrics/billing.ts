@@ -42,3 +42,16 @@ export const billingRecurringChargeTotal = new client.Counter({
   labelNames: ["provider", "result"],
   registers: [register],
 });
+
+/**
+ * Скасування ЗАМІНЕНОЇ рекурентки у її провайдера (`supersede.ts`). `result` =
+ * cancelled (провайдер підтвердив) | gone (підписки в провайдера вже нема) |
+ * failed (відмова, рядок лишається в черзі на ретрай) | abandoned (вичерпано
+ * ліміт спроб, потрібен ручний розбір: стара підписка може й далі списувати).
+ */
+export const billingSupersedeCancelTotal = new client.Counter({
+  name: "billing_supersede_cancel_total",
+  help: "Cancellations of superseded recurring subscriptions by provider and result",
+  labelNames: ["provider", "result"],
+  registers: [register],
+});

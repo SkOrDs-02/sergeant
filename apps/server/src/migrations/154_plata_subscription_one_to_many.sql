@@ -17,6 +17,14 @@
 --   3. Backfill: активні plata-підписки з `subscriptions`, чий id відсутній у
 --      мапінгу (його затер другий checkout), додаються назад - тепер вебхук
 --      по такому id резолвиться.
+--   4. `billing_pending_cancellation` - черга скасування ЗАМІНЕНИХ рекуренток
+--      (будь-який провайдер). Коли нова оплачена підписка витісняє стару,
+--      активація нової комітиться незалежно від того, чи вдалося скасувати
+--      стару у провайдера (стара може бути вже мертва, провайдер вимкнений або
+--      тимчасово недоступний). Намір скасувати пишеться в ту ж транзакцію,
+--      сам виклик провайдера йде після COMMIT, а невдачі добиває ретрай-полер.
+--      Рядок лишається після успіху (`resolved_at`) як слід "цю підписку ми
+--      замінили": запізнілий callback по ній не воскрешає її поверх нової.
 --
 -- Адитивно щодо даних: жоден рядок не видаляється, жодна колонка не
 -- знімається. Ідемпотентно (guard на форму PK). Провайдери на проді вимкнені
@@ -53,6 +61,24 @@ SELECT s.user_id, s.provider_subscription_id, NOW()
    AND s.provider_subscription_id IS NOT NULL
    AND s.status IN ('active', 'trialing', 'past_due')
 ON CONFLICT (subscription_id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS billing_pending_cancellation (
+  provider                 TEXT        NOT NULL,
+  provider_subscription_id TEXT        NOT NULL,
+  user_id                  TEXT        NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  attempts                 INTEGER     NOT NULL DEFAULT 0,
+  last_attempt_at          TIMESTAMPTZ,
+  resolved_at              TIMESTAMPTZ,
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (provider, provider_subscription_id)
+);
+
+CREATE INDEX IF NOT EXISTS billing_pending_cancellation_open_idx
+  ON billing_pending_cancellation (created_at)
+  WHERE resolved_at IS NULL;
+
+COMMENT ON TABLE billing_pending_cancellation IS
+  'Скасування рекуренток, замінених новою підпискою (supersede.ts). Рядок пишеться в транзакції активації нової підписки; resolved_at ставиться після підтвердження провайдера (або відповіді "підписки вже нема"). Відкриті рядки добиває ретрай-полер; після ліміту спроб лишаються для ручного розбору. Resolved-рядки - слід "замінено нами".';
 
 COMMENT ON TABLE plata_subscription IS
   'user ↔ monobank subscriptionId, 1:N (subscription/create не має reference; кожен checkout - новий рядок). confirmed_at ставиться звіркою (plataSync.ts) після першого підтвердженого subscription/status; NULL + created_at < 1h - предмет швидкого тику і ознака живого checkout (409 CHECKOUT_PENDING). superseded_at - рекурентку скасовано, бо її замінила нова підписка.';

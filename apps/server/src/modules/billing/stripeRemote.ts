@@ -6,6 +6,7 @@
  * Успіх або `throw` (не-2xx). Тіло відповіді не читаємо й не логуємо.
  */
 import { env } from "../../env/env.js";
+import { ProviderSubscriptionGoneError } from "./provider.js";
 
 const STRIPE_SUBSCRIPTIONS_URL = "https://api.stripe.com/v1/subscriptions";
 const CANCEL_TIMEOUT_MS = 15_000;
@@ -34,6 +35,9 @@ export async function cancelStripeRemoteSubscription(
       signal: AbortSignal.timeout(CANCEL_TIMEOUT_MS),
     },
   );
+  if (response.status === 404) {
+    throw new ProviderSubscriptionGoneError("Stripe cancel: HTTP 404");
+  }
   if (!response.ok) {
     throw new Error(`Stripe cancel failed: HTTP ${response.status}`);
   }

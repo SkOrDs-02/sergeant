@@ -11,7 +11,10 @@
  */
 import crypto from "node:crypto";
 import { env } from "../../env/env.js";
-import { BillingConfigurationError } from "./provider.js";
+import {
+  BillingConfigurationError,
+  ProviderSubscriptionGoneError,
+} from "./provider.js";
 
 export const LIQPAY_CHECKOUT_URL = "https://www.liqpay.ua/api/3/checkout";
 export const LIQPAY_REQUEST_URL = "https://www.liqpay.ua/api/request";
@@ -100,10 +103,15 @@ function assertUnsubscribeAccepted(body: LiqPayApiResult | null): void {
     body.status !== "failure" &&
     (body.result === "ok" || body.status === "unsubscribed");
   if (accepted) return;
-  throw new Error(
+  const message =
     `LiqPay unsubscribe rejected: result=${safeToken(body?.result)} ` +
-      `status=${safeToken(body?.status)} err_code=${safeToken(body?.err_code)}`,
-  );
+    `status=${safeToken(body?.status)} err_code=${safeToken(body?.err_code)}`;
+  // Підписки з таким `order_id` у LiqPay нема (скасована раніше, ніколи не
+  // існувала): окремий випадок, який заміна підписки читає як успіх.
+  if (body?.err_code === "order_not_found") {
+    throw new ProviderSubscriptionGoneError(message);
+  }
+  throw new Error(message);
 }
 
 /**

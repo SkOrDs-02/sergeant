@@ -79,6 +79,7 @@ import {
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataSyncPoller } from "./modules/billing/plataSync.js";
+import { SupersedeRetryPoller } from "./modules/billing/supersedeRetryPoller.js";
 import { GdprCleanupPoller } from "./modules/gdpr/cleanupPoller.js";
 import { AccountDeletionPoller } from "./modules/me/deletionPoller.js";
 import { SilpoSyncPoller } from "./modules/silpo/syncScheduler.js";
@@ -262,6 +263,11 @@ logArchivePoller.start();
 // idempotent start/stop, два таймери (fast/slow tick).
 const plataSyncPoller = new PlataSyncPoller({ pool });
 plataSyncPoller.start();
+
+// Добивання скасування замінених рекуренток (supersede.ts): скасування старої
+// підписки йде після COMMIT активації нової, невдачі лишаються в черзі.
+const supersedeRetryPoller = new SupersedeRetryPoller({ pool });
+supersedeRetryPoller.start();
 
 // Фоновий синк чеків Сільпо — той самий Tier-A poller-патерн. Off, поки
 // `SILPO_ENABLED=false`. Без нього чеки підтягуються ЛИШЕ по кнопці
@@ -573,6 +579,9 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
 
     await runBackgroundStop("silpo_sync_poller", () => silpoSyncPoller.stop());
     await runBackgroundStop("plata_sync_poller", () => plataSyncPoller.stop());
+    await runBackgroundStop("billing_supersede_retry_poller", () =>
+      supersedeRetryPoller.stop(),
+    );
     await runBackgroundStop("webhook_events_retention_poller", () =>
       webhookEventsRetentionPoller.stop(),
     );

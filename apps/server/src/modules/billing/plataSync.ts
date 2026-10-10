@@ -39,8 +39,10 @@ import {
 } from "../../lib/pollerStartupTick.js";
 import { MONOPAY_BASE, getPlataToken as getToken } from "./plataRemote.js";
 import {
-  cancelSupersededRecurrence,
   findSupersededRecurrence,
+  recordSupersededRecurrence,
+  settleSupersededRecurrence,
+  type PreviousRecurrence,
 } from "./supersede.js";
 
 // `plata.ts` імпортує з цього модуля (`reconcileBySubscriptionId`), тож
@@ -55,6 +57,8 @@ const FAST_TICK_MS = 5 * 60 * 1000;
  */
 const SLOW_TICK_MS = 60 * 60 * 1000;
 const FAST_WINDOW_MS = 60 * 60 * 1000;
+/** Як довго повільний тік ще перезвіряє непідтверджений checkout (див. runSlowTick). */
+const UNCONFIRMED_LOOKBACK_DAYS = 3;
 const GRACE_DAYS = 3;
 const ACTIVE_STATUSES = new Set(["active"]);
 
@@ -100,9 +104,11 @@ async function applyActive(
     ? new Date(statusResp.nextChargeDate)
     : null;
   // Одна транзакція: якщо в користувача вже є ІНША жива рекурентка (інший
-  // провайдер чи інший subscriptionId Plata), її скасовують на боці провайдера
-  // перед COMMIT, а відмова відкочує активацію разом із `confirmed_at` -
-  // швидкий тік і вебхук повторять спробу (аудит data-21).
+  // провайдер чи інший subscriptionId Plata), намір скасувати її пишеться в
+  // ту саму транзакцію, а сам виклик провайдера йде ПІСЛЯ COMMIT і активацію
+  // не відкочує: підписка оплачена, а стара могла вже бути мертвою (аудит
+  // data-21, supersede.ts).
+  let toCancel: PreviousRecurrence | null = null;
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -139,7 +145,13 @@ async function applyActive(
          updated_at = NOW()`,
       [row.user_id, row.subscription_id, nextChargeDate],
     );
-    if (previous) await cancelSupersededRecurrence(client, previous);
+    if (previous) {
+      toCancel = await recordSupersededRecurrence(
+        client,
+        row.user_id,
+        previous,
+      );
+    }
     await client.query("COMMIT");
   } catch (err) {
     try {
@@ -151,6 +163,7 @@ async function applyActive(
   } finally {
     client.release();
   }
+  if (toCancel) await settleSupersededRecurrence(pool, toCancel);
   billingRecurringChargeTotal.inc({ provider: "plata", result: "charged" });
 }
 
@@ -323,6 +336,16 @@ export async function runFastTick(pool: Pool): Promise<PlataSyncResult> {
  * яких не звіряли понад 24 год. Штамп - `plata_subscription.updated_at`
  * (ставить `markReconciled`/`applyActive`), тому тік можна запускати
  * щогодини й після кожного рестарту: свіжозвірені рядки він пропускає.
+ *
+ * Друга гілка - ОПЛАЧЕНІ, але непідтверджені checkout-и поза вікном
+ * швидкого тіку (`confirmed_at IS NULL`, старші за годину, молодші за
+ * {@link UNCONFIRMED_LOOKBACK_DAYS}). Без неї підписка B, яку не вдалось
+ * активувати за першу годину (monobank віддав 5xx на `subscription/status`,
+ * процес перезапустили), лишалась би сиротою: у `subscriptions` тримається
+ * інший рядок, джойн першої гілки B не бачить, а гроші вже списуються.
+ * Покинуті (неоплачені) checkout-и теж потрапляють сюди, але лише на цей
+ * термін; їх відсікає сам `subscription/status`, а `superseded_at` знімає
+ * вже замінені.
  */
 export async function runSlowTick(pool: Pool): Promise<PlataSyncResult> {
   const { rows } = await pool.query<PlataSubscriptionRow>(
@@ -334,7 +357,15 @@ export async function runSlowTick(pool: Pool): Promise<PlataSyncResult> {
         AND s.provider_subscription_id = ps.subscription_id
       WHERE s.status IN ('active', 'past_due')
         AND ps.superseded_at IS NULL
-        AND ps.updated_at < NOW() - INTERVAL '24 hours'`,
+        AND ps.updated_at < NOW() - INTERVAL '24 hours'
+     UNION
+     SELECT ps.user_id, ps.subscription_id
+       FROM plata_subscription ps
+      WHERE ps.confirmed_at IS NULL
+        AND ps.superseded_at IS NULL
+        AND ps.created_at <= NOW() - make_interval(secs => $1)
+        AND ps.created_at > NOW() - make_interval(days => $2)`,
+    [FAST_WINDOW_MS / 1000, UNCONFIRMED_LOOKBACK_DAYS],
   );
   for (const row of rows) await reconcileSubscription(pool, row);
   return { processed: rows.length };

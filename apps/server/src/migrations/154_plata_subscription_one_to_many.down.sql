@@ -1,11 +1,13 @@
 -- Відкат 154: повернути plata_subscription до 1:1 (PK = user_id).
 --
--- Local-only (Rule #4: прод `down.sql` не виконує).
+-- Local-only (Rule #4: прод `down.sql` не виконує). Черга `billing_pending_cancellation` знімається разом із даними.
 --
 -- УВАГА: відкат втрачає дані. Для користувачів з кількома мапінгами лишається
 -- один рядок: той, що збігається з живою підпискою в `subscriptions`, інакше
 -- найновіший за `created_at`. Решта (id скасованих/замінених підписок)
 -- видаляється, бо 1:1-схема їх вмістити не може.
+
+DROP TABLE IF EXISTS billing_pending_cancellation;
 
 DELETE FROM plata_subscription p
  WHERE p.subscription_id <> (
