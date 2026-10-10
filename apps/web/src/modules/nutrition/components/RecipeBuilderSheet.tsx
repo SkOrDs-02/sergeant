@@ -186,11 +186,10 @@ export function RecipeBuilderSheet({
       onClose={onClose}
       title={initial ? t.titleEdit : t.titleNew}
       description={t.description}
-      panelClassName="nutrition-sheet"
       zIndex={120}
     >
       <div className="mb-3">
-        <SectionHeading as="div" size="xs" variant="nutrition" className="mb-1">
+        <SectionHeading as="div" size="xs" className="mb-1">
           {t.nameLabel}
         </SectionHeading>
         <Input
@@ -217,9 +216,9 @@ export function RecipeBuilderSheet({
       />
 
       {rows.length > 0 && (
-        <ul className="mb-3 space-y-2">
+        <ul className="mb-3 divide-y divide-line border-y border-line">
           {rows.map((r, i) => (
-            <li key={r.key} className="flex items-center gap-2">
+            <li key={r.key} className="flex items-center gap-2 py-2">
               <span className="min-w-0 flex-1 text-style-body text-text wrap-break-word">
                 {r.name}
               </span>
@@ -260,12 +259,7 @@ export function RecipeBuilderSheet({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <SectionHeading
-            as="div"
-            size="xs"
-            variant="nutrition"
-            className="mb-1"
-          >
+          <SectionHeading as="div" size="xs" className="mb-1">
             {t.servingsLabel}
           </SectionHeading>
           <Input
@@ -278,12 +272,7 @@ export function RecipeBuilderSheet({
           />
         </div>
         <div>
-          <SectionHeading
-            as="div"
-            size="xs"
-            variant="nutrition"
-            className="mb-1"
-          >
+          <SectionHeading as="div" size="xs" className="mb-1">
             {t.cookedLabel}
           </SectionHeading>
           <Input
@@ -308,7 +297,7 @@ export function RecipeBuilderSheet({
       </div>
 
       {components.length > 0 && (
-        <div className="mt-3 rounded-2xl bg-panelHi p-3 text-style-caption text-text space-y-0.5">
+        <div className="mt-3 space-y-0.5 border-t border-line pt-3 text-style-caption text-text tabular-nums">
           <div>
             {t.perServing} {macroLine(perServing, fmtMacro) || t.noData}
           </div>
@@ -331,7 +320,8 @@ export function RecipeBuilderSheet({
       <div className="mt-3">
         <Button
           type="button"
-          className="h-12 min-h-[44px] w-full bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
+          variant="solid"
+          className="w-full"
           disabled={!!reason}
           onClick={save}
         >

@@ -3,10 +3,11 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
+import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
-import { cn } from "@shared/lib/ui/cn";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
 import {
   kcalFromMacros,
@@ -106,18 +107,22 @@ export function DailyPlanCard({
   const pantryIgnored = prefs.recipePantryMode === "ignore";
 
   return (
-    <Card className="p-4">
-      <div className="text-style-label text-text">Денний план</div>
+    <Card as="section" padding="md">
+      <SectionHeading as="div" size="lg">
+        Денний план
+      </SectionHeading>
       <div className="text-style-caption text-muted mt-0.5">
         {pantryIgnored
           ? messages.nutrition.dayPlanIntro.pantryIgnored
           : messages.nutrition.dayPlanIntro.withPantry}
       </div>
 
-      <div className="mt-4 space-y-4">
-        <div>
-          <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-            <div className="text-style-caption text-muted">Цілі на день</div>
+      <div className="mt-5 space-y-7">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionHeading as="div" size="md">
+              Цілі на день
+            </SectionHeading>
             <DailyPlanGoalSelectors
               prefs={prefs}
               setPrefs={setPrefs}
@@ -129,57 +134,18 @@ export function DailyPlanCard({
           <div className="grid grid-cols-2 gap-2">
             {(
               [
-                {
-                  key: "dailyTargetKcal",
-                  label: "Ккал/день",
-                  unit: "",
-                  color: null,
-                },
-                {
-                  key: "dailyTargetProtein_g",
-                  label: "Білки",
-                  unit: "г",
-                  color: "text-info-strong dark:text-info",
-                },
-                {
-                  key: "dailyTargetFat_g",
-                  label: "Жири",
-                  unit: "г",
-                  color: "text-warning-strong dark:text-warning",
-                },
-                {
-                  key: "dailyTargetCarbs_g",
-                  label: "Вуглеводи",
-                  unit: "г",
-                  color: "text-success-strong dark:text-success",
-                },
+                { key: "dailyTargetKcal", label: "Ккал/день", unit: "" },
+                { key: "dailyTargetProtein_g", label: "Білки", unit: "г" },
+                { key: "dailyTargetFat_g", label: "Жири", unit: "г" },
+                { key: "dailyTargetCarbs_g", label: "Вуглеводи", unit: "г" },
               ] as const
-            ).map(({ key, label, unit, color }) => (
+            ).map(({ key, label, unit }) => (
               <div key={key}>
-                {/* AI-CONTEXT: тут стояв AI-DANGER «не міняти `text-xs` на
-                    роль», і спирався він на побоювання, що поруч із
-                    `font-semibold` два правила ваги на одному вузлі й
-                    невідомо, яке виграє. Побоювання зняте заміром у
-                    зібраному CSS (записаний у `tailwind-preset.js`): ролі
-                    реєструються через `addUtilities`, тобто мають ту саму
-                    специфічність, що й core-утиліти, і виграє той, що нижче
-                    у файлі — `.font-semibold` (офсет 180546) стоїть нижче за
-                    `.text-style-caption` (177815). Отже роль ПРОГРАЄ явній
-                    вазі передбачувано, а не «як пощастить», і мітка лишається
-                    напівжирною.
-
-                    Що лишилось чинним із того коментаря: мітка стоїть НАД
-                    інпутом навмисно — правило «підпис під числом» діє для
-                    чисел, які читають, а не для полів, які заповнюють.
-
-                    AI-DANGER: замір привʼязаний до порядку утиліт у білді.
-                    Переміряй, перш ніж спиратись на нього деінде. */}
-                <div
-                  className={cn(
-                    "text-style-caption mb-1 font-semibold",
-                    color ?? "text-muted",
-                  )}
-                >
+                {/* Підпис стоїть НАД інпутом навмисно: правило «підпис під
+                    числом» діє для чисел, які читають, а не для полів, які
+                    заповнюють. Усі чотири підписи нейтральні: колір макро
+                    живе лише в даних (мова H). */}
+                <div className="mb-1 text-style-overline text-subtle">
                   {label}
                   {unit && ` (${unit})`}
                 </div>
@@ -251,15 +217,15 @@ export function DailyPlanCard({
           <GoalRangeWarning prefs={prefs} />
 
           {!prefs.adaptiveGoalEnabled && (
-            <p className="mt-3 text-style-caption text-muted">
+            <p className="text-style-caption text-muted">
               Автокалібрування вмикається в Налаштуваннях → Їжа.
             </p>
           )}
 
           {hasTargets && (
-            <div className="mt-2 flex flex-wrap gap-1 items-center">
+            <div className="flex flex-wrap items-baseline gap-x-2 text-style-label text-text tabular-nums">
               {prefs.dailyTargetKcal != null && (
-                <span className="text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-xl px-2 py-0.5">
+                <span className="font-semibold">
                   <Measure
                     value={prefs.dailyTargetKcal}
                     unit="ккал"
@@ -268,23 +234,23 @@ export function DailyPlanCard({
                 </span>
               )}
               {prefs.dailyTargetProtein_g != null && (
-                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                <span className="text-muted">
                   Б: <Measure value={prefs.dailyTargetProtein_g} unit="г" />
                 </span>
               )}
               {prefs.dailyTargetFat_g != null && (
-                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                <span className="text-muted">
                   Ж: <Measure value={prefs.dailyTargetFat_g} unit="г" />
                 </span>
               )}
               {prefs.dailyTargetCarbs_g != null && (
-                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                <span className="text-muted">
                   В: <Measure value={prefs.dailyTargetCarbs_g} unit="г" />
                 </span>
               )}
               <button
                 type="button"
-                className="text-style-caption text-muted hover:text-danger transition-colors px-1 ml-auto"
+                className="touch-target ml-auto rounded-lg px-1 text-style-label font-semibold text-muted hover:text-text focus-ring"
                 onClick={() =>
                   setPrefs((p) => ({
                     ...p,
@@ -308,23 +274,15 @@ export function DailyPlanCard({
         />
 
         <div className="grid gap-2">
-          <button
+          <Button
             type="button"
+            variant="solid"
+            className="w-full"
             onClick={fetchDayPlan}
             disabled={busy || dayPlanBusy}
-            className={cn(
-              "text-style-label w-full h-11 rounded-2xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-              // Обидві CTA — сирі `<button>`, тож кільце фокуса не приходить
-              // від `Button`. Без нього з клавіатури не видно, де ти стоїш
-              // (підтверджено живим прогоном 2026-09-16). Канон — утиліта
-              // `focus-ring`, а не рукописний `focus-visible:ring-2`: її
-              // стереже храповик `handRolledFocusRing` у `pnpm lint`.
-              "focus-ring",
-            )}
           >
             {dayPlanBusy ? "Генерую план…" : "Згенерувати денний план"}
-          </button>
+          </Button>
           {typeof fetchWeekPlan === "function" && (
             <WeekPlanButton
               onClick={fetchWeekPlan}
@@ -332,44 +290,45 @@ export function DailyPlanCard({
               busy={weekPlanBusy}
             />
           )}
+          {pantryItems?.length === 0 && !pantryIgnored && (
+            <div className="text-style-body text-muted text-center">
+              Додай продукти в комору, і план їх врахує
+            </div>
+          )}
         </div>
 
-        {pantryItems?.length === 0 && !pantryIgnored && (
-          <div className="text-style-body text-muted text-center -mt-2">
-            Додай продукти в комору, і план їх врахує
-          </div>
-        )}
-
         {weekPlanDays.length > 0 && (
-          <div className="rounded-2xl border border-line bg-panel p-4 space-y-3">
-            <div className="text-style-label text-text">Тижневий план</div>
-            {weekPlanDays.map((d: WeekPlanDay, i: number) => (
-              <div
-                key={i}
-                /* AI-DANGER: `text-sm` — це кегль КОНТЕЙНЕРА, від якого
-                   успадковують діти. `text-style-label` замість нього підняв
-                   би вагу до 500 на всьому блоці, включно з нотатками, які
-                   мають лишатись звичайними. Заміняти можна тільки разом із
-                   перебором дітей. */
-                className="text-sm border-b border-line/40 pb-2 last:border-0"
-              >
-                <div className="font-semibold text-nutrition-strong dark:text-nutrition">
-                  {d.label}
+          <div>
+            <SectionHeading as="div" size="md">
+              Тижневий план
+            </SectionHeading>
+            <div className="mt-2 divide-y divide-line border-t border-line">
+              {weekPlanDays.map((d: WeekPlanDay, i: number) => (
+                <div
+                  key={i}
+                  /* AI-DANGER: `text-sm` — це кегль КОНТЕЙНЕРА, від якого
+                     успадковують діти. `text-style-label` замість нього
+                     підняв би вагу до 500 на всьому блоці, включно з
+                     нотатками, які мають лишатись звичайними. Заміняти
+                     можна тільки разом із перебором дітей. */
+                  className="py-2.5 text-sm"
+                >
+                  <div className="font-semibold text-text">{d.label}</div>
+                  {d.note && (
+                    <div className="text-style-caption text-muted mt-0.5">
+                      {d.note}
+                    </div>
+                  )}
+                  {Array.isArray(d.meals) && d.meals.length > 0 && (
+                    <ul className="list-disc pl-4 mt-1 text-style-caption text-text space-y-0.5">
+                      {d.meals.map((line: string, j: number) => (
+                        <li key={j}>{line}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                {d.note && (
-                  <div className="text-style-caption text-muted mt-0.5">
-                    {d.note}
-                  </div>
-                )}
-                {Array.isArray(d.meals) && d.meals.length > 0 && (
-                  <ul className="list-disc pl-4 mt-1 text-style-caption text-text space-y-0.5">
-                    {d.meals.map((line: string, j: number) => (
-                      <li key={j}>{line}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
@@ -385,7 +344,7 @@ export function DailyPlanCard({
         {import.meta.env.DEV &&
           weekPlanRaw &&
           (!weekPlan?.days || weekPlan.days.length === 0) && (
-            <details className="rounded-2xl border border-line bg-bg p-3">
+            <details className="rounded-xl border border-line p-3">
               <summary className="cursor-pointer text-style-caption text-muted">
                 Діагностика плану (raw)
               </summary>
@@ -397,28 +356,33 @@ export function DailyPlanCard({
 
         {sortedMeals.length > 0 && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <div className="text-style-label text-text">
-                  {freshness.stale ? "Твій план" : "Твій план на сьогодні"}
-                </div>
-                {freshness.label && (
-                  <div className="text-style-caption text-muted">
-                    {freshness.label}
-                  </div>
-                )}
+            <SectionHeading
+              as="div"
+              size="lg"
+              {...(dayPlan?.totalKcal != null && {
+                action: (
+                  <span className="text-style-label text-muted tabular-nums">
+                    ~
+                    <Measure
+                      value={Math.round(dayPlan.totalKcal)}
+                      unit="ккал"
+                    />{" "}
+                    разом
+                  </span>
+                ),
+              })}
+            >
+              {freshness.stale ? "Твій план" : "Твій план на сьогодні"}
+            </SectionHeading>
+            {freshness.label && (
+              <div className="-mt-2 text-style-caption text-muted">
+                {freshness.label}
               </div>
-              {dayPlan?.totalKcal != null && (
-                <span className="text-style-caption text-muted">
-                  ~<Measure value={Math.round(dayPlan.totalKcal)} unit="ккал" />{" "}
-                  разом
-                </span>
-              )}
-            </div>
+            )}
 
             {dayPlan?.totalKcal != null && prefs.dailyTargetKcal != null && (
-              <div className="rounded-xl bg-panel border border-line px-3 py-2">
-                <div className="flex justify-between text-style-caption text-muted mb-1">
+              <div>
+                <div className="mb-1 flex justify-between text-style-caption text-muted">
                   <span>Прогрес до цілі</span>
                   {/* Одиниця стоїть один раз на пару чисел — перше йде з
                       порожнім `unit`, але з тими самими `tabular-nums`,
@@ -430,14 +394,13 @@ export function DailyPlanCard({
                     <Measure value={prefs.dailyTargetKcal} unit="ккал" />
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full bg-line overflow-hidden">
+                <div className="h-1.5 overflow-hidden rounded-[3px] bg-line">
                   <div
-                    className={cn(
-                      "h-full rounded-full transition-[width,background-color]",
+                    className={
                       dayPlan.totalKcal > prefs.dailyTargetKcal * 1.1
-                        ? "bg-danger"
-                        : "bg-nutrition",
-                    )}
+                        ? "h-full rounded-[3px] bg-danger transition-[width,background-color]"
+                        : "h-full rounded-[3px] bg-chart-nutrition transition-[width,background-color]"
+                    }
                     style={{
                       width: `${Math.min(
                         100,
@@ -451,7 +414,7 @@ export function DailyPlanCard({
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="divide-y divide-line border-y border-line">
               {sortedMeals.map((meal, i) => (
                 <DailyPlanMealRow
                   key={`${meal.type}_${i}`}
@@ -464,9 +427,7 @@ export function DailyPlanCard({
             </div>
 
             {dayPlan?.note && (
-              <div className="rounded-xl bg-panel border border-line px-3 py-2 text-style-caption text-muted">
-                {dayPlan.note}
-              </div>
+              <p className="text-style-caption text-muted">{dayPlan.note}</p>
             )}
           </div>
         )}

@@ -100,8 +100,8 @@ describe("PhotoAnalyzeCard", () => {
       name: "Перерахувати з урахуванням уточнень",
     });
 
-    expect(save.className).toContain("bg-nutrition-strong");
-    expect(refine.className).not.toContain("bg-nutrition-strong");
+    expect(save.className).toContain("bg-text");
+    expect(refine.className).not.toContain("bg-text ");
     expect(
       screen.getByText(/Сам аналіз у журнал не потрапляє/),
     ).toBeInTheDocument();

@@ -19,9 +19,11 @@ export function readPhotoPrivacyAck(ackKey: string): boolean {
   return safeReadLS<boolean>(ackKey, false) === true;
 }
 
+// Мова H (редизайн v3 PR4): hue модуля лише в даних, тож кнопка
+// підтвердження нейтральна в обох модулях. Проп `tone` лишився API.
 const TONE_BUTTON_CLASS = {
-  nutrition: "text-nutrition-strong dark:text-nutrition",
-  finyk: "text-finyk-strong dark:text-finyk",
+  nutrition: "text-text",
+  finyk: "text-text",
 } as const;
 
 export interface PhotoPrivacyNoticeProps {
@@ -67,8 +69,10 @@ export function PhotoPrivacyNotice({
   const [acked, setAcked] = useState(() => readPhotoPrivacyAck(ackKey));
   if (acked) return null;
   return (
-    <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
-      <div className="text-style-label text-text">{copy.title}</div>
+    <div className="mb-3 border-y border-line py-3">
+      <div className="text-style-body font-semibold text-text">
+        {copy.title}
+      </div>
       {/* AI-NOTE: caption тут навмисний: це дисклеймер приватності під
           заголовком нотіса, а не текст, який читають потоком. Підняти до
           `text-style-body` означало б зрівняти його з основним контентом
@@ -90,7 +94,7 @@ export function PhotoPrivacyNotice({
           setAcked(true);
           onAck?.();
         }}
-        className={`mt-2 min-h-11 px-3 text-style-caption ${TONE_BUTTON_CLASS[tone]} hover:underline`}
+        className={`mt-2 min-h-11 rounded-lg text-style-label font-semibold underline underline-offset-2 focus-ring ${TONE_BUTTON_CLASS[tone]}`}
       >
         {blockingAnalysis ? copy.ackAnalyze : copy.ack}
       </button>

@@ -41,23 +41,23 @@ export function PantryVariantChoiceSheet({
       panelClassName="nutrition-sheet"
       zIndex={140}
     >
-      <ul className="grid gap-2">
+      <ul className="divide-y divide-line border-y border-line">
         {(choice?.sources ?? []).map((s, i) => (
           <li key={`${s.name}_${s.addedAt ?? ""}_${i}`}>
             <button
               type="button"
               onClick={() => onResolve(s.name)}
-              className="w-full flex items-center justify-between gap-3 px-4 touch-target py-2.5 rounded-2xl border border-line bg-panel text-left hover:border-nutrition/50 hover:bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 transition-colors"
+              className="w-full flex items-center justify-between gap-3 touch-target py-2.5 text-left hover:bg-line/40 focus-ring transition-colors"
             >
               <span className="min-w-0 grid">
-                <span className="min-w-0 text-style-label text-text truncate">
+                <span className="min-w-0 text-style-body font-semibold text-text truncate">
                   {s.name}
                 </span>
-                <span className="min-w-0 text-style-caption text-subtle truncate">
+                <span className="min-w-0 text-style-caption text-muted truncate">
                   {s.addedAt ?? COPY.unknownAddedAt}
                 </span>
               </span>
-              <span className="shrink-0 tabular-nums text-style-caption text-subtle">
+              <span className="shrink-0 tabular-nums text-style-body font-medium text-text">
                 {formatPantryQty(s.qty, s.unit)}
               </span>
             </button>
@@ -67,7 +67,7 @@ export function PantryVariantChoiceSheet({
 
       <Button
         type="button"
-        variant="ghost"
+        variant="outline"
         className="mt-3 w-full h-12 min-h-[44px]"
         onClick={() => onResolve(null)}
       >

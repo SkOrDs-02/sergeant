@@ -7,6 +7,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useWaterTracker } from "../hooks/useWaterTracker";
 import { Card } from "@shared/components/ui/Card";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { WaterHistorySheet } from "./WaterHistorySheet";
 import { messages } from "@shared/i18n/uk";
@@ -80,42 +81,31 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
   }, []);
 
   return (
-    <Card radius="lg">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Icon
-            name="droplet"
-            size="lg"
-            className="text-nutrition"
-            aria-hidden
-          />
-          <div className="min-w-0">
-            <div className="text-style-label text-text leading-none">Вода</div>
-            <div className="text-style-caption text-subtle mt-0.5">
-              {fmt(todayMl)}
-              {goalMl > 0 && ` / ${fmt(goalMl)}`}
-              {done && (
-                <Icon name="check" size="xs" className="ml-1" aria-hidden />
-              )}
-            </div>
-          </div>
-        </div>
-        {/* Вхід у журнал раніше був самим хедером-кнопкою без жодного
-            візуального афордансу — його не знаходили. Тепер це названа
-            кнопка. */}
-        <button
-          type="button"
-          onClick={() => setHistoryOpen(true)}
-          className={cn(
-            "shrink-0 min-h-[44px] px-3 rounded-xl text-style-caption",
-            "text-subtle hover:text-text border border-line transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-          )}
-          aria-label={`${messages.nutrition.waterHistory.openLabel}: ${fmt(todayMl)}${goalMl > 0 ? ` / ${fmt(goalMl)}` : ""}`}
-        >
-          Історія
-        </button>
-      </div>
+    <Card as="section" padding="md">
+      <SectionHeading
+        size="lg"
+        meta={
+          <span className="tabular-nums">
+            {fmt(todayMl)}
+            {goalMl > 0 && ` / ${fmt(goalMl)}`}
+          </span>
+        }
+        action={
+          /* Вхід у журнал раніше був самим хедером-кнопкою без жодного
+             візуального афордансу — його не знаходили. Тепер це названа
+             кнопка. */
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="touch-target rounded-lg text-style-label font-semibold text-text focus-ring"
+            aria-label={`${messages.nutrition.waterHistory.openLabel}: ${fmt(todayMl)}${goalMl > 0 ? ` / ${fmt(goalMl)}` : ""}`}
+          >
+            Історія
+          </button>
+        }
+      >
+        Вода
+      </SectionHeading>
 
       <WaterHistorySheet
         open={historyOpen}
@@ -126,11 +116,11 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
 
       {/* Progress bar */}
       {goalMl > 0 && (
-        <div className="h-2 bg-line/30 rounded-full overflow-hidden mb-3">
+        <div className="mt-2 mb-3 h-[5px] rounded-[3px] bg-line overflow-hidden">
           <div
             className={cn(
-              "h-full rounded-full transition-[width,background-color] duration-slower",
-              done ? "bg-success" : "bg-info",
+              "h-full rounded-[3px] transition-[width] duration-slower",
+              done ? "bg-text" : "bg-chart-nutrition",
             )}
             style={{ width: `${pct}%` }}
           />
@@ -144,11 +134,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             key={ml}
             type="button"
             onClick={() => handleAdd(ml)}
-            className={cn(
-              "h-9 rounded-xl text-style-caption transition-colors focus-ring",
-              "bg-info-soft text-info-soft-fg border border-info/20",
-              "hover:bg-info/20 active:scale-95",
-            )}
+            className="h-9 rounded-[7px] border border-line text-style-label font-semibold text-text tabular-nums hover:bg-line/40 focus-ring"
           >
             +{ml < 1000 ? ml : `${ml / 1000}л`}
           </button>
@@ -183,24 +169,19 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           type="button"
           onClick={handleCustomAdd}
           disabled={!customMl || Number(customMl) <= 0}
-          className={cn(
-            "h-11 px-3 rounded-xl text-style-caption transition-colors shrink-0 whitespace-nowrap focus-ring",
-            "bg-info-soft text-info-soft-fg border border-info/20",
-            "hover:bg-info/20 disabled:opacity-50 active:scale-95",
-          )}
+          className="h-11 px-3 rounded-lg border border-border-strong text-style-label font-semibold text-text shrink-0 whitespace-nowrap hover:bg-line/40 disabled:opacity-50 focus-ring"
         >
-          + Додати
+          Додати
         </button>
         {lastAction && (
           <button
             type="button"
             onClick={handleUndo}
             title={"Відмінити останнє додавання"}
-            className="h-11 px-3 inline-flex items-center gap-1 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap focus-ring"
+            className="h-11 px-3 inline-flex items-center rounded-lg text-style-label text-muted hover:text-text border border-border-strong shrink-0 whitespace-nowrap focus-ring"
             aria-label={`Відмінити останнє додавання (${lastAction.amount} мл)`}
           >
-            <Icon name="arrow-down-left" size="sm" />
-            {lastAction.amount}
+            Відмінити
           </button>
         )}
         {todayMl > 0 && (
@@ -236,10 +217,10 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
               }
             }}
             className={cn(
-              "h-11 px-3 inline-flex items-center justify-center rounded-xl text-style-caption transition-colors border shrink-0 whitespace-nowrap focus-ring",
+              "h-11 px-3 inline-flex items-center justify-center rounded-lg text-style-label border shrink-0 whitespace-nowrap focus-ring",
               resetPending
-                ? "text-danger border-danger/40"
-                : "text-subtle hover:text-danger border-line",
+                ? "text-danger-strong border-danger/40"
+                : "text-muted hover:text-danger-strong border-line",
             )}
             aria-label={
               resetPending

@@ -8,11 +8,14 @@ import {
   ATWATER_KCAL_PER_G,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
-import { cn } from "@shared/lib/ui/cn";
 import {
   calcGoalRangeIssues,
   calcMacroKcalMismatch,
 } from "../lib/dailyPlanValidation";
+
+// Дрібна дія в рядку (мова H): контур 1 px, радіус 7, чорнило.
+const SMALL_ACTION =
+  "inline-flex h-9 items-center rounded-[7px] border border-line px-3 text-style-label font-semibold text-text hover:bg-line/40 focus-ring disabled:opacity-50";
 
 interface MacroKcalWarningProps {
   prefs: NutritionPrefs;
@@ -32,48 +35,36 @@ export function MacroKcalWarning({
   const absDiff = Math.abs(diff);
   const overshoot = kind === "over";
 
-  const tone = overshoot
-    ? "border-danger/40 bg-danger/10"
-    : "border-warning/40 bg-warning/10";
-
   return (
-    <div
+    <Notice
+      tone="ink"
       role="status"
       aria-live="polite"
-      className={cn(
-        "mt-3 rounded-xl border px-3 py-2.5 text-xs space-y-2",
-        tone,
-      )}
+      className="text-style-caption space-y-2"
       data-testid="macro-kcal-warning"
     >
-      <div className="flex items-start gap-2">
-        <p className="text-text leading-snug">
-          {overshoot ? (
-            <>
-              Сума макро виходить на <strong>{calc} ккал</strong>, це на{" "}
-              <strong>{absDiff} ккал</strong> більше за ціль{" "}
-              <strong>{target} ккал</strong>. 1 г білка = 4 ккал, 1 г жиру = 9
-              ккал, 1 г вуглеводів = 4 ккал.
-            </>
-          ) : (
-            <>
-              Сума макро дає лише <strong>{calc} ккал</strong>, це на{" "}
-              <strong>{absDiff} ккал</strong> менше за ціль{" "}
-              <strong>{target} ккал</strong>.
-            </>
-          )}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2 pl-5">
+      <p className="leading-snug">
+        {overshoot ? (
+          <>
+            Сума макро виходить на <strong>{calc} ккал</strong>, це на{" "}
+            <strong>{absDiff} ккал</strong> більше за ціль{" "}
+            <strong>{target} ккал</strong>. 1 г білка = 4 ккал, 1 г жиру = 9
+            ккал, 1 г вуглеводів = 4 ккал.
+          </>
+        ) : (
+          <>
+            Сума макро дає лише <strong>{calc} ккал</strong>, це на{" "}
+            <strong>{absDiff} ккал</strong> менше за ціль{" "}
+            <strong>{target} ккал</strong>.
+          </>
+        )}
+      </p>
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={busy}
           onClick={() => setPrefs((p) => ({ ...p, dailyTargetKcal: calc }))}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
-            "border-line/60 bg-bg/60 text-text hover:bg-panelHi",
-            "disabled:opacity-50 transition-colors",
-          )}
+          className={SMALL_ACTION}
         >
           Перерахувати ккал → {calc}
         </button>
@@ -88,16 +79,12 @@ export function MacroKcalWarning({
               dailyTargetCarbs_g: null,
             }))
           }
-          className={cn(
-            "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
-            "border-line bg-panel text-subtle hover:text-text hover:bg-panelHi",
-            "disabled:opacity-50 transition-colors",
-          )}
+          className={SMALL_ACTION}
         >
           Скинути макро
         </button>
       </div>
-    </div>
+    </Notice>
   );
 }
 
@@ -152,17 +139,15 @@ export function MissingMacrosHint({
       tone="ink"
       role="status"
       aria-live="polite"
-      className="mt-3 text-style-caption space-y-2"
+      className="text-style-caption space-y-2"
       data-testid="missing-macros-hint"
     >
-      <div className="flex items-start gap-2">
-        <p className="text-text leading-snug">
-          Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
-          що тобі важливо: білок, жир чи вуглеводи. Підстав середні стартові
-          значення й відредагуй під себе.
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2 pl-5">
+      <p className="leading-snug">
+        Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
+        що тобі важливо: білок, жир чи вуглеводи. Підстав середні стартові
+        значення й відредагуй під себе.
+      </p>
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={busy}
@@ -174,11 +159,7 @@ export function MissingMacrosHint({
               dailyTargetCarbs_g: suggestedCarbs,
             }))
           }
-          className={cn(
-            "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
-            "border-line/60 bg-bg/60 text-text hover:bg-panelHi",
-            "disabled:opacity-50 transition-colors",
-          )}
+          className={SMALL_ACTION}
         >
           Підставити середні · Б{suggestedProtein} · Ж{suggestedFat} · В
           {suggestedCarbs}
@@ -196,16 +177,14 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
       tone="ink"
       role="status"
       aria-live="polite"
-      className="mt-3 text-style-caption space-y-1"
+      className="text-style-caption space-y-1"
       data-testid="goal-range-warning"
     >
-      <div className="flex items-start gap-2">
-        <ul className="text-text leading-snug space-y-0.5 list-disc pl-4">
-          {issues.map((issue) => (
-            <li key={`${issue.field}-${issue.kind}`}>{issue.message}</li>
-          ))}
-        </ul>
-      </div>
+      <ul className="list-disc space-y-0.5 pl-4 leading-snug">
+        {issues.map((issue) => (
+          <li key={`${issue.field}-${issue.kind}`}>{issue.message}</li>
+        ))}
+      </ul>
     </Notice>
   );
 }

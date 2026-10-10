@@ -73,16 +73,18 @@ export function DayStrip({ meals, className }: DayStripProps) {
   return (
     <section
       className={cn(
-        "rounded-xl border border-nutrition-soft-border bg-nutrition-soft px-4 pt-3 pb-2.5",
+        // Мова H.2: єдина тинтована поверхня екрана журналу. Текст і числа
+        // чорнилом, у hue лише ярлик і стовпчики.
+        "rounded-xl bg-nutrition-tint px-4 pt-3 pb-3 text-text",
         className,
       )}
       aria-label={copy.ariaLabel}
     >
       <div className="flex items-baseline justify-between gap-3 mb-2.5">
-        <h3 className="text-style-caption font-semibold text-nutrition-soft-fg flex items-center gap-2 before:content-[''] before:w-0.5 before:h-3 before:shrink-0 before:rounded-full before:bg-current">
+        <h3 className="text-style-overline text-nutrition-tint-label">
           {copy.heading}
         </h3>
-        <p className="text-style-caption text-nutrition-soft-fg tabular-nums">
+        <p className="text-style-caption text-text tabular-nums">
           {copy.peakPrefix} {peakKcal} {copy.kcalUnit}
         </p>
       </div>
@@ -95,7 +97,7 @@ export function DayStrip({ meals, className }: DayStripProps) {
           гребені Фініка. */}
       <div
         aria-hidden
-        className="grid grid-cols-[repeat(var(--strip-hours),minmax(0,1fr))] gap-px items-end h-20 text-nutrition"
+        className="grid grid-cols-[repeat(var(--strip-hours),minmax(0,1fr))] gap-px items-end h-20 text-chart-nutrition"
         style={{ "--strip-hours": HOURS_IN_DAY } as CSSProperties}
       >
         {hours.map((h) => {
@@ -108,12 +110,12 @@ export function DayStrip({ meals, className }: DayStripProps) {
           return (
             <div
               key={h.hour}
-              className="rounded-t-[2px] bg-current overflow-hidden"
+              className="rounded-t-[3px] bg-current overflow-hidden"
               style={{ height: `${pct}%` }}
             >
               {guessPct > 0 && (
                 <div
-                  className="w-full bg-nutrition-soft"
+                  className="w-full bg-nutrition-tint"
                   style={{
                     height: `${guessPct}%`,
                     backgroundImage: ESTIMATE_HATCH,
@@ -130,14 +132,14 @@ export function DayStrip({ meals, className }: DayStripProps) {
           якій частині доби пік. */}
       <div
         aria-hidden
-        className="flex justify-between mt-1 text-style-caption text-nutrition-soft-fg/70 tabular-nums"
+        className="flex justify-between mt-1 text-style-caption text-text tabular-nums"
       >
         <span>0</span>
         <span>12</span>
         <span>23</span>
       </div>
 
-      <p className="mt-2 text-style-caption text-nutrition-soft-fg/80">
+      <p className="mt-2 text-style-caption text-text">
         {/* Частка здогадок показується ЗАВЖДИ, а не від порога 50%
             (рішення власника 2026-08-06). Поріг
             `ESTIMATED_KCAL_SHARE_THRESHOLD` лишається керувати ТОНОМ

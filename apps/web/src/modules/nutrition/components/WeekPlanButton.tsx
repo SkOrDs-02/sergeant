@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/ui/cn";
+import { Button } from "@shared/components/ui/Button";
 import { useLocale } from "@shared/i18n/useLocale";
 import { PaywallModal, useFeatureGate } from "../../../core/billing";
 
@@ -23,20 +23,17 @@ export function WeekPlanButton({
   const { messages } = useLocale();
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        className="w-full"
         onClick={() => {
           if (gate.requireAccess()) void onClick();
         }}
         disabled={disabled}
-        className={cn(
-          "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-          "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-          "focus-ring",
-        )}
       >
         {busy ? "…" : "План на тиждень"}
-      </button>
+      </Button>
       {gate.paywallOpen && (
         <PaywallModal
           open

@@ -153,7 +153,7 @@ describe("SavedSection — порції: макроси на одну порці
   it("при множнику 1 підсумок не дублює підрядок, а кнопка без ×1", () => {
     renderSaved({});
     expect(screen.queryByText(/усього/)).toBeNull();
-    expect(screen.getByRole("button", { name: "+ У журнал" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "У журнал" })).toBeTruthy();
   });
 
   it("множник 2 одразу показує підсумок на 2 порції", () => {
@@ -180,9 +180,7 @@ describe("SavedSection — порції: макроси на одну порці
 
   it("кнопка журналу показує множник, коли він ≠ 1 (десяткова кома)", () => {
     renderSaved({ s1: "1.5" });
-    expect(
-      screen.getByRole("button", { name: "+ У журнал ×1,5" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "У журнал ×1,5" })).toBeTruthy();
     expect(screen.getByText(/→ усього ≈ 675 ккал/)).toBeTruthy();
   });
 
@@ -190,7 +188,7 @@ describe("SavedSection — порції: макроси на одну порці
     for (const raw of ["abc", "0", ""]) {
       const { unmount } = renderSaved({ s1: raw });
       expect(screen.queryByText(/усього/)).toBeNull();
-      expect(screen.getByRole("button", { name: "+ У журнал" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "У журнал" })).toBeTruthy();
       unmount();
     }
   });

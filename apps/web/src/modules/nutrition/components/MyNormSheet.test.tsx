@@ -71,7 +71,7 @@ afterEach(() => vi.clearAllMocks());
 describe("MyNormSheet", () => {
   it("показує норму з розкладом формули: 1590 ккал, сидячий x 1,2, дефіцит 550", () => {
     renderSheet();
-    fireEvent.click(screen.getByRole("tab", { name: "Схуднення" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Схуднення" }));
 
     const body = text(document.body);
     expect(body).toContain("1 590 ккал на день");
@@ -84,7 +84,7 @@ describe("MyNormSheet", () => {
     vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(false);
     const onClose = vi.fn();
     renderSheet(onClose);
-    fireEvent.click(screen.getByRole("tab", { name: "Схуднення" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Схуднення" }));
     fireEvent.change(screen.getByLabelText("Поточна вага (кг)"), {
       target: { value: "79" },
     });
@@ -107,7 +107,7 @@ describe("MyNormSheet", () => {
 
   it("цільова вага дає орієнтовну дату цілі", () => {
     renderSheet();
-    fireEvent.click(screen.getByRole("tab", { name: "Схуднення" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Схуднення" }));
     fireEvent.change(screen.getByLabelText(/Цільова вага/u), {
       target: { value: "75" },
     });

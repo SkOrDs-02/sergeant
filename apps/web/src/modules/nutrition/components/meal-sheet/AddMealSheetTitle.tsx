@@ -39,7 +39,7 @@ export function AddMealSheetTitle({
         <button
           type="button"
           onClick={onBacktrack}
-          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
+          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-text hover:bg-line/40 focus-ring"
           aria-label="Назад до вибору джерела"
         >
           <Icon name="chevron-left" size="lg" />

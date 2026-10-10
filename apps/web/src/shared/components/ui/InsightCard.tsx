@@ -9,32 +9,18 @@
  * `useInsightDismissal()` hook що зберігає dismissals у localStorage
  * (`sergeant.v2.insights.dismissed`).
  *
- * Структура:
- *   [✨ amber icon] [Title \n Subtitle (button → activate)] [→ (button → dismiss)]
+ * Структура (мова H, redesign v3 PR4):
+ *   [Title 
+ Subtitle (button → activate)] [Сержант (icon-button)] [× (dismiss)]
  *
- * ## A11y refactor vs. handoff JSX
+ * Нейтральна панель `bg-panel` без тіні, без бурштинового гліфа в
+ * тонованому квадраті й без темної плитки `ink-strong`: «від Сержанта»
+ * несе кнопка-іконка дії, а не забарвлення картки. Обидві теми беруть ті
+ * самі токени (панель, чорнило, другий сірий), тож окремої темної гілки
+ * немає.
  *
- * Handoff JSX був nested-button: зовнішній `<div>` wrapping і activate
- * button + dismiss button — це OK, але це не group. Sergeant wraps в
- * `<div role="group" aria-labelledby="…">` так що screen readers
- * announce'ять обидві дії як повʼязані.
- *
- * ## Token discipline (Hard Rule #11 — no raw palette in className)
- *
- * Handoff пропонував `bg-em-900/95` (raw em-palette + opacity modifier).
- * У Sergeant це violation #11. Замість того використовуємо `bg-ink-strong`
- * — semantic token що мапиться на emerald-900 в light / white в dark /
- * pure #000 в HC (via PR-1). У темній темі картку перевизначено на
- * `bg-panelHi` з контуром: біла плитка ставала найяскравішою плямою екрана,
- * яскравішою за hero й головну дію (критика екранів, хвиля 3). Amber icon уживає `bg-celebration/20` (2026-08: коментар раніше
- * помилково називав неіснуючий `bg-celebration-soft` token).
- *
- * ## Module context
- *
- * `module` prop керує decorative module tint (через accent border) — але
- * primary visual identity лишається AI/celebration (amber + ink-strong),
- * не module accent. Це навмисно: insight reads as "from Sergeant", not
- * "from Finyk/Fizruk/...".
+ * Розмітка: `<div role="group" aria-labelledby="…">` обгортає три
+ * незалежні кнопки, тож скрінрідер оголошує їх як повʼязані.
  *
  * ## Телеметрія петель цінності (Хвиля 2)
  *
@@ -230,49 +216,25 @@ export function InsightCard({
       role="group"
       aria-labelledby={titleId}
       className={cn(
-        // Push-card chrome: ink-strong solid у світлій темі. У темній
-        // ink-strong стає білим, тож картку опускаємо на підняту панель із
-        // контуром; сигнал «від Сержанта» несуть бурштинові гліфи.
-        "mx-3.5 mt-2 px-3 py-2.5 rounded-3xl",
-        "bg-ink-strong text-bg-base",
-        "dark:bg-panelHi dark:text-text dark:border dark:border-line",
-        "flex items-center gap-3 shadow-e3",
+        // Мова H (redesign v3): нейтральна панель без тіні й без гліфа
+        // в тонованому квадраті; «від Сержанта» несе кнопка-іконка дії.
+        "flex items-center gap-2 rounded-xl bg-panel py-2 pl-4 pr-2",
         className,
       )}
     >
-      {/* Amber sergeant glyph — celebration-tier visual signal so the card
-          reads as "AI noticed something" without competing з module accent. */}
-      <span
-        aria-hidden
-        className={cn(
-          "w-8 h-8 rounded-xl shrink-0",
-          "flex items-center justify-center",
-          "bg-celebration/20 text-celebration",
-        )}
-      >
-        <Icon name="sergeant" size="md" strokeWidth={2} />
-      </span>
-
       {/* Activate button — title + subtitle. Takes the remaining width. */}
       <button
         type="button"
         onClick={handleActivate}
-        className={cn(
-          "flex-1 text-left min-w-0",
-          "focus:outline-none focus-visible:rounded-xl",
-          "focus-visible:ring-2 focus-visible:ring-celebration/45",
-          "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-        )}
+        className="flex-1 min-w-0 rounded-lg py-1 text-left focus-ring"
       >
         <div
           id={titleId}
-          className="text-style-label font-extrabold truncate text-bg-base dark:text-text"
+          className="text-style-body font-semibold truncate text-text"
         >
           {title}
         </div>
-        <div className="text-style-caption opacity-70 truncate text-bg-base dark:text-text">
-          {subtitle}
-        </div>
+        <div className="text-style-label truncate text-muted">{subtitle}</div>
       </button>
 
       {/* Чип «Спитати Сержанта» — окремий, праворуч перед dismiss (тап по
@@ -301,13 +263,10 @@ export function InsightCard({
             askAiDisabled ? "Ліміт запитів до Сержанта на сьогодні" : undefined
           }
           className={cn(
-            "shrink-0 touch-target inline-flex items-center justify-center gap-1 px-2 rounded-xl",
-            "text-style-caption font-semibold",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-soft-fg/45",
-            "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+            "shrink-0 touch-target inline-flex h-9 w-9 items-center justify-center rounded-[7px] border border-line focus-ring",
             askAiDisabled
-              ? "bg-white/10 text-bg-base/40 dark:text-muted cursor-not-allowed"
-              : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
+              ? "text-subtle cursor-not-allowed"
+              : "text-text hover:bg-line/40",
           )}
         >
           <Icon name="sergeant" size="sm" strokeWidth={2} aria-hidden />
@@ -319,12 +278,7 @@ export function InsightCard({
         type="button"
         onClick={handleDismiss}
         aria-label="Закрити пропозицію"
-        className={cn(
-          "text-style-title text-celebration shrink-0 px-2 -my-1",
-          "hover:opacity-80 transition-opacity",
-          "focus:outline-none focus-visible:rounded-xl",
-          "focus-visible:ring-2 focus-visible:ring-celebration/45",
-        )}
+        className="touch-target inline-flex shrink-0 items-center justify-center rounded-lg text-style-label text-muted hover:text-text focus-ring"
       >
         {/* SLOP-1 (аудит 2026-09): без явної мітки тут стояв текстовий гліф
             «→» — «гліф у слоті іконки» з анти-слоп стратегії §3.2. Тепер

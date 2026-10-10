@@ -56,13 +56,13 @@ export function ManualEntryTab({
     <div className="space-y-3">
       {/* Одиниця — головне рішення цієї вкладки, тому стоїть НАД полями. */}
       <div>
-        <SectionHeading as="div" size="xs" variant="nutrition" className="mb-1">
+        <SectionHeading as="div" size="xs" className="mb-1">
           Звідки числа
         </SectionHeading>
         <div
           role="radiogroup"
           aria-label="Одиниця КБЖВ"
-          className="grid grid-cols-2 gap-1 rounded-2xl bg-panelHi p-1"
+          className="flex flex-col divide-y divide-line border-y border-line"
         >
           {MODES.map((m) => {
             const isActive = basis === m.id;
@@ -73,24 +73,31 @@ export function ManualEntryTab({
                 role="radio"
                 aria-checked={isActive}
                 onClick={() => setBasis(m.id)}
-                className={cn(
-                  "min-h-[44px] rounded-xl px-3 py-2 text-left",
-                  "transition-[background-color,color] focus-visible:outline-none",
-                  "focus-visible:ring-2 focus-visible:ring-nutrition/60",
-                  isActive
-                    ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
-                    : "text-muted hover:text-text",
-                )}
+                className="flex min-h-[44px] items-center justify-between gap-3 py-2 text-left focus-ring"
               >
-                <span className="block text-style-label">{m.title}</span>
-                <span
-                  className={cn(
-                    "block text-style-caption font-normal",
-                    isActive ? "text-white/80" : "text-subtle",
-                  )}
-                >
-                  {m.hint}
+                <span className="min-w-0">
+                  <span
+                    className={cn(
+                      "block text-style-body",
+                      isActive
+                        ? "font-semibold text-text"
+                        : "font-medium text-muted",
+                    )}
+                  >
+                    {m.title}
+                  </span>
+                  <span className="block text-style-label text-muted">
+                    {m.hint}
+                  </span>
                 </span>
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="shrink-0 text-style-label text-text"
+                  >
+                    Обрано
+                  </span>
+                )}
               </button>
             );
           })}
@@ -123,7 +130,6 @@ export function ManualEntryTab({
           <Button
             type="button"
             variant="solid"
-            tone="nutrition"
 
             className="w-full min-h-[44px]"
             onClick={onWholeMeal}

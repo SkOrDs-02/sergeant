@@ -81,7 +81,7 @@ function ErrorBanner({
           <button
             type="button"
             onClick={onRetry}
-            className="mt-1.5 touch-target text-style-caption text-nutrition-strong dark:text-nutrition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 rounded-lg"
+            className="mt-1.5 touch-target text-style-label font-semibold text-text underline underline-offset-2 focus-ring rounded-lg"
           >
             {COPY.retryCta}
           </button>
@@ -107,7 +107,7 @@ function QtyStepper({
         aria-label={COPY.decreaseQty}
         disabled={disabled || qty <= 1}
         onClick={() => onChange(qty - 1)}
-        className="w-9 h-9 min-h-[44px] min-w-[44px] rounded-xl border border-line flex items-center justify-center text-text hover:bg-panelHi disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
+        className="w-9 h-9 min-h-[44px] min-w-[44px] rounded-lg border border-border-strong flex items-center justify-center text-text hover:bg-line/40 disabled:opacity-40 transition-colors focus-ring"
       >
         <Icon name="minus" size="sm" aria-hidden />
       </button>
@@ -119,7 +119,7 @@ function QtyStepper({
         aria-label={COPY.increaseQty}
         disabled={disabled}
         onClick={() => onChange(qty + 1)}
-        className="w-9 h-9 min-h-[44px] min-w-[44px] rounded-xl border border-line flex items-center justify-center text-text hover:bg-panelHi disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
+        className="w-9 h-9 min-h-[44px] min-w-[44px] rounded-lg border border-border-strong flex items-center justify-center text-text hover:bg-line/40 disabled:opacity-40 transition-colors focus-ring"
       >
         <Icon name="plus" size="sm" aria-hidden />
       </button>
@@ -146,7 +146,7 @@ function MatchPicker({
         value={selectedLagerId ?? ""}
         disabled={disabled}
         onChange={(e) => onSelect(e.target.value)}
-        className="min-h-[44px] rounded-lg border border-line bg-bg px-2 text-style-caption text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 disabled:opacity-50"
+        className="input-focus-nutrition min-h-[44px] rounded-lg border border-control bg-panelHi px-2 text-style-caption text-text disabled:opacity-50"
       >
         {matches.map((m) => (
           <option key={m.lagerId} value={m.lagerId}>
@@ -178,7 +178,7 @@ function CartRow({
 }) {
   if (row.unmatched) {
     return (
-      <li className="flex items-start gap-2.5 px-1 py-2 rounded-xl">
+      <li className="flex items-start gap-2.5 py-2">
         <div className="min-w-0 flex-1">
           <div className="text-style-label text-text truncate">{row.query}</div>
           <div className="text-style-caption text-subtle">{COPY.unmatched}</div>
@@ -190,7 +190,7 @@ function CartRow({
   const selected = row.matches.find((m) => m.lagerId === row.selectedLagerId);
 
   return (
-    <li className="grid gap-2 px-1 py-2 rounded-xl hover:bg-panelHi/50 transition-colors">
+    <li className="grid gap-2 py-2">
       <div className="flex items-center gap-2.5">
         <label className="flex items-center gap-2.5 min-w-0 flex-1 touch-target cursor-pointer">
           <input
@@ -198,7 +198,7 @@ function CartRow({
             checked={row.checked}
             disabled={disabled}
             onChange={() => onToggle(index)}
-            className="shrink-0 w-5 h-5 accent-nutrition"
+            className="shrink-0 w-5 h-5 accent-text"
           />
           {/* `min-w-0` на кожній дитині grid — трек інакше має
               `min-width: auto` і `truncate` не спрацьовує (та сама пастка,
@@ -206,7 +206,7 @@ function CartRow({
           <span className="min-w-0 flex-1 grid">
             <span
               className={cn(
-                "min-w-0 text-style-label text-text truncate",
+                "min-w-0 text-style-body font-semibold text-text truncate",
                 !row.checked && "opacity-50",
               )}
             >
@@ -225,7 +225,7 @@ function CartRow({
                     <s className="opacity-60">
                       <Money amount={selected.oldPriceKop / 100} kopecks />
                     </s>{" "}
-                    <span className="text-success font-semibold">
+                    <span className="text-text font-semibold">
                       −
                       {Math.round(
                         (1 - selected.priceKop / selected.oldPriceKop) * 100,
@@ -237,7 +237,7 @@ function CartRow({
                 {" / "}
                 {selected.displayRatio ?? selected.unit}
                 {!selected.available && (
-                  <span className="ml-1 text-warning font-semibold">
+                  <span className="ml-1 text-text font-semibold">
                     {COPY.outOfStock}
                   </span>
                 )}
@@ -283,11 +283,11 @@ function SuccessView({
       <div className="flex items-center gap-2.5">
         <p className="text-style-label text-text">{COPY.successTitle}</p>
       </div>
-      <ul className="grid gap-1 rounded-2xl border border-line bg-bg p-3">
+      <ul className="divide-y divide-line border-y border-line">
         {cart.items.map((item) => (
           <li
             key={item.name}
-            className="flex items-center justify-between gap-3 text-style-caption text-text"
+            className="flex items-center justify-between gap-3 py-2 text-style-body text-text"
           >
             <span className="min-w-0 truncate">
               {item.name} × {item.quantity}
@@ -311,19 +311,12 @@ function SuccessView({
           href={cart.cartUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="min-h-[44px] rounded-xl border border-nutrition/40 text-nutrition-strong dark:text-nutrition flex items-center justify-center gap-1.5 text-style-label hover:bg-nutrition/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
+          className="min-h-[44px] rounded-lg border border-border-strong text-text flex items-center justify-center text-style-label font-semibold hover:bg-line/40 transition-colors focus-ring"
         >
-          <Icon name="link" size={15} aria-hidden />
           {COPY.successCartLink}
         </a>
       )}
-      <Button
-        type="button"
-        variant="solid"
-        tone="nutrition"
-        className="h-12 shadow-none hover:shadow-none dark:shadow-none"
-        onClick={onClose}
-      >
+      <Button type="button" variant="solid" className="h-12" onClick={onClose}>
         {COPY.closeCta}
       </Button>
       {/* Помилився списком — прибрати все одним тапом дешевше, ніж знімати
@@ -342,7 +335,7 @@ function SuccessView({
           type="button"
           variant="ghost"
           size="sm"
-          className="min-h-[44px] text-danger-strong dark:text-danger hover:text-danger"
+          className="min-h-[44px] text-danger-strong hover:text-danger-strong"
           onClick={onClear}
           disabled={clearPending}
           loading={clearPending}
@@ -414,8 +407,7 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
             <Button
               type="button"
               variant="solid"
-              tone="nutrition"
-              className="flex-1 h-12 shadow-none hover:shadow-none dark:shadow-none"
+              className="flex-1 h-12"
               disabled={busy || checkedCount === 0}
               loading={busy}
               onClick={apply}
@@ -463,7 +455,7 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
           )}
           {!isLoading && !previewErrorKind && rows.length > 0 && (
             <>
-              <ul className="grid gap-0.5">
+              <ul className="divide-y divide-line">
                 {rows.map((row, i) => (
                   <CartRow
                     key={`${i}:${row.query}`}
