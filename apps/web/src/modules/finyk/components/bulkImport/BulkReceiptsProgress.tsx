@@ -13,7 +13,7 @@
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Select } from "@shared/components/ui/Select";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { Money } from "@shared/components/ui/Money";
@@ -78,7 +78,6 @@ function ItemRow({
   const canEdit = item.status === "drafted";
   const unrecognized =
     canEdit && item.draft ? draftLooksUnrecognized(item.draft) : false;
-  const isDone = item.status === "saved" || item.status === "already-exists";
   const isError = item.status === "fetch-error" || item.status === "save-error";
   const expenseCategories = expenseCustomCategories(customCategories);
   const categoryDisplay: Readonly<Record<string, { label: string }>> = {
@@ -117,20 +116,6 @@ function ItemRow({
           <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center">
             {item.status === "fetching" || item.status === "saving" ? (
               <Spinner size="xs" />
-            ) : isDone ? (
-              <Icon
-                name="check-circle"
-                size="md"
-                className="text-success-strong dark:text-success"
-                aria-hidden
-              />
-            ) : isError ? (
-              <Icon
-                name="x-circle"
-                size="md"
-                className="text-danger-strong dark:text-danger"
-                aria-hidden
-              />
             ) : null}
           </span>
         )}
@@ -223,7 +208,7 @@ export function BulkReceiptsProgress({
 
   return (
     <div className="space-y-3">
-      <ul className="divide-y divide-line rounded-2xl border border-line">
+      <ul className="divide-y divide-line rounded-xl border border-line">
         {items.map((item) => (
           <ItemRow
             key={item.id}
@@ -240,12 +225,12 @@ export function BulkReceiptsProgress({
       {!allSettled ? (
         <Button
           variant="solid"
-          tone="finyk"
           className="w-full"
 
           loading={isSaving}
           disabled={isProcessing || readyCount === 0}
           onClick={onSaveAll}
+          tone="ink"
         >
           {isProcessing
             ? "Розпізнаю чеки…"

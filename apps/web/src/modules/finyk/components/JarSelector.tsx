@@ -26,7 +26,7 @@ function JarSelectorComponent({
   return (
     <select
       className={cn(
-        "input-focus-finyk w-full h-10 rounded-xl border border-line bg-bg px-3 text-sm text-text",
+        "focus-ring w-full h-10 rounded-xl border border-line bg-bg px-3 text-style-label text-text",
         className,
       )}
       aria-label={messages.finyk.jarSelector.ariaLabel}

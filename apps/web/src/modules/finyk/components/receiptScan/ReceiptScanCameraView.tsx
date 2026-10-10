@@ -23,7 +23,7 @@ export function ReceiptScanCameraView({
 
   return (
     <div className="space-y-2">
-      <div className="relative overflow-hidden rounded-2xl border border-line bg-black">
+      <div className="relative overflow-hidden rounded-xl border border-line bg-black">
         <video
           ref={videoRef}
           className="aspect-square w-full object-cover"
@@ -32,7 +32,7 @@ export function ReceiptScanCameraView({
           autoPlay
         />
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="aspect-square w-2/3 rounded-xl border-2 border-finyk/80" />
+          <div className="aspect-square w-2/3 rounded-xl border-2 border-line" />
         </div>
       </div>
       {status ? (

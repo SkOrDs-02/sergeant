@@ -254,7 +254,7 @@ describe("FinykApp — real page routing via the bottom nav", () => {
     renderApp();
     await userEvent.click(navButton("Планування"));
     expect(
-      await screen.findByRole("heading", { name: "Бюджети" }),
+      await screen.findByRole("heading", { name: "Планування" }),
     ).toBeInTheDocument();
   });
 

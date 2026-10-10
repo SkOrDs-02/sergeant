@@ -41,7 +41,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
@@ -352,11 +352,11 @@ export function ReceiptScanSheet({
               </Button>
               <Button
                 variant="solid"
-                tone="finyk"
                 className="flex-1"
 
                 onClick={() => void handleSave()}
                 loading={isSaving}
+                tone="ink"
               >
                 Зберегти
               </Button>
@@ -365,10 +365,10 @@ export function ReceiptScanSheet({
         ) : editingItem ? (
           <Button
             variant="solid"
-            tone="finyk"
             className="w-full"
 
             onClick={() => setEditingItemId(null)}
+            tone="ink"
           >
             Готово
           </Button>
@@ -407,15 +407,14 @@ export function ReceiptScanSheet({
           {DPS_QR_SCAN_ENABLED && (
             <Button
               variant="solid"
-              tone="finyk"
               className="w-full"
 
               onClick={() => {
                 setFlowError(null);
                 setStage("camera");
               }}
+              tone="ink"
             >
-              <Icon name="scanner" size="md" aria-hidden />
               Скан QR камерою
             </Button>
           )}
@@ -428,7 +427,6 @@ export function ReceiptScanSheet({
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Icon name="camera" size="md" aria-hidden />
             Завантажити фото
           </Button>
           {/* AI-NOTE: кегль тут навмисний — це підказка ПІД контролом, один
@@ -458,7 +456,7 @@ export function ReceiptScanSheet({
             {draftLooksUnrecognized(editingItem.draft) && (
               <p
                 role="status"
-                className="rounded-xl border border-line bg-panelHi p-2.5 text-style-body text-text"
+                className="rounded-xl border border-line bg-panel p-2.5 text-style-body text-text"
               >
                 Схоже, на фото не чек: розпізнати нічого не вдалося. Заповни
                 поля вручну, і чек повернеться у вибрані.
@@ -482,7 +480,7 @@ export function ReceiptScanSheet({
             {batchCapNote && (
               <p
                 role="status"
-                className="rounded-xl border border-line bg-panelHi p-2.5 text-style-body text-text"
+                className="rounded-xl border border-line bg-panel p-2.5 text-style-body text-text"
               >
                 {batchCapNote}
               </p>
@@ -531,7 +529,7 @@ export function ReceiptScanSheet({
           {draftLooksUnrecognized(draft) && (
             <p
               role="status"
-              className="rounded-xl border border-line bg-panelHi p-2.5 text-style-body text-text"
+              className="rounded-xl border border-line bg-panel p-2.5 text-style-body text-text"
             >
               Схоже, на фото не чек: розпізнати нічого не вдалося. Спробуй
               чіткіше фото чека або заповни поля вручну.

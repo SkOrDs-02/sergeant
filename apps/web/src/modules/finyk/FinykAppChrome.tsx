@@ -62,7 +62,7 @@ export function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
       {/* Іконка — другий, не-кольоровий канал стану: сама крапка одна на
           вузьких екранах (текст ховається `hidden sm:inline`) не дає зрячим
           людям розрізнити 5 станів без кольору. */}
-      <Icon name={syncTone.icon} size="xs" className="shrink-0" />
+
       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
       <span className="hidden sm:inline">{syncTone.text}</span>
     </div>
@@ -111,7 +111,7 @@ export function AuthErrorBanner({
             <button
               type="button"
               onClick={onOpenAuth}
-              className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
+              className="touch-target focus-ring rounded-lg text-style-caption text-text mt-2 hover:underline"
             >
               Увійти
             </button>
@@ -120,7 +120,7 @@ export function AuthErrorBanner({
               <button
                 type="button"
                 onClick={onOpenSettings}
-                className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
+                className="touch-target focus-ring rounded-lg text-style-caption text-text mt-2 hover:underline"
               >
                 Оновити токен у Налаштуваннях
               </button>
@@ -130,7 +130,7 @@ export function AuthErrorBanner({
         <button
           type="button"
           onClick={() => setAuthError("")}
-          className="touch-target focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
+          className="touch-target focus-ring rounded-lg text-muted hover:text-text transition-colors shrink-0"
           aria-label="Закрити"
         >
           <Icon name="close" size="md" aria-hidden />

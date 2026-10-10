@@ -69,7 +69,7 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
           <button
             type="button"
             onClick={() => void query.refetch()}
-            className="mt-1 touch-target text-style-caption text-primary hover:underline"
+            className="mt-1 touch-target text-style-caption text-text hover:underline"
           >
             Спробуй ще раз
           </button>

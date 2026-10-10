@@ -61,6 +61,8 @@ export function ManualExpenseFooter({
           onClick={onSubmit}
           disabled={isSubmitting}
           loading={storageLoading}
+          tone="ink"
+          variant="solid"
         >
           {isEditing ? copy.save : createLabel}
         </Button>

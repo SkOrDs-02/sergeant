@@ -2,7 +2,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
@@ -79,32 +79,6 @@ export function FinykLoginScreen({
     <div className="min-h-dvh flex items-center justify-center p-5 bg-bg safe-area-pt-pb">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div
-            className={cn(
-              "w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-4",
-              // Акцент Фініка, а не нейтральний бренд хабу: екран живе
-              // всередині модуля й має нести його колір.
-              "bg-finyk/10 border border-finyk/25",
-              "shadow-card",
-            )}
-          >
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-finyk-strong dark:text-finyk"
-              aria-hidden
-            >
-              <rect x="3" y="8" width="18" height="12" rx="2" />
-              <path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-            </svg>
-          </div>
           <h1 className="text-style-headline text-text">ФІНІК</h1>
           <p className="text-style-label text-muted mt-1">
             Персональний фінансовий менеджер
@@ -115,7 +89,7 @@ export function FinykLoginScreen({
           onSubmit={submit}
           noValidate
           className={cn(
-            "bg-panel/95 backdrop-blur-xl border rounded-3xl p-6 shadow-float",
+            "bg-panel  border rounded-xl p-6",
             "border-line dark:border-line",
           )}
         >
@@ -248,7 +222,7 @@ export function FinykLoginScreen({
 
           {authError &&
             (authError === messages.finyk.monoConnectErrors.accountRequired ? (
-              <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+              <div className="mt-3 text-style-label bg-panel border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
                 <p className="font-semibold text-text">Потрібен вхід</p>
                 <p className="text-style-caption text-muted">{authError}</p>
                 {onOpenAuth && (
@@ -263,7 +237,7 @@ export function FinykLoginScreen({
                 )}
               </div>
             ) : (
-              <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+              <div className="mt-3 text-style-label bg-panel border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
                 <p className="font-semibold text-text">
                   Токен потребує оновлення
                 </p>
@@ -276,7 +250,7 @@ export function FinykLoginScreen({
           {/* Server-level error (from useApiForm) or parent-provided error */}
           {(serverError || (error && !authError)) && (
             <p
-              className="mt-3 text-style-label text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2"
+              className="mt-3 text-style-label text-danger-strong dark:text-danger bg-panel rounded-xl px-3 py-2"
               role="alert"
             >
               {serverError ?? error}
@@ -285,16 +259,10 @@ export function FinykLoginScreen({
 
           <Button
             type="submit"
-            className={cn(
-              "mt-4 w-full h-12 min-h-[48px] text-base border-0",
-              "bg-linear-to-r from-brand-strong to-brand-800",
-              "hover:from-brand-800 hover:to-brand-800",
-              "text-white font-semibold",
-              "shadow-md hover:shadow-glow",
-              "transition-[background-color,box-shadow,opacity,transform] duration-base",
-              "active:scale-[0.98]",
-            )}
+            className="mt-4 w-full min-h-[48px] text-style-body font-semibold"
             disabled={connecting || isSubmitting || !tokenValue.trim()}
+            tone="ink"
+            variant="solid"
           >
             {connecting || isSubmitting
               ? messages.loadingActions.connecting
@@ -329,7 +297,6 @@ export function FinykLoginScreen({
               className="mt-1 w-full min-h-[44px]"
               onClick={onBackToHub}
             >
-              <Icon name="chevron-left" size="sm" />
               {backLabel}
             </Button>
           )}

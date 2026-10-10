@@ -51,10 +51,10 @@ export function ColumnMapper({
       </p>
 
       {sampleRows.length > 0 && (
-        <div className="overflow-x-auto rounded-2xl border border-line">
+        <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full text-style-caption">
             <thead>
-              <tr className="border-b border-line bg-panelHi">
+              <tr className="border-b border-line bg-panel">
                 {headers.map((h) => (
                   <th
                     key={h}
@@ -177,7 +177,6 @@ export function ColumnMapper({
 
       <Button
         variant="solid"
-        tone="finyk"
         className="w-full"
 
         disabled={!canSubmit}
@@ -194,6 +193,7 @@ export function ColumnMapper({
             decimalComma,
           })
         }
+        tone="ink"
       >
         Продовжити
       </Button>

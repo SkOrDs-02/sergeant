@@ -64,7 +64,7 @@ const merchants: FrequentMerchant[] = [
 describe("ManualExpenseSheet — interactive surfaces", () => {
   it("uses an income-specific description placeholder", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
     expect(
       screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток"),
     ).toBeInTheDocument();

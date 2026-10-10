@@ -109,16 +109,16 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
   return (
     <section
       className={cn(
-        "rounded-xl border border-finyk-soft-border bg-finyk-soft px-4 pt-3 pb-2.5",
+        "rounded-xl border border-line bg-panel px-4 pt-3 pb-2.5",
         className,
       )}
       aria-label={copy.ariaLabel}
     >
       <div className="flex items-baseline justify-between gap-3 mb-2.5">
-        <h3 className="text-style-caption font-semibold text-finyk-soft-fg flex items-center gap-2 before:content-[''] before:w-0.5 before:h-3 before:shrink-0 before:rounded-full before:bg-current">
+        <h3 className="text-style-caption font-semibold text-muted flex items-center gap-2">
           {copy.heading}
         </h3>
-        <p className="text-style-caption text-finyk-soft-fg tabular-nums">
+        <p className="text-style-caption text-muted tabular-nums">
           {copy.peakPrefix} <Money amount={max} tone="inherit" />
         </p>
       </div>
@@ -144,12 +144,12 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
               className={cn(
                 "relative h-full flex flex-col justify-end",
                 isToday &&
-                  "before:absolute before:inset-y-0 before:-left-px before:w-px before:bg-finyk-soft-fg/45",
+                  "before:absolute before:inset-y-0 before:-left-px before:w-px before:bg-line",
               )}
             >
               {pct > 0 && (
                 <div
-                  className="rounded-t-[2px] bg-finyk min-h-[2px]"
+                  className="rounded-t-[2px] bg-chart-finyk min-h-[2px]"
                   style={{ height: `${pct}%` }}
                 />
               )}
@@ -170,7 +170,7 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
           потрібно, щоб зрозуміти, у якій частині місяця пік. */}
       <div
         aria-hidden
-        className="flex justify-between mt-1 text-style-caption text-finyk-soft-fg/70 tabular-nums"
+        className="flex justify-between mt-1 text-style-caption text-subtle tabular-nums"
       >
         <span>1</span>
         <span>{Math.round(days.length / 2)}</span>
@@ -178,7 +178,7 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
       </div>
 
       {gap && (
-        <p className="mt-2 text-style-caption text-finyk-soft-fg">
+        <p className="mt-2 text-style-caption text-muted">
           {fillVars(copy.gapLine, gapVars(gap))}
         </p>
       )}
