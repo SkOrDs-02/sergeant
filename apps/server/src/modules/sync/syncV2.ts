@@ -86,6 +86,7 @@ import {
   applyFinykNetworthHistory,
   applyFinykPrefs,
 } from "./finyk/applySync.js";
+import { applyFinykTxNotes } from "./finyk/applyTxNotes.js";
 
 export { APPLY_REJECT_REASONS, ENGINE_REJECT_REASONS };
 export type { ApplyRejectReason, EngineRejectReason, RejectReason };
@@ -210,6 +211,8 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   nutrition_shopping_list: applyNutritionShoppingList,
   finyk_hidden_accounts: applyFinykHiddenAccounts,
   finyk_hidden_transactions: applyFinykHiddenTransactions,
+  // Нотатки до операцій (data-27, міграція 156): composite-PK tombstone з `note`.
+  finyk_tx_notes: applyFinykTxNotes,
   finyk_budgets: perRowBlob("finyk_budgets"),
   finyk_subscriptions: perRowBlob("finyk_subscriptions"),
   finyk_assets: perRowBlob("finyk_assets"),

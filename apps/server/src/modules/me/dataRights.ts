@@ -281,6 +281,7 @@ export const MODULE_EXPORT_TABLES = {
     "finyk_subscriptions",
     "finyk_tx_categories",
     "finyk_tx_filters",
+    "finyk_tx_notes",
     "finyk_tx_splits",
   ],
   fizruk: [

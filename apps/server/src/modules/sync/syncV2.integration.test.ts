@@ -173,7 +173,7 @@ beforeEach(async () => {
               finyk_manual_expenses, finyk_tx_filters,
               finyk_tx_categories, finyk_tx_splits,
               finyk_mono_debt_links, finyk_networth_history,
-              finyk_prefs
+              finyk_tx_notes, finyk_prefs
               RESTART IDENTITY CASCADE`,
   );
 });
@@ -2903,6 +2903,124 @@ describe("syncV2Push: finyk apply-функції (PR #035)", () => {
       };
       expect(body.accepted).toBe(0);
       expect(body!.results[0]!.reason).toBe("invalid_month");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "finyk_tx_notes: пуш з пристрою A доїздить на B, LWW і soft-delete (data-27)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-ftn");
+
+      const push = async (
+        key: string,
+        op: "insert" | "update" | "delete",
+        note: string | null,
+        clientTs: string,
+        device: string,
+      ) => {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-ftn",
+            headers: { "x-origin-device-id": device },
+            body: {
+              ops: [
+                {
+                  table: "finyk_tx_notes",
+                  op,
+                  row: {
+                    user_id: "u-ftn",
+                    transaction_id: "mono-tx-1",
+                    ...(note === null ? {} : { note }),
+                  },
+                  client_ts: clientTs,
+                  idempotency_key: key,
+                },
+              ],
+            },
+          }),
+          res,
+        );
+        return (
+          res.body as {
+            results: Array<{ status: string; reason?: string }>;
+          }
+        ).results[0]!;
+      };
+      const readRow = async () =>
+        (
+          await testPool!.query<{ note: string; deleted_at: Date | null }>(
+            `SELECT note, deleted_at FROM finyk_tx_notes
+               WHERE user_id = $1 AND transaction_id = $2`,
+            ["u-ftn", "mono-tx-1"],
+          )
+        ).rows[0];
+
+      const t1 = isoNow(-6_000);
+      const t2 = isoNow(-4_000);
+      const t3 = isoNow(-2_000);
+
+      // A пише нотатку, B її тягне.
+      expect(
+        (await push("ftn-1", "insert", "оренда", t2, "device-A")).status,
+      ).toBe("applied");
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({
+          userId: "u-ftn",
+          query: { since: 0 },
+          headers: { "x-origin-device-id": "device-B" },
+        }),
+        pullRes,
+      );
+      const pulled = (
+        pullRes.body as {
+          ops: Array<{ table: string; row: { note: string } }>;
+        }
+      ).ops;
+      expect(pulled.map((o) => [o.table, o.row.note])).toEqual([
+        ["finyk_tx_notes", "оренда"],
+      ]);
+
+      // LWW: старіша правка з B відхиляється, нотатка A лишається.
+      const stale = await push("ftn-2", "update", "стара", t1, "device-B");
+      expect(stale.status).toBe("rejected");
+      expect(stale.reason).toBe("lww_conflict");
+      expect((await readRow())!.note).toBe("оренда");
+
+      // Новіша правка з B перемагає.
+      expect(
+        (await push("ftn-3", "update", "оренда 2", t3, "device-B")).status,
+      ).toBe("applied");
+      expect((await readRow())!.note).toBe("оренда 2");
+
+      // Видалення = soft-delete, рядок лишається з tombstone.
+      expect(
+        (await push("ftn-4", "delete", null, isoNow(-1_000), "device-A"))
+          .status,
+      ).toBe("applied");
+      expect((await readRow())!.deleted_at).not.toBeNull();
+
+      // Новіший запис воскрешає tombstone (чистий LWW).
+      expect(
+        (await push("ftn-5", "insert", "знову", isoNow(), "device-B")).status,
+      ).toBe("applied");
+      const revived = (await readRow())!;
+      expect(revived.note).toBe("знову");
+      expect(revived.deleted_at).toBeNull();
+
+      // Межа довжини: перевищення відхиляється, рядок не змінюється.
+      const tooLong = await push(
+        "ftn-6",
+        "update",
+        "x".repeat(1001),
+        isoNow(1_000),
+        "device-A",
+      );
+      expect(tooLong.reason).toBe("text_too_long");
+      expect((await readRow())!.note).toBe("знову");
     },
     TIMEOUT_MS,
   );

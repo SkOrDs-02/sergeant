@@ -76,6 +76,33 @@ export const finykHiddenTransactions = sqliteTable(
   ],
 );
 
+/**
+ * Нотатки користувача до банківських операцій (аудит 2026-10-01, data-27).
+ * Дзеркалить серверну `finyk_tx_notes` (міграція 156): composite PK, порожня
+ * нотатка = soft-delete через `deleted_at`.
+ */
+export const finykTxNotes = sqliteTable(
+  "finyk_tx_notes",
+  {
+    userId: text("user_id").notNull(),
+    transactionId: text("transaction_id").notNull(),
+    note: text("note").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.transactionId] }),
+    index("finyk_tx_notes_user_active_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
 // ---------------------------------------------------------------------
 // Per-row + JSONB tables
 // ---------------------------------------------------------------------

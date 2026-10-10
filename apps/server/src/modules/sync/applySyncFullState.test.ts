@@ -73,8 +73,8 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries + routine_habit_skips + fizruk_custom_activities (47 total; обидві pushup-таблиці зняті міграціями 139/140)", () => {
-    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(47);
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries + routine_habit_skips + fizruk_custom_activities + finyk_tx_notes (48 total; обидві pushup-таблиці зняті міграціями 139/140)", () => {
+    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(48);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
         "routine_habits",
