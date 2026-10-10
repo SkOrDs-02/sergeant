@@ -1,3 +1,4 @@
+import { isMealTypeId, type MealTypeId } from "@sergeant/nutrition-domain";
 import { deviceDayKey } from "@sergeant/shared";
 
 export type ScenarioId =
@@ -5,7 +6,8 @@ export type ScenarioId =
   | "pantry-receipt-names"
   | "finyk-month"
   | "routine-streaks"
-  | "fizruk-active-session";
+  | "fizruk-active-session"
+  | "nutrition-day";
 
 const SCENARIO_IDS: readonly ScenarioId[] = [
   "empty",
@@ -13,6 +15,7 @@ const SCENARIO_IDS: readonly ScenarioId[] = [
   "finyk-month",
   "routine-streaks",
   "fizruk-active-session",
+  "nutrition-day",
 ];
 
 export interface ScenarioLocalPantryItem {
@@ -58,12 +61,34 @@ export interface ScenarioLocalFizrukWorkout {
   readonly items: readonly ScenarioLocalFizrukWorkoutItem[];
 }
 
+/** Запис журналу Їжі. `time` це «ГГ:ХХ» за годинником пристрою. */
+export interface ScenarioLocalNutritionMeal {
+  readonly daysAgo: number;
+  readonly time: string;
+  readonly mealType: MealTypeId;
+  readonly name: string;
+  readonly amount_g: number | null;
+  readonly kcal: number;
+  readonly protein_g: number;
+  readonly fat_g: number;
+  readonly carbs_g: number;
+}
+
+export interface ScenarioLocalNutritionGoal {
+  readonly kcal: number;
+  readonly protein_g: number;
+  readonly fat_g: number;
+  readonly carbs_g: number;
+}
+
 export interface ScenarioLocalWorld {
   readonly scenario: ScenarioId;
   readonly pantryItems: readonly ScenarioLocalPantryItem[];
   readonly routineHabits: readonly ScenarioLocalRoutineHabit[];
   readonly finykBudgets: readonly ScenarioLocalFinykBudget[];
   readonly fizrukWorkouts: readonly ScenarioLocalFizrukWorkout[];
+  readonly nutritionMeals: readonly ScenarioLocalNutritionMeal[];
+  readonly nutritionGoal: ScenarioLocalNutritionGoal | null;
 }
 
 export interface ResolvedRoutineHabit extends ScenarioLocalRoutineHabit {
@@ -213,6 +238,58 @@ function parseFizrukWorkout(
   };
 }
 
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function parseNutritionMeal(
+  value: unknown,
+  path: string,
+): ScenarioLocalNutritionMeal {
+  const r = asRecord(value, path, [
+    "daysAgo",
+    "time",
+    "mealType",
+    "name",
+    "amount_g",
+    "kcal",
+    "protein_g",
+    "fat_g",
+    "carbs_g",
+  ]);
+  const time = asString(r["time"], `${path}.time`);
+  if (!TIME_RE.test(time)) throw new Error(`${path}.time: очікував ГГ:ХХ`);
+  const mealType = r["mealType"];
+  if (!isMealTypeId(mealType)) {
+    throw new Error(`${path}.mealType: невідомий тип '${String(mealType)}'`);
+  }
+  return {
+    daysAgo: asDaysAgo(r["daysAgo"], `${path}.daysAgo`),
+    time,
+    mealType,
+    name: asString(r["name"], `${path}.name`),
+    amount_g:
+      r["amount_g"] == null
+        ? null
+        : asNonNegative(r["amount_g"], `${path}.amount_g`),
+    kcal: asNonNegative(r["kcal"], `${path}.kcal`),
+    protein_g: asNonNegative(r["protein_g"], `${path}.protein_g`),
+    fat_g: asNonNegative(r["fat_g"], `${path}.fat_g`),
+    carbs_g: asNonNegative(r["carbs_g"], `${path}.carbs_g`),
+  };
+}
+
+function parseNutritionGoal(
+  value: unknown,
+  path: string,
+): ScenarioLocalNutritionGoal {
+  const r = asRecord(value, path, ["kcal", "protein_g", "fat_g", "carbs_g"]);
+  return {
+    kcal: asNonNegative(r["kcal"], `${path}.kcal`),
+    protein_g: asNonNegative(r["protein_g"], `${path}.protein_g`),
+    fat_g: asNonNegative(r["fat_g"], `${path}.fat_g`),
+    carbs_g: asNonNegative(r["carbs_g"], `${path}.carbs_g`),
+  };
+}
+
 /** Парсер локальної частини світу від `unknown`: невідоме поле чи id це помилка. */
 export function parseScenarioLocalWorld(value: unknown): ScenarioLocalWorld {
   const r = asRecord(value, "world.local", [
@@ -221,6 +298,8 @@ export function parseScenarioLocalWorld(value: unknown): ScenarioLocalWorld {
     "routineHabits",
     "finykBudgets",
     "fizrukWorkouts",
+    "nutritionMeals",
+    "nutritionGoal",
   ]);
   const scenario = asString(r["scenario"], "world.local.scenario");
   const id = SCENARIO_IDS.find((known) => known === scenario);
@@ -253,6 +332,15 @@ export function parseScenarioLocalWorld(value: unknown): ScenarioLocalWorld {
       parseFinykBudget,
     ),
     fizrukWorkouts,
+    nutritionMeals: asArray(
+      r["nutritionMeals"],
+      "world.local.nutritionMeals",
+      parseNutritionMeal,
+    ),
+    nutritionGoal:
+      r["nutritionGoal"] == null
+        ? null
+        : parseNutritionGoal(r["nutritionGoal"], "world.local.nutritionGoal"),
   };
 }
 

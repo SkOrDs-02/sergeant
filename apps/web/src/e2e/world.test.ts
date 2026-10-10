@@ -26,6 +26,49 @@ describe("parseScenarioLocalWorld", () => {
     );
   });
 
+  it("парсить журнал Їжі й норму", () => {
+    const world = parseScenarioLocalWorld({
+      scenario: "nutrition-day",
+      nutritionGoal: { kcal: 1900, protein_g: 120, fat_g: 60, carbs_g: 230 },
+      nutritionMeals: [
+        {
+          daysAgo: 0,
+          time: "08:10",
+          mealType: "breakfast",
+          name: "Вівсянка",
+          amount_g: null,
+          kcal: 412,
+          protein_g: 12,
+          fat_g: 8,
+          carbs_g: 70,
+        },
+      ],
+    });
+    expect(world.nutritionGoal?.kcal).toBe(1900);
+    expect(world.nutritionMeals[0]?.amount_g).toBeNull();
+  });
+
+  it("відхиляє невідомий тип прийому їжі", () => {
+    expect(() =>
+      parseScenarioLocalWorld({
+        scenario: "nutrition-day",
+        nutritionMeals: [
+          {
+            daysAgo: 0,
+            time: "08:10",
+            mealType: "brunch",
+            name: "Вівсянка",
+            amount_g: null,
+            kcal: 1,
+            protein_g: 0,
+            fat_g: 0,
+            carbs_g: 0,
+          },
+        ],
+      }),
+    ).toThrow(/mealType/);
+  });
+
   it("відхиляє відʼємний daysAgo", () => {
     expect(() =>
       parseScenarioLocalWorld({
