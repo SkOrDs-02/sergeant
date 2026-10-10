@@ -62,10 +62,10 @@ export function ModulesSection() {
           <p className={label}>модуль Фінік</p>
           <h3 className={`${title} group-hover:underline`}>Гроші</h3>
           <p className={`${body} text-ink-text`}>
-            Чотири входи витрат замість одного банку.
+            Витрати з банку, фото чека, виписки або вручну.
           </p>
           <p className="mt-3 text-xs leading-relaxed text-ink-text">
-            У звʼязках: як доставка їжі залежить від тренувань
+            У звʼязках: тренування і витрати на доставку
           </p>
         </a>
 
@@ -79,7 +79,7 @@ export function ModulesSection() {
             Щоденник тренувань і порада, коли відпочити.
           </p>
           <p className="mt-3 text-xs leading-relaxed text-ink-text">
-            У звʼязках: як тренування тримають звички
+            У звʼязках: тренування і виконання звичок
           </p>
         </a>
 
@@ -93,7 +93,7 @@ export function ModulesSection() {
             Пропуск із причиною не обнуляє серію.
           </p>
           <p className="mt-3 text-xs leading-relaxed text-ink">
-            У звʼязках: як звички впливають на їжу і витрати
+            У звʼязках: звички, їжа і витрати
           </p>
         </a>
 
@@ -107,7 +107,7 @@ export function ModulesSection() {
             КБЖВ, коли половини продуктів немає в базах.
           </p>
           <p className="mt-3 text-xs leading-relaxed text-ink">
-            У звʼязках: як їжа відгукується на звички
+            У звʼязках: їжа і виконання звичок
           </p>
         </a>
       </div>
@@ -140,7 +140,7 @@ export function ConnectionExamples() {
           <span className="text-routine-strong">Рутина</span>
         </div>
         <blockquote className="text-lg font-medium leading-snug text-foreground">
-          «Коли тренуєшся важче, краще тримаєш звички»
+          «У дні з більшим обʼємом тренувань звички виконувалися частіше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
           {CONFIDENCE.stable} · 34 спільні дні
@@ -157,7 +157,7 @@ export function ConnectionExamples() {
           <span className="text-routine-strong">Рутина</span>
         </div>
         <blockquote className="text-lg font-medium leading-snug text-foreground">
-          «Коли тримаєш звички, їси менше»
+          «У дні з виконаними звичками записано менше калорій»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
           {CONFIDENCE.coincidence} · 2 тижні даних
@@ -194,8 +194,8 @@ export function ConnectionsSection() {
         Звʼязки, які він помічає
       </h2>
       <p className="mt-4 max-w-2xl leading-relaxed text-muted">
-        Окремі трекери показують цифри. Застосунок читає всі сфери разом і
-        показує, як вони впливають одна на одну. А коли даних замало, мовчить.
+        Окремі трекери показують цифри. Застосунок порівнює записи з усіх сфер і
+        показує звʼязки між ними. Коли даних замало, мовчить.
       </p>
 
       <ConnectionExamples />
