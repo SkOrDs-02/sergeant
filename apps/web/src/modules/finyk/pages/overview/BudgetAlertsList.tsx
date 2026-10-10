@@ -57,8 +57,8 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
               "w-full rounded-lg px-4 py-3 flex items-center justify-between border text-left",
               "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               over
-                ? "bg-panel border-danger/20 hover:bg-panel"
-                : "bg-panel border-warning/20 hover:bg-panel",
+                ? "bg-panel border-danger/20 hover:bg-line/40"
+                : "bg-panel border-warning/20 hover:bg-line/40",
             )}
           >
             <span className="flex items-center gap-2 min-w-0">

@@ -36,7 +36,7 @@ export function StatTile({ label, value, hint, onClick }: StatTileProps) {
     "block w-full text-left py-3 border-b border-line last:border-0",
 
     "transition-colors",
-    onClick && "hover:border-muted/50 active:scale-[0.99]",
+    onClick && "hover:border-muted/50",
   );
   const inner = (
     <>

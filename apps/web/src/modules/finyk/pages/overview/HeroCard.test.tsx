@@ -25,6 +25,41 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("HeroCard", () => {
+  it("does not promise money available when no daily plan exists", () => {
+    render(
+      <HeroCard
+        networth={0}
+        monoTotal={0}
+        totalDebt={0}
+        daysInMonth={31}
+        daysPassed={10}
+        todayRemaining={null}
+        dayBudget={null}
+      />,
+    );
+    expect(screen.queryByText("Сьогодні ще можна")).not.toBeInTheDocument();
+  });
+  it("keeps the monthly percentage and overrun status in plain text", () => {
+    render(
+      <HeroCard
+        networth={0}
+        monoTotal={0}
+        totalDebt={0}
+        daysInMonth={31}
+        daysPassed={10}
+        todayRemaining={-10}
+        dayBudget={100}
+        spent={1200}
+        planExpense={1000}
+        hasExpensePlan
+        spendPlanRatio={1.2}
+      />,
+    );
+    expect(screen.getByTestId("hero-strip-footer")).toHaveTextContent("120%");
+    expect(screen.getByTestId("hero-strip-footer")).toHaveTextContent(
+      "Понад план",
+    );
+  });
   const baseProps = {
     networth: -89158,
     monoTotal: 255,

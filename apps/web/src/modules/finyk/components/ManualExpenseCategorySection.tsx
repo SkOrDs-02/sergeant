@@ -76,7 +76,7 @@ export function ManualExpenseCategorySection({
               type="button"
               onClick={() => setAiAppliedCategory(null)}
               aria-label="Сховати підказку Сержанта"
-              className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-lg hover:bg-panel transition-colors touch-target"
+              className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-lg hover:bg-line/40 transition-colors touch-target"
             >
               <Icon name="close" size={10} aria-hidden />
             </button>

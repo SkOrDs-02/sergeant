@@ -127,7 +127,7 @@ export function TransactionsBatchToolbar({
               key={cat.id}
               type="button"
               onClick={() => onApplyCategory(cat.id)}
-              className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-panel transition-colors min-h-[48px]"
+              className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-line/40 transition-colors min-h-[48px]"
             >
               {/*
                 Тут стояв слот під емодзі категорії — `<span className="text-style-title">`

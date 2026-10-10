@@ -168,7 +168,7 @@ const MonthNav = memo(function MonthNav({
       <button
         type="button"
         onClick={() => go(-1)}
-        className="min-w-[44px] min-h-[44px] rounded-lg border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panel transition-colors"
+        className="min-w-[44px] min-h-[44px] rounded-lg border border-line flex items-center justify-center text-muted hover:text-text hover:bg-line/40 transition-colors"
         aria-label="Попередній місяць"
       >
         <Icon name="chevron-left" size="sm" />
@@ -178,7 +178,7 @@ const MonthNav = memo(function MonthNav({
         type="button"
         onClick={() => go(1)}
         disabled={isCurrentMonth}
-        className="min-w-[44px] min-h-[44px] rounded-lg border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panel transition-colors disabled:opacity-30"
+        className="min-w-[44px] min-h-[44px] rounded-lg border border-line flex items-center justify-center text-muted hover:text-text hover:bg-line/40 transition-colors disabled:opacity-30"
         aria-label="Наступний місяць"
       >
         <Icon name="chevron-right" size="sm" />

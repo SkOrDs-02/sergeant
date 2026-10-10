@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 
 const { state, writeSnapshotMock } = vi.hoisted(() => ({
@@ -48,6 +48,10 @@ vi.mock("./useFinykQuickStatsWriter", () => ({
 import { useFinykQuickStatsBoot } from "./useFinykQuickStatsBoot";
 
 describe("useFinykQuickStatsBoot", () => {
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     state.sqliteTick = 0;
@@ -62,6 +66,22 @@ describe("useFinykQuickStatsBoot", () => {
     state.sqlite.monthlyPlan = null;
     state.mono.refreshedAt = null;
     state.mono.transactions = [];
+  });
+
+  it("rebuilds the Hub snapshot at Kyiv midnight even without data changes", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-10T20:59:59Z"));
+    state.sqlite.refreshedAt = "2026-10-10T20:00:00Z";
+    state.mono.refreshedAt = "2026-10-10T20:00:00Z";
+    renderHook(useFinykQuickStatsBoot);
+    expect(writeSnapshotMock).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(writeSnapshotMock).toHaveBeenCalledTimes(2);
+    expect(writeSnapshotMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ nowMs: Date.parse("2026-10-10T21:00:01Z") }),
+    );
   });
 
   it("waits for both canonical caches before rebuilding the Hub snapshot", () => {

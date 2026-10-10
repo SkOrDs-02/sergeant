@@ -149,10 +149,8 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const dialog = categoryDialog();
     const allSection = dialog.getByText("Усі категорії").closest("section");
     expect(allSection).not.toBeNull();
-    const optionLabels = within(allSection!)
-      .getAllByRole("button")
-      .map((button) => button.textContent?.trim());
-    expect(optionLabels).toEqual([
+    const optionButtons = within(allSection!).getAllByRole("button");
+    const optionLabels = [
       // 2026-08-13: «Їжа» (`food`) і «Продукти» (`groceries`) були двома
       // чипами на ОДИН канонічний кошик `food`, який MCC-каталог зве
       // «Продукти». Лишився один — `food` під канонічним підписом;
@@ -186,7 +184,11 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       "Подарунки",
       "Перекази людям",
       "Інше",
-    ]);
+    ];
+    expect(optionButtons).toHaveLength(optionLabels.length);
+    optionLabels.forEach((label, index) =>
+      expect(optionButtons[index]).toHaveAccessibleName(label),
+    );
   });
 
   // Дата — один дефолт: стрічка днів видима одразу, без кроку «Не сьогодні?».

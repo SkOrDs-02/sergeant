@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
@@ -16,6 +17,7 @@ import { writeFinykQuickStatsSnapshot } from "./useFinykQuickStatsWriter";
  * empty Finyk card until the module screen happens to be opened.
  */
 export function useFinykQuickStatsBoot(): void {
+  const nowMs = useKyivDayNow();
   const sqliteTick = useFinykSqliteReadTick();
   const monoMirrorTick = useFinykMonoMirrorTick();
 
@@ -44,6 +46,7 @@ export function useFinykQuickStatsBoot(): void {
     });
 
     writeFinykQuickStatsSnapshot({
+      nowMs,
       transactions:
         manualTxs.length > 0
           ? [...mono.transactions, ...manualTxs]
@@ -56,5 +59,5 @@ export function useFinykQuickStatsBoot(): void {
       manualDebts: storage.manualDebts,
       receivables: storage.receivables,
     });
-  }, [monoMirrorTick, sqliteTick]);
+  }, [monoMirrorTick, sqliteTick, nowMs]);
 }

@@ -1,5 +1,6 @@
 import { getFinykDayPlan } from "../lib/dayPlan";
 import { useEffect } from "react";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { computeFinykQuickStats } from "@sergeant/finyk-domain/utils";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
@@ -126,6 +127,7 @@ export function useFinykQuickStatsWriter({
   mono: MergedMonoLike;
   storage: StorageLike;
 }): void {
+  const nowMs = useKyivDayNow();
   const { realTx, transactions: scheduleBankTx } = mono;
   const {
     manualExpenses,
@@ -144,6 +146,7 @@ export function useFinykQuickStatsWriter({
       manualTxs.length > 0 ? [...realTx, ...manualTxs] : realTx;
 
     writeFinykQuickStatsSnapshot({
+      nowMs,
       transactions,
       scheduleTransactions: [...scheduleBankTx, ...manualTxs],
       excludedTxIds,
@@ -165,5 +168,6 @@ export function useFinykQuickStatsWriter({
     subscriptions,
     manualDebts,
     receivables,
+    nowMs,
   ]);
 }

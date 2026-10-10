@@ -1,6 +1,7 @@
 import { Card } from "@shared/components/ui/Card";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { messages } from "@shared/i18n";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 
 import { cn } from "@shared/lib/ui/cn";
@@ -92,7 +93,7 @@ export function BudgetsLimitsSection({
         type="button"
         onClick={toggleLimits}
         aria-expanded={limitsOpen}
-        className="w-full flex items-center justify-between gap-3 py-3 text-left bg-panel hover:bg-panel transition-colors"
+        className="w-full flex items-center justify-between gap-3 py-3 text-left bg-panel hover:bg-line/40 transition-colors"
       >
         <span className="flex items-center gap-2 min-w-0">
           <SectionHeading
@@ -126,6 +127,11 @@ export function BudgetsLimitsSection({
               </span>
             )}
           </SectionHeading>
+        </span>
+        <span className="text-style-caption text-muted">
+          {limitsOpen
+            ? messages.finykRedesign.collapse
+            : messages.finykRedesign.expand}
         </span>
       </button>
       {limitsOpen && limitBudgets.length === 0 && (

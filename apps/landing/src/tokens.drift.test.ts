@@ -93,6 +93,9 @@ describe("токени лендінга не розходяться з @sergeant
     expect(tokenHex("ink-hi")).toBe(
       canonical(inkTheme.surface.surfaceHi, "ink.surfaceHi"),
     );
+    expect(tokenHex("ink-line")).toBe(
+      canonical(inkTheme.surface.line, "ink.line"),
+    );
     expect(tokenHex("ink-text")).toBe(
       canonical(inkTheme.text.strong, "ink.text.strong"),
     );

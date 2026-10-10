@@ -17,6 +17,7 @@ import { Input } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Label } from "@shared/components/ui/FormField";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n";
 import { catChipVars } from "../lib/categoryChip";
 import { stripLeadingEmoji } from "./txRowHelpers";
 
@@ -108,14 +109,15 @@ export function CategoryPickerField({
       key={category.id}
       type="button"
       aria-pressed={category.id === selectedId}
+      aria-label={stripLeadingEmoji(category.label)}
       onClick={() => choose(category.id)}
       style={catChipVars(category.id, categories)}
       className={cn(
         "w-full touch-target rounded-lg border px-2.5 py-2.5 text-left",
         "flex items-center justify-between gap-2 transition-colors",
         category.id === selectedId
-          ? "bg-panel border-line"
-          : "border-line hover:bg-panel",
+          ? "bg-bg border-line"
+          : "border-line hover:bg-line/40",
       )}
     >
       <span className="inline-flex min-w-0 items-center gap-2 text-style-body">
@@ -125,6 +127,11 @@ export function CategoryPickerField({
         />
         <span className="truncate">{stripLeadingEmoji(category.label)}</span>
       </span>
+      {category.id === selectedId && (
+        <span className="text-style-caption font-semibold text-text">
+          {messages.finykRedesign.selected}
+        </span>
+      )}
     </button>
   );
 

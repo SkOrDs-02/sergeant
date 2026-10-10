@@ -4,7 +4,8 @@ import { getFinykDayPlan } from "../../lib/dayPlan";
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect } from "react";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { ucFirst } from "@shared/lib/ui/ucFirst";
 import { calcFinykSpendingTotal } from "../../utils";
 import { useFlowSchedule } from "./useFlowSchedule";
@@ -83,14 +84,14 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     manualExpenses,
   } = storage;
 
-  // The raw current instant is captured once as a primitive epoch and
+  // The current financial day is kept as a primitive epoch, refreshed at midnight, and
   // immediately routed through Kyiv helpers (getKyivDateParts below +
   // getCurrentMonthContext), so no host-local day boundary ever leaks out of
   // this hook. Using `Date.now()` (a number) instead of a `new Date()` object
   // keeps this instant a scalar the React Compiler can track — a component-scope
   // `Date` reads as a locally-created mutable value that poisons every derived
   // memo dependency (react-hooks/preserve-manual-memoization).
-  const [nowMs] = useState(() => Date.now());
+  const nowMs = useKyivDayNow();
   // Anchor every calendar-window computation below to Europe/Kyiv (the
   // domain time invariant) instead of host-local Date getters, so month and
   // day boundaries never drift off-by-one on a non-Kyiv device. getKyivDateParts
@@ -508,7 +509,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     spent,
     income,
     todaySpent,
-    todayIncome: todaySummary.income,
+    todayIncome: todaySummary.incomeMinor / 100,
     dailyPlan,
     showMonthForecast,
     projectedSpend,

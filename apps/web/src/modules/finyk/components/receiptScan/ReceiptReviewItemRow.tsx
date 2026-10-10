@@ -52,7 +52,7 @@ function QtyInput({
       // Той самий анти-зум/тач-floor, що в `receiptMoneyInput.tsx`: 16px
       // шрифт і ≥44px висота лише під `pointer: coarse` (бета-фідбек №2).
 
-      className="focus-ring h-9 min-w-0 rounded-lg border border-line bg-panel px-2 text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-style-body"
+      className="focus-ring h-9 min-w-0 rounded-lg border border-line bg-panel px-2 text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-style-label-lg"
     />
   );
 }
@@ -85,7 +85,7 @@ export function ReceiptReviewItemRow({
           onClick={() => onRemove(index)}
           disabled={disabled}
           aria-label={`Видалити позицію ${index + 1}`}
-          className="shrink-0 touch-target flex items-center justify-center rounded-lg text-danger-strong dark:text-danger hover:bg-panel transition-colors"
+          className="shrink-0 touch-target flex items-center justify-center rounded-lg text-danger-strong dark:text-danger hover:bg-line/40 transition-colors"
         >
           <Icon name="trash" size="sm" aria-hidden />
         </button>

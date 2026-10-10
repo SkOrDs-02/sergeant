@@ -11,6 +11,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Money } from "@shared/components/ui/Money";
+import { messages } from "@shared/i18n";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
 // each persisted as the canonical dot-form value (string while editing,
@@ -149,7 +150,7 @@ function MonthlyPlanCardComponent({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-panel transition-colors"
+        className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-line/40 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
           <SectionHeading as="span" size="lg" variant="text">
@@ -157,6 +158,11 @@ function MonthlyPlanCardComponent({
           </SectionHeading>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <span className="text-style-caption text-text">
+            {open
+              ? messages.finykRedesign.collapse
+              : messages.finykRedesign.expand}
+          </span>
           {hasPlan && !open && (
             <span
               className={cn(
@@ -187,6 +193,19 @@ function MonthlyPlanCardComponent({
           )}
         </div>
       </button>
+      {planExpense > 0 && (
+        <p className="px-5 pb-3 text-style-caption font-semibold text-text">
+          {isOver
+            ? messages.finykRedesign.overPlan
+            : messages.finykRedesign.withinPlan}
+          {showBalance && ` · ${pctExpense}%`}
+        </p>
+      )}
+      {factSavings < 0 && (
+        <p className="px-5 pb-3 text-style-caption text-text">
+          {messages.finykRedesign.savingsDeficit}
+        </p>
+      )}
 
       {open && (
         <div className="px-5 pb-5 pt-1 space-y-3">
@@ -221,16 +240,7 @@ function MonthlyPlanCardComponent({
                   "—"
                 )}
               </div>
-              <div
-                className={cn(
-                  "text-right text-style-caption",
-                  planIncome === 0
-                    ? "text-text"
-                    : incomeDelta >= 0
-                      ? "text-text"
-                      : "text-text",
-                )}
-              >
+              <div className={cn("text-right text-style-caption", "text-text")}>
                 {!showBalance ? (
                   "••••"
                 ) : planIncome > 0 ? (
@@ -264,16 +274,7 @@ function MonthlyPlanCardComponent({
                   "—"
                 )}
               </div>
-              <div
-                className={cn(
-                  "text-right text-style-caption",
-                  planExpense === 0
-                    ? "text-text"
-                    : expenseDelta > 0
-                      ? "text-text"
-                      : "text-text",
-                )}
-              >
+              <div className={cn("text-right text-style-caption", "text-text")}>
                 {!showBalance ? (
                   "••••"
                 ) : planExpense > 0 ? (
@@ -293,12 +294,7 @@ function MonthlyPlanCardComponent({
                   "—"
                 )}
               </div>
-              <div
-                className={cn(
-                  "text-right",
-                  factSavings >= 0 ? "text-text" : "text-text",
-                )}
-              >
+              <div className={cn("text-right", "text-text")}>
                 {!showBalance ? (
                   "••••"
                 ) : planSavings > 0 || factSavings !== 0 ? (
@@ -307,16 +303,7 @@ function MonthlyPlanCardComponent({
                   "—"
                 )}
               </div>
-              <div
-                className={cn(
-                  "text-right text-style-caption",
-                  planSavings === 0 && factSavings === 0
-                    ? "text-text"
-                    : savingsDelta >= 0
-                      ? "text-text"
-                      : "text-text",
-                )}
-              >
+              <div className={cn("text-right text-style-caption", "text-text")}>
                 {!showBalance ? (
                   "••••"
                 ) : planSavings > 0 || factSavings !== 0 ? (
@@ -391,7 +378,7 @@ function MonthlyPlanCardComponent({
               type="button"
               onClick={() => setEditing((v) => !v)}
               aria-expanded={editing}
-              className="text-style-caption text-text hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-panel transition-colors"
+              className="text-style-caption text-text hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-line/40 transition-colors"
             >
               {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
             </button>

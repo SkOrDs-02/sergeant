@@ -128,12 +128,7 @@ export function SilpoReceiptPickerSheet({
                   )
                 }
                 className={cn(
-                  "touch-target flex w-full items-center justify-between gap-3 rounded-lg border p-2 text-left transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
-                  // Точний збіг суми виділяємо рамкою модуля, а не заливкою:
-                  // це підказка, а не вибір — рішення лишається за людиною.
-                  exactAmount
-                    ? "border-line bg-panel"
-                    : "border-line bg-panel hover:bg-panel",
+                  "touch-target flex w-full items-center justify-between gap-3 border-b border-line bg-panel p-2 text-left transition-colors hover:bg-line/40 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
                 )}
               >
                 <span className="min-w-0">
@@ -142,7 +137,9 @@ export function SilpoReceiptPickerSheet({
                   </span>
                   <span className="block text-style-caption text-subtle">
                     {formatReceiptDate(receipt.purchasedAt)}
-                    {exactAmount ? ` · ${COPY.exactAmount}` : ""}
+                    {exactAmount && (
+                      <span className="font-semibold text-text">{` · ${COPY.exactAmount}`}</span>
+                    )}
                   </span>
                 </span>
               </button>

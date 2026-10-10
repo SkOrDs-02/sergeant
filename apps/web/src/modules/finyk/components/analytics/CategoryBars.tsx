@@ -43,7 +43,7 @@ function Row({
     <button
       type="button"
       onClick={onSelect}
-      className={cn(shared, "rounded-lg focus-ring hover:bg-panel")}
+      className={cn(shared, "rounded-lg focus-ring hover:bg-line/40")}
     >
       {children}
     </button>

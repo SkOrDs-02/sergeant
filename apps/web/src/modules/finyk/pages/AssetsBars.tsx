@@ -78,11 +78,15 @@ export interface QuickActionButtonProps extends Omit<
 export const QuickActionButton = forwardRef<
   HTMLButtonElement,
   QuickActionButtonProps
->(function QuickActionButton({ label, tone: _tone, className, ...rest }, ref) {
+>(function QuickActionButton(
+  { label, tone = "neutral", className, ...rest },
+  ref,
+) {
   return (
     <Button
       ref={ref}
       variant="outline"
+      tone={tone === "neutral" || tone === "finyk" ? "ink" : tone}
       size="md"
       className={cn("w-full min-w-0 px-1", className)}
       {...rest}
@@ -122,7 +126,7 @@ export function SectionBar({
       onClick={onToggle}
       aria-expanded={open}
       // Нейтральна група: назва, сума й текстовий стан розгортання.
-      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panel border border-line rounded-lg mb-2 text-left  transition-[transform,box-shadow,border-color] hover:border-muted/40"
+      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panel border-b border-line mb-2 text-left transition-colors hover:bg-line/40"
     >
       <div className="flex items-center gap-3 min-w-0">
         <div className="min-w-0">

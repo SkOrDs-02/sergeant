@@ -42,6 +42,8 @@ export interface SegmentedProps<V extends string = string> {
   variant?: SegmentedVariant;
   /** Row geometry. Defaults to `pill` (label-sized, wrapping chips). */
   layout?: SegmentedLayout;
+  /** Filters keep toggle-button semantics; arrows move focus without changing the list. */
+  semantics?: "tabs" | "filter";
   /** Accessible label for the underlying role="tablist". */
   ariaLabel?: string;
   className?: string;
@@ -73,6 +75,7 @@ export function Segmented<V extends string = string>({
   onChange,
   size = "md",
   layout = "pill",
+  semantics = "tabs",
   ariaLabel,
   className,
 }: SegmentedProps<V>) {
@@ -85,8 +88,9 @@ export function Segmented<V extends string = string>({
       return;
     }
     const tabs = Array.from(
-      tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ??
-        [],
+      tablistRef.current?.querySelectorAll<HTMLButtonElement>(
+        semantics === "filter" ? "button[data-pill]" : '[role="tab"]',
+      ) ?? [],
     );
     if (tabs.length === 0) return;
 
@@ -111,6 +115,7 @@ export function Segmented<V extends string = string>({
     const item = items[targetIndex];
     if (!target || !item) return;
     target.focus();
+    if (semantics === "filter") return;
     if (item.value !== value) {
       hapticTap();
       onChange(item.value);
@@ -120,7 +125,8 @@ export function Segmented<V extends string = string>({
   return (
     <div
       ref={tablistRef}
-      role="tablist"
+      role={semantics === "filter" ? "toolbar" : "tablist"}
+      aria-orientation={semantics === "filter" ? "horizontal" : undefined}
       aria-label={ariaLabel}
       className={cn(
         "gap-0.5 rounded-[10px] bg-track p-0.5",
@@ -134,17 +140,27 @@ export function Segmented<V extends string = string>({
           <button
             key={item.value}
             type="button"
-            role="tab"
-            aria-selected={isActive}
+            role={semantics === "filter" ? undefined : "tab"}
+            data-pill={semantics === "filter" ? "" : undefined}
+            aria-selected={semantics === "filter" ? undefined : isActive}
+            aria-pressed={semantics === "filter" ? isActive : undefined}
             aria-label={item.ariaLabel}
             title={item.title}
-            tabIndex={isActive ? 0 : -1}
+            tabIndex={
+              isActive ||
+              (semantics === "filter" &&
+                item === items[0] &&
+                !items.some((option) => option.value === value))
+                ? 0
+                : -1
+            }
             onKeyDown={handleKeyDown}
             onClick={() => {
               if (item.value !== value) {
                 hapticTap();
-                onChange(item.value);
               }
+              if (item.value !== value || semantics === "filter")
+                onChange(item.value);
             }}
             className={cn(
               "rounded-lg font-semibold transition-colors",

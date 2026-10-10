@@ -129,7 +129,7 @@ export function TransferSuggestionCard({
             ))}
           </div>
         </div>
-        <span className="text-style-label tabular-nums text-text text-text shrink-0">
+        <span className="text-style-label tabular-nums text-text shrink-0">
           {showBalance ? <Money amount={amountUah} tone="inherit" /> : "••••"}
         </span>
       </div>

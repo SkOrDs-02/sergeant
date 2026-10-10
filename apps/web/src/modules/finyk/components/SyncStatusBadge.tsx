@@ -77,7 +77,7 @@ function SyncStatusBadgeComponent({
           type="button"
           onClick={onRetry}
           disabled={isLoading}
-          className="ml-1 px-2 py-1 rounded-lg focus-ring bg-panel border border-line text-style-caption text-text hover:bg-panel transition-colors disabled:opacity-50"
+          className="ml-1 px-2 py-1 rounded-lg focus-ring bg-panel border border-line text-style-caption text-text hover:bg-line/40 transition-colors disabled:opacity-50"
         >
           {messages.actions.retry}
         </button>

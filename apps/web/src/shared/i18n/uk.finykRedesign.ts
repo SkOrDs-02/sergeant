@@ -1,9 +1,16 @@
 export const finykRedesign = {
   assetsTitle: "Активи",
   transactionsTitle: "Операції",
-  planningTitle: "Планування",
+  planningTitle: "План",
 
-  analyticsTitle: "Аналітика",
+  analyticsTitle: "Аналіз",
+  selected: "Обрано",
+  creditCard: "кредитна",
+  expand: "Розгорнути",
+  collapse: "Згорнути",
+  overPlan: "Понад план",
+  withinPlan: "У межах плану",
+  savingsDeficit: "Дефіцит заощаджень",
   budgetType: "Тип бюджету",
   limit: "Ліміт витрат",
   goal: "Ціль накопичення",

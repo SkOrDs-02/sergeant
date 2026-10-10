@@ -55,7 +55,7 @@ export function TransactionsHeader({
         <button
           onClick={() => goMonth(-1)}
           aria-label="Попередній місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-panel transition-colors"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-line/40 transition-colors"
         >
           <Icon name="chevron-left" size="sm" />
         </button>
@@ -64,7 +64,7 @@ export function TransactionsHeader({
           onClick={() => goMonth(1)}
           disabled={isCurrentMonth}
           aria-label="Наступний місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-panel transition-colors disabled:opacity-30"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-line/40 transition-colors disabled:opacity-30"
         >
           <Icon name="chevron-right" size="sm" />
         </button>

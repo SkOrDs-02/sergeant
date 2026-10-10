@@ -13,6 +13,7 @@ import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { messages } from "@shared/i18n";
 
 interface LimitBudgetInput {
   id: string;
@@ -323,10 +324,15 @@ function LimitBudgetCardComponent({
                         type="button"
                         onClick={() => setAdviceOpen((v) => !v)}
                         aria-expanded={adviceOpen}
-                        className="flex-1 flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-panel transition-colors"
+                        className="flex-1 flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-line/40 transition-colors"
                       >
                         <span className="flex items-center gap-2 text-style-caption text-text">
                           Порада Сержанта
+                        </span>
+                        <span className="text-style-caption text-muted">
+                          {adviceOpen
+                            ? messages.finykRedesign.collapse
+                            : messages.finykRedesign.expand}
                         </span>
                       </button>
                       {onDismissAdvice && (

@@ -121,17 +121,21 @@ function RoleSheet({
               key={role}
               type="button"
               aria-pressed={selected}
+              aria-label={describeLinkedTxRole(role, kind).label}
               onClick={() => onPick(role)}
               className={cn(
                 "w-full touch-target rounded-lg border px-4 py-3 text-left transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
-                selected
-                  ? "border-line bg-panel"
-                  : "border-line hover:bg-panel",
+                selected ? "border-line bg-bg" : "border-line hover:bg-line/40",
               )}
             >
               <div className="text-style-label text-text">
                 {describeLinkedTxRole(role, kind).label}
+                {selected && (
+                  <span className="ml-2 text-style-caption font-semibold text-text">
+                    {messages.finykRedesign.selected}
+                  </span>
+                )}
                 {currentRole === null && suggested === role && (
                   <span className="text-style-caption text-subtle ml-2">
                     {copy.suggestedHint}

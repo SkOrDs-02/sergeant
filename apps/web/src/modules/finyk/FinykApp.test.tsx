@@ -254,7 +254,7 @@ describe("FinykApp — real page routing via the bottom nav", () => {
     renderApp();
     await userEvent.click(navButton("Планування"));
     expect(
-      await screen.findByRole("heading", { name: "Планування" }),
+      await screen.findByRole("heading", { name: "План" }),
     ).toBeInTheDocument();
   });
 
@@ -270,7 +270,7 @@ describe("FinykApp — real page routing via the bottom nav", () => {
     renderApp();
     await userEvent.click(navButton("Аналітика"));
     expect(
-      await screen.findByRole("heading", { name: "Аналітика" }),
+      await screen.findByRole("heading", { name: "Аналіз" }),
     ).toBeInTheDocument();
   });
 

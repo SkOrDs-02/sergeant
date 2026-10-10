@@ -217,6 +217,11 @@ export function Overview({
 
                   <TodayOperations
                     transactions={d.todayTransactions}
+                    summary={{
+                      expense: d.todaySpent,
+                      income: d.todayIncome,
+                      balance: d.todayIncome - d.todaySpent,
+                    }}
                     showBalance={showBalance}
                     onOpenToday={() =>
                       navigate("/finyk/transactions?date=today")

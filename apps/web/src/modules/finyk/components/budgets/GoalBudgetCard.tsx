@@ -10,6 +10,7 @@ import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n";
 
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
@@ -318,6 +319,11 @@ function GoalBudgetCardComponent({
                   className="text-style-caption text-subtle hover:text-text flex items-center gap-1 transition-colors"
                 >
                   Історія ({contributions.length})
+                  <span>
+                    {historyOpen
+                      ? messages.finykRedesign.collapse
+                      : messages.finykRedesign.expand}
+                  </span>
                 </button>
               )}
             </div>

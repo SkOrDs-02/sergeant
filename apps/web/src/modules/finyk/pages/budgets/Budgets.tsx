@@ -43,6 +43,7 @@ import {
   type BudgetFormType,
 } from "../../components/budgets/AddBudgetForm";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useToast } from "@shared/hooks/useToast";
 import {
   trackEvent,
@@ -191,8 +192,8 @@ export function Budgets({
     manualExpenses = [],
   } = storage;
 
-  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
-  const now = useMemo(() => new Date(), []);
+  const nowMs = useKyivDayNow();
+  const now = useMemo(() => new Date(nowMs), [nowMs]);
   const { monthStart, daysPassed, daysInMonth } = getCurrentMonthContext(now);
 
   // Manual expenses/income live in storage (LS + React state), not in the
@@ -504,8 +505,7 @@ export function Budgets({
     daysLeft: daysLeft2,
   } = getMonthlyPlanUsage(
     { planIncome, planExpense, totalFact: totalExpenseFact },
-    // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getMonthlyPlanUsage
-    new Date(),
+    now,
   );
 
   const { dayPlan } = getFinykDayPlan({
