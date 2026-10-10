@@ -1149,7 +1149,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-10` [high] Memory-режим (збій OPFS або квоти) пише порожні знімки комори, які після відновлення сховища видаляють продукти на сервері й на всіх пристроях
 
-- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без soft-delete відсутніх дітей не робились, це окремий зсув моделі, закриє й data-40)
+- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без неявного soft-delete відсутніх дітей зроблено в гілці claude/fix-data-40-pantry-stable-ids, data-40)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (pantry) + durability (memory VFS, журнал)
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:446-448,641-675; apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/db/sqlite.ts:846-889; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:118,161-179; packages/dualwrite-core/src/tableSpec.ts:200-215
 - **Першопричина:** У :memory:-режимі модуль бачить порожню базу і пише pantry-upsert {items: []} для дефолтних місць зберігання; ackDualWrite у memory навмисно не знімає журнал, тож знімок реплеїться на справжній OPFS-базі. upsertPantry → softDeleteRemovedChildren при порожньому keepIds видаляє всі живі позиції без LWW-перевірки і ставить delete з clientTs memory-сесії, який виграє на сервері.
@@ -3300,7 +3300,7 @@ psql: обидва рядки fizruk_programs і всі 5 оп sync_op_log дл�
 
 ### `data-40` [medium] Позиційні id позицій комори: офлайн-правка тихо втрачається, якщо інший пристрій прибрав сусідню позицію
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-40-pantry-stable-ids (стабільний `PantryItem.id` замість позиційного, поелементна дельта sync з одним delete на прибрану позицію і без перепису сусідів, `sort_order` існуючих рядків не чіпається, `itemId` журналу стабільний; без міграції даних, бо рядки вже несуть ці id; лишилось: показ відхилених `lww_conflict` користувачеві, бо рішення власника тримати його в `BENIGN_REJECT_REASONS`, і одночасна правка ТІЄЇ САМОЇ позиції з двох пристроїв, яка далі розв'язується LWW по рядку)
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** web: Їжа (pantry) + nutrition-domain
 - **Де:** apps/web/src/modules/nutrition/lib/nutritionStorage.ts:485-511 (id на :497); packages/nutrition-domain/src/pantryLedger.ts:79-83; apps/web/src/core/syncEngine/singleton.ts:45
 - **Першопричина:** Id позиції будується з місця, індексу й назви, а upsertPantry щоразу переписує весь список місця з новим client_ts; видалення чи переміщення зсуває id усіх наступних позицій, тож паралельна правка програє LWW, а lww_conflict клієнт вважає benign і нічого не показує.

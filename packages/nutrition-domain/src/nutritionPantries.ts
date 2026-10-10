@@ -100,7 +100,10 @@ function sanitizePantryItem(raw: unknown): PantryItem | null {
   if (!name) return null;
   const qtyNum = Number(r["qty"]);
   const qty = r["qty"] == null || !Number.isFinite(qtyNum) ? null : qtyNum;
+  const rawId = typeof r["id"] === "string" ? r["id"].trim() : "";
   return {
+    // Стабільний id (data-40) переживає нормалізацію; відсутній — не вигадуємо.
+    ...(rawId ? { id: rawId } : {}),
     name,
     qty,
     unit: r["unit"] == null ? null : String(r["unit"]),

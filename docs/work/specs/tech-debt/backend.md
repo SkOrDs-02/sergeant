@@ -546,12 +546,12 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 Гіпотеза 2026-07-25 підтвердилась, і знову виявилась ширшою: уражені не дві
 таблиці, а **чотири** — клієнт не шле UUID у жодній з них.
 
-| таблиця                  | форма клієнтського id        |
-| ------------------------ | ---------------------------- |
-| `nutrition_pantries`     | `home` \| `p_<ms>_<idx>`     |
-| `nutrition_pantry_items` | `<pantryId>::<idx>::<name>`  |
-| `nutrition_meals`        | `meal_mig_<ts>_<idx>_<uuid>` |
-| `nutrition_recipes`      | `rcp_ai_<hash>`              |
+| таблиця                  | форма клієнтського id                                            |
+| ------------------------ | ---------------------------------------------------------------- |
+| `nutrition_pantries`     | `home` \| `p_<ms>_<idx>`                                         |
+| `nutrition_pantry_items` | `pi_<uuid>` (до 2026-10-10 `<pantryId>::<idx>::<name>`, data-40) |
+| `nutrition_meals`        | `meal_mig_<ts>_<idx>_<uuid>`                                     |
+| `nutrition_recipes`      | `rcp_ai_<hash>`                                                  |
 
 Прогін `POST /api/v2/sync/push` із цими id: до міграції всі чотири
 `apply_failed` (контроль із голим UUID — `applied`), після — всі чотири

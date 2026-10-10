@@ -332,6 +332,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: [],
+        removedItemIds: [],
         pantryFieldsChanged: true,
       },
     ]);
@@ -349,6 +350,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: [],
+        removedItemIds: [],
         pantryFieldsChanged: true,
       },
     ]);
@@ -382,6 +384,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: ["it1"],
+        removedItemIds: [],
         pantryFieldsChanged: false,
       },
     ]);
@@ -406,6 +409,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: [],
+        removedItemIds: ["it2"],
         pantryFieldsChanged: false,
       },
     ]);

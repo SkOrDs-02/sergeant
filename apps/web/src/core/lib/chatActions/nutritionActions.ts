@@ -332,7 +332,7 @@ export function handleNutritionAction(
         appendNutritionPantryEvent({
           id: null,
           pantryId: activeId,
-          itemId: null,
+          itemId: item.id ?? null,
           itemKey: canonicalFoodKey(rawName),
           kind: "consume",
           deltaQty: -consumed,
@@ -375,7 +375,7 @@ export function handleNutritionAction(
         appendNutritionPantryEvent({
           id: null,
           pantryId: item.pantryId,
-          itemId: null,
+          itemId: item.id ?? null,
           itemKey: canonicalFoodKey(String(item.name || "")),
           kind: "adjust",
           deltaQty: null,

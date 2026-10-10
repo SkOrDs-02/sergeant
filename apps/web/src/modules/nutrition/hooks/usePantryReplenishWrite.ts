@@ -167,7 +167,9 @@ export function usePantryReplenishWrite({
       appendNutritionPantryEvent({
         id: null,
         pantryId,
-        itemId: null,
+        // Нова позиція дістає id лише всередині `mergeItems`, тож до її появи
+        // в списку id невідомий — журнал ключується на `itemKey`.
+        itemId: existing?.id ?? null,
         itemKey: canonicalFoodKey(item.name),
         kind: "replenish",
         deltaQty: item.qty,
@@ -303,7 +305,7 @@ export function usePantryReplenishWrite({
       appendNutritionPantryEvent({
         id: null,
         pantryId: line.pantryId,
-        itemId: null,
+        itemId: current.id ?? null,
         itemKey: canonicalFoodKey(line.itemName),
         kind: "adjust",
         deltaQty: null,
