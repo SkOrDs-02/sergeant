@@ -1,9 +1,9 @@
+import { Card } from "@shared/components/ui/Card";
 import { useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
+
 import { toKyivISODate } from "@sergeant/shared";
 import type { MonoJarDto } from "@shared/api";
 import {
@@ -79,22 +79,19 @@ export function BudgetsGoalsSection({
   );
 
   return (
-    <>
+    <Card padding="none" className="px-4">
       <button
         type="button"
         onClick={toggleGoals}
         aria-expanded={goalsOpen}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left bg-panel border border-line rounded-2xl shadow-card hover:bg-panelHi transition-colors"
+        className="w-full flex items-center justify-between gap-3 py-3 text-left bg-panel hover:bg-panel transition-colors"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="text-muted" aria-hidden>
-            <Icon name="target" size="md" />
-          </span>
           <SectionHeading
             as="span"
-            size="xs"
+            size="lg"
             className="mb-0! normal-case tracking-normal"
-            variant="finyk"
+            variant="text"
           >
             Цілі накопичення
             {goalBudgets.length > 0 && (
@@ -104,34 +101,11 @@ export function BudgetsGoalsSection({
             )}
           </SectionHeading>
         </span>
-        <Icon
-          name="chevron-down"
-          size="sm"
-          className={cn(
-            "transition-transform text-muted shrink-0",
-            goalsOpen ? "rotate-180" : "",
-          )}
-        />
       </button>
       {goalsOpen && goalBudgets.length === 0 && (
         <EmptyState
           compact
           module="finyk"
-          icon={
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-          }
           title="Поки немає цілей"
           description="Постав ціль накопичення і стеж за прогресом."
         />
@@ -291,6 +265,6 @@ export function BudgetsGoalsSection({
             />
           );
         })}
-    </>
+    </Card>
   );
 }

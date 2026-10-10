@@ -5,7 +5,7 @@ import { SubCard } from "../components/SubCard";
 import { MonthOutflowComb } from "../components/MonthOutflowComb";
 import type { CombEntry } from "../lib/monthOutflowComb";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
@@ -77,11 +77,11 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
         showBalance={showBalance}
         className="mb-2"
       />
-      <div className="mb-2 rounded-xl border border-finyk-soft-border bg-finyk-soft px-4 py-3 flex items-center justify-between gap-3">
-        <span className="text-style-caption text-finyk-soft-fg">
+      <div className="mb-2 rounded-xl border border-line bg-panel px-4 py-3 flex items-center justify-between gap-3">
+        <span className="text-style-caption text-muted">
           Витрати на підписки за місяць
         </span>
-        <strong className="text-style-label tabular-nums text-finyk-soft-fg">
+        <strong className="text-style-label tabular-nums text-muted">
           {showBalance ? <Money amount={Math.round(subsMonthly)} /> : "••••"}
         </strong>
       </div>
@@ -91,9 +91,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onClick={() => openHubModule("routine", "")}
           className="w-full text-style-caption text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
         >
-          <Icon name="calendar" size="sm" aria-hidden />
           <span>Побачити у календарі Рутини</span>
-          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       )}
       {subscriptions.map((sub, i) => (

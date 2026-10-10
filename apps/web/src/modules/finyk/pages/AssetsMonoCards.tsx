@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Switch } from "@shared/components/ui/Switch";
 import { Badge } from "@shared/components/ui/Badge";
@@ -96,24 +96,17 @@ export function AssetsMonoCards({
             onClick={() => setOpenId(id)}
             aria-label={`${visual.name}: ${t.settingsAriaSuffix}`}
             className={cn(
-              "touch-target flex w-full flex-col gap-1 rounded-xl border border-line bg-panel p-3 text-left transition-colors",
-              "hover:bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+              "touch-target flex w-full flex-col gap-1 border-b border-line py-3 last:border-0 text-left transition-colors",
+              "hover:bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               !included && "opacity-50",
             )}
           >
             <div className="flex w-full items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <span
-                  className={cn(
-                    "inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0",
-                    visual.tone,
-                  )}
-                  aria-hidden
-                >
-                  <Icon name={visual.iconName} size={18} />
-                </span>
                 <div className="min-w-0">
-                  <div className="text-style-label truncate">{visual.name}</div>
+                  <div className="text-style-body font-semibold truncate">
+                    {visual.name}
+                  </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span className="text-style-caption text-subtle">
                       {included ? t.bankLabel : t.excluded}
@@ -126,7 +119,7 @@ export function AssetsMonoCards({
                   </div>
                 </div>
               </div>
-              <div className="text-style-label tabular-nums text-text text-right shrink-0">
+              <div className="text-style-body font-medium tabular-nums text-text text-right shrink-0">
                 {showBalance ? (
                   // `kopecks` увімкнено навмисно: це залишок на рахунку
                   // банку, де копійка — частина факту, а не шум. На

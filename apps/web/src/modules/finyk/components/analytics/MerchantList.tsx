@@ -85,7 +85,7 @@ function MerchantListComponent({
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-bg rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-primary/70 rounded-full"
+                    className="h-full bg-chart-finyk/70 rounded-full"
                     style={{ width: `${barPct}%` }}
                   />
                 </div>

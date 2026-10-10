@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Card } from "@shared/components/ui/Card";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { type IconName } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
@@ -20,8 +20,6 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
  */
 export function AssetsGroupCard({
   title,
-  iconName,
-  iconClassName,
   open,
   onToggle,
   children,
@@ -41,13 +39,9 @@ export function AssetsGroupCard({
         aria-expanded={open}
         onClick={onToggle}
       >
-        <SectionHeading as="span" size="xs" variant="finyk">
-          <span className="inline-flex items-center gap-1.5">
-            <Icon name={iconName} size="sm" className={iconClassName} />
-            {title}
-          </span>
+        <SectionHeading as="span" size="lg" variant="muted">
+          <span className="inline-flex items-center gap-1.5">{title}</span>
         </SectionHeading>
-        <Icon name={open ? "chevron-up" : "chevron-down"} size="md" />
       </button>
       <div hidden={!open} className="space-y-2">
         {children}

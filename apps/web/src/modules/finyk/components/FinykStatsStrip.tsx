@@ -10,7 +10,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import {
@@ -31,37 +31,21 @@ type StatTileProps = {
   onClick?: (() => void) | undefined;
 };
 
-function toneClass(tone: IconTone) {
-  return tone === "success"
-    ? "text-success"
-    : tone === "danger"
-      ? "text-danger"
-      : "text-muted";
-}
-
-export function StatTile({
-  iconName,
-  iconTone,
-  label,
-  value,
-  hint,
-  onClick,
-}: StatTileProps) {
+export function StatTile({ label, value, hint, onClick }: StatTileProps) {
   const base = cn(
-    "flex-1 min-w-38 shrink-0 text-left px-3 py-2.5",
-    "bg-panelHi border border-line rounded-2xl",
+    "block w-full text-left py-3 border-b border-line last:border-0",
+
     "transition-colors",
     onClick && "hover:border-muted/50 active:scale-[0.99]",
   );
   const inner = (
     <>
       <div className="flex items-center gap-2 text-style-caption text-muted">
-        <span className={cn("inline-flex", toneClass(iconTone))} aria-hidden>
-          <Icon name={iconName} size="sm" />
-        </span>
         <span className="truncate">{label}</span>
       </div>
-      <div className="text-style-label text-text mt-1 truncate">{value}</div>
+      <div className="text-style-body font-medium text-text mt-1 truncate">
+        {value}
+      </div>
       {hint && (
         <div className="text-style-caption text-subtle mt-0.5 truncate">
           {hint}
@@ -115,10 +99,7 @@ export function FinykStatsStrip({
   return (
     <div
       data-no-swipe
-      className={cn(
-        "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden [touch-action:pan-x_pan-y]",
-        className,
-      )}
+      className={cn("divide-y divide-line", className)}
       role="list"
     >
       {showSubsTile && (

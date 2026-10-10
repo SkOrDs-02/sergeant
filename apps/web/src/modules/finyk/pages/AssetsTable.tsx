@@ -1,5 +1,5 @@
 import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { FinykStatsStrip } from "../components/FinykStatsStrip";
 import { QuickActionButton, SectionBar } from "./AssetsBars";
@@ -70,7 +70,6 @@ export function AssetsTable({ state }: { state: State }) {
               id: "asset",
               label: "Актив",
               description: "Готівка, депозит, інвестиції, авто",
-              icon: <Icon name="wallet" size="md" aria-hidden />,
               onSelect: openAssetForm,
             },
             {
@@ -78,7 +77,6 @@ export function AssetsTable({ state }: { state: State }) {
               id: "receivable",
               label: "Мені винні",
               description: "Борг, який мають повернути тобі",
-              icon: <Icon name="hand-coins" size="md" aria-hidden />,
               onSelect: openReceivableForm,
             },
           ]}

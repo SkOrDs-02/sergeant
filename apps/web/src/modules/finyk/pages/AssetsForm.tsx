@@ -1,3 +1,4 @@
+import { messages } from "@shared/i18n";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -160,17 +161,12 @@ export function SubscriptionForm({
             });
             setShowSubForm(false);
           }}
+          tone="ink"
+          variant="solid"
         >
           Додати
         </Button>
-        <Button
-          className="flex-1"
-          size="sm"
-          variant="outline"
-          onClick={() => setShowSubForm(false)}
-        >
-          Скасувати
-        </Button>
+        <CancelButton onCancel={() => setShowSubForm(false)} />
       </div>
     </Card>
   );
@@ -285,17 +281,12 @@ export function ReceivableForm({
             });
             setShowRecvForm(false);
           }}
+          tone="ink"
+          variant="solid"
         >
           {editingId ? "Зберегти" : "Додати"}
         </Button>
-        <Button
-          className="flex-1"
-          size="sm"
-          variant="outline"
-          onClick={() => setShowRecvForm(false)}
-        >
-          Скасувати
-        </Button>
+        <CancelButton onCancel={() => setShowRecvForm(false)} />
       </div>
     </Card>
   );
@@ -360,7 +351,7 @@ export function AssetForm({
             }))
           }
         />
-        <div className="rounded-2xl border border-line bg-panelHi px-4 py-3">
+        <div className="rounded-xl border border-line bg-panel px-4 py-3">
           <div className="text-style-caption text-muted">Валюта активу</div>
           <div className="text-style-label text-text">
             {isLegacyNonUah ? newAsset.currency : "UAH"}
@@ -417,17 +408,12 @@ export function AssetForm({
               });
               setShowAssetForm(false);
             }}
+            tone="ink"
+            variant="solid"
           >
             {editingId ? "Зберегти" : "Додати"}
           </Button>
-          <Button
-            className="flex-1"
-            size="sm"
-            variant="outline"
-            onClick={() => setShowAssetForm(false)}
-          >
-            Скасувати
-          </Button>
+          <CancelButton onCancel={() => setShowAssetForm(false)} />
         </div>
       </Card>
     </>
@@ -481,7 +467,7 @@ export function DebtForm({
       ref={debtFormRef as React.Ref<HTMLElement>}
       variant="flat"
       radius="md"
-      className="space-y-3 mb-2 border-danger/30 bg-danger-soft/40 dark:bg-danger/10"
+      className="space-y-3 mb-2 border-danger/30 bg-panel/40 dark:bg-panel"
     >
       <div>
         <div className="text-style-label text-danger-strong dark:text-danger">
@@ -621,18 +607,21 @@ export function DebtForm({
               setShowDebtForm(false);
             }
           }}
+          tone="ink"
+          variant="solid"
         >
           {editingId ? "Зберегти" : "Додати"}
         </Button>
-        <Button
-          className="flex-1"
-          size="sm"
-          variant="outline"
-          onClick={() => setShowDebtForm(false)}
-        >
-          Скасувати
-        </Button>
+        <CancelButton onCancel={() => setShowDebtForm(false)} />
       </div>
     </Card>
+  );
+}
+
+function CancelButton({ onCancel }: { onCancel: () => void }) {
+  return (
+    <Button variant="outline" size="sm" className="flex-1" onClick={onCancel}>
+      {messages.actions.cancel}
+    </Button>
   );
 }

@@ -1,5 +1,6 @@
+import { Card } from "@shared/components/ui/Card";
 import { pluralUa } from "@sergeant/shared";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
@@ -17,33 +18,19 @@ export function AssetsNetworthCard({
 }: Pick<State, "networth" | "totalAssets" | "totalDebt" | "showBalance"> & {
   nonUahManualAssetCount?: number;
 }) {
-  const isNegative = networth < 0;
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-3xl border p-5 mb-3 shadow-soft",
-        "bg-finyk/5 dark:bg-finyk-surface-dark/10 border-finyk/15 dark:border-finyk-border-dark/20",
-        "before:absolute before:inset-0 before:pointer-events-none before:bg-linear-to-br",
-        isNegative
-          ? "before:from-danger/5 before:via-transparent before:to-transparent"
-          : "before:from-finyk/10 before:via-transparent before:to-transparent",
-      )}
+    <Card
+      prominence={totalAssets + totalDebt > 0 ? "hero" : "panel"}
+      tone="finyk"
+      padding="lg"
+      className="mb-3 text-text"
     >
       <div className="relative">
-        {/* AI-CONTEXT: підпис іде ПІД числом, а не над ним — те саме правило
-            і той самий коментар, що в `overview/MonthPulseCard.tsx`. До
-            2026-09-02 «Загальний капітал» стояв НАД `display`, тобто на
-            найпомітнішому числі модуля службове слово зустрічало око
-            першим. Разом із цим тут один приглушений сірий на блок
-            (`text-muted`): підписи «Активи» / «Пасиви» нижче були
-            `text-subtle` при `text-muted` на верхній мітці — два сірі на
-            одній картці, ієрархію тепер несуть розмір і вага. */}
+        {/* H.2: число й підписи на тинті чорнилом; ієрархію несуть розмір і вага. */}
         <div
           className={cn(
             "text-style-display tnum flex items-center gap-1.5",
-            isNegative
-              ? "text-danger-strong dark:text-danger"
-              : "text-finyk-strong dark:text-finyk",
+            "text-text",
             !showBalance && "tracking-widest",
           )}
         >
@@ -71,12 +58,11 @@ export function AssetsNetworthCard({
             "\u2022\u2022\u2022\u2022\u2022\u2022"
           )}
         </div>
-        <p className="text-style-label text-muted mt-1 inline-flex items-center gap-1.5">
-          <Icon name="wallet" size="sm" aria-hidden />
+        <p className="text-style-label text-text mt-1 inline-flex items-center gap-1.5">
           Загальний капітал
         </p>
         {nonUahManualAssetCount > 0 && (
-          <p className="text-style-caption text-warning-strong dark:text-warning mt-1">
+          <p className="text-style-caption text-text mt-1">
             {nonUahManualAssetCount}{" "}
             {pluralUa(
               nonUahManualAssetCount,
@@ -85,28 +71,28 @@ export function AssetsNetworthCard({
           </p>
         )}
         {showBalance ? (
-          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-finyk/20 text-sm">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-line text-style-label">
             <div>
               <div className="font-semibold tabular-nums text-text">
                 <Money amount={totalAssets} signed tone="inherit" />
               </div>
-              <div className="text-style-caption text-muted mt-0.5">Активи</div>
+              <div className="text-style-caption text-text mt-0.5">Активи</div>
             </div>
-            <div className="w-px bg-finyk/20 hidden sm:block self-stretch min-h-10" />
+            <div className="w-px bg-panel hidden sm:block self-stretch min-h-10" />
             <div>
               <div className="font-semibold tabular-nums text-text">
                 <Money amount={-totalDebt} tone="inherit" />
               </div>
-              <div className="text-style-caption text-muted mt-0.5">Пасиви</div>
+              <div className="text-style-caption text-text mt-0.5">Пасиви</div>
             </div>
           </div>
         ) : (
-          <p className="text-style-caption text-muted mt-3">Суми приховано</p>
+          <p className="text-style-caption text-text mt-3">Суми приховано</p>
         )}
         {showBalance && totalAssets + totalDebt > 0 && (
           <AssetsLiabilitiesBar assets={totalAssets} liabilities={totalDebt} />
         )}
       </div>
-    </div>
+    </Card>
   );
 }

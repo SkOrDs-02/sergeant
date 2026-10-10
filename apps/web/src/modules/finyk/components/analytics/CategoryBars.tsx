@@ -119,17 +119,17 @@ function CategoryBarsComponent({
                 </span>
                 <span
                   aria-hidden
-                  className="relative mt-1.5 block h-[5px] rounded-sm bg-track"
+                  className="relative mt-1.5 block h-[11px] rounded-sm"
                 >
                   {prev > 0 && (
                     <span
                       data-testid="category-bar-ghost"
-                      className="absolute inset-y-0 left-0 rounded-sm bg-line"
+                      className="absolute bottom-0 left-0 h-[4px] rounded-sm bg-line"
                       style={{ width: `${(prev / max) * 100}%` }}
                     />
                   )}
                   <span
-                    className="absolute inset-y-0 left-0 rounded-sm"
+                    className="absolute top-0 left-0 h-[4px] rounded-sm"
                     style={{
                       width: `${(row.spent / max) * 100}%`,
                       background: row.color,

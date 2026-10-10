@@ -1,3 +1,4 @@
+import { messages } from "@shared/i18n";
 import { useAssetsState, type AssetsProps } from "./useAssetsState";
 import { AssetsTxPickerView } from "./AssetsTxPickerView";
 import { AssetsTable } from "./AssetsTable";
@@ -42,9 +43,10 @@ export function Assets({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-1">
-        {/* eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- sr-only a11y page heading, UA-only surface */}
-        <h1 className="sr-only">Активи</h1>
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-1">
+        <h1 className="text-style-title text-text mb-4">
+          {messages.finykRedesign.assetsTitle}
+        </h1>
         <AssetsTable state={state} />
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { messages } from "@shared/i18n";
 /**
  * Last validated: 2026-09-24
  * Status: Active
@@ -18,7 +19,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Money, Delta } from "@shared/components/ui/Money";
-import { cn } from "@shared/lib/ui/cn";
+
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { filterToKyivFirstDays, filterToKyivMonth } from "../lib/monthWindow";
 import { isMonoNotConnectedError } from "../lib/monoBankErrors";
@@ -52,6 +53,7 @@ import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { NARROW_NBSP } from "@sergeant/shared";
 
 interface SectionProps {
+  hero?: boolean;
   title: string;
   children: ReactNode;
   className?: string;
@@ -116,10 +118,16 @@ const Section = memo(function Section({
   title,
   children,
   className,
+  hero = false,
 }: SectionProps) {
   return (
-    <Card radius="lg" padding="lg" className={className}>
-      <SectionHeading as="div" size="xs" className="mb-4" variant="finyk">
+    <Card
+      prominence={hero ? "hero" : "panel"}
+      tone={hero ? "finyk" : undefined}
+      padding="lg"
+      className={className}
+    >
+      <SectionHeading as="div" size="lg" className="mb-4" variant="text">
         {title}
       </SectionHeading>
       {children}
@@ -160,7 +168,7 @@ const MonthNav = memo(function MonthNav({
       <button
         type="button"
         onClick={() => go(-1)}
-        className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors"
+        className="min-w-[44px] min-h-[44px] rounded-lg border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panel transition-colors"
         aria-label="Попередній місяць"
       >
         <Icon name="chevron-left" size="sm" />
@@ -170,7 +178,7 @@ const MonthNav = memo(function MonthNav({
         type="button"
         onClick={() => go(1)}
         disabled={isCurrentMonth}
-        className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
+        className="min-w-[44px] min-h-[44px] rounded-lg border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panel transition-colors disabled:opacity-30"
         aria-label="Наступний місяць"
       >
         <Icon name="chevron-right" size="sm" />
@@ -194,7 +202,7 @@ const ComparisonRow = memo(function ComparisonRow({
   showBalance = true,
 }: ComparisonRowProps) {
   return (
-    <div className="flex items-center justify-between text-sm">
+    <div className="flex items-center justify-between text-style-label">
       <span className="text-muted">{label}</span>
       <div className="flex items-center gap-2">
         {showBalance ? (
@@ -534,12 +542,14 @@ export function Analytics({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <h1 className="sr-only">Аналітика</h1>
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-4">
+        <h1 className="text-style-title text-text">
+          {messages.finykRedesign.analyticsTitle}
+        </h1>
         <MonthNav year={year} month={month} onChange={handleMonthChange} />
 
         {fetchError && bankTx.length === 0 && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger-strong dark:text-danger">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-panel border border-danger/20 text-style-label text-danger-strong dark:text-danger">
             <span>{fetchError}</span>
             <button
               type="button"
@@ -552,80 +562,37 @@ export function Analytics({
         )}
 
         {/* Summary */}
-        <Section title="Підсумок місяця">
+        <Section
+          title="Підсумок місяця"
+          hero={!pageLoading && summary.spent + summary.income > 0}
+        >
           {pageLoading ? (
-            <div className="grid grid-cols-3 gap-3">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-12 rounded-xl" />
-              ))}
-            </div>
+            <Skeleton className="h-8 rounded-lg" />
           ) : (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <div className="text-style-caption text-subtle mb-1">
-                  Витрати
-                </div>
-                {/* Нуль не є ні витратою, ні доходом: статус-колір лише на
-                    справжній сумі, інакше порожній місяць читається як
-                    результат. */}
-                {showBalance ? (
-                  <Money
-                    amount={summary.spent}
-                    tone="inherit"
-                    className={cn(
-                      "block text-style-label",
-                      summary.spent === 0
-                        ? "text-text"
-                        : "text-danger-strong dark:text-danger",
-                    )}
-                  />
-                ) : (
-                  <span className="block text-style-label text-danger-strong dark:text-danger">
-                    ••••
-                  </span>
-                )}
-              </div>
-              <div className="text-center">
-                <div className="text-style-caption text-subtle mb-1">Дохід</div>
-                {showBalance ? (
-                  <Money
-                    amount={summary.income}
-                    tone="inherit"
-                    className={cn(
-                      "block text-style-label",
-                      summary.income === 0
-                        ? "text-text"
-                        : "text-success-strong dark:text-success",
-                    )}
-                  />
-                ) : (
-                  <span className="block text-style-label text-success-strong dark:text-success">
-                    ••••
-                  </span>
-                )}
-              </div>
-              <div className="text-center">
-                <div className="text-style-caption text-subtle mb-1">
-                  Баланс
-                </div>
-                {/* Баланс — підписана дельта, тож `Delta`, а не `Money`:
-                    вона й знак ставить сама, і колір бере з того самого
-                    `signedDeltaClass`, який тут стояв вручну. */}
-                {showBalance ? (
-                  <Delta
-                    value={summary.balance}
-                    polarity="positive"
-                    className="block text-style-label"
-                  />
-                ) : (
-                  <span className="block text-style-label">••••</span>
-                )}
-              </div>
-            </div>
+            <p className="text-style-label text-text tabular-nums">
+              {messages.finykRedesign.expenses}{" "}
+              {showBalance ? (
+                <Money amount={summary.spent} tone="inherit" />
+              ) : (
+                "••••"
+              )}{" "}
+              · {messages.finykRedesign.income}{" "}
+              {showBalance ? (
+                <Money amount={summary.income} tone="inherit" />
+              ) : (
+                "••••"
+              )}{" "}
+              · {messages.finykRedesign.balance}{" "}
+              {showBalance ? (
+                <Money amount={summary.balance} signed tone="inherit" />
+              ) : (
+                "••••"
+              )}
+            </p>
           )}
           {/* Р15: при доході 0 рядка немає зовсім, «0 %» було б неправдою. */}
           {!pageLoading && savingsRate !== null && (
-            <div className="mt-4 pt-3 border-t border-line text-sm text-muted space-y-0.5">
+            <div className="mt-4 pt-3 border-t border-line text-style-label text-text space-y-0.5">
               <p>
                 {savingsRate >= 0
                   ? `Відкладено ${Math.round(savingsRate)}${NARROW_NBSP}% доходу`
@@ -635,9 +602,11 @@ export function Analytics({
                   місяців його тоді ще не було. */}
               {isCurrentMonth && plannedSavings > 0 && showBalance && (
                 <p>
-                  План відкласти <Money amount={plannedSavings} />, вийшло{" "}
+                  План відкласти{" "}
+                  <Money amount={plannedSavings} tone="inherit" />, вийшло{" "}
                   <Money
                     amount={(summary.incomeMinor - summary.spentMinor) / 100}
+                    tone="inherit"
                   />
                 </p>
               )}
@@ -655,7 +624,9 @@ export function Analytics({
             }
           >
             {comparison.prevTxCount === 0 ? (
-              <p className="text-sm text-muted">Немає з чим порівняти</p>
+              <p className="text-style-label text-muted">
+                Немає з чим порівняти
+              </p>
             ) : (
               <div className="space-y-2">
                 <ComparisonRow

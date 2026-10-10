@@ -13,7 +13,6 @@ import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
-import { CategoryIconChip } from "../CategoryIconChip";
 
 interface LimitBudgetInput {
   id: string;
@@ -81,7 +80,6 @@ interface LimitBudgetCardProps {
 function LimitBudgetCardComponent({
   budget,
   categoryLabel,
-  customCategories = [],
   showBalance = true,
   breakdown,
   forecast,
@@ -137,15 +135,14 @@ function LimitBudgetCardComponent({
   );
 
   return (
-    <Card radius="lg" padding="lg">
+    <Card
+      prominence="ghost"
+      padding="md"
+      className="border-b border-line rounded-none"
+    >
       {isEditing ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2 pb-1">
-            <CategoryIconChip
-              categoryId={budget.categoryId ?? ""}
-              customCategories={customCategories}
-              size={24}
-            />
             <div>
               <p className="text-style-caption text-muted">
                 Редагування ліміту
@@ -174,14 +171,20 @@ function LimitBudgetCardComponent({
                 event.target.value as "month" | "week" | "one_time",
               )
             }
-            className="input-focus-finyk w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-sm text-text"
+            className="focus-ring w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-style-label text-text"
           >
             <option value="month">Щомісяця</option>
             <option value="week">Щотижня</option>
             <option value="one_time">Одноразово</option>
           </select>
           <div className="flex gap-2">
-            <Button className="flex-1" size="sm" onClick={onSave}>
+            <Button
+              className="flex-1"
+              size="sm"
+              onClick={onSave}
+              tone="ink"
+              variant="solid"
+            >
               Зберегти
             </Button>
             <Button
@@ -199,35 +202,12 @@ function LimitBudgetCardComponent({
         <>
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2 min-w-0">
-              {isCombo ? (
-                // Комбо-ліміт: до трьох чипів категорій поруч, решта — «+N».
-                <span className="flex items-center gap-1 shrink-0">
-                  {categoryIds.slice(0, 3).map((id) => (
-                    <CategoryIconChip
-                      key={id}
-                      categoryId={id}
-                      customCategories={customCategories}
-                      size={24}
-                    />
-                  ))}
-                  {categoryIds.length > 3 && (
-                    <span className="text-style-caption text-muted">
-                      +{categoryIds.length - 3}
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <CategoryIconChip
-                  categoryId={budget.categoryId ?? ""}
-                  customCategories={customCategories}
-                />
-              )}
               <div className="min-w-0 flex-1">
                 {/* `truncate`, а не перенос: підпис комбо довший за
                     одно-категорійний, і при переносі лишав у другому рядку
                     самотнє «2» (браузерний QA 2026-08-26). Обрізати безпечно —
                     повний склад набору стоїть нижче рядками розбивки. */}
-                <span className="text-style-label block truncate">
+                <span className="text-style-body font-semibold block truncate">
                   {categoryLabel || "—"}
                 </span>
                 <div className="text-style-caption text-subtle mt-0.5 flex items-center gap-1.5">
@@ -252,7 +232,9 @@ function LimitBudgetCardComponent({
                   самій картці. NARROW_NBSP перед ₴ — той самий відступ, що
                   ставить <Money> нижче (браузерний QA 2026-08-25). */}
               {isCombo ? null : (
-                <span className="text-style-caption">{amountNode}</span>
+                <span className="text-style-body font-medium">
+                  {amountNode}
+                </span>
               )}
               <Button
                 type="button"
@@ -321,11 +303,6 @@ function LimitBudgetCardComponent({
                   className="flex items-center justify-between gap-2 text-style-caption text-subtle"
                 >
                   <span className="flex items-center gap-1.5 min-w-0">
-                    <CategoryIconChip
-                      categoryId={row.categoryId}
-                      customCategories={customCategories}
-                      size={24}
-                    />
                     <span className="truncate">{row.label}</span>
                   </span>
                   <span className="tabular-nums shrink-0">
@@ -346,20 +323,11 @@ function LimitBudgetCardComponent({
                         type="button"
                         onClick={() => setAdviceOpen((v) => !v)}
                         aria-expanded={adviceOpen}
-                        className="flex-1 flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-panelHi transition-colors"
+                        className="flex-1 flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-panel transition-colors"
                       >
                         <span className="flex items-center gap-2 text-style-caption text-text">
-                          <Icon name="sergeant" size="md" aria-hidden />
                           Порада Сержанта
                         </span>
-                        <Icon
-                          name="chevron-down"
-                          size="sm"
-                          className={cn(
-                            "transition-transform text-muted",
-                            adviceOpen ? "rotate-180" : "",
-                          )}
-                        />
                       </button>
                       {onDismissAdvice && (
                         <Tooltip
@@ -377,7 +345,7 @@ function LimitBudgetCardComponent({
                       )}
                     </div>
                     {adviceOpen && (
-                      <p className="px-3 pb-2.5 text-xs text-text leading-relaxed">
+                      <p className="px-3 pb-2.5 text-style-caption text-text leading-relaxed">
                         {proactiveText}
                       </p>
                     )}

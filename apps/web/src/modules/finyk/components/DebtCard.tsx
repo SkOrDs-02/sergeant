@@ -72,13 +72,15 @@ function DebtCardComponent({
   const isOverdue = dueText?.includes("Прострочено");
 
   return (
-    <div className="bg-panel border border-line rounded-xl p-4 mb-3">
+    <div className="border-b border-line py-4 last:border-0">
       <div className="flex items-start justify-between mb-3">
-        <span className="text-style-label leading-snug">{name}</span>
+        <span className="text-style-body font-semibold leading-snug">
+          {name}
+        </span>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <span
             className={cn(
-              "text-style-label tabular-nums",
+              "text-style-body font-medium tabular-nums",
               isReceivable
                 ? "text-success-strong dark:text-success"
                 : "text-danger-strong dark:text-danger",
@@ -124,7 +126,7 @@ function DebtCardComponent({
         <div
           className={cn(
             "h-full rounded-full transition-[width,background-color] duration-slower",
-            isReceivable ? "bg-success" : "bg-primary",
+            isReceivable ? "bg-success" : "bg-chart-finyk",
           )}
           style={{ width: `${pct}%` }}
         />
@@ -147,17 +149,15 @@ function DebtCardComponent({
             isOverdue ? "text-danger-strong dark:text-danger" : "text-muted",
           )}
         >
-          <Icon name="calendar" size={13} aria-hidden />{" "}
           {formatDueDateValue(dueDate)} · {dueText}
         </div>
       )}
       {onLink && (
         <button
           onClick={onLink}
-          className="mt-3 w-full text-style-caption text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
+          className="mt-3 w-full text-style-caption text-muted border border-dashed border-line rounded-lg py-2 hover:border-primary hover:text-text transition-colors"
         >
-          <Icon name="link" size="sm" aria-hidden /> Привʼязати операції (
-          {linkedCount || 0})
+          Привʼязати операції ({linkedCount || 0})
         </button>
       )}
     </div>

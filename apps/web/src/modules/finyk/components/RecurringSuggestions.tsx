@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 
@@ -122,15 +122,9 @@ export function RecurringSuggestions({
     <section className="mb-4">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-panelHi border border-line rounded-2xl text-left transition-colors hover:border-muted/50"
+        className="w-full flex items-center justify-between px-4 py-3 bg-panel border border-line rounded-lg text-left transition-colors hover:border-muted/50"
       >
         <div className="flex items-center gap-2">
-          <Icon
-            name="lightbulb"
-            size={18}
-            className="text-warning"
-            aria-hidden
-          />
           <div>
             <div className="text-style-label text-text">
               Можливі підписки
@@ -145,7 +139,6 @@ export function RecurringSuggestions({
         </div>
         <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2">
           {open ? "Згорнути" : "Розгорнути"}
-          <Icon name={open ? "chevron-up" : "chevron-down"} size="sm" />
         </span>
       </button>
 
@@ -154,7 +147,7 @@ export function RecurringSuggestions({
           {candidates.map((c) => (
             <li
               key={c.key}
-              className="px-4 py-3 bg-panelHi border border-line rounded-2xl"
+              className="px-4 py-3 bg-panel border border-line rounded-xl"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -192,6 +185,8 @@ export function RecurringSuggestions({
                     size="sm"
                     onClick={() => onAdd?.(c)}
                     className="whitespace-nowrap"
+                    tone="ink"
+                    variant="solid"
                   >
                     + Підписка
                   </Button>

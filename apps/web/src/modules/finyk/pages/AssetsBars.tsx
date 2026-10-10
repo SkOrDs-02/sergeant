@@ -1,28 +1,9 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { formatNumberUk } from "@sergeant/shared";
 
-const TONE_TEXT: Record<"success" | "danger" | "muted" | "finyk", string> = {
-  success: "text-success",
-  danger: "text-danger",
-  muted: "text-muted",
-  finyk: "text-finyk-strong dark:text-finyk",
-};
-
-const TONE_BG: Record<"success" | "danger" | "muted" | "finyk", string> = {
-  success: "bg-success/10",
-  danger: "bg-danger/10",
-  muted: "bg-panelHi",
-  finyk: "bg-finyk/10",
-};
-
-/**
- * Single-row stacked bar that visualises the assets vs. liabilities split
- * inside the Networth header. Only rendered when the user has at least
- * one of each bucket — a lone bar would be misleading.
- */
 export function AssetsLiabilitiesBar({
   assets,
   liabilities,
@@ -38,35 +19,20 @@ export function AssetsLiabilitiesBar({
   return (
     <div className="mt-4">
       <div
-        className="relative flex h-2 w-full overflow-hidden rounded-full bg-finyk/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
+        className="relative flex h-2 w-full overflow-hidden rounded-sm bg-line"
         role="img"
         aria-label={`Активи ${assetsPct}% · Пасиви ${liabilitiesPct}%`}
         aria-describedby={summaryId}
       >
+        <div className="bg-chart-finyk" style={{ width: `${assetsPct}%` }} />
         <div
-          className="bg-linear-to-r from-finyk to-finyk-strong"
-          style={{ width: `${assetsPct}%` }}
-        />
-        <div
-          className="bg-linear-to-r from-danger to-danger-strong"
+          className="bg-danger-strong"
           style={{ width: `${liabilitiesPct}%` }}
         />
       </div>
-      <div className="flex justify-between text-style-caption text-muted mt-2 tabular-nums">
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="inline-block h-1.5 w-1.5 rounded-full bg-finyk-strong"
-            aria-hidden
-          />
-          Активи {assetsPct}%
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="inline-block h-1.5 w-1.5 rounded-full bg-danger"
-            aria-hidden
-          />
-          Пасиви {liabilitiesPct}%
-        </span>
+      <div className="flex justify-between text-style-caption text-text mt-2 tabular-nums">
+        <span>Активи {assetsPct}%</span>
+        <span>Пасиви {liabilitiesPct}%</span>
       </div>
       <div id={summaryId} className="sr-only">
         <p>
@@ -81,7 +47,7 @@ export function AssetsLiabilitiesBar({
   );
 }
 
-export type QuickActionTone = "finyk" | "success" | "danger";
+export type QuickActionTone = "neutral" | "finyk" | "success" | "danger";
 
 export interface QuickActionButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
@@ -100,7 +66,7 @@ export interface QuickActionButtonProps extends Omit<
  * flow into a single tap that opens the relevant section *and* reveals
  * its inline form.
  *
- * Це звичайний `Button variant="soft"`, а не картка з іконкою в тонованому
+ * Це звичайний `Button variant="outline"`, а не картка з іконкою в тонованому
  * квадраті: тайл за формою збігався з картками вмісту поруч, і око не
  * розрізняло «натисни» та «прочитай» (анти-слоп, атрактор icon-in-tinted-
  * square). Іконки немає навмисно: у трьох колонках підпис і є значенням.
@@ -112,15 +78,11 @@ export interface QuickActionButtonProps extends Omit<
 export const QuickActionButton = forwardRef<
   HTMLButtonElement,
   QuickActionButtonProps
->(function QuickActionButton(
-  { label, tone = "finyk", className, ...rest },
-  ref,
-) {
+>(function QuickActionButton({ label, tone: _tone, className, ...rest }, ref) {
   return (
     <Button
       ref={ref}
-      variant="soft"
-      tone={tone}
+      variant="outline"
       size="md"
       className={cn("w-full min-w-0 px-1", className)}
       {...rest}
@@ -151,8 +113,6 @@ export type SectionBarProps = {
  */
 export function SectionBar({
   title,
-  iconName,
-  iconTone = "muted",
   summary,
   open,
   onToggle,
@@ -161,25 +121,12 @@ export function SectionBar({
     <button
       onClick={onToggle}
       aria-expanded={open}
-      // `bg-panel`, а не `bg-panelHi`: бар секції — та сама біла поверхня,
-      // що й рядки карток Monobank під ним. Сірий бар читався як
-      // «підкладка», а не як заголовок рівня з картками (звіт власника
-      // 2026-09-03).
-      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panel border border-line rounded-2xl mb-2 text-left shadow-soft transition-[transform,box-shadow,border-color] hover:border-muted/40 hover:shadow-card hover:-translate-y-px active:translate-y-0"
+      // Нейтральна група: назва, сума й текстовий стан розгортання.
+      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panel border border-line rounded-lg mb-2 text-left  transition-[transform,box-shadow,border-color] hover:border-muted/40"
     >
       <div className="flex items-center gap-3 min-w-0">
-        <span
-          className={cn(
-            "inline-flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
-            TONE_BG[iconTone],
-            TONE_TEXT[iconTone],
-          )}
-          aria-hidden
-        >
-          <Icon name={iconName} size={18} />
-        </span>
         <div className="min-w-0">
-          <div className="text-style-label text-text truncate">{title}</div>
+          <div className="text-style-title text-text truncate">{title}</div>
           {summary && (
             <div className="text-style-caption text-muted mt-0.5 truncate tabular-nums">
               {summary}
@@ -189,11 +136,6 @@ export function SectionBar({
       </div>
       <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2 group-hover:text-text transition-colors">
         <span>{open ? "Згорнути" : "Розгорнути"}</span>
-        <Icon
-          name={open ? "chevron-up" : "chevron-down"}
-          size="sm"
-          aria-hidden
-        />
       </span>
     </button>
   );
