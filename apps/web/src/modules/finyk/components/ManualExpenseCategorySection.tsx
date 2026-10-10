@@ -65,19 +65,18 @@ export function ManualExpenseCategorySection({
       {aiAppliedCategory && categorySlug === aiAppliedCategory ? (
         <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-base mb-2">
           <Badge
-            variant="finyk"
+            variant="neutral"
             tone="soft"
             size="sm"
             className="inline-flex items-center gap-1.5"
           >
-            <Icon name="sergeant" size="xs" aria-hidden />
             Сержант ·{" "}
             {categoryDisplay[aiAppliedCategory]?.label ?? aiAppliedCategory}
             <button
               type="button"
               onClick={() => setAiAppliedCategory(null)}
               aria-label="Сховати підказку Сержанта"
-              className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-finyk/20 transition-colors touch-target"
+              className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-lg hover:bg-panel transition-colors touch-target"
             >
               <Icon name="close" size={10} aria-hidden />
             </button>

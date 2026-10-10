@@ -18,7 +18,7 @@ import type {
   LinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -263,10 +263,10 @@ export function BankTransactionDetailsSheet({
       footer={
         <Button
           variant="solid"
-          tone="finyk"
 
           onClick={onClose}
           className="w-full"
+          tone="ink"
         >
           {copy.done}
         </Button>
@@ -363,7 +363,7 @@ export function BankTransactionDetailsSheet({
           )}
 
         {!isIncome && (
-          <section className="rounded-2xl border border-line bg-panel p-3">
+          <section className="rounded-xl border border-line bg-panel p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-style-label text-text">
@@ -376,13 +376,11 @@ export function BankTransactionDetailsSheet({
                 </p>
               </div>
               <Button
-                variant="soft"
-                tone="finyk"
+                variant="outline"
 
                 size="xs"
                 onClick={openSplitEditor}
               >
-                <Icon name="shuffle" size={15} aria-hidden />
                 {existingSplits.length > 0
                   ? copy.changeSplit
                   : copy.createSplit}
@@ -426,7 +424,7 @@ export function BankTransactionDetailsSheet({
           />
         )}
 
-        <section className="space-y-2 rounded-2xl border border-line bg-panel p-3">
+        <section className="space-y-2 rounded-xl border border-line bg-panel p-3">
           <Switch
             checked={excludedFromStats}
             onChange={(next) => {

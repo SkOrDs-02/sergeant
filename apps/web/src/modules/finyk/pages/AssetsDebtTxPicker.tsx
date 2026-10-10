@@ -5,7 +5,7 @@
 import { useState, type ReactNode } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
@@ -123,10 +123,10 @@ function RoleSheet({
               aria-pressed={selected}
               onClick={() => onPick(role)}
               className={cn(
-                "w-full touch-target rounded-xl border px-4 py-3 text-left transition-colors",
+                "w-full touch-target rounded-lg border px-4 py-3 text-left transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
                 selected
-                  ? "border-finyk bg-finyk/10"
+                  ? "border-line bg-panel"
                   : "border-line hover:bg-panel",
               )}
             >
@@ -229,7 +229,6 @@ export function AssetsDebtTxPicker({
           onClick={onBack}
           className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
         >
-          <Icon name="chevron-left" size="sm" />
           {copy.back}
         </button>
         <span className="text-style-label">
@@ -243,11 +242,7 @@ export function AssetsDebtTxPicker({
               {/* До 2026-08-21 тут стояв `item.emoji` — засіяний дефолт
                   («💸» для боргу, «👤» для дебіторки), який форма не дає
                   редагувати. Тобто хардкод емодзі, а не вибір людини. */}
-              <Icon
-                name={isDebt ? "credit-card" : "user"}
-                size="sm"
-                aria-hidden
-              />
+
               {item.name}
             </div>
             <p className="text-style-caption text-subtle mt-2 leading-relaxed">

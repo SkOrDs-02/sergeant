@@ -10,7 +10,7 @@ import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
+
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   dismissNudge,
@@ -176,7 +176,11 @@ function GoalBudgetCardComponent({
   return (
     <>
       {CelebrationComponent}
-      <Card radius="lg" padding="lg">
+      <Card
+        prominence="ghost"
+        padding="md"
+        className="border-b border-line rounded-none"
+      >
         {isEditing ? (
           <div className="space-y-2">
             <div>
@@ -223,6 +227,8 @@ function GoalBudgetCardComponent({
                 size="sm"
                 onClick={handleSave}
                 disabled={!draftTargetValid}
+                tone="ink"
+                variant="solid"
               >
                 Зберегти
               </Button>
@@ -240,8 +246,8 @@ function GoalBudgetCardComponent({
         ) : (
           <>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-style-label">
-                <Icon name="target" size="md" aria-hidden /> {budget.name}
+              <span className="text-style-body font-semibold">
+                {budget.name}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-style-caption text-muted">
@@ -264,9 +270,9 @@ function GoalBudgetCardComponent({
                 </button>
               </div>
             </div>
-            <div className="h-2 bg-bg rounded-full overflow-hidden">
+            <div className="h-2 bg-bg rounded-[3px] overflow-hidden">
               <div
-                className="h-full rounded-full bg-success transition-[width,background-color] duration-slower"
+                className="h-full rounded-[3px] bg-success transition-[width,background-color] duration-slower"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -312,15 +318,6 @@ function GoalBudgetCardComponent({
                   className="text-style-caption text-subtle hover:text-text flex items-center gap-1 transition-colors"
                 >
                   Історія ({contributions.length})
-                  <Icon
-                    name="chevron-down"
-                    size="xs"
-                    aria-hidden
-                    className={cn(
-                      "transition-transform",
-                      historyOpen ? "rotate-180" : "",
-                    )}
-                  />
                 </button>
               )}
             </div>
@@ -354,6 +351,8 @@ function GoalBudgetCardComponent({
                     size="sm"
                     onClick={handleAddContribution}
                     disabled={!contribAmountValid}
+                    tone="ink"
+                    variant="solid"
                   >
                     Додати
                   </Button>

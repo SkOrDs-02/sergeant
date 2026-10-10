@@ -177,7 +177,7 @@ describe("Analytics page", () => {
     expect(screen.queryByText("Поки немає продавців")).toBeNull();
     expect(
       container.querySelectorAll('[class*="animate-pulse"]').length,
-    ).toBeGreaterThanOrEqual(7);
+    ).toBeGreaterThanOrEqual(5);
   });
 
   it("keeps a failed background fetch of the prior month off the page", async () => {

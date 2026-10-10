@@ -93,8 +93,8 @@ export function ManualExpenseAmountSection({
                 }
                 className={
                   personal
-                    ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-style-caption bg-success/10 text-success-strong dark:text-success border border-success/30 hover:bg-success/15 transition-colors tabular-nums"
-                    : "px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors tabular-nums"
+                    ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-style-caption bg-panel text-text border border-line hover:bg-panel transition-colors tabular-nums"
+                    : "px-2.5 py-1 rounded-lg text-style-caption bg-panel text-muted border border-line hover:border-muted/50 transition-colors tabular-nums"
                 }
                 aria-label={
                   personal
@@ -102,12 +102,6 @@ export function ManualExpenseAmountSection({
                     : `${formatMoney(value)}`
                 }
               >
-                {personal ? (
-                  <span
-                    aria-hidden
-                    className="w-1.5 h-1.5 rounded-full bg-finyk"
-                  />
-                ) : null}
                 {formatMoney(value)}
               </button>
             ))}
@@ -121,7 +115,7 @@ export function ManualExpenseAmountSection({
         {amountHeroVisible ? (
           <div
             aria-hidden
-            className="text-style-display font-mono tabular-nums text-finyk-strong dark:text-finyk leading-none mb-2 select-none"
+            className="text-style-display font-mono tabular-nums text-text leading-none mb-2 select-none"
           >
             {formatMoney(amountNumeric)}
           </div>

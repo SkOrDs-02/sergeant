@@ -157,13 +157,13 @@ describe("AssetsSubscriptionsSection", () => {
     ).toBe(true);
   });
 
-  it("uses the theme-aware finyk foreground on the monthly total plaque", () => {
+  it("keeps the monthly subscription summary neutral", () => {
     const { container } = render(
       <AssetsSubscriptionsSection state={makeState()} />,
     );
-    const plaque = container.querySelector(".bg-finyk-soft");
+    const plaque = container.querySelector(".bg-panel");
     expect(plaque).not.toBeNull();
-    expect(plaque!.querySelectorAll(".text-finyk-soft-fg")).toHaveLength(2);
+    expect(plaque!.querySelectorAll(".text-muted").length).toBeGreaterThan(0);
     expect(plaque!.querySelector(".text-finyk-strong")).toBeNull();
   });
 

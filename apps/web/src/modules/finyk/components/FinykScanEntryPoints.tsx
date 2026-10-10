@@ -34,7 +34,7 @@ import { BulkImportSheet, ReceiptScanSheet } from "./lazyReceiptSheets";
 import { useAuthOptional } from "../../../core/auth/AuthContext";
 
 /** Shared between both lazy sheets below — matches `Sheet`'s own backdrop
- * treatment (`bg-black/40 backdrop-blur-sm`, `Sheet.tsx`) so the fallback
+ * treatment (`bg-black/40`, `Sheet.tsx`) so the fallback
  * reads as "the sheet is opening", not a separate flash of UI. */
 function SheetOpeningFallback() {
   return (
@@ -42,7 +42,7 @@ function SheetOpeningFallback() {
       role="status"
       aria-live="polite"
       aria-label="Відкриваю…"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
       <Spinner size="lg" />
     </div>

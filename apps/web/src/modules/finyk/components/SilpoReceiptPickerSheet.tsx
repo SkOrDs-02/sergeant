@@ -24,7 +24,7 @@
  */
 import { useMemo } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
@@ -103,7 +103,7 @@ export function SilpoReceiptPickerSheet({
           <EmptyState
             size="sm"
             module="finyk"
-            icon={<Icon name="file-text" size="lg" />}
+
             title={COPY.emptyTitle}
             description={COPY.emptyHint}
           />
@@ -128,12 +128,12 @@ export function SilpoReceiptPickerSheet({
                   )
                 }
                 className={cn(
-                  "touch-target flex w-full items-center justify-between gap-3 rounded-xl border p-2 text-left transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
+                  "touch-target flex w-full items-center justify-between gap-3 rounded-lg border p-2 text-left transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
                   // Точний збіг суми виділяємо рамкою модуля, а не заливкою:
                   // це підказка, а не вибір — рішення лишається за людиною.
                   exactAmount
-                    ? "border-finyk bg-panelHi"
-                    : "border-line bg-panelHi hover:bg-panel",
+                    ? "border-line bg-panel"
+                    : "border-line bg-panel hover:bg-panel",
                 )}
               >
                 <span className="min-w-0">
@@ -145,12 +145,6 @@ export function SilpoReceiptPickerSheet({
                     {exactAmount ? ` · ${COPY.exactAmount}` : ""}
                   </span>
                 </span>
-                <Icon
-                  name="chevron-right"
-                  size="md"
-                  className="shrink-0 text-muted"
-                  aria-hidden
-                />
               </button>
             </li>
           ))}

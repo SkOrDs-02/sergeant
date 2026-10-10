@@ -546,8 +546,8 @@ export function Transactions({
               lastUpdated={lastUpdated}
             />
             {isDayFilterValid && (
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-finyk/25 bg-finyk-soft px-3 py-2">
-                <span className="text-style-caption text-finyk-strong dark:text-finyk">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel px-3 py-2">
+                <span className="text-style-caption text-text text-text">
                   {dayFilterLabel}
                 </span>
                 {onClearDayFilter && (

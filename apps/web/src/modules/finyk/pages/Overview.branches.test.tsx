@@ -189,7 +189,9 @@ describe("Overview page (branches)", () => {
       mono: buildMono({ realTx: [mkTx("t1", -5000)] }),
     });
     expect(screen.getByText("Капітал")).toBeInTheDocument();
-    expect(screen.getByText("Сьогодні")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Сьогодні" }),
+    ).toBeInTheDocument();
   });
 
   it("opens the today-filtered transaction route from the daily summary", () => {

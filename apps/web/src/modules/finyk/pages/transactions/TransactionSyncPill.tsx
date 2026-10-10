@@ -17,14 +17,7 @@ export interface TransactionSyncPillProps {
   lastUpdated: Date | null | undefined;
 }
 
-/**
- * Compact sync + last-updated meta row.
- *
- * Floating "✓ синхронізовано · мережа · 6/6 акаунтів" + bare "Оновлено:
- * 10:55" used to read as two stray grey lines under the action cluster.
- * Collapsed into one pill chip + inline timestamp so the panel reads as
- * a single controls tray.
- */
+/** Sync state and last update are plain facts in the controls row. */
 export function TransactionSyncPill({
   syncState,
   lastUpdated,
@@ -36,25 +29,8 @@ export function TransactionSyncPill({
   const showSyncRow = syncState?.status !== "idle" || lastUpdated;
   if (!showSyncRow) return null;
 
-  // Sync-meta pill: tone follows status, dot mirrors `text-*` colour so the
-  // pill remains a single-glance status chip even without reading the label.
   const tone =
-    syncState?.status === "error"
-      ? "text-danger-strong dark:text-danger border-danger/30 bg-danger/10"
-      : syncState?.status === "partial"
-        ? "text-warning-strong dark:text-warning border-warning/30 bg-warning/10"
-        : // `loading` і решта станів мали однаковий тон (різнилась лише крапка
-          // нижче), тому гілка одна. Суцільна заливка й межа: напівпрозора
-          // `/60` змішувалась із тлом під пілюлею (хвиля 5 аудиту контрасту).
-          "text-subtle border-line bg-panelHi";
-  const dot =
-    syncState?.status === "error"
-      ? "bg-danger"
-      : syncState?.status === "partial"
-        ? "bg-warning"
-        : syncState?.status === "loading"
-          ? "bg-muted motion-safe:animate-pulse"
-          : "bg-success";
+    syncState?.status === "error" ? "text-danger-strong" : "text-muted";
   const statusLabel =
     syncState?.status === "loading"
       ? "оновлення…"
@@ -75,19 +51,9 @@ export function TransactionSyncPill({
     <div className="flex items-center gap-2 flex-wrap text-style-caption">
       {syncState?.status !== "idle" && statusLabel && (
         <span
-          className={cn(
-            "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border tabular-nums",
-            tone,
-          )}
+          className={cn("inline-flex items-center gap-1.5 tabular-nums", tone)}
           aria-label={`Стан синхронізації: ${statusLabel}, джерело: ${sourceLabel}, акаунтів: ${syncState?.accountsOk}/${syncState?.accountsTotal}`}
         >
-          <span
-            className={cn(
-              "inline-block w-1.5 h-1.5 rounded-full shrink-0",
-              dot,
-            )}
-            aria-hidden
-          />
           <span>{statusLabel}</span>
           <span className="text-line" aria-hidden>
             ·

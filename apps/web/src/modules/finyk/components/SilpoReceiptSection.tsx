@@ -27,7 +27,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
@@ -39,7 +39,7 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { useSilpoReceiptForTransaction } from "@finyk/hooks/useSilpoReceipts";
 import { useSilpoUnlinkReceipt } from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
-import { CATEGORY_ICON_MAP, stripLeadingEmoji } from "./txRowHelpers";
+import { stripLeadingEmoji } from "./txRowHelpers";
 import { SilpoReceiptPickerSheet } from "./SilpoReceiptPickerSheet";
 
 // Discoverability CTA (§ audit finding): a not-yet-connected user opening a
@@ -225,14 +225,8 @@ export function SilpoReceiptSection({
   if (status === "disconnected") {
     if (!looksLikeSilpo) return null;
     return (
-      <section className="rounded-2xl border border-line bg-panel p-3">
+      <section className="rounded-xl border border-line bg-panel p-3">
         <div className="flex items-center gap-2">
-          <Icon
-            name="shopping-cart"
-            size="md"
-            className="text-muted shrink-0"
-            aria-hidden
-          />
           <h3 className="text-style-label text-text">
             {copy.connectPromptTitle}
           </h3>
@@ -241,8 +235,7 @@ export function SilpoReceiptSection({
           {copy.connectPromptHint}
         </p>
         <Button
-          variant="soft"
-          tone="finyk"
+          variant="outline"
 
           size="sm"
           className="mt-2"
@@ -286,7 +279,7 @@ export function SilpoReceiptSection({
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="touch-target rounded-xl px-3 text-style-caption text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
+            className="touch-target rounded-lg px-3 text-style-caption text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
           >
             {messages.finyk.silpoReceiptPicker.cta}
           </button>
@@ -311,27 +304,19 @@ export function SilpoReceiptSection({
   };
 
   return (
-    <section className="rounded-2xl border border-line bg-panel p-3">
+    <section className="rounded-xl border border-line bg-panel p-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon
-            name="shopping-cart"
-            size="md"
-            className="text-muted shrink-0"
-            aria-hidden
-          />
           <h3 className="text-style-label text-text">{copy.title}</h3>
         </div>
         <Button
-          variant="soft"
-          tone="finyk"
+          variant="outline"
 
           size="xs"
           disabled={!canPropose}
           aria-expanded={proposalOpen}
           onClick={() => setProposalOpen((open) => !open)}
         >
-          <Icon name="shuffle" size={15} aria-hidden />
           {copy.splitCta}
         </Button>
       </div>
@@ -347,7 +332,7 @@ export function SilpoReceiptSection({
       )}
 
       {proposalOpen && canPropose && (
-        <div className="mt-3 space-y-2 rounded-xl border border-line bg-panelHi p-3">
+        <div className="mt-3 space-y-2 rounded-xl border border-line bg-panel p-3">
           <p className="text-style-caption text-subtle">{copy.proposalTitle}</p>
           <ul className="space-y-1.5">
             {finalSplits.map((split) => {
@@ -361,11 +346,6 @@ export function SilpoReceiptSection({
                   className="flex items-center justify-between gap-2 text-style-body"
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <Icon
-                      name={CATEGORY_ICON_MAP[split.categoryId] ?? "tag"}
-                      size={15}
-                      aria-hidden
-                    />
                     <span className="truncate text-text">
                       {stripLeadingEmoji(meta?.label ?? split.categoryId)}
                     </span>
@@ -385,18 +365,18 @@ export function SilpoReceiptSection({
           <div className="flex gap-2 pt-1">
             <Button
               variant="solid"
-              tone="finyk"
 
               size="xs"
               className="flex-1"
               onClick={confirmSplit}
+              tone="ink"
             >
               {copy.proposalConfirm}
             </Button>
             <button
               type="button"
               onClick={() => setProposalOpen(false)}
-              className="touch-target rounded-xl border border-line px-3 text-style-caption text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
+              className="touch-target rounded-lg border border-line px-3 text-style-caption text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
             >
               {copy.proposalCancel}
             </button>
@@ -450,7 +430,7 @@ export function SilpoReceiptSection({
               onSuccess: () => setJustUnlinked(true),
             })
           }
-          className="touch-target rounded-xl px-3 text-style-caption text-subtle transition-colors hover:text-text disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
+          className="touch-target rounded-lg px-3 text-style-caption text-subtle transition-colors hover:text-text disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
         >
           {unlinkMutation.isPending ? copy.unlinkPending : copy.unlinkCta}
         </button>

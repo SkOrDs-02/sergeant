@@ -1,3 +1,5 @@
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Card } from "@shared/components/ui/Card";
 /**
  * Last validated: 2026-05-14
  * Status: Active
@@ -5,7 +7,7 @@
 import { memo, useId, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Money } from "@shared/components/ui/Money";
@@ -135,23 +137,24 @@ function MonthlyPlanCardComponent({
   const savingsDelta = factSavings - planSavings;
 
   return (
-    <div
-      className={cn(
-        "bg-panel border rounded-2xl shadow-card overflow-hidden",
-        isOver ? "border-danger/40" : "border-line",
-      )}
+    <Card
+      prominence={
+        (hasPlan || totalExpenseFact > 0) && !editing ? "hero" : "panel"
+      }
+      tone="finyk"
+      padding="none"
+      className="overflow-hidden"
     >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-panelHi transition-colors"
+        className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-panel transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-muted" aria-hidden>
-            <Icon name="calendar" size="md" />
-          </span>
-          <span className="text-style-label text-text">План на місяць</span>
+          <SectionHeading as="span" size="lg" variant="text">
+            План на місяць
+          </SectionHeading>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasPlan && !open && (
@@ -163,9 +166,7 @@ function MonthlyPlanCardComponent({
                 // вузлі»). Перевитрата лишається важчою за норму, як і
                 // задумано: це єдине число, видне на згорнутій картці.
                 "text-style-caption tabular-nums",
-                isOver
-                  ? "text-danger-strong dark:text-danger font-semibold"
-                  : "text-muted",
+                isOver ? "text-text font-semibold" : "text-text",
               )}
             >
               {!showBalance ? (
@@ -174,66 +175,44 @@ function MonthlyPlanCardComponent({
                 <Money amount={planExpense - totalExpenseFact} tone="inherit" />
               ) : planExpense > 0 ? (
                 <>
-                  {pctExpense}% · <Money amount={remaining} />
+                  {pctExpense}% · <Money amount={remaining} tone="inherit" />
                 </>
               ) : (
-                <Money amount={planIncome} signed />
+                <Money amount={planIncome} signed tone="inherit" />
               )}
             </span>
           )}
           {!hasPlan && !open && (
-            <span className="text-style-caption text-subtle">Не заданий</span>
+            <span className="text-style-caption text-text">Не заданий</span>
           )}
-          <Icon
-            name="chevron-down"
-            size="sm"
-            className={cn(
-              "transition-transform text-muted",
-              open ? "rotate-180" : "",
-            )}
-          />
         </div>
       </button>
 
       {open && (
         <div className="px-5 pb-5 pt-1 space-y-3">
           {hasPlan ? (
-            /*
-              AI-CONTEXT: у стовпці Δ стоїть `Money signed`, а НЕ `Delta` —
-              попри те, що `Delta` існує рівно під дельти. Причина в тоні.
-              `Delta` знає два кольори: успіх і небезпека. Тут же недобір
-              доходу навмисно позначений `text-warning`, а не `text-danger`
-              — не дотягнути до плану це не аварія, і продукт про це
-              говорить рівно (той самий вибір, що «констатація, не докір» у
-              борді рекордів Фізрука). Перевести на `Delta` означало б
-              зробити недобір доходу червоним заодно з перевитратою.
-
-              Тож поверхня лишає свою семантику кольору, а від П4 бере те,
-              заради чого він і є — тири суми. `tone="inherit"` віддає
-              знаку, копійкам і символу колір комірки: інакше приглушений
-              сірий тир поруч із зеленим числом розповзається на два тони.
-            */
-            <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums items-baseline">
+            /* H.2: усі суми й дельти на тинті чорнилом, знак лишається текстом. */
+            <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-3 gap-y-1.5 text-style-label tabular-nums items-baseline">
               <div />
-              <div className="text-style-caption text-subtle text-right">
+              <div className="text-style-caption text-text text-right">
                 План
               </div>
-              <div className="text-style-caption text-subtle text-right">
+              <div className="text-style-caption text-text text-right">
                 Факт
               </div>
-              <div className="text-style-caption text-subtle text-right">Δ</div>
+              <div className="text-style-caption text-text text-right">Δ</div>
 
-              <div className="text-style-caption text-muted">Дохід</div>
-              <div className="text-right text-muted">
+              <div className="text-style-caption text-text">Дохід</div>
+              <div className="text-right text-text">
                 {!showBalance ? (
                   "••••"
                 ) : planIncome > 0 ? (
-                  <Money amount={planIncome} />
+                  <Money amount={planIncome} tone="inherit" />
                 ) : (
                   "—"
                 )}
               </div>
-              <div className="text-right text-success-strong dark:text-success">
+              <div className="text-right text-text">
                 {!showBalance ? (
                   "••••"
                 ) : factIncome > 0 ? (
@@ -246,10 +225,10 @@ function MonthlyPlanCardComponent({
                 className={cn(
                   "text-right text-style-caption",
                   planIncome === 0
-                    ? "text-subtle"
+                    ? "text-text"
                     : incomeDelta >= 0
-                      ? "text-success-strong dark:text-success"
-                      : "text-warning-strong dark:text-warning",
+                      ? "text-text"
+                      : "text-text",
                 )}
               >
                 {!showBalance ? (
@@ -261,12 +240,12 @@ function MonthlyPlanCardComponent({
                 )}
               </div>
 
-              <div className="text-style-caption text-muted">Витрати</div>
-              <div className="text-right text-muted">
+              <div className="text-style-caption text-text">Витрати</div>
+              <div className="text-right text-text">
                 {!showBalance ? (
                   "••••"
                 ) : planExpense > 0 ? (
-                  <Money amount={planExpense} />
+                  <Money amount={planExpense} tone="inherit" />
                 ) : (
                   "—"
                 )}
@@ -274,9 +253,7 @@ function MonthlyPlanCardComponent({
               <div
                 className={cn(
                   "text-right",
-                  isOver
-                    ? "text-danger-strong dark:text-danger font-semibold"
-                    : "text-danger-strong dark:text-danger",
+                  isOver ? "text-text font-semibold" : "text-text",
                 )}
               >
                 {!showBalance ? (
@@ -291,10 +268,10 @@ function MonthlyPlanCardComponent({
                 className={cn(
                   "text-right text-style-caption",
                   planExpense === 0
-                    ? "text-subtle"
+                    ? "text-text"
                     : expenseDelta > 0
-                      ? "text-danger-strong dark:text-danger"
-                      : "text-success-strong dark:text-success",
+                      ? "text-text"
+                      : "text-text",
                 )}
               >
                 {!showBalance ? (
@@ -306,12 +283,12 @@ function MonthlyPlanCardComponent({
                 )}
               </div>
 
-              <div className="text-style-caption text-muted">Накопич.</div>
-              <div className="text-right text-muted">
+              <div className="text-style-caption text-text">Накопич.</div>
+              <div className="text-right text-text">
                 {!showBalance ? (
                   "••••"
                 ) : planSavings > 0 ? (
-                  <Money amount={planSavings} />
+                  <Money amount={planSavings} tone="inherit" />
                 ) : (
                   "—"
                 )}
@@ -319,9 +296,7 @@ function MonthlyPlanCardComponent({
               <div
                 className={cn(
                   "text-right",
-                  factSavings >= 0
-                    ? "text-success-strong dark:text-success"
-                    : "text-danger-strong dark:text-danger",
+                  factSavings >= 0 ? "text-text" : "text-text",
                 )}
               >
                 {!showBalance ? (
@@ -336,10 +311,10 @@ function MonthlyPlanCardComponent({
                 className={cn(
                   "text-right text-style-caption",
                   planSavings === 0 && factSavings === 0
-                    ? "text-subtle"
+                    ? "text-text"
                     : savingsDelta >= 0
-                      ? "text-success-strong dark:text-success"
-                      : "text-danger-strong dark:text-danger",
+                      ? "text-text"
+                      : "text-text",
                 )}
               >
                 {!showBalance ? (
@@ -352,23 +327,27 @@ function MonthlyPlanCardComponent({
               </div>
             </div>
           ) : (
-            <div className="text-style-label text-subtle">
+            <div className="text-style-label text-text">
               Постав план, і побачиш, скільки безпечно витрачати на день.
             </div>
           )}
 
           {hasPlan && planExpense > 0 && (
             <div className="space-y-1">
-              <div className="flex justify-between text-style-caption text-subtle">
+              <div className="flex justify-between text-style-caption text-text">
                 <span>{pctExpense}% витрачено</span>
                 {safePerDay > 0 && daysLeft > 0 && !isOver && (
                   <span className="tabular-nums">
-                    {showBalance ? <Money amount={safePerDay} /> : "••••"}
+                    {showBalance ? (
+                      <Money amount={safePerDay} tone="inherit" />
+                    ) : (
+                      "••••"
+                    )}
                     /день · {daysLeft} дн.
                   </span>
                 )}
                 {isOver && (
-                  <span className="text-danger-strong dark:text-danger font-semibold tabular-nums">
+                  <span className="text-text font-semibold tabular-nums">
                     {showBalance ? (
                       <Money
                         amount={planExpense - totalExpenseFact}
@@ -380,10 +359,10 @@ function MonthlyPlanCardComponent({
                   </span>
                 )}
               </div>
-              <div className="h-2 bg-bg rounded-full overflow-hidden">
+              <div className="h-2 bg-bg rounded-[3px] overflow-hidden">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-[width,background-color]",
+                    "h-full rounded-[3px] transition-[width,background-color]",
                     isOver
                       ? "bg-danger"
                       : pctExpense >= 85
@@ -396,9 +375,12 @@ function MonthlyPlanCardComponent({
               {showBalance &&
                 forecastExpense != null &&
                 forecastExpense > 0 && (
-                  <div className="text-style-caption text-subtle">
+                  <div className="text-style-caption text-text">
                     За поточним темпом до кінця місяця ~
-                    <Money amount={Math.round(forecastExpense)} />
+                    <Money
+                      amount={Math.round(forecastExpense)}
+                      tone="inherit"
+                    />
                   </div>
                 )}
             </div>
@@ -409,9 +391,8 @@ function MonthlyPlanCardComponent({
               type="button"
               onClick={() => setEditing((v) => !v)}
               aria-expanded={editing}
-              className="text-style-caption text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
+              className="text-style-caption text-text hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-panel transition-colors"
             >
-              <Icon name="edit" size="xs" />
               {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
             </button>
           </div>
@@ -449,7 +430,7 @@ function MonthlyPlanCardComponent({
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

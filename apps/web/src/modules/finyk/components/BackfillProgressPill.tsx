@@ -66,10 +66,10 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
       : 0;
 
   const tone = isFailed
-    ? "bg-danger/10 border-danger/30 text-danger-strong dark:text-danger"
+    ? "bg-panel border-danger/30 text-danger-strong dark:text-danger"
     : isCompleted
-      ? "bg-success/10 border-success/30 text-text"
-      : "bg-panelHi border-line text-text";
+      ? "bg-panel border-success/30 text-text"
+      : "bg-panel border-line text-text";
 
   const dotTone = isFailed
     ? "bg-danger"
@@ -99,7 +99,7 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
     >
       <div className="flex items-center gap-2 text-style-caption">
         <span
-          className={cn("inline-block w-2 h-2 rounded-full shrink-0", dotTone)}
+          className={cn("inline-block w-2 h-2 rounded-[3px] shrink-0", dotTone)}
           aria-hidden
         />
         <span className="flex-1 truncate">{headline}</span>

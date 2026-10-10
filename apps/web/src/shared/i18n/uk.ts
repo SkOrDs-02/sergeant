@@ -1,3 +1,4 @@
+import { finykRedesign } from "./uk.finykRedesign";
 /**
  * Український message-каталог для apps/web.
  *
@@ -472,6 +473,7 @@ export const messages = {
   routine: routinePageMessages,
 
   finyk: finykPageMessages,
+  finykRedesign,
 
   // Profile sessions list (PR-10 ux-roast 2026-Q2 / §10.3 «Цей пристрій +
   // last-seen у людському форматі»). Section copy + accessibility-labels

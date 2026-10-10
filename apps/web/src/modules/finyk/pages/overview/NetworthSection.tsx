@@ -1,7 +1,7 @@
 import { Suspense, memo } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { NetworthChart } from "../../components/charts/lazy";
 import { ChartFallback } from "../../components/charts/ChartFallback";
 
@@ -51,7 +51,7 @@ const NetworthSectionImpl = function NetworthSection({
       <EmptyState
         compact
         module="finyk"
-        icon={<Icon name="trending-up" size="lg" />}
+
         title="Поки що мало записів балансу"
         description="Графік капіталу зʼявиться після кількох змін балансу."
       />

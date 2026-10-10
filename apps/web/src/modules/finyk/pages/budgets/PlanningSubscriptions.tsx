@@ -144,7 +144,7 @@ export function PlanningSubscriptions({
   }
 
   return (
-    <div className="space-y-3" id="finyk-subscriptions-section">
+    <div className="space-y-7" id="finyk-subscriptions-section">
       <PlannedFlowsCard plannedFlows={plannedFlows} showBalance={showBalance} />
 
       <RecurringSuggestions

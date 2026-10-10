@@ -178,7 +178,7 @@ const MonthStripImpl = function MonthStrip({
               <div
                 key={day.dayKey}
                 aria-hidden="true"
-                className="flex-1 min-w-0 h-full rounded-[1px] bg-finyk-soft-border/40"
+                className="flex-1 min-w-0 h-full rounded-[1px] bg-line/50"
               />
             );
           }
@@ -208,17 +208,17 @@ const MonthStripImpl = function MonthStrip({
                 // аудиту контрасту 2026-10-01). Чорнило hero-картки тримає ≥4.7:1
                 // проти кожної зупинки в обох темах.
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-hero-ink",
-                isToday && "ring-1 ring-finyk-strong dark:ring-finyk",
+                isToday && "ring-1 ring-text",
               )}
             >
               {/* Трек — окремий шар з `overflow-hidden` лише для скруглення
                 бару, що росте знизу. */}
-              <span className="absolute inset-0 rounded-[1px] bg-finyk-soft overflow-hidden">
+              <span className="absolute inset-0 rounded-[1px] bg-line/50 overflow-hidden">
                 <span
                   aria-hidden="true"
                   className={cn(
                     "absolute inset-x-0 bottom-0 transition-[height]",
-                    day.over120 ? "bg-chart-finyk" : "bg-finyk/50",
+                    day.over120 ? "bg-chart-finyk" : "bg-chart-finyk/50",
                   )}
                   style={{ height: `${fillPct}%` }}
                 />
@@ -233,7 +233,7 @@ const MonthStripImpl = function MonthStrip({
       {lastDay > 0 && (
         <div
           aria-hidden="true"
-          className="mt-1 flex justify-between text-style-caption text-hero-ink tabular-nums"
+          className="mt-1 flex justify-between text-style-caption text-text tabular-nums"
         >
           <span>1</span>
           <span>{Math.ceil(lastDay / 2)}</span>
@@ -269,7 +269,7 @@ export function MonthStripHint({
   return (
     <div
       role="note"
-      className="mt-2 flex items-start gap-2 rounded-xl border border-hero-ink/15 bg-hero-ink/5 px-3 py-2 text-style-caption text-hero-ink"
+      className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-transparent px-3 py-2 text-style-caption text-text"
     >
       <span className="min-w-0 flex-1 leading-snug">
         {hasPlan ? m.hintWithPlan : m.hintNoPlan}
@@ -281,7 +281,7 @@ export function MonthStripHint({
           setDismissed(true);
         }}
         aria-label={m.hintDismiss}
-        className="touch-target -m-2 inline-flex shrink-0 items-center justify-center rounded-full p-2 text-hero-ink hover:bg-hero-ink/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+        className="touch-target -m-2 inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-text hover:bg-line/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
         <Icon name="close" size="sm" aria-hidden />
       </button>

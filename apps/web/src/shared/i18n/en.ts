@@ -1,3 +1,4 @@
+import { finykRedesignEn } from "./en.finykRedesign";
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
 import { nutritionTdeeEn } from "./en.nutritionTdee";
@@ -17,6 +18,7 @@ import { nutritionTdeeEn } from "./en.nutritionTdee";
 export const messagesEn: Partial<{
   [K in keyof typeof ukMessages]: MessageGroupShape<(typeof ukMessages)[K]>;
 }> = {
+  finykRedesign: finykRedesignEn,
   auth: {
     /** Apple sign-in button label. */
     signInWithApple: "Sign in with Apple",

@@ -146,12 +146,12 @@ export function BulkReviewTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panelHi p-2.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel p-2.5">
         <button
           type="button"
           onClick={() => onToggleAll(!allSelected)}
           disabled={disabled}
-          className="touch-target flex items-center gap-2 rounded-xl px-1.5 text-style-caption text-text"
+          className="touch-target flex items-center gap-2 rounded-lg px-1.5 text-style-caption text-text"
         >
           <AnimatedCheckbox
             checked={allSelected}
@@ -207,7 +207,7 @@ export function BulkReviewTable({
         </p>
       )}
 
-      <ul className="divide-y divide-line rounded-2xl border border-line">
+      <ul className="divide-y divide-line rounded-xl border border-line">
         {rows.map((row) => {
           const options = categoryOptionsFor(
             row.direction,
@@ -289,14 +289,14 @@ export function BulkReviewTable({
                       }
                       ariaLabel="Сума"
                       disabled={disabled}
-                      // `pointer-coarse:text-base!` мусить бути і тут:
+                      // `pointer-coarse:text-style-body!` мусить бути і тут:
                       // `text-style-body!` (важливий, ~15px на вузькому
                       // екрані) інакше переміг би 16px-floor базового
                       // інпута, і iOS-зум повернувся б саме в bulk-таблиці.
                       // `pointer-coarse:min-h-11!` — щоб важливий `h-9!`
                       // не перебивав 44px touch-target floor на тачі.
-                      // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
-                      className="h-9! text-left! text-style-body! pointer-coarse:min-h-11! pointer-coarse:text-base!"
+
+                      className="h-9! text-left! text-style-body! pointer-coarse:min-h-11! pointer-coarse:text-style-body!"
                     />
                     <Select
                       size="sm"

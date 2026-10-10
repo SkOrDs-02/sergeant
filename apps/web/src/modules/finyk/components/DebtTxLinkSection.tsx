@@ -57,7 +57,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import { findLinkedKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Input } from "@shared/components/ui/Input";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -181,7 +181,7 @@ export function DebtTxLinkSection({
   if (linkedDebt) {
     const isAuto = linkedDebt.txLinks?.[linkedKey]?.auto === true;
     return (
-      <div className="rounded-2xl border border-line bg-panel p-3 flex items-center justify-between gap-3">
+      <div className="rounded-xl border border-line bg-panel p-3 flex items-center justify-between gap-3">
         <p className="text-style-caption text-subtle">
           {copy.linkedPrefix} «{linkedDebt.name}»
           {isAuto && <span> · {autoLabel}</span>}
@@ -205,7 +205,7 @@ export function DebtTxLinkSection({
   // народжується вже сплаченим, не має сенсу.
   if (isPayment && manualDebts.length === 0) {
     return (
-      <div className="rounded-2xl border border-line bg-panel p-3 space-y-1">
+      <div className="rounded-xl border border-line bg-panel p-3 space-y-1">
         <p className="text-style-caption text-subtle">{copy.prompt}</p>
         <p className="text-style-caption text-muted">{shared.noDebtsHint}</p>
       </div>
@@ -213,13 +213,12 @@ export function DebtTxLinkSection({
   }
 
   return (
-    <div className="rounded-2xl border border-line bg-panel p-3 space-y-2">
+    <div className="rounded-xl border border-line bg-panel p-3 space-y-2">
       <p className="text-style-caption text-subtle">{copy.prompt}</p>
       <div className="flex gap-2">
         {manualDebts.length > 0 && (
           <Button
-            variant="soft"
-            tone="finyk"
+            variant="outline"
 
             size="sm"
             className="flex-1"
@@ -230,8 +229,7 @@ export function DebtTxLinkSection({
         )}
         {!isPayment && (
           <Button
-            variant="soft"
-            tone="finyk"
+            variant="outline"
 
             size="sm"
             className="flex-1"
@@ -253,7 +251,7 @@ export function DebtTxLinkSection({
               key={d.id}
               type="button"
               onClick={() => linkExisting(d.id)}
-              className="w-full touch-target rounded-xl border border-line px-4 py-3 text-left hover:bg-panelHi transition-colors flex items-center justify-between gap-2"
+              className="w-full touch-target rounded-lg border border-line px-4 py-3 text-left hover:bg-panel transition-colors flex items-center justify-between gap-2"
             >
               <span className="text-style-label text-text">{d.name}</span>
               <Money
@@ -275,7 +273,6 @@ export function DebtTxLinkSection({
         >
           <div className="space-y-3">
             <p className="text-style-caption text-subtle inline-flex items-center gap-1.5">
-              <Icon name="calendar" size={13} aria-hidden />
               <Money amount={amountUAH} />
               {dateLabel ? ` · ${dateLabel}` : null}
             </p>
@@ -293,6 +290,8 @@ export function DebtTxLinkSection({
                 size="sm"
                 disabled={!newDebtName.trim()}
                 onClick={createDebt}
+                tone="ink"
+                variant="solid"
               >
                 {shared.create}
               </Button>

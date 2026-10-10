@@ -45,10 +45,10 @@ describe("AssetsBars (branches)", () => {
       expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it("defaults to the finyk soft Button variant", () => {
+    it("uses a neutral outlined action", () => {
       render(<QuickActionButton label="Актив" onClick={vi.fn()} />);
       expect(screen.getByRole("button", { name: /\+ Актив/ })).toHaveClass(
-        "bg-finyk-soft",
+        "border-border-strong",
       );
     });
   });

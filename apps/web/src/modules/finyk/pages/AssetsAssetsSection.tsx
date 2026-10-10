@@ -63,7 +63,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
   const assetsOpen = assetsExpanded || showAssetForm;
 
   return (
-    <div className="mb-3 space-y-3">
+    <div className="space-y-7">
       <AssetsMonoCards
         accounts={accounts}
         hiddenAccounts={hiddenAccounts}
@@ -126,7 +126,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           <button
             type="button"
             onClick={() => setAllReceivablesVisible((visible) => !visible)}
-            className="touch-target w-full text-style-caption text-primary hover:underline"
+            className="touch-target w-full text-style-caption text-text hover:underline"
           >
             {allReceivablesVisible
               ? "Згорнути"
@@ -180,7 +180,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 (chip) => (
                   <span
                     key={chip}
-                    className="inline-flex items-center text-style-caption text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+                    className="inline-flex items-center text-style-caption text-muted"
                   >
                     {chip}
                   </span>
@@ -212,24 +212,20 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         {manualAssets.slice(0, allAssetsVisible ? undefined : 3).map((a, i) => (
           <div
             key={i}
-            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3 hover:bg-panelHi transition-colors"
+            className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-panelHi leading-none shrink-0"
-                aria-hidden
-              >
-                <Icon name="wallet" size={18} className="text-muted" />
-              </span>
               <div className="min-w-0">
-                <div className="text-style-label truncate">{a.name}</div>
+                <div className="text-style-body font-semibold truncate">
+                  {a.name}
+                </div>
                 <div className="text-style-caption text-subtle mt-0.5">
                   {a.currency}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-style-label tabular-nums text-success-strong dark:text-success">
+              <span className="text-style-body font-medium tabular-nums text-success-strong dark:text-success">
                 {showBalance ? (
                   <Money
                     amount={Number(a.amount)}
@@ -293,7 +289,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           <button
             type="button"
             onClick={() => setAllAssetsVisible((visible) => !visible)}
-            className="touch-target w-full text-style-caption text-primary hover:underline"
+            className="touch-target w-full text-style-caption text-text hover:underline"
           >
             {allAssetsVisible
               ? "Згорнути"

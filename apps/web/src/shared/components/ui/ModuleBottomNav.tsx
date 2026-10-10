@@ -28,15 +28,7 @@ import {
  *   at the top. The panel background fills the safe-area strip
  *   (padding-bottom) so there's no page-coloured dead space below the
  *   labels (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
- * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
- *   outline):
- *   - Light: a solid module-accent square (`tokens.fillLight` =
- *     strong-tier, e.g. `bg-finyk-strong`) with an ink-on-cream
- *     foreground (`text-bg`).
- *   - Dark («Чорнило»): a solid module-accent square (`tokens.fillDark`
- *     = luminescent tier-400) with the same ink foreground (`text-bg`
- *     resolves to `#14100e` under `.dark`, so one bare class covers both
- *     themes). No drop-shadow glow.
+ * - Active tab uses ink and font weight; every label stays visible.
  * - Labels `text-style-caption` (12px) per Hard Rule #16.
  *
  * Routine special-case (FAB):
@@ -109,38 +101,11 @@ export interface ModuleBottomNavProps {
   className?: string;
 }
 
-type ColorTokens = {
-  /** Active-tab solid fill (light) — module strong-tier accent. */
-  fillLight: string;
-  /** Active-tab solid fill (dark «Чорнило») — luminescent tier-400 accent. */
-  fillDark: string;
-  /** Tiny unread/attention dot color. */
-  badge: string;
-};
-
-const COLORS: Record<ModuleNavColor, ColorTokens> = {
-  finyk: {
-    fillLight: "bg-finyk-strong",
-    // `brand` став нейтральним кам'яним тоном хаба (design-audit M1), тож
-    // brand-400 давав Фініку сіру плашку. Tier-400 модуля, як у решти трьох.
-    fillDark: "dark:bg-teal-400",
-    badge: "bg-finyk",
-  },
-  fizruk: {
-    fillLight: "bg-fizruk-strong",
-    fillDark: "dark:bg-cyan-400",
-    badge: "bg-fizruk",
-  },
-  routine: {
-    fillLight: "bg-routine-strong",
-    fillDark: "dark:bg-rose-400",
-    badge: "bg-routine",
-  },
-  nutrition: {
-    fillLight: "bg-nutrition-strong",
-    fillDark: "dark:bg-lime-400",
-    badge: "bg-nutrition",
-  },
+const BADGE: Record<ModuleNavColor, string> = {
+  finyk: "bg-finyk",
+  fizruk: "bg-fizruk",
+  routine: "bg-routine",
+  nutrition: "bg-nutrition",
 };
 
 export const ModuleBottomNav = memo(function ModuleBottomNav({
@@ -153,7 +118,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   onPrefetch,
   className,
 }: ModuleBottomNavProps) {
-  const tokens = COLORS[module];
+  const badgeClass = BADGE[module];
   const isTablist = role === "tablist";
   const kbInsetPx = useVisualKeyboardInset(true);
   const hidden = kbInsetPx > 0;
@@ -243,7 +208,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       aria-hidden={hidden || undefined}
       className={cn(
         "shrink-0 relative z-30",
-        "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "bottom-nav-shell border border-line bg-panel",
         "transition-transform duration-base motion-reduce:transition-none",
         hidden && "translate-y-full pointer-events-none",
         className,
@@ -286,37 +251,15 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                 "transition-[color,transform,border-color] duration-base",
                 "active:scale-95",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                active ? "text-bg" : "text-text hover:text-text/80",
+                active
+                  ? "text-text font-semibold"
+                  : "text-muted hover:text-text",
               )}
             >
               <span
                 className={cn(
-                  // Пілюля має ОДНАКОВИЙ горизонтальний бокс в активному й
-                  // неактивному стані (`h-full w-full`, по центру grid-
-                  // колонки) — інакше зазор між сусідніми пілюлями стрибає
-                  // залежно від того, який таб активний (founder-аудит R1,
-                  // 2026-09-11). Раніше активна пілюля розпирала бокс до
-                  // `w-full`, а неактивна лишалась вузькою (`px-2`, ≈38px):
-                  // grid-колонки вже рівні, а видимі краї пілюль — ні.
-                  // Підпис активного лишається у власному рядку під
-                  // іконкою (`flex-col`) — він стискається/обривається
-                  // всередині вже наявного боксу, а не розпирає його.
-                  // `py-0.5`, не `py-1`: трек тепер `min-h`, тож вертикальний
-                  // відступ пілюлі входить у ВНУТРІШНЮ висоту рядка. Із
-                  // `py-1` вміст (іконка + підпис + відступи + `my-1.5`
-                  // кнопки) на 16px-корені та fine-pointer давав 61px проти
-                  // мінімуму 60 — нав став би на 1px вищим уже на 100%
-                  // тексту. Пілюля все одно розтягується на весь трек
-                  // (`h-full`) і центрує вміст, тож видимо нічого не міняється.
-                  "relative flex h-full w-full min-w-0 items-center justify-center rounded-xl px-1 py-0.5",
-                  "transition-[background-color,color] duration-base",
-                  active
-                    ? cn(
-                        "flex-col gap-0.5 text-bg",
-                        tokens.fillLight,
-                        tokens.fillDark,
-                      )
-                    : "text-text",
+                  "relative flex h-full w-full min-w-0 flex-col items-center justify-center gap-0.5 px-1 py-0.5",
+                  active ? "text-text" : "text-muted",
                 )}
                 aria-hidden
               >
@@ -326,7 +269,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                     <span
                       className={cn(
                         "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
-                        tokens.badge,
+                        badgeClass,
                       )}
                       aria-hidden
                     />
@@ -365,8 +308,8 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                     "text-style-caption font-semibold leading-tight overflow-hidden text-ellipsis whitespace-nowrap",
                     "transition-[max-width,opacity] duration-base motion-reduce:transition-none",
                     active
-                      ? "max-w-full opacity-100"
-                      : "max-w-0 opacity-0 pointer-events-none",
+                      ? "max-w-full font-semibold"
+                      : "max-w-full font-medium",
                   )}
                 >
                   {item.visibleLabel ?? item.label}

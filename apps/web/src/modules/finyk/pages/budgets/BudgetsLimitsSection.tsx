@@ -1,7 +1,8 @@
+import { Card } from "@shared/components/ui/Card";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { cn } from "@shared/lib/ui/cn";
 import {
   calcLimitPace,
@@ -86,22 +87,19 @@ export function BudgetsLimitsSection({
     (b) => calculateLimitUsage(b, calcSpent(b)).overLimit,
   ).length;
   return (
-    <>
+    <Card padding="none" className="px-4">
       <button
         type="button"
         onClick={toggleLimits}
         aria-expanded={limitsOpen}
-        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left bg-panel border border-line rounded-2xl shadow-card hover:bg-panelHi transition-colors"
+        className="w-full flex items-center justify-between gap-3 py-3 text-left bg-panel hover:bg-panel transition-colors"
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="text-muted" aria-hidden>
-            <Icon name="calendar" size="md" />
-          </span>
           <SectionHeading
             as="span"
-            size="xs"
+            size="lg"
             className="mb-0! normal-case tracking-normal"
-            variant="finyk"
+            variant="text"
           >
             {/* `monthStart` — київська північ 1-го числа (`getCurrentMonthContext`
                 → `kyivDayStartMs`), тобто 21:00/22:00 UTC ОСТАННЬОГО дня
@@ -129,36 +127,11 @@ export function BudgetsLimitsSection({
             )}
           </SectionHeading>
         </span>
-        <Icon
-          name="chevron-down"
-          size="sm"
-          className={cn(
-            "transition-transform text-muted shrink-0",
-            limitsOpen ? "rotate-180" : "",
-          )}
-        />
       </button>
       {limitsOpen && limitBudgets.length === 0 && (
         <EmptyState
           compact
           module="finyk"
-          icon={
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          }
           title="Поки немає лімітів"
           description="Встанови ліміт витрат на категорію, щоб не виходити за бюджет."
         />
@@ -220,7 +193,7 @@ export function BudgetsLimitsSection({
                 }
               }}
               className={cn(
-                "rounded-2xl transition-shadow duration-slow",
+                "rounded-xl transition-shadow duration-slow",
                 isHighlighted &&
                   "ring-2 ring-finyk/60 ring-offset-2 ring-offset-bg",
               )}
@@ -307,6 +280,6 @@ export function BudgetsLimitsSection({
             </div>
           );
         })}
-    </>
+    </Card>
   );
 }

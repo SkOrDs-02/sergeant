@@ -1,7 +1,6 @@
 import { Sheet } from "@shared/components/ui/Sheet";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
-import { CategoryIconChip } from "../../components/CategoryIconChip";
-import { isCategoryIdLike } from "../../lib/categoryChip";
+
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 
 export interface TransactionsBatchToolbarProps {
@@ -59,7 +58,7 @@ export function TransactionsBatchToolbar({
               the outer
               `safe-area-pb` already covers the nav's bottom inset. */}
           <div className="max-w-4xl mx-auto px-4 above-bottom-nav-pb pt-3">
-            <div className="bg-panel border border-line rounded-2xl shadow-float px-4 py-3 flex items-center justify-between gap-3">
+            <div className="bg-panel border border-line rounded-xl shadow-float px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-style-label text-text">
                 {selectedSize} обрано
               </span>
@@ -67,14 +66,14 @@ export function TransactionsBatchToolbar({
                 <button
                   type="button"
                   onClick={onOpenCatPicker}
-                  className="text-style-label px-4 py-2 rounded-xl bg-primary text-bg min-h-[40px] transition-colors"
+                  className="text-style-label px-4 py-2 rounded-lg bg-primary text-bg min-h-[40px] transition-colors"
                 >
                   Категорія
                 </button>
                 <button
                   type="button"
                   onClick={allSelectedHidden ? onApplyUnhide : onApplyHide}
-                  className="text-style-label touch-target px-4 py-2 rounded-xl border border-line bg-panelHi text-text transition-colors hover:border-muted"
+                  className="text-style-label touch-target px-4 py-2 rounded-lg border border-line bg-panel text-text transition-colors hover:border-muted"
                 >
                   {allSelectedHidden ? "Показати" : "Приховати"}
                 </button>
@@ -82,13 +81,13 @@ export function TransactionsBatchToolbar({
                   type="button"
                   onClick={onApplyExclude}
                   aria-label="Не враховувати у статистиці"
-                  className="text-style-label px-4 py-2 rounded-xl border border-line bg-panelHi text-text min-h-[40px] transition-colors hover:border-muted"
+                  className="text-style-label px-4 py-2 rounded-lg border border-line bg-panel text-text min-h-[40px] transition-colors hover:border-muted"
                 >
                   Не враховувати
                 </button>
               </div>
             </div>
-            <div className="mt-2 rounded-xl border border-line bg-panelHi px-3 py-2 text-style-body text-muted">
+            <div className="mt-2 rounded-xl border border-line bg-panel px-3 py-2 text-style-body text-muted">
               <p>
                 {allSelectedHidden ? (
                   <>
@@ -128,10 +127,10 @@ export function TransactionsBatchToolbar({
               key={cat.id}
               type="button"
               onClick={() => onApplyCategory(cat.id)}
-              className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-panelHi transition-colors min-h-[48px]"
+              className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-panel transition-colors min-h-[48px]"
             >
               {/*
-                Тут стояв слот під емодзі категорії — `<span className="text-lg">`
+                Тут стояв слот під емодзі категорії — `<span className="text-style-title">`
                 із `(cat as { emoji?: string }).emoji`. Він не міг нічого
                 показати: `mergeExpenseCategoryDefinitions` збирає результат
                 із власних літералів `{ id, label, mccs, keywords }`
@@ -141,11 +140,7 @@ export function TransactionsBatchToolbar({
                 12px відступу зліва ні за що. З 2026-08-21 слот заповнює
                 той самий чип, що й у рядку операції.
               */}
-              <CategoryIconChip
-                categoryId={cat.id}
-                customCategories={customCategories?.filter(isCategoryIdLike)}
-                size={24}
-              />
+
               <span className="text-style-label text-text">
                 {stripLeadingEmoji(cat.label)}
               </span>

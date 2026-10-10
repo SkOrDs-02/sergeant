@@ -40,7 +40,7 @@ function CategorySelectorComponent({
       // цей проп і закриває (ревʼю CodeRabbit 2026-08-26).
       aria-label={ariaLabel?.trim() || placeholder}
       className={cn(
-        "input-focus-finyk w-full h-10 pointer-coarse:min-h-[44px] rounded-xl border border-line bg-bg px-3 text-sm text-text",
+        "focus-ring w-full h-10 pointer-coarse:min-h-[44px] rounded-lg border border-line bg-bg px-3 text-style-label text-text",
         className,
       )}
       value={value || ""}

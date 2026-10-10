@@ -35,12 +35,14 @@ export function FinykPhotoPrivacyNotice({
   blockingAnalysis?: boolean | undefined;
 }) {
   return (
-    <PhotoPrivacyNotice
-      ackKey={FINYK_PHOTO_PRIVACY_ACK_KEY}
-      text={FINYK_PHOTO_NOTICE_TEXT}
-      tone="finyk"
-      onAck={onAck}
-      blockingAnalysis={blockingAnalysis}
-    />
+    <div className="[&>div]:rounded-xl [&>div]:border-0 [&>div]:bg-panel [&_button]:text-text">
+      <PhotoPrivacyNotice
+        ackKey={FINYK_PHOTO_PRIVACY_ACK_KEY}
+        text={FINYK_PHOTO_NOTICE_TEXT}
+        tone="finyk"
+        onAck={onAck}
+        blockingAnalysis={blockingAnalysis}
+      />
+    </div>
   );
 }
