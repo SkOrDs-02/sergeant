@@ -43,6 +43,7 @@ const EMPTY_CACHE = {
   manualExpenses: [],
   txCategories: {},
   txSplits: {},
+  txNotes: {},
   monoDebtLinkedTxIds: {},
   networthHistory: [],
   monthlyPlan: null,

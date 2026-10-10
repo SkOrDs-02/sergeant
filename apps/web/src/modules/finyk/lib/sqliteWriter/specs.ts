@@ -23,6 +23,8 @@ import type { FinykBlobTable, FinykIdTable } from "./diff.js";
  *    Upsert is `strictly-newer`; DELETE is **hard, guard-less** — absence is
  *    the "no override" state (ADR-0073 § НЕ абстрагуємо #2, Open Q #2). The
  *    hard `DELETE` carries no `WHERE updated_at < ?` on purpose.
+ *  - **tx notes** (`finyk_tx_notes`): composite PK `(user_id, transaction_id)`
+ *    з `note`, tombstone soft-delete (`strictly-newer` upsert, `soft` delete).
  *  - **time-series** (`finyk_networth_history`): composite PK
  *    `(user_id, month)`; no delete op.
  *  - **singleton prefs** (`finyk_prefs`): PK `user_id`.
@@ -205,6 +207,38 @@ export const TX_SPLITS_DELETE_SQL = buildDelete({
 export const MONO_DEBT_LINK_DELETE_SQL = buildDelete({
   table: "finyk_mono_debt_links",
   deletePolicy: "hard",
+  matchColumns: ["user_id", "transaction_id"],
+});
+
+// -----------------------------------------------------------------------
+// tx notes (finyk_tx_notes, composite (user_id, transaction_id), soft-delete)
+// -----------------------------------------------------------------------
+
+// Нотатка — дані користувача, які він вписує сам, тож на відміну від
+// мапінгів вище вона на soft-delete: порожня нотатка = tombstone
+// (`deleted_at`), а новіша правка воскрешає рядок. Так LWW чесно розвʼязує
+// «видалив на A» проти «відредагував на B» (аудит 2026-10-01, data-27).
+const TX_NOTE_UPSERT_SPEC: TableSpec = {
+  table: "finyk_tx_notes",
+  insertClause: `INSERT INTO finyk_tx_notes
+       (user_id, transaction_id, note, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["user_id", "transaction_id"],
+  updateColumns: [
+    { column: "note" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
+export const TX_NOTE_UPSERT_SQL = buildLwwUpsert(TX_NOTE_UPSERT_SPEC);
+
+export const TX_NOTE_DELETE_SQL = buildDelete({
+  table: "finyk_tx_notes",
+  deletePolicy: "soft",
   matchColumns: ["user_id", "transaction_id"],
 });
 

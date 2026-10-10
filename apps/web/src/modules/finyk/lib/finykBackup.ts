@@ -47,6 +47,7 @@ import {
   networthHistoryFrom,
   serializePrefsJson,
   txCatsFromMap,
+  txNotesFromMap,
   txSplitsFromMap,
 } from "./sqliteWriter/extract.js";
 import {
@@ -119,9 +120,11 @@ export function readFinykBackupFromStorage() {
     monoDebtLinkedTxIds: warm
       ? cache.monoDebtLinkedTxIds
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.monoDebtLinkedTxIds, {}),
-    // Нотатки живуть лише в LS (поза SQLite dual-write), тож і на теплому
-    // кеші джерело одне — LS (аудит 2026-10-01, data-27).
-    txNotes: readJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, {}),
+    // Нотатки в SQLite (`finyk_tx_notes`, data-27): на теплому кеші беремо
+    // їх звідти, на холодному - LS-знімок (він же першоджерело перелиття).
+    txNotes: warm
+      ? cache.txNotes
+      : readJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, {}),
     networthHistory: warm
       ? cache.networthHistory
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.networthHistory, []),
@@ -192,29 +195,12 @@ export async function persistFinykNormalizedToSqlite(
   if (getCachedFinykSqliteState().refreshedAt === null) {
     throw new Error(BACKUP_RESTORE_NOT_READY_MESSAGE);
   }
-  // Нотатки не в SQLite: `replace` уже записав їх у LS через
-  // `persistFinykNormalizedToStorage`, а `merge` до LS не торкається, тож
-  // дописуємо відсутні тут (існуюча нотатка пристрою лишається).
-  if (mode === "merge") mergeTxNotesIntoStorage(normalized.txNotes);
   const prev = cacheToDualWriteState();
   const next =
     mode === "replace"
       ? backupOntoState(prev, normalized)
       : mergeBackupOntoState(prev, normalized);
   return dualWriteFinykState(prev, next);
-}
-
-function mergeTxNotesIntoStorage(incoming: FinykBackup["txNotes"]): void {
-  if (!incoming) return;
-  const current = readJSON<Record<string, string>>(
-    FINYK_FIELD_TO_STORAGE_KEY.txNotes,
-    {},
-  );
-  const base =
-    current && typeof current === "object" && !Array.isArray(current)
-      ? current
-      : {};
-  writeJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, { ...incoming, ...base });
 }
 
 function cacheToDualWriteState(): FinykDualWriteState {
@@ -231,6 +217,7 @@ function cacheToDualWriteState(): FinykDualWriteState {
     manualExpenses: blobsFromArray(cache.manualExpenses),
     txCategories: txCatsFromMap(cache.txCategories),
     txSplits: txSplitsFromMap(cache.txSplits),
+    txNotes: txNotesFromMap(cache.txNotes),
     monoDebtLinks: monoDebtLinksFromMap(cache.monoDebtLinkedTxIds),
     networthHistory: networthHistoryFrom(cache.networthHistory),
     prefs: {
@@ -263,6 +250,7 @@ function backupOntoState(
   if (b.manualExpenses) next.manualExpenses = blobsFromArray(b.manualExpenses);
   if (b.txCategories) next.txCategories = txCatsFromMap(b.txCategories);
   if (b.txSplits) next.txSplits = txSplitsFromMap(b.txSplits);
+  if (b.txNotes) next.txNotes = txNotesFromMap(b.txNotes);
   if (b.monoDebtLinkedTxIds) {
     next.monoDebtLinks = monoDebtLinksFromMap(b.monoDebtLinkedTxIds);
   }
@@ -356,6 +344,9 @@ function mergeBackupOntoState(
       txSplitsFromMap(b.txSplits),
       byTx,
     );
+  }
+  if (b.txNotes) {
+    next.txNotes = addMissingBy(prev.txNotes, txNotesFromMap(b.txNotes), byTx);
   }
   if (b.monoDebtLinkedTxIds) {
     next.monoDebtLinks = addMissingBy(

@@ -2,11 +2,7 @@ import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
-import {
-  usePersist,
-  useReadonlyPersist,
-  reportSilentError,
-} from "./useStorage.persist";
+import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
 import type {
@@ -65,8 +61,10 @@ export interface FinykStorageSlots {
   setMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
   txCategories: TxCategoriesMap;
   setTxCategories: Dispatch<SetStateAction<TxCategoriesMap>>;
-  /** User's own free-text annotation per bank transaction (LS-only —
-   * not part of the SQLite dual-write mirror, same as `finyk_tx_filters_v1`). */
+  /** User's own free-text annotation per bank transaction. Тече через
+   * dual-write у `finyk_tx_notes` (SQLite + outbox → синк між пристроями);
+   * LS-ключ `finyk_tx_notes` — лише first-paint і джерело одноразового
+   * перелиття (`lib/txNotesLsImport.ts`). */
   txNotes: TxNotesMap;
   setTxNotes: Dispatch<SetStateAction<TxNotesMap>>;
   monoDebtLinkedTxIds: MonoDebtLinkedMap;
@@ -152,9 +150,13 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     "finyk_tx_cats",
     {},
   );
-  // LS-only: нотатки не входять у SQLite dual-write, тож пишучий
-  // `usePersist` — єдиний писач ключа (аудит 2026-10-01, data-27).
-  const [txNotes, setTxNotes] = usePersist<TxNotesMap>("finyk_tx_notes", {});
+  // Нотатки йдуть через dual-write (`finyk_tx_notes`, data-27): LS лише
+  // first-paint, писача в LS більше немає. Старі LS-нотатки одноразово
+  // переливає `importLegacyTxNotesFromLs` на буті читального шляху.
+  const [txNotes, setTxNotes] = useReadonlyPersist<TxNotesMap>(
+    "finyk_tx_notes",
+    {},
+  );
   const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] =
     useReadonlyPersist<MonoDebtLinkedMap>("finyk_mono_debt_linked", {});
   const [networthHistory, setNetworthHistory] = useReadonlyPersist<
@@ -232,6 +234,7 @@ export function useFinykStorageSlots(): FinykStorageSlots {
       setManualExpenses(cache.manualExpenses);
       setTxCategories(cache.txCategories);
       setTxSplits(cache.txSplits);
+      setTxNotes(cache.txNotes);
       setMonoDebtLinkedTxIds(cache.monoDebtLinkedTxIds);
       setNetworthHistory(cache.networthHistory);
       if (cache.monthlyPlan !== null) setMonthlyPlan(cache.monthlyPlan);

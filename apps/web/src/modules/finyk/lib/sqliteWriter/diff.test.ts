@@ -517,6 +517,78 @@ describe("diffFinykDualWriteOps — per-tx mappings", () => {
   });
 });
 
+describe("diffFinykDualWriteOps — txNotes (data-27)", () => {
+  const withNotes = (
+    notes: ReadonlyArray<{ transactionId: string; note: string }>,
+  ): FinykDualWriteState => ({ ...EMPTY_FINYK_STATE, txNotes: notes });
+
+  it("нова нотатка дає tx-note-upsert", () => {
+    expect(
+      diffFinykDualWriteOps(
+        withNotes([]),
+        withNotes([{ transactionId: "tx-1", note: "оренда" }]),
+      ),
+    ).toEqual([
+      {
+        kind: "tx-note-upsert",
+        entry: { transactionId: "tx-1", note: "оренда" },
+      },
+    ]);
+  });
+
+  it("зміна тексту дає upsert, незмінний текст (інший обʼєкт) - жодного опа", () => {
+    const prev = withNotes([{ transactionId: "tx-1", note: "а" }]);
+    expect(
+      diffFinykDualWriteOps(
+        prev,
+        withNotes([{ transactionId: "tx-1", note: "б" }]),
+      ),
+    ).toEqual([
+      { kind: "tx-note-upsert", entry: { transactionId: "tx-1", note: "б" } },
+    ]);
+    expect(
+      diffFinykDualWriteOps(
+        prev,
+        withNotes([{ transactionId: "tx-1", note: "а" }]),
+      ),
+    ).toEqual([]);
+  });
+
+  it("зникнення нотатки зі стану (порожня нотатка) дає tx-note-delete", () => {
+    expect(
+      diffFinykDualWriteOps(
+        withNotes([{ transactionId: "tx-1", note: "а" }]),
+        withNotes([]),
+      ),
+    ).toEqual([{ kind: "tx-note-delete", transactionId: "tx-1" }]);
+  });
+
+  it("порядок: upsert-и за transactionId ASC, далі delete-и", () => {
+    const ops = diffFinykDualWriteOps(
+      withNotes([
+        { transactionId: "z-old", note: "x" },
+        { transactionId: "a-old", note: "x" },
+      ]),
+      withNotes([
+        { transactionId: "m-new", note: "y" },
+        { transactionId: "b-new", note: "y" },
+      ]),
+    );
+    expect(ops).toEqual([
+      {
+        kind: "tx-note-upsert",
+        entry: { transactionId: "b-new", note: "y" },
+      },
+      {
+        kind: "tx-note-upsert",
+        entry: { transactionId: "m-new", note: "y" },
+      },
+      { kind: "tx-note-delete", transactionId: "a-old" },
+      { kind: "tx-note-delete", transactionId: "z-old" },
+    ]);
+  });
+});
+
 describe("diffFinykDualWriteOps — networthHistory (time-series)", () => {
   it("emit networth-upsert для нових місяців у порядку month ASC", () => {
     const next: FinykDualWriteState = {
@@ -713,6 +785,7 @@ describe("diffFinykDualWriteOps — детермінований порядок 
       manualExpenses: [blob("exp")],
       txCategories: [{ transactionId: "tx-1", categoryId: "c1" }],
       txSplits: [{ transactionId: "tx-2", splitsJson: "[]" }],
+      txNotes: [{ transactionId: "tx-4", note: "оренда" }],
       monoDebtLinks: [{ transactionId: "tx-3", debtIdsJson: "[]" }],
       networthHistory: [{ month: "2026-04", networth: 1 }],
       prefs: makePrefs(),
@@ -730,6 +803,7 @@ describe("diffFinykDualWriteOps — детермінований порядок 
       "blob-upsert", // manualExpenses
       "tx-category-upsert",
       "tx-splits-upsert",
+      "tx-note-upsert",
       "mono-debt-link-upsert",
       "networth-upsert",
       "prefs-upsert",

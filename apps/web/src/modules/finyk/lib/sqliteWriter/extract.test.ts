@@ -90,6 +90,7 @@ describe("extractFinykDualWriteState — порожні slots дають мін�
       manualExpenses: [],
       txCategories: [],
       txSplits: [],
+      txNotes: [],
       monoDebtLinks: [],
       networthHistory: [],
       prefs: {
@@ -296,6 +297,55 @@ describe("extractFinykDualWriteState — txCatsFromMap", () => {
       extractFinykDualWriteState(makeSlots({ txCategories: undefined }), false)
         .txCategories,
     ).toEqual([]);
+  });
+});
+
+describe("extractFinykDualWriteState — txNotesFromMap (data-27)", () => {
+  it("повертає {transactionId, note} з обрізаними пробілами", () => {
+    const state = extractFinykDualWriteState(
+      makeSlots({ txNotes: { "tx-1": "  оренда  ", "tx-2": "кава" } }),
+      false,
+    );
+    expect(state.txNotes).toEqual([
+      { transactionId: "tx-1", note: "оренда" },
+      { transactionId: "tx-2", note: "кава" },
+    ]);
+  });
+
+  it("порожні, пробільні та не-рядкові нотатки відсутні в стані (= немає нотатки)", () => {
+    const state = extractFinykDualWriteState(
+      makeSlots({
+        txNotes: {
+          "tx-empty": "",
+          "tx-blank": "   ",
+          "tx-num": 7,
+          "tx-null": null,
+          "tx-ok": "ok",
+        },
+      }),
+      false,
+    );
+    expect(state.txNotes).toEqual([{ transactionId: "tx-ok", note: "ok" }]);
+  });
+
+  it("обрізає нотатку до NOTE_MAX_LEN (1000) і не лишає половину сурогатної пари", () => {
+    const long = "я".repeat(1500);
+    const emoji = "a".repeat(999) + "😀" + "b".repeat(10);
+    const state = extractFinykDualWriteState(
+      makeSlots({ txNotes: { "tx-long": long, "tx-emoji": emoji } }),
+      false,
+    );
+    const byId = new Map(state.txNotes.map((n) => [n.transactionId, n.note]));
+    expect(byId.get("tx-long")).toHaveLength(1000);
+    expect(byId.get("tx-emoji")).toBe("a".repeat(999));
+  });
+
+  it("не падає на null / масиві / відсутньому слоті", () => {
+    for (const bad of [null, undefined, [], "str"]) {
+      expect(
+        extractFinykDualWriteState(makeSlots({ txNotes: bad }), false).txNotes,
+      ).toEqual([]);
+    }
   });
 });
 

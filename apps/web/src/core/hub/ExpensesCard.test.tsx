@@ -79,6 +79,7 @@ function emptySqliteCache(): SqliteFinykCache {
     manualExpenses: [],
     txCategories: {},
     txSplits: {},
+    txNotes: {},
     monoDebtLinkedTxIds: {},
     networthHistory: [],
     monthlyPlan: null,

@@ -31,6 +31,7 @@ import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
+import { importLegacyTxNotesFromLs } from "./txNotesLsImport.js";
 import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader.js";
 import {
@@ -71,6 +72,23 @@ export async function bootFinykSqliteReadPath(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateFinyk(client);
+
+    // Нотатки з LS (#1469) переливаємо ДО першого refresh: кеш, опублікований
+    // без них, перекрив би слот порожнім обʼєктом (data-27). Збій перелиття не
+    // валить буг читального шляху: LS-ключ лишається, наступний старт повторить.
+    try {
+      await importLegacyTxNotesFromLs(
+        client,
+        userId,
+        // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
+        new Date().toISOString(),
+      );
+    } catch (err) {
+      logger.warn(
+        "[finyk.sqliteRead] tx-notes LS import failed",
+        err instanceof Error ? err.message : err,
+      );
+    }
 
     await refreshFinykSqliteState(client, userId);
 

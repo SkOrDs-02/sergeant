@@ -59,6 +59,7 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "finyk_manual_expenses",
   "finyk_tx_filters",
   "finyk_tx_categories",
+  "finyk_tx_notes",
   "finyk_tx_splits",
   "finyk_mono_debt_links",
   "finyk_networth_history",

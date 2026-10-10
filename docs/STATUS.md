@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-09 by docs:gen-status. **Next review:** 2026-10-16.
+> **Last touched:** 2026-10-10 by docs:gen-status. **Next review:** 2026-10-17.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -53,8 +53,8 @@
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/planning/redesign-v3-progress.md`](./work/specs/planning/redesign-v3-progress.md) — Редизайн v3: журнал виконання — Active _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластерів (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits _(Активні спеки)_
 - [`work/specs/anonymous-migration-fast-path.md`](./work/specs/anonymous-migration-fast-path.md) — SPEC: швидкий шлях гейта міграції анонімних даних — Scaffolded - напрям («якщо переносити нічого, пропустити розвідку й вести в хаб») ухвалив власник; конкретний механізм, _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/privacy.md`](./work/specs/audits/2026-10-01-full-app-audit/privacy.md) — Аудит 2026-10-01 · Приватність і відповідність — Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
