@@ -5,7 +5,7 @@
  *
  * Дані: знімок quick-stats Фініка (`todaySpent`, `todayPoints`, `dayPlan`),
  * той самий, з якого читає панель модулів. План дня рахує писач Фініка
- * через `calculateSafeToSpendPerDay` на початок доби.
+ * через канонічний селектор `getFinykDayPlan`, включно з регулярними платежами.
  *
  * Last validated: 2026-10-09
  * Status: Active
@@ -84,11 +84,11 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
         <span className="tnum">
           {view.dayPlan === null
             ? t.noPlan
-            : `${t.plan} ${formatNumberUk(view.dayPlan)}`}
+            : `${t.plan} ${formatNumberUk(view.dayPlan, { maximumFractionDigits: 0 })}`}
         </span>
       </div>
       <p className="mt-1.5 text-style-display tnum text-text">
-        {formatNumberUk(view.todaySpent)}{" "}
+        {formatNumberUk(view.todaySpent, { maximumFractionDigits: 0 })}{" "}
         <span
           className={cn(
             "text-style-label-lg font-medium tracking-normal",
@@ -97,7 +97,7 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
         >
           ₴
           {left !== null &&
-            ` · ${left < 0 ? t.over : t.left} ${formatNumberUk(Math.abs(left))}`}
+            ` · ${left < 0 ? t.over : t.left} ${formatNumberUk(Math.abs(left), { maximumFractionDigits: 0 })}`}
         </span>
       </p>
       <svg
