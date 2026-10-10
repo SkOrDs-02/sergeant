@@ -48,6 +48,7 @@ export function HubSearch({
     setActiveIdx,
     recents,
     openHit,
+    openModule,
     pickRecent,
     clearRecents,
     commitQuery,
@@ -103,8 +104,7 @@ export function HubSearch({
         onPickRecent={pickRecent}
         onClearRecents={clearRecents}
         onCommitQuery={commitQuery}
-        onOpenModule={onOpenModule}
-        onClose={onClose}
+        onOpenModule={openModule}
       />
     </div>
   );

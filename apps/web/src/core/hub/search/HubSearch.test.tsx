@@ -17,6 +17,7 @@ const engine = {
   setActiveIdx: vi.fn(),
   recents: [],
   openHit: vi.fn(),
+  openModule: vi.fn(),
   pickRecent: vi.fn(),
   clearRecents: vi.fn(),
   commitQuery: vi.fn(),
@@ -71,7 +72,6 @@ vi.mock("./SearchResults", () => ({
     onClearRecents,
     onCommitQuery,
     onOpenModule,
-    onClose,
   }: {
     flat: Array<{ id: string }>;
     onActivate: (hit: { id: string }) => void;
@@ -80,7 +80,6 @@ vi.mock("./SearchResults", () => ({
     onClearRecents: () => void;
     onCommitQuery: (query: string) => void;
     onOpenModule: (moduleId: string) => void;
-    onClose: () => void;
   }) => (
     <div data-testid="search-results">
       <button
@@ -104,9 +103,6 @@ vi.mock("./SearchResults", () => ({
       </button>
       <button type="button" onClick={() => onOpenModule("routine")}>
         open-module
-      </button>
-      <button type="button" onClick={onClose}>
-        close-results
       </button>
     </div>
   ),
@@ -181,7 +177,6 @@ describe("HubSearch — shell smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: "ai-open-chat" }));
     fireEvent.click(screen.getByRole("button", { name: "ai-dismiss" }));
     fireEvent.click(screen.getByRole("button", { name: "close-search" }));
-    fireEvent.click(screen.getByRole("button", { name: "close-results" }));
 
     expect(engine.setQuery).toHaveBeenCalledWith("нова");
     expect(engine.setActiveIdx).toHaveBeenCalledWith(0);
@@ -189,12 +184,12 @@ describe("HubSearch — shell smoke", () => {
     expect(engine.pickRecent).toHaveBeenCalledWith("кава");
     expect(engine.clearRecents).toHaveBeenCalledTimes(1);
     expect(engine.commitQuery).toHaveBeenCalledWith("звіт");
-    expect(onOpenModule).toHaveBeenCalledWith("routine");
+    expect(engine.openModule).toHaveBeenCalledWith("routine");
     expect(engine.inlineAi.ask).toHaveBeenCalledWith("аналіз");
     expect(engine.inlineAi.cancel).toHaveBeenCalledTimes(1);
     expect(engine.escalateToChat).toHaveBeenCalledTimes(1);
     expect(engine.inlineAi.reset).toHaveBeenCalledTimes(1);
-    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   // Аудит ux-02: палітра не мала запису в історії; Back на першому записі

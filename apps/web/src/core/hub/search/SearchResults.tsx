@@ -20,8 +20,11 @@ export interface SearchResultsProps {
   onPickRecent: (q: string) => void;
   onClearRecents: () => void;
   onCommitQuery: (q: string) => void;
+  /**
+   * Відкриває модуль і сам закриває пошук після навігації (`openModule` з
+   * `useSearchEngine`) — тому окремого `onClose` тут немає.
+   */
   onOpenModule: (moduleId: string) => void;
-  onClose: () => void;
 }
 
 /**
@@ -43,7 +46,6 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
       onClearRecents,
       onCommitQuery,
       onOpenModule,
-      onClose,
     },
     ref,
   ) {
@@ -186,7 +188,6 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                     hapticTap();
                     onCommitQuery(query);
                     onOpenModule(moduleId);
-                    onClose();
                   }}
                   className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
