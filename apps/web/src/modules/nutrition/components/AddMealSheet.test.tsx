@@ -1034,6 +1034,24 @@ describe("AddMealSheet — editing an existing meal", () => {
   });
 });
 
+describe("AddMealSheet — initialSourceTab", () => {
+  it("opens the source step on the requested tab (row of the «Додати» sheet)", () => {
+    renderSheet({ initialSourceTab: "manual" });
+    expect(screen.getByRole("tab", { name: /Своє/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("defaults to «Пошук»", () => {
+    renderSheet();
+    expect(screen.getByRole("tab", { name: /Пошук/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+});
+
 describe("AddMealSheet — photo step", () => {
   it("initialStep='photo' opens straight at the photo step", () => {
     renderSheet({ initialStep: "photo" });

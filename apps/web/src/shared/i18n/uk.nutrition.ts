@@ -9,6 +9,14 @@
  * Спредиться в `messages.nutrition` з `uk.ts`.
  */
 export const nutritionPageMessages = {
+  // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): ті самі джерела,
+  // що в кроці «Джерело страви» аркуша прийому.
+  addSources: {
+    search: { label: "Пошук", hint: "Продукт або страва з бази" },
+    scan: { label: "Скан", hint: "Штрихкод на упаковці" },
+    photo: { label: "Фото", hint: "AI оцінить страву на фото" },
+    manual: { label: "Своє", hint: "Назва й калорії вручну" },
+  },
   // Крок «Звідки страва?» і чекбокс повтору в `AddMealSheet`.
   addMeal: {
     copyYesterday: "Як учора",

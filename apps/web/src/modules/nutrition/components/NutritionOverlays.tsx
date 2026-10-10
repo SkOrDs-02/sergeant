@@ -28,6 +28,7 @@ import type {
 } from "../hooks/useNutritionUiState";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
+import type { SourceTabId } from "./meal-sheet/SourceTabs";
 import {
   useNutritionQuickChips,
   type QuickChip,
@@ -70,6 +71,8 @@ interface NutritionOverlaysProps {
   applyRestorePayload: (payload: unknown) => void | Promise<void>;
   /** `"photo"` — AddMealSheet відкривається одразу на кроці аналізу фото. */
   addMealInitialStep?: "source" | "photo" | undefined;
+  /** Вкладка кроку «Джерело страви»: рядок аркуша «Додати». */
+  addMealInitialSourceTab?: SourceTabId | undefined;
   /** Тип прийому, обраний тапом по сегменту hero; `null` — вгадує годинник. */
   addMealInitialMealType?: MealTypeId | null | undefined;
   onQuickAddMeal?: (chip: QuickChip) => void;
@@ -99,6 +102,7 @@ export function NutritionOverlays({
   setRestoreConfirm,
   applyRestorePayload,
   addMealInitialStep,
+  addMealInitialSourceTab,
   addMealInitialMealType,
   onQuickAddMeal,
   openMealTypeSheet = null,
@@ -218,6 +222,7 @@ export function NutritionOverlays({
           return wrappedSaveMeal(meal, photoFile, newDate);
         }}
         initialStep={addMealInitialStep}
+        initialSourceTab={addMealInitialSourceTab}
         initialMealType={addMealInitialMealType}
         initialMeal={editingMeal}
         initialDate={editingMeal?.date}

@@ -108,6 +108,8 @@ interface AddMealSheetProps {
   onCopyYesterday?: (() => void) | undefined;
   /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
   initialStep?: "source" | "photo" | undefined;
+  /** Вкладка кроку джерела на відкритті; без неї «Пошук». */
+  initialSourceTab?: SourceTabId | undefined;
   /**
    * Тип прийому для НОВОГО запису. Порожньо — тип вгадує годинник
    * (`mealTypeByNow`), як для FAB. Заповнено рівно тоді, коли людина
@@ -142,6 +144,7 @@ export function AddMealSheet({
   onClose,
   onSave,
   initialStep,
+  initialSourceTab = "search",
   initialMealType,
   initialMeal,
   initialDate,
@@ -264,7 +267,7 @@ export function AddMealSheet({
     // сканер при активній вкладці «Скан», тож аркуш, закритий на ній,
     // при наступному відкритті кидав би людину одразу в камеру — без
     // жодного жесту з її боку.
-    setSourceTab("search");
+    setSourceTab(initialSourceTab);
     setBarcode("");
     setBarcodeStatus("");
     setBarcodeNotice(null);

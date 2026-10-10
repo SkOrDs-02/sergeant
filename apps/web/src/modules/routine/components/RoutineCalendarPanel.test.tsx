@@ -293,9 +293,7 @@ describe("RoutineCalendarPanel", () => {
     );
     render(<RoutineCalendarPanel />);
     expect(screen.getByText("Почни з однієї звички")).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Додати звичку в «Рутина»" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Нова звичка" }));
     expect(onOpenQuickAddHabit).toHaveBeenCalledTimes(1);
   });
 
@@ -326,7 +324,7 @@ describe("RoutineCalendarPanel", () => {
 
     // Головна дія лишається на місці — саме вона й мусить бути єдиною.
     expect(
-      screen.getByRole("button", { name: "Додати звичку в «Рутина»" }),
+      screen.getByRole("button", { name: "Нова звичка" }),
     ).toBeInTheDocument();
   });
 
