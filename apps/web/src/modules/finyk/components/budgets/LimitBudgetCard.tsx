@@ -171,7 +171,7 @@ function LimitBudgetCardComponent({
                 event.target.value as "month" | "week" | "one_time",
               )
             }
-            className="focus-ring w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-style-label text-text"
+            className="focus-ring w-full h-10 min-w-0 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
           >
             <option value="month">Щомісяця</option>
             <option value="week">Щотижня</option>
@@ -248,10 +248,10 @@ function LimitBudgetCardComponent({
               </Button>
             </div>
           </div>
-          <div className="h-2 bg-bg rounded-full overflow-hidden">
+          <div className="h-2 bg-bg rounded-[3px] overflow-hidden">
             <div
               className={cn(
-                "h-full rounded-full transition-[width,background-color] duration-slower",
+                "h-full rounded-[3px] transition-[width,background-color] duration-slower",
                 overLimit
                   ? "bg-danger"
                   : warnLimit

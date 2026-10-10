@@ -270,9 +270,9 @@ function GoalBudgetCardComponent({
                 </button>
               </div>
             </div>
-            <div className="h-2 bg-bg rounded-full overflow-hidden">
+            <div className="h-2 bg-bg rounded-[3px] overflow-hidden">
               <div
-                className="h-full rounded-full bg-success transition-[width,background-color] duration-slower"
+                className="h-full rounded-[3px] bg-success transition-[width,background-color] duration-slower"
                 style={{ width: `${pct}%` }}
               />
             </div>

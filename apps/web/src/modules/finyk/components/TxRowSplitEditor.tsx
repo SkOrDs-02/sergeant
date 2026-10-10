@@ -48,7 +48,7 @@ function SplitAmountInput({
       inputMode="decimal"
       value={draft.value}
       onChange={draft.onChange}
-      className="focus-ring w-24 text-style-caption h-9 rounded-xl border border-line bg-panel px-2 text-right text-text"
+      className="focus-ring w-24 text-style-caption h-9 rounded-lg border border-line bg-panel px-2 text-right text-text"
       placeholder="₴"
       aria-label="Сума частки"
     />

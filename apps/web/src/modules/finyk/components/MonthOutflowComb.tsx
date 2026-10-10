@@ -154,7 +154,7 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
                 />
               )}
               {isIncome && (
-                <div className="mt-px h-[3px] rounded-full bg-success-strong dark:bg-success" />
+                <div className="mt-px h-[3px] rounded-[3px] bg-success-strong dark:bg-success" />
               )}
             </div>
           );

@@ -53,7 +53,7 @@ function CategoryDeltaTableComponent({
               <th scope="row" className="text-left font-normal py-1.5 pr-2">
                 <span className="flex items-center gap-2 min-w-0">
                   <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    className="w-2.5 h-2.5 rounded-[3px] shrink-0"
                     style={{ backgroundColor: r.color }}
                     aria-hidden
                   />

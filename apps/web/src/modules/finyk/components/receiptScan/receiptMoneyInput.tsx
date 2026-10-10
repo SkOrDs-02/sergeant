@@ -73,7 +73,7 @@ export function ReceiptMoneyInput({
         // `pointer-coarse:min-h-11` — 44px touch-target floor (WCAG 2.5.5)
         // на тачі; на десктопі лишається компактний h-9.
 
-        "focus-ring h-9 min-w-0 rounded-xl border border-line bg-panel px-2 text-right text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-style-body",
+        "focus-ring h-9 min-w-0 rounded-lg border border-line bg-panel px-2 text-right text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-style-body",
         className,
       )}
     />

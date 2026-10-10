@@ -368,7 +368,7 @@ export function TransactionList({
 
   const content = (
     <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad">
-      <h1 className="text-style-title text-text mb-4">
+      <h1 className="text-style-headline text-text mb-4">
         {messages.finykRedesign.transactionsTitle}
       </h1>
       {header}

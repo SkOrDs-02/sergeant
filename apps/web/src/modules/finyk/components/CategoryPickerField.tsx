@@ -121,7 +121,7 @@ export function CategoryPickerField({
       <span className="inline-flex min-w-0 items-center gap-2 text-style-body">
         <span
           aria-hidden
-          className="cat-dot h-2.5 w-2.5 shrink-0 rounded-full"
+          className="cat-dot h-2.5 w-2.5 shrink-0 rounded-[3px]"
         />
         <span className="truncate">{stripLeadingEmoji(category.label)}</span>
       </span>

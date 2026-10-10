@@ -58,7 +58,7 @@ interface OverviewProps {
 
 const overviewLoadingSkeleton = (
   <div className="flex-1 overflow-y-auto">
-    <div className="px-5 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
+    <div className="px-5 pt-4 page-tabbar-pad space-y-7 max-w-4xl mx-auto">
       <Skeleton className="h-[168px] rounded-xl" />
       <Skeleton className="h-[120px] opacity-80 rounded-xl" />
       <Skeleton className="h-[110px] opacity-60 rounded-xl" />
@@ -125,7 +125,7 @@ export function Overview({
           2026-09-16.
 
           Видимий, а не `sr-only` (рішення власника 2026-09-17). Стиль —
-          `text-style-title text-text`, єдиний у репо зразок видимого
+          `text-style-headline text-text`, єдиний у репо зразок видимого
           сторінкового заголовка (`fizruk/pages/Programs.tsx`,
           `fizruk/components/workouts/WorkoutsHeader.tsx`).
 
@@ -137,7 +137,7 @@ export function Overview({
           для завантаженого стану, бо обидва лежать під цим блоком.
           `shrink-0`, щоб flex-колонка не стискала рядок. */}
       <div className="shrink-0 w-full max-w-4xl mx-auto px-5 pt-4">
-        <h1 className="text-style-title text-text">
+        <h1 className="text-style-headline text-text">
           {messages.nav.finykOverview}
         </h1>
       </div>
@@ -148,7 +148,7 @@ export function Overview({
       >
         {() => (
           <div className="flex-1 overflow-y-auto overscroll-contain">
-            <div className="px-5 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
+            <div className="px-5 pt-4 page-tabbar-pad space-y-7 max-w-4xl mx-auto">
               {(d.clientInfo ||
                 d.syncState?.status === "error" ||
                 d.syncState?.status === "loading" ||

@@ -147,14 +147,14 @@ export function RecurringSuggestions({
           {candidates.map((c) => (
             <li
               key={c.key}
-              className="px-4 py-3 bg-panel border border-line rounded-xl"
+              className="px-4 py-3 border-b border-line last:border-0"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "inline-block w-2 h-2 rounded-full shrink-0",
+                        "inline-block w-2.5 h-2.5 rounded-[3px] shrink-0",
                         CONFIDENCE_DOT[c.confidence],
                       )}
                       title={`Впевненість: ${CONFIDENCE_LABEL[c.confidence]}`}

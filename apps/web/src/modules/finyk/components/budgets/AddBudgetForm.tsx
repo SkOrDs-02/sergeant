@@ -411,7 +411,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={`${fieldId}-period`}>Період</Label>
             <select
               id={`${fieldId}-period`}
-              className="focus-ring w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-style-label text-text"
+              className="focus-ring w-full h-10 min-w-0 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
               disabled={isSubmitting}
               {...limitForm.register("period")}
             >
@@ -568,7 +568,7 @@ function AddBudgetFormComponent({
                 текст, тож без нього вибір лишався б невидимим. */}
 
             <select
-              className="focus-ring h-10 min-w-0 flex-1 rounded-xl border border-line bg-bg px-3 text-style-label text-text"
+              className="focus-ring h-10 min-w-0 flex-1 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
               value={goalIconOf(goalEmoji)}
               aria-label="Іконка цілі"
               onChange={(e) =>

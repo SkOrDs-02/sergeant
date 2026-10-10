@@ -99,7 +99,7 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
     >
       <div className="flex items-center gap-2 text-style-caption">
         <span
-          className={cn("inline-block w-2 h-2 rounded-full shrink-0", dotTone)}
+          className={cn("inline-block w-2 h-2 rounded-[3px] shrink-0", dotTone)}
           aria-hidden
         />
         <span className="flex-1 truncate">{headline}</span>

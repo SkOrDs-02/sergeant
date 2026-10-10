@@ -52,18 +52,14 @@ export function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
         // у `SyncIndicator.getSyncTone`.
         syncTone.needsAttention ? "flex" : "hidden sm:flex",
         "items-center gap-1.5 select-none shrink-0",
-        "text-style-caption px-1.5 sm:px-2 py-0.5 rounded-full border",
+        "text-style-caption",
         "transition-colors duration-base",
         syncTone.pill,
       )}
       role="status"
       aria-label={`Стан синхронізації: ${syncTone.text}`}
     >
-      {/* Іконка — другий, не-кольоровий канал стану: сама крапка одна на
-          вузьких екранах (текст ховається `hidden sm:inline`) не дає зрячим
-          людям розрізнити 5 станів без кольору. */}
-
-      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
+      <Icon name={syncTone.icon} size="sm" aria-hidden />
       <span className="hidden sm:inline">{syncTone.text}</span>
     </div>
   );

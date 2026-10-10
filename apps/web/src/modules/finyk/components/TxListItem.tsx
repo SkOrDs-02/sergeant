@@ -80,7 +80,7 @@ function TxListItemImpl({
       {selectMode && (
         <span
           className={cn(
-            "absolute left-3 top-1/2 -translate-y-1/2 z-20 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+            "absolute left-3 top-1/2 -translate-y-1/2 z-20 w-[22px] h-[22px] rounded-[5px] border-2 flex items-center justify-center transition-colors",
             selected ? "bg-primary border-primary" : "border-muted bg-panel",
           )}
           aria-hidden

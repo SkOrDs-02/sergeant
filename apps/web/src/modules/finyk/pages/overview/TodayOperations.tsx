@@ -56,7 +56,12 @@ export function TodayOperations({
               </div>
               <span className="text-style-body font-medium text-text">
                 {showBalance ? (
-                  <Money amount={tx.amount / 100} signed tone="inherit" />
+                  <Money
+                    amount={tx.amount / 100}
+                    signed
+                    kopecks
+                    tone="inherit"
+                  />
                 ) : (
                   "••••"
                 )}

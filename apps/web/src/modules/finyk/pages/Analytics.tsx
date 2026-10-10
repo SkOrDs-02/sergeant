@@ -542,8 +542,8 @@ export function Analytics({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-4">
-        <h1 className="text-style-title text-text">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
+        <h1 className="text-style-headline text-text">
           {messages.finykRedesign.analyticsTitle}
         </h1>
         <MonthNav year={year} month={month} onChange={handleMonthChange} />

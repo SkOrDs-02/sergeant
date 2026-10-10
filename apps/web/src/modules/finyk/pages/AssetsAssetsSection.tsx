@@ -63,7 +63,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
   const assetsOpen = assetsExpanded || showAssetForm;
 
   return (
-    <div className="mb-3 space-y-3">
+    <div className="space-y-7">
       <AssetsMonoCards
         accounts={accounts}
         hiddenAccounts={hiddenAccounts}
@@ -180,7 +180,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 (chip) => (
                   <span
                     key={chip}
-                    className="inline-flex items-center text-style-caption text-muted bg-panel border border-line rounded-full px-2 py-0.5"
+                    className="inline-flex items-center text-style-caption text-muted"
                   >
                     {chip}
                   </span>
@@ -212,7 +212,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         {manualAssets.slice(0, allAssetsVisible ? undefined : 3).map((a, i) => (
           <div
             key={i}
-            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3 hover:bg-panel transition-colors"
+            className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0"
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="min-w-0">

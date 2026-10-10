@@ -125,7 +125,9 @@ vi.mock("./components/SyncIndicator", () => ({
   getSyncTone: vi.fn(() => ({
     dot: "bg-muted",
     text: "не підключено",
-    pill: "bg-panelHi text-muted border-line",
+    pill: "text-muted",
+    icon: "wifi-off",
+    needsAttention: true,
   })),
 }));
 

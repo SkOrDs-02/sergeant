@@ -191,7 +191,7 @@ export function AssetsTxPickerView({
         aria-label="Період операцій"
         value={month}
         onChange={(event) => setMonth(event.target.value)}
-        className="focus-ring h-10 w-full rounded-xl border border-line bg-bg px-3 text-style-label text-text"
+        className="focus-ring h-10 w-full rounded-lg border border-line bg-bg px-3 text-style-label text-text"
       >
         <option value="">Останні 90 днів</option>
         {monthOptions.map((option) => (
@@ -299,9 +299,9 @@ export function AssetsTxPickerView({
                 Погашено цього місяця: <Money amount={Math.round(paid)} /> ·
                 Базовий борг: <Money amount={Math.round(total)} />
               </div>
-              <div className="h-1.5 bg-line rounded-full overflow-hidden mt-3">
+              <div className="h-1.5 bg-line rounded-[3px] overflow-hidden mt-3">
                 <div
-                  className="h-full bg-danger rounded-full transition-[width,background-color] duration-slower"
+                  className="h-full bg-danger rounded-[3px] transition-[width,background-color] duration-slower"
                   style={{
                     width: `${total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0}%`,
                   }}

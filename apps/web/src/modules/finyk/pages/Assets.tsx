@@ -43,8 +43,8 @@ export function Assets({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-1">
-        <h1 className="text-style-title text-text mb-4">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
+        <h1 className="text-style-headline text-text">
           {messages.finykRedesign.assetsTitle}
         </h1>
         <AssetsTable state={state} />

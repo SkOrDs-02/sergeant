@@ -535,8 +535,8 @@ export function Budgets({
     >
       {() => (
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-4">
-            <h1 className="text-style-title text-text">
+          <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
+            <h1 className="text-style-headline text-text">
               {messages.finykRedesign.planningTitle}
             </h1>
             <MonthlyPlanCard
@@ -646,7 +646,7 @@ export function Budgets({
                   <QuickActionButton
                     label={messages.finyk.planning.schedule}
                     tone="finyk"
-                    className="rounded-xl "
+                    className="rounded-lg"
                   />
                 }
               />
