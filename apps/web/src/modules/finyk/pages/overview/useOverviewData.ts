@@ -1,3 +1,5 @@
+import { getFinykDayPlan } from "../../lib/dayPlan";
+
 /**
  * Last validated: 2026-05-14
  * Status: Active
@@ -315,7 +317,6 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
   // plan progress bar and the day-budget number below.
   const hasExpensePlan = planExpense > 0;
   const dailyPlan = hasExpensePlan ? planExpense / daysInMonth : null;
-  const remainingDays = Math.max(1, daysInMonth - daysPassed + 1);
   const currentYear = kyivYear;
   const currentMonth = kyivMonth;
   const monthFlows = useMemo(
@@ -392,14 +393,17 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
   // (надлишок рівно `todaySpent / remainingDays`). Тепер `dayBudget` —
   // денна норма на початок дня: вона не смикається протягом доби, і саме
   // тому лишається чесним спільним знаменником стрічки (ADR-0079).
-  const spentBeforeToday = spent - todaySummary.spent;
-  const dayBudget = hasExpensePlan
-    ? (planExpense -
-        spentBeforeToday -
-        recurringOutThisMonth +
-        recurringInThisMonth) /
-      remainingDays
-    : null;
+  const { dayPlan: dayBudget, todaySpent } = getFinykDayPlan({
+    transactions: txForStats,
+    scheduleTransactions: linkableTx,
+    subscriptions,
+    manualDebts,
+    receivables,
+    planExpense,
+    excludedTxIds: new Set(excludedTxIds),
+    txSplits,
+    nowMs,
+  });
 
   // `todayRemaining` — «Лишилось на сьогодні» (hero, рішення 2 спеки
   // finyk-hero-month-strip). `null` РІВНО тоді, коли `dayBudget === null`
@@ -407,8 +411,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
   // тобто без плану hero показав би бадьоре «−495 ₴ понад бюджет дня» замість
   // CTA «Постав план». З планом лишається живим протягом дня: зменшується з
   // кожною витратою сьогодні, може піти у мінус.
-  const todayRemaining =
-    dayBudget === null ? null : dayBudget - todaySummary.spent;
+  const todayRemaining = dayBudget === null ? null : dayBudget - todaySpent;
 
   // Стрічка місяця (`MonthStrip`) — по одному елементу на кожен день місяця,
   // за тими самими правилами виключення, що дають `spent` вище
@@ -484,6 +487,10 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     lastUpdated,
     monoError,
     monoRefresh,
+    todayTransactions: statTx.filter((tx) => {
+      const ms = txEpochMs(tx);
+      return ms != null && getKyivDayKey(ms) === todayKey;
+    }),
     // Computed values
     networth,
     monoTotal,
@@ -500,7 +507,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     dateLabel,
     spent,
     income,
-    todaySpent: todaySummary.spent,
+    todaySpent,
     todayIncome: todaySummary.income,
     dailyPlan,
     showMonthForecast,

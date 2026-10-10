@@ -52,6 +52,9 @@ export function useFinykQuickStatsBoot(): void {
       txSplits: storage.txSplits,
       planExpense: Number(storage.monthlyPlan?.expense || 0),
       limitsCount: getLimitBudgets(storage.budgets).length,
+      subscriptions: storage.subscriptions,
+      manualDebts: storage.manualDebts,
+      receivables: storage.receivables,
     });
   }, [monoMirrorTick, sqliteTick]);
 }
