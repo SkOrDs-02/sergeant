@@ -52,7 +52,12 @@ the access log, session-fingerprint drift and Better Auth
 behaviour is exactly the previous one, so the code can ship before the owner
 sets the variables (backend first, then Vercel). The signature binds the IP
 only, no timestamp: a replayed pair can only claim the very IP it was issued
-for. Residual: a request that reaches the API directly (not via Vercel) keeps
+for. The verifier rejects non-public addresses (loopback, private,
+link-local, CGNAT, unspecified, ULA, IPv4-mapped) that Vercel never signs. The
+network allowlist `requireInternalIp` (`/api/push/send`, `/api/internal/*`,
+M14) deliberately ignores the signed header and reads `req.ip` via
+`getNetworkIp()`: it must stay a network check, not a second shared secret.
+Residual: a request that reaches the API directly (not via Vercel) keeps
 `req.ip` semantics. See [`env-vars.md`](../../engineering/integrations/env-vars.md).
 
 ## Consequences

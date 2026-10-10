@@ -27,6 +27,7 @@ import {
   verifySignedClientIp,
 } from "./clientIp.js";
 import { getIp } from "./rateLimit.js";
+import { requireInternalIp } from "./requireInternalIp.js";
 
 const SECRET = "s".repeat(40);
 const EGRESS = "76.76.21.1";
@@ -82,6 +83,30 @@ describe("verifySignedClientIp", () => {
     expect(
       verifySignedClientIp({ [CLIENT_IP_HEADER]: ip }, SECRET),
     ).toBeUndefined();
+  });
+
+  it.each([
+    "127.0.0.1",
+    "::1",
+    "10.1.2.3",
+    "172.16.0.9",
+    "192.168.1.1",
+    "100.64.0.1",
+    "169.254.1.1",
+    "0.0.0.0",
+    "::",
+    "fd00::1",
+    "fe80::1",
+    "::ffff:127.0.0.1",
+  ])("відхиляє непублічну адресу %s навіть з валідним підписом", (ip) => {
+    expect(verifySignedClientIp(signed(ip), SECRET)).toBeUndefined();
+  });
+
+  it("приймає публічні v4 і v6", () => {
+    expect(verifySignedClientIp(signed("8.8.8.8"), SECRET)).toBe("8.8.8.8");
+    expect(verifySignedClientIp(signed("2001:4860:4860::8888"), SECRET)).toBe(
+      "2001:4860:4860::8888",
+    );
   });
 
   it("відхиляє не-IP значення навіть з валідним підписом", () => {
@@ -164,5 +189,48 @@ describe("clientIpMiddleware: rate-limit і Better Auth бачать той са
       .set("x-forwarded-for", "9.9.9.9");
     expect(res.body.rateLimit).toBe(res.body.reqIp);
     expect(res.body.betterAuth).toBe("9.9.9.9");
+  });
+});
+
+describe("requireInternalIp ігнорує підписаний заголовок (M14 лишається мережевим)", () => {
+  beforeEach(() => {
+    envMock.SERGEANT_CLIENT_IP_SECRET = SECRET;
+  });
+
+  function internalApp() {
+    const app = express();
+    app.set("trust proxy", 1);
+    app.use(
+      requireInternalIp({ entries: ["203.0.113.5"], failClosedOnEmpty: true }),
+    );
+    app.get("/api/push/send", (_req, res) => {
+      res.json({ ok: true });
+    });
+    return app;
+  }
+
+  it("підписаний 127.0.0.1 не проходить: рішає req.ip (XFF), а не заголовок", async () => {
+    // XFF задає «мережевий» IP поза allowlist; підписаний loopback не має його перекрити.
+    const res = await request(internalApp())
+      .get("/api/push/send")
+      .set("x-forwarded-for", "198.51.100.77")
+      .set(signed("127.0.0.1"));
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("IP_NOT_ALLOWED");
+  });
+
+  it("підписаний IP з allowlist не рятує, якщо req.ip поза allowlist", async () => {
+    const res = await request(internalApp())
+      .get("/api/push/send")
+      .set("x-forwarded-for", "198.51.100.77")
+      .set(signed("203.0.113.5"));
+    expect(res.status).toBe(403);
+  });
+
+  it("req.ip з allowlist проходить без підпису", async () => {
+    const res = await request(internalApp())
+      .get("/api/push/send")
+      .set("x-forwarded-for", "203.0.113.5");
+    expect(res.status).toBe(200);
   });
 });

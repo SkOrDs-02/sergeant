@@ -43,6 +43,48 @@ export const AUTH_IP_ADDRESS_HEADERS: string[] = [
   "x-forwarded-for",
 ];
 
+/**
+ * Адреси, які Vercel Edge ніколи легітимно не підписує як IP клієнта:
+ * loopback, private, link-local, CGNAT, unspecified, ULA, IPv4-mapped.
+ * Без цього вкрадена пара секрет+підпис дозволила б «стати» 127.0.0.1 і
+ * пройти мережевий allowlist (M14), що за задумом тримає саме при витоку ключів.
+ */
+const NON_PUBLIC = (() => {
+  const list = new net.BlockList();
+  for (const [addr, prefix] of [
+    ["0.0.0.0", 8],
+    ["10.0.0.0", 8],
+    ["100.64.0.0", 10],
+    ["127.0.0.0", 8],
+    ["169.254.0.0", 16],
+    ["172.16.0.0", 12],
+    ["192.0.0.0", 24],
+    ["192.168.0.0", 16],
+    ["224.0.0.0", 3],
+  ] as const) {
+    list.addSubnet(addr, prefix, "ipv4");
+  }
+  for (const [addr, prefix] of [
+    ["::", 128],
+    ["::1", 128],
+    ["fc00::", 7],
+    ["fe80::", 10],
+    ["ff00::", 8],
+  ] as const) {
+    list.addSubnet(addr, prefix, "ipv6");
+  }
+  return list;
+})();
+
+function isPublicIp(ip: string): boolean {
+  const fam = net.isIP(ip);
+  if (fam === 0 || ip.includes("%")) return false;
+  // IPv4-mapped (::ffff:a.b.c.d): Vercel підписує чистий v4; а правило
+  // ::ffff:0:0/96 у BlockList збігалося б і з усіма v4-перевірками.
+  if (fam === 6 && /^(0{0,4}:){2,5}ffff:/i.test(ip)) return false;
+  return !NON_PUBLIC.check(ip, fam === 4 ? "ipv4" : "ipv6");
+}
+
 function firstHeader(
   headers: Request["headers"],
   name: string,
@@ -63,12 +105,24 @@ export function verifySignedClientIp(
   if (!secret) return undefined;
   const ip = firstHeader(headers, CLIENT_IP_HEADER);
   const sig = firstHeader(headers, CLIENT_IP_SIG_HEADER);
-  if (!ip || !sig || net.isIP(ip) === 0) return undefined;
+  if (!ip || !sig || !isPublicIp(ip)) return undefined;
   const expected = createHmac("sha256", secret).update(ip).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (a.length !== b.length) return undefined;
   return timingSafeEqual(a, b) ? ip : undefined;
+}
+
+/**
+ * Мережевий IP з'єднання (`req.ip` за `trust proxy`), БЕЗ підписаного
+ * заголовка. Для мережевих гейтів (`requireInternalIp`, M14): вони мають
+ * лишатися мережевими й не залежати від ще одного спільного секрету.
+ */
+export function getNetworkIp(req: Request): string | undefined {
+  const fromExpress = req?.ip;
+  return typeof fromExpress === "string" && fromExpress.trim()
+    ? fromExpress.trim()
+    : undefined;
 }
 
 /**
@@ -83,10 +137,7 @@ export function getClientIp(req: Request): string | undefined {
     env.SERGEANT_CLIENT_IP_SECRET,
   );
   if (signed) return signed;
-  const fromExpress = req?.ip;
-  return typeof fromExpress === "string" && fromExpress.trim()
-    ? fromExpress.trim()
-    : undefined;
+  return getNetworkIp(req);
 }
 
 /**

@@ -435,7 +435,7 @@ TRUST_PROXY=false                 ← повністю вимкнути XFF-па
 Спільний секрет підпису IP клієнта між Vercel Edge Middleware ([`apps/web/middleware.ts`](../../../apps/web/middleware.ts)) і сервером ([`apps/server/src/http/clientIp.ts`](../../../apps/server/src/http/clientIp.ts)); закриває rel-03 / SECURITY-20260804-1-1 (per-IP ліміти за Vercel-проксі злипались в egress-адреси). Мін. **32 символи**, коротше валить boot сервера; порожній рядок = не задано. Згенерувати: `openssl rand -hex 32`.
 
 - **Vercel (web-проєкт):** middleware бере перше значення `x-forwarded-for`, ставить `x-sergeant-client-ip` і `x-sergeant-client-ip-sig` = `base64url(HMAC-SHA256(secret, ip))`; клієнтські копії обох заголовків стирає. Секрет у заголовок не передається. Слабший за 32 символи секрет тут вважається незаданим.
-- **Coolify (`sergeant-api-v2`):** `getIp()` (rate-limit, анонімна AI-квота, push), access-log, session-drift і Better Auth (`advanced.ipAddress`, через `x-sergeant-resolved-client-ip`) беруть IP із заголовка лише за timing-safe збігу підпису; інакше `req.ip`.
+- **Coolify (`sergeant-api-v2`):** `getIp()` (rate-limit, анонімна AI-квота, push), access-log, session-drift і Better Auth (`advanced.ipAddress`, через `x-sergeant-resolved-client-ip`) беруть IP із заголовка лише за timing-safe збігу підпису; інакше `req.ip`. Підписані loopback/private/link-local/CGNAT/unspecified адреси відхиляються. Мережевий гейт `requireInternalIp` (M14) підписаний заголовок ігнорує й читає лише `req.ip` (`getNetworkIp`).
 - **Не задано** на будь-якому з боків: поведінка точно як до rel-03 (`TRUST_PROXY` не чіпається). Тому порядок викочування: спершу бекенд, потім Vercel. Ротація: атомарно в обох місцях; у вікні розфазу запити просто повертаються до `req.ip`.
 
 ---
