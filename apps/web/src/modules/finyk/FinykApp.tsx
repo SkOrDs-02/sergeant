@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
@@ -139,6 +140,9 @@ export default function App({
     onEscape: () => setShowLoginOverlay(false),
     inertBackground: true,
   });
+  // Системний Back закриває оверлей Monobank, а не виводить із Фініка і не
+  // губить вставлений токен (аудит ux-02).
+  useHistoryDismiss(showLoginOverlay, () => setShowLoginOverlay(false));
   const [editingManualExpenseId, setEditingManualExpenseId] = useState<
     string | null
   >(null);

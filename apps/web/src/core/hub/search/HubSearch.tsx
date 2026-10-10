@@ -5,6 +5,7 @@ import { SearchResults } from "./SearchResults";
 import { useSearchEngine } from "./useSearchEngine";
 import { messages } from "@shared/i18n/uk";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 
 export interface HubSearchProps {
   onClose: () => void;
@@ -56,6 +57,11 @@ export function HubSearch({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useDialogFocusTrap(true, panelRef, { inertBackground: true });
+
+  // Пошук монтується лише відкритим (`HubModals`), тож `open` тут завжди true.
+  // Системний Back (Android/PWA) закриває палітру, а не виводить із модуля чи
+  // закриває застосунок з першого запису історії (аудит ux-02).
+  useHistoryDismiss(true, onClose);
 
   const activeHit = flat[activeIdx];
 

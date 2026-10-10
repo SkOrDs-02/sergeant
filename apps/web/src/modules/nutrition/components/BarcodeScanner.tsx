@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import {
   scanBarcodeNative,
   useBarcodeScanner,
@@ -145,6 +146,11 @@ function WebBarcodeScanner({
     onEscape: handleClose,
     inertBackground: true,
   });
+
+  // Системний Back (Android/PWA) закриває лише сканер. Без запису в історії
+  // він виводив з Комори або закривав аркуш із напівзаповненим прийомом їжі,
+  // а камера лишалась увімкненою над іншим маршрутом (аудит ux-02).
+  useHistoryDismiss(true, handleClose);
 
   // Таймер лише зводить прапорець угору; «опустити» його не треба —
   // помилка камери має пріоритет у розмітці нижче. Скидати стан прямо в

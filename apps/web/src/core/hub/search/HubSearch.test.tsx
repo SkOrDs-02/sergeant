@@ -196,4 +196,13 @@ describe("HubSearch — shell smoke", () => {
     expect(engine.inlineAi.reset).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  // Аудит ux-02: палітра не мала запису в історії; Back на першому записі
+  // (холодний старт PWA) закривав застосунок і губив запит.
+  it("системний Back (popstate) закриває пошук", () => {
+    const onClose = vi.fn();
+    render(<HubSearch onClose={onClose} onOpenModule={vi.fn()} />);
+    fireEvent.popState(window);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

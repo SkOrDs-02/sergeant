@@ -5,6 +5,7 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
@@ -101,6 +102,8 @@ export function MacrosEditor({
   useDialogFocusTrap(Boolean(pendingUnlink), unlinkPanelRef, {
     onEscape: cancelUnlink,
   });
+  // Системний Back закриває лише це попередження, а не весь аркуш прийому.
+  useHistoryDismiss(Boolean(pendingUnlink), cancelUnlink);
 
   return (
     <div className="mb-1">
