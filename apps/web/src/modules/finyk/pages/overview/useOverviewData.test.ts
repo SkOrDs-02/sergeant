@@ -223,6 +223,24 @@ describe("useOverviewData", () => {
   });
 
   describe("today summary", () => {
+    it("keeps daily income precise before calculating the displayed balance", () => {
+      const realTx = [
+        mkTx("income", 10049),
+        mkTx("expense", -2051),
+      ] as UseOverviewDataParams["mono"]["realTx"];
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({ realTx }),
+          storage: buildStorage(),
+        }),
+      );
+      expect(result.current.todayIncome).toBe(100.49);
+      expect(result.current.todaySpent).toBe(20.51);
+      expect(
+        result.current.todayIncome - result.current.todaySpent,
+      ).toBeCloseTo(79.98);
+    });
+
     it("uses the Kyiv day, excludes transfers, and derives the daily plan", () => {
       const todayTime = Math.floor(
         new Date("2026-06-04T08:00:00Z").getTime() / 1000,

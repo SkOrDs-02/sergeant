@@ -509,7 +509,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     spent,
     income,
     todaySpent,
-    todayIncome: todaySummary.income,
+    todayIncome: todaySummary.incomeMinor / 100,
     dailyPlan,
     showMonthForecast,
     projectedSpend,

@@ -213,10 +213,8 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     const dialog = categoryDialog();
     const allSection = dialog.getByText("Усі категорії").closest("section");
     expect(allSection).not.toBeNull();
-    const optionLabels = within(allSection!)
-      .getAllByRole("button")
-      .map((button) => button.textContent?.trim());
-    expect(optionLabels).toEqual([
+    const optionButtons = within(allSection!).getAllByRole("button");
+    const optionLabels = [
       "Зарплата",
       "Фріланс",
       "Подарунок",
@@ -225,9 +223,17 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       "Пенсія/соц.",
       "Борг",
       "Інше",
-    ]);
+    ];
+    expect(optionButtons).toHaveLength(optionLabels.length);
+    optionLabels.forEach((label, index) =>
+      expect(optionButtons[index]).toHaveAccessibleName(label),
+    );
     // Expense-only categories must not leak into income mode.
-    expect(optionLabels).not.toContain("Продукти");
+    expect(
+      within(allSection!).queryByRole("button", {
+        name: "Продукти",
+      }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Додати надходження" }),
     ).toBeInTheDocument();
