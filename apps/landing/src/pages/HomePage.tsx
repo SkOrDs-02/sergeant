@@ -17,7 +17,7 @@ import { ORGANIZATION_ID } from "../lib/jsonLd";
 /**
  * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
  * Дані ілюстративні (підпис у нотатці про це каже) – сенс віджета в тому,
- * щоб показати причину-наслідок, а не конкретні числа. Рівень впевненості
+ * щоб показати спостереження, а не причинний вплив. Рівень впевненості
  * один на всі три стани: це та сама закономірність, а не три різні, і
  * підпис береться з канонічної шкали (`CONFIDENCE`), а не вигадується.
  */
@@ -25,17 +25,17 @@ const HERO_SCENARIOS = {
   1: {
     spend: "2 260",
     pct: 90,
-    note: "У тижні з одним тренуванням доставки найбільше",
+    note: "У тижні з одним тренуванням витрати на доставку найвищі",
   },
   3: {
     spend: "1 840",
     pct: 74,
-    note: "Три тренування, і замовлень доставки вже менше",
+    note: "У тижні з трьома тренуваннями витрати на доставку нижчі",
   },
   5: {
     spend: "1 320",
     pct: 53,
-    note: "Пʼять тренувань, і доставка падає майже вдвічі",
+    note: "У тижні з пʼятьма тренуваннями витрати на доставку найнижчі",
   },
 } as const;
 
@@ -47,7 +47,7 @@ type HeroTrainings = keyof typeof HERO_SCENARIOS;
  * Hero-колаж: картки даних, «розкидані на столі», і нотатка-інсайт, яку
  * Sergeant ніби лишив поверх них. Картка тренувань – живий перемикач:
  * 1/3/5 тренувань перераховують бар доставки і саму нотатку, показуючи
- * причину-наслідок замість статичної картинки. До lg – звичайна колонка
+ * спостереження з різних тижнів. До lg – звичайна колонка
  * з легкими нахилами, на lg – absolute-розкладка з пунктирними звʼязками.
  */
 function HeroCollage() {
@@ -178,7 +178,7 @@ export default function HomePage() {
           operatingSystem: "Web",
           description: ROUTE_META["/"].description,
           featureList: [
-            "Гроші: чотири входи витрат – синхронізація Monobank, фото чека, виписка файлом, ручна форма",
+            "Гроші: витрати з Monobank, фото чека, виписки файлом або вручну",
             "Тіло: щоденник тренувань, тоннаж і рекорди",
             "Звички: серія, яку не обнуляє пропуск із причиною",
             "Їжа: КБЖВ зі штрихкоду, фото страви та української бази продуктів",
@@ -223,14 +223,20 @@ export default function HomePage() {
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
             Гроші, тренування, звички і їжа в одному приватному застосунку. Він
-            помічає, як тиждень без тренувань відгукується в доставці, і
-            мовчить, поки даних замало. Рахує, а не читає лекцій.
+            порівнює твої записи й помічає звʼязки між сферами, коли даних
+            вистачає. Рахує, а не читає лекцій.
           </p>
           <div className="flex flex-col gap-2.5">
             <TelegramCta placement="hero" label="Стати в чергу" />
             <p className="text-sm text-subtle">
-              безкоштовно назавжди: чотири модулі й 20 дій Сержанта щотижня ·
-              дані твої,{" "}
+              безкоштовно назавжди: чотири модулі й{" "}
+              <a
+                href="/pomichnyk#limity"
+                className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                20 запитів до Сержанта щотижня
+              </a>{" "}
+              · дані твої,{" "}
               <a
                 href="/vyhid"
                 className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
