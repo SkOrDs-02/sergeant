@@ -1579,7 +1579,7 @@ I could not refute this. The bug is real. I think "high" overstates the severity
 
 ### `data-15` [medium] Таблиці з hard-delete без tombstone (категорії й розбивки транзакцій, привʼязки боргів, net-worth): видалення не доходить на інші пристрої, а застарілий оп воскрешає рядок
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-15-client-hard-delete-pull (клієнтська частина: pull-delete на таблиці без `deleted_at`, але з `updated_at`, виконує hard DELETE з LWW `updated_at < client_ts` замість `rejected`; лишилось: soft-delete (`deleted_at` + `updated_at`) на обох боках з міграцією і tombstone-перевіркою в серверній гілці INSERT, воскресіння застарілим опом на сервері досі можливе, правка ADR-0073 — окремим стековим PR за рішенням власника)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync finyk + web: applyPullOp + dualwrite-core
 - **Де:** apps/server/src/modules/sync/finyk/applySync.ts:239-265,299-321,354-381; apps/web/src/core/syncEngine/applyPullOp.ts:331-334; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:278-340; apps/web/src/modules/finyk/lib/sqliteWriter/specs.ts:194-209; packages/dualwrite-core/src/tableSpec.ts:183-189
 - **Першопричина:** finyk_tx_categories, finyk_tx_splits, finyk_mono_debt_links і finyk_networth_history видаляються справжнім DELETE без запису часу видалення. На сервері після DELETE гілка «рядка немає» вставляє запізнілий оп без порівняння з часом видалення; на клієнті pull для delete на таблиці без deleted_at повертає rejected (подія в Sentry), а курсор іде далі.
