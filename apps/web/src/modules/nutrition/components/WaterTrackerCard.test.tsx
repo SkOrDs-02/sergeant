@@ -56,7 +56,7 @@ describe("WaterTrackerCard", () => {
     render(<WaterTrackerCard goalMl={2000} />);
     const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "350" } });
-    fireEvent.click(screen.getByText("+ Додати"));
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
     expect(add).toHaveBeenCalledWith(350);
     // After a custom add, the undo button surfaces with the last amount.
     expect(
@@ -84,7 +84,7 @@ describe("WaterTrackerCard", () => {
     const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "0" } });
     // Button disabled → click does nothing.
-    fireEvent.click(screen.getByText("+ Додати"));
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
     expect(add).not.toHaveBeenCalled();
   });
 
@@ -95,7 +95,7 @@ describe("WaterTrackerCard", () => {
     expect(input.value).toBe("25");
     fireEvent.change(input, { target: { value: "абв" } });
     expect(input.value).toBe("");
-    expect(screen.getByText("+ Додати")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
   });
 
   it("requires a two-tap confirm to reset", () => {

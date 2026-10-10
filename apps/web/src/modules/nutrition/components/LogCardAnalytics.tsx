@@ -8,7 +8,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Measure } from "@shared/components/ui/Measure";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Stat } from "@shared/components/ui/Stat";
-import { cn } from "@shared/lib/ui/cn";
+import { Segmented } from "@shared/components/ui/Segmented";
 import {
   getRowsForRange,
   mealTypeBreakdown,
@@ -16,7 +16,6 @@ import {
 } from "../lib/nutritionStats";
 import { compareWeekToPrevious } from "../lib/weekCompare";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
 import {
   calcNutritionPeriodAverages,
   type NutritionLog,
@@ -70,28 +69,22 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
   );
 
   return (
-    <div className="rounded-2xl border border-line bg-panel px-3 py-3 space-y-3">
+    <section className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <SectionHeading as="div" size="xs" variant="nutrition">
+        <SectionHeading as="h2" size="lg">
           Аналітика (тренди)
         </SectionHeading>
-        <div className="flex gap-2">
-          {[30, 90].map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setStatsRange(d)}
-              className={cn(
-                "px-2 py-1 rounded-xl text-style-caption border",
-                statsRange === d
-                  ? "border-nutrition/60 text-nutrition-strong dark:text-nutrition bg-nutrition/10"
-                  : "border-line text-muted bg-panelHi",
-              )}
-            >
-              {d} днів
-            </button>
-          ))}
-        </div>
+        <Segmented
+          size="sm"
+          semantics="filter"
+          ariaLabel="Період трендів"
+          items={[
+            { value: "30", label: "30 днів" },
+            { value: "90", label: "90 днів" },
+          ]}
+          value={String(statsRange)}
+          onChange={(v) => setStatsRange(Number(v))}
+        />
       </div>
 
       {statsAvg.daysLogged === 0 ? (
@@ -101,13 +94,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
         // ґудзика: «+ Додати прийом їжі» вже видно нижче на цій самій
         // сторінці `LogCard` — дублювати дію в компактній картці означало
         // б саме той анти-патерн, який документ empty-states забороняє.
-        <EmptyState
-          compact
-          module="nutrition"
-          icon={<Icon name="trending-up" size="lg" />}
-          title="Ще немає трендів"
-          description="Запиши кілька прийомів їжі, і тут зʼявляться середні калорії, макро та графік за днями."
-        />
+        <EmptyState compact title="Ще немає трендів" />
       ) : (
         <>
           {/* F1 (анти-слоп аудит 2026-09-01): 2×2 плитки «підпис → число →
@@ -159,12 +146,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           </p>
 
           <div className="border-t border-line pt-3">
-            <SectionHeading
-              as="div"
-              size="xs"
-              variant="nutrition"
-              className="mb-2"
-            >
+            <SectionHeading as="h3" size="md" className="mb-2">
               Калорії по днях (останні {Math.min(statsRange, statsRows.length)})
             </SectionHeading>
             {(() => {
@@ -176,7 +158,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                     <div
                       key={i}
                       title={`${Math.round(k)} ккал`}
-                      className="flex-1 rounded-sm bg-nutrition/60"
+                      className="flex-1 rounded-t-[3px] bg-chart-nutrition"
                       style={{
                         height: `${Math.max(2, Math.round((k / max) * 48))}px`,
                       }}
@@ -189,29 +171,24 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-3">
             <div>
-              <SectionHeading
-                as="div"
-                size="xs"
-                variant="nutrition"
-                className="mb-2"
-              >
+              <SectionHeading as="h3" size="md" className="mb-2">
                 Топ страв
               </SectionHeading>
               {statsTop.length === 0 ? (
-                <div className="text-style-caption text-muted">
+                <div className="text-style-label text-muted">
                   Поки що порожньо
                 </div>
               ) : (
-                <ol className="space-y-1">
+                <ol className="divide-y divide-line">
                   {statsTop.map((x) => (
                     <li
                       key={x.name}
-                      className="flex items-baseline justify-between gap-2"
+                      className="flex items-baseline justify-between gap-2 py-1.5"
                     >
-                      <span className="text-style-caption text-text truncate">
+                      <span className="text-style-label text-text truncate">
                         {x.name}
                       </span>
-                      <span className="text-style-caption text-muted shrink-0">
+                      <span className="text-style-caption text-muted tabular-nums shrink-0">
                         <Measure value={x.count} unit="" />× ·{" "}
                         <Measure value={Math.round(x.kcal)} unit="ккал" />
                       </span>
@@ -221,20 +198,15 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
               )}
             </div>
             <div>
-              <SectionHeading
-                as="div"
-                size="xs"
-                variant="nutrition"
-                className="mb-2"
-              >
+              <SectionHeading as="h3" size="md" className="mb-2">
                 Розподіл прийомів
               </SectionHeading>
               {Object.keys(statsMealTypes).length === 0 ? (
-                <div className="text-style-caption text-muted">
+                <div className="text-style-label text-muted">
                   Поки що порожньо
                 </div>
               ) : (
-                <ul className="space-y-1">
+                <ul className="divide-y divide-line">
                   {MEAL_ORDER.filter(
                     (t) => (statsMealTypes[t]?.count ?? 0) > 0,
                   ).map((t) => {
@@ -243,20 +215,12 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                     return (
                       <li
                         key={t}
-                        className="flex items-baseline justify-between gap-2"
+                        className="flex items-baseline justify-between gap-2 py-1.5"
                       >
-                        <span className="text-style-caption text-text inline-flex items-center gap-1.5">
-                          {MEAL_META[t] && (
-                            <Icon
-                              name={MEAL_META[t].iconName as IconName}
-                              size="sm"
-                              className="text-muted"
-                              aria-hidden
-                            />
-                          )}
+                        <span className="text-style-label text-text">
                           {MEAL_META[t]?.label || t}
                         </span>
-                        <span className="text-style-caption text-muted shrink-0">
+                        <span className="text-style-caption text-muted tabular-nums shrink-0">
                           <Measure value={s.count} unit="" />× ·{" "}
                           <Measure value={Math.round(s.kcal)} unit="ккал" />
                         </span>
@@ -269,6 +233,6 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           </div>
         </>
       )}
-    </div>
+    </section>
   );
 }

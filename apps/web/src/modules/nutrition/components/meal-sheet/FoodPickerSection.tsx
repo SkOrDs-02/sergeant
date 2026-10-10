@@ -123,12 +123,11 @@ export function FoodPickerSection({
   return (
     <div className="mb-4 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <SectionHeading as="div" size="xs" variant="nutrition">
+        <SectionHeading as="div" size="xs">
           Продукт
         </SectionHeading>
         {(foodBusy || offBusy) && (
           <span className="text-style-caption text-subtle flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 border border-nutrition/40 border-t-nutrition rounded-full motion-safe:animate-spin" />
             пошук…
           </span>
         )}
@@ -153,8 +152,8 @@ export function FoodPickerSection({
         <div className="text-style-caption text-muted">{foodErr}</div>
       )}
       {(foodHits.length > 0 || offHits.length > 0) && (
-        <div className="max-h-56 overflow-y-auto rounded-2xl border border-line bg-bg shadow-sm">
-          <ul className="divide-y divide-line/20">
+        <div className="max-h-56 overflow-y-auto border-y border-line">
+          <ul className="divide-y divide-line">
             {foodHits.map((p) => (
               <FoodHitRow
                 key={p.id}
@@ -172,7 +171,7 @@ export function FoodPickerSection({
                 {/* Роздільник потрібен, коли є з чим розділяти: локальні
                     хіти вище або більше ніж одне зовнішнє джерело. */}
                 {(foodHits.length > 0 || offHitGroups.length > 1) && (
-                  <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi font-semibold">
+                  <li className="pt-3 pb-1 text-style-overline text-subtle">
                     {group.label}
                   </li>
                 )}

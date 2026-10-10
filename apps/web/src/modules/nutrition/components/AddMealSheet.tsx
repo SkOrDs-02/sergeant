@@ -683,12 +683,7 @@ export function AddMealSheet({
 
             {initialMeal?.id && initialDate && (
               <div className="mb-4">
-                <SectionHeading
-                  as="div"
-                  size="xs"
-                  variant="nutrition"
-                  className="mb-1"
-                >
+                <SectionHeading as="div" size="xs" className="mb-1">
                   Дата
                 </SectionHeading>
                 <DateField
@@ -763,7 +758,8 @@ export function AddMealSheet({
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 type="button"
-                className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
+                variant="solid"
+                className="h-12 min-h-[44px]"
                 onClick={handleSave}
               >
                 {initialMeal?.id ? "Зберегти зміни" : "Додати прийом"}

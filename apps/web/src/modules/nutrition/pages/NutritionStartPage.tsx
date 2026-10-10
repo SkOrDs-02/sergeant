@@ -55,9 +55,9 @@ export function NutritionStartPage({
             aria-label={messages.loaders.loadingSection}
             className="space-y-3"
           >
-            <Skeleton className="h-56 rounded-3xl" />
-            <Skeleton className="h-32 rounded-2xl" />
-            <Skeleton className="h-24 rounded-2xl" />
+            <Skeleton className="h-56 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
           </div>
         ) : (
           <NutritionDashboard

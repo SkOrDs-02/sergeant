@@ -1,5 +1,5 @@
 /**
- * SourceTabs — крок «звідки страва» як смужка вкладок.
+ * SourceTabs — крок «звідки страва» як список вкладок на hairline.
  *
  * AI-CONTEXT: доти цей крок був вертикальним стосом усіх джерел одразу
  * (шаблони → нещодавні → комора → пошук → штрихкод+фото → два ручні
@@ -14,21 +14,16 @@
  * Status: Active
  * Last validated: 2026-08-22
  */
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
 
 export type SourceTabId = "search" | "scan" | "photo" | "manual";
 
-const TABS: ReadonlyArray<{
-  id: SourceTabId;
-  label: string;
-  icon: "search" | "barcode" | "camera" | "edit";
-}> = [
-  { id: "search", label: "Пошук", icon: "search" },
-  { id: "scan", label: "Скан", icon: "barcode" },
-  { id: "photo", label: "Фото", icon: "camera" },
-  { id: "manual", label: "Своє", icon: "edit" },
+const TABS: ReadonlyArray<{ id: SourceTabId; label: string }> = [
+  { id: "search", label: "Пошук" },
+  { id: "scan", label: "Скан" },
+  { id: "photo", label: "Фото" },
+  { id: "manual", label: "Своє" },
 ];
 
 interface SourceTabsProps {
@@ -36,16 +31,22 @@ interface SourceTabsProps {
   onChange: (id: SourceTabId) => void;
 }
 
+/**
+ * Мова H (редизайн v3, PR4): джерела вводу — не сегмент, а вертикальний
+ * список на hairline (сегмент лишається лише для вкладок і фільтрів одного
+ * списку). Семантика вкладок не змінилась: кожен рядок — `role="tab"` зі
+ * своєю панеллю, а стрілки ходять вгору-вниз (`orientation: 'vertical'`).
+ */
 export function SourceTabs({ active, onChange }: SourceTabsProps) {
-  // Роль `tablist` обіцяє стрілки; без хука обіцянка була порожня.
   // `manual`: вкладка «Скан» сама відкриває камеру, тож стрілка лише
   // переносить фокус, а вкладку вибирає Enter/Space (WCAG 3.2.1, ux-16).
-  const onTabKeyDown = useTablistArrowKeys(true, "manual");
+  const onTabKeyDown = useTablistArrowKeys(true, "manual", "vertical");
   return (
     <div
       role="tablist"
       aria-label="Джерело страви"
-      className="mb-4 grid grid-cols-4 gap-1 rounded-2xl bg-panelHi p-1"
+      aria-orientation="vertical"
+      className="mb-4 flex flex-col divide-y divide-line border-y border-line"
     >
       {TABS.map((t) => {
         const isActive = t.id === active;
@@ -61,16 +62,23 @@ export function SourceTabs({ active, onChange }: SourceTabsProps) {
             onKeyDown={onTabKeyDown}
             onClick={() => onChange(t.id)}
             className={cn(
-              "min-h-[44px] rounded-xl px-2 py-2 flex flex-col items-center justify-center gap-0.5",
-              "transition-[background-color,color] focus-visible:outline-none",
-              "focus-visible:ring-2 focus-visible:ring-nutrition/60",
-              isActive
-                ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
-                : "text-muted hover:text-text",
+              "flex min-h-[44px] items-center justify-between gap-3 text-left focus-ring",
+              isActive ? "text-text" : "text-muted hover:text-text",
             )}
           >
-            <Icon name={t.icon} size="sm" aria-hidden />
-            <span className="text-style-caption font-semibold">{t.label}</span>
+            <span
+              className={cn(
+                "text-style-body",
+                isActive ? "font-semibold" : "font-medium",
+              )}
+            >
+              {t.label}
+            </span>
+            {isActive && (
+              <span aria-hidden="true" className="text-style-label text-text">
+                Обрано
+              </span>
+            )}
           </button>
         );
       })}

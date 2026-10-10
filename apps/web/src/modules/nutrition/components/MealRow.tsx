@@ -4,7 +4,6 @@
  */
 import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -35,7 +34,7 @@ function MealThumb({ mealId }: { mealId: string }) {
       decoding="async"
       width="40"
       height="40"
-      className="w-10 h-10 rounded-xl object-cover shrink-0 border border-line"
+      className="w-10 h-10 rounded-lg object-cover shrink-0"
     />
   );
 }
@@ -64,76 +63,66 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
           : macroSource === "recipe"
             ? "рецепт"
             : "";
-  // 6.4: AI-sourced entries (photoAI / recipeAI) get the nutrition-tinted
-  // sergeant-glyph badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
-  // is a deterministic lookup, not AI inference, so it keeps the neutral
-  // soft tone without the sergeant glyph.
-  const isAiSourced = macroSource === "photoAI" || macroSource === "recipeAI";
+  // Походження КБЖВ текстом у мета-рядку, без значка й гліфа Сержанта
+  // (мова H: іконок у рядках немає).
+  const meta = [
+    meal.time,
+    meal.amount_g != null && meal.amount_g > 0
+      ? `${Math.round(meal.amount_g)} г`
+      : null,
+    sourceLabel || null,
+  ].filter(Boolean);
   return (
-    <div className="flex items-center gap-3 bg-panelHi rounded-2xl px-3 py-2.5 group">
+    <div className="flex items-center gap-3 py-2.5 group">
       <MealThumb mealId={meal.id} />
       <button
         type="button"
         onClick={onEdit}
         disabled={!onEdit}
         className={cn(
-          "flex flex-col flex-1 min-w-0 text-left",
+          "flex flex-1 min-w-0 items-baseline gap-3 rounded-lg text-left focus-ring",
           onEdit ? "cursor-pointer" : "cursor-default",
         )}
         aria-label={onEdit ? "Редагувати запис" : undefined}
       >
-        <div className="flex items-baseline gap-2">
-          <span className="text-style-label text-text truncate">
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-style-body font-semibold text-text truncate">
             {meal.name}
           </span>
-          {meal.time && (
-            <span className="text-style-caption text-subtle shrink-0">
-              {meal.time}
-            </span>
-          )}
-          {sourceLabel && (
-            <Badge
-              variant={isAiSourced ? "nutrition" : "neutral"}
-              tone="soft"
-              size="xs"
-              className="shrink-0 inline-flex items-center gap-1 rounded-full"
-              title="Походження КБЖВ"
-            >
-              {isAiSourced && <Icon name="sergeant" size={10} aria-hidden />}
-              <span>{sourceLabel}</span>
-            </Badge>
-          )}
-        </div>
-        <div className="flex gap-2 mt-0.5 flex-wrap">
-          {meal.amount_g != null && meal.amount_g > 0 && (
-            <span className="text-style-caption text-subtle">
-              <Measure value={Math.round(meal.amount_g)} unit="г" />
-            </span>
-          )}
-          {mac.kcal != null && (
-            <Measure
-              value={Math.round(mac.kcal)}
-              unit="ккал"
-              tone="inherit"
-              className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold"
-            />
-          )}
-          {mac.protein_g != null && (
-            <span className="text-style-caption text-subtle">
-              Б <Measure value={Math.round(mac.protein_g)} unit="г" />
-            </span>
-          )}
-          {mac.fat_g != null && (
-            <span className="text-style-caption text-subtle">
-              Ж <Measure value={Math.round(mac.fat_g)} unit="г" />
-            </span>
-          )}
-          {mac.carbs_g != null && (
-            <span className="text-style-caption text-subtle">
-              В <Measure value={Math.round(mac.carbs_g)} unit="г" />
-            </span>
-          )}
-        </div>
+          <span className="flex flex-wrap gap-x-2 text-style-caption text-muted">
+            {meta.map((part) => (
+              <span
+                key={part as string}
+                title={part === sourceLabel ? "Походження КБЖВ" : undefined}
+              >
+                {part}
+              </span>
+            ))}
+            {mac.protein_g != null && (
+              <span>
+                Б <Measure value={Math.round(mac.protein_g)} unit="г" />
+              </span>
+            )}
+            {mac.fat_g != null && (
+              <span>
+                Ж <Measure value={Math.round(mac.fat_g)} unit="г" />
+              </span>
+            )}
+            {mac.carbs_g != null && (
+              <span>
+                В <Measure value={Math.round(mac.carbs_g)} unit="г" />
+              </span>
+            )}
+          </span>
+        </span>
+        {mac.kcal != null && (
+          <Measure
+            value={Math.round(mac.kcal)}
+            unit="ккал"
+            tone="inherit"
+            className="shrink-0 text-style-body font-medium text-text tabular-nums"
+          />
+        )}
       </button>
       <Button
         variant="ghost"
@@ -141,7 +130,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         iconOnly
         onClick={onRemove}
         aria-label="Видалити запис"
-        className="text-muted hover:text-danger hover:bg-danger/10 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
+        className="text-muted hover:text-danger-strong sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
       >
         <Icon name="close" size="sm" aria-hidden />
       </Button>

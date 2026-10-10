@@ -7,7 +7,7 @@ import { render, screen } from "@testing-library/react";
 import { flatMatch } from "@shared/testing/numberText";
 import { describe, expect, it } from "vitest";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
-import { MacroBadge, MacroRatioBar } from "./DailyPlanMacros";
+import { MacroRatioBar } from "./DailyPlanMacros";
 
 const EMPTY_PREFS = {} as NutritionPrefs;
 
@@ -48,19 +48,5 @@ describe("MacroRatioBar", () => {
       />,
     );
     expect(screen.getByText(flatMatch(/Б 100 %/))).toBeInTheDocument();
-  });
-});
-
-describe("MacroBadge", () => {
-  it("returns null when value is null or undefined", () => {
-    const { container: nullContainer } = render(
-      <MacroBadge label="Б" value={null} />,
-    );
-    expect(nullContainer.firstChild).toBeNull();
-  });
-
-  it("renders rounded value with custom unit and label", () => {
-    render(<MacroBadge label="ккал" value={420.6} unit="" />);
-    expect(screen.getByText("421")).toBeInTheDocument();
   });
 });

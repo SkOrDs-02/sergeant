@@ -36,7 +36,6 @@
  * ширини незалежно від довжини підпису.
  */
 import { useState } from "react";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
@@ -47,7 +46,6 @@ export type PantryInputMode = "single" | "list";
 
 interface Segment {
   key: string;
-  icon: IconName;
   label: string;
   /** Повний accessible-name, коли він ширший за короткий видимий підпис. */
   ariaLabel?: string;
@@ -70,18 +68,14 @@ function SegmentButton({ seg }: { seg: Segment }) {
       aria-label={seg.ariaLabel}
       aria-pressed={seg.active}
       className={cn(
-        "min-h-[44px] rounded-xl px-1.5 py-2 flex flex-col items-center justify-center gap-0.5",
-        "transition-colors disabled:opacity-50 focus-visible:outline-none",
-        "focus-visible:ring-2 focus-visible:ring-nutrition/60",
-        seg.active
-          ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
-          : "text-subtle hover:text-text",
+        "min-h-[44px] rounded-lg border border-border-strong px-1.5 py-2 flex items-center justify-center",
+        "text-style-label font-semibold text-text truncate transition-colors",
+        "hover:bg-line/40 disabled:opacity-50 focus-ring",
+        // Обраний режим позначено заливкою-нейтраллю, не hue модуля.
+        seg.active && "bg-line/60",
       )}
     >
-      <Icon name={seg.icon} size="sm" aria-hidden />
-      <span className="text-style-caption font-semibold truncate max-w-full">
-        {seg.label}
-      </span>
+      <span className="truncate max-w-full">{seg.label}</span>
     </button>
   );
 }
@@ -111,14 +105,12 @@ export function PantrySourceTabs({
   const segments: Segment[] = [
     {
       key: "single",
-      icon: "edit",
       label: "По одному",
       active: mode === "single",
       onClick: () => onModeChange("single"),
     },
     {
       key: "list",
-      icon: "list",
       label: "Списком",
       active: mode === "list",
       onClick: () => onModeChange("list"),
@@ -127,7 +119,6 @@ export function PantrySourceTabs({
   if (typeof onScanBarcode === "function") {
     segments.push({
       key: "scan",
-      icon: "scanner",
       label: "Скан",
       ariaLabel: "Сканувати штрих-код",
       disabled: busy,
@@ -137,7 +128,6 @@ export function PantrySourceTabs({
   if (silpoConnected) {
     segments.push({
       key: "receipt",
-      icon: "shopping-cart",
       label: "З чека",
       // Короткий видимий підпис («З чека») влазить у сітку на 393px;
       // повна фраза лишається доступним іменем — той самий текст, який
@@ -160,10 +150,7 @@ export function PantrySourceTabs({
       <div
         role="group"
         aria-label={messages.nutrition.pantryCard.sourceStripLabel}
-        className={cn(
-          "grid gap-1 rounded-2xl bg-panelHi border border-line p-1 mb-3",
-          columnsClass,
-        )}
+        className={cn("grid gap-1.5 mb-3", columnsClass)}
       >
         {segments.map((seg) => (
           <SegmentButton key={seg.key} seg={seg} />

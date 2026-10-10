@@ -10,7 +10,6 @@
  * @last-validated 2026-05-21
  */
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
 
@@ -64,12 +63,10 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
           key={chip.id}
           size="xs"
           variant="outline"
-          tone="neutral"
           onClick={() => onTap(chip)}
           aria-label={LABELS.chip(chip.label, chip.grams)}
-          className="shrink-0 border-nutrition/40"
+          className="shrink-0 rounded-lg"
         >
-          <Icon name="plus" size="xs" aria-hidden />
           <span className="whitespace-nowrap">{chip.label}</span>
           <span className="text-style-caption text-muted whitespace-nowrap">
             · {chip.macros.kcal} {messages.nutrition.kcalUnit}

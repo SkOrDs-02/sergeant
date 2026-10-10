@@ -119,7 +119,7 @@ describe("NutritionDashboard", () => {
         prefs={GOAL_PREFS}
       />,
     );
-    expect(screen.getByText("Сьогодні")).toBeInTheDocument();
+    expect(screen.getByText(/^Сьогодні ·/)).toBeInTheDocument();
     // Прийом тепер оголошує власна кнопка сегмента, не спільна мітка
     // картинки: сегменти стали клікабельними, а кнопка не може жити під
     // `aria-hidden`.
@@ -206,7 +206,7 @@ describe("NutritionDashboard", () => {
       />,
     );
     expect(screen.queryByText(/Записано \d+ із 4/)).not.toBeInTheDocument();
-    expect(screen.getByText("3 прийоми їжі")).toBeInTheDocument();
+    expect(screen.getByText(/3 прийоми їжі/)).toBeInTheDocument();
   });
 
   it("does NOT clear the incomplete-day note when a photo saves 3 rows of the SAME meal type (nutrition audit PR-N2)", () => {
@@ -222,7 +222,7 @@ describe("NutritionDashboard", () => {
       />,
     );
     expect(screen.getByText("Записано 1 із 4")).toBeInTheDocument();
-    expect(screen.getByText("1 прийом їжі")).toBeInTheDocument();
+    expect(screen.getByText(/1 прийом їжі/)).toBeInTheDocument();
     expect(screen.queryByText(/3 прийом/)).not.toBeInTheDocument();
   });
 

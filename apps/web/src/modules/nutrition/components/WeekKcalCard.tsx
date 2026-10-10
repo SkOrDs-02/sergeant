@@ -20,9 +20,8 @@
  * опт-аут із `apps/web/src/styles/mobile.css`.
  */
 import { useMemo, useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
-
 import { Card } from "@shared/components/ui/Card";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { getKyivMondayIndex, parseKyivDate } from "@shared/lib/time/kyivTime";
@@ -109,30 +108,33 @@ export function WeekKcalCard({
   }
 
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-1">
-        <div className="text-style-label text-text">{t.heading}</div>
-        <button
-          type="button"
-          onClick={() => onGoToLog?.(selectedDate ?? undefined)}
-          className="inline-flex items-center gap-0.5 rounded-md text-style-caption text-nutrition-strong dark:text-nutrition hover:underline focus-ring"
-        >
-          {t.logLink}
-          <Icon name="chevron-right" size="sm" aria-hidden />
-        </button>
-      </div>
+    <Card as="section" padding="md">
+      <SectionHeading
+        size="lg"
+        action={
+          <button
+            type="button"
+            onClick={() => onGoToLog?.(selectedDate ?? undefined)}
+            className="touch-target rounded-lg text-style-label font-semibold text-text focus-ring"
+          >
+            {t.logLink}
+          </button>
+        }
+      >
+        {t.heading}
+      </SectionHeading>
 
-      <div className="flex items-baseline justify-between gap-2 mb-2">
+      <div className="mt-1 mb-3 flex items-baseline justify-between gap-2">
         <span
           className={cn(
-            "text-style-caption truncate",
-            selected ? "text-text" : "text-subtle",
+            "text-style-label truncate tabular-nums",
+            selected ? "text-text" : "text-muted",
           )}
         >
           {summaryText}
         </span>
         {scaleText !== null && (
-          <span className="text-style-caption text-muted shrink-0">
+          <span className="text-style-caption text-subtle tabular-nums shrink-0">
             {scaleText}
           </span>
         )}
@@ -175,7 +177,7 @@ export function WeekKcalCard({
                   // Пунктир і так має розриви, тож 4px проміжки не видно.
                   <div
                     aria-hidden="true"
-                    className="absolute inset-x-0 border-t border-dashed border-text/25"
+                    className="absolute inset-x-0 border-t border-dashed border-subtle"
                     style={{ bottom: `${bar.goalRatio * PLOT_HEIGHT}px` }}
                   />
                 )}
@@ -185,14 +187,16 @@ export function WeekKcalCard({
                   // не внесено», огризок у 3px читався як «мало зʼїв».
                   <div
                     data-testid={`week-kcal-empty-${bar.date}`}
-                    className="w-full max-w-[18px] h-0.5 rounded-full bg-text/15"
+                    className="w-full max-w-[18px] h-0.5 rounded-[3px] bg-line"
                   />
                 ) : (
                   <div
                     data-testid={`week-kcal-bar-${bar.date}`}
                     className={cn(
-                      "relative w-full max-w-[18px] rounded-t-md transition-[height,background-color] duration-slow",
-                      bar.isOver ? "bg-warning" : "bg-nutrition",
+                      "relative w-full max-w-[18px] rounded-t-[3px] transition-[height,background-color] duration-slow",
+                      // Небезпека лише понад допуск (канон Їжі: червоний
+                      // при >110 % ккал), інакше hue модуля в даних.
+                      bar.isOver ? "bg-danger" : "bg-chart-nutrition",
                       isToday || isSelected ? "opacity-100" : "opacity-40",
                     )}
                     style={{ height: `${height}px` }}
@@ -202,7 +206,7 @@ export function WeekKcalCard({
               <span
                 className={cn(
                   "text-style-caption leading-none",
-                  isToday || isSelected ? "text-text font-bold" : "text-muted",
+                  isToday || isSelected ? "text-text font-bold" : "text-subtle",
                 )}
               >
                 {label}

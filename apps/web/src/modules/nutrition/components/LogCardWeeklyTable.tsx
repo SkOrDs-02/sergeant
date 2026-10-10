@@ -4,9 +4,6 @@
  */
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
 import { useMemo, useState } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
 import { getMacrosForDateRange } from "../lib/nutritionStorage";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
 
@@ -30,11 +27,8 @@ export function LogCardWeeklyTable({
   );
 
   return (
-    <div className="rounded-2xl border border-line bg-panel px-3 py-2">
-      <SectionHeading
-        as="button"
-        size="xs"
-        variant="nutrition"
+    <div className="border-y border-line">
+      <button
         type="button"
         onClick={() => setWeekOpen((v) => !v)}
         // Тогл керує таблицею нижче, але не повідомляв про це:
@@ -43,25 +37,21 @@ export function LogCardWeeklyTable({
         // і розкладає `...props` на елемент, тож пропси доходять.
         aria-expanded={weekOpen}
         aria-controls={WEEK_TABLE_ID}
-        className="flex items-center gap-2 w-full text-left py-1"
+        className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg text-left focus-ring"
       >
-        <Icon
-          name="chevron-right"
-          size="xs"
-          strokeWidth={2.5}
-          className={cn(
-            "transition-transform shrink-0",
-            weekOpen ? "rotate-90" : "",
-          )}
-        />
-        Журнал за тиждень
-      </SectionHeading>
+        <span className="text-style-body font-semibold text-text">
+          Журнал за тиждень
+        </span>
+        <span className="text-style-label text-muted">
+          {weekOpen ? "Сховати" : "Показати"}
+        </span>
+      </button>
 
       {weekOpen && (
-        <div id={WEEK_TABLE_ID} className="overflow-x-auto mt-2">
-          <table className="w-full text-style-caption text-left">
+        <div id={WEEK_TABLE_ID} className="overflow-x-auto pb-2">
+          <table className="w-full text-style-label text-left tabular-nums">
             <thead>
-              <tr className="text-subtle">
+              <tr className="text-style-overline text-subtle">
                 <th className="py-1 pr-2">Дата</th>
                 <th className="py-1 pr-2">Ккал</th>
                 <th className="py-1 pr-2">Б</th>
@@ -71,10 +61,8 @@ export function LogCardWeeklyTable({
             </thead>
             <tbody>
               {weekRows.map((r) => (
-                <tr key={r.date} className="border-t border-line/40">
-                  <td className="py-1 pr-2 font-mono text-style-caption">
-                    {r.date.slice(5)}
-                  </td>
+                <tr key={r.date} className="border-t border-line text-text">
+                  <td className="py-1.5 pr-2">{r.date.slice(5)}</td>
                   <td className="py-1 pr-2">{Math.round(r.kcal)}</td>
                   <td className="py-1 pr-2">{Math.round(r.protein_g)}</td>
                   <td className="py-1 pr-2">{Math.round(r.fat_g)}</td>

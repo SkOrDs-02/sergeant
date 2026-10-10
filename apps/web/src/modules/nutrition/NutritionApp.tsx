@@ -535,7 +535,7 @@ export default function NutritionApp({
                     type="button"
                     onClick={() => setErr("")}
                     aria-label="Закрити повідомлення про помилку"
-                    className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                    className="min-h-11 min-w-11 shrink-0 rounded-lg text-lg leading-none hover:bg-line/40 focus-ring"
                   >
                     ×
                   </button>
