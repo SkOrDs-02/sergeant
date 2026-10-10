@@ -94,7 +94,7 @@ describe("TransactionDayHeader (branches)", () => {
     expect(screen.getByText(/· 3/)).toBeInTheDocument();
   });
 
-  it("colours positive totals with success tone", () => {
+  it("keeps signed positive totals in ink on today's tint", () => {
     const { container } = render(
       <TransactionDayHeader
         dayKey={todayKey()}
@@ -104,7 +104,11 @@ describe("TransactionDayHeader (branches)", () => {
         onToggle={vi.fn()}
       />,
     );
-    expect(container.querySelector(".text-success-strong")).not.toBeNull();
+    const total = container.querySelector(
+      "span.shrink-0.tabular-nums.text-text",
+    );
+    expect(total).toHaveTextContent("+250,00");
+    expect(container.querySelector(".text-success-strong")).toBeNull();
   });
 
   it("uses neutral text colour for non-positive totals", () => {
