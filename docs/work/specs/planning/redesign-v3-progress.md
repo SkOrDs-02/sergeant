@@ -12,7 +12,7 @@
 | PR2         | `claude/redesign-v3-pr2`             | #1497     | merged    | 3, 11, 15, 16; частково 26-29                               |
 | PR3         | `claude/redesign-v3-pr3`             | #1498     | merged    | 8 частково, 9, 13, 24-29 по Фініку                          |
 | PR3 · фікси | `codex/redesign-v3-pr3-review-fixes` | #1501     | merged    | Виправлення регресій ревʼю PR3                              |
-| PR4         | `claude/redesign-v3-pr4`             |           | draft     | 9, 24-29, 31 по Їжі; частково 8                             |
+| PR4         | `claude/redesign-v3-pr4`             | #1503     | draft     | 9, 24-29, 31 по Їжі; частково 8                             |
 | PR5         | `claude/redesign-v3-pr5`             |           | не почато |                                                             |
 | PR6         | `claude/redesign-v3-pr6`             |           | не почато |                                                             |
 | PR7         | `claude/redesign-v3-pr7`             |           | не почато |                                                             |
