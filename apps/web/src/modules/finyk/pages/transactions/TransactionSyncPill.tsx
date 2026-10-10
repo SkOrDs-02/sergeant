@@ -30,7 +30,11 @@ export function TransactionSyncPill({
   if (!showSyncRow) return null;
 
   const tone =
-    syncState?.status === "error" ? "text-danger-strong" : "text-muted";
+    syncState?.status === "error"
+      ? "text-danger-strong"
+      : syncState?.status === "partial"
+        ? "text-warning-strong"
+        : "text-muted";
   const statusLabel =
     syncState?.status === "loading"
       ? "оновлення…"

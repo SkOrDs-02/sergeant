@@ -289,14 +289,14 @@ export function BulkReviewTable({
                       }
                       ariaLabel="Сума"
                       disabled={disabled}
-                      // `pointer-coarse:text-style-body!` мусить бути і тут:
+                      // `pointer-coarse:text-style-label-lg!` мусить бути і тут:
                       // `text-style-body!` (важливий, ~15px на вузькому
                       // екрані) інакше переміг би 16px-floor базового
                       // інпута, і iOS-зум повернувся б саме в bulk-таблиці.
                       // `pointer-coarse:min-h-11!` — щоб важливий `h-9!`
                       // не перебивав 44px touch-target floor на тачі.
 
-                      className="h-9! text-left! text-style-body! pointer-coarse:min-h-11! pointer-coarse:text-style-body!"
+                      className="h-9! text-left! text-style-body! pointer-coarse:min-h-11! pointer-coarse:text-style-label-lg!"
                     />
                     <Select
                       size="sm"

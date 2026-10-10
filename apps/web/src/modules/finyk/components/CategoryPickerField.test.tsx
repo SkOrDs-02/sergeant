@@ -12,6 +12,20 @@ import { CategoryPickerField } from "./CategoryPickerField";
 afterEach(cleanup);
 
 describe("CategoryPickerField", () => {
+  it("shows the current selection visibly as well as to assistive technology", () => {
+    render(
+      <CategoryPickerField
+        categories={[{ id: "food", label: "Продукти" }]}
+        selectedId="food"
+        onSelect={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Продукти/ }));
+    const dialog = screen.getByRole("dialog", { name: "Категорія" });
+    const selected = within(dialog).getByRole("button", { name: "Продукти" });
+    expect(selected).toHaveAttribute("aria-pressed", "true");
+    expect(within(selected).getByText("Обрано")).toBeVisible();
+  });
   it("тримає 80 категорій за одним полем і фільтрує їх пошуком", () => {
     const categories = Array.from({ length: 80 }, (_, index) => ({
       id: `custom-${index}`,

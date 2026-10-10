@@ -93,7 +93,7 @@ export function ManualExpenseAmountSection({
                 }
                 className={
                   personal
-                    ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-style-caption bg-panel text-text border border-line hover:bg-panel transition-colors tabular-nums"
+                    ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-style-caption bg-panel text-text border border-line hover:bg-line/40 transition-colors tabular-nums"
                     : "px-2.5 py-1 rounded-lg text-style-caption bg-panel text-muted border border-line hover:border-muted/50 transition-colors tabular-nums"
                 }
                 aria-label={

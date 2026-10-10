@@ -542,7 +542,7 @@ export function BulkImportSheet({
         // фоні, як Витрата») — той самий фінік-акцент, що й активний чип
         // «Витрата» у ManualExpenseSheet, а не сірий panelHi.
         <div className="space-y-1.5 rounded-xl border border-line bg-panel p-3 text-style-body text-text">
-          <p className="font-semibold text-text text-text">
+          <p className="font-semibold text-text">
             Створено: {commitResult.created}
           </p>
           {commitResult.skipped.monoMatched > 0 && (

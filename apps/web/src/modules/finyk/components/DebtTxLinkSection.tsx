@@ -251,7 +251,7 @@ export function DebtTxLinkSection({
               key={d.id}
               type="button"
               onClick={() => linkExisting(d.id)}
-              className="w-full touch-target rounded-lg border border-line px-4 py-3 text-left hover:bg-panel transition-colors flex items-center justify-between gap-2"
+              className="w-full touch-target rounded-lg border border-line px-4 py-3 text-left hover:bg-line/40 transition-colors flex items-center justify-between gap-2"
             >
               <span className="text-style-label text-text">{d.name}</span>
               <Money

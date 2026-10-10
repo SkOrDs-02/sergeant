@@ -78,7 +78,7 @@ export function AssetsNetworthCard({
               </div>
               <div className="text-style-caption text-text mt-0.5">Активи</div>
             </div>
-            <div className="w-px bg-panel hidden sm:block self-stretch min-h-10" />
+            <div className="w-px bg-line hidden sm:block self-stretch min-h-10" />
             <div>
               <div className="font-semibold tabular-nums text-text">
                 <Money amount={-totalDebt} tone="inherit" />

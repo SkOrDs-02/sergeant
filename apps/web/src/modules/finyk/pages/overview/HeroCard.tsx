@@ -59,6 +59,7 @@ const HeroCardImpl = function HeroCard({
   spent = 0,
   planExpense = 0,
   hasExpensePlan = false,
+  spendPlanRatio = 0,
   showBalance = true,
   onSetPlan,
   onOpenDay,
@@ -66,10 +67,12 @@ const HeroCardImpl = function HeroCard({
 }: HeroCardProps) {
   return (
     <Card prominence="hero" tone="finyk" padding="lg" className="text-text">
-      <p className="text-style-caption font-semibold uppercase tracking-label text-finyk-tint-label">
-        {todayRemaining !== null && todayRemaining < 0
-          ? copy.todayDeficit
-          : copy.todayAvailable}
+      <p className="text-style-overline text-finyk-tint-label">
+        {todayRemaining === null
+          ? copy.dayPlan
+          : todayRemaining < 0
+            ? copy.todayDeficit
+            : copy.todayAvailable}
       </p>
       {todayRemaining === null ? (
         <div className="mt-2">
@@ -138,7 +141,9 @@ const HeroCardImpl = function HeroCard({
               <Money amount={planExpense} tone="inherit" />
             ) : (
               "••••"
-            )}
+            )}{" "}
+            · {showBalance ? `${Math.round(spendPlanRatio * 100)}%` : "••••"} ·{" "}
+            {spendPlanRatio > 1 ? copy.overPlan : copy.withinPlan}
           </>
         )}{" "}
         · {daysPassed}/{daysInMonth}

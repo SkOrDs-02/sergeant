@@ -269,7 +269,7 @@ export function MonthStripHint({
   return (
     <div
       role="note"
-      className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-transparent px-3 py-2 text-style-caption text-text"
+      className="mt-2 flex items-start gap-2 text-style-caption text-text"
     >
       <span className="min-w-0 flex-1 leading-snug">
         {hasPlan ? m.hintWithPlan : m.hintNoPlan}

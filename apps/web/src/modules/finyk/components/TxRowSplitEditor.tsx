@@ -134,7 +134,7 @@ export function TxRowSplitEditor({
                     "flex min-h-[44px] w-full items-center gap-2 rounded-lg px-2 text-left text-style-caption",
                     category.id === sp.categoryId
                       ? "bg-line/40 text-text"
-                      : "text-text hover:bg-panel",
+                      : "text-text hover:bg-line/40",
                   )}
                 >
                   {stripLeadingEmoji(category.label)}

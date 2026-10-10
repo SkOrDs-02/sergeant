@@ -97,7 +97,7 @@ export function AssetsMonoCards({
             aria-label={`${visual.name}: ${t.settingsAriaSuffix}`}
             className={cn(
               "touch-target flex w-full flex-col gap-1 border-b border-line py-3 last:border-0 text-left transition-colors",
-              "hover:bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+              "hover:bg-line/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               !included && "opacity-50",
             )}
           >

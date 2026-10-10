@@ -81,6 +81,7 @@ export function TxRowMetaChips({
   overrideCatId,
   fromMerchantRule = false,
   existingSplitsCount,
+  isCreditCard,
   account,
   accountName,
   showAccount = true,
@@ -92,6 +93,7 @@ export function TxRowMetaChips({
   const isTransfer = catId === INTERNAL_TRANSFER_ID;
   // Порядок фіксований: рахунок → переказ → «змін.» → П24 → спліт.
   const statuses: string[] = [];
+  if (isCreditCard) statuses.push(messages.finykRedesign.creditCard);
   // Переказ виключений НЕЯВНО (доменне правило), явне виключення —
   // окремою дією людини; обидва шляхи ведуть до того самого видимого
   // маркера, бо для людини наслідок однаковий: рядок не рахується в
@@ -153,8 +155,7 @@ export function TxRowMetaChips({
           {showAccountName && (
             <span className="inline-flex items-center gap-1" data-tx-account>
               {showAiMark && <span aria-hidden>·</span>}
-              {/* §2: рахунок завжди нейтральний — «кредитна» позначає
-                  іконка, не колір. Червоне лишається боргам/активам. */}
+              {/* Account and credit-card labels remain neutral text. */}
 
               {accountName}
             </span>
