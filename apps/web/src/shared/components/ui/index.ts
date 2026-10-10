@@ -253,8 +253,8 @@ export type {
   AnimationStyle,
 } from "./AnimatedList";
 
-export { AddActionBar } from "./AddActionBar";
-export type { AddActionBarProps } from "./AddActionBar";
+export { AddAction, CornerAction } from "./CornerAction";
+export type { AddSource, CornerActionProps } from "./CornerAction";
 export { Notice } from "./Notice";
 export type { NoticeProps, NoticeTone } from "./Notice";
 

@@ -8,6 +8,7 @@ import { RoutineMomentLine } from "./RoutineMomentLine";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { messages } from "@shared/i18n/uk";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { FizrukDayPlanSheet } from "@fizruk/components/planning/FizrukDayPlanSheet";
@@ -250,15 +251,6 @@ export function RoutineCalendarPanel({
             className={C.emptyStateWarm}
             title="Почни з однієї звички"
             description="Потім вона зʼявиться тут і в календарі, з відмітками по днях."
-            action={
-              <Button
-                type="button"
-                className={cn("w-full max-w-xs font-bold", C.primary)}
-                onClick={() => onOpenQuickAddHabit()}
-              >
-                Додати звичку в «Рутина»
-              </Button>
-            }
           />
         )}
         {listIsEmpty && !hasListFilter && !hasNoHabits && (
@@ -498,6 +490,15 @@ export function RoutineCalendarPanel({
             })}
           </div>
         )}
+        {/* Вхід «нова звичка» рядком у кінці списку (redesign v3, PR4b),
+            замість смуги над tab bar. Він же єдина дія порожнього стану. */}
+        <button
+          type="button"
+          className="flex min-h-14 w-full items-center border-y border-line text-left text-style-body font-semibold text-text focus-ring"
+          onClick={() => onOpenQuickAddHabit()}
+        >
+          {messages.routine.newHabit}
+        </button>
       </section>
 
       {/* Інсайт майже-рекорду стоїть під списком, бо список дня головний

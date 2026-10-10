@@ -58,7 +58,6 @@ export default function RoutineApp({
     setMainTab,
     quickAddHabitOpen,
     quickAddFocusTick,
-    openQuickAddHabit,
     closeQuickAddHabit,
     streakMax,
     calendarData,
@@ -142,7 +141,6 @@ export default function RoutineApp({
           setRoutine={setRoutine}
           quickAddHabitOpen={quickAddHabitOpen}
           quickAddFocusTick={quickAddFocusTick}
-          onOpenQuickAddHabit={openQuickAddHabit}
           onCloseQuickAddHabit={closeQuickAddHabit}
         />
       </MeshBackground>

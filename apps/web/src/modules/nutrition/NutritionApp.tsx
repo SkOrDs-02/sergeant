@@ -20,7 +20,9 @@ import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Notice } from "@shared/components/ui/Notice";
-import { AddActionBar } from "@shared/components/ui/AddActionBar";
+import { AddAction } from "@shared/components/ui/CornerAction";
+import { messages } from "@shared/i18n/uk";
+import type { SourceTabId } from "./components/meal-sheet/SourceTabs";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -178,6 +180,10 @@ export default function NutritionApp({
   const [addMealInitialStep, setAddMealInitialStep] = useState<
     "source" | "photo"
   >("source");
+  // Вкладка джерела, з якої відкриється крок «Джерело страви»: рядок
+  // аркуша «Додати» в куті. Решта входів відкривають «Пошук».
+  const [addMealInitialSourceTab, setAddMealInitialSourceTab] =
+    useState<SourceTabId>("search");
   // Тип прийому, з яким відкриється аркуш. `null` — тип вгадує годинник
   // (`mealTypeByNow`), як і було для FAB. Не `null` рівно тоді, коли
   // людина тапнула конкретний сегмент hero: вона вже сказала, у який
@@ -266,12 +272,20 @@ export default function NutritionApp({
   // FAB (fab-and-manual-income spec §5): єдина точка входу для «додати
   // прийом їжі», уніфікована з рештою модулів. Скидає edit-стан, щоб
   // sheet завжди відкривався у create-режимі.
-  const handleOpenAddMeal = useCallback(() => {
-    setEditingMeal(null);
-    setAddMealInitialStep("source");
-    setAddMealInitialMealType(null);
-    log.setAddMealSheetOpen(true);
-  }, [log, setEditingMeal]);
+  const openAddMealAt = useCallback(
+    (tab: SourceTabId) => {
+      setEditingMeal(null);
+      setAddMealInitialStep("source");
+      setAddMealInitialSourceTab(tab);
+      setAddMealInitialMealType(null);
+      log.setAddMealSheetOpen(true);
+    },
+    [log, setEditingMeal],
+  );
+  const handleOpenAddMeal = useCallback(
+    () => openAddMealAt("search"),
+    [openAddMealAt],
+  );
 
   // Форма додавання з уже обраним типом прийому. Той самий аркуш і той
   // самий крок «Джерело», що й у FAB, — різниця рівно в обраному типі.
@@ -279,6 +293,7 @@ export default function NutritionApp({
     (type: MealTypeId) => {
       setEditingMeal(null);
       setAddMealInitialStep("source");
+      setAddMealInitialSourceTab("search");
       setAddMealInitialMealType(type);
       log.setAddMealSheetOpen(true);
     },
@@ -314,6 +329,7 @@ export default function NutritionApp({
   const handleOpenMealPhoto = useCallback(() => {
     setEditingMeal(null);
     setAddMealInitialStep("photo");
+    setAddMealInitialSourceTab("search");
     setAddMealInitialMealType(null);
     log.setAddMealSheetOpen(true);
   }, [log, setEditingMeal]);
@@ -482,6 +498,7 @@ export default function NutritionApp({
     isLoading: dayPlanBusy,
   };
 
+  const src = messages.nutrition.addSources;
   return (
     // Sergeant v2 redesign (2026-05, PR-6) — Nutrition shell wraps content
     // in MeshBackground. ModuleAccentProvider drops asShellRoot; shell-root
@@ -555,7 +572,7 @@ export default function NutritionApp({
                   трек. Через це довгі назви з чеків Сільпо розпирали трек
                   ширше за екран, а `overflow-x-hidden` вище просто
                   обрізав недосяжний хвіст. */}
-              <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-w-0">
+              <div className="grid grid-cols-[minmax(0,1fr)] gap-4 min-w-0 page-tabbar-pad">
                 {activePage === "start" && (
                   <NutritionStartPage
                     log={log}
@@ -647,7 +664,22 @@ export default function NutritionApp({
         </SwipePages>
 
         {(activePage === "start" || activePage === "log") && (
-          <AddActionBar label="Додати страву" onClick={handleOpenAddMeal} />
+          <AddAction
+            sources={[
+              { id: "search", ...src.search, onSelect: handleOpenAddMeal },
+              {
+                id: "scan",
+                ...src.scan,
+                onSelect: () => openAddMealAt("scan"),
+              },
+              { id: "photo", ...src.photo, onSelect: handleOpenMealPhoto },
+              {
+                id: "manual",
+                ...src.manual,
+                onSelect: () => openAddMealAt("manual"),
+              },
+            ]}
+          />
         )}
 
         <NutritionBottomNav
@@ -674,6 +706,7 @@ export default function NutritionApp({
           setRestoreConfirm={setRestoreConfirm}
           applyRestorePayload={applyRestorePayload}
           addMealInitialStep={addMealInitialStep}
+          addMealInitialSourceTab={addMealInitialSourceTab}
           addMealInitialMealType={addMealInitialMealType}
           onQuickAddMeal={handleQuickAddMealFromChip}
           openMealTypeSheet={openMealTypeSheet}

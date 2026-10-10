@@ -1,6 +1,12 @@
 /** @status Active */
 
 export const finykPageMessages = {
+  // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): наявні входи модуля.
+  addSources: {
+    manual: { label: "Вручну", hint: "Сума, категорія і дата" },
+    receipt: { label: "Чек", hint: "Фото чека з магазину" },
+    import: { label: "Документи", hint: "Скріншоти банку й виписки" },
+  },
   reportHeading: "Витрати",
   budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",

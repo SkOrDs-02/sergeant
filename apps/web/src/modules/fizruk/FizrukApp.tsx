@@ -9,7 +9,7 @@ import {
   SwipePages,
 } from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
-import { AddActionBar } from "@shared/components/ui/AddActionBar";
+import { CornerAction } from "@shared/components/ui/CornerAction";
 import { Modal } from "@shared/components/ui/Modal";
 import { Button } from "@shared/components/ui/Button";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
@@ -319,7 +319,7 @@ export default function FizrukApp({
           }
         />
         {showFab && (
-          <AddActionBar
+          <CornerAction
             label={messages.fizruk.resumeWorkoutFab}
             onClick={handleFabClick}
           />

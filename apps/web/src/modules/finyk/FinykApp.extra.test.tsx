@@ -4,7 +4,7 @@
  * primary smoke suite: pwaAction effect, URL-sync effect, first-run
  * navigation, ManualExpenseSheet onSave / onDelete callbacks,
  * handlePostSavePrompt cross-module prompts, login-overlay callbacks,
- * SyncPill balance toggle, and the add-expense bar.
+ * SyncPill balance toggle, and the corner add button.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
@@ -30,6 +30,12 @@ const navigateMock = vi.fn();
 // тестів цього файлу не цікавиться входом, тож усі рендери дістають
 // один спільний no-op замість `undefined`.
 const NOOP_AUTH = () => {};
+
+/** Кнопка «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел. */
+function openManualExpense() {
+  fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Вручну/ }));
+}
 
 const storageMock: {
   showBalance: boolean;
@@ -318,11 +324,11 @@ afterEach(() => {
 
 // ── FAB / expense sheet ───────────────────────────────────────────────────────
 
-describe("FinykApp (extra) — add-expense bar opens expense sheet", () => {
-  it("clicking «Додати витрату» opens ManualExpenseSheet", () => {
+describe("FinykApp (extra) — corner add button opens expense sheet", () => {
+  it("«Додати» → «Вручну» opens ManualExpenseSheet", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     expect(screen.queryByTestId("expense-sheet")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
   });
 
@@ -332,15 +338,15 @@ describe("FinykApp (extra) — add-expense bar opens expense sheet", () => {
     "budgets",
     "analytics",
     "assets",
-  ] as const)("keeps the add-expense bar available on %s", (page) => {
+  ] as const)("keeps the corner add button available on %s", (page) => {
     vi.mocked(useFinykRoute).mockReturnValueOnce([page, navigateMock]);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(screen.getByTestId("add-action-bar")).toBeInTheDocument();
+    expect(screen.getByTestId("corner-action")).toBeInTheDocument();
   });
 
   it("closing ManualExpenseSheet hides it", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("close-sheet"));
     expect(screen.queryByTestId("expense-sheet")).not.toBeInTheDocument();
@@ -352,7 +358,7 @@ describe("FinykApp (extra) — add-expense bar opens expense sheet", () => {
 describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
   it("onSave without id calls addManualExpense + success toast 'Витрату додано'", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-add"));
     expect(storageMock.addManualExpense).toHaveBeenCalled();
     expect(toastMock.success).toHaveBeenCalledWith("Витрату додано.");
@@ -360,7 +366,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with id calls editManualExpense + success toast 'Витрату оновлено'", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-edit"));
     expect(storageMock.editManualExpense).toHaveBeenCalledWith(
       "exp-1",
@@ -371,7 +377,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with category='cafe' triggers restaurant cross-module prompt", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-cafe"));
     expect(tryShowCrossModulePrompt).toHaveBeenCalledWith(
       toastMock,
@@ -381,7 +387,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with category='food' triggers food cross-module prompt", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-food"));
     expect(tryShowCrossModulePrompt).toHaveBeenCalledWith(
       toastMock,
@@ -396,7 +402,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
   it("onDelete without snapshot calls toast.success directly", () => {
     storageMock.manualExpenses = [];
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(toastMock.success).toHaveBeenCalledWith("Витрату видалено");
@@ -406,7 +412,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
   it("onDelete with snapshot calls showUndoToast", () => {
     storageMock.manualExpenses = [{ id: "exp-1", category: "food" }];
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(showUndoToast).toHaveBeenCalledWith(
