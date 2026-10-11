@@ -10,8 +10,8 @@
  * тепер її поле `window`, `packages/routine-domain/src/flexStreak.ts`)
  * уже рахує кожен день своєї серії окремо; це полотно припиняє втрату,
  * не рахує нічого нового. Мапінг стан→вигляд рахує кольором акценту лише
- * дні, що стосуються активності самої серії (`done` / `skip` / прощений
- * `miss`) — `pause` і `off` навмисно нейтральні (лінія `line`), бо це дні,
+ * виконані дні (`done`); решта чотири стани нейтральні й різняться
+ * формою, бо це дні,
  * яких для серії «не існує» (канон §4).
  *
  * Домен віддає й шостий тип — `pending` (сьогодні заплановано, ще не
@@ -48,7 +48,7 @@ export interface HabitStreakCanvasProps {
   className?: string;
 }
 
-const CELL_BASE = "w-6 h-7 shrink-0 rounded-md";
+const CELL_BASE = "w-6 h-7 shrink-0 rounded-[3px]";
 
 const GRACE_FORMS = { one: "заморозка", few: "заморозки", many: "заморозок" };
 
@@ -75,10 +75,7 @@ function DayCell({
         <li
           role="img"
           aria-label={`${dateLabel}: ${T.cellDone}`}
-          className={cn(
-            CELL_BASE,
-            "bg-routine border border-routine-strong/30",
-          )}
+          className={cn(CELL_BASE, "bg-chart-routine")}
         />
       );
     case "skip":
@@ -88,7 +85,7 @@ function DayCell({
           aria-label={`${dateLabel}: ${T.cellSkipPrefix}${
             reason ? SKIP_REASON_LABELS[reason] : T.noReason
           }`}
-          className={cn(CELL_BASE, "bg-transparent border-2 border-routine/55")}
+          className={cn(CELL_BASE, "bg-transparent border-2 border-muted")}
         />
       );
     case "miss":
@@ -110,7 +107,7 @@ function DayCell({
           aria-label={`${dateLabel}: ${T.cellPause}`}
           className={cn(
             CELL_BASE,
-            "relative overflow-hidden border border-line bg-panelHi",
+            "relative overflow-hidden border border-dashed border-muted bg-panel",
           )}
         >
           <span
@@ -128,7 +125,7 @@ function DayCell({
         <li
           role="img"
           aria-label={`${dateLabel}: ${T.cellOff}`}
-          className={cn(CELL_BASE, "bg-line/15")}
+          className={cn(CELL_BASE, "bg-transparent border border-line")}
         />
       );
     case "pending":
@@ -172,20 +169,17 @@ const LEGEND: LegendRow[] = [
 function LegendSwatch({ kind }: { kind: StreakDayKind }) {
   // Ті самі клас-набори, що й у клітинки полотна, розмір фіксований, щоб
   // легенда лишалась вирівняним стовпцем незалежно від тексту праворуч.
-  const fixed = "w-6 h-6 shrink-0 rounded-md";
+  const fixed = "w-6 h-6 shrink-0 rounded-[3px]";
   switch (kind) {
     case "done":
       return (
-        <span
-          aria-hidden="true"
-          className={cn(fixed, "bg-routine border border-routine-strong/30")}
-        />
+        <span aria-hidden="true" className={cn(fixed, "bg-chart-routine")} />
       );
     case "skip":
       return (
         <span
           aria-hidden="true"
-          className={cn(fixed, "bg-transparent border-2 border-routine/55")}
+          className={cn(fixed, "bg-transparent border-2 border-muted")}
         />
       );
     case "miss":
@@ -196,7 +190,7 @@ function LegendSwatch({ kind }: { kind: StreakDayKind }) {
           aria-hidden="true"
           className={cn(
             fixed,
-            "relative overflow-hidden border border-line bg-panelHi",
+            "relative overflow-hidden border border-dashed border-muted bg-panel",
           )}
         >
           <span
@@ -210,7 +204,12 @@ function LegendSwatch({ kind }: { kind: StreakDayKind }) {
       );
     case "off":
     default:
-      return <span aria-hidden="true" className={cn(fixed, "bg-line/15")} />;
+      return (
+        <span
+          aria-hidden="true"
+          className={cn(fixed, "bg-transparent border border-line")}
+        />
+      );
   }
 }
 
@@ -240,10 +239,10 @@ export function HabitStreakCanvas({
 
   return (
     <Card radius="lg" className={className}>
-      <SectionHeading as="h3" size="xs" className="mb-1" variant="routine">
+      <SectionHeading as="h3" size="lg" className="mb-2">
         {T.heading}
       </SectionHeading>
-      <p className="text-style-caption text-subtle mb-3">
+      <p className="text-style-label text-muted mb-3">
         {days > 0
           ? `${days} ${pluralDays(days)} ${T.daysSuffix}${graceLine}`
           : T.notStarted}
@@ -277,7 +276,7 @@ export function HabitStreakCanvas({
               <p className="text-style-label text-text font-semibold">
                 {row.title}
               </p>
-              <p className="text-style-caption text-subtle">{row.body}</p>
+              <p className="text-style-label text-muted">{row.body}</p>
             </div>
           </li>
         ))}

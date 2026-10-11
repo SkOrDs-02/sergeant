@@ -19,7 +19,6 @@ import {
   updateCategory,
   deleteCategory,
 } from "../../lib/routineStorage";
-import { HabitGlyph } from "../HabitGlyph";
 import { HabitGlyphPicker } from "../HabitGlyphPicker";
 import type { CategoryDraft, RoutineState } from "../../lib/types";
 
@@ -63,7 +62,7 @@ export function CategoriesSection({
 
   return (
     <Card as="section" radius="lg" padding="md" className="space-y-3">
-      <SectionHeading as="h2" size="xs" variant="routine">
+      <SectionHeading as="h2" size="lg">
         {editingCatId ? "Редагувати категорію" : "Категорії"}
       </SectionHeading>
       <div className="flex flex-wrap items-stretch gap-2">
@@ -96,6 +95,7 @@ export function CategoriesSection({
         {editingCatId ? (
           <>
             <Button
+              tone="neutral"
               type="button"
               variant="outline"
               className="min-h-[44px] min-w-0 sm:min-w-28"
@@ -131,6 +131,7 @@ export function CategoriesSection({
               Зберегти
             </Button>
             <Button
+              tone="neutral"
               type="button"
               variant="outline"
               className="min-h-[44px] min-w-0"
@@ -144,6 +145,7 @@ export function CategoriesSection({
           </>
         ) : (
           <Button
+            tone="neutral"
             type="button"
             variant="outline"
             className="min-h-[44px] w-full min-w-0 sm:w-auto sm:min-w-28"
@@ -176,9 +178,7 @@ export function CategoriesSection({
       </div>
       {routine.categories.length === 0 ? (
         <p className="text-style-body text-subtle leading-snug">
-          Категорій ще немає. Категорія групує звички за сферою життя:
-          «Здоровʼя», «Робота», «Дім», і зʼявляється у формі звички під «Більше
-          опцій».
+          {messages.routine.emptyCategories}
         </p>
       ) : (
         <ul className="mt-2 space-y-2">
@@ -190,20 +190,15 @@ export function CategoriesSection({
               <li
                 key={c.id}
                 className={cn(
-                  "flex items-center justify-between gap-2 rounded-xl border border-line bg-panelHi px-3 py-2",
-                  editingCatId === c.id &&
-                    "ring-2 ring-routine-ring/60 dark:ring-routine-border-dark/40",
+                  "flex flex-wrap items-center justify-between gap-2 border-b border-line py-2",
+                  editingCatId === c.id && "outline outline-1 outline-line",
                 )}
               >
                 <div className="flex min-w-0 items-center gap-2">
-                  <HabitGlyph
-                    value={c.emoji}
-                    size="md"
-                    className="text-muted"
-                    optional
-                  />
-                  <span className="text-style-label truncate">{c.name}</span>
-                  <span className="shrink-0 text-style-caption text-subtle bg-panel border border-line rounded-full px-2 py-0.5">
+                  <span className="text-style-label-lg font-semibold break-words">
+                    {c.name}
+                  </span>
+                  <span className="shrink-0 text-style-label text-muted tabular-nums">
                     {habitCount} {habitCountLabel(habitCount)}
                   </span>
                 </div>
@@ -211,7 +206,7 @@ export function CategoriesSection({
                   <IconButton
                     size="xs"
                     variant="ghost"
-                    className="rounded-xl text-subtle hover:text-text"
+                    className="rounded-lg text-subtle hover:text-text"
                     onClick={() => {
                       setEditingCatId(c.id);
                       setCatDraft({ name: c.name, emoji: c.emoji || "" });
@@ -223,7 +218,7 @@ export function CategoriesSection({
                   <IconButton
                     size="xs"
                     variant="ghost"
-                    className="rounded-xl text-subtle hover:text-danger"
+                    className="rounded-lg text-subtle hover:text-danger"
                     onClick={() => {
                       // Soft-delete with undo: snapshot the full
                       // routine state, apply the deletion, then offer

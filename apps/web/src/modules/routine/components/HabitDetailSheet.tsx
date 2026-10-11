@@ -26,7 +26,6 @@ import { HabitPauseSection } from "./HabitPauseSection";
 import { HabitStatsSection } from "./HabitStatsSection";
 import { HabitStreakCanvas } from "./HabitStreakCanvas";
 import type { Habit, RoutineState } from "../lib/types";
-import { HabitGlyph } from "./HabitGlyph";
 import { fillName } from "../lib/fillName";
 
 function todayKey(): string {
@@ -107,11 +106,6 @@ export function HabitDetailSheet({
     );
   }, [habit, routine.categories]);
 
-  const categoryGlyph = useMemo(() => {
-    if (!habit?.categoryId) return undefined;
-    return routine.categories.find((c) => c.id === habit.categoryId)?.emoji;
-  }, [habit, routine.categories]);
-
   const recLabel = habit
     ? RECURRENCE_OPTIONS.find((o) => o.value === (habit.recurrence || "daily"))
         ?.label || ""
@@ -177,6 +171,7 @@ export function HabitDetailSheet({
   const footer = canMutate ? (
     <div className="flex flex-col gap-2 sm:flex-row">
       <Button
+        tone="neutral"
         type="button"
         variant="outline"
         className="flex-1"
@@ -185,6 +180,7 @@ export function HabitDetailSheet({
         {messages.actions.edit}
       </Button>
       <Button
+        tone="neutral"
         type="button"
         variant="outline"
         className="flex-1"
@@ -210,18 +206,12 @@ export function HabitDetailSheet({
     tag.length > 0 || category ? (
       <div className="flex flex-wrap gap-1.5 mt-1.5">
         {tag.map((t) => (
-          <span
-            key={t}
-            className="text-style-caption px-2 py-0.5 rounded-full bg-routine-soft border border-routine-soft-border text-routine-soft-fg font-medium"
-          >
+          <span key={t} className="text-style-label text-muted">
             {t}
           </span>
         ))}
         {category && (
-          <span className="text-style-caption inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-panelHi border border-line text-muted font-medium">
-            <HabitGlyph value={categoryGlyph} size="xs" optional />
-            {category}
-          </span>
+          <span className="text-style-label text-muted">{category}</span>
         )}
       </div>
     ) : null;
@@ -233,7 +223,6 @@ export function HabitDetailSheet({
         onClose={onClose}
         title={
           <span className="flex items-center gap-2">
-            <HabitGlyph value={habit.emoji} size="lg" />
             <span className="truncate">{habit.name}</span>
           </span>
         }
@@ -242,7 +231,7 @@ export function HabitDetailSheet({
         panelClassName="routine-sheet max-w-4xl"
         zIndex={200}
       >
-        <div className="text-style-caption text-subtle space-y-0.5 mb-5">
+        <div className="text-style-label text-muted space-y-1 mb-7">
           <p>
             {recLabel}
             {habit.timeOfDay ? ` · ${habit.timeOfDay}` : ""}
@@ -278,7 +267,7 @@ export function HabitDetailSheet({
         */}
         {isOnce ? null : (
           <section
-            className="mb-5"
+            className="mb-7"
             aria-label={messages.routine.streakCanvas.heading}
           >
             <HabitStreakCanvas
@@ -314,19 +303,14 @@ export function HabitDetailSheet({
 
         {notes.length > 0 && (
           <section className="mb-2" aria-label="Нотатки">
-            <SectionHeading
-              as="h3"
-              size="xs"
-              className="mb-2"
-              variant="routine"
-            >
+            <SectionHeading as="h3" size="lg" className="mb-3">
               Останні нотатки
             </SectionHeading>
             <ul className="space-y-1.5">
               {notes.map((n) => (
                 <li
                   key={n.date}
-                  className="text-style-caption bg-panelHi border border-line rounded-xl px-3 py-2"
+                  className="text-style-label border-b border-line py-2"
                 >
                   <span className="text-subtle">{n.date}:</span>{" "}
                   <span className="text-text">{n.text}</span>
