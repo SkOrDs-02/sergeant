@@ -1,6 +1,6 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-11 by @claude (PR3 і фікси merged; PR4 Їжа). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-11 by @claude (PR4 merged; PR4b кнопка в куті). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
@@ -12,7 +12,8 @@
 | PR2         | `claude/redesign-v3-pr2`             | #1497     | merged    | 3, 11, 15, 16; частково 26-29                               |
 | PR3         | `claude/redesign-v3-pr3`             | #1498     | merged    | 8 частково, 9, 13, 24-29 по Фініку                          |
 | PR3 · фікси | `codex/redesign-v3-pr3-review-fixes` | #1501     | merged    | Виправлення регресій ревʼю PR3                              |
-| PR4         | `claude/redesign-v3-pr4`             | #1503     | draft     | 9, 24-29, 31 по Їжі; частково 8                             |
+| PR4         | `claude/redesign-v3-pr4`             | #1503     | merged    | 9, 24-29, 31 по Їжі; частково 8                             |
+| PR4b        | `claude/redesign-v3-pr4b`            |           | draft     | 7 (форма швидкої дії, поправка 2026-10-10)                  |
 | PR5         | `claude/redesign-v3-pr5`             |           | не почато |                                                             |
 | PR6         | `claude/redesign-v3-pr6`             |           | не почато |                                                             |
 | PR7         | `claude/redesign-v3-pr7`             |           | не почато |                                                             |
@@ -545,3 +546,58 @@ pull порожній. Це локальна проблема персистен
 - Сегменти-вибір і радіо на hairline: патерн у `meal-sheet/choiceClasses.ts` (Їжа) і `RadioList` у `MyNormSheet.tsx`; якщо Рутині потрібне те саме, винести в спільний примітив замість третьої копії.
 - `hubChatActions.ok` далі флейкує під повним прогоном (таймаут 20 с), поодинці зелений; так само `analyticsConsent.sqliteReload` цього разу.
 - Python на Windows пише CRLF: після правок скриптом проганяти `prettier --write` або писати з `newline=''`.
+
+## PR4b · кнопка в куті
+
+**Стан на старті (2026-10-11).** PR4 #1503 змерджено 2026-10-10 21:54 з червоними `check` і `Critical-flow E2E`. Причини: (1) `prettier --check` падав на `packages/db-schema/src/__tests__/sqlite-syncOpOutboxPurge.test.ts` з #1499 (не PR4), ланцюжок `check` на цьому зупинявся, тож решту кроків CI не бачив; той самий червоний `check` на `main` уже з `af2e4da1a`; (2) `nutrition-smoke` шукав точний текст «Сьогодні», а hero PR4 пише «Сьогодні · N прийомів їжі». Обидва полагоджено в PR4b. База `origin/main` `e4f975e3c`.
+
+**Рішення власника 2026-10-11.** Фізрук: «Продовжити тренування» (видима лише з активною сесією поза сторінками тренувань, рішення 2026-08-08) лишається, але як кнопка в куті без аркуша. Спека «у Фізрука окремої дії немає» читається як «немає + Додати».
+
+**Що зроблено.**
+
+- Примітив `CornerAction` (`shared/components/ui/CornerAction.tsx`) замість `AddActionBar`: чорна кнопка праворуч над tab bar, 16 px від краю колонки, 14 px від навігації, h 44, радіус 8, текст 15 / 600, «+» 20 px, тінь `0 2px 8px rgba(0,0,0,.18)`. Свій `<button>` з `bg-text text-bg`, а не `Button`: `Button` бере акцент модуля з контексту й фарбував кнопку в teal / lime (видно на першому знімку). Смугу публікує в `--sgt-fab-inset` як і раніше, під клавіатурою ховається.
+- `AddAction` у тому ж файлі: кнопка «+ Додати» і аркуш «Додати» з текстовими рядками (назва 16 / 600, підпис 14 другим сірим, hairline). Аркуш закривається перед викликом джерела.
+- Фінік: рядки «Вручну», «Чек», «Документи» (копі в `messages.finyk.addSources`); дрібні «Чек» і «Імпорт» поруч прибрано. Гейт входу для чека й документів той самий.
+- Їжа: рядки «Пошук», «Скан», «Фото», «Своє» (`messages.nutrition.addSources`). Новий проп `AddMealSheet.initialSourceTab` (через `NutritionOverlays`), стан `addMealInitialSourceTab` у `NutritionApp`; «Фото» йде наявним `handleOpenMealPhoto` (крок фото). Решта входів скидають вкладку на «Пошук». Сітка сторінок отримала `page-tabbar-pad`: без нього кінець Журналу ховався під кнопкою (так було і зі смугою).
+- Рутина: смугу знято з `RoutineActions` (проп `onOpenQuickAddHabit` прибрано), «Нова звичка» рядком на hairline у кінці списку дня в `RoutineCalendarPanel`. Рядок показується завжди, у порожньому стані він єдина дія: кнопку «Додати звичку в «Рутина»» з порожнього стану знято, щоб дія не дублювалась. Ключ `messages.routine.addHabitFab` → `newHabit`.
+- Фізрук: `CornerAction` з підписом «Продовжити тренування», без аркуша.
+- E2E: `finyk-smoke`, `deep-module-crud` (Фінік і Рутина), `anonymous-persistence`, `anonymous-migration-on-login`, `module-navigation-expanded`, `nutrition-smoke` переведено на `corner-action` → `add-sources` або на рядок «Нова звичка». `nutrition-smoke` чекає `/^Сьогодні ·/` і фільтрує діалог прийому за текстом (аркуш «Додати» може бути ще в DOM на анімації закриття).
+- Юніти: `FinykScanEntryPoints`, `FinykApp.extra`, `NutritionApp.extra` (новий тест рядка «Скан» → вкладка скану), `AddMealSheet` (`initialSourceTab`), `RoutineActions`, `RoutineCalendarPanel`, `AnalyticsConsentBanner.fab`.
+- Канони: журнал рішень `finyk.md`, `nutrition.md`, `routine.md`.
+- Окремим комітом `style(db-schema)`: prettier на тесті #1499, щоб `check` дійшов далі за `format:check`.
+
+**Позиції каталогу § 2.** 7 (FAB): форма дії доведена до канону поправки 2026-10-10. Інших позицій не чіпав.
+
+**Верифікація** (2026-10-11, коміти `8330cf9f9`, `0fe84633d`).
+
+| Команда                                                          | Результат                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm --filter @sergeant/web typecheck`                          | 0                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `SERGEANT_HEAVY_OK=1 pnpm --filter @sergeant/web test`           | 1 у повному прогоні (2993 с): 1355 / 1358 файлів, 13 976 passed / 5 failed / 5 skipped. Усі 5 під навантаженням (воркер не відповів, таймаут 20 с): `AuthContext.unsyncedLoss`, `ReceiptScanSheet` (чеки пачкою), `hubChatActions.ok`. Поодинці: перші два 32 passed / 4 skipped, `hubChatActions.ok` 6 / 6. Зачеплені модулі окремим прогоном: 88 файлів, 906 passed (+2 нові тести `AddMealSheet`, +1 `NutritionApp.extra`) |
+| `SERGEANT_HEAVY_OK=1 pnpm --filter @sergeant/design-tokens test` | 0, 357 passed                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `pnpm lint` (повний ланцюжок, PowerShell)                        | 0; два попередження `no-raw-storage-key` у `fizrukActions/programs.ts` не від PR4b                                                                                                                                                                                                                                                                                                                                            |
+| `npx eslint --max-warnings=0` на змінених TSX                    | 0                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `node scripts/check-ui-canon-ratchet.mjs`                        | 0; перший прогін червонів на `size={20}` (`numericIconSize`), стало `size="lg"`                                                                                                                                                                                                                                                                                                                                               |
+| `pnpm design:check-md` / `pnpm lint:specs`                       | 0 / 0                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `node scripts/docs/generate-documentation-inventory.mjs --check` | 0                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `SERGEANT_HEAVY_OK=1 pnpm --filter @sergeant/web build`          | 0                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `cd apps/web && npx size-limit`                                  | **1**, борг `main`: JS 1 516 191 B (PR4: 1 516 102, +89 B), CSS 35 598 B ≤ 40 000 (PR4: 35 528, +70 B)                                                                                                                                                                                                                                                                                                                        |
+| `node scripts/ci/check-eager-bundle.mjs`                         | 0, 257,6 kB ≤ 268 kB                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Critical smoke                                                   | **не прогнано локально** (Postgres іншого worktree, як у PR4); вердикт за CI `Critical-flow E2E`                                                                                                                                                                                                                                                                                                                              |
+| Скріншоти `playwright.shots.config.ts`                           | 0; 16 до (`main` + сідер) і 20 після                                                                                                                                                                                                                                                                                                                                                                                          |
+
+**Скріншоти.** 390×844, світла й темна, сідер `VITE_E2E_SEED=true`: `/finyk` (світ `finyk-month`), кінець `/finyk/transactions`, аркуш «Додати» Фініка, `/nutrition` (`nutrition-day`), кінець `/nutrition/log`, аркуш «Додати» Їжі, `/routine` (`routine-streaks`) зверху і в кінці списку, `/routine` у світі `empty`, `/fizruk` (`fizruk-active-session`). Надіслано в чат сесії. Знімальний спек (не в репо) має кроки `openAdd` (кнопка в куті) і `scrollEnd`; `scrollEnd` крутить лише елементи з `overflow-y: auto | scroll`, бо прокрутка кореня документа зсувала fixed-шари й давала хибне перекриття кінця списку кнопкою.
+
+**Відхилення від спеки і чому.**
+
+- Кнопка в куті не через `Button`, а власним `button`: `Button` у модулі бере акцент із `ModuleAccentProvider`, і solid ставав hue модуля, а канон поправки каже чорнило.
+- Фізрук має кнопку в куті «Продовжити тренування» (рішення власника 2026-10-11 вище), хоча спека каже «окремої дії немає».
+- Рутина: кнопку з порожнього стану «Почни з однієї звички» знято, її роль бере рядок «Нова звичка» під ним. Решта форми Рутини (картки звичок, фільтри) лишилась старою: це PR5.
+- `page-tabbar-pad` на сітці сторінок Їжі: не назване в спеці, але без нього кнопка накривала кінець Журналу.
+- Фікс prettier у `packages/db-schema` поза скоупом спеки: без нього `check` червоний на будь-якому PR.
+
+**Наступному PR (PR5, Рутина).**
+
+- Рядок «Нова звичка» (`RoutineCalendarPanel`) уже в мові H; PR5 переробляє картки звичок над ним (бокси з лівою смугою, `rounded-2xl`, тінь) і фільтри стрічки під ним.
+- Порожній стан Рутини: заголовок «Почни з однієї звички» імперативний, `EmptyState` з тонованою рамкою (`C.emptyStateWarm`); привести до H-empty (факт одним рядком) у PR5.
+- Решта нотаток для PR5 у секції PR4 вище (`InsightCard`, спільний радіо-список, флейк `hubChatActions.ok`).
