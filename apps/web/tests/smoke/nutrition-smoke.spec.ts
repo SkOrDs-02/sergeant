@@ -72,17 +72,19 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
   await page.goto("/nutrition", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "nutrition");
 
-  // Аналіз фото живе ВКЛАДКОЮ кроку джерела (не окремим кроком), і оскільки
-  // CTA-картку зі стартової прибрано (2026-08-17, дубль входу), шлях у
-  // модулі один: «Додати страву» → «Джерело страви» → вкладка «Фото».
-  //
-  // Заголовок аркуша тут лишається «Джерело страви» — саме тому, що крок не
-  // покидається; перевіряти його як ознаку фото більше не можна. Ознака —
-  // сам підпис картки аналізу.
-  await page.getByRole("button", { name: "Додати страву" }).click();
-  const photoSheet = page.getByRole("dialog");
+  // PR4b: кнопка в куті → джерело «Фото» відкриває крок аналізу
+  // без проміжної вкладки. Аркуш «Додати» ще може закриватися,
+  // тому вибираємо діалог аналізу за його власним заголовком.
+  await page
+    .getByTestId("corner-action")
+    .getByRole("button", { name: "Додати" })
+    .click();
+  await page
+    .getByTestId("add-sources")
+    .getByRole("button", { name: /^Фото/ })
+    .click();
+  const photoSheet = page.getByRole("dialog", { name: "Аналіз фото страви" });
   await expect(photoSheet).toBeVisible({ timeout: 10_000 });
-  await photoSheet.getByRole("tab", { name: /Фото/ }).click();
   await expect(photoSheet).toContainText("AI визначить КБЖВ");
 
   await photoSheet
