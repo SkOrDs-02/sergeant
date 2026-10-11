@@ -6,7 +6,6 @@ import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import type { Habit, RoutineState } from "../lib/types";
-import { HabitGlyph } from "./HabitGlyph";
 
 export interface HabitLeadersBlockProps {
   habits: Habit[];
@@ -56,33 +55,27 @@ export function HabitLeadersBlock({
 
   return (
     <Card radius="lg">
-      <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
+      <SectionHeading as="p" size="lg" className="mb-3">
         Найстабільніша й найслабша · 30 днів
       </SectionHeading>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <div className="rounded-xl border border-routine-line/40 dark:border-routine-border-dark/20 bg-routine-surface/30 dark:bg-routine-surface-dark/8 p-3">
-          <SectionHeading as="p" size="xs" variant="subtle" className="mb-1">
-            Найстабільніша
-          </SectionHeading>
-          <p className="text-style-label text-text flex items-center gap-1.5 truncate">
-            <HabitGlyph value={best.habit.emoji} size="sm" />
+      <div className="divide-y divide-line">
+        <div className="py-3">
+          <p className="text-style-label text-muted mb-1">Найстабільніша</p>
+          <p className="text-style-label-lg font-semibold text-text flex items-center gap-1.5 truncate">
             <span className="truncate">{best.habit.name}</span>
           </p>
-          <p className="text-style-caption text-subtle mt-0.5 tabular-nums">
+          <p className="text-style-label text-muted mt-0.5 tabular-nums">
             <Measure value={Math.round(best.rate * 100)} unit="%" /> ·{" "}
             {best.completed}/{best.scheduled}
           </p>
         </div>
         {worst && (
-          <div className="rounded-xl border border-line bg-panel p-3">
-            <SectionHeading as="p" size="xs" variant="subtle" className="mb-1">
-              Найслабша
-            </SectionHeading>
-            <p className="text-style-label text-text flex items-center gap-1.5 truncate">
-              <HabitGlyph value={worst.habit.emoji} size="sm" />
+          <div className="py-3">
+            <p className="text-style-label text-muted mb-1">Найслабша</p>
+            <p className="text-style-label-lg font-semibold text-text flex items-center gap-1.5 truncate">
               <span className="truncate">{worst.habit.name}</span>
             </p>
-            <p className="text-style-caption text-subtle mt-0.5 tabular-nums">
+            <p className="text-style-label text-muted mt-0.5 tabular-nums">
               <Measure value={Math.round(worst.rate * 100)} unit="%" /> ·{" "}
               {worst.completed}/{worst.scheduled}
             </p>

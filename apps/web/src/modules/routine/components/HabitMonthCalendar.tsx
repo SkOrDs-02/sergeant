@@ -73,9 +73,9 @@ export function HabitMonthCalendar({
   };
 
   return (
-    <section className="mb-5" aria-label="Календар виконань">
+    <section className="mb-7" aria-label="Календар виконань">
       <div className="flex items-center justify-between mb-2">
-        <SectionHeading as="h3" size="xs" variant="routine">
+        <SectionHeading as="h3" size="lg">
           Календар
         </SectionHeading>
         <div className="flex items-center gap-2">
@@ -131,15 +131,14 @@ export function HabitMonthCalendar({
             <div
               key={dk}
               className={cn(
-                "aspect-square flex items-center justify-center rounded-xl text-style-caption transition-colors",
+                "aspect-square flex flex-col items-center justify-center text-style-label transition-colors",
                 done
-                  ? "bg-routine-surface2 dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine border border-routine-ring/40 dark:border-routine-border-dark/30 font-bold"
+                  ? "text-text font-bold border-b-2 border-chart-routine"
                   : scheduled
-                    ? "bg-panelHi text-muted border border-line/30"
+                    ? "text-muted"
                     : // eslint-disable-next-line sergeant-design/no-opacity-on-text-token -- незапланований день: неактивна клітинка, WCAG 1.4.3 її не покриває (той самий виняток, під яким `HabitDetailSheet.tsx` стоїть в allowlist `eslint.web.js`)
                       "text-subtle/50",
-                isToday &&
-                  "ring-1 ring-routine-ring/60 dark:ring-routine-border-dark/50",
+                isToday && "underline underline-offset-4",
               )}
               title={
                 done ? `${dk}: виконано` : scheduled ? `${dk}: заплановано` : dk
@@ -152,11 +151,11 @@ export function HabitMonthCalendar({
       </div>
       <div className="flex items-center gap-3 mt-2 text-style-caption text-subtle">
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-routine-surface2 dark:bg-routine-surface-dark/15 border border-routine-ring/40 dark:border-routine-border-dark/30" />
+          <span className="inline-block w-3 h-3 rounded-[3px] bg-chart-routine" />
           Виконано
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded bg-panelHi border border-line/30" />
+          <span className="inline-block w-3 h-3 rounded-[3px] border border-muted" />
           Заплановано
         </span>
       </div>

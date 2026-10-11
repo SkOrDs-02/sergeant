@@ -1,15 +1,11 @@
 import { useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
-import { IconButton } from "@shared/components/ui/IconButton";
+import { HabitStateButton } from "./HabitStateButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { cn } from "@shared/lib/ui/cn";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { SKIP_REASON_LABELS, SKIP_REASON_OPTIONS } from "../lib/skipReasons";
 import type { HabitSkip, SkipReason } from "@sergeant/routine-domain";
 import type { Habit } from "../lib/types";
-import { HabitGlyph } from "./HabitGlyph";
-import { Icon } from "@shared/components/ui/Icon";
 
 export interface ScheduledHabitForReport extends Habit {
   completed: boolean;
@@ -62,33 +58,28 @@ export function DayReportSheet({
       zIndex={200}
     >
       {scheduledHabits.length === 0 && (
-        <p className="text-style-label text-muted text-center py-6">
+        <p className="text-style-label-lg font-semibold text-text text-center py-6">
           На цей день немає запланованих звичок
         </p>
       )}
 
       {done.length > 0 && (
-        <div className="mb-4">
-          <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
+        <div className="mb-7">
+          <SectionHeading as="p" size="lg" className="mb-3">
             Виконано ({done.length})
           </SectionHeading>
           <ul className="space-y-1.5">
             {done.map((h) => (
               <li
                 key={h.id}
-                className="flex items-center gap-3 rounded-xl bg-routine-surface/40 dark:bg-routine-surface-dark/10 border border-routine-line/30 dark:border-routine-border-dark/20 px-3 py-2.5"
+                className="flex min-h-14 items-center gap-2 border-b border-line py-2"
               >
-                <IconButton
-                  size="xs"
-                  variant="ghost"
+                <HabitStateButton
+                  completed
                   onClick={() => onToggleHabit(h.id, dateKey)}
-                  className={cn("shrink-0 rounded-xl border font-bold", C.done)}
                   aria-label="Скасувати виконання"
-                >
-                  <Icon name="check" size="sm" aria-hidden />
-                </IconButton>
-                <span className="text-style-label text-text flex items-center gap-1.5 truncate">
-                  <HabitGlyph value={h.emoji} size="sm" />
+                />
+                <span className="text-style-label-lg font-semibold text-text flex items-center gap-1.5 truncate">
                   <span className="truncate">{h.name}</span>
                 </span>
               </li>
@@ -99,27 +90,19 @@ export function DayReportSheet({
 
       {missed.length > 0 && (
         <div>
-          <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
+          <SectionHeading as="p" size="lg" className="mb-3">
             Пропущено ({missed.length})
           </SectionHeading>
           <ul className="space-y-1.5">
             {missed.map((h) => (
-              <li
-                key={h.id}
-                className="rounded-xl bg-panel border border-line px-3 py-2.5"
-              >
+              <li key={h.id} className="border-b border-line py-2">
                 <div className="flex items-center gap-3">
-                  <IconButton
-                    size="xs"
-                    variant="ghost"
+                  <HabitStateButton
+                    completed={false}
                     onClick={() => onToggleHabit(h.id, dateKey)}
-                    className="shrink-0 rounded-xl border border-line font-bold text-muted"
                     aria-label="Відмітити як виконано"
-                  >
-                    <Icon name="circle-outline" size="sm" aria-hidden />
-                  </IconButton>
-                  <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
-                    <HabitGlyph value={h.emoji} size="sm" />
+                  />
+                  <span className="text-style-label-lg font-semibold text-text flex items-center gap-1.5 truncate">
                     <span className="truncate">{h.name}</span>
                   </span>
                   {onSetSkip && (
@@ -128,7 +111,7 @@ export function DayReportSheet({
                       onClick={() =>
                         setAskingFor((cur) => (cur === h.id ? null : h.id))
                       }
-                      className="touch-target ml-auto shrink-0 rounded-lg px-2 text-style-caption text-subtle hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
+                      className="touch-target ml-auto shrink-0 rounded-lg px-2 text-style-label text-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                       aria-expanded={askingFor === h.id}
                       // Лише коли група причин у DOM: інакше посилання на
                       // неіснуючий id.
@@ -147,7 +130,7 @@ export function DayReportSheet({
                     id={`skip-reasons-${h.id}`}
                     role="group"
                     aria-label={`Причина пропуску: ${h.name}`}
-                    className="mt-2 flex flex-wrap gap-1.5"
+                    className="mt-2 divide-y divide-line"
                   >
                     {SKIP_REASON_OPTIONS.map((o) => (
                       <button
@@ -157,7 +140,7 @@ export function DayReportSheet({
                           onSetSkip(h.id, o.value);
                           setAskingFor(null);
                         }}
-                        className="touch-target rounded-full border border-line px-3 text-style-caption text-text hover:bg-routine-surface/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
+                        className="focus-ring flex min-h-11 w-full items-center border-b border-line py-2 text-left text-style-label-lg text-text"
                       >
                         {o.label}
                       </button>
@@ -171,28 +154,27 @@ export function DayReportSheet({
       )}
 
       {skipped.length > 0 && (
-        <div className="mt-4">
-          <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
+        <div className="mt-7">
+          <SectionHeading as="p" size="lg" className="mb-3">
             Не зміг ({skipped.length})
           </SectionHeading>
           <ul className="space-y-1.5">
             {skipped.map((h) => (
               <li
                 key={h.id}
-                className="flex items-center gap-3 rounded-xl bg-panel border border-line border-dashed px-3 py-2.5"
+                className="flex flex-wrap min-h-14 items-center gap-3 border-b border-line py-2"
               >
-                <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
-                  <HabitGlyph value={h.emoji} size="sm" />
+                <span className="text-style-label-lg font-semibold text-text flex items-center gap-1.5 truncate">
                   <span className="truncate">{h.name}</span>
                 </span>
-                <span className="text-style-caption text-subtle">
+                <span className="text-style-label text-muted">
                   {SKIP_REASON_LABELS[skips[h.id]?.reason ?? "other"]}
                 </span>
                 {onClearSkip && (
                   <button
                     type="button"
                     onClick={() => onClearSkip(h.id)}
-                    className="touch-target ml-auto shrink-0 rounded-lg px-2 text-style-caption text-subtle hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
+                    className="touch-target ml-auto shrink-0 rounded-lg px-2 text-style-label text-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   >
                     Зняти
                   </button>
@@ -208,7 +190,7 @@ export function DayReportSheet({
 
       {scheduledHabits.length > 0 && (
         <div className="mt-4 pt-3 border-t border-line text-center">
-          <p className="text-style-caption text-subtle">
+          <p className="text-style-label text-muted">
             {done.length} з {counted} виконано
             {counted > 0 && (
               <span className="ml-1 font-semibold text-text">

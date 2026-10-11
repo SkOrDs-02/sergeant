@@ -17,11 +17,8 @@
  * adding a new behaviour means editing the matching shard above.
  */
 
-import {
-  MeshBackground,
-  ModuleAccentProvider,
-  SwipePages,
-} from "@shared/components/layout";
+import { MeshBackground, SwipePages } from "@shared/components/layout";
+import { ModuleAccentContext } from "@shared/components/layout/ModuleAccentProvider";
 import { ROUTINE_TAB_IDS } from "./components/RoutineBottomNav";
 import { RoutineActions } from "./RoutineActions";
 import { RoutineHeader } from "./RoutineHeader";
@@ -34,7 +31,6 @@ import { messages } from "@shared/i18n/uk";
 export interface RoutineAppProps {
   onBackToHub?: () => void;
   onGoToHub?: () => void;
-  onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
@@ -43,7 +39,6 @@ export interface RoutineAppProps {
 export default function RoutineApp({
   onBackToHub,
   onGoToHub,
-  onOpenSettings,
   onOpenModule,
   pwaAction,
   onPwaActionConsumed,
@@ -85,11 +80,9 @@ export default function RoutineApp({
   });
 
   return (
-    // Sergeant v2 redesign (2026-05, PR-6) — Routine shell wraps content
-    // in MeshBackground (shell-root role). ModuleAccentProvider drops
-    // asShellRoot so MeshBackground owns h-dvh + bg-mesh; Provider stays
-    // as transparent accent context (Hard Rule #12).
-    <ModuleAccentProvider module="routine" className="contents">
+    // H: neutral controls even inside the outer ModuleShell accent context.
+    // The sole tinted hero and charts choose their Routine tone explicitly.
+    <ModuleAccentContext.Provider value={null}>
       {/* `bottom-nav-height-var` — див. FinykApp: навігацію малює модуль,
           тож і змінну висоти для `Sheet` виставляє він. */}
       <MeshBackground className="bottom-nav-height-var">
@@ -106,11 +99,7 @@ export default function RoutineApp({
             `banner` — єдиний banner на сторінці (перевірено: ані
             `RootLayout`, ані `ModuleShell` свого не мають). */}
         <header>
-          <RoutineHeader
-            onBackToHub={onBackToHub}
-            onGoToHub={onGoToHub}
-            onOpenSettings={onOpenSettings}
-          />
+          <RoutineHeader onBackToHub={onBackToHub} onGoToHub={onGoToHub} />
         </header>
 
         <SwipePages
@@ -144,6 +133,6 @@ export default function RoutineApp({
           onCloseQuickAddHabit={closeQuickAddHabit}
         />
       </MeshBackground>
-    </ModuleAccentProvider>
+    </ModuleAccentContext.Provider>
   );
 }

@@ -106,7 +106,7 @@ export function TagsSection({
 
   return (
     <Card as="section" radius="lg" padding="md" className="space-y-3">
-      <SectionHeading as="h2" size="xs" variant="routine">
+      <SectionHeading as="h2" size="lg">
         Теги
       </SectionHeading>
       <div className="flex gap-2 items-stretch">
@@ -122,6 +122,7 @@ export function TagsSection({
           }}
         />
         <Button
+          tone="neutral"
           type="button"
           variant="outline"
           className="min-h-[44px] shrink-0 px-4"
@@ -153,22 +154,22 @@ export function TagsSection({
           }}
           aria-label="Додати тег"
         >
-          <Icon name="plus" size="md" aria-hidden />
+          {messages.routine.addTag}
         </Button>
       </div>
-      <ul className="flex flex-wrap gap-2">
+      <ul className="divide-y divide-line">
         {routine.tags.map((t) => (
           <li
             key={t.id}
-            className="text-style-caption inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-panelHi border border-line"
+            className="text-style-label-lg flex min-h-14 items-center gap-2 py-2"
           >
             {editingTagId === t.id ? (
               <form
-                className="inline-flex items-center gap-1"
+                className="flex-1 flex items-center gap-1"
                 onSubmit={submit}
               >
                 <Input
-                  className="h-7! px-1.5! text-xs! w-24"
+                  className="routine-touch-field w-full"
                   aria-label={`Назва тега ${t.name}`}
                   aria-invalid={Boolean(formState.errors.tagName) || undefined}
                   disabled={isSubmitting}
@@ -197,7 +198,7 @@ export function TagsSection({
                   «а чи використовується цей тег» можна було, тільки видаливши
                   його.
                 */}
-                <span className="text-style-caption text-subtle tabular-nums">
+                <span className="text-style-label text-subtle tabular-nums">
                   {
                     routine.habits.filter((h) =>
                       (h.tagIds || []).includes(t.id),
@@ -207,7 +208,7 @@ export function TagsSection({
                 <IconButton
                   size="xs"
                   variant="ghost"
-                  className="rounded-xl text-subtle hover:text-text"
+                  className="rounded-lg text-subtle hover:text-text"
                   onClick={() => startEdit(t.id, t.name)}
                   aria-label={`Змінити ${t.name}`}
                 >
@@ -216,7 +217,7 @@ export function TagsSection({
                 <IconButton
                   size="xs"
                   variant="ghost"
-                  className="rounded-xl text-subtle hover:text-danger"
+                  className="rounded-lg text-subtle hover:text-danger"
                   onClick={() => {
                     // Soft-delete with undo (see docs/design/UNDO-PATTERN.md):
                     // snapshot the routine before applying the delete, then

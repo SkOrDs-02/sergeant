@@ -292,7 +292,7 @@ describe("RoutineCalendarPanel", () => {
       baseData({ listIsEmpty: true, hasListFilter: false, hasNoHabits: true }),
     );
     render(<RoutineCalendarPanel />);
-    expect(screen.getByText("Почни з однієї звички")).toBeInTheDocument();
+    expect(screen.getByText("Звичок ще немає")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Нова звичка" }));
     expect(onOpenQuickAddHabit).toHaveBeenCalledTimes(1);
   });
@@ -565,9 +565,9 @@ describe("RoutineCalendarPanel", () => {
     render(<RoutineCalendarPanel />);
     const row = screen.getByText("Пити воду").closest("div")!;
     void row;
-    // Completed habits expose a "+ Нотатка" collapsed trigger.
-    expect(screen.getByText("+ Нотатка")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("+ Нотатка"));
+    // Completed habits expose a "Нотатка" collapsed trigger.
+    expect(screen.getByText("Нотатка")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Нотатка"));
     expect(
       screen.getByPlaceholderText("Нотатка до відмітки"),
     ).toBeInTheDocument();
@@ -980,11 +980,11 @@ describe("RoutineCalendarPanel", () => {
     );
 
     render(<RoutineCalendarPanel />);
-    fireEvent.click(screen.getByText("+ Нотатка"));
+    fireEvent.click(screen.getByText("Нотатка"));
     const input = screen.getByPlaceholderText("Нотатка до відмітки");
     fireEvent.blur(input);
 
-    expect(screen.getByText("+ Нотатка")).toBeInTheDocument();
+    expect(screen.getByText("Нотатка")).toBeInTheDocument();
   });
 
   it("closes opened detail sheets via their close callbacks", () => {

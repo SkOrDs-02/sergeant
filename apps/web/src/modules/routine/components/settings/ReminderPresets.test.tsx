@@ -67,16 +67,13 @@ describe("ReminderPresets", () => {
     render(<Harness />);
     const morning = screen.getByRole("radio", { name: "Ранок" });
     fireEvent.click(morning);
-    expect(morning).toHaveAttribute("aria-checked", "true");
+    expect(morning).toBeChecked();
   });
 
   it("clears reminders via «Без» option", () => {
     render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
     fireEvent.click(screen.getByRole("radio", { name: "Без" }));
-    expect(screen.getByRole("radio", { name: "Без" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Без" })).toBeChecked();
   });
 
   it("removes a custom reminder time", () => {
@@ -111,7 +108,7 @@ describe("ReminderPresets", () => {
   it("adds another reminder time while under the limit", () => {
     render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Додати час" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати час" }));
 
     expect(screen.getByDisplayValue("12:00")).toBeInTheDocument();
   });
