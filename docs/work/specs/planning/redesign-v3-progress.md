@@ -802,3 +802,7 @@ Artifact harness потребував власного `package.json {type:modul
 **routine: 89eec07f4 refactor(web): finish H cleanup in routine — exit 0**, eslint/prettier/staged-typecheck/docs-derived/gitleaks пройшли, skip-hook немає.
 
 **Коміт поверхні fizruk:** механічні H-радіуси та міграція live Card/EmptyState/SettingsGroup call-site-ів; source callbacks/дані не міняються. Для finyk також знято невживаний storage key / CategoryIconChip; fizruk включає видимий i18n delete-entry підпис і regression assertion. Перед цим фінальний після-cn `e2e:mobile` пройшов 41/41, exit 0. Коміт зі штатними hooks; точний hash/exit — нижче після виконання.
+
+**fizruk: b9e1580ca refactor(web): finish H cleanup in fizruk — exit 0**, eslint/prettier/staged-typecheck/docs-derived/gitleaks пройшли, skip-hook немає.
+
+**Після-cn web mobile:** `pnpm --filter @sergeant/web e2e:mobile` — **0, 41/41**, 5,7 min, та сама повна lane, без retries / ослаблення assertions; proxy telemetry errors до API :3000 очікувані в API-mocked audit і не є product-console failure. Всі чотири module-коміти виконано послідовно зі штатними hooks (finyk `69ba49bbb`, nutrition `d969753a6`, routine `89eec07f4`, fizruk `b9e1580ca`). Наступний verification-коміт містить лише smoke-selector міграції й web mobile-action selector; коментар StandaloneRoutes очищено від порожніх backticks старого page-enter, DOM не змінено.

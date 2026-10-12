@@ -76,7 +76,13 @@ test("@critical module headers keep their canonical names after onboarding", asy
         .filter({ hasText: module.heading })
         .first(),
     ).toBeVisible();
-    await page.getByRole("button", { name: "На хаб" }).first().click();
+    await page
+      .getByRole("button", {
+        name: module.heading === "Фізрук" ? "Назад" : "На хаб",
+        exact: true,
+      })
+      .first()
+      .click();
     await expect(
       page.getByRole("navigation", { name: "Розділи хабу" }),
     ).toBeVisible();
