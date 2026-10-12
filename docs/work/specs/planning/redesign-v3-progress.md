@@ -16,7 +16,7 @@
 | PR4b        | `claude/redesign-v3-pr4b`            | #1504                                                    | merged | 7 (форма швидкої дії, поправка 2026-10-10)                  |
 | PR5         | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged | 14, 31; 8, 9, 24–29 по Рутині                               |
 | PR6         | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged | 8, 9, 24–29 по Фізруку                                      |
-| PR7         | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | draft  | 24, 25, 32, 33; пʼять v3 baseline = 0                       |
+| PR7         | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                       |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -832,3 +832,5 @@ Linux pre-push hook намагався оновити Windows trunk `D:\Sergeant
 `gh pr view 1508 --json state,mergedAt,isDraft` — **0, MERGED, 2026-10-12T17:52:16Z, isDraft false**. Усі **PR0–PR7 змерджені**, нових кодових PR за спекою немає. Перевірка перед другим push виявила мерж; у закриту гілку оновлення не пушилось. Номер/URL був у локальному doc-коміті `131d583f4`, але main ще не мав цього запису. На свіжому `origin/main` (`c137a2387`) створено `claude/redesign-v3-pr7-journal`, перенесено тільки цей doc-коміт і виправлено стан на merged; буде окремий **docs-only draft** для журналу/похідного open-work, не PR8 і не нова реалізація. Всі production-файли тотожні main.
 
 CI коду #1508 на момент цього запису: `check` ще IN_PROGRESS, `Critical-flow E2E (Playwright)` FAILURE. Не оголошувати CI зеленим; точну причину перевірити за job logs. Усі prescribed локальні web-гейти/команди вище мають 0; native за прямим дозволом власника не мігрувався. Фінальна **післямержева** верифікація 37 позицій каталогу і `pnpm deploy:status` ще не виконані — наступна сесія за тим самим промптом. Документаційний follow-up потрібен, щоб сесія з GitHub main побачила номер і merged-стан та не почала PR7 повторно.
+
+CI logs для critical job 114936320049 через `gh api .../logs` недоступні: redirect у GitHub Actions blob повертає Forbidden; причину FAILURE не встановлено. Не називати його доведеним flaky. Документаційний follow-up не виправляє CI коду.
