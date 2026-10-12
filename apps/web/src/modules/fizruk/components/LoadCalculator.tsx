@@ -76,7 +76,7 @@ export function LoadCalculator({
           <div
             key={zone.tone}
             className={cn(
-              "rounded-xl border p-3",
+              "rounded-panel border p-3",
               TONE_CLASSES[zone.tone].bgColor,
               TONE_CLASSES[zone.tone].borderColor,
             )}
@@ -103,7 +103,7 @@ export function LoadCalculator({
                   // `border-line` (як картки в плані дня). Межа додає 1px з
                   // кожного боку, тому `py-[5px]` замість `py-1.5` тримає
                   // висоту осередка (і зон) тією самою.
-                  className="text-center bg-panel border border-line rounded-xl py-[5px] px-1"
+                  className="text-center bg-panel border border-line rounded-panel py-[5px] px-1"
                 >
                   <div className="text-style-caption text-subtle leading-none mb-0.5">
                     {entry.percent}%

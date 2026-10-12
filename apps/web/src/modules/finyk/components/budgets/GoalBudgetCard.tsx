@@ -11,7 +11,6 @@ import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n";
-
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   dismissNudge,
@@ -328,7 +327,7 @@ function GoalBudgetCardComponent({
               )}
             </div>
             {addingContribution && (
-              <div className="mt-2 space-y-2 p-3 rounded-xl bg-bg border border-line">
+              <div className="mt-2 space-y-2 p-3 rounded-panel bg-bg border border-line">
                 <div>
                   <Label htmlFor={contribAmountId}>Сума поповнення</Label>
                   <MoneyInput

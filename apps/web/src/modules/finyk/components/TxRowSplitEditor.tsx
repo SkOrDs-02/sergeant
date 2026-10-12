@@ -112,7 +112,7 @@ export function TxRowSplitEditor({
             <div
               role="listbox"
               aria-label="Категорія частини розподілу"
-              className="absolute left-0 right-28 top-10 z-20 max-h-56 overflow-y-auto rounded-xl border border-line bg-panel p-1.5 shadow-lg"
+              className="absolute left-0 right-28 top-10 z-20 max-h-56 overflow-y-auto rounded-panel border border-line bg-panel p-1.5 shadow-lg"
             >
               {splitCategoryOptions.map((category) => (
                 <button

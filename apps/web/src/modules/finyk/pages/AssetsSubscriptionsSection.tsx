@@ -5,7 +5,6 @@ import { SubCard } from "../components/SubCard";
 import { MonthOutflowComb } from "../components/MonthOutflowComb";
 import type { CombEntry } from "../lib/monthOutflowComb";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-
 import { Money } from "@shared/components/ui/Money";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
@@ -77,7 +76,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
         showBalance={showBalance}
         className="mb-2"
       />
-      <div className="mb-2 rounded-xl border border-line bg-panel px-4 py-3 flex items-center justify-between gap-3">
+      <div className="mb-2 rounded-panel border border-line bg-panel px-4 py-3 flex items-center justify-between gap-3">
         <span className="text-style-caption text-muted">
           Витрати на підписки за місяць
         </span>

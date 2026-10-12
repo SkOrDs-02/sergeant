@@ -169,7 +169,7 @@ export function ProfilePage() {
           headingSize="md"
           collapsedSubtitle="PIN при відкритті на цьому пристрої"
         >
-          <Card radius="lg" padding="md">
+          <Card padding="md">
             <AppLockSettings />
           </Card>
         </CollapsibleSection>
@@ -187,7 +187,7 @@ export function ProfilePage() {
           collapsedSubtitle="Твої факти й усе, що запамʼятав Сержант"
         >
           <MemoryBankSection />
-          <Card radius="lg" padding="md">
+          <Card padding="md">
             <AiMemorySection />
           </Card>
         </CollapsibleSection>

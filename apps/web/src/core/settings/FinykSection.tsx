@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
 import { useInView } from "@shared/hooks/useInView";
 import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
 import { limitBudgetCategoryIds } from "@sergeant/finyk-domain/domain/budget";
@@ -120,7 +119,7 @@ export function FinykSection() {
   };
 
   const catInputClass =
-    "input-focus-finyk flex-1 min-w-0 h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text";
+    "input-focus-finyk flex-1 min-w-0 h-11 rounded-lg border border-line bg-panelHi px-3 text-style-body text-text";
 
   return (
     <div ref={sectionRef}>
@@ -128,12 +127,7 @@ export function FinykSection() {
           фарбує бейдж модульним акцентом лише коли задані ОБИДВА — `icon`
           і `module`. Без другого всі чотири модульні секції вкладки
           «Розділи» падали на спільний сірий фолбек. */}
-      <SettingsGroup
-        title="Фінік"
-        icon="credit-card"
-        module="finyk"
-        anchorId="settings-finyk"
-      >
+      <SettingsGroup title="Фінік" anchorId="settings-finyk">
         {setShowBalance ? (
           <SettingsSubGroup title="Показ сум">
             <ToggleRow
@@ -219,8 +213,6 @@ export function FinykSection() {
           ) : (
             <EmptyState
               compact
-              module="finyk"
-              icon={<Icon name="tag" size="lg" />}
               title="Поки немає власних категорій"
               description="Додай першу категорію вище, вона зʼявиться у списку операцій, сплітів і лімітів."
             />

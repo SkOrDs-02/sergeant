@@ -55,7 +55,7 @@ export function SessionTopBar({
     // навмисно прибрано (theme.css § v2) — інсет застосовує КОЖЕН споживач
     // сам, тож без цього рядка смуга залазить під системний статус-бар
     // (звіт власника 2026-09-11, скріншот з LTE/годинником поверх кнопок).
-    <div className="safe-area-pt sticky top-0 z-30 rounded-b-xl bg-fizruk-tint">
+    <div className="safe-area-pt sticky top-0 z-30 rounded-b-panel bg-fizruk-tint">
       <div className="mx-auto flex h-14 max-w-xl items-center gap-1 px-1">
         <button
           type="button"

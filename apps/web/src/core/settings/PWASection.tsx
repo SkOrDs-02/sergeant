@@ -70,7 +70,7 @@ export function PWASection() {
   return (
     // `smartphone` не існує в реєстрі `Icon` — секція малювала порожнє коло
     // заглушки (огляд 2026-09-04). `refresh-cw` — про те, що тут роблять.
-    <SettingsGroup title={settingsSectionTitle("pwa")} icon="refresh-cw">
+    <SettingsGroup title={settingsSectionTitle("pwa")}>
       <p className="text-style-body text-subtle leading-snug">
         Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
         можна скинути збережені на пристрої файли застосунку й перезавантажити
@@ -101,7 +101,7 @@ export function PWASection() {
           як є. */}
       {/* PR-S10: сирий JSON діагностики SW — для підтримки, не для всіх.
           Розкриття за замовчуванням закрите; summary ≥44px. */}
-      <details className="rounded-xl border border-line">
+      <details className="rounded-panel border border-line">
         <summary className="flex min-h-[44px] cursor-pointer items-center px-3 text-style-label text-subtle focus-ring">
           Для підтримки
         </summary>
@@ -123,7 +123,7 @@ export function PWASection() {
             Технічна діагностика
           </Button>
           {swSnapshot ? (
-            <div className="rounded-xl border border-line bg-panelHi p-3 space-y-2">
+            <div className="rounded-panel border border-line bg-panelHi p-3 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-style-label">Результат діагностики</span>
                 <Button

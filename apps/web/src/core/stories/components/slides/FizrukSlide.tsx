@@ -16,7 +16,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
       </p>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <div className="rounded-2xl bg-white/15 border border-white/20 px-4 py-3">
+        <div className="rounded-panel bg-white/15 border border-white/20 px-4 py-3">
           <div className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
             Тренувань
           </div>
@@ -24,7 +24,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
             {agg?.workoutsCount ?? 0}
           </div>
         </div>
-        <div className="rounded-2xl bg-white/15 border border-white/20 px-4 py-3">
+        <div className="rounded-panel bg-white/15 border border-white/20 px-4 py-3">
           <div className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
             Обсяг, кг
           </div>
@@ -52,13 +52,13 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
       )}
 
       {agg?.recoveryLabel && (
-        <div className="mt-2 inline-flex self-start px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-style-caption font-semibold">
+        <div className="mt-2 inline-flex self-start px-3 py-1.5 rounded-lg bg-white/15 border border-white/20 text-style-caption font-semibold">
           {agg.recoveryLabel}
         </div>
       )}
 
       {ai?.summary && (
-        <div className="mt-auto rounded-2xl bg-brand-strong px-4 py-3 border border-white/20">
+        <div className="mt-auto rounded-panel bg-brand-strong px-4 py-3 border border-white/20">
           <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
             <p className="text-style-caption text-white/85 mt-2 leading-relaxed">

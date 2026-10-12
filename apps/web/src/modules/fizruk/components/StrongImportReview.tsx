@@ -191,7 +191,7 @@ export function StrongImportReview({
         </fieldset>
 
         {parsed?.error ? (
-          <p className="rounded-xl border border-danger/30 bg-danger/10 p-3 text-style-caption text-danger-strong">
+          <p className="rounded-panel border border-danger/30 bg-danger/10 p-3 text-style-caption text-danger-strong">
             {parsed.error}
           </p>
         ) : null}
@@ -222,7 +222,7 @@ export function StrongImportReview({
             }
           />
         ) : parsed?.draft ? (
-          <p className="rounded-xl border border-line bg-panelHi p-3 text-style-caption text-text">
+          <p className="rounded-panel border border-line bg-panelHi p-3 text-style-caption text-text">
             {copy.allMatched}
           </p>
         ) : null}
@@ -262,7 +262,7 @@ function MatchList({
   return (
     <div className="space-y-2">
       <h3 className="text-style-label text-text">{title}</h3>
-      <ul className="divide-y divide-line rounded-xl border border-line">
+      <ul className="divide-y divide-line rounded-panel border border-line">
         {matches.map((match) => (
           <li key={match.strongName} className="space-y-2 p-3">
             <div className="text-style-body font-semibold text-text">
@@ -297,7 +297,7 @@ function Stat({
   readonly value: number;
 }) {
   return (
-    <div className="rounded-xl border border-line bg-panelHi p-3">
+    <div className="rounded-panel border border-line bg-panelHi p-3">
       <div className="text-style-caption text-subtle">{label}</div>
       <div className="mt-1 text-style-title font-extrabold text-text tabular-nums">
         {value}

@@ -144,10 +144,10 @@ export function SessionExerciseFocus({
     <div className="space-y-3">
       <section
         aria-labelledby={`session-exercise-${it.id}`}
-        className="rounded-xl bg-panel p-4"
+        className="rounded-panel bg-panel p-4"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-panelHi">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-panelHi">
             {image ? (
               <img
                 src={image}

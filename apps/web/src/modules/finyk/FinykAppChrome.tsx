@@ -97,7 +97,7 @@ export function AuthErrorBanner({
       className="fixed top-[calc(68px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
     >
       {/* Мова H: плаваюча поверхня без іконки, тінь як у тоста. */}
-      <div className="bg-bg rounded-xl px-4 py-3 flex items-start gap-3 shadow-e4">
+      <div className="bg-bg rounded-panel px-4 py-3 flex items-start gap-3 shadow-e4">
         <div className="flex-1 min-w-0">
           <p className="text-style-label font-semibold text-text">
             {needsAccount ? "Потрібен вхід" : "Токен потребує оновлення"}

@@ -2,10 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-// AI-DANGER: прямо з `uk.privacy`, а не з `uk` — `AppLock` це eager-поверхня
-// (замок мусить бути на екрані до будь-якого роуту), і через один
-// `messages.privacy.lock` вона тягнула весь каталог. Гейт —
-// `uk.core.eagerImports.test.ts`.
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { privacyMessages } from "@shared/i18n/uk.privacy";
 import { type LockState } from "./useAppLock";
@@ -30,7 +26,7 @@ function PinDisplay({ length, filled }: { length: number; filled: number }) {
       {Array.from({ length }).map((_, i) => (
         <div
           key={i}
-          className={`w-3 h-3 rounded-full border-2 transition-colors ${
+          className={`w-3 h-3 rounded-mark border-2 transition-colors ${
             i < filled ? "bg-brand border-brand" : "bg-transparent border-line"
           }`}
         />
@@ -85,7 +81,7 @@ function PinPad({
                 key={key}
                 type="button"
                 aria-label={isBackspace ? m.deleteDigit : key}
-                className="w-16 h-16 rounded-full bg-panel border border-line text-style-title text-text hover:bg-panelHi active:scale-95 transition-colors select-none"
+                className="w-16 h-16 rounded-lg bg-panel border border-line text-style-title text-text hover:bg-panelHi transition-colors select-none"
                 onClick={() => {
                   if (isBackspace) {
                     onChange(value.slice(0, -1));
@@ -346,7 +342,7 @@ export function AppLock({
 
   return (
     <div
-      className="fixed inset-0 z-300 flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md motion-safe:animate-fade-in"
+      className="fixed inset-0 z-300 flex items-center justify-center p-6 bg-bg/95 motion-safe:animate-fade-in"
       role="presentation"
     >
       <div
@@ -356,7 +352,7 @@ export function AppLock({
         aria-labelledby="app-lock-title"
         className="w-full max-w-xs flex flex-col items-center gap-4"
       >
-        <div className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center mb-2">
+        <div className="w-14 h-14 rounded-panel bg-brand/10 flex items-center justify-center mb-2">
           <Icon name="lock" size={28} className="text-brand" />
         </div>
 

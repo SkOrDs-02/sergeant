@@ -35,7 +35,7 @@ export function FinykPhotoPrivacyNotice({
   blockingAnalysis?: boolean | undefined;
 }) {
   return (
-    <div className="[&>div]:rounded-xl [&>div]:border-0 [&>div]:bg-panel [&_button]:text-text">
+    <div className="[&>div]:rounded-panel [&>div]:border-0 [&>div]:bg-panel [&_button]:text-text">
       <PhotoPrivacyNotice
         ackKey={FINYK_PHOTO_PRIVACY_ACK_KEY}
         text={FINYK_PHOTO_NOTICE_TEXT}

@@ -76,7 +76,7 @@ export function WorkoutItemTypeSwitcher({
   return (
     <div
       aria-disabled={isReadOnly || undefined}
-      className="rounded-xl border border-line bg-panelHi px-3"
+      className="rounded-panel border border-line bg-panelHi px-3"
     >
       <SectionHeading as="div" size="xs" variant="fizruk" className="pt-2">
         {ts.heading}

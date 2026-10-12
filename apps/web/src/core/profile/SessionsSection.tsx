@@ -21,9 +21,6 @@ import {
   type SessionItem,
 } from "../auth/authClient";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
-// F6 (review): reuse the shared UA pluraliser instead of a hand-rolled
-// `=== 1 ? … : …` ternary — the ternary's "else" branch used the wrong
-// Ukrainian plural form for 2–4 (see the fix below).
 import { pluralize } from "../hub/useHubDashboardState";
 
 const COPY = messages.profileSessions;
@@ -213,7 +210,7 @@ export function SessionsSection({ online }: { online: boolean }) {
   };
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       {/* V-4 (2026-08-08) прибрав звідси текстовий заголовок, і шапка
           картки лишилась із самотньою іконкою та кнопкою «Оновити» —
           залишок, а не дизайн (огляд 2026-09-04). Шапки більше немає:
@@ -256,7 +253,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                 return (
                   <li
                     key={s.id}
-                    className="flex items-start gap-3 p-3 rounded-xl border border-line bg-panel"
+                    className="flex items-start gap-3 p-3 rounded-panel border border-line bg-panel"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -264,7 +261,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                           {ua.label}
                         </p>
                         {isCurrent && (
-                          <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong border border-brand-500/30">
+                          <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-lg bg-brand-500/10 text-brand-strong border border-brand-500/30">
                             {COPY.thisDevice}
                           </span>
                         )}

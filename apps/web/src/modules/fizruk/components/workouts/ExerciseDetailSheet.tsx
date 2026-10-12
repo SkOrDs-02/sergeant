@@ -129,7 +129,7 @@ export function ExerciseDetailSheet({
       zIndex={100}
     >
       {cf?.hasWarning && (
-        <div className="mb-4 rounded-xl border border-line bg-panelHi px-3 py-2.5 text-xs text-text leading-snug">
+        <div className="mb-4 rounded-panel border border-line bg-panelHi px-3 py-2.5 text-xs text-text leading-snug">
           {cf.injury.blocked ? (
             <div className="font-semibold">
               Ти позначив біль. Навантажувати цю групу не раджу.
@@ -168,7 +168,7 @@ export function ExerciseDetailSheet({
                   decoding="async"
                   width="160"
                   height="160"
-                  className="h-40 w-40 rounded-xl object-cover border border-line bg-bg"
+                  className="h-40 w-40 rounded-panel object-cover border border-line bg-bg"
                 />
               </button>
             ))}
@@ -238,7 +238,7 @@ export function ExerciseDetailSheet({
           href={`https://www.google.com/search?q=${encodeURIComponent(selected.name.uk)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border-strong bg-panel px-6 text-style-label-lg font-semibold text-text motion-safe:transition-all motion-safe:duration-base motion-safe:ease-smooth hover:border-brand-200 hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-lg border border-border-strong bg-panel px-6 text-style-label-lg font-semibold text-text motion-safe:transition-all motion-safe:duration-base motion-safe:ease-smooth hover:border-brand-200 hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
           Знайти в інтернеті
         </a>

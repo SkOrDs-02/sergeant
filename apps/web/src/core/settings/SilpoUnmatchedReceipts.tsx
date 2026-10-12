@@ -60,7 +60,7 @@ export function SilpoUnmatchedReceipts({
 
   return (
     <>
-      <details className="rounded-xl border border-line bg-panel p-3">
+      <details className="rounded-panel border border-line bg-panel p-3">
         <summary className="touch-target flex cursor-pointer items-center justify-between gap-2 text-style-label text-text marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk">
           <span className="flex min-w-0 items-center gap-2">
             <Icon

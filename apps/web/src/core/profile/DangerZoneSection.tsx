@@ -79,11 +79,7 @@ export function DangerZoneSection({
 
   return (
     <>
-      <Card
-        radius="lg"
-        padding="none"
-        className="overflow-hidden border-danger/30"
-      >
+      <Card padding="none" className="overflow-hidden border-danger/30">
         <div className="px-4 py-3.5 flex items-center gap-2 border-b border-danger/20">
           <Icon
             name="alert"

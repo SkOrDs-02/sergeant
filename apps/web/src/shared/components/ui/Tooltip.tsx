@@ -251,7 +251,7 @@ export function Tooltip({
               pointerEvents: "none",
             }}
             className={cn(
-              "rounded-xl bg-fg text-surface shadow-float",
+              "rounded-lg bg-fg text-surface shadow-float",
               "motion-safe:animate-fade-in",
               sizeClasses[size],
               className,

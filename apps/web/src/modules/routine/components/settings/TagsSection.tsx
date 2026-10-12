@@ -105,7 +105,7 @@ export function TagsSection({
   }, [reset]);
 
   return (
-    <Card as="section" radius="lg" padding="md" className="space-y-3">
+    <Card as="section" padding="md" className="space-y-3">
       <SectionHeading as="h2" size="lg">
         Теги
       </SectionHeading>

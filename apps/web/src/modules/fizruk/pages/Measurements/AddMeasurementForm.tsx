@@ -44,7 +44,7 @@ const measurementSchema = z.object(
 );
 
 const inp =
-  "input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-4 text-text";
+  "input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-4 text-text";
 
 // Field-caption styling for the measurements grid. This is a genuine form
 // <label> (htmlFor/id bound below), not a narrative eyebrow, so the

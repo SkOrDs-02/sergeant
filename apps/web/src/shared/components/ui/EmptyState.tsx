@@ -13,31 +13,12 @@
  * naked-string placeholders that used to drift in copy, focus styling,
  * and a11y wiring.
  *
- * Slots (all optional except `title`):
- * - `illustration` — large SVG (preferred for full-page surfaces); when
- *   passed, the smaller `icon` slot is suppressed.
- * - `icon` — compact glyph for dense surfaces (in-card placeholders).
- * - `eyebrow` — short tag above the title (e.g. "404", "ERROR", "WARNING").
- * - `title` — single-line headline (required for SR announcement).
- * - `description` — supporting copy under the title.
- * - `action` / `primaryAction` — CTA button.
- * - `secondaryAction` — supportive button next to the primary CTA.
- * - `tertiaryLink` — text link (e.g. "Дізнатись більше").
- * - `hint` — small lightbulb-prefixed footer note.
- * - `examplePreview` — optional inline mock of what real data would look like.
+ * Факт, текстова мета й дії. Без декоративних іконок та ілюстрацій.
  *
  * Sizes (`size: sm | md | lg`):
  * - `sm` (compact): in-card / inline empty placeholder
  * - `md` (default): full-page empty states inside Card or page bodies
  * - `lg`: error pages (`/404`, `/500`, `/offline`)
- *
- * Variants (`variant: neutral | info | success | warning | danger`):
- * - Drives the icon container tint and the eyebrow chip colour. Module
- *   accents (`module: finyk | fizruk | routine | nutrition`) are an
- *   orthogonal axis and take precedence over `variant` when both are set,
- *   because module belongingness is a stronger semantic signal than tone.
- *   Saturated brand fills used as background for white text always go
- *   through `-strong` companions (Hard Rule #9).
  *
  * Backward compat:
  * - `compact: true` keeps working — maps to `size="sm"`.
@@ -51,7 +32,6 @@
  *   Hard Rule #14.
  */
 import type { ReactNode } from "react";
-import type { ModuleAccent } from "@sergeant/design-tokens";
 import type { OnboardingGoals } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
@@ -61,14 +41,7 @@ import { coreMessages } from "@shared/i18n/uk.core";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
-export type EmptyStateVariant =
-  "neutral" | "info" | "success" | "warning" | "danger";
-
 export interface EmptyStateProps {
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  icon?: ReactNode | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  illustration?: ReactNode | undefined;
   /** Ярлик над фактом (12 / 600 / caps), напр. «404». */
   eyebrow?: ReactNode | undefined;
   title?: ReactNode | undefined;
@@ -101,16 +74,8 @@ export interface EmptyStateProps {
   compact?: boolean | undefined;
   /** Density token. Defaults to `md`. `sm` matches the legacy `compact` look. */
   size?: EmptyStateSize | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  variant?: EmptyStateVariant | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  disableAnimation?: boolean | undefined;
   /** Рядок мети під дією. */
   hint?: string | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  examplePreview?: ReactNode | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  module?: ModuleAccent | undefined;
   /**
    * Override live-region politeness. Default `"polite"`. Set to `"off"`
    * for empty states that mount on initial page load alongside other
@@ -135,8 +100,7 @@ const PADDING: Record<EmptyStateSize, string> = {
 
 /**
  * Мова H (redesign v3): факт одним рядком 16 / 600, під ним дія кнопкою
- * outline. Без іконки в колі, ілюстрації й «Прикладу» в пунктирі: ці пропи
- * ще приймаються, але не рендеряться (@removeBy 2026-12-01, PR7). Текстові
+ * outline. Без іконки, ілюстрації та прикладу. Текстові
  * пропи лишаються текстом: `eyebrow` ярликом над фактом, `description` і
  * `hint` рядками мети другим сірим.
  */

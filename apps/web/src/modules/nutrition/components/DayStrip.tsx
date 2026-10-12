@@ -75,7 +75,7 @@ export function DayStrip({ meals, className }: DayStripProps) {
       className={cn(
         // Мова H.2: єдина тинтована поверхня екрана журналу. Текст і числа
         // чорнилом, у hue лише ярлик і стовпчики.
-        "rounded-xl bg-nutrition-tint px-4 pt-3 pb-3 text-text",
+        "rounded-panel bg-nutrition-tint px-4 pt-3 pb-3 text-text",
         className,
       )}
       aria-label={copy.ariaLabel}

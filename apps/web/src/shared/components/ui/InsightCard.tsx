@@ -218,7 +218,7 @@ export function InsightCard({
       className={cn(
         // Мова H (redesign v3): нейтральна панель без тіні й без гліфа
         // в тонованому квадраті; «від Сержанта» несе кнопка-іконка дії.
-        "flex items-center gap-2 rounded-xl bg-panel py-2 pl-4 pr-2",
+        "flex items-center gap-2 rounded-panel bg-panel py-2 pl-4 pr-2",
         className,
       )}
     >

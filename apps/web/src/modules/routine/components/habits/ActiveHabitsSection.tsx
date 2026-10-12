@@ -62,7 +62,7 @@ export function ActiveHabitsSection({
   const hasActive = routine.habits.some((h) => !h.archived);
 
   return (
-    <Card as="section" radius="lg" padding="md" className="space-y-3">
+    <Card as="section" padding="md" className="space-y-3">
       <SectionHeading as="h2" size="lg">
         Активні звички
       </SectionHeading>
@@ -83,10 +83,6 @@ export function ActiveHabitsSection({
       {!hasActive && (
         <EmptyState
           title={messages.routine.emptyHabits}
-          // Форми «вище» на цьому екрані немає — вище лише поле пошуку по
-          // списку. Додавання йде через плаваючу «+», як і каже підказка
-          // зверху сторінки (`uk.routine.ts` → `habitsHint`).
-          module="routine"
           action={
             typeof onOpenCalendar === "function" ? (
               <Button
@@ -112,7 +108,6 @@ export function ActiveHabitsSection({
         <EmptyState
           title="Нічого не знайшов"
           description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
-          module="routine"
           action={
             <Button
               tone="neutral"

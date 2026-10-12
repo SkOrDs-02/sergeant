@@ -234,7 +234,7 @@ export function MemoryBankSection() {
   const manualStep = MEMORY_MANUAL_STEPS[manualStepIndex];
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       {/* V-4 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»):
           цей `<div>` раніше малював власний текстовий заголовок
           «Памʼять AI» поверх `text-style-label` — БІЛЬШИМ за зовнішній
@@ -266,9 +266,6 @@ export function MemoryBankSection() {
           <>
             <EmptyState
               size="sm"
-              icon={
-                <Icon name="sergeant" size={22} className="text-brand-500" />
-              }
               title="Банк памʼяті порожній"
               description="Сержант поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
               action={
@@ -340,7 +337,7 @@ export function MemoryBankSection() {
                         <button
                           type="button"
                           onClick={() => handleDelete(entry.id)}
-                          className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-xl flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                          className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-lg flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
                           aria-label={`Видалити: ${entry.fact}`}
                         >
                           <Icon name="close" size="sm" />
@@ -432,7 +429,7 @@ export function MemoryBankSection() {
           </div>
         )}
         {manualOpen && manualStep && (
-          <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3 text-left">
+          <div className="mt-4 rounded-panel border border-line bg-panelHi p-3 text-left">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-style-caption text-muted">
@@ -446,7 +443,7 @@ export function MemoryBankSection() {
               <button
                 type="button"
                 onClick={closeManualFlow}
-                className="shrink-0 rounded-xl p-2 text-muted hover:bg-panel hover:text-text"
+                className="shrink-0 rounded-lg p-2 text-muted hover:bg-panel hover:text-text"
                 aria-label="Закрити ручне заповнення"
               >
                 <Icon name="close" size="sm" />
@@ -476,7 +473,7 @@ export function MemoryBankSection() {
           </div>
         )}
         {pendingImport && (
-          <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3 text-left">
+          <div className="mt-4 rounded-panel border border-line bg-panelHi p-3 text-left">
             <p className="text-style-label text-text">
               Перевір імпорт: {pendingImport.fileName}
             </p>
@@ -504,14 +501,6 @@ export function MemoryBankSection() {
               // <p> тепер той самий примітив, що й два інші.
               <EmptyState
                 size="sm"
-                variant="warning"
-                // Іконка тут не декор: `variant` у `EmptyState` фарбує
-                // РІВНО контейнер іконки і чип eyebrow — сам title/description
-                // лишаються нейтральними завжди. Без жодного з двох слотів
-                // `variant="warning"` — мертвий проп, і попереджувальний тон,
-                // який до V-14 несло саме забарвлення тексту
-                // (`text-warning-strong`), зник би при переїзді на примітив.
-                icon={<Icon name="alert-triangle" size={18} />}
                 title="Нових записів немає"
                 description="Існуюча памʼять не буде перезаписана."
                 className="mt-2"

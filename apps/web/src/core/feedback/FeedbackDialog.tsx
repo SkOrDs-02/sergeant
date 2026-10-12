@@ -187,7 +187,7 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
         {submitError && (
           <div
             role="alert"
-            className="rounded-2xl border border-danger/30 bg-danger/10 p-3 space-y-2"
+            className="rounded-panel border border-danger/30 bg-danger/10 p-3 space-y-2"
           >
             <p className="text-style-caption text-fg leading-snug">
               {submitError === "offline"

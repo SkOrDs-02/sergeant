@@ -96,7 +96,7 @@ export function HubChatHeader({
           <div className="flex items-center gap-2 text-style-caption text-text">
             <span
               className={cn(
-                "inline-block w-2 h-2 rounded-full",
+                "inline-block w-2 h-2 rounded-mark",
                 contextState.status === "ready"
                   ? "bg-brand-500"
                   : contextState.status === "building"

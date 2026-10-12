@@ -250,7 +250,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           мірятись із власним рекордом тут не час.
         */}
         {best.isNewPR && !aging.returnMode && (
-          <div className="flex items-center gap-2.5 rounded-xl border border-line bg-panelHi px-4 py-3">
+          <div className="flex items-center gap-2.5 rounded-panel border border-line bg-panelHi px-4 py-3">
             <div>
               <p className="text-style-label text-text">
                 Новий особистий рекорд!
@@ -265,7 +265,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         <ReturnProtocolNotice aging={aging} />
 
         {best.isRegression && !aging.returnMode && (
-          <div className="rounded-xl border border-line bg-panel px-4 py-3">
+          <div className="rounded-panel border border-line bg-panel px-4 py-3">
             <p className="text-style-label text-text">
               {`${messages.fizruk.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
             </p>
@@ -444,7 +444,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 .map(({ workout, item }) => (
                   <div
                     key={`${workout.id}_${item.id}`}
-                    className="border border-line rounded-xl p-3 bg-bg"
+                    className="border border-line rounded-panel p-3 bg-bg"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-style-caption text-subtle">

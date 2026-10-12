@@ -130,7 +130,7 @@ export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
   if (!cfg || !data) return null;
 
   return (
-    <div className="rounded-xl border border-line bg-bg overflow-hidden">
+    <div className="rounded-panel border border-line bg-bg overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -138,7 +138,7 @@ export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
       >
         <div
           className={cn(
-            "w-6 h-6 rounded-xl flex items-center justify-center shrink-0",
+            "w-6 h-6 rounded-panel flex items-center justify-center shrink-0",
             cfg.bgClass,
             cfg.colorClass,
           )}

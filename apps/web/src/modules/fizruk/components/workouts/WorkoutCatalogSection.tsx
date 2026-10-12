@@ -13,7 +13,6 @@ import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Segmented } from "@shared/components/ui/Segmented";
@@ -272,14 +271,12 @@ export function WorkoutCatalogSection({
           */
           hasQuery ? (
             <EmptyState
-              illustration={<FizrukEmptyIllustration size={96} />}
               title="Нічого не знайшлось"
               description={
                 q
                   ? `За запитом «${q}» вправ немає. Спробуй іншу назву, групу мʼязів або скинь пошук.`
                   : "Під вибрані фільтри вправ немає. Скинь їх або обери інші."
               }
-              module="fizruk"
               action={
                 <button
                   type="button"
@@ -292,10 +289,8 @@ export function WorkoutCatalogSection({
             />
           ) : (
             <EmptyState
-              illustration={<FizrukEmptyIllustration size={96} />}
               title="Поки немає вправ"
               description="Додай першу через кнопку «+ Додати»."
-              module="fizruk"
             />
           )
         ) : (

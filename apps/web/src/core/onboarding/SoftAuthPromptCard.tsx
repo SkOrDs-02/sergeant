@@ -86,14 +86,14 @@ export function SoftAuthPromptCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-brand-500/30",
+        "relative overflow-hidden rounded-panel border border-brand-500/30",
         "bg-linear-to-br from-brand-500/10 via-panel to-panel p-4",
         "shadow-card",
       )}
       data-variant={variant}
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 shrink-0 rounded-2xl bg-brand-500/15 text-brand-strong flex items-center justify-center">
+        <div className="w-10 h-10 shrink-0 rounded-lg bg-brand-500/15 text-brand-strong flex items-center justify-center">
           <Icon name="cloud-check" size="lg" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">

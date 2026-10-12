@@ -64,7 +64,7 @@ export function JournalEntryCard({
       `rule`/`perf` стверджувала б неперервність, якої на екрані немає.
       Отже правильний хід — не давати краю зовсім.
     */
-    <div className="rounded-xl border border-line bg-bg">
+    <div className="rounded-panel border border-line bg-bg">
       <div className="flex items-start gap-2">
         <button
           type="button"
@@ -95,9 +95,11 @@ export function JournalEntryCard({
         <button
           type="button"
           onClick={() => onDelete(entry.id)}
-          className="focus-ring touch-target shrink-0 m-1 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          className="focus-ring touch-target shrink-0 m-1 flex items-center justify-center rounded-lg px-2 py-1 text-style-caption text-muted hover:text-danger hover:bg-danger/10 transition-colors"
           aria-label={messages.fizruk.journal.deleteEntryAriaLabel}
-        ></button>
+        >
+          {messages.fizruk.journal.deleteEntryAriaLabel}
+        </button>
       </div>
       {open && (
         <div id={contentId} className="px-3 pb-3 pt-0">

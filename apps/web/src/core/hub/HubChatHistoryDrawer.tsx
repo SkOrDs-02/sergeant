@@ -162,7 +162,7 @@ function HistoryPanel({
       aria-label="Історія чатів"
     >
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm motion-safe:animate-fade-in"
+        className="absolute inset-0 bg-black/50 motion-safe:animate-fade-in"
         onClick={onClose}
         aria-hidden
         tabIndex={-1}
@@ -210,7 +210,7 @@ function HistoryPanel({
             onClick={() => {
               onCreate();
             }}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-lg bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
             <Icon name="plus" size={15} />
             Нова бесіда
@@ -221,7 +221,7 @@ function HistoryPanel({
           {groups.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 text-center py-12 px-4">
               <div
-                className="w-14 h-14 rounded-2xl bg-panelHi flex items-center justify-center"
+                className="w-14 h-14 rounded-panel bg-panelHi flex items-center justify-center"
                 aria-hidden
               >
                 <Icon name="message-circle" size={22} className="text-subtle" />
@@ -256,7 +256,7 @@ function HistoryPanel({
                           onClick={() => onSelect(s.id)}
                           aria-current={isActive ? "true" : undefined}
                           className={cn(
-                            "w-full flex items-start gap-3 pl-3 pr-12 py-2.5 rounded-2xl text-left transition-colors border outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                            "w-full flex items-start gap-3 pl-3 pr-12 py-2.5 rounded-lg text-left transition-colors border outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                             isActive
                               ? "bg-brand-soft border-brand-soft-border/60 text-text"
                               : "bg-panel border-transparent hover:bg-panelHi text-text",
@@ -266,7 +266,7 @@ function HistoryPanel({
                               лише тоном фону: у темній темі тон губиться. */}
                           <span
                             className={cn(
-                              "mt-1.5 w-1 self-stretch rounded-full shrink-0",
+                              "mt-1.5 w-1 self-stretch rounded-mark shrink-0",
                               isActive ? "bg-brand-500" : "bg-transparent",
                             )}
                             aria-hidden

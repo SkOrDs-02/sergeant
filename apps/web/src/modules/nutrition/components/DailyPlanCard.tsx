@@ -32,6 +32,7 @@ import {
 } from "./DailyPlanMealRow";
 import { DailyPlanGoalSelectors } from "./DailyPlanGoalSelectors";
 import { PantryModeSelect } from "./PantryModeSelect";
+import { describePlanFreshness } from "../lib/planFreshness";
 
 // Re-export pure validation helpers for tests / consumers that already
 // imported them from the original (now slimmed) component module. The
@@ -40,7 +41,6 @@ export {
   calcGoalRangeIssues,
   calcMacroKcalMismatch,
 } from "../lib/dailyPlanValidation";
-import { describePlanFreshness } from "../lib/planFreshness";
 
 interface WeekPlanDay {
   label?: string;
@@ -344,7 +344,7 @@ export function DailyPlanCard({
         {import.meta.env.DEV &&
           weekPlanRaw &&
           (!weekPlan?.days || weekPlan.days.length === 0) && (
-            <details className="rounded-xl border border-line p-3">
+            <details className="rounded-panel border border-line p-3">
               <summary className="cursor-pointer text-style-caption text-muted">
                 Діагностика плану (raw)
               </summary>

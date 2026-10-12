@@ -69,7 +69,7 @@ function NumberField({
           disabled={disabled}
           className={cn(
             "input-focus h-10 w-24 px-2.5 text-right text-style-body",
-            "bg-panelHi border border-line rounded-xl text-text",
+            "bg-panelHi border border-line rounded-lg text-text",
             "placeholder:text-muted",
             "disabled:opacity-60 disabled:cursor-not-allowed",
           )}
@@ -114,9 +114,9 @@ export function NutritionSection() {
   return (
     // V-13 — акцент бейджа вимагає пари `icon` + `module`; чому саме так,
     // розписано у `FinykSection.tsx`.
-    <SettingsGroup title="Їжа" icon="utensils" module="nutrition">
+    <SettingsGroup title="Їжа">
       {storageErr && (
-        <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-style-body text-danger-strong dark:text-danger">
+        <div className="rounded-panel border border-danger/40 bg-danger/10 px-3 py-2 text-style-body text-danger-strong dark:text-danger">
           {storageErr}
         </div>
       )}

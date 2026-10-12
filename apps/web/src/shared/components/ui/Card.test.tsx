@@ -19,31 +19,13 @@ afterEach(cleanup);
  */
 describe("Card", () => {
   describe("panel (дефолт)", () => {
-    it("bg-panel, rounded-xl, p-4, без бордера й тіні", () => {
+    it("bg-panel, rounded-panel, p-4, без бордера й тіні", () => {
       const { container } = render(<Card>body</Card>);
       const cls = container.firstElementChild!.className;
       expect(cls).toContain("bg-panel");
-      expect(cls).toContain("rounded-xl");
+      expect(cls).toContain("rounded-panel");
       expect(cls).toContain("p-4");
       expect(cls).not.toMatch(/border|shadow/);
-    });
-
-    it.each(["default", "flat", "elevated", "glass", "soft"] as const)(
-      "легасі prominence=%s рендерить ту саму панель",
-      (prominence) => {
-        const { container } = render(<Card prominence={prominence}>x</Card>);
-        const cls = container.firstElementChild!.className;
-        expect(cls).toContain("bg-panel");
-        expect(cls).not.toMatch(/border|shadow|blur|rounded-(2xl|3xl)/);
-      },
-    );
-
-    it("легасі radius ігнорується: радіус панелі завжди 12 px", () => {
-      const { container } = render(<Card radius="xl">x</Card>);
-      expect(container.firstElementChild!.className).toContain("rounded-xl");
-      expect(container.firstElementChild!.className).not.toContain(
-        "rounded-3xl",
-      );
     });
 
     it("padding='none' emits no padding utility class", () => {
@@ -81,13 +63,6 @@ describe("Card", () => {
         expect(cls).not.toMatch(/grad|shadow|border/);
       },
     );
-
-    it("легасі module / variant=finyk теж дають тинт", () => {
-      const { container, rerender } = render(<Card module="finyk">x</Card>);
-      expect(container.firstElementChild!.className).toContain("bg-finyk-tint");
-      rerender(<Card variant="finyk">x</Card>);
-      expect(container.firstElementChild!.className).toContain("bg-finyk-tint");
-    });
 
     it("hero без модуля падає на панель", () => {
       const { container } = render(<Card prominence="hero">x</Card>);

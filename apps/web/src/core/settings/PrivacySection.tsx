@@ -158,7 +158,6 @@ export function PrivacySection() {
   return (
     <SettingsGroup
       title={settingsSectionTitle("privacy")}
-      icon="shield"
       anchorId="settings-privacy"
     >
       <SettingsSubGroup title="Згода та дані">

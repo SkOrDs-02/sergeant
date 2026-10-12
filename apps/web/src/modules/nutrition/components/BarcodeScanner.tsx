@@ -172,7 +172,7 @@ function WebBarcodeScanner({
         role="dialog"
         aria-modal="true"
         aria-labelledby="barcode-scanner-title"
-        className="relative flex w-full max-h-[100dvh] flex-col bg-panel rounded-t-xl border-t border-line"
+        className="relative flex w-full max-h-[100dvh] flex-col bg-panel rounded-t-panel border-t border-line"
       >
         <div className="flex shrink-0 justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-line rounded-[3px]" aria-hidden />
@@ -197,7 +197,7 @@ function WebBarcodeScanner({
             низькому вʼюпорті (ноутбук, зум, ландшафт) панель не виїжджає за
             верх екрана, а прокручується лише тіло з відео і статусом. */}
         <div className="min-h-0 space-y-3 overflow-y-auto px-4 pb-8">
-          <div className="rounded-xl overflow-hidden border border-line bg-black relative">
+          <div className="rounded-panel overflow-hidden border border-line bg-black relative">
             <video
               ref={videoRef}
               className="w-full aspect-video max-h-[60dvh] object-cover"
@@ -206,7 +206,7 @@ function WebBarcodeScanner({
               autoPlay
             />
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-3/4 h-1/2 border-2 border-white/80 rounded-xl" />
+              <div className="w-3/4 h-1/2 border-2 border-white/80 rounded-panel" />
             </div>
           </div>
           {status ? (

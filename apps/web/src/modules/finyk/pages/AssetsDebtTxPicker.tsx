@@ -5,7 +5,6 @@
 import { useState, type ReactNode } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
-
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
@@ -241,7 +240,7 @@ export function AssetsDebtTxPicker({
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card variant="flat" radius="md" className="mb-4">
+          <Card className="mb-4">
             <div className="text-style-caption text-subtle inline-flex items-center gap-1.5">
               {/* До 2026-08-21 тут стояв `item.emoji` — засіяний дефолт
                   («💸» для боргу, «👤» для дебіторки), який форма не дає

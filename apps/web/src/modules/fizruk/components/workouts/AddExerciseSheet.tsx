@@ -152,7 +152,7 @@ export function AddExerciseSheet({
           </select>
         </label>
 
-        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-panel border border-line bg-panelHi px-3 py-2">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Обладнання
           </SectionHeading>
@@ -188,7 +188,7 @@ export function AddExerciseSheet({
           </div>
         </div>
 
-        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-panel border border-line bg-panelHi px-3 py-2">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Основні мʼязи
           </SectionHeading>
@@ -216,7 +216,7 @@ export function AddExerciseSheet({
           </div>
         </div>
 
-        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-panel border border-line bg-panelHi px-3 py-2">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Супутні мʼязи
           </SectionHeading>

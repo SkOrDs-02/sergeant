@@ -33,7 +33,7 @@ import { formatNumberUk } from "@sergeant/shared";
 
 const t = messages.fizruk.atlas;
 
-export type { AtlasMuscleDatum, AtlasData } from "../lib/atlasData";
+export type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
 
 type AtlasMode = "recovery" | "last" | "volume";
 
@@ -345,7 +345,7 @@ export function BodyAtlas({
         <div
           ref={silhouetteBoxRef}
           className={cn(
-            "min-w-0 shrink rounded-xl bg-bg p-3",
+            "min-w-0 shrink rounded-panel bg-bg p-3",
             compact
               ? "mx-auto max-w-[200px] basis-[200px]"
               : "max-w-[300px] basis-[300px]",
@@ -588,7 +588,7 @@ export function BodyAtlas({
 
         {!compact && (
           <div className="min-w-0 flex-1 basis-[260px]">
-            <div className="rounded-xl border border-line bg-bg p-4">
+            <div className="rounded-panel border border-line bg-bg p-4">
               {selected && selectedDatum ? (
                 <SelectedCard
                   label={BODY_ATLAS_MUSCLE_LABELS_UK[selected]}
@@ -693,7 +693,7 @@ function SelectedCard({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-surface p-2.5">
+    <div className="rounded-panel bg-surface p-2.5">
       <p className="text-style-caption text-subtle">{label}</p>
       <p className="mt-0.5 text-lg font-medium text-text">{value}</p>
     </div>

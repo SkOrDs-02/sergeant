@@ -122,6 +122,16 @@ export const ICON_SIZE_TOKENS = {
  * причиною.
  */
 export const ROUNDED_FULL_ALLOWLIST = [
+  // Оптимізований аватар — коло за змістом; фото-панелі мають радіус panel.
+  "apps/web/src/shared/components/ui/OptimizedImage.tsx",
+  // Скелет аватара повторює його круглу форму; інші скелети мають H-радіуси.
+  "apps/web/src/shared/components/ui/Skeleton.tsx",
+  // Канонічні кружки стану звички, 22 px у зоні 44 px (мова H).
+  "apps/web/src/modules/routine/components/HabitStateButton.tsx",
+  "apps/web/src/modules/routine/components/habits/HabitListItem.tsx",
+  // Кругле кільце завантаження (animate-spin); інші форми переведено на H.
+  "apps/web/src/core/hub/search/InlineAiRail.tsx",
+
   // аватар: круг і бейдж статусу на ньому
   "apps/web/src/shared/components/ui/Avatar.tsx",
   // спінер: кругле кільце
@@ -134,8 +144,6 @@ export const ROUNDED_FULL_ALLOWLIST = [
   "apps/web/src/shared/components/ui/Switch.tsx",
   // кружки звичок у місячній сітці Рутини
   "apps/web/src/modules/routine/components/RoutineCalendarMonthGrid.tsx",
-  // скелет аватарів/кілець модулів
-  "apps/web/src/shared/components/ui/ModulePageLoader.tsx",
 ];
 
 export const LEGACY_BUTTON_VARIANTS = [

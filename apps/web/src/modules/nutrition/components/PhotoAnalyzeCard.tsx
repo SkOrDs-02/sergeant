@@ -176,7 +176,7 @@ export function PhotoAnalyzeCard({
       {/* Drop-zone */}
       <label
         className={cn(
-          "block w-full rounded-xl border border-border-strong cursor-pointer transition-colors",
+          "block w-full rounded-lg border border-border-strong cursor-pointer transition-colors",
           photoPreviewUrl ? "bg-panel" : "bg-panel hover:bg-line/40",
         )}
       >
@@ -202,7 +202,7 @@ export function PhotoAnalyzeCard({
               decoding="async"
               width="600"
               height="280"
-              className="block w-full max-w-full max-h-[280px] object-cover rounded-xl"
+              className="block w-full max-w-full max-h-[280px] object-cover rounded-panel"
             />
             <span className="absolute bottom-3 right-3 rounded-lg bg-panel px-3 py-2 text-style-caption text-text">
               Замінити фото

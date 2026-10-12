@@ -124,7 +124,7 @@ export function HabitStatsSection({
       {/* P2-4 (анти-слоп аудит 2026-09-23, хвіст F1 з 2026-09-01): та сама
           «однакові плитки» граматика, яку `RoutineStatsPanel` уже позбувся —
           один hero-показник, решта рядком тексту без власного бокса. */}
-      <Card as="div" radius="lg">
+      <Card as="div">
         {isOnce ? (
           <Stat label="Разів виконано" value={totalDone} size="md" />
         ) : (

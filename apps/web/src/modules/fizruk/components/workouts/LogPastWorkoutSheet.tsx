@@ -52,7 +52,6 @@
  * `TimeField` - його time-двійник. Скарга тестера 2026-08-16.
  */
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-
 import { Button } from "@shared/components/ui/Button";
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
@@ -444,7 +443,7 @@ export function LogPastWorkoutSheet({
               /* Заводимо просто тут, а не окремим екраном: людина вже посеред
              запису, і відправити її в довідник означало б загубити введені
              дату й час. MET не питаємо числом - лише рівень навантаження. */
-              <div className="min-w-0 space-y-2 rounded-xl border border-line bg-panelHi p-3">
+              <div className="min-w-0 space-y-2 rounded-panel border border-line bg-panelHi p-3">
                 <div className="min-w-0">
                   <label
                     htmlFor={newNameId}

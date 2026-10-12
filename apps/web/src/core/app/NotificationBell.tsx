@@ -89,7 +89,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         aria-label={`Сповіщення: ${count}`}
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          "relative w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl",
+          "relative w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-lg",
           "text-muted hover:text-text hover:bg-panelHi transition-colors",
           FOCUS_RING,
         )}
@@ -97,7 +97,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         <Icon name="bell" size="lg" />
         <span
           aria-hidden="true"
-          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-strong text-white dark:bg-brand-400 dark:text-bg text-xs font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
+          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-lg bg-brand-strong text-white dark:bg-brand-400 dark:text-bg text-xs font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
         >
           {count}
         </span>
@@ -110,13 +110,13 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
           role="dialog"
           // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- single-use a11y label; i18n catalog reserves entries for strings on ≥2 surfaces
           aria-label="Сповіщення"
-          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-panel shadow-float p-1.5 z-50"
+          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-panel border border-line bg-panel shadow-float p-1.5 z-50"
         >
           <ul>
             {notifications.map((n) => (
               <li
                 key={n.id}
-                className="flex items-start gap-3 px-2.5 py-2.5 rounded-xl"
+                className="flex items-start gap-3 px-2.5 py-2.5 rounded-panel"
               >
                 <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel">
                   <Icon name={n.icon} size="md" />

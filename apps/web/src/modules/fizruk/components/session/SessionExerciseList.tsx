@@ -108,7 +108,7 @@ export function SessionExerciseList({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl bg-panel px-4 py-8 text-center">
+      <div className="rounded-panel bg-panel px-4 py-8 text-center">
         <div className="text-style-label text-text">{ss.emptyTitle}</div>
         <div className="mt-1 text-style-caption text-subtle">
           {ss.emptyBody}
@@ -133,7 +133,7 @@ export function SessionExerciseList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl bg-panel">
+    <div className="overflow-hidden rounded-panel bg-panel">
       <ul className="divide-y divide-line">
         {items.map((it, idx) => {
           const state = states[idx] ?? "todo";

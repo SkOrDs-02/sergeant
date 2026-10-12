@@ -59,7 +59,6 @@ export function DashboardSection() {
   return (
     <SettingsGroup
       title={settingsSectionTitle("dashboard")}
-      icon="grid"
       anchorId="settings-dashboard"
     >
       <SettingsSubGroup title="Вигляд">

@@ -240,7 +240,6 @@ const preset = {
         // Use `cyan-700` / `cyan-800` instead of `teal-500` / `teal-700`
         // for fizruk module surfaces — see docs/design/redesign-v2.md.
         cyan: brandColors.cyan,
-        cream: brandColors.cream,
         rose: brandColors.rose,
         lime: brandColors.lime,
 
@@ -659,32 +658,14 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BORDER RADIUS — 3 semantic tiers (see docs/design/design/radius-rhythm.md)
-      //
-      //   CONTROL  (12 px, rounded-xl)   — buttons, inputs, badges, chips,
-      //                                    icon-buttons, segmented controls
-      //   CARD     (16 px, rounded-2xl)  — cards, panels, list items,
-      //                                    dropdowns, sticky banners
-      //   HERO     (24 px, rounded-3xl)  — modals, sheets, hero cards,
-      //                                    module bento tiles
-      //
-      //   PILL     (9999 px, rounded-full) — FAB, avatars, status dots, tags
-      //   SWATCH   (2 px, rounded-sm)      — heatmap cells, chart legend dots
-      //
-      // 4xl / 5xl exist for one-off illustration surfaces (onboarding
-      // hero blob); they are NOT part of the regular rhythm.
-      //
-      // Forbidden in new code:
-      //   `rounded-lg` (8 px)  — sits between CONTROL and CARD with no role
-      //   `rounded-md` (6 px)  — folded into CONTROL; reach for `rounded-xl`
-      //   `rounded` / `rounded-DEFAULT` (4 px) — no semantic slot at all
-      //
-      // Lint: see `eslint-plugin-sergeant-design`. The design-system audit
-      // sweeps remaining call sites incrementally — when touching a file
-      // you usually want `rounded-xl` for ≤ 40 px controls and `rounded-2xl`
-      // for surfaces ≥ 48 px tall.
-      // ════��══════════════════════════════════════════════════════════════
+      // BORDER RADIUS — мова H: панель 12, контрол 8, дія 7, сегмент 6, чекбокс 5, бар/свотч 3.
       borderRadius: {
+        // Мова H: роль поверхні й позначки, без великих радіусів контролів.
+        panel: "12px",
+        action: "7px",
+        segment: "6px",
+        check: "5px",
+        mark: "3px",
         "2xl": "16px",
         "3xl": "24px",
         "4xl": "32px",
@@ -841,29 +822,6 @@ const preset = {
         "card-rose": "linear-gradient(135deg, #fff5f6 0%, #ffffff 100%)",
         "card-lime": "linear-gradient(135deg, #f8fee7 0%, #ffffff 100%)",
 
-        // Dark-mode overlays for module hero Card variants. Layered on top
-        // of `bg-panel` so branded cards keep a faint module tint in dark
-        // mode instead of reading as a neutral warm surface.
-        "card-finyk-dark": "var(--gradient-card-finyk-dark)",
-        "card-fizruk-dark": "var(--gradient-card-fizruk-dark)",
-        "card-routine-dark": "var(--gradient-card-routine-dark)",
-        "card-nutrition-dark": "var(--gradient-card-nutrition-dark)",
-
-        // Hero-ink gradients (dark) — «Чорнило» v3.1 § 2. CSS vars defined
-        // in theme.css `.dark`. Module hero Card variant fill; identity
-        // carried by the accent border/glow, not fill saturation.
-        "hero-ink-finyk": "var(--hero-ink-finyk)",
-        "hero-ink-fizruk": "var(--hero-ink-fizruk)",
-        "hero-ink-routine": "var(--hero-ink-routine)",
-        "hero-ink-nutrition": "var(--hero-ink-nutrition)",
-
-        // Module hero gradients — CSS vars defined in theme.css:705-708.
-        // Used by PR-E..PR-H module page headers (bg-hero-grad-* utility).
-        "hero-grad-finyk": "var(--hero-grad-finyk)",
-        "hero-grad-fizruk": "var(--hero-grad-fizruk)",
-        "hero-grad-routine": "var(--hero-grad-routine)",
-        "hero-grad-nutrition": "var(--hero-grad-nutrition)",
-
         hero: "linear-gradient(150deg, #fdf9f3 0%, #fefdfb 100%)",
         // `hero-g` (pre-teal-migration orphan) removed 2026-08
         // design-audit T10 — zero consumers.
@@ -972,10 +930,6 @@ const preset = {
         // Bounce for notifications (CELEBRATE tier)
         "bounce-in":
           "bounceIn var(--motion-duration-slower) var(--motion-ease-overshoot)",
-        // Stagger enter — children use animation-delay: index × 30 ms,
-        // capped at 150 ms total (Hard Rule #17).
-        "stagger-in":
-          "fadeSlideUp var(--motion-duration-slow) var(--motion-ease-standard) both",
         // Modal / sheet exits (RESPONSE tier)
         "fade-out":
           "fadeOut var(--motion-duration-fast) var(--motion-ease-accelerate) forwards",
@@ -1057,10 +1011,6 @@ const preset = {
           "50%": { transform: "scale(1.05)" },
           "70%": { transform: "scale(0.9)" },
           "100%": { opacity: "1", transform: "scale(1)" },
-        },
-        fadeSlideUp: {
-          "0%": { opacity: "0", transform: "translateY(8px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
         },
         wiggle: {
           "0%, 100%": { transform: "rotate(-0.6deg)" },

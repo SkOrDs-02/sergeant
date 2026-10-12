@@ -12,7 +12,6 @@
 import { useMemo } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -112,8 +111,6 @@ export function FinykMerchantRulesSection({
       ) : (
         <EmptyState
           compact
-          module="finyk"
-          icon={<Icon name="tag" size="lg" />}
           title={copy.settings.empty.title}
           description={copy.settings.empty.description}
         />

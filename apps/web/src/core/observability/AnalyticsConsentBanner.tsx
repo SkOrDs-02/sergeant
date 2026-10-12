@@ -47,7 +47,7 @@ export default function AnalyticsConsentBanner() {
       ref={bannerRef}
       aria-labelledby="analytics-consent-title"
       data-testid="analytics-consent-banner"
-      className="fixed inset-x-3 z-40 mx-auto max-w-md rounded-2xl border border-line bg-panel p-4 shadow-e2"
+      className="fixed inset-x-3 z-40 mx-auto max-w-md rounded-panel border border-line bg-panel p-4 shadow-e2"
       style={{
         bottom:
           "calc(max(var(--sgt-bottom-nav-inset, 0px), env(safe-area-inset-bottom, 0px)) + 0.75rem)",

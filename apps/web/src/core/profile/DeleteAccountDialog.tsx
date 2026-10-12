@@ -74,7 +74,7 @@ export function DeleteAccountDialog({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 "
         onClick={onCancel}
         aria-label="Закрити"
       />
@@ -83,7 +83,7 @@ export function DeleteAccountDialog({
         // `overflow-y-auto` — пара до `kbStyles.panel`: під клавіатурою
         // висота обрізається, і без власного скролу кнопки внизу стали б
         // недосяжними.
-        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-soft p-5 z-10 overflow-y-auto overscroll-contain"
+        className="relative w-full max-w-sm bg-panel border border-line rounded-panel shadow-soft p-5 z-10 overflow-y-auto overscroll-contain"
         style={kbStyles.panel}
         role="dialog"
         aria-modal="true"

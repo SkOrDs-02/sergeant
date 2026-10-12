@@ -246,7 +246,7 @@ export function SilpoIntegrationSection({
   if (status === "disabled") {
     return (
       <SettingsSubGroup title={COPY.title}>
-        <div className="rounded-xl border border-line bg-panel p-3">
+        <div className="rounded-panel border border-line bg-panel p-3">
           <p className="text-style-label text-text">{COPY.disabledTitle}</p>
           <p className="mt-1 text-style-caption text-subtle">
             {COPY.disabledBody}
@@ -288,7 +288,7 @@ export function SilpoIntegrationSection({
         {checkFailed ? (
           <div className="space-y-3">
             <p
-              className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2"
+              className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
               role="alert"
             >
               {COPY.checkFailed}
@@ -307,7 +307,7 @@ export function SilpoIntegrationSection({
           <div className="space-y-3">
             {syncState?.lastFailedAt ? (
               <div
-                className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/15"
+                className="flex items-start gap-3 p-3 rounded-panel border border-warning/40 bg-warning/15"
                 role="status"
               >
                 <Icon
@@ -331,8 +331,8 @@ export function SilpoIntegrationSection({
                 </div>
               </div>
             ) : null}
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-success/30 bg-bg">
-              <div className="w-2.5 h-2.5 rounded-full shrink-0 bg-success" />
+            <div className="flex items-center gap-3 p-3 rounded-panel border border-success/30 bg-bg">
+              <div className="w-2.5 h-2.5 rounded-mark shrink-0 bg-success" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label">{COPY.connected}</div>
                 <div className="text-style-caption text-subtle mt-0.5">

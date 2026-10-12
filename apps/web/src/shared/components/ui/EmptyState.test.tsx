@@ -40,15 +40,9 @@ describe("EmptyState — a11y", () => {
     expect(status!.getAttribute("aria-live")).toBe("off");
   });
 
-  it("мова H: icon, illustration і examplePreview не рендеряться, hint лишається текстом", () => {
+  it("мова H: факт без декоративної іконки, hint лишається текстом", () => {
     const { container, queryByText } = render(
-      <EmptyState
-        icon={<svg data-testid="ico" />}
-        illustration={<svg data-testid="ill" />}
-        title="Записів немає"
-        hint="Підказка"
-        examplePreview={<span>Приклад-рядок</span>}
-      />,
+      <EmptyState title="Записів немає" hint="Підказка" />,
     );
     expect(container.querySelector("svg")).toBeNull();
     expect(queryByText("Підказка")).not.toBeNull();

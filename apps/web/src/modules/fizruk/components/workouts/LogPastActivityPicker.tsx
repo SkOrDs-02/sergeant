@@ -8,7 +8,6 @@
  * «Швидкий запис» і вперлась у стелю 600 рядків (Hard Rule #18).
  */
 import { useState } from "react";
-
 import { Input } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
@@ -76,7 +75,7 @@ export function ActivityPickerSheet({
   // `border-transparent` + `px-[7px]` у решти рядків: межа не зсуває текст.
   const optionClass = (active: boolean) =>
     cn(
-      "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-xl border px-[7px] text-left text-style-body",
+      "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-lg border px-[7px] text-left text-style-body",
       active
         ? "border-text bg-panelHi text-text"
         : "border-transparent text-text",

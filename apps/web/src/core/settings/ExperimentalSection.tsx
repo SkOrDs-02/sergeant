@@ -60,7 +60,7 @@ export function ExperimentalSection() {
     // "Експериментальні функції" (КОПІЯ ДЛЯ ЗАТВЕРДЖЕННЯ ВЛАСНИКОМ) — тепер
     // єдине джерело: `settingsSectionsCatalog.ts`, дзеркалиться в
     // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
-    <SettingsGroup title={settingsSectionTitle("experimental")} icon="tool">
+    <SettingsGroup title={settingsSectionTitle("experimental")}>
       <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
       <Notice tone="ink" role="note">
         {copy.warningBanner}

@@ -227,7 +227,7 @@ export function WorkoutTemplatesSection({
               onChange={(e) => setQ(e.target.value)}
               aria-label="Пошук вправи для шаблону"
             />
-            <div className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-line divide-y divide-line">
+            <div className="mt-2 max-h-40 overflow-y-auto rounded-panel border border-line divide-y divide-line">
               {pickList.map((ex) => (
                 <button
                   key={ex.id}
@@ -318,7 +318,7 @@ export function WorkoutTemplatesSection({
                   return (
                     <li
                       key={`${id}_${idx}`}
-                      className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors ${isSelected ? "border-line bg-panelHi" : group ? "border-line bg-panelHi" : "border-line bg-bg"}`}
+                      className={`flex items-center gap-2 rounded-panel border px-2 py-1.5 transition-colors ${isSelected ? "border-line bg-panelHi" : group ? "border-line bg-panelHi" : "border-line bg-bg"}`}
                     >
                       {groupSelectMode && (
                         <button
@@ -429,7 +429,6 @@ export function WorkoutTemplatesSection({
         {(templates || []).length === 0 ? (
           <EmptyState
             compact
-            module="fizruk"
             title="Поки немає шаблонів"
             description="Створи свій перший, кнопка вище."
           />

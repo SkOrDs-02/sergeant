@@ -316,7 +316,7 @@ function LimitBudgetCardComponent({
 
           {showProactiveAdvice &&
             (proactiveText || proactiveLoading !== false) && (
-              <div className="mt-3 bg-bg rounded-xl overflow-hidden">
+              <div className="mt-3 bg-bg rounded-panel overflow-hidden">
                 {proactiveText ? (
                   <>
                     <div className="flex items-stretch">

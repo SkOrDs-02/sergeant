@@ -34,8 +34,6 @@ import { Stat } from "@shared/components/ui/Stat";
 import { PrBoard } from "./Progress/PrBoard";
 import { MuscleVolumeBlock } from "../components/MuscleWeekMatrix";
 import { buildMuscleWeekMatrix } from "../lib/muscleWeekMatrix";
-// Одна локаль на модуль: «Тіло» друкувало «82,5 кг», а «Прогрес» —
-// «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
 import { fmt, fmtLoose } from "../lib/numberFmt";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 
@@ -316,7 +314,7 @@ export function Progress({ onNavigate }: ProgressProps) {
               onClick={() => onNavigate("measurements")}
               className="focus-ring touch-target w-full flex items-center gap-3 rounded-lg border border-line bg-panelHi hover:bg-panel transition-[background-color,transform] px-4 py-3 text-left"
             >
-              <div className="shrink-0 w-9 h-9 rounded-xl bg-panelHi text-text flex items-center justify-center"></div>
+              <div className="shrink-0 w-9 h-9 rounded-lg bg-panelHi text-text flex items-center justify-center"></div>
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   {messages.fizruk.progress.measurementsTitle}

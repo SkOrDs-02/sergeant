@@ -34,10 +34,7 @@ export function FeedbackSection() {
   };
 
   return (
-    <SettingsGroup
-      title={messages.feedback.settingsTitle}
-      icon="message-circle"
-    >
+    <SettingsGroup title={messages.feedback.settingsTitle}>
       <SettingsSubGroup title={messages.feedback.settingsSubGroupTitle}>
         <p className="text-style-body text-subtle leading-snug">
           {messages.feedback.settingsDescription}

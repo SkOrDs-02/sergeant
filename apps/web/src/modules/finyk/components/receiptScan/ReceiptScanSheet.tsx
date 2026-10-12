@@ -41,7 +41,6 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { apiClient } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
-
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
@@ -456,7 +455,7 @@ export function ReceiptScanSheet({
             {draftLooksUnrecognized(editingItem.draft) && (
               <p
                 role="status"
-                className="rounded-xl border border-line bg-panel p-2.5 text-style-body text-text"
+                className="rounded-panel border border-line bg-panel p-2.5 text-style-body text-text"
               >
                 Схоже, на фото не чек: розпізнати нічого не вдалося. Заповни
                 поля вручну, і чек повернеться у вибрані.
@@ -480,7 +479,7 @@ export function ReceiptScanSheet({
             {batchCapNote && (
               <p
                 role="status"
-                className="rounded-xl border border-line bg-panel p-2.5 text-style-body text-text"
+                className="rounded-panel border border-line bg-panel p-2.5 text-style-body text-text"
               >
                 {batchCapNote}
               </p>
@@ -529,7 +528,7 @@ export function ReceiptScanSheet({
           {draftLooksUnrecognized(draft) && (
             <p
               role="status"
-              className="rounded-xl border border-line bg-panel p-2.5 text-style-body text-text"
+              className="rounded-panel border border-line bg-panel p-2.5 text-style-body text-text"
             >
               Схоже, на фото не чек: розпізнати нічого не вдалося. Спробуй
               чіткіше фото чека або заповни поля вручну.

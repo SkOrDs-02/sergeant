@@ -94,7 +94,7 @@ export function Programs({
               <div
                 key={prog.id}
                 className={cn(
-                  "bg-panel border rounded-xl overflow-hidden transition-[background-color,border-color,box-shadow,opacity]",
+                  "bg-panel border rounded-panel overflow-hidden transition-[background-color,border-color,box-shadow,opacity]",
                   isActive ? "border-line" : "border-line",
                 )}
               >
@@ -143,7 +143,7 @@ export function Programs({
                             // CONTROL tier (12px) — `rounded` (4px) has no
                             // slot on the canonical radius scale (see
                             // `packages/design-tokens/tailwind-preset.js`).
-                            "flex-1 text-center rounded-xl py-1 text-style-caption font-bold transition-colors",
+                            "flex-1 text-center rounded-panel py-1 text-style-caption font-bold transition-colors",
                             hasSession
                               ? isToday && isActive
                                 ? "bg-text text-bg"
@@ -202,7 +202,7 @@ export function Programs({
                           </button>
                         )}
                         {!todaySession && (
-                          <div className="flex-1 py-2.5 rounded-xl bg-panelHi text-subtle text-style-label text-center">
+                          <div className="flex-1 py-2.5 rounded-lg bg-panelHi text-subtle text-style-label text-center">
                             {messages.fizruk.programs.restToday}
                           </div>
                         )}
@@ -281,7 +281,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
         return (
           <div
             key={`${schedEntry.day}_${schedEntry.sessionKey}`}
-            className="rounded-xl bg-panel border border-line p-3"
+            className="rounded-panel bg-panel border border-line p-3"
           >
             <div className="flex items-center gap-2 mb-2">
               {/* Fizruk module accent throughout — was mixing the cyan

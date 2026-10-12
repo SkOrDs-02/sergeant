@@ -74,11 +74,11 @@ export function DailyNudge({
 
   return (
     <section
-      className="relative bg-panel border border-brand-500/20 rounded-2xl p-4 shadow-card"
+      className="relative bg-panel border border-brand-500/20 rounded-panel p-4 shadow-card"
       aria-label="Щоденна порада"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
+        <div className="shrink-0 w-9 h-9 rounded-lg bg-brand-500/10 text-brand-strong flex items-center justify-center">
           <Icon name="sergeant" size={18} />
         </div>
         <div className="min-w-0 flex-1">
@@ -96,7 +96,7 @@ export function DailyNudge({
               trigger={
                 <button
                   type="button"
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   aria-label="Інші дії"
                 >
                   <Icon name="more-horizontal" size="md" />

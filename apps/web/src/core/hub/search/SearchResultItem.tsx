@@ -60,7 +60,7 @@ export function SearchResultItem({
       onClick={() => onActivate(hit)}
       onMouseEnter={() => onHover(index)}
       className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         active
           ? "bg-panelHi ring-1 ring-brand-500/25"
           : "hover:bg-panelHi active:bg-panelHi",
@@ -68,7 +68,7 @@ export function SearchResultItem({
     >
       <span
         className={cn(
-          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
           MODULE_COLORS[hit.module],
         )}
         aria-hidden

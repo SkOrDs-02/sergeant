@@ -117,7 +117,7 @@ export function SessionExtrasRow({
         />
       )}
       {open === "note" && (
-        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-panel border border-line bg-panelHi px-3 py-2">
           <label
             htmlFor={noteId}
             className="block text-style-caption text-subtle"

@@ -7,8 +7,6 @@ import { isApiError, privatApi } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-// V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
-// портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
 import { failedCopy } from "@shared/i18n/failedCopy";
@@ -140,8 +138,8 @@ export function FinykPrivatBankSection({
       )}
       {privatConnected ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-bg border border-success/30 rounded-xl">
-            <div className="w-9 h-9 rounded-xl bg-success/10 border border-success/20 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-3 p-3 bg-bg border border-success/30 rounded-panel">
+            <div className="w-9 h-9 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center shrink-0">
               {/* icon-size, not type */}
               <Icon name="credit-card" size={18} aria-hidden />
             </div>
@@ -180,7 +178,7 @@ export function FinykPrivatBankSection({
               onChange={(event) => setPrivatIdInput(event.target.value)}
               placeholder={COPY.merchantIdPlaceholder}
               autoComplete="off"
-              className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
+              className="input-focus-finyk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-style-body text-text"
             />
           </div>
           <div>
@@ -198,13 +196,13 @@ export function FinykPrivatBankSection({
                 onChange={(event) => setPrivatTokenInput(event.target.value)}
                 placeholder={COPY.tokenPlaceholder}
                 autoComplete="off"
-                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
+                className="input-focus-finyk w-full h-11 rounded-lg border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
                 onKeyDown={(event) => event.key === "Enter" && connectPrivat()}
               />
               <button
                 type="button"
                 onClick={() => setShowPrivatToken((visible) => !visible)}
-                className="focus-ring touch-target absolute right-0 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
+                className="focus-ring touch-target absolute right-0 top-1/2 -translate-y-1/2 rounded-lg text-subtle hover:text-text"
                 aria-label={showPrivatToken ? COPY.hide : COPY.show}
               >
                 <Icon
@@ -219,7 +217,7 @@ export function FinykPrivatBankSection({
             {COPY.storageNote}
           </p>
           {privatError && (
-            <p className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2">
+            <p className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2">
               {privatError}
             </p>
           )}

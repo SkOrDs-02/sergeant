@@ -13,15 +13,8 @@ import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
 
-/** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
-type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
-
 export interface SettingsGroupProps {
   title: string;
-  /** @deprecated мова H: рядок без іконки. @removeBy 2026-12-01 */
-  icon?: string;
-  /** @deprecated мова H: рядок без акценту модуля. @removeBy 2026-12-01 */
-  module?: SettingsModule;
   children: ReactNode;
   defaultOpen?: boolean;
   /**
@@ -158,7 +151,6 @@ export function SettingsGroup({
 
   // Мова H (redesign v3, H-settings): секція це рядок на hairline, без
   // картки, тіні, іконки й шеврона; стан розкриття несе `aria-expanded`.
-  // Пропи `icon` і `module` лишились для call-site-ів, PR7 їх прибирає.
 
   return (
     <section className="-mt-px border-y border-line first:mt-0">
@@ -319,7 +311,7 @@ export function ToggleRow({
         // Рядок списку на hairline, а не картка в картці (огляд 2026-09-04,
         // П2 анти-слоп стратегії: контекст під заголовком — щільний список
         // без карток). Тап лишається на всю ширину рядка.
-        "py-3 -mx-2 px-2 rounded-lg border-b border-line/60 last:border-b-0",
+        "py-3 px-2 rounded-lg border-b border-line/60 last:border-b-0",
         !disabled && "hover:bg-panelHi active:bg-panelHi",
         "transition-[background-color]",
       )}
@@ -360,7 +352,7 @@ export function ToggleRow({
 
 // `ConfirmModal` видалено (V-8, аудит Профілю/Налаштувань 2026-08-08).
 // Це була ДРУГА оболонка підтвердження на тих самих двох сторінках, з
-// власним затемненням (`bg-black/60 backdrop-blur-md` проти `bg-black/40`
+// власним затемненням (`bg-black/60` проти `bg-black/40`
 // у канонічному `ConfirmDialog`) і — головне — БЕЗ `createPortal`: вона
 // малювалась у потоці батька, тож усередині glass-картки Налаштувань її
 // обрізало (той самий симптом, що вже описаний у `OnboardingWizard.tsx`).
