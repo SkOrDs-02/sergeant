@@ -58,7 +58,7 @@ export function FirstEntryCelebrationModal({
       aria-live="polite"
       className={cn(
         "fixed inset-x-4 z-100 mx-auto flex max-w-md items-start gap-3",
-        "bottom-[calc(var(--bottom-nav-inset,5rem)+1rem)] rounded-xl border border-line bg-panel p-3 shadow-e2",
+        "bottom-[calc(var(--bottom-nav-inset,5rem)+1rem)] rounded-panel border border-line bg-panel p-3 shadow-e2",
         "motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:fade-in",
       )}
     >

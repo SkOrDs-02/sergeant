@@ -121,7 +121,7 @@ export function OptimizedImage({
     return (
       <div
         className={cn(
-          "flex items-center justify-center bg-panelHi text-muted rounded-xl",
+          "flex items-center justify-center bg-panelHi text-muted rounded-panel",
           wrapperClassName,
         )}
         style={aspectRatio ? { aspectRatio } : undefined}
@@ -227,7 +227,7 @@ export function OptimizedHeroImage({
       alt={alt}
       aspectRatio="16/9"
       sizes="100vw"
-      wrapperClassName={cn("w-full rounded-2xl", className)}
+      wrapperClassName={cn("w-full rounded-panel", className)}
       {...props}
     />
   );
@@ -255,7 +255,7 @@ export function OptimizedThumbnail({
       alt={alt}
       aspectRatio="1/1"
       blurOnLoad={false}
-      wrapperClassName={cn("rounded-xl", sizeClasses[size], className)}
+      wrapperClassName={cn("rounded-panel", sizeClasses[size], className)}
       {...props}
     />
   );

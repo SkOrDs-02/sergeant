@@ -46,10 +46,10 @@ function CapabilityCard({ item }: { item: Capability }) {
       onClick={() => navigate(item.href)}
       data-testid={`capability-${item.id}`}
       className={cn(
-        "w-full text-left flex items-start gap-3 p-4 rounded-2xl",
+        "w-full text-left flex items-start gap-3 p-4 rounded-lg",
         "bg-surface-soft-glass border border-surface-line shadow-soft",
         "hover:border-brand/40 hover:bg-surface-strong-glass",
-        "active:scale-[0.99] transition-[background-color,border-color,transform]",
+        "transition-[background-color,border-color,transform]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
@@ -57,7 +57,7 @@ function CapabilityCard({ item }: { item: Capability }) {
       <span
         aria-hidden
         className={cn(
-          "shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center",
+          "shrink-0 w-10 h-10 rounded-lg border flex items-center justify-center",
           accent || "bg-surface-soft-glass border-surface-line text-muted-v2",
         )}
       >
@@ -104,7 +104,7 @@ export function CapabilitiesPage({ onClose }: CapabilitiesPageProps) {
       className="h-dvh overflow-y-auto overscroll-contain bg-bg outline-none safe-area-pt"
     >
       <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 pt-3 pb-8">
-        <Card prominence="glass" radius="lg" padding="md">
+        <Card prominence="panel" padding="md">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <h1 className="flex items-center gap-2 text-style-title text-text leading-tight">

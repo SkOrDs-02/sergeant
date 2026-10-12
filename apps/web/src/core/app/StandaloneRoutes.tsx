@@ -195,14 +195,14 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       }
       return (
         <Suspense fallback={<PageLoader />}>
-          {/* AI-DANGER: `page-enter` — проміжний блок між `#root` і `MeshBackground`.
+          {/* AI-DANGER: обгортка — проміжний блок між `#root` і `MeshBackground`.
               Без явної висоти він auto, тож `h-app-dvh` (=`height:100%`) усередині
               резолвиться в `auto`, шел росте під контент, а `body{overflow:hidden}`
               просто зрізає низ — власний `overflow-y-auto` шела при цьому не має
               чого скролити. Саме так на 1280×720 ставав недосяжним футер із
               легальними лінками, а на 1280×633 — кнопка «Зареєструватися»
               (browser QA 2026-08-23). Той самий токен уже стоїть на `/legal/*`. */}
-          <div className="page-enter h-app-dvh min-h-0">
+          <div className="h-app-dvh min-h-0">
             <AuthPage onContinueWithoutAccount={onLeaveAuth} />
           </div>
         </Suspense>
@@ -228,7 +228,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       <Suspense fallback={<PageLoader />}>
         {/* Висота — з тієї ж причини, що на `/sign-in`: цей екран теж стоїть
             на `MeshBackground` з власним `overflow-y-auto`. */}
-        <div className="page-enter h-app-dvh min-h-0">
+        <div className="h-app-dvh min-h-0">
           <ResetPasswordPage />
         </div>
       </Suspense>
@@ -245,7 +245,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     render: () => (
       <Suspense fallback={<PageLoader />}>
         {/* Див. коментар на `/sign-in` — той самий скрол-контракт. */}
-        <div className="page-enter h-app-dvh min-h-0">
+        <div className="h-app-dvh min-h-0">
           <VerifyEmailPage />
         </div>
       </Suspense>
@@ -292,12 +292,12 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // `/pricing` — Phase 0 monetization рейки: статична сторінка з тарифами
   // і waitlist-формою. Анонімна (auth не вимагається), бо основний
   // траффік — неавторизовані відвідувачі, які ще не зробили sign-up.
-  // ОПТ-АУТ з `page-enter` — «one entry system per page» (Hard Rule #17).
+  // ОПТ-АУТ з `` — «one entry system per page» (Hard Rule #17).
   // `PricingPage` має власну вхідну хореографію (стагер тарифних карток),
   // і обгортка додавала другу: виміряно на prod 2 RESPONSE одночасно при
   // ліміті «1 AMBIENT + 1 RESPONSE». Правило прямо забороняє загортати
   // компонент із власним входом у ще один вхід. Той самий опт-аут уже де-факто
-  // діяв для `/welcome` (він теж рендериться без `page-enter`) — тут він
+  // діяв для `/welcome` (він теж рендериться без ``) — тут він
   // просто стає явним.
   defineStandaloneRoute({
     paths: [PRICING_PATH],
@@ -317,7 +317,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     ],
     render: ({ pathname }) => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter h-app-dvh min-h-0 overflow-hidden">
+        <div className="h-app-dvh min-h-0 overflow-hidden">
           <LegalPage pathname={pathname} />
         </div>
       </Suspense>
@@ -333,7 +333,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [STATUS_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        <div className="">
           <StatusPage />
         </div>
       </Suspense>
@@ -373,7 +373,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [ASSISTANT_PATH],
     render: ({ onAssistantClose }) => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        <div className="">
           <AssistantCataloguePage onClose={onAssistantClose} />
         </div>
       </Suspense>
@@ -386,7 +386,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [CAPABILITIES_PATH],
     render: ({ onAssistantClose }) => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        <div className="">
           <CapabilitiesPage onClose={onAssistantClose} />
         </div>
       </Suspense>

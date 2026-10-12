@@ -77,7 +77,7 @@ function ModuleLink({ module }: { module: ChatActionCardModule }) {
       to={target.to}
       data-testid={`chat-card-link-${module}`}
       className={cn(
-        "mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5",
+        "mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5",
         "text-style-caption font-medium transition-opacity hover:opacity-80",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40",
         target.chip,
@@ -109,7 +109,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
       role="status"
       aria-label={`${card.title}: ${card.summary}`}
       className={cn(
-        "mt-2 flex items-start gap-2 rounded-xl border px-3 py-2",
+        "mt-2 flex items-start gap-2 rounded-panel border px-3 py-2",
         failed
           ? "bg-warning/10 border-warning/30"
           : "bg-brand-500/5 border-brand-500/30",
@@ -169,7 +169,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
       data-testid={`chat-confirm-card-${card.toolName}`}
       role="status"
       aria-label={`Виконано: ${card.title}`}
-      className="mt-2 rounded-xl border border-danger/30 bg-danger/5 overflow-hidden"
+      className="mt-2 rounded-panel border border-danger/30 bg-danger/5 overflow-hidden"
     >
       {/* Header row */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-danger/20">
@@ -193,7 +193,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
         <span className="text-style-label font-semibold text-danger-strong dark:text-danger flex-1 truncate">
           {card.title}
         </span>
-        <span className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger rounded-full bg-danger/10 px-1.5 py-0.5">
+        <span className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger rounded-lg bg-danger/10 px-1.5 py-0.5">
           Виконано
         </span>
       </div>
@@ -223,7 +223,7 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
     >
       {isAssistant && (
         <span
-          className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/10 text-brand-500"
+          className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/10 text-brand-500"
           aria-hidden
         >
           <svg
@@ -245,7 +245,7 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
       <div
         {...(isError ? { role: "alert" as const } : {})}
         className={cn(
-          "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-style-body leading-relaxed",
+          "max-w-[82%] rounded-panel px-3.5 py-2.5 text-style-body leading-relaxed",
           isAssistant && isError
             ? "bg-danger/10 border border-danger/30 text-text rounded-bl-sm whitespace-normal"
             : isAssistant
@@ -317,7 +317,7 @@ export function TypingIndicator() {
       aria-label="Сержант набирає відповідь"
     >
       <span
-        className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/10 text-brand-500"
+        className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-brand-500/10 text-brand-500"
         aria-hidden
       >
         <svg
@@ -338,12 +338,12 @@ export function TypingIndicator() {
       {/* Animated dots — hidden when prefers-reduced-motion is active. */}
       <div
         aria-hidden
-        className="motion-safe:flex hidden bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 gap-1.5 items-center"
+        className="motion-safe:flex hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 gap-1.5 items-center"
       >
         {[0, 0.15, 0.3].map((d, i) => (
           <span
             key={i}
-            className="w-1.5 h-1.5 bg-subtle rounded-full motion-safe:animate-bounce"
+            className="w-1.5 h-1.5 bg-subtle rounded-mark motion-safe:animate-bounce"
             style={{ animationDelay: `${d}s` }}
           />
         ))}
@@ -351,7 +351,7 @@ export function TypingIndicator() {
       {/* Static label shown only when prefers-reduced-motion is set. */}
       <div
         aria-hidden
-        className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 items-center"
+        className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 items-center"
       >
         <span className="text-style-body text-muted">Думаю…</span>
       </div>

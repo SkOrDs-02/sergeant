@@ -267,7 +267,7 @@ export function Sheet({
 
   // Portal the sheet to <body> so it escapes every ancestor stacking /
   // containing-block context. Several hub routes wrap their root in a
-  // `.page-enter` element whose entry animation keeps
+  // animated wrapper whose entry animation can keep
   // `transform: translateY(0)` via `animation-fill-mode: both`. Per the
   // CSS spec, any non-`none` `transform` on an ancestor establishes a
   // new containing block — which means our `position: fixed` overlay is
@@ -310,7 +310,7 @@ export function Sheet({
           "relative w-full max-w-lg flex flex-col max-h-[90dvh] motion-safe:animate-slide-up",
           // Мова H: непрозорий аркуш кольору сторінки з тінню плаваючого;
           // `glass` лишився як API, але скла більше немає.
-          "bg-bg rounded-t-xl shadow-e4",
+          "bg-bg rounded-t-panel shadow-e4",
           // Повноекранна панель стоїть на краях вʼюпорта: закруглення й
           // верхня лінія на межі зі статус-баром читаються як артефакт.
           fullScreen && "rounded-none",

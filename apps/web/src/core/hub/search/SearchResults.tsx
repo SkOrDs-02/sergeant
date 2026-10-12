@@ -1,5 +1,4 @@
 import { forwardRef, useEffect, useRef } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -91,7 +90,6 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
       >
         {query.trim().length >= 2 && results.length === 0 && (
           <EmptyState
-            icon={<Icon name="search" size={22} strokeWidth={1.6} />}
             title="Нічого не знайшов"
             description={`За запитом «${query}» нічого не знайшов. Спробуй іншу фразу.`}
           />
@@ -117,7 +115,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                   key={r}
                   type="button"
                   onClick={() => onPickRecent(r)}
-                  className="inline-flex items-center gap-1.5 px-3 h-8 pointer-coarse:min-h-[44px] rounded-full bg-panelHi border border-line text-style-label text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  className="inline-flex items-center gap-1.5 px-3 h-8 pointer-coarse:min-h-[44px] rounded-lg bg-panelHi border border-line text-style-label text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <svg
                     width="12"
@@ -143,7 +141,6 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
 
         {!showRecents && query.trim().length < 2 && results.length === 0 && (
           <EmptyState
-            icon={<Icon name="search" size={22} strokeWidth={1.6} />}
             title="Глобальний пошук"
             description={`Операції, тренування, звички, їжа. Все в одному місці. ${modK}, щоб відкрити звідусіль.`}
           />
@@ -188,7 +185,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                     onOpenModule(moduleId);
                     onClose();
                   }}
-                  className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <span>
                     Показано {group.items.length} · відкрити {group.label}

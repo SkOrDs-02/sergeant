@@ -53,7 +53,7 @@ export function CapabilityDetailModal({
       size="md"
       footer={
         cap ? (
-          <div className="px-5 py-3 border-t border-line bg-panel/50 rounded-b-3xl">
+          <div className="px-5 py-3 border-t border-line bg-panel/50 rounded-b-panel">
             <Button
               variant="solid"
               size="md"
@@ -72,7 +72,7 @@ export function CapabilityDetailModal({
           <p className="text-style-body text-text">{cap.description}</p>
 
           {cap.risky && (
-            <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-2xl px-3 py-2 text-style-caption text-warning-strong dark:text-warning">
+            <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-panel px-3 py-2 text-style-caption text-warning-strong dark:text-warning">
               <Icon name="alert-triangle" size="sm" aria-hidden />
               <span>
                 Критична дія. Перевір дані перед відправкою, деякі зміни
@@ -89,7 +89,7 @@ export function CapabilityDetailModal({
               {cap.examples.map((ex, i) => (
                 <li
                   key={i}
-                  className="text-style-body text-text bg-bg border border-line rounded-xl px-3 py-2"
+                  className="text-style-body text-text bg-bg border border-line rounded-panel px-3 py-2"
                 >
                   «{ex}»
                 </li>

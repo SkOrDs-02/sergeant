@@ -27,7 +27,6 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-
 import { useOptionalHubShell } from "../app/HubShellContext";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -36,9 +35,6 @@ import { messages } from "@shared/i18n/uk";
 import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
 import { cn } from "@shared/lib/ui/cn";
 import { isApiError, type AiMemoryListItem } from "@sergeant/api-client";
-
-// V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
-// портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
@@ -170,7 +166,7 @@ function MemoryFact({
   const clampable = item.content.length > CLAMP_CHARS;
 
   return (
-    <li className="flex items-start gap-2 rounded-xl border border-line bg-panel p-3">
+    <li className="flex items-start gap-2 rounded-panel border border-line bg-panel p-3">
       <div className="min-w-0 flex-1">
         <p
           className={cn(
@@ -232,12 +228,12 @@ function ProfileGroupCard({ count }: { count: number }) {
   const shell = useOptionalHubShell();
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-3">
+    <section className="rounded-panel border border-line bg-panel p-3">
       <div className="flex items-center gap-2">
         <span className="text-style-label font-semibold text-text">
           {m.profileGroupTitle}
         </span>
-        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-style-caption font-bold text-muted">
+        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-lg bg-panelHi text-style-caption font-bold text-muted">
           {count}
         </span>
       </div>
@@ -288,14 +284,14 @@ function MemoryGroupSection({
         aria-expanded={open}
         aria-label={`${m.groupToggleAria}: ${group.label}`}
         className={cn(
-          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl touch-target",
+          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg touch-target",
           "border border-line bg-panel hover:bg-panelHi transition-colors",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         )}
       >
         <span className="flex items-center gap-2 text-style-label font-semibold text-text">
           {group.label}
-          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-style-caption font-bold text-muted">
+          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-lg bg-panelHi text-style-caption font-bold text-muted">
             {group.items.length}
           </span>
         </span>

@@ -192,7 +192,7 @@ export function CommandPaletteUI() {
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm motion-safe:animate-fade-in cursor-default"
+        className="absolute inset-0 bg-black/50 motion-safe:animate-fade-in cursor-default"
         onClick={closePalette}
         aria-label="Закрити палітру команд"
         tabIndex={-1}
@@ -204,7 +204,7 @@ export function CommandPaletteUI() {
         style={kbStyles.panel}
         className={cn(
           "relative w-full max-w-xl max-h-[70vh] flex flex-col overflow-hidden",
-          "bg-panel border border-line rounded-3xl shadow-float",
+          "bg-panel border border-line rounded-panel shadow-float",
           "motion-safe:animate-fade-in",
         )}
       >
@@ -404,7 +404,7 @@ function CommandGroup({
               onMouseEnter={() => !cmd.disabled && onHover(cmd.id)}
               onClick={() => onActivate(cmd)}
               className={cn(
-                "flex w-full items-center gap-3 px-2.5 py-2 text-left rounded-xl",
+                "flex w-full items-center gap-3 px-2.5 py-2 text-left rounded-lg",
                 "transition-colors duration-fast",
                 "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",

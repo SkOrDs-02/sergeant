@@ -11,7 +11,6 @@
  */
 import { useNavigate } from "react-router-dom";
 import { Button, EmptyState, Icon } from "@shared/components/ui";
-import { NotFoundIllustration } from "@assets/illustrations";
 
 export interface NotFoundPageProps {
   /**
@@ -33,9 +32,7 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
     >
       <EmptyState
         size="lg"
-        variant="info"
         eyebrow="404"
-        illustration={<NotFoundIllustration size={200} />}
         title="Сторінку не знайдено"
         // The empty state is the entire 404 surface, so it has to carry the
         // page heading — otherwise this route ships with no heading at all.

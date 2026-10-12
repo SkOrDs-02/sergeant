@@ -168,11 +168,11 @@ export function AssistantCataloguePage({
           </Button>
         </div>
 
-        <Card variant="default" radius="lg" padding="lg">
+        <Card padding="lg">
           <div className="flex items-start gap-3">
             <span
               aria-hidden
-              className="shrink-0 w-11 h-11 rounded-2xl bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
+              className="shrink-0 w-11 h-11 rounded-lg bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
             >
               <Icon name="sergeant" size="lg" />
             </span>
@@ -208,7 +208,7 @@ export function AssistantCataloguePage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук"
-            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
+            className="w-full bg-panel border border-line rounded-lg pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
             aria-label="Пошук можливостей"
           />
         </div>
@@ -221,7 +221,7 @@ export function AssistantCataloguePage({
               data-testid="catalogue-toggle-all"
               className={cn(
                 "inline-flex items-center gap-1.5 text-style-label font-semibold text-muted",
-                "rounded-full px-2.5 py-1 hover:bg-panel hover:text-text transition-colors",
+                "rounded-lg px-2.5 py-1 hover:bg-panel hover:text-text transition-colors",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               )}
             >
@@ -236,7 +236,7 @@ export function AssistantCataloguePage({
         )}
 
         {filtered.length === 0 && (
-          <Card variant="flat" radius="lg" padding="xl">
+          <Card padding="xl">
             <p className="text-center text-subtle text-style-body">
               Нічого не знайшов за «{query}». Спробуй інший термін.
             </p>
@@ -288,8 +288,6 @@ function ModuleGroup({
   return (
     <Card
       as="section"
-      variant="default"
-      radius="lg"
       padding="none"
       className="overflow-hidden"
       aria-labelledby={headingId}
@@ -309,7 +307,7 @@ function ModuleGroup({
         <span
           aria-hidden
           className={cn(
-            "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
+            "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center",
             swatch,
           )}
         >
@@ -381,7 +379,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
     >
       <span
         aria-hidden
-        className="shrink-0 w-9 h-9 rounded-xl bg-bg border border-line flex items-center justify-center text-text"
+        className="shrink-0 w-9 h-9 rounded-lg bg-bg border border-line flex items-center justify-center text-text"
       >
         <Icon name={capability.icon} size="md" />
       </span>
@@ -432,7 +430,7 @@ function CapabilityLegend({ showNew }: { showNew: boolean }) {
     <div
       data-testid="catalogue-legend"
       className={cn(
-        "mb-4 bg-panel border border-line rounded-2xl px-3 py-2.5",
+        "mb-4 bg-panel border border-line rounded-panel px-3 py-2.5",
         "flex flex-wrap items-center gap-x-3 gap-y-2",
       )}
       aria-label="Що означають позначки"
@@ -484,7 +482,7 @@ function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
       title={title}
       className={cn(
         "inline-flex items-center gap-1 text-style-caption font-medium leading-none",
-        "border rounded-full px-1.5 py-1",
+        "border rounded-lg px-1.5 py-1",
         cls,
       )}
     >

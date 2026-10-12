@@ -156,7 +156,7 @@ export function NotificationsSection() {
     // V-7 (2026-08-08): title читається з каталогу, а не хардкодиться тут —
     // раніше цей рядок і ⌘K-індекс (settingsSectionsCatalog.ts) розходились
     // ("Сповіщення" тут vs "Нагадування" у пошуку) без жодної перевірки.
-    <SettingsGroup title={settingsSectionTitle("notifications")} icon="bell">
+    <SettingsGroup title={settingsSectionTitle("notifications")}>
       {/* Два рядки поспіль мали один підпис «Push-сповіщення» (браузерний
           дозвіл і власне підписка) і читались як дубль (огляд 2026-09-04).
           Перший рядок — про дозвіл браузера, і називається так. */}
@@ -324,7 +324,7 @@ export function NotificationsSection() {
               type="number"
               min={0}
               max={23}
-              className="w-16 h-9 touch-target rounded-xl bg-panel border border-line px-2 text-style-body text-text"
+              className="w-16 h-9 touch-target rounded-lg bg-panel border border-line px-2 text-style-body text-text"
               value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
               disabled={!nutritionHydrated}
               onBlur={() => setReminderHourDraft(null)}

@@ -296,7 +296,7 @@ export function PresetSheet({
         {saveError && (
           <p
             role="alert"
-            className="rounded-2xl border border-danger bg-danger/10 px-3 py-2 text-style-caption text-text"
+            className="rounded-panel border border-danger bg-danger/10 px-3 py-2 text-style-caption text-text"
           >
             {messages.onboarding.presetSaveFailed}
           </p>
@@ -307,7 +307,7 @@ export function PresetSheet({
             type="button"
             onClick={() => void handlePick(item)}
             className={cn(
-              "w-full text-left px-3 py-3 rounded-2xl border border-line bg-panelHi",
+              "w-full text-left px-3 py-3 rounded-lg border border-line bg-panelHi",
               "hover:border-brand-500/50 hover:bg-brand-500/5 transition-[background-color,border-color,opacity]",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
             )}
@@ -315,7 +315,7 @@ export function PresetSheet({
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center",
+                  "w-11 h-11 shrink-0 rounded-lg flex items-center justify-center",
                   config.accent,
                 )}
                 aria-hidden
@@ -343,7 +343,7 @@ export function PresetSheet({
           type="button"
           onClick={handleCustom}
           className={cn(
-            "w-full text-center px-3 py-3 rounded-2xl border border-dashed border-line",
+            "w-full text-center px-3 py-3 rounded-lg border border-dashed border-line",
             "text-style-label text-muted hover:text-text hover:border-brand-500/50",
             "transition-[background-color,border-color,opacity]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",

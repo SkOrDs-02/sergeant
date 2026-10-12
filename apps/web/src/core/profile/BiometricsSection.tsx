@@ -70,11 +70,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
   const editingDisabled = !online;
 
   return (
-    <Card
-      radius="lg"
-      padding="none"
-      className="min-w-0 max-w-full overflow-hidden"
-    >
+    <Card padding="none" className="min-w-0 max-w-full overflow-hidden">
       {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
           (канонічний коментар там): `COPY.sectionTitle` тут дослівно
           збігався з зовнішнім заголовком «Біометрія» в `ProfilePage.tsx`

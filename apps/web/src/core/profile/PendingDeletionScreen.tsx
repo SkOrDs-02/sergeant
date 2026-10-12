@@ -87,7 +87,7 @@ export function PendingDeletionScreen({
       role="dialog"
       aria-modal="true"
       aria-labelledby="pending-deletion-title"
-      className="fixed inset-0 z-modal flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md"
+      className="fixed inset-0 z-modal flex items-center justify-center p-6 bg-bg/95 "
     >
       <div className="w-full max-w-sm text-center">
         <div className="flex justify-center mb-4" aria-hidden>

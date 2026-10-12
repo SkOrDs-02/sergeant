@@ -91,9 +91,9 @@ const outlineVariants: Record<BadgeVariant, string> = {
 };
 
 const sizes: Record<BadgeSize, string> = {
-  xs: "h-5 px-1.5 text-style-caption gap-1 rounded-xl",
-  sm: "h-6 px-2 text-style-caption gap-1 rounded-xl",
-  md: "h-7 px-2.5 text-style-caption gap-1.5 rounded-xl",
+  xs: "h-5 px-1.5 text-style-caption gap-1 rounded-lg",
+  sm: "h-6 px-2 text-style-caption gap-1 rounded-lg",
+  md: "h-7 px-2.5 text-style-caption gap-1.5 rounded-lg",
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -134,7 +134,7 @@ export function Badge({
       {dot && (
         <span
           aria-hidden
-          className="w-1.5 h-1.5 rounded-full bg-current shrink-0"
+          className="w-1.5 h-1.5 rounded-mark bg-current shrink-0"
         />
       )}
       {children}

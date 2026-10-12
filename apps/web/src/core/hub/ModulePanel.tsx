@@ -54,7 +54,7 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
 
   return (
     <nav aria-label={coreMessages.hub.moduleRail} data-testid="module-panel">
-      <ul className="rounded-xl bg-panel px-4">
+      <ul className="rounded-panel bg-panel px-4">
         {rows.map(({ id, preview }, i) => {
           const enabled = activeModules.includes(id);
           const label = MODULE_LABELS[id];

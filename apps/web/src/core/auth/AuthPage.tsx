@@ -110,7 +110,6 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
 
           <Card
             prominence="hero"
-            radius="xl"
             padding="lg"
             className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-slow"
           >
@@ -181,7 +180,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <button
                 type="button"
                 onClick={switchMode}
-                className="min-h-touch-target text-style-label text-brand-strong dark:text-brand-400 hover:underline px-3 py-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                className="min-h-touch-target text-style-label text-brand-strong dark:text-brand-400 hover:underline px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               >
                 {mode === "login"
                   ? "Немає акаунту? Зареєструватися"

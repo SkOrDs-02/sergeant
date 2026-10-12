@@ -14,11 +14,6 @@ import { cn } from "@shared/lib/ui/cn";
 import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
 import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
 import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
-// V-8 (аудит Профілю/Налаштувань 2026-08-08): раніше тут був локальний
-// `ConfirmModal` із `SettingsPrimitives` — друга оболонка підтвердження з
-// власним затемненням і, головне, без `createPortal`: вона малювалась у
-// потоці батька, тож усередині glass-картки Налаштувань її обрізало.
-// Канонічна оболонка одна — `ConfirmDialog`, вона портальна.
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
 import { MonoTokenInlineForm } from "./MonoTokenInlineForm";
@@ -251,7 +246,7 @@ export function FinykWebhookServiceSection({
           <div className="space-y-3">
             <div
               className={cn(
-                "flex items-center gap-3 p-3 rounded-xl border",
+                "flex items-center gap-3 p-3 rounded-panel border",
                 webhookSyncState.status === "active"
                   ? "bg-bg border-success/30"
                   : webhookSyncState.status === "pending"
@@ -261,7 +256,7 @@ export function FinykWebhookServiceSection({
             >
               <div
                 className={cn(
-                  "w-2.5 h-2.5 rounded-full shrink-0",
+                  "w-2.5 h-2.5 rounded-mark shrink-0",
                   webhookSyncState.status === "active"
                     ? "bg-success"
                     : webhookSyncState.status === "pending"
@@ -347,7 +342,7 @@ export function FinykWebhookServiceSection({
         ) : webhookCheckFailed ? (
           <div className="space-y-3">
             <p
-              className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2"
+              className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
               role="alert"
             >
               {COPY.checkFailed}
@@ -374,7 +369,7 @@ export function FinykWebhookServiceSection({
         )}
         {webhookError && (
           <p
-            className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2"
+            className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
             role="alert"
           >
             {webhookError}

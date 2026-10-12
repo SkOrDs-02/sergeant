@@ -23,7 +23,6 @@
  */
 import { Icon } from "@shared/components/ui/Icon";
 import type { AccessDenial } from "@shared/lib/api/accessDenial";
-
 import { PRICING_PATH, PROFILE_PATH, SIGN_IN_PATH } from "../app/appPaths";
 import { accessDenialCopy } from "./accessDenialCopy";
 
@@ -63,7 +62,7 @@ export function AccessDenialNotice({
       role="note"
       data-testid="access-denial-notice"
       data-reason={denial.reason}
-      className={`rounded-2xl border border-line bg-panel px-4 py-4 space-y-3 ${className ?? ""}`}
+      className={`rounded-panel border border-line bg-panel px-4 py-4 space-y-3 ${className ?? ""}`}
     >
       <div className="flex items-start gap-2.5">
         <Icon
@@ -86,7 +85,7 @@ export function AccessDenialNotice({
                Каталог `shared/i18n/uk.ts` уперся в `max-lines: 600` (Hard Rule
                #18); той самий компроміс уже стоїть у `ChatAuthGate`. */
             aria-label="Закрити пояснення"
-            className="min-h-11 min-w-11 shrink-0 rounded-xl text-style-title leading-none text-muted hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="min-h-11 min-w-11 shrink-0 rounded-lg text-style-title leading-none text-muted hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
             ×
           </button>
@@ -96,7 +95,7 @@ export function AccessDenialNotice({
         <a
           href={href}
           data-testid="access-denial-action"
-          className="flex items-center justify-center gap-2 w-full min-h-[44px] rounded-2xl bg-primary text-bg font-semibold text-style-label transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2"
+          className="flex items-center justify-center gap-2 w-full min-h-[44px] rounded-lg bg-primary text-bg font-semibold text-style-label transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2"
         >
           {copy.actionLabel}
         </a>

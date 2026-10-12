@@ -99,7 +99,7 @@ export function DataExportSection() {
   };
 
   return (
-    <SettingsGroup title={settingsSectionTitle("dataExport")} icon="download">
+    <SettingsGroup title={settingsSectionTitle("dataExport")}>
       <p className="text-style-body text-subtle leading-snug">
         Збережи всі свої локальні дані у файл, його потім можна імпортувати
         назад. Для залогінених користувачів нижче є окремий експорт із серверних
@@ -115,7 +115,7 @@ export function DataExportSection() {
           візуальне групування, не структурний заголовок, тож лишається
           зовнішньою обгорткою навколо примітиву, а не частиною самого
           `SettingsSubGroup`. */}
-      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
+      <div className="rounded-panel border border-line/60 bg-surface-soft-glass p-3">
         <SettingsSubGroup title="Права на дані">
           <p className="text-style-body text-subtle leading-relaxed">
             Серверний експорт не включає сирі секрети й токени. Видалити акаунт

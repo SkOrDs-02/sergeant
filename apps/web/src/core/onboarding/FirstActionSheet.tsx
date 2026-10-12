@@ -16,8 +16,6 @@ import {
   NARROW_NBSP,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
-// AI-CONTEXT: `uk.ts`, не `uk.core` — аркуш живе в лінивому чанку хаба, тож
-// повний каталог йому безкоштовний (розбір — у самій групі `firstAction`).
 import { messages } from "@shared/i18n/uk";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
@@ -211,7 +209,6 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
       <>
         <Card
           as="section"
-          radius="lg"
           padding="md"
           className="relative space-y-3"
           aria-label={COPY.sheetLabel}
@@ -249,7 +246,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   type="button"
                   onClick={() => openPreset(id)}
                   className={cn(
-                    "w-full min-h-[56px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "w-full min-h-[56px] rounded-lg border border-line bg-panelHi px-3 py-2",
                     "text-left transition-[background-color,border-color]",
                     "hover:border-brand-500/50 hover:bg-brand-500/5",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
@@ -258,7 +255,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   <span className="flex items-center gap-3">
                     <span
                       className={cn(
-                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        "w-10 h-10 shrink-0 rounded-lg flex items-center justify-center",
                         action.accent,
                       )}
                       aria-hidden
@@ -294,7 +291,6 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
       <>
         <Card
           as="section"
-          radius="lg"
           padding="md"
           className="relative space-y-3"
           aria-label={COPY.sheetLabel}
@@ -336,7 +332,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   type="button"
                   onClick={() => openPreset(id)}
                   className={cn(
-                    "w-full min-h-[60px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "w-full min-h-[60px] rounded-lg border border-line bg-panelHi px-3 py-2",
                     "text-left transition-[background-color,border-color]",
                     "hover:border-brand-500/50 hover:bg-brand-500/5",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
@@ -345,7 +341,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   <span className="flex items-center gap-3">
                     <span
                       className={cn(
-                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        "w-10 h-10 shrink-0 rounded-lg flex items-center justify-center",
                         action.accent,
                       )}
                       aria-hidden
@@ -382,7 +378,6 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     <>
       <Card
         as="section"
-        radius="lg"
         padding="md"
         className="relative space-y-3"
         aria-label={COPY.sheetLabel}
@@ -415,7 +410,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           type="button"
           onClick={() => openPreset(primaryId)}
           className={cn(
-            "w-full text-left px-4 py-3 rounded-xl border-2 border-brand-500/50 bg-brand-500/5",
+            "w-full text-left px-4 py-3 rounded-lg border-2 border-brand-500/50 bg-brand-500/5",
             "hover:border-brand-500 hover:bg-brand-500/10 transition-[background-color,border-color,opacity]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
@@ -423,7 +418,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           <div className="flex items-center gap-3">
             <div
               className={cn(
-                "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center",
+                "w-11 h-11 shrink-0 rounded-lg flex items-center justify-center",
                 primary.accent,
               )}
             >
@@ -465,7 +460,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   type="button"
                   onClick={() => openPreset(id)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 px-3 h-8 rounded-full",
+                    "inline-flex items-center gap-1.5 px-3 h-8 rounded-lg",
                     "border border-line bg-panelHi text-text",
                     "hover:border-brand-500/50 hover:bg-brand-500/5",
                     "transition-[background-color,border-color]",

@@ -73,7 +73,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
   const disabled = !online || isSubmitting;
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
           (канонічний коментар там): текстовий заголовок «Пароль» дослівно
           дублював заголовок `CollapsibleSection` у `ProfilePage.tsx` і
@@ -174,7 +174,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
         {serverError && (
           <div
             role="alert"
-            className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-3 py-2"
+            className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-panel px-3 py-2"
           >
             {serverError}
           </div>

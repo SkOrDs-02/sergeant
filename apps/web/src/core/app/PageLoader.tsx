@@ -1,7 +1,4 @@
 import { Skeleton } from "@shared/components/ui/Skeleton";
-// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
-// каталог тягне з собою десять модульних файлів плюс en-копію
-// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 
 /**
@@ -29,7 +26,7 @@ export function PageLoader() {
       aria-label={messages.loaders.pageLoading}
     >
       <div className="flex items-center gap-3">
-        <Skeleton pulse={false} className="h-10 w-10 rounded-2xl" />
+        <Skeleton pulse={false} className="h-10 w-10 rounded-lg" />
         <div className="flex-1 space-y-2">
           <Skeleton pulse={false} className="h-3.5 w-1/2" />
           <Skeleton pulse={false} className="h-3 w-1/3" />

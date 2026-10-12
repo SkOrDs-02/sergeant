@@ -54,7 +54,7 @@ export function OutcomeCard({
 
   return (
     <section
-      className="rounded-2xl border border-line bg-panel p-4 sm:p-5 space-y-4"
+      className="rounded-panel border border-line bg-panel p-4 sm:p-5 space-y-4"
       aria-labelledby="ftux-outcome-card-title"
       data-testid="ftux-outcome-card"
     >
@@ -96,7 +96,7 @@ export function OutcomeCard({
               // було видно лише кольором рамки.
               aria-current={selected ? "true" : undefined}
               className={cn(
-                "text-left rounded-xl border p-3 transition-colors focus-ring",
+                "text-left rounded-lg border p-3 transition-colors focus-ring",
                 selected
                   ? "border-brand-strong dark:border-brand-400 bg-brand-soft"
                   : "border-line bg-bg hover:bg-panelHi",

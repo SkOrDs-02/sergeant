@@ -46,14 +46,14 @@ export function AIDigestSection() {
     // V-7 (2026-08-08): title читається з каталогу — раніше цей рядок і
     // ⌘K-індекс (settingsSectionsCatalog.ts) розходились ("AI Звіт тижня"
     // тут vs "AI-дайджести" у пошуку) без жодної перевірки.
-    <SettingsGroup title={settingsSectionTitle("ai")} icon="clipboard">
+    <SettingsGroup title={settingsSectionTitle("ai")}>
       <div className="space-y-3">
         <p className="text-style-body text-subtle leading-snug">
           Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси,
           тренування, харчування та звички. Звіт збирається сам щопонеділка і
           чекає на головній у блоці «Звіт тижня»; там же його можна оновити.
         </p>
-        <div className="p-3 rounded-xl bg-bg border border-line">
+        <div className="p-3 rounded-panel bg-bg border border-line">
           <p className="text-style-label text-text">Поточний тиждень</p>
           <p className="text-style-caption text-muted mt-0.5">{weekRange}</p>
           {generatedAt && (

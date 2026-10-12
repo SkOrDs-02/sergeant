@@ -17,9 +17,7 @@
  *     (matches Hub bento + Settings module toggles). Picked state adds
  *     a ring + accent surface; unpicked stays neutral.
  *   - Tap target ≥44px (Hard Rule #11). Card body itself is the button.
- *   - Active-press animation = `active:scale-[0.97]` (Hard Rule #17
- *     RESPONSE class). No ambient motion — `MeshBackground` at the
- *     page level already supplies AMBIENT motion.
+ *   - Рух на hover/press знято мовою H; вибір показується станом.
  *   - All four cards default to *picked* on mount. Matches the
  *     existing onboarding A/B "all" arm (post-S6.1 default) so legacy
  *     users who already saw the row-based wizard observe identical
@@ -167,9 +165,9 @@ export function WelcomeModulePicker({
               aria-label={MODULE_LABELS[id]}
               className={cn(
                 "relative min-h-[120px] sm:min-h-[140px] p-3.5 text-left",
-                "rounded-2xl border bg-panel transition-all duration-base",
+                "rounded-lg border bg-panel transition-all duration-base",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-                "active:scale-[0.97] motion-reduce:active:scale-100",
+                "",
                 active
                   ? cn(v.border, v.bg, "shadow-card ring-2", v.ring)
                   : "border-line hover:border-brand-500/30",
@@ -178,7 +176,7 @@ export function WelcomeModulePicker({
               <span
                 aria-hidden
                 className={cn(
-                  "absolute top-2.5 right-2.5 w-5 h-5 rounded-full",
+                  "absolute top-2.5 right-2.5 w-5 h-5 rounded-lg",
                   "text-white flex items-center justify-center",
                   "transition-opacity",
                   active ? cn(v.check, "opacity-100") : "opacity-0",
@@ -189,7 +187,7 @@ export function WelcomeModulePicker({
               <span
                 aria-hidden
                 className={cn(
-                  "flex w-10 h-10 items-center justify-center rounded-xl",
+                  "flex w-10 h-10 items-center justify-center rounded-lg",
                   active ? v.icon : "bg-panelHi text-muted",
                 )}
               >
@@ -241,7 +239,7 @@ export function WelcomeModulePicker({
         onClick={onOpenAuth}
         variant="outline"
         size="md"
-        className="w-full h-11 min-h-[44px] rounded-2xl border-line bg-panel text-style-label text-text hover:bg-panelHi hover:border-brand-500/40"
+        className="w-full h-11 min-h-[44px] rounded-lg border-line bg-panel text-style-label text-text hover:bg-panelHi hover:border-brand-500/40"
       >
         <Icon name="user" size="md" strokeWidth={2} aria-hidden />
         <span>{copy.haveAccount}</span>

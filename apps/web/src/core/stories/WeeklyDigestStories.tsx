@@ -84,7 +84,7 @@ export function WeeklyDigestStories({
   if (!slide) return null;
 
   // Portal to <body> so the modal escapes every ancestor stacking context.
-  // Without this, the `page-enter` animation on the hub root (which keeps
+  // Without this, the `` animation on the hub root (which keeps
   // `transform: translateY(0)` via `animation-fill-mode: both`) and the
   // `overflow-hidden` + shadow wrapper on `WeeklyDigestCard` both promote
   // themselves to independent stacking contexts — and the primary FAB

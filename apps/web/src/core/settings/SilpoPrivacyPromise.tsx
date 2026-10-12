@@ -44,7 +44,7 @@ export function SilpoPrivacyPromise({
   if (variant === "inline") return text;
 
   return (
-    <details className="rounded-xl border border-line bg-panel p-3">
+    <details className="rounded-panel border border-line bg-panel p-3">
       <summary className="touch-target flex cursor-pointer items-center gap-2 text-style-label text-text marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk">
         <Icon
           name="shield"

@@ -107,8 +107,6 @@ export function InlineAiRail({
       }}
     >
       <Card
-        variant="default"
-        radius="lg"
         padding="md"
         className="space-y-3"
         ref={answerRef as never}
@@ -118,7 +116,7 @@ export function InlineAiRail({
           <div className="flex items-start gap-2 min-w-0">
             <span
               className={cn(
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
                 state.status === "error"
                   ? "bg-danger-soft text-danger-soft-fg"
                   : "bg-brand-soft text-brand-strong dark:text-brand-300",
@@ -182,7 +180,7 @@ export function InlineAiRail({
                 type="button"
                 onClick={() => onOpenInChat(state.question)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
@@ -237,7 +235,7 @@ export function InlineAiRail({
                 type="button"
                 onClick={() => onRetry(state.question)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-style-label",
                   "bg-panel border border-line text-text hover:bg-panelHi",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
@@ -249,7 +247,7 @@ export function InlineAiRail({
                 type="button"
                 onClick={() => onOpenInChat(state.question)}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
+                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",

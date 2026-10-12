@@ -35,7 +35,7 @@ export function RoutineSection() {
   return (
     // V-13 — акцент бейджа вимагає пари `icon` + `module`; чому саме так,
     // розписано у `FinykSection.tsx`.
-    <SettingsGroup title="Рутина" icon="check" module="routine">
+    <SettingsGroup title="Рутина">
       <div className="space-y-7 [&_[data-row]]:mx-0 [&_[data-row]]:px-0">
         <SettingsSubGroup title="Календар">
           <ToggleRow

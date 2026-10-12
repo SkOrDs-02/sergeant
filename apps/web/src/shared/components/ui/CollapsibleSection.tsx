@@ -242,7 +242,7 @@ export function CollapsibleSection({
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl -ml-0.5 pl-0.5"
+          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg -ml-0.5 pl-0.5"
         >
           <MorphChevron
             open
@@ -261,9 +261,9 @@ export function CollapsibleSection({
           aria-expanded={open}
           className={cn(
             "flex items-center gap-3 w-full text-left",
-            "px-3.5 py-3 rounded-2xl",
+            "px-3.5 py-3 rounded-lg",
             "bg-panel hover:bg-panelHi border border-line shadow-soft",
-            "transition-colors active:scale-[0.99]",
+            "transition-colors ",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >

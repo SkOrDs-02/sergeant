@@ -39,13 +39,12 @@ export function ReEngagementCard({
   return (
     <Card
       as="section"
-      radius="lg"
       padding="lg"
       className="relative overflow-hidden"
       aria-label="Повернення"
     >
       <div className="flex flex-col items-center text-center space-y-3">
-        <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
+        <div className="w-12 h-12 rounded-lg bg-brand-500/10 text-brand-strong flex items-center justify-center">
           <Icon name="hand-wave" size="xl" />
         </div>
         <div className="space-y-1">

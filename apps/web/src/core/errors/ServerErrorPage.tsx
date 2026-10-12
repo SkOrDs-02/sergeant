@@ -13,7 +13,6 @@
  * chance of recovery.
  */
 import { Button, EmptyState, Icon } from "@shared/components/ui";
-import { ServerErrorIllustration } from "@assets/illustrations";
 
 export interface ServerErrorPageProps {
   /** Forward a `resetErrorBoundary()` if available. */
@@ -42,9 +41,7 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
       </p>
       <EmptyState
         size="lg"
-        variant="danger"
         eyebrow="500"
-        illustration={<ServerErrorIllustration size={200} />}
         title="Щось пішло не так"
         // The empty state is the entire `/500` surface, so it has to carry
         // the page heading — otherwise this route ships with no heading at

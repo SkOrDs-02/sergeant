@@ -81,8 +81,7 @@ export function CrossModulePreview({
   return (
     <Card
       as="section"
-      prominence="glass"
-      radius="lg"
+      prominence="panel"
       padding="md"
       className="relative overflow-hidden"
       aria-label={messages.hub.crossModulePreviewAria}
@@ -92,13 +91,13 @@ export function CrossModulePreview({
         type="button"
         onClick={handleDismiss}
         aria-label={copy.dismissAriaLabel}
-        className="absolute top-2 right-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+        className="absolute top-2 right-2 p-1 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
         <Icon name="close" size="md" />
       </button>
 
       <div className="flex items-start gap-3 pr-6">
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
+        <div className="shrink-0 w-9 h-9 rounded-lg bg-brand-500/10 text-brand-strong flex items-center justify-center">
           <Icon name="sergeant" size={18} />
         </div>
         <div className="flex-1 min-w-0 space-y-2">

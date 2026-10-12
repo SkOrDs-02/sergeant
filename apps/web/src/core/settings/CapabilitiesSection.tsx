@@ -58,10 +58,7 @@ export function CapabilitiesSection() {
   const navigate = useNavigate();
 
   return (
-    <SettingsGroup
-      title={messages.onboarding.capabilitiesGroupTitle}
-      icon="compass"
-    >
+    <SettingsGroup title={messages.onboarding.capabilitiesGroupTitle}>
       <ul className="space-y-3">
         {LINKS.map((link) => (
           <li key={link.id}>
@@ -69,11 +66,11 @@ export function CapabilitiesSection() {
               type="button"
               onClick={() => navigate(link.href)}
               data-testid={link.testId}
-              className="flex w-full min-h-[44px] items-start gap-3 rounded-2xl border border-line/60 bg-surface-soft-glass p-3 text-left shadow-soft transition-[background-color,border-color] hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="flex w-full min-h-[44px] items-start gap-3 rounded-lg border border-line/60 bg-surface-soft-glass p-3 text-left shadow-soft transition-[background-color,border-color] hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             >
               <span
                 aria-hidden
-                className="mt-0.5 flex shrink-0 items-center justify-center rounded-xl border border-surface-line bg-surface-soft-glass p-1.5 text-muted-v2"
+                className="mt-0.5 flex shrink-0 items-center justify-center rounded-panel border border-surface-line bg-surface-soft-glass p-1.5 text-muted-v2"
               >
                 <Icon name={link.icon} size={18} />
               </span>

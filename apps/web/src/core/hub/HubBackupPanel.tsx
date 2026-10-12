@@ -217,7 +217,7 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-line bg-panelHi px-3 py-2.5 flex flex-col gap-3 text-style-body text-subtle",
+        "rounded-panel border border-line bg-panelHi px-3 py-2.5 flex flex-col gap-3 text-style-body text-subtle",
         className,
       )}
     >

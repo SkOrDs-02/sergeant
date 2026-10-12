@@ -167,14 +167,14 @@ export function VerifyEmailPage() {
           <BrandLogo as="h1" size="md" className="justify-center" />
         </div>
 
-        <Card prominence="hero" radius="xl" padding="lg" className="space-y-5">
+        <Card prominence="hero" padding="lg" className="space-y-5">
           <div className="text-center space-y-2">
             <span
               aria-hidden="true"
               className={
                 isProblem
-                  ? "inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-danger/10 text-danger-strong dark:text-danger"
-                  : "inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-strong"
+                  ? "inline-flex items-center justify-center w-12 h-12 rounded-lg bg-danger/10 text-danger-strong dark:text-danger"
+                  : "inline-flex items-center justify-center w-12 h-12 rounded-lg bg-brand-500/10 text-brand-strong"
               }
             >
               <Icon
@@ -196,7 +196,7 @@ export function VerifyEmailPage() {
             role={isProblem ? "alert" : "status"}
             className={
               isProblem
-                ? "text-style-label text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed"
+                ? "text-style-label text-text bg-danger/10 border border-danger/30 rounded-lg px-4 py-3 leading-relaxed"
                 : "text-style-label text-subtle text-center leading-relaxed"
             }
           >
