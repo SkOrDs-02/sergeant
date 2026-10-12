@@ -24,7 +24,7 @@ export function ArchivedHabitsSection({
   if (archived.length === 0) return null;
 
   return (
-    <Card as="section" radius="lg" padding="md" className="space-y-2">
+    <Card as="section" padding="md" className="space-y-2">
       <SectionHeading as="h2" size="lg">
         Архів
       </SectionHeading>

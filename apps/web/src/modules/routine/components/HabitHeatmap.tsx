@@ -281,7 +281,7 @@ export function HabitHeatmap({
   }, [weeks]);
 
   return (
-    <Card ref={rootRef} radius="lg">
+    <Card ref={rootRef}>
       <SectionHeading as="p" size="lg" className="mb-3">
         Активність: сьогодні та історія
       </SectionHeading>

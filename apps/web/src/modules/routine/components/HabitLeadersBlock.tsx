@@ -54,7 +54,7 @@ export function HabitLeadersBlock({
   if (!best) return null;
 
   return (
-    <Card radius="lg">
+    <Card>
       <SectionHeading as="p" size="lg" className="mb-3">
         Найстабільніша й найслабша · 30 днів
       </SectionHeading>

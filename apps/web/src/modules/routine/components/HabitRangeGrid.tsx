@@ -129,7 +129,7 @@ export function HabitRangeGrid({
   const firstRowCells = rows[0]?.cells;
 
   return (
-    <Card as="section" radius="lg" aria-label={M.heading}>
+    <Card as="section" aria-label={M.heading}>
       <SectionHeading as="p" size="lg" className="mb-2">
         {M.heading}
       </SectionHeading>
