@@ -279,7 +279,7 @@ export function GeneratorCard({
                 <summary className="cursor-pointer text-style-caption text-muted hover:text-text">
                   Показати діагностику (raw відповідь AI)
                 </summary>
-                <pre className="mt-2 whitespace-pre-wrap text-style-caption leading-snug text-muted border border-line rounded-xl p-3 max-h-64 overflow-auto">
+                <pre className="mt-2 whitespace-pre-wrap text-style-caption leading-snug text-muted border border-line rounded-panel p-3 max-h-64 overflow-auto">
                   {recipesRaw}
                 </pre>
               </details>

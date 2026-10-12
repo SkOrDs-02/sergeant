@@ -790,3 +790,7 @@ Artifact harness потребував власного `package.json {type:modul
 **Shared/core коміт:** `ba47e961e refactor(web): finish H primitives and migrate shared call sites` — **0**, 177 файлів; штатні hooks, staged-typecheck (72,07 s), docs-derived і gitleaks пройшли. API cleanup, H-radius call-site-и й cn conflict-regression закомічено; live side-effect adapter imports у main та їхні пояснення збережено.
 
 **Коміт поверхні finyk:** механічні H-радіуси та міграція live Card/EmptyState/SettingsGroup call-site-ів; source callbacks/дані не міняються. Для finyk також знято невживаний storage key / CategoryIconChip; fizruk включає видимий i18n delete-entry підпис і regression assertion. Перед цим фінальний після-cn `e2e:mobile` пройшов 41/41, exit 0. Коміт зі штатними hooks; точний hash/exit — нижче після виконання.
+
+**finyk: 69ba49bbb refactor(web): finish H cleanup in finyk — exit 0**, eslint/prettier/staged-typecheck/docs-derived/gitleaks пройшли, skip-hook немає.
+
+**Коміт поверхні nutrition:** механічні H-радіуси та міграція live Card/EmptyState/SettingsGroup call-site-ів; source callbacks/дані не міняються. Для finyk також знято невживаний storage key / CategoryIconChip; fizruk включає видимий i18n delete-entry підпис і regression assertion. Перед цим фінальний після-cn `e2e:mobile` пройшов 41/41, exit 0. Коміт зі штатними hooks; точний hash/exit — нижче після виконання.

@@ -60,7 +60,7 @@ const MENU_EDGE_GAP_PX = 8;
  * trigger is closest to.
  *
  * `position: fixed` was tried first and rejected: this page renders inside
- * a route wrapper with its own `transform` (the `.page-enter` entry
+ * a route wrapper with its own `transform` (the `.` entry
  * animation — see `Sheet.tsx`'s identical note), which makes `fixed`
  * resolve against that ancestor's box instead of the real viewport. Live
  * 375px verification showed the menu landing off-screen either way until
@@ -248,7 +248,7 @@ export function DailyPlanGoalSelectors({
         {menuOpen && (
           <div
             role="menu"
-            className="absolute top-full mt-1 z-10 rounded-xl border border-line bg-bg overflow-hidden"
+            className="absolute top-full mt-1 z-10 rounded-panel border border-line bg-bg overflow-hidden"
             style={{ width: MENU_WIDTH_PX, left: menuLeft }}
           >
             {tdeeTargets ? (
