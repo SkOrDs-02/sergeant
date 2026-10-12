@@ -1,8 +1,4 @@
 import { messages } from "@shared/i18n/uk";
-/**
- * Last validated: 2026-05-14
- * Status: Active
- */
 import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -156,7 +152,7 @@ export function RecoveryFocusCard({
           />
 
           {rec.wellbeingMult > 1.1 && (
-            <div className="mb-3 px-3 py-2 rounded-xl bg-panelHi border border-line flex items-start gap-2">
+            <div className="mb-3 px-3 py-2 rounded-panel bg-panelHi border border-line flex items-start gap-2">
               <p className="text-style-body text-text leading-snug">
                 {rec.wellbeingMult >= 1.3
                   ? "Поганий сон або дуже низька енергія, відновлення значно сповільнене."

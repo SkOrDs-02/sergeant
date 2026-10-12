@@ -115,7 +115,7 @@ export function WeeklyVolumeChart({
         </div>
         <EmptyState
           compact
-          className="rounded-xl border border-dashed border-line bg-panelHi/50"
+          className="rounded-panel border border-dashed border-line bg-panelHi/50"
           title="Поки без обʼєму за тиждень"
           description="Заверши тренування з силовими підходами, тут зʼявиться сумарний обʼєм (кг×повторення) по днях."
         />

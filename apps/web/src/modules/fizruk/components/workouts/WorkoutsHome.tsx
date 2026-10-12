@@ -103,7 +103,7 @@ export function WorkoutsHome({
   return (
     <div className="space-y-4">
       {hasActive ? (
-        <div className="rounded-xl bg-fizruk-tint p-4">
+        <div className="rounded-panel bg-fizruk-tint p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-style-overline text-fizruk-tint-label">
@@ -140,7 +140,7 @@ export function WorkoutsHome({
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-surface p-4 text-center">
+        <div className="rounded-panel border border-border bg-surface p-4 text-center">
           <div className="text-style-label text-text">
             Немає активного тренування
           </div>

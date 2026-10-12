@@ -184,7 +184,7 @@ export function Measurements() {
             </ol>
             <div
               data-testid="measurement-guide-table-scroll"
-              className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-xl border border-line"
+              className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-panel border border-line"
             >
               <DataTable
                 module="fizruk"
@@ -348,7 +348,7 @@ export function Measurements() {
         {/*
           Журнал записів за датами — теж окремий аркуш, а не «низ» стосу
           (та сама причина вище). `overflow-hidden` знято: він жив тут лише
-          заради скруглення рядків під `rounded-2xl`, а край скасовує
+          заради скруглення рядків під `rounded-panel`, а край скасовує
           скруглення взагалі — та сама правка, що в `WeeklyDigestCard`.
         */}
         <Card padding="none">

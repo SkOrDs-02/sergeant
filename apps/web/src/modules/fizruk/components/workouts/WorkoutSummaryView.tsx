@@ -174,7 +174,7 @@ export function WorkoutSummaryView({
           {items.map((item) => (
             <li
               key={item.id}
-              className="rounded-xl border border-line bg-bg px-3 py-2.5"
+              className="rounded-panel border border-line bg-bg px-3 py-2.5"
             >
               <div className="text-style-label text-text">{item.nameUk}</div>
               <div className="text-style-caption text-subtle mt-0.5">

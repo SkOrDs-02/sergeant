@@ -27,7 +27,7 @@ import { useInjuries } from "../hooks/useInjuries";
  * поводитись як фініш-фло — мʼязи у згорнутому вигляді.
  *
  * Items render as a rectangular grid (`InjuryChip`-style row: label + check
- * glyph), not `rounded-full` pills in `flex-wrap` — that divergence made the
+ * glyph), not `rounded-lg` pills in `flex-wrap` — that divergence made the
  * "same layout" claim above false (founder audit round2 2026-09-11, D2):
  * 27 pills of uneven width gave a ragged rhythm the finish flow never had.
  * `grid-cols-2 sm:grid-cols-3` mirrors the wellbeing rating grid in
@@ -140,7 +140,7 @@ export function InjuryManager() {
           {active.map((injury) => (
             <div
               key={injury.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panelHi px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-panel border border-line bg-panelHi px-3 py-2"
             >
               <span className="text-style-body text-text">
                 {injurySiteLabelUk(injury.site)}

@@ -798,3 +798,7 @@ Artifact harness потребував власного `package.json {type:modul
 **nutrition: d969753a6 refactor(web): finish H cleanup in nutrition — exit 0**, eslint/prettier/staged-typecheck/docs-derived/gitleaks пройшли, skip-hook немає.
 
 **Коміт поверхні routine:** механічні H-радіуси та міграція live Card/EmptyState/SettingsGroup call-site-ів; source callbacks/дані не міняються. Для finyk також знято невживаний storage key / CategoryIconChip; fizruk включає видимий i18n delete-entry підпис і regression assertion. Перед цим фінальний після-cn `e2e:mobile` пройшов 41/41, exit 0. Коміт зі штатними hooks; точний hash/exit — нижче після виконання.
+
+**routine: 89eec07f4 refactor(web): finish H cleanup in routine — exit 0**, eslint/prettier/staged-typecheck/docs-derived/gitleaks пройшли, skip-hook немає.
+
+**Коміт поверхні fizruk:** механічні H-радіуси та міграція live Card/EmptyState/SettingsGroup call-site-ів; source callbacks/дані не міняються. Для finyk також знято невживаний storage key / CategoryIconChip; fizruk включає видимий i18n delete-entry підпис і regression assertion. Перед цим фінальний після-cn `e2e:mobile` пройшов 41/41, exit 0. Коміт зі штатними hooks; точний hash/exit — нижче після виконання.

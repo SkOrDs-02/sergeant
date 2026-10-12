@@ -117,7 +117,7 @@ export function FizrukDayPlanSheet({
                     {exerciseList.map((ex) => (
                       <li
                         key={ex.id}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel"
+                        className="flex items-center gap-2 rounded-panel px-3 py-2 border border-line bg-panel"
                       >
                         <span className="w-1.5 h-1.5 rounded-lg bg-panelHi shrink-0" />
                         <span className="text-style-label text-text truncate">

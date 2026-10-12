@@ -305,7 +305,6 @@ export function QuickStartSheet({
         {totalCount === 0 ? (
           <EmptyState
             compact
-            module="fizruk"
             title={q.trim() ? "Нічого не знайшов" : "Каталог поки що порожній"}
             description={
               q.trim()

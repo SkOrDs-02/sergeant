@@ -22,9 +22,6 @@ import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../../hooks/useInjuries";
 import { useDailyLog } from "../../hooks/useDailyLog";
 import { planWellbeingHandoff } from "../../lib/wellbeingBridge";
-// `FinishFlashState` живе у `../../pages/Workouts.types` (там `useState`
-// setter, що ходить між обома sheet-ами). Імпортуємо звідти, щоб не дублювати
-// оголошення (aislop `ai-slop/duplicate-type-declaration`).
 import type { FinishFlashState } from "../../pages/Workouts.types";
 
 // Реекспорт для споживачів цього компонента (тест + orchestrator), що вже
@@ -126,7 +123,7 @@ export function WorkoutFinishSheets({
       >
         {finishFlash.step === "wellbeing" && (
           <Card
-            prominence="elevated"
+            prominence="panel"
             // `overscroll-contain`: без нього жест, доведений до межі
             // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
             // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
@@ -281,7 +278,7 @@ export function WorkoutFinishSheets({
 
         {finishFlash.step === "injury" && (
           <Card
-            prominence="elevated"
+            prominence="panel"
             // `overscroll-contain`: без нього жест, доведений до межі
             // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
             // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
@@ -453,7 +450,7 @@ export function WorkoutFinishSheets({
         )}
 
         {finishFlash.step === "summary" && !finishFlash.collapsed && (
-          <div className="rounded-xl overflow-hidden bg-panel">
+          <div className="rounded-panel overflow-hidden bg-panel">
             <div className="fizruk-summary-header">
               <div className="flex items-start justify-between gap-2">
                 <div>

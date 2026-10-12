@@ -27,7 +27,7 @@ export function ReturnProtocolNotice({ aging }: ReturnProtocolNoticeProps) {
   const injury = aging.returnReason === "injury";
 
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-line bg-panelHi px-4 py-3">
+    <div className="flex items-start gap-2.5 rounded-panel border border-line bg-panelHi px-4 py-3">
       <div className="min-w-0">
         <p className="text-style-label text-text">
           {injury ? t.injuryTitle : t.staleTitle}
