@@ -105,9 +105,7 @@ describe("HeroCard · active state", () => {
       startedAtIso: "2026-04-23T12:14:25Z",
       itemsCount: 0,
     });
-    expect(
-      screen.getByText(/Сесія відкрита, підходи й таймер чекають/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Сесія відкрита/i)).toBeInTheDocument();
   });
 
   it("falls back to 0:00 for an unparseable startedAt", () => {
@@ -279,7 +277,9 @@ describe("HeroCard · empty state", () => {
       hasTemplates: true,
     });
 
-    expect(screen.getByText(/План порожній/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/На сьогодні нічого не заплановано/i),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Обрати шаблон/i }));
     expect(onOpenTemplates).toHaveBeenCalledTimes(1);
 
@@ -332,7 +332,7 @@ describe("HeroCard · recovery bars + kicker", () => {
 
   it("shows the empty-body message when there are no recovery rows", () => {
     renderHero({ kind: "empty", hasTemplates: false });
-    expect(screen.getByText(/Тіло ще не має історії/)).toBeInTheDocument();
+    expect(screen.getByText(/Історії тренувань ще немає/)).toBeInTheDocument();
   });
 
   it("kicker contains the streak-weeks and weekly-workouts readout", () => {

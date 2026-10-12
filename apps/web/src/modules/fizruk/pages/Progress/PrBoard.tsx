@@ -7,7 +7,6 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
-import { Icon } from "@shared/components/ui/Icon";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { deviceDayKey } from "@sergeant/shared";
 import { ReturnScale } from "./ReturnScale";
@@ -85,7 +84,7 @@ export function PrBoard({
     prFilter === "all" ? prs : prs.filter((p) => p.muscleGroup === prFilter);
 
   return (
-    <Card radius="lg" padding="lg">
+    <Card padding="lg">
       <div className="flex items-center justify-between gap-2 mb-3">
         <SectionHeading size="xs" variant="fizruk">
           {messages.fizruk.prBoard.heading} · {prs.length}
@@ -105,9 +104,9 @@ export function PrBoard({
             onClick={() => onPrFilterChange("all")}
             aria-pressed={prFilter === "all"}
             className={cn(
-              "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border",
+              "focus-ring shrink-0 px-3 min-h-[44px] rounded-lg text-style-caption transition-colors border",
               prFilter === "all"
-                ? "bg-fizruk-strong text-white border-fizruk-strong dark:bg-fizruk dark:text-bg dark:border-fizruk"
+                ? "bg-text text-bg border-line dark:text-bg"
                 : "bg-panel border-line text-subtle hover:text-text",
             )}
           >
@@ -120,9 +119,9 @@ export function PrBoard({
               onClick={() => onPrFilterChange(g === prFilter ? "all" : g)}
               aria-pressed={prFilter === g}
               className={cn(
-                "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border whitespace-nowrap",
+                "focus-ring shrink-0 px-3 min-h-[44px] rounded-lg text-style-caption transition-colors border whitespace-nowrap",
                 prFilter === g
-                  ? "bg-fizruk-strong text-white border-fizruk-strong dark:bg-fizruk dark:text-bg dark:border-fizruk"
+                  ? "bg-text text-bg border-line dark:text-bg"
                   : "bg-panel border-line text-subtle hover:text-text",
               )}
             >
@@ -156,14 +155,13 @@ export function PrBoard({
               <button
                 key={p.id}
                 type="button"
-                className="focus-ring w-full text-left border border-line rounded-2xl p-3 bg-bg hover:bg-panelHi transition-colors"
+                className="focus-ring w-full text-left border border-line rounded-lg p-3 bg-bg hover:bg-panelHi transition-colors"
                 onClick={() => onSelect(p.id)}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     {podiumRank && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning">
-                        <Icon name="award" size="sm" aria-hidden />
+                      <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-text">
                         {podiumRank}
                       </span>
                     )}
@@ -218,7 +216,7 @@ export function PrBoard({
                     // ≈2.2:1 on the dark chip background — below WCAG AA.
                     // `-strong`/module-tint pair mirrors the icon tiles
                     // above and clears AA in both themes.
-                    <span className="ml-auto text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk-strong dark:text-fizruk font-medium shrink-0">
+                    <span className="ml-auto text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-text font-medium shrink-0">
                       {p.muscleGroupLabel}
                     </span>
                   )}

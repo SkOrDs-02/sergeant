@@ -49,7 +49,7 @@ describe("RecoveryFocusCard", () => {
   it("keeps the side toggle out of the navigation button — flipping side does not open the atlas", () => {
     const onOpenAtlas = vi.fn();
     render(<RecoveryFocusCard onOpenAtlas={onOpenAtlas} />);
-    fireEvent.click(screen.getByRole("button", { name: "Ззаду" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Ззаду" }));
     expect(onOpenAtlas).not.toHaveBeenCalled();
   });
 
@@ -73,7 +73,7 @@ describe("RecoveryFocusCard", () => {
 
   it("показує силует і легенду раніше за межі поради, а межі згорнуті", () => {
     const { container } = render(<RecoveryFocusCard />);
-    const sideToggle = screen.getByRole("button", { name: "Ззаду" });
+    const sideToggle = screen.getByRole("radio", { name: "Ззаду" });
     const legend = screen.getByText("готово");
     const notes = container.querySelector("details")!;
     expect(notes.open).toBe(false);

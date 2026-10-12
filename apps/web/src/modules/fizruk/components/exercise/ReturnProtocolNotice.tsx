@@ -13,7 +13,6 @@
  * Витягнуто окремим компонентом, бо `pages/Exercise.tsx` уже близько до
  * стелі `max-lines: 600` (Hard Rule #18).
  */
-import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 import { messages } from "@shared/i18n/uk";
 import type { OneRmAging } from "@sergeant/fizruk-domain/domain";
@@ -28,13 +27,12 @@ export function ReturnProtocolNotice({ aging }: ReturnProtocolNoticeProps) {
   const injury = aging.returnReason === "injury";
 
   return (
-    <div className="flex items-start gap-2.5 rounded-2xl border border-info/40 bg-info/10 px-4 py-3">
-      <Icon name="info" size="lg" aria-hidden className="mt-0.5 shrink-0" />
+    <div className="flex items-start gap-2.5 rounded-xl border border-line bg-panelHi px-4 py-3">
       <div className="min-w-0">
-        <p className="text-style-label text-info-strong dark:text-info">
+        <p className="text-style-label text-text">
           {injury ? t.injuryTitle : t.staleTitle}
         </p>
-        <p className="text-style-caption text-info-strong dark:text-info">
+        <p className="text-style-caption text-text">
           {injury ? t.injuryNote : t.staleNote}
         </p>
         <p className="text-style-caption text-subtle mt-1 tabular-nums">

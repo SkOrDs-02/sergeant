@@ -3,7 +3,6 @@ import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { measurementGuideRows } from "@shared/i18n/uk.fizruk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { DataTable } from "@shared/components/ui/DataTable";
 import {
@@ -12,7 +11,6 @@ import {
   type MeasurementEntry,
 } from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
-import { Stat } from "@shared/components/ui/Stat";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useToast } from "@shared/hooks/useToast";
@@ -121,7 +119,7 @@ export function Measurements() {
       ref={guideTriggerRef}
       type="button"
       onClick={() => setGuideOpen(true)}
-      className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
+      className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-lg p-4"
     >
       <div className="min-w-0">
         <SectionHeading
@@ -130,17 +128,10 @@ export function Measurements() {
           variant="fizruk"
           className="inline-flex items-center gap-1.5"
         >
-          <Icon
-            name="info"
-            size="sm"
-            className="shrink-0 text-fizruk-strong dark:text-fizruk"
-            aria-hidden
-          />
           {messages.fizruk.measurements.manual}
         </SectionHeading>
-        <div className="text-style-label text-fizruk-strong dark:text-fizruk mt-0.5 inline-flex items-center gap-0.5">
+        <div className="text-style-label text-text mt-0.5 inline-flex items-center gap-0.5">
           {messages.fizruk.measurements.manualLink}
-          <Icon name="chevron-right" size="sm" />
         </div>
       </div>
     </button>
@@ -149,16 +140,15 @@ export function Measurements() {
   if (guideOpen) {
     return (
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-        <article className="max-w-2xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+        <article className="max-w-2xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
           <button
             type="button"
             onClick={() => setGuideOpen(false)}
-            className="focus-ring rounded-lg inline-flex items-center gap-1 min-h-11 text-style-label text-fizruk-strong hover:underline"
+            className="focus-ring rounded-lg inline-flex items-center gap-1 min-h-11 text-style-label text-text hover:underline"
           >
-            <Icon name="chevron-left" size="sm" />
             {messages.fizruk.measurements.guideBack}
           </button>
-          <Card radius="lg" className="space-y-4">
+          <Card className="space-y-4">
             <div>
               {/* `id` + `tabIndex={-1}` — programmatic focus target for the
                   scroll/focus-management effect above (not part of tab
@@ -194,7 +184,7 @@ export function Measurements() {
             </ol>
             <div
               data-testid="measurement-guide-table-scroll"
-              className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-2xl border border-line"
+              className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-xl border border-line"
             >
               <DataTable
                 module="fizruk"
@@ -230,7 +220,7 @@ export function Measurements() {
                 href="https://www.cdc.gov/diabetes/living-with/healthy-weight.html"
                 target="_blank"
                 rel="noreferrer"
-                className="focus-ring rounded-lg min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
+                className="focus-ring rounded-lg min-h-11 inline-flex items-center text-text hover:underline"
               >
                 {messages.fizruk.measurements.guideWhoLink}
                 <span className="sr-only">
@@ -242,7 +232,7 @@ export function Measurements() {
                 href="https://www.nhs.uk/health-assessment-tools/calculate-your-waist-to-height-ratio"
                 target="_blank"
                 rel="noreferrer"
-                className="focus-ring rounded-lg min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
+                className="focus-ring rounded-lg min-h-11 inline-flex items-center text-text hover:underline"
               >
                 {messages.fizruk.measurements.guideCdcLink}
                 <span className="sr-only">
@@ -259,7 +249,7 @@ export function Measurements() {
 
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         {/* Сторінка не мала ЖОДНОГО `<h1>` — лише `SectionHeading as="div"`
             по картках (axe `page-has-heading-one`, замір свіпу 2026-09-16).
             Видимий заголовок за зразком сусідніх сторінок модуля
@@ -267,7 +257,7 @@ export function Measurements() {
             той самий `text-style-title text-text` плюс підпис-caption. */}
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-style-title text-text">
+            <h1 className="text-style-headline text-text">
               {messages.fizruk.progress.measurementsTitle}
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
@@ -277,7 +267,7 @@ export function Measurements() {
           {latest && (
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
               size="sm"
               className="h-9 px-4"
               onClick={() => setAddOpen(true)}
@@ -294,32 +284,16 @@ export function Measurements() {
         {/* До першого запису плиткам нема що казати: «0 / – / 0» подає
             порожній стан як результат. */}
         {latest && (
-          <div className="grid grid-cols-2 gap-2">
-            <Card radius="lg" padding="sm">
-              <Stat
-                label={messages.fizruk.measurements.records}
-                value={stats.total}
-                size="sm"
-                align="center"
-              />
-            </Card>
-            <Card radius="lg" padding="sm">
-              <Stat
-                label={messages.fizruk.measurements.last}
-                value={
-                  <span className="text-style-label">{stats.latestAt}</span>
-                }
-                size="sm"
-                align="center"
-              />
-            </Card>
-          </div>
+          <p className="text-style-body text-muted">
+            {messages.fizruk.measurements.records}: {stats.total} ·{" "}
+            {messages.fizruk.measurements.last}: {stats.latestAt}
+          </p>
         )}
 
         {!latest && <AddMeasurementForm addEntry={addEntry} />}
 
         {latest && (
-          <Card padding="none">
+          <Card prominence="hero" tone="fizruk" padding="none">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -334,11 +308,11 @@ export function Measurements() {
                   {Object.keys(deltas).length ? "Δ від попереднього" : ""}
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 divide-y divide-line">
                 {MEASURE_FIELDS.filter((f) => latest[f.id] != null).map((f) => (
                   <div
                     key={f.id}
-                    className="bg-bg border border-line rounded-2xl p-3"
+                    className="flex min-h-[56px] flex-wrap items-center justify-between gap-2 py-2"
                   >
                     <SectionHeading as="div" size="xs" variant="fizruk">
                       {f.label}
@@ -356,9 +330,7 @@ export function Measurements() {
                         <div
                           className={cn(
                             "text-style-caption mt-1",
-                            delta > 0
-                              ? "text-warning-strong dark:text-warning"
-                              : "text-success-strong dark:text-success",
+                            delta > 0 ? "text-text" : "text-text",
                           )}
                         >
                           {delta > 0 ? "+" : ""}
@@ -410,7 +382,7 @@ export function Measurements() {
                   <button
                     type="button"
                     aria-label={messages.fizruk.measurements.deleteAria}
-                    className="focus-ring touch-target -mr-2 px-2 inline-flex items-center justify-center rounded-full text-style-caption text-danger-strong hover:text-danger transition-colors"
+                    className="focus-ring touch-target -mr-2 px-2 inline-flex items-center justify-center rounded-lg text-style-caption text-danger-strong hover:text-danger transition-colors"
                     onClick={() => handleDelete(e.id)}
                   >
                     {messages.actions.delete}
@@ -426,7 +398,7 @@ export function Measurements() {
                   {hasOverflow && (
                     <button
                       type="button"
-                      className="focus-ring touch-target ml-1 -my-2 px-1 rounded-lg inline-flex items-center text-fizruk-strong dark:text-fizruk font-semibold hover:underline"
+                      className="focus-ring touch-target ml-1 -my-2 px-1 rounded-lg inline-flex items-center text-text font-semibold hover:underline"
                       aria-expanded={isRowExpanded}
                       aria-label={
                         isRowExpanded

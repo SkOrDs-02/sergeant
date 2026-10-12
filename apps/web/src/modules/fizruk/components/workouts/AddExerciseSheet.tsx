@@ -132,7 +132,7 @@ export function AddExerciseSheet({
             Основна група
           </SectionHeading>
           <select
-            className="input-focus-fizruk w-full min-h-[44px] rounded-2xl border border-line bg-panelHi px-3 py-2 text-sm text-text"
+            className="input-focus-fizruk w-full min-h-[44px] rounded-lg border border-line bg-panelHi px-3 py-2 text-sm text-text"
             value={form.primaryGroup}
             onChange={(e) =>
               setForm((f) => ({
@@ -152,7 +152,7 @@ export function AddExerciseSheet({
           </select>
         </label>
 
-        <div className="rounded-2xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Обладнання
           </SectionHeading>
@@ -174,9 +174,9 @@ export function AddExerciseSheet({
                     // каталогу (`WorkoutCatalogSection`) — fizruk-soft
                     // токени замість інверсного «чорнила», щоб обидві
                     // поверхні вибору обладнання виглядали однаково.
-                    "text-xs px-3 py-2.5 min-h-[44px] rounded-xl border transition-colors",
+                    "text-xs px-3 py-2.5 min-h-[44px] rounded-lg border transition-colors",
                     active
-                      ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
+                      ? "border-line bg-panelHi text-text font-semibold"
                       : "border-line bg-bg text-muted hover:border-muted hover:text-text",
                   )}
                   aria-pressed={active}
@@ -188,7 +188,7 @@ export function AddExerciseSheet({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Основні мʼязи
           </SectionHeading>
@@ -198,7 +198,7 @@ export function AddExerciseSheet({
                 key={id}
                 type="button"
                 className={cn(
-                  "text-xs px-3 py-2 min-h-[44px] rounded-xl border transition-colors",
+                  "text-xs px-3 py-2 min-h-[44px] rounded-lg border transition-colors",
                   (form.musclesPrimary || []).includes(id)
                     ? "bg-primary border-primary text-bg"
                     : "border-line bg-bg text-muted hover:border-muted hover:text-text",
@@ -216,7 +216,7 @@ export function AddExerciseSheet({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Супутні мʼязи
           </SectionHeading>
@@ -226,9 +226,9 @@ export function AddExerciseSheet({
                 key={id}
                 type="button"
                 className={cn(
-                  "text-xs px-3 py-2 min-h-[44px] rounded-xl border transition-colors",
+                  "text-xs px-3 py-2 min-h-[44px] rounded-lg border transition-colors",
                   (form.musclesSecondary || []).includes(id)
-                    ? "bg-text/80 border-text/80 text-white"
+                    ? "bg-text/80 border-text/80 text-bg"
                     : "border-line bg-bg text-muted hover:border-muted hover:text-text",
                 )}
                 onClick={() =>
@@ -262,7 +262,7 @@ export function AddExerciseSheet({
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
           variant="solid"
-          tone="fizruk"
+          tone="neutral"
 
           className="h-12 min-h-[44px]"
           onClick={() => {

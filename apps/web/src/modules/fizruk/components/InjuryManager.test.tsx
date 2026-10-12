@@ -127,6 +127,6 @@ describe("InjuryManager", () => {
     const chestChip = screen
       .getAllByRole("button", { name: "Груди" })
       .find((el) => el.hasAttribute("disabled"));
-    expect(chestChip?.querySelector("svg")).not.toBeNull();
+    expect(chestChip).toHaveTextContent("✓");
   });
 });

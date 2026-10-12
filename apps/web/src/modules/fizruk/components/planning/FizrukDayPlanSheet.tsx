@@ -119,7 +119,7 @@ export function FizrukDayPlanSheet({
                         key={ex.id}
                         className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-info shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-lg bg-panelHi shrink-0" />
                         <span className="text-style-label text-text truncate">
                           {ex?.name?.uk || ex?.name?.en || ex.id}
                         </span>
@@ -166,18 +166,16 @@ export function FizrukDayPlanSheet({
                         handleAssign(tpl.id);
                       }}
                       className={cn(
-                        "w-full text-left rounded-xl px-3 py-2.5 border transition-colors min-h-[44px]",
+                        "w-full text-left rounded-lg px-3 py-2.5 border transition-colors min-h-[44px]",
                         isActive
-                          ? "border-info/50 bg-info/10"
+                          ? "border-line bg-panelHi"
                           : "border-line bg-panel hover:bg-panelHi",
                       )}
                     >
                       <p
                         className={cn(
                           "text-style-label truncate",
-                          isActive
-                            ? "text-info-strong dark:text-info"
-                            : "text-text",
+                          isActive ? "text-text" : "text-text",
                         )}
                       >
                         {tpl.name}

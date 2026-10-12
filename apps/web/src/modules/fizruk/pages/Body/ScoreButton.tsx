@@ -51,10 +51,10 @@ export function ScoreButton({
       // moved to `aria-label` + the selected-level caption rendered once
       // under the whole row (`Body.tsx`), not repeated inside each tile.
       className={cn(
-        "focus-ring flex-1 aspect-square min-h-11 flex items-center justify-center rounded-xl border text-style-title transition-[background-color,border-color,color]",
+        "focus-ring flex-1 aspect-square min-h-11 flex items-center justify-center rounded-lg border text-style-title transition-[background-color,border-color,color]",
         selected
-          ? "bg-success-strong text-white border-success-strong"
-          : "border-line text-subtle hover:border-success/50 hover:text-text",
+          ? "bg-text text-bg border-line"
+          : "border-line text-subtle hover:border-line hover:text-text",
       )}
       title={label}
     >

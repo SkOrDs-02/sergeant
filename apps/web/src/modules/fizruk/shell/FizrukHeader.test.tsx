@@ -42,19 +42,22 @@ describe("FizrukHeader", () => {
     expect(onBackToHub).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a dedicated hub button when onGoToHub is provided", () => {
-    const onGoToHub = vi.fn();
+  it("keeps one back action beside the assistant", () => {
+    const onBackToHub = vi.fn();
     render(
       <FizrukHeader
         page="dashboard"
         onContextualBack={vi.fn()}
-        onBackToHub={vi.fn()}
-        onGoToHub={onGoToHub}
+        onBackToHub={onBackToHub}
+        onGoToHub={vi.fn()}
       />,
     );
-
-    fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
-    expect(onGoToHub).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
+    expect(onBackToHub).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "На хаб" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Відкрити Сержанта" }),
+    ).toBeInTheDocument();
   });
 
   it("keeps the module name in the header on programs page", () => {
@@ -105,19 +108,13 @@ describe("FizrukHeader", () => {
     },
   );
 
-  it("renders settings button when onOpenSettings is provided", () => {
-    const onOpenSettings = vi.fn();
-    render(
-      <FizrukHeader
-        page="dashboard"
-        onContextualBack={vi.fn()}
-        onOpenSettings={onOpenSettings}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", { name: /Налаштування модуля/i }),
-    );
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  it("keeps settings in the hub instead of adding another header action", () => {
+    render(<FizrukHeader page="dashboard" onContextualBack={vi.fn()} />);
+    expect(
+      screen.queryByRole("button", { name: /Налаштування модуля/i }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Відкрити Сержанта" }),
+    ).toBeInTheDocument();
   });
 });

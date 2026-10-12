@@ -113,7 +113,7 @@ export function MiniLineChart({
     return (
       <EmptyState
         compact
-        className="rounded-2xl border border-dashed border-line bg-panelHi/50"
+        className="rounded-xl border border-dashed border-line bg-panelHi/50"
         title="Немає числових даних"
         description={`Додай записи в розділі «Заміри», щоб відстежувати ${metricLabel}.`}
       />
@@ -123,7 +123,7 @@ export function MiniLineChart({
     return (
       <EmptyState
         compact
-        className="rounded-2xl border border-dashed border-line bg-panelHi/50"
+        className="rounded-xl border border-dashed border-line bg-panelHi/50"
         title="Замало точок для лінії"
         description={`Щоб відстежувати ${metricLabel}, потрібні щонайменше два заміри.`}
       />

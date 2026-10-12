@@ -7,8 +7,6 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
-  ModuleHeaderHubButton,
-  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -30,7 +28,6 @@ export interface FizrukHeaderProps {
    * in sync — see `FizrukApp.contextualBackTarget`.
    */
   onContextualBack: () => void;
-  onOpenSettings?: (() => void) | undefined;
 }
 
 function titleFor(_page: FizrukPage): string {
@@ -81,7 +78,7 @@ function ContextualBackButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
+        "-ml-1 flex items-center gap-1 rounded-lg px-2 py-2 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
         "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
@@ -107,41 +104,10 @@ function ContextualBackButton({
   );
 }
 
-function DumbbellBadge() {
-  return (
-    <div
-      className={cn(
-        "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
-        "bg-linear-to-br from-cyan-100 to-cyan-200",
-        "dark:from-cyan-900/40 dark:to-cyan-900/30",
-        "text-fizruk-strong dark:text-fizruk-300",
-        "border border-fizruk-soft-border/60",
-        "shadow-sm",
-      )}
-      aria-hidden
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3" />
-      </svg>
-    </div>
-  );
-}
-
 export function FizrukHeader({
   page,
   onBackToHub,
-  onGoToHub,
   onContextualBack,
-  onOpenSettings,
 }: FizrukHeaderProps) {
   // Один вихід на підсторінку, і він завжди тут. До PR-Z7 набір був
   // вужчий (atlas / exercise / measurements), тож на `catalog`,
@@ -173,13 +139,10 @@ export function FizrukHeader({
     left = (
       <div className="flex items-center gap-1">
         <ModuleHeaderBackButton onClick={onBackToHub} />
-        {typeof onGoToHub === "function" && (
-          <ModuleHeaderHubButton onClick={onGoToHub} />
-        )}
       </div>
     );
   } else {
-    left = <DumbbellBadge />;
+    left = null;
   }
 
   return (
@@ -194,9 +157,6 @@ export function FizrukHeader({
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />
-          {onOpenSettings && (
-            <ModuleHeaderSettingsButton onClick={onOpenSettings} />
-          )}
         </div>
       }
     />

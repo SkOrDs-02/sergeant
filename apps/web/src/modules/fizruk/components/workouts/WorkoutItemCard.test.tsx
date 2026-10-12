@@ -346,16 +346,16 @@ describe("WorkoutItemCard — type switcher", () => {
       it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }),
     });
     expect(
-      screen.getByRole("tablist", { name: /Тип вправи/ }),
+      screen.getByRole("radiogroup", { name: /Тип вправи/ }),
     ).toBeInTheDocument();
     unmount();
     renderCard();
-    expect(screen.queryByRole("tablist", { name: /Тип вправи/ })).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: /Тип вправи/ })).toBeNull();
   });
 
   it("switches the item to time type, seeding durationSec", () => {
     renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }) });
-    fireEvent.click(screen.getByRole("tab", { name: /Час: секунди/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Час: секунди/ }));
     expect(updateItem).toHaveBeenCalledWith(
       "w1",
       "it-1",
@@ -368,7 +368,7 @@ describe("WorkoutItemCard — type switcher", () => {
       it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }),
       isReadOnly: true,
     });
-    expect(screen.queryByRole("tablist", { name: /Тип вправи/ })).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: /Тип вправи/ })).toBeNull();
   });
 });
 

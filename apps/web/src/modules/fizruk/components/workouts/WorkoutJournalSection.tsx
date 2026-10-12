@@ -138,7 +138,7 @@ export function WorkoutJournalSection({
 
   if (!activeWorkout) {
     return (
-      <Card radius="lg" padding="lg" className="text-center">
+      <Card padding="lg" className="text-center">
         <div className="text-style-label text-text">{copy.notFoundTitle}</div>
         <div className="text-style-caption text-subtle mt-1">
           {copy.notFoundDescription}
@@ -146,7 +146,7 @@ export function WorkoutJournalSection({
         <div className="mt-3">
           <Button
             variant="solid"
-            tone="fizruk"
+            tone="neutral"
             className="w-full h-11"
             onClick={onClose}
           >

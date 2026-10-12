@@ -52,7 +52,7 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
   const { active, clear } = useInjuries();
 
   return (
-    <Card as="section" radius="lg" padding="lg" aria-label={t.title}>
+    <Card as="section" padding="lg" aria-label={t.title}>
       <SectionHeading size="xs" variant="fizruk" as="h2">
         {t.title}
       </SectionHeading>
@@ -91,8 +91,8 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
         <div className="mt-3">
           <Button
             size="sm"
-            variant="soft"
-            tone="fizruk"
+            variant="outline"
+            tone="neutral"
 
             onClick={onOpenBody}
           >

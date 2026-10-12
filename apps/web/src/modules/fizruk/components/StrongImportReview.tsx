@@ -140,7 +140,7 @@ export function StrongImportReview({
           </Button>
           <Button
             variant="solid"
-            tone="fizruk"
+            tone="neutral"
 
             className="h-11"
             disabled={!canSubmit}
@@ -182,7 +182,7 @@ export function StrongImportReview({
                 type="button"
                 aria-pressed={weightUnit === unit}
                 onClick={() => setWeightUnit(unit)}
-                className="h-11 rounded-xl border border-line bg-bg px-3 text-style-body text-text transition-colors hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg aria-pressed:border-fizruk-ring aria-pressed:bg-fizruk/15 aria-pressed:text-fizruk-strong"
+                className="h-11 rounded-lg border border-line bg-bg px-3 text-style-body text-text transition-colors hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg aria-pressed:border-line aria-pressed:bg-panelHi aria-pressed:text-fizruk-strong"
               >
                 {unit}
               </button>
@@ -222,7 +222,7 @@ export function StrongImportReview({
             }
           />
         ) : parsed?.draft ? (
-          <p className="rounded-xl border border-success/30 bg-success/10 p-3 text-style-caption text-success-strong">
+          <p className="rounded-xl border border-line bg-panelHi p-3 text-style-caption text-text">
             {copy.allMatched}
           </p>
         ) : null}
@@ -262,7 +262,7 @@ function MatchList({
   return (
     <div className="space-y-2">
       <h3 className="text-style-label text-text">{title}</h3>
-      <ul className="divide-y divide-line rounded-2xl border border-line">
+      <ul className="divide-y divide-line rounded-xl border border-line">
         {matches.map((match) => (
           <li key={match.strongName} className="space-y-2 p-3">
             <div className="text-style-body font-semibold text-text">

@@ -62,8 +62,8 @@
 
 @utility input-focus-fizruk {
   @apply outline-hidden transition-colors
-           focus-visible:border-fizruk/60
-           focus-visible:ring-2 focus-visible:ring-fizruk/25;
+           focus-visible:border-border-strong
+           focus-visible:ring-2 focus-visible:ring-focus/25;
 }
 
 /* Мова H (редизайн v3 PR4): hue Їжі лише в даних, тож фокус поля
@@ -227,10 +227,10 @@
      FOCUS STATES — Accessible, branded
      ═══════════════════════════════════════════════════════════════════════ */
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
 }
 

@@ -4,7 +4,6 @@ import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
 import type { FizrukData } from "@sergeant/fizruk-domain";
@@ -185,22 +184,15 @@ export function QuickStartSheet({
                 onClose();
                 programTile.onStart();
               }}
-              className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
+              className="rounded-lg border border-line bg-panelHi p-4 text-left hover:border-muted transition"
             >
               <div className="flex items-center gap-3">
-                <Icon name="list-checks" size={22} className="text-muted" />
                 <div className="flex-1 min-w-0">
                   <div className="text-style-label text-text">За програмою</div>
                   <div className="text-style-caption text-subtle mt-0.5 truncate">
                     Сьогодні: {programTile.label}
                   </div>
                 </div>
-                <Icon
-                  name="chevron-right"
-                  size="sm"
-                  className="text-subtle"
-                  aria-hidden
-                />
               </div>
             </button>
           ) : null}
@@ -211,32 +203,24 @@ export function QuickStartSheet({
               onClose();
               onPickTemplate();
             }}
-            className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
+            className="rounded-lg border border-line bg-panelHi p-4 text-left hover:border-muted transition"
           >
             <div className="flex items-center gap-3">
-              <Icon name="clipboard" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">За шаблоном</div>
                 <div className="text-style-caption text-subtle mt-0.5">
                   Готовий набір вправ, старт із заповненим списком.
                 </div>
               </div>
-              <Icon
-                name="chevron-right"
-                size="sm"
-                className="text-subtle"
-                aria-hidden
-              />
             </div>
           </button>
 
           <button
             type="button"
             onClick={() => setStep("pick")}
-            className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
+            className="rounded-lg border border-line bg-panelHi p-4 text-left hover:border-muted transition"
           >
             <div className="flex items-center gap-3">
-              <Icon name="dumbbell" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   Підібрати вправи
@@ -245,12 +229,6 @@ export function QuickStartSheet({
                   Обери вправи зараз і почни, без збереження шаблону.
                 </div>
               </div>
-              <Icon
-                name="chevron-right"
-                size="sm"
-                className="text-subtle"
-                aria-hidden
-              />
             </div>
           </button>
         </div>
@@ -279,7 +257,6 @@ export function QuickStartSheet({
           onClick={() => setStep("choose")}
           aria-label="Повернутись до вибору способу"
         >
-          <Icon name="chevron-left" size="sm" />
           Назад
         </Button>
       }
@@ -294,13 +271,13 @@ export function QuickStartSheet({
           </Button>
           <Button
             variant="solid"
-            tone="fizruk"
+            tone="neutral"
 
             className="h-12 min-h-[44px] sm:flex-1"
             onClick={handleConfirm}
             disabled={selectedCount === 0}
           >
-            <Icon name="play" size="md" aria-hidden /> Почати
+            Почати
             {selectedCount > 0 ? ` · ${selectedCount}` : ""}
           </Button>
         </div>
@@ -329,7 +306,6 @@ export function QuickStartSheet({
           <EmptyState
             compact
             module="fizruk"
-            icon={<Icon name="dumbbell" size="lg" />}
             title={q.trim() ? "Нічого не знайшов" : "Каталог поки що порожній"}
             description={
               q.trim()
@@ -365,24 +341,22 @@ export function QuickStartSheet({
                           onClick={() => toggle(id)}
                           aria-pressed={active}
                           className={cn(
-                            "w-full text-left rounded-xl border p-3 min-h-[52px] flex items-center gap-3 transition-colors",
+                            "w-full text-left rounded-lg border p-3 min-h-[52px] flex items-center gap-3 transition-colors",
                             active
-                              ? "border-brand-500 bg-brand-500/10"
+                              ? "border-text bg-panelHi"
                               : "border-line bg-bg hover:border-muted",
                           )}
                         >
                           <span
                             className={cn(
-                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-style-caption font-bold",
+                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-lg border text-style-caption font-bold",
                               active
-                                ? "bg-brand-strong border-brand-strong text-white"
+                                ? "bg-text border-text text-bg"
                                 : "border-line text-subtle",
                             )}
                             aria-hidden
                           >
-                            {active ? (
-                              <Icon name="check" size="sm" aria-hidden />
-                            ) : null}
+                            {active ? <span aria-hidden>✓</span> : null}
                           </span>
                           <span className="text-style-label text-text truncate flex-1">
                             {name}

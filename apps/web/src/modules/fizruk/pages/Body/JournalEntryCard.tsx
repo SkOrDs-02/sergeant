@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -74,7 +73,7 @@ export function JournalEntryCard({
           aria-controls={contentId}
           className={cn(
             "flex-1 min-w-0 flex items-center gap-2 px-3 py-2 text-left",
-            "rounded-xl transition-colors hover:bg-panelHi/40",
+            "rounded-lg transition-colors hover:bg-panelHi/40",
           )}
         >
           <span
@@ -83,9 +82,7 @@ export function JournalEntryCard({
               "inline-flex justify-center w-3 text-muted transition-transform shrink-0",
               open ? "rotate-180" : "rotate-0",
             )}
-          >
-            <Icon name="chevron-down" size="sm" />
-          </span>
+          ></span>
           <span className="text-style-caption text-muted shrink-0">
             {dateLabel}
           </span>
@@ -98,21 +95,9 @@ export function JournalEntryCard({
         <button
           type="button"
           onClick={() => onDelete(entry.id)}
-          className="focus-ring touch-target shrink-0 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          className="focus-ring touch-target shrink-0 m-1 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
           aria-label={messages.fizruk.journal.deleteEntryAriaLabel}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" />
-          </svg>
-        </button>
+        ></button>
       </div>
       {open && (
         <div id={contentId} className="px-3 pb-3 pt-0">

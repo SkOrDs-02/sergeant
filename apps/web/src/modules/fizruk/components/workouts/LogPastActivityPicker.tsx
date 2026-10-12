@@ -78,7 +78,7 @@ export function ActivityPickerSheet({
     cn(
       "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-xl border px-[7px] text-left text-style-body",
       active
-        ? "border-fizruk-edge bg-fizruk-surface text-fizruk-soft-fg"
+        ? "border-text bg-panelHi text-text"
         : "border-transparent text-text",
     );
 
