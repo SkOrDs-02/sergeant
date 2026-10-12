@@ -46,7 +46,7 @@ describe("Atlas page", () => {
     const { container } = render(<Atlas />);
     const scrollRoot = container.querySelector(".max-w-4xl");
     expect(scrollRoot).not.toBeNull();
-    expect(scrollRoot).not.toHaveClass("page-tabbar-pad");
-    expect(scrollRoot).toHaveClass("safe-area-pb");
+    expect(scrollRoot).toHaveClass("page-tabbar-pad");
+    expect(scrollRoot).toHaveClass("page-tabbar-pad");
   });
 });

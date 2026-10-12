@@ -2,6 +2,7 @@
  * Last validated: 2026-06-05
  * Status: Active
  */
+import { ModuleAccentContext } from "@shared/components/layout/ModuleAccentProvider";
 import { useEffect, useState } from "react";
 import {
   ModuleShell,
@@ -44,7 +45,6 @@ import { RestTimerOverlayConnected } from "./components/workouts/RestTimerOverla
 interface FizrukAppProps {
   onBackToHub?: () => void;
   onGoToHub?: () => void;
-  onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
@@ -53,7 +53,6 @@ interface FizrukAppProps {
 export default function FizrukApp({
   onBackToHub,
   onGoToHub,
-  onOpenSettings,
   onOpenModule,
   pwaAction,
   onPwaActionConsumed,
@@ -218,113 +217,113 @@ export default function FizrukApp({
   })();
 
   return (
-    <RestTimerProvider>
-      {/* Module-level rest-timer overlay — rendered above the router so it
+    <ModuleAccentContext.Provider value={null}>
+      <RestTimerProvider>
+        {/* Module-level rest-timer overlay — rendered above the router so it
           survives navigation between Огляд / Атлас / Тренування while a
           rest countdown is active (audit-06 F3). */}
-      <RestTimerOverlayConnected hidden={sessionMode} />
+        <RestTimerOverlayConnected hidden={sessionMode} />
 
-      <ModuleShell
-        module="fizruk"
-        header={
-          sessionMode ? undefined : (
-            <FizrukHeader
-              page={page}
-              activeProgram={activeProgram}
-              onBackToHub={onBackToHub}
-              onGoToHub={onGoToHub}
-              onContextualBack={() => navigate(contextualBackTarget)}
-              onOpenSettings={onOpenSettings}
-            />
-          )
-        }
-        banner={
-          <StorageErrorBanner eventName={FIZRUK_WORKOUTS_STORAGE_ERROR} />
-        }
-        nav={
-          sessionMode ? undefined : (
-            <ModuleBottomNav
-              items={FIZRUK_NAV}
-              activeId={fizrukNavActiveId(page)}
-              onChange={(id) => navigate(id)}
-              module="fizruk"
-              ariaLabel={messages.nav.fizrukSections}
-            />
-          )
-        }
-      >
-        {/* Свайп між чотирма вкладками нижньої навігації. `activeId={page}`
+        <ModuleShell
+          header={
+            sessionMode ? undefined : (
+              <FizrukHeader
+                page={page}
+                activeProgram={activeProgram}
+                onBackToHub={onBackToHub}
+                onGoToHub={onGoToHub}
+                onContextualBack={() => navigate(contextualBackTarget)}
+              />
+            )
+          }
+          banner={
+            <StorageErrorBanner eventName={FIZRUK_WORKOUTS_STORAGE_ERROR} />
+          }
+          nav={
+            sessionMode ? undefined : (
+              <ModuleBottomNav
+                module="fizruk"
+                items={FIZRUK_NAV}
+                activeId={fizrukNavActiveId(page)}
+                onChange={(id) => navigate(id)}
+                ariaLabel={messages.nav.fizrukSections}
+              />
+            )
+          }
+        >
+          {/* Свайп між чотирма вкладками нижньої навігації. `activeId={page}`
             навмисно передає сиру сторінку, а не `fizrukNavActiveId(page)`:
             на детальних екранах («Вправа», «Тренування», «Атлас», «Заміри»)
             її нема в `SWIPE_PAGE_IDS`, і `SwipePages` вимикає жест сам —
             свайпати «наступну вкладку» з відкритої вправи безглуздо. */}
-        <SwipePages
-          ids={SWIPE_PAGE_IDS}
-          activeId={page}
-          onChange={(next) => navigate(next)}
-        >
-          <FizrukRouter
-            page={page}
-            exerciseId={exerciseId}
-            workoutId={workoutId}
-            workoutItemId={workoutItemId}
-            atlasMuscleId={atlasMuscleId}
-            activeProgramId={activeProgramId}
-            activeProgram={activeProgram}
-            activateProgram={activateProgram}
-            deactivateProgram={deactivateProgram}
-            todaySession={todaySession}
-            quickStartRequest={quickStartRequest}
-            onNavigate={(target) => navigate(target)}
-            onStartProgramWorkout={(session) =>
-              handleStartProgramWorkout(session)
-            }
-            onQuickStart={handleQuickStart}
-            onOpenModule={onOpenModule}
-          />
-        </SwipePages>
-        <Modal
-          open={pendingProgramStart !== null}
-          onClose={() => setPendingProgramStart(null)}
-          title={conflictCopy.title}
-          description={conflictCopy.description}
-          size="sm"
-          footer={
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="solid"
-                tone="fizruk"
+          <SwipePages
+            ids={SWIPE_PAGE_IDS}
+            activeId={page}
+            onChange={(next) => navigate(next)}
+          >
+            <FizrukRouter
+              page={page}
+              exerciseId={exerciseId}
+              workoutId={workoutId}
+              workoutItemId={workoutItemId}
+              atlasMuscleId={atlasMuscleId}
+              activeProgramId={activeProgramId}
+              activeProgram={activeProgram}
+              activateProgram={activateProgram}
+              deactivateProgram={deactivateProgram}
+              todaySession={todaySession}
+              quickStartRequest={quickStartRequest}
+              onNavigate={(target) => navigate(target)}
+              onStartProgramWorkout={(session) =>
+                handleStartProgramWorkout(session)
+              }
+              onQuickStart={handleQuickStart}
+              onOpenModule={onOpenModule}
+            />
+          </SwipePages>
+          <Modal
+            open={pendingProgramStart !== null}
+            onClose={() => setPendingProgramStart(null)}
+            title={conflictCopy.title}
+            description={conflictCopy.description}
+            size="sm"
+            footer={
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="solid"
+                  tone="neutral"
 
-                className="w-full h-12"
-                onClick={() => resolveProgramStartConflict("finish")}
-              >
-                {conflictCopy.finish}
-              </Button>
-              <Button
-                variant="solid"
-                tone="danger"
-                className="w-full h-12"
-                onClick={() => resolveProgramStartConflict("discard")}
-              >
-                {conflictCopy.discard}
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full h-12"
-                onClick={() => setPendingProgramStart(null)}
-              >
-                {messages.actions.cancel}
-              </Button>
-            </div>
-          }
-        />
-        {showFab && (
-          <CornerAction
-            label={messages.fizruk.resumeWorkoutFab}
-            onClick={handleFabClick}
+                  className="w-full h-12"
+                  onClick={() => resolveProgramStartConflict("finish")}
+                >
+                  {conflictCopy.finish}
+                </Button>
+                <Button
+                  variant="solid"
+                  tone="danger"
+                  className="w-full h-12"
+                  onClick={() => resolveProgramStartConflict("discard")}
+                >
+                  {conflictCopy.discard}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12"
+                  onClick={() => setPendingProgramStart(null)}
+                >
+                  {messages.actions.cancel}
+                </Button>
+              </div>
+            }
           />
-        )}
-      </ModuleShell>
-    </RestTimerProvider>
+          {showFab && (
+            <CornerAction
+              label={messages.fizruk.resumeWorkoutFab}
+              onClick={handleFabClick}
+            />
+          )}
+        </ModuleShell>
+      </RestTimerProvider>
+    </ModuleAccentContext.Provider>
   );
 }

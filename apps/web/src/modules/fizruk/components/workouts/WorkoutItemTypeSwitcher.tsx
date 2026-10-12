@@ -2,9 +2,9 @@
  * Last validated: 2026-08-08
  * Status: Active
  */
-import { useEffect, useRef } from "react";
+
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Segmented } from "@shared/components/ui/Segmented";
+import { FizrukChoiceList } from "../FizrukChoiceList";
 import { messages } from "@shared/i18n/uk";
 import type { WorkoutItem } from "@sergeant/fizruk-domain";
 
@@ -63,11 +63,8 @@ export function buildTypeSwitchPatch(
  * currently being logged; the card only ever renders the
  * type-specific fields.
  *
- * Read-only guard mirrors the pre-redesign behaviour exactly: `Segmented`
- * has no `disabled` prop, so a CSS-only block would still let Tab +
- * Arrow keys reach the control. The `onChange` guard refuses the
- * mutation outright, and the effect below pulls every tab out of the
- * Tab order once read-only so keyboard users can't even reach it.
+ * Native radio controls carry the read-only state; the mutation guard
+ * also rejects updates if the parent changes state during a click.
  */
 export function WorkoutItemTypeSwitcher({
   item,
@@ -75,33 +72,18 @@ export function WorkoutItemTypeSwitcher({
   onChange,
 }: WorkoutItemTypeSwitcherProps) {
   const ts = messages.fizruk.typeSwitcher;
-  const segmentedTypeRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!isReadOnly) return;
-    const tabs =
-      segmentedTypeRef.current?.querySelectorAll<HTMLButtonElement>(
-        '[role="tab"]',
-      );
-    tabs?.forEach((tab) => {
-      tab.tabIndex = -1;
-    });
-  });
 
   return (
     <div
-      ref={segmentedTypeRef}
       aria-disabled={isReadOnly || undefined}
-      className="rounded-2xl border border-line bg-panelHi px-3"
+      className="rounded-xl border border-line bg-panelHi px-3"
     >
       <SectionHeading as="div" size="xs" variant="fizruk" className="pt-2">
         {ts.heading}
       </SectionHeading>
-      <Segmented
-        variant="fizruk"
-        style="solid"
-        size="md"
+      <FizrukChoiceList
+        disabled={isReadOnly}
         ariaLabel={ts.ariaLabel}
-        className={isReadOnly ? "opacity-50 pointer-events-none" : ""}
         value={item.type || "strength"}
         items={[
           {
@@ -124,9 +106,7 @@ export function WorkoutItemTypeSwitcher({
           },
         ]}
         onChange={(t) => {
-          // Real block, not just visual — see the effect above for why
-          // (Segmented has no `disabled` prop, and both mouse AND
-          // keyboard paths land here).
+          // Keep the mutation guard even though radios are disabled.
           if (isReadOnly) return;
           onChange(buildTypeSwitchPatch(t, item));
         }}

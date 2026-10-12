@@ -41,7 +41,7 @@ export function WarmupCooldownChecklist({
         <span className="text-style-caption text-subtle">{title}</span>
         <button
           type="button"
-          className="focus-ring min-h-[44px] -my-2 px-2 rounded-lg text-style-caption font-semibold text-fizruk hover:opacity-80 transition-opacity"
+          className="focus-ring min-h-[44px] -my-2 px-2 rounded-lg text-style-caption font-semibold text-text hover:opacity-80 transition-opacity"
           onClick={onInit}
         >
           Додати
@@ -61,7 +61,7 @@ export function WarmupCooldownChecklist({
       <summary className="text-style-caption text-subtle cursor-pointer select-none flex items-center justify-between min-h-[28px]">
         <span>{title}</span>
         <span
-          className={`ml-2 text-style-caption font-bold tabular-nums ${doneCount === total ? "text-success-strong dark:text-success" : "text-text"}`}
+          className={`ml-2 text-style-caption font-bold tabular-nums ${doneCount === total ? "text-text" : "text-text"}`}
         >
           {doneCount}/{total}
         </span>
@@ -71,7 +71,8 @@ export function WarmupCooldownChecklist({
           <li key={item.id} className="flex items-center gap-2">
             <button
               type="button"
-              className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${item.done ? "bg-success-strong border-success-strong text-white" : "border-control bg-bg"}`}
+              className="focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+              aria-pressed={item.done}
               onClick={() => onToggle(item.id)}
               aria-label={
                 item.done
@@ -79,17 +80,12 @@ export function WarmupCooldownChecklist({
                   : `${item.label}: позначити як завершене`
               }
             >
-              {item.done && (
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path
-                    d="M2 5l2.5 2.5L8 3"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
+              <span
+                aria-hidden
+                className={`flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border ${item.done ? "border-text bg-text text-bg" : "border-line bg-bg"}`}
+              >
+                {item.done ? "✓" : null}
+              </span>
             </button>
             <span
               className={`text-style-caption ${item.done ? "line-through text-subtle" : "text-text"}`}

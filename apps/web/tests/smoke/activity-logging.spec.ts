@@ -55,9 +55,9 @@ test("@critical fizruk: заняття з каталогу пишеться од
   await sheet.getByLabel("Дата").fill(yesterdayLocalDateString());
   await sheet.getByLabel("Початок").fill("10:00");
   // 45 хв - дефолт форми; клікаємо явно, щоб тест ловив і зникнення чипів.
-  await sheet.getByRole("tab", { name: "45 хв" }).click();
-  await sheet.getByRole("tab", { name: "Все тіло" }).click();
-  await sheet.getByRole("tab", { name: "Середньо" }).click();
+  await sheet.getByRole("radio", { name: "45 хв" }).click();
+  await sheet.getByRole("radio", { name: "Все тіло" }).click();
+  await sheet.getByRole("radio", { name: "Середньо" }).click();
   // Ваги в свіжому профілі немає, тож форма просить її тут - без неї
   // витрати рахувати нічим.
   await sheet.getByLabel("Твоя вага, кг").fill("60");

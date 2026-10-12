@@ -15,13 +15,7 @@ export function SupersetBadge({
   compact?: boolean;
 }) {
   const label = type === "circuit" ? "Коло" : compact ? "СС" : "Суперсет";
-  return (
-    <span
-      className={`text-style-overline px-1.5 py-0.5 rounded-full ${type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success-strong dark:text-success border border-success/30"}`}
-    >
-      {label}
-    </span>
-  );
+  return <span className="text-style-caption text-muted">{label}</span>;
 }
 
 /**
@@ -37,7 +31,7 @@ export function SupersetBadge({
  */
 export function SupersetMemberLabel({ position }: { position: number }) {
   return (
-    <span className="text-style-overline px-1.5 py-0.5 rounded-full border border-line bg-panelHi text-subtle tabular-nums">
+    <span className="text-style-caption text-muted tabular-nums">
       {`A${position}`}
     </span>
   );

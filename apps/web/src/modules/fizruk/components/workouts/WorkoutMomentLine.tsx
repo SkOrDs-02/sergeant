@@ -25,7 +25,7 @@ export function WorkoutMomentLine({ workoutId }: { workoutId: string }) {
     <MomentLine
       target={workoutId}
       format={workoutMomentText}
-      className="mt-1 text-fizruk-strong dark:text-fizruk"
+      className="mt-1 text-text"
     />
   );
 }

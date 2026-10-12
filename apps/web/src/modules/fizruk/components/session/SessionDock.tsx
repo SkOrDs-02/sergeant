@@ -40,8 +40,6 @@ export function SessionDock({
   const rt = messages.fizruk.restTimer;
   const kbInset = useVisualKeyboardInset(true);
   const resting = restTimer != null;
-  const urgent =
-    resting && restTimer.remaining <= 10 && restTimer.remaining > 0;
   const pct =
     resting && restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0;
 
@@ -49,7 +47,7 @@ export function SessionDock({
     <div
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 border-t bg-panel transition-transform",
-        resting ? "border-success/60" : "border-line",
+        "border-line",
         kbInset > 0 && "translate-y-full pointer-events-none",
       )}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -63,38 +61,20 @@ export function SessionDock({
               role="timer"
               aria-label={rt.ariaLabel}
             >
-              <div className="relative h-10 w-10 shrink-0">
-                <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15"
-                    fill="none"
-                    stroke="currentColor"
-                    className="text-line/40"
-                    strokeWidth="3"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15"
-                    fill="none"
-                    stroke="currentColor"
-                    className={urgent ? "text-warning" : "text-success"}
-                    strokeWidth="3"
-                    strokeDasharray={`${94.2 * pct} 94.2`}
-                    strokeLinecap="round"
-                    style={{ transition: "stroke-dasharray 1s linear" }}
-                  />
-                </svg>
-              </div>
+              <span
+                aria-hidden
+                className="h-[5px] w-10 shrink-0 overflow-hidden rounded-[3px] bg-line"
+              >
+                <span
+                  className="block h-full rounded-[3px] bg-chart-fizruk transition-[width] duration-base"
+                  style={{ width: `${pct * 100}%` }}
+                />
+              </span>
               <div className="min-w-0">
                 <div
                   className={cn(
                     "text-style-title font-bold leading-tight tracking-tight tabular-nums",
-                    urgent
-                      ? "text-warning-strong dark:text-warning"
-                      : "text-text",
+                    "text-text",
                   )}
                 >
                   {formatRestClock(restTimer.remaining)}
@@ -108,7 +88,7 @@ export function SessionDock({
               <button
                 key={seconds}
                 type="button"
-                className="focus-ring h-11 w-11 shrink-0 rounded-xl border border-line text-style-label font-semibold tabular-nums text-text hover:bg-panelHi"
+                className="focus-ring h-11 w-11 shrink-0 rounded-lg border border-line text-style-label font-semibold tabular-nums text-text hover:bg-panelHi"
                 onClick={() => onAdjustRest(seconds)}
                 aria-label={`${seconds > 0 ? rt.add : rt.subtract} ${Math.abs(seconds)} ${rt.secondsSuffix}`}
               >
@@ -118,7 +98,7 @@ export function SessionDock({
             ))}
             <button
               type="button"
-              className="focus-ring h-11 shrink-0 rounded-xl px-3 text-style-label font-semibold text-danger-strong dark:text-danger hover:bg-danger/10"
+              className="focus-ring h-11 shrink-0 rounded-lg px-3 text-style-label font-semibold text-danger-strong dark:text-danger hover:bg-danger/10"
               onClick={onSkipRest}
             >
               {rt.skip}

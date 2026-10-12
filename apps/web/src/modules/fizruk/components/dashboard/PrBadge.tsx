@@ -20,7 +20,6 @@
  */
 
 import { messages } from "@shared/i18n/uk";
-import { Badge } from "@shared/components/ui/Badge";
 import type { PrLatest } from "../../hooks/usePrLatest";
 import { fmtLoose } from "../../lib/numberFmt";
 
@@ -78,31 +77,8 @@ export function PrBadge({ pr }: PrBadgeProps) {
   const weightLabel = fmtLoose(pr.weightKg);
 
   return (
-    <div
-      aria-hidden
-      className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-end pointer-events-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow"
-    >
-      <Badge variant="fizruk" size="xs" className="h-6 px-2 rounded-xl">
-        <svg
-          width={12}
-          height={12}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          focusable={false}
-        >
-          {/* `award` glyph — Lucide-style trophy/medal substitute */}
-          <circle cx={12} cy={8} r={6} />
-          <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-        </svg>
-        <span>
-          PR · {exerciseShort} · {weightLabel} {messages.fizruk.kgUnit}
-        </span>
-      </Badge>
-    </div>
+    <p aria-hidden className="text-style-body text-muted">
+      PR · {exerciseShort} · {weightLabel} {messages.fizruk.kgUnit}
+    </p>
   );
 }

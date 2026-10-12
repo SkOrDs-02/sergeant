@@ -38,7 +38,6 @@
  * історія, тож для нього «синхронізації ще не було» – скарга системи на
  * власний стан, а не межа поради.
  */
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import type { WellbeingSignal } from "@sergeant/fizruk-domain";
 import type { ReplicaFreshness } from "../../../core/syncEngine/replicaFreshness";
@@ -58,21 +57,15 @@ export function RecoveryHonestyNotes({
   const neverSynced = freshness.lastPullAt === null;
 
   return (
-    <details className="group mb-3 rounded-xl border border-line bg-panel px-3">
-      <summary className="touch-target flex cursor-pointer items-center gap-1.5 text-style-caption text-muted marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk">
-        <Icon
-          name="info"
-          size={13}
-          className="shrink-0 text-subtle"
-          aria-hidden
-        />
+    <details className="group mb-3 border-b border-line py-1">
+      <summary className="touch-target flex cursor-pointer items-center gap-1.5 text-style-caption text-muted marker:content-none focus-ring">
         <span className="min-w-0 flex-1">{t.observationBadge}</span>
-        <Icon
-          name="chevron-right"
-          size={13}
-          className="shrink-0 text-subtle transition-transform group-open:rotate-90"
-          aria-hidden
-        />
+        <span className="group-open:hidden">
+          {messages.fizruk.disclosure.show}
+        </span>
+        <span className="hidden group-open:inline">
+          {messages.fizruk.disclosure.hide}
+        </span>
       </summary>
 
       <div className="pb-3">

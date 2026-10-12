@@ -124,7 +124,7 @@ describe("Dashboard — guest, no data (real hooks + real children)", () => {
   it("renders the hero body-empty message for a guest with no training history (рішення 1)", async () => {
     renderDashboard();
     expect(
-      await screen.findByText(/Тіло ще не має історії/),
+      await screen.findByText(/Історії тренувань ще немає/),
     ).toBeInTheDocument();
   });
 

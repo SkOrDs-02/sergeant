@@ -55,7 +55,7 @@ function InjuryChip({
       className={cn(
         "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         selected
-          ? "border-warning-strong bg-warning/15 text-warning-strong dark:text-warning"
+          ? "border-line bg-panelHi text-text"
           : "border-line bg-bg text-muted hover:border-muted hover:text-text",
       )}
       onClick={() => onToggle(site)}
@@ -63,7 +63,7 @@ function InjuryChip({
       <span>
         {INJURY_SITE_LABELS_UK[site as keyof typeof INJURY_SITE_LABELS_UK]}
       </span>
-      {selected && <Icon name="check" size="sm" aria-hidden />}
+      {selected && "✓"}
     </button>
   );
 }
@@ -127,7 +127,6 @@ export function WorkoutFinishSheets({
         {finishFlash.step === "wellbeing" && (
           <Card
             prominence="elevated"
-            radius="lg"
             // `overscroll-contain`: без нього жест, доведений до межі
             // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
             // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
@@ -167,7 +166,7 @@ export function WorkoutFinishSheets({
                     key={`e${n}`}
                     type="button"
                     className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-xl border text-style-label transition-colors",
+                      "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
                       finishFlash.energy === n
                         ? "bg-text text-bg border-text"
                         : "border-line bg-bg text-muted hover:border-muted",
@@ -202,7 +201,7 @@ export function WorkoutFinishSheets({
                     key={`m${n}`}
                     type="button"
                     className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-xl border text-style-label transition-colors",
+                      "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
                       finishFlash.mood === n
                         ? "bg-text text-bg border-text"
                         : "border-line bg-bg text-muted hover:border-muted",
@@ -230,7 +229,7 @@ export function WorkoutFinishSheets({
               </Button>
               <Button
                 variant="solid"
-                tone="fizruk"
+                tone="neutral"
 
                 className="flex-1 h-12 min-h-[44px]"
                 type="button"
@@ -283,7 +282,6 @@ export function WorkoutFinishSheets({
         {finishFlash.step === "injury" && (
           <Card
             prominence="elevated"
-            radius="lg"
             // `overscroll-contain`: без нього жест, доведений до межі
             // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
             // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
@@ -347,12 +345,12 @@ export function WorkoutFinishSheets({
                 type="button"
                 aria-expanded={musclesOpen}
                 onClick={() => setMusclesOpen((open) => !open)}
-                className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-xl border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-lg border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               >
                 <span className="inline-flex items-center gap-2">
                   {injuryCopy.groupMuscles}
                   {selectedMuscleCount > 0 && (
-                    <span className="rounded-full bg-warning/15 px-2 py-0.5 text-style-caption text-warning-strong dark:text-warning">
+                    <span className="rounded-lg bg-panelHi px-2 py-0.5 text-style-caption text-text">
                       {selectedMuscleCount}
                     </span>
                   )}
@@ -403,7 +401,7 @@ export function WorkoutFinishSheets({
               </Button>
               <Button
                 variant="solid"
-                tone="fizruk"
+                tone="neutral"
 
                 className="flex-1 h-12"
                 disabled={
@@ -440,13 +438,13 @@ export function WorkoutFinishSheets({
         {finishFlash.step === "summary" && finishFlash.collapsed && (
           <button
             type="button"
-            className="w-full flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel px-4 py-3 min-h-[44px] shadow-float text-left"
+            className="w-full flex items-center justify-between gap-3 rounded-lg border border-line bg-panel px-4 py-3 min-h-[44px] text-left"
             onClick={() =>
               setFinishFlash((f) => f && { ...f, collapsed: false })
             }
           >
             <span className="text-style-label text-text inline-flex items-center gap-1.5">
-              <Icon name="check" size={15} aria-hidden /> Результати
+              Результати
             </span>
             <span className="text-style-caption text-subtle tabular-nums">
               {formatDurShort(finishFlash.durationSec)}
@@ -455,14 +453,14 @@ export function WorkoutFinishSheets({
         )}
 
         {finishFlash.step === "summary" && !finishFlash.collapsed && (
-          <div className="rounded-2xl overflow-hidden border border-line shadow-float">
+          <div className="rounded-xl overflow-hidden bg-panel">
             <div className="fizruk-summary-header">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <SectionHeading size="xs" variant="fizruk" as="div">
                     Завершено
                   </SectionHeading>
-                  <div className="text-style-title text-fizruk-soft-fg mt-1 leading-tight">
+                  <div className="text-style-title text-text mt-1 leading-tight">
                     Тренування виконано
                   </div>
                 </div>
@@ -472,7 +470,7 @@ export function WorkoutFinishSheets({
                   // тобто SVG із власним розміром, на який шкала шрифта не
                   // впливає. Клас нічого не робив, лише тягнув за собою
                   // попередження про сиру шкалу.
-                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-fizruk-soft-fg hover:opacity-70"
+                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-lg bg-panelHi text-text hover:opacity-70"
                   aria-label="Закрити"
                   onClick={closeFinish}
                 >
@@ -505,7 +503,6 @@ export function WorkoutFinishSheets({
                     openHubModule("nutrition", "log");
                   }}
                 >
-                  <Icon name="egg" size={15} aria-hidden />
                   <span>Додати білок після тренування</span>
                   <span aria-hidden>→</span>
                 </button>
@@ -513,7 +510,7 @@ export function WorkoutFinishSheets({
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 min-h-[44px] rounded-full"
+                  className="flex-1 h-12 min-h-[44px] rounded-lg"
                   type="button"
                   onClick={() =>
                     setFinishFlash((f) => f && { ...f, collapsed: true })
@@ -524,7 +521,7 @@ export function WorkoutFinishSheets({
                 <button
                   type="button"
 
-                  className="fizruk-cta-accent flex-1 py-3 rounded-full text-base"
+                  className="fizruk-cta-accent flex-1 py-3 rounded-lg text-base"
                   onClick={closeFinish}
                 >
                   Готово

@@ -400,7 +400,7 @@ export function Workouts({
             footer={
               <Button
                 variant="solid"
-                tone="fizruk"
+                tone="neutral"
 
                 className="w-full h-11"
                 onClick={() => setCatalogSheetOpen(false)}

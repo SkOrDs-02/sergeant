@@ -129,7 +129,7 @@ export function ExerciseDetailSheet({
       zIndex={100}
     >
       {cf?.hasWarning && (
-        <div className="mb-4 rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2.5 text-xs text-warning-strong dark:text-warning leading-snug">
+        <div className="mb-4 rounded-xl border border-line bg-panelHi px-3 py-2.5 text-xs text-text leading-snug">
           {cf.injury.blocked ? (
             <div className="font-semibold">
               Ти позначив біль. Навантажувати цю групу не раджу.
@@ -157,7 +157,7 @@ export function ExerciseDetailSheet({
               <button
                 key={src}
                 type="button"
-                className="shrink-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fizruk"
+                className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fizruk"
                 onClick={() => setViewerOpen(true)}
                 aria-label={`${exerciseTitle}: відкрити перегляд, кадр ${i + 1}`}
               >
@@ -168,7 +168,7 @@ export function ExerciseDetailSheet({
                   decoding="async"
                   width="160"
                   height="160"
-                  className="h-40 w-40 rounded-2xl object-cover border border-line bg-bg"
+                  className="h-40 w-40 rounded-xl object-cover border border-line bg-bg"
                 />
               </button>
             ))}
@@ -201,7 +201,7 @@ export function ExerciseDetailSheet({
           {(selected?.muscles?.primary || []).map((m) => (
             <span
               key={m}
-              className="text-xs px-3 py-1.5 rounded-full border border-line bg-bg text-muted font-semibold"
+              className="text-xs px-3 py-1.5 rounded-lg border border-line bg-bg text-muted font-semibold"
             >
               {musclesUk?.[m] || m} · основний
             </span>
@@ -209,7 +209,7 @@ export function ExerciseDetailSheet({
           {(selected?.muscles?.secondary || []).map((m) => (
             <span
               key={m}
-              className="text-xs px-3 py-1.5 rounded-full border border-line bg-bg text-subtle font-semibold"
+              className="text-xs px-3 py-1.5 rounded-lg border border-line bg-bg text-subtle font-semibold"
             >
               {musclesUk?.[m] || m}
             </span>
@@ -225,7 +225,7 @@ export function ExerciseDetailSheet({
           {equipmentLabels.map((eq) => (
             <span
               key={eq}
-              className="text-xs px-3 py-1.5 rounded-full border border-line bg-bg text-muted font-semibold"
+              className="text-xs px-3 py-1.5 rounded-lg border border-line bg-bg text-muted font-semibold"
             >
               {eq}
             </span>
@@ -238,7 +238,7 @@ export function ExerciseDetailSheet({
           href={`https://www.google.com/search?q=${encodeURIComponent(selected.name.uk)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border-strong bg-panel px-6 text-style-label-lg font-semibold text-text shadow-e1 motion-safe:transition-all motion-safe:duration-base motion-safe:ease-smooth hover:border-brand-200 hover:bg-panelHi hover:shadow-e2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg active:scale-[0.98]"
+          className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-xl border border-border-strong bg-panel px-6 text-style-label-lg font-semibold text-text motion-safe:transition-all motion-safe:duration-base motion-safe:ease-smooth hover:border-brand-200 hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
           Знайти в інтернеті
         </a>
@@ -288,7 +288,7 @@ export function ExerciseDetailSheet({
       {mode === "log" && (
         <Button
           type="button"
-          className="w-full h-12 mt-5 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90 dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90 dark:border-fizruk"
+          className="w-full h-12 mt-5 bg-text text-bg border-line hover:bg-panelHi dark:text-bg dark:hover:bg-panelHi"
           onClick={() => {
             if (!activeWorkoutId) {
               toast?.warning?.("Спочатку натисни «Почати тренування».");

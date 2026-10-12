@@ -103,7 +103,6 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "info",
             label: ss.aboutExercise,
-            icon: <Icon name="info" size="md" aria-hidden />,
             onSelect: onOpenInfo,
           },
         ]
@@ -114,7 +113,6 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "stats",
             label: ss.exerciseStats,
-            icon: <Icon name="trending-up" size="md" aria-hidden />,
             onSelect: onOpenStats,
           },
         ]
@@ -125,7 +123,6 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "ungroup",
             label: ss.ungroup,
-            icon: <Icon name="scissors" size="md" aria-hidden />,
             onSelect: onUngroup,
           },
         ]
@@ -136,7 +133,6 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "remove",
             label: ss.removeFromWorkout,
-            icon: <Icon name="trash" size="md" aria-hidden />,
             destructive: true,
             onSelect: onRemoveItem,
           },
@@ -148,7 +144,7 @@ export function SessionExerciseFocus({
     <div className="space-y-3">
       <section
         aria-labelledby={`session-exercise-${it.id}`}
-        className="rounded-2xl border border-line bg-panel p-3 shadow-e1"
+        className="rounded-xl bg-panel p-4"
       >
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-panelHi">
@@ -159,14 +155,7 @@ export function SessionExerciseFocus({
                 className="h-full w-full object-cover"
                 loading="lazy"
               />
-            ) : (
-              <Icon
-                name="dumbbell"
-                size={22}
-                className="text-subtle"
-                aria-hidden
-              />
-            )}
+            ) : null}
           </div>
           <div className="min-w-0 flex-1">
             <h2
@@ -174,7 +163,7 @@ export function SessionExerciseFocus({
               className="flex items-center gap-2 text-style-label-lg font-bold leading-tight text-text"
             >
               {pos != null ? (
-                <span className="rounded-md bg-fizruk-surface px-1.5 text-style-caption font-bold text-fizruk-soft-fg">
+                <span className="rounded-md bg-panelHi px-1.5 text-style-caption font-bold text-text">
                   A{pos}
                 </span>
               ) : null}
@@ -232,9 +221,8 @@ export function SessionExerciseFocus({
             type="button"
             onClick={() => onOpenItem(prev.id)}
             aria-label={`${ss.prevExercise}: ${prev.nameUk}`}
-            className="focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-xl px-2 text-style-label text-muted hover:text-text"
+            className="focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-lg px-2 text-style-label text-muted hover:text-text"
           >
-            <Icon name="chevron-left" size="md" aria-hidden />
             <span className="truncate">{prev.nameUk}</span>
           </button>
         ) : (
@@ -245,10 +233,9 @@ export function SessionExerciseFocus({
             type="button"
             onClick={() => onOpenItem(next.id)}
             aria-label={`${ss.nextExercise}: ${next.nameUk}`}
-            className="focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-xl px-2 text-style-label font-semibold text-fizruk-strong dark:text-fizruk hover:bg-fizruk-surface"
+            className="focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-lg px-2 text-style-label font-semibold text-text hover:bg-panelHi"
           >
             <span className="truncate">{next.nameUk}</span>
-            <Icon name="chevron-right" size="md" aria-hidden />
           </button>
         ) : (
           <span />

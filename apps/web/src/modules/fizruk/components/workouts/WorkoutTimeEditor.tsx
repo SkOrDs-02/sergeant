@@ -4,7 +4,6 @@
  */
 import { useId } from "react";
 import type { Workout } from "@sergeant/fizruk-domain";
-import { Icon } from "@shared/components/ui/Icon";
 import { formatDateTimeShort, formatTimeHm } from "@shared/lib/time/formatDate";
 import {
   isoToDatetimeLocalValue,
@@ -113,12 +112,6 @@ export function WorkoutTimeEditor({
             </span>
           ) : null}
         </span>
-        <Icon
-          name="chevron-down"
-          size="md"
-          className="shrink-0 text-subtle transition-transform group-open:rotate-180"
-          aria-hidden
-        />
       </summary>
       <div className="mt-2 space-y-2">
         <label

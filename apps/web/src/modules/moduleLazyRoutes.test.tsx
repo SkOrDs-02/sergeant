@@ -93,7 +93,7 @@ describe("module lazy route entries", () => {
       (lastLazyProps!["onPwaActionConsumed"] as () => void)();
 
       expect(hubShell.goBackOrHub).toHaveBeenCalledTimes(1);
-      if (moduleId === "routine") {
+      if (moduleId === "routine" || moduleId === "fizruk") {
         // H: налаштування Рутини — у хабі; у шапці лише Сержант.
         expect(lastLazyProps).not.toHaveProperty("onOpenSettings");
         (lastLazyProps!["onGoToHub"] as () => void)();

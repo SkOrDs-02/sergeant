@@ -60,7 +60,7 @@ function ScaleRow({
             key={`${idPrefix}${n}`}
             type="button"
             className={cn(
-              "min-w-[44px] min-h-[44px] rounded-xl border text-style-label transition-colors",
+              "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
               value === n
                 ? "bg-text text-bg border-text"
                 : "border-line bg-bg text-muted hover:border-muted",
