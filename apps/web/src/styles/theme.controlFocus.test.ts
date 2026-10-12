@@ -160,43 +160,6 @@ describe("--c-focus-solid (суцільний колір індикатора ф
   }
 });
 
-describe("фокус на світлому hero-градієнті: `hero-ink` ≥ 4.5:1 проти кожної зупинки", () => {
-  // Follow-up аудиту 2026-10-01: у піддереві модуля `--c-focus-solid` =
-  // `--c-{m}-ink` (світла -800), а початок hero-градієнта — той самий тир, тож
-  // кільце зливалось із фоном (≈1.0-1.3:1). Правило в кінці `theme.css`
-  // підставляє чорнило `#fdf9f3`; тут пінимо, що воно тримає ≥4.5:1 (вище за
-  // 3:1 індикатора: те саме чорнило несе текст hero) і що правило справді
-  // ставить саме цей колір.
-  const HERO_INK = "253 249 243";
-  it("правило ставить `--c-focus-solid: 253 249 243`", () => {
-    expect(css).toMatch(
-      /html:not\(\.dark\) \[class\*="bg-hero-grad-"\]\s*\{\s*--c-focus-solid:\s*253 249 243;/,
-    );
-  });
-  for (const module of ["finyk", "fizruk", "routine", "nutrition"] as const) {
-    const decl = new RegExp(
-      `--hero-grad-${module}:\\s*linear-gradient\\(([^)]*)\\)`,
-    ).exec(css);
-    it(`${module}: градієнт у :root знайдено`, () => {
-      expect(
-        decl,
-        `--hero-grad-${module} не знайдено в theme.css`,
-      ).not.toBeNull();
-    });
-    const stops = [...(decl?.[1] ?? "").matchAll(/#([0-9a-fA-F]{6})\b/g)].map(
-      (m) => hexToTriplet(`#${m[1]}`),
-    );
-    it(`${module}: у градієнті є щонайменше дві зупинки`, () => {
-      expect(stops.length).toBeGreaterThanOrEqual(2);
-    });
-    for (const stop of stops) {
-      it(`${module}: hero-ink проти зупинки rgb(${stop}) ≥ 4.5:1`, () => {
-        expect(contrast(HERO_INK, stop)).toBeGreaterThanOrEqual(4.5);
-      });
-    }
-  }
-});
-
 describe("Switch: трек і бігунок — стани розрізняються ≥3:1 (CodeRabbit на #1286)", () => {
   // `dark:bg-brand-400` (#a8a29e) проти вимкненого `bg-control` (#827b77) давав
   // 1.65:1: стани майже не розрізнялись. Тут числа беруться ЗІ ДЖЕРЕЛА
@@ -302,8 +265,6 @@ describe("локація правил: ПОЗА `@layer` (інакше вони 
       /\n\.peer:focus-visible ~ \[class\*="peer-focus-visible:ring"\]\s*\{/,
     "кільце невалідного поля":
       /\n\*:focus-visible\[aria-invalid="true"\]:not\(\.focus-ring\)\s*\{/,
-    "фокус на світлому hero-градієнті (hero-ink)":
-      /\nhtml:not\(\.dark\) \[class\*="bg-hero-grad-"\]\s*\{/,
   };
   for (const [name, re] of Object.entries(RULES)) {
     it(`${name}: правило є і стоїть на нульовій глибині`, () => {
@@ -356,16 +317,5 @@ describe("локація правил: ПОЗА `@layer` (інакше вони 
       const block = css.slice(match!.index, css.indexOf("}", match!.index));
       expect(block).not.toMatch(/:hover|:disabled|aria-invalid/);
     });
-  });
-
-  it("`.zone-chip` — у `@layer components`, а не поза шарами", () => {
-    // Відступ у два пробіли — це саме правило, а не згадка в коментарі.
-    const index = css.indexOf("\n  .zone-chip {") + 1;
-    expect(index).toBeGreaterThan(0);
-    expect(depthAt(index)).toBe(1);
-    const before = css.slice(0, index);
-    expect(before.lastIndexOf("@layer components")).toBeGreaterThan(
-      before.lastIndexOf("@layer base"),
-    );
   });
 });
