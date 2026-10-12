@@ -1,9 +1,5 @@
 import { formatTimeHm } from "@shared/lib/time/formatDate";
 import { txEpochMs } from "../lib/monthWindow";
-/**
- * Last validated: 2026-08-21
- * Status: Active
- */
 import { memo, useMemo } from "react";
 import {
   getExpenseCategoryForTransaction,
@@ -16,7 +12,6 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
-
 import { getAccountShortName, type TxRowTx } from "./txRowHelpers";
 import { TxRowMetaChips } from "./TxRowMetaChips";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
@@ -168,7 +163,7 @@ function TxRowImpl({
     <div
       className={cn(
         divider && "border-b border-line last:border-0",
-        highlighted && "bg-line/40 rounded-xl border-0 my-0.5",
+        highlighted && "bg-line/40 rounded-panel border-0 my-0.5",
       )}
     >
       {/* Main row */}

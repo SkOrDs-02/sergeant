@@ -2,7 +2,6 @@ import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
@@ -89,7 +88,7 @@ export function FinykLoginScreen({
           onSubmit={submit}
           noValidate
           className={cn(
-            "bg-panel  border rounded-xl p-6",
+            "bg-panel  border rounded-panel p-6",
             "border-line dark:border-line",
           )}
         >
@@ -222,7 +221,7 @@ export function FinykLoginScreen({
 
           {authError &&
             (authError === messages.finyk.monoConnectErrors.accountRequired ? (
-              <div className="mt-3 text-style-label bg-panel border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+              <div className="mt-3 text-style-label bg-panel border border-warning/40 rounded-lg px-3 py-2.5 space-y-1">
                 <p className="font-semibold text-text">Потрібен вхід</p>
                 <p className="text-style-caption text-muted">{authError}</p>
                 {onOpenAuth && (
@@ -237,7 +236,7 @@ export function FinykLoginScreen({
                 )}
               </div>
             ) : (
-              <div className="mt-3 text-style-label bg-panel border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+              <div className="mt-3 text-style-label bg-panel border border-warning/40 rounded-lg px-3 py-2.5 space-y-1">
                 <p className="font-semibold text-text">
                   Токен потребує оновлення
                 </p>
@@ -250,7 +249,7 @@ export function FinykLoginScreen({
           {/* Server-level error (from useApiForm) or parent-provided error */}
           {(serverError || (error && !authError)) && (
             <p
-              className="mt-3 text-style-label text-danger-strong dark:text-danger bg-panel rounded-xl px-3 py-2"
+              className="mt-3 text-style-label text-danger-strong dark:text-danger bg-panel rounded-lg px-3 py-2"
               role="alert"
             >
               {serverError ?? error}

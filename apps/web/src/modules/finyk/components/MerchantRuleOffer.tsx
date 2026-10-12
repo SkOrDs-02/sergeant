@@ -78,7 +78,7 @@ export function MerchantRuleOffer({
     return (
       <section
         aria-label={copy.offerAria}
-        className="space-y-2 rounded-xl border border-line bg-panel p-3"
+        className="space-y-2 rounded-panel border border-line bg-panel p-3"
         data-testid="merchant-rule-offer"
       >
         <Button
@@ -117,7 +117,7 @@ export function MerchantRuleOffer({
     return (
       <section
         aria-label={fillRuleCopy(copy.activeTitle, { merchant })}
-        className="space-y-2 rounded-xl border border-line bg-panel p-3"
+        className="space-y-2 rounded-panel border border-line bg-panel p-3"
         data-testid="merchant-rule-active"
       >
         <div>

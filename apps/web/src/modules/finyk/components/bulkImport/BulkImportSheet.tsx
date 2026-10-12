@@ -26,7 +26,6 @@
 import { pluralUa } from "@sergeant/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
@@ -541,7 +540,7 @@ export function BulkImportSheet({
         // Success-тон карткою (бета-фідбек №4: «Створено на зеленому
         // фоні, як Витрата») — той самий фінік-акцент, що й активний чип
         // «Витрата» у ManualExpenseSheet, а не сірий panelHi.
-        <div className="space-y-1.5 rounded-xl border border-line bg-panel p-3 text-style-body text-text">
+        <div className="space-y-1.5 rounded-panel border border-line bg-panel p-3 text-style-body text-text">
           <p className="font-semibold text-text">
             Створено: {commitResult.created}
           </p>

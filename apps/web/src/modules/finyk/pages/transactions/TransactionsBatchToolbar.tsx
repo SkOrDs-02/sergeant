@@ -1,6 +1,5 @@
 import { Sheet } from "@shared/components/ui/Sheet";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
-
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 
 export interface TransactionsBatchToolbarProps {
@@ -58,7 +57,7 @@ export function TransactionsBatchToolbar({
               the outer
               `safe-area-pb` already covers the nav's bottom inset. */}
           <div className="max-w-4xl mx-auto px-4 above-bottom-nav-pb pt-3">
-            <div className="bg-panel border border-line rounded-xl shadow-float px-4 py-3 flex items-center justify-between gap-3">
+            <div className="bg-panel border border-line rounded-panel shadow-float px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-style-label text-text">
                 {selectedSize} обрано
               </span>
@@ -87,7 +86,7 @@ export function TransactionsBatchToolbar({
                 </button>
               </div>
             </div>
-            <div className="mt-2 rounded-xl border border-line bg-panel px-3 py-2 text-style-body text-muted">
+            <div className="mt-2 rounded-panel border border-line bg-panel px-3 py-2 text-style-body text-muted">
               <p>
                 {allSelectedHidden ? (
                   <>

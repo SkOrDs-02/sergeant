@@ -32,7 +32,7 @@ export function AssetsGroupCard({
   children?: ReactNode;
 }) {
   return (
-    <Card radius="lg" padding="sm" className="space-y-2">
+    <Card padding="sm" className="space-y-2">
       <button
         type="button"
         className="touch-target flex w-full items-center justify-between pt-2 text-left"

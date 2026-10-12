@@ -3,7 +3,6 @@ import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-
 import { cn } from "@shared/lib/ui/cn";
 import {
   calcLimitPace,
@@ -137,7 +136,6 @@ export function BudgetsLimitsSection({
       {limitsOpen && limitBudgets.length === 0 && (
         <EmptyState
           compact
-          module="finyk"
           title="Поки немає лімітів"
           description="Встанови ліміт витрат на категорію, щоб не виходити за бюджет."
         />
@@ -199,7 +197,7 @@ export function BudgetsLimitsSection({
                 }
               }}
               className={cn(
-                "rounded-xl transition-shadow duration-slow",
+                "rounded-panel transition-shadow duration-slow",
                 isHighlighted &&
                   "ring-2 ring-finyk/60 ring-offset-2 ring-offset-bg",
               )}

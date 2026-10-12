@@ -1,8 +1,4 @@
 import { messages } from "@shared/i18n";
-/**
- * Last validated: 2026-09-24
- * Status: Active
- */
 import {
   memo,
   useCallback,
@@ -19,7 +15,6 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Money, Delta } from "@shared/components/ui/Money";
-
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { filterToKyivFirstDays, filterToKyivMonth } from "../lib/monthWindow";
 import { isMonoNotConnectedError } from "../lib/monoBankErrors";
@@ -549,7 +544,7 @@ export function Analytics({
         <MonthNav year={year} month={month} onChange={handleMonthChange} />
 
         {fetchError && bankTx.length === 0 && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-panel border border-danger/20 text-style-label text-danger-strong dark:text-danger">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-panel border border-danger/20 text-style-label text-danger-strong dark:text-danger">
             <span>{fetchError}</span>
             <button
               type="button"
@@ -652,11 +647,10 @@ export function Analytics({
         {/* Categories */}
         <Section title="Категорії">
           {pageLoading ? (
-            <Skeleton className="h-40 rounded-xl" />
+            <Skeleton className="h-40 rounded-panel" />
           ) : distribution.length === 0 ? (
             <EmptyState
               compact
-              module="finyk"
               title="Поки немає витрат"
               description="Цього місяця витрат ще немає. Додай першу або підключи Monobank."
             />
@@ -718,13 +712,12 @@ export function Analytics({
           {pageLoading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-8 rounded-xl" />
+                <Skeleton key={i} className="h-8 rounded-lg" />
               ))}
             </div>
           ) : topMerchants.length === 0 ? (
             <EmptyState
               compact
-              module="finyk"
               title="Поки немає продавців"
               description="Витрат за цей місяць ще не записано."
             />

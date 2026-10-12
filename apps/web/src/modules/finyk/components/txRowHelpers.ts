@@ -13,7 +13,7 @@ import type { IconName } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 
 export const SPLIT_INPUT_CLASS =
-  "input-focus-finyk flex-1 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-text";
+  "input-focus-finyk flex-1 text-xs h-9 rounded-lg border border-line bg-panelHi px-2 text-text";
 
 /**
  * `categoryId` → імʼя іконки для тонованого чипа категорії.

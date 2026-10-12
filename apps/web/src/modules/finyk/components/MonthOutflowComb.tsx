@@ -21,11 +21,9 @@
  */
 import { memo, useMemo, type CSSProperties } from "react";
 import { pluralDays } from "@sergeant/shared";
-
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
-
 import {
   buildMonthComb,
   MIN_ENTRIES,
@@ -109,7 +107,7 @@ const MonthOutflowCombImpl = function MonthOutflowComb({
   return (
     <section
       className={cn(
-        "rounded-xl border border-line bg-panel px-4 pt-3 pb-2.5",
+        "rounded-panel border border-line bg-panel px-4 pt-3 pb-2.5",
         className,
       )}
       aria-label={copy.ariaLabel}
