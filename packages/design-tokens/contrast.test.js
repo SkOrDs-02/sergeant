@@ -936,9 +936,9 @@ describe("@sergeant/design-tokens — `fizruk-surface`: темна пара за
       path.join(FIZRUK_COMPONENTS, "session", "SessionExtrasRow.tsx"),
       "utf8",
     );
-    const active = classLiteralWith(src, "bg-fizruk-surface");
-    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
-    expect(active).toMatch(/(?<![\w:-])text-fizruk-soft-fg(?![\w-])/);
+    const active = classLiteralWith(src, "border-text bg-panelHi");
+    expect(active).toMatch(/(?<![\w:-])border-text(?![\w-])/);
+    expect(active).toMatch(/(?<![\w:-])text-text(?![\w-])/);
     // `border-fizruk-ring` (cyan-200) давав 1.01:1 проти столу у світлій.
     expect(active).not.toMatch(/border-fizruk-ring/);
   });
@@ -948,8 +948,8 @@ describe("@sergeant/design-tokens — `fizruk-surface`: темна пара за
       path.join(FIZRUK_COMPONENTS, "workouts", "LogPastActivityPicker.tsx"),
       "utf8",
     );
-    const active = classLiteralWith(src, "bg-fizruk-surface");
-    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
+    const active = classLiteralWith(src, "border-text bg-panelHi");
+    expect(active).toMatch(/(?<![\w:-])border-text(?![\w-])/);
   });
 });
 
