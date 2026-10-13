@@ -13,7 +13,7 @@
  * naked-string placeholders that used to drift in copy, focus styling,
  * and a11y wiring.
  *
- * Факт, текстова мета й дії. Без декоративних іконок та ілюстрацій.
+ * Факт і дії; додатковий контекст — у доступному описі. Без декоративних іконок та ілюстрацій.
  *
  * Sizes (`size: sm | md | lg`):
  * - `sm` (compact): in-card / inline empty placeholder
@@ -31,11 +31,11 @@
  * - `focus-visible:` only on CTAs (delegated to `<Button>` / `<a>`), per
  *   Hard Rule #14.
  */
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, useId, type ReactNode } from "react";
 import type { OnboardingGoals } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
-import { Button } from "./Button";
+import { Button, type ButtonProps } from "./Button";
 import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { coreMessages } from "@shared/i18n/uk.core";
 
@@ -101,8 +101,8 @@ const PADDING: Record<EmptyStateSize, string> = {
 /**
  * Мова H (redesign v3): факт одним рядком 16 / 600, під ним дія кнопкою
  * outline. Без іконки, ілюстрації та прикладу. Текстові
- * пропи лишаються текстом: `eyebrow` ярликом над фактом, `description` і
- * `hint` рядками мети другим сірим.
+ * `description` і `hint` лишаються доступним описом для скрінрідера,
+ * без видимих абзаців.
  */
 export function EmptyState({
   eyebrow,
@@ -121,6 +121,15 @@ export function EmptyState({
 }: EmptyStateProps) {
   const resolvedSize = resolveSize(size, compact);
   const primary = primaryAction ?? action;
+  const id = useId();
+  const describedBy =
+    [description && `${id}-description`, hint && `${id}-hint`]
+      .filter(Boolean)
+      .join(" ") || undefined;
+  const primaryControl =
+    isValidElement<ButtonProps>(primary) && primary.type === Button
+      ? cloneElement(primary, { variant: "outline" })
+      : primary;
   return (
     // `role="status"` + `aria-live="polite"` keep the empty-state silent
     // until it appears dynamically (e.g. after a filter clears the list).
@@ -128,6 +137,7 @@ export function EmptyState({
       role="status"
       aria-live={ariaLive}
       aria-atomic="true"
+      aria-describedby={describedBy}
       className={cn("flex flex-col gap-1", PADDING[resolvedSize], className)}
     >
       {eyebrow && <p className="text-style-overline text-subtle">{eyebrow}</p>}
@@ -135,17 +145,21 @@ export function EmptyState({
         {title}
       </TitleTag>
       {description && (
-        <p className="text-style-label text-muted text-pretty">{description}</p>
+        <span id={`${id}-description`} hidden>
+          {description}
+        </span>
       )}
       {(primary || secondaryAction) && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {primary}
+          {primaryControl}
           {secondaryAction}
         </div>
       )}
       {tertiaryLink && <div className="mt-1">{tertiaryLink}</div>}
       {hint && (
-        <p className="mt-2 text-style-label text-muted text-pretty">{hint}</p>
+        <span id={`${id}-hint`} hidden>
+          {hint}
+        </span>
       )}
     </div>
   );

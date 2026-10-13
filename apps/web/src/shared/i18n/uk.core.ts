@@ -27,6 +27,15 @@
  */
 
 export const coreMessages = {
+  onboardingPrompts: {
+    syncTitle: "Синхронізація записів",
+    syncReason: "Акаунт синхронізує записи між пристроями.",
+    returnTitle: "Повернення",
+    absence: "Тебе не було",
+    continue: "Продовжити",
+    tryAction: "Спробувати",
+    remindWeek: "Нагадай за тиждень",
+  },
   loaders: {
     // Round 16 — page-level loader copy. Окремий ключ для full-page-loader
     // (`Завантаження сторінки`) щоб не плутати з inline-spinner-ом

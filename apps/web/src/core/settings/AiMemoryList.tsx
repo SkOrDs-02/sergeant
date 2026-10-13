@@ -294,17 +294,10 @@ function MemoryGroupSection({
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-lg bg-panelHi text-style-caption font-bold text-muted">
             {group.items.length}
           </span>
+          <span className="text-style-caption text-muted">
+            {open ? messages.actions.collapse : messages.actions.expand}
+          </span>
         </span>
-        <Icon
-          name="chevron-right"
-          size={15}
-          strokeWidth={2.5}
-          className={cn(
-            "text-muted transition-transform duration-base",
-            open && "rotate-90",
-          )}
-          aria-hidden
-        />
       </button>
 
       {open && hint && (
@@ -383,7 +376,7 @@ export function AiMemoryList() {
       query.error.kind === "http" &&
       query.error.isAuth
     ) {
-      return <EmptyState size="sm" description={m.authRequired} />;
+      return <EmptyState size="sm" title={m.authRequired} />;
     }
     return (
       <div className="flex flex-wrap items-center gap-2">
@@ -407,7 +400,7 @@ export function AiMemoryList() {
     // стану, ніж спільний `EmptyState` (немає role=status/aria-live,
     // інша типографіка). `MemoryBankSection` — другий вхід у «що ШІ про
     // мене знає» — тепер малює порожнечу тим самим примітивом.
-    return <EmptyState size="sm" description={m.empty} />;
+    return <EmptyState size="sm" title={m.empty} />;
   }
 
   const groupsDefaultOpen = items.length <= AUTO_OPEN_MAX_ITEMS;

@@ -30,13 +30,12 @@ describe("CollapsibleSection", () => {
     expect(screen.getByText("payload")).toBeInTheDocument();
   });
 
-  it("shows a collapsed pill with icon, title, and subtitle when collapsed", () => {
+  it("shows a collapsed text row with title, subtitle, and expand action", () => {
     render(
       <CollapsibleSection
         storageKey="sergeant.test.collapsed"
         title="Аналітика"
         defaultOpen={false}
-        collapsedIcon="bar-chart"
         collapsedSubtitle="3 інсайти"
       >
         <p>payload</p>
