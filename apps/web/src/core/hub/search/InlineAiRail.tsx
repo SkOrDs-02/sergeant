@@ -119,7 +119,7 @@ export function InlineAiRail({
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
                 state.status === "error"
                   ? "bg-danger-soft text-danger-soft-fg"
-                  : "bg-brand-soft text-brand-strong dark:text-brand-300",
+                  : "bg-panel text-text",
               )}
               aria-hidden="true"
             >
@@ -181,12 +181,11 @@ export function InlineAiRail({
                 onClick={() => onOpenInChat(state.question)}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-style-label",
-                  "bg-brand-soft text-brand-strong dark:text-brand-300",
-                  "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
+                  "bg-panel text-text",
+                  "border border-line hover:bg-panelHi",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
               {state.hasToolCalls && (
@@ -240,7 +239,6 @@ export function InlineAiRail({
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="refresh-cw" size="sm" strokeWidth={2.2} />
                 Повторити
               </button>
               <button
@@ -248,12 +246,11 @@ export function InlineAiRail({
                 onClick={() => onOpenInChat(state.question)}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-style-label",
-                  "bg-brand-soft text-brand-strong dark:text-brand-300",
-                  "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
+                  "bg-panel text-text",
+                  "border border-line hover:bg-panelHi",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
             </div>

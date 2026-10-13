@@ -92,6 +92,21 @@ describe("WeeklyDigestCard — телеметрія AI-поради", () => {
     cleanup();
   });
 
+  it("шапка, модулі та дія сторіс без декоративних заливок і піктограм", () => {
+    const { container } = render(<WeeklyDigestCard />);
+    expect(container.querySelector('[class*="bg-linear-to"]')).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Переглянути як сторіс" })
+        .querySelector("svg"),
+    ).toBeNull();
+    expect(screen.getByText(DIGEST.finyk.summary)).toBeInTheDocument();
+    expect(screen.getByText(DIGEST.finyk.comment)).toBeInTheDocument();
+    expect(
+      screen.getByText(DIGEST.overallRecommendations[0]!),
+    ).toBeInTheDocument();
+  });
+
   it("НЕ емітить показ, поки тіло звіту згорнуте", () => {
     render(<WeeklyDigestCard />);
     expect(

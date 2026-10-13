@@ -97,7 +97,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         <Icon name="bell" size="lg" />
         <span
           aria-hidden="true"
-          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-lg bg-brand-strong text-white dark:bg-brand-400 dark:text-bg text-xs font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
+          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-lg bg-text text-bg text-style-caption font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
         >
           {count}
         </span>
@@ -118,9 +118,6 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
                 key={n.id}
                 className="flex items-start gap-3 px-2.5 py-2.5 rounded-panel"
               >
-                <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel">
-                  <Icon name={n.icon} size="md" />
-                </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-style-label text-text leading-tight">
                     {n.title}

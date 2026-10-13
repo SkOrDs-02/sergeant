@@ -210,9 +210,8 @@ function HistoryPanel({
             onClick={() => {
               onCreate();
             }}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-lg bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-lg bg-text text-bg hover:bg-text/90 transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
-            <Icon name="plus" size={15} />
             Нова бесіда
           </button>
         </div>
@@ -220,18 +219,8 @@ function HistoryPanel({
         <div className="flex-1 overflow-y-auto overscroll-contain px-3 pb-4">
           {groups.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 text-center py-12 px-4">
-              <div
-                className="w-14 h-14 rounded-panel bg-panelHi flex items-center justify-center"
-                aria-hidden
-              >
-                <Icon name="message-circle" size={22} className="text-subtle" />
-              </div>
               <div className="text-style-label text-text">
                 Поки немає інших бесід.
-              </div>
-              <div className="text-style-body text-muted leading-snug max-w-[26ch]">
-                Кожна нова розмова зʼявиться тут, щоб до неї можна було
-                повернутись.
               </div>
             </div>
           ) : (

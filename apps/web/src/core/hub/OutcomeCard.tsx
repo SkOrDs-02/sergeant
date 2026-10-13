@@ -1,5 +1,5 @@
 import { Button } from "@shared/components/ui/Button";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import type { DashboardModuleId } from "./hub.types";
 
@@ -79,7 +79,6 @@ export function OutcomeCard({
           aria-label={`Відкрити: ${preferred.title}`}
         >
           Відкрити
-          <Icon name="chevron-right" size="sm" className="ml-1" />
         </Button>
       </div>
 
@@ -98,14 +97,11 @@ export function OutcomeCard({
               className={cn(
                 "text-left rounded-lg border p-3 transition-colors focus-ring",
                 selected
-                  ? "border-brand-strong dark:border-brand-400 bg-brand-soft"
+                  ? "border-line bg-panel"
                   : "border-line bg-bg hover:bg-panelHi",
               )}
             >
               <span className="flex items-start gap-3">
-                <span className="mt-0.5 text-brand-strong" aria-hidden="true">
-                  <Icon name={module.icon} size="md" />
-                </span>
                 <span className="space-y-1">
                   <span className="block text-style-label font-semibold text-text">
                     {module.title}

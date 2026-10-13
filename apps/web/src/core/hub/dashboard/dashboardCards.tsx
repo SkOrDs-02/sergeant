@@ -4,7 +4,6 @@
  */
 import { useEffect, useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import {
   STORAGE_KEYS,
@@ -173,12 +172,6 @@ export function WeeklyDigestFooter({
           {weekRange}
         </span>
       </span>
-      <Icon
-        name="chevron-right"
-        size="sm"
-        strokeWidth={2.5}
-        className="text-muted shrink-0"
-      />
     </button>
   );
 }

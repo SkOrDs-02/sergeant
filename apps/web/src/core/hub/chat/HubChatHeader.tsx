@@ -129,7 +129,6 @@ export function HubChatHeader({
         </div>
         <PopoverDivider />
         <PopoverItem
-          icon={<Icon name="list" size="sm" />}
           onClick={() => {
             onDetailsOpenChange(false);
             onOpenHistory();

@@ -1,5 +1,4 @@
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { Modal } from "@shared/components/ui/Modal";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import {
@@ -41,11 +40,6 @@ export function CapabilityDetailModal({
       description={
         cap ? (
           <span className="flex items-center gap-2 text-style-caption">
-            <Icon
-              name={CAPABILITY_MODULE_META[cap.module].icon}
-              size="xs"
-              aria-hidden
-            />
             {CAPABILITY_MODULE_META[cap.module].title}
           </span>
         ) : undefined
@@ -72,8 +66,7 @@ export function CapabilityDetailModal({
           <p className="text-style-body text-text">{cap.description}</p>
 
           {cap.risky && (
-            <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-panel px-3 py-2 text-style-caption text-warning-strong dark:text-warning">
-              <Icon name="alert-triangle" size="sm" aria-hidden />
+            <div className="flex items-start gap-2 bg-panel rounded-panel px-3 py-2 text-style-caption text-warning-strong dark:text-warning">
               <span>
                 Критична дія. Перевір дані перед відправкою, деякі зміни
                 скасувати не можна.
