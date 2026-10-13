@@ -9,7 +9,6 @@
 // - в `loading` або `offline` AI-залежні chip-и disabled.
 
 import { useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import {
   type AssistantCapability,
@@ -52,10 +51,10 @@ function chipClassName({
   hubLike: boolean;
 }): string {
   return cn(
-    "inline-flex min-h-10 items-center gap-1.5 text-style-label px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors",
+    "inline-flex min-h-11 items-center gap-1.5 text-style-label px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors",
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
     active
-      ? "bg-brand-500/10 border border-brand-500/40 text-brand-600 hover:bg-brand-500/15"
+      ? "bg-panelHi border border-control text-text hover:bg-panel"
       : hubLike
         ? "bg-panel border border-line text-text hover:border-muted"
         : "bg-panel border border-line text-subtle hover:text-text hover:border-muted",
@@ -115,7 +114,6 @@ export function ChatQuickActions({
           hubLike: HUB_LIKE.has(a.module),
         })}
       >
-        <Icon name={a.icon} size={13} aria-hidden />
         <span className="hidden sm:inline">{a.label}</span>
         <span className="sm:hidden">{shortLabel}</span>
       </button>
@@ -144,11 +142,6 @@ export function ChatQuickActions({
               hubLike: true,
             })}
           >
-            <Icon
-              name={expanded ? "chevron-up" : "chevron-down"}
-              size={13}
-              aria-hidden
-            />
             {expanded ? "Згорнути" : "Ще"}
           </button>
         )}

@@ -30,7 +30,6 @@ import {
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
 import { addDays, dateKeyFromDate } from "../lib/weekUtils";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import {
   useRoutineCalendarActions,
   useRoutineCalendarData,
@@ -255,22 +254,14 @@ export function RoutineCalendarPanel({
           <EmptyState
             compact
             title="Порожній період"
-            description={
-              <>
-                У цьому періоді подій немає. Перевір регулярність звичок або{" "}
-                {/* Inline link inside body text — WCAG 2.5.5 exception
-                    "inline links in flowing text". data-compact opts out of
-                    the global 44×44 floor so the text baseline stays aligned. */}
-                <button
-                  type="button"
-                  data-compact
-                  className={C.linkAccent}
-                  onClick={() => setFizrukPlanDateKey(selectedDay)}
-                >
-                  заплануй тренування
-                </button>
-                .
-              </>
+            action={
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFizrukPlanDateKey(selectedDay)}
+              >
+                заплануй тренування
+              </Button>
             }
           />
         )}

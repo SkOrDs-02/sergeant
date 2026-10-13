@@ -17,7 +17,6 @@ import { isApiError, silpoConnectUrl } from "@shared/api";
 import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { Icon } from "@shared/components/ui/Icon";
 import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { friendlyApiError } from "@shared/lib/api/friendlyApiError";
@@ -299,7 +298,6 @@ export function SilpoIntegrationSection({
               onClick={() => void refetch()}
               disabled={isFetching}
             >
-              <Icon name="refresh-cw" size="md" aria-hidden />
               {isFetching ? COPY.checking : COPY.retryCheck}
             </Button>
           </div>
@@ -310,12 +308,6 @@ export function SilpoIntegrationSection({
                 className="flex items-start gap-3 p-3 rounded-panel border border-warning/40 bg-warning/15"
                 role="status"
               >
-                <Icon
-                  name="alert-triangle"
-                  size="md"
-                  className="shrink-0 mt-0.5 text-warning-strong dark:text-warning"
-                  aria-hidden
-                />
                 <div className="flex-1 min-w-0">
                   <div className="text-style-label">{COPY.failedTitle}</div>
                   <div className="text-style-caption text-subtle mt-0.5">
@@ -351,7 +343,6 @@ export function SilpoIntegrationSection({
                 onClick={runSync}
                 disabled={syncMutation.isPending}
               >
-                <Icon name="refresh-cw" size="md" aria-hidden />
                 {syncMutation.isPending ? COPY.syncing : COPY.sync}
               </Button>
               <Button
@@ -403,7 +394,6 @@ export function SilpoIntegrationSection({
               className="w-full h-11"
               onClick={goToSilpoConnect}
             >
-              <Icon name="shopping-cart" size="md" aria-hidden />
               {COPY.connect}
             </Button>
           </div>
@@ -421,7 +411,6 @@ export function SilpoIntegrationSection({
             onClick={() => setConfirmKind("wipe")}
             disabled={destructivePending}
           >
-            <Icon name="trash" size="md" aria-hidden />
             {COPY.wipeCta}
           </Button>
         </SettingsSubGroup>

@@ -24,20 +24,6 @@ import {
 } from "@sergeant/shared";
 import { CapabilityDetailModal } from "./components/CapabilityDetailModal";
 
-// Per-module icon swatch — keeps each card visually anchored to its module
-// brand without leaning on saturated fills behind body text. Opacity steps
-// stay on the registered Tailwind scale (rule #8 in AGENTS.md).
-const MODULE_SWATCH: Record<CapabilityModule, string> = {
-  finyk: "bg-finyk/10 text-finyk-strong dark:bg-finyk/15",
-  fizruk: "bg-fizruk/10 text-fizruk-strong dark:bg-fizruk/15",
-  routine: "bg-routine/10 text-routine-strong dark:bg-routine/15",
-  nutrition: "bg-nutrition/10 text-nutrition-strong dark:bg-nutrition/15",
-  cross: "bg-brand/10 text-brand-strong dark:bg-brand/15",
-  analytics: "bg-info/10 text-info-strong dark:bg-info/15",
-  utility: "bg-panelHi text-muted",
-  memory: "bg-accent/10 text-accent",
-};
-
 interface AssistantCataloguePageProps {
   onClose: () => void;
 }
@@ -170,12 +156,6 @@ export function AssistantCataloguePage({
 
         <Card padding="lg">
           <div className="flex items-start gap-3">
-            <span
-              aria-hidden
-              className="shrink-0 w-11 h-11 rounded-lg bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
-            >
-              <Icon name="sergeant" size="lg" />
-            </span>
             <div className="flex-1 min-w-0">
               <h1 className="text-style-title text-text leading-tight">
                 {messages.sergeant.capabilitiesSectionTitle}
@@ -196,19 +176,13 @@ export function AssistantCataloguePage({
         />
 
         <div className="relative">
-          <span
-            aria-hidden
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
-          >
-            <Icon name="search" size="md" />
-          </span>
           <input
             type="search"
             {...searchFieldProps("capabilities-search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук"
-            className="w-full bg-panel border border-line rounded-lg pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
+            className="w-full bg-panel border border-line rounded-lg px-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
             aria-label="Пошук можливостей"
           />
         </div>
@@ -225,11 +199,6 @@ export function AssistantCataloguePage({
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               )}
             >
-              <Icon
-                name={allCollapsed ? "chevron-down" : "chevron-up"}
-                size="xs"
-                aria-hidden
-              />
               {allCollapsed ? "Розгорнути все" : "Згорнути все"}
             </button>
           </div>
@@ -284,7 +253,6 @@ function ModuleGroup({
   const meta = CAPABILITY_MODULE_META[module];
   const headingId = `catalogue-module-${module}`;
   const listId = `catalogue-module-${module}-list`;
-  const swatch = MODULE_SWATCH[module];
   return (
     <Card
       as="section"
@@ -304,15 +272,6 @@ function ModuleGroup({
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus/45",
         )}
       >
-        <span
-          aria-hidden
-          className={cn(
-            "shrink-0 w-10 h-10 rounded-lg flex items-center justify-center",
-            swatch,
-          )}
-        >
-          <Icon name={meta.icon} size={18} />
-        </span>
         <span className="flex-1 min-w-0">
           <span
             id={headingId}
@@ -329,15 +288,9 @@ function ModuleGroup({
             ])}
           </span>
         </span>
-        <Icon
-          name="chevron-down"
-          size="md"
-          aria-hidden
-          className={cn(
-            "shrink-0 text-muted transition-transform",
-            collapsed ? "-rotate-90" : "rotate-0",
-          )}
-        />
+        <span className="text-style-caption text-muted">
+          {collapsed ? messages.actions.expand : messages.actions.collapse}
+        </span>
       </button>
       {!collapsed && (
         <ul id={listId} className="border-t border-line divide-y divide-line">
@@ -377,19 +330,12 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
         "flex items-start gap-3",
       )}
     >
-      <span
-        aria-hidden
-        className="shrink-0 w-9 h-9 rounded-lg bg-bg border border-line flex items-center justify-center text-text"
-      >
-        <Icon name={capability.icon} size="md" />
-      </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
           <span className="text-style-label text-text">{capability.label}</span>
           {isRecentCapability(capability.since) && (
             <BadgeChip
               tone="brand"
-              icon="sergeant"
               label="Новинка"
               title="Нещодавно додана можливість"
             />
@@ -397,7 +343,6 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
           {capability.isQuickAction && (
             <BadgeChip
               tone="brand"
-              icon="zap"
               label="Чіп"
               title="Швидкий сценарій (показується chip-ом у чаті)"
             />
@@ -405,7 +350,6 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
           {capability.risky && (
             <BadgeChip
               tone="warning"
-              icon="alert-triangle"
               label="Ризик"
               title="Критична дія: скасувати не можна"
             />
@@ -414,12 +358,6 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
         <span className="block text-style-body text-subtle mt-0.5">
           {capability.description}
         </span>
-      </span>
-      <span aria-hidden className="shrink-0 text-subtle pt-1">
-        <Icon
-          name={capability.requiresInput ? "chevron-right" : "send"}
-          size="sm"
-        />
       </span>
     </button>
   );
@@ -430,7 +368,7 @@ function CapabilityLegend({ showNew }: { showNew: boolean }) {
     <div
       data-testid="catalogue-legend"
       className={cn(
-        "mb-4 bg-panel border border-line rounded-panel px-3 py-2.5",
+        "mb-4 bg-panel rounded-panel px-3 py-2.5",
         "flex flex-wrap items-center gap-x-3 gap-y-2",
       )}
       aria-label="Що означають позначки"
@@ -439,16 +377,16 @@ function CapabilityLegend({ showNew }: { showNew: boolean }) {
         Позначки:
       </span>
       <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
-        <BadgeChip tone="brand" icon="zap" label="Чіп" />
+        <BadgeChip tone="brand" label="Чіп" />
         швидкий сценарій
       </span>
       <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
-        <BadgeChip tone="warning" icon="alert-triangle" label="Ризик" />
+        <BadgeChip tone="warning" label="Ризик" />
         критична дія
       </span>
       {showNew && (
         <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
-          <BadgeChip tone="brand" icon="sparkles" label="Новинка" />
+          <BadgeChip tone="brand" label="Новинка" />
           нещодавно додано
         </span>
       )}
@@ -458,35 +396,21 @@ function CapabilityLegend({ showNew }: { showNew: boolean }) {
 
 interface BadgeChipProps {
   tone: "brand" | "warning";
-  icon: string;
   label: string;
   title?: string;
 }
 
-function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
+function BadgeChip({ tone, label, title }: BadgeChipProps) {
   const cls =
-    tone === "brand"
-      ? "text-brand-strong bg-brand-500/8 border-brand-500/25"
-      : tone === "warning"
-        ? "text-warning-strong dark:text-warning bg-panel border-warning/25"
-        : "text-success-strong dark:text-success bg-success/8 border-success/25";
-  // UX-feedback 2026-05-08: previously rendered uppercase + bold + 10px
-  // tracking-wide which made the chips visually compete with the
-  // capability label («оці чіпсинки про новинка чип і тд якісь
-  // непропорційні до інших елементів»). Now: lowercase capitalised
-  // label, 11px text, regular medium weight, softened border / fill.
-  // The chips still scan as status-badges (icon + pill shape) but no
-  // longer outshout the text they sit next to.
+    tone === "warning" ? "text-danger-strong dark:text-danger" : "text-muted";
   return (
     <span
       title={title}
       className={cn(
         "inline-flex items-center gap-1 text-style-caption font-medium leading-none",
-        "border rounded-lg px-1.5 py-1",
         cls,
       )}
     >
-      <Icon name={icon} size={9} aria-hidden />
       {label}
     </span>
   );

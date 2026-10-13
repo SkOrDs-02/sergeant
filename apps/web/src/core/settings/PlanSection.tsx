@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { isApiError } from "@sergeant/api-client";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { billingApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { billingKeys } from "@shared/lib/api/queryKeys";
@@ -276,7 +275,6 @@ export function PlanSection() {
                   data-testid="plan-manage-button"
                   className="gap-2"
                 >
-                  <Icon name="credit-card" size="md" />
                   Керувати підпискою
                 </Button>
               )}
@@ -323,7 +321,6 @@ export function PlanSection() {
               data-testid="plan-upgrade-button"
               className="gap-2"
             >
-              <Icon name="sergeant" size="md" />
               Перейти на Premium
             </Button>
           )}

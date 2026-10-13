@@ -10,7 +10,7 @@ import { useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { Icon } from "@shared/components/ui/Icon";
 import { generatePDFReport } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
 import { useLocale } from "@shared/i18n/useLocale";
@@ -76,7 +76,6 @@ function formatPeriodLabel(period: Period, offset: number): string {
 // ── InsightRow (kept local — not a lazy chunk, always needed) ─────────
 
 interface InsightRowProps {
-  iconName: IconName;
   title: string;
   stat: string;
   detail?: string;
@@ -97,15 +96,9 @@ interface InsightRowProps {
  * Це НЕ ієрархія густини (`generateInsights` не ранжує) — це зняття
  * контейнера, якому немає що означати.
  */
-function InsightRow({ iconName, title, stat, detail }: InsightRowProps) {
+function InsightRow({ title, stat, detail }: InsightRowProps) {
   return (
     <li className="flex items-start gap-3 py-2.5">
-      <Icon
-        name={iconName}
-        size="md"
-        className="mt-0.5 shrink-0 text-subtle"
-        aria-hidden
-      />
       <div className="min-w-0 flex-1">
         <p className="text-style-body leading-snug text-text">{title}</p>
         {detail && (

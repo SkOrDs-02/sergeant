@@ -12,9 +12,8 @@ import {
 } from "react";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { motionScrollBehavior } from "../../lib/ui/motion";
-import { Icon } from "./Icon";
-import { MorphChevron } from "./MorphChevron";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
 import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
 
@@ -27,12 +26,6 @@ export interface CollapsibleSectionProps {
   defaultOpen?: boolean;
   /** SectionHeading size — defaults to "xs". */
   headingSize?: SectionHeadingSize;
-  /**
-   * Icon name (from the shared `Icon` set) rendered on the left of the
-   * collapsed "pill" state. When omitted, the collapsed state renders
-   * title-only — useful for sections without an obvious glyph.
-   */
-  collapsedIcon?: string;
   /**
    * Short preview / summary line shown inside the collapsed pill, below
    * the title. Typical content: a live count, freshness timestamp,
@@ -76,12 +69,9 @@ export interface CollapsibleSectionProps {
  * the "Підказки" and "Аналітика" sections to reduce scroll depth.
  *
  * Two visual states:
- * - **Expanded** — minimal eyebrow heading + rotating chevron, so the
- *   section's own content dominates the viewport.
- * - **Collapsed** — full-width "pill" card (panel bg + border, icon,
- *   regular-case title, optional `collapsedSubtitle` preview, right
- *   chevron). Makes the collapsed row read as a purposeful, tappable
- *   entry point instead of a stray eyebrow with nothing under it.
+ * - **Expanded** — section heading and a textual collapse action.
+ * - **Collapsed** — factual hairline row with an optional preview and
+ *   a textual expand action; no decorative icons.
  *
  * Collapse animation uses CSS `grid-template-rows` for smooth height
  * transitions (no JavaScript measurement needed).
@@ -112,7 +102,6 @@ export function CollapsibleSection({
   title,
   defaultOpen = true,
   headingSize = "xs",
-  collapsedIcon,
   collapsedSubtitle,
   onOpenChange,
   openSignal,
@@ -244,12 +233,9 @@ export function CollapsibleSection({
           aria-expanded={open}
           className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg -ml-0.5 pl-0.5"
         >
-          <MorphChevron
-            open
-            size={12}
-            strokeWidth={2.5}
-            className="text-subtle"
-          />
+          <span className="text-style-caption text-muted ml-auto order-last">
+            {messages.actions.collapse}
+          </span>
           <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
           </SectionHeading>
@@ -261,24 +247,12 @@ export function CollapsibleSection({
           aria-expanded={open}
           className={cn(
             "flex items-center gap-3 w-full text-left",
-            "px-3.5 py-3 rounded-lg",
-            "bg-panel hover:bg-panelHi border border-line shadow-soft",
+            "py-3 border-b border-line",
+            "hover:bg-panel",
             "transition-colors ",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
-          {/* Гліф без тонованого квадрата (огляд 2026-09-04) — той самий
-              хід, що `BentoCard` і `SettingsGroup`: icon-in-tinted-square
-              робив кожну згорнуту секцію однаковою плиткою. */}
-          {collapsedIcon && (
-            <Icon
-              name={collapsedIcon}
-              size={18}
-              strokeWidth={2}
-              className="shrink-0 text-muted"
-              aria-hidden
-            />
-          )}
           <span className="flex-1 min-w-0">
             <span className="text-style-label block text-text leading-tight">
               {title}
@@ -289,12 +263,9 @@ export function CollapsibleSection({
               </span>
             )}
           </span>
-          <MorphChevron
-            open={false}
-            size={16}
-            strokeWidth={2}
-            className="text-subtle"
-          />
+          <span className="text-style-caption text-muted">
+            {messages.actions.expand}
+          </span>
         </button>
       )}
 

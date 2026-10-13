@@ -139,10 +139,6 @@ export function FinykPrivatBankSection({
       {privatConnected ? (
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-bg border border-success/30 rounded-panel">
-            <div className="w-9 h-9 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center shrink-0">
-              {/* icon-size, not type */}
-              <Icon name="credit-card" size={18} aria-hidden />
-            </div>
             <div>
               <div className="text-style-label text-text">{COPY.connected}</div>
               <div className="text-style-code text-subtle mt-0.5 truncate">

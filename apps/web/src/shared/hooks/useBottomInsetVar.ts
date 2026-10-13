@@ -45,11 +45,33 @@ export function useBottomInsetVar(
 
     const publish = () => {
       const rect = el.getBoundingClientRect();
-      const occupied = Math.max(0, Math.round(window.innerHeight - rect.top));
+      // На поверненні після клавіатури translate ще завершується:
+      // активний нав уже займає свою повну смугу, навіть якщо rect.top
+      // на першому кадрі лишився за екраном. Вимір висоти, без 60/64px.
+      const floor = varName === BOTTOM_NAV_INSET_VAR ? rect.height : 0;
+      const occupied = Math.max(
+        0,
+        Math.round(floor),
+        Math.round(window.innerHeight - rect.top),
+      );
       root.style.setProperty(varName, `${occupied}px`);
     };
 
     publish();
+    // CSS translation змінює top без ResizeObserver. Аркуш анімує
+    // предка списку джерел, тому слухаємо capture також на предках.
+    const settled = (event: Event) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        (target.contains(el) || el.contains(target))
+      )
+        publish();
+    };
+    document.addEventListener("transitionend", settled, true);
+    document.addEventListener("transitioncancel", settled, true);
+    document.addEventListener("animationend", settled, true);
+    document.addEventListener("animationcancel", settled, true);
 
     const observer =
       typeof ResizeObserver === "undefined"
@@ -61,6 +83,10 @@ export function useBottomInsetVar(
 
     return () => {
       observer?.disconnect();
+      document.removeEventListener("transitionend", settled, true);
+      document.removeEventListener("transitioncancel", settled, true);
+      document.removeEventListener("animationend", settled, true);
+      document.removeEventListener("animationcancel", settled, true);
       window.removeEventListener("resize", publish);
       window.visualViewport?.removeEventListener("resize", publish);
       root.style.removeProperty(varName);

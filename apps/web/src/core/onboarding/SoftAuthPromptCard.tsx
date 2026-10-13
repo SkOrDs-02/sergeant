@@ -6,16 +6,14 @@ import { useEffect, useMemo } from "react";
 import {
   SOFT_AUTH_COPY_EXPERIMENT,
   assignVariant,
-  getSoftAuthCopy,
   type SoftAuthCopyVariant,
 } from "@sergeant/shared";
-import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { dismissSoftAuth } from "./vibePicks";
 import { messages } from "@shared/i18n/uk";
+import { coreMessages } from "@shared/i18n/uk.core";
 import { useHubBannerSlot } from "../hub/bannerBudget";
 
 /**
@@ -23,11 +21,9 @@ import { useHubBannerSlot } from "../hub/bannerBudget";
  * their first real entry. Intentionally not a modal — we never interrupt
  * the user; they can ignore it until they're ready.
  *
- * Copy is gain-first by default (S3.2): «{N} записів вже тут. Акаунт
- * синхронізує…» rather than the pre-S3.2 fear framing «створи акаунт,
- * щоб не втратити». The fear copy is preserved as the `fear` A/B arm
- * via `SOFT_AUTH_COPY_EXPERIMENT` (`assignVariant` defaults to 100%
- * `gain`; PostHog can flip the bucket at runtime).
+ * Мова H: коротка причина синхронізації й дві текстові дії. Призначення
+ * варіанта та контекст накопичених записів лишаються в телеметрії;
+ * оформлення й копі не повертають маркетинговий банер.
  */
 export function SoftAuthPromptCard({
   onOpenAuth,
@@ -55,10 +51,6 @@ export function SoftAuthPromptCard({
       ) as SoftAuthCopyVariant,
     [],
   );
-  const copy = useMemo(
-    () => getSoftAuthCopy(variant, { entryCount, sessionDays }),
-    [variant, entryCount, sessionDays],
-  );
 
   useEffect(() => {
     if (!hasSlot) return;
@@ -84,28 +76,21 @@ export function SoftAuthPromptCard({
   if (!hasSlot) return null;
 
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-panel border border-brand-500/30",
-        "bg-linear-to-br from-brand-500/10 via-panel to-panel p-4",
-        "shadow-card",
-      )}
-      data-variant={variant}
-    >
+    <div className="border-y border-line py-3" data-variant={variant}>
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 shrink-0 rounded-lg bg-brand-500/15 text-brand-strong flex items-center justify-center">
-          <Icon name="cloud-check" size="lg" aria-hidden />
-        </div>
         <div className="min-w-0 flex-1">
-          <p className="text-style-label text-text">{copy.title}</p>
-          <p className="text-style-body text-muted mt-1 leading-relaxed">
-            {copy.body}
+          <p className="text-style-body font-semibold text-text">
+            {coreMessages.onboardingPrompts.syncTitle}
+          </p>
+          <p className="text-style-label text-muted mt-1">
+            {coreMessages.onboardingPrompts.syncReason}
           </p>
           <div className="flex items-center gap-2 mt-3">
             <Button
               type="button"
               onClick={handleOpenAuth}
-              variant="solid"
+              variant="outline"
+              tone="neutral"
               size="sm"
             >
               {messages.auth.createAccount}

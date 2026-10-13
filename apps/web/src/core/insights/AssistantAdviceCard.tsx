@@ -129,7 +129,7 @@ export function AssistantAdviceCard({
       className={cn(
         "rounded-panel overflow-hidden",
         "transition-all duration-base",
-        "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
+        "border border-line bg-panel",
       )}
     >
       <div className="rounded-panel bg-panel overflow-hidden">
@@ -141,12 +141,6 @@ export function AssistantAdviceCard({
           className="flex items-center justify-between w-full px-4 py-3 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         >
           <div className="flex items-center gap-2">
-            <span
-              className="w-6 h-6 rounded-lg bg-brand-soft flex items-center justify-center text-xs" /* glyph scales with container, not a type role */
-              aria-hidden
-            >
-              S
-            </span>
             <SectionHeading as="span" size="xs" variant="muted">
               {messages.sergeant.adviceCardTitle}
             </SectionHeading>
@@ -165,11 +159,9 @@ export function AssistantAdviceCard({
               </Badge>
             )}
           </div>
-          <Icon
-            name={collapsed ? "chevron-down" : "chevron-up"}
-            size="sm"
-            className="text-muted"
-          />
+          <span className="text-style-caption text-muted">
+            {collapsed ? "Розгорнути" : "Згорнути"}
+          </span>
         </button>
 
         {!collapsed && (
@@ -250,16 +242,10 @@ export function AssistantAdviceCard({
                     }}
                     className={cn(
                       "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg touch-target",
-                      "bg-brand-soft text-brand-soft-fg text-style-caption font-semibold",
-                      "hover:brightness-105 transition-[filter,transform]",
+                      "border border-line bg-panel text-text text-style-caption font-semibold",
+                      "hover:bg-panelHi transition-colors",
                     )}
                   >
-                    <Icon
-                      name="sergeant"
-                      size={13}
-                      strokeWidth={2}
-                      aria-hidden
-                    />
                     Запитати Сержанта про це
                   </button>
                 )}

@@ -1,6 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@shared/lib/ui/cn";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -99,14 +98,6 @@ export interface HubMainContentProps {
   inFtuxSession?: boolean;
 }
 
-/** Канонічний порядок вкладок хабу для напрямку slide-анімації (#11). */
-const HUB_TAB_ORDER: readonly HubView[] = [
-  "dashboard",
-  "reports",
-  "profile",
-  "settings",
-];
-
 export const HubMainContent = memo(function HubMainContent({
   onOpenModule,
   hubView,
@@ -192,28 +183,6 @@ export const HubMainContent = memo(function HubMainContent({
     }
   }, [hubView]);
 
-  // #11 — directional slide choreography between hub tabs.
-  // The canonical tab order is: dashboard → reports → profile → settings.
-  // Switching to a tab that is further right → slide-in from the right;
-  // switching left → slide-in from the left. This mirrors the spatial model
-  // of a physical tab strip, matching the user's mental map.
-  const prevHubViewForAnim = useRef<HubView>(hubView);
-  const [slideClass, setSlideClass] = useState<string>("");
-
-  useEffect(() => {
-    const prev = prevHubViewForAnim.current;
-    if (prev === hubView) return;
-    const prevIdx = HUB_TAB_ORDER.indexOf(prev);
-    const nextIdx = HUB_TAB_ORDER.indexOf(hubView);
-    const goRight = nextIdx > prevIdx;
-    setSlideClass(goRight ? "animate-slide-in-right" : "animate-slide-in-left");
-    prevHubViewForAnim.current = hubView;
-    // Clear the class after the animation completes so re-mounting
-    // the same tab doesn't re-trigger the enter keyframe.
-    const id = setTimeout(() => setSlideClass(""), 260);
-    return () => clearTimeout(id);
-  }, [hubView]);
-
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: coachKeys.all }),
@@ -240,7 +209,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-dashboard"
               role="tabpanel"
               aria-labelledby="hub-tab-dashboard"
-              className={cn("flex flex-col gap-5 pt-2", slideClass)}
+              className="flex flex-col gap-5 pt-2"
             >
               <h1 className="sr-only">{messages.nav.dashboard}</h1>
               {/* Канон finyk §6.2 — durability. Банер жив лише всередині
@@ -277,7 +246,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-reports"
               role="tabpanel"
               aria-labelledby="hub-tab-reports"
-              className={cn("pt-2", slideClass)}
+              className="pt-2"
             >
               <h1 className="sr-only">{messages.nav.reports}</h1>
               <SuspenseWithMinDelay fallback={<PageLoader />}>
@@ -303,7 +272,6 @@ export const HubMainContent = memo(function HubMainContent({
               // згори проти 12px у сусідній вкладці — рівно та розбіжність
               // сусідніх вкладок одного хаба, яку V-10 і фіксує, просто
               // переїхала б на рівень вище.
-              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <ProfilePage />
@@ -319,7 +287,6 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-settings"
               role="tabpanel"
               aria-labelledby="hub-tab-settings"
-              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubSettingsPage scrollContainer={scrollElement} />

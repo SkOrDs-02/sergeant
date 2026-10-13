@@ -101,6 +101,11 @@ describe("SilpoIntegrationSection", () => {
     renderSection();
 
     expect(await screen.findByText("Звʼязати Сільпо")).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("button", { name: "Звʼязати Сільпо" })
+        .querySelector("svg"),
+    ).toBeNull();
     // No leftover receipts — no single point of deletion needed.
     expect(
       screen.queryByText("Видалити всі дані Сільпо"),

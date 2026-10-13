@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { privacyMessages } from "@shared/i18n/uk.privacy";
 import { type LockState } from "./useAppLock";
@@ -27,7 +26,7 @@ function PinDisplay({ length, filled }: { length: number; filled: number }) {
         <div
           key={i}
           className={`w-3 h-3 rounded-mark border-2 transition-colors ${
-            i < filled ? "bg-brand border-brand" : "bg-transparent border-line"
+            i < filled ? "bg-text border-text" : "bg-transparent border-line"
           }`}
         />
       ))}
@@ -352,10 +351,6 @@ export function AppLock({
         aria-labelledby="app-lock-title"
         className="w-full max-w-xs flex flex-col items-center gap-4"
       >
-        <div className="w-14 h-14 rounded-panel bg-brand/10 flex items-center justify-center mb-2">
-          <Icon name="lock" size={28} className="text-brand" />
-        </div>
-
         <h2
           id="app-lock-title"
           className="text-style-title text-text text-center"

@@ -96,6 +96,7 @@ describe("AiMemoryList", () => {
     renderList();
     const text = await screen.findByText(/Поки що AI нічого/);
     expect(text.closest('[role="status"]')).toBeTruthy();
+    expect(text).toBeVisible();
   });
 
   it("НЕ видаляє без підтвердження", async () => {

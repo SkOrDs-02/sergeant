@@ -234,7 +234,7 @@ export function WorkoutCatalogSection({
                   <span
                     aria-hidden
                     className={cn(
-                      "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[3px] border transition-colors",
+                      "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-check border transition-colors",
                       active
                         ? "border-line bg-panelHi text-text"
                         : "border-border-strong",

@@ -10,7 +10,7 @@
  * `apps/web/src/core/NotFoundPage.tsx` — deleted 2026-05-21).
  */
 import { useNavigate } from "react-router-dom";
-import { Button, EmptyState, Icon } from "@shared/components/ui";
+import { Button, EmptyState } from "@shared/components/ui";
 
 export interface NotFoundPageProps {
   /**
@@ -47,7 +47,6 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
               navigate(homePath, { replace: true });
             }}
           >
-            <Icon name="home" size="md" />
             На головну
           </Button>
         }
@@ -60,7 +59,6 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
               navigate(-1);
             }}
           >
-            <Icon name="chevron-left" size="md" />
             Назад
           </Button>
         }

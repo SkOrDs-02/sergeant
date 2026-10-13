@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, screen } from "@testing-library/react";
 import { EmptyState, ModuleEmptyState } from "./EmptyState";
 import { Button } from "./Button";
 
@@ -13,6 +13,22 @@ afterEach(cleanup);
  * прямо стосується Hard Rule #14 (`focus-visible:ring-*`).
  */
 describe("EmptyState — a11y", () => {
+  it("мова H: контекст доступний скрінрідеру, на екрані лише факт і дія", () => {
+    render(
+      <EmptyState
+        title="Записів немає"
+        description="Створи свій перший запис"
+        hint="Збережи запис"
+        action={<Button variant="solid">Додати</Button>}
+      />,
+    );
+    expect(screen.getByText("Створи свій перший запис")).not.toBeVisible();
+    expect(screen.getByText("Збережи запис")).not.toBeVisible();
+    expect(screen.getByRole("status")).toHaveAccessibleDescription(
+      "Створи свій перший запис Збережи запис",
+    );
+  });
+
   it("renders title + description у live-region з role='status' / aria-live='polite' / aria-atomic", () => {
     const { container, getByText } = render(
       <EmptyState

@@ -16,6 +16,7 @@ import { Card } from "@shared/components/ui/Card";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { coreMessages } from "@shared/i18n/uk.core";
+import { isFinykBalanceHidden, maskAmount } from "@finyk/lib/balanceVisibility";
 import { cn } from "@shared/lib/ui/cn";
 import { buildSpendLine, LINE_H, LINE_W } from "./spendHeroLine";
 
@@ -50,6 +51,12 @@ export interface HubSpendHeroProps {
 
 export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
   const t = coreMessages.hub.spendHero;
+  const balanceHidden = isFinykBalanceHidden();
+  const formatAmount = (amount: number) =>
+    maskAmount(
+      formatNumberUk(amount, { maximumFractionDigits: 0 }),
+      balanceHidden,
+    );
   // ponytail: «зараз» фіксується на монтуванні хаба; тік раз на хвилину
   // додати, якщо лінія має повзти, поки екран відкритий.
   const [mountedAt] = useState(() => Date.now());
@@ -84,11 +91,11 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
         <span className="tnum">
           {view.dayPlan === null
             ? t.noPlan
-            : `${t.plan} ${formatNumberUk(view.dayPlan, { maximumFractionDigits: 0 })}`}
+            : `${t.plan} ${formatAmount(view.dayPlan)}`}
         </span>
       </div>
       <p className="mt-1.5 text-style-display tnum text-text">
-        {formatNumberUk(view.todaySpent, { maximumFractionDigits: 0 })}{" "}
+        {formatAmount(view.todaySpent)}{" "}
         <span
           className={cn(
             "text-style-label-lg font-medium tracking-normal",
@@ -97,7 +104,7 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
         >
           ₴
           {left !== null &&
-            ` · ${left < 0 ? t.over : t.left} ${formatNumberUk(Math.abs(left), { maximumFractionDigits: 0 })}`}
+            ` · ${left < 0 ? t.over : t.left} ${formatAmount(Math.abs(left))}`}
         </span>
       </p>
       <svg

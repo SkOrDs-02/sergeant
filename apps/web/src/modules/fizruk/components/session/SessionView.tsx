@@ -11,7 +11,6 @@ import type {
   WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import type { DropdownMenuItem } from "@shared/components/ui/DropdownMenu";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -419,7 +418,6 @@ export function SessionView({
               onClick={onAddExercise}
               aria-label={ss.addExerciseAria}
             >
-              <Icon name="plus" size="md" aria-hidden />
               {ss.addExercise}
             </Button>
           )

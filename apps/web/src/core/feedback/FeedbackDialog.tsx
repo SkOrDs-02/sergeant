@@ -8,7 +8,7 @@ import { feedbackApi } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Textarea } from "@shared/components/ui/Input";
 import { Modal } from "@shared/components/ui/Modal";
-import { Segmented } from "@shared/components/ui/Segmented";
+import { RoutineChoiceList } from "../../modules/routine/components/settings/RoutineChoiceList";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { trackEvent } from "../observability/analytics";
@@ -154,11 +154,11 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
       }
     >
       <div className="space-y-4">
-        <Segmented<FeedbackCategory>
-          ariaLabel={messages.feedback.categoryLabel}
+        <RoutineChoiceList<FeedbackCategory>
+          label={messages.feedback.categoryLabel}
           value={category}
           onChange={setCategory}
-          items={[
+          options={[
             { value: "idea", label: messages.feedback.categoryIdea },
             { value: "bug", label: messages.feedback.categoryBug },
             { value: "other", label: messages.feedback.categoryOther },

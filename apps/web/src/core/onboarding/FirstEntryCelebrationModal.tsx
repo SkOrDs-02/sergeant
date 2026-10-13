@@ -62,9 +62,6 @@ export function FirstEntryCelebrationModal({
         "motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:fade-in",
       )}
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-success-soft text-success-soft-fg">
-        <Icon name="check" size="sm" aria-hidden />
-      </span>
       <div className="min-w-0 flex-1">
         <p className="text-style-label text-text">{copy.headline}</p>
         <p className="text-style-caption text-muted">{copy.subtext}</p>
@@ -83,7 +80,7 @@ export function FirstEntryCelebrationModal({
         <button
           type="button"
           onClick={close}
-          className="touch-target -ml-2 mt-1 rounded-lg px-2 text-style-caption font-medium text-brand-strong focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 dark:text-brand-400"
+          className="touch-target -ml-2 mt-1 rounded-lg px-2 text-style-caption font-medium text-text focus-ring"
         >
           {copy.primaryCtaLabel}
         </button>
