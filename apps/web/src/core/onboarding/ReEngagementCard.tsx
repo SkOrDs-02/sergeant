@@ -3,12 +3,11 @@
  * Status: Active
  */
 import { useCallback, useEffect } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { markReengagementShown, pluralDays } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 export function ReEngagementCard({
   daysInactive,
@@ -37,33 +36,34 @@ export function ReEngagementCard({
   }, [daysInactive, onContinue]);
 
   return (
-    <Card
-      as="section"
-      padding="lg"
-      className="relative overflow-hidden"
-      aria-label="Повернення"
+    <section
+      className="border-y border-line py-3"
+      aria-label={coreMessages.onboardingPrompts.returnTitle}
     >
-      <div className="flex flex-col items-center text-center space-y-3">
-        <div className="w-12 h-12 rounded-lg bg-brand-500/10 text-brand-strong flex items-center justify-center">
-          <Icon name="hand-wave" size="xl" />
-        </div>
+      <div className="space-y-3">
         <div className="space-y-1">
-          <h3 className="text-style-title text-text">Давно не бачились!</h3>
-          <p className="text-style-body text-muted leading-relaxed max-w-xs">
-            Тебе не було {daysInactive} {pluralDays(daysInactive)}. Все
-            збережено, продовжуй звідки зупинився.
+          <h3 className="text-style-body font-semibold text-text">
+            {coreMessages.onboardingPrompts.returnTitle}
+          </h3>
+          <p className="text-style-label text-muted">
+            {coreMessages.onboardingPrompts.absence} {daysInactive}{" "}
+            {pluralDays(daysInactive)}.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="solid" size="sm" onClick={handleContinue}>
-            Продовжити
-            <Icon name="chevron-right" size="sm" />
+          <Button
+            variant="outline"
+            tone="neutral"
+            size="sm"
+            onClick={handleContinue}
+          >
+            {coreMessages.onboardingPrompts.continue}
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
-            Пізніше
+            {coreMessages.actions.later}
           </Button>
         </div>
       </div>
-    </Card>
+    </section>
   );
 }

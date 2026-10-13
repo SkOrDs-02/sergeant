@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { type IconName } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
@@ -281,10 +281,6 @@ export function PresetSheet({
     openHubModuleWithAction(moduleId, config.fallback.action);
   };
 
-  const fallbackIconName = config.fallback.icon as Parameters<
-    typeof Icon
-  >[0]["name"];
-
   return (
     <Sheet
       open={open}
@@ -307,21 +303,12 @@ export function PresetSheet({
             type="button"
             onClick={() => void handlePick(item)}
             className={cn(
-              "w-full text-left px-3 py-3 rounded-lg border border-line bg-panelHi",
-              "hover:border-brand-500/50 hover:bg-brand-500/5 transition-[background-color,border-color,opacity]",
+              "w-full text-left py-3 border-b border-line",
+              "hover:bg-panel transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
             )}
           >
             <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  "w-11 h-11 shrink-0 rounded-lg flex items-center justify-center",
-                  config.accent,
-                )}
-                aria-hidden
-              >
-                <Icon name={item.icon} size="lg" />
-              </div>
               <div className="min-w-0 flex-1">
                 <div className="text-style-title text-text truncate">
                   {item.title}
@@ -330,11 +317,6 @@ export function PresetSheet({
                   {item.desc}
                 </div>
               </div>
-              <Icon
-                name="chevron-right"
-                size="md"
-                className="text-muted shrink-0"
-              />
             </div>
           </button>
         ))}
@@ -343,14 +325,13 @@ export function PresetSheet({
           type="button"
           onClick={handleCustom}
           className={cn(
-            "w-full text-center px-3 py-3 rounded-lg border border-dashed border-line",
+            "w-full text-center px-3 py-3 rounded-lg border border-control",
             "text-style-label text-muted hover:text-text hover:border-brand-500/50",
             "transition-[background-color,border-color,opacity]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
           <div className="flex items-center justify-center gap-1.5">
-            <Icon name={fallbackIconName} size="sm" />
             <span>{config.fallback.label}</span>
           </div>
         </button>

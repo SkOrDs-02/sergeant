@@ -18,17 +18,13 @@ import {
 import { webKVStore } from "@shared/lib/storage/storage";
 import { messages } from "@shared/i18n/uk";
 
-type IconName = Parameters<typeof Icon>[0]["name"];
-
 interface FirstActionEntry {
-  icon: IconName;
   title: string;
   desc: string;
-  accent: string;
   /**
    * Short label rendered in the inline chip row (S2.3). Module titles
    * like «Запиши перший прийом їжі» are too long for a chip; the chip
-   * uses just the module name. Icon carries the rest of the meaning.
+   * uses just the module name.
    */
   chipLabel: string;
 }
@@ -47,23 +43,15 @@ const COPY = messages.firstAction;
 
 const ACTIONS: Record<ModuleId, FirstActionEntry> = {
   routine: {
-    icon: "check",
-    accent: "text-routine-soft-fg bg-routine-soft",
     ...COPY.actions.routine,
   },
   finyk: {
-    icon: "credit-card",
-    accent: "text-finyk-soft-fg bg-finyk-soft",
     ...COPY.actions.finyk,
   },
   nutrition: {
-    icon: "utensils",
-    accent: "text-nutrition-soft-fg bg-nutrition-soft",
     ...COPY.actions.nutrition,
   },
   fizruk: {
-    icon: "dumbbell",
-    accent: "text-fizruk-soft-fg bg-fizruk-soft",
     ...COPY.actions.fizruk,
   },
 };
@@ -218,7 +206,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <SectionHeading as="div" size="xs" variant="subtle">
                 {COPY.kicker}
               </SectionHeading>
-              <h2 className="text-style-title text-text mt-0.5">
+              <h2 className="text-style-body font-semibold text-text mt-0.5">
                 {COPY.headingMany}
               </h2>
               <p className="text-style-body text-muted mt-0.5 leading-snug">
@@ -237,7 +225,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="divide-y divide-line border-y border-line">
             {moduleIds.map((id) => {
               const action = ACTIONS[id];
               return (
@@ -246,24 +234,15 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   type="button"
                   onClick={() => openPreset(id)}
                   className={cn(
-                    "w-full min-h-[56px] rounded-lg border border-line bg-panelHi px-3 py-2",
+                    "w-full min-h-14 py-2",
                     "text-left transition-[background-color,border-color]",
-                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "hover:bg-panel",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   )}
                 >
                   <span className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        "w-10 h-10 shrink-0 rounded-lg flex items-center justify-center",
-                        action.accent,
-                      )}
-                      aria-hidden
-                    >
-                      <Icon name={action.icon} size="lg" />
-                    </span>
                     <span className="min-w-0">
-                      <span className="block text-style-title text-text">
+                      <span className="block text-style-body font-semibold text-text">
                         {action.chipLabel}
                       </span>
                       <span className="block text-style-caption text-muted">
@@ -300,7 +279,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <SectionHeading as="div" size="xs" variant="subtle">
                 {COPY.kicker}
               </SectionHeading>
-              <h2 className="text-style-title text-text mt-0.5">
+              <h2 className="text-style-body font-semibold text-text mt-0.5">
                 {COPY.headingMany}
               </h2>
               <p className="text-style-body text-muted mt-0.5 leading-snug">
@@ -320,7 +299,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           </div>
 
           <div
-            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+            className="divide-y divide-line border-y border-line"
             role="group"
             aria-label={COPY.picksLabel}
           >
@@ -332,24 +311,15 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   type="button"
                   onClick={() => openPreset(id)}
                   className={cn(
-                    "w-full min-h-[60px] rounded-lg border border-line bg-panelHi px-3 py-2",
+                    "w-full min-h-14 py-2",
                     "text-left transition-[background-color,border-color]",
-                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "hover:bg-panel",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   )}
                 >
                   <span className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        "w-10 h-10 shrink-0 rounded-lg flex items-center justify-center",
-                        action.accent,
-                      )}
-                      aria-hidden
-                    >
-                      <Icon name={action.icon} size="lg" />
-                    </span>
                     <span className="min-w-0">
-                      <span className="block text-style-title text-text">
+                      <span className="block text-style-body font-semibold text-text">
                         {action.chipLabel}
                       </span>
                       <span className="block text-style-caption text-muted">
@@ -387,7 +357,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             <SectionHeading as="div" size="xs" variant="subtle">
               {COPY.kicker}
             </SectionHeading>
-            <h2 className="text-style-title text-text mt-0.5">
+            <h2 className="text-style-body font-semibold text-text mt-0.5">
               {picks.length > 1 ? COPY.headingMany : COPY.headingOne}
             </h2>
             <p className="text-style-body text-muted mt-0.5 leading-snug">
@@ -410,31 +380,20 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           type="button"
           onClick={() => openPreset(primaryId)}
           className={cn(
-            "w-full text-left px-4 py-3 rounded-lg border-2 border-brand-500/50 bg-brand-500/5",
-            "hover:border-brand-500 hover:bg-brand-500/10 transition-[background-color,border-color,opacity]",
+            "w-full text-left py-3 border-y border-line",
+            "hover:bg-panel transition-colors",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
           <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "w-11 h-11 shrink-0 rounded-lg flex items-center justify-center",
-                primary.accent,
-              )}
-            >
-              <Icon name={primary.icon} size={22} />
-            </div>
             <div className="min-w-0 flex-1">
-              <div className="text-style-title text-text">{primary.title}</div>
+              <div className="text-style-body font-semibold text-text">
+                {primary.title}
+              </div>
               <div className="text-style-body text-muted mt-0.5 truncate">
                 {getGoalAwareDesc(primaryId, primary.desc)}
               </div>
             </div>
-            <Icon
-              name="chevron-right"
-              size={18}
-              className="text-brand-strong"
-            />
           </div>
         </button>
 
@@ -445,7 +404,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           // `onboarding_first_action_picked` event with `via="chip"`
           // vs `via="primary"`.
           <div
-            className="flex flex-wrap items-center gap-2 pt-1"
+            className="divide-y divide-line border-y border-line"
             role="group"
             aria-label={COPY.otherModuleLabel}
           >
@@ -460,23 +419,14 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                   type="button"
                   onClick={() => openPreset(id)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 px-3 h-8 rounded-lg",
-                    "border border-line bg-panelHi text-text",
-                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "flex w-full min-h-14 items-center py-2",
+                    "text-text",
+                    "hover:bg-panel",
                     "transition-[background-color,border-color]",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "w-5 h-5 shrink-0 rounded-md flex items-center justify-center",
-                      a.accent,
-                    )}
-                    aria-hidden
-                  >
-                    <Icon name={a.icon} size="xs" />
-                  </span>
-                  <span className="text-style-caption font-medium">
+                  <span className="text-style-body font-semibold">
                     {a.chipLabel}
                   </span>
                 </button>
