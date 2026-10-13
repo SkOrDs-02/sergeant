@@ -108,13 +108,17 @@ export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 // string that is already covered by the contract tests. Do not inline these
 // into the resolver — keeping them flat guarantees byte-identical output
 // across the legacy and canonical entry points.
-const variants: Record<ButtonVariantLegacy, string> = {
+type ButtonStyleKey = ButtonVariantLegacy | "danger-outline";
+
+const variants: Record<ButtonStyleKey, string> = {
   // Мова H (redesign v3): `primary` = чорнило на сторінці (у темній
   // сторінка на чорнилі, бо токени перевертаються), `secondary` = outline
   // 1 px `border-strong` без тіні. Межу outline-кнопки дає обвід, не заливка.
   primary: "bg-text text-bg hover:bg-text/90 active:bg-text/80",
   secondary:
     "bg-transparent text-text border border-border-strong hover:bg-panel active:bg-panelHi",
+  "danger-outline":
+    "bg-transparent text-danger-strong dark:text-danger border border-border-strong hover:bg-panel active:bg-panelHi",
   // AI-CONTEXT: `ghost` — НЕ «стриманий secondary». Без бордера й заливки
   // його межу мусить давати РАМКА контейнера, в якому він стоїть. Сусідство
   // з гучною кнопкою межі не замінює — рішення власника 2026-09-15 після
@@ -269,7 +273,7 @@ const MODULE_LEGACY_OVERRIDE: Record<
 // treatment), so it maps regardless of tone.
 const EMPHASIS_TONE_MAP: Record<
   ButtonEmphasis,
-  Partial<Record<ButtonTone, ButtonVariantLegacy>>
+  Partial<Record<ButtonTone, ButtonStyleKey>>
 > = {
   solid: {
     neutral: "primary",
@@ -290,6 +294,7 @@ const EMPHASIS_TONE_MAP: Record<
   },
   outline: {
     neutral: "secondary",
+    danger: "danger-outline",
   },
   ghost: {
     neutral: "ghost",
@@ -304,7 +309,7 @@ function resolveStyleKey(
   variant: ButtonVariant,
   tone: ButtonTone | undefined,
   module: ModuleAccent | undefined,
-): ButtonVariantLegacy {
+): ButtonStyleKey {
   // Legacy path: a flat alias already encodes emphasis + colour. Preserve
   // the exact pre-2026-07 behaviour, including the `module` redirect.
   if (LEGACY_VARIANTS.has(variant)) {
