@@ -36,6 +36,9 @@ export {
 } from "./Card";
 export type { CardPadding, CardProps, CardTitleProps } from "./Card";
 
+export { ContentGroup, ContentRow } from "./ContentGroup";
+export type { ContentGroupProps, ContentRowProps } from "./ContentGroup";
+
 export { Avatar } from "./Avatar";
 export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
 

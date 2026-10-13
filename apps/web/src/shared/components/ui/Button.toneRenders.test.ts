@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-14
+ * Last validated: 2026-10-13
  * Status: Active
  *
  * Гейт на одне: щоб `tone`, написаний у виклику, справді щось означав.
@@ -63,7 +63,7 @@ const EMPHASIS_TONES: Record<string, ReadonlySet<string>> = {
     "routine",
     "nutrition",
   ]),
-  outline: new Set(["neutral"]),
+  outline: new Set(["neutral", "danger"]),
   ghost: new Set(["neutral"]),
 };
 
@@ -245,7 +245,8 @@ describe("Button: `tone` мусить щось означати (PR-C1, побі
       "utf8",
     );
     // `outline` і `ghost` навмисно бідні — саме на цьому і горіли виклики.
-    // Якщо в них зʼявиться модульна клітинка, копію треба оновити.
+    // `outline.danger` додано для стриманих дій ризику (02+03, 2026-10-13).
+    // Якщо зʼявляться інші клітинки, копію треба оновити.
     const map = /const EMPHASIS_TONE_MAP[\s\S]*?\n};/.exec(btn)?.[0] ?? "";
     expect(map).toContain("outline: {");
     expect(map).toContain("ghost: {");
