@@ -82,7 +82,7 @@ export function WarmupCooldownChecklist({
             >
               <span
                 aria-hidden
-                className={`flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border ${item.done ? "border-text bg-text text-bg" : "border-line bg-bg"}`}
+                className={`flex h-[22px] w-[22px] items-center justify-center rounded-check border ${item.done ? "border-text bg-text text-bg" : "border-line bg-bg"}`}
               >
                 {item.done ? "✓" : null}
               </span>

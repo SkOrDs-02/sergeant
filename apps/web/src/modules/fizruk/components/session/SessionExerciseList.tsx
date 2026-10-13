@@ -4,7 +4,6 @@
  */
 import type { WorkoutGroup, WorkoutItem } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { fmtLoose } from "../../lib/numberFmt";
@@ -123,7 +122,6 @@ export function SessionExerciseList({
               onClick={onAddExercise}
               aria-label={ss.addExerciseAria}
             >
-              <Icon name="plus" size="md" aria-hidden />
               {ss.addExercise}
             </Button>
           </div>

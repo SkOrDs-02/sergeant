@@ -330,7 +330,7 @@ export function WorkoutTemplatesSection({
                         >
                           <span
                             aria-hidden
-                            className={`flex h-[22px] w-[22px] items-center justify-center rounded-[3px] border ${isSelected ? "border-text bg-text text-bg" : "border-line bg-bg"}`}
+                            className={`flex h-[22px] w-[22px] items-center justify-center rounded-check border ${isSelected ? "border-text bg-text text-bg" : "border-line bg-bg"}`}
                           >
                             {isSelected ? "✓" : null}
                           </span>
