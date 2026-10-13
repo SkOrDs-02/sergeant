@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { POST_SUCCESS_REDIRECT_MS } from "@shared/lib/ui/timeouts";
 import { BrandLogo } from "../app/BrandLogo";
@@ -161,28 +160,14 @@ export function VerifyEmailPage() {
       <main
         id="main"
         tabIndex={-1}
-        className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower outline-none"
+        className="w-full max-w-sm my-auto outline-none"
       >
         <div className="text-center mb-6">
           <BrandLogo as="h1" size="md" className="justify-center" />
         </div>
 
-        <Card prominence="hero" padding="lg" className="space-y-5">
+        <Card prominence="panel" padding="lg" className="space-y-5">
           <div className="text-center space-y-2">
-            <span
-              aria-hidden="true"
-              className={
-                isProblem
-                  ? "inline-flex items-center justify-center w-12 h-12 rounded-lg bg-danger/10 text-danger-strong dark:text-danger"
-                  : "inline-flex items-center justify-center w-12 h-12 rounded-lg bg-brand-500/10 text-brand-strong"
-              }
-            >
-              <Icon
-                name={isProblem ? "alert" : "check"}
-                size={22}
-                strokeWidth={2.5}
-              />
-            </span>
             <h2
               ref={headingRef}
               tabIndex={-1}
@@ -196,7 +181,7 @@ export function VerifyEmailPage() {
             role={isProblem ? "alert" : "status"}
             className={
               isProblem
-                ? "text-style-label text-text bg-danger/10 border border-danger/30 rounded-lg px-4 py-3 leading-relaxed"
+                ? "text-style-label text-text bg-panel rounded-lg px-4 py-3 leading-relaxed"
                 : "text-style-label text-subtle text-center leading-relaxed"
             }
           >

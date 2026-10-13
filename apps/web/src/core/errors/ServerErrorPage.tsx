@@ -12,7 +12,7 @@
  * and reloading is the minimal action the user can take with the highest
  * chance of recovery.
  */
-import { Button, EmptyState, Icon } from "@shared/components/ui";
+import { Button, EmptyState } from "@shared/components/ui";
 
 export interface ServerErrorPageProps {
   /** Forward a `resetErrorBoundary()` if available. */
@@ -50,7 +50,6 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         description="Сервер тимчасово не зміг обробити запит. Спробуй оновити сторінку, зазвичай це допомагає."
         primaryAction={
           <Button type="button" variant="solid" size="lg" onClick={reload}>
-            <Icon name="refresh-cw" size="md" />
             Оновити сторінку
           </Button>
         }

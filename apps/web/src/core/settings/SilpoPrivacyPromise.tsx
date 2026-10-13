@@ -17,7 +17,6 @@
  *   `focus-visible:ring-finyk`) — той самий `<details>`-патерн у тому ж
  *   файловому сусідстві.
  */
-import { Icon } from "@shared/components/ui/Icon";
 
 export interface SilpoPrivacyPromiseCopy {
   privacyPromiseParagraph1: string;
@@ -46,12 +45,6 @@ export function SilpoPrivacyPromise({
   return (
     <details className="rounded-panel border border-line bg-panel p-3">
       <summary className="touch-target flex cursor-pointer items-center gap-2 text-style-label text-text marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk">
-        <Icon
-          name="shield"
-          size="md"
-          className="text-muted shrink-0"
-          aria-hidden
-        />
         {copy.privacyPromiseDetailsSummary}
       </summary>
       <div className="mt-2">{text}</div>

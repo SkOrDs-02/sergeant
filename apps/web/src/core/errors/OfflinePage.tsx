@@ -15,7 +15,7 @@
  * reads as "we're paused, not broken" — data is queued, not lost
  * (per `docs/design/design/design-system.md` § 15 Offline).
  */
-import { Button, EmptyState, Icon } from "@shared/components/ui";
+import { Button, EmptyState } from "@shared/components/ui";
 import { useOnlineStatus } from "@shared/hooks";
 
 export function OfflinePage() {
@@ -80,7 +80,6 @@ export function OfflinePage() {
               window.location.reload();
             }}
           >
-            <Icon name="refresh-cw" size="md" />
             {online ? "Спробувати ще" : "Очікування мережі…"}
           </Button>
         }

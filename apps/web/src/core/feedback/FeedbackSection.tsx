@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { trackEvent } from "../observability/analytics";
 import {
@@ -46,7 +45,6 @@ export function FeedbackSection() {
           className="h-10 w-full justify-center gap-2"
           onClick={handleOpen}
         >
-          <Icon name="message-circle" size="md" />
           {messages.feedback.openButton}
         </Button>
       </SettingsSubGroup>

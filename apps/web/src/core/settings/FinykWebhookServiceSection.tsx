@@ -7,7 +7,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isApiError, monoWebhookApi, type MonoSyncState } from "@shared/api";
 import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { isRetriableError } from "@shared/lib/api/queryClient";
 import { cn } from "@shared/lib/ui/cn";
@@ -353,7 +352,6 @@ export function FinykWebhookServiceSection({
               onClick={() => syncStateQuery.refetch()}
               disabled={syncStateQuery.isFetching}
             >
-              <Icon name="refresh-cw" size="md" aria-hidden />
               {syncStateQuery.isFetching ? COPY.checking : COPY.retryCheck}
             </Button>
           </div>
@@ -387,7 +385,6 @@ export function FinykWebhookServiceSection({
           onClick={refreshAllData}
           disabled={refreshing}
         >
-          <Icon name="refresh-cw" size="md" aria-hidden />
           {refreshing ? COPY.refreshing : COPY.refresh}
         </Button>
         <Button
@@ -396,7 +393,6 @@ export function FinykWebhookServiceSection({
           className="w-full h-11"
           onClick={() => setConfirmKind("cache")}
         >
-          <Icon name="trash" size="md" aria-hidden />
           {COPY.clearTransactions}
         </Button>
       </SettingsSubGroup>

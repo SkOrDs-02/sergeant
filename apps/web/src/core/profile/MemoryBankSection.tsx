@@ -248,7 +248,6 @@ export function MemoryBankSection() {
           усередині — цей коментар канонічний, решта секцій Профілю з тим
           самим фіксом лише посилаються на нього. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="sergeant" size={18} className="text-muted" />
         <span className="ml-auto text-style-caption text-muted">
           {entries.length} {pluralUa(entries.length, MEMORY_ENTRY_FORMS)}
           {" \u00b7 "}
@@ -274,7 +273,6 @@ export function MemoryBankSection() {
                   size="sm"
                   onClick={() => openMemoryChat("interview")}
                 >
-                  <Icon name="sergeant" size="sm" className="mr-1.5" />
                   Заповнити профіль
                 </Button>
               }
@@ -293,7 +291,6 @@ export function MemoryBankSection() {
                   size="sm"
                   onClick={() => importRef.current?.click()}
                 >
-                  <Icon name="upload" size="sm" className="mr-1.5" />
                   Імпорт
                 </Button>
               }
@@ -311,12 +308,10 @@ export function MemoryBankSection() {
             {Object.entries(grouped).map(([cat, items]) => {
               const meta = CATEGORY_META[cat] || {
                 label: cat,
-                icon: "pen" as const,
               };
               return (
                 <div key={cat}>
                   <div className="text-style-overline text-muted mb-2 flex items-center gap-1.5">
-                    <Icon name={meta.icon} size="xs" aria-hidden />
                     {meta.label}
                   </div>
                   <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
@@ -358,7 +353,6 @@ export function MemoryBankSection() {
                 ariaLabel="Як додати факт"
                 trigger={
                   <Button variant="outline" size="sm" className="gap-1.5">
-                    <Icon name="plus" size="sm" />
                     Додати
                   </Button>
                 }
@@ -368,7 +362,6 @@ export function MemoryBankSection() {
                     id: "chat",
                     label: "Додати інфо в чаті",
                     description: "Розкажи Сержанту, він запише",
-                    icon: <Icon name="sergeant" size="md" />,
                     onSelect: () => openMemoryChat("add"),
                   },
                   {
@@ -376,7 +369,6 @@ export function MemoryBankSection() {
                     id: "interview",
                     label: "Пройти інтервʼю",
                     description: "Ширші питання: цілі, обмеження, звички",
-                    icon: <Icon name="message-circle" size="md" />,
                     onSelect: () => openMemoryChat("interview"),
                   },
                   {
@@ -384,7 +376,6 @@ export function MemoryBankSection() {
                     id: "manual",
                     label: "Вручну",
                     description: "Крок за кроком, без чату",
-                    icon: <Icon name="pen" size="md" />,
                     onSelect: () => setManualOpen(true),
                   },
                 ]}
@@ -406,14 +397,12 @@ export function MemoryBankSection() {
                     type: "item",
                     id: "export",
                     label: "Експорт памʼяті",
-                    icon: <Icon name="download" size="md" />,
                     onSelect: handleExport,
                   },
                   {
                     type: "item",
                     id: "import",
                     label: "Імпорт памʼяті",
-                    icon: <Icon name="upload" size="md" />,
                     onSelect: () => importRef.current?.click(),
                   },
                 ]}
