@@ -5,20 +5,20 @@
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
 
-| PR                | Гілка                                | GitHub PR                                                | Стан        | Позиції каталогу § 2                                          |
-| ----------------- | ------------------------------------ | -------------------------------------------------------- | ----------- | ------------------------------------------------------------- |
-| PR0               | `claude/redesign-v3-pr0`             | #1494                                                    | merged      | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                     |
-| PR1               | `claude/redesign-v3-pr1`             | #1495                                                    | merged      | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36   |
-| PR2               | `claude/redesign-v3-pr2`             | #1497                                                    | merged      | 3, 11, 15, 16; частково 26-29                                 |
-| PR3               | `claude/redesign-v3-pr3`             | #1498                                                    | merged      | 8 частково, 9, 13, 24-29 по Фініку                            |
-| PR3 · фікси       | `codex/redesign-v3-pr3-review-fixes` | #1501                                                    | merged      | Виправлення регресій ревʼю PR3                                |
-| PR4               | `claude/redesign-v3-pr4`             | #1503                                                    | merged      | 9, 24-29, 31 по Їжі; частково 8                               |
-| PR4b              | `claude/redesign-v3-pr4b`            | #1504                                                    | merged      | 7 (форма швидкої дії, поправка 2026-10-10)                    |
-| PR5               | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged      | 14, 31; 8, 9, 24–29 по Рутині                                 |
-| PR6               | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged      | 8, 9, 24–29 по Фізруку                                        |
-| PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged      | 24, 25, 32, 33; пʼять v3 baseline = 0                         |
-| Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged      | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37       |
-| Content hierarchy | `claude/redesign-v3-content-groups`  | номер після публікації                                   | in progress | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів |
+| PR                | Гілка                                | GitHub PR                                                | Стан   | Позиції каталогу § 2                                          |
+| ----------------- | ------------------------------------ | -------------------------------------------------------- | ------ | ------------------------------------------------------------- |
+| PR0               | `claude/redesign-v3-pr0`             | #1494                                                    | merged | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                     |
+| PR1               | `claude/redesign-v3-pr1`             | #1495                                                    | merged | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36   |
+| PR2               | `claude/redesign-v3-pr2`             | #1497                                                    | merged | 3, 11, 15, 16; частково 26-29                                 |
+| PR3               | `claude/redesign-v3-pr3`             | #1498                                                    | merged | 8 частково, 9, 13, 24-29 по Фініку                            |
+| PR3 · фікси       | `codex/redesign-v3-pr3-review-fixes` | #1501                                                    | merged | Виправлення регресій ревʼю PR3                                |
+| PR4               | `claude/redesign-v3-pr4`             | #1503                                                    | merged | 9, 24-29, 31 по Їжі; частково 8                               |
+| PR4b              | `claude/redesign-v3-pr4b`            | #1504                                                    | merged | 7 (форма швидкої дії, поправка 2026-10-10)                    |
+| PR5               | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged | 14, 31; 8, 9, 24–29 по Рутині                                 |
+| PR6               | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged | 8, 9, 24–29 по Фізруку                                        |
+| PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                         |
+| Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37       |
+| Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | draft  | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -912,7 +912,7 @@ CI першого head `ee7096d65`: `check` FAILURE у кроці `Script unit t
 
 ## Погоджена ієрархія змісту web · 2026-10-13
 
-**Стан:** у роботі, гілка `claude/redesign-v3-content-groups` від свіжого `origin/main` `f252a1c049986c73a6817151991028a4c58b4f3c`. #1510 підтверджено MERGED, `mergedAt=2026-10-13T15:11:55Z` (`gh pr view 1510 --json state,mergedAt,url`, exit0). Це окреме погоджене власником доповнення після PR0–PR7, не PR8 і не пропуск початкової спеки.
+**Стан:** draft [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511), гілка `claude/redesign-v3-content-groups` від свіжого `origin/main` `f252a1c049986c73a6817151991028a4c58b4f3c`. #1510 підтверджено MERGED, `mergedAt=2026-10-13T15:11:55Z` (`gh pr view 1510 --json state,mergedAt,url`, exit0). Це окреме погоджене власником доповнення після PR0–PR7, не PR8 і не пропуск початкової спеки.
 
 **Рішення власника:** поєднати мокапи 02 і 03 та застосовувати спільну ієрархію по всій web-апці. Нейтральна межа об’єднує пов’язаний стан і дії; рівноправні підпункти відділяє hairline; секція має чинний заголовок і 24px до наступної теми. Додаткові акцентні заливки й вкладені картки не потрібні. Відключення/очищення — outline із danger-текстом, чинні підтвердження зберігаються. Native mobile/mobile-shell заморожені за прямою вказівкою власника; codebase-memory і MEMANTO ігноруються.
 
@@ -933,3 +933,5 @@ CI першого head `ee7096d65`: `check` FAILURE у кроці `Script unit t
 **Фінальне уточнення й кадри:** після відгуку власника перезнято батьківські групи Monobank/Сільпо й рядки операцій: after `--grep "Monobank content group|Silpo content group|Service details|Desktop grouped actions"` — exit0, 7/7; before `--grep "Monobank content group|Silpo content group"` — exit0, 4/4. Решта вже успішних кадрів не змінювалася. Галерея/ZIP оновлено; знімки залишаються поза PR. Новий тест перевіряє належність оновлення/кешу до named region Monobank, чинний тест Сільпо перевіряє належність refresh/wipe до своєї групи. Foundation-коміт `bb37a847a` та core-коміт `47a693d64` пройшли штатні hooks, exit0; жодних skip-hook. Повні format/lint та docs-гейти повторюються на фінальному журналі перед публікацією.
 
 **Публікаційні гейти:** повторний повний `pnpm lint` — exit0 (`lint-publication.exit=0`); `pnpm design:check-md` і `pnpm lint:specs` — exit0 кожна. Свіжий `pnpm --filter @sergeant/web size` та eager guard — exit0, JS1.5MB/CSS32.59kB/eager257.5kB у бюджетах. Після fetch main лишається `f252a1c`; перевірений код не має розбіжності бази. `pnpm format:check` — exit0 на всьому репозиторії (`format-publication.exit=0`); після дописування цього результату docs повторно перевірено scoped Prettier перед комітом.
+
+**Draft опубліковано:** `gh pr create --draft --body-file /workspace/artifacts/content-groups/pr-body.md` — exit0, [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511). `gh pr view 1511 --json state,isDraft,mergedAt,mergeable,headRefOid,statusCheckRollup` та GitHub-конектор підтвердили OPEN, isDraft=true, mergedAt=null, MERGEABLE. Перший head `45d9a2768`; CI стартував, ще не є зеленим доказом. Документаційний коміт `45d9a2768` — exit0 зі штатними hooks; перша спроба docs(design) відхилена commitlint через невідомий scope, виправлено на дозволений docs(docs), hooks не вимикалися. Push — exit0; штатний non-gating refresh Windows `D:\Sergeant` надрукував відсутній шлях, push успішний. Після цього publication-запису перевірити PR OPEN перед push і актуальні checks на новому head. Код не змінювався; до мержу наступного PR не починати.
