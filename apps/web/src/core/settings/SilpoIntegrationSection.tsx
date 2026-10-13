@@ -29,6 +29,7 @@ import {
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { useSilpoUpdateSettings } from "@finyk/hooks/useSilpoReceipts";
 import { SettingsSubGroup, ToggleRow } from "./SettingsPrimitives";
+import { ContentGroup, ContentRow } from "@shared/components/ui/ContentGroup";
 import { SilpoPrivacyPromise } from "./SilpoPrivacyPromise";
 import {
   SilpoUnmatchedReceipts,
@@ -102,7 +103,7 @@ const COPY = {
   reauthBody:
     "Доступ до акаунта Сільпо закінчився або був відкликаний. Підключи заново, щоб чеки продовжили оновлюватись.",
   reauthCta: "Підключити повторно",
-  dangerTitle: "Небезпечна дія",
+  dangerTitle: "Дані чеків",
   wipeCta: "Видалити всі дані Сільпо",
   wipeTitle: "Видалити всі дані Сільпо?",
   wipeBody:
@@ -245,12 +246,17 @@ export function SilpoIntegrationSection({
   if (status === "disabled") {
     return (
       <SettingsSubGroup title={COPY.title}>
-        <div className="rounded-panel border border-line bg-panel p-3">
+        <ContentGroup
+          as="section"
+          variant="bounded"
+          className="p-4"
+          aria-label={COPY.title}
+        >
           <p className="text-style-label text-text">{COPY.disabledTitle}</p>
           <p className="mt-1 text-style-caption text-subtle">
             {COPY.disabledBody}
           </p>
-        </div>
+        </ContentGroup>
       </SettingsSubGroup>
     );
   }
@@ -280,141 +286,152 @@ export function SilpoIntegrationSection({
       />
 
       <SettingsSubGroup title={COPY.title}>
-        <p className="text-style-caption text-subtle leading-snug">
-          {COPY.help}
-        </p>
+        <ContentGroup
+          as="section"
+          variant="bounded"
+          className="space-y-4 p-4"
+          aria-label={COPY.title}
+        >
+          <p className="text-style-caption text-subtle leading-snug">
+            {COPY.help}
+          </p>
 
-        {checkFailed ? (
-          <div className="space-y-3">
-            <p
-              className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
-              role="alert"
-            >
-              {COPY.checkFailed}
-            </p>
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={() => void refetch()}
-              disabled={isFetching}
-            >
-              {isFetching ? COPY.checking : COPY.retryCheck}
-            </Button>
-          </div>
-        ) : status === "connected" ? (
-          <div className="space-y-3">
-            {syncState?.lastFailedAt ? (
-              <div
-                className="flex items-start gap-3 p-3 rounded-panel border border-warning/40 bg-warning/15"
-                role="status"
+          {checkFailed ? (
+            <div className="space-y-3">
+              <p
+                className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
+                role="alert"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="text-style-label">{COPY.failedTitle}</div>
-                  <div className="text-style-caption text-subtle mt-0.5">
-                    {COPY.failedSince}{" "}
-                    {formatKyivDateTime(syncState.lastFailedAt)}
-                    {syncState.lastErrorCode
-                      ? ` · ${syncState.lastErrorCode}`
-                      : ""}
-                  </div>
-                  <div className="text-style-caption text-subtle mt-1">
-                    {COPY.failedAction}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-            <div className="flex items-center gap-3 p-3 rounded-panel border border-success/30 bg-bg">
-              <div className="w-2.5 h-2.5 rounded-mark shrink-0 bg-success" />
-              <div className="flex-1 min-w-0">
-                <div className="text-style-label">{COPY.connected}</div>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {syncState?.receiptsCount ?? 0} {COPY.receipts}
-                  {" · "}
-                  {syncState?.lastSyncAt
-                    ? `${COPY.lastSync} ${formatKyivDateTime(syncState.lastSyncAt)}`
-                    : COPY.neverSynced}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2">
+                {COPY.checkFailed}
+              </p>
               <Button
                 variant="outline"
-                className="flex-1 h-11"
-                onClick={runSync}
-                disabled={syncMutation.isPending}
+                className="w-full h-11"
+                onClick={() => void refetch()}
+                disabled={isFetching}
               >
-                {syncMutation.isPending ? COPY.syncing : COPY.sync}
-              </Button>
-              <Button
-                variant="soft"
-                tone="danger"
-                className="flex-1 h-11"
-                onClick={() => setConfirmKind("disconnect")}
-                disabled={destructivePending}
-              >
-                {COPY.disconnect}
+                {isFetching ? COPY.checking : COPY.retryCheck}
               </Button>
             </div>
-            <ToggleRow
-              label={COPY.autoImportLabel}
-              description={COPY.autoImportDescription}
-              checked={syncState?.pantryAutoImportSince != null}
-              onChange={(checked) => void runToggleAutoImport(checked)}
-              disabled={updateSettingsMutation.isPending}
-            />
-            {/* Той самий текст, що в disconnected-стані, але згорнутий —
+          ) : status === "connected" ? (
+            <div className="space-y-3">
+              {syncState?.lastFailedAt ? (
+                <div
+                  className="flex items-start gap-3 p-3 rounded-panel border border-warning/40 bg-warning/15"
+                  role="status"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-style-label">{COPY.failedTitle}</div>
+                    <div className="text-style-caption text-subtle mt-0.5">
+                      {COPY.failedSince}{" "}
+                      {formatKyivDateTime(syncState.lastFailedAt)}
+                      {syncState.lastErrorCode
+                        ? ` · ${syncState.lastErrorCode}`
+                        : ""}
+                    </div>
+                    <div className="text-style-caption text-subtle mt-1">
+                      {COPY.failedAction}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              <ContentGroup>
+                <ContentRow className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-mark shrink-0 bg-success" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-style-label">{COPY.connected}</div>
+                    <div className="text-style-caption text-subtle mt-0.5">
+                      {syncState?.receiptsCount ?? 0} {COPY.receipts}
+                      {" · "}
+                      {syncState?.lastSyncAt
+                        ? `${COPY.lastSync} ${formatKyivDateTime(syncState.lastSyncAt)}`
+                        : COPY.neverSynced}
+                    </div>
+                  </div>
+                </ContentRow>
+                <ContentRow className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-11"
+                    onClick={runSync}
+                    disabled={syncMutation.isPending}
+                  >
+                    {syncMutation.isPending ? COPY.syncing : COPY.sync}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    tone="danger"
+                    className="flex-1 h-11"
+                    onClick={() => setConfirmKind("disconnect")}
+                    disabled={destructivePending}
+                  >
+                    {COPY.disconnect}
+                  </Button>
+                </ContentRow>
+              </ContentGroup>
+              <ToggleRow
+                label={COPY.autoImportLabel}
+                description={COPY.autoImportDescription}
+                checked={syncState?.pantryAutoImportSince != null}
+                onChange={(checked) => void runToggleAutoImport(checked)}
+                disabled={updateSettingsMutation.isPending}
+              />
+              {/* Той самий текст, що в disconnected-стані, але згорнутий —
                 щоденно не муляє, лишається на відстані одного тапу. */}
-            <SilpoPrivacyPromise copy={COPY} variant="details" />
-            <SilpoUnmatchedReceipts
-              enabled={status === "connected"}
-              addManualExpense={addManualExpense}
-            />
-          </div>
-        ) : status === "reauth_required" ? (
-          <div className="space-y-3">
-            <Notice tone="ink" role="alert">
-              <div>{COPY.reauthTitle}</div>
-              <p className="mt-0.5 font-normal text-muted">{COPY.reauthBody}</p>
-            </Notice>
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={goToSilpoConnect}
-            >
-              {COPY.reauthCta}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Обіцянка приватності — ПЕРЕД рішенням підключити, не після
+              <SilpoPrivacyPromise copy={COPY} variant="details" />
+              <SilpoUnmatchedReceipts
+                enabled={status === "connected"}
+                addManualExpense={addManualExpense}
+              />
+            </div>
+          ) : status === "reauth_required" ? (
+            <div className="space-y-3">
+              <Notice tone="ink" role="alert">
+                <div>{COPY.reauthTitle}</div>
+                <p className="mt-0.5 font-normal text-muted">
+                  {COPY.reauthBody}
+                </p>
+              </Notice>
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={goToSilpoConnect}
+              >
+                {COPY.reauthCta}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Обіцянка приватності — ПЕРЕД рішенням підключити, не після
                 (гейт №2 спеки). */}
-            <SilpoPrivacyPromise copy={COPY} variant="inline" />
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={goToSilpoConnect}
-            >
-              {COPY.connect}
-            </Button>
-          </div>
-        )}
+              <SilpoPrivacyPromise copy={COPY} variant="inline" />
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={goToSilpoConnect}
+              >
+                {COPY.connect}
+              </Button>
+            </div>
+          )}
+          {(status === "connected" ||
+            status === "reauth_required" ||
+            (syncState?.receiptsCount ?? 0) > 0) && (
+            <ContentRow>
+              <p className="text-style-label text-text">{COPY.dangerTitle}</p>
+              <Button
+                variant="outline"
+                tone="danger"
+                className="mt-3 w-full h-11"
+                onClick={() => setConfirmKind("wipe")}
+                disabled={destructivePending}
+              >
+                {COPY.wipeCta}
+              </Button>
+            </ContentRow>
+          )}
+        </ContentGroup>
       </SettingsSubGroup>
-
-      {(status === "connected" ||
-        status === "reauth_required" ||
-        (syncState?.receiptsCount ?? 0) > 0) && (
-        <SettingsSubGroup title={COPY.dangerTitle}>
-          <Button
-            variant="soft"
-            tone="danger"
-            className="w-full h-11"
-            onClick={() => setConfirmKind("wipe")}
-            disabled={destructivePending}
-          >
-            {COPY.wipeCta}
-          </Button>
-        </SettingsSubGroup>
-      )}
     </>
   );
 }

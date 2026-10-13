@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { ContentGroup, ContentRow } from "@shared/components/ui/ContentGroup";
 import { meApi, type UserPreferences } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
@@ -29,6 +30,10 @@ import {
 // напряму, а не виводити з відрендереного виводу (2026-08-08 adversarial
 // review, finding #4).
 const disclosure = messages.dataDisclosure;
+const AI_DATA_ROW_TITLES = {
+  text: "Текстові запити",
+  photo: "Фото",
+} as const;
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   // L-3: продукт — opt-in analytics, не opt-out. Дефолт тут мусить
@@ -284,22 +289,22 @@ export function PrivacySection() {
         {/* Що саме Сержант памʼятає і як це стерти — у Профілі, поруч із
             фактами, які людина розповіла сама (один вхід замість двох). */}
         {shell ? (
-          <div className="flex flex-col items-start gap-1">
-            <p className="text-style-body text-subtle leading-relaxed">
-              Що саме Сержант памʼятає і як це стерти: у Профілі, поруч із
-              твоїми фактами.
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => shell.ui.setHubView("profile")}
-            >
-              Відкрити Профіль → Памʼять
-            </Button>
-          </div>
-        ) : null}
-        {/* Рішення founder-а 2026-09-14. Видалення акаунта ІСНУЄ —
+          <ContentGroup>
+            <ContentRow className="flex flex-col items-start gap-1">
+              <p className="text-style-body text-subtle leading-relaxed">
+                Що саме Сержант памʼятає і як це стерти: у Профілі, поруч із
+                твоїми фактами.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => shell.ui.setHubView("profile")}
+              >
+                Відкрити Профіль → Памʼять
+              </Button>
+            </ContentRow>
+            {/* Рішення founder-а 2026-09-14. Видалення акаунта ІСНУЄ —
             `profile/DangerZoneSection` із підтвердженням, — але живе воно в
             Профілі, а шукають його тут: це та сама поличка «мої дані й що з
             ними можна зробити», що й експорт зі згодами. Продуктовий огляд
@@ -310,21 +315,21 @@ export function PrivacySection() {
             в два місця означало б два шляхи до неї й два місця, де може
             розʼїхатись підтвердження. Форма та сама, що у вказівника на
             памʼять вище. */}
-        {shell ? (
-          <div className="flex flex-col items-start gap-1">
-            <p className="text-style-body text-subtle leading-relaxed">
-              Видалити акаунт разом з усіма даними можна в Профілі, у розділі
-              «Небезпечна зона».
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => shell.ui.setHubView("profile")}
-            >
-              Відкрити Профіль → Небезпечна зона
-            </Button>
-          </div>
+            <ContentRow className="flex flex-col items-start gap-1">
+              <p className="text-style-body text-subtle leading-relaxed">
+                Видалити акаунт разом з усіма даними можна в Профілі, у розділі
+                «Небезпечна зона».
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => shell.ui.setHubView("profile")}
+              >
+                Відкрити Профіль → Небезпечна зона
+              </Button>
+            </ContentRow>
+          </ContentGroup>
         ) : null}
         <LegalLinks compact className="justify-start" />
       </SettingsSubGroup>
@@ -334,12 +339,24 @@ export function PrivacySection() {
           навмисно — спершу те, чим людина керує, потім те, що їй обіцяють.
           Текст не змінено жодним словом, лише місце. */}
       <SettingsSubGroup title={disclosure.subprocessors.title}>
-        <p className="text-style-body text-subtle leading-relaxed">
-          {disclosure.subprocessors.body}
-        </p>
-        <p className="text-style-body text-subtle leading-relaxed">
-          {disclosure.subprocessors.photoNote}
-        </p>
+        <ContentGroup>
+          <ContentRow>
+            <p className="text-style-label text-text">
+              {AI_DATA_ROW_TITLES.text}
+            </p>
+            <p className="mt-1 text-style-body text-subtle leading-relaxed">
+              {disclosure.subprocessors.body}
+            </p>
+          </ContentRow>
+          <ContentRow>
+            <p className="text-style-label text-text">
+              {AI_DATA_ROW_TITLES.photo}
+            </p>
+            <p className="mt-1 text-style-body text-subtle leading-relaxed">
+              {disclosure.subprocessors.photoNote}
+            </p>
+          </ContentRow>
+        </ContentGroup>
       </SettingsSubGroup>
 
       <SettingsSubGroup title={disclosure.sunset.title}>

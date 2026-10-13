@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-18
+ * Last validated: 2026-10-13
  * Status: Active — Silpo MCP integration, гейт №2 приватності (спека
  * `docs/work/specs/silpo-mcp-integration.md` § Відкриті
  * гейти). Текст обіцянки затверджений founder-ом дослівно — редагувати
@@ -12,10 +12,9 @@
  * - `variant="inline"` — disconnected-стан картки, обіцянка стоїть ПЕРЕД
  *   кнопкою «Звʼязати Сільпо» (рішення до підключення, не після).
  * - `variant="details"` — connected-стан, згорнутий `<details>`, щоб не
- *   муляв щодня, але лишався доступний в один тап. Стилізація зумисно
- *   повторює `SilpoUnmatchedReceipts.tsx` (`touch-target` +
- *   `focus-visible:ring-finyk`) — той самий `<details>`-патерн у тому ж
- *   файловому сусідстві.
+ *   муляв щодня, але лишався доступний в один тап. У батьківській групі
+ *   інтеграції це рядок із нативним маркером розкриття, а не вкладена
+ *   картка; touch-ціль та клавіатурний фокус зберігаються.
  */
 
 export interface SilpoPrivacyPromiseCopy {
@@ -43,8 +42,8 @@ export function SilpoPrivacyPromise({
   if (variant === "inline") return text;
 
   return (
-    <details className="rounded-panel border border-line bg-panel p-3">
-      <summary className="touch-target flex cursor-pointer items-center gap-2 text-style-label text-text marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk">
+    <details className="border-t border-line pt-3">
+      <summary className="touch-target list-inside cursor-pointer py-3 text-style-label text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk">
         {copy.privacyPromiseDetailsSummary}
       </summary>
       <div className="mt-2">{text}</div>

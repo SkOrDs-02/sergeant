@@ -396,10 +396,10 @@ describe("FinykSection interactions", () => {
     });
     renderSection();
     expect(await screen.findByText("Синхронізація очікує")).toBeInTheDocument();
-    const card = screen
+    const row = screen
       .getByText("Синхронізація очікує")
-      .closest("[class*='border-']");
-    expect(card?.className).toContain("border-warning/30");
+      .closest("[data-content-row]");
+    expect(row?.querySelector(".bg-warning")).toBeInTheDocument();
   });
 
   it("renders a red error indicator when status is an unknown/error value", async () => {
@@ -414,10 +414,10 @@ describe("FinykSection interactions", () => {
     expect(
       await screen.findByText("Синхронізація не працює"),
     ).toBeInTheDocument();
-    const card = screen
+    const row = screen
       .getByText("Синхронізація не працює")
-      .closest("[class*='border-']");
-    expect(card?.className).toContain("border-danger/30");
+      .closest("[data-content-row]");
+    expect(row?.querySelector(".bg-danger")).toBeInTheDocument();
   });
 
   it("shows Re-sync… and disables the button when backfill is running", async () => {
