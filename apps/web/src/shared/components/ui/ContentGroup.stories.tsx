@@ -55,3 +55,50 @@ export const InformationalRows: Story = {
     </div>
   ),
 };
+
+export const IntegrationWithOperations: Story = {
+  render: () => (
+    <div className="max-w-sm bg-bg p-5">
+      <p className="mb-3 text-style-overline text-text">Monobank</p>
+      <ContentGroup
+        as="section"
+        variant="bounded"
+        className="p-4"
+        aria-label="Monobank"
+      >
+        <ContentGroup>
+          <ContentRow>
+            <p className="text-style-label text-text">Синхронізація активна</p>
+            <p className="text-style-caption text-subtle">7 рахунків</p>
+          </ContentRow>
+          <ContentRow className="flex gap-2">
+            <Button variant="outline" className="flex-1">
+              Історія
+            </Button>
+            <Button variant="outline" tone="danger" className="flex-1">
+              Відʼєднати
+            </Button>
+          </ContentRow>
+        </ContentGroup>
+        <ContentRow className="mt-4">
+          <p className="text-style-label text-text">Оновлення операцій</p>
+          <p className="mt-1 text-style-caption text-subtle">
+            Перевірити нові операції Monobank.
+          </p>
+          <Button variant="outline" className="mt-3 w-full">
+            Оновити дані
+          </Button>
+        </ContentRow>
+        <ContentRow>
+          <p className="text-style-label text-text">Локальні копії операцій</p>
+          <p className="mt-1 text-style-caption text-subtle">
+            Очистити збережені копії на цьому пристрої.
+          </p>
+          <Button variant="outline" tone="danger" className="mt-3 w-full">
+            Очистити кеш операцій
+          </Button>
+        </ContentRow>
+      </ContentGroup>
+    </div>
+  ),
+};

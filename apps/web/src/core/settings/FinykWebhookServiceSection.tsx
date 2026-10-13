@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isApiError, monoWebhookApi, type MonoSyncState } from "@shared/api";
 import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
+import { ContentGroup, ContentRow } from "@shared/components/ui/ContentGroup";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { isRetriableError } from "@shared/lib/api/queryClient";
 import { cn } from "@shared/lib/ui/cn";
@@ -38,9 +39,13 @@ const COPY = {
   tokenHelp:
     "Токен відправляється на сервер і не зберігається у браузері. Mono → Налаштування → Інші → API.",
   connect: "Підключити Monobank",
-  serviceTitle: "Сервіс",
-  serviceHelp:
-    "Операції з Monobank приходять самі й оновлюються, коли ти повертаєшся у вкладку. Щоб перевірити просто зараз, натисни «Оновити дані». Якщо список операцій виглядає дивно, очисти збережені операції й синхронізуй знову.",
+  integrationTitle: "Monobank",
+  serviceRefreshTitle: "Оновлення операцій",
+  serviceCacheTitle: "Локальні копії операцій",
+  serviceRefreshHelp:
+    "Операції з Monobank приходять самі й оновлюються, коли ти повертаєшся у вкладку. Щоб перевірити просто зараз, натисни «Оновити дані».",
+  serviceCacheHelp:
+    "Якщо список операцій виглядає дивно, очисти збережені операції й синхронізуй знову.",
   refreshing: "Оновлення…",
   refresh: "Оновити дані",
   clearTransactions: "Очистити кеш операцій",
@@ -240,161 +245,170 @@ export function FinykWebhookServiceSection({
         }}
       />
 
-      <SettingsSubGroup title="Monobank (Webhook)">
-        {webhookConnected && webhookSyncState ? (
-          <div className="space-y-3">
-            <div
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-panel border",
-                webhookSyncState.status === "active"
-                  ? "bg-bg border-success/30"
-                  : webhookSyncState.status === "pending"
-                    ? "bg-bg border-warning/30"
-                    : "bg-bg border-danger/30",
-              )}
-            >
-              <div
-                className={cn(
-                  "w-2.5 h-2.5 rounded-mark shrink-0",
-                  webhookSyncState.status === "active"
-                    ? "bg-success"
-                    : webhookSyncState.status === "pending"
-                      ? "bg-warning"
-                      : "bg-danger",
-                )}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="text-style-label">
-                  {webhookSyncState.status === "active"
-                    ? "Синхронізація активна"
-                    : webhookSyncState.status === "pending"
-                      ? "Синхронізація очікує"
-                      : "Синхронізація не працює"}
-                </div>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {webhookSyncState.accountsCount} {COPY.accounts}
-                  {webhookSyncState.lastEventAt && (
-                    <>
-                      {" · "}
-                      {new Date(webhookSyncState.lastEventAt).toLocaleString(
-                        "uk-UA",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          day: "numeric",
-                          month: "short",
-                          timeZone: "Europe/Kyiv",
-                        },
+      <SettingsSubGroup title={COPY.integrationTitle}>
+        <ContentGroup
+          as="section"
+          variant="bounded"
+          className="p-4"
+          aria-label={COPY.integrationTitle}
+        >
+          {webhookConnected && webhookSyncState ? (
+            <div className="space-y-3">
+              <ContentGroup>
+                <ContentRow className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "w-2.5 h-2.5 rounded-mark shrink-0",
+                      webhookSyncState.status === "active"
+                        ? "bg-success"
+                        : webhookSyncState.status === "pending"
+                          ? "bg-warning"
+                          : "bg-danger",
+                    )}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-style-label">
+                      {webhookSyncState.status === "active"
+                        ? "Синхронізація активна"
+                        : webhookSyncState.status === "pending"
+                          ? "Синхронізація очікує"
+                          : "Синхронізація не працює"}
+                    </div>
+                    <div className="text-style-caption text-subtle mt-0.5">
+                      {webhookSyncState.accountsCount} {COPY.accounts}
+                      {webhookSyncState.lastEventAt && (
+                        <>
+                          {" · "}
+                          {new Date(
+                            webhookSyncState.lastEventAt,
+                          ).toLocaleString("uk-UA", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            day: "numeric",
+                            month: "short",
+                            timeZone: "Europe/Kyiv",
+                          })}
+                        </>
                       )}
-                    </>
-                  )}
-                </div>
-              </div>
+                    </div>
+                  </div>
+                </ContentRow>
+                <ContentRow className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-11"
+                    onClick={triggerBackfill}
+                    disabled={backfillProgress?.status === "running"}
+                  >
+                    {backfillProgress?.status === "running"
+                      ? "Повторна синхронізація…"
+                      : "Синхронізувати історію"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    tone="danger"
+                    className="flex-1 h-11"
+                    onClick={() => setConfirmKind("disconnect")}
+                  >
+                    {COPY.disconnect}
+                  </Button>
+                </ContentRow>
+              </ContentGroup>
+              <BackfillProgressPill progress={backfillProgress} />
             </div>
-            <div className="flex gap-2">
+          ) : webhookNeedsReconnect ? (
+            <div className="space-y-3">
+              <Notice tone="ink" role="alert">
+                <div>{COPY.reconnectTitle}</div>
+                <p className="mt-0.5 font-normal text-muted">
+                  {COPY.reconnectBody}
+                </p>
+              </Notice>
+              <MonoTokenInlineForm
+                value={webhookTokenInput}
+                onChange={setWebhookTokenInput}
+                onSubmit={connectWebhook}
+                submitting={webhookConnecting}
+                submitLabel={COPY.reconnect}
+                help={null}
+              />
               <Button
                 variant="outline"
-                className="flex-1 h-11"
-                onClick={triggerBackfill}
-                disabled={backfillProgress?.status === "running"}
-              >
-                {backfillProgress?.status === "running"
-                  ? "Повторна синхронізація…"
-                  : "Синхронізувати історію"}
-              </Button>
-              <Button
-                variant="soft"
                 tone="danger"
-                className="flex-1 h-11"
+                className="w-full h-11"
                 onClick={() => setConfirmKind("disconnect")}
               >
                 {COPY.disconnect}
               </Button>
             </div>
-            <BackfillProgressPill progress={backfillProgress} />
-          </div>
-        ) : webhookNeedsReconnect ? (
-          <div className="space-y-3">
-            <Notice tone="ink" role="alert">
-              <div>{COPY.reconnectTitle}</div>
-              <p className="mt-0.5 font-normal text-muted">
-                {COPY.reconnectBody}
+          ) : webhookCheckFailed ? (
+            <div className="space-y-3">
+              <p
+                className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
+                role="alert"
+              >
+                {COPY.checkFailed}
               </p>
-            </Notice>
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={() => syncStateQuery.refetch()}
+                disabled={syncStateQuery.isFetching}
+              >
+                {syncStateQuery.isFetching ? COPY.checking : COPY.retryCheck}
+              </Button>
+            </div>
+          ) : (
             <MonoTokenInlineForm
               value={webhookTokenInput}
               onChange={setWebhookTokenInput}
               onSubmit={connectWebhook}
               submitting={webhookConnecting}
-              submitLabel={COPY.reconnect}
-              help={null}
+              submitLabel={COPY.connect}
+              help={COPY.tokenHelp}
             />
-            <Button
-              variant="soft"
-              tone="danger"
-              className="w-full h-11"
-              onClick={() => setConfirmKind("disconnect")}
-            >
-              {COPY.disconnect}
-            </Button>
-          </div>
-        ) : webhookCheckFailed ? (
-          <div className="space-y-3">
+          )}
+          {webhookError && (
             <p
               className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
               role="alert"
             >
-              {COPY.checkFailed}
+              {webhookError}
+            </p>
+          )}
+          <ContentRow className="mt-4">
+            <p className="text-style-label text-text">
+              {COPY.serviceRefreshTitle}
+            </p>
+            <p className="mt-1 text-style-caption text-subtle leading-snug">
+              {COPY.serviceRefreshHelp}
             </p>
             <Button
               variant="outline"
-              className="w-full h-11"
-              onClick={() => syncStateQuery.refetch()}
-              disabled={syncStateQuery.isFetching}
+              className="mt-3 w-full h-11"
+              onClick={refreshAllData}
+              disabled={refreshing}
             >
-              {syncStateQuery.isFetching ? COPY.checking : COPY.retryCheck}
+              {refreshing ? COPY.refreshing : COPY.refresh}
             </Button>
-          </div>
-        ) : (
-          <MonoTokenInlineForm
-            value={webhookTokenInput}
-            onChange={setWebhookTokenInput}
-            onSubmit={connectWebhook}
-            submitting={webhookConnecting}
-            submitLabel={COPY.connect}
-            help={COPY.tokenHelp}
-          />
-        )}
-        {webhookError && (
-          <p
-            className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"
-            role="alert"
-          >
-            {webhookError}
-          </p>
-        )}
-      </SettingsSubGroup>
-
-      <SettingsSubGroup title={COPY.serviceTitle}>
-        <p className="text-style-caption text-subtle leading-snug">
-          {COPY.serviceHelp}
-        </p>
-        <Button
-          variant="outline"
-          className="w-full h-11"
-          onClick={refreshAllData}
-          disabled={refreshing}
-        >
-          {refreshing ? COPY.refreshing : COPY.refresh}
-        </Button>
-        <Button
-          variant="soft"
-          tone="danger"
-          className="w-full h-11"
-          onClick={() => setConfirmKind("cache")}
-        >
-          {COPY.clearTransactions}
-        </Button>
+          </ContentRow>
+          <ContentRow>
+            <p className="text-style-label text-text">
+              {COPY.serviceCacheTitle}
+            </p>
+            <p className="mt-1 text-style-caption text-subtle leading-snug">
+              {COPY.serviceCacheHelp}
+            </p>
+            <Button
+              variant="outline"
+              tone="danger"
+              className="mt-3 w-full h-11"
+              onClick={() => setConfirmKind("cache")}
+            >
+              {COPY.clearTransactions}
+            </Button>
+          </ContentRow>
+        </ContentGroup>
       </SettingsSubGroup>
     </>
   );

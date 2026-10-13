@@ -5,6 +5,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { Icon } from "@shared/components/ui/Icon";
 import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/ui/cn";
@@ -254,10 +255,10 @@ function ModuleGroup({
   const headingId = `catalogue-module-${module}`;
   const listId = `catalogue-module-${module}-list`;
   return (
-    <Card
+    <ContentGroup
       as="section"
-      padding="none"
-      className="overflow-hidden"
+      variant="bounded"
+      className="overflow-hidden p-0"
       aria-labelledby={headingId}
     >
       <button
@@ -301,7 +302,7 @@ function ModuleGroup({
           ))}
         </ul>
       )}
-    </Card>
+    </ContentGroup>
   );
 }
 

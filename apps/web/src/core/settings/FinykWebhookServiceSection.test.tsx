@@ -20,6 +20,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -118,6 +119,29 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/Не вдалося перевірити стан підключення/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps connection, refresh and local-cache actions inside Monobank", async () => {
+    syncStateMock.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 5,
+    });
+    renderSection();
+    await screen.findByText("Синхронізація активна");
+    const bank = screen.getByRole("region", { name: "Monobank" });
+    for (const name of [
+      "Синхронізувати історію",
+      "Оновити дані",
+      "Очистити кеш операцій",
+    ]) {
+      expect(within(bank).getByRole("button", { name })).toBeVisible();
+    }
+    expect(
+      screen.queryByRole("heading", { name: "Сервіс" }),
     ).not.toBeInTheDocument();
   });
 

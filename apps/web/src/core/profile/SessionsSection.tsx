@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { ContentRow } from "@shared/components/ui/ContentGroup";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
@@ -244,16 +245,17 @@ export function SessionsSection({ online }: { online: boolean }) {
                 {COPY.currentUnknown}
               </p>
             )}
-            <ul className="space-y-2">
+            <ul>
               {sessions.map((s) => {
                 const isExpired = new Date(s.expiresAt) < new Date();
                 const isCurrent = currentSessionId === s.id;
                 const ua = parseUserAgent(s.userAgent);
                 const lastSeen = formatRelativeUk(s.updatedAt);
                 return (
-                  <li
+                  <ContentRow
+                    as="li"
                     key={s.id}
-                    className="flex items-start gap-3 p-3 rounded-panel border border-line bg-panel"
+                    className="flex items-start gap-3"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -278,7 +280,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                       )}
                     </div>
                     <Button
-                      variant="soft"
+                      variant="outline"
                       tone="danger"
                       size="xs"
                       disabled={revoking === s.id || currentLookupFailed}
@@ -287,7 +289,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                     >
                       {COPY.revoke}
                     </Button>
-                  </li>
+                  </ContentRow>
                 );
               })}
             </ul>
