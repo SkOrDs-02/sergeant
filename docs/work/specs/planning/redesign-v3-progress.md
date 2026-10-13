@@ -17,7 +17,7 @@
 | PR5         | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged | 14, 31; 8, 9, 24–29 по Рутині                               |
 | PR6         | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged | 8, 9, 24–29 по Фізруку                                      |
 | PR7         | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                       |
-| Review fix  | `claude/redesign-v3-review-fixes`    | draft PR: номер після публікації                         | active | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37     |
+| Review fix  | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | draft  | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37     |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -823,6 +823,22 @@ Artifact harness потребував власного `package.json {type:modul
 
 **Публікація / наступна сесія:** номер і URL додати після `gh pr create --draft --body-file`, перед повторним push звірити PR OPEN. До мержу нової роботи не починати; якщо PR7 відкритий — перевірити CI і чинний дозволений scope. Mobile/mobile-shell не тестувалися й не мігрувалися за прямою вказівкою власника; cream-споживачі можуть давати native failures, відповідні CI-гейти не послаблялись. Після фактичного мержу PR7: журнал → merged; фінальний прохід по **37** позиціях каталогу з тим самим сідером, `pnpm deploy:status` на свіжому main; backlink/PR-ledger follow-up canonical docs тільки з реальним merged_at (Rule 26). Ці післямержеві дії зараз не зараховуються.
 
+## PR7 · draft опубліковано (2026-10-12)
+
+[**#1508**](https://github.com/SkOrDs-02/sergeant/pull/1508), `claude/redesign-v3-pr7` → main, **OPEN / isDraft true / mergedAt null** (`gh pr view 1508 --json state,mergedAt,isDraft,headRefOid,statusCheckRollup`, exit 0). `git fetch origin main` повторено перед push: main лишився `050700bd1a119cedb19ae78d43cc3f43cbb1ba7a`, перевірене дерево не стало застарілим. Docs-коміт `e5f60f7f9` — 0; перший push — 0; `gh pr create --draft --body-file /workspace/artifacts/redesign-pr7/pr-body.md` — 0; body validator — 0. Коміти по поверхнях послідовні, NODE_OPTIONS 4096, всі стандартні hooks пройшли, --no-verify не використовувався.
+
+Linux pre-push hook намагався оновити Windows trunk `D:\Sergeant` і надрукував `cannot change to ...`; це штатний **non-gating** refresh hook репо, відсутній шлях у цьому середовищі. Git push успішний, remote branch і PR підтверджені; hook не вимикався і не змінювався.
+
+Цей publication-doc коміт додає номер у журнал і регенеровані похідні доки; перед його push знову перевірити PR OPEN. CI першого head ще не є доказом CI фінального doc-head; перевірити актуальні checks після push, не оголошувати CI зеленим за локальними тестами. Native surface виключена лише з роботи/claims за прямою вказівкою власника, CI гейти не вимкнені. Якщо наступна сесія побачить PR7 OPEN — нову роботу не починати. Якщо MERGED — фінальні 37 позицій / deploy:status / canonical backlinks за правилом 26; жодного PR8 в цій спеці немає.
+
+## PR7 · власник змерджив до фінального doc-push (2026-10-12)
+
+`gh pr view 1508 --json state,mergedAt,isDraft` — **0, MERGED, 2026-10-12T17:52:16Z, isDraft false**. Усі **PR0–PR7 змерджені**, нових кодових PR за спекою немає. Перевірка перед другим push виявила мерж; у закриту гілку оновлення не пушилось. Номер/URL був у локальному doc-коміті `131d583f4`, але main ще не мав цього запису. На свіжому `origin/main` (`c137a2387`) створено `claude/redesign-v3-pr7-journal`, перенесено тільки цей doc-коміт і виправлено стан на merged; буде окремий **docs-only draft** для журналу/похідного open-work, не PR8 і не нова реалізація. Всі production-файли тотожні main.
+
+CI коду #1508 на момент цього запису: `check` ще IN_PROGRESS, `Critical-flow E2E (Playwright)` FAILURE. Не оголошувати CI зеленим; точну причину перевірити за job logs. Усі prescribed локальні web-гейти/команди вище мають 0; native за прямим дозволом власника не мігрувався. Фінальна **післямержева** верифікація 37 позицій каталогу і `pnpm deploy:status` ще не виконані — наступна сесія за тим самим промптом. Документаційний follow-up потрібен, щоб сесія з GitHub main побачила номер і merged-стан та не почала PR7 повторно.
+
+CI logs для critical job 114936320049 через `gh api .../logs` недоступні: redirect у GitHub Actions blob повертає Forbidden; причину FAILURE не встановлено. Не називати його доведеним flaky. Документаційний follow-up не виправляє CI коду.
+
 ## Фінальне ревʼю після PR7 · 2026-10-12
 
 **Запит власника:** повторно перевірити повну спеку й пропуски; кнопка «Додати» іноді перекриває navbar. Це окремий fix-PR, не PR8. Гілка `claude/redesign-v3-review-fixes` від свіжого `origin/main` `c137a238768e58db39ab5413c5f3491d3b0a7d73`. `gh pr view 1508 --json state,mergedAt`: MERGED, `2026-10-12T17:52:16Z`. Журнальний #1509 OPEN; не мержити його самостійно. Усі вісім implementation PR змерджені; приймання production очікує мержу виправлень ревʼю.
@@ -860,7 +876,7 @@ Toast reserve тепер охоплює **весь dialog AddAction**, вклю�
 
 ### Підсумкова перевірка review-fix перед публікацією
 
-Гілка `claude/redesign-v3-review-fixes`, від main `c137a2387`. Окремий draft fix-PR; номер дописати після `gh pr create`. Повторно перевірено всі 37 позицій §2: первинні PR0–PR7 реалізували основу; пропуски п. 7, 9, 15–16, 18–29, 34–37 закриті source-review, перевірками маршрутів та умовних станів, розписаними у [мемо](../audits/2026-10-08-redesign-v3-gap-memo.md#2a--повторне-приймання-після-pr7). Це не production-acceptance до мержу цього PR. Наступна сесія перевіряє merged-state саме цього draft-PR, production deployment SHA та всі 37 в production; PR8 за планом немає.
+Гілка `claude/redesign-v3-review-fixes`, від main `c137a2387`. Окремий draft fix-PR [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510), відкритий після восьми комітів. Повторно перевірено всі 37 позицій §2: первинні PR0–PR7 реалізували основу; пропуски п. 7, 9, 15–16, 18–29, 34–37 закриті source-review, перевірками маршрутів та умовних станів, розписаними у [мемо](../audits/2026-10-08-redesign-v3-gap-memo.md#2a--повторне-приймання-після-pr7). Це не production-acceptance до мержу цього PR. Наступна сесія спершу перевіряє `gh pr view 1510 --json state,mergedAt`: поки PR відкритий, нової роботи не починати, перевірити CI. Після мержу перевірити production deployment SHA та всі 37 в production; PR8 за планом немає.
 
 | Команда / доказ                                                                                                                                                                                                                | Фактичний результат 2026-10-13                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -886,3 +902,9 @@ Toast reserve тепер охоплює **весь dialog AddAction**, вклю�
 Повторний red-repro на main після вирівнювання фікстур: `SHOTS_PHASE=before pnpm exec playwright test tests/repro-corner.spec.ts` — **exit1, 2/2 очікуваних failures**, gap−58px після keyboard-close в обох темах. Ті самі тести на fix-branch у фінальному after-прогоні — **2/2 passed**, gap+14px. Red — доказ відтворення, не обовʼязковий зелений gate.
 
 Фінальні seeded Chromium кадри: 48 production-маршрутів × 2 теми × before/after = 192 свіжих PNG; 38+38 розгорнутих та 18+18 ізольованих справжніх компонентів. Разом із чотирма keyboard та чотирма toast/Photo PNG — **312** оригінальних файлів 390×844 у `/workspace/artifacts/redesign-v3-review/screenshots.html` і `screenshots.zip`, передані власнику в чаті. `/design` — історичний DEV-only кадр, поза production; шість застарілих QA-кадрів прибрано з галереї. Порівняння не є physical iPhone/VoiceOver чи production acceptance. `verify-captures.py`: exit0, парність і розмір усіх96+96 маршрутів та свіжі38+38/18+18 додаткові стани.
+
+### Публікація #1510 і синхронізація з main
+
+`gh pr create --draft --body-file` відкрив [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510). GitHub згодом показав `isDraft:false`, тому статус повернуто в draft через `gh pr ready --undo 1510` (exit0). Після створення #1510 у main змерджено docs-only #1509 (`ea7b9b583`); це спричинило конфлікт у журналі та похідному `docs/open-work.md`. `origin/main` змерджено в review-fix гілку, збережено записи PR7 з #1509 і все повторне ревю; `docs/open-work.md` регенеровано. Інших конфліктних файлів немає.
+
+CI першого head `ee7096d65`: `check` FAILURE у кроці `Script unit tests (whole glob, not a hand-kept list)`, тоді як `Critical-flow E2E (Playwright)` PASS. Точний локальний повтор того самого glob: exit1, 718/720 passed; обидва failures у `check-dead-doc-links.test.mjs`: після усунення однієї старої згадки бюджет dead-doc-links залишився 234, факт 233. `node scripts/check-dead-doc-links.mjs --update` зменшив baseline до 233; це усуває обидва assertions без послаблення порога. Повторний точний glob: **exit0, 720/720 passed**. CI нового head перевірити перед оголошенням зеленого стану.
