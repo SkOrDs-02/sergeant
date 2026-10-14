@@ -14,9 +14,9 @@
 import { Icon } from "@shared/components/ui/Icon";
 
 const STEP_TITLES: Record<string, string> = {
-  source: "Джерело страви",
-  photo: "Аналіз фото страви",
-  package: "Продукт з упаковки",
+  source: "Додати прийом їжі",
+  photo: "Фото страви",
+  package: "На 100 г",
 };
 
 const FALLBACK_TITLE = "Додати прийом їжі";
@@ -40,7 +40,7 @@ export function AddMealSheetTitle({
           type="button"
           onClick={onBacktrack}
           className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-text hover:bg-line/40 focus-ring"
-          aria-label="Назад до вибору джерела"
+          aria-label="Назад до вибору способу"
         >
           <Icon name="chevron-left" size="lg" />
         </button>
