@@ -117,6 +117,7 @@ import {
   getSyncEngineReader,
   getSyncEngineWriter,
 } from "./singleton";
+import * as writerFactory from "./syncEngineWriter";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -163,8 +164,34 @@ describe("createDefaultRuntime (default boot path)", () => {
     });
   });
 
+  it("pulls once the last full backlog batch is followed by an empty tick", async () => {
+    const factory = vi.spyOn(writerFactory, "createSyncEngineWriterRuntime");
+    const runtime = await bootSyncEngineWriter();
+    await runtime!.flushNow();
+    const deps = factory.mock.calls[0]?.[0];
+    expect(deps).toBeDefined();
+    mockPullV2.mockClear();
+
+    deps!.onTickComplete?.({
+      drained: 200,
+      pushed: 200,
+      retried: 0,
+      rejected: 0,
+    });
+    await Promise.resolve();
+    expect(mockPullV2).not.toHaveBeenCalled();
+
+    deps!.onTickComplete?.({ drained: 0, pushed: 0, retried: 0, rejected: 0 });
+    await vi.waitFor(() => expect(mockPullV2).toHaveBeenCalledTimes(1));
+    factory.mockRestore();
+  });
+
   it("sec-18: drain без сесії виставляє сигнал «сесії немає», з живою сесією знімає, збій мережі його не чіпає", async () => {
     const runtime = await bootSyncEngineWriter();
+    // Startup now resumes a persisted queue immediately. Finish that tick
+    // before changing the session used by the next, separate drain.
+    await runtime!.flushNow();
+    mockDrain.mockClear();
     expect(readSyncSessionMissing()).toBe(false);
 
     // Сесія спливла посеред роботи: `data: null` без помилки.

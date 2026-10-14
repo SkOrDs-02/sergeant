@@ -4064,6 +4064,48 @@
       "canonical_owner": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/run.json"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/handoff.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/handoff.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/legacy-opfs-after.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/legacy-opfs-after.json"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-batch-200.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-batch-200.json"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-transfer.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-transfer.json"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/run.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/run.json"
+    },
+    {
       "old_path": "docs/work/specs/audits/verification/session-summary-2026-09-05.md",
       "new_path": "docs/work/specs/audits/verification/session-summary-2026-09-05.md",
       "action": "keep",

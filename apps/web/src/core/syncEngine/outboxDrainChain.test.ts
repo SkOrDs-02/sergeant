@@ -115,7 +115,10 @@ describe("sync v2: ланцюг «локальний запис → HTTP-push»"
    * `singleton.ts`: drain скоупиться живим `resolveUserId()`, лишні
    * залежності — справжні helper-и db-schema.
    */
-  function makeRuntime(resolveUserId: () => Promise<string | null>) {
+  function makeRuntime(
+    resolveUserId: () => Promise<string | null>,
+    backlog: { catchUpDelayMs?: number; flushOnStart?: boolean } = {},
+  ) {
     return createSyncEngineWriterRuntime({
       pushDeps: {
         drain: async (options) => {
@@ -140,6 +143,7 @@ describe("sync v2: ланцюг «локальний запис → HTTP-push»"
       recoverDeadLetter: () => Promise.resolve({ recovered: [], skipped: [] }),
       intervalMs: 30_000,
       limit: 100,
+      ...backlog,
     });
   }
 
@@ -153,6 +157,35 @@ describe("sync v2: ланцюг «локальний запис → HTTP-push»"
       idempotencyKey,
     });
   }
+
+  it("черга, збережена до запуску, доганяється без нових enqueue і 30-секундних пауз", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const runtime = makeRuntime(() => Promise.resolve(AUTHED_USER_ID), {
+      catchUpDelayMs: 2_000,
+      flushOnStart: true,
+    });
+    try {
+      for (let i = 0; i < 350; i += 1) {
+        await enqueueFinykOp(AUTHED_USER_ID, `old-backlog-${i}`);
+      }
+      runtime.start();
+      await runtime.flushNow();
+      expect((await countOutboxByStatus(client)).pending).toBe(250);
+      await vi.advanceTimersByTimeAsync(6_000);
+      expect((await countOutboxByStatus(client)).pending).toBe(0);
+      expect(pushCalls.map((batch) => batch.length)).toEqual([
+        100, 100, 100, 50,
+      ]);
+      expect(
+        new Set(pushCalls.flat().map((op) => op.idempotency_key)).size,
+      ).toBe(350);
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(pushCalls).toHaveLength(4);
+    } finally {
+      runtime.stop();
+      vi.useRealTimers();
+    }
+  });
 
   it("автентифікований запис доїжджає до HTTP-push і зникає з черги", async () => {
     // Робить неможливим: «локальний запис зроблено, черга не порожня, у

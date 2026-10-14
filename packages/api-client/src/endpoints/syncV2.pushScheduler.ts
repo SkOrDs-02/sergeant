@@ -128,6 +128,9 @@ export interface SyncEnginePushSchedulerDeps {
    * per `stop()` (only when an interval is currently armed).
    */
   readonly clearInterval: SyncEngineClearIntervalFn;
+  /** Single-shot timer pair for paced backlog continuation. Defaults to platform timers. */
+  readonly setTimeout?: SyncEngineSetIntervalFn;
+  readonly clearTimeout?: SyncEngineClearIntervalFn;
   /**
    * Optional observer for periodic-tick errors. Periodic ticks never
    * re-throw — this is the sole signal that a tick failed.
@@ -162,6 +165,11 @@ export interface SyncEnginePushSchedulerOptions extends SyncEnginePushOptions {
    * after `start()`.
    */
   readonly intervalMs: number;
+  /**
+   * Opt-in continuation after a full acknowledged batch. Retries yield to
+   * the normal interval; no continuation runs while the scheduler is stopped.
+   */
+  readonly catchUpDelayMs?: number;
 }
 
 export interface SyncEnginePushScheduler {
@@ -217,9 +225,47 @@ export function createSyncEnginePushScheduler(
       )}`,
     );
   }
+  if (
+    options.catchUpDelayMs !== undefined &&
+    (!Number.isFinite(options.catchUpDelayMs) || options.catchUpDelayMs <= 0)
+  ) {
+    throw new Error(
+      "createSyncEnginePushScheduler: catchUpDelayMs must be positive and finite",
+    );
+  }
 
   let intervalHandle: unknown = null;
   let inflight: Promise<SyncEnginePushResult> | null = null;
+  let catchUpHandle: unknown = null;
+  const setTimeout =
+    deps.setTimeout ?? ((fn, ms) => globalThis.setTimeout(fn, ms));
+  const clearTimeout =
+    deps.clearTimeout ??
+    ((handle) =>
+      globalThis.clearTimeout(
+        handle as ReturnType<typeof globalThis.setTimeout>,
+      ));
+
+  const clearCatchUp = (): void => {
+    if (catchUpHandle === null) return;
+    clearTimeout(catchUpHandle);
+    catchUpHandle = null;
+  };
+
+  const scheduleCatchUp = (result: SyncEnginePushResult): void => {
+    if (
+      options.catchUpDelayMs === undefined ||
+      intervalHandle === null ||
+      (result.drained !== options.limit && !result.hasMore) ||
+      result.pushed === 0 ||
+      result.retried > 0
+    )
+      return;
+    catchUpHandle = setTimeout(() => {
+      catchUpHandle = null;
+      tick().catch((error: unknown) => onTickError?.(error));
+    }, options.catchUpDelayMs);
+  };
 
   const onTickError = deps.onTickError;
   const onSkippedTick = deps.onSkippedTick;
@@ -229,14 +275,22 @@ export function createSyncEnginePushScheduler(
     if (inflight !== null) {
       return inflight;
     }
-    const tickOptions: SyncEnginePushOptions =
-      options.originDeviceId === undefined
+    // A manual/periodic tick replaces the waiting continuation. Its result
+    // decides whether another batch is useful, without overlapping uploads.
+    clearCatchUp();
+    const tickOptions: SyncEnginePushOptions = {
+      ...(options.originDeviceId === undefined
         ? { limit: options.limit }
-        : { limit: options.limit, originDeviceId: options.originDeviceId };
+        : { limit: options.limit, originDeviceId: options.originDeviceId }),
+      ...(options.maxBodyBytes === undefined
+        ? {}
+        : { maxBodyBytes: options.maxBodyBytes }),
+    };
     const promise = (async () => {
       try {
         const result = await runSyncEnginePushOnce(deps.push, tickOptions);
         onTickComplete?.(result);
+        scheduleCatchUp(result);
         return result;
       } finally {
         inflight = null;
@@ -264,6 +318,7 @@ export function createSyncEnginePushScheduler(
       intervalHandle = deps.setInterval(periodicTick, options.intervalMs);
     },
     stop(): void {
+      clearCatchUp();
       if (intervalHandle === null) {
         return;
       }

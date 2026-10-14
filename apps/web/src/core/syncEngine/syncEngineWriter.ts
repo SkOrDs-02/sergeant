@@ -75,6 +75,12 @@ export interface SyncEngineWriterDeps {
   ) => SyncEngineFlushOnReconnect;
   readonly intervalMs: number;
   readonly limit: number;
+  /** Opt-in paced drain for queues larger than one batch. */
+  readonly catchUpDelayMs?: number;
+  /** Body budget to keep larger batches below the server's HTTP limit. */
+  readonly maxBodyBytes?: number;
+  /** Start delivering persisted rows immediately after reopening the PWA. */
+  readonly flushOnStart?: boolean;
   /**
    * Trailing-debounce для `notifyEnqueued` (мс тиші після останнього
    * enqueue, перш ніж іде push). Дефолт {@link DEFAULT_ENQUEUE_DEBOUNCE_MS}.
@@ -156,14 +162,21 @@ export function createSyncEngineWriterRuntime(
     if (scheduler) return scheduler;
     const createScheduler =
       deps.createScheduler ?? createSyncEnginePushScheduler;
-    const options: SyncEnginePushSchedulerOptions =
-      deps.originDeviceId === undefined
+    const options: SyncEnginePushSchedulerOptions = {
+      ...(deps.originDeviceId === undefined
         ? { intervalMs: deps.intervalMs, limit: deps.limit }
         : {
             intervalMs: deps.intervalMs,
             limit: deps.limit,
             originDeviceId: deps.originDeviceId,
-          };
+          }),
+      ...(deps.catchUpDelayMs === undefined
+        ? {}
+        : { catchUpDelayMs: deps.catchUpDelayMs }),
+      ...(deps.maxBodyBytes === undefined
+        ? {}
+        : { maxBodyBytes: deps.maxBodyBytes }),
+    };
     scheduler = createScheduler(
       {
         push: deps.pushDeps,
@@ -224,6 +237,7 @@ export function createSyncEngineWriterRuntime(
       started = true;
       ensureScheduler().start();
       ensureReconnect();
+      if (deps.flushOnStart) flushAndReport("sync-v2-push-on-start");
     },
     stop(): void {
       if (!started) return;
