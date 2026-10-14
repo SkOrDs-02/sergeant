@@ -5,6 +5,7 @@ import { Notice } from "@shared/components/ui/Notice";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
 import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
+import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 
 // Збереження «користувач визнав ризик експериментальних фіч». Живе
@@ -61,32 +62,33 @@ export function ExperimentalSection() {
     // єдине джерело: `settingsSectionsCatalog.ts`, дзеркалиться в
     // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
     <SettingsGroup title={settingsSectionTitle("experimental")}>
-      <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
-      <Notice tone="ink" role="note">
-        {copy.warningBanner}
-      </Notice>
-      {!acknowledged && (
-        <div className="flex items-start gap-3 text-text">
-          <input
-            id="experimental-opt-in"
-            type="checkbox"
-            checked={acknowledged}
-            onChange={(e) => setExperimentalAcknowledged(e.target.checked)}
-            className="mt-1 h-4 w-4 shrink-0 accent-brand cursor-pointer"
-            data-testid="experimental-opt-in"
-          />
-          <label
-            htmlFor="experimental-opt-in"
-            className="flex-1 min-w-0 cursor-pointer"
-          >
-            <span className="text-style-label block">{copy.optInLabel}</span>
-            <span className="text-style-caption text-subtle mt-1 block leading-relaxed">
-              {copy.optInHint}
-            </span>
-          </label>
-        </div>
-      )}
-      {/*
+      <ContentGroup variant="bounded" className="space-y-3">
+        <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
+        <Notice tone="ink" role="note">
+          {copy.warningBanner}
+        </Notice>
+        {!acknowledged && (
+          <div className="flex items-start gap-3 text-text">
+            <input
+              id="experimental-opt-in"
+              type="checkbox"
+              checked={acknowledged}
+              onChange={(e) => setExperimentalAcknowledged(e.target.checked)}
+              className="mt-1 h-4 w-4 shrink-0 accent-brand cursor-pointer"
+              data-testid="experimental-opt-in"
+            />
+            <label
+              htmlFor="experimental-opt-in"
+              className="flex-1 min-w-0 cursor-pointer"
+            >
+              <span className="text-style-label block">{copy.optInLabel}</span>
+              <span className="text-style-caption text-subtle mt-1 block leading-relaxed">
+                {copy.optInHint}
+              </span>
+            </label>
+          </div>
+        )}
+        {/*
         Блокування тепер на САМОМУ тумблері, а не на коробці навколо нього.
         Доти тут стояли `aria-disabled` на цьому `div`, `opacity: 0.55` і
         no-op в `onChange` — виглядало заблокованим, але для клавіатури й
@@ -98,18 +100,19 @@ export function ExperimentalSection() {
         стані вже гасить себе сам (`opacity-60`), а подвійне приглушення
         робило підписи менш читабельними без жодної нової інформації.
       */}
-      <div className="space-y-4">
-        {items.map((flag) => (
-          <ToggleRow
-            key={flag.id}
-            label={flag.label}
-            description={flag.description}
-            checked={Boolean(flags[flag.id])}
-            disabled={togglesDisabled}
-            onChange={(checked) => setFlag(flag.id, checked)}
-          />
-        ))}
-      </div>
+        <div className="space-y-4">
+          {items.map((flag) => (
+            <ToggleRow
+              key={flag.id}
+              label={flag.label}
+              description={flag.description}
+              checked={Boolean(flags[flag.id])}
+              disabled={togglesDisabled}
+              onChange={(checked) => setFlag(flag.id, checked)}
+            />
+          ))}
+        </div>
+      </ContentGroup>
     </SettingsGroup>
   );
 }

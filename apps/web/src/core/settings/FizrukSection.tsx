@@ -13,18 +13,18 @@ export function FizrukSection() {
   const typedSettings = settings as Record<RestCategory, number>;
   return (
     <SettingsGroup title="Фізрук">
-      <SettingsSubGroup title="Таймер відпочинку">
+      <SettingsSubGroup variant="bounded" title="Таймер відпочинку">
         <p className="text-style-body text-muted">
           {messages.fizruk.restSettingsHint}
         </p>
-        <div className="space-y-7">
+        <div className="divide-y divide-line">
           {(
             Object.entries(REST_CATEGORY_LABELS) as [RestCategory, string][]
           ).map(([cat, label]) => (
-            <section key={cat}>
-              <h3 className="text-style-label-lg font-semibold text-text">
+            <section key={cat} className="py-3 first:pt-0 last:pb-0">
+              <h4 className="text-style-label font-semibold text-text">
                 {label}
-              </h3>
+              </h4>
               <FizrukChoiceList
                 ariaLabel={label}
                 value={String(typedSettings[cat])}

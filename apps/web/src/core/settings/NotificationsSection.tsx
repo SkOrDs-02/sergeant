@@ -193,7 +193,7 @@ export function NotificationsSection() {
 
       <PushNotificationToggle className="py-2 border-b border-line/60" />
 
-      <SettingsSubGroup title="Скільки на день">
+      <SettingsSubGroup variant="bounded" title="Скільки на день">
         <div className="py-2">
           <p className="text-style-label text-text">
             Нагадувань на день, не більше
@@ -224,7 +224,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title={sergeantCopy.name}>
+      <SettingsSubGroup variant="bounded" title={sergeantCopy.name}>
         <ToggleRow
           label={sergeantCopy.nudgesToggleLabel}
           description={sergeantCopy.nudgesToggleDescription}
@@ -255,7 +255,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Рутина (звички)">
+      <SettingsSubGroup variant="bounded" title="Рутина (звички)">
         <ToggleRow
           label="Нагадування про звички"
           description={backgroundHint(
@@ -266,7 +266,7 @@ export function NotificationsSection() {
         />
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Фізрук (тренування)">
+      <SettingsSubGroup variant="bounded" title="Фізрук (тренування)">
         <ToggleRow
           label="Нагадування про тренування"
           description={backgroundHint(
@@ -305,7 +305,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Їжа">
+      <SettingsSubGroup variant="bounded" title="Їжа">
         <ToggleRow
           label="Нагадування про їжу"
           description={backgroundHint(

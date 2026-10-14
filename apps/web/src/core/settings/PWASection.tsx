@@ -9,7 +9,7 @@ import {
   swSetDebug,
 } from "../app/swControl";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
-import { SettingsGroup } from "./SettingsPrimitives";
+import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 export function PWASection() {
   const toast = useToast();
@@ -71,22 +71,24 @@ export function PWASection() {
     // `smartphone` не існує в реєстрі `Icon` — секція малювала порожнє коло
     // заглушки (огляд 2026-09-04). `refresh-cw` — про те, що тут роблять.
     <SettingsGroup title={settingsSectionTitle("pwa")}>
-      <p className="text-style-body text-subtle leading-snug">
-        Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
-        можна скинути збережені на пристрої файли застосунку й перезавантажити
-        його.
-      </p>
-      <Button
-        type="button"
-        variant="soft"
-        tone="danger"
-        size="sm"
-        className="h-10 w-full"
-        disabled={swBusy || !("serviceWorker" in navigator)}
-        onClick={() => setConfirmOpen(true)}
-      >
-        Скинути кеш PWA
-      </Button>
+      <SettingsSubGroup variant="bounded" title="Файли застосунку">
+        <p className="text-style-body text-subtle leading-snug">
+          Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
+          можна скинути збережені на пристрої файли застосунку й перезавантажити
+          його.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          tone="danger"
+          size="sm"
+          className="h-10 w-full"
+          disabled={swBusy || !("serviceWorker" in navigator)}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Скинути кеш PWA
+        </Button>
+      </SettingsSubGroup>
       {/* V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
           §5): цей блок НАВМИСНО не переведено на `SettingsSubGroup`.
           «Результат діагностики» — не структурний заголовок підрозділу, а

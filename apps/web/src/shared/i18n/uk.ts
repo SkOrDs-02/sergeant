@@ -38,6 +38,16 @@ import { sergeantMessages } from "./uk.sergeant";
 import { coreMessages } from "./uk.core";
 
 export const messages = {
+  collection: {
+    countLabel: "Записів",
+    manage: "Керувати",
+    search: "Пошук",
+    searchPlaceholder: "Пошук за назвою",
+    foundLabel: "Знайдено",
+    emptySearch: "Нічого не знайдено",
+    limitReached:
+      "Ліміт: {limit} записів. Щоб додати новий, видали один з наявних.",
+  },
   // AI-CONTEXT (2026-09-12): групи, потрібні до першого екрана, живуть у
   // `./uk.core`, а тут розкладаються назад — щоб `messages.actions.save`
   // і решта call-site-ів працювали без жодної правки. Поділ зроблено не

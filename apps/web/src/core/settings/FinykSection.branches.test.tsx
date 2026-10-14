@@ -310,6 +310,11 @@ describe("FinykSection branch gaps", () => {
   it("invokes addCustomCategory via the Додати button and clears the input", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
     const input = (await screen.findByPlaceholderText(
       "Назва категорії",
     )) as HTMLInputElement;
