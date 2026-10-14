@@ -1,87 +1,75 @@
 /**
- * SourceTabs — крок «звідки страва» як список вкладок на hairline.
- *
- * AI-CONTEXT: доти цей крок був вертикальним стосом усіх джерел одразу
- * (шаблони → нещодавні → комора → пошук → штрихкод+фото → два ручні
- * режими). Кожне джерело було видно завжди, тож екран ріс, а вибір
- * читався як «прокрути й знайди своє». Вкладки роблять вибір джерела
- * одним рухом і тримають висоту кроку сталою.
- *
- * Порядок вкладок — за частотою, а не за складністю: більшість прийомів
- * додають пошуком або повтором, тож «Пошук» стоїть першим і є типовою
- * вкладкою. «Своє» останнє — це шлях, коли решта не спрацювала.
- *
+ * Last validated: 2026-10-13
  * Status: Active
- * Last validated: 2026-08-22
+ * Вибір способу — навігаційні дії; після вибору лишається один рядок.
  */
-import { cn } from "@shared/lib/ui/cn";
-import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
+import { useEffect, useRef } from "react";
+import { messages } from "@shared/i18n/uk";
+import { Button } from "@shared/components/ui/Button";
 
 export type SourceTabId = "search" | "scan" | "photo" | "manual";
-
-const TABS: ReadonlyArray<{ id: SourceTabId; label: string }> = [
-  { id: "search", label: "Пошук" },
-  { id: "scan", label: "Скан" },
-  { id: "photo", label: "Фото" },
-  { id: "manual", label: "Своє" },
-];
+export const SOURCE_LABELS: Record<SourceTabId, string> = {
+  search: messages.nutrition.addSources.search.label,
+  scan: messages.nutrition.addSources.scan.label,
+  photo: messages.nutrition.addSources.photo.label,
+  manual: messages.nutrition.addSources.manual.label,
+};
 
 interface SourceTabsProps {
   active: SourceTabId;
+  expanded?: boolean;
   onChange: (id: SourceTabId) => void;
+  onExpand?: () => void;
 }
 
-/**
- * Мова H (редизайн v3, PR4): джерела вводу — не сегмент, а вертикальний
- * список на hairline (сегмент лишається лише для вкладок і фільтрів одного
- * списку). Семантика вкладок не змінилась: кожен рядок — `role="tab"` зі
- * своєю панеллю, а стрілки ходять вгору-вниз (`orientation: 'vertical'`).
- */
-export function SourceTabs({ active, onChange }: SourceTabsProps) {
-  // `manual`: вкладка «Скан» сама відкриває камеру, тож стрілка лише
-  // переносить фокус, а вкладку вибирає Enter/Space (WCAG 3.2.1, ux-16).
-  const onTabKeyDown = useTablistArrowKeys(true, "manual", "vertical");
+export function SourceTabs({
+  active,
+  expanded = true,
+  onChange,
+  onExpand,
+}: SourceTabsProps) {
+  const navRef = useRef<HTMLElement>(null);
+  const changeRef = useRef<HTMLButtonElement>(null);
+  const previousExpanded = useRef(expanded);
+  useEffect(() => {
+    if (previousExpanded.current === expanded) return;
+    previousExpanded.current = expanded;
+    if (expanded)
+      navRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    else changeRef.current?.focus();
+  }, [expanded]);
+  if (!expanded)
+    return (
+      <div className="mb-4 flex min-h-[44px] items-center justify-between gap-3 border-b border-line pb-2">
+        <span className="text-style-label text-text">
+          {SOURCE_LABELS[active]}
+        </span>
+        <Button
+          variant="ghost"
+          ref={changeRef}
+          onClick={onExpand}
+          aria-label="Змінити спосіб додавання"
+        >
+          Змінити
+        </Button>
+      </div>
+    );
   return (
-    <div
-      role="tablist"
-      aria-label="Джерело страви"
-      aria-orientation="vertical"
+    <nav
+      ref={navRef}
+      aria-label="Спосіб додавання їжі"
       className="mb-4 flex flex-col divide-y divide-line border-y border-line"
     >
-      {TABS.map((t) => {
-        const isActive = t.id === active;
-        return (
-          <button
-            key={t.id}
-            role="tab"
-            type="button"
-            id={`source-tab-${t.id}`}
-            aria-selected={isActive}
-            aria-controls={`source-panel-${t.id}`}
-            tabIndex={isActive ? 0 : -1}
-            onKeyDown={onTabKeyDown}
-            onClick={() => onChange(t.id)}
-            className={cn(
-              "flex min-h-[44px] items-center justify-between gap-3 text-left focus-ring",
-              isActive ? "text-text" : "text-muted hover:text-text",
-            )}
-          >
-            <span
-              className={cn(
-                "text-style-body",
-                isActive ? "font-semibold" : "font-medium",
-              )}
-            >
-              {t.label}
-            </span>
-            {isActive && (
-              <span aria-hidden="true" className="text-style-label text-text">
-                Обрано
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
+      {(Object.keys(SOURCE_LABELS) as SourceTabId[]).map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange(id)}
+          className="flex min-h-[44px] items-center justify-between gap-3 py-2 text-left text-style-body text-text focus-ring"
+        >
+          {SOURCE_LABELS[id]}
+        </button>
+      ))}
+    </nav>
   );
 }

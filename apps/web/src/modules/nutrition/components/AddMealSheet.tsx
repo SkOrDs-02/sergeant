@@ -58,7 +58,6 @@ import {
   type MealFormState,
   type MealSaveTemplate,
 } from "./meal-sheet/mealFormUtils";
-import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
@@ -67,7 +66,6 @@ import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { useSavePickedFood } from "./meal-sheet/useSavePickedFood";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
-import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
 import type { SourceTabId } from "./meal-sheet/SourceTabs";
 import { SourceStep } from "./meal-sheet/SourceStep";
 import { RememberForRepeat } from "./meal-sheet/RememberForRepeat";
@@ -144,7 +142,7 @@ export function AddMealSheet({
   onClose,
   onSave,
   initialStep,
-  initialSourceTab = "search",
+  initialSourceTab,
   initialMealType,
   initialMeal,
   initialDate,
@@ -162,15 +160,15 @@ export function AddMealSheet({
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("100");
   const savePicked = useSavePickedFood();
+  const [packageRequest, setPackageRequest] = useState(0);
+  const manualDraftRef = useRef<MealFormState | null>(null);
   const [sourceTab, setSourceTab] = useState<SourceTabId>("search");
   const [fromPantryItem, setFromPantryItem] = useState<string | null>(null);
   const [date, setDate] = useState("");
-  // Four-step flow: "source" (pick a source — template / pantry / food
-  // search / barcode / photo / manual), "photo" (AI analysis inside the
-  // sheet), "package" (manual per-100 g entry from a label) and "fill"
-  // (name, time, macros, save). Editing an existing meal skips straight
-  // to "fill" since the source is already decided.
-  const [step, setStep] = useState("source");
+  // Спочатку спосіб і його панель (пошук, штрихкод, фото, ручний ввід),
+  // потім форма запису. Панелі зберігають чернетки до закриття аркуша.
+  // Редагування наявного запису одразу відкриває форму.
+  const [step, setStep] = useState<"source" | "fill">("source");
   // Set on the photo → fill transition; drives `source`/`macroSource` and
   // the meal-thumbnail save. Cleared on backtrack so a user who returns
   // to "source" and picks another source doesn't keep photoAI semantics.
@@ -236,6 +234,8 @@ export function AddMealSheet({
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
     setPrevOpen(true);
+    manualDraftRef.current = null;
+    setPackageRequest(0);
     setDraftId(newMealId());
     setDate(initialDate ?? "");
     if (initialMeal?.id) {
@@ -267,7 +267,9 @@ export function AddMealSheet({
     // сканер при активній вкладці «Скан», тож аркуш, закритий на ній,
     // при наступному відкритті кидав би людину одразу в камеру — без
     // жодного жесту з її боку.
-    setSourceTab(initialSourceTab);
+    setSourceTab(
+      initialStep === "photo" ? "photo" : (initialSourceTab ?? "search"),
+    );
     setBarcode("");
     setBarcodeStatus("");
     setBarcodeNotice(null);
@@ -283,9 +285,7 @@ export function AddMealSheet({
     // toward manual input. Editing already has a source and opens the fill
     // form directly; `initialStep="photo"` (shortcuts/CTA) opens the photo
     // step without the "Звідки страва?" detour.
-    setStep(
-      initialMeal?.id ? "fill" : initialStep === "photo" ? "photo" : "source",
-    );
+    setStep(initialMeal?.id ? "fill" : "source");
     void ensureSeedFoods();
   } else if (!open && prevOpen) {
     setPrevOpen(false);
@@ -570,14 +570,20 @@ export function AddMealSheet({
   // упаковки, а не назад до вибору джерела: користувач уже знає, чого
   // хоче, зайвий екран тут лише відкидає назад.
   function handleSwitchToPackage() {
+    if (!pickedFood && !fromPantryItem && !appliedPhoto)
+      manualDraftRef.current = form;
     dropSeededMacros();
     setPickedGrams("100");
     setFoodQuery("");
-    setStep("package");
+    setSourceTab("manual");
+    setPackageRequest((request) => request + 1);
+    setStep("source");
   }
 
   const canBacktrack = step !== "source" && !initialMeal?.id;
   function handleBacktrack() {
+    if (step === "fill" && !pickedFood && !fromPantryItem && !appliedPhoto)
+      manualDraftRef.current = form;
     // Clear any picked source to prevent the auto-advance effect from
     // immediately pushing back to "fill" when we return to "source".
     // Відмова від джерела мусить прибрати і засіяні ним значення: інакше
@@ -624,61 +630,67 @@ export function AddMealSheet({
         panelClassName="nutrition-sheet"
         zIndex={120}
       >
-        {step === "source" ? (
-          <SourceStep
-            yesterdayMeals={yesterdayMeals}
-            onCopyYesterday={onCopyYesterday}
-            sourceTab={sourceTab}
-            onTabChange={setSourceTab}
-            search={{
-              mealTemplates,
-              setForm,
-              setPrefs,
-              onTemplateSelected: () => setStep("fill"),
-              onEditTemplate: (t) => setEditingTemplateId(t.id),
-              quickChips,
-              onQuickAddMeal,
-              onQuickAdded: onClose,
-              pantryItems,
-              sourcePick,
-              fromPantryItem,
-              setFromPantryItem,
-              picker: {
-                foodQuery,
-                setFoodQuery,
-                foodHits,
-                offHits,
-                foodBusy,
-                offBusy,
-                foodErr,
-                searchSettled: search.searchSettled,
-                setPickedFood,
-                setPickedGrams,
-              },
-            }}
-            barcode={{
-              barcodeStatus,
-              setBarcodeStatus,
-              barcodeNotice,
-              onDismissBarcodeNotice: () => setBarcodeNotice(null),
-              onRetryBarcodeLookup: () => void handleBarcodeLookup(barcode),
-              onUsePhotoForBarcode: () => setSourceTab("photo"),
-              onManualEntryForBarcode: () => {
-                setBarcodeNotice(null);
-                setSourceTab("manual");
-              },
-              setScannerOpen,
-              actionLabel: "Сканувати ще раз",
-            }}
-            onPhotoApply={handlePhotoApply}
-            onPackageCreated={handlePackageCreated}
-            onWholeMeal={() => setStep("fill")}
-          />
-        ) : step === "photo" ? (
-          <PhotoStep onApply={handlePhotoApply} />
-        ) : step === "package" ? (
-          <PackageEntryStep onCreated={handlePackageCreated} />
-        ) : (
+        <div hidden={step !== "source"}>
+          {!initialMeal?.id && (
+            <SourceStep
+              packageRequest={packageRequest}
+              yesterdayMeals={yesterdayMeals}
+              onCopyYesterday={onCopyYesterday}
+              initialSourceChosen={
+                initialStep === "photo" || initialSourceTab !== undefined
+              }
+              sourceTab={sourceTab}
+              onTabChange={setSourceTab}
+              search={{
+                mealTemplates,
+                setForm,
+                setPrefs,
+                onTemplateSelected: () => setStep("fill"),
+                onEditTemplate: (t) => setEditingTemplateId(t.id),
+                quickChips,
+                onQuickAddMeal,
+                onQuickAdded: onClose,
+                pantryItems,
+                sourcePick,
+                fromPantryItem,
+                setFromPantryItem,
+                picker: {
+                  foodQuery,
+                  setFoodQuery,
+                  foodHits,
+                  offHits,
+                  foodBusy,
+                  offBusy,
+                  foodErr,
+                  searchSettled: search.searchSettled,
+                  setPickedFood,
+                  setPickedGrams,
+                },
+              }}
+              barcode={{
+                barcodeStatus,
+                setBarcodeStatus,
+                barcodeNotice,
+                onDismissBarcodeNotice: () => setBarcodeNotice(null),
+                onRetryBarcodeLookup: () => void handleBarcodeLookup(barcode),
+                onUsePhotoForBarcode: () => setSourceTab("photo"),
+                onManualEntryForBarcode: () => {
+                  setBarcodeNotice(null);
+                  setSourceTab("manual");
+                },
+                setScannerOpen,
+                actionLabel: "Сканувати ще раз",
+              }}
+              onPhotoApply={handlePhotoApply}
+              onPackageCreated={handlePackageCreated}
+              onWholeMeal={() => {
+                if (manualDraftRef.current) setForm(manualDraftRef.current);
+                setStep("fill");
+              }}
+            />
+          )}
+        </div>
+        {step === "source" ? null : (
           <>
             <MealTypePicker mealType={form.mealType} setForm={setForm} />
 

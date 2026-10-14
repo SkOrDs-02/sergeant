@@ -516,10 +516,10 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
     );
   });
 
-  it("рядок «Скан» аркуша «Додати» відкриває крок джерела на вкладці скану", () => {
+  it("рядок «Штрихкод» аркуша «Додати» відкриває крок джерела на вкладці скану", () => {
     render(<NutritionApp />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByRole("button", { name: "Додати" }));
-    fireEvent.click(screen.getByRole("button", { name: /^Скан/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Штрихкод/ }));
     const overlays = screen.getByTestId("nutrition-overlays");
     expect(overlays).toHaveAttribute("data-initial-step", "source");
     expect(overlays).toHaveAttribute("data-initial-source-tab", "scan");

@@ -2,7 +2,7 @@
  * Last validated: 2026-10-08
  * Status: Active
  */
-import type { ComponentProps } from "react";
+import { useState, type ComponentProps } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 import type { Meal } from "@sergeant/nutrition-domain";
@@ -14,6 +14,8 @@ import { SearchTabPanel } from "./SearchTabPanel";
 import { SourceTabs, type SourceTabId } from "./SourceTabs";
 
 interface SourceStepProps {
+  packageRequest?: number;
+  initialSourceChosen?: boolean;
   yesterdayMeals: readonly Meal[];
   onCopyYesterday?: (() => void) | undefined;
   sourceTab: SourceTabId;
@@ -30,6 +32,8 @@ interface SourceStepProps {
  * Винесено з `AddMealSheet` під стелю Hard Rule #18 (поведінка не змінена).
  */
 export function SourceStep({
+  packageRequest = 0,
+  initialSourceChosen = false,
   yesterdayMeals,
   onCopyYesterday,
   sourceTab,
@@ -40,57 +44,68 @@ export function SourceStep({
   onPackageCreated,
   onWholeMeal,
 }: SourceStepProps) {
+  const [chooserOpen, setChooserOpen] = useState(!initialSourceChosen);
+  const [lastTab, setLastTab] = useState(sourceTab);
+  const [visited, setVisited] = useState<SourceTabId[]>(
+    initialSourceChosen ? [sourceTab] : [],
+  );
+  // Переходи зі сканера (фото/ручний ввід) теж означають явний вибір.
+  if (lastTab !== sourceTab) {
+    setLastTab(sourceTab);
+    setChooserOpen(false);
+    if (!visited.includes(sourceTab)) setVisited([...visited, sourceTab]);
+  }
+  function choose(tab: SourceTabId) {
+    search.sourcePick.cancelAutoPick();
+    setChooserOpen(false);
+    if (!visited.includes(tab)) setVisited([...visited, tab]);
+    onTabChange(tab);
+  }
   return (
     <>
-      {onCopyYesterday && yesterdayMeals.length > 0 && (
-        <Button
-          type="button"
-          variant="outline"
-          className="mb-3 w-full min-h-[44px]"
-          onClick={onCopyYesterday}
-        >
-          {messages.nutrition.addMeal.copyYesterday} ({yesterdayMeals.length})
-        </Button>
-      )}
-      <SourceTabs active={sourceTab} onChange={onTabChange} />
+      <SourceTabs
+        active={sourceTab}
+        expanded={chooserOpen}
+        onExpand={() => {
+          search.sourcePick.cancelAutoPick();
+          setChooserOpen(true);
+        }}
+        onChange={choose}
+      />
 
-      {sourceTab === "search" && (
-        <div
-          role="tabpanel"
-          id="source-panel-search"
-          aria-labelledby="source-tab-search"
-        >
+      {visited.includes("search") && (
+        <div hidden={chooserOpen || sourceTab !== "search"}>
           <SearchTabPanel {...search} />
+          {onCopyYesterday && yesterdayMeals.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mb-3 w-full min-h-[44px]"
+              onClick={onCopyYesterday}
+            >
+              {messages.nutrition.addMeal.copyYesterday} (
+              {yesterdayMeals.length})
+            </Button>
+          )}
         </div>
       )}
 
-      {sourceTab === "scan" && (
-        <div
-          role="tabpanel"
-          id="source-panel-scan"
-          aria-labelledby="source-tab-scan"
-        >
+      {visited.includes("scan") && (
+        <div hidden={chooserOpen || sourceTab !== "scan"}>
           <BarcodeSection {...barcode} />
         </div>
       )}
 
-      {sourceTab === "photo" && (
-        <div
-          role="tabpanel"
-          id="source-panel-photo"
-          aria-labelledby="source-tab-photo"
-        >
+      {visited.includes("photo") && (
+        <div hidden={chooserOpen || sourceTab !== "photo"}>
           <PhotoStep onApply={onPhotoApply} />
         </div>
       )}
 
-      {sourceTab === "manual" && (
-        <div
-          role="tabpanel"
-          id="source-panel-manual"
-          aria-labelledby="source-tab-manual"
-        >
+      {visited.includes("manual") && (
+        <div hidden={chooserOpen || sourceTab !== "manual"}>
           <ManualEntryTab
+            packageRequest={packageRequest}
             onCreated={onPackageCreated}
             onWholeMeal={onWholeMeal}
           />

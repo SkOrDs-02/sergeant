@@ -182,8 +182,9 @@ export default function NutritionApp({
   >("source");
   // Вкладка джерела, з якої відкриється крок «Джерело страви»: рядок
   // аркуша «Додати» в куті. Решта входів відкривають «Пошук».
-  const [addMealInitialSourceTab, setAddMealInitialSourceTab] =
-    useState<SourceTabId>("search");
+  const [addMealInitialSourceTab, setAddMealInitialSourceTab] = useState<
+    SourceTabId | undefined
+  >(undefined);
   // Тип прийому, з яким відкриється аркуш. `null` — тип вгадує годинник
   // (`mealTypeByNow`), як і було для FAB. Не `null` рівно тоді, коли
   // людина тапнула конкретний сегмент hero: вона вже сказала, у який
@@ -273,7 +274,7 @@ export default function NutritionApp({
   // прийом їжі», уніфікована з рештою модулів. Скидає edit-стан, щоб
   // sheet завжди відкривався у create-режимі.
   const openAddMealAt = useCallback(
-    (tab: SourceTabId) => {
+    (tab: SourceTabId | undefined) => {
       setEditingMeal(null);
       setAddMealInitialStep("source");
       setAddMealInitialSourceTab(tab);
@@ -283,7 +284,7 @@ export default function NutritionApp({
     [log, setEditingMeal],
   );
   const handleOpenAddMeal = useCallback(
-    () => openAddMealAt("search"),
+    () => openAddMealAt(undefined),
     [openAddMealAt],
   );
 
@@ -293,7 +294,7 @@ export default function NutritionApp({
     (type: MealTypeId) => {
       setEditingMeal(null);
       setAddMealInitialStep("source");
-      setAddMealInitialSourceTab("search");
+      setAddMealInitialSourceTab(undefined);
       setAddMealInitialMealType(type);
       log.setAddMealSheetOpen(true);
     },
@@ -329,7 +330,7 @@ export default function NutritionApp({
   const handleOpenMealPhoto = useCallback(() => {
     setEditingMeal(null);
     setAddMealInitialStep("photo");
-    setAddMealInitialSourceTab("search");
+    setAddMealInitialSourceTab(undefined);
     setAddMealInitialMealType(null);
     log.setAddMealSheetOpen(true);
   }, [log, setEditingMeal]);
@@ -666,7 +667,11 @@ export default function NutritionApp({
         {(activePage === "start" || activePage === "log") && (
           <AddAction
             sources={[
-              { id: "search", ...src.search, onSelect: handleOpenAddMeal },
+              {
+                id: "search",
+                ...src.search,
+                onSelect: () => openAddMealAt("search"),
+              },
               {
                 id: "scan",
                 ...src.scan,
