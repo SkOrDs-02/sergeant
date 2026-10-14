@@ -107,7 +107,7 @@ export function TagsSection({
     <CollectionManager
       title="Теги"
       count={routine.tags.length}
-      description="Теги допомагають знаходити звички за темою."
+      description={messages.collection.routineTagsDescription}
     >
       {(query) => {
         const visibleItems = routine.tags.filter((item) =>

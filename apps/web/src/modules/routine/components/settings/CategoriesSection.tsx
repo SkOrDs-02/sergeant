@@ -63,7 +63,7 @@ export function CategoriesSection({
     <CollectionManager
       title="Категорії"
       count={routine.categories.length}
-      description="Категорії обʼєднують звички. Тут можна додати або змінити їх."
+      description={messages.collection.routineCategoriesDescription}
     >
       {(query) => {
         const visibleItems = routine.categories.filter((item) =>
@@ -76,7 +76,7 @@ export function CategoriesSection({
             </p>
             {editingCatId && (
               <h3 className="text-style-label font-semibold">
-                Редагувати категорію
+                {messages.collection.categoryEditTitle}
               </h3>
             )}
             <div className="flex flex-wrap items-stretch gap-2">
@@ -199,7 +199,7 @@ export function CategoriesSection({
             {visibleItems.length === 0 ? (
               <p className="text-style-body text-subtle leading-snug">
                 {query
-                  ? "Категорій не знайдено"
+                  ? messages.collection.categoryEmptySearch
                   : messages.routine.emptyCategories}
               </p>
             ) : (

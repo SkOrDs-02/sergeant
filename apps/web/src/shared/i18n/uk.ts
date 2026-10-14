@@ -39,6 +39,17 @@ import { coreMessages } from "./uk.core";
 
 export const messages = {
   collection: {
+    finykCategoriesDescription:
+      "Окремі списки витрат і надходжень. Категорії доступні в операціях, сплітах і лімітах.",
+    categoryKindLabel: "Тип категорій",
+    categoryNameLabel: "Назва нової категорії",
+    categoryDeleteLabel: "Видалити категорію: {name}",
+    categoryEmptySearch: "Категорій не знайдено",
+    routineTagsDescription: "Теги допомагають знаходити звички за темою.",
+    routineCategoriesDescription:
+      "Категорії обʼєднують звички. Тут можна додати або змінити їх.",
+    categoryEditTitle: "Редагувати категорію",
+    pwaFilesTitle: "Файли застосунку",
     countLabel: "Записів",
     manage: "Керувати",
     search: "Пошук",

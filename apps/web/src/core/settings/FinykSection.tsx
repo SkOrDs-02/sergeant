@@ -146,7 +146,7 @@ export function FinykSection() {
           title="Власні категорії"
           count={customCategories.length}
           limit={80}
-          description="Окремі списки витрат і надходжень. Категорії доступні в операціях, сплітах і лімітах."
+          description={messages.collection.finykCategoriesDescription}
         >
           {(query) => {
             const visibleCategories = customCategories.filter(
@@ -159,7 +159,7 @@ export function FinykSection() {
                 <Segmented
                   layout="bar"
                   semantics="filter"
-                  ariaLabel="Тип категорій"
+                  ariaLabel={messages.collection.categoryKindLabel}
                   value={newCategoryKind}
                   onChange={setNewCategoryKind}
                   items={[
@@ -176,7 +176,7 @@ export function FinykSection() {
                       setNewCategoryLabel(event.target.value)
                     }
                     placeholder={"Назва категорії"}
-                    aria-label="Назва нової категорії"
+                    aria-label={messages.collection.categoryNameLabel}
                     disabled={customCategories.length >= 80}
                     maxLength={80}
                     className={catInputClass}
@@ -228,7 +228,10 @@ export function FinykSection() {
                           tone="danger"
                           onClick={() => setPendingDelete(category)}
                           className="shrink-0"
-                          aria-label={`Видалити категорію: ${category.label}`}
+                          aria-label={messages.collection.categoryDeleteLabel.replace(
+                            "{name}",
+                            category.label,
+                          )}
                         >
                           Видалити
                         </Button>
@@ -241,7 +244,7 @@ export function FinykSection() {
                     title={
                       customCategories.length === 0
                         ? "Поки немає власних категорій"
-                        : "Категорій не знайдено"
+                        : messages.collection.categoryEmptySearch
                     }
                     description="Додай першу категорію вище, вона зʼявиться у списку операцій, сплітів і лімітів."
                   />
