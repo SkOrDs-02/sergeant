@@ -3854,7 +3854,7 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-08-site-audit.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/2026-10-14-web-functional-hierarchy.md",
       "new_path": "docs/work/specs/audits/2026-10-14-web-functional-hierarchy.md",
       "action": "keep",
       "genre": "active-work",
