@@ -1,6 +1,6 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-15 by @codex (функціональна ієрархія та менеджери; #1512/#1513 merged; native заморожений власником). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-15 by @codex (свіжість витрат хаба; #1514 merged; native заморожений власником). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
@@ -1023,3 +1023,11 @@ GitHub-конектор підтвердив #1514 merged2026-10-15T17:47:52Z. �
 **Freeze і гейти hub-freshness:** web-коміт1a3093e47, усі штатні hooks/gitleaks exit0. Остаточний red на main:4fail/3pass, exit1; acceptance на фіксі:7/7, exit0. Types/lint/build/size/eager/format: exit0; JS1.51MB≤1.51MB, CSS32.59KB≤40KB, eager258.1KB≤268KB. Повний `CI=true NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @sergeant/web exec vitest run --maxWorkers=3 --reporter=verbose` виконується на1a3093e47; після freeze production не змінювати.
 
 **Browser hub-freshness:** `browser-before-final` і `browser-after-final`2/2, exit0 кожна, Chromium390×844, seedtrue, світла/темна. До: хаб100₴, правильні700₴ лише після входу у Фінік. Після: хаб500₴ на startup і700₴ на visibilitychange до входу у Фінік; Фінік700₴. По одному bank-tx запиту на startup/focus, загалом2. Приватний API fixture, реальна локальна SQLite/писачі. Headless bringToFront сам не давав visibilitychange; у фінальному harness явно надсилається lifecycle event, тест не видається за фізичний iPhone.12PNG/6пар, галерея/ZIP передані в чат. Повні suite counts, docs-гейти й номер нового draft дописати після завершення.
+
+### Фінальний gate hub-freshness
+
+`CI=true NODE_OPTIONS=--max-old-space-size=4096 pnpm --filter @sergeant/web exec vitest run --maxWorkers=3 --reporter=verbose`: **1368 файлів /14083 passed /5 skipped, failures0, exit0**,1338.90s (`web-complete.log/.exit`). Production freeze1a3093e47; `sha256sum --check full-suite-source.sha256`: exit0. Свіжий fetch18:37UTC підтвердив origin/main4aaac1772. Повний web завершено, це не scoped-green. Types/lint/format/build/size/eager та browser before/after вже exit0, докази вище. Docs checks/design/specs/PR body validator — exit0; повторюються після фінального запису перед push.
+
+| PR                           | Гілка                            | Виконано / каталог §2                                                                                                                     | Верифікація                                                                                        | Відхилення / продовження                                                            |
+| ---------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Draft, номер після створення | `claude/fix-hub-finyk-freshness` | HUB-FRESH-01–03: boot bank refresh, persisted query/focus, один mirror writer. Каталог37 позицій уже закритий, це прямий багфікс власника | Весь web1368files/14083passed/5skipped,0failures; усі web-гейти exit0; browser4сценарії/12PNG/6пар | Native frozen. Після gh create записати номер/CI; до мержу наступний PR не починати |
