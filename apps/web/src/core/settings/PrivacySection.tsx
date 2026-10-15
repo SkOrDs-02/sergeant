@@ -165,7 +165,7 @@ export function PrivacySection() {
       title={settingsSectionTitle("privacy")}
       anchorId="settings-privacy"
     >
-      <SettingsSubGroup title="Згода та дані">
+      <SettingsSubGroup variant="bounded" title="Згода та дані">
         <p className="text-style-body text-subtle leading-relaxed">
           Обери, що Sergeant може використовувати для якості продукту та
           персоналізації. Дані для входу, безпеки й оплати залишаються

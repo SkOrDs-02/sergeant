@@ -12,7 +12,6 @@
  * Тут лишились справжні налаштування: календарні тумблери, теги, категорії.
  */
 import { useState } from "react";
-import { messages } from "@shared/i18n/uk";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import { TagsSection } from "../../modules/routine/components/settings/TagsSection";
 import { CategoriesSection } from "../../modules/routine/components/settings/CategoriesSection";
@@ -37,7 +36,7 @@ export function RoutineSection() {
     // розписано у `FinykSection.tsx`.
     <SettingsGroup title="Рутина">
       <div className="space-y-7 [&_[data-row]]:mx-0 [&_[data-row]]:px-0">
-        <SettingsSubGroup title="Календар">
+        <SettingsSubGroup variant="bounded" title="Календар">
           <ToggleRow
             label="Показувати тренування з Фізрука в календарі"
             description="Заплановані тренування з Фізрука зʼявляться у місячному календарі поряд зі звичками."
@@ -54,25 +53,18 @@ export function RoutineSection() {
           />
         </SettingsSubGroup>
 
-        <SettingsSubGroup title="Теги та категорії">
-          <div className="space-y-7">
-            <p className="text-style-body text-subtle leading-snug">
-              {messages.routine.settingsTagsHint}
-            </p>
-            <TagsSection
-              routine={routine}
-              setRoutine={setRoutine}
-              tagDraft={tagDraft}
-              setTagDraft={setTagDraft}
-            />
-            <CategoriesSection
-              routine={routine}
-              setRoutine={setRoutine}
-              catDraft={catDraft}
-              setCatDraft={setCatDraft}
-            />
-          </div>
-        </SettingsSubGroup>
+        <TagsSection
+          routine={routine}
+          setRoutine={setRoutine}
+          tagDraft={tagDraft}
+          setTagDraft={setTagDraft}
+        />
+        <CategoriesSection
+          routine={routine}
+          setRoutine={setRoutine}
+          catDraft={catDraft}
+          setCatDraft={setCatDraft}
+        />
       </div>
     </SettingsGroup>
   );

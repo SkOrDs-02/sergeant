@@ -10,6 +10,7 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Switch } from "@shared/components/ui/Switch";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
+import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
 
@@ -221,6 +222,8 @@ export function SettingsGroup({
 export interface SettingsSubGroupProps {
   title: string;
   children: ReactNode;
+  /** Functional controls own one neutral boundary; prose stays plain. */
+  variant?: "plain" | "bounded";
 }
 
 /**
@@ -235,17 +238,29 @@ export interface SettingsSubGroupProps {
  * кнопки, стану, `aria-expanded`, `inert` чи власної рамки. Підрозділ
  * візуально відділяється лейблом, а не вкладеною панеллю.
  */
-export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
+export function SettingsSubGroup({
+  title,
+  children,
+  variant = "plain",
+}: SettingsSubGroupProps) {
+  const titleId = useId();
   return (
-    <div className="space-y-3">
-      <h3 className="text-style-overline text-text">{title}</h3>
+    <ContentGroup
+      as={variant === "bounded" ? "section" : "div"}
+      variant={variant}
+      aria-labelledby={variant === "bounded" ? titleId : undefined}
+      className="space-y-3"
+    >
+      <h3 id={titleId} className="text-style-overline text-text">
+        {title}
+      </h3>
       {/* Сусідні рядки (`data-row`, див. `ToggleRow`) стоять впритул на
           спільній hairline — проміжок лишається лише між рядком і
           абзацом/кнопкою. */}
       <div className="flex flex-col gap-3 [&>[data-row]+[data-row]]:-mt-3">
         {children}
       </div>
-    </div>
+    </ContentGroup>
   );
 }
 

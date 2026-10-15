@@ -3,6 +3,8 @@
  * Статус: Активний
  */
 import { useState } from "react";
+import { messages } from "@shared/i18n/uk";
+import { Segmented } from "@shared/components/ui/Segmented";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -11,6 +13,7 @@ import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
 import { limitBudgetCategoryIds } from "@sergeant/finyk-domain/domain/budget";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
+import { CollectionManager } from "@shared/components/ui/CollectionManager";
 import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
@@ -110,6 +113,7 @@ export function FinykSection() {
     : 0;
 
   const addCategory = () => {
+    if (customCategories.length >= 80) return;
     if (newCategoryKind === "income") {
       addCustomCategory(newCategoryLabel, { kind: "income" });
     } else {
@@ -129,7 +133,7 @@ export function FinykSection() {
           «Розділи» падали на спільний сірий фолбек. */}
       <SettingsGroup title="Фінік" anchorId="settings-finyk">
         {setShowBalance ? (
-          <SettingsSubGroup title="Показ сум">
+          <SettingsSubGroup variant="bounded" title="Показ сум">
             <ToggleRow
               label="Приховувати суми"
               description="Баланс, бюджети, аналітика й суми на головному екрані показують «••••» замість чисел. Операції в Фініку лишаються видимими."
@@ -138,105 +142,138 @@ export function FinykSection() {
             />
           </SettingsSubGroup>
         ) : null}
-        <SettingsSubGroup title="Власні категорії">
-          <p className="text-style-body text-subtle leading-snug">
-            Витрати й надходження мають окремі списки. Іконка підбирається
-            автоматично, емодзі в назві не потрібне.
-          </p>
-          <div
-            className="grid grid-cols-2 gap-2"
-            role="group"
-            aria-label="Тип категорії"
-          >
-            {(["expense", "income"] as const).map((kind) => (
-              <Button
-                key={kind}
-                type="button"
-                // Легасі-шлях давав `finyk` / `finyk-soft` через
-                // MODULE_LEGACY_OVERRIDE; канонічний еквівалент — та сама
-                // пара emphasis-ів при спільному tone.
-                variant={newCategoryKind === kind ? "solid" : "soft"}
-                tone="finyk"
-                onClick={() => setNewCategoryKind(kind)}
-              >
-                {kind === "expense" ? "Витрата" : "Надходження"}
-              </Button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newCategoryLabel}
-              onChange={(event) => setNewCategoryLabel(event.target.value)}
-              placeholder={"Назва категорії"}
-              maxLength={80}
-              className={catInputClass}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && newCategoryLabel.trim()) {
-                  addCategory();
-                }
-              }}
-            />
-            <Button
-              type="button"
-              className="shrink-0 h-11 px-4"
-              onClick={addCategory}
-            >
-              Додати
-            </Button>
-          </div>
-          {customCategories.length > 0 ? (
-            <ul className="space-y-0 -mx-4">
-              {customCategories.map((category) => (
-                <li
-                  key={category.id}
-                  className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line last:border-0"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-style-label truncate">
-                      {category.label}
-                    </span>
-                    <span className="block text-style-caption text-subtle">
-                      {category.kind === "income" ? "Надходження" : "Витрата"}
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setPendingDelete(category)}
-                    className="text-style-label font-semibold text-danger-strong dark:text-danger hover:text-danger shrink-0"
-                  >
-                    Видалити
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState
-              compact
-              title="Поки немає власних категорій"
-              description="Додай першу категорію вище, вона зʼявиться у списку операцій, сплітів і лімітів."
-            />
-          )}
-          <ConfirmDialog
-            open={pendingDelete !== null}
-            title="Видалити категорію?"
-            description={
+        <CollectionManager
+          title="Власні категорії"
+          count={customCategories.length}
+          limit={80}
+          description={messages.collection.finykCategoriesDescription}
+        >
+          {(query) => {
+            const visibleCategories = customCategories.filter(
+              (category) =>
+                (category.kind ?? "expense") === newCategoryKind &&
+                category.label.toLocaleLowerCase("uk-UA").includes(query),
+            );
+            return (
               <>
-                Категорію «{pendingDelete?.label}» буде видалено. Ліміти лише з
-                цією категорією буде видалено
-                {soleLimitsCount > 0 ? ` (зараз їх: ${soleLimitsCount})` : ""};
-                в комбінованих лімітах вона просто зникне зі списку. Дію не
-                можна скасувати.
+                <Segmented
+                  layout="bar"
+                  semantics="filter"
+                  ariaLabel={messages.collection.categoryKindLabel}
+                  value={newCategoryKind}
+                  onChange={setNewCategoryKind}
+                  items={[
+                    { value: "expense", label: "Витрата" },
+                    { value: "income", label: "Надходження" },
+                  ]}
+                />
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCategoryLabel}
+                    onChange={(event) =>
+                      setNewCategoryLabel(event.target.value)
+                    }
+                    placeholder={"Назва категорії"}
+                    aria-label={messages.collection.categoryNameLabel}
+                    disabled={customCategories.length >= 80}
+                    maxLength={80}
+                    className={catInputClass}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && newCategoryLabel.trim()) {
+                        addCategory();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    className="shrink-0 h-11 px-4"
+                    onClick={addCategory}
+                    disabled={
+                      !newCategoryLabel.trim() || customCategories.length >= 80
+                    }
+                  >
+                    Додати
+                  </Button>
+                </div>
+                {customCategories.length >= 80 && (
+                  <p className="text-style-body text-muted" role="status">
+                    {messages.collection.limitReached.replace("{limit}", "80")}
+                  </p>
+                )}
+                <p className="text-style-caption text-muted" role="status">
+                  {messages.collection.foundLabel}: {visibleCategories.length}
+                </p>
+                {visibleCategories.length > 0 ? (
+                  <ul className="divide-y divide-line">
+                    {visibleCategories.map((category) => (
+                      <li
+                        key={category.id}
+                        className="flex items-center justify-between gap-2 py-3"
+                      >
+                        <span className="min-w-0">
+                          <span className="block text-style-label break-words">
+                            {category.label}
+                          </span>
+                          <span className="block text-style-caption text-subtle">
+                            {category.kind === "income"
+                              ? "Надходження"
+                              : "Витрата"}
+                          </span>
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          tone="danger"
+                          onClick={() => setPendingDelete(category)}
+                          className="shrink-0"
+                          aria-label={messages.collection.categoryDeleteLabel.replace(
+                            "{name}",
+                            category.label,
+                          )}
+                        >
+                          Видалити
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    compact
+                    title={
+                      customCategories.length === 0
+                        ? "Поки немає власних категорій"
+                        : messages.collection.categoryEmptySearch
+                    }
+                    description="Додай першу категорію вище, вона зʼявиться у списку операцій, сплітів і лімітів."
+                  />
+                )}
+                <ConfirmDialog
+                  open={pendingDelete !== null}
+                  title="Видалити категорію?"
+                  description={
+                    <>
+                      Категорію «{pendingDelete?.label}» буде видалено. Ліміти
+                      лише з цією категорією буде видалено
+                      {soleLimitsCount > 0
+                        ? ` (зараз їх: ${soleLimitsCount})`
+                        : ""}
+                      ; в комбінованих лімітах вона просто зникне зі списку. Дію
+                      не можна скасувати.
+                    </>
+                  }
+                  confirmLabel="Видалити"
+                  onConfirm={() => {
+                    if (pendingDelete) removeCustomCategory(pendingDelete.id);
+                    setPendingDelete(null);
+                  }}
+                  onCancel={() => setPendingDelete(null)}
+                />
               </>
-            }
-            confirmLabel="Видалити"
-            onConfirm={() => {
-              if (pendingDelete) removeCustomCategory(pendingDelete.id);
-              setPendingDelete(null);
-            }}
-            onCancel={() => setPendingDelete(null)}
-          />
-        </SettingsSubGroup>
+            );
+          }}
+        </CollectionManager>
 
         <FinykMerchantRulesSection
           rules={merchantRules ?? NO_MERCHANT_RULES}

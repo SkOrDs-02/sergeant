@@ -3,7 +3,7 @@ import {
   act,
   cleanup,
   fireEvent,
-  render,
+  render as renderBase,
   screen,
 } from "@testing-library/react";
 import { useState } from "react";
@@ -29,6 +29,16 @@ vi.mock("@shared/hooks/useToast", () => ({
 }));
 
 import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
+
+function render(...args: Parameters<typeof renderBase>) {
+  const result = renderBase(...args);
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "Керувати: Правила категорій",
+    }),
+  );
+  return result;
+}
 
 afterEach(() => {
   cleanup();
@@ -75,7 +85,9 @@ function Harness({
 describe("Налаштування → Фінік → Правила категорій", () => {
   it("порожній список показує порожній стан із підказкою, як створити правило", () => {
     render(<Harness initial={[]} />);
-    expect(screen.getByText("Правила категорій")).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Правила категорій" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Правил поки немає")).toBeInTheDocument();
     expect(screen.queryByTestId("merchant-rules-list")).toBeNull();
   });

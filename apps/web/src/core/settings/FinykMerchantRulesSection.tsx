@@ -24,9 +24,10 @@ import {
 } from "@finyk/lib/merchantRuleCopy";
 import {
   buildMerchantRuleIndex,
+  MERCHANT_RULES_LIMIT,
   type MerchantRule,
 } from "@sergeant/finyk-domain/lib/merchantRules";
-import { SettingsSubGroup } from "./SettingsPrimitives";
+import { CollectionManager } from "@shared/components/ui/CollectionManager";
 
 interface FinykMerchantRulesSectionProps {
   rules: readonly MerchantRule[];
@@ -63,58 +64,81 @@ export function FinykMerchantRulesSection({
   );
 
   return (
-    <SettingsSubGroup title={copy.settings.title}>
-      <p className="text-style-body text-subtle leading-snug">
-        {copy.settings.description}
-      </p>
-      {sorted.length > 0 ? (
-        <ul className="space-y-0 -mx-4" data-testid="merchant-rules-list">
-          {sorted.map((rule) => {
-            const categoryName = merchantRuleCategoryName(
-              rule.kind,
-              rule.categoryId,
-              customCategories,
-            );
-            const kindLabel =
-              rule.kind === "income"
-                ? copy.settings.kindIncome
-                : copy.settings.kindExpense;
-            return (
-              <li
-                key={rule.id}
-                className="flex items-center justify-between gap-2 px-4 py-2 border-b border-line last:border-0"
+    <CollectionManager
+      title={copy.settings.title}
+      count={sorted.length}
+      limit={MERCHANT_RULES_LIMIT}
+      description={copy.settings.description}
+    >
+      {(query) => {
+        const visibleRules = sorted.filter((rule) =>
+          `${rule.label} ${merchantRuleCategoryName(rule.kind, rule.categoryId, customCategories) ?? ""}`
+            .toLocaleLowerCase("uk-UA")
+            .includes(query),
+        );
+        return (
+          <>
+            <p className="text-style-caption text-muted" role="status">
+              {messages.collection.foundLabel}: {visibleRules.length}
+            </p>
+            {visibleRules.length > 0 ? (
+              <ul
+                className="divide-y divide-line"
+                data-testid="merchant-rules-list"
               >
-                <span className="min-w-0">
-                  <span className="block text-style-label truncate">
-                    {rule.label}
-                  </span>
-                  <span className="block text-style-caption text-subtle">
-                    {`${kindLabel} · ${categoryName ?? copy.settings.missingCategory}`}
-                  </span>
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  className="shrink-0"
-                  aria-label={fillRuleCopy(copy.settings.removeAria, {
-                    merchant: rule.label,
-                  })}
-                  onClick={() => removeRule(rule)}
-                >
-                  {copy.settings.remove}
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <EmptyState
-          compact
-          title={copy.settings.empty.title}
-          description={copy.settings.empty.description}
-        />
-      )}
-    </SettingsSubGroup>
+                {visibleRules.map((rule) => {
+                  const categoryName = merchantRuleCategoryName(
+                    rule.kind,
+                    rule.categoryId,
+                    customCategories,
+                  );
+                  const kindLabel =
+                    rule.kind === "income"
+                      ? copy.settings.kindIncome
+                      : copy.settings.kindExpense;
+                  return (
+                    <li
+                      key={rule.id}
+                      className="flex items-center justify-between gap-2 py-2"
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-style-label break-words">
+                          {rule.label}
+                        </span>
+                        <span className="block text-style-caption text-subtle">
+                          {`${kindLabel} · ${categoryName ?? copy.settings.missingCategory}`}
+                        </span>
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="md"
+                        className="shrink-0"
+                        aria-label={fillRuleCopy(copy.settings.removeAria, {
+                          merchant: rule.label,
+                        })}
+                        onClick={() => removeRule(rule)}
+                      >
+                        {copy.settings.remove}
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState
+                compact
+                title={
+                  query
+                    ? messages.collection.emptySearch
+                    : copy.settings.empty.title
+                }
+                description={copy.settings.empty.description}
+              />
+            )}
+          </>
+        );
+      }}
+    </CollectionManager>
   );
 }

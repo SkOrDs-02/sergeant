@@ -2,15 +2,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useState } from "react";
 import {
-  render,
+  render as renderBase,
   screen,
   fireEvent,
   waitFor,
   cleanup,
 } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
-import { ToastProvider, useToast } from "@shared/hooks/useToast";
+import { ToastProvider } from "@shared/hooks/useToast";
 import type { RoutineState, Tag } from "../../lib/types";
+import { ToastContainer } from "@shared/components/ui/Toast";
 import { TagsSection } from "./TagsSection";
 
 // `routineStorage` writes to localStorage on every mutation; the test
@@ -28,26 +29,14 @@ vi.mock("@shared/lib/storage/storage", async () => {
   };
 });
 
-function makeRoutineWithTags(tags: Tag[]): RoutineState {
-  return { ...defaultRoutineState(), tags };
+function render(...args: Parameters<typeof renderBase>) {
+  const result = renderBase(...args);
+  fireEvent.click(screen.getByRole("button", { name: "Керувати: Теги" }));
+  return result;
 }
 
-function ToastProbe() {
-  const { toasts } = useToast();
-  return (
-    <div aria-label="toast probe">
-      {toasts.map((toast) => (
-        <div key={toast.id}>
-          <span>{toast.msg}</span>
-          {toast.action && (
-            <button type="button" onClick={toast.action.onClick}>
-              {toast.action.label}
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+function makeRoutineWithTags(tags: Tag[]): RoutineState {
+  return { ...defaultRoutineState(), tags };
 }
 
 function Harness({ initial }: { initial: RoutineState }) {
@@ -61,7 +50,7 @@ function Harness({ initial }: { initial: RoutineState }) {
         tagDraft={tagDraft}
         setTagDraft={setTagDraft}
       />
-      <ToastProbe />
+      <ToastContainer />
     </ToastProvider>
   );
 }

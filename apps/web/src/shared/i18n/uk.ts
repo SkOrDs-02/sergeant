@@ -38,6 +38,27 @@ import { sergeantMessages } from "./uk.sergeant";
 import { coreMessages } from "./uk.core";
 
 export const messages = {
+  collection: {
+    finykCategoriesDescription:
+      "Окремі списки витрат і надходжень. Категорії доступні в операціях, сплітах і лімітах.",
+    categoryKindLabel: "Тип категорій",
+    categoryNameLabel: "Назва нової категорії",
+    categoryDeleteLabel: "Видалити категорію: {name}",
+    categoryEmptySearch: "Категорій не знайдено",
+    routineTagsDescription: "Теги допомагають знаходити звички за темою.",
+    routineCategoriesDescription:
+      "Категорії обʼєднують звички. Тут можна додати або змінити їх.",
+    categoryEditTitle: "Редагувати категорію",
+    pwaFilesTitle: "Файли застосунку",
+    countLabel: "Записів",
+    manage: "Керувати",
+    search: "Пошук",
+    searchPlaceholder: "Пошук за назвою",
+    foundLabel: "Знайдено",
+    emptySearch: "Нічого не знайдено",
+    limitReached:
+      "Ліміт: {limit} записів. Щоб додати новий, видали один з наявних.",
+  },
   // AI-CONTEXT (2026-09-12): групи, потрібні до першого екрана, живуть у
   // `./uk.core`, а тут розкладаються назад — щоб `messages.actions.save`
   // і решта call-site-ів працювали без жодної правки. Поділ зроблено не
