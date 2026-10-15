@@ -3854,6 +3854,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-08-site-audit.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/2026-10-14-web-functional-hierarchy.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-14-web-functional-hierarchy.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",
@@ -4064,42 +4071,42 @@
       "canonical_owner": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/run.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/handoff.md",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/handoff.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/handoff.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/legacy-opfs-after.json",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/legacy-opfs-after.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/legacy-opfs-after.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-batch-200.json",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-batch-200.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-batch-200.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-transfer.json",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-transfer.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-transfer.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/run.json",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/run.json",
       "action": "keep",
       "genre": "active-work",
