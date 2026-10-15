@@ -3861,6 +3861,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-14-web-functional-hierarchy.md"
     },
     {
+      "old_path": "docs/work/specs/audits/2026-10-15-hub-finyk-freshness.md",
+      "new_path": "docs/work/specs/audits/2026-10-15-hub-finyk-freshness.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-15-hub-finyk-freshness.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",

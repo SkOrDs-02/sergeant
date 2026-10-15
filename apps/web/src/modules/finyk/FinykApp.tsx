@@ -94,7 +94,9 @@ export default function App({
   pwaAction,
   onPwaActionConsumed,
 }: FinykAppProps) {
-  const mono = useMonobank();
+  // FinykBootCluster owns mirror writes for the whole app. The screen
+  // observes the same query keys without persisting every response twice.
+  const mono = useMonobank({ writeMirror: false });
   const privat = usePrivatbank(PRIVAT_ENABLED);
   useMonoTokenMigration(true);
   const toast = useToast();
