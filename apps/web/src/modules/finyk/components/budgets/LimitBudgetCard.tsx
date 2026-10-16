@@ -8,6 +8,7 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
+import { FinanceItemHeading } from "../FinanceItemHeading";
 import { Money } from "@shared/components/ui/Money";
 import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
@@ -105,11 +106,6 @@ function LimitBudgetCardComponent({
   const fieldId = useId();
   const limitId = `${fieldId}-limit`;
   const periodId = `${fieldId}-period`;
-  const categoryIds =
-    budget.categoryIds && budget.categoryIds.length > 0
-      ? budget.categoryIds
-      : [budget.categoryId ?? ""];
-  const isCombo = categoryIds.length > 1;
   const periodLabel =
     budget.period === "week"
       ? "Щотижня"
@@ -137,9 +133,11 @@ function LimitBudgetCardComponent({
 
   return (
     <Card
+      as="article"
+      aria-label={categoryLabel || "—"}
       prominence="ghost"
-      padding="md"
-      className="border-b border-line rounded-none"
+      padding="none"
+      className="border-t border-line rounded-none py-4"
     >
       {isEditing ? (
         <div className="space-y-2">
@@ -201,42 +199,10 @@ function LimitBudgetCardComponent({
         </div>
       ) : (
         <>
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="min-w-0 flex-1">
-                {/* `truncate`, а не перенос: підпис комбо довший за
-                    одно-категорійний, і при переносі лишав у другому рядку
-                    самотнє «2» (браузерний QA 2026-08-26). Обрізати безпечно —
-                    повний склад набору стоїть нижче рядками розбивки. */}
-                <span className="text-style-body font-semibold block truncate">
-                  {categoryLabel || "—"}
-                </span>
-                <div className="text-style-caption text-subtle mt-0.5 flex items-center gap-1.5">
-                  <span>{periodLabel}</span>
-                  {/* У комбо сума їде в цей рядок: чипи + сума + олівець на
-                      одній лінії лишали підпису ~94px при потрібних ~140, і
-                      «Продукти + ще 2» обрізалось трьома крапками ще на 390px.
-                      Одно-категорійна картка лишається з сумою праворуч —
-                      рівно як була. */}
-                  {isCombo ? (
-                    <>
-                      <span aria-hidden>·</span>
-                      {amountNode}
-                    </>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {/* Групування розрядів: без нього «3635 / 20000 ₴» розходилось із
-                  форматованими «Залишок 16 365 ₴» і рядками розбивки на тій
-                  самій картці. NARROW_NBSP перед ₴ — той самий відступ, що
-                  ставить <Money> нижче (браузерний QA 2026-08-25). */}
-              {isCombo ? null : (
-                <span className="text-style-body font-medium">
-                  {amountNode}
-                </span>
-              )}
+          <FinanceItemHeading
+            title={categoryLabel || "—"}
+            meta={periodLabel}
+            actions={
               <Button
                 type="button"
                 variant="ghost"
@@ -247,8 +213,37 @@ function LimitBudgetCardComponent({
               >
                 <Icon name="edit" size="md" aria-hidden />
               </Button>
-            </div>
-          </div>
+            }
+            value={
+              <div
+                className={cn(
+                  "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1",
+                  showBalance &&
+                    overLimit &&
+                    "text-danger-strong dark:text-danger",
+                )}
+              >
+                {showBalance && (
+                  <span className="text-style-caption font-medium">
+                    {overLimit ? "Перевищено на" : "Залишок"}
+                  </span>
+                )}
+                <span>
+                  {!showBalance ? (
+                    "••••"
+                  ) : overLimit ? (
+                    <Money
+                      amount={spent - budget.limit}
+                      kopecks
+                      tone="inherit"
+                    />
+                  ) : (
+                    <Money amount={remaining} tone="inherit" />
+                  )}
+                </span>
+              </div>
+            }
+          />
           <div className="h-2 bg-bg rounded-[3px] overflow-hidden">
             <div
               className={cn(
@@ -262,30 +257,9 @@ function LimitBudgetCardComponent({
               style={{ width: `${Math.min(100, pctRaw)}%` }}
             />
           </div>
-          <div
-            className={cn(
-              "text-style-caption mt-2",
-              overLimit
-                ? "text-danger-strong dark:text-danger font-medium"
-                : warnLimit
-                  ? "text-warning-strong dark:text-warning"
-                  : "text-subtle",
-            )}
-          >
-            {!showBalance ? (
-              "••••"
-            ) : overLimit ? (
-              /* З копійками навмисно: суму перевищення людина звіряє з
-                 записами, це регістр звірки, а не аналітики (канон § 6.1,
-                 рішення 2026-09-24). */
-              <>
-                Перевищено на <Money amount={spent - budget.limit} kopecks />
-              </>
-            ) : (
-              <>
-                Залишок <Money amount={remaining} /> · {pctRounded}% використано
-              </>
-            )}
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-style-caption text-muted">
+            {amountNode}
+            <span>{showBalance ? `${pctRounded}% використано` : "••••"}</span>
           </div>
           {showBalance && forecast != null && forecast > 0 && (
             <div className="text-style-caption text-subtle mt-1">
@@ -297,7 +271,10 @@ function LimitBudgetCardComponent({
           {breakdown && breakdown.length > 1 && (
             // Розбивка факту комбо-ліміту: видно, ЩО саме зʼїло бюджет.
             // Без власних під-лімітів — лише факт по кожній категорії.
-            <ul className="mt-2 space-y-1" aria-label="Витрати по категоріях">
+            <ul
+              className="mt-3 space-y-2 border-l border-line pl-3"
+              aria-label="Витрати по категоріях"
+            >
               {breakdown.map((row) => (
                 <li
                   key={row.categoryId}

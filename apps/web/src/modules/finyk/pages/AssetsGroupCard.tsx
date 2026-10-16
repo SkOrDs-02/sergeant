@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { Card } from "@shared/components/ui/Card";
+import { ContentGroup } from "@shared/components/ui/ContentGroup";
+import { messages } from "@shared/i18n";
 import { type IconName } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
@@ -32,21 +33,26 @@ export function AssetsGroupCard({
   children?: ReactNode;
 }) {
   return (
-    <Card padding="sm" className="space-y-2">
+    <ContentGroup className="space-y-3 border-t border-line py-4 first:border-t-0">
       <button
         type="button"
-        className="touch-target flex w-full items-center justify-between pt-2 text-left"
+        className="touch-target focus-ring flex w-full items-center justify-between gap-3 text-left"
         aria-expanded={open}
         onClick={onToggle}
       >
         <SectionHeading as="span" size="lg" variant="muted">
-          <span className="inline-flex items-center gap-1.5">{title}</span>
+          <span>{title}</span>
         </SectionHeading>
+        <span className="shrink-0 text-style-caption text-muted">
+          {open
+            ? messages.finykRedesign.collapse
+            : messages.finykRedesign.expand}
+        </span>
       </button>
       <div hidden={!open} className="space-y-2">
         {children}
       </div>
-    </Card>
+    </ContentGroup>
   );
 }
 

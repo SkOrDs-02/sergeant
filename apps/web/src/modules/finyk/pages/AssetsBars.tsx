@@ -123,10 +123,14 @@ export function SectionBar({
 }: SectionBarProps) {
   return (
     <button
+      type="button"
       onClick={onToggle}
       aria-expanded={open}
       // Нейтральна група: назва, сума й текстовий стан розгортання.
-      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panel border-b border-line mb-2 text-left transition-colors hover:bg-line/40"
+      className={cn(
+        "touch-target group w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-line/40 focus-ring",
+        open && "border-b border-line",
+      )}
     >
       <div className="flex items-center gap-3 min-w-0">
         <div className="min-w-0">
