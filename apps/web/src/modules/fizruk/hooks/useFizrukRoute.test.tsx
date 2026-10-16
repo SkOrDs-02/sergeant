@@ -1,7 +1,13 @@
 /** @vitest-environment jsdom */
 import type { ReactNode } from "react";
 import { act, renderHook } from "@testing-library/react";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useFizrukRoute } from "./useFizrukRoute";
@@ -91,6 +97,42 @@ describe("useFizrukRoute", () => {
       result.current.navigate("workouts");
     });
     expect(seen.at(-1)).toBe("/fizruk/workouts");
+  });
+
+  it("returning from a directory does not reopen it on the next history back", async () => {
+    const { result } = renderHook(
+      () => ({
+        route: useFizrukRoute(),
+        back: useNavigate(),
+        path: useLocation().pathname,
+      }),
+      { wrapper: wrapper("/fizruk") },
+    );
+    act(() => result.current.route.navigate("workouts"));
+    act(() => result.current.route.navigate("catalog"));
+    act(() => result.current.route.navigate("workouts", { back: true }));
+    expect(result.current.path).toBe("/fizruk/workouts");
+    await act(async () => {
+      await result.current.back(-1);
+    });
+    expect(result.current.path).toBe("/fizruk");
+  });
+
+  it("returns from a cold directory link without adding another history entry", async () => {
+    const { result } = renderHook(
+      () => ({
+        route: useFizrukRoute(),
+        back: useNavigate(),
+        path: useLocation().pathname,
+      }),
+      { wrapper: wrapper("/fizruk/catalog") },
+    );
+    act(() => result.current.route.navigate("workouts", { back: true }));
+    expect(result.current.path).toBe("/fizruk/workouts");
+    await act(async () => {
+      await result.current.back(-1);
+    });
+    expect(result.current.path).toBe("/fizruk/workouts");
   });
 
   it("navigate() reaches the dedicated history route", () => {
