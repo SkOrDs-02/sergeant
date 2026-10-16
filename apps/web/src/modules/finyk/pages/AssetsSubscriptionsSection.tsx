@@ -1,3 +1,4 @@
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useMemo } from "react";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
@@ -16,6 +17,7 @@ import type { useAssetsState } from "./useAssetsState";
 type State = ReturnType<typeof useAssetsState>;
 
 export function AssetsSubscriptionsSection({ state }: { state: State }) {
+  const nowMs = useKyivDayNow();
   const {
     subscriptions,
     setSubscriptions,
@@ -51,7 +53,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
   // тут те саме, з якого рахуються звіти, а не те, яке показує телефон
   // у роумінгу.
   const { combEntries, daysInMonth, todayDom } = useMemo(() => {
-    const kyiv = getKyivDateParts();
+    const kyiv = getKyivDateParts(nowMs);
     const entries: CombEntry[] = subscriptions.map((sub) => ({
       id: String(sub.id),
       name: String(sub.name ?? ""),
@@ -64,7 +66,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
       daysInMonth: new Date(Date.UTC(kyiv.year, kyiv.month, 0)).getUTCDate(),
       todayDom: kyiv.day,
     };
-  }, [subscriptions, transactions]);
+  }, [subscriptions, transactions, nowMs]);
 
   return (
     <div className="mb-3 space-y-0">

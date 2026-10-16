@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
+import { useMemo } from "react";
 import { Measure } from "@shared/components/ui/Measure";
 import { habitCompletionRate } from "../lib/streaks";
 import { anchoredTodayKey } from "../lib/dayAnchor";
-import { dateKeyFromDate } from "@sergeant/routine-domain";
+import { dateKeyMinusDays } from "@sergeant/routine-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import type { Habit, RoutineState } from "../lib/types";
@@ -16,16 +17,17 @@ export function HabitLeadersBlock({
   habits,
   completions,
 }: HabitLeadersBlockProps) {
-  const [windowStartMs] = useState(() => Date.now() - 29 * 86_400_000);
+  const dayKey = useDeviceDayKey();
 
   const { best, worst } = useMemo(() => {
+    void dayKey;
     const active = habits.filter((h) => !h.archived);
     if (active.length === 0) return { best: null, worst: null };
 
     // Device-local inclusive 30-day window (today + 29 days back),
     // same anchor as the rest of web-routine (ADR-0078, cutover 2026-09-01).
     const endKey = anchoredTodayKey();
-    const startKey = dateKeyFromDate(new Date(windowStartMs));
+    const startKey = dateKeyMinusDays(endKey, 29);
 
     const rates = active
       .map((h) => {
@@ -49,7 +51,7 @@ export function HabitLeadersBlock({
       return { best, worst: null };
 
     return { best, worst };
-  }, [habits, completions, windowStartMs]);
+  }, [habits, completions, dayKey]);
 
   if (!best) return null;
 

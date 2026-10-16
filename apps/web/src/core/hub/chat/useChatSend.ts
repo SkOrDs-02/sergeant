@@ -415,11 +415,12 @@ export function useChatSend({
       }, 90_000);
 
       try {
-        const context = contextRef.current.text || buildContextMeasured();
-        if (!contextRef.current.text) {
-          contextRef.current = { text: context, ts: Date.now() };
-          setContextState({ status: "ready", ts: contextRef.current.ts });
-        }
+        // The idle snapshot can predate a pull, a local write in another
+        // module, or midnight. Read canonical data at the user's turn;
+        // a Finyk-only preview notification cannot invalidate every input.
+        const context = buildContextMeasured();
+        contextRef.current = { text: context, ts: Date.now() };
+        setContextState({ status: "ready", ts: contextRef.current.ts });
 
         let data;
         try {

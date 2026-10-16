@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-09-01
  * Status: Active
@@ -19,7 +20,6 @@ import {
   countKcalStreakDays,
   deviceWeekStartKey,
   resolveKcalGoalsForDays,
-  todayISODate,
   type MealTypeId,
   type NutritionLog,
   type NutritionPrefs,
@@ -46,10 +46,6 @@ import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 // тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
 // Kyiv, бо журнал, з якого читаються ці дані, сам пишеться під ключем дня
 // пристрою (useNutritionLog). unification-modules.md #1.18.
-function todayISO(): string {
-  return todayISODate();
-}
-
 interface NutritionDashboardProps {
   log: NutritionLog;
   prefs: NutritionPrefs;
@@ -66,7 +62,7 @@ export function NutritionDashboard({
   onGoToDailyPlan,
   onPickMeal,
 }: NutritionDashboardProps) {
-  const today = todayISO();
+  const today = useDeviceDayKey();
   const goalPeriods = useNutritionGoalPeriods();
   const adaptiveGoal = useAdaptiveNutritionGoal(log, prefs);
 
@@ -78,10 +74,11 @@ export function NutritionDashboard({
   // oldest→newest ending at the given day, so anchoring `endIso` on Sunday
   // yields Mon…Sun in order.
   const weekRows = useMemo(() => {
+    void today;
     const weekStart = deviceWeekStartKey();
     const weekEnd = addDaysISODate(weekStart, 6);
     return getMacrosForDateRange(log, weekEnd, 7);
-  }, [log]);
+  }, [log, today]);
 
   // Поденна ціль із append-only журналу: зміна норми сьогодні не
   // перефарбовує попередні стовпчики, а лінія стає східчастою.
@@ -201,8 +198,8 @@ export function NutritionDashboard({
   // Дашборд монтується лише після бута читання (гейт у
   // `NutritionStartPage`), тож нуль холодного старту сюди не доходить.
   const kcalStreak = useMemo(
-    () => countKcalStreakDays(log, goalPeriods, todayISODate()),
-    [log, goalPeriods],
+    () => countKcalStreakDays(log, goalPeriods, today),
+    [log, goalPeriods, today],
   );
   useStreakMilestoneCelebration(
     "nutrition",

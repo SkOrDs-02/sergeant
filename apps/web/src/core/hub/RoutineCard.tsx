@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Lazy-loaded per-domain card for routine/habits data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
@@ -117,9 +118,11 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
 
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const dayKey = useDeviceDayKey();
   const bump = useHubStorageBump();
 
   const { cur, prev, dates, partial } = useMemo(() => {
+    void dayKey;
     void bump; // storage-write tick — forces re-read without calling load* inside deps
     // Canonical routine state from the SQLite warm cache — `hub_routine_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
@@ -147,7 +150,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       dates: w.dates,
       partial: w.partial,
     };
-  }, [period, offset, bump]);
+  }, [period, offset, bump, dayKey]);
 
   const formattedCurrent = formatNumberUk(cur.pct);
   const formattedPrev = formatNumberUk(prev.pct);

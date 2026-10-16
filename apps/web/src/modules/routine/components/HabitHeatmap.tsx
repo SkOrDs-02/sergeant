@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-05-14
  * Status: Active
@@ -110,7 +111,9 @@ export function HabitHeatmap({
     capture: true,
   });
 
+  const dayKey = useDeviceDayKey();
   const { weeks, monthMarkers } = useMemo(() => {
+    void dayKey;
     // Той самий анкер доби, що й решта web-routine (`lib/dayAnchor.ts`), не
     // окрема копія — інакше хітмап знову міг би показати «сьогодні» в
     // іншій клітинці, ніж решта картки (unification audit 2026-08-31,
@@ -181,7 +184,7 @@ export function HabitHeatmap({
     });
 
     return { weeks, monthMarkers };
-  }, [habits, completions, skips, historyWeeks, futureWeeks]);
+  }, [habits, completions, skips, historyWeeks, futureWeeks, dayKey]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
   const cellPositions = useMemo(() => {

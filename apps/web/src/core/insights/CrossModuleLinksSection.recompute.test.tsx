@@ -61,7 +61,20 @@ describe("CrossModuleLinksSection — перерахунок за прогрів
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     localStorage.clear();
+  });
+
+  it("slides the correlation window when the device day changes without a write", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 18, 23, 59, 59));
+    render(<CrossModuleLinksSection />);
+    expect(buildSpy.mock.results.at(-1)?.value.to).toBe("2026-10-18");
+    act(() => {
+      vi.setSystemTime(new Date(2026, 9, 19, 9));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(buildSpy.mock.results.at(-1)?.value.to).toBe("2026-10-19");
   });
 
   it("перераховує ряди, коли кеш Фініка повідомляє про оновлення", () => {

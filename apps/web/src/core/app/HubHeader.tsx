@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useMemo } from "react";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { cn } from "@shared/lib/ui/cn";
 import { useShortcutGlyph } from "@shared/hooks";
 import { Icon } from "@shared/components/ui/Icon";
@@ -45,7 +46,11 @@ export function HubHeader({
   notifications,
   activeTab,
 }: HubHeaderProps) {
-  const dateStr = useMemo(() => formatKyivNominativeDate(), []);
+  const kyivNow = useKyivDayNow();
+  const dateStr = useMemo(() => {
+    void kyivNow;
+    return formatKyivNominativeDate();
+  }, [kyivNow]);
   const { modK } = useShortcutGlyph();
   const tabTitle = activeTab ? HUB_TAB_TITLES[activeTab] : undefined;
   const counts = useHubDayCounts();
