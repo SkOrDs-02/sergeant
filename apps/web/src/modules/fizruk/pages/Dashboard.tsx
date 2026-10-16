@@ -1,3 +1,5 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 /**
  * Last validated: 2026-05-19
  * Status: Active
@@ -95,7 +97,12 @@ export function Dashboard({
 }: DashboardProps) {
   // Use the shared nominative formatter so weekday matches HubHeader
   // ("Пʼятниця" not "пʼятницю") and the Kyiv timezone is anchored correctly.
-  const today = useMemo(() => formatKyivNominativeDate(), []);
+  const dayKey = useDeviceDayKey();
+  const kyivNow = useKyivDayNow();
+  const today = useMemo(() => {
+    void kyivNow;
+    return formatKyivNominativeDate();
+  }, [kyivNow]);
   const rec = useRecovery();
   const {
     workouts,
@@ -325,13 +332,12 @@ export function Dashboard({
     }
   }, [monthlyPlan, templates]);
 
-  const dashboardKpis = useMemo(
-    () =>
-      computeDashboardKpis(workouts || [], {
-        measurements: measurements || [],
-      }),
-    [workouts, measurements],
-  );
+  const dashboardKpis = useMemo(() => {
+    void dayKey;
+    return computeDashboardKpis(workouts || [], {
+      measurements: measurements || [],
+    });
+  }, [workouts, measurements, dayKey]);
 
   const recentWorkouts = useMemo(
     () => listRecentCompletedWorkouts(workouts || [], { limit: 3 }),

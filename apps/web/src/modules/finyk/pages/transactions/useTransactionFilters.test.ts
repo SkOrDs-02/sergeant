@@ -233,6 +233,19 @@ describe("useTransactionFilters", () => {
   });
 
   describe("external dayFilter", () => {
+    it("moves the today filter at Kyiv midnight with unchanged transactions", () => {
+      const params = buildDefaultParams({
+        realTx: [mkTx("old", -100)],
+        dayFilter: "today",
+      });
+      const { result } = renderHook(() => useTransactionFilters(params));
+      expect(result.current.filtered.map((t) => t.id)).toEqual(["old"]);
+      act(() => {
+        vi.setSystemTime(new Date("2025-06-05T09:00:00Z"));
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+      expect(result.current.filtered).toEqual([]);
+    });
     it("keeps only the current Kyiv day for dayFilter='today'", () => {
       const today = mkTx("today", -100, {
         time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),

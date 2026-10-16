@@ -4,7 +4,7 @@
  * Status: Active
  * Unit tests for the `NutritionDashboard` hero/insights/week render.
  */
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../hooks/useProteinLowInsight", () => ({
@@ -94,9 +94,43 @@ beforeEach(() => {
   toastSuccess.mockReset();
 });
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.useRealTimers();
+});
 
 describe("NutritionDashboard", () => {
+  it("moves the weekly chart to the new week without changing the log", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-18T12:00:00Z"));
+    const log = {
+      "2026-10-18": {
+        meals: [
+          {
+            id: "m",
+            name: "Суп",
+            time: "12:00",
+            mealType: "lunch",
+            macros: { kcal: 640, protein_g: 0, fat_g: 0, carbs_g: 0 },
+          },
+        ],
+      },
+    } as never;
+    render(
+      <NutritionDashboard log={log} prefs={GOAL_PREFS} onPickMeal={vi.fn()} />,
+    );
+    expect(screen.getByTestId("week-kcal-bar-2026-10-18")).toBeInTheDocument();
+    act(() => {
+      vi.setSystemTime(new Date("2026-10-19T12:00:00Z"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(
+      screen.queryByTestId("week-kcal-bar-2026-10-18"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Ще немає записів цього тижня"),
+    ).toBeInTheDocument();
+  });
   it("keeps the final card scrollable above the fixed add-meal button", () => {
     render(
       <NutritionDashboard

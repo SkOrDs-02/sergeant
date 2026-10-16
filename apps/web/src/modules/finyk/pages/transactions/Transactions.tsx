@@ -1,3 +1,4 @@
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
@@ -328,7 +329,9 @@ export function Transactions({
     [jarIdsKey],
   );
 
+  const kyivNow = useKyivDayNow();
   const transferSuggestions = useMemo(() => {
+    void kyivNow;
     // До прогріву вже підтверджені перекази ще без категорії й поверталися
     // б у чергу пропозицій цілою пачкою.
     if (!storageReady) return [];
@@ -350,6 +353,7 @@ export function Transactions({
     jarAccountIds,
     rejectedTransferPairs,
     snoozedTransferPairs,
+    kyivNow,
   ]);
   const visibleTransferSuggestion = transferSuggestions[0] ?? null;
   const visibleTransferKey = visibleTransferSuggestion

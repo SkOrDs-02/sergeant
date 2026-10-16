@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Lazy-loaded per-domain card for nutrition/kcal data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
@@ -154,6 +155,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
 
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const dayKey = useDeviceDayKey();
   const bump = useHubStorageBump();
   // CALC-4 (аудит 2026-09): на холодному deep-link кеш SQLite модуля
   // наповнюється ПІСЛЯ першого рендера; hub-bump цього не бачить, тік
@@ -162,6 +164,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   const sqliteTick = useNutritionSqliteReadTick();
 
   const { cur, prev, prevAny, dates, partial } = useMemo(() => {
+    void dayKey;
     void bump; // storage-write tick
     void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling load* inside deps
     // Canonical meal log from the SQLite warm cache — `nutrition_log_v1`
@@ -188,7 +191,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
       dates: w.dates,
       partial: w.partial,
     };
-  }, [period, offset, bump, sqliteTick]);
+  }, [period, offset, bump, sqliteTick, dayKey]);
 
   const formattedCurrent = formatNumberUk(cur.avg);
   const formattedPrev = formatNumberUk(prev.avg);

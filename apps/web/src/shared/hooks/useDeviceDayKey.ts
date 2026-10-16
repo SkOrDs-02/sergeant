@@ -77,9 +77,11 @@ export function useDeviceDay(): { dayKey: string; refresh: () => void } {
 
     schedule();
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     return () => {
       if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
     };
   }, []);
 

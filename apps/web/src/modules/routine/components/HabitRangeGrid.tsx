@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-08-17
  * Status: Active
@@ -105,7 +106,9 @@ export function HabitRangeGrid({
   days,
   hint,
 }: HabitRangeGridProps) {
+  const dayKey = useDeviceDayKey();
   const rows = useMemo(() => {
+    void dayKey;
     // Той самий анкер доби, що й у хітмапі та «Зведенні» (`lib/dayAnchor.ts`),
     // не окрема копія — інакше зріз зсувався б на клітинку при роумінгу.
     const today = anchoredTodayDate();
@@ -116,7 +119,7 @@ export function HabitRangeGrid({
       freezePausedPast: true,
       ...(skips ? { skips } : {}),
     });
-  }, [habits, completions, skips, days]);
+  }, [habits, completions, skips, days, dayKey]);
 
   const habitsById = useMemo(() => {
     const map = new Map<string, Habit>();

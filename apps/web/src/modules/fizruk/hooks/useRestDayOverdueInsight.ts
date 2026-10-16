@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-05-19
  * Status: Active
@@ -45,7 +46,9 @@ export function useRestDayOverdueInsight(
   workouts: readonly Workout[],
   loaded: boolean,
 ): Insight | null {
+  const dayKey = useDeviceDayKey();
   return useMemo(() => {
+    void dayKey;
     // Suppress while SQLite boot is still in flight — avoids a false
     // "no workouts" state triggering the card on first render.
     if (!loaded) return null;
@@ -79,5 +82,5 @@ export function useRestDayOverdueInsight(
       // catch a user who is busy in finyk/routine/nutrition.
       showOn: "both",
     };
-  }, [workouts, loaded]);
+  }, [workouts, loaded, dayKey]);
 }

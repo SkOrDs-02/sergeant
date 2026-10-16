@@ -1,3 +1,10 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
+import { useHubStorageBump } from "./useHubStorageBump";
+import { useFinykSqliteReadTick } from "../../modules/finyk/lib/sqliteReadGate";
+import { useFizrukSqliteReadTick } from "../../modules/fizruk/lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../../modules/nutrition/lib/sqliteReadGate";
+import { useFinykMonoMirrorTick } from "../../modules/finyk/lib/monoMirrorGate";
 /**
  * Last validated: 2026-09-03
  * Status: Active
@@ -125,6 +132,13 @@ export function HubReports() {
   // conversion-critical, тому йде через `useLocale`.
   const { messages: i18n } = useLocale();
 
+  const dayKey = useDeviceDayKey();
+  const kyivNow = useKyivDayNow();
+  const storageBump = useHubStorageBump();
+  const finykTick = useFinykSqliteReadTick();
+  const fizrukTick = useFizrukSqliteReadTick();
+  const nutritionTick = useNutritionSqliteReadTick();
+  const mirrorTick = useFinykMonoMirrorTick();
   const label = formatPeriodLabel(period, offset);
   const isCurrentPeriod = offset === 0;
 
@@ -158,7 +172,26 @@ export function HubReports() {
    * Замість підпису секція переїхала НАД перемикач — туди, де вже стоять
    * звʼязки, і рівно з тієї ж причини.
    */
-  const insights = useMemo(() => generateInsights(), []);
+  const insights = useMemo(() => {
+    // Warm caches hydrate after the first render; date windows also expire
+    // without any record write. Use the same signals as the domain reports.
+    void storageBump;
+    void finykTick;
+    void fizrukTick;
+    void nutritionTick;
+    void mirrorTick;
+    void dayKey;
+    void kyivNow;
+    return generateInsights();
+  }, [
+    storageBump,
+    finykTick,
+    fizrukTick,
+    nutritionTick,
+    mirrorTick,
+    dayKey,
+    kyivNow,
+  ]);
 
   // Phase 7 D2 — cross-module PDF export is Premium. Free users see
   // the button but tapping it opens the paywall instead of generating

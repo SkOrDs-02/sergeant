@@ -6,6 +6,7 @@
  * mirror cache is refreshed.
  */
 
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { useSyncExternalStore } from "react";
 
 let cacheTick = 0;
@@ -40,6 +41,7 @@ export function notifyFinykMonoMirrorRefresh(): void {
       /* noop — listeners must never break notify */
     }
   }
+  emitHubBus("storageUpdated", undefined);
 }
 
 /** Test-only escape hatch: clears subscribers + resets tick. */

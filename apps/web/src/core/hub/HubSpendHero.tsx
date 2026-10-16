@@ -1,3 +1,4 @@
+import { useMinuteNow } from "@shared/hooks/useMinuteNow";
 /**
  * Hero хаба «Витрати сьогодні» (redesign v3, H.2): тинт Фініка, число дня
  * 40 px, «₴ · ще N» до плану дня і лінія накопичених витрат від 06:00 до
@@ -10,7 +11,7 @@
  * Last validated: 2026-10-09
  * Status: Active
  */
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { STORAGE_KEYS, formatNumberUk } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
@@ -57,21 +58,21 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
       formatNumberUk(amount, { maximumFractionDigits: 0 }),
       balanceHidden,
     );
-  // ponytail: «зараз» фіксується на монтуванні хаба; тік раз на хвилину
-  // додати, якщо лінія має повзти, поки екран відкритий.
-  const [mountedAt] = useState(() => Date.now());
+  // Refresh the clock each minute and when the browser resumes.
+  // The line must not clip new transactions to the original mount hour.
+  const nowMs = useMinuteNow();
   const view = useMemo(() => {
     void storageBump;
     const snap = readSnapshot();
     if (!snap) return null;
-    const { hour, minute } = getKyivDateParts(mountedAt);
+    const { hour, minute } = getKyivDateParts(nowMs);
     const nowMinute = hour * 60 + minute;
     return {
       ...snap,
       nowLabel: `${pad(hour)}:${pad(minute)}`,
       line: buildSpendLine(snap.todayPoints, nowMinute, snap.dayPlan),
     };
-  }, [storageBump, mountedAt]);
+  }, [storageBump, nowMs]);
 
   if (!view) return null;
   const left = view.dayPlan === null ? null : view.dayPlan - view.todaySpent;

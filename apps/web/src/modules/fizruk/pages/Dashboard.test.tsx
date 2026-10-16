@@ -29,7 +29,8 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import type { ComponentProps } from "react";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import { formatKyivNominativeDate } from "@shared/lib/time/greeting";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -40,6 +41,10 @@ import { AuthProvider } from "../../../core/auth/AuthContext";
 import { server } from "../../../test/msw/server";
 
 import { Dashboard } from "./Dashboard";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../lib/sqliteReader";
 
 const mockNavigate = vi.fn();
 // Типізовано САМИМ пропсовим типом сторінки, а не виведено з літерала:
@@ -77,6 +82,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  clearFizrukSqliteCache();
   vi.useRealTimers();
   vi.clearAllMocks();
 });
@@ -99,6 +105,43 @@ function renderDashboard(
 }
 
 describe("Dashboard — guest, no data (real hooks + real children)", () => {
+  it("drops the old week's workout count without editing workouts", async () => {
+    vi.setSystemTime(new Date("2026-10-18T12:00:00Z"));
+    __setFizrukSqliteCacheForTests({
+      workouts: [
+        {
+          id: "w",
+          startedAt: "2026-10-18T09:00:00Z",
+          endedAt: "2026-10-18T10:00:00Z",
+          items: [],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+        },
+      ],
+    });
+    renderDashboard();
+    const kicker = await screen.findByText(
+      new RegExp(`${formatKyivNominativeDate()}.*1 тренування`),
+    );
+    act(() => {
+      vi.setSystemTime(new Date("2026-10-19T08:00:00Z"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(kicker).not.toHaveTextContent("1 тренування");
+  });
+  it("refreshes the date after waking on the next Kyiv day", async () => {
+    renderDashboard();
+    expect(
+      await screen.findByText(formatKyivNominativeDate()),
+    ).toBeInTheDocument();
+    act(() => {
+      vi.setSystemTime(new Date("2026-06-05T09:00:00+03:00"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(screen.getByText(formatKyivNominativeDate())).toBeInTheDocument();
+  });
   it("renders the real HeroCard empty state with the date+streak kicker", async () => {
     renderDashboard();
 
