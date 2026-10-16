@@ -61,3 +61,7 @@ Canonical bridge/writers і відправлена outbox-черга перед 
 `pnpm --filter @sergeant/db-schema build` — exit0: локальний dist не експортував уже наявний у source `markOutboxSuccessBatch`. CI вже збирає пакет окремо; source пакета не змінений. Dev servers перезапущені `--force` з окремим Vite cacheDir для main. Ранні помилки fixtures/DTO/маршрутів, HMR та interrupted прогонів не є доказами; остаточні replay й whole-package вище замінюють їх. Архіви `before-header-*` / `before-routine-parent-*` збережені, не зараховуються як фінальний green.
 
 Це перерахунок за вже доставленими даними й чинними lifecycle-подіями, без нового server polling/realtime/AI-запиту. Chromium з QA API fixtures не доводить physical-iPhone, реальний банківський ingest чи production cloud sync. Full monorepo/native `pnpm check` не заявляється зеленим замість web evidence; native заморожений власником. Дані не мігрують і не видаляються; відкат — revert PR.
+
+## PR
+
+Draft [#1516](https://github.com/SkOrDs-02/sergeant/pull/1516), гілка `claude/fix-cross-module-freshness`; base main2d7ae0773, остаточний web d25627a97. Джерела після повного пакета не змінені; публікаційні коміти лише docs. Початковий CI мав `check`/Critical-flow E2E IN_PROGRESS; остаточний статус читати з найновішого head, не з раннього прогону.
