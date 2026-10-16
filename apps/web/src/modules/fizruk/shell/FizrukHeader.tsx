@@ -7,6 +7,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderHubButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -39,13 +40,8 @@ function backLabelFor(page: FizrukPage): string {
   switch (page) {
     case "atlas":
       return "Моє тіло";
-    // PR-Z7: каталог і шаблони приєднані до `exercise`. Раніше на їх місці
-    // стояв коментар, що вони лишаються осторонь через власну стрілку
-    // `WorkoutsHeader` — але та стрілка малювалась ОДНОЧАСНО з парою
-    // «Назад»/«На хаб» із цієї ж шапки, тобто намір «не дублювати» код не
-    // виконував: на екрані було три виходи замість одного. Тепер вихід
-    // один і живе тут, а `WorkoutsHeader` свою стрілку на маршрутних
-    // екранах не малює (`section` != undefined).
+    // Контекстна стрілка одна, у шапці. Окрема «На хаб» виходить із
+    // модуля незалежно від історії; це інша дія, а не друга стрілка назад.
     case "exercise":
     case "catalog":
     case "templates":
@@ -107,13 +103,11 @@ function ContextualBackButton({
 export function FizrukHeader({
   page,
   onBackToHub,
+  onGoToHub,
   onContextualBack,
 }: FizrukHeaderProps) {
-  // Один вихід на підсторінку, і він завжди тут. До PR-Z7 набір був
-  // вужчий (atlas / exercise / measurements), тож на `catalog`,
-  // `templates` і `history` шапка малювала пару «Назад» + «На хаб», а
-  // сторінка згори докладала власну стрілку — два-три різні виходи поруч;
-  // на `programs` при цьому не було жодного.
+  // Контекстний back не замінює прямий вихід на хаб: history-back може
+  // вести на іншу вкладку модуля, а людина має бачити обидва призначення.
   const showContextualBack =
     page === "atlas" ||
     page === "exercise" ||
@@ -123,10 +117,6 @@ export function FizrukHeader({
     page === "history" ||
     page === "programs";
 
-  // Module-level settings drawer was dropped per user request — all
-  // Fizruk settings (backup, reminders, data reset) now live in the
-  // Hub-wide Settings screen. The header no longer owns a gear icon,
-  // so the right slot is left empty.
   let left: React.ReactNode = null;
   if (showContextualBack) {
     left = (
@@ -136,11 +126,7 @@ export function FizrukHeader({
       />
     );
   } else if (typeof onBackToHub === "function") {
-    left = (
-      <div className="flex items-center gap-1">
-        <ModuleHeaderBackButton onClick={onBackToHub} />
-      </div>
-    );
+    left = <ModuleHeaderBackButton onClick={onBackToHub} />;
   } else {
     left = null;
   }
@@ -148,7 +134,14 @@ export function FizrukHeader({
   return (
     <ModuleHeader
       module={showContextualBack ? undefined : "fizruk"}
-      left={left}
+      left={
+        left || onGoToHub ? (
+          <div className="flex items-center gap-1">
+            {left}
+            {onGoToHub && <ModuleHeaderHubButton onClick={onGoToHub} />}
+          </div>
+        ) : null
+      }
       title={titleFor(page)}
       subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
       subtitleShort={

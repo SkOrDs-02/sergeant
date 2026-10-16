@@ -232,7 +232,9 @@ export default function FizrukApp({
                 activeProgram={activeProgram}
                 onBackToHub={onBackToHub}
                 onGoToHub={onGoToHub}
-                onContextualBack={() => navigate(contextualBackTarget)}
+                onContextualBack={() =>
+                  navigate(contextualBackTarget, { back: true })
+                }
               />
             )
           }

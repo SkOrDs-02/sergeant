@@ -5,6 +5,7 @@
 import { memo, useEffect, useId, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { FinanceItemHeading } from "../FinanceItemHeading";
 import { Input } from "@shared/components/ui/Input";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
@@ -177,9 +178,11 @@ function GoalBudgetCardComponent({
     <>
       {CelebrationComponent}
       <Card
+        as="article"
+        aria-label={budget.name}
         prominence="ghost"
-        padding="md"
-        className="border-b border-line rounded-none"
+        padding="none"
+        className="border-t border-line rounded-none py-4"
       >
         {isEditing ? (
           <div className="space-y-2">
@@ -245,31 +248,33 @@ function GoalBudgetCardComponent({
           </div>
         ) : (
           <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-style-body font-semibold">
-                {budget.name}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-style-caption text-muted">
-                  {showBalance ? (
-                    <>
-                      <Money amount={saved} /> /{" "}
-                      <Money amount={budget.targetAmount} />
-                    </>
-                  ) : (
-                    "••••"
-                  )}
-                </span>
-                <button
+            <FinanceItemHeading
+              title={budget.name}
+              actions={
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
                   onClick={onBeginEdit}
-                  className="text-subtle hover:text-text transition-colors"
                   aria-label="Редагувати ціль"
                 >
                   <Icon name="edit" size="md" aria-hidden />
-                </button>
-              </div>
-            </div>
+                </Button>
+              }
+              value={
+                showBalance ? (
+                  <>
+                    <Money amount={saved} />{" "}
+                    <span className="text-style-caption font-medium text-muted">
+                      / <Money amount={budget.targetAmount} />
+                    </span>
+                  </>
+                ) : (
+                  "••••"
+                )
+              }
+            />
             <div className="h-2 bg-bg rounded-[3px] overflow-hidden">
               <div
                 className="h-full rounded-[3px] bg-success transition-[width,background-color] duration-slower"
@@ -281,7 +286,7 @@ function GoalBudgetCardComponent({
                 {monthlyLabel}
               </div>
             )}
-            <div className="text-style-caption text-subtle mt-0.5">
+            <div className="text-style-caption text-muted mt-2">
               {pct}% ·{" "}
               {daysLeft !== null
                 ? daysLeft > 0
@@ -290,7 +295,7 @@ function GoalBudgetCardComponent({
                 : "Без дедлайну"}
             </div>
             {hasBreakdown && (
-              <div className="text-style-caption text-subtle mt-0.5">
+              <div className="text-style-caption text-muted mt-3 border-l border-line pl-3">
                 {showBalance ? (
                   <>
                     з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}

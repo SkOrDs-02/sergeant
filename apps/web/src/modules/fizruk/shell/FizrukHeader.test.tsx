@@ -42,19 +42,22 @@ describe("FizrukHeader", () => {
     expect(onBackToHub).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps one back action beside the assistant", () => {
+  it("keeps a direct hub exit beside the history back action", () => {
     const onBackToHub = vi.fn();
+    const onGoToHub = vi.fn();
     render(
       <FizrukHeader
         page="dashboard"
         onContextualBack={vi.fn()}
         onBackToHub={onBackToHub}
-        onGoToHub={vi.fn()}
+        onGoToHub={onGoToHub}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     expect(onBackToHub).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("button", { name: "На хаб" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
+    expect(onGoToHub).toHaveBeenCalledTimes(1);
+    expect(onBackToHub).toHaveBeenCalledTimes(1);
     expect(
       screen.getByRole("button", { name: "Відкрити Сержанта" }),
     ).toBeInTheDocument();
@@ -86,25 +89,27 @@ describe("FizrukHeader", () => {
     ["history", "Назад: Огляд"],
     ["programs", "Назад: Огляд"],
   ] as const)(
-    "на '%s' дає РІВНО один вихід — контекстний back «%s»",
+    "на '%s' зберігає контекстний back «%s» і прямий вихід на хаб",
     (page, label) => {
       const onContextualBack = vi.fn();
+      const onGoToHub = vi.fn();
       render(
         <FizrukHeader
           page={page}
           onContextualBack={onContextualBack}
           onBackToHub={vi.fn()}
-          onGoToHub={vi.fn()}
+          onGoToHub={onGoToHub}
         />,
       );
 
       fireEvent.click(screen.getByRole("button", { name: label }));
       expect(onContextualBack).toHaveBeenCalledTimes(1);
 
-      // Головне тут — саме ці два рядки: `onBackToHub`/`onGoToHub` передані,
-      // і до правки шапка малювала б обидві кнопки поруч зі стрілкою сторінки.
+      // Одна контекстна стрілка й окрема дія, яка завжди виходить із модуля.
       expect(screen.queryByRole("button", { name: "Назад" })).toBeNull();
-      expect(screen.queryByRole("button", { name: "На хаб" })).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
+      expect(onGoToHub).toHaveBeenCalledTimes(1);
+      expect(onContextualBack).toHaveBeenCalledTimes(1);
     },
   );
 

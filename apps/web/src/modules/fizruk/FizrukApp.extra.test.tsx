@@ -341,7 +341,9 @@ describe("FizrukApp (extra) — contextual back navigation", () => {
       fireEvent.click(
         screen.getByRole("button", { name: `Назад: ${backLabel}` }),
       );
-      expect(navigateMock).toHaveBeenCalledWith(expectedTarget);
+      expect(navigateMock).toHaveBeenCalledWith(expectedTarget, {
+        back: true,
+      });
     },
   );
 });
