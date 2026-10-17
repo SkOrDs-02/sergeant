@@ -8,16 +8,21 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HubMainContent, type HubMainContentProps } from "./HubMainContent";
 
-function renderWithClient(ui: ReactElement) {
+function renderWithClient(ui: ReactElement, initialEntry = "/") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
-  );
+  return render(ui, {
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      </MemoryRouter>
+    ),
+  });
 }
 
 vi.mock("../hub/HubDashboard", () => ({
@@ -56,7 +61,15 @@ vi.mock("../hub/HubSettingsPage", () => ({
 }));
 
 vi.mock("../profile/ProfilePage", () => ({
-  ProfilePage: () => <section data-testid="profile-page" />,
+  ProfilePage: ({
+    scrollContainer,
+  }: {
+    scrollContainer: HTMLElement | null;
+  }) => (
+    <section data-testid="profile-page">
+      {scrollContainer ? "has scroll container" : "no scroll container"}
+    </section>
+  ),
 }));
 
 // Реальний банер читає `useLocalUserId` → `useAuth`, а цей набір рендерить
@@ -208,6 +221,20 @@ describe("HubMainContent iOS install banner", () => {
       );
     },
   );
+
+  it("передає Профілю контейнер і не перебиває ціль секції відновленням позиції вкладки", async () => {
+    const { rerender } = renderWithClient(
+      <HubMainContent {...props()} />,
+      "/?tab=profile#profile-memory",
+    );
+    const host = screen.getByTestId("scroll-container");
+    host.scrollTo = vi.fn();
+    rerender(<HubMainContent {...props({ hubView: "profile" })} />);
+    expect(await screen.findByTestId("profile-page")).toHaveTextContent(
+      "has scroll container",
+    );
+    expect(host.scrollTo).not.toHaveBeenCalled();
+  });
 
   it("invalidates hub dashboard queries when pull-to-refresh fires", async () => {
     renderWithClient(<HubMainContent {...props()} />);

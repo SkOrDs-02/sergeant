@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ContentGroup, ContentRow } from "@shared/components/ui/ContentGroup";
 import { meApi, type UserPreferences } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
 import { useOptionalHubShell } from "../app/HubShellContext";
+import { PROFILE_SECTION_HASHES } from "../profile/profileSectionNavigation";
 import { LegalLinks } from "../legal/LegalLinks";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import {
@@ -78,8 +85,14 @@ export function PrivacySection() {
   const [loadFailure, setLoadFailure] = useState<PreferenceLoadFailure | null>(
     null,
   );
-  const [savingPreference, setSavingPreference] =
-    useState<PreferenceKey | null>(null);
+  const [savingPreferences, setSavingPreferences] = useState<
+    Partial<Record<PreferenceKey, boolean>>
+  >({});
+  // Різні згоди незалежні. Одну згоду не записуємо двічі паралельно:
+  // порядок відповідей не гарантує порядок фактичних записів сервера.
+  const pendingPreferences = useRef(new Set<PreferenceKey>());
+  const preferenceWriteQueue = useRef(Promise.resolve());
+  const analyticsChoiceVersion = useRef(0);
   // Локальна згода на аналітику — для гостя (див. гілку `loadFailure ===
   // "auth"` нижче): сервера в нього немає, а рішення живе на пристрої.
   const localAnalyticsConsent = useSyncExternalStore(
@@ -125,11 +138,16 @@ export function PrivacySection() {
   useEffect(() => loadPreferences(), [loadPreferences]);
 
   const updatePreference = async (key: PreferenceKey, checked: boolean) => {
+    if (pendingPreferences.current.has(key)) return;
+    const mayHydrateAnalytics = !pendingPreferences.current.has("analytics");
+    pendingPreferences.current.add(key);
+    if (key === "analytics") analyticsChoiceVersion.current += 1;
+    const analyticsVersion = analyticsChoiceVersion.current;
     setPreferencesError(null);
     setLoadFailure(null);
-    setSavingPreference(key);
-    const previous = preferences;
-    setPreferences({ ...previous, [key]: checked });
+    setSavingPreferences((current) => ({ ...current, [key]: true }));
+    const previous = preferences[key];
+    setPreferences((current) => ({ ...current, [key]: checked }));
     if (key === "analytics") {
       // Оптимістично, ще ДО мережевого round trip (CodeRabbit PR #627):
       // dismiss між кліком і відповіддю сервера має вже враховувати новий
@@ -137,26 +155,44 @@ export function PrivacySection() {
       setAnalyticsConsent(checked);
     }
     try {
-      const next = await meApi.updatePreferences({ [key]: checked });
-      setPreferences(next);
+      // Сервер читає й перезаписує весь рядок налаштувань. Оптимістичні
+      // зміни незалежні, але PATCH мають іти послідовно, щоб не втратити їх.
+      const write = preferenceWriteQueue.current.then(() =>
+        meApi.updatePreferences({ [key]: checked }),
+      );
+      preferenceWriteQueue.current = write.then(
+        () => undefined,
+        () => undefined,
+      );
+      const next = await write;
+      setPreferences((current) => ({ ...current, [key]: next[key] }));
       setPreferencesLoaded(true);
       if (key === "analytics") {
         // Явний вибір людини на цьому пристрої — фіксуємо як рішення.
         setAnalyticsConsent(next.analytics);
-      } else {
+      } else if (
+        mayHydrateAnalytics &&
+        analyticsVersion === analyticsChoiceVersion.current &&
+        !pendingPreferences.current.has("analytics")
+      ) {
         // Інший тумблер (aiMemory, healthDataConsent…) — не відповідь про
         // аналітику: лише синхронізуємо кеш із сервером, не записуючи
         // «рішення» на пристрої (інакше банер згоди мовчки зникав би).
         hydrateAnalyticsConsent(next.analytics);
+        setPreferences((current) => ({
+          ...current,
+          analytics: next.analytics,
+        }));
       }
     } catch {
-      setPreferences(previous);
+      setPreferences((current) => ({ ...current, [key]: previous }));
       if (key === "analytics") {
-        setAnalyticsConsent(previous.analytics);
+        setAnalyticsConsent(previous);
       }
       setPreferencesError("Не вдалося зберегти налаштування. Спробуй ще раз.");
     } finally {
-      setSavingPreference(null);
+      pendingPreferences.current.delete(key);
+      setSavingPreferences((current) => ({ ...current, [key]: false }));
     }
   };
 
@@ -177,11 +213,12 @@ export function PrivacySection() {
             <ToggleRow
               label="Аналітика продукту"
               description={
-                savingPreference === "analytics"
+                savingPreferences.analytics
                   ? "Зберігаю…"
                   : "Допомагає бачити, де інтерфейс незручний або ламається."
               }
               checked={preferences.analytics}
+              disabled={savingPreferences.analytics === true}
               onChange={(checked) =>
                 void updatePreference("analytics", checked)
               }
@@ -189,11 +226,12 @@ export function PrivacySection() {
             <ToggleRow
               label="Памʼять для Сержанта"
               description={
-                savingPreference === "aiMemory"
+                savingPreferences.aiMemory
                   ? "Зберігаю…"
                   : "Дозволяє Сержанту памʼятати корисні факти між сесіями, щоб відповіді були точнішими. Вимкнення не видаляє вже збережене."
               }
               checked={preferences.aiMemory}
+              disabled={savingPreferences.aiMemory === true}
               onChange={(checked) => void updatePreference("aiMemory", checked)}
             />
             {/* Рішення власника 2026-09-29 (вузький гейт, GDPR Art. 9): це
@@ -209,11 +247,12 @@ export function PrivacySection() {
             <ToggleRow
               label="Дані про здоровʼя для Сержанта"
               description={
-                savingPreference === "healthDataConsent"
+                savingPreferences.healthDataConsent
                   ? "Зберігаю…"
                   : "Дозволяє Сержанту бачити й запамʼятовувати тренування, вагу, самопочуття та харчування: у чаті, повідомленнях дня, тижневих звітах і при аналізі фото страв. Без згоди він цього не бачить і скаже, що потрібен дозвіл; фінанси й звички працюють як завжди. Вимкнення не видаляє вже збережене."
               }
               checked={preferences.healthDataConsent}
+              disabled={savingPreferences.healthDataConsent === true}
               onChange={(checked) =>
                 void updatePreference("healthDataConsent", checked)
               }
@@ -299,7 +338,11 @@ export function PrivacySection() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => shell.ui.setHubView("profile")}
+                onClick={() =>
+                  shell.ui.setHubView("profile", {
+                    hash: PROFILE_SECTION_HASHES.memory,
+                  })
+                }
               >
                 Відкрити Профіль → Памʼять
               </Button>
@@ -318,15 +361,19 @@ export function PrivacySection() {
             <ContentRow className="flex flex-col items-start gap-1">
               <p className="text-style-body text-subtle leading-relaxed">
                 Видалити акаунт разом з усіма даними можна в Профілі, у розділі
-                «Небезпечна зона».
+                «Видалення акаунта».
               </p>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => shell.ui.setHubView("profile")}
+                onClick={() =>
+                  shell.ui.setHubView("profile", {
+                    hash: PROFILE_SECTION_HASHES["account-deletion"],
+                  })
+                }
               >
-                Відкрити Профіль → Небезпечна зона
+                Відкрити Профіль → Видалення акаунта
               </Button>
             </ContentRow>
           </ContentGroup>

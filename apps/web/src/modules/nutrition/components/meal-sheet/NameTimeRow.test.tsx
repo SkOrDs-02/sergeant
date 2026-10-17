@@ -127,78 +127,43 @@ describe("NameTimeRow", () => {
     expect(setTime).toHaveBeenCalledWith("09:30");
   });
 
-  it("applies parsed voice meal fields and clears the form error", () => {
-    vi.mocked(parseMealSpeech).mockReturnValue({
+  it.each([
+    {
       name: "Омлет",
       kcal: 249.6,
       protein: 30.4,
       grams: null,
-      raw: "омлет 250 ккал",
-    });
-    const setForm = vi.fn();
-    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "mic" }));
-
-    const update = setForm.mock.calls[0]?.[0] as (
-      form: MealFormState,
-    ) => MealFormState;
-    expect(update(makeForm({ err: "old error" }))).toMatchObject({
-      name: "Омлет",
-      kcal: "249.6",
-      protein_g: "30.4",
-      err: "",
-    });
-  });
-
-  /**
-   * Порція, сказана голосом, мусить кудись потрапити.
-   *
-   * `parseMealSpeech` повертає `grams`, підказка Whisper поруч із кнопкою
-   * прямо вчить їх називати — а `MealFormState` поля для них не має: тут
-   * РУЧНИЙ запис, де ккал абсолютні для страви, не на 100 г. Доти число
-   * просто зникало. Назва — єдине поле, здатне його понести.
-   */
-  it("сказана порція йде в назву, а не зникає", () => {
-    vi.mocked(parseMealSpeech).mockReturnValue({
+      expectedName: "Омлет",
+    },
+    {
       name: "Гречка",
       kcal: 180,
       protein: null,
       grams: 200,
-      raw: "гречка двісті грам сто вісімдесят калорій",
-    });
-    const setForm = vi.fn();
-    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "mic" }));
-
-    const update = setForm.mock.calls[0]?.[0] as (
-      form: MealFormState,
-    ) => MealFormState;
-    expect(update(makeForm())).toMatchObject({
-      name: "Гречка 200 г",
-      kcal: "180",
-    });
-  });
-
-  it("без порції назва лишається чистою", () => {
-    vi.mocked(parseMealSpeech).mockReturnValue({
-      name: "Омлет",
-      kcal: 250,
-      protein: null,
-      grams: null,
-      raw: "омлет 250 ккал",
-    });
-    const setForm = vi.fn();
-    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "mic" }));
-
-    const update = setForm.mock.calls[0]?.[0] as (
-      form: MealFormState,
-    ) => MealFormState;
-    expect(update(makeForm()).name).toBe("Омлет");
-  });
+      expectedName: "Гречка 200 г",
+    },
+  ])(
+    "routes spoken fields through the canonical setters: $expectedName",
+    ({ name, kcal, protein, grams, expectedName }) => {
+      vi.mocked(parseMealSpeech).mockReturnValue({
+        name,
+        kcal,
+        protein,
+        grams,
+        raw: "meal",
+      });
+      const setters = { name: vi.fn(), kcal: vi.fn(), protein_g: vi.fn() };
+      const field = (key: keyof MealFormState) =>
+        setters[key as keyof typeof setters];
+      render(<NameTimeRow form={makeForm()} field={field} setForm={vi.fn()} />);
+      fireEvent.click(screen.getByRole("button", { name: "mic" }));
+      expect(setters.name).toHaveBeenCalledWith(expectedName);
+      expect(setters.kcal).toHaveBeenCalledWith(String(kcal));
+      if (protein != null)
+        expect(setters.protein_g).toHaveBeenCalledWith(String(protein));
+      else expect(setters.protein_g).not.toHaveBeenCalled();
+    },
+  );
 
   it("ignores unparsed voice transcripts and records voice errors", () => {
     vi.mocked(parseMealSpeech).mockReturnValue(null);

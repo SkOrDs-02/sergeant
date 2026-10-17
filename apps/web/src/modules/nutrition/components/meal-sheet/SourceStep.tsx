@@ -16,6 +16,7 @@ import { SourceTabs, type SourceTabId } from "./SourceTabs";
 interface SourceStepProps {
   packageRequest?: number;
   initialSourceChosen?: boolean;
+  singleMealOnly?: boolean;
   yesterdayMeals: readonly Meal[];
   onCopyYesterday?: (() => void) | undefined;
   sourceTab: SourceTabId;
@@ -34,6 +35,7 @@ interface SourceStepProps {
 export function SourceStep({
   packageRequest = 0,
   initialSourceChosen = false,
+  singleMealOnly = false,
   yesterdayMeals,
   onCopyYesterday,
   sourceTab,
@@ -71,6 +73,7 @@ export function SourceStep({
           setChooserOpen(true);
         }}
         onChange={choose}
+        sources={singleMealOnly ? ["search", "scan", "manual"] : undefined}
       />
 
       {visited.includes("search") && (
@@ -92,7 +95,12 @@ export function SourceStep({
 
       {visited.includes("scan") && (
         <div hidden={chooserOpen || sourceTab !== "scan"}>
-          <BarcodeSection {...barcode} />
+          <BarcodeSection
+            {...barcode}
+            onUsePhotoForBarcode={
+              singleMealOnly ? undefined : barcode.onUsePhotoForBarcode
+            }
+          />
         </div>
       )}
 

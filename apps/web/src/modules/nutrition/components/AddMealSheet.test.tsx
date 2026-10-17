@@ -425,15 +425,6 @@ vi.mock("./meal-sheet/mealFormUtils", async (importOriginal) => {
   };
 });
 
-vi.mock("../lib/mealTypes", () => ({
-  MEAL_TYPES: [
-    { id: "breakfast", label: "Сніданок" },
-    { id: "lunch", label: "Обід" },
-    { id: "dinner", label: "Вечеря" },
-    { id: "snack", label: "Перекус" },
-  ],
-}));
-
 vi.mock("../lib/foodDb/foodDb", () => ({
   ensureSeedFoods: vi.fn(() => Promise.resolve()),
   upsertFood: vi.fn(() => Promise.resolve({ ok: true })),
@@ -1126,11 +1117,8 @@ describe("AddMealSheet — photo step", () => {
   });
 
   it("applying a photo result advances to fill and saves with photoAI semantics", async () => {
-    // Note: `mealFormUtils` is mocked above so `emptyForm` always returns
-    // empty macro strings regardless of the applied macros — mirrors the
-    // "AI couldn't read macros from the photo" case, so saving routes
-    // through the empty-macro confirm step (see the dedicated describe
-    // block below for that flow's own coverage).
+    // Реальний photoResultToForm переносить прочитані КБЖВ у форму.
+    // Підтвердження порожньої калорійності перевіряється окремими кейсами.
     const onSave = vi.fn();
     renderSheet({ onSave, initialStep: "photo" });
     fireEvent.click(screen.getByTestId("apply-photo"));
@@ -1138,13 +1126,13 @@ describe("AddMealSheet — photo step", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );
-    const dialog = await screen.findByRole("alertdialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       name: "Борщ",
       source: "photo",
       macroSource: "photoAI",
+      macros: { kcal: 250, protein_g: 10, fat_g: 5, carbs_g: 30 },
     });
     // Оригінал фото їде разом зі стравою — з нього host зробить мініатюру.
     expect(onSave.mock.calls[0]![1]).toBeInstanceOf(File);
@@ -1155,7 +1143,7 @@ describe("AddMealSheet — photo step", () => {
     const onSave = vi.fn();
     renderSheet({ onSave, initialStep: "photo" });
     fireEvent.click(screen.getByTestId("apply-photo-multi"));
-    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );
@@ -1211,12 +1199,9 @@ describe("AddMealSheet — photo step", () => {
     // (це затирало б обраний людиною тип прийому й час), а чистить рівно
     // засіяні джерелом поля.
     const onSave = vi.fn();
-    const { emptyForm } = await import("./meal-sheet/mealFormUtils");
     renderSheet({ onSave, initialStep: "photo", mealTemplates: [] });
     fireEvent.click(screen.getByTestId("apply-photo"));
-    expect(vi.mocked(emptyForm)).toHaveBeenLastCalledWith(
-      expect.objectContaining({ dishName: "Борщ" }),
-    );
+    expect(screen.getByTestId("name-input")).toHaveValue("Борщ");
     fireEvent.click(
       screen.getByRole("button", { name: "Назад до вибору способу" }),
     );

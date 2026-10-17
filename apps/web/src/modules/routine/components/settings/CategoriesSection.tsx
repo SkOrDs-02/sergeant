@@ -17,6 +17,8 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  loadRoutineState,
+  restoreCategory,
 } from "../../lib/routineStorage";
 import { HabitGlyphPicker } from "../HabitGlyphPicker";
 import type { CategoryDraft, RoutineState } from "../../lib/types";
@@ -243,13 +245,12 @@ export function CategoriesSection({
                           variant="ghost"
                           className="rounded-lg text-subtle hover:text-danger"
                           onClick={() => {
-                            // Soft-delete with undo: snapshot the full
-                            // routine state, apply the deletion, then offer
-                            // a 5 s undo toast that restores the snapshot.
-                            // No `ConfirmDialog` — per the unified undo
-                            // policy (`AGENTS.md`) confirmation dialogs are
-                            // reserved for non-reversible flows.
-                            const snapshot = routine;
+                            const habitIds = routine.habits
+                              .filter((habit) => habit.categoryId === c.id)
+                              .map((habit) => habit.id);
+                            const index = routine.categories.findIndex(
+                              (category) => category.id === c.id,
+                            );
                             const wasEditing = editingCatId === c.id;
                             setRoutine((s) => deleteCategory(s, c.id));
                             if (wasEditing) {
@@ -262,7 +263,15 @@ export function CategoriesSection({
                                 : "";
                             showUndoToast(toast, {
                               msg: `Видалено категорію «${c.name}»${detail}`,
-                              onUndo: () => setRoutine(snapshot),
+                              onUndo: () =>
+                                setRoutine(
+                                  restoreCategory(
+                                    loadRoutineState(),
+                                    c,
+                                    habitIds,
+                                    index,
+                                  ),
+                                ),
                             });
                           }}
                           aria-label={`Видалити ${c.name}`}

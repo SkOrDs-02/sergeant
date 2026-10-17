@@ -20,6 +20,7 @@ interface SourceTabsProps {
   expanded?: boolean;
   onChange: (id: SourceTabId) => void;
   onExpand?: () => void;
+  sources?: readonly SourceTabId[] | undefined;
 }
 
 export function SourceTabs({
@@ -27,6 +28,7 @@ export function SourceTabs({
   expanded = true,
   onChange,
   onExpand,
+  sources = Object.keys(SOURCE_LABELS) as SourceTabId[],
 }: SourceTabsProps) {
   const navRef = useRef<HTMLElement>(null);
   const changeRef = useRef<HTMLButtonElement>(null);
@@ -60,7 +62,7 @@ export function SourceTabs({
       aria-label="Спосіб додавання їжі"
       className="mb-4 flex flex-col divide-y divide-line border-y border-line"
     >
-      {(Object.keys(SOURCE_LABELS) as SourceTabId[]).map((id) => (
+      {sources.map((id) => (
         <button
           key={id}
           type="button"

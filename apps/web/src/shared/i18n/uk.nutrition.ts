@@ -19,6 +19,7 @@ export const nutritionPageMessages = {
   },
   // Крок «Звідки страва?» і чекбокс повтору в `AddMealSheet`.
   addMeal: {
+    editTitle: "Редагувати прийом їжі",
     copyYesterday: "Як учора",
     rememberForRepeat: "Запамʼятати для повтору",
     rememberForRepeatHint:
@@ -416,6 +417,12 @@ export const nutritionPageMessages = {
     addCta: "+ Додати позицію з каталогу",
     kcalUnit: "ккал",
     gramsUnit: "г",
+    editCta: "Змінити позиції",
+    total: "Разом",
+    saveHint: "Кожна позиція збережеться окремим записом у журналі.",
+    protein: "Білки",
+    fat: "Жири",
+    carbs: "Вуглеводи",
   },
 
   /** Додавання позиції у фото-список через каталог продуктів. */

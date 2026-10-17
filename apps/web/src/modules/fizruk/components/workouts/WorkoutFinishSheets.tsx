@@ -10,7 +10,7 @@ import {
   isCrossModulePromptSuppressed,
   recordCrossModulePromptAccepted,
 } from "@shared/lib/modules/crossModulePrompt";
-import { formatDurShort } from "@sergeant/fizruk-domain";
+import { formatDurShort, type WorkoutWellbeing } from "@sergeant/fizruk-domain";
 import {
   BODY_ATLAS_MUSCLE_IDS,
   INJURY_SITE_LABELS_UK,
@@ -68,16 +68,15 @@ function InjuryChip({
 interface WorkoutFinishSheetsProps {
   finishFlash: FinishFlashState | null;
   setFinishFlash: Dispatch<SetStateAction<FinishFlashState | null>>;
-  updateWorkout: (
-    id: string,
-    patch: { wellbeing?: { energy?: number; mood?: number } },
-  ) => void;
+  workoutWellbeing?: WorkoutWellbeing | null | undefined;
+  updateWorkout: (id: string, patch: { wellbeing?: WorkoutWellbeing }) => void;
   onDone?: (() => void) | undefined;
 }
 
 export function WorkoutFinishSheets({
   finishFlash,
   setFinishFlash,
+  workoutWellbeing,
   updateWorkout,
   onDone,
 }: WorkoutFinishSheetsProps) {
@@ -235,6 +234,7 @@ export function WorkoutFinishSheets({
                   if (wid && (finishFlash.energy || finishFlash.mood)) {
                     updateWorkout(wid, {
                       wellbeing: {
+                        ...workoutWellbeing,
                         ...(finishFlash.energy != null
                           ? { energy: finishFlash.energy }
                           : {}),

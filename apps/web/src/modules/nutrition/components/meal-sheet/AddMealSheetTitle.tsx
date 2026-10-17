@@ -12,6 +12,7 @@
  * Last validated: 2026-08-24
  */
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 
 const STEP_TITLES: Record<string, string> = {
   source: "Додати прийом їжі",
@@ -23,6 +24,7 @@ const FALLBACK_TITLE = "Додати прийом їжі";
 
 interface AddMealSheetTitleProps {
   step: string;
+  editing?: boolean;
   /** Стрілка «назад» показується лише там, де backtrack справді можливий. */
   canBacktrack: boolean;
   onBacktrack: () => void;
@@ -30,6 +32,7 @@ interface AddMealSheetTitleProps {
 
 export function AddMealSheetTitle({
   step,
+  editing = false,
   canBacktrack,
   onBacktrack,
 }: AddMealSheetTitleProps) {
@@ -45,7 +48,11 @@ export function AddMealSheetTitle({
           <Icon name="chevron-left" size="lg" />
         </button>
       )}
-      <span className="truncate">{STEP_TITLES[step] ?? FALLBACK_TITLE}</span>
+      <span className="truncate">
+        {editing
+          ? messages.nutrition.addMeal.editTitle
+          : (STEP_TITLES[step] ?? FALLBACK_TITLE)}
+      </span>
     </div>
   );
 }

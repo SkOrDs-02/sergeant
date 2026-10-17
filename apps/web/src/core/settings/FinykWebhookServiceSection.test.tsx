@@ -22,7 +22,11 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  QueryObserver,
+} from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import type { MonoSyncState } from "@shared/api";
 import { finykKeys } from "@shared/lib/api/queryKeys";
@@ -136,13 +140,113 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
     for (const name of [
       "Синхронізувати історію",
       "Оновити дані",
-      "Очистити кеш операцій",
+      "Перезавантажити операції",
     ]) {
       expect(within(bank).getByRole("button", { name })).toBeVisible();
     }
     expect(
       screen.queryByRole("heading", { name: "Сервіс" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("recovery refetches active date buckets, resets old buckets and describes retained history", async () => {
+    syncStateMock.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 1,
+    });
+    const { queryClient } = renderSection();
+    const currentKey = finykKeys.monoWebhookTransactions(
+      "2026-10-01|2026-11-01",
+    );
+    const historicalKey = finykKeys.monoWebhookTransactions(
+      "2026-09-01|2026-10-01",
+    );
+    queryClient.setQueryData(historicalKey, ["old"]);
+    const fetchCurrent = vi.fn().mockResolvedValue(["fresh"]);
+    const observer = new QueryObserver(queryClient, {
+      queryKey: currentKey,
+      queryFn: fetchCurrent,
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    try {
+      await waitFor(() => expect(fetchCurrent).toHaveBeenCalledTimes(1));
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /Очистити кеш операцій|Перезавантажити операції/,
+        }),
+      );
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("із сервера Sergeant");
+      expect(dialog).toHaveTextContent(
+        "Збережена історія, ручні записи та категорії залишаться",
+      );
+      expect(dialog).not.toHaveTextContent("зникнуть");
+      fireEvent.click(
+        within(dialog).getByRole("button", {
+          name: /^(Очистити|Перезавантажити)$/,
+        }),
+      );
+      await waitFor(() => expect(fetchCurrent).toHaveBeenCalledTimes(2));
+      expect(queryClient.getQueryData(historicalKey)).toBeUndefined();
+      expect(queryClient.getQueryData(currentKey)).toEqual(["fresh"]);
+    } finally {
+      unsubscribe();
+      queryClient.clear();
+    }
+  });
+
+  it("shows recovery progress and an actionable error when an active list cannot reload", async () => {
+    syncStateMock.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 1,
+    });
+    const { queryClient } = renderSection();
+    let rejectReload!: (error: Error) => void;
+    const fetchCurrent = vi
+      .fn()
+      .mockResolvedValueOnce(["saved"])
+      .mockImplementation(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectReload = reject;
+          }),
+      );
+    const observer = new QueryObserver(queryClient, {
+      queryKey: finykKeys.monoWebhookTransactions("2026-10-01|2026-11-01"),
+      queryFn: fetchCurrent,
+      retry: false,
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    try {
+      await waitFor(() => expect(fetchCurrent).toHaveBeenCalledTimes(1));
+      fireEvent.click(
+        await screen.findByRole("button", { name: "Перезавантажити операції" }),
+      );
+      fireEvent.click(
+        within(await screen.findByRole("alertdialog")).getByRole("button", {
+          name: "Перезавантажити",
+        }),
+      );
+      expect(
+        await screen.findByRole("button", { name: "Перезавантажую…" }),
+      ).toBeDisabled();
+      rejectReload(new Error("network down"));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Не вдалося перезавантажити операції Monobank. Спробуй ще раз.",
+      );
+      expect(
+        screen.getByRole("button", { name: "Перезавантажити операції" }),
+      ).toBeEnabled();
+    } finally {
+      unsubscribe();
+      queryClient.clear();
+    }
   });
 
   // F2 (review): `syncStateQuery.isError` alone doesn't distinguish a

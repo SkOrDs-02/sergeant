@@ -176,7 +176,7 @@ describe("FinykSection extra branches", () => {
   it("cancels the cache-clear confirm modal without clearing anything", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+    fireEvent.click(await screen.findByText("Перезавантажити операції"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Скасувати"));
@@ -319,20 +319,16 @@ describe("FinykSection extra branches", () => {
 
   // ── Cache clear confirm executes clearTxCache ─────────────────────────────
 
-  it("clears tx cache when the confirm modal Очистити button is clicked", async () => {
+  it("reloads transactions without removing local storage when confirmed", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+    fireEvent.click(await screen.findByText("Перезавантажити операції"));
 
     const dialog = await screen.findByRole("alertdialog");
-    fireEvent.click(within(dialog).getByText("Очистити"));
+    fireEvent.click(within(dialog).getByText("Перезавантажити"));
 
-    await waitFor(() =>
-      expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
-    );
-    expect(removeFinykStorageItem).toHaveBeenCalledWith(
-      "finyk_tx_cache_last_good",
-    );
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(removeFinykStorageItem).not.toHaveBeenCalled();
   });
 
   // ── Connect: auth error with no server message falls back to default ───────

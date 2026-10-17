@@ -14,7 +14,13 @@ import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
-import { createTag, deleteTag, updateTag } from "../../lib/routineStorage";
+import {
+  createTag,
+  deleteTag,
+  updateTag,
+  loadRoutineState,
+  restoreTag,
+} from "../../lib/routineStorage";
 import type { RoutineState } from "../../lib/types";
 
 export interface TagsSectionProps {
@@ -233,12 +239,12 @@ export function TagsSection({
                         variant="ghost"
                         className="rounded-lg text-subtle hover:text-danger"
                         onClick={() => {
-                          // Soft-delete with undo (see docs/design/UNDO-PATTERN.md):
-                          // snapshot the routine before applying the delete, then
-                          // surface a 5 s undo toast that restores the snapshot.
-                          // No ConfirmDialog — confirms are reserved for
-                          // non-reversible flows per the unified undo policy.
-                          const snapshot = routine;
+                          const habitIds = routine.habits
+                            .filter((habit) => habit.tagIds?.includes(t.id))
+                            .map((habit) => habit.id);
+                          const index = routine.tags.findIndex(
+                            (tag) => tag.id === t.id,
+                          );
                           const usageCount = routine.habits.filter((h) =>
                             (h.tagIds || []).includes(t.id),
                           ).length;
@@ -249,7 +255,15 @@ export function TagsSection({
                               : "";
                           showUndoToast(toast, {
                             msg: `Видалено тег «${t.name}»${detail}`,
-                            onUndo: () => setRoutine(snapshot),
+                            onUndo: () =>
+                              setRoutine(
+                                restoreTag(
+                                  loadRoutineState(),
+                                  t,
+                                  habitIds,
+                                  index,
+                                ),
+                              ),
                           });
                         }}
                         aria-label={`Видалити ${t.name}`}
