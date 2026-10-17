@@ -3882,6 +3882,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-16-navigation-finance-hierarchy.md"
     },
     {
+      "old_path": "docs/work/specs/audits/2026-10-16-user-journeys-and-copy.md",
+      "new_path": "docs/work/specs/audits/2026-10-16-user-journeys-and-copy.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-16-user-journeys-and-copy.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",
