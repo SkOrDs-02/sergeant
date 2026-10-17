@@ -501,6 +501,11 @@ export function Workouts({
         <WorkoutFinishSheets
           finishFlash={o.finishFlash}
           setFinishFlash={o.setFinishFlash}
+          workoutWellbeing={
+            o.workouts.find(
+              (workout) => workout.id === o.finishFlash?.workoutId,
+            )?.wellbeing
+          }
           updateWorkout={o.updateWorkout}
           onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
         />

@@ -5,6 +5,7 @@
 import { memo, useState } from "react";
 import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
 import { Money } from "@shared/components/ui/Money";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { fmtDate } from "../utils";
 import { getSubscriptionDueDate } from "../lib/upcomingSchedule";
 import { cn } from "@shared/lib/ui/cn";
@@ -69,7 +70,7 @@ function SubCardComponent({
   const { amount, currency } = getSubscriptionAmountMeta(sub, [
     ...transactions,
   ]);
-  const [now] = useState(Date.now);
+  const now = useKyivDayNow();
   const days = kyivCalendarDaysBetween(
     getSubscriptionDueDate(
       Number(sub.billingDay) || 1,

@@ -1155,7 +1155,7 @@ describe("AddMealSheet — photo step", () => {
     const onSave = vi.fn();
     renderSheet({ onSave, initialStep: "photo" });
     fireEvent.click(screen.getByTestId("apply-photo-multi"));
-    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );

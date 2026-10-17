@@ -13,7 +13,6 @@ import { isRetriableError } from "@shared/lib/api/queryClient";
 import { cn } from "@shared/lib/ui/cn";
 import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
 import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
-import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
 import { MonoTokenInlineForm } from "./MonoTokenInlineForm";
@@ -26,13 +25,13 @@ interface FinykWebhookServiceSectionProps {
 }
 
 const COPY = {
-  clearCacheTitle: "Очистити кеш?",
+  clearCacheTitle: "Перезавантажити операції?",
   disconnectTitle: "Вийти з Monobank?",
   clearCacheBody:
-    "Операції, збережені на цьому пристрої, зникнуть. Потім вони підтягнуться з Monobank знову.",
+    "Відкриті списки операцій знову завантажаться із сервера Sergeant. Збережена історія, ручні записи та категорії залишаться.",
   disconnectBody:
     "Автоматичне отримання операцій з Monobank вимкнеться. Щоб відновити, введи токен заново.",
-  clear: "Очистити",
+  clear: "Перезавантажити",
   exit: "Вийти",
   accounts: "рахунків",
   disconnect: "Відʼєднати",
@@ -41,14 +40,15 @@ const COPY = {
   connect: "Підключити Monobank",
   integrationTitle: "Monobank",
   serviceRefreshTitle: "Оновлення операцій",
-  serviceCacheTitle: "Локальні копії операцій",
+  serviceCacheTitle: "Відновлення списку операцій",
   serviceRefreshHelp:
     "Операції з Monobank приходять самі й оновлюються, коли ти повертаєшся у вкладку. Щоб перевірити просто зараз, натисни «Оновити дані».",
   serviceCacheHelp:
-    "Якщо список операцій виглядає дивно, очисти збережені операції й синхронізуй знову.",
+    "Якщо список виглядає застарілим, завантаж операції із сервера заново. Збережена історія залишиться доступною.",
   refreshing: "Оновлення…",
   refresh: "Оновити дані",
-  clearTransactions: "Очистити кеш операцій",
+  clearTransactions: "Перезавантажити операції",
+  reloading: "Перезавантажую…",
   // L-15: `GET /api/mono/sync-state` може впасти через мережу/5xx —
   // окремо від чесного "ще не підключено". Раніше обидва стани малювали
   // однакову форму вводу токена, тож юзер із живим підключенням бачив
@@ -90,6 +90,7 @@ export function FinykWebhookServiceSection({
   const [webhookConnecting, setWebhookConnecting] = useState(false);
   const [webhookError, setWebhookError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [reloading, setReloading] = useState(false);
 
   const syncStateQuery = useQuery<MonoSyncState>({
     queryKey: finykKeys.monoSyncState,
@@ -201,14 +202,25 @@ export function FinykWebhookServiceSection({
     }
   };
 
-  const clearTxCache = () => {
-    removeFinykStorageItem("finyk_tx_cache");
-    removeFinykStorageItem("finyk_tx_cache_last_good");
-    queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
-    queryClient.removeQueries({
-      queryKey: finykKeys.monoWebhookTransactions(),
-    });
-    queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState });
+  const clearTxCache = async () => {
+    if (reloading) return;
+    setReloading(true);
+    setWebhookError("");
+    try {
+      // Date-bucketed read caches only: preserve the SQLite mirror and
+      // user-authored records, and refetch every currently observed list.
+      await queryClient.resetQueries(
+        { queryKey: finykKeys.monoWebhookTransactionsPrefix },
+        { throwOnError: true },
+      );
+      await queryClient.invalidateQueries({
+        queryKey: hubKeys.preview("finyk"),
+      });
+    } catch {
+      setWebhookError(failedCopy("перезавантажити операції Monobank"));
+    } finally {
+      setReloading(false);
+    }
   };
 
   const refreshAllData = async () => {
@@ -239,7 +251,7 @@ export function FinykWebhookServiceSection({
         danger={confirmKind === "disconnect"}
         onCancel={() => setConfirmKind(null)}
         onConfirm={() => {
-          if (confirmKind === "cache") clearTxCache();
+          if (confirmKind === "cache") void clearTxCache();
           if (confirmKind === "disconnect") disconnectWebhook();
           setConfirmKind(null);
         }}
@@ -401,11 +413,11 @@ export function FinykWebhookServiceSection({
             </p>
             <Button
               variant="outline"
-              tone="danger"
               className="mt-3 w-full h-11"
               onClick={() => setConfirmKind("cache")}
+              disabled={reloading}
             >
-              {COPY.clearTransactions}
+              {reloading ? COPY.reloading : COPY.clearTransactions}
             </Button>
           </ContentRow>
         </ContentGroup>

@@ -560,12 +560,23 @@ export function useMonobankWebhook({
     setAuthError("");
   }, [queryClient]);
 
-  const clearTxCache = useCallback(() => {
-    queryClient.removeQueries({
-      queryKey: finykKeys.monoWebhookTransactions(),
-    });
-    queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+  const clearTxCache = useCallback(async () => {
     setError("");
+    try {
+      // Reset every date bucket and refetch active observers. Removing only
+      // the default "all" bucket misses real queries; removing active queries
+      // would also leave mounted readers without a replacement request.
+      // The SQLite mirror and user-authored records remain available offline.
+      await queryClient.resetQueries(
+        { queryKey: finykKeys.monoWebhookTransactionsPrefix },
+        { throwOnError: true },
+      );
+      await queryClient.invalidateQueries({
+        queryKey: hubKeys.preview("finyk"),
+      });
+    } catch {
+      setError(failedCopy("перезавантажити операції Monobank"));
+    }
   }, [queryClient]);
 
   return {

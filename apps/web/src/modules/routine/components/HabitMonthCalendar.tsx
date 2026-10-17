@@ -12,12 +12,15 @@ import {
   isFlexibleHabit,
   monthGrid,
   weekDoneCountExcludingDate,
+  type HabitSkip,
 } from "@sergeant/routine-domain";
 import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { anchoredTodayDate } from "../lib/dayAnchor";
 import { WEEKDAY_LABELS } from "../lib/routineConstants";
 import type { Habit } from "../lib/types";
 import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
+import { messages } from "@shared/i18n/uk";
+import { SKIP_REASON_LABELS } from "../lib/skipReasons";
 
 interface MonthCursor {
   y: number;
@@ -28,12 +31,14 @@ export interface HabitMonthCalendarProps {
   habit: Habit;
   completions: string[];
   todayKey: string;
+  skips?: Record<string, HabitSkip> | undefined;
 }
 
 export function HabitMonthCalendar({
   habit,
   completions,
   todayKey,
+  skips,
 }: HabitMonthCalendarProps) {
   // Device-local "current month" for the calendar cursor (ADR-0078,
   // cutover 2026-09-01 — consolidated page-audit § Theme 1 — 09 F3) so it
@@ -126,6 +131,8 @@ export function HabitMonthCalendar({
             weekDoneCount,
           });
           const done = completionSet.has(dk);
+          const skip = done ? undefined : skips?.[dk];
+          const missed = !done && !skip && scheduled && dk < todayKey;
           const isToday = dk === todayKey;
           return (
             <div
@@ -134,14 +141,26 @@ export function HabitMonthCalendar({
                 "aspect-square flex flex-col items-center justify-center text-style-label transition-colors",
                 done
                   ? "text-text font-bold border-b-2 border-chart-routine"
-                  : scheduled
-                    ? "text-muted"
-                    : // eslint-disable-next-line sergeant-design/no-opacity-on-text-token -- незапланований день: неактивна клітинка, WCAG 1.4.3 її не покриває (той самий виняток, під яким `HabitDetailSheet.tsx` стоїть в allowlist `eslint.web.js`)
-                      "text-subtle/50",
+                  : skip
+                    ? "text-muted border-2 border-muted"
+                    : missed
+                      ? "text-muted border-b-2 border-line"
+                      : scheduled
+                        ? "text-muted"
+                        : // eslint-disable-next-line sergeant-design/no-opacity-on-text-token -- незапланований день: неактивна клітинка, WCAG 1.4.3 її не покриває (той самий виняток, під яким `HabitDetailSheet.tsx` стоїть в allowlist `eslint.web.js`)
+                          "text-subtle/50",
                 isToday && "underline underline-offset-4",
               )}
               title={
-                done ? `${dk}: виконано` : scheduled ? `${dk}: заплановано` : dk
+                done
+                  ? `${dk}: виконано`
+                  : skip
+                    ? `${dk}: ${messages.routine.statsRange.stateSkipped}, ${SKIP_REASON_LABELS[skip.reason]}`
+                    : missed
+                      ? `${dk}: ${messages.routine.statsRange.stateMissed}`
+                      : scheduled
+                        ? `${dk}: заплановано`
+                        : dk
               }
             >
               {day}
@@ -149,10 +168,18 @@ export function HabitMonthCalendar({
           );
         })}
       </div>
-      <div className="flex items-center gap-3 mt-2 text-style-caption text-subtle">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-2 text-style-caption text-subtle">
         <span className="flex items-center gap-1">
           <span className="inline-block w-3 h-3 rounded-[3px] bg-chart-routine" />
           Виконано
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 rounded-[3px] border-2 border-muted" />
+          {messages.routine.streakCanvas.legendSkipTitle}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-3 h-3 border-b-2 border-line" />
+          {messages.routine.streakCanvas.legendGraceTitle}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block w-3 h-3 rounded-[3px] border border-muted" />

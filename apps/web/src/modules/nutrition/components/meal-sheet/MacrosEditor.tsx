@@ -43,6 +43,7 @@ interface MacrosEditorProps {
   pickedGrams: string;
   photoResult?: MealFormPhotoResult | null | undefined;
   hasPhotoMacros: boolean;
+  onUnlink?: () => void;
 }
 
 export function MacrosEditor({
@@ -54,6 +55,7 @@ export function MacrosEditor({
   pickedGrams,
   photoResult,
   hasPhotoMacros,
+  onUnlink,
 }: MacrosEditorProps) {
   // Guarded edit: when a food is linked from the DB, direct macro edits
   // used to silently drop the `foodId`. Now the first edit opens a
@@ -84,6 +86,7 @@ export function MacrosEditor({
     if (!pendingUnlink) return;
     const { key, value } = pendingUnlink;
     setPickedFood(null);
+    onUnlink?.();
     if (key && value !== null) field(key)(value);
     setPendingUnlink(null);
   };

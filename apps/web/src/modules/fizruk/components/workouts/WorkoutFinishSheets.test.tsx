@@ -18,6 +18,7 @@ import {
   WorkoutFinishSheets,
   type FinishFlashState,
 } from "./WorkoutFinishSheets";
+import type { Workout, WorkoutWellbeing } from "@sergeant/fizruk-domain";
 
 // Cross-module prompt helpers — default to not suppressed so the nudge shows.
 vi.mock("@shared/lib/modules/crossModulePrompt", () => ({
@@ -73,12 +74,14 @@ function renderSheets(
   flash: FinishFlashState | null,
   setFinishFlash = vi.fn(),
   updateWorkout = vi.fn(),
+  workoutWellbeing?: WorkoutWellbeing | null,
 ) {
   return render(
     <WorkoutFinishSheets
       finishFlash={flash}
       setFinishFlash={setFinishFlash}
       updateWorkout={updateWorkout}
+      workoutWellbeing={workoutWellbeing}
     />,
   );
 }
@@ -91,6 +94,41 @@ describe("WorkoutFinishSheets — null guard", () => {
 });
 
 describe("WorkoutFinishSheets — wellbeing step", () => {
+  it.each([
+    { sleep: 2, soreness: 3 },
+    { sleep: null, soreness: null },
+  ])(
+    "preserves readiness $sleep/$soreness while saving finish ratings",
+    (readiness) => {
+      let workout: Workout = {
+        id: "w-1",
+        startedAt: "2026-10-16T08:00:00.000Z",
+        endedAt: "2026-10-16T09:00:00.000Z",
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        wellbeing: { ...readiness, energy: 1, mood: 2 },
+      };
+      // Same shallow patch semantics as useWorkouts.updateWorkout: replacing
+      // wellbeing here would remove the readiness answers from the saved session.
+      const updateWorkout = vi.fn((id: string, patch: Partial<Workout>) => {
+        if (id === workout.id) workout = { ...workout, ...patch };
+      });
+      renderSheets(
+        makeFlash({ energy: 4, mood: 5 }),
+        vi.fn(),
+        updateWorkout,
+        workout.wellbeing,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+
+      expect(workout.wellbeing).toEqual({ ...readiness, energy: 4, mood: 5 });
+    },
+  );
+
   it("renders Самопочуття heading and rating buttons", () => {
     renderSheets(makeFlash({ step: "wellbeing" }));
     expect(screen.getByText("Самопочуття")).toBeInTheDocument();

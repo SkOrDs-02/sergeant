@@ -47,18 +47,21 @@ export interface CollapsibleSectionProps {
    */
   onOpenChange?: (open: boolean) => void;
   /**
-   * Лічильник запитів «покажи секцію» ззовні (діп-лінк з картки в іншому
-   * місці сторінки). Кожне ЗБІЛЬШЕННЯ розгортає секцію так само, як клік
-   * (стан пишеться в `storageKey`), і докручує до неї. Значення на монтуванні
-   * не діє: секція реагує лише на зміну.
+   * Лічильник або route key запиту «покажи секцію» ззовні. Кожна зміна
+   * розгортає секцію так само, як клік (стан пишеться в `storageKey`), і
+   * докручує до неї. На монтуванні діє лише з явним `revealOnMount`.
    */
-  openSignal?: number;
+  openSignal?: number | string | undefined;
+  /** Явна route-ціль має розкритися й при першому монтуванні. */
+  revealOnMount?: boolean;
   /**
    * Що показати після розгортання за `openSignal`: елемент усередині секції
    * (наприклад, рядки звіту), а не її верх. Фокус іде туди ж, тож елемент має
    * бути фокусованим програмно (`tabIndex={-1}`). Без значення — верх секції.
    */
   revealRef?: RefObject<HTMLElement | null>;
+  /** Власник app-scroller може обробити зовнішнє розкриття без document-скролу. */
+  onReveal?: (target: HTMLElement) => void;
   children?: ReactNode;
   className?: string;
 }
@@ -105,12 +108,16 @@ export function CollapsibleSection({
   collapsedSubtitle,
   onOpenChange,
   openSignal,
+  revealOnMount = false,
   revealRef,
+  onReveal,
   children,
   className,
 }: CollapsibleSectionProps) {
   const [open, setOpen] = useState<boolean>(
-    () => safeReadLS<boolean>(storageKey, defaultOpen) ?? defaultOpen,
+    () =>
+      (revealOnMount && openSignal !== undefined) ||
+      (safeReadLS<boolean>(storageKey, defaultOpen) ?? defaultOpen),
   );
   const sectionRef = useRef<HTMLElement>(null);
   // Вузол сітки. Несе дві ролі одночасно: з нього приходить `transitionend`
@@ -190,39 +197,47 @@ export function CollapsibleSection({
   // в ефекті дав би зайвий каскадний рендер. Побічні дії (сховище, скрол,
   // фокус) — у ефекті нижче.
   const [seenSignal, setSeenSignal] = useState(openSignal);
-  if (openSignal !== undefined && openSignal !== seenSignal) {
+  if (openSignal !== seenSignal) {
     setSeenSignal(openSignal);
-    if (!open) setOpen(true);
+    if (openSignal !== undefined && !open) setOpen(true);
   }
 
   // Після розгортання: записати стан як від кліку, дочекатись кінця переходу
   // (або діяти одразу, якщо секція вже була розгорнута), показати й
   // сфокусувати `revealRef`. Фокус — для скрінрідера: без нього «Відкрити» з
   // картки лишало б курсор на кнопці, яка вже нічого не показує.
-  const handledSignalRef = useRef(openSignal);
+  const handledSignalRef = useRef(revealOnMount ? undefined : openSignal);
   const wasOpenRef = useRef(open);
   useEffect(() => {
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = open;
-    if (openSignal === undefined || openSignal === handledSignalRef.current) {
+    if (openSignal === undefined) {
+      handledSignalRef.current = undefined;
+      return;
+    }
+    if (openSignal === handledSignalRef.current) {
       return;
     }
     handledSignalRef.current = openSignal;
     const reveal = () => {
       const target = revealRef?.current ?? sectionRef.current;
-      target?.scrollIntoView?.({
-        behavior: motionScrollBehavior(),
-        block: "nearest",
-      });
+      if (target && onReveal) {
+        onReveal(target);
+      } else {
+        target?.scrollIntoView?.({
+          behavior: motionScrollBehavior(),
+          block: "nearest",
+        });
+      }
       if (revealRef?.current) revealRef.current.focus({ preventScroll: true });
     };
+    safeWriteLS(storageKey, true);
     if (wasOpen) {
       reveal();
       return;
     }
-    safeWriteLS(storageKey, true);
     scrollWhenSettled(reveal);
-  }, [openSignal, open, revealRef, storageKey, scrollWhenSettled]);
+  }, [openSignal, open, revealRef, onReveal, storageKey, scrollWhenSettled]);
 
   return (
     <section ref={sectionRef} className={cn("space-y-2", className)}>

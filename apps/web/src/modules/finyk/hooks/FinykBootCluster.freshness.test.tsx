@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -82,8 +89,17 @@ function Hub() {
   return <HubSpendHero storageBump={bump} />;
 }
 function ScreenObserver() {
-  const { transactions } = useMonobankWebhook({ writeMirror: false });
-  return <output data-testid="bank-rows">{transactions.length}</output>;
+  const { transactions, clearTxCache } = useMonobankWebhook({
+    writeMirror: false,
+  });
+  return (
+    <>
+      <output data-testid="bank-rows">{transactions.length}</output>
+      <button onClick={() => void clearTxCache()}>
+        Reload bank operations
+      </button>
+    </>
+  );
 }
 function mountHub(withScreen = false) {
   return render(
@@ -208,6 +224,42 @@ describe("Hub bank freshness without mounting FinykApp", () => {
       ),
     ).toHaveLength(2);
   });
+  it("reloads active operations into the canonical mirror without deleting saved bank history or manual records", async () => {
+    const manualJson = JSON.stringify({
+      id: "manual-preserved",
+      amount: 42,
+      description: "Manual expense",
+    });
+    await runtime.db!.client.run(
+      "INSERT INTO finyk_manual_expenses (id, user_id, data_json) VALUES (?, ?, ?)",
+      ["manual-preserved", runtime.userId, manualJson],
+    );
+    mountHub(true);
+    await waitFor(() =>
+      expect(getCachedFinykMonoMirrorState().transactions).toHaveLength(2),
+    );
+    expect(requests).toBe(1);
+    bankRows = [bankTx("after-recovery", -1_000)];
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reload bank operations" }),
+    );
+    await waitFor(() =>
+      expect(
+        getCachedFinykMonoMirrorState().transactions.map((tx) => tx.id),
+      ).toContain("after-recovery"),
+    );
+    expect(requests).toBe(2);
+    expect(
+      getCachedFinykMonoMirrorState().transactions.map((tx) => tx.id),
+    ).toEqual(expect.arrayContaining(["cached", "new"]));
+    expect(
+      await runtime.db!.client.all(
+        "SELECT data_json, deleted_at FROM finyk_manual_expenses WHERE id = ?",
+        ["manual-preserved"],
+      ),
+    ).toEqual([{ data_json: manualJson, deleted_at: null }]);
+  });
+
   it("keeps the last local total when the bank endpoint is unavailable", async () => {
     server.use(
       http.get("*/api/v1/mono/transactions", () => {

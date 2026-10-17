@@ -1,4 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { readProfileSectionHash } from "../profile/profileSectionNavigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
@@ -106,6 +108,7 @@ export const HubMainContent = memo(function HubMainContent({
   inFtuxSession = false,
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
+  const location = useLocation();
 
   // Per-tab scroll persistence. Кожна hub-вкладка запамʼятовує свою
   // позицію скролу; при поверненні на вкладку її прокрутку відновлюємо
@@ -150,6 +153,12 @@ export const HubMainContent = memo(function HubMainContent({
   useEffect(() => {
     liveViewRef.current = hubView;
     if (prevHubViewRef.current !== null && prevHubViewRef.current !== hubView) {
+      // Явний підрозділ Профілю сам розгортає й показує ціль. Відновлення
+      // старої позиції вкладки не має перебивати цей перехід.
+      if (hubView === "profile" && readProfileSectionHash(location.hash)) {
+        prevHubViewRef.current = hubView;
+        return undefined;
+      }
       const el = scrollElRef.current;
       const saved = scrollPositionsRef.current.get(hubView) ?? 0;
       // Відкладаємо на два rAF, щоб контент нової вкладки встиг
@@ -170,7 +179,7 @@ export const HubMainContent = memo(function HubMainContent({
     }
     prevHubViewRef.current = hubView;
     return undefined;
-  }, [hubView]);
+  }, [hubView, location.hash]);
 
   // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches.
   useEffect(() => {
@@ -274,7 +283,7 @@ export const HubMainContent = memo(function HubMainContent({
               // переїхала б на рівень вище.
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
-                <ProfilePage />
+                <ProfilePage scrollContainer={scrollElement} />
                 <TabReadyProbe tab="profile" />
               </SuspenseWithMinDelay>
             </div>

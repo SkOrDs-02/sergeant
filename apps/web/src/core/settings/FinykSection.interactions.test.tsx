@@ -436,19 +436,15 @@ describe("FinykSection interactions", () => {
     await waitFor(() => expect(mockedDisconnect).toHaveBeenCalledTimes(1));
   });
 
-  it("clears the transaction cache through the confirm modal", async () => {
+  it("reloads transaction queries through the confirm modal without removing local storage", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+    fireEvent.click(await screen.findByText("Перезавантажити операції"));
 
     const dialog = await screen.findByRole("alertdialog");
-    fireEvent.click(within(dialog).getByText("Очистити"));
-    await waitFor(() =>
-      expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
-    );
-    expect(removeFinykStorageItem).toHaveBeenCalledWith(
-      "finyk_tx_cache_last_good",
-    );
+    fireEvent.click(within(dialog).getByText("Перезавантажити"));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(removeFinykStorageItem).not.toHaveBeenCalled();
   });
 
   it("refreshes all data on demand", async () => {
