@@ -611,13 +611,22 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   const shared = await createSyncSharedContext();
   const clock = createClockSkewMonitor({ report: reportClockSkew });
 
+  // The scheduler serializes ticks. Resolve a fresh handle for each drain,
+  // then keep all its receipts on that handle even after an account switch.
+  let drainedClient: SqliteMigrationClient | null = null;
+  const receiptClient = (): SqliteMigrationClient => {
+    if (!drainedClient) throw new Error("sync receipt without a drained batch");
+    return drainedClient;
+  };
+
   let pushedSincePull = false;
   return createSyncEngineWriterRuntime({
     pushDeps: {
       drain: async (options) => {
         const userId = await shared.resolveUserId();
         if (!userId) return [];
-        return shared.dbSchema.drainSyncOpOutbox(await shared.resolveClient(), {
+        drainedClient = await shared.resolveClient();
+        return shared.dbSchema.drainSyncOpOutbox(drainedClient, {
           ...options,
           userId,
           onQuarantine: shared.onOutboxQuarantine,
@@ -630,20 +639,14 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       },
       markSuccess: async (id) => {
         clock.noteOutcome(null);
-        return shared.dbSchema.markOutboxSuccess(
-          await shared.resolveClient(),
-          id,
-        );
+        return shared.dbSchema.markOutboxSuccess(receiptClient(), id);
       },
       markSuccessBatch: async (ids) => {
-        await shared.dbSchema.markOutboxSuccessBatch(
-          await shared.resolveClient(),
-          ids,
-        );
+        await shared.dbSchema.markOutboxSuccessBatch(receiptClient(), ids);
       },
       onBatchedSuccess: () => clock.noteOutcome(null),
       markRetry: async (id, plan) =>
-        shared.dbSchema.markOutboxRetry(await shared.resolveClient(), id, plan),
+        shared.dbSchema.markOutboxRetry(receiptClient(), id, plan),
       markRejected: async (id, reason, meta) => {
         clock.noteOutcome(reason);
         reportTerminalRejection(
@@ -652,11 +655,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
           meta,
           clock.isSkewed() ? { skewMs: clock.skewMs() } : undefined,
         );
-        return shared.dbSchema.markOutboxRejected(
-          await shared.resolveClient(),
-          id,
-          reason,
-        );
+        return shared.dbSchema.markOutboxRejected(receiptClient(), id, reason);
       },
       planRetry: shared.dbSchema.planRetry,
       now: () => new Date(),
