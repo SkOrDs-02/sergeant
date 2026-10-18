@@ -744,7 +744,8 @@ export const fizrukPageMessages = {
     // `/fizruk/history` тепер один і належить шапці модуля, тож рядок
     // лишався б підписом до кнопки, якої немає.
     emptyTitle: "Поки немає тренувань",
-    emptyDescription: "Заверши перше тренування, воно зʼявиться тут.",
+    emptyDescription: "Завершене тренування зʼявиться тут.",
+    startCta: "Почати тренування",
     endedBadge: "Завершене",
     activeBadge: "Активне",
     /**

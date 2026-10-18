@@ -9,6 +9,10 @@
  * Спредиться в `messages.nutrition` з `uk.ts`.
  */
 export const nutritionPageMessages = {
+  journalEmpty: {
+    title: "Поки немає записів",
+    description: "Додай перший прийом їжі. Калорії та КБЖВ порахуються тут.",
+  },
   // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): ті самі джерела,
   // що в кроці «Джерело страви» аркуша прийому.
   addSources: {

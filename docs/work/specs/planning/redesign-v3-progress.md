@@ -1,26 +1,27 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-17 by @codex (аудит шляхів, логіки та правдивості текстів; #1518 merged; #1519 draft OPEN; додаткова перевірка живучості даних; native заморожений власником). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-18 by @codex (#1519 merged; порожні стани опубліковано в draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522); прибирання підтвердженого застарілого коду лишається окремим наступним PR; native заморожений власником). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
 
-**Поточний зріз:** [draft #1519](https://github.com/SkOrDs-02/sergeant/pull/1519), `claude/fix-user-journeys-audit-ci`: CI baseline + SYNC-DUR-01–03. #1518 уже merged2026-10-17T21:45:14Z. Весь web на runtime `071732df0`:1383files/14178passed/5skipped/0failures,exit0; докази й межі в останньому розділі нижче. CI перевіряти на фактичному опублікованому head, не на попередньому зеленому4db7a9692. До мержу #1519 наступний PR не починати.
+**Поточний зріз:** #1519 merged 2026-10-18T08:21:53Z. Активний draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522), `claude/empty-states-refresh`: спільний web-канон порожніх станів і чотири реальні поверхні. Після його мержу окремим PR прибрати лише підтверджені знахідки застарілого коду з попереднього аудиту. Native не чіпати.
 
-| PR                | Гілка                                | GitHub PR                                                | Стан   | Позиції каталогу § 2                                          |
-| ----------------- | ------------------------------------ | -------------------------------------------------------- | ------ | ------------------------------------------------------------- |
-| PR0               | `claude/redesign-v3-pr0`             | #1494                                                    | merged | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                     |
-| PR1               | `claude/redesign-v3-pr1`             | #1495                                                    | merged | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36   |
-| PR2               | `claude/redesign-v3-pr2`             | #1497                                                    | merged | 3, 11, 15, 16; частково 26-29                                 |
-| PR3               | `claude/redesign-v3-pr3`             | #1498                                                    | merged | 8 частково, 9, 13, 24-29 по Фініку                            |
-| PR3 · фікси       | `codex/redesign-v3-pr3-review-fixes` | #1501                                                    | merged | Виправлення регресій ревʼю PR3                                |
-| PR4               | `claude/redesign-v3-pr4`             | #1503                                                    | merged | 9, 24-29, 31 по Їжі; частково 8                               |
-| PR4b              | `claude/redesign-v3-pr4b`            | #1504                                                    | merged | 7 (форма швидкої дії, поправка 2026-10-10)                    |
-| PR5               | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged | 14, 31; 8, 9, 24–29 по Рутині                                 |
-| PR6               | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged | 8, 9, 24–29 по Фізруку                                        |
-| PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                         |
-| Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37       |
-| Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів |
+| PR                | Гілка                                | GitHub PR                                                | Стан   | Позиції каталогу § 2                                               |
+| ----------------- | ------------------------------------ | -------------------------------------------------------- | ------ | ------------------------------------------------------------------ |
+| PR0               | `claude/redesign-v3-pr0`             | #1494                                                    | merged | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                          |
+| PR1               | `claude/redesign-v3-pr1`             | #1495                                                    | merged | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36        |
+| PR2               | `claude/redesign-v3-pr2`             | #1497                                                    | merged | 3, 11, 15, 16; частково 26-29                                      |
+| PR3               | `claude/redesign-v3-pr3`             | #1498                                                    | merged | 8 частково, 9, 13, 24-29 по Фініку                                 |
+| PR3 · фікси       | `codex/redesign-v3-pr3-review-fixes` | #1501                                                    | merged | Виправлення регресій ревʼю PR3                                     |
+| PR4               | `claude/redesign-v3-pr4`             | #1503                                                    | merged | 9, 24-29, 31 по Їжі; частково 8                                    |
+| PR4b              | `claude/redesign-v3-pr4b`            | #1504                                                    | merged | 7 (форма швидкої дії, поправка 2026-10-10)                         |
+| PR5               | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged | 14, 31; 8, 9, 24–29 по Рутині                                      |
+| PR6               | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged | 8, 9, 24–29 по Фізруку                                             |
+| PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                              |
+| Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37            |
+| Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів      |
+| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | active | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -1286,3 +1287,17 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 **Наступній сесії:** спершу `gh pr view 1519 --json state,mergedAt,headRefOid,statusCheckRollup`. Якщо OPEN — лише CI й виправлення червоного, нічого нового. Якщо MERGED — позначити merged; наступна робота тільки за новим запитом власника. SYNC-DUR-01–03 реалізовані й локально прийняті; незавершеної імплементації немає. Новий actual-head CI після push не підміняти зеленим run39072521577 на попередньому metadata-head4db7a9692.
 
 **Фактично опубліковано sync-фікси:** #1519 має title `fix(web): захистити дані під час синхронізації`, фінальний body за шаблоном із14178passed; connector update і push exit0. Source/docs publication head `cbc158e0d9b2107a951c1df931915c807a165c20` перевірений через gh: OPEN, mergedAtnull, drafttrue, MERGEABLE; збігається з локальним HEAD. На ньому вже стартував новий CI check/Critical-flow E2E/commitlint/migration down drill, тож green старого4db не видається за новий. SHA256 усіх web source/tests після push0, дерево чисте. Цей запис додається наступним docs-only комітом, без змін перевіреного runtime071732df0; після його push gh знов звіряє actualhead/CI. Джерело вже на remote, повторно імплементувати чи створювати новий PR не треба. Перший крок після /clear — стан #1519 і CI його поточного head.
+
+## Follow-up · 2026-10-18: спільний канон порожніх станів
+
+**Гілка:** `claude/empty-states-refresh`, перед публікацією перебазована без конфліктів на актуальний `origin/main` `096ca332a`. **PR:** draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522). Це погоджене доповнення після завершених PR0–PR7, без нової позиції каталогу § 2. Native заморожений і не змінюється.
+
+**Що зроблено.** `ModuleEmptyState` став first-run патерном із компактною статичною лінійною ілюстрацією, видимим коротким описом і максимум однією дією. Звичайний `EmptyState` лишився тихим станом для фільтрів і підсекцій. Finyk `/finyk/transactions` пояснює два джерела операцій і не дублює глобальну кнопку «Додати». Fizruk `/fizruk/history` веде кнопкою у канонічний Workouts home, а не запускає сесію на місці. Routine `/routine/habits` ховає пошук і підказку сортування, доки звичок немає; «Створити звичку» відкриває чинний `HabitQuickCreateDialog`. Nutrition `/nutrition/log` пояснює, де зʼявляться калорії та КБЖВ, і зберігає чинний зовнішній сценарій додавання. Нові користувацькі рядки без довгого тире, риторичних питань і обіцянок.
+
+**Канони.** Оновлено `docs/design/design/empty-states.md`: три рівні, межа між first-run і порожнім фільтром, одна дія, правила копії та доступності. Зміни маршруту дії зафіксовано в `docs/product/modules/fizruk.md` і `routine.md`. Storybook-приклади приведено до реального API.
+
+**Верифікація на поточному diff.** Після rebase на `096ca332a` focused Vitest для shared/Finyk/Fizruk/Routine/Nutrition: 8 файлів, 83 passed, exit 0. `pnpm --filter @sergeant/web typecheck`: exit 0. Web ESLint: exit 0, лише 2 наявні warnings `fizruk_plan_template_v1` поза diff. `pnpm lint:design-conventions`: exit 0, 19 тестів. `pnpm lint:ui-canon`: exit 0, нових порушень 0. Focused Prettier check: exit 0 до rebase; перебазування не змінило diff. `pnpm --filter @sergeant/web build`: exit 0. Фінальний root `pnpm check`: exit 0; test/typecheck 35/35 tasks, web 1385 файлів і 14206 passed / 5 skipped, server 446 файлів і 6638 passed / 5 skipped / 11 todo, production build 4/4 tasks, E2E seed boundary passed. Перед повтором root gate `pnpm docs:gen-inventory` додав у похідний інвентар нову `finyk-analytics-v3.md`, яка прийшла з актуального main; runtime це не змінює. Browser: `VITE_E2E_SEED=true`, empty world, Chromium, 390×844, `/finyk/transactions`, `/fizruk/history`, `/routine/habits`, `/nutrition/log`, світла й темна теми; післякадри в `/workspace/artifacts/empty-states-refresh/after/`.
+
+**Відхилення й межі.** Каталожні рішення redesign v3 не переглядались. Дані, синхронізація, формули, сховища та mobile не змінені. Підтверджені знахідки мертвого або застарілого коду свідомо не змішуються з цим UI PR; власник попросив прибрати їх окремо після мержу цього PR.
+
+**Наступній сесії:** перевірити стан останнього draft PR цієї гілки. Якщо OPEN, лише CI та виправлення червоного. Якщо MERGED, позначити merged і взяти окремий cleanup застарілого коду; не додавати до нього нові візуальні рішення без запиту власника.
