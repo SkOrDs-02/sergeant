@@ -47,7 +47,15 @@ export function ipPrefix(ip: string | null | undefined): string | null {
   if (!ip) return null;
   const trimmed = ip.trim();
   if (!trimmed) return null;
-  if (trimmed.includes("/")) return trimmed;
+  if (trimmed.includes("/")) {
+    // Збережений до канонізації IPv6 /64 (`2a02:2f0e:005d:001a::/64`) має
+    // збігатися з живим (`2a02:2f0e:5d:1a::/64`), інакше хибний drift.
+    const [address = "", prefixLength] = trimmed.split("/", 2);
+    if (prefixLength === "64" && isIP(address) === 6) {
+      return `${expandIpv6Prefix(address)}/64`;
+    }
+    return trimmed;
+  }
   const family = isIP(trimmed);
   if (family === 4) {
     const parts = trimmed.split(".");
@@ -58,6 +66,18 @@ export function ipPrefix(ip: string | null | undefined): string | null {
     return `${expandIpv6Prefix(trimmed)}/64`;
   }
   return null;
+}
+
+/**
+ * Канонічна форма однієї hex-групи IPv6: нижній регістр, без нулів
+ * попереду (`005d` -> `5d`, `0000` -> `0`). Better Auth зберігає
+ * `session.ipAddress` розгорнутим (`2a02:2f0e:005d:001a:0000:...`), а
+ * Vercel/Express віддає скорочений (`2a02:2f0e:5d:1a::1`): без канонізації
+ * той самий /64 давав різні префікси і хибний session-drift.
+ */
+function canonicalGroup(group: string): string {
+  const n = Number.parseInt(group || "0", 16);
+  return Number.isNaN(n) ? group.toLowerCase() : n.toString(16);
 }
 
 /**
@@ -73,10 +93,7 @@ function expandIpv6Prefix(addr: string): string {
   const tailParts = tail ? tail.split(":") : [];
   const fillCount = Math.max(0, 8 - headParts.length - tailParts.length);
   const allGroups = [...headParts, ...Array(fillCount).fill("0"), ...tailParts];
-  const prefix = allGroups
-    .slice(0, 4)
-    .map((g) => g || "0")
-    .join(":");
+  const prefix = allGroups.slice(0, 4).map(canonicalGroup).join(":");
   return `${prefix}::`;
 }
 

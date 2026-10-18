@@ -15,6 +15,7 @@ import {
   intFromEnv,
   founderIdsFromEnv,
   optionalStrictBoolFromEnv,
+  optionalSecretFromEnv,
   optionalUrl,
   strictBoolFromEnv,
   stringWithDefault,
@@ -34,6 +35,15 @@ const envSchema = z.object({
   PORT: coerceInt.default(3000),
 
   TRUST_PROXY: z.string().optional(),
+
+  /**
+   * Спільний секрет підпису IP клієнта між Vercel Edge Middleware
+   * (`apps/web/middleware.ts`) і сервером (rel-03). Опційний: без нього
+   * (на будь-якому з боків) `x-sergeant-client-ip` ігнорується і IP береться
+   * з `req.ip`, як і раніше. Порожній рядок = не задано. Мін. 32 символи
+   * (`openssl rand -hex 32`). Той самий рядок — у Vercel web-проєкті.
+   */
+  SERGEANT_CLIENT_IP_SECRET: optionalSecretFromEnv(32),
 
   REQUEST_TIMEOUT_MS: intFromEnv(120_000),
 

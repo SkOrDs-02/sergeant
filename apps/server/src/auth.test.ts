@@ -670,28 +670,47 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     }
   });
 
-  it("advanced відсутній, коли BETTER_AUTH_CROSS_SITE_COOKIES=0 навіть на https base URL", async () => {
+  it("cookie-опції advanced відсутні, коли BETTER_AUTH_CROSS_SITE_COOKIES=0 навіть на https base URL", async () => {
     vi.resetModules();
     vi.stubEnv("BETTER_AUTH_URL", "https://api.example.com");
     vi.stubEnv("BETTER_AUTH_CROSS_SITE_COOKIES", "0");
     try {
       const { auth: authOptOut } = await import("./auth.js");
       const options = (
-        authOptOut as unknown as { options: { advanced?: unknown } }
+        authOptOut as unknown as {
+          options: { advanced?: { useSecureCookies?: boolean } };
+        }
       ).options;
-      expect(options.advanced).toBeUndefined();
+      expect(options.advanced?.useSecureCookies).toBeUndefined();
     } finally {
       vi.unstubAllEnvs();
       vi.resetModules();
     }
   });
 
-  it("advanced відсутній для http (локальний dev) base URL", () => {
+  it("cookie-опції advanced відсутні для http (локальний dev) base URL", () => {
     // Default test env (no BETTER_AUTH_URL стаб) резолвиться у
     // `http://localhost:${PORT}` через getBaseURL() — не https.
-    const options = (auth as unknown as { options: { advanced?: unknown } })
-      .options;
-    expect(options.advanced).toBeUndefined();
+    const options = (
+      auth as unknown as {
+        options: { advanced?: { useSecureCookies?: boolean } };
+      }
+    ).options;
+    expect(options.advanced?.useSecureCookies).toBeUndefined();
+  });
+
+  it("rel-03: Better Auth бере IP спершу з перевіреного x-sergeant-resolved-client-ip", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          advanced?: { ipAddress?: { ipAddressHeaders?: string[] } };
+        };
+      }
+    ).options;
+    expect(options.advanced?.ipAddress?.ipAddressHeaders).toEqual([
+      "x-sergeant-resolved-client-ip",
+      "x-forwarded-for",
+    ]);
   });
 
   /**

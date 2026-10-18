@@ -91,6 +91,10 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "x-signature",
   "x-webhook-signature",
   "x-hmac-signature",
+  // rel-03: HMAC підписаного IP клієнта (Vercel Edge -> API). Без часової
+  // мітки, тож витік пари `x-sergeant-client-ip` + підпис дозволив би
+  // видавати себе за чужий IP (вичерпати його бакет входу, обійти ліміти).
+  "x-sergeant-client-ip-sig",
   // OTP / magic-link / verification flows. Pre-2026-05-13 these leaked
   // through `event.request.data` once we ever set up a form-state context
   // capture; today `request.data` is wholesale-deleted, but adding the

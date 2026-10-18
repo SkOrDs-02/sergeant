@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-10-12 by docs:gen-today. **Next review:** 2026-10-19.
+> **Last touched:** 2026-10-18 by docs:gen-today. **Next review:** 2026-10-25.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -18,7 +18,7 @@ Sorted: `blocked` items first, далі явні `agent-ready`, потім за 
 
 Документи, чия `Next review:` дата минула. Або bump date після швидкого re-read, або переведи в `Status: Closed`/`Archived`.
 
-- [`work/specs/audits/2026-09-11-founder-ux-review-round2.md`](./work/specs/audits/2026-09-11-founder-ux-review-round2.md) — Розбір зауважень власника, хвиля 2 (після Codex) _(due 2026-10-11, **1d overdue**)_
+- [`work/specs/audits/2026-09-11-founder-ux-review-round2.md`](./work/specs/audits/2026-09-11-founder-ux-review-round2.md) — Розбір зауважень власника, хвиля 2 (після Codex) _(due 2026-10-11, **7d overdue**)_
 
 ## WIP load — 🟢 healthy
 
