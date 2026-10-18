@@ -548,11 +548,11 @@ export function persistNutritionShoppingList(
 // contains it.
 // ─────────────────────────────────────────────
 
-function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
+export function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
   return { id: r.id, title: r.title, dataJson: JSON.stringify(r) };
 }
 
-function peekNutritionDualWriteState(): NutritionDualWriteState | null {
+export function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   try {
     const cache = getCachedNutritionSqliteState();
     const prefs = getPrefsOverlay() ?? cache.prefs ?? defaultNutritionPrefs();
