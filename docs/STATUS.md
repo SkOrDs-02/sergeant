@@ -52,9 +52,9 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластерів (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits _(Активні спеки)_
 - [`work/specs/planning/redesign-v3-progress.md`](./work/specs/planning/redesign-v3-progress.md) — Редизайн v3: журнал виконання — Active _(Активні спеки)_
 - [`work/specs/audits/2026-10-16-navigation-finance-hierarchy.md`](./work/specs/audits/2026-10-16-navigation-finance-hierarchy.md) — Вихід із Фізрука та ієрархія фінансових сутностей — Active _(Активні спеки)_
-- [`work/specs/audits/2026-10-16-user-journeys-and-copy.md`](./work/specs/audits/2026-10-16-user-journeys-and-copy.md) — Аудит користувацьких шляхів, ієрархії та правдивості текстів — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
