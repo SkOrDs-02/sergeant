@@ -24,6 +24,8 @@ export const routinePageMessages = {
   },
   newHabit: "Нова звичка",
   emptyHabits: "Звичок ще немає",
+  emptyHabitsDescription: "Створи одну звичку, щоб почати серію.",
+  createHabit: "Створити звичку",
   emptyCategories: "Категорій ще немає",
   noteAction: "Нотатка",
   reorderHint: "Перетягни звичку або обери «Вище» чи «Нижче» в її меню.",
@@ -76,7 +78,7 @@ export const routinePageMessages = {
   // Налаштувань 2026-08-03 (`components/RoutineHabitsPanel.tsx`).
   habitsTab: {
     label: "Звички",
-    intro: "Нова звичка додається рядком в Огляді.",
+    intro: "Тут можна створювати, впорядковувати й архівувати звички.",
     // `{name}` підставляється на місці виклику через `fillName()` —
     // каталог лишається plain-string (обмеження `MessageCatalog`).
     deleteArchivedTitle: "Видалити «{name}» назавжди?",

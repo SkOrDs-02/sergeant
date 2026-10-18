@@ -1,13 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { EmptyState } from "./EmptyState";
+import { EmptyState, ModuleEmptyState } from "./EmptyState";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 
 /**
  * `EmptyState` — універсальний placeholder для секцій без контенту.
- * Унормовує іконку/ілюстрацію, заголовок, опис, CTA та опціональні hint
- * + example-preview. Респектує `prefers-reduced-motion: reduce` (анімації
- * вмикаються тільки під `motion-safe:`).
+ * Унормовує заголовок, доступний опис і CTA. `<ModuleEmptyState>` додає
+ * компактну статичну ілюстрацію та показує опис як наступний крок.
  *
  * **Tier-и (див. `docs/design/design/empty-states.md`):**
  *
@@ -24,16 +23,15 @@ import { Button } from "./Button";
  *   `aria-atomic="true"`, тому SR озвучує `title` + `description`
  *   одним повідомленням, коли empty-state зʼявляється динамічно
  *   (наприклад, після фільтра).
- * - Іконки та ілюстрації стоять у `aria-hidden`-обгортках — SR не
+ * - Ілюстрації стоять у `aria-hidden`-обгортках, тому SR не
  *   дублює декоративну графіку у live-region-озвучці.
  * - `action`-кнопка фокус НЕ перехоплює на mount; коли користувач
  *   до неї tab-неться, `<Button>` показує власний `focus-visible:ring`
  *   (Hard Rule #14). Для icon-only action-у обовʼязково передай
  *   `aria-label`.
  *
- * **API-нюанс:** якщо передати і `icon`, і `illustration` —
- * `illustration` виграє (стекати дві провідні візуалізації виглядає
- * шумно). Використовуй `icon` для compact, `illustration` для full-bleed.
+ * Звичайний `<EmptyState>` лишається стриманим для фільтрів і підсекцій.
+ * Модульну ілюстрацію не збирають вручну: для цього є обгортка.
  */
 const meta: Meta<typeof EmptyState> = {
   title: "Shared / EmptyState",
@@ -59,11 +57,11 @@ export default meta;
 
 type Story = StoryObj<typeof EmptyState>;
 
-/** Default — без іконки/ілюстрації, тільки текст + опис. */
+/** Default: лише видимий факт; опис залишається доступним скрінрідеру. */
 export const Default: Story = {};
 
 /**
- * **Tier 1 / hero** — з іконкою + CTA. Типова форма у списках, де
+ * **Tier 1 / hero** з CTA. Типова форма у списках, де
  * користувач ще не бачить рядків. Фокус НЕ перехоплюємо на mount;
  * `<Button>` сам забезпечить `focus-visible:ring`, коли користувач
  * tab-неться.
@@ -158,45 +156,42 @@ export const CompactNoAction: Story = {
  * Використовуй для full-screen empty-станів у `/finyk`.
  */
 export const ModuleFinyk: Story = {
-  args: {
-    title: "Жодної операції",
-    description: "Підключи Mono або додай витрату вручну, щоб почати облік.",
-    action: (
-      <Button variant="finyk" size="md">
-        Підключити Mono
-      </Button>
-    ),
-  },
+  render: () => (
+    <ModuleEmptyState
+      module="finyk"
+      title="Операцій ще немає"
+      description="Додай витрату вручну або підключи Monobank."
+    />
+  ),
 };
 
 /**
  * **Module accent — Fizruk.** Illustration-варіант для `/fizruk` (тренування).
  */
 export const ModuleFizruk: Story = {
-  args: {
-    title: "Як прогресують мої тренування?",
-    description: "Запиши перше тренування, і побачиш ріст у цифрах.",
-    action: (
-      <Button variant="fizruk" size="md">
-        Почати тренування
-      </Button>
-    ),
-  },
+  render: () => (
+    <ModuleEmptyState
+      module="fizruk"
+      variant="compact"
+      description="Завершене тренування зʼявиться тут."
+      onAction={() => undefined}
+      actionLabel="Почати тренування"
+    />
+  ),
 };
 
 /**
  * **Module accent — Routine.** Illustration-варіант для `/routine` (звички).
  */
 export const ModuleRoutine: Story = {
-  args: {
-    title: "Що насправді стало звичкою?",
-    description: "Відстежуй щоденні дії, серія днів покаже правду.",
-    action: (
-      <Button variant="routine" size="md">
-        Створити звичку
-      </Button>
-    ),
-  },
+  render: () => (
+    <ModuleEmptyState
+      module="routine"
+      description="Створи одну звичку, щоб почати серію."
+      onAction={() => undefined}
+      actionLabel="Створити звичку"
+    />
+  ),
 };
 
 /**
@@ -204,15 +199,14 @@ export const ModuleRoutine: Story = {
  * (харчовий щоденник).
  */
 export const ModuleNutrition: Story = {
-  args: {
-    title: "Що ти їси насправді?",
-    description: "Запиши перший прийом їжі, і тут зʼявляться калорії за день.",
-    action: (
-      <Button variant="nutrition" size="md">
-        Додати їжу
-      </Button>
-    ),
-  },
+  render: () => (
+    <ModuleEmptyState
+      module="nutrition"
+      variant="compact"
+      title="Поки немає записів"
+      description="Додай перший прийом їжі. Калорії та КБЖВ порахуються тут."
+    />
+  ),
 };
 
 /**

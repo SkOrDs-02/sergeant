@@ -27,7 +27,6 @@ import type { RoutineState } from "./lib/types";
 export interface RoutineTimelineProps {
   storageErrorMsg: string | null;
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
-  onOpenCalendarTab: () => void;
   onDismissStorageError: () => void;
   calendarData: RoutineCalendarData;
   calendarActions: RoutineCalendarActions;
@@ -42,7 +41,6 @@ export interface RoutineTimelineProps {
 export function RoutineTimeline({
   storageErrorMsg,
   setRoutine,
-  onOpenCalendarTab,
   onDismissStorageError,
   calendarData,
   calendarActions,
@@ -119,7 +117,6 @@ export function RoutineTimeline({
               routine={routine}
               setRoutine={setRoutine}
               hidden={mainTab !== "habits"}
-              onOpenCalendar={onOpenCalendarTab}
             />
           </SectionErrorBoundary>
 

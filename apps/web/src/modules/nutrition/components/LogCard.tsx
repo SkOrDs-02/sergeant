@@ -5,8 +5,9 @@
 import { useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import { estimateLogBytes } from "../lib/nutritionStorage";
 import {
   addDaysISODate,
@@ -156,7 +157,12 @@ export function LogCard({
           відсутність запису, а не є записом.
         */}
         {meals.length === 0 ? (
-          <EmptyState compact title="Поки немає записів" />
+          <ModuleEmptyState
+            module="nutrition"
+            variant="compact"
+            title={messages.nutrition.journalEmpty.title}
+            description={messages.nutrition.journalEmpty.description}
+          />
         ) : (
           <DayLogSheet
             groups={groups}

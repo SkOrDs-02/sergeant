@@ -29,7 +29,7 @@ describe("EmptyState — a11y", () => {
     );
   });
 
-  it("renders title + description у live-region з role='status' / aria-live='polite' / aria-atomic", () => {
+  it("renders title + hidden description у live-region з role='status' / aria-live='polite' / aria-atomic", () => {
     const { container, getByText } = render(
       <EmptyState
         title="Поки немає шаблонів"
@@ -40,11 +40,13 @@ describe("EmptyState — a11y", () => {
     expect(status).not.toBeNull();
     expect(status!.getAttribute("aria-live")).toBe("polite");
     expect(status!.getAttribute("aria-atomic")).toBe("true");
-    // title + description видимі і живуть всередині live-region.
+    // title + description живуть всередині live-region; звичайний компактний
+    // стан не витрачає місце на видимий пояснювальний абзац.
     expect(status!.contains(getByText("Поки немає шаблонів"))).toBe(true);
     expect(
       status!.contains(getByText("Створи свій перший, кнопка вище.")),
     ).toBe(true);
+    expect(getByText("Створи свій перший, кнопка вище.")).not.toBeVisible();
   });
 
   it("ariaLive='off' вимикає озвучку (для empty-state-ів на initial page load)", () => {
@@ -115,6 +117,21 @@ describe("EmptyState — a11y", () => {
 });
 
 describe("ModuleEmptyState — dismiss button a11y", () => {
+  it("показує стриману ілюстрацію та видимий наступний крок", () => {
+    const { container } = render(
+      <ModuleEmptyState
+        module="routine"
+        title="Звичок ще немає"
+        description="Створи одну звичку, щоб почати серію."
+      />,
+    );
+
+    expect(
+      screen.getByText("Створи одну звичку, щоб почати серію."),
+    ).toBeVisible();
+    expect(container.querySelector('[role="status"] svg')).not.toBeNull();
+  });
+
   it("dismiss-кнопка має aria-label і focus-visible:ring (Hard Rule #14)", () => {
     const { getByRole } = render(
       <ModuleEmptyState module="finyk" dismissible onDismiss={() => {}} />,

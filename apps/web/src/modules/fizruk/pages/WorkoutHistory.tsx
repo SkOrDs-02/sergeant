@@ -8,8 +8,8 @@
  * with its own "+ Нове" / "Шаблони" start-CTAs — a second start path
  * parallel to the home's «Почати тренування», and one whose
  * state (an in-memory `view`, not the URL) did not survive a refresh.
- * This page owns its own URL, and carries no start-CTA at all — starting
- * a session lives only on `WorkoutsHome`.
+ * This page owns its own URL. Its empty-state action routes to
+ * `WorkoutsHome`, which remains the only surface that starts a session.
  */
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
@@ -58,6 +58,7 @@ export function WorkoutHistory({ onNavigate }: WorkoutHistoryProps) {
             deleteWorkout={deleteWorkout}
             restoreWorkout={restoreWorkout}
             onOpenWorkout={(id) => onNavigate(`workout/${id}`)}
+            onStartWorkout={() => onNavigate("workouts")}
           />
         )}
       </div>
