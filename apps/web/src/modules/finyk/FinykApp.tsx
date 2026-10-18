@@ -539,7 +539,13 @@ export default function App({
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
           customCategories={storage.customCategories}
+          cashOnHandExists={storage.cashOnHand != null}
+          defaultAccount={storage.cashOnHand?.preferForManual ? "cash" : null}
+          onCreateCashOnHand={storage.createCashOnHand}
           onSave={(expense) => {
+            if (expense.account !== undefined) {
+              storage.rememberManualAccount(expense.account);
+            }
             handleExpenseSave(expense);
             handlePostSavePrompt(expense);
           }}

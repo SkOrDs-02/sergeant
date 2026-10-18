@@ -15,3 +15,11 @@ export const CategoryBars = lazyImport(
   () => import("../analytics/CategoryBars"),
   "CategoryBars",
 );
+
+// Розріз «За рахунками» малює рядки тим самим `CategoryBars`, тож і сам
+// вантажиться ліниво: статичний імпорт із `Analytics` зняв би лінивість
+// обох.
+export const AccountBars = lazyImport(
+  () => import("../analytics/AccountBars"),
+  "AccountBars",
+);

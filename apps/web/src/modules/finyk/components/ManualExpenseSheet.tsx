@@ -75,6 +75,10 @@ import { useManualCategoryHydration } from "./useManualCategoryHydration";
 import { ManualExpenseKindTabs } from "./ManualExpenseKindTabs";
 import { ManualExpenseDateSection } from "./ManualExpenseDateSection";
 import { ManualExpenseFooter } from "./ManualExpenseFooter";
+import {
+  ManualExpenseAccountSection,
+  type ManualAccount,
+} from "./ManualExpenseAccountSection";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { DebtTxLinkSection } from "./DebtTxLinkSection";
 import { decideManualDebtLink } from "./manualDebtLink";
@@ -101,6 +105,8 @@ interface ManualExpenseSheetProps {
     category: string;
     date: string;
     kind: ManualExpenseKind;
+    /** Рахунок запису; ключ присутній, лише коли форма показує поле. */
+    account?: ManualAccount;
   }) => void;
   /**
    * Delete the expense currently being edited. Only wired in edit mode
@@ -118,6 +124,7 @@ interface ManualExpenseSheetProps {
     kind?: string;
     /** Legacy alias — see `resolveManualExpenseKind` in finyk-domain. */
     type?: string;
+    account?: "cash";
   } | null;
   frequentCategories?: FrequentCategory[];
   frequentMerchants?: FrequentMerchant[];
@@ -168,6 +175,14 @@ interface ManualExpenseSheetProps {
   manualDebts?: readonly Debt[] | undefined;
   setManualDebts?: ((updater: (debts: Debt[]) => Debt[]) => void) | undefined;
   setLinkedTxRole?: SetLinkedTxRole | undefined;
+  /**
+   * «Готівка на руках» (Р3). Без `onCreateCashOnHand` поля рахунку немає:
+   * поверхні, що лише створюють запис із чека, його не показують.
+   */
+  cashOnHandExists?: boolean | undefined;
+  /** Останній обраний рахунок для нового запису (Р3.2). */
+  defaultAccount?: ManualAccount | undefined;
+  onCreateCashOnHand?: ((amountMinor: number) => void) | undefined;
 }
 
 export function ManualExpenseSheet({
@@ -190,6 +205,9 @@ export function ManualExpenseSheet({
   manualDebts,
   setManualDebts,
   setLinkedTxRole,
+  cashOnHandExists = false,
+  defaultAccount = null,
+  onCreateCashOnHand,
 }: ManualExpenseSheetProps) {
   const formId = useId();
   const descId = `${formId}-desc`;
@@ -200,6 +218,8 @@ export function ManualExpenseSheet({
   /** Id збереженого запису — він же transactionId для звʼязки з чеком. */
   const expenseId = initialExpense?.id ? String(initialExpense.id) : null;
   const [kind, setKind] = useState<ManualExpenseKind>("expense");
+  const [account, setAccount] = useState<ManualAccount>(null);
+  const showAccount = onCreateCashOnHand !== undefined;
 
   // Власні категорії — лише витратні (див. проп). Тримаємо їх окремим
   // мемо, щоб `customIds` був стабільним для нормалізації нижче.
@@ -276,6 +296,7 @@ export function ManualExpenseSheet({
               ? initialExpense.date
               : toExpenseInstant(values.date || toKyivISODate()),
           kind,
+          ...(showAccount ? { account } : {}),
         });
 
         // UX-15: "Додати ще" keeps the sheet open for rapid batch entry.
@@ -393,6 +414,7 @@ export function ManualExpenseSheet({
       if (initialExpense?.id) {
         const initialKind = resolveManualExpenseKind(initialExpense);
         setKind(initialKind);
+        setAccount(initialExpense.account === "cash" ? "cash" : null);
         reset({
           description: String(initialExpense.description || ""),
           amount:
@@ -412,6 +434,7 @@ export function ManualExpenseSheet({
         });
       } else {
         setKind("expense");
+        setAccount(cashOnHandExists ? defaultAccount : null);
         // Не `CategorySlug`: власна категорія за визначенням поза union-ом.
         let startCategory: string = DEFAULT_CATEGORY;
         if (initialCategory) {
@@ -461,6 +484,8 @@ export function ManualExpenseSheet({
     customIds,
     customIncomeIds,
     reset,
+    cashOnHandExists,
+    defaultAccount,
   ]);
 
   const sortedCategories = useMemo(
@@ -747,6 +772,16 @@ export function ManualExpenseSheet({
           }
           register={register}
         />
+
+        {showAccount && (
+          <ManualExpenseAccountSection
+            account={account}
+            onAccountChange={setAccount}
+            cashExists={cashOnHandExists}
+            onCreateCash={onCreateCashOnHand}
+            isSubmitting={isSubmitting}
+          />
+        )}
 
         <ManualExpenseCategorySection
           catLabelId={catLabelId}

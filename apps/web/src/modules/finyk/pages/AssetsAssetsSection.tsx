@@ -11,6 +11,7 @@ import {
 } from "../utils";
 import { AssetsMonoCards } from "./AssetsMonoCards";
 import { AssetsMonoJars } from "./AssetsMonoJars";
+import { AssetsCashOnHand } from "./AssetsCashOnHand";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ReceivableForm, AssetForm } from "./AssetsForm";
@@ -56,6 +57,9 @@ export function AssetsAssetsSection({ state }: { state: State }) {
     assetNameInputRef,
     setTxPicker,
     showBalance,
+    cashBalanceMinor,
+    createCashOnHand,
+    setCashActualAmount,
   } = state;
 
   // Похідний стан, а не ефект із setState: поки форма показана, група
@@ -73,6 +77,15 @@ export function AssetsAssetsSection({ state }: { state: State }) {
       />
 
       <AssetsMonoJars jars={jars} showBalance={showBalance} />
+
+      {createCashOnHand && setCashActualAmount && (
+        <AssetsCashOnHand
+          balanceMinor={cashBalanceMinor}
+          onCreate={createCashOnHand}
+          onSetActual={setCashActualAmount}
+          showBalance={showBalance}
+        />
+      )}
 
       <AssetsGroupCard
         title="Мені винні"

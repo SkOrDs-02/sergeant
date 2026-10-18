@@ -38,6 +38,10 @@ import {
   type MerchantRule,
 } from "@sergeant/finyk-domain/lib/merchantRules";
 import {
+  sanitizeCashOnHand,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
+import {
   EMPTY_FINYK_SQLITE_CACHE,
   getCachedFinykSqliteState,
   setFinykSqliteCache,
@@ -349,6 +353,9 @@ export async function refreshFinykSqliteState(
   const merchantRules = prefsRow
     ? parseMerchantRules(prefsRow.prefs_json)
     : null;
+  const cashOnHand = prefsRow
+    ? parseCashOnHand(prefsRow.prefs_json)
+    : undefined;
 
   if (seq <= publishedSeq) return getCachedFinykSqliteState();
   publishedSeq = seq;
@@ -371,6 +378,7 @@ export async function refreshFinykSqliteState(
     excludedStatTxIds,
     dismissedRecurring,
     merchantRules,
+    cashOnHand,
     // eslint-disable-next-line no-restricted-syntax -- UTC-anchored refresh timestamp (updatedAt-style), not a Kyiv day boundary; pre-existing
     refreshedAt: new Date().toISOString(),
   });
@@ -384,6 +392,15 @@ function parseMerchantRules(raw: string | null | undefined): MerchantRule[] {
   return sanitizeMerchantRules(
     (parsed as { merchantRules?: unknown }).merchantRules,
   );
+}
+
+/** `finyk_prefs.prefs_json` → «Готівка на руках»; немає або зіпсовано = `null`. */
+function parseCashOnHand(
+  raw: string | null | undefined,
+): CashOnHandState | null {
+  const parsed = safeParseJson<unknown>(raw ?? null, null);
+  if (!parsed || typeof parsed !== "object") return null;
+  return sanitizeCashOnHand((parsed as { cashOnHand?: unknown }).cashOnHand);
 }
 
 function safeStringArray(raw: string | null | undefined): string[] {

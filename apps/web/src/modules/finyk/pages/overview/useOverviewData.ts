@@ -82,6 +82,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     // refuses to preserve as a memo dependency
     // (react-hooks/preserve-manual-memoization).
     manualExpenses,
+    cashBalanceMinor,
   } = storage;
 
   // The current financial day is kept as a primitive epoch, refreshed at midnight, and
@@ -221,6 +222,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
         receivables,
         transactions: linkableTx,
         jars,
+        cashOnHandMinor: cashBalanceMinor,
       }),
     [
       accounts,
@@ -230,6 +232,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
       receivables,
       linkableTx,
       jars,
+      cashBalanceMinor,
     ],
   );
   const monoTotal = assetsSummary.monoBalance + privatTotal;
@@ -261,10 +264,11 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     // manual-only user and disagreed with «Капітал» on the same screen.
     const manualOnlyData =
       clientInfo == null &&
-      (manualAssets?.length ?? 0) +
+      ((manualAssets?.length ?? 0) +
         (manualDebts?.length ?? 0) +
         (receivables?.length ?? 0) >
-        0;
+        0 ||
+        cashBalanceMinor !== null);
     if (accounts.length > 0 || manualOnlyData) {
       saveNetworthSnapshot(networth);
     }
@@ -277,6 +281,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     manualAssets,
     manualDebts,
     receivables,
+    cashBalanceMinor,
     saveNetworthSnapshot,
   ]);
 

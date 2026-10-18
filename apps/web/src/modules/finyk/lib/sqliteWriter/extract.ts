@@ -29,6 +29,10 @@
  */
 
 import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
+import {
+  sanitizeCashOnHand,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
 import type { FinykStorageSlots } from "../../hooks/useFinykStorageSlots";
 import {
   EMPTY_FINYK_STATE,
@@ -177,7 +181,7 @@ export function extractFinykDualWriteState(
   // щоб серверний `applyFinykPrefs` отримав чистий `string[]`.
   const excludedStatTxIdsJson = serializeStringArray(slots.excludedStatTxIds);
   const dismissedRecurringJson = serializeStringArray(slots.dismissedRecurring);
-  const prefsJson = serializePrefsJson(slots.merchantRules);
+  const prefsJson = serializePrefsJson(slots.merchantRules, slots.cashOnHand);
 
   return {
     hiddenAccounts: idsFromArray(slots.hiddenAccounts),
@@ -217,17 +221,23 @@ export function stateWithSlice<K extends keyof FinykDualWriteState>(
 }
 
 /**
- * `prefs_json` = `{ merchantRules }`. Порядок масиву лишається як у слоті:
- * діф порівнює РЯДКИ, тож перестановка без зміни складу не має чіпати
- * мережу, а стабільний порядок із SQLite (перечитується тим самим JSON)
- * гарантує, що ехо власного запису не виглядає як зміна.
+ * `prefs_json` = `{ merchantRules, cashOnHand? }`. Порядок масиву лишається
+ * як у слоті: діф порівнює РЯДКИ, тож перестановка без зміни складу не має
+ * чіпати мережу, а стабільний порядок із SQLite (перечитується тим самим
+ * JSON) гарантує, що ехо власного запису не виглядає як зміна.
+ *
+ * `cashOnHand` обовʼязковий аргумент навмисно: блоб пишеться цілком, тож
+ * виклик, який забув про готівку, обнулив би рахунок (ADR-0076).
  */
 export function serializePrefsJson(
   merchantRules: readonly unknown[] | null | undefined,
+  cashOnHand: CashOnHandState | null | undefined,
 ): string {
   try {
+    const cash = sanitizeCashOnHand(cashOnHand);
     return JSON.stringify({
       merchantRules: sanitizeMerchantRules(merchantRules),
+      ...(cash ? { cashOnHand: cash } : {}),
     });
   } catch {
     return "{}";
