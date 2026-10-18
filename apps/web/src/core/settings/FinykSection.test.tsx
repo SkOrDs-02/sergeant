@@ -264,6 +264,12 @@ describe("FinykSection", () => {
     });
     renderWithProviders();
     expect(screen.getByText("Правила категорій")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Фінік" }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Правила категорій",
+      }),
+    );
     expect(screen.getByText("Правил поки немає")).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();

@@ -110,7 +110,7 @@ export function PendingVoiceChip({
         width: CHIP_WIDTH,
         zIndex: 9999,
       }}
-      className="rounded-2xl bg-panel/95 backdrop-blur-sm border border-line shadow-xl px-3 py-2 flex items-center gap-2 motion-safe:animate-fade-in"
+      className="rounded-panel bg-panel/95 border border-line shadow-xl px-3 py-2 flex items-center gap-2 motion-safe:animate-fade-in"
     >
       {/* Countdown ring + remaining seconds.  Ring fills counter-clockwise
           so the visual "drains" toward zero. */}
@@ -168,7 +168,7 @@ export function PendingVoiceChip({
           hapticTap();
           onCancel();
         }}
-        className="shrink-0 w-7 h-7 rounded-full bg-line/30 text-muted hover:text-danger hover:bg-danger/15 flex items-center justify-center pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
+        className="shrink-0 w-7 h-7 rounded-lg bg-line/30 text-muted hover:text-danger hover:bg-danger/15 flex items-center justify-center pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
         aria-label="Скасувати"
         title="Скасувати"
       >

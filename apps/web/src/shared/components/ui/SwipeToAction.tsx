@@ -190,7 +190,7 @@ function SwipeToActionImpl({
       : "Свайпни для дії";
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className="relative overflow-hidden rounded-panel">
       {/* First-time swipe hint */}
       {hintVisible && (
         <div

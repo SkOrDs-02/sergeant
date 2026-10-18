@@ -47,7 +47,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
     (hasExpensePlan && showBalance && showMonthForecast && projectedSpend > 0);
 
   return (
-    <Card variant="default" radius="lg" padding="md" className="space-y-3">
+    <Card padding="md" className="space-y-3">
       <div>
         <div className="flex items-center gap-1">
           <p className="text-style-caption text-muted">

@@ -24,7 +24,7 @@ const PlannedFlowsCardImpl = function PlannedFlowsCard({
   if (plannedFlows.length === 0) return null;
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       <div className="px-5 pt-4 pb-2">
         <SectionHeading size="lg" variant="muted">
           {messages.finyk.planning.upcomingTitle}

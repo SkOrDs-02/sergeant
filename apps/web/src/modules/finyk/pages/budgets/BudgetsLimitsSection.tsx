@@ -3,7 +3,6 @@ import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-
 import { cn } from "@shared/lib/ui/cn";
 import {
   calcLimitPace,
@@ -95,7 +94,7 @@ export function BudgetsLimitsSection({
         aria-expanded={limitsOpen}
         className="w-full flex items-center justify-between gap-3 py-3 text-left bg-panel hover:bg-line/40 transition-colors"
       >
-        <span className="flex items-center gap-2 min-w-0">
+        <span className="min-w-0">
           <SectionHeading
             as="span"
             size="lg"
@@ -121,12 +120,12 @@ export function BudgetsLimitsSection({
                 ({limitBudgets.length})
               </span>
             )}
-            {overCount > 0 && (
-              <span className="ml-1 font-semibold text-danger-strong dark:text-danger">
-                · {overCount} перевищено
-              </span>
-            )}
           </SectionHeading>
+          {overCount > 0 && (
+            <span className="mt-1 block text-style-caption font-medium text-danger-strong dark:text-danger">
+              {overCount} перевищено
+            </span>
+          )}
         </span>
         <span className="text-style-caption text-muted">
           {limitsOpen
@@ -137,7 +136,6 @@ export function BudgetsLimitsSection({
       {limitsOpen && limitBudgets.length === 0 && (
         <EmptyState
           compact
-          module="finyk"
           title="Поки немає лімітів"
           description="Встанови ліміт витрат на категорію, щоб не виходити за бюджет."
         />
@@ -199,7 +197,7 @@ export function BudgetsLimitsSection({
                 }
               }}
               className={cn(
-                "rounded-xl transition-shadow duration-slow",
+                "rounded-panel transition-shadow duration-slow",
                 isHighlighted &&
                   "ring-2 ring-finyk/60 ring-offset-2 ring-offset-bg",
               )}

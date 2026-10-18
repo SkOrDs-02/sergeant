@@ -115,7 +115,6 @@ export function HubInsightsBlock({
       openSignal={openSignal}
       revealRef={weekReportRef}
       title="Порада й тиждень"
-      collapsedIcon="sergeant"
       collapsedSubtitle={
         coachLoading
           ? (weekHeadline ?? "Порада Сержанта на день")

@@ -65,7 +65,7 @@ export function ModuleSettingsDrawer({
     <div className="fixed inset-0 z-80 flex justify-end" role="presentation">
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/50 "
         aria-label={messages.nav.closeSettings}
         onClick={onClose}
       />
@@ -90,7 +90,7 @@ export function ModuleSettingsDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+            className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors"
             aria-label={messages.actions.close}
           >
             <Icon name="close" size={22} />

@@ -11,7 +11,6 @@ import type {
   WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import type { DropdownMenuItem } from "@shared/components/ui/DropdownMenu";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -268,7 +267,6 @@ export function SessionView({
             type: "item",
             id: "group",
             label: ss.groupIntoSuperset,
-            icon: <Icon name="repeat" size="md" aria-hidden />,
             onSelect: enterSelectMode,
           },
         ]
@@ -378,8 +376,8 @@ export function SessionView({
         {selectMode ? (
           <>
             <Button
-              variant="soft"
-              tone="fizruk"
+              variant="outline"
+              tone="neutral"
               className="h-11 flex-1"
               disabled={groupDisabled}
               onClick={() => handleCreateGroup("superset")}
@@ -387,8 +385,8 @@ export function SessionView({
               {ss.makeSuperset} ({groupCount}/3)
             </Button>
             <Button
-              variant="soft"
-              tone="fizruk"
+              variant="outline"
+              tone="neutral"
               className="h-11 flex-1"
               disabled={groupDisabled}
               onClick={() => handleCreateGroup("circuit")}
@@ -414,13 +412,12 @@ export function SessionView({
           // вправи (обидва дублі — браузерний прохід 2026-09-11).
           items.length > 0 && (
             <Button
-              variant="soft"
-              tone="fizruk"
+              variant="outline"
+              tone="neutral"
               className="h-11 flex-1"
               onClick={onAddExercise}
               aria-label={ss.addExerciseAria}
             >
-              <Icon name="plus" size="md" aria-hidden />
               {ss.addExercise}
             </Button>
           )

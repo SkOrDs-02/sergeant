@@ -425,15 +425,6 @@ vi.mock("./meal-sheet/mealFormUtils", async (importOriginal) => {
   };
 });
 
-vi.mock("../lib/mealTypes", () => ({
-  MEAL_TYPES: [
-    { id: "breakfast", label: "Сніданок" },
-    { id: "lunch", label: "Обід" },
-    { id: "dinner", label: "Вечеря" },
-    { id: "snack", label: "Перекус" },
-  ],
-}));
-
 vi.mock("../lib/foodDb/foodDb", () => ({
   ensureSeedFoods: vi.fn(() => Promise.resolve()),
   upsertFood: vi.fn(() => Promise.resolve({ ok: true })),
@@ -475,6 +466,7 @@ function QueryWrapper({ children }: { children: React.ReactNode }) {
 
 function renderSheet(
   props: Partial<React.ComponentProps<typeof AddMealSheet>> = {},
+  selectSearch = true,
 ) {
   const defaults = {
     open: true,
@@ -482,22 +474,42 @@ function renderSheet(
     onSave: vi.fn(),
     mealTemplates: [],
   };
-  return render(<AddMealSheet {...defaults} {...props} />, {
+  const view = render(<AddMealSheet {...defaults} {...props} />, {
     wrapper: QueryWrapper,
   });
+  if (
+    selectSearch &&
+    props.open !== false &&
+    !props.initialMeal?.id &&
+    props.initialStep !== "photo" &&
+    (!props.initialSourceTab || props.initialSourceTab === "search")
+  )
+    chooseSource(/Пошук продукту/);
+  return view;
 }
 
-// Крок джерела — смужка вкладок, тож обидва ручні режими живуть під
-// «Своє». Типовий режим там — «з упаковки», тому шлях до нього коротший
-// на один тап, ніж до разової страви.
-function openManualTab() {
-  fireEvent.click(screen.getByRole("tab", { name: /Своє/ }));
+function chooseSource(name: RegExp) {
+  const change = screen.queryByRole("button", {
+    name: "Змінити спосіб додавання",
+  });
+  if (change) fireEvent.click(change);
+  fireEvent.click(
+    within(
+      screen.getByRole("navigation", { name: "Спосіб додавання їжі" }),
+    ).getByRole("button", { name }),
+  );
 }
-
+function openManualTab(per100 = true) {
+  chooseSource(/Ввести вручну/);
+  if (per100) fireEvent.click(screen.getByRole("button", { name: /На 100 г/ }));
+}
 function goToWholeMeal() {
-  openManualTab();
-  fireEvent.click(screen.getByRole("radio", { name: /Готова страва/ }));
-  fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+  openManualTab(false);
+  const unit = screen.queryByRole("button", {
+    name: "Змінити одиницю калорійності",
+  });
+  if (unit) fireEvent.click(unit);
+  fireEvent.click(screen.getByRole("button", { name: /За всю порцію/ }));
 }
 
 function renderManualSheet(
@@ -550,7 +562,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("shows 'Джерело страви' heading when opened with templates", () => {
+  it("shows 'Додати прийом їжі' heading when opened with templates", () => {
     renderSheet({
       mealTemplates: [
         {
@@ -561,7 +573,7 @@ describe("AddMealSheet — source step (with templates)", () => {
         },
       ],
     });
-    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
+    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
   });
 
   it("розводить пошук і штрихкод по різних вкладках", () => {
@@ -579,9 +591,9 @@ describe("AddMealSheet — source step (with templates)", () => {
     expect(screen.getByTestId("food-picker")).toBeInTheDocument();
     expect(screen.queryByTestId("barcode-section")).toBeNull();
 
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     expect(screen.getByTestId("barcode-section")).toBeInTheDocument();
-    expect(screen.queryByTestId("food-picker")).toBeNull();
+    expect(screen.queryByTestId("food-picker")).not.toBeVisible();
   });
 
   it("clicking 'Готова страва' advances to fill step", () => {
@@ -606,15 +618,15 @@ describe("AddMealSheet — source step (with templates)", () => {
   // Тепер це два явні режими, і кожен підписаний своєю одиницею.
   it("пропонує два ручні режими з різними одиницями КБЖВ", () => {
     renderSheet({ mealTemplates: [] });
-    openManualTab();
+    openManualTab(false);
     // Підпис одиниці — на самому перемикачі: різниця між режимами саме в
     // ній, і побачити її треба ДО того, як вводити числа.
-    expect(screen.getByRole("radio", { name: /З упаковки/ })).toHaveTextContent(
-      "на 100 г",
+    expect(screen.getByRole("button", { name: /На 100 г/ })).toHaveTextContent(
+      "На 100 г",
     );
     expect(
-      screen.getByRole("radio", { name: /Готова страва/ }),
-    ).toHaveTextContent("за всю порцію");
+      screen.getByRole("button", { name: /За всю порцію/ }),
+    ).toHaveTextContent("За всю порцію");
   });
 
   it("«З упаковки» — типовий режим вкладки й показується одразу в ній", () => {
@@ -623,7 +635,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     // Поля етикетки рендеряться ПРЯМО у вкладці, без переходу на окремий
     // крок: заради цього вкладки й робились — менше стрибків маршрутом.
     expect(screen.getByTestId("package-step")).toBeInTheDocument();
-    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
+    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
     expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
 
@@ -748,7 +760,7 @@ describe("AddMealSheet — source step (with templates)", () => {
       pantryItems: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
     });
     fireEvent.click(screen.getByTestId("pick-pantry"));
-    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByLabelText("Назад до вибору способу"));
     goToWholeMeal();
     expect(screen.getByTestId("name-input")).toHaveValue("");
   });
@@ -788,7 +800,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Молочний коктейль" },
     });
-    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByLabelText("Назад до вибору способу"));
     goToWholeMeal();
     expect(screen.getByTestId("name-input")).toHaveValue("Молочний коктейль");
   });
@@ -820,7 +832,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     renderSheet({ mealTemplates: [] });
     fireEvent.click(screen.getByTestId("pick-food"));
     fireEvent.click(screen.getByTestId("change-product"));
-    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
+    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
     expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
   });
 
@@ -837,7 +849,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     });
     expect(screen.getByTestId("name-input")).toHaveValue("Равіолі");
 
-    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
+    fireEvent.click(screen.getByLabelText("Назад до вибору способу"));
     goToWholeMeal();
     expect(screen.getByTestId("name-input")).toHaveValue("");
   });
@@ -930,10 +942,10 @@ describe("AddMealSheet — source step (with templates)", () => {
 
 describe("AddMealSheet — fill step (no templates/photoResult/initialMeal)", () => {
   it("starts at source step even when there are no templates or recent meals", () => {
-    renderSheet({ mealTemplates: [] });
-    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
+    renderSheet({ mealTemplates: [] }, false);
+    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
     expect(
-      screen.getByRole("tablist", { name: "Джерело страви" }),
+      screen.getByRole("navigation", { name: "Спосіб додавання їжі" }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
   });
@@ -1018,6 +1030,7 @@ describe("AddMealSheet — editing an existing meal", () => {
         mealType: "lunch",
         foodId: "food-db-99",
         amount_g: 150,
+        macroSource: "productDb",
         macros: { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 },
       },
     });
@@ -1034,6 +1047,69 @@ describe("AddMealSheet — editing an existing meal", () => {
   });
 });
 
+describe("AddMealSheet — source choice", () => {
+  it("редагування не монтує фото з попереднього способу додавання", () => {
+    renderSheet({
+      initialStep: "photo",
+      initialMeal: {
+        id: "existing",
+        name: "Обід",
+        mealType: "lunch",
+        time: "12:00",
+        macros: { kcal: 120, protein_g: null, fat_g: null, carbs_g: null },
+      },
+    });
+    expect(screen.getByTestId("name-input")).toHaveValue("Обід");
+    expect(screen.queryByTestId("photo-step")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Спосіб додавання їжі" }),
+    ).not.toBeInTheDocument();
+  });
+  it("відкриває ручний шлях без списку решти способів", () => {
+    renderSheet({ initialSourceTab: "manual" });
+    expect(
+      screen.queryByRole("navigation", { name: "Спосіб додавання їжі" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /За всю порцію/ })).toBeVisible();
+  });
+  it("починає з вибору способу, без Обрано і без форми", () => {
+    renderSheet({}, false);
+    expect(
+      screen.getByRole("navigation", { name: "Спосіб додавання їжі" }),
+    ).toBeVisible();
+    expect(screen.queryByText("Обрано")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("food-picker")).not.toBeInTheDocument();
+    chooseSource(/Пошук продукту/);
+    expect(
+      screen.queryByRole("navigation", { name: "Спосіб додавання їжі" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("food-picker")).toBeVisible();
+  });
+  it("зміна одиниці з ручної форми зберігає її чернетку", () => {
+    renderManualSheet();
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Борщ" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Маю етикетку на 100 г" }),
+    );
+    expect(screen.getByTestId("package-step")).toBeVisible();
+    goToWholeMeal();
+    expect(screen.getByTestId("name-input")).toHaveValue("Борщ");
+  });
+  it("повернення до способу зберігає ручний запис", () => {
+    renderManualSheet();
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Борщ" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Назад до вибору способу" }),
+    );
+    goToWholeMeal();
+    expect(screen.getByTestId("name-input")).toHaveValue("Борщ");
+  });
+});
+
 describe("AddMealSheet — photo step", () => {
   it("initialStep='photo' opens straight at the photo step", () => {
     renderSheet({ initialStep: "photo" });
@@ -1042,11 +1118,8 @@ describe("AddMealSheet — photo step", () => {
   });
 
   it("applying a photo result advances to fill and saves with photoAI semantics", async () => {
-    // Note: `mealFormUtils` is mocked above so `emptyForm` always returns
-    // empty macro strings regardless of the applied macros — mirrors the
-    // "AI couldn't read macros from the photo" case, so saving routes
-    // through the empty-macro confirm step (see the dedicated describe
-    // block below for that flow's own coverage).
+    // Реальний photoResultToForm переносить прочитані КБЖВ у форму.
+    // Підтвердження порожньої калорійності перевіряється окремими кейсами.
     const onSave = vi.fn();
     renderSheet({ onSave, initialStep: "photo" });
     fireEvent.click(screen.getByTestId("apply-photo"));
@@ -1054,13 +1127,13 @@ describe("AddMealSheet — photo step", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );
-    const dialog = await screen.findByRole("alertdialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       name: "Борщ",
       source: "photo",
       macroSource: "photoAI",
+      macros: { kcal: 250, protein_g: 10, fat_g: 5, carbs_g: 30 },
     });
     // Оригінал фото їде разом зі стравою — з нього host зробить мініатюру.
     expect(onSave.mock.calls[0]![1]).toBeInstanceOf(File);
@@ -1071,7 +1144,7 @@ describe("AddMealSheet — photo step", () => {
     const onSave = vi.fn();
     renderSheet({ onSave, initialStep: "photo" });
     fireEvent.click(screen.getByTestId("apply-photo-multi"));
-    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    expect(screen.queryByTestId("macros-editor")).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );
@@ -1127,14 +1200,11 @@ describe("AddMealSheet — photo step", () => {
     // (це затирало б обраний людиною тип прийому й час), а чистить рівно
     // засіяні джерелом поля.
     const onSave = vi.fn();
-    const { emptyForm } = await import("./meal-sheet/mealFormUtils");
     renderSheet({ onSave, initialStep: "photo", mealTemplates: [] });
     fireEvent.click(screen.getByTestId("apply-photo"));
-    expect(vi.mocked(emptyForm)).toHaveBeenLastCalledWith(
-      expect.objectContaining({ dishName: "Борщ" }),
-    );
+    expect(screen.getByTestId("name-input")).toHaveValue("Борщ");
     fireEvent.click(
-      screen.getByRole("button", { name: "Назад до вибору джерела" }),
+      screen.getByRole("button", { name: "Назад до вибору способу" }),
     );
     goToWholeMeal();
     expect(screen.getByTestId("name-input")).toHaveValue("");
@@ -1314,12 +1384,12 @@ describe("AddMealSheet — source step branches", () => {
     // Крок фото — всередині sheet-а: без закриття, навігації на «Огляд» і
     // синтетичного кліку по file input (старий onRequestPhoto-маршрут).
     renderSheet({ mealTemplates: [template] });
-    fireEvent.click(screen.getByRole("tab", { name: /Фото/ }));
+    chooseSource(/Фото страви/);
     expect(screen.getByTestId("photo-step")).toBeInTheDocument();
     // Вихід — це вже не стрілка «назад», а сусідня вкладка: крок джерела
     // ми не покидали, тож і повертатись нема звідки.
-    fireEvent.click(screen.getByRole("tab", { name: /Пошук/ }));
-    expect(screen.queryByTestId("photo-step")).not.toBeInTheDocument();
+    chooseSource(/Пошук продукту/);
+    expect(screen.queryByTestId("photo-step")).not.toBeVisible();
     expect(screen.getByTestId("food-picker")).toBeInTheDocument();
   });
 
@@ -1350,15 +1420,15 @@ describe("AddMealSheet — source step branches", () => {
     renderSheet({ mealTemplates: [template] });
     goToWholeMeal();
     expect(
-      screen.getByLabelText("Назад до вибору джерела"),
+      screen.getByLabelText("Назад до вибору способу"),
     ).toBeInTheDocument();
   });
 
   it("back arrow returns to source step", () => {
     renderSheet({ mealTemplates: [template] });
     goToWholeMeal();
-    fireEvent.click(screen.getByLabelText("Назад до вибору джерела"));
-    expect(screen.getByText("Джерело страви")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Назад до вибору способу"));
+    expect(screen.getByText("Додати прийом їжі")).toBeInTheDocument();
   });
 });
 
@@ -1465,7 +1535,7 @@ describe("AddMealSheet — вкладка «Скан» сама відкрива
   it("відкриває сканер одразу при переході на вкладку", () => {
     renderSheet({ mealTemplates: [] });
     expect(stableBarcodeLookup.setScannerOpen).not.toHaveBeenCalledWith(true);
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     expect(stableBarcodeLookup.setScannerOpen).toHaveBeenCalledWith(true);
   });
 
@@ -1473,13 +1543,13 @@ describe("AddMealSheet — вкладка «Скан» сама відкрива
     // Без ref-гарда закритий сканер відчинявся б назад на кожному
     // ре-рендері, і вийти з вкладки стало б неможливо.
     renderSheet({ mealTemplates: [] });
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     const countOpens = () =>
       stableBarcodeLookup.setScannerOpen.mock.calls.filter(
         (call: unknown[]) => call[0] === true,
       ).length;
     const opens = countOpens();
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     expect(countOpens()).toBe(opens);
   });
 
@@ -1495,26 +1565,25 @@ describe("AddMealSheet — вкладка «Скан» сама відкрива
     const view = render(<AddMealSheet {...props} open />, {
       wrapper: QueryWrapper,
     });
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     expect(stableBarcodeLookup.setScannerOpen).toHaveBeenCalledWith(true);
 
     view.rerender(<AddMealSheet {...props} open={false} />);
     stableBarcodeLookup.setScannerOpen.mockClear();
     view.rerender(<AddMealSheet {...props} open />);
 
-    expect(screen.getByRole("tab", { name: /Пошук/ })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(
+      screen.getByRole("navigation", { name: "Спосіб додавання їжі" }),
+    ).toBeVisible();
     expect(stableBarcodeLookup.setScannerOpen).not.toHaveBeenCalledWith(true);
   });
 
   it("відкриває сканер знову після повернення на вкладку", () => {
     renderSheet({ mealTemplates: [] });
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
-    fireEvent.click(screen.getByRole("tab", { name: /Пошук/ }));
+    chooseSource(/Штрихкод/);
+    chooseSource(/Пошук продукту/);
     stableBarcodeLookup.setScannerOpen.mockClear();
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     expect(stableBarcodeLookup.setScannerOpen).toHaveBeenCalledWith(true);
   });
 });
@@ -1551,24 +1620,55 @@ describe("AddMealSheet — barcode scanner overlay", () => {
  */
 describe("AddMealSheet — виходи з картки «Продукт не знайдено»", () => {
   const selectedTab = () =>
-    screen
-      .getAllByRole("tab")
-      .filter((t) => t.getAttribute("aria-selected") === "true")
-      .map((t) => t.textContent?.trim())
-      .join("");
+    screen.getByRole("button", { name: "Змінити спосіб додавання" })
+      .previousElementSibling?.textContent ?? "";
 
   it("«Сфотографувати страву» веде на вкладку «Фото»", () => {
     renderSheet({ mealTemplates: [] });
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     fireEvent.click(screen.getByText("notice-use-photo"));
     expect(selectedTab()).toMatch(/Фото/);
   });
 
   it("«Ввести вручну» веде на вкладку «Своє», а не в порожній «Скан»", () => {
     renderSheet({ mealTemplates: [] });
-    fireEvent.click(screen.getByRole("tab", { name: /Скан/ }));
+    chooseSource(/Штрихкод/);
     fireEvent.click(screen.getByText("notice-manual-entry"));
-    expect(selectedTab()).toMatch(/Своє/);
-    expect(selectedTab()).not.toMatch(/Скан/);
+    expect(selectedTab()).toMatch(/Ввести вручну/);
+    expect(selectedTab()).not.toMatch(/Штрихкод/);
+  });
+});
+
+describe("AddMealSheet — manual-прийом із foodId не повертається в productDb", () => {
+  // ux-13: `manual`-прийом, який ще несе `foodId` (запис до рішення
+  // 2026-10-16, коли ручна правка КБЖВ ще не прибирала звʼязок), після
+  // збереження без правки КБЖВ не має підніматись до `productDb`: це знімало б
+  // гард `useEditedFoodRehydration`, і зміна ваги стерла б ручні цифри.
+  it("зміна лише назви лишає macroSource manual", async () => {
+    const onSave = vi.fn();
+    renderSheet({
+      onSave,
+      initialMeal: {
+        id: "existing-meal-3",
+        name: "Гречка",
+        mealType: "lunch",
+        foodId: "food-gone",
+        amount_g: 150,
+        macroSource: "manual",
+        macros: { kcal: 250, protein_g: 8, fat_g: 2, carbs_g: 40 },
+      },
+    });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Гречка з грибами" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      id: "existing-meal-3",
+      foodId: "food-gone",
+      macroSource: "manual",
+    });
   });
 });

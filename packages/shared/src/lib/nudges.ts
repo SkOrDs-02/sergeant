@@ -53,21 +53,20 @@ const NUDGE_CATALOG: readonly NudgeDefinition[] = [
   {
     id: "day2_cross_module",
     day: 2,
-    message:
-      "Один напрямок ти вже ведеш. Додай другий, Sergeant покаже, як вони впливають один на одного.",
+    message: "Записи є в одному модулі.",
     conditionExactlyOneModule: true,
   },
   {
     id: "day2_routine",
     day: 2,
-    message: "Вчора ти зробив перший запис. Сьогодні – створи звичку?",
+    message: "Нова звичка.",
     conditionModule: "routine",
     conditionEmpty: true,
   },
   {
     id: "day3_chat",
     day: 3,
-    message: "3 дні з Sergeant! Спробуй AI-чат для плану на день.",
+    message: "План дня в чаті Сержанта.",
   },
   {
     id: "day5_analytics",
@@ -77,7 +76,7 @@ const NUDGE_CATALOG: readonly NudgeDefinition[] = [
   {
     id: "day7_digest",
     day: 7,
-    message: "Тиждень! Подивись свій перший дайджест.",
+    message: "Звіт тижня.",
   },
 ];
 

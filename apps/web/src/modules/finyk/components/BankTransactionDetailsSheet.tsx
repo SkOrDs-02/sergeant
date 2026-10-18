@@ -18,7 +18,6 @@ import type {
   LinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import { Button } from "@shared/components/ui/Button";
-
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -274,7 +273,7 @@ export function BankTransactionDetailsSheet({
     >
       <div className="space-y-5">
         <div>
-          <section className="rounded-xl bg-panel p-4">
+          <section className="rounded-panel bg-panel p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-style-label text-text break-words">
@@ -363,7 +362,7 @@ export function BankTransactionDetailsSheet({
           )}
 
         {!isIncome && (
-          <section className="rounded-xl border border-line bg-panel p-3">
+          <section className="rounded-panel border border-line bg-panel p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-style-label text-text">
@@ -424,7 +423,7 @@ export function BankTransactionDetailsSheet({
           />
         )}
 
-        <section className="space-y-2 rounded-xl border border-line bg-panel p-3">
+        <section className="space-y-2 rounded-panel border border-line bg-panel p-3">
           <Switch
             checked={excludedFromStats}
             onChange={(next) => {

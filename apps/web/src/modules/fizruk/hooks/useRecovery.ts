@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMinuteNow } from "@shared/hooks/useMinuteNow";
+import { useMemo } from "react";
 import { useExerciseCatalog } from "./useExerciseCatalog";
 import { useWorkouts } from "./useWorkouts";
 import { useDailyLog } from "./useDailyLog";
@@ -50,7 +51,7 @@ export function useRecovery(options: UseRecoveryOptions = {}) {
   const { entries: dailyLogEntries } = useDailyLog();
   const { activeSites: injurySites } = useInjuries();
 
-  const [nowMs] = useState(() => Date.now());
+  const nowMs = useMinuteNow();
 
   const stats = useMemo(() => {
     // `wellbeingSignal` знає не лише множник, а й ЧОМУ він такий: запис поза

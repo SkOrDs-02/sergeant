@@ -70,11 +70,9 @@ test("@critical routine: stats tab deep-link round-trips to calendar", async ({
   await overview.click();
   await expect(page).toHaveURL(/\/routine$/);
   await expect(overview).toHaveAttribute("aria-selected", "true");
-  // Головна дія екрана (`RoutineActions.tsx`): закріплена кнопка «Нова звичка».
+  // Вхід «Нова звичка» — рядок у кінці списку дня (`RoutineCalendarPanel`).
   await expect(
-    page
-      .getByTestId("add-action-bar")
-      .getByRole("button", { name: "Нова звичка" }),
+    page.getByRole("button", { name: "Нова звичка", exact: true }),
   ).toBeVisible();
 
   expect(

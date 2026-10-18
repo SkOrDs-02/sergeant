@@ -226,7 +226,7 @@ export function WheelPicker({
       {/* Centre selection band */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 rounded-xl border-y border-brand-strong/40 bg-brand-strong/5"
+        className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 rounded-lg border-y border-brand-strong/40 bg-brand-strong/5"
         style={{ height: itemHeight }}
       />
       {/* Fade masks */}
@@ -257,7 +257,7 @@ export function WheelPicker({
         onKeyDown={onKeyDown}
         className={cn(
           "h-full overflow-y-auto no-scrollbar snap-y snap-mandatory outline-none",
-          "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-xl",
+          "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg",
           disabled && "overflow-hidden",
         )}
         style={{ scrollPaddingTop: pad }}

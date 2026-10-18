@@ -116,7 +116,10 @@ describe("ReEngagementCard — hero не порожній (PR-H1 audit-guard)", 
     expect(screen.getByText("privacy-lock-banner")).toBeInTheDocument();
 
     // ...і все одно hero не порожній: заголовок і CTA картки на екрані.
-    expect(screen.getByText("Давно не бачились!")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Повернення" }),
+    ).toBeInTheDocument();
+    expect(document.querySelector("section svg")).toBeNull();
     expect(
       screen.getByRole("button", { name: /Продовжити/ }),
     ).toBeInTheDocument();

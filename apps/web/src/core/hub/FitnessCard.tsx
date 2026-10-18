@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Lazy-loaded per-domain card for fizruk/workout data in HubReports.
  * Reads its own localStorage shard and aggregates independently so
@@ -149,6 +150,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
 
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const dayKey = useDeviceDayKey();
   const bump = useHubStorageBump();
   // CALC-4 (аудит 2026-09): на холодному deep-link кеш SQLite модуля
   // наповнюється ПІСЛЯ першого рендера; hub-bump цього не бачить, тік
@@ -157,6 +159,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   const sqliteTick = useFizrukSqliteReadTick();
 
   const { cur, prev, prevAny, dates } = useMemo(() => {
+    void dayKey;
     void bump; // storage-write tick
     void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling getCached* inside deps
     // Canonical workouts live in the SQLite warm cache — `fizruk_workouts_v1`
@@ -180,7 +183,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
       prevAny: aggregateWorkouts(rawWorkouts, w.prevAll).count > 0,
       dates: w.dates,
     };
-  }, [period, offset, bump, sqliteTick]);
+  }, [period, offset, bump, sqliteTick, dayKey]);
 
   const formattedCurrent = formatNumberUk(cur.count);
   const formattedPrev = formatNumberUk(prev.count);

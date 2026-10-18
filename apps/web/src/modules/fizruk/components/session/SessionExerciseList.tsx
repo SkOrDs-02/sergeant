@@ -4,7 +4,6 @@
  */
 import type { WorkoutGroup, WorkoutItem } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { fmtLoose } from "../../lib/numberFmt";
@@ -108,7 +107,7 @@ export function SessionExerciseList({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-line bg-panel px-4 py-8 text-center">
+      <div className="rounded-panel bg-panel px-4 py-8 text-center">
         <div className="text-style-label text-text">{ss.emptyTitle}</div>
         <div className="mt-1 text-style-caption text-subtle">
           {ss.emptyBody}
@@ -117,13 +116,12 @@ export function SessionExerciseList({
           <div className="mt-4">
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
 
               className="h-11 w-full"
               onClick={onAddExercise}
               aria-label={ss.addExerciseAria}
             >
-              <Icon name="plus" size="md" aria-hidden />
               {ss.addExercise}
             </Button>
           </div>
@@ -133,7 +131,7 @@ export function SessionExerciseList({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-line bg-panel shadow-e1">
+    <div className="overflow-hidden rounded-panel bg-panel">
       <ul className="divide-y divide-line">
         {items.map((it, idx) => {
           const state = states[idx] ?? "todo";
@@ -168,11 +166,9 @@ export function SessionExerciseList({
                   // одне ціле (браузерний прохід 2026-09-11). Контейнера тут
                   // свідомо немає — у списку немає підходів, які він мав би
                   // окреслювати.
-                  pos != null
-                    ? "border-l-[3px] border-fizruk pl-[9px]"
-                    : "border-l-[3px] border-transparent pl-[9px]",
-                  isCurrent ? "bg-fizruk-surface" : "hover:bg-panelHi",
-                  selectMode && checked && "bg-fizruk-surface",
+                  "pl-3",
+                  isCurrent ? "bg-panelHi" : "hover:bg-panelHi",
+                  selectMode && checked && "bg-panelHi",
                 )}
               >
                 {selectMode ? (
@@ -181,35 +177,29 @@ export function SessionExerciseList({
                     className={cn(
                       "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
                       checked
-                        ? "border-fizruk-strong bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg"
+                        ? "border-line bg-text text-bg dark:text-bg"
                         : "border-border-strong bg-panel",
                     )}
                   >
-                    {checked ? <Icon name="check" size="sm" /> : null}
+                    {checked ? "✓" : null}
                   </span>
                 ) : (
                   <span
                     aria-hidden
                     className={cn(
-                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-style-label font-bold tabular-nums",
-                      state === "done"
-                        ? "border-success/40 bg-success/10 text-success-strong dark:text-success"
-                        : isCurrent
-                          ? "border-fizruk-ring bg-panel text-fizruk-strong dark:text-fizruk"
-                          : "border-line bg-panelHi text-subtle",
+                      "flex w-6 shrink-0 items-center justify-center text-style-label-lg font-medium tabular-nums",
+                      state === "done" || isCurrent
+                        ? "text-text"
+                        : "text-subtle",
                     )}
                   >
-                    {state === "done" ? (
-                      <Icon name="check" size={18} />
-                    ) : (
-                      idx + 1
-                    )}
+                    {state === "done" ? "✓" : idx + 1}
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     {pos != null ? (
-                      <span className="rounded-md bg-fizruk-surface px-1.5 text-style-caption font-bold text-fizruk-soft-fg">
+                      <span className="rounded-md bg-panelHi px-1.5 text-style-caption font-bold text-text">
                         A{pos}
                       </span>
                     ) : null}
@@ -234,19 +224,6 @@ export function SessionExerciseList({
                     {sub.text}
                   </span>
                 </span>
-                {!selectMode && (
-                  <Icon
-                    name="chevron-right"
-                    size={18}
-                    className={cn(
-                      "shrink-0",
-                      isCurrent
-                        ? "text-fizruk-strong dark:text-fizruk"
-                        : "text-subtle",
-                    )}
-                    aria-hidden
-                  />
-                )}
               </button>
             </li>
           );

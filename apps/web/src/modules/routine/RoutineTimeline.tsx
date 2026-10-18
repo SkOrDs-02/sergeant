@@ -27,7 +27,6 @@ import type { RoutineState } from "./lib/types";
 export interface RoutineTimelineProps {
   storageErrorMsg: string | null;
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
-  onOpenCalendarTab: () => void;
   onDismissStorageError: () => void;
   calendarData: RoutineCalendarData;
   calendarActions: RoutineCalendarActions;
@@ -42,7 +41,6 @@ export interface RoutineTimelineProps {
 export function RoutineTimeline({
   storageErrorMsg,
   setRoutine,
-  onOpenCalendarTab,
   onDismissStorageError,
   calendarData,
   calendarActions,
@@ -84,7 +82,7 @@ export function RoutineTimeline({
         enabled={!cloudPullPending}
         contentClassName="page-tabbar-pad routine-main-pad"
       >
-        <div className="max-w-4xl mx-auto w-full pt-4 space-y-4">
+        <div className="max-w-4xl mx-auto w-full pt-4 space-y-7">
           <h1 className="sr-only">Рутина</h1>
           {storageErrorMsg && (
             <Notice
@@ -119,7 +117,6 @@ export function RoutineTimeline({
               routine={routine}
               setRoutine={setRoutine}
               hidden={mainTab !== "habits"}
-              onOpenCalendar={onOpenCalendarTab}
             />
           </SectionErrorBoundary>
 

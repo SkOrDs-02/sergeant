@@ -92,7 +92,6 @@ const routineAppMocks = vi.hoisted(() => {
     useRoutineAppState: vi.fn(() => stateBundle),
     headerProps: null as {
       onBackToHub?: (() => void) | undefined;
-      onOpenSettings?: (() => void) | undefined;
     } | null,
     timelineProps: null as Record<string, unknown> | null,
     actionsProps: null as Record<string, unknown> | null,
@@ -104,21 +103,13 @@ vi.mock("./useRoutineAppState", () => ({
 }));
 
 vi.mock("./RoutineHeader", () => ({
-  RoutineHeader: (props: {
-    onBackToHub?: () => void;
-    onOpenSettings?: () => void;
-  }) => {
+  RoutineHeader: (props: { onBackToHub?: () => void }) => {
     routineAppMocks.headerProps = props;
     return (
       <div data-testid="routine-header">
         {typeof props.onBackToHub === "function" ? (
           <button type="button" onClick={props.onBackToHub}>
             Назад
-          </button>
-        ) : null}
-        {typeof props.onOpenSettings === "function" ? (
-          <button type="button" onClick={props.onOpenSettings}>
-            Налаштування
           </button>
         ) : null}
       </div>
@@ -171,13 +162,6 @@ describe("RoutineApp", () => {
     expect(routineAppMocks.headerProps?.onBackToHub).toBe(onBackToHub);
     fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     expect(onBackToHub).toHaveBeenCalledTimes(1);
-  });
-
-  it("wires onOpenSettings through RoutineHeader", () => {
-    const onOpenSettings = vi.fn();
-    renderApp(<RoutineApp onOpenSettings={onOpenSettings} />);
-    fireEvent.click(screen.getByRole("button", { name: "Налаштування" }));
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   it("passes pwaAction and callbacks into useRoutineAppState", async () => {

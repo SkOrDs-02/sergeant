@@ -59,7 +59,7 @@ test.describe("mobile coarse-pointer UI audit", () => {
   }
 
   // Аркуш ручного запису — стан, до якого свіп по `ROUTES` структурно не
-  // дістає: він за FAB-ом, тож у steady-state його полів на сторінці немає
+  // дістає: він за кнопкою в куті, тож у steady-state його полів на сторінці немає
   // взагалі. Розкриваємо «Іншу дату» явно — згорнутий `<details>` не
   // рендерить поле, тобто замір над ним нічого не доводив би.
   //
@@ -79,7 +79,11 @@ test.describe("mobile coarse-pointer UI audit", () => {
     await seedFTUX(page, "post-ftux");
     await page.goto("/finyk", { waitUntil: "domcontentloaded" });
 
-    await page.getByRole("button", { name: "Додати витрату" }).click();
+    await page.getByTestId("corner-action").getByRole("button").click();
+    await page
+      .getByTestId("add-sources")
+      .getByRole("button", { name: /Вручну/ })
+      .click();
 
     const dateField = page.getByLabel("Дата", { exact: true });
     await page.getByText("Інша дата").click();

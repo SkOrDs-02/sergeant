@@ -18,6 +18,8 @@ import {
   within,
 } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
+import { UNDO_TOAST_DEFAULT_LABEL } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import type { RoutineState } from "../lib/types";
 
 const {
@@ -340,6 +342,53 @@ describe("HabitDetailSheet", () => {
       "data-editing",
       "h1",
     );
+  });
+
+  it("carries the habit's declared skips into its month calendar", () => {
+    render(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine({
+          skips: {
+            h1: {
+              "2026-06-13": { reason: "travel", at: "2026-06-13T12:00:00Z" },
+            },
+          },
+        })}
+        onClose={vi.fn()}
+      />,
+    );
+    const calendar = screen.getByRole("region", { name: "Календар виконань" });
+    expect(
+      within(calendar).getByTitle("2026-06-13: не зміг, У дорозі"),
+    ).toBeInTheDocument();
+    expect(
+      within(calendar).queryByTitle("2026-06-13: заплановано"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("points to the archive action in details instead of the removed Settings path", () => {
+    render(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine()}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", {
+        name: messages.routine.habitsTab.archiveAction,
+      }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
+
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog).toHaveTextContent(
+      `«${messages.routine.habitsTab.archiveAction}» у деталях звички`,
+    );
+    expect(dialog).not.toHaveTextContent("через Налаштування");
+    expect(dialog).toHaveTextContent(`кнопка «${UNDO_TOAST_DEFAULT_LABEL}»`);
   });
 
   it("deletes via confirm dialog, snapshots, shows undo toast and closes", () => {

@@ -5,7 +5,11 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { webKVStore } from "@shared/lib/storage/storage";
 
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
-import type { GoalPeriodInsertOp, NutritionGoalSnapshot } from "./diff.js";
+import type {
+  GoalPeriodInsertOp,
+  GoalPeriodRestoreOp,
+  NutritionGoalSnapshot,
+} from "./diff.js";
 
 /**
  * Хендлер op-kind-у `goal-period-insert` — append-only журнал цілей КБЖВ.
@@ -86,6 +90,55 @@ export async function insertGoalPeriod(
       origin: op.origin,
       tz_offset_min: tzOffsetMin,
       created_at: clientTs,
+    },
+  });
+}
+
+/**
+ * Відновлення сходинки з бекапу (аудит 2026-10-01, data-35): `id`,
+ * `effective_from` і `created_at` беруться з файлу, а не з годинника, решта
+ * шляху (`INSERT OR IGNORE`, outbox) та сама, що в `insertGoalPeriod`. Чужий
+ * `id` не перезаписує наявну сходинку: `OR IGNORE` лишає рядок як є.
+ */
+export async function restoreGoalPeriod(
+  client: SqliteMigrationClient,
+  op: GoalPeriodRestoreOp,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  const { id, effectiveFrom, goal, origin, createdAt } = op.period;
+  const { kcal, proteinG, fatG, carbsG, waterMl } = goal;
+
+  await client.run(GOAL_PERIOD_INSERT_SQL, [
+    id,
+    userId,
+    effectiveFrom,
+    kcal,
+    proteinG,
+    fatG,
+    carbsG,
+    waterMl,
+    origin,
+    null,
+    createdAt,
+    clientTs,
+  ]);
+
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "nutrition_goal_periods",
+    op: "insert",
+    clientTs,
+    row: {
+      id,
+      user_id: userId,
+      effective_from: effectiveFrom,
+      kcal,
+      protein_g: proteinG,
+      fat_g: fatG,
+      carbs_g: carbsG,
+      water_ml: waterMl,
+      origin,
+      created_at: createdAt,
     },
   });
 }

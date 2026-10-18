@@ -482,7 +482,7 @@ grep found no EMAIL_VERIFICATION_REQUIRED handling in apps/web/src or packages/a
 
 ### `ux-07` [medium] Виписка на 1000+ рядків проходить прев'ю, але «Імпортувати» падає з «Некоректні дані запиту»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-ux-07-import-large-statement (кнопка блокується понад 1000 вибраних рядків з поясненням; клієнтська нарізка на кілька commit-ів лишилась follow-up-ом після data-29)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+shared: Фінік / імпорт виписок
 - **Де:** packages/shared/src/schemas/import.ts:315; apps/server/src/modules/finyk/import/statementPreview.ts (MAX_PREVIEW_DATA_ROWS); apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx:330-343
 - **Першопричина:** Прев'ю приймає до MAX_PREVIEW_DATA_ROWS=10 000 рядків, а схема commit обмежує rows значенням IMPORT_COMMIT_MAX_ROWS=1000. Коментар у схемі передбачає кілька commit-ів, але BulkImportSheet.handleCommit шле все одним запитом, а кнопка блокується лише тоді, коли не вибрано жодного рядка.
@@ -811,7 +811,7 @@ vb/05-list-typing.mjs, новий користувач. На старті «Ту
 
 ### `ux-13` [medium] У прийомі, доданому з бази продуктів, на іншому пристрої чи після очищення даних не можна змінити вагу, і він підписаний «Вручну»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-ux-13-meal-weight-edit (старі рядки `productDb` із ручними КБЖВ, збережені до фіксу, на пристрої без локального продукту отримують масштабоване поле ваги: потрібне рішення власника, див. журнал рішень nutrition.md 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа / журнал
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useEditedFoodRehydration.ts; nutrition foodDb (makeFoodProduct, ensureSeedFoods); nutrition_meals.food_id
 - **Першопричина:** Seed-продукти отримують випадковий локальний id food_&lt;uuid&gt; окремо на кожному пристрої. Прийом зберігає цей id без per100, а useEditedFoodRehydration шукає продукт лише в локальній IndexedDB. На іншому пристрої продукт не знаходиться, поля ваги немає, і запис показується як ручний.

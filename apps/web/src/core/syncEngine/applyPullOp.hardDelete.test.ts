@@ -149,6 +149,56 @@ describe("applyPullOp — hard-delete finyk-таблиці (data-15)", () => {
     expect(await count("finyk_tx_categories")).toBe(1);
   });
 
+  it("delete відсутнього рядка -> skipped (нічого не змінилось, кеш не будимо)", async () => {
+    expect(
+      await applyPullOp(
+        client,
+        op("finyk_tx_categories", "delete", catRow, T1),
+        USER,
+        "device-a",
+      ),
+    ).toBe("skipped");
+    expect(await count("finyk_tx_categories")).toBe(0);
+  });
+
+  it("локальний writer коммітить між SELECT і DELETE -> рядок лишається, outcome skipped", async () => {
+    await applyPullOp(
+      client,
+      op("finyk_tx_categories", "insert", catRow, T0),
+      USER,
+      "device-a",
+    );
+    let interleaved = false;
+    const racing: SqliteMigrationClient = {
+      ...client,
+      async all<R extends Record<string, unknown>>(
+        sql: string,
+        params?: readonly unknown[],
+      ) {
+        const rows = await client.all<R>(sql, params);
+        if (!interleaved && sql.startsWith("SELECT updated_at")) {
+          interleaved = true;
+          db.prepare(
+            `UPDATE finyk_tx_categories SET category_id = ?, updated_at = ?`,
+          ).run("local-edit", T2);
+        }
+        return rows;
+      },
+    };
+    const outcome = await applyPullOp(
+      racing,
+      op("finyk_tx_categories", "delete", catRow, T1, 2),
+      USER,
+      "device-a",
+    );
+    expect(interleaved).toBe(true);
+    expect(outcome).toBe("skipped");
+    const left = await client.all<{ category_id: string; updated_at: string }>(
+      `SELECT category_id, updated_at FROM finyk_tx_categories`,
+    );
+    expect(left).toEqual([{ category_id: "local-edit", updated_at: T2 }]);
+  });
+
   it("delete чужого user_id не чіпає рядок і відхиляється", async () => {
     await applyPullOp(
       client,

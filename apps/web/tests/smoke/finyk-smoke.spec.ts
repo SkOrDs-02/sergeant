@@ -49,11 +49,14 @@ test("@critical finyk: empty transactions → add-expense CTA opens sheet", asyn
     timeout: 10_000,
   });
 
-  // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка тепер
-  // «Додати», а «Додати витрату» — role="menuitem" усередині фану.
+  // «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел.
   await page
-    .getByTestId("add-action-bar")
-    .getByRole("button", { name: "Додати витрату" })
+    .getByTestId("corner-action")
+    .getByRole("button", { name: "Додати" })
+    .click();
+  await page
+    .getByTestId("add-sources")
+    .getByRole("button", { name: /^Вручну/ })
     .click();
   await expect(
     page.getByRole("dialog", { name: "Додати витрату" }),

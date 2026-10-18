@@ -109,7 +109,7 @@ describe("HabitStreakCanvas", () => {
     ).not.toBeNull();
   });
 
-  it("рендерить «не за розкладом» як найтихіший стан — без бордера", () => {
+  it("рендерить «не за розкладом» як незаповнений нейтральний контур", () => {
     render(
       <HabitStreakCanvas
         habit={HABIT}
@@ -120,7 +120,8 @@ describe("HabitStreakCanvas", () => {
     );
     const cell = screen.getByLabelText("25 лип.: не за розкладом");
     expect(cell).toBeInTheDocument();
-    expect(cell.className).not.toContain("border");
+    expect(cell.className).toContain("bg-transparent");
+    expect(cell.className).not.toContain("routine");
   });
 
   it("сьогодні поза розкладом лишається «не за розкладом», а не pending", () => {
@@ -201,6 +202,6 @@ describe("HabitStreakCanvas", () => {
       />,
     );
     expect(screen.getByText(/Серія ще не почалась/)).toBeInTheDocument();
-    expect(screen.getByText(/Тут зʼявиться полотно/)).toBeInTheDocument();
+    expect(screen.getByText(/Відміток ще немає/)).toBeInTheDocument();
   });
 });

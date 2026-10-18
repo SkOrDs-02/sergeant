@@ -1,5 +1,4 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
 import { TimeField } from "@shared/components/ui/TimeField";
@@ -9,7 +8,8 @@ import {
   readNotificationPermission,
   useRoutineRemindersToggle,
 } from "../../hooks/useRoutineRemindersToggle";
-import { ROUTINE_THEME as C } from "../../lib/routineConstants";
+import { RoutineChoiceList } from "./RoutineChoiceList";
+import { messages } from "@shared/i18n/uk";
 import {
   REMINDER_PRESETS,
   matchReminderPreset,
@@ -45,57 +45,25 @@ export function ReminderPresets({
   const activePresetId = matchReminderPreset(times)?.id ?? null;
   return (
     <div className="space-y-2">
-      <div className="text-style-caption text-subtle">
+      <div className="text-style-label text-subtle">
         Нагадування (необовʼязково)
       </div>
-      <div
-        className="flex flex-wrap gap-1.5"
-        role="radiogroup"
-        aria-label="Нагадування"
-      >
-        {REMINDER_PRESETS.map((preset) => {
-          const active = activePresetId === preset.id;
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              className={cn(
-                "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
-                active ? C.chipOn : C.chipOff,
-              )}
-              onClick={() =>
-                setHabitDraft((d) => ({
-                  ...d,
-                  reminderTimes: [...preset.times],
-                  timeOfDay: preset.times[0] || "",
-                }))
-              }
-            >
-              {preset.label}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          role="radio"
-          aria-checked={times.length === 0}
-          className={cn(
-            "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
-            times.length === 0 ? C.chipOn : C.chipOff,
-          )}
-          onClick={() =>
-            setHabitDraft((d) => ({
-              ...d,
-              reminderTimes: [],
-              timeOfDay: "",
-            }))
-          }
-        >
-          Без
-        </button>
-      </div>
+      <RoutineChoiceList
+        label="Нагадування"
+        value={times.length === 0 ? "none" : activePresetId}
+        options={[
+          ...REMINDER_PRESETS.map((p) => ({ value: p.id, label: p.label })),
+          { value: "none", label: messages.routine.noReminder },
+        ]}
+        onChange={(id) => {
+          const times = REMINDER_PRESETS.find((p) => p.id === id)?.times ?? [];
+          setHabitDraft((d) => ({
+            ...d,
+            reminderTimes: [...times],
+            timeOfDay: times[0] || "",
+          }));
+        }}
+      />
       {times.map((t, i) => (
         <div key={i} className="flex items-center gap-2">
           {/* `flex-1` сам по собі НЕ рятує: він ставить `flex-basis: 0`, але
@@ -125,7 +93,7 @@ export function ReminderPresets({
           <IconButton
             size="xs"
             variant="ghost"
-            className="rounded-xl text-subtle hover:text-danger hover:bg-danger/10"
+            className="rounded-lg text-subtle hover:text-danger hover:bg-danger/10"
             onClick={() =>
               setHabitDraft((d) => {
                 const arr = (d.reminderTimes || []).filter((_, j) => j !== i);
@@ -145,17 +113,17 @@ export function ReminderPresets({
       {showDeliveryHint && (
         <div
           role="status"
-          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-line bg-panelHi px-3 py-2"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line pt-3"
         >
-          <p className="text-style-caption text-muted min-w-0 flex-1">
+          <p className="text-style-label text-muted min-w-0 flex-1">
             {prefEnabled
               ? "Браузер не дозволяє сповіщення, тож нагадування не прийдуть"
               : "Нагадування вимкнені в налаштуваннях"}
           </p>
           <Button
             type="button"
-            variant="soft"
-            tone="routine"
+            variant="outline"
+            tone="neutral"
             size="sm"
             onClick={async () => {
               await setReminders(true);
@@ -169,7 +137,7 @@ export function ReminderPresets({
       {times.length < 5 && times.length > 0 && (
         <button
           type="button"
-          className="text-style-caption text-routine-strong dark:text-routine font-semibold hover:underline"
+          className="text-style-label text-text font-semibold hover:underline"
           onClick={() =>
             setHabitDraft((d) => ({
               ...d,
@@ -177,7 +145,7 @@ export function ReminderPresets({
             }))
           }
         >
-          + Додати час
+          {messages.routine.addTime}
         </button>
       )}
     </div>

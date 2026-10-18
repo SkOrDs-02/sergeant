@@ -22,6 +22,11 @@ function renderPage() {
 }
 
 describe("CapabilitiesPage", () => {
+  it("renders factual capability rows without decorative glyphs", () => {
+    const { container } = renderPage();
+    expect(container.querySelectorAll("svg")).toHaveLength(0);
+  });
+
   it("володіє власним скрол-контейнером на всю висоту вікна", () => {
     const { container } = renderPage();
     const main = container.querySelector("main");

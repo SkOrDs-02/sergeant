@@ -6,7 +6,6 @@ import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { DateField } from "@shared/components/ui/DateField";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { todayISODate, type MealTypeId } from "@sergeant/nutrition-domain";
@@ -46,7 +45,7 @@ export function CopyMealSheet({
       zIndex={120}
     >
       <div className="mb-4">
-        <SectionHeading as="div" size="xs" variant="nutrition" className="mb-1">
+        <SectionHeading as="div" size="xs" className="mb-1">
           {copy.dateLabel}
         </SectionHeading>
         <DateField
@@ -56,7 +55,7 @@ export function CopyMealSheet({
         />
       </div>
       <div className="mb-4">
-        <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
+        <SectionHeading as="div" size="xs" className="mb-2">
           {copy.mealLabel}
         </SectionHeading>
         <div className="flex gap-2 flex-wrap">
@@ -67,13 +66,12 @@ export function CopyMealSheet({
               aria-pressed={chosen === mt.id}
               onClick={() => setTarget(mt.id)}
               className={cn(
-                "text-style-label px-3 py-1.5 min-h-[44px] rounded-xl border inline-flex items-center gap-1.5",
+                "text-style-label px-3 py-1.5 min-h-[44px] rounded-lg border border-border-strong focus-ring",
                 chosen === mt.id
-                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
-                  : "bg-panelHi text-muted border-line hover:border-nutrition/50",
+                  ? "bg-line/60 text-text font-semibold"
+                  : "text-muted hover:bg-line/40",
               )}
             >
-              <Icon name={mt.iconName as IconName} size="sm" aria-hidden />
               {mt.label}
             </button>
           ))}
@@ -82,7 +80,7 @@ export function CopyMealSheet({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
           type="button"
-          className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
+          className="h-12 min-h-[44px]"
           disabled={!date}
           onClick={() => onCopy(date, chosen)}
         >

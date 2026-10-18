@@ -59,10 +59,9 @@ export function DashboardSection() {
   return (
     <SettingsGroup
       title={settingsSectionTitle("dashboard")}
-      icon="grid"
       anchorId="settings-dashboard"
     >
-      <SettingsSubGroup title="Вигляд">
+      <SettingsSubGroup variant="bounded" title="Вигляд">
         {/* Тема переїхала сюди з меню «⋯» у шапці (огляд 2026-09-04): це
             єдина підгрупа про вигляд, і саме тут її шукали — пошук
             «тема» доти давав порожнечу. */}
@@ -77,7 +76,7 @@ export function DashboardSection() {
           onChange={setShowInsights}
         />
       </SettingsSubGroup>
-      <SettingsSubGroup title="Розділи на головній">
+      <SettingsSubGroup variant="bounded" title="Розділи на головній">
         <p className="text-style-body text-subtle leading-snug">
           Які розділи показувати на головній. Неактивні розділи лишаються в
           панелі модулів приглушеними і не потрапляють у «Закрито сьогодні».

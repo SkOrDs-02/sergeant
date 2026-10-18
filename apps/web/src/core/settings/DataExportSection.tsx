@@ -99,7 +99,7 @@ export function DataExportSection() {
   };
 
   return (
-    <SettingsGroup title={settingsSectionTitle("dataExport")} icon="download">
+    <SettingsGroup title={settingsSectionTitle("dataExport")}>
       <p className="text-style-body text-subtle leading-snug">
         Збережи всі свої локальні дані у файл, його потім можна імпортувати
         назад. Для залогінених користувачів нижче є окремий експорт із серверних
@@ -111,17 +111,14 @@ export function DataExportSection() {
           §5): три саморобні `<h3 class="text-style-label">` → спільний
           примітив `SettingsSubGroup` (h3, `text-style-overline`) — той
           самий рецепт, канонічно пояснений у `PrivacySection.tsx`.
-          Рамка-картка (border/bg/padding) навколо кожного підблоку —
-          візуальне групування, не структурний заголовок, тож лишається
-          зовнішньою обгорткою навколо примітиву, а не частиною самого
-          `SettingsSubGroup`. */}
-      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <SettingsSubGroup title="Права на дані">
-          <p className="text-style-body text-subtle leading-relaxed">
-            Серверний експорт не включає сирі секрети й токени. Видалити акаунт
-            можна у профілі, там зібрані всі дії керування акаунтом.
-          </p>
-          {/* PR-S14: дві кнопки б'ють у `meApi.exportAccount`, який для гостя
+          Функціональна межа тепер належить bounded-варіанту спільного
+          примітиву: заголовок, пояснення й дії експорту в одній групі. */}
+      <SettingsSubGroup variant="bounded" title="Права на дані">
+        <p className="text-style-body text-subtle leading-relaxed">
+          Серверний експорт не включає сирі секрети й токени. Видалити акаунт
+          можна у профілі, там зібрані всі дії керування акаунтом.
+        </p>
+        {/* PR-S14: дві кнопки б'ють у `meApi.exportAccount`, який для гостя
               завжди 401. Доти гість натискав їх і отримував помилку — тобто
               інтерфейс пропонував дію, якої не існує для його стану, і
               пояснював це вже постфактум. Тепер стан видно ДО натискання.
@@ -132,46 +129,45 @@ export function DataExportSection() {
               `!signedIn` зробила б так, що кожен залогінений користувач на
               частку секунди бачить «увійди» — рівно той дефект, який
               PR-S2 лікував у сусідній секції. */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => void handleServerExport("json")}
-              disabled={serverExportBusy || signedIn === false}
-            >
-              {serverExportBusy ? m.busy : m.downloadJson}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => void handleServerExport("csv")}
-              disabled={serverExportBusy || signedIn === false}
-            >
-              {serverExportBusy ? m.busy : m.downloadCsv}
-            </Button>
-          </div>
-          {signedIn === false ? (
-            <p className="text-style-caption text-subtle leading-relaxed">
-              {m.guestHint}
-            </p>
-          ) : null}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleServerExport("json")}
+            disabled={serverExportBusy || signedIn === false}
+          >
+            {serverExportBusy ? m.busy : m.downloadJson}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void handleServerExport("csv")}
+            disabled={serverExportBusy || signedIn === false}
+          >
+            {serverExportBusy ? m.busy : m.downloadCsv}
+          </Button>
+        </div>
+        {signedIn === false ? (
           <p className="text-style-caption text-subtle leading-relaxed">
-            {m.formatsHint}
+            {m.guestHint}
           </p>
-          {serverMessage ? (
-            <p className="text-style-caption text-success-strong" role="status">
-              {serverMessage}
-            </p>
-          ) : null}
-          {serverError ? (
-            <p className="text-style-caption text-danger-strong" role="alert">
-              {serverError}
-            </p>
-          ) : null}
-        </SettingsSubGroup>
-      </div>
+        ) : null}
+        <p className="text-style-caption text-subtle leading-relaxed">
+          {m.formatsHint}
+        </p>
+        {serverMessage ? (
+          <p className="text-style-caption text-success-strong" role="status">
+            {serverMessage}
+          </p>
+        ) : null}
+        {serverError ? (
+          <p className="text-style-caption text-danger-strong" role="alert">
+            {serverError}
+          </p>
+        ) : null}
+      </SettingsSubGroup>
 
       {/* Тут раніше стояли дві декларації — «Куди їдуть дані для AI»
           (рішення founder-а #10) і sunset-обіцянка (рішення #6). Вони

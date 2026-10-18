@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@shared/api", async () => {
@@ -101,6 +107,11 @@ describe("SilpoIntegrationSection", () => {
     renderSection();
 
     expect(await screen.findByText("Звʼязати Сільпо")).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole("button", { name: "Звʼязати Сільпо" })
+        .querySelector("svg"),
+    ).toBeNull();
     // No leftover receipts — no single point of deletion needed.
     expect(
       screen.queryByText("Видалити всі дані Сільпо"),
@@ -167,8 +178,15 @@ describe("SilpoIntegrationSection", () => {
 
     expect(await screen.findByText("Сільпо звʼязано")).toBeInTheDocument();
     expect(screen.getByText(/5 чеків/)).toBeInTheDocument();
-    expect(screen.getByText("Оновити чеки")).toBeInTheDocument();
-    expect(screen.getByText("Видалити всі дані Сільпо")).toBeInTheDocument();
+    const receipts = screen.getByRole("region", { name: "Сільпо (чеки)" });
+    expect(
+      within(receipts).getByRole("button", { name: "Оновити чеки" }),
+    ).toBeVisible();
+    expect(
+      within(receipts).getByRole("button", {
+        name: "Видалити всі дані Сільпо",
+      }),
+    ).toBeVisible();
   });
 
   // Дві перевірки нижче — про те, чого бракувало два тижні: зламаний синк

@@ -59,6 +59,9 @@ describe("SoftAuthPromptCard", () => {
     const card = container.querySelector("[data-variant]");
     expect(card).not.toBeNull();
     expect(card?.getAttribute("data-variant")).toBe("gain");
+    expect(card).toHaveTextContent("Синхронізація записів");
+    expect(card?.querySelector("svg")).toBeNull();
+    expect(card?.className).not.toMatch(/bg-linear|brand|shadow/);
 
     // Both CTAs from i18n render.
     expect(

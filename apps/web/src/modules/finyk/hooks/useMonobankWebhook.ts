@@ -45,7 +45,6 @@ import {
 
 const SYNC_STATE_STALE = 30_000;
 const ACCOUNTS_STALE = 5 * 60_000;
-const TX_STALE = 60_000;
 
 /**
  * Webhook-backed Monobank hook (Track C).
@@ -55,7 +54,9 @@ const TX_STALE = 60_000;
  */
 export function useMonobankWebhook({
   enabled = true,
-}: { enabled?: boolean } = {}) {
+  writeMirror = true,
+  loadJars = true,
+}: { enabled?: boolean; writeMirror?: boolean; loadJars?: boolean } = {}) {
   const queryClient = useQueryClient();
   // PR #038 — read the authenticated user id straight from the React
   // Query cache instead of `useUser()` / `useAuth()`. The `me` cache is
@@ -78,7 +79,8 @@ export function useMonobankWebhook({
     queryFn: ({ signal }) => monoWebhookApi.syncState({ signal }),
     enabled,
     staleTime: SYNC_STATE_STALE,
-    refetchOnWindowFocus: true,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
     retry: authAwareRetry(1),
   });
 
@@ -103,7 +105,7 @@ export function useMonobankWebhook({
   const jarsQuery = useQuery<MonoJarDto[]>({
     queryKey: finykKeys.monoWebhookJars,
     queryFn: ({ signal }) => monoWebhookApi.jars({ signal }),
-    enabled: enabled && isConnected,
+    enabled: enabled && isConnected && loadJars,
     staleTime: ACCOUNTS_STALE,
     refetchOnWindowFocus: false,
     retry: authAwareRetry(1),
@@ -166,8 +168,11 @@ export function useMonobankWebhook({
     queryFn: ({ signal }) =>
       fetchAllMonoTransactions({ from: fromDate, to: toDate }, { signal }),
     enabled: enabled && isConnected,
-    staleTime: TX_STALE,
-    refetchOnWindowFocus: true,
+    // A restored query can predate new bank operations even inside 60s.
+    // It must revalidate when sync-state enables it, as well as on focus.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
     retry: authAwareRetry(2),
   });
 
@@ -189,15 +194,12 @@ export function useMonobankWebhook({
     emitHubBus("storageUpdated", undefined);
   }, [transactions, queryClient]);
 
-  // PR #038 — Mono cache mirror.
-  //
-  // Best-effort write into the SQLite mirror tables on every successful
-  // Mono fetch. Runs alongside the LS shim above so the mirror stays
-  // a strict superset of LS during the experiment. Failures are
-  // swallowed — the LS write above remains the source-of-truth until
-  // the read overlay flag is flipped on per-user.
+  // FinykBootCluster owns these writes on every authenticated route.
+  // The Finyk screen observes the same queries with writeMirror=false.
+  // Failed refreshes preserve the last local data for offline use.
   useEffect(() => {
-    if (!userId || transactions.length === 0) return;
+    if (!enabled || !writeMirror || !userId || transactions.length === 0)
+      return;
     let cancelled = false;
     void (async () => {
       try {
@@ -219,10 +221,10 @@ export function useMonobankWebhook({
     return () => {
       cancelled = true;
     };
-  }, [transactions, userId]);
+  }, [transactions, userId, enabled, writeMirror]);
 
   useEffect(() => {
-    if (!userId || accounts.length === 0) return;
+    if (!enabled || !writeMirror || !userId || accounts.length === 0) return;
     let cancelled = false;
     // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock account-snapshot instant, not a Kyiv day boundary
     const snapshotAt = new Date().toISOString();
@@ -248,7 +250,7 @@ export function useMonobankWebhook({
     return () => {
       cancelled = true;
     };
-  }, [accounts, userId]);
+  }, [accounts, userId, enabled, writeMirror]);
 
   // Read overlay — when the network slice is empty (cold start, fetch
   // pending) and the flag is on, return the mirrored transactions so
@@ -355,7 +357,9 @@ export function useMonobankWebhook({
         queryKey: finykKeys.monoWebhookTransactions(`${from}|${to}`),
         queryFn: ({ signal }) =>
           fetchAllMonoTransactions({ from, to }, { signal }),
-        staleTime: TX_STALE,
+        // A restored query can predate new bank operations even inside 60s.
+        // It must revalidate when sync-state enables it, as well as on focus.
+        staleTime: 0,
         retry: authAwareRetry(2),
       });
       return (data ?? [])
@@ -556,12 +560,23 @@ export function useMonobankWebhook({
     setAuthError("");
   }, [queryClient]);
 
-  const clearTxCache = useCallback(() => {
-    queryClient.removeQueries({
-      queryKey: finykKeys.monoWebhookTransactions(),
-    });
-    queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+  const clearTxCache = useCallback(async () => {
     setError("");
+    try {
+      // Reset every date bucket and refetch active observers. Removing only
+      // the default "all" bucket misses real queries; removing active queries
+      // would also leave mounted readers without a replacement request.
+      // The SQLite mirror and user-authored records remain available offline.
+      await queryClient.resetQueries(
+        { queryKey: finykKeys.monoWebhookTransactionsPrefix },
+        { throwOnError: true },
+      );
+      await queryClient.invalidateQueries({
+        queryKey: hubKeys.preview("finyk"),
+      });
+    } catch {
+      setError(failedCopy("перезавантажити операції Monobank"));
+    }
   }, [queryClient]);
 
   return {

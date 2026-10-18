@@ -19,6 +19,74 @@ describe("CollapsibleSection", () => {
     cleanup();
   });
 
+  it("розкриває явну route-ціль на монтуванні попри збережене згортання", () => {
+    localStorage.setItem("sergeant.test.route-target", "false");
+    const onReveal = vi.fn();
+    render(
+      <CollapsibleSection
+        storageKey="sergeant.test.route-target"
+        title="Памʼять"
+        openSignal="route-memory"
+        revealOnMount
+        onReveal={onReveal}
+      >
+        payload
+      </CollapsibleSection>,
+    );
+    const toggle = screen.getByRole("button", { name: /Памʼять/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(onReveal).toHaveBeenCalledWith(toggle.closest("section"));
+    expect(localStorage.getItem("sergeant.test.route-target")).toBe("true");
+  });
+
+  it("повторює той самий history-запит після зняття цілі та ручного згортання", () => {
+    const onReveal = vi.fn();
+    const props = {
+      storageKey: "sergeant.test.route-back",
+      title: "Памʼять",
+      onReveal,
+    };
+    const { rerender } = render(
+      <CollapsibleSection {...props} openSignal="route-memory" revealOnMount />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Памʼять/ }));
+    rerender(<CollapsibleSection {...props} />);
+    onReveal.mockClear();
+    rerender(<CollapsibleSection {...props} openSignal="route-memory" />);
+    const toggle = screen.getByRole("button", { name: /Памʼять/ });
+    fireEvent.transitionEnd(toggle.nextElementSibling!);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(onReveal).toHaveBeenCalledWith(toggle.closest("section"));
+  });
+
+  it("віддає зовнішнє розкриття власнику прокрутки без scrollIntoView", () => {
+    const onReveal = vi.fn();
+    const props = {
+      storageKey: "sergeant.test.host-reveal",
+      title: "Памʼять",
+      defaultOpen: false,
+      onReveal,
+    };
+    const { rerender } = render(
+      <CollapsibleSection {...props} openSignal={0}>
+        payload
+      </CollapsibleSection>,
+    );
+    const toggle = screen.getByRole("button", { name: /Памʼять/ });
+    const section = toggle.closest("section")!;
+    const scrollIntoView = vi.fn();
+    section.scrollIntoView = scrollIntoView;
+    rerender(
+      <CollapsibleSection {...props} openSignal={1}>
+        payload
+      </CollapsibleSection>,
+    );
+    fireEvent.transitionEnd(toggle.nextElementSibling!);
+    expect(onReveal).toHaveBeenCalledWith(section);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("renders an expanded heading and its children by default", () => {
     render(
       <CollapsibleSection storageKey="sergeant.test.expanded" title="Підказки">
@@ -30,13 +98,12 @@ describe("CollapsibleSection", () => {
     expect(screen.getByText("payload")).toBeInTheDocument();
   });
 
-  it("shows a collapsed pill with icon, title, and subtitle when collapsed", () => {
+  it("shows a collapsed text row with title, subtitle, and expand action", () => {
     render(
       <CollapsibleSection
         storageKey="sergeant.test.collapsed"
         title="Аналітика"
         defaultOpen={false}
-        collapsedIcon="bar-chart"
         collapsedSubtitle="3 інсайти"
       >
         <p>payload</p>

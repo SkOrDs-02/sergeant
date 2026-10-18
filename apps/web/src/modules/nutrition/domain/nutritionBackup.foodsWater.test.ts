@@ -84,7 +84,7 @@ describe("бекап Їжі: власні продукти і вода", () => {
     ]);
 
     freshDevice({ "2026-10-02": 300 });
-    applyNutritionBackupPayload(file, "merge");
+    await applyNutritionBackupPayload(file, "merge");
     await applyNutritionBackupFoods(file);
     await applyNutritionBackupFoods(file); // повторний імпорт без дублів
 
@@ -109,7 +109,7 @@ describe("бекап Їжі: власні продукти і вода", () => {
       exportedAt: "2026-06-01T00:00:00.000Z",
       data: { stateSchemaVersion: 1, prefs: {} },
     };
-    applyNutritionBackupPayload(v1, "merge");
+    await applyNutritionBackupPayload(v1, "merge");
     await applyNutritionBackupFoods(v1);
     expect(await listFoods()).toEqual([]);
   });

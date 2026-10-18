@@ -14,7 +14,6 @@
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { Button } from "@shared/components/ui/Button";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { FIZRUK_GROUP_LABEL } from "../lib/hubCalendarAggregate";
 
 const COPY = messages.routine.filterChips;
@@ -23,7 +22,7 @@ const COPY = messages.routine.filterChips;
 // solid у тоні Рутини, решта — outline з hairline модуля. Власна розмітка
 // пігулки прибрана (анти-слоп, chip-scroller як дефолтний фільтр); 44px на
 // coarse pointer дає сам Button.
-const CHIP_OFF = "border-routine/40";
+const CHIP_OFF = "border-line";
 // Довгий тег переноситься рядком, тож фіксована висота `size="xs"` знята.
 const CHIP_WRAPPING =
   "h-auto min-h-8 py-1.5 whitespace-normal break-words leading-snug text-left";
@@ -74,18 +73,13 @@ export function RoutineFilterChips({
       role="group"
       aria-label={COPY.groupLabel}
     >
-      <SectionHeading
-        as="span"
-        size="xs"
-        className="shrink-0 sm:w-auto"
-        variant="routine"
-      >
+      <span className="text-style-label text-muted shrink-0 sm:w-auto">
         {COPY.heading}
-      </SectionHeading>
+      </span>
       <Button
         size="xs"
         variant={tagFilter === null ? "solid" : "outline"}
-        tone={tagFilter === null ? "routine" : "neutral"}
+        tone="neutral"
         aria-pressed={tagFilter === null}
         onClick={onClearFilter}
         className={cn("shrink-0", tagFilter !== null && CHIP_OFF)}
@@ -105,7 +99,7 @@ export function RoutineFilterChips({
           className={cn(
             "shrink-0",
             tagFilter === "__fizruk"
-              ? "border-info/50 bg-info/10 text-text"
+              ? "border-text bg-panelHi text-text"
               : CHIP_OFF,
           )}
         >
@@ -124,7 +118,7 @@ export function RoutineFilterChips({
             CHIP_WRAPPING,
             "max-w-[75vw] sm:max-w-[200px]",
             tagFilter === "__finyk_sub"
-              ? "border-success/40 bg-success/10 text-text"
+              ? "border-text bg-panelHi text-text"
               : CHIP_OFF,
           )}
         >
@@ -136,7 +130,7 @@ export function RoutineFilterChips({
           key={name}
           size="xs"
           variant={tagFilter === name ? "solid" : "outline"}
-          tone={tagFilter === name ? "routine" : "neutral"}
+          tone="neutral"
           aria-pressed={tagFilter === name}
           onClick={() => toggle(name)}
           className={cn(
@@ -152,8 +146,8 @@ export function RoutineFilterChips({
       {orphanTagFilter && (
         <Button
           size="xs"
-          variant="soft"
-          tone="routine"
+          variant="outline"
+          tone="neutral"
           onClick={onClearFilter}
           className={cn(
             "shrink-0",

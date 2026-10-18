@@ -32,7 +32,7 @@ export function SaveAsTemplate({
     <div className="mt-3">
       <button
         type="button"
-        className="text-style-caption text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
+        className="min-h-[44px] rounded-lg text-style-label font-semibold text-text underline underline-offset-2 focus-ring"
         onClick={() => {
           const name = form.name.trim();
           if (!name) {

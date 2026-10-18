@@ -92,9 +92,7 @@ describe("PaywallModal", () => {
     renderModal(true);
     expect(screen.getByText("AI-чат на ліміті")).toBeTruthy();
     expect(screen.getByText("Free план: 5 запитів/день.")).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: /Перейти на Premium/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Дивитися плани/ })).toBeTruthy();
   });
 
   // Trial дає лише новому акаунту і лише за прапорцем (спека access-tiers),
@@ -115,14 +113,14 @@ describe("PaywallModal", () => {
   it("moves initial focus to the primary CTA, not the close button", () => {
     renderModal(true);
     expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: /Перейти на Premium/ }),
+      screen.getByRole("button", { name: /Дивитися плани/ }),
     );
   });
 
   it("navigates to /pricing?source=paywall when the primary CTA is pressed", () => {
     renderModal(true);
     navigateSpy.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /Перейти на Premium/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Дивитися плани/ }));
     expect(navigateSpy).toHaveBeenLastCalledWith("/pricing?source=paywall");
   });
 

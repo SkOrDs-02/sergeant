@@ -1579,7 +1579,7 @@ I could not refute this. The bug is real. I think "high" overstates the severity
 
 ### `data-15` [medium] Таблиці з hard-delete без tombstone (категорії й розбивки транзакцій, привʼязки боргів, net-worth): видалення не доходить на інші пристрої, а застарілий оп воскрешає рядок
 
-- **Стан:** частково виправлено в гілці claude/fix-data-15-client-hard-delete-pull (клієнтська частина: pull-delete на таблиці без `deleted_at`, але з `updated_at`, виконує hard DELETE з LWW `updated_at < client_ts` замість `rejected`; лишилось: soft-delete (`deleted_at` + `updated_at`) на обох боках з міграцією і tombstone-перевіркою в серверній гілці INSERT, воскресіння застарілим опом на сервері досі можливе, правка ADR-0073 — окремим стековим PR за рішенням власника)
+- **Стан:** частково виправлено в гілці claude/fix-data-15-client-hard-delete-pull (клієнтська частина: pull-delete на таблиці без `deleted_at`, але з `updated_at`, виконує hard DELETE з LWW `julianday(updated_at) < julianday(client_ts)` у самому DELETE (RETURNING, відсутній або новіший локально рядок -> skipped) замість `rejected`; лишилось: soft-delete (`deleted_at` + `updated_at`) на обох боках з міграцією і tombstone-перевіркою в серверній гілці INSERT, воскресіння застарілим опом на сервері досі можливе, правка ADR-0073 — окремим стековим PR за рішенням власника)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync finyk + web: applyPullOp + dualwrite-core
 - **Де:** apps/server/src/modules/sync/finyk/applySync.ts:239-265,299-321,354-381; apps/web/src/core/syncEngine/applyPullOp.ts:331-334; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:278-340; apps/web/src/modules/finyk/lib/sqliteWriter/specs.ts:194-209; packages/dualwrite-core/src/tableSpec.ts:183-189
 - **Першопричина:** finyk_tx_categories, finyk_tx_splits, finyk_mono_debt_links і finyk_networth_history видаляються справжнім DELETE без запису часу видалення. На сервері після DELETE гілка «рядка немає» вставляє запізнілий оп без порівняння з часом видалення; на клієнті pull для delete на таблиці без deleted_at повертає rejected (подія в Sentry), а курсор іде далі.
@@ -2977,7 +2977,7 @@ Harness: finyk versions 999 and 4 accepted, 0/-1/1000 rejected; routine schemaVe
 
 ### `data-35` [medium] Бекап «всього Hub» неповний і з втратами: немає рецептів, списку покупок, води й періодів цілей, а restore стирає історію покупок комори (sources)
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-35-nutrition-backup-complete (власні продукти foodDb і вода `data.water` додав окремо `main`, 2207eb038; ця гілка зливає схему v2 з ними)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап Їжі (nutritionBackup)
 - **Де:** apps/web/src/modules/nutrition/domain/nutritionBackup.ts:71-89,146-226; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:262-312,485-511; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:603; apps/web/src/core/hub/HubBackupPanel.tsx:177,189-193
 - **Першопричина:** normalizePantryItem на експорті й імпорті лишає лише name, qty, unit і notes, тож PantryItem.sources і ambiguousQty губляться, а extractPantrySnapshots пише sources = null поверх наявних. Payload Їжі не містить nutrition_recipes, nutrition_shopping_list, nutrition_water_log і nutrition_goal_periods.

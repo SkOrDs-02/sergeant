@@ -10,6 +10,25 @@
  */
 
 export const fizrukPageMessages = {
+  recoveryWarnings: {
+    injury: "Позначено біль: не раджу навантажувати",
+    recovering: "Мʼязи ще відновлюються",
+  },
+  disclosure: { show: "Показати", hide: "Сховати" },
+  restSettingsHint: "Обраний час відпочинку діє для вправ цього типу.",
+  hero: {
+    start: "Почати",
+    activeLabel: "Тренування триває",
+    openSession: "Сесія відкрита",
+    recovery: "Стан відновлення",
+    noPlan: "На сьогодні нічого не заплановано",
+    noHistory: "Історії тренувань ще немає",
+    openPlan: "Відкрити план",
+    chooseTemplate: "Обрати шаблон",
+    createTemplate: "Створити шаблон",
+    quickStart: "Швидкий старт",
+    programs: "До програм",
+  },
   headerSubtitle: "Рух · сила · відновлення",
   // < sm: повний підпис не вміщається поруч із двома кнопками шапки на
   // 390 px (VIS-1, аудит 2026-09). «Рух і відновлення» теж не вміщався на
@@ -725,7 +744,8 @@ export const fizrukPageMessages = {
     // `/fizruk/history` тепер один і належить шапці модуля, тож рядок
     // лишався б підписом до кнопки, якої немає.
     emptyTitle: "Поки немає тренувань",
-    emptyDescription: "Заверши перше тренування, воно зʼявиться тут.",
+    emptyDescription: "Завершене тренування зʼявиться тут.",
+    startCta: "Почати тренування",
     endedBadge: "Завершене",
     activeBadge: "Активне",
     /**

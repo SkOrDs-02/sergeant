@@ -21,9 +21,6 @@ import {
 } from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
-// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
-// каталог тягне з собою десять модульних файлів плюс en-копію
-// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 
 // Мова H (redesign v3): один рядок факту на плаваючій поверхні. Без
@@ -220,7 +217,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
         // Elevation e5 — toast tier. Toasts are the top-most
         // ephemeral surface; the tray sits on `z-toast` (300), above
         // modals/sheets (200) even when both stacks are visible.
-        "text-style-label pointer-events-auto w-full px-4 py-3 rounded-xl shadow-e5 relative overflow-hidden",
+        "text-style-label pointer-events-auto w-full px-4 py-3 rounded-lg shadow-e5 relative overflow-hidden",
         "flex items-center gap-2.5 outline-none",
         "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "touch-pan-y", // allow vertical scroll, capture horizontal swipe

@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
@@ -137,14 +136,14 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card radius="lg" padding="lg">
+          <Card padding="lg">
             <EmptyState
               title="Неправильний ID вправи"
               description="Посилання пошкоджене або застаріле. Повернись до журналу тренувань і обери вправу зі списку."
               action={
                 <Button
                   variant="solid"
-                  tone="fizruk"
+                  tone="neutral"
                   onClick={() => onNavigate("workouts")}
                 >
                   До журналу
@@ -169,7 +168,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div
-          className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3"
+          className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7"
           role="status"
           aria-live="polite"
           aria-label="Завантаження вправи"
@@ -194,7 +193,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card radius="lg" padding="lg">
+          <Card padding="lg">
             <EmptyState
               title="Вправу не знайдено"
               description="Можливо, її видалили з каталогу. Повернись до журналу і обери зі списку."
@@ -202,7 +201,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 onNavigate ? (
                   <Button
                     variant="solid"
-                    tone="fizruk"
+                    tone="neutral"
                     onClick={() => onNavigate("workouts")}
                   >
                     До журналу
@@ -218,9 +217,9 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         <div>
-          <h1 className="text-style-title text-text leading-tight">
+          <h1 className="text-style-headline text-text leading-tight">
             {ex?.name?.uk ||
               ex?.name?.en ||
               history?.[0]?.item?.nameUk ||
@@ -231,7 +230,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               {muscleLabels.map((m) => (
                 <span
                   key={m}
-                  className="text-style-caption px-2.5 py-1 rounded-full bg-success/10 text-success-strong dark:text-success border border-success/20"
+                  className="text-style-caption px-2.5 py-1 rounded-lg bg-panelHi text-text border border-line"
                 >
                   {m}
                 </span>
@@ -251,13 +250,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           мірятись із власним рекордом тут не час.
         */}
         {best.isNewPR && !aging.returnMode && (
-          <div className="flex items-center gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
-            <Icon name="award" size="lg" aria-hidden />
+          <div className="flex items-center gap-2.5 rounded-panel border border-line bg-panelHi px-4 py-3">
             <div>
-              <p className="text-style-label text-warning-strong dark:text-warning">
+              <p className="text-style-label text-text">
                 Новий особистий рекорд!
               </p>
-              <p className="text-style-caption text-warning-strong dark:text-warning">
+              <p className="text-style-caption text-text">
                 Найкращий результат за всю історію
               </p>
             </div>
@@ -267,7 +265,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         <ReturnProtocolNotice aging={aging} />
 
         {best.isRegression && !aging.returnMode && (
-          <div className="rounded-2xl border border-line bg-panel px-4 py-3">
+          <div className="rounded-panel border border-line bg-panel px-4 py-3">
             <p className="text-style-label text-text">
               {`${messages.fizruk.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
             </p>
@@ -277,9 +275,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Card radius="lg">
-            <SectionHeading as="h2" size="xs" variant="fizruk">
+        <div className="space-y-7">
+          <Card
+            prominence={history.length > 0 ? "hero" : "panel"}
+            tone="fizruk"
+          >
+            <SectionHeading as="h2" size="lg" variant="fizruk">
               Особистий рекорд
             </SectionHeading>
             <div className="text-style-headline text-text mt-1 tabular-nums">
@@ -306,8 +307,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               </div>
             )}
           </Card>
-          <Card radius="lg">
-            <SectionHeading as="h2" size="xs" variant="fizruk">
+          <Card>
+            <SectionHeading as="h2" size="lg" variant="fizruk">
               Наступного разу
             </SectionHeading>
             <div className="text-style-headline text-text mt-1 tabular-nums">
@@ -336,7 +337,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 приймає число, а не рядок. */}
             {suggestedNext?.altWeightKg != null &&
               suggestedNext.altReps != null && (
-                <div className="text-style-caption text-fizruk mt-1">
+                <div className="text-style-caption text-text mt-1">
                   або{" "}
                   <Measure
                     value={suggestedNext.altWeightKg}
@@ -356,8 +357,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         </div>
 
         {hasStrength && (
-          <Card radius="lg">
-            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+          <Card>
+            <SectionHeading as="h2" size="lg" className="mb-3" variant="fizruk">
               Прогресія 1RM (за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
@@ -370,8 +371,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         )}
 
         {hasStrength && (
-          <Card radius="lg">
-            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+          <Card>
+            <SectionHeading as="h2" size="lg" className="mb-3" variant="fizruk">
               Обʼєм тренування (кг × повтори, за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
@@ -384,8 +385,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         )}
 
         {hasCardio && (
-          <Card radius="lg">
-            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+          <Card>
+            <SectionHeading as="h2" size="lg" className="mb-3" variant="fizruk">
               Темп (хв/км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
@@ -401,8 +402,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         )}
 
         {hasCardio && (
-          <Card radius="lg">
-            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+          <Card>
+            <SectionHeading as="h2" size="lg" className="mb-3" variant="fizruk">
               Дистанція (км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
@@ -426,8 +427,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           />
         )}
 
-        <Card radius="lg" padding="lg">
-          <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+        <Card padding="lg">
+          <SectionHeading as="h2" size="lg" className="mb-3" variant="fizruk">
             Історія підходів
           </SectionHeading>
           {history.length === 0 ? (
@@ -443,7 +444,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 .map(({ workout, item }) => (
                   <div
                     key={`${workout.id}_${item.id}`}
-                    className="border border-line rounded-2xl p-3 bg-bg"
+                    className="border border-line rounded-panel p-3 bg-bg"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-style-caption text-subtle">
@@ -451,7 +452,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                           ? formatShortDate(workout.startedAt)
                           : "—"}
                       </div>
-                      <div className="text-style-caption px-2 py-1 rounded-full border border-line text-subtle">
+                      <div className="text-style-caption px-2 py-1 rounded-lg border border-line text-subtle">
                         {item.type === "strength"
                           ? "силова"
                           : item.type === "distance"
@@ -499,8 +500,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                     {history.length}
                   </p>
                   <Button
-                    variant="soft"
-                    tone="fizruk"
+                    variant="outline"
+                    tone="neutral"
                     size="sm"
                     onClick={() =>
                       setVisibleHistoryCount((prev) =>
@@ -518,9 +519,9 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <div className="mt-3">
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
               size="lg"
-              className="w-full rounded-full"
+              className="w-full rounded-lg"
               onClick={() => onNavigate("workouts")}
             >
               Перейти до журналу

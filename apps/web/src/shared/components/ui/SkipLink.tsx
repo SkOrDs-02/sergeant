@@ -35,7 +35,7 @@ export function SkipLink({
         // above every surface in the app (modals, sheets, toasts all
         // live ≤ z-[200]).
         "focus:fixed focus:top-3 focus:left-3 focus:z-300",
-        "focus:px-4 focus:py-2 focus:rounded-xl",
+        "focus:px-4 focus:py-2 focus:rounded-lg",
         "focus:border focus-visible:bg-panel focus-visible:text-text focus-visible:shadow-float focus-visible:border-line",
         /* focus-only a11y skip-link sizing, not a type role */
         "focus:text-sm focus:font-semibold",

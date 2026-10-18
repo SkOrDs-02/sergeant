@@ -72,7 +72,7 @@ describe("FeedbackDialog", () => {
     const { onClose } = renderDialog();
 
     fireEvent.click(
-      screen.getByRole("tab", { name: messages.feedback.categoryBug }),
+      screen.getByRole("radio", { name: messages.feedback.categoryBug }),
     );
     typeMessage("Кнопка не працює");
     clickSubmit();
@@ -160,7 +160,7 @@ describe("FeedbackDialog", () => {
     expect(writeText).toHaveBeenCalledWith("врятуй мій текст");
   });
 
-  it("updates the textarea placeholder when the category tab changes", () => {
+  it("updates the textarea placeholder when the category choice changes", () => {
     renderDialog();
 
     const textarea = screen.getByLabelText(
@@ -169,12 +169,12 @@ describe("FeedbackDialog", () => {
     expect(textarea.placeholder).toBe(messages.feedback.placeholderIdea);
 
     fireEvent.click(
-      screen.getByRole("tab", { name: messages.feedback.categoryBug }),
+      screen.getByRole("radio", { name: messages.feedback.categoryBug }),
     );
     expect(textarea.placeholder).toBe(messages.feedback.placeholderBug);
 
     fireEvent.click(
-      screen.getByRole("tab", { name: messages.feedback.categoryOther }),
+      screen.getByRole("radio", { name: messages.feedback.categoryOther }),
     );
     expect(textarea.placeholder).toBe(messages.feedback.placeholderOther);
   });

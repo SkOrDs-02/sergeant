@@ -54,17 +54,15 @@ describe("WelcomeModulePicker — preset grid shell", () => {
     expect(onComplete).toHaveBeenCalledWith(["finyk", "fizruk"]);
   });
 
-  it("обрана плитка: контур `-edge` модуля (A4 аудиту контрасту), необрана — тиха межа", async () => {
-    // `border-{m}/60` давав 2.67-2.88:1 проти столу; стан вибору потребує ≥3:1.
+  it("вибір показаний нейтральним чекбоксом і зберігає aria-pressed", async () => {
     const user = userEvent.setup();
     render(<WelcomeModulePicker onComplete={vi.fn()} onOpenAuth={vi.fn()} />);
     const finyk = screen.getByRole("button", { name: MODULE_LABELS.finyk });
-    expect(finyk.className).toContain("border-finyk-edge");
-    expect(finyk.className).not.toContain("border-finyk/60");
+    expect(finyk).toHaveAttribute("aria-pressed", "true");
+    expect(finyk.querySelector("[aria-hidden]")?.className).toContain("bg-ink");
     await user.click(finyk);
     expect(finyk).toHaveAttribute("aria-pressed", "false");
-    expect(finyk.className).toContain("border-line");
-    expect(finyk.className).not.toContain("border-finyk-edge");
+    expect(finyk.querySelector("[aria-hidden]")?.className).toContain("bg-bg");
   });
 
   it("routes returning users via onOpenAuth", async () => {

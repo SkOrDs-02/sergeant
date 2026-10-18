@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "@shared/components/ui/Modal";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 
 /**
@@ -71,7 +70,7 @@ export function ExercisePhotoViewer({
     >
       <button
         type="button"
-        className="block w-full rounded-2xl overflow-hidden border border-line bg-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fizruk"
+        className="block w-full rounded-lg overflow-hidden border border-line bg-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fizruk"
         onClick={() => {
           if (!canAlternate) return;
           setPlaying(false);
@@ -95,7 +94,6 @@ export function ExercisePhotoViewer({
             onClick={() => setPlaying((p) => !p)}
             aria-pressed={playing}
           >
-            <Icon name={playing ? "pause" : "play"} size="md" aria-hidden />
             {playing ? t.stopLabel : t.playLabel}
           </Button>
         </div>

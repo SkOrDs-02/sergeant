@@ -95,7 +95,7 @@ export function PaywallModal({
       // v2 visual refresh (Phase 7 D2). Panel inherits `bg-surface` from
       // <Modal>; the extra `bg-gradient` overlay lifts the paywall to a
       // brand-accented hero tone so the upsell does not look like a
-      // generic system dialog. Scrim + backdrop-blur (AMBIENT motion
+      // generic system dialog. Scrim + (AMBIENT motion
       // slot per Motion #17) live inside <Modal>; we add no new ambient
       // here. The CTA hover state is the single RESPONSE.
       panelClassName="bg-gradient-to-b from-brand/8 to-surface border-brand/20"

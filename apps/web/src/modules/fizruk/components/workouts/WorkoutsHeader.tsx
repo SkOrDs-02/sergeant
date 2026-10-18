@@ -62,7 +62,7 @@ export function WorkoutsHeader({
       {view !== "home" && !routeOwnsBack ? (
         <button
           type="button"
-          className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] -ml-1 rounded-xl flex items-center justify-center text-text hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] -ml-1 rounded-lg flex items-center justify-center text-text hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           onClick={onBack}
           aria-label="Повернутись до тренувань"
         >
@@ -70,7 +70,7 @@ export function WorkoutsHeader({
         </button>
       ) : null}
       <div className="flex-1">
-        <h1 className="text-style-title text-text">{title}</h1>
+        <h1 className="text-style-headline text-text">{title}</h1>
         {view === "home" ? (
           <p className="text-style-caption text-subtle mt-0.5">
             {homeSubtitle}
@@ -80,7 +80,7 @@ export function WorkoutsHeader({
       {view === "catalog" ? (
         <Button
           variant="solid"
-          tone="fizruk"
+          tone="neutral"
 
           size="sm"
           className="h-9 px-4"

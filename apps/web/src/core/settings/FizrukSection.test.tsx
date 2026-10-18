@@ -35,14 +35,14 @@ describe("FizrukSection", () => {
 
   it("persists the chosen rest duration for a category", () => {
     renderSettingsSection(<FizrukSection />);
-    const buttons = screen.getAllByText("90с");
+    const buttons = screen.getAllByRole("radio", { name: "120с" });
     fireEvent.click(buttons[0]!);
     const stored = JSON.parse(localStorage.getItem(REST_KEY) ?? "{}") as Record<
       string,
       unknown
     >;
     const firstCategory = Object.keys(REST_CATEGORY_LABELS)[0] as string;
-    expect(stored[firstCategory]).toBe(90);
+    expect(stored[firstCategory]).toBe(120);
   });
 
   // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
@@ -55,15 +55,16 @@ describe("FizrukSection", () => {
     localStorage.setItem(REST_KEY, JSON.stringify({ compound: 120 }));
     renderSettingsSection(<FizrukSection />);
 
-    const group = screen.getByRole("group", {
+    const group = screen.getByRole("radiogroup", {
       name: REST_CATEGORY_LABELS.compound,
     });
     const pressed = within(group)
-      .getAllByRole("button")
-      .filter((b) => b.getAttribute("aria-pressed") === "true");
+      .getAllByRole("radio")
+      .filter((b) => (b as HTMLInputElement).checked);
 
     expect(pressed).toHaveLength(1);
-    expect(pressed[0]).toHaveTextContent("120с");
+    expect(pressed[0]).toBeChecked();
+    expect(pressed[0]).toHaveAttribute("value", "120");
   });
 
   // Другий бік того самого: без назви групи ряд «30с 60с 90с 120с 180с»
@@ -72,7 +73,9 @@ describe("FizrukSection", () => {
     renderSettingsSection(<FizrukSection />);
 
     for (const label of Object.values(REST_CATEGORY_LABELS)) {
-      expect(screen.getByRole("group", { name: label })).toBeInTheDocument();
+      expect(
+        screen.getByRole("radiogroup", { name: label }),
+      ).toBeInTheDocument();
     }
   });
 });

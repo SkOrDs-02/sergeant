@@ -869,25 +869,7 @@
 
     --c-nutrition-soft: 63 98 18; /* lime-800 — brighter than lime-900 for readability */
     --c-nutrition-soft-border: 86 124 15; /* lime-700 */
-    --c-nutrition-soft-hover: 86 124 15; /* lime-700 */
-
-    /* Hero-ink gradients (dark) — «Чорнило» v3.1 § 2. The module hero
-       Card fill sits one quiet tonal step off the ink base — identity
-       comes from the accent border/25 + inset-glow already on the hero
-       class, not from fill saturation. Replaces the `-900` `--c-*-soft`
-       fill hero previously borrowed above (soft tokens are untouched —
-       they stay for soft-buttons/badges, spec § 2 point 3). */
-    --hero-ink-finyk: linear-gradient(160deg, #12201a 0%, #0f1a15 100%);
-    --hero-ink-fizruk: linear-gradient(160deg, #101d20 0%, #0e1719 100%);
-    /* AI-CONTEXT (Р2, 2026-08-07): підтон зсунуто 13°→340° / 9°→343°.
-       Старі значення підбирались під коралову родину (hue 0–10°), а троянда
-       сидить на 344–346° — по інший бік від червоного. Різниця майже
-       невидима наодинці, але hero-карта несе rose-400 border і glow, і над
-       теплішим фоном холодніший акцент давав би брудну межу. Світлота
-       збережена (±0.0007), усі пари не гіршають: text 16.67 (було 16.35),
-       muted 5.92 (5.81), rose-400 8.03 (7.87). */
-    --hero-ink-routine: linear-gradient(160deg, #1c1316 0%, #171012 100%);
-    --hero-ink-nutrition: linear-gradient(160deg, #171f10 0%, #12180d 100%);
+    --c-nutrition-soft-hover: 86 124 15;
 
     /* Soft-fill FOREGROUND (dark) — bright `-300` accent tier. The module
        DEFAULT accent used previously (`dark:text-<m>` = emerald-500 /
@@ -1371,69 +1353,24 @@
 
     /* Hairlines — soft + strong dividers tuned for glass surfaces. */
     --line-v2: rgba(227, 227, 224, 1); /* = --c-line */
-    --line-strong-v2: rgba(201, 201, 197, 1); /* = --c-border-strong */
-
-    /* Стіл і зона (рішення власника 2026-09-03; замінили mesh).
-       Радіальних свічень більше нема: одна emerald-пляма в куті (усе, що
-       лишилось від mesh після П5) читалась не як глибина, а як артефакт, а
-       беж під білими картками — як «голий» фон. Тепер фон сторінки — стіл
-       у hue модуля (`--module-desk-rgb`), шапка й таби модуля — зона того ж
-       hue на крок глибша (`--module-zone-rgb`, малює `ModuleHeader`).
-       Хаб нейтральний. Тут — дефолти для хабу і всього поза модулем;
-       модульні значення — у `[data-module-accent=…]` нижче, темна тема —
-       у `.dark`. Джерело правди hex — `moduleSurfaces` у
-       packages/design-tokens/tokens.js; contrast.test.js тримає
-       `--c-subtle` ≥4.5:1 на кожному столі, тому стіл майже не темніший
-       за `--c-bg` і різниться лише hue. */
-    --module-desk-rgb: 251 251 250; /* = --c-bg: стіл модуля знято (мова H) */
-    --module-zone-rgb: 251 251 250; /* = --c-bg: зону знято */
+    --line-strong-v2: rgba(
+      201,
+      201,
+      197,
+      1
+    ); /* = --c-border-strong */ /* = --c-bg: зону знято */
     /* Shared by `.bg-mesh` and the root canvas. iOS standalone can expose
        the canvas below a full-height child while safe-area geometry settles;
        using the exact same colour prevents that region from becoming a
        different-colour strip on `/welcome`. Token references remain live
        across dark / high-contrast overrides. */
-    --app-mesh-background: rgb(var(--module-desk-rgb));
+    --app-mesh-background: rgb(var(--c-bg));
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
     --shadow-card-v2: none; /* мова H: контент без тіні */
     --shadow-pill: none;
     --shadow-nav: none; /* нав непрозорий, hairline зверху */
-    --shadow-fab: 0 8px 22px rgba(15, 118, 110, 0.45);
-
-    /* Hero gradients — «Чорнило» v3.1 § 3 brand anchor: the SAME saturated
-       gradient in both themes (Card hero light bg + the decorative
-       low-opacity wash HeroCard/Atlas/PrBadge layer on top in both
-       themes). Start stop matches `--c-{module}-accent` (light tier)
-       above so the two token families stay visually locked. */
-    --hero-grad-finyk: linear-gradient(
-      135deg,
-      #115e59,
-      #0f766e
-    ); /* teal-800 → teal-700 — 2026-08 design-audit T2 follow-up: same fix
-          as routine F2 / fizruk / nutrition; the old →teal-400 light end
-          measured ~1.77:1 for text-hero-ink. (2026-07: was emerald-700 →
-          -500.) */
-    --hero-grad-fizruk: linear-gradient(
-      135deg,
-      #155e75,
-      #0e7490
-    ); /* cyan-800 → cyan-700 — 2026-08 design-audit T2: same fix as routine
-          F2 below; the old →cyan-400 light end measured ~1.7–2.2:1 for
-          text-hero-ink, mirrored here one tier deeper. */
-    --hero-grad-routine: linear-gradient(
-      135deg,
-      #8d4256,
-      #ac4c64
-    ); /* rose-800 → rose-700 — design-audit F2: light-theme hero text
-          (hero-ink #fdf9f3) needs ≥4.5:1 for caption/body; the old
-          →rose-400 light end capped even full-opacity ink at 2.16:1
-          (виміряно наживо 2.12–2.26:1). rose-700 is also the registered
-          `-strong` companion for routine (Hard Rule #9). */
-    --hero-grad-nutrition: linear-gradient(
-      135deg,
-      #466212,
-      #4e6f10
-    ); /* lime-800 → середина lime-800/700 (було lime-800 → lime-700; ще раніше
+    --shadow-fab: 0 8px 22px rgba(15, 118, 110, 0.45); /* lime-800 → середина lime-800/700 (було lime-800 → lime-700; ще раніше
           lime-ink → lime-400) — 2026-08 design-audit T2: same fix as routine
           F2; old →lime-400 light end failed the hero-ink text pair.
           2026-10-01 (аудит контрасту, A9; рішення власника «темніший кінець
@@ -1466,14 +1403,12 @@
     --surface-line: rgba(38, 44, 53, 1); /* = --c-line */
 
     --line-v2: rgba(38, 44, 53, 1); /* = --c-line */
-    --line-strong-v2: rgba(52, 59, 69, 1); /* = --c-border-strong */
-
-    /* Стіл і зона, темна: стіл один для всіх — ink base; зона — 7%
-       tier-400 акценту модуля на ньому (модульні значення в
-       `.dark [data-module-accent=…]` нижче). Свічень немає: глибина в
-       «Чорнилі» — tint + accent border, не glow (DESIGN.md § Темна тема). */
-    --module-desk-rgb: 14 17 22; /* = --c-bg */
-    --module-zone-rgb: 14 17 22; /* = --c-bg */
+    --line-strong-v2: rgba(
+      52,
+      59,
+      69,
+      1
+    ); /* = --c-border-strong */ /* = --c-bg */
 
     /* Shadows dark — much stronger outer drops + faint bright inset. */
     --shadow-card-v2: none;
@@ -1496,10 +1431,6 @@
      See docs/design/redesign-v2/governance.md § HC contract.
      ═══════════════════════════════════════════════════════════════════════ */
   html.hc {
-    /* Стіл і зона → суцільний bg-base: HC не має тонових шарів. */
-    --module-desk-rgb: var(--c-bg-base);
-    --module-zone-rgb: var(--c-bg-base);
-
     /* Glass → opaque. */
     --surface-glass: rgba(255, 255, 255, 1);
     --surface-strong-glass: rgba(255, 255, 255, 1);
@@ -1517,16 +1448,7 @@
     --shadow-card-v2: 0 0 0 2px rgba(0, 0, 0, 0.6);
     --shadow-pill: 0 0 0 2px rgba(0, 0, 0, 0.7);
     --shadow-nav: 0 0 0 2px rgba(0, 0, 0, 0.7);
-    --shadow-fab: 0 0 0 3px rgba(15, 118, 110, 1);
-
-    /* Hero → solid module color. These variables feed Tailwind's
-       `background-image` utilities, so a bare hex value is invalid CSS and
-       silently drops the fill. A one-colour gradient preserves the HC solid
-       contract while keeping the utility valid. */
-    --hero-grad-finyk: linear-gradient(#115e59 0 0); /* teal-800 */
-    --hero-grad-fizruk: linear-gradient(#155e75 0 0); /* cyan-800 */
-    --hero-grad-routine: linear-gradient(#ac4c64 0 0); /* rose-700 */
-    --hero-grad-nutrition: linear-gradient(#466212 0 0); /* lime-800 */
+    --shadow-fab: 0 0 0 3px rgba(15, 118, 110, 1); /* lime-800 */
   }
 
   html.hc.dark {
@@ -1544,21 +1466,7 @@
     --shadow-card-v2: 0 0 0 2px rgba(255, 255, 255, 0.7);
     --shadow-pill: 0 0 0 2px rgba(255, 255, 255, 0.8);
     --shadow-nav: 0 0 0 2px rgba(255, 255, 255, 0.8);
-    --shadow-fab: 0 0 0 3px rgba(45, 212, 191, 1); /* teal-400 — unified with light/hc teal (was orphan emerald-400, 2026-08 design-audit T5) */
-
-    /* Card's dark variant consumes `--hero-ink-*`, not `--hero-grad-*`.
-       Override both families so HC keeps strong module identity instead of
-       falling back to the near-neutral Chornylo hero. */
-    --hero-grad-finyk: linear-gradient(#2dd4bf 0 0); /* teal-400 */
-    --hero-grad-fizruk: linear-gradient(#06b6d4 0 0); /* cyan-500 */
-    --hero-grad-routine: linear-gradient(#f68da4 0 0); /* rose-400 */
-    --hero-grad-nutrition: linear-gradient(#b0e636 0 0); /* lime-400 */
-    --hero-ink-finyk: linear-gradient(#134e4a 0 0); /* teal-900 */
-    --hero-ink-fizruk: linear-gradient(#164e63 0 0); /* cyan-900 */
-    --hero-ink-routine: linear-gradient(
-      #753949 0 0
-    ); /* rose-900 (був red-900 #7f1d1d — чужа родина) */
-    --hero-ink-nutrition: linear-gradient(#365314 0 0); /* lime-900 */
+    --shadow-fab: 0 0 0 3px rgba(45, 212, 191, 1); /* teal-400 — unified with light/hc teal (was orphan emerald-400, 2026-08 design-audit T5) */ /* lime-900 */
   }
 }
 
@@ -1577,7 +1485,7 @@
 }
 
 .bg-zone {
-  background-color: rgb(var(--module-zone-rgb));
+  background-color: rgb(var(--c-bg));
 }
 
 /* AI-DANGER (2026-10-01, аудит A8): `.zone-chip` МУСИТЬ жити в
@@ -1590,33 +1498,6 @@
    `components` клас усе ще перебиває preflight (`border-color` із `base`), але
    програє явним утилітам компонента — рівно так задумано. */
 @layer components {
-  .zone-chip {
-    background-color: transparent;
-    border-color: rgb(var(--module-accent-strong-rgb, var(--c-line)) / 0.3);
-  }
-}
-
-[data-module-accent="fizruk"] {
-  --module-desk-rgb: 251 251 250;
-  --module-zone-rgb: 251 251 250;
-}
-[data-module-accent="nutrition"] {
-  --module-desk-rgb: 251 251 250;
-  --module-zone-rgb: 251 251 250;
-}
-
-.dark [data-module-accent="fizruk"] {
-  --module-desk-rgb: 14 17 22;
-  --module-zone-rgb: 14 17 22;
-}
-.dark [data-module-accent="nutrition"] {
-  --module-desk-rgb: 14 17 22;
-  --module-zone-rgb: 14 17 22;
-}
-
-html.hc [data-module-accent] {
-  --module-desk-rgb: var(--c-bg-base);
-  --module-zone-rgb: var(--c-bg-base);
 }
 
 /* Колір індикатора фокусу в піддереві модуля — його `-ink` тир (аудит
@@ -1732,21 +1613,6 @@ html.hc *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0),
    його не бачить, бо `:focus-visible` стоїть на input, а не на треку. */
 .peer:focus-visible ~ [class*="peer-focus-visible:ring"] {
   --tw-ring-color: rgb(var(--c-focus-solid));
-}
-
-/* Hero-градієнт у світлій темі: фокус — чорнило `hero-ink` (`#fdf9f3`).
-   У піддереві модуля `--c-focus-solid` = `--c-{m}-ink` (світла -800), а
-   початок градієнта hero-картки — той самий тир (`#115e59 → #0f766e`,
-   `#466212 → #4e6f10`, `#8d4256 …`): кільце зливалось із фоном (≈1.0-1.3:1
-   проти градієнта; пласкому «столу» поруч воно давало хибні 5-6:1, тому
-   аудит 2026-10-01 цього не бачив). На кнопці «Повернутись у сесію» Фізрука
-   `focus-visible:ring-hero-ink` із компонента глушився глобальним правилом
-   вище. Чорнило дає ≥4.7:1 проти кожної світлої зупинки (`contrast.test.js`),
-   а темна тема й так на модульному `-ink` тирі (hero там — майже чорний
-   `--hero-ink-*`, кільце 5.7:1+). `:not(.dark)` охоплює й HC-світлу (hero
-   там плаский teal-800/cyan-800/…, кільце того ж тиру зникало б так само). */
-html:not(.dark) [class*="bg-hero-grad-"] {
-  --c-focus-solid: 253 249 243;
 }
 
 /* Невалідне поле зберігає danger-відтінок кільця, але суцільний `-ink` тир

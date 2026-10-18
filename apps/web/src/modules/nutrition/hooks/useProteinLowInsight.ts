@@ -1,3 +1,4 @@
+import { useMinuteNow } from "@shared/hooks/useMinuteNow";
 /**
  * Last validated: 2026-06-15
  * Status: Active
@@ -31,13 +32,14 @@ export function useProteinLowInsight(
   log: NutritionLog,
   prefs: NutritionPrefs,
 ): Insight | null {
+  const nowMs = useMinuteNow();
   return useMemo(() => {
     const goal = prefs.dailyTargetProtein_g ?? 0;
     if (goal <= 0) return null;
 
     // Час доби (>= 18:00) лишається Kyiv-анкорним навмисно — це НЕ день-ключ,
     // а wall-clock gate, поза межами виміру ADR-0078 для цієї зміни.
-    const { hour } = getKyivDateParts();
+    const { hour } = getKyivDateParts(nowMs);
     if (hour < 18) return null;
 
     // ADR-0078: читаємо той самий день, під яким журнал зберігає прийоми
@@ -68,5 +70,5 @@ export function useProteinLowInsight(
       // "log a meal" navigation closes the loop.
       showOn: "both",
     } satisfies Insight;
-  }, [log, prefs]);
+  }, [log, prefs, nowMs]);
 }

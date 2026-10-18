@@ -13,7 +13,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@shared/components/ui/Badge";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
-
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
@@ -201,7 +200,7 @@ export function ReceiptReviewForm({
           </Button>
         </div>
         {draft.items.length > 0 ? (
-          <ul className="mt-1 rounded-xl border border-line bg-panel px-3">
+          <ul className="mt-1 rounded-panel border border-line bg-panel px-3">
             {draft.items.map((item, index) => (
               <ReceiptReviewItemRow
                 key={`${item.position}-${index}`}

@@ -1,7 +1,6 @@
 import { Suspense, memo } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-
 import { NetworthChart } from "../../components/charts/lazy";
 import { ChartFallback } from "../../components/charts/ChartFallback";
 
@@ -20,12 +19,7 @@ const NetworthSectionImpl = function NetworthSection({
 }: NetworthSectionProps) {
   if (networthHistory.length >= 2) {
     return (
-      <Card
-        variant="default"
-        radius="lg"
-        padding="none"
-        className="px-5 pt-4 pb-3"
-      >
+      <Card padding="none" className="px-5 pt-4 pb-3">
         <div className="flex items-center justify-between mb-3">
           <span className="text-style-caption text-subtle">
             Динаміка капіталу
@@ -42,15 +36,9 @@ const NetworthSectionImpl = function NetworthSection({
   }
 
   return (
-    <Card
-      variant="default"
-      radius="lg"
-      padding="none"
-      className="border-dashed"
-    >
+    <Card padding="none" className="border-dashed">
       <EmptyState
         compact
-        module="finyk"
 
         title="Поки що мало записів балансу"
         description="Графік капіталу зʼявиться після кількох змін балансу."

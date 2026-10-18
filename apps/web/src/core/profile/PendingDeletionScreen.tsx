@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { formatDateFull } from "@shared/lib/time/formatDate";
 import { messages } from "@shared/i18n/uk";
@@ -87,13 +86,9 @@ export function PendingDeletionScreen({
       role="dialog"
       aria-modal="true"
       aria-labelledby="pending-deletion-title"
-      className="fixed inset-0 z-modal flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md"
+      className="fixed inset-0 z-modal flex items-center justify-center p-6 bg-bg/95 "
     >
       <div className="w-full max-w-sm text-center">
-        <div className="flex justify-center mb-4" aria-hidden>
-          <Icon name="trash-2" className="w-10 h-10 text-danger-strong" />
-        </div>
-
         <h1
           id="pending-deletion-title"
           className="text-style-title text-text mb-3"

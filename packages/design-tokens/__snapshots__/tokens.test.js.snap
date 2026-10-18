@@ -40,16 +40,8 @@ exports[`@sergeant/design-tokens — mobile.js > mobile.spacing scale is stable 
 }
 `;
 
-exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/cream/rose/lime/stone scales) 1`] = `
+exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/rose/lime/stone scales) 1`] = `
 {
-  "cream": {
-    "100": "#fdf9f3",
-    "200": "#faf3e8",
-    "300": "#f5ead8",
-    "400": "#eedcc4",
-    "50": "#fefdfb",
-    "500": "#e4ccab",
-  },
   "cyan": {
     "100": "#cffafe",
     "200": "#a5f3fc",

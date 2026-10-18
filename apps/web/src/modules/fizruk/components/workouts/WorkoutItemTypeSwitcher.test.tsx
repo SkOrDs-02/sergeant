@@ -21,7 +21,7 @@ describe("WorkoutItemTypeSwitcher", () => {
         onChange={onChange}
       />,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "Час: секунди" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Час: секунди" }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ type: "time" }),
     );
@@ -36,7 +36,7 @@ describe("WorkoutItemTypeSwitcher", () => {
         onChange={onChange}
       />,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "Час: секунди" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Час: секунди" }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ type: "time", sets: undefined }),
     );
@@ -52,7 +52,7 @@ describe("WorkoutItemTypeSwitcher", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("tab", { name: "Дистанція: метри та час" }),
+      screen.getByRole("radio", { name: "Дистанція: метри та час" }),
     );
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -73,7 +73,7 @@ describe("WorkoutItemTypeSwitcher", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("tab", { name: "Силова: кг × повтори × підходи" }),
+      screen.getByRole("radio", { name: "Силова: кг × повтори × підходи" }),
     );
     expect(onChange).toHaveBeenCalledWith({
       type: "strength",
@@ -90,8 +90,8 @@ describe("WorkoutItemTypeSwitcher", () => {
         onChange={onChange}
       />,
     );
-    const timeTab = screen.getByRole("tab", { name: "Час: секунди" });
-    const activeTab = screen.getByRole("tab", {
+    const timeTab = screen.getByRole("radio", { name: "Час: секунди" });
+    const activeTab = screen.getByRole("radio", {
       name: "Силова: кг × повтори × підходи",
     });
 
@@ -102,8 +102,8 @@ describe("WorkoutItemTypeSwitcher", () => {
     fireEvent.keyDown(activeTab, { key: "ArrowRight" });
     expect(onChange).not.toHaveBeenCalled();
 
-    expect(activeTab).toHaveAttribute("tabindex", "-1");
-    expect(timeTab).toHaveAttribute("tabindex", "-1");
+    expect(activeTab).toBeDisabled();
+    expect(timeTab).toBeDisabled();
   });
 
   it("keeps a non-read-only tab in the normal roving-tabindex order", () => {
@@ -115,7 +115,7 @@ describe("WorkoutItemTypeSwitcher", () => {
       />,
     );
     expect(
-      screen.getByRole("tab", { name: "Силова: кг × повтори × підходи" }),
-    ).toHaveAttribute("tabindex", "0");
+      screen.getByRole("radio", { name: "Силова: кг × повтори × підходи" }),
+    ).toBeEnabled();
   });
 });

@@ -169,13 +169,15 @@ async function applyRoutineEntries(
 
   if (op.op === "delete") {
     if (!local) return "skipped";
-    await client.run(
+    const changed = await client.all(
       `UPDATE routine_entries
           SET deleted_at = ?, updated_at = ?
-        WHERE id = ? AND user_id = ?`,
-      [op.client_ts, op.client_ts, id, userId],
+        WHERE id = ? AND user_id = ?
+          AND (julianday(updated_at) IS NULL OR julianday(updated_at) < julianday(?))
+        RETURNING 1 AS applied`,
+      [op.client_ts, op.client_ts, id, userId, op.client_ts],
     );
-    return "applied";
+    return changed.length > 0 ? "applied" : "skipped";
   }
 
   const name = typeof row["name"] === "string" ? row["name"] : "";
@@ -186,7 +188,7 @@ async function applyRoutineEntries(
   const deletedAt =
     typeof row["deleted_at"] === "string" ? row["deleted_at"] : null;
 
-  await client.run(
+  const changed = await client.all(
     `INSERT INTO routine_entries
        (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -194,10 +196,14 @@ async function applyRoutineEntries(
        name = excluded.name,
        completed_at = excluded.completed_at,
        updated_at = excluded.updated_at,
-       deleted_at = excluded.deleted_at`,
+       deleted_at = excluded.deleted_at
+     WHERE routine_entries.user_id != excluded.user_id
+        OR julianday(routine_entries.updated_at) IS NULL
+        OR julianday(routine_entries.updated_at) < julianday(excluded.updated_at)
+     RETURNING 1 AS applied`,
     [id, userId, name, completedAt, createdAt, op.client_ts, deletedAt],
   );
-  return "applied";
+  return changed.length > 0 ? "applied" : "skipped";
 }
 
 async function applyRoutineStreaks(
@@ -339,26 +345,33 @@ async function applyGenericRegistryRow(
       // finyk_mono_debt_links / finyk_networth_history — hard-delete-таблиці
       // (є `updated_at`, нема `deleted_at`). Сервер віддає їм справжній
       // `delete`-оп, а раніше тут стояв `rejected`: видалення не доходило на
-      // інші пристрої, рядок воскресав. Тепер це hard DELETE з LWW:
-      // `updated_at < client_ts` дублює JS-guard вище (`isStaleLocal`, там
-      // `>=` -> skipped) і лишається на випадок, коли рядок змінився між
-      // вибіркою й записом. Таблиця без `updated_at` (нема з чим порівняти)
-      // лишається `rejected`. Soft-delete з міграцією — окремий PR (ADR-0073).
+      // інші пристрої, рядок воскресав. Тепер це hard DELETE з тим самим LWW
+      // `julianday`-guard, що й soft-delete та upsert нижче: JS-guard вище
+      // (`isStaleLocal`) лише швидкий шлях, а локальний writer може закомітити
+      // між вибіркою й записом. Рядок, що не видалився (новіший локально або
+      // вже відсутній), дає "skipped", а не "applied", щоб таблиця не потрапила
+      // в affectedTables і не будила зайвий refresh кешу. Таблиця без
+      // `updated_at` (нема з чим порівняти) лишається `rejected`. Soft-delete
+      // з міграцією — окремий PR (ADR-0073).
       if (!hasUpdatedAt) return "rejected";
-      await client.run(
+      const removed = await client.all(
         `DELETE FROM ${safeTable}
-          WHERE ${lookupWhere} AND updated_at < ?`,
+          WHERE ${lookupWhere}
+            AND (julianday(updated_at) IS NULL OR julianday(updated_at) < julianday(?))
+        RETURNING 1 AS applied`,
         [...lookupValues, op.client_ts],
       );
-      return "applied";
+      return removed.length > 0 ? "applied" : "skipped";
     }
-    await client.run(
+    const changed = await client.all(
       `UPDATE ${safeTable}
           SET deleted_at = ?, updated_at = ?
-        WHERE ${lookupWhere}`,
-      [op.client_ts, op.client_ts, ...lookupValues],
+        WHERE ${lookupWhere}
+          AND (julianday(updated_at) IS NULL OR julianday(updated_at) < julianday(?))
+        RETURNING 1 AS applied`,
+      [op.client_ts, op.client_ts, ...lookupValues, op.client_ts],
     );
-    return "applied";
+    return changed.length > 0 ? "applied" : "skipped";
   }
 
   const payload: Record<string, unknown> = { ...row, updated_at: op.client_ts };
@@ -381,13 +394,21 @@ async function applyGenericRegistryRow(
 
   if (nonPkAssignments.length === 0) return "skipped";
 
-  await client.run(
+  // The SELECT above is only a fast path. Another local writer can commit
+  // while it is awaited, so the mutation itself must enforce the same LWW.
+  const newerOnly = hasUpdatedAt
+    ? ` WHERE ${scopeByUser ? `${safeTable}.user_id != excluded.user_id OR ` : ""}
+        julianday(${safeTable}.updated_at) IS NULL
+        OR julianday(${safeTable}.updated_at) < julianday(excluded.updated_at)`
+    : "";
+  const changed = await client.all(
     `INSERT INTO ${safeTable} (${insertCols.join(", ")})
      VALUES (${placeholders})
-     ON CONFLICT(${pkColumns.join(", ")}) DO UPDATE SET ${nonPkAssignments}`,
+     ON CONFLICT(${pkColumns.join(", ")}) DO UPDATE SET ${nonPkAssignments}${newerOnly}
+     RETURNING 1 AS applied`,
     values,
   );
-  return "applied";
+  return changed.length > 0 ? "applied" : "skipped";
 }
 
 /**

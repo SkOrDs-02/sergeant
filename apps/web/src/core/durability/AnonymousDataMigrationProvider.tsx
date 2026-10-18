@@ -12,23 +12,18 @@ import {
   type ReactNode,
 } from "react";
 import { useLocation } from "react-router-dom";
-
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
-// AI-DANGER: `@shared/i18n` (index) тягне uk-каталог І en-копію — а це
-// eager-поверхня. Беремо вузьке ядро; гейт — `uk.core.eagerImports.test.ts`.
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 import {
   safeReadStringLSDurable,
   safeWriteStringLSDurable,
 } from "@shared/lib/storage/storage";
-
 import { captureException } from "../observability/sentry";
 import {
   classifyTickError,
   readOnlineStatus,
 } from "../syncEngine/tickErrorReport";
-
 import {
   LEGAL_COOKIES_PATH,
   LEGAL_OFFER_PATH,
@@ -387,7 +382,7 @@ function AuthenticatedMigrationGate({
     return (
       <MigrationGateContext.Provider value={value}>
         <main className="flex min-h-screen items-center justify-center bg-bg px-6 text-text">
-          <section className="w-full max-w-md rounded-2xl border border-line bg-panel p-6 text-center shadow-e1">
+          <section className="w-full max-w-md rounded-panel border border-line bg-panel p-6 text-center shadow-e1">
             {state === "failed" ? (
               <>
                 <p

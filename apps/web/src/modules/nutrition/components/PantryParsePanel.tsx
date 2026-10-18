@@ -16,7 +16,7 @@
  * доки людина не тапне.
  */
 import { useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -29,6 +29,8 @@ function formatQty(item: PantryItem): string {
   return item.unit || "";
 }
 
+const DISCLOSE_OPEN = "Сховати";
+const DISCLOSE_CLOSED = "Показати";
 const GUIDE = messages.nutrition.pantryGuide;
 const PREVIEW = messages.nutrition.pantryPreview;
 const AMBIGUOUS = messages.nutrition.pantryAmbiguousQty;
@@ -36,16 +38,15 @@ const AMBIGUOUS = messages.nutrition.pantryAmbiguousQty;
 export function PantryListGuide() {
   return (
     <details className="mt-2 group">
-      <summary className="text-style-caption text-subtle cursor-pointer list-none flex items-center gap-1.5 min-h-[44px] focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl">
-        {/* Каретка згортки. Обертання лишається на обгортці, а не на самій
-            іконці: `<details>` міняє `group-open`, і поворот має читати
-            стан елемента, а не стан іконки. */}
-        <span aria-hidden className="transition-transform group-open:rotate-90">
-          <Icon name="chevron-right" size="xs" />
-        </span>
+      <summary className="text-style-caption text-subtle cursor-pointer list-none flex items-center justify-between gap-2 min-h-[44px] rounded-lg focus-ring">
         {GUIDE.summary}
+        {/* Стан згортки текстом, не каретою. `<details>` міняє `group-open`. */}
+        <span aria-hidden className="shrink-0">
+          <span className="group-open:hidden">{DISCLOSE_CLOSED}</span>
+          <span className="hidden group-open:inline">{DISCLOSE_OPEN}</span>
+        </span>
       </summary>
-      <div className="mt-1 pl-4 text-style-caption text-subtle grid gap-1">
+      <div className="mt-1 text-style-caption text-subtle grid gap-1">
         <p>
           {GUIDE.separators}{" "}
           <span className="text-text">{GUIDE.separatorsExample}</span>
@@ -125,7 +126,7 @@ export function PantryParsePreview({
   const selected = resolvedItems.filter((_, i) => !excluded.has(i));
 
   return (
-    <div className="mt-3 rounded-2xl border border-nutrition/30 bg-nutrition/5 p-3">
+    <div className="mt-3 border-t border-line pt-3">
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-style-label text-text">
           {PREVIEW.parsedCount} {preview.items.length}
@@ -137,7 +138,7 @@ export function PantryParsePreview({
         )}
       </div>
 
-      <ul className="grid gap-0.5 mb-3">
+      <ul className="divide-y divide-line mb-3">
         {preview.items.map((item, i) => {
           const resolvedUnit = unitOverrides[i] ?? item.unit;
           const qty = item.ambiguousQty
@@ -145,7 +146,7 @@ export function PantryParsePreview({
             : formatQty(item);
           return (
             <li key={`${item.name}_${i}`}>
-              <label className="flex items-center gap-2.5 px-1 min-h-[44px] cursor-pointer">
+              <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={!excluded.has(i)}
@@ -157,7 +158,7 @@ export function PantryParsePreview({
                       return next;
                     })
                   }
-                  className="shrink-0 w-5 h-5 accent-nutrition"
+                  className="shrink-0 w-5 h-5 accent-text"
                 />
                 <span
                   className={cn(
@@ -173,13 +174,13 @@ export function PantryParsePreview({
                   </span>
                 )}
                 {item.ambiguousQty && (
-                  <span className="text-style-caption text-warning-strong dark:text-warning shrink-0">
+                  <span className="text-style-caption text-muted shrink-0">
                     {AMBIGUOUS.badge}
                   </span>
                 )}
               </label>
               {item.ambiguousQty && (
-                <div className="flex items-center gap-2 pl-8 pb-1.5">
+                <div className="flex items-center gap-2 pl-[30px] pb-2">
                   <span className="text-style-caption text-subtle">
                     {AMBIGUOUS.question}
                   </span>
@@ -190,10 +191,8 @@ export function PantryParsePreview({
                       onClick={() => chooseUnit(i, unit)}
                       aria-pressed={resolvedUnit === unit}
                       className={cn(
-                        "text-style-caption px-2.5 py-1 min-h-[32px] rounded-xl border transition-colors",
-                        resolvedUnit === unit
-                          ? "bg-nutrition-strong text-white border-nutrition-strong dark:bg-nutrition dark:text-bg dark:border-nutrition"
-                          : "border-line text-subtle hover:text-text hover:border-nutrition/50",
+                        "text-style-caption font-semibold px-2.5 py-1 min-h-[32px] rounded-[7px] border border-line text-text transition-colors hover:bg-line/40 focus-ring",
+                        resolvedUnit === unit && "bg-line/60",
                       )}
                     >
                       {item.qty}{" "}
@@ -208,25 +207,24 @@ export function PantryParsePreview({
       </ul>
 
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
+          variant="solid"
           onClick={() => onConfirm(selected)}
           disabled={busy || selected.length === 0}
-          className={cn(
-            "text-style-label px-4 h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-          )}
+          className="pointer-coarse:min-h-[44px]"
         >
           {PREVIEW.confirm} {selected.length}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           onClick={onDismiss}
           disabled={busy}
-          className="text-style-label px-4 h-11 rounded-2xl text-subtle hover:text-text transition-colors"
+          className="pointer-coarse:min-h-[44px]"
         >
           {PREVIEW.dismiss}
-        </button>
+        </Button>
       </div>
     </div>
   );

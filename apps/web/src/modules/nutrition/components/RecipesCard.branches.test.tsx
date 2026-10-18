@@ -289,7 +289,7 @@ describe("RecipesCard — addRecipeAsMeal branches", () => {
 
   it("показує підсумок на N порцій наживо і пише в журнал те саме число", async () => {
     // Регресія: множник писав лише `portionById`, і результат було видно
-    // тільки після «+ У журнал» - поле виглядало зламаним. Макроси рецепта -
+    // тільки після «У журнал» - поле виглядало зламаним. Макроси рецепта -
     // на ОДНУ порцію (рішення власника 2026-10-01), тож підрядок лишається
     // «/ порція», а підсумок на N порцій живе окремо.
     const addMealToLog = vi
@@ -308,7 +308,7 @@ describe("RecipesCard — addRecipeAsMeal branches", () => {
     // Ціна однієї порції від множника не залежить.
     expect(screen.getByText(/≈ 350 ккал \/ порція/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "+ У журнал ×2" }));
+    fireEvent.click(screen.getByRole("button", { name: "У журнал ×2" }));
     await waitFor(() => expect(addMealToLog).toHaveBeenCalledTimes(1));
     expect(addMealToLog.mock.calls[0]![0].macros.kcal).toBe(700);
   });

@@ -16,10 +16,6 @@ import {
   dismissOutboxPurgeNotice,
   useOutboxPurgeNotice,
 } from "../syncEngine/outboxPurgeNotice";
-// AI-DANGER: беремо VFS із легкого `storageBackendState`, а НЕ з
-// `sqlite.ts`. Той статично тягне `drizzle-orm` і схему, тож один імпорт
-// звідси поклав би весь drizzle на критичний шлях (root `AGENTS.md`
-// § Performance budgets, історія `vendor-sqlite`).
 import {
   readActiveSqliteVfs,
   readSqliteVfsFallbackReason,
@@ -234,7 +230,7 @@ export function SyncStatusSheet({
         <div
           role="status"
           data-testid="sync-session-expired"
-          className="mb-3 rounded-xl border border-danger/30 bg-danger/5 px-3 py-2.5"
+          className="mb-3 rounded-panel border border-danger/30 bg-danger/5 px-3 py-2.5"
         >
           <p className="text-style-label font-semibold text-danger-strong dark:text-danger">
             {COPY.sessionExpiredTitle}
@@ -245,7 +241,7 @@ export function SyncStatusSheet({
           <a
             href={signInHref()}
             className={cn(
-              "mt-2 flex w-full min-h-[44px] items-center justify-center rounded-xl font-semibold transition-colors",
+              "mt-2 flex w-full min-h-[44px] items-center justify-center rounded-lg font-semibold transition-colors",
               "bg-danger/10 text-danger-strong hover:bg-danger/15",
               "focus-ring",
             )}
@@ -258,7 +254,7 @@ export function SyncStatusSheet({
         {rows.map((row) => (
           <div
             key={row.label}
-            className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-panelHi"
+            className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-panel bg-panelHi"
           >
             <span className="text-style-label text-text">{row.label}</span>
             <span
@@ -281,7 +277,7 @@ export function SyncStatusSheet({
             onClose();
           }}
           className={cn(
-            "mt-3 w-full min-h-[44px] rounded-xl font-semibold transition-colors",
+            "mt-3 w-full min-h-[44px] rounded-lg font-semibold transition-colors",
             "bg-brand-soft text-brand-strong hover:bg-brand-soft-hover",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
@@ -292,7 +288,7 @@ export function SyncStatusSheet({
       {purgeNotice && (
         <div
           role="status"
-          className="mt-3 rounded-xl border border-warning/30 bg-warning/5 px-3 py-2.5"
+          className="mt-3 rounded-panel border border-warning/30 bg-warning/5 px-3 py-2.5"
         >
           <p className="text-style-label font-semibold text-warning-strong dark:text-warning">
             {COPY.purgeNoticeTitle}
@@ -304,7 +300,7 @@ export function SyncStatusSheet({
             type="button"
             onClick={dismissOutboxPurgeNotice}
             className={cn(
-              "mt-2 w-full min-h-[44px] rounded-xl font-semibold transition-colors",
+              "mt-2 w-full min-h-[44px] rounded-lg font-semibold transition-colors",
               "bg-warning/10 text-warning-strong hover:bg-warning/15",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
             )}

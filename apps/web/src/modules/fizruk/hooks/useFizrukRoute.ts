@@ -57,7 +57,7 @@ export interface UseFizrukRouteResult {
    * inside the session).
    */
   segments: readonly string[];
-  navigate: (next: FizrukPage | string) => void;
+  navigate: (next: FizrukPage | string, options?: { back?: boolean }) => void;
 }
 
 /**
@@ -128,7 +128,7 @@ export function useFizrukRoute(
   }, [location.pathname, page]);
 
   const navigate = useCallback(
-    (next: FizrukPage | string) => {
+    (next: FizrukPage | string, options?: { back?: boolean }) => {
       // Accept either a typed `FizrukPage` (`navigate("workouts")`) or a
       // `<page>/<segment>` string (`navigate("exercise/abc-123")`) — the
       // legacy `useHashRoute` hook supported both, so the call-sites in
@@ -136,6 +136,20 @@ export function useFizrukRoute(
       const raw = String(next || "").trim();
       const parts = raw.split("/").filter(Boolean);
       const result = parseFizrukSegments(parts);
+      const goTo = (target: string) => {
+        const from = (routerLocation.state as { fizrukFrom?: string } | null)
+          ?.fizrukFrom;
+        // Відомий попередній екран повертаємо через POP без дубля в історії.
+        // Cold deep link потребує REPLACE, інакше «Назад» знов відкриє довідник.
+        if (options?.back && from === target) {
+          void navigateRR(-1);
+        } else {
+          void navigateRR(target, {
+            replace: options?.back ?? false,
+            state: { fizrukFrom: location.pathname },
+          });
+        }
+      };
 
       // Defect #1: on the exercise page, a bare `workouts` target (no
       // segment) is always a "back"-shaped call — the header's contextual
@@ -152,7 +166,7 @@ export function useFizrukRoute(
       ) {
         const remembered = safeReadStringSS(EXERCISE_RETURN_SESSION_KEY);
         if (remembered && remembered !== location.pathname) {
-          navigateRR(remembered, { replace: false });
+          goTo(remembered);
           return;
         }
       }
@@ -163,9 +177,9 @@ export function useFizrukRoute(
         result.subSegment,
       );
       if (location.pathname === target) return;
-      navigateRR(target, { replace: false });
+      goTo(target);
     },
-    [location.pathname, navigateRR, page],
+    [location.pathname, navigateRR, page, routerLocation.state],
   );
 
   return { page, segments, navigate };
