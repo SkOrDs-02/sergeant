@@ -32,6 +32,7 @@ import { recordReadFallback } from "../../../core/observability/dualWriteTelemet
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
 import { runTxNotesImportStep, runTxNotesRequeueStep } from "./txNotesBoot.js";
+import { LEGACY_LS_IMPORT_CLIENT_TS } from "./txNotesLsImport.js";
 import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader.js";
 import {
@@ -77,12 +78,9 @@ export async function bootFinykSqliteReadPath(
     // кеш, опублікований без імпортованих нотаток, перекрив би слот порожнім
     // обʼєктом. Збій не валить буг читального шляху: LS-ключ лишається,
     // наступний старт повторить.
-    await runTxNotesImportStep(
-      client,
-      userId,
-      // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
-      new Date().toISOString(),
-    );
+    // Мітка консервативна (епоха), а не «зараз»: нотатка з LS давня, і будь-який
+    // серверний стан (зокрема видалення з іншого пристрою) має її перебивати.
+    await runTxNotesImportStep(client, userId, LEGACY_LS_IMPORT_CLIENT_TS);
 
     await refreshFinykSqliteState(client, userId);
 

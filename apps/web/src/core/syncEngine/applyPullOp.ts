@@ -2,6 +2,7 @@ import type { SyncV2PullOp } from "@sergeant/api-client";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyNutritionGoalPeriodsPull } from "./applyPullGoalPeriods.js";
+import { applyTxNotesPullDelete } from "./applyPullTxNotes.js";
 
 export type ApplyPullOutcome = "applied" | "skipped" | "rejected";
 
@@ -519,6 +520,11 @@ export async function applyPullOp(
 
   if (!CLIENT_PULL_SUPPORTED_TABLES.has(op.table)) {
     return "rejected";
+  }
+
+  if (op.table === "finyk_tx_notes") {
+    const deleted = await applyTxNotesPullDelete(client, op, userId);
+    if (deleted !== null) return deleted;
   }
 
   const special = SPECIAL_HANDLERS[op.table];

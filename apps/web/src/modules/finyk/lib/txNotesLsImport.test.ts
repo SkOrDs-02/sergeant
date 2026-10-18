@@ -19,7 +19,11 @@ import {
 } from "@sergeant/db-schema/sqlite";
 
 import { clearFinykSqliteCache, refreshFinykSqliteState } from "./sqliteReader";
-import { importLegacyTxNotesFromLs } from "./txNotesLsImport";
+import {
+  importLegacyTxNotesFromLs,
+  LEGACY_LS_IMPORT_CLIENT_TS,
+} from "./txNotesLsImport";
+import { applyPullOp } from "../../../core/syncEngine/applyPullOp";
 
 vi.mock("../../../core/syncEngine/outboxSchema.js", () => ({
   ensureOutboxSchema: async () => {},
@@ -34,9 +38,12 @@ let db: BetterSqliteDatabase;
 let client: SqliteMigrationClient;
 /** `tx-bad` падає на запису: імітація збою SQLite посеред перелиття. */
 let failOnTx: string | null = null;
+/** Збій постановки в outbox (SQLite-запис нотатки при цьому проходить). */
+let failOnOutbox = false;
 
 beforeEach(async () => {
   failOnTx = null;
+  failOnOutbox = false;
   localStorage.clear();
   db = new Database(":memory:");
   client = {
@@ -50,6 +57,9 @@ beforeEach(async () => {
         (params ?? []).includes(failOnTx)
       ) {
         throw new Error("disk full");
+      }
+      if (failOnOutbox && /INTO sync_op_outbox/.test(sql)) {
+        throw new Error("outbox busy");
       }
       db.prepare(sql).run(...((params ?? []) as unknown[]));
     },
@@ -174,6 +184,78 @@ describe("importLegacyTxNotesFromLs", () => {
     const cache = await refreshFinykSqliteState(client, USER);
     expect(cache.txNotes).toEqual({ "tx-1": "перша", "tx-bad": "друга" });
     expect(await outbox()).toHaveLength(2);
+  });
+
+  it("збій постановки в outbox лишає LS-ключ, повтор ставить оп (рядок у SQLite уже є)", async () => {
+    setLs({ "tx-1": "оренда" });
+    failOnOutbox = true;
+
+    const first = await importLegacyTxNotesFromLs(client, USER, TS);
+
+    expect(first.drained).toBe(false);
+    expect(localStorage.getItem(LS_KEY)).not.toBeNull();
+    expect(await outbox()).toHaveLength(0);
+
+    failOnOutbox = false;
+    const second = await importLegacyTxNotesFromLs(client, USER, TS);
+
+    expect(second.drained).toBe(true);
+    expect(localStorage.getItem(LS_KEY)).toBeNull();
+    expect((await outbox()).map((r) => r.op)).toEqual(["insert"]);
+  });
+
+  it("епоха: видалення з іншого пристрою після перелиття лишає tombstone", async () => {
+    setLs({ "tx-1": "стара з LS" });
+    await importLegacyTxNotesFromLs(client, USER, LEGACY_LS_IMPORT_CLIENT_TS);
+
+    const outcome = await applyPullOp(
+      client,
+      {
+        id: 10,
+        table: "finyk_tx_notes",
+        op: "delete",
+        row: { user_id: USER, transaction_id: "tx-1" },
+        client_ts: "2026-10-11T10:00:00.000Z",
+        server_ts: "2026-10-11T10:00:00.000Z",
+        origin_device_id: "device-A",
+      } as never,
+      USER,
+      "device-B",
+    );
+
+    expect(outcome).toBe("applied");
+    const cache = await refreshFinykSqliteState(client, USER);
+    expect(cache.txNotes).toEqual({});
+    const rows = await client.all<{ note: string; deleted_at: string | null }>(
+      `SELECT note, deleted_at FROM finyk_tx_notes WHERE transaction_id = 'tx-1'`,
+    );
+    expect(rows[0]).toEqual({
+      note: "",
+      deleted_at: "2026-10-11T10:00:00.000Z",
+    });
+  });
+
+  it("видалення з іншого пристрою ДО перелиття лишає tombstone, LS не воскресає", async () => {
+    await applyPullOp(
+      client,
+      {
+        id: 10,
+        table: "finyk_tx_notes",
+        op: "delete",
+        row: { user_id: USER, transaction_id: "tx-1" },
+        client_ts: "2026-10-11T10:00:00.000Z",
+        server_ts: "2026-10-11T10:00:00.000Z",
+        origin_device_id: "device-A",
+      } as never,
+      USER,
+      "device-B",
+    );
+    setLs({ "tx-1": "стара з LS" });
+    await importLegacyTxNotesFromLs(client, USER, LEGACY_LS_IMPORT_CLIENT_TS);
+
+    const cache = await refreshFinykSqliteState(client, USER);
+    expect(cache.txNotes).toEqual({});
+    expect(await outbox()).toHaveLength(0);
   });
 
   it("без LS-ключа - нічого не робить", async () => {
