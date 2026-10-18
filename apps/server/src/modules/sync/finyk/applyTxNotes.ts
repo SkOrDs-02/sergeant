@@ -70,16 +70,33 @@ export async function applyFinykTxNotes(
 
   if (op.op === "delete" || note === "") {
     if (existing.rows.length === 0) {
-      // Явне видалення нічого не знайшло - це `not_found`, як у решти
-      // tombstone-таблиць; порожній `note` на insert/update - не помилка.
-      return op.op === "delete"
-        ? { status: "rejected", reason: "not_found" }
-        : { status: "applied" };
+      // Порожня нотатка на insert/update без рядка - не помилка, писати нічого.
+      if (op.op !== "delete") return { status: "applied" };
+      // Явне видалення рядка, якого на сервері ще нема (нотатка не доїхала,
+      // або видалення прийшло раніше за вставку): ставимо tombstone з міткою
+      // видалення замість `not_found`. Так (1) клієнт не засмічує Sentry
+      // небенайним reject-ом, а (2) старіша вставка з іншого пристрою не
+      // воскресить нотатку - LWW порівняє її з міткою tombstone. `note` у
+      // tombstone порожній: тексту після видалення не лишається.
+      return applyIfNewer(
+        client,
+        `INSERT INTO finyk_tx_notes
+           (user_id, transaction_id, note, created_at, updated_at, deleted_at)
+         VALUES ($1, $2, '', $3, $3, $3)
+         ON CONFLICT (user_id, transaction_id) DO UPDATE
+           SET note       = '',
+               updated_at = EXCLUDED.updated_at,
+               deleted_at = EXCLUDED.updated_at
+           WHERE finyk_tx_notes.updated_at < EXCLUDED.updated_at`,
+        [userId, transactionId, clientTs],
+      );
     }
+    // Приватність: soft-delete чистить і текст, а не лише ставить мітку -
+    // рядок із `deleted_at` лишається в таблиці й іде в GDPR-експорт.
     return applyIfNewer(
       client,
       `UPDATE finyk_tx_notes
-         SET deleted_at = $1, updated_at = $1
+         SET note = '', deleted_at = $1, updated_at = $1
        WHERE user_id = $2 AND transaction_id = $3 AND updated_at < $1`,
       [clientTs, userId, transactionId],
     );

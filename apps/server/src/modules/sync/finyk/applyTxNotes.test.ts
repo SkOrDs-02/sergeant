@@ -119,12 +119,14 @@ describe("applyFinykTxNotes", () => {
     ).resolves.toEqual({ status: "applied" });
     const write = lastQuery(fake);
     expect(write.sql).toContain("UPDATE finyk_tx_notes");
-    expect(write.sql).toContain("SET deleted_at = $1, updated_at = $1");
+    expect(write.sql).toContain(
+      "SET note = '', deleted_at = $1, updated_at = $1",
+    );
     expect(write.sql).not.toMatch(/DELETE FROM/);
     expect(write.params).toEqual([NEWER, "u1", "tx-1"]);
   });
 
-  it("delete неіснуючої нотатки - not_found", async () => {
+  it("delete неіснуючої нотатки - tombstone з порожнім note, не not_found", async () => {
     const fake = new FakeClient();
     await expect(
       applyFinykTxNotes(
@@ -133,7 +135,14 @@ describe("applyFinykTxNotes", () => {
         "u1",
         TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "not_found" });
+    ).resolves.toEqual({ status: "applied" });
+    const write = lastQuery(fake);
+    expect(write.sql).toContain("INSERT INTO finyk_tx_notes");
+    expect(write.sql).toContain("VALUES ($1, $2, '', $3, $3, $3)");
+    expect(write.sql).toContain(
+      "WHERE finyk_tx_notes.updated_at < EXCLUDED.updated_at",
+    );
+    expect(write.params).toEqual(["u1", "tx-1", TS]);
   });
 
   it("порожня нотатка на update = soft-delete, а не помилка", async () => {

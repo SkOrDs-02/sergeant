@@ -69,7 +69,7 @@ describe("finyk_tx_notes adapter SQL", () => {
 
     const { sql, params } = calls[0]!;
     expect(sql).toContain("UPDATE finyk_tx_notes");
-    expect(sql).toContain("SET deleted_at = ?, updated_at = ?");
+    expect(sql).toContain("SET note = '', deleted_at = ?, updated_at = ?");
     expect(sql).toContain("updated_at < ?");
     expect(sql).not.toContain("DELETE FROM");
     expect(params).toEqual([

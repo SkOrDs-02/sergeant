@@ -236,11 +236,12 @@ const TX_NOTE_UPSERT_SPEC: TableSpec = {
 
 export const TX_NOTE_UPSERT_SQL = buildLwwUpsert(TX_NOTE_UPSERT_SPEC);
 
-export const TX_NOTE_DELETE_SQL = buildDelete({
-  table: "finyk_tx_notes",
-  deletePolicy: "soft",
-  matchColumns: ["user_id", "transaction_id"],
-});
+// Приватність: soft-delete чистить і текст (`note = ''`), бо tombstone-рядок
+// лишається в таблиці (і в серверному GDPR-експорті). Bind-порядок той самий,
+// що в `buildDelete`: `[deletedAt, updatedAt, userId, transactionId, clientTs]`.
+export const TX_NOTE_DELETE_SQL = `UPDATE finyk_tx_notes
+        SET note = '', deleted_at = ?, updated_at = ?
+      WHERE user_id = ? AND transaction_id = ? AND updated_at < ?`;
 
 // -----------------------------------------------------------------------
 // time-series (finyk_networth_history, composite (user_id, month))

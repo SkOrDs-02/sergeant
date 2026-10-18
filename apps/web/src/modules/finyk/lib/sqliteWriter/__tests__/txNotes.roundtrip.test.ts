@@ -94,10 +94,15 @@ describe("txNotes у відновленні з бекапу", () => {
     );
 
     expect(await notes()).toEqual({ "tx-1": "з файлу" });
-    const gone = await handle.client.all<{ deleted_at: string | null }>(
-      `SELECT deleted_at FROM finyk_tx_notes WHERE transaction_id = 'tx-2'`,
+    const gone = await handle.client.all<{
+      deleted_at: string | null;
+      note: string;
+    }>(
+      `SELECT deleted_at, note FROM finyk_tx_notes WHERE transaction_id = 'tx-2'`,
     );
     expect(gone[0]!.deleted_at).not.toBeNull();
+    // Приватність: tombstone не тримає текст нотатки.
+    expect(gone[0]!.note).toBe("");
   });
 
   it("старий бекап без txNotes нотаток не чіпає (і в replace, і в merge)", async () => {
