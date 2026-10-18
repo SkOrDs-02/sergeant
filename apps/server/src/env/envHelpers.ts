@@ -11,6 +11,14 @@ import { z } from "zod";
 
 export const coerceInt = z.coerce.number().int();
 
+/** Опційний секрет: порожній рядок = не задано, задане має бути ≥ `minLength`. */
+export const optionalSecretFromEnv = (minLength: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined || v.trim() === "" ? undefined : v))
+    .pipe(z.string().min(minLength).optional());
+
 export const intFromEnv = (defaultValue: number) =>
   z
     .string()

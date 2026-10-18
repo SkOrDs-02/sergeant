@@ -44,6 +44,7 @@ describe("logger", () => {
       expect(redactPaths).toContain("req.headers.cookie");
       expect(redactPaths).toContain('req.headers["x-csrf-token"]');
       expect(redactPaths).toContain('res.headers["set-cookie"]');
+      expect(redactPaths).toContain('req.headers["x-sergeant-client-ip-sig"]');
       expect(redactPaths).toContain("password");
       expect(redactPaths).toContain("token");
       expect(redactPaths).toContain("sessionToken");

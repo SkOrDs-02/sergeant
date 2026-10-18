@@ -201,6 +201,8 @@ export const redactPaths = [
   'req.headers["x-openclaw-webhook-secret"]',
   'req.headers["x-api-secret"]',
   'req.headers["x-internal-token"]',
+  // rel-03: підпис IP клієнта — credential-матеріал (реплей без експірації).
+  'req.headers["x-sergeant-client-ip-sig"]',
   'res.headers["set-cookie"]',
   "password",
   "newPassword",

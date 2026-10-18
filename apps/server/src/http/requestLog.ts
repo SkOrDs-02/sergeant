@@ -10,6 +10,7 @@ import {
   statusClass,
 } from "../obs/metrics.js";
 import { elapsedMs } from "../lib/timing.js";
+import { getClientIp } from "./clientIp.js";
 
 /**
  * Один JSON-рядок на відповідь + емісія HTTP-RED метрик.
@@ -99,7 +100,7 @@ export function requestLogMiddleware(
       status,
       ms: Math.round(ms),
       bytesOut,
-      ipHash: hashIp(req.ip),
+      ipHash: hashIp(getClientIp(req)),
       ua: req.get("user-agent") || undefined,
     });
 

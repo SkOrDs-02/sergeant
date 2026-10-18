@@ -32,6 +32,17 @@ vi.mock("../components/charts/lazy", () => ({
       bars total {data.reduce((sum, d) => sum + d.spent, 0)}
     </div>
   ),
+  // Розріз «За рахунками» тут лише кнопка фільтра: самі рядки покриває
+  // `AccountBars.test.tsx`, а цей набір перевіряє, що фільтр звужує сторінку.
+  AccountBars: ({
+    onSelect,
+  }: {
+    onSelect: (accountKey: string | null) => void;
+  }) => (
+    <button type="button" onClick={() => onSelect("cash_on_hand")}>
+      only-cash
+    </button>
+  ),
 }));
 
 const KYIV = new Date("2026-06-15T09:00:00Z"); // mid-June 2026, Kyiv-local
@@ -339,6 +350,43 @@ describe("Analytics page", () => {
     });
     // manual expense produces category distribution → bars render
     expect(await screen.findByTestId("category-bars")).toBeInTheDocument();
+  });
+
+  it("фільтр рахунку лишає в підсумку лише готівкові витрати (Р4.2)", async () => {
+    const manualExpenses = [
+      {
+        id: "cash",
+        amount: 200,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+        account: "cash",
+      },
+      {
+        id: "none",
+        amount: 50,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+      },
+    ];
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono()}
+          storage={buildStorage({
+            manualExpenses: manualExpenses as unknown as NonNullable<
+              AnalyticsProps["storage"]["manualExpenses"]
+            >,
+          })}
+        />,
+      );
+    });
+    expect(await screen.findByTestId("category-bars")).toHaveTextContent(
+      "bars total 250",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "only-cash" }));
+    expect(screen.getByTestId("category-bars")).toHaveTextContent(
+      "bars total 200",
+    );
   });
 
   it("показує помилку завантаження банку навіть коли в місяці є ручна витрата", async () => {

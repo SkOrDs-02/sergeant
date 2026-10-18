@@ -347,3 +347,29 @@ describe("txNotes у бекапі (аудит 2026-10-01, data-27)", () => {
     ).toEqual({ "tx-1": "моя", "tx-9": "нова" });
   });
 });
+
+describe("«Готівка на руках» у бекапі (ADR-0076)", () => {
+  const cash = {
+    initialAmount: 100_000,
+    createdAt: 1_700_000_000_000,
+    adjustments: [],
+    countAsExpenseTxIds: [],
+    preferForManual: false,
+  };
+
+  it("експорт на теплому кеші несе рахунок, normalize його зберігає", () => {
+    fakeCache.value = warmCache({
+      cashOnHand: cash,
+      networthHistory: [],
+      customCategories: [],
+    });
+    const snapshot = readFinykBackupFromStorage();
+    expect(snapshot.cashOnHand).toEqual(cash);
+    expect(normalizeFinykBackup(snapshot).cashOnHand).toEqual(cash);
+  });
+
+  it("без рахунку поля у файлі немає", () => {
+    fakeCache.value = warmCache({ cashOnHand: null });
+    expect("cashOnHand" in readFinykBackupFromStorage()).toBe(false);
+  });
+});

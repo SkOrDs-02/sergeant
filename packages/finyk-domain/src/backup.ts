@@ -61,6 +61,11 @@ export interface FinykBackup {
    * пристрої як є.
    */
   merchantRules?: unknown[];
+  /**
+   * «Готівка на руках» (`CashOnHandState`, ADR-0076). Необовʼязкове поле:
+   * файл без нього лишає рахунок на пристрої як є.
+   */
+  cashOnHand?: Record<string, unknown>;
 }
 
 /**
@@ -121,6 +126,11 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   for (const field of ARRAY_FIELDS) {
     const v = needArr(obj[field], field);
     if (v) out[field] = v;
+  }
+
+  const cash = obj["cashOnHand"];
+  if (cash && typeof cash === "object" && !Array.isArray(cash)) {
+    out.cashOnHand = cash as Record<string, unknown>;
   }
 
   if (obj["monthlyPlan"] !== undefined && obj["monthlyPlan"] !== null) {

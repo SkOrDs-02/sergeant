@@ -36,6 +36,10 @@ import {
   FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
 } from "@sergeant/finyk-domain/storage-keys";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import {
+  isCashWithdrawalCandidate,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
 import { formatMoney } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import type {
@@ -145,6 +149,9 @@ export interface TransactionsStorageSlice {
   cancelledTxIds?: ReadonlySet<string> | undefined;
   excludedStatTxIds: string[] | undefined;
   toggleExcludeFromStats: (id: string) => void;
+  /** «Готівка на руках»: підказка й перебиття для знять (ADR-0076). */
+  cashOnHand?: CashOnHandState | null | undefined;
+  toggleCashCountAsExpense?: ((id: string) => void) | undefined;
   txCategories: TxCategoriesMap;
   /**
    * Правила «Завжди так для цього магазину» і їхні мутатори. Усе необовʼязкове:
@@ -247,6 +254,8 @@ export function Transactions({
     cancelledTxIds,
     excludedStatTxIds,
     toggleExcludeFromStats,
+    cashOnHand,
+    toggleCashCountAsExpense,
     txCategories,
     merchantRuleIndex,
     upsertMerchantRule,
@@ -669,6 +678,19 @@ export function Transactions({
           onSplitChange={handleSplitChange}
           onToggleHidden={selection.stableHideTx}
           onToggleExcludedFromStats={toggleExcludeFromStats}
+          cashWithdrawal={
+            cashOnHand &&
+            toggleCashCountAsExpense &&
+            isCashWithdrawalCandidate(editingBankTransaction, cashOnHand)
+              ? {
+                  countedAsExpense: cashOnHand.countAsExpenseTxIds.includes(
+                    editingBankTransaction.id,
+                  ),
+                  onToggle: () =>
+                    toggleCashCountAsExpense(editingBankTransaction.id),
+                }
+              : undefined
+          }
           onClose={() => setEditingBankTransaction(null)}
         />
       )}

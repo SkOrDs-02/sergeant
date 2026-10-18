@@ -188,6 +188,7 @@ function readStatTransactions(): FinykSearchTx[] {
     txCategories: sqlite.txCategories,
     receivables: sqlite.receivables,
     excludedStatTxIds: sqlite.excludedStatTxIds,
+    cashOnHand: sqlite.cashOnHand,
     transactions: [
       ...sqlite.manualExpenses.map((entry) => ({
         id: String(entry.id ?? ""),

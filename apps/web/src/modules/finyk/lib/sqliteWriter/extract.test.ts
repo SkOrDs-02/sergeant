@@ -678,3 +678,32 @@ describe("extractFinykDualWriteState — integration / happy path", () => {
     expect(slots).toEqual(snapshot);
   });
 });
+
+describe("prefs_json і «Готівка на руках» (ADR-0076)", () => {
+  const cash = {
+    initialAmount: 100_000,
+    createdAt: 1_700_000_000_000,
+    adjustments: [{ id: "a1", amount: -5_000, at: 1_700_000_001_000 }],
+    countAsExpenseTxIds: ["tx-1"],
+    preferForManual: true,
+  };
+
+  it("рахунок їде в prefs_json поруч із правилами", () => {
+    const state = extractFinykDualWriteState(
+      makeSlots({ cashOnHand: cash }),
+      false,
+    );
+    expect(JSON.parse(state.prefs?.prefsJson ?? "")).toEqual({
+      merchantRules: [],
+      cashOnHand: cash,
+    });
+  });
+
+  it("без рахунку ключа cashOnHand немає", () => {
+    const state = extractFinykDualWriteState(
+      makeSlots({ cashOnHand: null }),
+      false,
+    );
+    expect(state.prefs?.prefsJson).toBe('{"merchantRules":[]}');
+  });
+});

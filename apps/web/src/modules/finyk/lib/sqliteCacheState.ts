@@ -23,6 +23,7 @@ import type {
 } from "../hooks/useStorage.types";
 import type { Debt, Receivable } from "@sergeant/finyk-domain/domain";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
+import type { CashOnHandState } from "@sergeant/finyk-domain/domain/cashOnHand";
 
 export interface SqliteFinykCache {
   /** Account ids hidden from balances (set membership). */
@@ -73,6 +74,11 @@ export interface SqliteFinykCache {
    * а не затирає його порожнім списком.
    */
   merchantRules: MerchantRule[] | null;
+  /**
+   * «Готівка на руках» (`prefs_json.cashOnHand`, ADR-0076). `undefined` —
+   * кеш холодний або рядка prefs ще немає; `null` — рахунку не створено.
+   */
+  cashOnHand?: CashOnHandState | null | undefined;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -96,6 +102,7 @@ export const EMPTY_FINYK_SQLITE_CACHE: SqliteFinykCache = {
   excludedStatTxIds: null,
   dismissedRecurring: null,
   merchantRules: null,
+  cashOnHand: undefined,
   refreshedAt: null,
 };
 

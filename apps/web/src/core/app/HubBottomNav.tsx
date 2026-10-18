@@ -19,28 +19,20 @@ import { messages } from "@shared/i18n/uk";
 /**
  * Sergeant Design System — `HubBottomNav`
  *
- * Hub-level bottom navigation. Renders as a floating pill — inset from
- * the screen edges (`mx-3` + bottom margin clearing the home indicator)
- * with the page mesh background continuing behind and below it, matching
- * `ModuleBottomNav` so the whole app reads under one navigation pattern.
+ * Hub-level bottom navigation, the same pattern as `ModuleBottomNav` so the
+ * whole app reads under one navigation (мова H, redesign v3 PR1).
  *
  * Canonical shape:
  * - Мінімальна висота треку 60 px (64 px on coarse-pointer devices); при
  *   збільшеному тексті (low-vision, 200% root) трек росте разом із підписом.
  * - Docked edge-to-edge against the screen bottom in both browser and PWA
- *   standalone via `bottom-nav-shell` — no horizontal margins, flat bottom,
- *   rounded only at the top. The panel background fills the safe-area strip
+ *   standalone via `bottom-nav-shell`: opaque, square corners, a hairline
+ *   on top, no blur. The background fills the safe-area strip
  *   (padding-bottom) so there's no page-coloured dead space below the labels
  *   and the nav never floats above the home indicator
  *   (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
- * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
- *   outline):
- *   - Light: a solid emerald (`brand-strong`) square with an ink-on-cream
- *     foreground (`text-bg`). Module-agnostic — the hub carries emerald,
- *     not a per-module accent.
- *   - Dark («Чорнило»): a solid emerald (`brand-400`, the hub's default
- *     accent) square with the same ink foreground (`text-bg` resolves to
- *     `#14100e` under `.dark`, so one bare class covers both themes).
+ * - Active tab: ink text (`text-text`), inactive `text-subtle`; no pill and
+ *   no accent fill. The label under the icon is always visible.
  * - `role="tablist"` + `aria-selected` for AT.
  *
  * Layout contract:
