@@ -43,6 +43,20 @@ describe("ipPrefix: канонічні IPv6-групи", () => {
     expect(ipPrefix("2A02:2F0E:5D:1A::1")).toBe(ipPrefix("2a02:2f0e:5d:1a::1"));
   });
 
+  it("збережений до канонізації /64 збігається з живим тим самим /64", () => {
+    expect(ipPrefix("2a02:2f0e:005d:001a::/64")).toBe("2a02:2f0e:5d:1a::/64");
+    expect(
+      detectFingerprintDrift({
+        storedUserAgent: "UA",
+        storedIp: "2a02:2f0e:005d:001a::/64",
+        currentUserAgent: "UA",
+        currentIp: "2a02:2f0e:5d:1a::1",
+      }),
+    ).toBeNull();
+    // Не-/64 префікси й IPv4 /24 лишаються як є.
+    expect(ipPrefix("10.0.0.0/24")).toBe("10.0.0.0/24");
+  });
+
   it("різні /64 лишаються різними", () => {
     expect(ipPrefix("2a02:2f0e:5d:1b::1")).not.toBe(
       ipPrefix("2a02:2f0e:005d:001a::1"),

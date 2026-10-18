@@ -47,7 +47,15 @@ export function ipPrefix(ip: string | null | undefined): string | null {
   if (!ip) return null;
   const trimmed = ip.trim();
   if (!trimmed) return null;
-  if (trimmed.includes("/")) return trimmed;
+  if (trimmed.includes("/")) {
+    // Збережений до канонізації IPv6 /64 (`2a02:2f0e:005d:001a::/64`) має
+    // збігатися з живим (`2a02:2f0e:5d:1a::/64`), інакше хибний drift.
+    const [address = "", prefixLength] = trimmed.split("/", 2);
+    if (prefixLength === "64" && isIP(address) === 6) {
+      return `${expandIpv6Prefix(address)}/64`;
+    }
+    return trimmed;
+  }
   const family = isIP(trimmed);
   if (family === 4) {
     const parts = trimmed.split(".");
