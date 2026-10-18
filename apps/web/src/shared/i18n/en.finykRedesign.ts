@@ -1,6 +1,8 @@
 export const finykRedesignEn = {
   assetsTitle: "Assets",
   transactionsTitle: "Transactions",
+  transactionsEmptyTitle: "No transactions yet",
+  transactionsEmptyDescription: "Add an expense manually or connect Monobank.",
   planningTitle: "Plan",
   analyticsTitle: "Analysis",
   selected: "Selected",

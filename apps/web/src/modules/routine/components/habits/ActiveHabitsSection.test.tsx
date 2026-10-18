@@ -59,7 +59,7 @@ interface HarnessProps {
   onEdit?: (h: Habit) => void;
   onCancelEditIf?: (id: string) => void;
   onOpenDetails?: (id: string) => void;
-  onOpenCalendar?: () => void;
+  onCreateHabit?: () => void;
   onRequestDelete?: (p: unknown) => void;
   editingId?: string | null;
 }
@@ -69,7 +69,7 @@ function Harness({
   onEdit = vi.fn(),
   onCancelEditIf = vi.fn(),
   onOpenDetails = vi.fn(),
-  onOpenCalendar,
+  onCreateHabit = vi.fn(),
   onRequestDelete = vi.fn(),
   editingId = null,
 }: HarnessProps) {
@@ -82,7 +82,7 @@ function Harness({
       onEdit={onEdit}
       onCancelEditIf={onCancelEditIf}
       onOpenDetails={onOpenDetails}
-      {...(onOpenCalendar ? { onOpenCalendar } : {})}
+      onCreateHabit={onCreateHabit}
       onRequestDelete={onRequestDelete}
     />
   );
@@ -99,7 +99,7 @@ afterEach(() => {
 
 describe("ActiveHabitsSection", () => {
   it("renders the section heading and the search input", () => {
-    render(<Harness initial={defaultRoutineState()} />);
+    render(<Harness initial={makeRoutine([makeHabit("h1", "Вода", 0)])} />);
     expect(screen.getByText("Активні звички")).toBeInTheDocument();
     expect(screen.getByLabelText("Пошук звичок у списку")).toBeInTheDocument();
   });
@@ -107,19 +107,25 @@ describe("ActiveHabitsSection", () => {
   it("renders an empty state when there are no active habits", () => {
     render(<Harness initial={defaultRoutineState()} />);
     expect(screen.getByText("Звичок ще немає")).toBeInTheDocument();
+    expect(
+      screen.getByText("Створи одну звичку, щоб почати серію."),
+    ).toBeVisible();
+    expect(
+      screen.queryByLabelText("Пошук звичок у списку"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/перетягни картку або скористайся стрілками/i),
+    ).not.toBeInTheDocument();
   });
 
-  it("offers a 'Перейти до календаря' CTA only when onOpenCalendar is provided", () => {
-    const onOpenCalendar = vi.fn();
+  it("opens habit creation from the empty state", () => {
+    const onCreateHabit = vi.fn();
     render(
-      <Harness
-        initial={defaultRoutineState()}
-        onOpenCalendar={onOpenCalendar}
-      />,
+      <Harness initial={defaultRoutineState()} onCreateHabit={onCreateHabit} />,
     );
-    const cta = screen.getByRole("button", { name: "Перейти до календаря" });
+    const cta = screen.getByRole("button", { name: "Створити звичку" });
     fireEvent.click(cta);
-    expect(onOpenCalendar).toHaveBeenCalledTimes(1);
+    expect(onCreateHabit).toHaveBeenCalledTimes(1);
   });
 
   it("lists active habits and filters them by the search query", () => {
@@ -164,14 +170,14 @@ describe("ActiveHabitsSection", () => {
   });
 
   // Порожній список і порожній пошук не мають накладатись: коли активних
-  // звичок немає взагалі, працює `EmptyState` «Звичок ще немає», а не цей.
-  it("keeps the no-habits empty state when the list is empty and a query is typed", () => {
+  // звичок немає взагалі, працює `ModuleEmptyState` «Звичок ще немає», а не цей.
+  it("keeps the no-habits empty state without exposing an irrelevant search", () => {
     render(<Harness initial={makeRoutine([])} />);
-    fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
-      target: { value: "будь-що" },
-    });
     expect(screen.getByText("Звичок ще немає")).toBeInTheDocument();
     expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Пошук звичок у списку"),
+    ).not.toBeInTheDocument();
   });
 
   it("wires the Деталі menu item to onOpenDetails", () => {

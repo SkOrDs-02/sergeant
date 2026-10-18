@@ -11,14 +11,14 @@
  * start-CTA of its own: starting a session lives only on `WorkoutsHome`.
  * Each row navigates to the route-owned single-workout view
  * (`/fizruk/workout/<id>`, `WorkoutJournalSection`) instead of toggling a
- * local selection — that view already renders the right thing for both
- * an in-flight and a finished session (02-A).
+ * local selection. The empty state may route to the canonical Workouts
+ * home; it does not start a session in place.
  */
 import { useCallback } from "react";
 import { VirtualList } from "@shared/components/ui/VirtualList";
 import { deviceDayKey, pluralExercises } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
@@ -33,6 +33,8 @@ export interface WorkoutHistoryListProps {
   restoreWorkout: (workout: Workout) => void;
   /** Navigates to `/fizruk/workout/<id>` (route-owned single-workout view). */
   onOpenWorkout: (id: string) => void;
+  /** Routes the empty state to the canonical Workouts start surface. */
+  onStartWorkout?: () => void;
 }
 
 interface WorkoutRowProps {
@@ -112,6 +114,7 @@ export function WorkoutHistoryList({
   deleteWorkout,
   restoreWorkout,
   onOpenWorkout,
+  onStartWorkout,
 }: WorkoutHistoryListProps) {
   const toast = useToast();
   const copy = messages.fizruk.workoutHistory;
@@ -145,10 +148,14 @@ export function WorkoutHistoryList({
       </div>
 
       {workoutList.length === 0 && (
-        <EmptyState
-          compact
+        <ModuleEmptyState
+          module="fizruk"
+          variant="compact"
           title={copy.emptyTitle}
           description={copy.emptyDescription}
+          {...(onStartWorkout ? { onAction: onStartWorkout } : {})}
+          actionLabel={copy.startCta}
+          className="px-5"
         />
       )}
 

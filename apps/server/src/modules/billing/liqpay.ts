@@ -24,20 +24,33 @@ import type {
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
-import {
-  BillingConfigurationError,
-  type BillingProvider,
-  type CancelSubscriptionOutcome,
-  type ProviderCheckoutInput,
-  type ProviderPortalInput,
+import type {
+  BillingProvider,
+  CancelSubscriptionOutcome,
+  ProviderCheckoutInput,
+  ProviderPortalInput,
 } from "./provider.js";
 import { isoOrNull } from "./stripeShared.js";
+import {
+  LIQPAY_API_VERSION,
+  LIQPAY_CHECKOUT_URL,
+  encodeData,
+  getLiqPayKeys,
+  signData,
+  unsubscribeLiqPayOrder,
+} from "./liqpayRemote.js";
+import {
+  findSupersededRecurrence,
+  isSupersededRecurrence,
+  recordSupersededRecurrence,
+  settleSupersededRecurrence,
+  type PreviousRecurrence,
+} from "./supersede.js";
 
-const LIQPAY_CHECKOUT_URL = "https://www.liqpay.ua/api/3/checkout";
-const LIQPAY_REQUEST_URL = "https://www.liqpay.ua/api/request";
-const LIQPAY_API_VERSION = 3;
-/** Алгоритм підпису. Доку розбіжна (sha3-256 в описі), робочі приклади — sha1. */
-const SIGNATURE_ALGO = "sha1" as const;
+// Транспорт (`data`/`signature`) живе в `liqpayRemote.ts`; ре-експорт лишає
+// публічну поверхню модуля незмінною для тестів.
+export { encodeData, signData };
+
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
 /**
@@ -51,22 +64,6 @@ const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 const SUCCESS_STATUSES = new Set(["success", "subscribed"]);
 /** Проміжний 3DS-стан — фінального рішення ще нема, підписку не чіпаємо. */
 const PENDING_STATUSES = new Set(["wait_secure", "wait_accept", "processing"]);
-
-interface LiqPayKeys {
-  publicKey: string;
-  privateKey: string;
-}
-
-function getKeys(): LiqPayKeys {
-  const publicKey = env.LIQPAY_PUBLIC_KEY;
-  const privateKey = env.LIQPAY_PRIVATE_KEY;
-  if (!publicKey || !privateKey) {
-    throw new BillingConfigurationError(
-      "LIQPAY_PUBLIC_KEY / LIQPAY_PRIVATE_KEY are not set",
-    );
-  }
-  return { publicKey, privateKey };
-}
 
 function getAppBaseUrl(): string {
   return (
@@ -90,24 +87,6 @@ function modeFromPublicKey(publicKey: string): "test" | "live" {
 function sandboxPaymentsAccepted(): boolean {
   const publicKey = env.LIQPAY_PUBLIC_KEY;
   return publicKey ? modeFromPublicKey(publicKey) === "test" : false;
-}
-
-/**
- * `data` = base64(JSON). Експортовано для тестів.
- */
-export function encodeData(payload: Record<string, unknown>): string {
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
-}
-
-/**
- * signature = base64(sha1(private_key + data + private_key)). Експортовано
- * для тестів і повторного використання у verify.
- */
-export function signData(data: string, privateKey: string): string {
-  return crypto
-    .createHash(SIGNATURE_ALGO)
-    .update(privateKey + data + privateKey, "utf8")
-    .digest("base64");
 }
 
 /**
@@ -193,57 +172,6 @@ function serializeBillingRow(
   };
 }
 
-/**
- * Відповідь `POST /api/request` — звичайний JSON (на відміну від callback-ів,
- * де він загорнутий у base64 `data`). Нас цікавлять лише `result`/`status` і
- * `err_code`; `err_description` і решту тіла навмисно не читаємо й не логуємо
- * (Hard Rule #21: чужий текст відповіді може нести поля платежу).
- */
-interface LiqPayApiResult {
-  result?: unknown;
-  status?: unknown;
-  err_code?: unknown;
-}
-
-async function readLiqPayApiResult(
-  response: Response,
-): Promise<LiqPayApiResult | null> {
-  try {
-    const parsed: unknown = await response.json();
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as LiqPayApiResult)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function safeToken(value: unknown): string {
-  return typeof value === "string" || typeof value === "number"
-    ? String(value).slice(0, 64)
-    : "-";
-}
-
-/**
- * `unsubscribe` прийнято лише за явного підтвердження: `result:"ok"` або
- * `status:"unsubscribed"`. Помилка, нерозпізнане тіло й не-JSON — відмова:
- * «не знаю» тут гірше за «ні», бо людині скажуть «скасовано», а списання
- * триватимуть.
- */
-function assertUnsubscribeAccepted(body: LiqPayApiResult | null): void {
-  const accepted =
-    body !== null &&
-    body.result !== "error" &&
-    body.status !== "error" &&
-    body.status !== "failure" &&
-    (body.result === "ok" || body.status === "unsubscribed");
-  if (accepted) return;
-  throw new Error(
-    `LiqPay unsubscribe rejected: result=${safeToken(body?.result)} ` +
-      `status=${safeToken(body?.status)} err_code=${safeToken(body?.err_code)}`,
-  );
-}
-
 async function readLatestSubscription(
   pool: Pool,
   userId: string,
@@ -308,33 +236,44 @@ async function hasCancellationEvent(
   return rows.length > 0;
 }
 
-/** Обробка одного верифікованого callback-у. Виконується всередині транзакції. */
+/**
+ * Обробка одного верифікованого callback-у. Виконується всередині транзакції.
+ *
+ * @returns замінену рекурентку, яку треба скасувати у провайдера ПІСЛЯ COMMIT
+ *   (див. `supersede.ts`), або `null`.
+ *
+ * Скасування (`unsubscribe`/`reversed`) і невдале списання скоуплені на
+ * `order_id` callback-у: у користувача може бути кілька order_id (нова
+ * підписка замінила стару), і термінальна подія СТАРОГО order_id не має гасити
+ * рядок НОВОГО. Рядок без order_id (NULL) гаситься як і раніше.
+ */
 async function applyLiqPayCallback(
   client: PoolClient,
   { userId, orderId, status, action }: LiqPayCallbackContext,
-): Promise<void> {
+): Promise<PreviousRecurrence | null> {
   const isCancel = action === "unsubscribe" || status === "reversed";
   if (isCancel) {
     await client.query(
       `UPDATE subscriptions
           SET status = 'canceled', updated_at = NOW()
         WHERE user_id = $1 AND provider = 'liqpay'
+          AND (provider_subscription_id = $2 OR provider_subscription_id IS NULL)
           AND status IN ('active', 'trialing', 'past_due')`,
-      [userId],
+      [userId, orderId],
     );
-    return;
+    return null;
   }
 
   if (PENDING_STATUSES.has(status)) {
     // 3DS-очікування — фінальний callback прийде окремо.
-    return;
+    return null;
   }
 
   if (status === "sandbox" && !sandboxPaymentsAccepted()) {
     // Тестовий платіж на бойових ключах — не оплата. Нічого не міняємо:
     // провалити його в гілку `past_due` нижче означало б збити живу підписку.
     logger.warn({ msg: "liqpay_sandbox_status_on_live_keys", orderId });
-    return;
+    return null;
   }
 
   if (SUCCESS_STATUSES.has(status) || status === "sandbox") {
@@ -344,11 +283,32 @@ async function applyLiqPayCallback(
         orderId,
         status,
       });
-      return;
+      return null;
+    }
+    // Підписку замінила нова (supersede.ts): це запізніле списання по вже
+    // заміненій рекуренції. Воно не має ні оживляти її, ні витісняти нову;
+    // скасування старої добʼє ретрай.
+    if (await isSupersededRecurrence(client, "liqpay", orderId)) {
+      logger.warn({
+        msg: "liqpay_success_for_superseded_order_ignored",
+        status,
+      });
+      return null;
     }
     // Наступне списання LiqPay робить сам через місяць (action:regular).
     const periodEnd = new Date();
     periodEnd.setMonth(periodEnd.getMonth() + 1);
+    // Живий рядок іншої рекурентки (інший провайдер чи інший order_id)
+    // не перезаписуємо мовчки: спершу запамʼятовуємо її, нижче скасовуємо
+    // на боці провайдера (аудит data-21). Читаємо ДО upsert-у.
+    const previous = await findSupersededRecurrence(client, userId, {
+      provider: "liqpay",
+      subscriptionId: orderId,
+    });
+    // `cancel_at_period_end` скидаємо, коли `provider_subscription_id`
+    // змінився: прапорець належав СТАРІЙ підписці, нова його успадковувати не
+    // мусить (аудит data-20). Той самий order_id (наступні списання) прапорець
+    // зберігає.
     await client.query(
       `INSERT INTO subscriptions
          (user_id, provider, plan, status, provider_subscription_id, current_period_end)
@@ -356,13 +316,25 @@ async function applyLiqPayCallback(
        ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
          plan = EXCLUDED.plan,
          status = 'active',
+         cancel_at_period_end = CASE
+           WHEN subscriptions.provider = 'liqpay'
+            AND subscriptions.provider_subscription_id IS NOT DISTINCT FROM
+                COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id)
+           THEN subscriptions.cancel_at_period_end
+           ELSE FALSE
+         END,
          provider = 'liqpay',
          provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
          current_period_end = EXCLUDED.current_period_end,
          updated_at = NOW()`,
       [userId, orderId, periodEnd],
     );
-    return;
+    // Намір скасувати попередню рекурентку пишемо в цю ж транзакцію; сам
+    // виклик LiqPay/іншого провайдера йде після COMMIT і активацію не
+    // відкочує (supersede.ts).
+    return previous
+      ? recordSupersededRecurrence(client, userId, previous)
+      : null;
   }
 
   // Решта (`failure`, `error`) — невдале списання. Якщо це рекурентка на
@@ -371,9 +343,11 @@ async function applyLiqPayCallback(
   await client.query(
     `UPDATE subscriptions
         SET status = 'past_due', updated_at = NOW()
-      WHERE user_id = $1 AND provider = 'liqpay' AND status = 'active'`,
-    [userId],
+      WHERE user_id = $1 AND provider = 'liqpay' AND status = 'active'
+        AND (provider_subscription_id = $2 OR provider_subscription_id IS NULL)`,
+    [userId, orderId],
   );
+  return null;
 }
 
 export const liqpayProvider: BillingProvider = {
@@ -382,7 +356,7 @@ export const liqpayProvider: BillingProvider = {
   async createCheckoutSession(
     input: ProviderCheckoutInput,
   ): Promise<BillingCheckoutResponse> {
-    const { publicKey, privateKey } = getKeys();
+    const { publicKey, privateKey } = getLiqPayKeys();
     const baseUrl = getAppBaseUrl();
     const orderId = encodeOrderId(input.user.id);
     const payload = {
@@ -434,7 +408,7 @@ export const liqpayProvider: BillingProvider = {
   },
 
   verifyWebhookSignature(data: string, signature: string): boolean {
-    const { privateKey } = getKeys();
+    const { privateKey } = getLiqPayKeys();
     return timingSafeEqualStr(signData(data, privateKey), signature);
   },
 
@@ -464,6 +438,7 @@ export const liqpayProvider: BillingProvider = {
     // назавжди, LiqPay на ретраї отримував 200, підписка не активувалась
     // ніколи — а гроші вже списані. ROLLBACK знімає і дедуп-рядок, тож
     // ретрай провайдера справді повторює роботу.
+    let toCancel: PreviousRecurrence | null = null;
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -480,7 +455,12 @@ export const liqpayProvider: BillingProvider = {
         return;
       }
 
-      await applyLiqPayCallback(client, { userId, orderId, status, action });
+      toCancel = await applyLiqPayCallback(client, {
+        userId,
+        orderId,
+        status,
+        action,
+      });
       await client.query("COMMIT");
     } catch (err) {
       try {
@@ -492,6 +472,7 @@ export const liqpayProvider: BillingProvider = {
     } finally {
       client.release();
     }
+    if (toCancel) await settleSupersededRecurrence(pool, toCancel);
   },
 
   async cancelSubscription(
@@ -519,29 +500,7 @@ export const liqpayProvider: BillingProvider = {
     const orderId = row.provider_subscription_id;
     if (!orderId) return "none"; // без order_id провайдеру нічого не наказати
 
-    const { privateKey, publicKey } = getKeys();
-    const payload = {
-      version: LIQPAY_API_VERSION,
-      public_key: publicKey,
-      action: "unsubscribe",
-      order_id: orderId,
-    };
-    const data = encodeData(payload);
-    const signature = signData(data, privateKey);
-    const body = new URLSearchParams({ data, signature });
-    const response = await fetch(LIQPAY_REQUEST_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-    });
-    if (!response.ok) {
-      throw new Error(`LiqPay unsubscribe failed: HTTP ${response.status}`);
-    }
-    // LiqPay віддає помилки бізнес-рівня з HTTP 200 і `result:"error"` у JSON,
-    // тож `response.ok` нічого не доводить. Без цієї перевірки відмова
-    // провайдера читалась як успіх, а підписку позначали скасованою, хоча
-    // LiqPay далі списував гроші.
-    assertUnsubscribeAccepted(await readLiqPayApiResult(response));
+    await unsubscribeLiqPayOrder(orderId);
 
     // Доступ лишається до кінця оплаченого періоду (ADR-1.11 семантика).
     await pool.query(

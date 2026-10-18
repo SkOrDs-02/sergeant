@@ -1030,6 +1030,7 @@ describe("AddMealSheet — editing an existing meal", () => {
         mealType: "lunch",
         foodId: "food-db-99",
         amount_g: 150,
+        macroSource: "productDb",
         macros: { kcal: 200, protein_g: 8, fat_g: 2, carbs_g: 40 },
       },
     });
@@ -1635,5 +1636,39 @@ describe("AddMealSheet — виходи з картки «Продукт не з
     fireEvent.click(screen.getByText("notice-manual-entry"));
     expect(selectedTab()).toMatch(/Ввести вручну/);
     expect(selectedTab()).not.toMatch(/Штрихкод/);
+  });
+});
+
+describe("AddMealSheet — manual-прийом із foodId не повертається в productDb", () => {
+  // ux-13: `manual`-прийом, який ще несе `foodId` (запис до рішення
+  // 2026-10-16, коли ручна правка КБЖВ ще не прибирала звʼязок), після
+  // збереження без правки КБЖВ не має підніматись до `productDb`: це знімало б
+  // гард `useEditedFoodRehydration`, і зміна ваги стерла б ручні цифри.
+  it("зміна лише назви лишає macroSource manual", async () => {
+    const onSave = vi.fn();
+    renderSheet({
+      onSave,
+      initialMeal: {
+        id: "existing-meal-3",
+        name: "Гречка",
+        mealType: "lunch",
+        foodId: "food-gone",
+        amount_g: 150,
+        macroSource: "manual",
+        macros: { kcal: 250, protein_g: 8, fat_g: 2, carbs_g: 40 },
+      },
+    });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Гречка з грибами" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      id: "existing-meal-3",
+      foodId: "food-gone",
+      macroSource: "manual",
+    });
   });
 });

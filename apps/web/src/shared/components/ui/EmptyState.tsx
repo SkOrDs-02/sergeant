@@ -13,7 +13,8 @@
  * naked-string placeholders that used to drift in copy, focus styling,
  * and a11y wiring.
  *
- * Факт і дії; додатковий контекст — у доступному описі. Без декоративних іконок та ілюстрацій.
+ * Компактний стан показує факт і дію. Модульний first-run додає стриману
+ * лінійну ілюстрацію та видимий наступний крок.
  *
  * Sizes (`size: sm | md | lg`):
  * - `sm` (compact): in-card / inline empty placeholder
@@ -38,6 +39,7 @@ import { Icon } from "./Icon";
 import { Button, type ButtonProps } from "./Button";
 import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { coreMessages } from "@shared/i18n/uk.core";
+import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
@@ -54,6 +56,13 @@ export interface EmptyStateProps {
    */
   titleAs?: "p" | "h1" | "h2" | "h3" | undefined;
   description?: ReactNode | undefined;
+  /**
+   * Видимий контекст для first-run станів. У компактних списках опис за
+   * замовчуванням лишається доступним лише скрінрідеру.
+   */
+  showDescription?: boolean | undefined;
+  /** Декоративна графіка для featured empty-state; завжди aria-hidden. */
+  illustration?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
    * supported; `primaryAction` is the explicit alias new code should
@@ -99,10 +108,8 @@ const PADDING: Record<EmptyStateSize, string> = {
 };
 
 /**
- * Мова H (redesign v3): факт одним рядком 16 / 600, під ним дія кнопкою
- * outline. Без іконки, ілюстрації та прикладу. Текстові
- * `description` і `hint` лишаються доступним описом для скрінрідера,
- * без видимих абзаців.
+ * Мова H (redesign v3): компактний стан лишається фактом і дією. Featured
+ * стан може додати одну лінійну ілюстрацію та короткий видимий опис.
  */
 export function EmptyState({
   eyebrow,
@@ -110,6 +117,8 @@ export function EmptyState({
   title,
   titleAs: TitleTag = "p",
   description,
+  showDescription = false,
+  illustration,
   action,
   primaryAction,
   secondaryAction,
@@ -138,17 +147,36 @@ export function EmptyState({
       aria-live={ariaLive}
       aria-atomic="true"
       aria-describedby={describedBy}
-      className={cn("flex flex-col gap-1", PADDING[resolvedSize], className)}
+      className={cn(
+        "flex flex-col gap-1",
+        illustration && "items-center text-center",
+        PADDING[resolvedSize],
+        className,
+      )}
     >
+      {illustration && <div aria-hidden="true">{illustration}</div>}
       {eyebrow && <p className="text-style-overline text-subtle">{eyebrow}</p>}
-      <TitleTag className="text-style-body font-semibold text-text text-pretty">
+      <TitleTag
+        className={cn(
+          "font-semibold text-text text-pretty",
+          illustration ? "mt-2 text-style-title" : "text-style-body",
+        )}
+      >
         {title}
       </TitleTag>
-      {description && (
-        <span id={`${id}-description`} hidden>
-          {description}
-        </span>
-      )}
+      {description &&
+        (showDescription ? (
+          <p
+            id={`${id}-description`}
+            className="mt-1 max-w-sm text-style-body leading-snug text-subtle text-pretty"
+          >
+            {description}
+          </p>
+        ) : (
+          <span id={`${id}-description`} hidden>
+            {description}
+          </span>
+        ))}
       {(primary || secondaryAction) && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {primaryControl}
@@ -173,6 +201,7 @@ export function EmptyState({
 export interface ModuleEmptyStateProps {
   module: "finyk" | "fizruk" | "routine" | "nutrition";
   variant?: "default" | "compact";
+  title?: string;
   onAction?: () => void;
   actionLabel?: string;
   /** Show a dismiss/close button in the top-right corner. */
@@ -270,6 +299,7 @@ function resolveGoalAwareDesc(
 export function ModuleEmptyState({
   module,
   variant = "default",
+  title,
   onAction,
   actionLabel,
   dismissible = false,
@@ -306,8 +336,12 @@ export function ModuleEmptyState({
         </button>
       )}
       <EmptyState
-        title={config.title}
+        title={title ?? config.title}
         description={resolvedDescription}
+        showDescription
+        illustration={
+          <ModuleEmptyIllustration module={module} size={compact ? 56 : 64} />
+        }
         size={compact ? "sm" : "md"}
         className={className}
         action={

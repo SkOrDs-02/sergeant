@@ -46,6 +46,19 @@ export class BillingConfigurationError extends Error {
   }
 }
 
+/**
+ * Провайдер відповів, що такої підписки в нього вже нема (LiqPay
+ * `order_not_found`, Stripe 404). Для користувацького скасування це така сама
+ * відмова, як інші (роут віддає 502), а для заміни старої підписки новою - успіх:
+ * списувати нічого, тож нова оплачена підписка не мусить на цьому застрягати.
+ */
+export class ProviderSubscriptionGoneError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProviderSubscriptionGoneError";
+  }
+}
+
 export interface ProviderSessionUser {
   id: string;
   email?: string | null;

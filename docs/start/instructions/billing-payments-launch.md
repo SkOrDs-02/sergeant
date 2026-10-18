@@ -1,6 +1,6 @@
 # Runbook: запуск приймання платежів (Plata / LiqPay)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-24.
+> **Last touched:** 2026-10-10 by @claude (§ 4а: скасування й повторний checkout). **Next review:** 2026-12-24.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -47,6 +47,17 @@
 - Перша реальна оплата: у `subscriptions` зʼявився рядок `provider='plata'`, `status='active'`, `current_period_end` дорівнює `nextChargeDate`.
 - `billing_webhook_total{provider="plata",status="verified"}` росте — вебхуки доходять і підпис сходиться. Нуль тут при успішних оплатах означає, що працює лише полінг (див. `PUBLIC_WEB_BASE_URL` вище).
 - `billing_recurring_charge_total{provider="plata",result="past_due"}` — сигнал невдалих списань.
+
+## 4а. Скасування й повторний checkout (аудит data-20, data-21)
+
+Перед вмиканням знай, як поводяться ці два шляхи, і перевір їх на першій живій оплаті:
+
+- **Скасування не ковтає відмову провайдера.** Якщо monobank (чи LiqPay/Stripe) не підтвердив скасування, `POST /api/billing/cancel` віддає `502 PROVIDER_CANCEL_FAILED`, прапорець `cancel_at_period_end` не ставиться, людина може повторити. Рядок `502` у логах/метриках після вмикання означає саме це, а не «скасовано». У monobank статус відповіді `subscription/edit` і `subscription/remove` недокументований: `404` від `remove` вважаємо «підписки вже нема» і приймаємо; будь-яке інше не-2xx від нього – відмова.
+- **Другий checkout відхиляється.** `409 ALREADY_SUBSCRIBED` (є діючий платний ентайтлмент) і `409 CHECKOUT_PENDING` (непідтверджений Plata-checkout молодший за годину). Сторінка оплати monobank живе годину, тож людина, яка закрила її без оплати, може почекати до години, перш ніж отримає нову.
+- **Заміна підписки.** Якщо оплату підтверджено при вже живій іншій рекуренті (інший провайдер чи інший `subscriptionId`), активація нової комітиться завжди, а скасування старої у її провайдера іде ПІСЛЯ коміту і активацію не відкочує (стара могла вже бути мертвою: період і grace минули, `order_not_found` у LiqPay, 404 у Stripe, monobank 400/404). Намір скасувати лежить у `billing_pending_cancellation`; невдалі спроби добиває `SupersedeRetryPoller` раз на годину (пауза між спробами 30 хв, до 24 спроб). Ознаки: `billing_supersede_cancel_failed` (error-лог) і `billing_supersede_cancel_total{result="failed"}` - борг у черзі; `billing_supersede_cancel_abandoned` / `result="abandoned"` - ліміт спроб вичерпано, стара підписка може й далі списувати: розбирати вручну (`SELECT * FROM billing_pending_cancellation WHERE resolved_at IS NULL`) і скасувати в кабінеті провайдера.
+- **Непідтверджений Plata-checkout.** Повільний тік (щогодини) крім активних підписок підбирає й оплачені, але непідтверджені checkout-и, старші за годину й молодші за 3 доби: так нова підписка не лишається сиротою, якщо monobank був недоступний у першу годину. Покинуті checkout-и в цьому вікні коштують один GET `subscription/status` на тік.
+- **Події замінених підписок.** `customer.subscription.updated/deleted` Stripe, `unsubscribe`/`reversed`/`failure`/запізніле `success` LiqPay по СТАРОМУ `subscriptionId`/`order_id` не гасять і не підмінюють рядок нової підписки.
+- Міграція `154` змінила `plata_subscription` на 1:N (PK `subscription_id`) і додала `superseded_at` і чергу `billing_pending_cancellation`; вона адитивна й застосовується з образом.
 
 ## 5. Відкладене, що варто закрити після першого місяця
 

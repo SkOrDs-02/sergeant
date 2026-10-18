@@ -25,7 +25,10 @@ import type { PactV4 } from "@pact-foundation/pact";
 
 import { isApiError } from "../../ApiError";
 import { createHttpClient } from "../../httpClient";
-import { createBillingEndpoints } from "../../endpoints/billing";
+import {
+  billingCheckoutConflictCode,
+  createBillingEndpoints,
+} from "../../endpoints/billing";
 import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
 // Знімок доступу (`docs/work/specs/access-tiers.md`): сервер віддає стан,
@@ -103,6 +106,59 @@ describe(
           );
         });
     });
+
+    // data-21: друга сторінка оплати = подвійне списання, тож сервер відхиляє
+    // checkout ДО звернення до провайдера. Клієнт розрізняє причину за `code`.
+    it.each([
+      [
+        "ALREADY_SUBSCRIBED",
+        "authenticated user-pact-001 in UA with an active liqpay subscription",
+        "User already has an active subscription",
+      ],
+      [
+        "CHECKOUT_PENDING",
+        "authenticated user-pact-001 in UA with an unconfirmed plata checkout younger than one hour",
+        "A checkout for this user is still pending",
+      ],
+    ] as const)(
+      "rejects with 409 %s when a second checkout would double-charge",
+      async (code, state, message) => {
+        await pact
+          .addInteraction()
+          .given(state)
+          .uponReceiving(
+            `a POST /api/v1/billing/checkout request (plan=pro, provider=plata) answered with 409 ${code}`,
+          )
+          .withRequest("POST", "/api/v1/billing/checkout", (req) => {
+            req.headers({
+              accept: "application/json",
+              "content-type": "application/json",
+            });
+            req.jsonBody({ plan: "pro", provider: "plata" });
+          })
+          .willRespondWith(409, (res) => {
+            res.headers({ "content-type": "application/json" });
+            res.jsonBody({ error: message, code });
+          })
+          .executeTest(async (mockServer) => {
+            const http = createHttpClient({ baseUrl: mockServer.url });
+            const billing = createBillingEndpoints(http);
+
+            let caught: unknown;
+            try {
+              await billing.createCheckout({ plan: "pro", provider: "plata" });
+            } catch (err) {
+              caught = err;
+            }
+
+            expect(isApiError(caught)).toBe(true);
+            if (!isApiError(caught)) return;
+            expect(caught.status).toBe(409);
+            expect(caught.body).toMatchObject({ code });
+            expect(billingCheckoutConflictCode(caught)).toBe(code);
+          });
+      },
+    );
   },
 );
 

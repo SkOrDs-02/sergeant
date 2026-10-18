@@ -6,7 +6,7 @@
  * поля, коли продукт привʼязаний, вільна правка коли ні, і позначка
  * ручних значень як підсумку порції.
  */
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MacrosEditor } from "./MacrosEditor";
@@ -291,5 +291,34 @@ describe("MacrosEditor", () => {
     expect(next.time).toBe("08:00");
     expect(next.name).toBe("Каша");
     expect(next.kcal).toBe("300");
+  });
+
+  // Аудит ux-02: Back закривав увесь аркуш прийому разом із попередженням.
+  it("системний Back закриває попередження про відвʼязування продукту", () => {
+    const setProtein = vi.fn();
+    const field = vi.fn((key: keyof MealFormState) =>
+      key === "protein_g" ? setProtein : vi.fn(),
+    );
+    render(
+      <MacrosEditor
+        form={makeForm()}
+        field={field}
+        setForm={vi.fn()}
+        pickedFood={pickedFood}
+        setPickedFood={vi.fn()}
+        pickedGrams="100"
+        hasPhotoMacros={false}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Білки г"), {
+      target: { value: "9" },
+    });
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.popState(window);
+    });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(setProtein).not.toHaveBeenCalled();
   });
 });

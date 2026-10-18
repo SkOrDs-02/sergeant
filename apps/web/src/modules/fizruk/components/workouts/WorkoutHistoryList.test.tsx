@@ -105,9 +105,15 @@ afterEach(() => {
 });
 
 describe("WorkoutHistoryList – empty state", () => {
-  it("shows the empty state when the workout list is empty", () => {
-    renderWithToast(<WorkoutHistoryList {...baseProps()} />);
+  it("shows the empty state and routes its action to the workout start surface", () => {
+    const onStartWorkout = vi.fn();
+    renderWithToast(<WorkoutHistoryList {...baseProps({ onStartWorkout })} />);
     expect(screen.getByText(/поки немає тренувань/i)).toBeTruthy();
+    expect(
+      screen.getByText("Завершене тренування зʼявиться тут."),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Почати тренування" }));
+    expect(onStartWorkout).toHaveBeenCalledTimes(1);
   });
 });
 

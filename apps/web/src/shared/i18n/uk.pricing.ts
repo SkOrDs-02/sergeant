@@ -80,6 +80,11 @@ export const pricingMessages = {
   errors: {
     checkoutUnavailable:
       "Оплата тимчасово недоступна. Можеш залишити email нижче, напишу, коли можна буде оплатити.",
+    // 409 ALREADY_SUBSCRIBED: підписка вже діє (інша вкладка чи застарілий кеш).
+    checkoutAlreadySubscribed: "Підписка вже діє. Керуй нею в налаштуваннях.",
+    // 409 CHECKOUT_PENDING: сторінка оплати живе до години, її ще можуть оплатити.
+    checkoutPending:
+      "Оплату вже відкрито в іншій вкладці. Заверши її там або спробуй за годину.",
     portalNoBillingCustomer:
       "Не знайдено платіжний профіль. Напиши у підтримку, підключу вручну.",
     portalUnavailable:
