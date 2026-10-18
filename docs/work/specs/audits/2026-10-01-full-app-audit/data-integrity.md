@@ -2428,7 +2428,7 @@ Verifier runs: pw_synclink_cold.mjs (key verify-cs-outbox-synclink) produced toa
 
 ### `data-27` [medium] Нотатки до банківських транзакцій не зберігаються ніде: зникають на reload, не синхронізуються й не потрапляють у бекап
 
-- **Стан:** виправлено в гілці claude/feat-data-27-tx-notes-sync (перша частина: нотатки в LS і в бекапі, #1469; друга: серверна таблиця `finyk_tx_notes` (міграція 156), клієнтська SQLite-таблиця, dual-write, sync v2 push/pull, одноразове перелиття LS-нотаток). Залишок: мобільний клієнт (ADR-0094, пауза) не знає таблиці `finyk_tx_notes`
+- **Стан:** виправлено в гілці claude/feat-data-27-tx-notes-sync (перша частина: нотатки в LS і в бекапі, #1469; друга: серверна таблиця `finyk_tx_notes` (міграція 156), клієнтська SQLite-таблиця, dual-write, sync v2 push/pull, одноразове перелиття LS-нотаток, перепостановка оп-ів, відхилених старим сервером у вікні деплою). Залишок: мобільний клієнт (ADR-0094, пауза) не знає таблиці `finyk_tx_notes`
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (txNotes)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:58-61,145-148; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-73; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:367-375; apps/web/src/modules/finyk/lib/sqliteWriter/extract.ts:183-198
 - **Першопричина:** txNotes оголошено через useReadonlyPersist, який лише читає LS на першому кадрі й нічого не пише, а dual-write стан (extractFinykDualWriteState) і бекап (FINYK_BACKUP_STORAGE_KEYS) txNotes не містять.

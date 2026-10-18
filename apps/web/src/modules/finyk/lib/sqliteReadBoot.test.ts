@@ -6,9 +6,9 @@ const refreshFinykSqliteState = vi.fn(async (..._a: unknown[]) => {
 });
 const recordReadFallback = vi.fn();
 const calls: string[] = [];
-const importLegacyTxNotesFromLs = vi.fn(async (..._a: unknown[]) => {
-  calls.push("import");
-  return { imported: 0, drained: true };
+const runTxNotesBootSteps = vi.fn(async (..._a: unknown[]) => {
+  calls.push("notes");
+  return undefined;
 });
 const migrationClient = { run: vi.fn() };
 const getSqliteDb = vi.fn(async () => ({
@@ -24,9 +24,8 @@ vi.mock("./clientMigrate.js", () => ({
 vi.mock("./sqliteReader.js", () => ({
   refreshFinykSqliteState: (...a: unknown[]) => refreshFinykSqliteState(...a),
 }));
-vi.mock("./txNotesLsImport.js", () => ({
-  importLegacyTxNotesFromLs: (...a: unknown[]) =>
-    importLegacyTxNotesFromLs(...a),
+vi.mock("./txNotesBoot.js", () => ({
+  runTxNotesBootSteps: (...a: unknown[]) => runTxNotesBootSteps(...a),
 }));
 vi.mock("../../../core/observability/dualWriteTelemetry.js", () => ({
   recordReadFallback: (...a: unknown[]) => recordReadFallback(...a),
@@ -75,18 +74,18 @@ describe("bootFinykSqliteReadPath", () => {
     );
   });
 
-  it("переливає LS-нотатки ДО першого refresh (data-27), інакше кеш затре слот порожнім", async () => {
+  it("виконує кроки нотаток (перелиття, перепостановка) ДО першого refresh (data-27), інакше кеш затре слот порожнім", async () => {
     await bootFinykSqliteReadPath("u1");
-    expect(importLegacyTxNotesFromLs).toHaveBeenCalledWith(
+    expect(runTxNotesBootSteps).toHaveBeenCalledWith(
       migrationClient,
       "u1",
       expect.any(String),
     );
-    expect(calls).toEqual(["import", "refresh"]);
+    expect(calls).toEqual(["notes", "refresh"]);
   });
 
-  it("збій перелиття нотаток не валить прогрів читального шляху", async () => {
-    importLegacyTxNotesFromLs.mockRejectedValueOnce(new Error("disk full"));
+  it("збій кроків нотаток не валить прогрів читального шляху", async () => {
+    runTxNotesBootSteps.mockRejectedValueOnce(new Error("disk full"));
     const ok = await bootFinykSqliteReadPath("u1");
     expect(ok).toBe(true);
     expect(refreshFinykSqliteState).toHaveBeenCalledTimes(1);
