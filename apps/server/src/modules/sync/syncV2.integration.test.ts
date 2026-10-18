@@ -2739,7 +2739,7 @@ describe("syncV2Push: finyk apply-функції (PR #035)", () => {
   );
 
   it(
-    "finyk_tx_categories: insert → delete uses hard DELETE (no soft-delete column)",
+    "finyk_tx_categories: insert → delete leaves a soft-delete tombstone (migration 156)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-ftc");
@@ -2791,12 +2791,14 @@ describe("syncV2Push: finyk apply-функції (PR #035)", () => {
       );
       expect((r2.body as { accepted: number }).accepted).toBe(1);
 
-      const rows = await testPool.query(
-        `SELECT 1 FROM finyk_tx_categories
+      const rows = await testPool.query<{ deleted_at: Date | null }>(
+        `SELECT deleted_at FROM finyk_tx_categories
            WHERE user_id = $1 AND transaction_id = $2`,
         ["u-ftc", "mono-tx-1"],
       );
-      expect(rows.rows).toHaveLength(0);
+      // data-15: рядок лишається як tombstone, а не зникає фізично.
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );

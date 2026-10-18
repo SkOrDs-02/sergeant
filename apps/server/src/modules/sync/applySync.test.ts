@@ -409,7 +409,13 @@ describe("finyk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(deleteClient)).toContain("DELETE FROM finyk_tx_categories");
+    // data-15: delete = tombstone, а не фізичний DELETE (міграція 156).
+    expect(sql(deleteClient, 1)).toContain("UPDATE finyk_tx_categories");
+    expect(sql(deleteClient, 1)).toContain(
+      "SET deleted_at = $1, updated_at = $1",
+    );
+    expect(sql(deleteClient, 1)).not.toContain("DELETE FROM");
+    expect(sql(upsertClient, 1)).toContain("deleted_at  = NULL");
   });
 
   it("rejects transaction categories before writes when required fields fail", async () => {
@@ -514,7 +520,7 @@ describe("finyk applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
 
-    const deleteClient = makeClient([]);
+    const deleteClient = makeClient([existing()]);
     await expect(
       applyFinykTxSplits(
         deleteClient,
@@ -524,7 +530,20 @@ describe("finyk applySync", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
     expect(sql(deleteClient, 0)).toContain("SELECT updated_at");
-    expect(sql(deleteClient, 1)).toContain("DELETE FROM finyk_tx_splits");
+    expect(sql(deleteClient, 1)).toContain("UPDATE finyk_tx_splits");
+    expect(sql(deleteClient, 1)).toContain("deleted_at = $1");
+
+    // Рядка немає: нічого позначати, жодного запису.
+    const missingClient = makeClient([]);
+    await expect(
+      applyFinykTxSplits(
+        missingClient,
+        op({ user_id: USER_ID, transaction_id: "tx-1" }, "delete"),
+        USER_ID,
+        CLIENT_TS,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    expect(missingClient.query).toHaveBeenCalledTimes(1);
   });
 
   it("applies hidden transaction and mono debt-link wrappers", async () => {
@@ -615,7 +634,7 @@ describe("finyk applySync", () => {
     ).resolves.toEqual({ status: "applied" });
     expect(sql(client)).toContain("INSERT INTO finyk_networth_history");
 
-    const deleteClient = makeClient([]);
+    const deleteClient = makeClient([existing()]);
     await expect(
       applyFinykNetworthHistory(
         deleteClient,
@@ -624,9 +643,8 @@ describe("finyk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(deleteClient, 1)).toContain(
-      "DELETE FROM finyk_networth_history",
-    );
+    expect(sql(deleteClient, 1)).toContain("UPDATE finyk_networth_history");
+    expect(sql(deleteClient, 1)).not.toContain("DELETE FROM");
   });
 
   it("applies prefs insert/update and rejects unsupported deletes", async () => {

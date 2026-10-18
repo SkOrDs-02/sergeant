@@ -114,8 +114,9 @@ describe("applyFinykTxCategories", () => {
     expect(fake.queries).toHaveLength(1);
   });
 
-  it("deletes transaction categories without requiring category_id", async () => {
+  it("tombstones transaction categories without requiring category_id", async () => {
     const fake = new FakeClient();
+    fake.queueRows([{ updated_at: new Date("2026-07-21T07:00:00.000Z") }]);
     const clientTs = new Date("2026-07-21T08:00:00.000Z");
 
     await expect(
@@ -131,9 +132,12 @@ describe("applyFinykTxCategories", () => {
     ).resolves.toEqual({ status: "applied" });
 
     const deletion = lastQuery(fake);
-    expect(deletion.sql).toContain("DELETE FROM finyk_tx_categories");
-    expect(deletion.sql).toContain("AND updated_at < $3");
-    expect(deletion.params).toEqual(["user-1", "tx-1", clientTs]);
+    // data-15: tombstone (deleted_at + updated_at), не фізичний DELETE.
+    expect(deletion.sql).toContain("UPDATE finyk_tx_categories");
+    expect(deletion.sql).toContain("SET deleted_at = $1, updated_at = $1");
+    expect(deletion.sql).toContain("AND updated_at < $1");
+    expect(deletion.sql).not.toContain("DELETE FROM");
+    expect(deletion.params).toEqual([clientTs, "user-1", "tx-1"]);
   });
 });
 
