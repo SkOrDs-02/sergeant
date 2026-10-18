@@ -346,7 +346,10 @@ export function applyNutritionBackupPayload(
   persistPantries(
     NUTRITION_PANTRIES_KEY,
     NUTRITION_ACTIVE_PANTRY_KEY,
-    pantries,
+    carryOverPantrySources(
+      pantries,
+      loadPantries(NUTRITION_PANTRIES_KEY, NUTRITION_ACTIVE_PANTRY_KEY),
+    ),
     activePantryId,
   );
   // Відновлення з бекапу — явна заміна цілого стану: користувач свідомо
@@ -363,6 +366,34 @@ export function applyNutritionBackupPayload(
   }
   if (data["water"] != null) saveWaterLog(data["water"]);
   return applyNutritionBackupSections(sections, mode);
+}
+
+/**
+ * Файл без `sources` у позиції (старий бекап або відкинутий пошкоджений масив)
+ * не має стирати історію покупок, яка вже є на пристрої. Позицію ідентифікує
+ * та сама трійка, що й її id (комора, індекс, назва), тож історія переїжджає
+ * лише на ту саму позицію і ніколи на іншу.
+ */
+function carryOverPantrySources(
+  incoming: NutritionBackupPantry[],
+  current: Pantry[],
+): NutritionBackupPantry[] {
+  const byId = new Map(current.map((p) => [p.id, p]));
+  return incoming.map((pantry) => {
+    const existing = byId.get(pantry.id);
+    if (!existing) return pantry;
+    return {
+      ...pantry,
+      items: pantry.items.map((item, idx) => {
+        if (item.sources) return item;
+        const prev = existing.items[idx];
+        if (!prev || prev.name !== item.name || !prev.sources?.length) {
+          return item;
+        }
+        return { ...item, sources: [...prev.sources] };
+      }),
+    };
+  });
 }
 
 /**

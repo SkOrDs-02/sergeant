@@ -347,6 +347,55 @@ describe("nutrition backup — повнота (data-35)", () => {
     expect(data.goalPeriods).toBeUndefined();
   });
 
+  it("теплий кеш без рядка списку покупок секції shoppingList не віддає", async () => {
+    __setNutritionSqliteCacheForTests({ shoppingList: null });
+    const { data } = await exportNutritionFile();
+    expect(data.shoppingList).toBeUndefined();
+    expect(data.goalPeriods).toBeDefined();
+  });
+
+  it("replace файлом без sources лишає історію покупок тій самій позиції і не переносить її на іншу", async () => {
+    __setNutritionSqliteCacheForTests({ pantries: MILK_PANTRY as never });
+    await applyNutritionBackupPayload(
+      v2File({
+        pantries: [
+          {
+            id: "home",
+            name: "Дім",
+            text: "",
+            items: [
+              { name: "Молоко", qty: 1500, unit: "мл", notes: null },
+              { name: "Сир", qty: 200, unit: "г", notes: null },
+            ],
+          },
+        ],
+      }),
+      "replace",
+    );
+    const [milk, cheese] = getCachedNutritionSqliteState().pantries[0]!.items;
+    expect(JSON.stringify(milk!.sources)).toBe(JSON.stringify(SOURCES));
+    expect(cheese!.sources ?? null).toBeNull();
+  });
+
+  it("replace не переносить sources, коли на тому ж індексі інша позиція", async () => {
+    __setNutritionSqliteCacheForTests({ pantries: MILK_PANTRY as never });
+    await applyNutritionBackupPayload(
+      v2File({
+        pantries: [
+          {
+            id: "home",
+            name: "Дім",
+            text: "",
+            items: [{ name: "Кефір", qty: 900, unit: "мл", notes: null }],
+          },
+        ],
+      }),
+      "replace",
+    );
+    const [kefir] = getCachedNutritionSqliteState().pantries[0]!.items;
+    expect(kefir!.sources ?? null).toBeNull();
+  });
+
   it("синхронний buildNutritionBackupPayload рецептів не віддає: забутий async-крок не дає неповного файлу", () => {
     __setNutritionSqliteCacheForTests({ recipes: [RECIPE] as never });
     expect(buildNutritionBackupPayload().data.recipes).toBeUndefined();
@@ -543,6 +592,7 @@ describe("nutrition backup — повнота (data-35)", () => {
         goalPeriods: [
           { ...PERIOD, id: "bad-kcal", kcal: 10_000_000 },
           { ...PERIOD, id: "bad-day", effectiveFrom: "2026-3-1" },
+          { ...PERIOD, id: "no-such-day", effectiveFrom: "2026-02-30" },
           { ...PERIOD, id: "bad-origin", origin: "hack" },
           PERIOD,
         ],

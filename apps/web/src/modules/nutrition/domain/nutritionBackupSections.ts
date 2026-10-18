@@ -79,11 +79,24 @@ export function readNutritionBackupSections(): NutritionBackupSections {
   const cache = getCachedNutritionSqliteState();
   if (cache.refreshedAt === null) return {};
   return {
-    shoppingList: loadShoppingList(),
+    // Без рядка в кеші `loadShoppingList()` віддає порожній дефолт, і replace
+    // таким файлом затер би справжній список на іншому пристрої.
+    ...(cache.shoppingList != null ? { shoppingList: loadShoppingList() } : {}),
     goalPeriods: loadNutritionGoalPeriods()
       .filter((p) => p.deletedAt == null)
       .map(({ deletedAt: _deletedAt, ...period }) => period),
   };
+}
+
+/** `2026-02-30` проходить DAY_KEY_RE, але такого дня немає. */
+function isRealDayKey(dayKey: string): boolean {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const date = new Date(Date.UTC(y ?? NaN, (m ?? NaN) - 1, d ?? NaN));
+  return (
+    date.getUTCFullYear() === y &&
+    date.getUTCMonth() + 1 === m &&
+    date.getUTCDate() === d
+  );
 }
 
 function optionalFinite(v: unknown, max: number): number | null | "bad" {
@@ -103,7 +116,9 @@ function normalizeBackupGoalPeriod(
   const origin = x["origin"];
   const createdAt = x["createdAt"];
   if (!id || typeof effectiveFrom !== "string") return null;
-  if (!DAY_KEY_RE.test(effectiveFrom)) return null;
+  if (!DAY_KEY_RE.test(effectiveFrom) || !isRealDayKey(effectiveFrom)) {
+    return null;
+  }
   if (typeof origin !== "string" || !GOAL_ORIGINS.has(origin)) return null;
   if (
     typeof createdAt !== "string" ||
