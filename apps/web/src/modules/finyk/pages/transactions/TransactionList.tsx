@@ -7,7 +7,7 @@ import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
   DataState,
@@ -343,10 +343,12 @@ export function TransactionList({
         />
       </div>
     ) : activeTx.length === 0 ? (
-      <div className="rounded-panel border border-dashed border-line bg-panel">
-        <EmptyState
-          title="Операцій ще немає"
-          description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+      <div className="rounded-panel bg-panel px-5">
+        <ModuleEmptyState
+          module="finyk"
+          variant="compact"
+          title={messages.finykRedesign.transactionsEmptyTitle}
+          description={messages.finykRedesign.transactionsEmptyDescription}
         />
       </div>
     ) : (

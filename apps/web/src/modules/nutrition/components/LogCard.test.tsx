@@ -56,6 +56,11 @@ describe("LogCard", () => {
     renderLog();
     expect(screen.getByText("Сьогодні")).toBeInTheDocument();
     expect(screen.getByText("Поки немає записів")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Додай перший прийом їжі. Калорії та КБЖВ порахуються тут.",
+      ),
+    ).toBeVisible();
   });
 
   it("shifts the selected date back and forward", () => {

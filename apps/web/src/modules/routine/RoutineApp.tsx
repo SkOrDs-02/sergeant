@@ -110,7 +110,6 @@ export default function RoutineApp({
           <RoutineTimeline
             storageErrorMsg={storageErrorMsg}
             setRoutine={setRoutine}
-            onOpenCalendarTab={() => setMainTab("calendar")}
             onDismissStorageError={() => setStorageErrorMsg(null)}
             calendarData={calendarData}
             calendarActions={calendarActions}

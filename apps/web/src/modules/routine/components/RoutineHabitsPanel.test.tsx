@@ -35,15 +35,24 @@ vi.mock("../lib/routineStorage", () => storageMocks);
 type DeleteCb = (p: { id: string; name: string; archived?: boolean }) => void;
 const childCbs = vi.hoisted(
   () =>
-    ({ activeDelete: undefined, archivedDelete: undefined }) as {
+    ({
+      activeDelete: undefined,
+      archivedDelete: undefined,
+      create: undefined,
+    }) as {
       activeDelete: DeleteCb | undefined;
       archivedDelete: DeleteCb | undefined;
+      create: (() => void) | undefined;
     },
 );
 
 vi.mock("./habits/ActiveHabitsSection", () => ({
-  ActiveHabitsSection: (props: { onRequestDelete: DeleteCb }) => {
+  ActiveHabitsSection: (props: {
+    onRequestDelete: DeleteCb;
+    onCreateHabit: () => void;
+  }) => {
     childCbs.activeDelete = props.onRequestDelete;
+    childCbs.create = props.onCreateHabit;
     return <div data-testid="active-habits" />;
   },
 }));
@@ -57,7 +66,9 @@ vi.mock("./HabitDetailSheet", () => ({
   HabitDetailSheet: () => <div data-testid="habit-detail-sheet" />,
 }));
 vi.mock("./HabitQuickCreateDialog", () => ({
-  HabitQuickCreateDialog: () => <div data-testid="quick-create" />,
+  HabitQuickCreateDialog: ({ open }: { open: boolean }) => (
+    <div data-testid="quick-create" data-open={String(open)} />
+  ),
 }));
 
 import { RoutineHabitsPanel } from "./RoutineHabitsPanel";
@@ -82,6 +93,7 @@ describe("RoutineHabitsPanel", () => {
     vi.clearAllMocks();
     childCbs.activeDelete = undefined;
     childCbs.archivedDelete = undefined;
+    childCbs.create = undefined;
   });
 
   afterEach(() => cleanup());
@@ -94,6 +106,19 @@ describe("RoutineHabitsPanel", () => {
     );
     expect(screen.getByTestId("active-habits")).toBeInTheDocument();
     expect(screen.getByTestId("archived-habits")).toBeInTheDocument();
+  });
+
+  it("opens the canonical habit dialog from the empty-list action", () => {
+    renderPanel();
+    expect(screen.getByTestId("quick-create")).toHaveAttribute(
+      "data-open",
+      "false",
+    );
+    act(() => childCbs.create?.());
+    expect(screen.getByTestId("quick-create")).toHaveAttribute(
+      "data-open",
+      "true",
+    );
   });
 
   it("opens an archive-aware confirm copy for archived habit deletion", () => {

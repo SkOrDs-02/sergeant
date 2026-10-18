@@ -90,7 +90,6 @@ describe("RoutineTimeline", () => {
         mainTab="calendar"
         routine={defaultRoutineState()}
         setRoutine={vi.fn()}
-        onOpenCalendarTab={vi.fn()}
         streakMax={3}
         onPullRefresh={vi.fn(async () => undefined)}
         onPullRefreshError={vi.fn()}
@@ -118,7 +117,6 @@ describe("RoutineTimeline", () => {
         mainTab="calendar"
         routine={defaultRoutineState()}
         setRoutine={vi.fn()}
-        onOpenCalendarTab={vi.fn()}
         streakMax={3}
         onPullRefresh={vi.fn(async () => undefined)}
         onPullRefreshError={vi.fn()}
@@ -140,7 +138,6 @@ describe("RoutineTimeline", () => {
         mainTab="stats"
         routine={defaultRoutineState()}
         setRoutine={vi.fn()}
-        onOpenCalendarTab={vi.fn()}
         streakMax={3}
         onPullRefresh={vi.fn(async () => undefined)}
         onPullRefreshError={vi.fn()}
@@ -165,7 +162,6 @@ describe("RoutineTimeline", () => {
       mainTab: "calendar" as const,
       routine: defaultRoutineState(),
       setRoutine: vi.fn(),
-      onOpenCalendarTab: vi.fn(),
       streakMax: 3,
       onPullRefresh: vi.fn(async () => undefined),
       onPullRefreshError: vi.fn(),

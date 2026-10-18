@@ -4,8 +4,8 @@
  * Status: Active
  *
  * `WorkoutHistory` — the dedicated `/fizruk/history` route page (03-A).
- * Verifies: no start-CTA anywhere on the page, back navigation, and row
- * navigation into the route-owned single-workout view. The list itself
+ * Verifies: the empty-state route to the canonical start surface, back
+ * navigation, and row navigation into the route-owned single-workout view. The list itself
  * (badges, swipe-delete, virtualization) is covered by
  * `WorkoutHistoryList.test.tsx`.
  */
@@ -75,11 +75,18 @@ function makeWorkout(override: Partial<Workout> = {}): Workout {
 }
 
 describe("WorkoutHistory page", () => {
-  it("has no start-CTA — starting a session lives only on the Workouts home", () => {
+  it("does not duplicate the filled-state start controls", () => {
     mockWorkouts.push(makeWorkout());
     renderWithToast(<WorkoutHistory onNavigate={vi.fn()} />);
     expect(screen.queryByText(/^\+ ?Нове$/)).not.toBeInTheDocument();
     expect(screen.queryByText(/^Шаблони$/)).not.toBeInTheDocument();
+  });
+
+  it("routes the empty-state action to the Workouts home", () => {
+    const onNavigate = vi.fn();
+    renderWithToast(<WorkoutHistory onNavigate={onNavigate} />);
+    fireEvent.click(screen.getByRole("button", { name: "Почати тренування" }));
+    expect(onNavigate).toHaveBeenCalledWith("workouts");
   });
 
   it("НЕ малює власної стрілки назад — вихід один і належить шапці модуля", () => {
