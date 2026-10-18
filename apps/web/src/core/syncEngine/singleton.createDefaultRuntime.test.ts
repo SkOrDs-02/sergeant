@@ -77,14 +77,19 @@ const mockRecoverDeadLetter = vi.fn(async (..._a: unknown[]) => ({
 }));
 const mockPurgeStale = vi.fn(async (..._a: unknown[]) => 0);
 const mockCountRejected = vi.fn(async (..._a: unknown[]) => 2);
+const mockMarkSuccess = vi.fn(async (..._a: unknown[]) => {});
+const mockMarkSuccessBatch = vi.fn(async (..._a: unknown[]) => {});
+const mockMarkRetry = vi.fn(async (..._a: unknown[]) => {});
+const mockMarkRejected = vi.fn(async (..._a: unknown[]) => {});
 vi.mock("@sergeant/db-schema/sqlite", () => ({
   repairPartialOutboxMigration: (...a: unknown[]) => mockRepair(...a),
   ROUTINE_MIGRATIONS_TABLE: "__routine_migrations",
   ROUTINE_CLIENT_MIGRATIONS: [],
   drainSyncOpOutbox: (...a: unknown[]) => mockDrain(...a),
-  markOutboxSuccess: vi.fn(async () => {}),
-  markOutboxRetry: vi.fn(async () => {}),
-  markOutboxRejected: vi.fn(async () => {}),
+  markOutboxSuccess: (...a: unknown[]) => mockMarkSuccess(...a),
+  markOutboxSuccessBatch: (...a: unknown[]) => mockMarkSuccessBatch(...a),
+  markOutboxRetry: (...a: unknown[]) => mockMarkRetry(...a),
+  markOutboxRejected: (...a: unknown[]) => mockMarkRejected(...a),
   planRetry: vi.fn(),
   countOutboxByStatus: (...a: unknown[]) => mockCountByStatus(...a),
   countRejectedOutbox: (...a: unknown[]) => mockCountRejected(...a),
@@ -132,6 +137,48 @@ afterEach(() => {
 });
 
 describe("createDefaultRuntime (default boot path)", () => {
+  it("pins receipt writes to the drained partition while the next tick uses the new partition", async () => {
+    const factory = vi.spyOn(writerFactory, "createSyncEngineWriterRuntime");
+    try {
+      const runtime = await bootSyncEngineWriter();
+      await runtime!.flushNow();
+      const push = factory.mock.calls[0]![0].pushDeps;
+      const sourceClient = client;
+      mockDrain.mockResolvedValueOnce([{ id: 1 }]);
+      await push.drain({ limit: 200, now: new Date() });
+      expect(mockDrain.mock.lastCall?.[0]).toBe(sourceClient);
+
+      // A's HTTP receipt arrives after switching to B's SQLite handle.
+      // Both per-user files can have an outbox row with local id=1.
+      const otherClient = makeClient();
+      dbHandle = { migrationClient: () => otherClient };
+      await push.markSuccess(1);
+      await push.markSuccessBatch!([1]);
+      await push.markRetry(1, {
+        attempts: 1,
+        status: "pending",
+        nextRetryAt: null,
+        lastError: "network",
+      });
+      await push.markRejected(1, "lww_conflict");
+      for (const write of [
+        mockMarkSuccess,
+        mockMarkSuccessBatch,
+        mockMarkRetry,
+        mockMarkRejected,
+      ]) {
+        expect(write.mock.lastCall?.[0]).toBe(sourceClient);
+      }
+
+      await push.drain({ limit: 200, now: new Date() });
+      expect(mockDrain.mock.lastCall?.[0]).toBe(otherClient);
+      await push.markSuccessBatch!([1]);
+      expect(mockMarkSuccessBatch.mock.lastCall?.[0]).toBe(otherClient);
+    } finally {
+      factory.mockRestore();
+    }
+  });
+
   it("boots a started runtime that prepares the schema and tags the fresh outcome", async () => {
     const runtime = await bootSyncEngineWriter();
 
