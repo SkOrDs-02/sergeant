@@ -9,7 +9,11 @@ import {
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../../shared/lib/idb/sergeantDb";
-import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
+import {
+  clampNonNegative,
+  generatePrefixedId,
+  type NullableMacros,
+} from "@sergeant/shared";
 
 /**
  * Lazy-loader для 1600+ seed-продуктів. Статичний import затягував весь
@@ -420,6 +424,36 @@ export function macrosForGrams(per100: unknown, grams: unknown): Macros {
     protein_g: Math.round(m.protein_g * k * 10) / 10,
     fat_g: Math.round(m.fat_g * k * 10) / 10,
     carbs_g: Math.round(m.carbs_g * k * 10) / 10,
+  };
+}
+
+/**
+ * Те саме, що `macrosForGrams`, але невідомий нутрієнт лишається `null`.
+ *
+ * `macrosForGrams` зводить відсутнє значення до `0` (`normalizeMacros`), і
+ * для форми прийому це різні речі: `null` - «не вказано» (порожнє поле,
+ * у журнал їде `null`), `0` - «рівно нуль». Продукт без білка в `per100`
+ * після зміни ваги не має отримувати «0 г білка».
+ */
+export function macrosForGramsNullable(
+  per100: unknown,
+  grams: unknown,
+): NullableMacros {
+  const k = clampNonNegative(grams) / 100;
+  const m =
+    per100 && typeof per100 === "object"
+      ? (per100 as Record<string, unknown>)
+      : {};
+  const scale = (key: string): number | null => {
+    const v = m[key];
+    if (typeof v !== "number" || !Number.isFinite(v)) return null;
+    return Math.round(clampNonNegative(v) * k * 10) / 10;
+  };
+  return {
+    kcal: scale("kcal"),
+    protein_g: scale("protein_g"),
+    fat_g: scale("fat_g"),
+    carbs_g: scale("carbs_g"),
   };
 }
 

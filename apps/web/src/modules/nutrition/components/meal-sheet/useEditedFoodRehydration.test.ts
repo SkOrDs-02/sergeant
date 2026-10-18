@@ -289,6 +289,17 @@ describe("useEditedFoodRehydration", () => {
       expect(picked.defaultGrams).toBe(150);
     });
 
+    it("`per100FromMeal` не вигадує нулі для невідомих нутрієнтів", () => {
+      expect(
+        per100FromMeal(200, {
+          kcal: 220,
+          protein_g: null,
+          fat_g: undefined,
+          carbs_g: 0,
+        }),
+      ).toEqual({ kcal: 110, protein_g: null, fat_g: null, carbs_g: 0 });
+    });
+
     it("`per100FromMeal` відхиляє нульову вагу й порожні макроси", () => {
       expect(per100FromMeal(0, { kcal: 100 })).toBeNull();
       expect(per100FromMeal(null, { kcal: 100 })).toBeNull();

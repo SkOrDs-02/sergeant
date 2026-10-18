@@ -26,10 +26,10 @@ import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
 import { ProductNutrientsRow } from "./ProductNutrientsRow";
 import { ProductThumb } from "./ProductThumb";
-import { macrosForGrams } from "../../lib/foodDb/foodDb";
+import { macrosForGramsNullable } from "../../lib/foodDb/foodDb";
 import {
   MAX_PORTION_GRAMS,
-  macroToFieldString,
+  macrosToFormFields,
   type MealFormState,
 } from "./mealFormUtils";
 import { useWheelGrams } from "./useWheelGrams";
@@ -120,7 +120,7 @@ export function PickedFoodCard({
           .replace(",", "."),
       );
       const grams = Number.isFinite(g) && g > 0 ? g : p.defaultGrams || 100;
-      const mac = macrosForGrams(p.per100, grams);
+      const mac = macrosForGramsNullable(p.per100, grams);
       setForm((s) => ({
         ...s,
         // Назва продукту сіється ЛИШЕ в порожнє поле. Ефект перезапускає
@@ -128,10 +128,7 @@ export function PickedFoodCard({
         // (`продукт || s.name`) затирав уже перейменовану людиною страву
         // щоразу, коли вона крутила порцію.
         name: s.name || [p.name, p.brand].filter(Boolean).join(" ").trim(),
-        kcal: macroToFieldString(Number(mac.kcal) || 0),
-        protein_g: macroToFieldString(Number(mac.protein_g) || 0),
-        fat_g: macroToFieldString(Number(mac.fat_g) || 0),
-        carbs_g: macroToFieldString(Number(mac.carbs_g) || 0),
+        ...macrosToFormFields(mac),
         err: "",
       }));
     },

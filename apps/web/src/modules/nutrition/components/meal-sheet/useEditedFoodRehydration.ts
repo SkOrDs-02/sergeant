@@ -114,8 +114,12 @@ export function per100FromMeal(
 ): PickedFood["per100"] | null {
   if (amountG == null || !(amountG > 0) || !macros) return null;
   if (macros.kcal == null || !Number.isFinite(macros.kcal)) return null;
+  // Невідомий нутрієнт лишається `null`: «0 г білка» у відновленого
+  // продукту було б вигадкою, яку зміна ваги потім розмножила б.
   const per100 = (n: number | null | undefined) =>
-    Math.round((((n ?? 0) * 100) / amountG) * 100) / 100;
+    n == null || !Number.isFinite(n)
+      ? null
+      : Math.round(((n * 100) / amountG) * 100) / 100;
   return {
     kcal: per100(macros.kcal),
     protein_g: per100(macros.protein_g),
