@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-17 by docs:gen-status. **Next review:** 2026-10-24.
+> **Last touched:** 2026-10-18 by docs:gen-status. **Next review:** 2026-10-25.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -39,11 +39,11 @@
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
-## 🔵 В роботі — 101 відкритий документ
+## 🔵 В роботі — 102 відкриті документи
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 101      |
+| Активні спеки | 102      |
 
 **Найактивніше (8, за останніми PR):**
 
