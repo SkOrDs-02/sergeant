@@ -415,7 +415,7 @@ describe("finyk applySync", () => {
       "SET deleted_at = $1, updated_at = $1",
     );
     expect(sql(deleteClient, 1)).not.toContain("DELETE FROM");
-    expect(sql(upsertClient, 1)).toContain("deleted_at  = NULL");
+    expect(sql(upsertClient, 1)).toContain("deleted_at  = EXCLUDED.deleted_at");
   });
 
   it("rejects transaction categories before writes when required fields fail", async () => {

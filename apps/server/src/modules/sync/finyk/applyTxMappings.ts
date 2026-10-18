@@ -5,7 +5,11 @@
    шаблон — єдиний варіант. Так само в `applySync.ts` поруч. */
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
-import { parseOptionalNumber, toJsonbParam } from "../syncV2-core.js";
+import {
+  parseOptionalDate,
+  parseOptionalNumber,
+  toJsonbParam,
+} from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 import { applyIfNewer } from "../applySync-helpers.js";
 
@@ -90,6 +94,17 @@ function checkOwner(
   return null;
 }
 
+/**
+ * `deleted_at` вхідного не-delete опа. Живий upsert несе `null` (воскресіння
+ * скидає tombstone), а рядок із міткою — наприклад, snapshot анонімного
+ * профілю, де запис уже видалено — лишається tombstone-ом і не воскресає на
+ * новому профілі. Той самий контракт, що в `applyFinykPerRowBlob`.
+ */
+const INVALID_DELETED_AT: AppliedStatus = {
+  status: "rejected",
+  reason: "invalid_deleted_at",
+};
+
 export async function applyFinykTxCategories(
   client: PoolClient,
   op: SyncV2Op,
@@ -117,17 +132,20 @@ export async function applyFinykTxCategories(
     return { status: "rejected", reason: "missing_category_id" };
   }
 
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") return INVALID_DELETED_AT;
+
   return applyIfNewer(
     client,
     `INSERT INTO finyk_tx_categories
        (user_id, transaction_id, category_id, created_at, updated_at, deleted_at)
-     VALUES ($1, $2, $3, $4, $5, NULL)
+     VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT (user_id, transaction_id) DO UPDATE
        SET category_id = EXCLUDED.category_id,
            updated_at  = EXCLUDED.updated_at,
-           deleted_at  = NULL
+           deleted_at  = EXCLUDED.deleted_at
        WHERE finyk_tx_categories.updated_at < EXCLUDED.updated_at`,
-    [userId, transactionId, categoryId, clientTs, clientTs],
+    [userId, transactionId, categoryId, clientTs, clientTs, deletedAt ?? null],
   );
 }
 
@@ -155,18 +173,20 @@ export async function applyFinykPerTxJsonbArray(
   if (settled) return settled;
 
   const jsonValue = toJsonbParam(row[jsonColumn]) ?? "[]";
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") return INVALID_DELETED_AT;
 
   return applyIfNewer(
     client,
     `INSERT INTO ${table}
        (user_id, transaction_id, ${jsonColumn}, created_at, updated_at, deleted_at)
-     VALUES ($1, $2, $3::jsonb, $4, $5, NULL)
+     VALUES ($1, $2, $3::jsonb, $4, $5, $6)
      ON CONFLICT (user_id, transaction_id) DO UPDATE
        SET ${jsonColumn} = EXCLUDED.${jsonColumn},
            updated_at    = EXCLUDED.updated_at,
-           deleted_at    = NULL
+           deleted_at    = EXCLUDED.deleted_at
        WHERE ${table}.updated_at < EXCLUDED.updated_at`,
-    [userId, transactionId, jsonValue, clientTs, clientTs],
+    [userId, transactionId, jsonValue, clientTs, clientTs, deletedAt ?? null],
   );
 }
 
@@ -197,18 +217,28 @@ export async function applyFinykNetworthHistory(
     return { status: "rejected", reason: "invalid_networth" };
   }
   const snapshotJson = toJsonbParam(row["snapshot_json"]) ?? "{}";
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") return INVALID_DELETED_AT;
 
   return applyIfNewer(
     client,
     `INSERT INTO finyk_networth_history
        (user_id, month, networth, snapshot_json, created_at, updated_at, deleted_at)
-     VALUES ($1, $2, $3, $4::jsonb, $5, $6, NULL)
+     VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)
      ON CONFLICT (user_id, month) DO UPDATE
        SET networth      = EXCLUDED.networth,
            snapshot_json = EXCLUDED.snapshot_json,
            updated_at    = EXCLUDED.updated_at,
-           deleted_at    = NULL
+           deleted_at    = EXCLUDED.deleted_at
        WHERE finyk_networth_history.updated_at < EXCLUDED.updated_at`,
-    [userId, month, networth ?? 0, snapshotJson, clientTs, clientTs],
+    [
+      userId,
+      month,
+      networth ?? 0,
+      snapshotJson,
+      clientTs,
+      clientTs,
+      deletedAt ?? null,
+    ],
   );
 }
