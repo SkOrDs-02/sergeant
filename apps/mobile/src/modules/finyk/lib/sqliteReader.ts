@@ -296,25 +296,25 @@ export async function refreshFinykSqliteState(
     client.all<TxCategoryRow>(
       `SELECT transaction_id, category_id
          FROM finyk_tx_categories
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<TxSplitsRow>(
       `SELECT transaction_id, splits_json
          FROM finyk_tx_splits
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<MonoDebtLinkRow>(
       `SELECT transaction_id, debt_ids_json
          FROM finyk_mono_debt_links
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<NetworthRow>(
       `SELECT month, networth
          FROM finyk_networth_history
-        WHERE user_id = ?
+        WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY month ASC`,
       [userId],
     ),
