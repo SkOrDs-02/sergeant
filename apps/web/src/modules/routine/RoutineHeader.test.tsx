@@ -32,12 +32,11 @@ describe("RoutineHeader", () => {
     expect(onBackToHub).not.toHaveBeenCalled();
   });
 
-  it("opens settings when onOpenSettings is provided", () => {
-    const onOpenSettings = vi.fn();
-    render(<RoutineHeader onOpenSettings={onOpenSettings} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: /Налаштування модуля/i }),
-    );
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  it("keeps one assistant entry on the right of the H header", () => {
+    render(<RoutineHeader />);
+    expect(
+      screen.queryByRole("button", { name: /Налаштування модуля/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 });

@@ -62,8 +62,6 @@ describe("обведена іконкова кнопка Рутини має о�
 
   it("константа лишається єдиним джерелом рецепта", async () => {
     const { ROUTINE_OUTLINE_ICON_BUTTON } = await import("./routineIconButton");
-    expect(ROUTINE_OUTLINE_ICON_BUTTON).toBe(
-      "rounded-xl border border-line bg-panel/90 text-muted",
-    );
+    expect(ROUTINE_OUTLINE_ICON_BUTTON).toBe("rounded-lg text-muted");
   });
 });

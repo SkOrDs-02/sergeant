@@ -91,19 +91,16 @@ export function MealTemplatesRow({
         collapsedSubtitle={`${mealTemplates.length} шаблонів`}
         className="mb-4"
       >
-        <div className="flex flex-wrap gap-2">
+        <div className="divide-y divide-line border-y border-line">
           {mealTemplates.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center gap-1 rounded-xl border border-line bg-panelHi"
-            >
+            <div key={t.id} className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => {
                   fillFormFromTemplate(setForm, t);
                   onSelected?.();
                 }}
-                className="px-2 py-1 text-xs hover:text-nutrition-strong dark:hover:text-nutrition"
+                className="min-h-[44px] flex-1 min-w-0 truncate rounded-lg text-left text-style-body font-semibold text-text focus-ring"
               >
                 {t.name}
               </button>
@@ -125,10 +122,10 @@ export function MealTemplatesRow({
                     aria-label={`Видалити швидкий прийом ${t.name}`}
                     variant="ghost"
                     size="sm"
-                    className="text-danger-strong dark:text-danger"
+                    className="text-muted hover:text-danger-strong"
                     onClick={() => setConfirmDeleteId(t.id)}
                   >
-                    <Icon name="trash" size={13} aria-hidden />
+                    <Icon name="trash" size="sm" aria-hidden />
                   </IconButton>
                 </>
               )}

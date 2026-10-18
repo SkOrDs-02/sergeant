@@ -62,7 +62,9 @@ describe("Stripe billing webhook processing", () => {
     expect(String(client.query.mock.calls[1]![0])).toContain(
       "INSERT INTO stripe_webhook_events",
     );
-    expect(String(client.query.mock.calls[2]![0])).toContain(
+    // Перед upsert-ом читається живий рядок (заміна рекурентки, data-21).
+    expect(String(client.query.mock.calls[2]![0])).toContain("FOR UPDATE");
+    expect(String(client.query.mock.calls[3]![0])).toContain(
       "INSERT INTO subscriptions",
     );
     expect(client.query).toHaveBeenLastCalledWith("COMMIT");

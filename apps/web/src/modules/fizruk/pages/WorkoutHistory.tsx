@@ -8,8 +8,8 @@
  * with its own "+ Нове" / "Шаблони" start-CTAs — a second start path
  * parallel to the home's «Почати тренування», and one whose
  * state (an in-memory `view`, not the URL) did not survive a refresh.
- * This page owns its own URL, and carries no start-CTA at all — starting
- * a session lives only on `WorkoutsHome`.
+ * This page owns its own URL. Its empty-state action routes to
+ * `WorkoutsHome`, which remains the only surface that starts a session.
  */
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
@@ -27,14 +27,14 @@ export function WorkoutHistory({ onNavigate }: WorkoutHistoryProps) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         {/* PR-Z7: власної стрілки тут більше немає. Вона малювалась поруч із
             парою «Назад» + «На хаб» із шапки модуля — три виходи на одному
             екрані. Тепер вихід один і живе в `FizrukHeader` (контекстний
             back для `history` веде на Огляд). */}
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <h1 className="text-style-title text-text">{copy.title}</h1>
+            <h1 className="text-style-headline text-text">{copy.title}</h1>
             <p className="text-style-caption text-subtle mt-0.5">
               {copy.subtitlePrefix} {finishedCount}
             </p>
@@ -58,6 +58,7 @@ export function WorkoutHistory({ onNavigate }: WorkoutHistoryProps) {
             deleteWorkout={deleteWorkout}
             restoreWorkout={restoreWorkout}
             onOpenWorkout={(id) => onNavigate(`workout/${id}`)}
+            onStartWorkout={() => onNavigate("workouts")}
           />
         )}
       </div>

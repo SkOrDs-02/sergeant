@@ -20,7 +20,7 @@ vi.mock("./txNotesOutboxRecovery.js", () => ({
 }));
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
-import { runTxNotesBootSteps } from "./txNotesBoot";
+import { runTxNotesImportStep, runTxNotesRequeueStep } from "./txNotesBoot";
 
 const client = {} as SqliteMigrationClient;
 
@@ -29,35 +29,41 @@ beforeEach(() => {
   calls.length = 0;
 });
 
-describe("runTxNotesBootSteps", () => {
-  it("спершу перелиття LS, потім перепостановка відхилених старим сервером", async () => {
-    await runTxNotesBootSteps(client, "u1", "2026-10-10T10:00:00.000Z");
-    expect(calls).toEqual(["import", "requeue"]);
+describe("runTxNotesImportStep", () => {
+  it("викликає перелиття LS із клієнтом, користувачем і clientTs", async () => {
+    await runTxNotesImportStep(client, "u1", "2026-10-10T10:00:00.000Z");
+    expect(calls).toEqual(["import"]);
     expect(importLegacyTxNotesFromLs).toHaveBeenCalledWith(
       client,
       "u1",
       "2026-10-10T10:00:00.000Z",
     );
+    expect(requeueTxNotesRejectedByOldServer).not.toHaveBeenCalled();
+  });
+
+  it("збій перелиття не кидає", async () => {
+    importLegacyTxNotesFromLs.mockRejectedValueOnce(new Error("disk full"));
+    await expect(
+      runTxNotesImportStep(client, "u1", "2026-10-10T10:00:00.000Z"),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe("runTxNotesRequeueStep", () => {
+  it("викликає перепостановку відхилених старим сервером", async () => {
+    await runTxNotesRequeueStep(client, "u1");
+    expect(calls).toEqual(["requeue"]);
     expect(requeueTxNotesRejectedByOldServer).toHaveBeenCalledWith(
       client,
       "u1",
     );
-  });
-
-  it("збій перелиття не блокує перепостановку й не кидає", async () => {
-    importLegacyTxNotesFromLs.mockRejectedValueOnce(new Error("disk full"));
-    await expect(
-      runTxNotesBootSteps(client, "u1", "2026-10-10T10:00:00.000Z"),
-    ).resolves.toBeUndefined();
-    expect(requeueTxNotesRejectedByOldServer).toHaveBeenCalledTimes(1);
+    expect(importLegacyTxNotesFromLs).not.toHaveBeenCalled();
   });
 
   it("збій перепостановки не кидає", async () => {
     requeueTxNotesRejectedByOldServer.mockRejectedValueOnce(
       new Error("outbox locked"),
     );
-    await expect(
-      runTxNotesBootSteps(client, "u1", "2026-10-10T10:00:00.000Z"),
-    ).resolves.toBeUndefined();
+    await expect(runTxNotesRequeueStep(client, "u1")).resolves.toBeUndefined();
   });
 });

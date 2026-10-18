@@ -28,7 +28,7 @@
  *
  * **Один рядок замість двох.** Було: пропорційні бари зверху й колонки з
  * назвою та ккал знизу — два ряди, що кодують те саме число. Стало: чотири
- * РІВНІ колонки-кнопки, а пропорція живе заливкою всередині колонки
+ * РІВНІ колонки-кнопки, а пропорція живе баром під підписом колонки
  * (`width` = частка прийому в зʼїденому). Порівняння прийомів лишилось
  * видимим, підпис не обрізається на вузькому екрані (ризик 2 спеки), а
  * ризик 1 — вузький сегмент — зник разом із пропорційною шириною колонки.
@@ -203,52 +203,46 @@ export function MealStrip({
   const accentIndex = findAccentIndex(segments, goalKcal);
 
   return (
-    <div className="flex flex-col gap-3">
-      {/*
-        ОДИН рядок сегментів, і кожен — кнопка. Було два ряди, що кодували
-        те саме число двічі: пропорційні бари зверху й колонки з назвою та
-        ккал знизу. Пропорція нікуди не поділась — вона тепер заливка
-        всередині колонки фіксованої ширини, тож і порівняння прийомів
-        видно, і підпис не обрізається на вузькому екрані (ризик 2 спеки).
+    <div className="flex flex-col gap-4">
+      {goalKcal != null && remaining != null && (
+        <div
+          role="img"
+          aria-label={buildRemainingAriaLabel(remaining, remainingLabel)}
+        >
+          {remaining < 0 ? (
+            /* Без мінуса: підпис поруч уже каже «понад ціль», і
+               «−250 … понад ціль» читалось як подвійне заперечення. */
+            <p className="text-style-display text-text tabular-nums">
+              {formatNumberUk(Math.round(Math.abs(remaining)))}{" "}
+              <span className="text-style-label text-text">
+                {messages.nutrition.heroStrip.overshootSuffix}
+              </span>
+            </p>
+          ) : (
+            <p className="text-style-display text-text tabular-nums">
+              {formatNumberUk(Math.round(remaining))}{" "}
+              <span className="text-style-label text-text">
+                {messages.nutrition.heroStrip.kcalUnit} · {remainingLabel}
+              </span>
+            </p>
+          )}
+        </div>
+      )}
 
-        A11y: рядок більше НЕ живе всередині `role="img"`. Кнопка не може
-        бути `aria-hidden`, а саме такими були обидва старі ряди. Тепер
-        факт кожного прийому несе доступна назва його кнопки, а спільний
-        `aria-label` лишається тільки за блоком залишку — тобто за тим,
-        що справді є картинкою з числом.
+      {/*
+        ОДИН рядок сегментів, і кожен — кнопка. Пропорція прийому живе
+        баром під підписом (частка в зʼїденому), колонки рівні, тож підпис
+        не обрізається на вузькому екрані (ризик 2 спеки).
+
+        A11y: рядок НЕ живе всередині `role="img"`. Кнопка не може бути
+        `aria-hidden`; факт кожного прийому несе доступна назва його кнопки,
+        а спільний `aria-label` лишається тільки за блоком залишку.
       */}
-      <ul data-testid="meal-strip-bars" className="grid grid-cols-4 gap-1">
+      <ul data-testid="meal-strip-bars" className="grid grid-cols-4 gap-2">
         {segments.map((seg, i) => {
           const isEmpty = seg.count <= 0;
           const isAccent = accentIndex === i;
           const share = total > 0 ? (seg.kcal / total) * 100 : 0;
-          const body = (
-            <>
-              {/*
-                Частка прийому смугою знизу, як макро-бари нижче. Заливка
-                на всю висоту колонки читалась як збій рендера, а не прогрес.
-              */}
-              <span
-                aria-hidden="true"
-                className="absolute inset-x-0 bottom-0 h-1 bg-hero-ink/15"
-              />
-              <span
-                aria-hidden="true"
-                data-testid="meal-strip-fill"
-                style={{ width: `${share}%` }}
-                className={cn(
-                  "absolute bottom-0 left-0 h-1",
-                  isAccent ? "bg-nutrition" : "bg-hero-ink/60",
-                )}
-              />
-              <span className="relative text-style-caption text-hero-ink truncate w-full">
-                {seg.label}
-              </span>
-              <span className="relative text-style-caption font-semibold text-hero-ink tabular-nums truncate w-full">
-                {seg.kcal > 0 ? formatNumberUk(Math.round(seg.kcal)) : "—"}
-              </span>
-            </>
-          );
           return (
             <li key={seg.type} className="flex">
               <button
@@ -258,90 +252,48 @@ export function MealStrip({
                   isEmpty ? ADD_TO_MEAL[seg.type] : SHOW_MEAL[seg.type]
                 }`}
                 className={cn(
-                  "relative isolate flex w-full flex-col items-center justify-center",
-                  "overflow-hidden rounded-lg border border-hero-ink/20 px-1 py-1.5",
-                  // Однакова легка заливка для порожнього й заповненого прийому:
-                  // `bg-hero-ink/10` під порожнім осередком світлило фон під
-                  // повним чорнилом `Сніданок/Обід/Вечеря/Перекус` (піксельний
-                  // замір 2026-10-01 на nutrition-hero: 4.29-4.92:1 замість
-                  // 4.67+ без заливки). Різницю «порожньо / є» несе смуга
-                  // частки знизу і число, а не яскравість осередку.
-                  "bg-hero-ink/5",
-                  // 44×44 під coarse pointer — сегмент тепер найдрібніший
-                  // тапабельний контрол hero-картки.
+                  "flex w-full flex-col items-start gap-0.5 rounded-lg py-1 text-left",
+                  // 44×44 під coarse pointer — сегмент найдрібніший
+                  // тапабельний контрол hero.
                   "pointer-coarse:min-h-[44px]",
-                  "motion-safe:transition-[background-color,border-color,transform]",
-                  // Перехідні стани: тиха заливка `/8` (не `/15` і `/20`),
-                  // бо чорнило `Сніданок/Обід/Вечеря/Перекус` лежить на ній.
-                  // Проти найсвітлішої зупинки градієнта (`#4e6f10`) `/5` дає
-                  // 4.99, `/8` — 4.70, `/10` — 4.49 (нижче AA), `/15` і `/20`
-                  // — 4.06 і 3.67. Між `/5` і `/10` на зареєстрованій шкалі
-                  // лишається лише `/8`, тож hover і active ділять її, а
-                  // відгук несе контур: `/20` → `/40` на hover → `/60` на
-                  // active, плюс звичне «вдавлювання» `active:scale-[0.98]`
-                  // (лише під `motion-safe`). Гейт:
-                  // `packages/design-tokens/contrast.test.js`.
-                  "hover:bg-hero-ink/8 hover:border-hero-ink/40",
-                  "active:bg-hero-ink/8 active:border-hero-ink/60 motion-safe:active:scale-[0.98]",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-hero",
+                  "hover:bg-line/40 focus-ring",
                 )}
               >
-                {body}
+                <span className="text-style-caption text-text truncate w-full">
+                  {seg.label}
+                </span>
+                <span className="text-style-label font-semibold text-text tabular-nums truncate w-full">
+                  {seg.kcal > 0 ? formatNumberUk(Math.round(seg.kcal)) : "—"}
+                </span>
+                {/* Частка прийому баром у hue модуля. Сегмент, що переводить
+                    суму за норму, — чорнилом (рішення 5 спеки), не
+                    небезпекою: канон Їжі лишає червоний лише для >110 %. */}
+                <span
+                  aria-hidden="true"
+                  className="relative mt-1 block h-[3px] w-full rounded-[3px] bg-line"
+                >
+                  <span
+                    data-testid="meal-strip-fill"
+                    style={{ width: `${share}%` }}
+                    className={cn(
+                      "absolute inset-y-0 left-0 rounded-[3px]",
+                      isAccent ? "bg-text" : "bg-chart-nutrition",
+                    )}
+                  />
+                </span>
               </button>
             </li>
           );
         })}
       </ul>
 
-      {goalKcal != null && remaining != null && (
-        <div
-          role="img"
-          aria-label={buildRemainingAriaLabel(remaining, remainingLabel)}
-          className="flex flex-col gap-1.5"
-        >
-          <div className="mt-1 flex flex-col items-center gap-0.5 text-center">
-            {remaining < 0 ? (
-              <>
-                {/* Без мінуса: підпис нижче вже каже «понад ціль», і
-                    «−250 … понад ціль» читалось як подвійне заперечення. */}
-                <p className="text-style-display text-hero-ink tabular-nums">
-                  {formatNumberUk(Math.round(Math.abs(remaining)))}
-                </p>
-                <p className="text-style-caption text-hero-ink">
-                  {messages.nutrition.heroStrip.overshootSuffix}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-style-display text-hero-ink tabular-nums">
-                  {formatNumberUk(Math.round(remaining))}{" "}
-                  <span className="text-style-caption text-hero-ink">
-                    {messages.nutrition.heroStrip.kcalUnit}
-                  </span>
-                </p>
-                <p className="text-style-caption text-hero-ink">
-                  {remainingLabel}
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       {incompleteNote && (
-        <p className="text-style-caption text-hero-ink text-center">
-          {incompleteNote}
-        </p>
+        <p className="text-style-caption text-text">{incompleteNote}</p>
       )}
 
       {goalKcal == null && onSetGoal && (
-        <div className="flex justify-center">
-          <Button
-            variant="solid"
-            tone="nutrition"
-            size="md"
-            onClick={onSetGoal}
-          >
+        <div>
+          <Button variant="outline" size="md" onClick={onSetGoal}>
             {messages.nutrition.heroStrip.ctaSetGoal}
           </Button>
         </div>
@@ -369,7 +321,7 @@ export function MealStrip({
           const over = macroOverage(m.consumed, m.goal);
           return (
             <li key={m.label} className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-1 text-style-caption text-hero-ink tabular-nums">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-1 text-style-caption text-text tabular-nums">
                 <span>{m.label}</span>
                 <span className="whitespace-nowrap">
                   {m.consumed}
@@ -392,10 +344,10 @@ export function MealStrip({
                       }`
                     : `${m.label}: ${m.consumed} ${unit}`
                 }
-                className="h-1.5 rounded-full bg-hero-ink/15 overflow-hidden"
+                className="h-[3px] rounded-[3px] bg-line overflow-hidden"
               >
                 <div
-                  className="h-full rounded-full bg-hero-ink/60 motion-safe:transition-[width] motion-safe:duration-slow"
+                  className="h-full rounded-[3px] bg-chart-nutrition motion-safe:transition-[width] motion-safe:duration-slow"
                   style={{ width: `${pct}%` }}
                 />
               </div>

@@ -13,7 +13,6 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@shared/api";
 import { finykKeys } from "@shared/lib/api/queryKeys";
 import { formatReceiptError } from "../lib/receiptErrors";
-import { Icon } from "@shared/components/ui/Icon";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { Badge } from "@shared/components/ui/Badge";
 import { Card } from "@shared/components/ui/Card";
@@ -42,7 +41,6 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
           id="receipt-items-title"
           className="flex items-center gap-1.5 text-style-label text-text"
         >
-          <Icon name="file-text" size={15} aria-hidden />
           Позиції чека
         </h3>
         {query.data?.receipt.source === "vision" && (

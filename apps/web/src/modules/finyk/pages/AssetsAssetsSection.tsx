@@ -3,6 +3,7 @@ import { DebtCard } from "../components/DebtCard";
 import { Icon } from "@shared/components/ui/Icon";
 import { AssetsGroupCard } from "./AssetsGroupCard";
 import { Money } from "@shared/components/ui/Money";
+import { FinanceItemHeading } from "../components/FinanceItemHeading";
 import {
   getRecvPaid,
   calcReceivableRemaining,
@@ -63,7 +64,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
   const assetsOpen = assetsExpanded || showAssetForm;
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-0">
       <AssetsMonoCards
         accounts={accounts}
         hiddenAccounts={hiddenAccounts}
@@ -211,22 +212,14 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         )}
         {manualAssets.slice(0, allAssetsVisible ? undefined : 3).map((a, i) => (
           <div
-            key={i}
-            className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0"
+            key={a.id}
+            className="border-t border-line py-4 first:border-t-0 first:pt-0 last:pb-0"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="min-w-0">
-                <div className="text-style-body font-semibold truncate">
-                  {a.name}
-                </div>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {a.currency}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-style-body font-medium tabular-nums text-success-strong dark:text-success">
-                {showBalance ? (
+            <FinanceItemHeading
+              title={a.name}
+              meta={a.currency}
+              value={
+                showBalance ? (
                   <Money
                     amount={Number(a.amount)}
                     symbol={
@@ -240,49 +233,53 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                   />
                 ) : (
                   "\u2022\u2022\u2022\u2022"
-                )}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingAssetId(a.id);
-                  setNewAsset({
-                    name: a.name ?? "",
-                    amount: String(a.amount ?? ""),
-                    currency: a.currency ?? "UAH",
-                    emoji: a.emoji ?? "",
-                  });
-                  setShowAssetForm(true);
-                }}
-                className="text-subtle hover:text-text transition-colors"
-                aria-label={`Редагувати актив ${a.name}`}
-              >
-                <Icon name="edit" size="md" aria-hidden />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const removed = a;
-                  const removedIdx = i;
-                  setManualAssets((as) =>
-                    as.filter((_, j) => j !== removedIdx),
-                  );
-                  showUndoToast(toast, {
-                    msg: `Видалено актив «${removed.name}»`,
-                    onUndo: () =>
-                      setManualAssets((as) => {
-                        const next = [...as];
-                        next.splice(removedIdx, 0, removed);
-                        return next;
-                      }),
-                  });
-                }}
-                className="text-subtle hover:text-danger transition-colors"
-                aria-label={`Видалити актив ${a.name}`}
-              >
-                <Icon name="trash" size="md" aria-hidden />
-              </button>
-            </div>
+                )
+              }
+              actions={
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingAssetId(a.id);
+                      setNewAsset({
+                        name: a.name ?? "",
+                        amount: String(a.amount ?? ""),
+                        currency: a.currency ?? "UAH",
+                        emoji: a.emoji ?? "",
+                      });
+                      setShowAssetForm(true);
+                    }}
+                    className="touch-target focus-ring text-subtle hover:text-text transition-colors"
+                    aria-label={`Редагувати актив ${a.name}`}
+                  >
+                    <Icon name="edit" size="md" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const removed = a;
+                      const removedIdx = i;
+                      setManualAssets((as) =>
+                        as.filter((_, j) => j !== removedIdx),
+                      );
+                      showUndoToast(toast, {
+                        msg: `Видалено актив «${removed.name}»`,
+                        onUndo: () =>
+                          setManualAssets((as) => {
+                            const next = [...as];
+                            next.splice(removedIdx, 0, removed);
+                            return next;
+                          }),
+                      });
+                    }}
+                    className="touch-target focus-ring text-subtle hover:text-danger transition-colors"
+                    aria-label={`Видалити актив ${a.name}`}
+                  >
+                    <Icon name="trash" size="md" aria-hidden />
+                  </button>
+                </>
+              }
+            />
           </div>
         ))}
         {manualAssets.length > 3 && (

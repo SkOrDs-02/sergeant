@@ -10,7 +10,7 @@ import { applyIfNewer } from "../applySync-helpers.js";
 
 /**
  * `finyk_tx_notes` — нотатки користувача до банківських операцій
- * (аудит 2026-10-01, data-27; міграція 156).
+ * (аудит 2026-10-01, data-27; міграція 155).
  *
  * Форма — composite-PK tombstone `(user_id, transaction_id)` з корисним
  * навантаженням `note`. Усе за канонічним LWW (ADR-0004): рядок виграє, лише

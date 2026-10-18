@@ -114,7 +114,7 @@ export function ProgressBar({
         aria-valuenow={indeterminate ? undefined : clamped}
         aria-busy={indeterminate || undefined}
         className={cn(
-          "relative w-full overflow-hidden rounded-full bg-line",
+          "relative w-full overflow-hidden rounded-mark bg-line",
           sizeClass[size],
         )}
         {...rest}
@@ -123,7 +123,7 @@ export function ProgressBar({
           <div
             aria-hidden="true"
             className={cn(
-              "absolute inset-y-0 left-0 rounded-full",
+              "absolute inset-y-0 left-0 rounded-mark",
               fillClass[variant],
               // Reduced motion falls back to a slow pulse on the full
               // width track so the user still sees "we're working" but
@@ -137,7 +137,7 @@ export function ProgressBar({
           <div
             aria-hidden="true"
             className={cn(
-              "h-full rounded-full motion-safe:transition-[width] motion-safe:duration-slow",
+              "h-full rounded-mark motion-safe:transition-[width] motion-safe:duration-slow",
               fillClass[variant],
             )}
             style={fillStyle}

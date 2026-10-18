@@ -1,11 +1,9 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-04-01.
+> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-04-18.
 > **Status:** Active
 
-Дизайн-філософія Sergeant — **Soft & Organic** на теплій нейтральній базі:
-фон сторінки — `--c-bg` `#ecebe7` (`theme.css`, рішення Б1 2026-08-07), а
-кремова рампа `cream.*` лишається в токенах для hero-ink і `apps/landing`.
+Для `apps/web` діє мова H: сторінка `#fbfbfa` / `#0e1116`, панель `#f2f2f0` / `#171c23`, тинт лише на одному блоці даних. Невживані web-токени `cream` і `moduleSurfaces` прибрано в redesign v3 PR7. Лендінг і заморожений mobile поза цим редизайном.
 
 > **⚠️ Канон палітри — [`DESIGN.md`](../../../DESIGN.md) (генерується з `packages/design-tokens/tokens.js`).**
 > Після stone-ребренду M1 (2026-07) `brand` більше не aliasить emerald: це `stone-700 #44403c`
@@ -275,28 +273,21 @@ Cross-platform: `-strong`-Tailwind-утиліти вивезені через
 Повне обґрунтування, виміряння контрасту й історію міграції (PR #851 → PR #855)
 див. у [`docs/design/design/archive/brand-palette-wcag-aa-proposal.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/05-design/design/archive/brand-palette-wcag-aa-proposal.md).
 
-### Кольори фону (Light-режим)
+### Кольори фону (мова H)
 
-```
-Page Background:    #ecebe7 (Warm neutral — Б1, 2026-08-07)
-Panel/Card:         #ffffff (Pure white)
-Panel Hover:        #f6f5f2 (Warm hover)
-Border:             #d2cec5 (Warm gray; було #e2e0da до 2026-10-01)
-```
+| Роль     | Світла    | Темна     |
+| -------- | --------- | --------- |
+| Сторінка | `#fbfbfa` | `#0e1116` |
+| Панель   | `#f2f2f0` | `#171c23` |
 
-> **Було `#fdf9f3` / `#faf7f1` / `#ebe4da` до 2026-08-07.** `#fdf9f3` не
-> зник — це `cream.100`, і він далі працює як hero-ink та як фон
-> `apps/landing` (`--color-background`). Але фоном застосунку він не є вже
-> давно: до Б1 сторінка світилася `#f2ecdf`, тобто підпис у цьому блоці
-> розходився з кодом ще тоді. Джерело істини — `--c-bg` / `--c-panel-hi` /
-> `--c-line` у [`theme.css`](../../../apps/web/src/styles/theme.css).
+Тинт hue модуля живе лише на одному блоці даних. `cream` і стіл модуля знято з web; попередні теплі фони не є чинним каноном. Джерело істини — токени та `theme.css`.
 
 ### Кольори тексту (Light-режим)
 
 ```
-Primary Text:   #0f1713 (--c-text — green near-black, «Чорнило» light pair)
-Muted Text:     #535c56 (--c-muted — ≥4.78:1 на столі й зоні)
-Subtle Text:    #605a54 (--c-subtle — ≥4.69:1 на столі, зоні, panel/bg)
+Primary Text:   #1c1c1e (--c-text, чорнило H)
+Muted Text:     #55555a (--c-muted, другий сірий H)
+Subtle Text:    #6e6e73 (--c-subtle, третій сірий H)
 ```
 
 > **Було `#1c1917` / `#57534e` / `#a8a29e` (stone-900/600/400).** Стара
@@ -402,17 +393,7 @@ xl:   12px  (Small buttons, chips)
 full: 9999px (Pills, avatars)
 ```
 
-> **Канонічний контракт:** рав-розміри вище — референс-таблиця. У
-> продакшн-коді обирай тир із size-driven шкали
-> [`radius-rhythm.md`](./radius-rhythm.md): **SWATCH** `rounded-sm` (2 px) ·
-> **CONTROL** `rounded-xl` (12 px) · **CARD** `rounded-2xl` (16 px) ·
-> **HERO** `rounded-3xl` (24 px) · **PILL** `rounded-full`. Шару семантичних
-> аліасів (`rounded-card` / `rounded-control` тощо) свідомо **немає** —
-> Tailwind уже дає правильний примітив, а два імені для однієї речі
-> збільшують дрейф. `rounded-lg` (8 px) і `rounded-md` (6 px) у новому коді
-> заборонені (`tailwind-preset.js` § BORDER RADIUS); `4xl` / `5xl` — лише для
-> разових ілюстрацій поза ритмом. Насамперед бери готовий `Button` / `Card` /
-> `Modal` — шкала вже зашита в компоненти.
+> **Канонічний контракт H:** радіус за роллю, не розміром: панель `rounded-panel` 12 px, кнопка/поле `rounded-lg` 8 px, дрібна дія `rounded-action` 7 px, сегмент `rounded-segment` 6 px, чекбокс `rounded-check` 5 px, бар/свотч `rounded-mark` 3 px. `rounded-full` лише для семантичних кіл за allowlist гейта. Числова таблиця вище — довідка примітивів Tailwind, не рекомендація для web. Деталі — [`radius-rhythm.md`](./radius-rhythm.md).
 
 ---
 

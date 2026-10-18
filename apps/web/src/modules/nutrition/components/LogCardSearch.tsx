@@ -4,7 +4,6 @@
  */
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
 import { useEffect, useMemo, useState } from "react";
-import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
@@ -38,13 +37,8 @@ export function LogCardSearch({
   }, [log, debouncedSearchQuery]);
 
   return (
-    <Card
-      variant="flat"
-      radius="lg"
-      padding="none"
-      className="px-3 py-3 space-y-2"
-    >
-      <SectionHeading as="div" size="xs" variant="nutrition">
+    <section className="space-y-2">
+      <SectionHeading as="h2" size="lg">
         Пошук по журналу
       </SectionHeading>
       <Input
@@ -58,9 +52,11 @@ export function LogCardSearch({
         {...searchFieldProps("nutrition-log-search")}
       />
       {searchQuery.trim() && (
-        <ul className="max-h-48 overflow-y-auto space-y-1">
+        <ul className="max-h-48 overflow-y-auto divide-y divide-line">
           {searchHits.length === 0 && (
-            <li className="text-muted text-style-caption">Нічого не знайшов</li>
+            <li className="py-2 text-muted text-style-label">
+              Нічого не знайшов
+            </li>
           )}
           {searchHits.map(({ date, meal }) => {
             const mac = meal.macros || {
@@ -72,33 +68,31 @@ export function LogCardSearch({
             return (
               <li
                 key={`${date}-${meal.id}`}
-                className="flex items-center gap-2 bg-panelHi rounded-xl px-2.5 py-2"
+                className="flex items-center gap-2 py-2"
               >
                 <button
                   type="button"
-                  className="text-left min-w-0 flex-1"
+                  className="text-left min-w-0 flex-1 rounded-lg focus-ring"
                   onClick={() => {
                     setSelectedDate(date);
                     setSearchQuery("");
                   }}
                 >
-                  <div className="text-style-caption text-text truncate">
+                  <div className="text-style-body font-semibold text-text truncate">
                     {meal.name}
                   </div>
-                  <div className="flex gap-1.5 mt-0.5 flex-wrap">
-                    <span className="text-style-caption text-subtle">
-                      {date}
-                    </span>
+                  <div className="flex gap-1.5 mt-0.5 flex-wrap text-style-caption text-muted">
+                    <span className="tabular-nums">{date}</span>
                     {mac.kcal != null && (
                       <Measure
                         value={Math.round(mac.kcal)}
                         unit="ккал"
                         tone="inherit"
-                        className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold"
+                        className="text-style-caption text-text font-semibold"
                       />
                     )}
                     {mac.protein_g != null && (
-                      <span className="text-style-caption text-subtle">
+                      <span>
                         {/* Одиниця тут раніше була відсутня зовсім (`Б24`),
                             тоді як сусідній `MealRow` набирав `Б 24г`, а
                             `FoodHitRow` — `Б 24г` із пробілом після літери.
@@ -111,7 +105,7 @@ export function LogCardSearch({
                 </button>
                 <button
                   type="button"
-                  className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] flex items-center justify-center rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
+                  className="shrink-0 h-9 px-3 pointer-coarse:min-h-[44px] inline-flex items-center justify-center rounded-[7px] border border-line text-style-label font-semibold text-text hover:bg-line/40 focus-ring"
                   onClick={() => {
                     // AI-DANGER: походження запису НЕ переписуємо.
                     //
@@ -147,13 +141,13 @@ export function LogCardSearch({
                   title="Додати до поточного дня"
                   aria-label={`Додати ${meal.name} до поточного дня`}
                 >
-                  +
+                  Додати
                 </button>
               </li>
             );
           })}
         </ul>
       )}
-    </Card>
+    </section>
   );
 }

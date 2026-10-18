@@ -149,7 +149,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
         <div
           id={LOGIN_ERROR_ID}
           role="alert"
-          className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
+          className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-panel px-4 py-2.5"
         >
           {loginError}
         </div>

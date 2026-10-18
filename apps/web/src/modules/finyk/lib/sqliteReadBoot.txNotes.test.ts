@@ -5,7 +5,7 @@
  *    до інших пристроїв;
  *  - нотатка, відхилена старим сервером у вікні деплою, лишається `rejected`
  *    назавжди.
- * Реальні модулі: `bootFinykSqliteReadPath`, `runTxNotesBootSteps`,
+ * Реальні модулі: `bootFinykSqliteReadPath`, `runTxNotesImportStep`, `runTxNotesRequeueStep`,
  * перелиття LS, перепостановка, `migrateFinyk`, ридер SQLite, outbox. Мокається
  * лише одиночка sqlite-wasm (`getSqliteDb` віддає in-memory better-sqlite3) і
  * DDL outbox (його створює справжній boot застосунку).
@@ -128,9 +128,13 @@ describe("bootFinykSqliteReadPath: нотатки до операцій", () => 
     clearFinykSqliteCache();
     expect(await bootFinykSqliteReadPath(USER)).toBe(true);
 
-    const rows = await outbox();
-    expect(rows.length).toBeGreaterThan(0);
-    expect(rows.every((r) => r.status === "pending")).toBe(true);
+    // Перепостановка не блокує бут (див. застереження в `txNotesBoot.ts`), тож
+    // чекаємо її результат, а не припускаємо, що вона вже відпрацювала.
+    await vi.waitFor(async () => {
+      const rows = await outbox();
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((r) => r.status === "pending")).toBe(true);
+    });
     expect(getCachedFinykSqliteState().txNotes).toEqual({ "tx-new": "свіжа" });
   });
 });

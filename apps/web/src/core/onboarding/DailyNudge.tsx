@@ -14,6 +14,7 @@ import {
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { useHubBannerSlot } from "../hub/bannerBudget";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 const SNOOZE_DAYS = 7;
 
@@ -74,21 +75,23 @@ export function DailyNudge({
 
   return (
     <section
-      className="relative bg-panel border border-brand-500/20 rounded-2xl p-4 shadow-card"
+      className="relative border-y border-line py-3"
       aria-label="Щоденна порада"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
-          <Icon name="sergeant" size={18} />
-        </div>
         <div className="min-w-0 flex-1">
           <p className="text-style-body text-text leading-relaxed">
             {nudge.message}
           </p>
           <div className="flex items-center gap-2 mt-2.5">
             {onAction && (
-              <Button variant="solid" size="xs" onClick={handlePrimary}>
-                Спробувати
+              <Button
+                variant="outline"
+                tone="neutral"
+                size="xs"
+                onClick={handlePrimary}
+              >
+                {coreMessages.onboardingPrompts.tryAction}
               </Button>
             )}
             <Popover
@@ -96,7 +99,7 @@ export function DailyNudge({
               trigger={
                 <button
                   type="button"
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   aria-label="Інші дії"
                 >
                   <Icon name="more-horizontal" size="md" />
@@ -104,11 +107,8 @@ export function DailyNudge({
               }
               className="min-w-[200px]"
             >
-              <PopoverItem
-                icon={<Icon name="clock" size="sm" />}
-                onClick={handleSnooze}
-              >
-                Нагадай за тиждень
+              <PopoverItem onClick={handleSnooze}>
+                {coreMessages.onboardingPrompts.remindWeek}
               </PopoverItem>
             </Popover>
           </div>

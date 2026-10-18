@@ -35,8 +35,8 @@ const TODAY = new Date(2025, 0, 15, 12, 0, 0, 0);
  * вмирала раніше, на гейті каденсу свіжості.
  */
 const INTENSITY_FILL_HEX = {
-  future: "#f5ead8", // brandColors.cream[300]
-  empty: "#faf3e8", // brandColors.cream[200]
+  future: "#d6d3d1", // brandColors.stone[300]
+  empty: "#e7e5e4", // brandColors.stone[200]
   l1: "#fed3db", // brandColors.rose[200]
   l2: "#f68da4", // brandColors.rose[400]
   l3: "#eb7691", // brandColors.rose[500]

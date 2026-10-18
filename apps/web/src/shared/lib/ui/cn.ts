@@ -15,6 +15,9 @@ import { extendTailwindMerge } from "tailwind-merge";
 const twMerge = extendTailwindMerge<"text-style">({
   extend: {
     classGroups: {
+      // H-радіуси з preset належать до того самого конфлікту, що й lg/full.
+      // Інакше явний радіус контролу не знімає базовий радіус панелі.
+      rounded: [{ rounded: ["panel", "action", "segment", "check", "mark"] }],
       "text-style": [
         {
           "text-style": [

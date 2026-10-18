@@ -259,27 +259,27 @@ export const CelebrationModal = memo(function CelebrationModal({
       // шрифтом — на Windows «🏆» приходив плоским, на Android іншого
       // відтінку, і модалка святкування виглядала по-різному на кожній ОС.
       achievement: (
-        <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center animate-celebration-pop">
+        <div className="w-16 h-16 rounded-lg bg-warning/20 flex items-center justify-center animate-celebration-pop">
           <Icon name="award" size={32} className="text-warning-strong" />
         </div>
       ),
       goal: (
-        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+        <div className="w-16 h-16 rounded-lg bg-brand/20 flex items-center justify-center animate-celebration-pop">
           <Icon name="target" size={32} className="text-brand-strong" />
         </div>
       ),
       levelUp: (
-        <div className="w-16 h-16 rounded-full bg-info/20 flex items-center justify-center animate-celebration-pop">
+        <div className="w-16 h-16 rounded-lg bg-info/20 flex items-center justify-center animate-celebration-pop">
           <Icon name="arrow-up" size={32} className="text-info" />
         </div>
       ),
       streak: (
-        <div className="w-16 h-16 rounded-full bg-danger/20 flex items-center justify-center animate-streak-glow">
+        <div className="w-16 h-16 rounded-lg bg-danger/20 flex items-center justify-center animate-streak-glow">
           <Icon name="flame" size={32} className="text-danger-strong" />
         </div>
       ),
       success: (
-        <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center animate-success-ring">
+        <div className="w-16 h-16 rounded-lg bg-success/20 flex items-center justify-center animate-success-ring">
           <Icon
             name="check"
             size={32}
@@ -290,7 +290,7 @@ export const CelebrationModal = memo(function CelebrationModal({
       ),
       /* icon-size, not type */
       confetti: (
-        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+        <div className="w-16 h-16 rounded-lg bg-brand/20 flex items-center justify-center animate-celebration-pop">
           <Icon name="sparkles" size={32} className="text-brand-strong" />
         </div>
       ),
@@ -321,10 +321,10 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     return (
       <div className="w-full max-w-[200px] mx-auto">
-        <div className="h-3 bg-panelHi rounded-full overflow-hidden">
+        <div className="h-3 bg-panelHi rounded-mark overflow-hidden">
           <div
             className={cn(
-              "h-full rounded-full transition-all duration-slowest ease-standard",
+              "h-full rounded-mark transition-all duration-slowest ease-standard",
               theme === "finyk" && "bg-finyk",
               theme === "fizruk" && "bg-fizruk",
               theme === "routine" && "bg-routine",
@@ -350,7 +350,7 @@ export const CelebrationModal = memo(function CelebrationModal({
           <div
             key={idx}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
               "bg-panelHi border border-line",
               "animate-module-card",
             )}
@@ -378,7 +378,7 @@ export const CelebrationModal = memo(function CelebrationModal({
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"
+        className="absolute inset-0 bg-black/40 cursor-default"
         onClick={handleClose}
         aria-label={messages.actions.close}
         tabIndex={-1}
@@ -414,7 +414,7 @@ export const CelebrationModal = memo(function CelebrationModal({
         ref={modalRef}
         className={cn(
           "relative z-10 w-full max-w-sm",
-          "bg-panel/95 backdrop-blur-xl rounded-3xl shadow-float",
+          "bg-panel/95 rounded-panel shadow-float",
           "border border-line overflow-hidden",
           isExiting ? "animate-scale-out" : "animate-streak-milestone",
         )}
@@ -655,12 +655,12 @@ export const MiniSuccess = memo(function MiniSuccess({
     >
       <div
         className={cn(
-          "flex items-center gap-2 px-4 py-2.5 rounded-full",
+          "flex items-center gap-2 px-4 py-2.5 rounded-lg",
           "bg-success-strong text-white shadow-float",
           "animate-toast-enter",
         )}
       >
-        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/20 animate-success-ring">
+        <span className="flex items-center justify-center w-5 h-5 rounded-lg bg-white/20 animate-success-ring">
           <Icon
             name="check"
             size="xs"

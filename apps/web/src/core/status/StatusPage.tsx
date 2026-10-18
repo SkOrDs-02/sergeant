@@ -226,7 +226,7 @@ function ComponentRow({
 }): JSX.Element {
   return (
     <li
-      className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel px-4 py-3"
+      className="flex items-center justify-between gap-3 rounded-panel border border-line bg-panel px-4 py-3"
       data-testid={`status-row-${component.id}`}
       data-status={component.status}
     >
@@ -241,7 +241,7 @@ function StatusPill({ status }: { status: ComponentStatus }): JSX.Element {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-style-caption",
+        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-0.5 text-style-caption",
         classes,
       )}
     >
@@ -255,7 +255,7 @@ function StatusDot({ status }: { status: ComponentStatus }): JSX.Element {
   return (
     <span
       aria-hidden
-      className={cn("inline-block size-2 rounded-full", DOT_CLASSES[status])}
+      className={cn("inline-block size-2 rounded-lg", DOT_CLASSES[status])}
     />
   );
 }
@@ -294,7 +294,7 @@ function LastIncidentRow({
 function LoadingCard(): JSX.Element {
   return (
     <div
-      className="rounded-2xl border border-line bg-panel px-4 py-3 text-style-body text-textDim"
+      className="rounded-panel border border-line bg-panel px-4 py-3 text-style-body text-textDim"
       data-testid="status-loading"
     >
       {messages.publicStatus.loading}
@@ -321,7 +321,7 @@ function ErrorCard({
         <button
           type="button"
           onClick={onRetry}
-          className="self-start rounded-xl border border-danger/40 px-3 py-1 text-style-caption focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+          className="self-start rounded-lg border border-danger/40 px-3 py-1 text-style-caption focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
         >
           {messages.publicStatus.errorRetry}
         </button>

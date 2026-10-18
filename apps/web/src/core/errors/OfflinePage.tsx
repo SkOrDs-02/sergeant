@@ -15,8 +15,7 @@
  * reads as "we're paused, not broken" — data is queued, not lost
  * (per `docs/design/design/design-system.md` § 15 Offline).
  */
-import { Button, EmptyState, Icon } from "@shared/components/ui";
-import { OfflineIllustration } from "@assets/illustrations";
+import { Button, EmptyState } from "@shared/components/ui";
 import { useOnlineStatus } from "@shared/hooks";
 
 export function OfflinePage() {
@@ -58,11 +57,7 @@ export function OfflinePage() {
       </p>
       <EmptyState
         size="lg"
-        // Тон іде за станом: попередження, поки мережі немає, і спокійний
-        // «готово», щойно вона повернулась.
-        variant={online ? "success" : "warning"}
         eyebrow={copy.eyebrow}
-        illustration={<OfflineIllustration size={200} />}
         title={copy.title}
         // The empty state is the entire `/offline` surface, so it has to
         // carry the page heading — otherwise this route ships with no
@@ -85,7 +80,6 @@ export function OfflinePage() {
               window.location.reload();
             }}
           >
-            <Icon name="refresh-cw" size="md" />
             {online ? "Спробувати ще" : "Очікування мережі…"}
           </Button>
         }

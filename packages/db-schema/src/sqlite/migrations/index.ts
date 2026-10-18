@@ -1769,7 +1769,7 @@ ALTER TABLE finyk_prefs
 // ---------------------------------------------------------------------------
 // Finyk module — нотатки до банківських операцій (аудит 2026-10-01, data-27).
 //
-// Дзеркало серверної міграції `156_finyk_tx_notes.sql`: composite PK
+// Дзеркало серверної міграції `155_finyk_tx_notes.sql`: composite PK
 // `(user_id, transaction_id)`, soft-delete через `deleted_at` (порожня
 // нотатка = tombstone, LWW чесний). Адитивно: нова таблиця, існуючих даних
 // не торкається. Нотатки з localStorage (`finyk_tx_notes`) переливаються

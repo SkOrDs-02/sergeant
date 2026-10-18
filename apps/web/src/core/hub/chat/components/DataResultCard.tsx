@@ -4,7 +4,6 @@
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
 
 /**
  * Структурована картка для read-only query/analytics tool-ів
@@ -20,14 +19,14 @@ import { Icon } from "@shared/components/ui/Icon";
  *     `query_transactions` / `query_workouts` / `query_nutrition`).
  *
  * Свідомо НЕ тягне модульний accent (Rule #12 module-accent
- * containment) — hub-картка фарбується нейтральним `brand` accent-ом,
- * як `ActionCard` у `ChatMessage`. Парсинг — best-effort: усе, що не
+ * containment) — H.1: нейтральна панель без декоративного гліфа.
+ * Парсинг — best-effort: усе, що не
  * вписалось у структуру, лишається у `headline`, тож гірше за текстовий
  * fallback бути не може.
  */
 
 export interface DataResultCardProps {
-  /** Назва query/analytics tool-а (для іконки та a11y-міток). */
+  /** Назва query/analytics tool-а для a11y-міток. */
   toolName: string;
   /** Сирий текстовий результат виконавця — той самий, що йде у `summary`. */
   result: string;
@@ -54,27 +53,6 @@ interface ParsedResult {
   subtitle?: string;
   metrics: MetricRow[];
   breakdown: BreakdownRow[];
-}
-
-/** Іконка для tool-а — нейтральна (hub), без модульного accent-у. */
-function iconForQueryTool(toolName: string): string {
-  switch (toolName) {
-    case "aggregate_spending":
-    case "training_stats":
-    case "nutrition_averages":
-    case "query_habits":
-      return "bar-chart";
-    case "compare_periods":
-    case "exercise_progress":
-    case "habit_correlation":
-      return "trending-up";
-    case "query_transactions":
-    case "query_workouts":
-    case "query_nutrition":
-      return "search";
-    default:
-      return "bar-chart";
-  }
 }
 
 /**
@@ -239,11 +217,11 @@ function BreakdownBars({ rows }: { rows: BreakdownRow[] }) {
             </div>
             {row.amount > 0 && (
               <div
-                className="h-1 w-full overflow-hidden rounded-full bg-brand-500/10"
+                className="h-1 w-full overflow-hidden rounded-mark bg-brand-500/10"
                 aria-hidden
               >
                 <div
-                  className="h-full rounded-full bg-brand-500/70"
+                  className="h-full rounded-lg bg-brand-500/70"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -269,25 +247,11 @@ function DataResultCardImpl({
       role="status"
       aria-label={`${title}: ${parsed.headline}`}
       className={cn(
-        "mt-2 rounded-xl border px-3 py-2.5",
-        failed
-          ? "border-warning/30 bg-warning/10"
-          : "border-brand-500/30 bg-brand-500/5",
+        "mt-2 rounded-panel bg-panel px-3 py-2.5",
+        failed ? "border border-warning/30" : "",
       )}
     >
       <div className="flex items-start gap-2">
-        <span
-          className={cn(
-            "mt-0.5 shrink-0",
-            failed ? "text-warning" : "text-brand-500",
-          )}
-          aria-hidden
-        >
-          <Icon
-            name={failed ? "alert" : iconForQueryTool(toolName)}
-            size="sm"
-          />
-        </span>
         <div className="min-w-0 flex-1">
           <p className="text-style-caption font-semibold text-text wrap-break-word">
             {title}

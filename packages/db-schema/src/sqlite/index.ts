@@ -43,6 +43,7 @@ export {
 } from "./syncOpOutboxDrain.js";
 export {
   markOutboxSuccess,
+  markOutboxSuccessBatch,
   markOutboxRetry,
   markOutboxRejected,
 } from "./syncOpOutboxLifecycle.js";

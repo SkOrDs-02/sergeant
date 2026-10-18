@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
@@ -18,6 +18,8 @@ import { ChangePasswordSection } from "./ChangePasswordSection";
 import { DangerZoneSection } from "./DangerZoneSection";
 import { MemoryBankSection } from "./MemoryBankSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
+import { readProfileSectionHash } from "./profileSectionNavigation";
 import { SessionsSection } from "./SessionsSection";
 
 // ProfilePage is always rendered inside the hub as a bottom-nav tab — the
@@ -55,7 +57,30 @@ function ProfileGroup({
   );
 }
 
-export function ProfilePage() {
+export interface ProfilePageProps {
+  scrollContainer?: HTMLElement | null;
+}
+
+export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
+  const location = useLocation();
+  const requestedSection = readProfileSectionHash(location.hash);
+  const revealSection = useCallback(
+    (target: HTMLElement) => {
+      if (scrollContainer) {
+        const top = Math.max(
+          0,
+          scrollContainer.scrollTop +
+            target.getBoundingClientRect().top -
+            scrollContainer.getBoundingClientRect().top -
+            16,
+        );
+        scrollContainer.scrollTo({ top, behavior: motionScrollBehavior() });
+      }
+      target.tabIndex = -1;
+      target.focus({ preventScroll: true });
+    },
+    [scrollContainer],
+  );
   const { user, logout, refresh } = useAuth();
   const online = useOnlineStatus();
   const toast = useToast();
@@ -169,7 +194,7 @@ export function ProfilePage() {
           headingSize="md"
           collapsedSubtitle="PIN при відкритті на цьому пристрої"
         >
-          <Card radius="lg" padding="md">
+          <Card padding="md">
             <AppLockSettings />
           </Card>
         </CollapsibleSection>
@@ -178,6 +203,9 @@ export function ProfilePage() {
       <ProfileGroup title="Про тебе">
         <CollapsibleSection
           storageKey="sergeant.profile.memory.open"
+          openSignal={requestedSection === "memory" ? location.key : undefined}
+          revealOnMount={requestedSection === "memory"}
+          onReveal={revealSection}
           title="Памʼять"
           defaultOpen={false}
           headingSize="md"
@@ -187,7 +215,7 @@ export function ProfilePage() {
           collapsedSubtitle="Твої факти й усе, що запамʼятав Сержант"
         >
           <MemoryBankSection />
-          <Card radius="lg" padding="md">
+          <Card padding="md">
             <AiMemorySection />
           </Card>
         </CollapsibleSection>
@@ -208,6 +236,11 @@ export function ProfilePage() {
             дублікат зовнішнього заголовка, а застереження про розділ. */}
         <CollapsibleSection
           storageKey="sergeant.profile.danger.open"
+          openSignal={
+            requestedSection === "account-deletion" ? location.key : undefined
+          }
+          revealOnMount={requestedSection === "account-deletion"}
+          onReveal={revealSection}
           title="Видалення акаунта"
           defaultOpen={false}
           headingSize="md"

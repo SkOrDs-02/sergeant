@@ -88,7 +88,7 @@ export const finykHiddenTransactions = pgTable(
  * Нотатки користувача до банківських операцій (аудит 2026-10-01, data-27).
  * Composite PK `(user_id, transaction_id)`; порожня нотатка = soft-delete
  * (`deleted_at`), щоб LWW чесно розвʼязував видалення на одному пристрої
- * проти старої правки з іншого. Дзеркалить міграцію 156.
+ * проти старої правки з іншого. Дзеркалить міграцію 155.
  */
 export const finykTxNotes = pgTable(
   "finyk_tx_notes",

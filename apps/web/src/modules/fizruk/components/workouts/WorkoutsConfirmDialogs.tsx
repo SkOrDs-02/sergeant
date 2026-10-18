@@ -79,7 +79,7 @@ export function WorkoutsConfirmDialogs({
           <div className="flex flex-col gap-2">
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
 
               className="w-full h-12"
               onClick={onFinishActiveAndContinue}

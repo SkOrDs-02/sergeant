@@ -201,7 +201,7 @@ export function OnboardingWizard({
   //
   // 2026-06-30 — modal-варіант порталиться у `document.body`. Tour-replay
   // (Settings → «Екскурсія») рендериться всередині `SettingsGroup`, а та —
-  // `Card prominence="glass"` із `backdrop-blur-md` + `overflow-hidden`.
+  // Панель з `overflow-hidden` не має обрізати портал діалогу.
   // `backdrop-filter` робить картку containing-block-ом для `position:fixed`
   // нащадків (CSS spec), тож `fixed inset-0` бекдроп замикався в межах
   // glass-картки і обрізався `overflow-hidden` — модалка відкривалась
@@ -216,14 +216,11 @@ export function OnboardingWizard({
       aria-modal="true"
       aria-label="Вітальний екран"
     >
-      <div
-        className="fixed inset-0 bg-bg/80 backdrop-blur-md"
-        aria-hidden="true"
-      />
+      <div className="fixed inset-0 bg-bg/80 " aria-hidden="true" />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
         <div
           ref={panelRef}
-          className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter"
+          className="relative w-full max-w-sm bg-panel border border-line rounded-panel shadow-float p-6 animate-onboarding-enter"
         >
           {content}
         </div>

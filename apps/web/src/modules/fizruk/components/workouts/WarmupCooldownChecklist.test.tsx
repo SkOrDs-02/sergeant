@@ -79,6 +79,6 @@ describe("WarmupCooldownChecklist", () => {
       />,
     );
 
-    expect(screen.getByText("1/1")).toHaveClass("text-success-strong");
+    expect(screen.getByText("1/1")).toHaveClass("text-text");
   });
 });

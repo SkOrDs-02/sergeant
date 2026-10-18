@@ -25,7 +25,6 @@
  * тож віртуалізація `VirtualMealList` не потрібна — і не варта фіксованої
  * висоти контейнера, яку вона вимагає всередині аркуша.
  */
-import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
@@ -68,17 +67,7 @@ export function MealTypeSheet({
     <Sheet
       open
       onClose={onClose}
-      title={
-        <span className="flex items-center gap-2">
-          <Icon
-            name={meta.iconName as IconName}
-            size={18}
-            className="text-nutrition"
-            aria-hidden
-          />
-          {meta.label}
-        </span>
-      }
+      title={meta.label}
       description={
         <span className="inline-flex items-center gap-1 tabular-nums">
           {meals.length}{" "}
@@ -92,17 +81,12 @@ export function MealTypeSheet({
         </span>
       }
     >
-      <ul className="flex flex-col gap-1.5">
+      <ul className="divide-y divide-line">
         {meals.map((meal) => (
           <li key={meal.id}>
             <SwipeToAction
               onSwipeLeft={() => onRemoveMeal(date, meal)}
-              rightLabel={
-                <span className="inline-flex items-center gap-1.5">
-                  <Icon name="trash" size={18} aria-hidden />
-                  {copy.remove}
-                </span>
-              }
+              rightLabel={<span>{copy.remove}</span>}
               rightColor="bg-danger"
             >
               <MealRow

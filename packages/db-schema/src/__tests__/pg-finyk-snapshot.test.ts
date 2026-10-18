@@ -95,7 +95,7 @@ describe("pg/finykHiddenTransactions schema snapshot", () => {
   });
 });
 
-describe("pg/finykTxNotes schema snapshot (data-27, міграція 156)", () => {
+describe("pg/finykTxNotes schema snapshot (data-27, міграція 155)", () => {
   const config = getTableConfig(finykTxNotes);
 
   it("has the canonical table name", () => {

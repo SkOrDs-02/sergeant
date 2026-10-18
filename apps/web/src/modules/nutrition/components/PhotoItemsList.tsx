@@ -56,21 +56,21 @@ export function PhotoItemsList({
 
   return (
     <div className="grid gap-2">
-      <SectionHeading as="div" size="xs" variant="nutrition">
+      <SectionHeading as="div" size="md">
         {copy.heading}
       </SectionHeading>
 
-      <ul className="grid gap-1.5">
+      <ul className="divide-y divide-line">
         {items.map((item, index) => {
           const lowConfidence = item.confidence < LOW_CONFIDENCE_THRESHOLD;
           return (
             <li
               key={`${item.name}-${index}`}
-              className="flex items-start gap-2 rounded-xl border border-line bg-panel px-3 py-2"
+              className="flex items-start gap-2 py-2.5"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2 min-w-0">
-                  <span className="text-style-label text-text truncate">
+                  <span className="text-style-body font-semibold text-text truncate">
                     {item.name}
                   </span>
                   {item.gramsApprox != null && (
@@ -88,7 +88,7 @@ export function PhotoItemsList({
                 {lowConfidence && (
                   // Позначка веде до дії, а не просто фарбує рядок: людина
                   // має зрозуміти, що виправляти слід саме цю позицію.
-                  <div className="text-style-caption text-warning-strong dark:text-warning mt-0.5">
+                  <div className="text-style-caption text-text mt-0.5">
                     {copy.lowConfidence}
                   </div>
                 )}
@@ -101,9 +101,9 @@ export function PhotoItemsList({
                   disabled={busy}
                   aria-label={`${copy.removePrefix} «${item.name}»`}
                   className={cn(
-                    "touch-target shrink-0 -mr-1 rounded-xl text-muted",
+                    "touch-target shrink-0 -mr-1 rounded-lg text-muted",
                     "hover:text-danger-strong disabled:opacity-50 transition-colors",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                    "focus-ring",
                     "inline-flex items-center justify-center",
                   )}
                 >
@@ -135,9 +135,9 @@ export function PhotoItemsList({
             onClick={() => setAddOpen(true)}
             disabled={busy}
             className={cn(
-              "touch-target text-style-caption w-full rounded-xl border border-dashed border-line",
-              "px-3 text-muted hover:border-nutrition/40 hover:text-text disabled:opacity-50 transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+              "touch-target text-style-label font-semibold w-full rounded-lg border border-border-strong",
+              "px-3 text-text hover:bg-line/40 disabled:opacity-50 transition-colors",
+              "focus-ring",
             )}
           >
             {copy.addCta}

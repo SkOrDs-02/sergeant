@@ -4,7 +4,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-
 import { toKyivISODate } from "@sergeant/shared";
 import type { MonoJarDto } from "@shared/api";
 import {
@@ -111,7 +110,6 @@ export function BudgetsGoalsSection({
       {goalsOpen && goalBudgets.length === 0 && (
         <EmptyState
           compact
-          module="finyk"
           title="Поки немає цілей"
           description="Постав ціль накопичення і стеж за прогресом."
         />

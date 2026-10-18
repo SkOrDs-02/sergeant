@@ -106,28 +106,38 @@ afterEach(() => {
   useAuthOptionalMock.mockReturnValue(null);
 });
 
+/** Кнопка «+ Додати» в куті, далі рядок джерела в аркуші. */
+function pickSource(label: string) {
+  fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: new RegExp(`^${label}`) }),
+  );
+}
+
 describe("FinykScanEntryPoints", () => {
-  it("renders the add bar with all three actions and neither sheet mounted", () => {
+  it("renders the corner button; the sources sheet lists all three entries", () => {
     renderEntryPoints();
-    expect(
-      screen.getByRole("button", { name: "Додати витрату" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Чек" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Імпорт" })).toBeInTheDocument();
+    expect(screen.queryByTestId("add-sources")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    for (const label of ["Вручну", "Чек", "Документи"]) {
+      expect(
+        screen.getByRole("button", { name: new RegExp(`^${label}`) }),
+      ).toBeInTheDocument();
+    }
     expect(screen.queryByTestId("receipt-scan-sheet")).not.toBeInTheDocument();
     expect(screen.queryByTestId("bulk-import-sheet")).not.toBeInTheDocument();
   });
 
-  it("«Додати витрату» calls onAddExpense directly (no sheet mount)", () => {
+  it("«Вручну» calls onAddExpense directly (no sheet mount)", () => {
     const { onAddExpense } = renderEntryPoints();
-    fireEvent.click(screen.getByText("Додати витрату"));
+    pickSource("Вручну");
     expect(onAddExpense).toHaveBeenCalled();
     expect(screen.queryByTestId("receipt-scan-sheet")).not.toBeInTheDocument();
   });
 
   it("«Чек» mounts ReceiptScanSheet lazily, closing unmounts it", async () => {
     renderEntryPoints();
-    fireEvent.click(screen.getByRole("button", { name: "Чек" }));
+    pickSource("Чек");
     await waitFor(() =>
       expect(screen.getByTestId("receipt-scan-sheet")).toBeInTheDocument(),
     );
@@ -139,9 +149,9 @@ describe("FinykScanEntryPoints", () => {
     );
   });
 
-  it("«Імпорт» mounts BulkImportSheet lazily, closing unmounts it", async () => {
+  it("«Документи» mounts BulkImportSheet lazily, closing unmounts it", async () => {
     renderEntryPoints();
-    fireEvent.click(screen.getByRole("button", { name: "Імпорт" }));
+    pickSource("Документи");
     await waitFor(() =>
       expect(screen.getByTestId("bulk-import-sheet")).toBeInTheDocument(),
     );
@@ -159,15 +169,15 @@ describe("FinykScanEntryPoints", () => {
   it("анонім, який тапає «Чек», отримує onOpenAuth — без мовчазного no-op", () => {
     useAuthOptionalMock.mockReturnValue({ user: null });
     const { onOpenAuth } = renderEntryPoints();
-    fireEvent.click(screen.getByRole("button", { name: "Чек" }));
+    pickSource("Чек");
     expect(onOpenAuth).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("receipt-scan-sheet")).not.toBeInTheDocument();
   });
 
-  it("анонім, який тапає «Імпорт», теж отримує onOpenAuth", () => {
+  it("анонім, який тапає «Документи», теж отримує onOpenAuth", () => {
     useAuthOptionalMock.mockReturnValue({ user: null });
     const { onOpenAuth } = renderEntryPoints();
-    fireEvent.click(screen.getByRole("button", { name: "Імпорт" }));
+    pickSource("Документи");
     expect(onOpenAuth).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("bulk-import-sheet")).not.toBeInTheDocument();
   });

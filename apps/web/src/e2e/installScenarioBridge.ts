@@ -74,9 +74,15 @@ export function installScenarioBridge(queryClient: QueryClient): void {
       await waitUntil("auth", () => authReady(queryClient));
       // Писачі модулів вантажаться лише тут: статичний імпорт тягнув їх у
       // бут кожної сторінки тестового білда і змінював її поведінку.
-      const { applyFinyk, applyFizruk, applyPantry, applyRoutine } =
-        await import("./writers");
+      const {
+        applyFinyk,
+        applyFizruk,
+        applyNutrition,
+        applyPantry,
+        applyRoutine,
+      } = await import("./writers");
       await applyPantry(world);
+      await applyNutrition(world);
       await applyRoutine(world);
       await applyFinyk(world);
       await applyFizruk(world);

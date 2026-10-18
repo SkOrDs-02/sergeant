@@ -42,8 +42,8 @@ export {
 export const chartColors = {
   /** Routine module heatmap levels */
   routine: {
-    future: brandColors.cream[300]!, // #f5ead8 — disabled/future
-    empty: brandColors.cream[200]!, // #faf3e8 — neutral
+    future: brandColors.stone[300]!, // disabled/future
+    empty: brandColors.stone[200]!, // neutral
     l1: brandColors.rose[200]!, // #fed3db — weak
     l2: brandColors.rose[400]!, // #f68da4 — medium
     l3: brandColors.rose[500]!, // #eb7691 — strong
@@ -58,21 +58,21 @@ export const chartColors = {
     protein: chartHex.protein, // #0e7490 — cyan-700
     carbs: chartHex.carbs, // #567c0f — lime-700 (was blue-500, off-brand)
     fat: chartHex.fat, // #ac4c64 — rose-700 (was yellow-500, off-brand)
-    track: brandColors.cream[300]!, // #f5ead8 — background track
+    track: brandColors.stone[300]!, // background track
   },
   /** Fizruk module charts */
   fizruk: {
     primary: moduleColors.fizruk.primary,
     secondary: moduleColors.fizruk.secondary,
     accent: moduleColors.fizruk.accent,
-    track: brandColors.cream[300]!,
+    track: brandColors.stone[300]!,
   },
   /** Finyk module charts */
   finyk: {
     income: brandColors.teal[700]!, // #0f766e (2026-07: was emerald-500, aligns with brand shift)
     expense: brandColors.rose[500]!, // #eb7691
     balance: brandColors.teal[500]!, // #14b8a6
-    track: brandColors.cream[300]!,
+    track: brandColors.stone[300]!,
   },
   /** General chart palette for pie/donut charts */
   palette: chartPaletteList,
@@ -120,7 +120,7 @@ export const semanticColors = {
   // Additional semantic aliases
   positive: statusColors.success,
   negative: statusColors.danger,
-  neutral: brandColors.cream[400]!,
+  neutral: brandColors.stone[400]!,
 } as const;
 
 /**
@@ -135,13 +135,13 @@ export const adaptiveColors = {
     inverse: "#fafaf9", // stone-50
   },
   background: {
-    primary: brandColors.cream[50]!,
-    secondary: brandColors.cream[100]!,
-    tertiary: brandColors.cream[200]!,
+    primary: brandColors.stone[50]!,
+    secondary: brandColors.stone[100]!,
+    tertiary: brandColors.stone[200]!,
   },
   border: {
-    light: brandColors.cream[200]!,
-    medium: brandColors.cream[300]!,
-    strong: brandColors.cream[400]!,
+    light: brandColors.stone[200]!,
+    medium: brandColors.stone[300]!,
+    strong: brandColors.stone[400]!,
   },
 } as const;

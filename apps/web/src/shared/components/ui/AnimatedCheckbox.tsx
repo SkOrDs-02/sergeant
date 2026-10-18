@@ -48,7 +48,7 @@ const variantStyles: Record<CheckboxVariant, { ring: string; fill: string }> = {
 
 const sizeStyles: Record<CheckboxSize, { box: string; icon: number }> = {
   sm: { box: "w-5 h-5", icon: 12 },
-  md: { box: "w-6 h-6", icon: 14 },
+  md: { box: "w-[22px] h-[22px]", icon: 14 },
   lg: { box: "w-8 h-8", icon: 18 },
 };
 
@@ -162,7 +162,7 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
   );
 
   const visualClass = cn(
-    "relative inline-flex items-center justify-center rounded-xl",
+    "relative inline-flex items-center justify-center rounded-check",
     "border-2 transition-all duration-base",
     sizes.box,
     checked ? cn(styles.fill, "border-transparent") : "border-control bg-panel",
@@ -247,7 +247,7 @@ export const HabitCheckbox = memo(function HabitCheckbox({
   return (
     <label
       className={cn(
-        "flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors",
+        "flex items-center gap-3 px-4 py-3 rounded-panel transition-colors",
         "hover:bg-panelHi/50 cursor-pointer",
         checked && "bg-panelHi/30",
       )}

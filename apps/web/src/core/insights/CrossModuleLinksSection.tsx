@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-08-05
  * Status: Active
@@ -105,6 +106,7 @@ export default function CrossModuleLinksSection() {
   // `window "storage"`). Його документація описує рівно наш збій: hub-картка
   // агрегує крос-модульні дані в `useMemo` і лишається протухлою. Ряди
   // Рутини читаються НЕ з SQLite, тож самих тіків для них не досить.
+  const dayKey = useDeviceDayKey();
   const storageBump = useHubStorageBump();
   const finykTick = useFinykSqliteReadTick();
   const nutritionTick = useNutritionSqliteReadTick();
@@ -115,6 +117,7 @@ export default function CrossModuleLinksSection() {
   // дані з ОДНОГО обчислення, а не з двох незалежних.
   const { links, silent, smallData, quiet } = useMemo(() => {
     // Ключі інвалідації «використано» явно — див. коментар до deps нижче.
+    void dayKey;
     void storageBump;
     void finykTick;
     void nutritionTick;
@@ -189,7 +192,7 @@ export default function CrossModuleLinksSection() {
     // `buildCrossModuleSeries` бере дані з модульних кешів і сховища, тобто
     // ззовні React. Правило їх не бачить і зве «unnecessary» — але без них
     // секція застигає на холодному першому рендері (B1). Не прибирай.
-  }, [storageBump, finykTick, nutritionTick, fizrukTick]);
+  }, [storageBump, finykTick, nutritionTick, fizrukTick, dayKey]);
 
   return (
     <section className="space-y-3">

@@ -1,5 +1,4 @@
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 
 interface AuthUnavailableScreenProps {
@@ -35,12 +34,6 @@ export function AuthUnavailableScreen({ onRetry }: AuthUnavailableScreenProps) {
       className="fixed inset-0 z-modal flex items-center justify-center bg-bg p-6"
     >
       <div role="status" className="w-full max-w-sm text-center">
-        <div className="mb-4 flex justify-center" aria-hidden>
-          <Icon
-            name="cloud-off"
-            className="h-10 w-10 text-warning-strong dark:text-warning"
-          />
-        </div>
         <h1 className="mb-3 text-style-title text-text">
           {m.serverUnavailable}
         </h1>

@@ -62,7 +62,7 @@ export function ItemEditSheet({
           єдиним способом її поправити було видалити позицію і створити
           заново, втративши залишок. */}
       <div className="mb-3">
-        <SectionHeading as="div" size="xs" variant="nutrition" className="mb-1">
+        <SectionHeading as="div" size="xs" className="mb-1">
           Назва
         </SectionHeading>
         <Input
@@ -79,12 +79,7 @@ export function ItemEditSheet({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <SectionHeading
-            as="div"
-            size="xs"
-            variant="nutrition"
-            className="mb-1"
-          >
+          <SectionHeading as="div" size="xs" className="mb-1">
             Кількість
           </SectionHeading>
           <Input
@@ -100,12 +95,7 @@ export function ItemEditSheet({
           />
         </div>
         <div>
-          <SectionHeading
-            as="div"
-            size="xs"
-            variant="nutrition"
-            className="mb-1"
-          >
+          <SectionHeading as="div" size="xs" className="mb-1">
             Одиниця
           </SectionHeading>
           <Input
@@ -130,12 +120,7 @@ export function ItemEditSheet({
       */}
       {itemEdit.pantryId && places.length > 1 && (
         <div className="mt-3">
-          <SectionHeading
-            as="div"
-            size="xs"
-            variant="nutrition"
-            className="mb-1"
-          >
+          <SectionHeading as="div" size="xs" className="mb-1">
             Місце
           </SectionHeading>
           <select
@@ -144,7 +129,7 @@ export function ItemEditSheet({
               setItemEdit((st) => ({ ...st, pantryId: e.target.value }))
             }
             aria-label="Місце зберігання позиції"
-            className="input-focus-nutrition w-full min-h-[44px] rounded-2xl bg-panel border border-line px-3 text-style-label text-text"
+            className="w-full min-h-[44px] rounded-lg bg-panel border border-line px-3 text-style-label text-text focus-ring"
           >
             {places.map((p) => (
               <option key={p.id} value={p.id}>
@@ -156,7 +141,7 @@ export function ItemEditSheet({
       )}
 
       {itemEdit.err ? (
-        <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
+        <div className="text-style-caption text-danger-strong mt-2">
           {itemEdit.err}
         </div>
       ) : null}
@@ -164,7 +149,7 @@ export function ItemEditSheet({
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
           type="button"
-          className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
+          className="h-12 min-h-[44px]"
           onClick={() => {
             const nameStr = String(itemEdit.name || "").trim();
             if (!nameStr) {

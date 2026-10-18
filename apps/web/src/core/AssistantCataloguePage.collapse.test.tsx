@@ -87,6 +87,11 @@ describe("AssistantCataloguePage — group collapsing", () => {
     __resetHubBusForTests();
   });
 
+  it("keeps glyphs in the standalone navigation control, not catalogue rows", () => {
+    const { container } = render(<AssistantCataloguePage onClose={() => {}} />);
+    expect(container.querySelectorAll("svg")).toHaveLength(1);
+  });
+
   it("groups are expanded by default and a representative row is visible", () => {
     render(<AssistantCataloguePage onClose={() => {}} />);
     expect(

@@ -86,7 +86,7 @@ export function ElevationSection() {
       <Group label="Card prominence: варіанти">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {CARD_VARIANTS.map((variant) => (
-            <Card key={variant} variant={variant} padding="md" radius="xl">
+            <Card key={variant} padding="md">
               <div className="text-style-label font-semibold text-text">
                 {variant}
               </div>
@@ -102,7 +102,7 @@ export function ElevationSection() {
         <div className="grid grid-cols-2 gap-4">
           {(["finyk", "fizruk", "routine", "nutrition"] as const).map(
             (module) => (
-              <Card key={module} module={module} prominence="hero" padding="lg">
+              <Card key={module} tone={module} prominence="hero" padding="lg">
                 <div className="text-style-label font-bold text-hero-ink">
                   {module}
                 </div>

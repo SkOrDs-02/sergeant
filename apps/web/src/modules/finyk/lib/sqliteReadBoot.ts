@@ -31,7 +31,7 @@ import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
-import { runTxNotesBootSteps } from "./txNotesBoot.js";
+import { runTxNotesImportStep, runTxNotesRequeueStep } from "./txNotesBoot.js";
 import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader.js";
 import {
@@ -73,27 +73,25 @@ export async function bootFinykSqliteReadPath(
     const client = handle.migrationClient();
     await migrateFinyk(client);
 
-    // Нотатки (data-27): перелиття з LS (#1469) і перепостановка відхилених
-    // старим сервером оп-ів - ДО першого refresh: кеш, опублікований без них,
-    // перекрив би слот порожнім обʼєктом. Збій не валить буг читального шляху:
-    // LS-ключ і відхилені рядки лишаються, наступний старт повторить.
-    try {
-      await runTxNotesBootSteps(
-        client,
-        userId,
-        // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
-        new Date().toISOString(),
-      );
-    } catch (err) {
-      logger.warn(
-        "[finyk.sqliteRead] tx-notes boot steps failed",
-        err instanceof Error ? err.message : err,
-      );
-    }
+    // Нотатки (data-27), крок 1: перелиття LS (#1469) ДО першого refresh -
+    // кеш, опублікований без імпортованих нотаток, перекрив би слот порожнім
+    // обʼєктом. Збій не валить буг читального шляху: LS-ключ лишається,
+    // наступний старт повторить.
+    await runTxNotesImportStep(
+      client,
+      userId,
+      // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
+      new Date().toISOString(),
+    );
 
     await refreshFinykSqliteState(client, userId);
 
+    // Крок 2: перепостановка нотаток, відхилених старим сервером. Не
+    // чекаємо її: вона не змінює таблицю нотаток (лише ставить оп-и в outbox),
+    // а очікування відсувало б `notifyFinykSqliteCacheRefresh` (див.
+    // застереження в `txNotesBoot.ts`). Збої крок гасить сам.
     booted = true;
+    void runTxNotesRequeueStep(client, userId);
     return true;
   } catch (err) {
     logger.warn(

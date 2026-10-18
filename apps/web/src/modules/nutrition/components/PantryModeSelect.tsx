@@ -44,7 +44,7 @@ export function PantryModeSelect({
               .value as NutritionPrefs["recipePantryMode"],
           }))
         }
-        className="input-focus-nutrition w-full h-11 rounded-2xl bg-panel border border-line px-4 text-style-body text-text"
+        className="input-focus-nutrition w-full h-11 rounded-lg bg-panelHi border border-control px-3 text-style-body text-text"
         disabled={disabled}
       >
         <option value="prefer">{copy.prefer}</option>

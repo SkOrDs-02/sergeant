@@ -26,6 +26,27 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
     planMock.isPro = true;
   });
 
+  it("порада має текстову шапку й дію без декоративного аватара", () => {
+    const { container } = render(
+      <AssistantAdviceCard
+        insight="Витрати за тиждень: 250 грн."
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/^S$/)).toBeNull();
+    expect(container.querySelector('[class*="bg-linear-to"]')).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: /запитати сержанта про це/i })
+        .querySelector("svg"),
+    ).toBeNull();
+    expect(
+      screen.getByText("Витрати за тиждень: 250 грн."),
+    ).toBeInTheDocument();
+  });
+
   it("renders a skeleton stand-in (no plain-text fallback) while loading without a cached insight", () => {
     render(
       <AssistantAdviceCard

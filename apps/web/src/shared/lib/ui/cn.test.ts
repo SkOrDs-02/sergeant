@@ -59,3 +59,17 @@ describe("cn", () => {
     }
   });
 });
+
+describe("H radius overrides", () => {
+  it("lets an explicit control radius replace a panel radius", () => {
+    expect(cn("rounded-panel", "rounded-lg")).toBe("rounded-lg");
+  });
+
+  it("keeps only the last radius across H roles and circle presets", () => {
+    expect(cn("rounded-lg", "rounded-mark")).toBe("rounded-mark");
+    expect(cn("rounded-panel", "rounded-full")).toBe("rounded-full");
+    expect(cn("rounded-segment", "rounded-check", "rounded-action")).toBe(
+      "rounded-action",
+    );
+  });
+});

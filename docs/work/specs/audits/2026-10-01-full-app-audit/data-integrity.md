@@ -1579,7 +1579,7 @@ I could not refute this. The bug is real. I think "high" overstates the severity
 
 ### `data-15` [medium] Таблиці з hard-delete без tombstone (категорії й розбивки транзакцій, привʼязки боргів, net-worth): видалення не доходить на інші пристрої, а застарілий оп воскрешає рядок
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-15-client-hard-delete-pull (клієнтська частина: pull-delete на таблиці без `deleted_at`, але з `updated_at`, виконує hard DELETE з LWW `julianday(updated_at) < julianday(client_ts)` у самому DELETE (RETURNING, відсутній або новіший локально рядок -> skipped) замість `rejected`; лишилось: soft-delete (`deleted_at` + `updated_at`) на обох боках з міграцією і tombstone-перевіркою в серверній гілці INSERT, воскресіння застарілим опом на сервері досі можливе, правка ADR-0073 — окремим стековим PR за рішенням власника)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync finyk + web: applyPullOp + dualwrite-core
 - **Де:** apps/server/src/modules/sync/finyk/applySync.ts:239-265,299-321,354-381; apps/web/src/core/syncEngine/applyPullOp.ts:331-334; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:278-340; apps/web/src/modules/finyk/lib/sqliteWriter/specs.ts:194-209; packages/dualwrite-core/src/tableSpec.ts:183-189
 - **Першопричина:** finyk_tx_categories, finyk_tx_splits, finyk_mono_debt_links і finyk_networth_history видаляються справжнім DELETE без запису часу видалення. На сервері після DELETE гілка «рядка немає» вставляє запізнілий оп без порівняння з часом видалення; на клієнті pull для delete на таблиці без deleted_at повертає rejected (подія в Sentry), а курсор іде далі.
@@ -1926,7 +1926,7 @@ node <scratch>/agents/client-static-web-route-guards/palette-logout.mjs
 
 ### `data-20` [medium] Скасування підписки може не дійти до провайдера, а повторити його неможливо: cancel_at_period_end ставиться без підтвердження і успадковується новою підпискою
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-20-21-billing-cancel-checkout (Plata кидає помилку замість ковтання відмови monobank, 502 `PROVIDER_CANCEL_FAILED`, прапорець ставиться лише після підтвердження; усі три upsert-и активації скидають `cancel_at_period_end` при новому `provider_subscription_id`; видалення акаунта лишається best-effort. Залишок: Stripe `customer.subscription.*`-вебхук (`upsertSubscriptionEvent`) не скидає прапорець і не скасовує попередню рекурентку, провайдер dormant)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: billing (Plata, LiqPay)
 - **Де:** apps/server/src/modules/billing/plata.ts:373-439; apps/server/src/modules/billing/plataSync.ts:99-111; apps/server/src/modules/billing/liqpay.ts:352-364,515-553; apps/server/src/modules/billing/getUserPlan.ts:26-30; apps/server/src/modules/me/dataRights.ts:30-46
 - **Першопричина:** cancelSubscription вважає cancel_at_period_end = TRUE доказом, що провайдера повідомлено, і повертає already_canceling без запиту. Plata ставить прапорець навіть коли monobank відповів не-2xx чи мережа впала (відповідь subscription/remove не перевіряється), а upsert-и активації (Plata applyActive, LiqPay) не скидають прапорець при новому provider_subscription_id.
@@ -2003,7 +2003,7 @@ POST /api/billing/cancel у момент, коли monobank відповідає
 
 ### `data-21` [medium] Checkout не перевіряє наявну підписку, а мапінг Plata user→subscriptionId перезаписується: оплачена підписка губиться і не скасовується
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-20-21-billing-cancel-checkout (409 `ALREADY_SUBSCRIBED` / `CHECKOUT_PENDING`; `plata_subscription` 1:N, міграція 154; cancel за `subscriptions.provider_subscription_id`; активація другої рекурентки ставить скасування попередньої в чергу `billing_pending_cancellation` у тій самій транзакції, виклик провайдера після коміту й ретрай-полер; термінальні події замінених Stripe/LiqPay-підписок скоуплені по id. Залишок: ліміт 24 спроб скасування замінених підписок вичерпується error-логом і ручним розбором; два паралельні checkout-и в межах мілісекунд до першого INSERT мапінгу гейт не ловить, але вебхуки обох резолвляться, а друга активація скасує першу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: billing (routes/billing, Plata, LiqPay)
 - **Де:** apps/server/src/routes/billing.ts:110-159; apps/server/src/modules/billing/plata.ts:305-313,396; apps/server/src/modules/billing/plataSync.ts:100-110,202-219; apps/server/src/modules/billing/liqpay.ts:353-362
 - **Першопричина:** POST /api/billing/checkout не дивиться на subscriptions і незавершені checkout-и (є лише rate-limit), plata_subscription має PK user_id, і другий checkout перезаписує subscription_id. Вебхук за старим id не резолвиться, cancel бере останній, можливо неоплачений id, а upsert-и LiqPay і Plata мовчки перезаписують provider активного рядка іншого провайдера.
@@ -2428,7 +2428,7 @@ Verifier runs: pw_synclink_cold.mjs (key verify-cs-outbox-synclink) produced toa
 
 ### `data-27` [medium] Нотатки до банківських транзакцій не зберігаються ніде: зникають на reload, не синхронізуються й не потрапляють у бекап
 
-- **Стан:** виправлено в гілці claude/feat-data-27-tx-notes-sync (перша частина: нотатки в LS і в бекапі, #1469; друга: серверна таблиця `finyk_tx_notes` (міграція 156), клієнтська SQLite-таблиця, dual-write, sync v2 push/pull, одноразове перелиття LS-нотаток, перепостановка оп-ів, відхилених старим сервером у вікні деплою). Залишок: мобільний клієнт (ADR-0094, пауза) не знає таблиці `finyk_tx_notes`
+- **Стан:** виправлено в гілці claude/feat-data-27-tx-notes-sync (перша частина: нотатки в LS і в бекапі, #1469; друга: серверна таблиця `finyk_tx_notes` (міграція 155), клієнтська SQLite-таблиця, dual-write, sync v2 push/pull, одноразове перелиття LS-нотаток, перепостановка оп-ів, відхилених старим сервером у вікні деплою). Залишок: мобільний клієнт (ADR-0094, пауза) не знає таблиці `finyk_tx_notes`
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (txNotes)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:58-61,145-148; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-73; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:367-375; apps/web/src/modules/finyk/lib/sqliteWriter/extract.ts:183-198
 - **Першопричина:** txNotes оголошено через useReadonlyPersist, який лише читає LS на першому кадрі й нічого не пише, а dual-write стан (extractFinykDualWriteState) і бекап (FINYK_BACKUP_STORAGE_KEYS) txNotes не містять.
@@ -2977,7 +2977,7 @@ Harness: finyk versions 999 and 4 accepted, 0/-1/1000 rejected; routine schemaVe
 
 ### `data-35` [medium] Бекап «всього Hub» неповний і з втратами: немає рецептів, списку покупок, води й періодів цілей, а restore стирає історію покупок комори (sources)
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-35-nutrition-backup-complete (власні продукти foodDb і вода `data.water` додав окремо `main`, 2207eb038; ця гілка зливає схему v2 з ними)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап Їжі (nutritionBackup)
 - **Де:** apps/web/src/modules/nutrition/domain/nutritionBackup.ts:71-89,146-226; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:262-312,485-511; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:603; apps/web/src/core/hub/HubBackupPanel.tsx:177,189-193
 - **Першопричина:** normalizePantryItem на експорті й імпорті лишає лише name, qty, unit і notes, тож PantryItem.sources і ambiguousQty губляться, а extractPantrySnapshots пише sources = null поверх наявних. Payload Їжі не містить nutrition_recipes, nutrition_shopping_list, nutrition_water_log і nutrition_goal_periods.

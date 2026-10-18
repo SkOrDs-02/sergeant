@@ -28,7 +28,7 @@ export function ForgotPasswordPanel({
     <div
       role="group"
       aria-label="Скидання пароля"
-      className="text-style-caption text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 leading-relaxed space-y-2"
+      className="text-style-caption text-text bg-brand-500/10 border border-brand-500/30 rounded-panel px-4 py-3 leading-relaxed space-y-2"
     >
       {forgotState === "sent" ? (
         <div className="space-y-3">

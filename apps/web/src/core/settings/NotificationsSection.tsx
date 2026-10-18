@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { Segmented } from "@shared/components/ui/Segmented";
+import { RoutineChoiceList } from "../../modules/routine/components/settings/RoutineChoiceList";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
@@ -156,7 +156,7 @@ export function NotificationsSection() {
     // V-7 (2026-08-08): title читається з каталогу, а не хардкодиться тут —
     // раніше цей рядок і ⌘K-індекс (settingsSectionsCatalog.ts) розходились
     // ("Сповіщення" тут vs "Нагадування" у пошуку) без жодної перевірки.
-    <SettingsGroup title={settingsSectionTitle("notifications")} icon="bell">
+    <SettingsGroup title={settingsSectionTitle("notifications")}>
       {/* Два рядки поспіль мали один підпис «Push-сповіщення» (браузерний
           дозвіл і власне підписка) і читались як дубль (огляд 2026-09-04).
           Перший рядок — про дозвіл браузера, і називається так. */}
@@ -193,7 +193,7 @@ export function NotificationsSection() {
 
       <PushNotificationToggle className="py-2 border-b border-line/60" />
 
-      <SettingsSubGroup title="Скільки на день">
+      <SettingsSubGroup variant="bounded" title="Скільки на день">
         <div className="py-2">
           <p className="text-style-label text-text">
             Нагадувань на день, не більше
@@ -203,13 +203,11 @@ export function NotificationsSection() {
               ? "Нагадування вимкнені: ні звички, ні тренування, ні Сержант не надсилатимуть сповіщень."
               : "Якщо приводів більше, обʼєдную їх в одне сповіщення. Жоден не загубиться."}
           </p>
-          <Segmented
-            className="mt-2"
-            size="md"
-            items={CAP_OPTIONS}
+          <RoutineChoiceList
+            label="Нагадувань на день, не більше"
+            options={CAP_OPTIONS}
             value={String(pushDailyCap.value)}
             onChange={(next) => void pushDailyCap.set(Number(next))}
-            ariaLabel="Нагадувань на день, не більше"
           />
         </div>
         {pushDailyCap.error && (
@@ -226,7 +224,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title={sergeantCopy.name}>
+      <SettingsSubGroup variant="bounded" title={sergeantCopy.name}>
         <ToggleRow
           label={sergeantCopy.nudgesToggleLabel}
           description={sergeantCopy.nudgesToggleDescription}
@@ -257,7 +255,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Рутина (звички)">
+      <SettingsSubGroup variant="bounded" title="Рутина (звички)">
         <ToggleRow
           label="Нагадування про звички"
           description={backgroundHint(
@@ -268,7 +266,7 @@ export function NotificationsSection() {
         />
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Фізрук (тренування)">
+      <SettingsSubGroup variant="bounded" title="Фізрук (тренування)">
         <ToggleRow
           label="Нагадування про тренування"
           description={backgroundHint(
@@ -307,7 +305,7 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Їжа">
+      <SettingsSubGroup variant="bounded" title="Їжа">
         <ToggleRow
           label="Нагадування про їжу"
           description={backgroundHint(
@@ -324,7 +322,7 @@ export function NotificationsSection() {
               type="number"
               min={0}
               max={23}
-              className="w-16 h-9 touch-target rounded-xl bg-panel border border-line px-2 text-style-body text-text"
+              className="w-16 h-9 touch-target rounded-lg bg-panel border border-line px-2 text-style-body text-text"
               value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
               disabled={!nutritionHydrated}
               onBlur={() => setReminderHourDraft(null)}

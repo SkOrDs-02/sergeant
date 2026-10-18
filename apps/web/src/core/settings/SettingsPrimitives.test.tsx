@@ -12,7 +12,6 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-
 import {
   SettingsGroup,
   SettingsGroupDefaultOpenContext,
@@ -64,7 +63,7 @@ afterEach(() => {
 describe("SettingsGroup", () => {
   it("мова H: рядок секції без іконки, бейджа й шеврона", () => {
     render(
-      <SettingsGroup title="Фінанси" icon="wallet" module="finyk">
+      <SettingsGroup title="Фінанси">
         <div>child</div>
       </SettingsGroup>,
     );
@@ -74,7 +73,7 @@ describe("SettingsGroup", () => {
 
   it("expands children on button click", () => {
     render(
-      <SettingsGroup title="Тест" icon="info">
+      <SettingsGroup title="Тест">
         <p>прихований контент</p>
       </SettingsGroup>,
     );
@@ -95,7 +94,7 @@ describe("SettingsGroup", () => {
   // ловимо регресію, лише зафіксувавши "виставлено" ДО кліку.
   it("ставить inert+aria-hidden на вміст, коли група монтується згорнутою (default), і знімає обидва при розгортанні", () => {
     render(
-      <SettingsGroup title="Дашборд" icon="layout">
+      <SettingsGroup title="Дашборд">
         <button type="button">Приховане поле</button>
       </SettingsGroup>,
     );
@@ -116,7 +115,7 @@ describe("SettingsGroup", () => {
 
   it("не ставить inert/aria-hidden, коли група монтується розгорнутою, і ставить обидва при згортанні", () => {
     render(
-      <SettingsGroup title="Профіль" icon="user" defaultOpen>
+      <SettingsGroup title="Профіль" defaultOpen>
         <button type="button">Видиме поле</button>
       </SettingsGroup>,
     );
@@ -172,7 +171,7 @@ describe("SettingsGroupDefaultOpenContext", () => {
   it("тримає значення true за замовчуванням у SettingsGroup, коли провайдер задає defaultOpen: true", () => {
     render(
       <SettingsGroupDefaultOpenContext.Provider value={{ defaultOpen: true }}>
-        <SettingsGroup title="Перша секція" icon="compass">
+        <SettingsGroup title="Перша секція">
           <p>вміст першої секції</p>
         </SettingsGroup>
       </SettingsGroupDefaultOpenContext.Provider>,
@@ -184,7 +183,7 @@ describe("SettingsGroupDefaultOpenContext", () => {
 
   it("не впливає на SettingsGroup, змонтовану без провайдера (дефолт контексту — { defaultOpen: false })", () => {
     render(
-      <SettingsGroup title="Секція без провайдера" icon="compass">
+      <SettingsGroup title="Секція без провайдера">
         <p>вміст</p>
       </SettingsGroup>,
     );
@@ -213,7 +212,7 @@ describe("SettingsGroupDefaultOpenContext", () => {
           <SettingsGroupDefaultOpenContext.Provider
             value={{ defaultOpen: open }}
           >
-            <SettingsGroup title="Сповіщення" icon="bell">
+            <SettingsGroup title="Сповіщення">
               <p>вміст</p>
             </SettingsGroup>
           </SettingsGroupDefaultOpenContext.Provider>
@@ -251,7 +250,7 @@ describe("SettingsGroupDefaultOpenContext", () => {
           <SettingsGroupDefaultOpenContext.Provider
             value={{ defaultOpen: open }}
           >
-            <SettingsGroup title="Сержант" icon="sparkles">
+            <SettingsGroup title="Сержант">
               <p>вміст</p>
             </SettingsGroup>
           </SettingsGroupDefaultOpenContext.Provider>
@@ -285,7 +284,7 @@ describe("SettingsGroupDefaultOpenContext", () => {
       <SettingsGroupDefaultOpenContext.Provider
         value={{ defaultOpen: false, onUserToggle }}
       >
-        <SettingsGroup title="Секція" icon="compass">
+        <SettingsGroup title="Секція">
           <p>вміст</p>
         </SettingsGroup>
       </SettingsGroupDefaultOpenContext.Provider>,
@@ -323,7 +322,7 @@ describe("SettingsGroupDefaultOpenContext", () => {
         <SettingsGroupDefaultOpenContext.Provider
           value={{ defaultOpen: false, onUserToggle }}
         >
-          <SettingsGroup title="Секція" icon="compass">
+          <SettingsGroup title="Секція">
             <p>вміст</p>
           </SettingsGroup>
         </SettingsGroupDefaultOpenContext.Provider>
@@ -346,7 +345,7 @@ describe("SettingsGroupDefaultOpenContext", () => {
   // ловив. Канонічний disclosure-патерн — `<h2><button aria-expanded>…`.
   it("рендерить заголовок секції як h2>button, а не голий span (дефект №5, axe heading-order)", () => {
     render(
-      <SettingsGroup title="Дашборд" icon="layout">
+      <SettingsGroup title="Дашборд">
         <p>вміст</p>
       </SettingsGroup>,
     );

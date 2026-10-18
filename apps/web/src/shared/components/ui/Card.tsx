@@ -12,7 +12,7 @@ import { cn } from "../../lib/ui/cn";
  * Картка це панель: `bg-panel`, радіус 12, без бордера й тіні. Три форми:
  *   - `panel` (дефолт) - групує список або блок;
  *   - `hero` - тинт модуля, рівно одна поверхня на екран (H.2); модуль
- *     задається `tone` (або легасі `module`);
+ *     задається `tone`;
  *   - `receipt` - матеріал «край і зріз», лише деталь чека Фініка.
  *
  * @example
@@ -20,49 +20,12 @@ import { cn } from "../../lib/ui/cn";
  *   <Card prominence="hero" tone="finyk">...</Card>
  *   <Card prominence="receipt">...</Card>
  *
- * Легасі-пропи (`variant`, `radius`, решта `prominence`) рендерять ту саму
- * панель, щоб екрани, які ще не перероблені PR2-PR6, не розʼїхались. Їх
- * прибирає PR7 разом із call-site-ами.
  */
 
 export type CardModule = "finyk" | "fizruk" | "routine" | "nutrition";
 
-export type CardProminence =
-  | "panel"
-  | "hero"
-  | "receipt"
-  /** @deprecated мова H: рендерить `panel`. @removeBy 2026-12-01 */
-  | "default"
-  /** @deprecated рендерить `panel` із курсором. @removeBy 2026-12-01 */
-  | "interactive"
-  /** @deprecated рендерить `panel`. @removeBy 2026-12-01 */
-  | "flat"
-  /** @deprecated рендерить `panel`. @removeBy 2026-12-01 */
-  | "elevated"
-  /** @deprecated рендерить `panel`. @removeBy 2026-12-01 */
-  | "glass"
-  /** @deprecated рендерить `panel`. @removeBy 2026-12-01 */
-  | "soft"
-  /** @deprecated рендерить `hero` (тинт). @removeBy 2026-12-01 */
-  | "tinted"
-  | "ghost";
-
-/**
- * @deprecated Prefer `prominence` + `tone`. @removeBy 2026-12-01
- */
-export type CardVariant =
-  | "default"
-  | "interactive"
-  | "flat"
-  | "elevated"
-  | "ghost"
-  | CardModule
-  | `${CardModule}-soft`;
-
+export type CardProminence = "panel" | "hero" | "receipt" | "ghost";
 export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
-
-/** @deprecated мова H: радіус панелі завжди 12 px. @removeBy 2026-12-01 */
-export type CardRadius = "md" | "lg" | "xl";
 
 const paddings: Record<CardPadding, string> = {
   none: "",
@@ -79,57 +42,11 @@ const TINT: Record<CardModule, string> = {
   nutrition: "bg-nutrition-tint",
 };
 
-const SOFT_VARIANT_RE = /^(finyk|fizruk|routine|nutrition)-soft$/;
-const MODULE_VARIANT_RE = /^(finyk|fizruk|routine|nutrition)$/;
-
-type Form = "panel" | "hero" | "receipt" | "ghost";
-
-function resolveForm(
-  variant: CardVariant | undefined,
-  module: CardModule | undefined,
-  prominence: CardProminence | undefined,
-): { form: Form; module: CardModule | null; interactive: boolean } {
-  if (prominence === "receipt" || prominence === "ghost") {
-    return { form: prominence, module: null, interactive: false };
-  }
-  if (prominence === "hero" || prominence === "tinted") {
-    return {
-      form: module ? "hero" : "panel",
-      module: module ?? null,
-      interactive: false,
-    };
-  }
-  if (prominence) {
-    return {
-      form: "panel",
-      module: null,
-      interactive: prominence === "interactive",
-    };
-  }
-  if (module) return { form: "hero", module, interactive: false };
-  if (variant && MODULE_VARIANT_RE.test(variant)) {
-    return { form: "hero", module: variant as CardModule, interactive: false };
-  }
-  if (variant === "ghost")
-    return { form: "ghost", module: null, interactive: false };
-  return {
-    form: "panel",
-    module: null,
-    interactive: variant === "interactive" && !SOFT_VARIANT_RE.test(variant),
-  };
-}
-
 export interface CardProps extends HTMLAttributes<HTMLElement> {
-  /** @deprecated Prefer `prominence` + `tone`. @removeBy 2026-12-01 */
-  variant?: CardVariant | undefined;
   /** Модуль тинту для `hero`. */
   tone?: CardModule | undefined;
-  /** @deprecated = `tone`. @removeBy 2026-12-01 */
-  module?: CardModule | undefined;
   prominence?: CardProminence | undefined;
   padding?: CardPadding | undefined;
-  /** @deprecated ігнорується, радіус панелі 12 px. @removeBy 2026-12-01 */
-  radius?: CardRadius | undefined;
   as?: ElementType | undefined;
   children?: ReactNode | undefined;
 }
@@ -137,23 +54,17 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
 export const Card = forwardRef<HTMLElement, CardProps>(function Card(
   {
     className,
-    variant,
     tone,
-    module,
-    prominence,
+    prominence = "panel",
     padding = "md",
-    radius: _radius,
     as: Component = "div",
     children,
     ...props
   },
   ref,
 ) {
-  const {
-    form,
-    module: hue,
-    interactive,
-  } = resolveForm(variant, tone ?? module, prominence);
+  const form = prominence;
+  const hue = tone;
 
   if (form === "receipt") {
     /*
@@ -180,8 +91,7 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
           : form === "hero" && hue
             ? TINT[hue]
             : "bg-panel",
-        "rounded-xl",
-        interactive && "cursor-pointer transition-colors hover:bg-line/40",
+        "rounded-panel",
         paddings[padding],
         className,
       )}

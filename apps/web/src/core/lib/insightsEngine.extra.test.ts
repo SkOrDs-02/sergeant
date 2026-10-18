@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../modules/finyk/lib/monoMirrorReader";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../modules/finyk/lib/sqliteReader";
 import { generateInsights } from "./insightsEngine";
 import {
   __setFizrukSqliteCacheForTests,
@@ -23,6 +30,8 @@ const DAY = 86_400_000;
 function clearAll() {
   localStorage.clear();
   clearFizrukSqliteCache();
+  clearFinykMonoMirrorCache();
+  clearFinykSqliteCache();
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
   clearNutritionSqliteCache();
@@ -89,7 +98,7 @@ describe("generateInsights — cross-module insights", () => {
     addTx(weekMidDaysAgo(2), 1000);
     addTx(weekMidDaysAgo(3), 1000);
 
-    localStorage.setItem(STORAGE_KEYS.FINYK_TX_CACHE, JSON.stringify(txs));
+    __setFinykMonoMirrorCacheForTests({ transactions: txs as never[] });
 
     const result = generateInsights();
     const ins = result.find((r) => r.id === "active_weeks_spending");
@@ -97,7 +106,7 @@ describe("generateInsights — cross-module insights", () => {
     expect(ins!.iconName).toBe("lightbulb");
   });
 
-  it("activeWeeksSpendingInsight: reads txs from { txs } cache wrapper shape and hidden/transfer exclusion", () => {
+  it("activeWeeksSpendingInsight: reads canonical mirror and excludes hidden/transfer transactions", () => {
     const specs: Array<{ daysAgo: number }> = [];
     for (const w of [0, 1]) {
       const d = weekMidDaysAgo(w);
@@ -130,18 +139,11 @@ describe("generateInsights — cross-module insights", () => {
       time: Math.floor(Date.now() / 1000),
     });
 
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_TX_CACHE,
-      JSON.stringify({ txs: inner }),
-    );
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_HIDDEN_TXS,
-      JSON.stringify(["hidden1"]),
-    );
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_TX_CATS,
-      JSON.stringify({ transfer1: "internal_transfer" }),
-    );
+    __setFinykMonoMirrorCacheForTests({ transactions: inner as never[] });
+    __setFinykSqliteStateCacheForTests({
+      hiddenTransactions: ["hidden1"],
+      txCategories: { transfer1: "internal_transfer" },
+    });
 
     const result = generateInsights();
     const ins = result.find((r) => r.id === "active_weeks_spending");

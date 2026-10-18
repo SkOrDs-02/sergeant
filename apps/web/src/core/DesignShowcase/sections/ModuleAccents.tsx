@@ -137,13 +137,7 @@ export function ModuleAccentsSection() {
       <Group label="Card prominence — soft / tinted / hero">
         <div className="grid grid-cols-2 gap-3">
           {MODULES.map((m) => (
-            <Card
-              key={m.id}
-              module={m.id}
-              prominence="soft"
-              padding="md"
-              radius="xl"
-            >
+            <Card key={m.id} tone={m.id} prominence="panel" padding="md">
               <div className="text-style-label font-semibold text-text">
                 {m.label}
               </div>

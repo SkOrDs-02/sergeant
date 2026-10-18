@@ -27,7 +27,11 @@ describe("a11y names", () => {
 
   it("names source tabs from visible text", () => {
     render(<SourceTabs active="search" onChange={vi.fn()} />);
-    expect(screen.getByRole("tab", { name: "Своє" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Пошук" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ввести вручну" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Пошук продукту" }),
+    ).toBeInTheDocument();
   });
 });

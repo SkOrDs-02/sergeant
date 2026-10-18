@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-10 by docs:gen-status. **Next review:** 2026-10-17.
+> **Last touched:** 2026-10-18 by docs:gen-status. **Next review:** 2026-10-25.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -39,11 +39,11 @@
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
-## 🔵 В роботі — 97 відкритих документів
+## 🔵 В роботі — 104 відкриті документи
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 97       |
+| Активні спеки | 104      |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -53,8 +53,8 @@
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/planning/redesign-v3-progress.md`](./work/specs/planning/redesign-v3-progress.md) — Редизайн v3: журнал виконання — Active _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластерів (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits _(Активні спеки)_
-- [`work/specs/anonymous-migration-fast-path.md`](./work/specs/anonymous-migration-fast-path.md) — SPEC: швидкий шлях гейта міграції анонімних даних — Scaffolded - напрям («якщо переносити нічого, пропустити розвідку й вести в хаб») ухвалив власник; конкретний механізм, _(Активні спеки)_
+- [`work/specs/audits/2026-10-16-navigation-finance-hierarchy.md`](./work/specs/audits/2026-10-16-navigation-finance-hierarchy.md) — Вихід із Фізрука та ієрархія фінансових сутностей — Active _(Активні спеки)_
+- [`work/specs/audits/2026-10-16-user-journeys-and-copy.md`](./work/specs/audits/2026-10-16-user-journeys-and-copy.md) — Аудит користувацьких шляхів, ієрархії та правдивості текстів — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 

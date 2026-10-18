@@ -7,8 +7,8 @@
  * logic: rendering subscriptions vs. empty state, the routine-calendar link,
  * the delete + undo path, the edit path, and linking transactions.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import type { Subscription } from "../hooks/useStorage.types";
 
 // Mock the heavy sub-components so we can test the section in isolation.
@@ -131,6 +131,28 @@ function buildState(
 }
 
 describe("AssetsSubscriptionsSection", () => {
+  afterEach(() => vi.useRealTimers());
+  it("updates the subscription calendar's month without changing subscriptions", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-30T12:00:00Z"));
+    const subscriptions = [1, 8, 15, 22].map((billingDay) => ({
+      ...makeSub(String(billingDay)),
+      billingDay,
+      expectedAmount: 10_000,
+    }));
+    render(<AssetsSubscriptionsSection state={makeState({ subscriptions })} />);
+    expect(screen.getAllByText("30", { exact: true }).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.queryAllByText("31", { exact: true })).toHaveLength(0);
+    act(() => {
+      vi.setSystemTime(new Date("2026-05-01T12:00:00Z"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(screen.getAllByText("31", { exact: true }).length).toBeGreaterThan(
+      0,
+    );
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     // Remove any undo buttons injected by prior test

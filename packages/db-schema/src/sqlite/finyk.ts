@@ -78,7 +78,7 @@ export const finykHiddenTransactions = sqliteTable(
 
 /**
  * Нотатки користувача до банківських операцій (аудит 2026-10-01, data-27).
- * Дзеркалить серверну `finyk_tx_notes` (міграція 156): composite PK, порожня
+ * Дзеркалить серверну `finyk_tx_notes` (міграція 155): composite PK, порожня
  * нотатка = soft-delete через `deleted_at`.
  */
 export const finykTxNotes = sqliteTable(

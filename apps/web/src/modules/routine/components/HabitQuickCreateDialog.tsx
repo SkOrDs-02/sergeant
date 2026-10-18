@@ -194,6 +194,7 @@ export function HabitQuickCreateDialog({
     <div className={cn("flex gap-2", editingId ? "flex-row" : "flex-col")}>
       {editingId && (
         <Button
+          tone="neutral"
           type="button"
           variant="outline"
           className="flex-1"
@@ -205,7 +206,7 @@ export function HabitQuickCreateDialog({
       <Button
         type="button"
         variant="solid"
-        tone="routine"
+        tone="neutral"
         className="w-full"
         onClick={handleSave}
       >

@@ -16,6 +16,7 @@ import {
   markOutboxRejected,
   markOutboxRetry,
   markOutboxSuccess,
+  markOutboxSuccessBatch,
 } from "../sqlite/syncOpOutboxLifecycle.js";
 import { planRetry } from "../sqlite/syncOpRetry.js";
 
@@ -118,6 +119,18 @@ describe("syncOpOutboxLifecycle", () => {
   });
 
   describe("markOutboxSuccess", () => {
+    it("batch-deletes acknowledged ids in one statement and preserves neighbours", async () => {
+      const a = await enqueueFresh(client, "batch-A");
+      const b = await enqueueFresh(client, "batch-B");
+      const c = await enqueueFresh(client, "batch-C");
+      await markOutboxSuccessBatch(client, [a, c]);
+      expect(readAll(db).map((row) => row.id)).toEqual([b]);
+      await expect(
+        markOutboxSuccessBatch(client, [a, c]),
+      ).resolves.toBeUndefined();
+      await expect(markOutboxSuccessBatch(client, [])).resolves.toBeUndefined();
+      expect(readAll(db).map((row) => row.id)).toEqual([b]);
+    });
     it("deletes the row by id and leaves siblings untouched", async () => {
       const a = await enqueueFresh(client, "idem-A");
       const b = await enqueueFresh(client, "idem-B");

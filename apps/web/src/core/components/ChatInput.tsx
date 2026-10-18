@@ -97,7 +97,7 @@ export function ChatInput({
         <button
           type="button"
           onClick={onHelp}
-          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           aria-label="Команди: показати довідку"
           title="Команди"
         >
@@ -121,7 +121,7 @@ export function ChatInput({
       </Tooltip>
       <input
         ref={inputRef}
-        className="input-focus-finyk flex-1 bg-panel border border-line rounded-2xl px-4 py-3 text-style-body text-text placeholder:text-subtle disabled:opacity-50"
+        className="input-focus-finyk flex-1 bg-panel border border-line rounded-lg px-4 py-3 text-style-body text-text placeholder:text-subtle disabled:opacity-50"
         placeholder={
           online ? "Напиши Сержанту" : "Немає зʼєднання, Сержант офлайн"
         }
@@ -146,7 +146,7 @@ export function ChatInput({
             stopSpeaking();
             setSpeaking(false);
           }}
-          className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning-strong dark:text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning-strong dark:text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           title="Зупинити озвучення"
           aria-label="Зупинити озвучення"
         >
@@ -167,7 +167,7 @@ export function ChatInput({
           type="button"
           onClick={toggleMic}
           className={cn(
-            "w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            "w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
             listening
               ? "bg-danger-strong text-white border-danger-strong motion-safe:animate-pulse"
               : "bg-panel border-line text-muted hover:text-text hover:border-muted",
@@ -198,7 +198,7 @@ export function ChatInput({
         type="button"
         onClick={onSend}
         disabled={loading || !input.trim() || !online}
-        className="w-11 h-11 rounded-full bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+        className="w-11 h-11 rounded-lg bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
         aria-label={online ? "Надіслати" : "Надсилання недоступне офлайн"}
         title={online ? "Надіслати" : "Немає інтернету, Сержант офлайн"}
       >

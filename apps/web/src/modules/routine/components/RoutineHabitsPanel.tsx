@@ -38,24 +38,25 @@ export interface RoutineHabitsPanelProps {
   routine: RoutineState;
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
   hidden?: boolean;
-  /** Перемкнути користувача на вкладку календаря (порожній стан). */
-  onOpenCalendar?: () => void;
 }
 
 export function RoutineHabitsPanel({
   routine,
   setRoutine,
   hidden,
-  onOpenCalendar,
 }: RoutineHabitsPanelProps) {
   const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [creatingHabit, setCreatingHabit] = useState(false);
   const [editDialogFocusTick, setEditDialogFocusTick] = useState(0);
   const [detailHabitId, setDetailHabitId] = useState<string | null>(null);
   const [deleteHabitPending, setDeleteHabitPending] =
     useState<PendingHabitDeletion | null>(null);
 
-  const closeEditDialog = () => setEditingId(null);
+  const closeHabitDialog = () => {
+    setEditingId(null);
+    setCreatingHabit(false);
+  };
 
   return (
     <div
@@ -63,7 +64,7 @@ export function RoutineHabitsPanel({
       id="routine-panel-habits"
       aria-labelledby="routine-tab-habits"
       hidden={hidden}
-      className="space-y-4"
+      className="space-y-7"
     >
       <p className="text-style-body text-subtle leading-snug">{COPY.intro}</p>
 
@@ -72,14 +73,19 @@ export function RoutineHabitsPanel({
         setRoutine={setRoutine}
         editingId={editingId}
         onEdit={(h) => {
+          setCreatingHabit(false);
           setEditingId(h.id);
           setEditDialogFocusTick((t) => t + 1);
         }}
         onCancelEditIf={(id) => {
-          if (editingId === id) closeEditDialog();
+          if (editingId === id) closeHabitDialog();
         }}
         onOpenDetails={(id) => setDetailHabitId(id)}
-        {...(onOpenCalendar ? { onOpenCalendar } : {})}
+        onCreateHabit={() => {
+          setEditingId(null);
+          setCreatingHabit(true);
+          setEditDialogFocusTick((t) => t + 1);
+        }}
         onRequestDelete={(pending) => setDeleteHabitPending(pending)}
       />
 
@@ -90,10 +96,10 @@ export function RoutineHabitsPanel({
       />
 
       <HabitQuickCreateDialog
-        open={!!editingId}
+        open={creatingHabit || !!editingId}
         routine={routine}
         setRoutine={setRoutine}
-        onClose={closeEditDialog}
+        onClose={closeHabitDialog}
         editingId={editingId}
         focusTick={editDialogFocusTick}
       />
@@ -120,7 +126,7 @@ export function RoutineHabitsPanel({
               return deleteHabit(s, pending.id);
             });
             if (!pending.archived && editingId === pending.id) {
-              closeEditDialog();
+              closeHabitDialog();
             }
             if (snapshot) {
               showUndoToast(toast, {

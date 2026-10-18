@@ -8,7 +8,7 @@
  * `habitScheduledOnDate`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render } from "@testing-library/react";
+import { render, within, screen, cleanup } from "@testing-library/react";
 import { HabitMonthCalendar } from "./HabitMonthCalendar";
 import type { Habit } from "../lib/types";
 
@@ -37,6 +37,7 @@ describe("HabitMonthCalendar", () => {
     vi.setSystemTime(FIXED_NOW);
   });
   afterEach(() => {
+    cleanup();
     vi.useRealTimers();
   });
 
@@ -72,6 +73,40 @@ describe("HabitMonthCalendar", () => {
     expect(
       container.querySelector('[title="2026-06-04: заплановано"]'),
     ).not.toBeNull();
+  });
+
+  it("distinguishes an excused skip from an unexcused past day and pending days", () => {
+    render(
+      <HabitMonthCalendar
+        habit={flexHabit({ recurrence: "daily" })}
+        completions={["2026-06-01"]}
+        skips={{ "2026-06-03": { reason: "sick", at: "2026-06-03T12:00:00Z" } }}
+        todayKey="2026-06-04"
+      />,
+    );
+    const calendar = screen.getByRole("region", { name: "Календар виконань" });
+    expect(
+      within(calendar).getByTitle("2026-06-03: не зміг, Хворів"),
+    ).toHaveClass("border-2");
+    expect(
+      within(calendar).queryByTitle("2026-06-03: заплановано"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(calendar).getByTitle("2026-06-02: не виконано"),
+    ).not.toHaveClass("border-2");
+    expect(
+      within(calendar).getByTitle("2026-06-01: виконано"),
+    ).toBeInTheDocument();
+    expect(
+      within(calendar).getByTitle("2026-06-04: заплановано"),
+    ).toBeInTheDocument();
+    expect(
+      within(calendar).getByTitle("2026-06-05: заплановано"),
+    ).toBeInTheDocument();
+    expect(
+      within(calendar).getByText("Не зміг, із причиною"),
+    ).toBeInTheDocument();
+    expect(within(calendar).getByText("Без відмітки")).toBeInTheDocument();
   });
 
   it("daily habit is unaffected: still scheduled on today regardless of week completions", () => {

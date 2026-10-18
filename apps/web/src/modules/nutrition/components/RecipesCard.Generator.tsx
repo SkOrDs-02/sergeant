@@ -13,7 +13,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/ui/cn";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import type { RecipeCacheEntry } from "../lib/recipeCache";
 import type { RecipeLike } from "./RecipesCard.helpers";
@@ -49,8 +49,10 @@ export function GeneratorCard({
   onAddToLog,
 }: GeneratorProps) {
   return (
-    <Card className="p-4">
-      <div className="text-style-label text-text">Рецепти</div>
+    <Card as="section" padding="md">
+      <SectionHeading as="div" size="lg">
+        Рецепти
+      </SectionHeading>
       {/* AI-NOTE: `text-style-caption` тут правильний — це підказка ПІД
           контролом (named-виняток правила `no-sentence-in-caption`), а не
           текст, який читають підряд. Анотацію додано при мержі `main` у
@@ -62,23 +64,23 @@ export function GeneratorCard({
         Рекомендації на базі продуктів з комори. Можна вказати час, порції та
         &quot;не хочу&quot;.
         {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
-          <span className="ml-1 text-nutrition-strong dark:text-nutrition">
+          <span className="ml-1">
             (є кеш сеансу, натисни «Запропонувати рецепти» для оновлення)
           </span>
         )}
       </div>
 
-      <div className="mt-3 grid gap-3">
+      <div className="mt-4 grid gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div className="text-style-caption text-muted mb-1">Ціль</div>
+            <div className="text-style-overline text-subtle mb-1">Ціль</div>
             <select
               aria-label="Ціль"
               value={prefs.goal}
               onChange={(e) =>
                 setPrefs((p) => ({ ...p, goal: e.target.value }))
               }
-              className="input-focus-nutrition w-full h-11 rounded-2xl bg-panel border border-line px-4 text-sm text-text"
+              className="w-full h-11 rounded-lg bg-panel border border-line px-3 text-style-body text-text focus-ring"
               disabled={busy}
             >
               <option value="balanced">Збалансовано</option>
@@ -88,7 +90,7 @@ export function GeneratorCard({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="text-style-caption text-muted mb-1">Порції</div>
+              <div className="text-style-overline text-subtle mb-1">Порції</div>
               <Input
                 value={String(prefs.servings)}
                 onChange={(e) => {
@@ -103,7 +105,7 @@ export function GeneratorCard({
               />
             </div>
             <div>
-              <div className="text-style-caption text-muted mb-1">Хвилин</div>
+              <div className="text-style-overline text-subtle mb-1">Хвилин</div>
               <Input
                 value={String(prefs.timeMinutes)}
                 onChange={(e) => {
@@ -121,7 +123,7 @@ export function GeneratorCard({
         </div>
 
         <div>
-          <div className="text-style-caption text-muted mb-1">
+          <div className="text-style-overline text-subtle mb-1">
             Не використовувати / алергени
           </div>
           <Input
@@ -136,7 +138,7 @@ export function GeneratorCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block">
-            <span className="block text-style-caption text-muted mb-1">
+            <span className="block text-style-overline text-subtle mb-1">
               Прийом їжі
             </span>
             <select
@@ -149,7 +151,7 @@ export function GeneratorCard({
                     .value as NutritionPrefs["recipeMealType"],
                 }))
               }
-              className="input-focus-nutrition w-full h-11 rounded-2xl bg-panel border border-line px-4 text-sm text-text"
+              className="w-full h-11 rounded-lg bg-panel border border-line px-3 text-style-body text-text focus-ring"
               disabled={busy}
             >
               <option value="any">Будь-який</option>
@@ -162,28 +164,23 @@ export function GeneratorCard({
           <PantryModeSelect prefs={prefs} setPrefs={setPrefs} disabled={busy} />
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="solid"
+          className="w-full"
           onClick={recommendRecipes}
           disabled={busy}
-          className={cn(
-            "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-          )}
         >
           Запропонувати рецепти
-        </button>
+        </Button>
 
         {recipes.length > 0 && (
-          <div className="grid gap-3">
+          <div className="divide-y divide-line border-y border-line">
             {recipes.map((r, idx) => (
-              <div
-                key={r.id || idx}
-                className="rounded-2xl border border-line bg-panel p-4 overflow-hidden"
-              >
+              <div key={r.id || idx} className="overflow-hidden py-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-                    <div className="text-style-label text-text wrap-break-word">
+                    <div className="text-style-body font-semibold text-text wrap-break-word">
                       {r.title || `Рецепт ${idx + 1}`}
                     </div>
                     <div className="text-style-caption text-muted mt-1">
@@ -192,11 +189,11 @@ export function GeneratorCard({
                     </div>
                   </div>
                   {r.macros?.kcal != null && (
-                    <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption text-muted">
+                    <div className="shrink-0 text-style-caption text-muted">
                       <div className="text-style-caption text-muted">
                         ≈ ккал / порція
                       </div>
-                      <div className="text-style-label text-text">
+                      <div className="text-style-body font-medium text-text tabular-nums">
                         {fmtMacro(r.macros.kcal)}
                       </div>
                     </div>
@@ -220,14 +217,14 @@ export function GeneratorCard({
                       }
                       disabled={busy}
                     >
-                      + У журнал
+                      У журнал
                     </Button>
                   </div>
                 </div>
 
                 {Array.isArray(r.ingredients) && r.ingredients.length > 0 && (
                   <div className="mt-3 text-style-body text-text wrap-break-word">
-                    <div className="text-style-caption text-muted mb-1">
+                    <div className="text-style-overline text-subtle mb-1">
                       Інгредієнти
                     </div>
                     {r.ingredients.join(", ")}
@@ -236,7 +233,7 @@ export function GeneratorCard({
 
                 {Array.isArray(r.steps) && r.steps.length > 0 && (
                   <div className="mt-3 text-style-body text-text">
-                    <div className="text-style-caption text-muted mb-1">
+                    <div className="text-style-overline text-subtle mb-1">
                       Кроки
                     </div>
                     <ol className="list-decimal pl-5 space-y-1">
@@ -249,7 +246,7 @@ export function GeneratorCard({
 
                 {Array.isArray(r.tips) && r.tips.length > 0 && (
                   <div className="mt-3 text-style-body text-text">
-                    <div className="text-style-caption text-muted mb-1">
+                    <div className="text-style-overline text-subtle mb-1">
                       Поради
                     </div>
                     <ul className="list-disc pl-5 space-y-1">
@@ -265,7 +262,7 @@ export function GeneratorCard({
         )}
 
         {recipesTried && !busy && recipes.length === 0 && !err && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted">
+          <div className="text-style-label text-muted">
             Рецептів не повернулося. Спробуй натиснути &quot;Розібрати&quot; або
             додати 2–3 базові продукти (яйця/крупа/овочі).
             {/* AI-DANGER: сира відповідь моделі — DEV-ONLY.
@@ -282,7 +279,7 @@ export function GeneratorCard({
                 <summary className="cursor-pointer text-style-caption text-muted hover:text-text">
                   Показати діагностику (raw відповідь AI)
                 </summary>
-                <pre className="mt-2 whitespace-pre-wrap text-style-caption leading-snug text-muted bg-bg border border-line rounded-xl p-3 max-h-64 overflow-auto">
+                <pre className="mt-2 whitespace-pre-wrap text-style-caption leading-snug text-muted border border-line rounded-panel p-3 max-h-64 overflow-auto">
                   {recipesRaw}
                 </pre>
               </details>

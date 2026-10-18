@@ -133,7 +133,7 @@ export function DateScrubber({
             onClick={() => onChange(key)}
             className={cn(
               "snap-end shrink-0 flex flex-col items-center justify-center gap-0.5",
-              "min-w-[3rem] min-h-[3.25rem] rounded-xl px-2 py-1.5",
+              "min-w-[3rem] min-h-[3.25rem] rounded-lg px-2 py-1.5",
               "border transition-colors focus-ring",
               selected
                 ? "bg-accent text-bg border-transparent font-semibold"

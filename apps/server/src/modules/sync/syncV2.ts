@@ -211,7 +211,7 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   nutrition_shopping_list: applyNutritionShoppingList,
   finyk_hidden_accounts: applyFinykHiddenAccounts,
   finyk_hidden_transactions: applyFinykHiddenTransactions,
-  // Нотатки до операцій (data-27, міграція 156): composite-PK tombstone з `note`.
+  // Нотатки до операцій (data-27, міграція 155): composite-PK tombstone з `note`.
   finyk_tx_notes: applyFinykTxNotes,
   finyk_budgets: perRowBlob("finyk_budgets"),
   finyk_subscriptions: perRowBlob("finyk_subscriptions"),

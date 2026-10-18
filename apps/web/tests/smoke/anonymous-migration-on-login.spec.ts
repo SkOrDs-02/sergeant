@@ -98,11 +98,15 @@ test("@critical anonymous: запис, створений без входу, з�
   ).toBe(401);
   await waitForInitialSqliteRefresh(page, "finyk");
 
-  // Створюємо витрату анонімно — той самий FAB-флоу, що в
+  // Створюємо витрату анонімно — той самий флоу кнопки в куті, що в
   // `anonymous-persistence.spec.ts`.
   await page
-    .getByTestId("add-action-bar")
-    .getByRole("button", { name: "Додати витрату" })
+    .getByTestId("corner-action")
+    .getByRole("button", { name: "Додати" })
+    .click();
+  await page
+    .getByTestId("add-sources")
+    .getByRole("button", { name: /^Вручну/ })
     .click();
   const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
   await expect(createDialog).toBeVisible();

@@ -491,7 +491,7 @@ export function Budgets({
     >
       {/* Shape-aware: header bar + 3 budget rows so the layout doesn't
           reflow when data lands. */}
-      <Skeleton className="h-28 rounded-xl" />
+      <Skeleton className="h-28 rounded-panel" />
       <SkeletonBudgetBar />
       <SkeletonBudgetBar className="opacity-80" />
       <SkeletonBudgetBar className="opacity-60" />

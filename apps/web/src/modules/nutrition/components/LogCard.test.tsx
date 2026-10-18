@@ -56,6 +56,11 @@ describe("LogCard", () => {
     renderLog();
     expect(screen.getByText("Сьогодні")).toBeInTheDocument();
     expect(screen.getByText("Поки немає записів")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Додай перший прийом їжі. Калорії та КБЖВ порахуються тут.",
+      ),
+    ).toBeVisible();
   });
 
   it("shifts the selected date back and forward", () => {
@@ -130,7 +135,7 @@ describe("LogCard", () => {
   it("invokes onAddMeal", () => {
     const onAddMeal = vi.fn();
     renderLog({ onAddMeal });
-    fireEvent.click(screen.getByText("+ Додати прийом їжі"));
+    fireEvent.click(screen.getByText("Додати прийом їжі"));
     expect(onAddMeal).toHaveBeenCalled();
   });
 

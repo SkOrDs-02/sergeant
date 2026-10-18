@@ -5,9 +5,9 @@
 import { useRef, useState } from "react";
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
-import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import type { PickedFood } from "./FoodPickerSection";
 import {
@@ -44,6 +44,7 @@ interface MacrosEditorProps {
   pickedGrams: string;
   photoResult?: MealFormPhotoResult | null | undefined;
   hasPhotoMacros: boolean;
+  onUnlink?: () => void;
 }
 
 export function MacrosEditor({
@@ -55,6 +56,7 @@ export function MacrosEditor({
   pickedGrams,
   photoResult,
   hasPhotoMacros,
+  onUnlink,
 }: MacrosEditorProps) {
   // Guarded edit: when a food is linked from the DB, direct macro edits
   // used to silently drop the `foodId`. Now the first edit opens a
@@ -85,6 +87,7 @@ export function MacrosEditor({
     if (!pendingUnlink) return;
     const { key, value } = pendingUnlink;
     setPickedFood(null);
+    onUnlink?.();
     if (key && value !== null) field(key)(value);
     setPendingUnlink(null);
   };
@@ -101,6 +104,8 @@ export function MacrosEditor({
   useDialogFocusTrap(Boolean(pendingUnlink), unlinkPanelRef, {
     onEscape: cancelUnlink,
   });
+  // Системний Back закриває лише це попередження, а не весь аркуш прийому.
+  useHistoryDismiss(Boolean(pendingUnlink), cancelUnlink);
 
   return (
     <div className="mb-1">
@@ -118,21 +123,16 @@ export function MacrosEditor({
                 err: "",
               }))
             }
-            className="inline-flex items-center gap-1 text-style-caption text-nutrition-strong dark:text-nutrition font-semibold hover:underline"
+            className="inline-flex min-h-[44px] items-center rounded-lg text-style-label font-semibold text-text underline underline-offset-2 focus-ring"
           >
-            <Icon name="chevron-left" size="sm" />З результату фото
+            З результату фото
           </button>
         </div>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {MACRO_FIELDS.map(({ key, label, placeholder }) => (
           <div key={key}>
-            <SectionHeading
-              as="div"
-              size="xs"
-              variant="nutrition"
-              className="mb-1"
-            >
+            <SectionHeading as="div" size="xs" className="mb-1">
               {label}
             </SectionHeading>
             <Input
@@ -185,7 +185,7 @@ export function MacrosEditor({
           ref={unlinkPanelRef}
           role="alertdialog"
           aria-label="Підтвердити ручне редагування КБЖВ"
-          className="mt-3 rounded-2xl border border-warning/40 bg-warning/10 p-3 text-xs text-text space-y-2"
+          className="mt-3 border-y border-line py-3 text-style-label text-text space-y-2"
         >
           <p className="font-semibold">
             Редагувати КБЖВ для «{pickedFood?.name || "продукт"}» вручну?
@@ -207,8 +207,6 @@ export function MacrosEditor({
             <Button
               type="button"
               variant="solid"
-              tone="nutrition"
-
               size="sm"
               className="flex-1"
               onClick={confirmUnlink}

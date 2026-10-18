@@ -3,6 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
 import {
   ACCOUNT_DELETION_GRACE_DAYS,
@@ -48,6 +49,10 @@ export function DeleteAccountDialog({
   // пінить body у `position: fixed` на поточному офсеті й рахує вкладеність.
   useBodyScrollLock(open);
 
+  // Системний Back закриває діалог, а не виводить із профілю з уже набраним
+  // паролем (аудит ux-02).
+  useHistoryDismiss(open, onCancel);
+
   // Центрований діалог із полем пароля. Без keyboard-геометрії поле
   // опиняється під клавіатурою, і видимим його робив лише пан visual
   // viewport від iOS — а `useKeyboardAwareOverlay` цей пан гасить, тож
@@ -74,7 +79,7 @@ export function DeleteAccountDialog({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 "
         onClick={onCancel}
         aria-label="Закрити"
       />
@@ -83,7 +88,7 @@ export function DeleteAccountDialog({
         // `overflow-y-auto` — пара до `kbStyles.panel`: під клавіатурою
         // висота обрізається, і без власного скролу кнопки внизу стали б
         // недосяжними.
-        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-soft p-5 z-10 overflow-y-auto overscroll-contain"
+        className="relative w-full max-w-sm bg-panel border border-line rounded-panel shadow-soft p-5 z-10 overflow-y-auto overscroll-contain"
         style={kbStyles.panel}
         role="dialog"
         aria-modal="true"

@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-05-14
  * Status: Active
@@ -110,7 +111,9 @@ export function HabitHeatmap({
     capture: true,
   });
 
+  const dayKey = useDeviceDayKey();
   const { weeks, monthMarkers } = useMemo(() => {
+    void dayKey;
     // Той самий анкер доби, що й решта web-routine (`lib/dayAnchor.ts`), не
     // окрема копія — інакше хітмап знову міг би показати «сьогодні» в
     // іншій клітинці, ніж решта картки (unification audit 2026-08-31,
@@ -181,7 +184,7 @@ export function HabitHeatmap({
     });
 
     return { weeks, monthMarkers };
-  }, [habits, completions, skips, historyWeeks, futureWeeks]);
+  }, [habits, completions, skips, historyWeeks, futureWeeks, dayKey]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
   const cellPositions = useMemo(() => {
@@ -281,8 +284,8 @@ export function HabitHeatmap({
   }, [weeks]);
 
   return (
-    <Card ref={rootRef} radius="lg">
-      <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
+    <Card ref={rootRef}>
+      <SectionHeading as="p" size="lg" className="mb-3">
         Активність: сьогодні та історія
       </SectionHeading>
 
@@ -363,7 +366,7 @@ export function HabitHeatmap({
                     aria-pressed={cell.key === selected}
                     data-today={cell.isToday ? "true" : undefined}
                     className={cn(
-                      "w-3 h-3 shrink-0 rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2",
+                      "w-3 h-3 shrink-0 rounded-[3px] transition-opacity focus-visible:outline focus-visible:outline-2",
                       HEATMAP.outline,
                       cellBg(cell.ratio, cell.isFuture),
                       cell.isToday && cn("ring-1", HEATMAP.ring),
@@ -406,7 +409,7 @@ export function HabitHeatmap({
             key={i}
             role="img"
             aria-label={`Рівень ${i + 1}`}
-            className={cn("w-2.5 h-2.5 rounded-sm inline-block shrink-0", c)}
+            className={cn("w-2.5 h-2.5 rounded-[3px] inline-block shrink-0", c)}
           />
         ))}
         <span>більше</span>
@@ -415,12 +418,12 @@ export function HabitHeatmap({
       {/* Persistent aria-live region: SR announces when a cell is selected */}
       <div aria-live="polite" aria-atomic="true" className="mt-2">
         {detailCell ? (
-          <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption">
-            <span className="text-subtle truncate">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-line pt-3 text-style-label">
+            <span className="text-muted">
               {formatUaWeekdayDate(detailCell.dt, { withYear: true })}
               {detailCell.isToday ? " · сьогодні" : ""}
             </span>
-            <span className="font-semibold text-text shrink-0">
+            <span className="font-semibold text-text tabular-nums">
               {detailCell.isFuture
                 ? "ще не настало"
                 : detailCell.total === 0

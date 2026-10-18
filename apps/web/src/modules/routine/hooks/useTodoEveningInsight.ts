@@ -1,3 +1,4 @@
+import { useMinuteNow } from "@shared/hooks/useMinuteNow";
 import { useMemo } from "react";
 import {
   habitScheduledOnDate,
@@ -18,18 +19,16 @@ import type { Insight } from "@shared/lib/insights/types";
  * bug as the day-key regression. The threshold now reads the device's own
  * clock, matching `todayKey` (also device-local via `lib/dayAnchor.ts`).
  *
- * The hour value is memoised from a single `new Date()` sample taken during
- * render. Because we memoize on `[pendingCount, isEvening]`, re-renders
- * driven by routine state changes (habit toggles) naturally re-evaluate the
- * condition; we do NOT start a clock interval here to avoid spurious re-renders
- * between habit interactions.
+ * The evening gate follows the minute clock and browser resume, so it
+ * updates even when the habit records themselves have not changed.
  */
 export function useTodoEveningInsight(routine: RoutineState): Insight | null {
+  const nowMs = useMinuteNow();
   const todayKey = anchoredTodayKey();
   // ADR-0078: "evening" is the device's own clock, not Kyiv's — matches
   // `todayKey` above.
-  // eslint-disable-next-line no-restricted-syntax, sergeant-design/prefer-kyiv-time -- див. коментар вище
-  const deviceHour = new Date().getHours();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- див. коментар вище
+  const deviceHour = new Date(nowMs).getHours();
   const isEvening = deviceHour >= 20;
 
   const pendingNames = useMemo(() => {

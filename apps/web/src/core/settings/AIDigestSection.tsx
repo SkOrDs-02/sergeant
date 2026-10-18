@@ -5,6 +5,7 @@
 import { useHubPref, HUB_PREF_MONDAY_AUTO } from "./hubPrefs";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
+import { ContentGroup, ContentRow } from "@shared/components/ui/ContentGroup";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 
@@ -46,14 +47,14 @@ export function AIDigestSection() {
     // V-7 (2026-08-08): title читається з каталогу — раніше цей рядок і
     // ⌘K-індекс (settingsSectionsCatalog.ts) розходились ("AI Звіт тижня"
     // тут vs "AI-дайджести" у пошуку) без жодної перевірки.
-    <SettingsGroup title={settingsSectionTitle("ai")} icon="clipboard">
-      <div className="space-y-3">
+    <SettingsGroup title={settingsSectionTitle("ai")}>
+      <ContentGroup variant="bounded" className="space-y-3">
         <p className="text-style-body text-subtle leading-snug">
           Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси,
           тренування, харчування та звички. Звіт збирається сам щопонеділка і
           чекає на головній у блоці «Звіт тижня»; там же його можна оновити.
         </p>
-        <div className="p-3 rounded-xl bg-bg border border-line">
+        <ContentRow>
           <p className="text-style-label text-text">Поточний тиждень</p>
           <p className="text-style-caption text-muted mt-0.5">{weekRange}</p>
           {generatedAt && (
@@ -61,14 +62,16 @@ export function AIDigestSection() {
               Згенеровано: {generatedAt}
             </p>
           )}
-        </div>
-        <ToggleRow
-          label="Автогенерація щопонеділка"
-          description="Перша сесія понеділка сама збирає звіт за завершений тиждень. Звіт не витрачає денний ліміт AI-запитів."
-          checked={mondayAuto}
-          onChange={handleToggleMondayAuto}
-        />
-      </div>
+        </ContentRow>
+        <ContentRow>
+          <ToggleRow
+            label="Автогенерація щопонеділка"
+            description="Перша сесія понеділка сама збирає звіт за завершений тиждень. Звіт не витрачає денний ліміт AI-запитів."
+            checked={mondayAuto}
+            onChange={handleToggleMondayAuto}
+          />
+        </ContentRow>
+      </ContentGroup>
     </SettingsGroup>
   );
 }

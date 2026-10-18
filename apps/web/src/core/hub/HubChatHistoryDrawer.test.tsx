@@ -258,4 +258,17 @@ describe("HubChatHistoryDrawer", () => {
     );
     expect(handlers.onClose.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
+
+  // Аудит ux-02: Back закривав чат під списком бесід, а не сам список.
+  it("системний Back закриває список бесід", () => {
+    const { handlers } = renderDrawer({ open: true, sessions: [] });
+    fireEvent.popState(window);
+    expect(handlers.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("закритий список не реагує на Back", () => {
+    const { handlers } = renderDrawer({ open: false, sessions: [] });
+    fireEvent.popState(window);
+    expect(handlers.onClose).not.toHaveBeenCalled();
+  });
 });

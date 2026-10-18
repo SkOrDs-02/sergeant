@@ -162,7 +162,6 @@ function DefaultErrorFallback<TError>({
   return (
     <EmptyState
       size="sm"
-      variant="danger"
       eyebrow={messages.errors.generic.title}
       title={messages.errors.generic.somethingWrong}
       description={message}
