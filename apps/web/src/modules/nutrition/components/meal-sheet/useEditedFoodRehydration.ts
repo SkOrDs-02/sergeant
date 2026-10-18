@@ -183,7 +183,9 @@ export function useEditedFoodRehydration({
           portions: food.portions,
         };
       }
-      const generic = await pickGenericFood(editedFoodId);
+      // Збій підвантаження корпусу (офлайн, чанк не прийшов) не має гасити
+      // останню ланку: етикетку з порції прийому можна вивести й без нього.
+      const generic = await pickGenericFood(editedFoodId).catch(() => null);
       if (generic) return generic;
       const per100 = per100FromMeal(amountG, {
         kcal,
