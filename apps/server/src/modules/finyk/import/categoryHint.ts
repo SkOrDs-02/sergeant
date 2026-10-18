@@ -8,6 +8,10 @@ import {
   INTERNAL_TRANSFER_ID,
   P2P_TRANSFER_MCCS,
 } from "@sergeant/finyk-domain/constants";
+import {
+  CASH_WITHDRAWAL_FRAGMENTS,
+  CASH_WITHDRAWAL_MCCS,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
 import type { ImportDirection } from "@sergeant/shared";
 
 /**
@@ -193,15 +197,13 @@ export function mapBankCategory(
  * проходить обовʼязковий bulk-review, і людина знімає чип одним тапом. Це
  * рівно та «видима overrideable підказка», яку описує ADR-0076.
  *
- * **Межа, про яку треба памʼятати.** Поки «Готівки на руках» (ADR-0076) у
- * коді немає, позначений переказом рядок виходить із підсумків — і готівкова
- * витрата існує лише тоді, коли людина внесе її сама. Тобто підказка міняє
- * бік похибки: замість подвійного обліку (зняття + ручна витрата) отримуємо
- * недооблік, якщо готівку не заносити. Закриє це лише ADR-0076.
+ * Коли в людини є «Готівка на руках», позначений переказом рядок зняття
+ * поповнює її баланс (`computeCashBalanceMinor`, Р2.7 спеки
+ * `finyk-analytics-v3.md`), а коди й описи зняття беруться з того самого
+ * списку домену, тож підказка і поповнення не розійдуться.
+ *
+ * Значення MCC-колонки (рядком, як воно прийшло з файлу) → слаг.
  */
-const CASH_WITHDRAWAL_MCCS: ReadonlySet<number> = new Set([6010, 6011]);
-
-/** Значення MCC-колонки (рядком, як воно прийшло з файлу) → слаг. */
 export function mapMccCell(raw: string): string | null {
   const mcc = Number.parseInt(raw.trim(), 10);
   if (!Number.isInteger(mcc) || mcc <= 0) return null;
@@ -218,18 +220,7 @@ export function mapMccCell(raw: string): string | null {
  *
  * Вужче за `getCategory`: перевіряється до нього, бо каталог мерчантів на
  * ці описи не реагує взагалі й віддає «Інше».
- */
-const CASH_WITHDRAWAL_FRAGMENTS: readonly string[] = [
-  "зняття готівки",
-  "видача готівки",
-  "отримання готівки",
-  "зняття коштів",
-  "банкомат",
-  "atm",
-  "cash withdrawal",
-];
-
-/**
+ *
  * Опис операції (назва мерчанта) → слаг за ключовими словами домену.
  *
  * `p2pMcc` — код переказу (4829) з MCC-колонки, якщо він там був. Каталог
