@@ -125,4 +125,19 @@ describe("DeleteAccountDialog", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  // Аудит ux-02: Back виводив із профілю разом із набраним паролем.
+  it("системний Back скасовує діалог", () => {
+    const onCancel = vi.fn();
+    renderDialog({ onCancel });
+    fireEvent.popState(window);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("закритий діалог не реагує на Back", () => {
+    const onCancel = vi.fn();
+    renderDialog({ open: false, onCancel });
+    fireEvent.popState(window);
+    expect(onCancel).not.toHaveBeenCalled();
+  });
 });

@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -71,6 +72,11 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   });
 
   useBodyScrollLock(open);
+
+  // Системний Back = «скасувати»: підтвердження не виконується, а діалог
+  // закривається, не виводячи з екрана й не закриваючи Sheet під ним.
+  // `onCancel` необовʼязковий, тож обгортка.
+  useHistoryDismiss(open, () => onCancel?.());
 
   if (!open) return null;
   if (typeof document === "undefined") return null;

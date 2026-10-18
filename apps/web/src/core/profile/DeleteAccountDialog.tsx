@@ -3,6 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
 import {
   ACCOUNT_DELETION_GRACE_DAYS,
@@ -47,6 +48,10 @@ export function DeleteAccountDialog({
   // refcount-у, тож вкладений оверлей затирав відновлення. Спільний хук
   // пінить body у `position: fixed` на поточному офсеті й рахує вкладеність.
   useBodyScrollLock(open);
+
+  // Системний Back закриває діалог, а не виводить із профілю з уже набраним
+  // паролем (аудит ux-02).
+  useHistoryDismiss(open, onCancel);
 
   // Центрований діалог із полем пароля. Без keyboard-геометрії поле
   // опиняється під клавіатурою, і видимим його робив лише пан visual
