@@ -8,6 +8,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import {
   getKyivDateParts,
   getKyivDayKey,
@@ -122,6 +123,10 @@ function HistoryPanel({
     onEscape: onClose,
     inertBackground: true,
   });
+
+  // Панель монтується лише на відкритому списку, тож `open` тут завжди true.
+  // Системний Back закриває лише список бесід, а не чат під ним.
+  useHistoryDismiss(true, onClose);
 
   // Sort newest-first by updatedAt so a freshly-touched session jumps
   // to the top, matching iOS Messages and Telegram conventions — then

@@ -340,7 +340,29 @@ async function applyGenericRegistryRow(
   }
 
   if (op.op === "delete") {
-    if (!hasDeletedAt) return "rejected";
+    if (!hasDeletedAt) {
+      // AI-CONTEXT (data-15): finyk_tx_categories / finyk_tx_splits /
+      // finyk_mono_debt_links / finyk_networth_history — hard-delete-таблиці
+      // (є `updated_at`, нема `deleted_at`). Сервер віддає їм справжній
+      // `delete`-оп, а раніше тут стояв `rejected`: видалення не доходило на
+      // інші пристрої, рядок воскресав. Тепер це hard DELETE з тим самим LWW
+      // `julianday`-guard, що й soft-delete та upsert нижче: JS-guard вище
+      // (`isStaleLocal`) лише швидкий шлях, а локальний writer може закомітити
+      // між вибіркою й записом. Рядок, що не видалився (новіший локально або
+      // вже відсутній), дає "skipped", а не "applied", щоб таблиця не потрапила
+      // в affectedTables і не будила зайвий refresh кешу. Таблиця без
+      // `updated_at` (нема з чим порівняти) лишається `rejected`. Soft-delete
+      // з міграцією — окремий PR (ADR-0073).
+      if (!hasUpdatedAt) return "rejected";
+      const removed = await client.all(
+        `DELETE FROM ${safeTable}
+          WHERE ${lookupWhere}
+            AND (julianday(updated_at) IS NULL OR julianday(updated_at) < julianday(?))
+        RETURNING 1 AS applied`,
+        [...lookupValues, op.client_ts],
+      );
+      return removed.length > 0 ? "applied" : "skipped";
+    }
     const changed = await client.all(
       `UPDATE ${safeTable}
           SET deleted_at = ?, updated_at = ?

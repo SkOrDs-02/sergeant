@@ -1,6 +1,6 @@
 # Playbook: Звести дублікати UI до канону і закріпити храповиком
 
-> **Last touched:** 2026-10-12 by @Skords-01. **Next review:** 2027-01-12.
+> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-02-10.
 > **Status:** Active
 > **Runtime-specific:** no
 

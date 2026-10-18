@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-10-12 by @Skords-01. **Next review:** 2027-04-01.
+> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-04-18.
 > **Status:** Active
 
 Для `apps/web` діє мова H: сторінка `#fbfbfa` / `#0e1116`, панель `#f2f2f0` / `#171c23`, тинт лише на одному блоці даних. Невживані web-токени `cream` і `moduleSurfaces` прибрано в redesign v3 PR7. Лендінг і заморожений mobile поза цим редизайном.

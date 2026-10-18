@@ -56,6 +56,10 @@ export const pricingEn: MessageGroupShape<(typeof ukMessages)["pricing"]> = {
   errors: {
     checkoutUnavailable:
       "Payment is temporarily unavailable. Leave your email below and we'll follow up when you can pay.",
+    checkoutAlreadySubscribed:
+      "Your subscription is already active. Manage it in settings.",
+    checkoutPending:
+      "A payment is already open in another tab. Finish it there or try again in an hour.",
     portalNoBillingCustomer:
       "No billing profile found. Reach out to support, we'll set it up manually.",
     portalUnavailable:

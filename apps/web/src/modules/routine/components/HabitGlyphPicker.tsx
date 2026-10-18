@@ -17,6 +17,7 @@ import { useRef, useState } from "react";
 import { ROUTINE_GLYPHS, type RoutineGlyph } from "@sergeant/routine-domain";
 import { Icon } from "@shared/components/ui/Icon";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { cn } from "@shared/lib/ui/cn";
 import { routineGlyphLabel } from "../lib/habitGlyphs";
@@ -53,6 +54,11 @@ export function HabitGlyphPicker({
   });
 
   useOutsideClick(wrapRef, () => setOpen(false), { enabled: open });
+
+  // Системний Back (Android/PWA) закриває лише пікер. Пікер зазвичай відкрито
+  // всередині Sheet-форми (нова звичка), і без власного запису в історії Back
+  // закривав би форму разом із пікером.
+  useHistoryDismiss(open, () => setOpen(false));
 
   return (
     <div className={cn("relative shrink-0", className)} ref={wrapRef}>

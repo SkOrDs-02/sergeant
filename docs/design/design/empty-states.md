@@ -1,6 +1,6 @@
 # Empty states
 
-> **Last touched:** 2026-10-18 by @Skords-01. **Next review:** 2027-04-18.
+> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-04-18.
 > **Status:** Active
 
 > **Аудиторія:** усі, хто пише UI у `apps/web`.

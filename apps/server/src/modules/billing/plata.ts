@@ -30,30 +30,29 @@ import type {
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
-import {
-  BillingConfigurationError,
-  type BillingProvider,
-  type CancelSubscriptionOutcome,
-  type ProviderCheckoutInput,
-  type ProviderPortalInput,
+import type {
+  BillingProvider,
+  CancelSubscriptionOutcome,
+  ProviderCheckoutInput,
+  ProviderPortalInput,
 } from "./provider.js";
 import { reconcileBySubscriptionId } from "./plataSync.js";
+import {
+  MONOPAY_BASE,
+  cancelPlataRemoteSubscription,
+  getPlataToken as getToken,
+} from "./plataRemote.js";
 import { isoOrNull } from "./stripeShared.js";
 
-export const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
 const CCY_UAH = 980;
-const SUBSCRIPTION_VALIDITY_SECONDS = 3600;
+/**
+ * Скільки живе `pageUrl` (секунди). Це ж межа для 409 CHECKOUT_PENDING: доти
+ * непідтверджений checkout ще може бути оплачений у іншій вкладці.
+ */
+export const SUBSCRIPTION_VALIDITY_SECONDS = 3600;
 const PUBKEY_TTL_MS = 60 * 60 * 1000;
 const PUBKEY_FORCE_COOLDOWN_MS = 60 * 1000;
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
-
-export function getToken(): string {
-  const token = env.PLATA_TOKEN;
-  if (!token) {
-    throw new BillingConfigurationError("PLATA_TOKEN is not set");
-  }
-  return token;
-}
 
 function getAppBaseUrl(): string {
   return (
@@ -256,17 +255,6 @@ async function readLatestSubscription(
   return rows[0] ?? null;
 }
 
-async function findSubscriptionId(
-  pool: Pool,
-  userId: string,
-): Promise<string | null> {
-  const { rows } = await pool.query<{ subscription_id: string }>(
-    `SELECT subscription_id FROM plata_subscription WHERE user_id = $1`,
-    [userId],
-  );
-  return rows[0]?.subscription_id ?? null;
-}
-
 export const plataProvider: BillingProvider = {
   id: "plata",
 
@@ -301,14 +289,13 @@ export const plataProvider: BillingProvider = {
     }
     // Записуємо мапінг ДО повернення pageUrl викликачу (до редиректу) —
     // subscription/create не має `reference`, тож це єдине місце, де звʼязок
-    // «юзер ↔ subscriptionId» можна зафіксувати.
+    // «юзер ↔ subscriptionId» можна зафіксувати. Мапінг 1:N (міграція 154):
+    // кожен checkout - окремий рядок, тож вебхук по будь-якому з id
+    // резолвиться, а попередній checkout не губиться (аудит data-21).
     await input.pool.query(
       `INSERT INTO plata_subscription (user_id, subscription_id)
        VALUES ($1, $2)
-       ON CONFLICT (user_id) DO UPDATE SET
-         subscription_id = EXCLUDED.subscription_id,
-         confirmed_at = NULL,
-         updated_at = NOW()`,
+       ON CONFLICT (subscription_id) DO NOTHING`,
       [input.user.id, payload.subscriptionId],
     );
     return {
@@ -366,22 +353,30 @@ export const plataProvider: BillingProvider = {
 
   /**
    * `edit action=cancel` без `refundAmount` (доступ до кінця періоду,
-   * ADR-1.11). Fallback на `subscription/remove` при 404/400 — `remove`
-   * працює лише поки за підпискою не було жодної оплати. Best-effort:
-   * провайдер-помилка не валить локальне скасування (ADR-0016).
+   * ADR-1.11), fallback на `subscription/remove` - див.
+   * {@link cancelPlataRemoteSubscription}.
    *
-   * AI-NOTE: на відміну від LiqPay/Stripe, відмову monobank тут ковтаємо й
-   * `cancel_at_period_end` усе одно виставляємо. Це давнє рішення, а не
-   * недогляд цього PR; змінювати його — окреме продуктове рішення
-   * (див. `plata.test.ts`: «swallows a network error from monobank»).
+   * Відмова monobank (не-2xx, мережа, таймаут) = `throw`: роут
+   * `/api/billing/cancel` віддає 502 PROVIDER_CANCEL_FAILED, а
+   * `cancel_at_period_end` НЕ ставиться, тож людина може повторити. Це
+   * рішення власника 2026-10-10 (аудит data-20, варіант A: Plata поводиться
+   * як LiqPay/Stripe). Раніше відмову ковтали й прапорець ставили все одно -
+   * людині казали "скасовано", а monobank далі списував. Видалення акаунта
+   * лишається best-effort (`notifyProvidersCancel` ловить throw, ADR-0016).
+   *
+   * Скасовуємо саме ту підписку, що тримає ентайтлмент
+   * (`subscriptions.provider_subscription_id`), а не "останній checkout"
+   * з мапінгу (аудит data-21).
    */
   async cancelSubscription(
     pool: Pool,
     userId: string,
   ): Promise<CancelSubscriptionOutcome> {
-    // Уже скасовано до кінця періоду — monobank вдруге не смикаємо.
-    const current = await pool.query<{ cancel_at_period_end: boolean }>(
-      `SELECT cancel_at_period_end
+    const { rows } = await pool.query<{
+      provider_subscription_id: string | null;
+      cancel_at_period_end: boolean;
+    }>(
+      `SELECT provider_subscription_id, cancel_at_period_end
          FROM subscriptions
         WHERE user_id = $1 AND provider = 'plata'
           AND status IN ('active', 'trialing', 'past_due')
@@ -389,52 +384,24 @@ export const plataProvider: BillingProvider = {
         LIMIT 1`,
       [userId],
     );
-    if (current.rows[0]?.cancel_at_period_end === true) {
-      return "already_canceling";
-    }
+    const row = rows[0];
+    if (!row) return "none"; // нема активної plata-підписки
+    // Уже скасовано до кінця періоду — monobank вдруге не смикаємо.
+    if (row.cancel_at_period_end === true) return "already_canceling";
+    const subscriptionId = row.provider_subscription_id;
+    if (!subscriptionId) return "none"; // без id провайдеру нічого не наказати
 
-    const subscriptionId = await findSubscriptionId(pool, userId);
-    if (subscriptionId) {
-      try {
-        const token = getToken();
-        const response = await fetch(`${MONOPAY_BASE}/subscription/edit`, {
-          method: "POST",
-          headers: {
-            "X-Token": token,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ subscriptionId, action: "cancel" }),
-        });
-        if (response.status === 404 || response.status === 400) {
-          await fetch(`${MONOPAY_BASE}/subscription/remove`, {
-            method: "POST",
-            headers: {
-              "X-Token": token,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ subscriptionId }),
-          });
-        } else if (!response.ok) {
-          logger.warn({
-            msg: "plata_subscription_cancel_failed",
-            status: response.status,
-          });
-        }
-      } catch (err) {
-        logger.warn({
-          msg: "plata_subscription_cancel_error",
-          err: err instanceof Error ? err.message : String(err),
-        });
-      }
-    }
-    // Доступ до кінця періоду (ADR-1.11). WHERE-guard лишає без змін усе, що
-    // не є активною plata-підпискою; `rowCount` каже, чи було що скасовувати.
+    await cancelPlataRemoteSubscription(subscriptionId);
+
+    // Доступ до кінця періоду (ADR-1.11). Прапорець ставимо лише після
+    // підтвердження monobank і лише тому рядку, чий id скасували.
     const updated = await pool.query(
       `UPDATE subscriptions
           SET cancel_at_period_end = TRUE, updated_at = NOW()
         WHERE user_id = $1 AND provider = 'plata'
+          AND provider_subscription_id = $2
           AND status IN ('active', 'trialing', 'past_due')`,
-      [userId],
+      [userId, subscriptionId],
     );
     return (updated.rowCount ?? 0) > 0 ? "canceled" : "none";
   },

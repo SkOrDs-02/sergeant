@@ -1,6 +1,6 @@
 # Функціональна ієрархія web і великі колекції
 
-> **Last touched:** 2026-10-15 by @Skords-01. **Next review:** 2027-01-12.
+> **Last touched:** 2026-10-18 by @claude. **Next review:** 2028-01-18.
 > **Status:** Active
 
 ## Контекст і межа
