@@ -61,6 +61,18 @@ export function ipPrefix(ip: string | null | undefined): string | null {
 }
 
 /**
+ * Канонічна форма однієї hex-групи IPv6: нижній регістр, без нулів
+ * попереду (`005d` -> `5d`, `0000` -> `0`). Better Auth зберігає
+ * `session.ipAddress` розгорнутим (`2a02:2f0e:005d:001a:0000:...`), а
+ * Vercel/Express віддає скорочений (`2a02:2f0e:5d:1a::1`): без канонізації
+ * той самий /64 давав різні префікси і хибний session-drift.
+ */
+function canonicalGroup(group: string): string {
+  const n = Number.parseInt(group || "0", 16);
+  return Number.isNaN(n) ? group.toLowerCase() : n.toString(16);
+}
+
+/**
  * Expand the leading 4 groups (64 bits) of an IPv6 address.
  *
  * Працює з compressed (`::`) формою: розгортаємо до 8 груп через `::`,
@@ -73,10 +85,7 @@ function expandIpv6Prefix(addr: string): string {
   const tailParts = tail ? tail.split(":") : [];
   const fillCount = Math.max(0, 8 - headParts.length - tailParts.length);
   const allGroups = [...headParts, ...Array(fillCount).fill("0"), ...tailParts];
-  const prefix = allGroups
-    .slice(0, 4)
-    .map((g) => g || "0")
-    .join(":");
+  const prefix = allGroups.slice(0, 4).map(canonicalGroup).join(":");
   return `${prefix}::`;
 }
 

@@ -31,6 +31,25 @@ describe("ipPrefix", () => {
   });
 });
 
+describe("ipPrefix: канонічні IPv6-групи", () => {
+  it("розгорнута (з нулями попереду) і скорочена форми одного /64 дають один префікс", () => {
+    expect(ipPrefix("2a02:2f0e:005d:001a:0000:0000:0000:0000")).toBe(
+      ipPrefix("2a02:2f0e:5d:1a::1"),
+    );
+    expect(ipPrefix("2a02:2f0e:5d:1a::1")).toBe("2a02:2f0e:5d:1a::/64");
+  });
+
+  it("регістр hex-цифр не впливає", () => {
+    expect(ipPrefix("2A02:2F0E:5D:1A::1")).toBe(ipPrefix("2a02:2f0e:5d:1a::1"));
+  });
+
+  it("різні /64 лишаються різними", () => {
+    expect(ipPrefix("2a02:2f0e:5d:1b::1")).not.toBe(
+      ipPrefix("2a02:2f0e:005d:001a::1"),
+    );
+  });
+});
+
 describe("detectFingerprintDrift", () => {
   it("returns null when stored fingerprint is empty (legacy session)", () => {
     expect(

@@ -26,6 +26,10 @@ import {
   getClientIp,
   verifySignedClientIp,
 } from "./clientIp.js";
+import {
+  detectFingerprintDrift,
+  ipPrefix,
+} from "../auth/sessionFingerprint.js";
 import { getIp } from "./rateLimit.js";
 import { requireInternalIp } from "./requireInternalIp.js";
 
@@ -189,6 +193,45 @@ describe("clientIpMiddleware: rate-limit і Better Auth бачать той са
       .set("x-forwarded-for", "9.9.9.9");
     expect(res.body.rateLimit).toBe(res.body.reqIp);
     expect(res.body.betterAuth).toBe("9.9.9.9");
+  });
+});
+
+describe("IPv6: Better Auth і session-drift бачать той самий /64 (rel-03)", () => {
+  // Група з нулем попереду (`5d`, `1a`) у /64 — типово для мобільних мереж.
+  const V6 = "2a02:2f0e:5d:1a::1";
+
+  beforeEach(() => {
+    envMock.SERGEANT_CLIENT_IP_SECRET = SECRET;
+  });
+
+  it("session.ipAddress від Better Auth не дає хибного ip-drift проти getClientIp", async () => {
+    let seen: { baIp: string | null; current: string | undefined } | undefined;
+    const app = express();
+    app.set("trust proxy", 1);
+    app.use(clientIpMiddleware);
+    app.get("/ip", (req, res) => {
+      seen = {
+        baIp: betterAuthGetIp(fromNodeHeaders(req.headers), {
+          advanced: {
+            ipAddress: { ipAddressHeaders: AUTH_IP_ADDRESS_HEADERS },
+          },
+        }),
+        current: getClientIp(req),
+      };
+      res.json({});
+    });
+    await request(app).get("/ip").set(signed(V6));
+
+    // Better Auth зберігає розгорнуту форму: `2a02:2f0e:005d:001a:0000:...`.
+    expect(seen?.baIp).toBe("2a02:2f0e:005d:001a:0000:0000:0000:0000");
+    expect(seen?.current).toBe(V6);
+    const base = { storedUserAgent: "ua", currentUserAgent: "ua" };
+    // Сире значення (legacy-рядки) і префікс, який пише databaseHooks.
+    for (const storedIp of [seen!.baIp, ipPrefix(seen!.baIp)]) {
+      expect(
+        detectFingerprintDrift({ ...base, storedIp, currentIp: seen!.current }),
+      ).toBeNull();
+    }
   });
 });
 

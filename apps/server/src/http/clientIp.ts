@@ -21,7 +21,9 @@ import { env } from "../env.js";
  *
  * AI-CONTEXT: підпис прив'язаний лише до IP, без часової мітки. Реплей
  * безпечний: підпис для IP X дає право заявити лише IP X, а підробити
- * підпис для чужого IP без секрету неможливо.
+ * підпис для чужого IP без секрету неможливо. Але пара IP+підпис, що
+ * витекла (Sentry, логи), дозволяє видавати себе за цей IP, тому
+ * `x-sergeant-client-ip-sig` редагується (REDACT_KEY_NAMES, redactPaths).
  */
 
 export const CLIENT_IP_HEADER = "x-sergeant-client-ip";
