@@ -54,7 +54,7 @@ export function CashAmountForm({
         <Button
           type="button"
           variant="solid"
-          tone="finyk"
+          tone="ink"
           size="sm"
           onClick={submit}
         >
