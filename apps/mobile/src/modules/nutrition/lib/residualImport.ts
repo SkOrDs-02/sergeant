@@ -34,6 +34,7 @@ import {
   normalizePantries,
   normalizeShoppingList,
   normalizeWaterLog,
+  resolvePantryItemIds,
   type NutritionLog,
   type NutritionPrefs,
   type Pantry,
@@ -264,25 +265,36 @@ function extractMealSnapshots(log: NutritionLog): NutritionMealSnapshot[] {
 function extractPantrySnapshots(
   pantries: readonly Pantry[],
 ): NutritionPantrySnapshot[] {
-  return pantries.map((p) => ({
-    id: p.id,
-    name: p.name,
-    text: p.text,
-    items: (p.items ?? []).map((it, idx) => ({
-      id: `${p.id}::${idx}::${it.name ?? ""}`,
-      name: it.name,
-      qty: typeof it.qty === "number" ? it.qty : null,
-      unit: typeof it.unit === "string" ? it.unit : null,
-      notes: typeof it.notes === "string" ? it.notes : null,
-      // Дзеркало web: варіанти покупок їдуть одним JSON-полем разом зі
-      // своєю позицією (міграція 130). Без цього рядка синк із телефону
-      // затирав би картку продукту, яку щойно записав веб.
-      sources:
-        Array.isArray(it.sources) && it.sources.length > 0
-          ? JSON.stringify(it.sources)
-          : null,
-    })),
-  }));
+  // data-40: id позиції стабільний і береться з `PantryItem.id` (його видає
+  // `mergeItems`, а рідер SQLite повертає як `row.id`). Раніше id виводився з
+  // місця в масиві і перейменовував рядок `pi_…` на позиційний при кожному
+  // записі; зі старою вебвкладкою це воскрешало tombstone і плодило дубль.
+  // Позиція без id отримує легасі-id за позицією (той, що вже лежить у рядку).
+  // `taken` спільний для всіх місць: PK рядка — `(user_id, id)`.
+  const taken = new Set<string>();
+  return pantries.map((p) => {
+    const items = p.items ?? [];
+    const ids = resolvePantryItemIds(p.id, items, taken);
+    return {
+      id: p.id,
+      name: p.name,
+      text: p.text,
+      items: items.map((it, idx) => ({
+        id: ids[idx] as string,
+        name: it.name,
+        qty: typeof it.qty === "number" ? it.qty : null,
+        unit: typeof it.unit === "string" ? it.unit : null,
+        notes: typeof it.notes === "string" ? it.notes : null,
+        // Дзеркало web: варіанти покупок їдуть одним JSON-полем разом зі
+        // своєю позицією (міграція 130). Без цього рядка синк із телефону
+        // затирав би картку продукту, яку щойно записав веб.
+        sources:
+          Array.isArray(it.sources) && it.sources.length > 0
+            ? JSON.stringify(it.sources)
+            : null,
+      })),
+    };
+  });
 }
 
 function extractRecipesFromMmkvBlob(raw: unknown): SavedRecipe[] {
