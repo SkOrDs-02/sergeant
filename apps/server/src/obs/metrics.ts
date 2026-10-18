@@ -647,4 +647,5 @@ export {
   billingCheckoutTotal,
   billingWebhookTotal,
   billingRecurringChargeTotal,
+  billingSupersedeCancelTotal,
 } from "./metrics/billing.js";

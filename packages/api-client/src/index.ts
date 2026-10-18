@@ -276,11 +276,14 @@ export {
 
 export {
   createBillingEndpoints,
+  billingCheckoutConflictCode,
+  BillingCheckoutConflictCodeBodySchema,
   BillingCheckoutRequestBodySchema,
   BillingCheckoutResponseBodySchema,
   BillingPortalResponseBodySchema,
   BillingStatusResponseBodySchema,
   type BillingAccess,
+  type BillingCheckoutConflictCode,
   type BillingCheckoutRequest,
   type BillingCheckoutResponse,
   type BillingEndpoints,

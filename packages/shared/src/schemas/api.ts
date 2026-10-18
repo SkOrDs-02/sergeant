@@ -1843,6 +1843,22 @@ export type BillingCheckoutResponse = z.infer<
   typeof BillingCheckoutResponseSchema
 >;
 
+// `POST /api/billing/checkout` відхиляється ДО звернення до провайдера
+// (аудит 2026-10-01, data-21), коли друга сторінка оплати дала б подвійне
+// списання. Помилка йде стандартною формою `{error, code, requestId}`:
+//   - `409 ALREADY_SUBSCRIBED` - у користувача вже є діючий платний
+//     ентайтлмент (reverse trial / ручний грант не рахуються);
+//   - `409 CHECKOUT_PENDING` - є непідтверджений Plata-checkout, молодший за
+//     годину (час життя `pageUrl`): його ще можуть оплатити в іншій вкладці.
+// Інші коди checkout-у: `400 PROVIDER_UNAVAILABLE`, `503 BILLING_UNAVAILABLE`.
+export const BillingCheckoutConflictCodeSchema = z.enum([
+  "ALREADY_SUBSCRIBED",
+  "CHECKOUT_PENDING",
+]);
+export type BillingCheckoutConflictCode = z.infer<
+  typeof BillingCheckoutConflictCodeSchema
+>;
+
 export const BillingSubscriptionSchema = z.object({
   id: z.number().int().positive().nullable(),
   provider: BillingSubscriptionProviderSchema.nullable(),
@@ -1924,8 +1940,9 @@ export type BillingPortalResponse = z.infer<typeof BillingPortalResponseSchema>;
 // Помилки йдуть стандартною формою `{error, code}`:
 //   - `409 NO_ACTIVE_SUBSCRIPTION` — жоден провайдер не має що скасовувати
 //     (немає підписки, founder-байпас або `provider='manual'`);
-//   - `502 PROVIDER_CANCEL_FAILED` — провайдер відмовив або не відповів,
-//     підписка лишається активною, можна повторити.
+//   - `502 PROVIDER_CANCEL_FAILED` — провайдер (LiqPay, Plata/monobank або
+//     Stripe) відмовив, не відповів чи мережа впала: `cancel_at_period_end`
+//     НЕ виставлено, підписка лишається активною, можна повторити.
 export const BillingCancelResponseSchema = z.object({
   ok: z.literal(true),
 });

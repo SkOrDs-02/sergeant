@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import type { ReactNode } from "react";
+import {
+  MemoryRouter,
+  UNSAFE_NavigationContext,
+  type Navigator,
+} from "react-router-dom";
+import { useContext, useEffect, type ReactNode } from "react";
 import type { Hit } from "./searchTypes";
 
 const performSearch = vi.hoisted(() => vi.fn<(q: string) => Hit[]>(() => []));
@@ -44,8 +48,24 @@ vi.mock("./useInlineAiRail", () => ({
 
 import { useSearchEngine } from "./useSearchEngine";
 
+// `useNavigate` у цьому файлі замокано, тож реальну зміну адреси (яку пошук
+// чекає перед закриттям) робимо через навігатор самого MemoryRouter.
+let routerNavigator: Navigator | null = null;
+function NavigatorProbe() {
+  const { navigator } = useContext(UNSAFE_NavigationContext);
+  useEffect(() => {
+    routerNavigator = navigator;
+  }, [navigator]);
+  return null;
+}
+
 function wrapper({ children }: { children: ReactNode }) {
-  return <MemoryRouter>{children}</MemoryRouter>;
+  return (
+    <MemoryRouter>
+      <NavigatorProbe />
+      {children}
+    </MemoryRouter>
+  );
 }
 
 function hit(
@@ -100,7 +120,7 @@ describe("useSearchEngine", () => {
     expect(result.current.results.length).toBeGreaterThan(0);
   });
 
-  it("openHit: module hit calls onOpenModule + onClose", () => {
+  it("openHit: module hit calls onOpenModule і закриває пошук лише після зміни адреси", () => {
     const { result } = setup();
     act(() =>
       result.current.openHit(
@@ -113,7 +133,23 @@ describe("useSearchEngine", () => {
     );
     expect(hapticTap).toHaveBeenCalled();
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
-    expect(onClose).toHaveBeenCalled();
+    // Лінивий чанк маршруту ще вантажиться: закрити зараз = відкотити запис
+    // історії раніше за push і скасувати перехід (ux-02, HubSearch).
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => routerNavigator?.push("/finyk"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("openHit: поки навігація не завершилась, повторний клік її не дублює", () => {
+    const { result } = setup();
+    const moduleHit = hit({
+      id: "m2",
+      module: "finyk",
+      target: { kind: "module", moduleId: "finyk" },
+    });
+    act(() => result.current.openHit(moduleHit));
+    act(() => result.current.openHit(moduleHit));
+    expect(onOpenModule).toHaveBeenCalledTimes(1);
   });
 
   it("openHit: ai-handoff resolves inline without closing", () => {
@@ -146,6 +182,9 @@ describe("useSearchEngine", () => {
       search: "?tab=settings",
       hash: "",
     });
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => routerNavigator?.push("/?tab=settings"));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   // L-13 (audit 2026-08-08): `hit.target.sectionId` was computed by
@@ -242,6 +281,8 @@ describe("useSearchEngine", () => {
         }),
       ),
     );
+    // Чат відкривається шиною без зміни адреси: пошук закривається одразу.
+    expect(onClose).toHaveBeenCalledTimes(1);
     expect(emitHubBus).toHaveBeenCalledWith("openChat", {
       message: "спробуй це",
       autoSend: false,

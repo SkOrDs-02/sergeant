@@ -1,6 +1,6 @@
 # Хаб: свіжість банківських витрат без входу у Фінік
 
-> **Last touched:** 2026-10-15 by @Skords-01. **Next review:** 2027-01-13.
+> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-11-01.
 > **Status:** Active
 
 ## Симптом і причина

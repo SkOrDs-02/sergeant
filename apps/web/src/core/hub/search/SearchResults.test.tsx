@@ -29,7 +29,6 @@ interface HandlerSet {
   onClearRecents: ReturnType<typeof vi.fn<() => void>>;
   onCommitQuery: ReturnType<typeof vi.fn<(q: string) => void>>;
   onOpenModule: ReturnType<typeof vi.fn<(moduleId: string) => void>>;
-  onClose: ReturnType<typeof vi.fn<() => void>>;
 }
 
 function handlers(): HandlerSet {
@@ -40,7 +39,6 @@ function handlers(): HandlerSet {
     onClearRecents: vi.fn(),
     onCommitQuery: vi.fn(),
     onOpenModule: vi.fn(),
-    onClose: vi.fn(),
   };
 }
 
@@ -64,7 +62,6 @@ function renderResults(
       onClearRecents={h.onClearRecents}
       onCommitQuery={h.onCommitQuery}
       onOpenModule={h.onOpenModule}
-      onClose={h.onClose}
     />,
   );
   return { ...view, handlers: h };
@@ -128,7 +125,7 @@ describe("SearchResults", () => {
     expect(screen.getByText("Жим")).toBeInTheDocument();
   });
 
-  it("renders the saturation footer for a real module with 10 hits and wires onCommitQuery/onOpenModule/onClose", () => {
+  it("renders the saturation footer for a real module with 10 hits and wires onCommitQuery/onOpenModule", () => {
     const results: Hit[] = Array.from({ length: 10 }, (_, i) =>
       makeHit({ id: `f${i}`, module: "finyk", moduleLabel: "Фінанси" }),
     );
@@ -144,7 +141,6 @@ describe("SearchResults", () => {
     expect(hapticTap).toHaveBeenCalledTimes(1);
     expect(h.onCommitQuery).toHaveBeenCalledWith("кава");
     expect(h.onOpenModule).toHaveBeenCalledWith("finyk");
-    expect(h.onClose).toHaveBeenCalledTimes(1);
   });
 
   it("does NOT render the saturation footer for the settings pseudo-module even with 10 hits", () => {

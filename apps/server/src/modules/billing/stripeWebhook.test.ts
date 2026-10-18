@@ -136,12 +136,14 @@ describe("customer.subscription.deleted — скасування гасить а
     expect(write).toContain("UPDATE subscriptions");
     expect(write).toContain("status = $2");
     expect(write).toContain("provider = 'stripe'");
+    // Скоуп по id підписки: `deleted` старої підписки не гасить нову.
+    expect(write).toContain("provider_subscription_id = $3");
     expect(write).toContain("status IN ('active', 'trialing', 'past_due')");
 
     const params = client.query.mock.calls.find((c) =>
       String(c[0]).includes("UPDATE subscriptions"),
     )?.[1] as unknown[];
-    expect(params).toEqual(["user_1", "canceled"]);
+    expect(params).toEqual(["user_1", "canceled", "sub_1"]);
     expect(client.query).toHaveBeenLastCalledWith("COMMIT");
   });
 

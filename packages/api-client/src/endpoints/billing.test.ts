@@ -19,6 +19,7 @@ import {
   BillingCheckoutResponseBodySchema,
   BillingPortalResponseBodySchema,
   BillingProvidersResponseBodySchema,
+  billingCheckoutConflictCode,
   createBillingEndpoints,
 } from "./billing";
 
@@ -340,5 +341,44 @@ describe("createBillingEndpoints.providers", () => {
     expect(() =>
       BillingCancelResponseBodySchema.parse({ ok: false }),
     ).toThrow();
+  });
+});
+
+describe("billingCheckoutConflictCode", () => {
+  async function checkoutError(status: number, body: unknown) {
+    globalThis.fetch = vi.fn(async () =>
+      jsonResponse(body, { status }),
+    ) as unknown as typeof fetch;
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    try {
+      await billing.createCheckout({ plan: "pro", provider: "plata" });
+    } catch (err) {
+      return err;
+    }
+    throw new Error("createCheckout did not reject");
+  }
+
+  it.each(["ALREADY_SUBSCRIBED", "CHECKOUT_PENDING"] as const)(
+    "розпізнає 409 %s",
+    async (code) => {
+      const err = await checkoutError(409, { error: "x", code });
+      expect(billingCheckoutConflictCode(err)).toBe(code);
+    },
+  );
+
+  it("null для 409 з чужим кодом, для не-409 і для не-ApiError", async () => {
+    expect(
+      billingCheckoutConflictCode(
+        await checkoutError(409, { error: "x", code: "NO_BILLING_CUSTOMER" }),
+      ),
+    ).toBeNull();
+    expect(
+      billingCheckoutConflictCode(
+        await checkoutError(503, { error: "x", code: "ALREADY_SUBSCRIBED" }),
+      ),
+    ).toBeNull();
+    expect(billingCheckoutConflictCode(new Error("boom"))).toBeNull();
+    expect(billingCheckoutConflictCode(null)).toBeNull();
   });
 });

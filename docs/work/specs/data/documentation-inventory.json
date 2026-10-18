@@ -3889,6 +3889,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-16-user-journeys-and-copy.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",
@@ -4664,6 +4671,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/README.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/planning/redesign-v3-1.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/redesign-v3-1.md"
     },
     {
       "old_path": "docs/work/specs/planning/redesign-v3-progress.md",

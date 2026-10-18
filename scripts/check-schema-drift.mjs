@@ -737,6 +737,7 @@ const SQL_ONLY_TABLES = [
   // Billing / subscriptions / revenue — керуються серверними billing-воркерами
   // та webhook-хендлерами (Stripe / Apple IAP / LiqPay), клієнт читає через API.
   "apple_iap_receipts",
+  "billing_pending_cancellation",
   "billing_webhook_events",
   // Plata: мапінг «юзер ↔ subscriptionId». `subscription/create` не має
   // `reference`, тож звʼязок фіксуємо самі (міграція 133). Читає і пише лише

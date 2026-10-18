@@ -11,6 +11,7 @@ import {
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { billingKeys } from "@shared/lib/api/queryKeys";
+import { ApiError } from "@sergeant/api-client";
 import { accessFixture } from "../test/helpers/billingAccess";
 
 const {
@@ -308,6 +309,50 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       /Оплата тимчасово недоступна/i,
     );
     expect(document.getElementById("waitlist-anchor")).not.toBeNull();
+  });
+
+  // data-21: сервер відхиляє другий checkout 409-ю ДО провайдера. Це не збій
+  // оплати: людина бачить причину, а не блок waitlist, і нічого не йде в Sentry.
+  describe("409 від checkout-у (data-21)", () => {
+    function conflict(code: string) {
+      return new ApiError({
+        kind: "http",
+        message: "conflict",
+        status: 409,
+        body: { error: "x", code },
+        url: "/api/v1/billing/checkout",
+      });
+    }
+
+    it("ALREADY_SUBSCRIBED: показує причину, оновлює план і не веде на waitlist", async () => {
+      createCheckoutMock.mockRejectedValueOnce(conflict("ALREADY_SUBSCRIBED"));
+      const client = makeClient();
+      const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+      renderPricing("/pricing", client);
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Спробувати Premium/i })[0]!,
+      );
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        /Підписка вже діє/i,
+      );
+      expect(screen.getByRole("alert")).not.toHaveTextContent(
+        /Оплата тимчасово недоступна/i,
+      );
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: billingKeys.status,
+      });
+    });
+
+    it("CHECKOUT_PENDING: просить завершити оплату в іншій вкладці", async () => {
+      createCheckoutMock.mockRejectedValueOnce(conflict("CHECKOUT_PENDING"));
+      renderPricing();
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Спробувати Premium/i })[0]!,
+      );
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        /Оплату вже відкрито в іншій вкладці/i,
+      );
+    });
   });
 
   // P1-8 (audit `2026-05-13-revenue-monetization-roast.md`): checkout return
