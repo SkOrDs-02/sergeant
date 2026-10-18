@@ -264,6 +264,7 @@ export const finykTxCategories = sqliteTable(
     updatedAt: text("updated_at")
       .notNull()
       .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.transactionId] }),
@@ -283,6 +284,7 @@ export const finykTxSplits = sqliteTable(
     updatedAt: text("updated_at")
       .notNull()
       .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.transactionId] }),
@@ -302,6 +304,7 @@ export const finykMonoDebtLinks = sqliteTable(
     updatedAt: text("updated_at")
       .notNull()
       .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.transactionId] }),
@@ -333,6 +336,7 @@ export const finykNetworthHistory = sqliteTable(
     updatedAt: text("updated_at")
       .notNull()
       .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.month] }),

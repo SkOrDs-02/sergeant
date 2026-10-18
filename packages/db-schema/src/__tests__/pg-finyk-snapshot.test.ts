@@ -172,6 +172,7 @@ describe("pg/finykTxCategories schema snapshot", () => {
       "category_id",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -182,8 +183,9 @@ describe("pg/finykTxCategories schema snapshot", () => {
     ]);
   });
 
-  it("declares no soft-delete column (delete = DELETE FROM)", () => {
-    expect(config.columns.map((c) => c.name)).not.toContain("deleted_at");
+  it("declares the nullable deleted_at tombstone column (migration 156)", () => {
+    const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+    expect(cols["deleted_at"]!.notNull).toBe(false);
   });
 
   it("category_id is a NOT NULL TEXT", () => {
@@ -203,6 +205,7 @@ describe("pg/finykTxSplits schema snapshot", () => {
       "splits_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -231,6 +234,7 @@ describe("pg/finykMonoDebtLinks schema snapshot", () => {
       "debt_ids_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -257,6 +261,7 @@ describe("pg/finykNetworthHistory schema snapshot", () => {
       "snapshot_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 

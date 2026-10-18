@@ -1766,6 +1766,26 @@ ALTER TABLE finyk_prefs
   ADD COLUMN dismissed_recurring_json TEXT NOT NULL DEFAULT '[]';
 `;
 
+// ---------------------------------------------------------------------------
+// Finyk module — soft-delete tombstone-и для per-tx мапінгів і networth
+// (аудит 2026-10-01, data-15, частина Б).
+//
+// Дзеркало серверної міграції `156_finyk_per_tx_soft_delete.sql`. До неї
+// `finyk_tx_categories` / `finyk_tx_splits` / `finyk_mono_debt_links` /
+// `finyk_networth_history` видалялись фізично, тож запізнілий upsert
+// воскрешав рядок. Тепер delete ставить `deleted_at` + `updated_at`
+// (як `finyk_budgets`), а читачі фільтрують `deleted_at IS NULL`.
+// Адитивно: nullable-колонка без backfill-у, наявні рядки живі.
+// Номер 005 свідомо: 004 займає `finyk_tx_notes` (#1530).
+// ---------------------------------------------------------------------------
+
+const FINYK_005_SQL = `
+ALTER TABLE finyk_tx_categories ADD COLUMN deleted_at TEXT;
+ALTER TABLE finyk_tx_splits ADD COLUMN deleted_at TEXT;
+ALTER TABLE finyk_mono_debt_links ADD COLUMN deleted_at TEXT;
+ALTER TABLE finyk_networth_history ADD COLUMN deleted_at TEXT;
+`;
+
 /**
  * Ordered list of bundled client migrations for the Finyk module on
  * SQLite. Pass this directly to `runMigrations` from
@@ -1781,6 +1801,7 @@ export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_finyk_tables.sql", sql: FINYK_001_SQL },
   { name: "002_finyk_mono_mirror.sql", sql: FINYK_002_SQL },
   { name: "003_finyk_prefs_excluded_dismissed.sql", sql: FINYK_003_SQL },
+  { name: "005_finyk_soft_delete_tombstones.sql", sql: FINYK_005_SQL },
 ] as const;
 
 /**

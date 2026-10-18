@@ -160,6 +160,7 @@ describe("sqlite/finykTxCategories schema snapshot", () => {
       "category_id",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -170,8 +171,9 @@ describe("sqlite/finykTxCategories schema snapshot", () => {
     ]);
   });
 
-  it("has no soft-delete column", () => {
-    expect(config.columns.map((c) => c.name)).not.toContain("deleted_at");
+  it("declares the nullable deleted_at tombstone column (client migration 005)", () => {
+    const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+    expect(cols["deleted_at"]!.notNull).toBe(false);
   });
 });
 
@@ -219,6 +221,7 @@ describe("sqlite/finykNetworthHistory schema snapshot", () => {
       "snapshot_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -361,13 +364,28 @@ describe("sqlite/finykMonoAccountSnapshots schema snapshot", () => {
 // ---------------------------------------------------------------------
 
 describe("sqlite/finyk migrations exports", () => {
-  it("exports the ordered finyk migrations list (001 + 002 + 003)", () => {
-    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(3);
+  it("exports the ordered finyk migrations list (001 + 002 + 003 + 005)", () => {
+    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(4);
     expect(FINYK_CLIENT_MIGRATIONS[0]!.name).toBe("001_finyk_tables.sql");
     expect(FINYK_CLIENT_MIGRATIONS[1]!.name).toBe("002_finyk_mono_mirror.sql");
     expect(FINYK_CLIENT_MIGRATIONS[2]!.name).toBe(
       "003_finyk_prefs_excluded_dismissed.sql",
     );
+    expect(FINYK_CLIENT_MIGRATIONS[3]!.name).toBe(
+      "005_finyk_soft_delete_tombstones.sql",
+    );
+  });
+
+  it("005 додає nullable deleted_at чотирьом hard-delete таблицям (data-15)", () => {
+    const sql = FINYK_CLIENT_MIGRATIONS[3]!.sql;
+    for (const table of [
+      "finyk_tx_categories",
+      "finyk_tx_splits",
+      "finyk_mono_debt_links",
+      "finyk_networth_history",
+    ]) {
+      expect(sql).toContain(`ALTER TABLE ${table} ADD COLUMN deleted_at TEXT;`);
+    }
   });
 
   it("001 inline SQL contains every Stage-4 finyk_* table CREATE", () => {
