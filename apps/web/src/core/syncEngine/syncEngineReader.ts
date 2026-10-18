@@ -3,6 +3,10 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyPullOp } from "./applyPullOp.js";
 import { readPullSinceCursor, writePullSinceCursor } from "./syncOpCursor.js";
+import {
+  backfillTxNotesOnce,
+  markTxNotesBackfillDone,
+} from "./txNotesBackfill.js";
 import { refreshCachesAfterPull } from "./refreshCachesAfterPull.js";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
 import {
@@ -284,23 +288,55 @@ export function createSyncEngineReaderRuntime(
       }
       const affectedTables = pendingRefresh.tables;
 
+      // Лічильник чекань рейт-ліміту спільний для догону й основного циклу.
       let rateLimitWaits = 0;
+      const fetchPage = async (from: number): Promise<SyncV2PullResponse> => {
+        for (;;) {
+          try {
+            return await deps.pull(from, {
+              limit: deps.limit,
+              originDeviceId: deps.originDeviceId,
+            });
+          } catch (error) {
+            const waitMs = rateLimitWaitMs(error);
+            if (waitMs === null || rateLimitWaits >= MAX_RATE_LIMIT_WAITS)
+              throw error;
+            rateLimitWaits += 1;
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+          }
+        }
+      };
+
+      const startedFresh = since === 0;
+
+      // Догін нотаток до операцій для пристроїв зі старого бандла (див.
+      // `txNotesBackfill.ts`). Збій не має блокувати основний pull: звітуємо
+      // й ідемо далі, наступний тік продовжить із збереженого прогресу.
+      try {
+        await backfillTxNotesOnce({
+          client,
+          userId,
+          originDeviceId: deps.originDeviceId,
+          mainCursor: since,
+          fetchPage,
+          affectedTables,
+          isConstraintFailure,
+        });
+      } catch (error) {
+        try {
+          // Офлайн основний pull нижче впаде сам і буде класифікований.
+          if (readOnlineStatus() !== false)
+            deps.captureException?.(error, {
+              scope: "sync-v2-tx-notes-backfill",
+              tags: { area: "sync", sync_direction: "pull" },
+            });
+        } catch {
+          /* обсервабіліті ніколи не має ламати шлях читання */
+        }
+      }
 
       for (;;) {
-        let page: SyncV2PullResponse;
-        try {
-          page = await deps.pull(since, {
-            limit: deps.limit,
-            originDeviceId: deps.originDeviceId,
-          });
-        } catch (error) {
-          const waitMs = rateLimitWaitMs(error);
-          if (waitMs === null || rateLimitWaits >= MAX_RATE_LIMIT_WAITS)
-            throw error;
-          rateLimitWaits += 1;
-          await new Promise((resolve) => setTimeout(resolve, waitMs));
-          continue;
-        }
+        const page = await fetchPage(since);
 
         for (const op of page.ops) {
           pulled += 1;
@@ -350,6 +386,9 @@ export function createSyncEngineReaderRuntime(
         if (page.next_cursor === null) break;
         since = page.next_cursor;
       }
+
+      // Повний pull з нуля вже охопив і нотатки: догін не потрібен.
+      if (startedFresh) await markTxNotesBackfillDone(client, userId);
 
       // Не `applied > 0`: у множині можуть лежати таблиці з попереднього
       // невдалого тіка (див. `pendingRefresh`).

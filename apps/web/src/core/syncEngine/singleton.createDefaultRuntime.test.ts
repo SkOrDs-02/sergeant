@@ -27,6 +27,7 @@ vi.mock("../auth/authClient", () => ({ getSession: () => mockGetSession() }));
 // calls (drain / getStatus) stay green.
 function makeClient() {
   return {
+    run: vi.fn(async () => {}),
     all: vi.fn(async (sql: string) => {
       if (sql.includes("AND name = 'sync_op_outbox'")) {
         return [{ name: "sync_op_outbox" }]; // smoke-check: present
