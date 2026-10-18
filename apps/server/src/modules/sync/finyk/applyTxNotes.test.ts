@@ -156,7 +156,9 @@ describe("applyFinykTxNotes", () => {
         NEWER,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(lastQuery(fake).sql).toContain("SET deleted_at = $1");
+    expect(lastQuery(fake).sql).toContain(
+      "SET note = '', deleted_at = $1, updated_at = $1",
+    );
   });
 
   it("порожня нотатка на insert без рядка - no-op, нічого не пишемо", async () => {
