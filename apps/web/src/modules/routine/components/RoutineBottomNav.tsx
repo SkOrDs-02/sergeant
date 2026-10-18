@@ -106,14 +106,11 @@ export function RoutineBottomNav({
   mainTab,
   onSelectTab,
 }: RoutineBottomNavProps) {
-  // The bespoke center-docked "+" FAB (Sergeant v2 PR-8, locked spec §3.2),
-  // including its keyboard-open hide wiring, was replaced by the shared
-  // `FloatingActionButton` (variant="v2-routine", bottom-right, mounted in
-  // `RoutineActions.tsx`) as part of the fab-and-manual-income spec's
-  // cross-module FAB placement unification — Routine's center-over-nav
-  // position was exactly the "неконсистентне розміщення" that spec calls
-  // out. The keyboard-hide behaviour itself now lives in the shared FAB
-  // component (mirrors `ModuleBottomNav`'s own `useVisualKeyboardInset`),
+  // The bespoke center-docked "+" FAB (Sergeant v2 PR-8, locked spec §3.2)
+  // is gone. Since redesign v3 PR4b Routine has no floating action at all:
+  // «Нова звичка» is a row at the end of the day list
+  // (`RoutineCalendarPanel`). The keyboard-hide behaviour lives in the
+  // shared nav itself (`ModuleBottomNav`'s own `useVisualKeyboardInset`),
   // so every module gets it, not just Routine.
   return (
     <ModuleBottomNav

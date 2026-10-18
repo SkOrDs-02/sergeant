@@ -50,7 +50,7 @@ const SIDES: Array<{ id: BodyAtlasSide; label: string }> = [
 
 /**
  * Cold (unworked) muscles and silhouette fill with a theme-aware neutral
- * derived from design tokens — warm-gray on the cream theme, slate on ink.
+ * derived from design tokens — warm-gray on the light theme, slate on ink.
  * Exposed as a CSS var so it flips with the active theme (no raw light/dark
  * hex pair). Muscle `<path>`s reference `NEUTRAL_BASE`; the SVG sets the var.
  */
@@ -66,7 +66,7 @@ const SELECTED_STROKE = "rgb(var(--c-fg))";
  * Endpoints are var-backed (`--c-bg` / `--c-fg`), not literal `#ffffff`/
  * `#000000` — a static white/black mix reads as a fixed light-mode gloss
  * and goes muddy/blown-out on the ink (dark) surface. `--c-bg` (near-white
- * on cream, near-black on ink) and `--c-fg` (near-black on cream,
+ * on light, near-black on ink) and `--c-fg` (near-black on light,
  * near-white on ink) invert together with the theme, so "top" and
  * "bottom" stay the lighter/darker edge of the sculpt in both themes
  * instead of a hardcoded light-mode-only highlight direction.

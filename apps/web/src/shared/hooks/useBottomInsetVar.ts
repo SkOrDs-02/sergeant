@@ -109,9 +109,9 @@ export const WORKOUT_BANNER_INSET_VAR = "--sgt-workout-banner-inset";
 export const SHEET_FOOTER_INSET_VAR = "--sgt-sheet-footer-inset";
 
 /**
- * Плаваюча кнопка дії (`FloatingActionButton`). Публікує сама кнопка, доки
+ * Кнопка дії в куті (`CornerAction`). Публікує сама кнопка, доки
  * видима; `page-tabbar-pad` додає різницю між нею і нижньою навігацією до
- * відступу скрол-контейнера, щоб останній рядок контенту не лягав під FAB
+ * відступу скрол-контейнера, щоб останній рядок контенту не лягав під неї
  * (критика екранів 2026-09-23: «+ Пасив», «Нд» у тижні ккал, порожній стан
  * трендів Журналу).
  */
@@ -119,7 +119,7 @@ export const FAB_INSET_VAR = "--sgt-fab-inset";
 
 /**
  * Банер згоди на аналітику (`AnalyticsConsentBanner`). Публікує сам банер,
- * доки змонтований; `FloatingActionButton` піднімається над ним, щоб кнопка
- * «Ні, дякую» не опинялась під FAB.
+ * доки змонтований; `CornerAction` піднімається над ним, щоб кнопка
+ * «Ні, дякую» не опинялась під кнопкою дії.
  */
 export const CONSENT_BANNER_INSET_VAR = "--sgt-consent-banner-inset";
