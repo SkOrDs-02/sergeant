@@ -3889,7 +3889,7 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-16-user-journeys-and-copy.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md",
       "new_path": "docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md",
       "action": "keep",
       "genre": "active-work",
@@ -4673,7 +4673,7 @@
       "canonical_owner": "docs/work/specs/planning/README.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/planning/redesign-v3-1.md",
       "new_path": "docs/work/specs/planning/redesign-v3-1.md",
       "action": "keep",
       "genre": "active-work",
