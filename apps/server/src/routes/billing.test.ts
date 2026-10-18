@@ -444,7 +444,9 @@ describe("billing routes", () => {
     setEnv("LIQPAY_PUBLIC_KEY", "sandbox_i123");
     setEnv("LIQPAY_PRIVATE_KEY", "sandbox_priv");
     setEnv("PRO_MONTHLY_UAH_KOPIYKAS", "19900");
-    const app = createTestApp(createQueryPool(vi.fn()));
+    const app = createTestApp(
+      createQueryPool(vi.fn().mockResolvedValue({ rows: [] })),
+    );
 
     const res = await request(app)
       .post("/api/billing/checkout")
@@ -454,6 +456,54 @@ describe("billing routes", () => {
     expect(res.status).toBe(200);
     expect(res.body.mode).toBe("test"); // sandbox_ public key
     expect(String(res.body.url)).toContain("liqpay.ua");
+  });
+
+  // data-21: checkout не створюється, коли вже є ентайтлмент або живий
+  // непідтверджений checkout. Провайдер при цьому не викликається взагалі.
+  describe("POST /checkout guard (409)", () => {
+    function checkoutPool(opts: { entitled?: boolean; pending?: boolean }) {
+      return vi.fn(async (sql: string) => {
+        if (sql.includes("FROM subscriptions")) {
+          return { rows: opts.entitled ? [{ x: 1 }] : [] };
+        }
+        if (sql.includes("FROM plata_subscription")) {
+          return { rows: opts.pending ? [{ x: 1 }] : [] };
+        }
+        return { rows: [] };
+      });
+    }
+
+    beforeEach(() => {
+      setEnv("LIQPAY_ENABLED", "true");
+      setEnv("LIQPAY_PUBLIC_KEY", "sandbox_i123");
+      setEnv("LIQPAY_PRIVATE_KEY", "sandbox_priv");
+      setEnv("PRO_MONTHLY_UAH_KOPIYKAS", "19900");
+    });
+
+    it("409 ALREADY_SUBSCRIBED при діючій підписці", async () => {
+      const app = createTestApp(
+        createQueryPool(checkoutPool({ entitled: true })),
+      );
+      const res = await request(app)
+        .post("/api/billing/checkout")
+        .set("x-vercel-ip-country", "UA")
+        .send({ plan: "pro", provider: "liqpay" });
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: "ALREADY_SUBSCRIBED" });
+      expect(res.body.url).toBeUndefined();
+    });
+
+    it("409 CHECKOUT_PENDING при непідтвердженому Plata-checkout-і", async () => {
+      const app = createTestApp(
+        createQueryPool(checkoutPool({ pending: true })),
+      );
+      const res = await request(app)
+        .post("/api/billing/checkout")
+        .set("x-vercel-ip-country", "UA")
+        .send({ plan: "pro", provider: "liqpay" });
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: "CHECKOUT_PENDING" });
+    });
   });
 
   it("rejects provider=stripe for a UA user with 400 PROVIDER_UNAVAILABLE", async () => {

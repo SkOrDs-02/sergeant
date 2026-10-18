@@ -1926,7 +1926,7 @@ node <scratch>/agents/client-static-web-route-guards/palette-logout.mjs
 
 ### `data-20` [medium] Скасування підписки може не дійти до провайдера, а повторити його неможливо: cancel_at_period_end ставиться без підтвердження і успадковується новою підпискою
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-20-21-billing-cancel-checkout (Plata кидає помилку замість ковтання відмови monobank, 502 `PROVIDER_CANCEL_FAILED`, прапорець ставиться лише після підтвердження; усі три upsert-и активації скидають `cancel_at_period_end` при новому `provider_subscription_id`; видалення акаунта лишається best-effort. Залишок: Stripe `customer.subscription.*`-вебхук (`upsertSubscriptionEvent`) не скидає прапорець і не скасовує попередню рекурентку, провайдер dormant)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: billing (Plata, LiqPay)
 - **Де:** apps/server/src/modules/billing/plata.ts:373-439; apps/server/src/modules/billing/plataSync.ts:99-111; apps/server/src/modules/billing/liqpay.ts:352-364,515-553; apps/server/src/modules/billing/getUserPlan.ts:26-30; apps/server/src/modules/me/dataRights.ts:30-46
 - **Першопричина:** cancelSubscription вважає cancel_at_period_end = TRUE доказом, що провайдера повідомлено, і повертає already_canceling без запиту. Plata ставить прапорець навіть коли monobank відповів не-2xx чи мережа впала (відповідь subscription/remove не перевіряється), а upsert-и активації (Plata applyActive, LiqPay) не скидають прапорець при новому provider_subscription_id.
@@ -2003,7 +2003,7 @@ POST /api/billing/cancel у момент, коли monobank відповідає
 
 ### `data-21` [medium] Checkout не перевіряє наявну підписку, а мапінг Plata user→subscriptionId перезаписується: оплачена підписка губиться і не скасовується
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-20-21-billing-cancel-checkout (409 `ALREADY_SUBSCRIBED` / `CHECKOUT_PENDING`; `plata_subscription` 1:N, міграція 154; cancel за `subscriptions.provider_subscription_id`; активація другої рекурентки ставить скасування попередньої в чергу `billing_pending_cancellation` у тій самій транзакції, виклик провайдера після коміту й ретрай-полер; термінальні події замінених Stripe/LiqPay-підписок скоуплені по id. Залишок: ліміт 24 спроб скасування замінених підписок вичерпується error-логом і ручним розбором; два паралельні checkout-и в межах мілісекунд до першого INSERT мапінгу гейт не ловить, але вебхуки обох резолвляться, а друга активація скасує першу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: billing (routes/billing, Plata, LiqPay)
 - **Де:** apps/server/src/routes/billing.ts:110-159; apps/server/src/modules/billing/plata.ts:305-313,396; apps/server/src/modules/billing/plataSync.ts:100-110,202-219; apps/server/src/modules/billing/liqpay.ts:353-362
 - **Першопричина:** POST /api/billing/checkout не дивиться на subscriptions і незавершені checkout-и (є лише rate-limit), plata_subscription має PK user_id, і другий checkout перезаписує subscription_id. Вебхук за старим id не резолвиться, cancel бере останній, можливо неоплачений id, а upsert-и LiqPay і Plata мовчки перезаписують provider активного рядка іншого провайдера.

@@ -12,7 +12,10 @@ import { billingApi } from "@shared/api";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { useToast } from "@shared/hooks/useToast";
 import { useLocale } from "@shared/i18n/useLocale";
-import type { BillingCheckoutResponse } from "@sergeant/api-client";
+import {
+  billingCheckoutConflictCode,
+  type BillingCheckoutResponse,
+} from "@sergeant/api-client";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
@@ -199,6 +202,22 @@ export function PricingPage() {
       window.location.assign(safeUrl);
       return;
     } catch (err) {
+      // 409: сервер відхилив checkout до звернення до провайдера, бо друга
+      // сторінка оплати дала б подвійне списання. Це не збій: показуємо
+      // причину, не сторінку waitlist, і не шлемо в Sentry.
+      const conflict = billingCheckoutConflictCode(err);
+      if (conflict) {
+        setCheckoutError(
+          conflict === "ALREADY_SUBSCRIBED"
+            ? t.errors.checkoutAlreadySubscribed
+            : t.errors.checkoutPending,
+        );
+        if (conflict === "ALREADY_SUBSCRIBED") {
+          // Кеш плану застарів: після оновлення CTA стане «Керувати підпискою».
+          void queryClient.invalidateQueries({ queryKey: billingKeys.status });
+        }
+        return;
+      }
       captureException(err, {
         tags: { scope: "pricing-checkout-redirect" },
       });
