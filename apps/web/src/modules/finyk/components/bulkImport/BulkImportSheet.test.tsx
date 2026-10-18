@@ -776,6 +776,11 @@ describe("BulkImportSheet — кап commit-у (ux-07)", () => {
     expect(screen.getByText(/За раз можна імпортувати до/)).toHaveTextContent(
       /вибрано 1.001\./,
     );
+    // Live-регіон, а не лише aria-describedby вимкненої кнопки.
+    expect(document.getElementById("bulk-import-cap-hint")).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
     fireEvent.click(button);
     expect(commitImportMock).not.toHaveBeenCalled();
   });
@@ -787,6 +792,10 @@ describe("BulkImportSheet — кап commit-у (ux-07)", () => {
     expect(
       screen.queryByText(/За раз можна імпортувати до/),
     ).not.toBeInTheDocument();
+    // Регіон змонтований заздалегідь (порожній), щоб перетин ліміту озвучився.
+    expect(document.getElementById("bulk-import-cap-hint")).toHaveTextContent(
+      "",
+    );
   });
 });
 

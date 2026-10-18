@@ -407,14 +407,21 @@ export function BulkImportSheet({
       footer={
         stage === "bulk-review" ? (
           <div className="space-y-2">
-            {overCommitCap && (
-              <p
-                id="bulk-import-cap-hint"
-                className="text-style-caption text-danger-strong dark:text-danger"
-              >
-                {commitCapMessage(selectedRowCount(reviewRows))}
-              </p>
-            )}
+            {/* Live-регіон змонтований завжди: вимкнена кнопка не фокусується,
+                тож aria-describedby сам перетин ліміту не озвучить. */}
+            <p
+              id="bulk-import-cap-hint"
+              aria-live="polite"
+              className={
+                overCommitCap
+                  ? "text-style-caption text-danger-strong dark:text-danger"
+                  : "sr-only"
+              }
+            >
+              {overCommitCap
+                ? commitCapMessage(selectedRowCount(reviewRows))
+                : ""}
+            </p>
             <Button
               variant="solid"
               tone="ink"
