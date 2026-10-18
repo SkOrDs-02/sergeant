@@ -92,9 +92,7 @@ describe("PaywallModal", () => {
     renderModal(true);
     expect(screen.getByText("AI-чат на ліміті")).toBeTruthy();
     expect(screen.getByText("Free план: 5 запитів/день.")).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: /Дивитися плани/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Дивитися плани/ })).toBeTruthy();
   });
 
   // Trial дає лише новому акаунту і лише за прапорцем (спека access-tiers),
