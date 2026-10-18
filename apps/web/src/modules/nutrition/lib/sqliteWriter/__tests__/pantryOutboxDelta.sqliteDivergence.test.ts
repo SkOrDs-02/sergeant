@@ -162,4 +162,30 @@ describe("rel-10 + data-40: дельта комори звіряється з SQ
     const live = (await livePantryRows()).map((r) => r.name).sort();
     expect(live).toEqual(["a", "bread", "milk"]);
   });
+
+  it("місця немає в prev (кеш відстав): позиції SQLite, яких немає в знімку, не ховаються", async () => {
+    // У SQLite уже є p1 з milk (наприклад, доїхало з іншого пристрою).
+    await dualWriteNutritionState(
+      state([snap([])]),
+      state([snap([entry(0, "milk")])]),
+    );
+    // Warm-кеш відстав: у prev місця p1 немає зовсім, а користувач додає bread.
+    enqueueMock.mockClear();
+    await dualWriteNutritionState(
+      state([]),
+      state([snap([entry(0, "bread")])]),
+    );
+
+    const deletes = (
+      enqueueMock.mock.calls as [
+        unknown,
+        { table: string; op: string; row: { id: string } },
+      ][]
+    )
+      .map(([, input]) => input)
+      .filter((c) => c.table === "nutrition_pantry_items" && c.op === "delete");
+    expect(deletes).toEqual([]);
+    const live = (await livePantryRows()).map((r) => r.name).sort();
+    expect(live).toEqual(["bread", "milk"]);
+  });
 });

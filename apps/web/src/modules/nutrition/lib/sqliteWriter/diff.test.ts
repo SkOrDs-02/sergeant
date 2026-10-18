@@ -311,7 +311,15 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
   it("емітить pantry-upsert для нової pantry", () => {
     const p = makePantry();
     const ops = diffNutritionDualWriteOps(EMPTY, makeState({ pantries: [p] }));
-    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: p }]);
+    expect(ops).toEqual([
+      {
+        kind: "pantry-upsert",
+        pantry: p,
+        changedItemIds: p.items.map((item) => item.id),
+        removedItemIds: [],
+        pantryFieldsChanged: true,
+      },
+    ]);
   });
 
   it("емітить pantry-delete для видаленої pantry", () => {

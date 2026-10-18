@@ -372,7 +372,17 @@ export function diffNutritionDualWriteOps(
               pantry: p,
               ...computePantryDelta(prevPantry, p, nextItemIds),
             }
-          : { kind: "pantry-upsert", pantry: p },
+          : // Місця немає в `prev` (новe або warm-кеш відстав від SQLite):
+            // явна дельта «усі позиції змінені, нічого не прибрано», інакше
+            // адаптер упав би на повний reconcile і поховав би рядки, що вже
+            // доїхали в SQLite з іншого пристрою.
+            {
+              kind: "pantry-upsert",
+              pantry: p,
+              changedItemIds: p.items.map((item) => item.id),
+              removedItemIds: [],
+              pantryFieldsChanged: true,
+            },
       ),
     (id) => ops.push({ kind: "pantry-delete", pantryId: id }),
   );
