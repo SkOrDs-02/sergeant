@@ -1,7 +1,7 @@
 # SPEC: Редизайн v3 `apps/web` (візуальна мова H)
 
-> **Last touched:** 2026-10-09 by @claude (спека після трьох раундів інтервʼю з власником). **Next review:** 2026-11-09.
-> **Status:** Draft
+> **Last touched:** 2026-10-18 by @claude (спеку закрито: статус Implemented, підсумок приймання); 2026-10-09 by @claude (спека після трьох раундів інтервʼю з власником). **Next review:** 2026-11-09.
+> **Status:** Implemented - PR0-PR7 і PR4b змерджено ([#1494](https://github.com/SkOrDs-02/sergeant/pull/1494), [#1495](https://github.com/SkOrDs-02/sergeant/pull/1495), [#1497](https://github.com/SkOrDs-02/sergeant/pull/1497), [#1498](https://github.com/SkOrDs-02/sergeant/pull/1498), [#1503](https://github.com/SkOrDs-02/sergeant/pull/1503), [#1504](https://github.com/SkOrDs-02/sergeant/pull/1504), [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505), [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506), [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508)), повторне приймання 37 позицій у fix-PR [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510). Підсумок і замір на `main` `58e08687d`: [журнал § Закриття спеки](./redesign-v3-progress.md#закриття-спеки--2026-10-18).
 
 Самодостатня спека: виконавець зі свіжої сесії реалізує її, читаючи лише цей документ, лінковані файли репо й канвас. Усі рішення нижче прийняті власником 2026-10-08 і 2026-10-09 через spec-інтервʼю; у § Рішення дизайну при кожному стоїть джерело. Відкинуті альтернативи не переглядаються.
 
