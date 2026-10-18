@@ -1,11 +1,11 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-18 by @codex (#1519 merged; погоджений follow-up порожніх станів у `claude/empty-states-refresh`; прибирання підтвердженого застарілого коду лишається окремим наступним PR; native заморожений власником). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-18 by @codex (#1519 merged; порожні стани опубліковано в draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522); прибирання підтвердженого застарілого коду лишається окремим наступним PR; native заморожений власником). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
 
-**Поточний зріз:** #1519 merged 2026-10-18T08:21:53Z. Активний follow-up `claude/empty-states-refresh`: спільний web-канон порожніх станів і чотири реальні поверхні; draft PR ще не створено. Після його мержу окремим PR прибрати лише підтверджені знахідки застарілого коду з попереднього аудиту. Native не чіпати.
+**Поточний зріз:** #1519 merged 2026-10-18T08:21:53Z. Активний draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522), `claude/empty-states-refresh`: спільний web-канон порожніх станів і чотири реальні поверхні. Після його мержу окремим PR прибрати лише підтверджені знахідки застарілого коду з попереднього аудиту. Native не чіпати.
 
 | PR                | Гілка                                | GitHub PR                                                | Стан   | Позиції каталогу § 2                                               |
 | ----------------- | ------------------------------------ | -------------------------------------------------------- | ------ | ------------------------------------------------------------------ |
@@ -21,7 +21,7 @@
 | PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                              |
 | Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37            |
 | Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів      |
-| Empty states      | `claude/empty-states-refresh`        | pending                                                  | active | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
+| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | active | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -1290,13 +1290,13 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 
 ## Follow-up · 2026-10-18: спільний канон порожніх станів
 
-**Гілка:** `claude/empty-states-refresh` від свіжого `origin/main` `58e08687d`, у якому #1519 уже merged. **PR:** pending до першого штатного коміту. Це погоджене доповнення після завершених PR0–PR7, без нової позиції каталогу § 2. Native заморожений і не змінюється.
+**Гілка:** `claude/empty-states-refresh`, перед публікацією перебазована без конфліктів на актуальний `origin/main` `096ca332a`. **PR:** draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522). Це погоджене доповнення після завершених PR0–PR7, без нової позиції каталогу § 2. Native заморожений і не змінюється.
 
 **Що зроблено.** `ModuleEmptyState` став first-run патерном із компактною статичною лінійною ілюстрацією, видимим коротким описом і максимум однією дією. Звичайний `EmptyState` лишився тихим станом для фільтрів і підсекцій. Finyk `/finyk/transactions` пояснює два джерела операцій і не дублює глобальну кнопку «Додати». Fizruk `/fizruk/history` веде кнопкою у канонічний Workouts home, а не запускає сесію на місці. Routine `/routine/habits` ховає пошук і підказку сортування, доки звичок немає; «Створити звичку» відкриває чинний `HabitQuickCreateDialog`. Nutrition `/nutrition/log` пояснює, де зʼявляться калорії та КБЖВ, і зберігає чинний зовнішній сценарій додавання. Нові користувацькі рядки без довгого тире, риторичних питань і обіцянок.
 
 **Канони.** Оновлено `docs/design/design/empty-states.md`: три рівні, межа між first-run і порожнім фільтром, одна дія, правила копії та доступності. Зміни маршруту дії зафіксовано в `docs/product/modules/fizruk.md` і `routine.md`. Storybook-приклади приведено до реального API.
 
-**Верифікація на поточному diff.** Focused Vitest для shared/Finyk/Fizruk/Routine/Nutrition: 8 файлів, 83 passed, exit 0. `pnpm --filter @sergeant/web typecheck`: exit 0. Web ESLint: exit 0, лише 2 наявні warnings `fizruk_plan_template_v1` поза diff. `pnpm lint:design-conventions`: exit 0, 19 тестів. `pnpm lint:ui-canon`: exit 0, нових порушень 0. Focused Prettier check: exit 0. `pnpm --filter @sergeant/web build`: exit 0. Browser: `VITE_E2E_SEED=true`, empty world, Chromium, 390×844, `/finyk/transactions`, `/fizruk/history`, `/routine/habits`, `/nutrition/log`, світла й темна теми; післякадри в `/workspace/artifacts/empty-states-refresh/after/`.
+**Верифікація на поточному diff.** Після rebase на `096ca332a` focused Vitest для shared/Finyk/Fizruk/Routine/Nutrition: 8 файлів, 83 passed, exit 0. `pnpm --filter @sergeant/web typecheck`: exit 0. Web ESLint: exit 0, лише 2 наявні warnings `fizruk_plan_template_v1` поза diff. `pnpm lint:design-conventions`: exit 0, 19 тестів. `pnpm lint:ui-canon`: exit 0, нових порушень 0. Focused Prettier check: exit 0 до rebase; перебазування не змінило diff. `pnpm --filter @sergeant/web build`: exit 0. Browser: `VITE_E2E_SEED=true`, empty world, Chromium, 390×844, `/finyk/transactions`, `/fizruk/history`, `/routine/habits`, `/nutrition/log`, світла й темна теми; післякадри в `/workspace/artifacts/empty-states-refresh/after/`.
 
 **Відхилення й межі.** Каталожні рішення redesign v3 не переглядались. Дані, синхронізація, формули, сховища та mobile не змінені. Підтверджені знахідки мертвого або застарілого коду свідомо не змішуються з цим UI PR; власник попросив прибрати їх окремо після мержу цього PR.
 
