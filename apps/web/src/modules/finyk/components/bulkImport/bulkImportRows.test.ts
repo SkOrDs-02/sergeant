@@ -3,8 +3,11 @@ import type {
   ImportScreenshotRow,
   ImportStatementRow,
 } from "@sergeant/api-client";
+import { IMPORT_COMMIT_MAX_ROWS } from "@sergeant/shared";
 import {
   applyBulkCategory,
+  commitCapMessage,
+  exceedsCommitCap,
   screenshotRowsToBulkReviewRows,
   selectedRowCount,
   setAllSelected,
@@ -406,5 +409,36 @@ describe("categoryHint — підказка категорії від серве
       rowOptions,
     );
     expect(row?.category).toBe("cafe");
+  });
+});
+
+describe("exceedsCommitCap", () => {
+  const makeRows = (count: number) =>
+    statementRowsToBulkReviewRows(
+      Array.from({ length: count }, (_, i) => ({
+        date: "2026-08-01",
+        amountKopiykas: 100 + i,
+        direction: "expense" as const,
+        description: `рядок ${i}`,
+      })),
+      rowOptions,
+    );
+
+  it("вибрано рівно кап → false, на один більше → true", () => {
+    expect(IMPORT_COMMIT_MAX_ROWS).toBe(1000);
+    expect(exceedsCommitCap(makeRows(1000))).toBe(false);
+    expect(exceedsCommitCap(makeRows(1001))).toBe(true);
+  });
+
+  it("рахує вибрані, а не всі: 1001 рядок із знятою галочкою = у капі", () => {
+    const rows = toggleRowSelected(makeRows(1001), "statement-0");
+    expect(exceedsCommitCap(rows)).toBe(false);
+  });
+
+  it("повідомлення називає ліміт і кількість вибраних та каже, що робити", () => {
+    const message = commitCapMessage(2000).replace(/\u00A0/g, " ");
+    expect(message).toContain("до 1 000 рядків");
+    expect(message).toContain("вибрано 2 000");
+    expect(message).toContain("Зніми частину галочок");
   });
 });
