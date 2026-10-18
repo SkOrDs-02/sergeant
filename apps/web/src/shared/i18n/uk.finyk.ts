@@ -496,4 +496,29 @@ export const finykPageMessages = {
       "{category}: {spent} з {limit}, за темпом перевищиш через {days} {unit}",
     limitOk: "{category}: {spent} з {limit}, у межах ліміту",
   },
+  // «Готівка на руках» (ADR-0076, спека finyk-analytics-v3 фаза 1).
+  cashOnHand: {
+    title: "Готівка на руках",
+    noAccount: "Без рахунку",
+    accountLegend: "Рахунок",
+    setupPrompt: "Скільки готівки зараз?",
+    setupHint:
+      "З цієї суми почнеться облік. Зняття в банкоматі поповнюватимуть готівку і не рахуватимуться витратою.",
+    amountLabel: "Сума готівки, ₴",
+    create: "Почати облік",
+    reconcile: "Вказати фактичну суму",
+    reconcileLabel: "Фактична сума, ₴",
+    reconcileHint:
+      "Різниця запишеться поправкою. Вона не потрапляє у витрати, доходи й ліміти.",
+    save: "Зберегти",
+    cancel: "Скасувати",
+    amountInvalid: "Вкажи суму від 0 ₴",
+    countAsExpense: "Рахувати як витрату",
+    countAsExpenseHint:
+      "Це зняття поповнює «Готівку на руках». Увімкни, якщо гроші одразу пішли на покупку і ти не записуватимеш її окремо.",
+    analyticsTitle: "За рахунками",
+    filterActive: "Лише «{account}»",
+    filterClear: "Усі рахунки",
+    cardFallback: "Картка",
+  },
 } as const;

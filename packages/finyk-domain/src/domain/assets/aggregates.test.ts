@@ -193,10 +193,25 @@ describe("assets — computeAssetsSummary", () => {
       jarsTotal: 0,
       manualDebtTotal: 0,
       receivableTotal: 0,
+      cashOnHandTotal: 0,
       totalAssets: 0,
       totalLiabilities: 0,
       networth: 0,
     });
+  });
+
+  it("«Готівка на руках» входить у активи й капітал", () => {
+    const summary = computeAssetsSummary({
+      accounts: [],
+      manualAssets: [],
+      manualDebts: [],
+      receivables: [],
+      transactions: [],
+      cashOnHandMinor: 100_000,
+    });
+    expect(summary.cashOnHandTotal).toBe(1000);
+    expect(summary.totalAssets).toBe(1000);
+    expect(summary.networth).toBe(1000);
   });
 
   it("networth = totalAssets − totalLiabilities", () => {

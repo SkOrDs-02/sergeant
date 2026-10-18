@@ -19,7 +19,8 @@ import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { filterToKyivFirstDays, filterToKyivMonth } from "../lib/monthWindow";
 import { isMonoNotConnectedError } from "../lib/monoBankErrors";
 import { useAnalytics } from "../hooks/useAnalytics";
-import { CategoryBars } from "../components/charts/lazy";
+import { AccountBars, CategoryBars } from "../components/charts/lazy";
+import { filterByAccountKey } from "@sergeant/finyk-domain/domain/accountBreakdown";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
 import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
@@ -78,6 +79,11 @@ export interface AnalyticsProps {
     fetchMonth: (year: number, month0Based: number) => Promise<Transaction[]>;
     /** Діапазон у дзеркало для тренду (Р11); без банку відсутній. */
     fetchRange?: FetchBankRange;
+    /** Підписи рахунків для розрізу «За рахунками» (Р4 v3). */
+    accounts?: readonly {
+      id?: string | undefined;
+      type?: string | undefined;
+    }[];
   };
   storage: {
     excludedTxIds: Set<string> | Iterable<string>;
@@ -431,15 +437,23 @@ export function Analytics({
     [isCurrentMonth, mono.realTx, monthCache, monthKey],
   );
 
-  const activeTx = useMemo(() => {
+  const allActiveTx = useMemo(() => {
     if (manualExpenseTxs.length === 0) return bankTx;
     return [...bankTx, ...manualExpenseTxs];
   }, [bankTx, manualExpenseTxs]);
 
+  // Фільтр «За рахунками» (Р4.2) звужує всі блоки нижче, крім самого
+  // розрізу і помісячного тренду (той читає всю історію з дзеркала).
+  const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const activeTx = useMemo(
+    () => filterByAccountKey(allActiveTx, accountFilter),
+    [allActiveTx, accountFilter],
+  );
+
   // Незавершений місяць міряємо тими ж днями попереднього, а не всім ним:
   // 27 днів вересня проти 31 дня серпня давали «−33 %» при незмінному темпі,
   // тоді як картка звітів хаба (#52) на тих самих даних казала «−23 %».
-  const prevTx = useMemo(() => {
+  const allPrevTx = useMemo(() => {
     const bankTx = filterToKyivMonth(monthCache[prevKey] || [], prevKey);
     const all =
       prevManualExpenseTxs.length === 0
@@ -447,6 +461,10 @@ export function Analytics({
         : [...bankTx, ...prevManualExpenseTxs];
     return isCurrentMonth ? filterToKyivFirstDays(all, nowKyiv.day) : all;
   }, [monthCache, prevKey, prevManualExpenseTxs, isCurrentMonth, nowKyiv.day]);
+  const prevTx = useMemo(
+    () => filterByAccountKey(allPrevTx, accountFilter),
+    [allPrevTx, accountFilter],
+  );
 
   const analyticsMono = useMemo(
     () => ({ ...mono, realTx: activeTx, loadingTx: mono.loadingTx || loading }),
@@ -526,7 +544,7 @@ export function Analytics({
   const plannedSavings = Number(storage.monthlyPlan?.savings) || 0;
 
   const pageLoading =
-    (isCurrentMonth ? mono.loadingTx : loading) && activeTx.length === 0;
+    (isCurrentMonth ? mono.loadingTx : loading) && allActiveTx.length === 0;
 
   // useCallback — передається у memo(MonthNav); стабільне посилання дозволяє
   // уникати перерендеру навігації при оновленні інших частин сторінки.
@@ -672,6 +690,22 @@ export function Analytics({
             </Suspense>
           )}
         </Section>
+
+        {!pageLoading && (
+          <Suspense fallback={null}>
+            <AccountBars
+              transactions={allActiveTx}
+              previousTransactions={prevKey in monthCache ? allPrevTx : null}
+              excludedTxIds={storage.excludedTxIds}
+              txSplits={storage.txSplits}
+              accounts={mono.accounts ?? []}
+              selected={accountFilter}
+              onSelect={setAccountFilter}
+              showBalance={showBalance}
+              title={messages.finyk.cashOnHand.analyticsTitle}
+            />
+          </Suspense>
+        )}
 
         {trend.points.length > 0 && (
           <Section title="Витрати за місяцями">
