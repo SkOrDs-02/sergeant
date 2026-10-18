@@ -12,9 +12,8 @@
      - animations.css      — `@keyframes`, page/module entry transitions
      - utilities.css       — Tailwind v4 `@utility` rules (focus rings,
                              typography scale, panels, gradients)
-     - components.css      — `.skeleton`, `.glass`, `.fab`, `.tooltip`,
-                             `.pill-nav`, micro-interactions
-     - module-surfaces.css — module-tinted hero cards (finyk/fizruk/etc.)
+     - components.css      — `.skeleton`, `.tooltip`, micro-interactions
+     - module-surfaces.css — chart-side palette classes (routine heatmap)
      - mobile.css          — touch-target floor, mobile-first helpers,
                              compact viewport typography
 
