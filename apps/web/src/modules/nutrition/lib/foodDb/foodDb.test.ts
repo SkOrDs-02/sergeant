@@ -33,6 +33,7 @@ import {
   listFoods,
   lookupFoodByBarcode,
   macrosForGrams,
+  macrosForGramsNullable,
   makeFoodProduct,
   replaceAllFoodsFromList,
   searchFoods,
@@ -97,6 +98,39 @@ describe("macrosForGrams (pure)", () => {
     expect(
       macrosForGrams({ kcal: 100, protein_g: 10, fat_g: 5, carbs_g: 20 }, -3),
     ).toEqual({ kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 });
+  });
+});
+
+describe("macrosForGramsNullable (pure)", () => {
+  it("scales like macrosForGrams when every nutrient is known", () => {
+    const per100 = { kcal: 100, protein_g: 10, fat_g: 5, carbs_g: 20 };
+    expect(macrosForGramsNullable(per100, 50)).toEqual(
+      macrosForGrams(per100, 50),
+    );
+  });
+
+  it("keeps an unknown nutrient null instead of turning it into 0", () => {
+    expect(
+      macrosForGramsNullable({ kcal: 100, protein_g: null, carbs_g: 20 }, 50),
+    ).toEqual({ kcal: 50, protein_g: null, fat_g: null, carbs_g: 10 });
+  });
+
+  it("keeps a real zero as 0", () => {
+    expect(
+      macrosForGramsNullable(
+        { kcal: 100, protein_g: 0, fat_g: 0, carbs_g: 0 },
+        50,
+      ),
+    ).toEqual({ kcal: 50, protein_g: 0, fat_g: 0, carbs_g: 0 });
+  });
+
+  it("returns all-null for non-object input", () => {
+    expect(macrosForGramsNullable(undefined, 100)).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
   });
 });
 
