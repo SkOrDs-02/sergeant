@@ -1,6 +1,6 @@
 # Вихід із Фізрука та ієрархія фінансових сутностей
 
-> **Last touched:** 2026-10-16 by @Skords-01. **Next review:** 2027-01-14.
+> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-11-29.
 > **Status:** Active
 
 ## Запит і база
