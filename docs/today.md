@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-10-08 by docs:gen-today. **Next review:** 2026-10-15.
+> **Last touched:** 2026-10-12 by docs:gen-today. **Next review:** 2026-10-19.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -14,9 +14,11 @@ Sorted: `blocked` items first, далі явні `agent-ready`, потім за 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
 
-## Прострочений review (0)
+## Прострочений review (1)
 
-_Жодного документа не пропустило `Next review:` дату. 🎉_
+Документи, чия `Next review:` дата минула. Або bump date після швидкого re-read, або переведи в `Status: Closed`/`Archived`.
+
+- [`work/specs/audits/2026-09-11-founder-ux-review-round2.md`](./work/specs/audits/2026-09-11-founder-ux-review-round2.md) — Розбір зауважень власника, хвиля 2 (після Codex) _(due 2026-10-11, **1d overdue**)_
 
 ## WIP load — 🟢 healthy
 

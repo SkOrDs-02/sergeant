@@ -39,6 +39,7 @@ vi.mock("../modules/me/dataRights.js", () => ({
 }));
 
 import {
+  optionalSession,
   requireFreshSession,
   requireSession,
   requireSessionSoft,
@@ -323,5 +324,38 @@ describe("гейт вікна видалення", () => {
 
     expect(res.status).toBe(401);
     expect(deletionStatusMock).not.toHaveBeenCalled();
+  });
+});
+
+// sec-15: OAuth-колбек Сільпо не може вимагати сесію (приземляється на
+// api-хост), але має використати її, коли вона є.
+describe("optionalSession(): лише читає сесію, ніколи не гейтить", () => {
+  function userApp() {
+    const app = express();
+    app.get("/p", optionalSession(), (req, res) => {
+      res.json({ userId: (req as { user?: { id: string } }).user?.id ?? null });
+    });
+    return app;
+  }
+
+  it("сесія є -> req.user виставлений", async () => {
+    getSessionUserMock.mockResolvedValueOnce({ id: "u-1" });
+    const res = await request(userApp()).get("/p");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ userId: "u-1" });
+  });
+
+  it("сесії немає -> пропускає без 401, req.user порожній", async () => {
+    getSessionUserMock.mockResolvedValueOnce(null);
+    const res = await request(userApp()).get("/p");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ userId: null });
+  });
+
+  it("lookup кидає -> fail-closed: як «сесії немає», не 500", async () => {
+    getSessionUserMock.mockRejectedValueOnce(new Error("db down"));
+    const res = await request(userApp()).get("/p");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ userId: null });
   });
 });

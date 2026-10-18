@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-05-19
  * Status: Active
@@ -45,7 +46,9 @@ export function useRestDayOverdueInsight(
   workouts: readonly Workout[],
   loaded: boolean,
 ): Insight | null {
+  const dayKey = useDeviceDayKey();
   return useMemo(() => {
+    void dayKey;
     // Suppress while SQLite boot is still in flight — avoids a false
     // "no workouts" state triggering the card on first render.
     if (!loaded) return null;
@@ -63,7 +66,7 @@ export function useRestDayOverdueInsight(
       id: "fizruk-rest-day-overdue",
       module: "fizruk",
       title: `${days} ${pluralDays(days)} без тренування`,
-      subtitle: "Час повернутися?",
+      subtitle: "Почати тренування",
       // AI-DANGER: питання мусить казати те саме, що й заголовок. Тут стояв
       // текст «N днів поспіль БЕЗ ДНЯ ВІДНОВЛЕННЯ» — протилежний зміст:
       // заголовок каже «ти не тренувався», а питання питало, коли поставити
@@ -79,5 +82,5 @@ export function useRestDayOverdueInsight(
       // catch a user who is busy in finyk/routine/nutrition.
       showOn: "both",
     };
-  }, [workouts, loaded]);
+  }, [workouts, loaded, dayKey]);
 }

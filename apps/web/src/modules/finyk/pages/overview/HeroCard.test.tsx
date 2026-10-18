@@ -25,6 +25,41 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("HeroCard", () => {
+  it("does not promise money available when no daily plan exists", () => {
+    render(
+      <HeroCard
+        networth={0}
+        monoTotal={0}
+        totalDebt={0}
+        daysInMonth={31}
+        daysPassed={10}
+        todayRemaining={null}
+        dayBudget={null}
+      />,
+    );
+    expect(screen.queryByText("Сьогодні ще можна")).not.toBeInTheDocument();
+  });
+  it("keeps the monthly percentage and overrun status in plain text", () => {
+    render(
+      <HeroCard
+        networth={0}
+        monoTotal={0}
+        totalDebt={0}
+        daysInMonth={31}
+        daysPassed={10}
+        todayRemaining={-10}
+        dayBudget={100}
+        spent={1200}
+        planExpense={1000}
+        hasExpensePlan
+        spendPlanRatio={1.2}
+      />,
+    );
+    expect(screen.getByTestId("hero-strip-footer")).toHaveTextContent("120%");
+    expect(screen.getByTestId("hero-strip-footer")).toHaveTextContent(
+      "Понад план",
+    );
+  });
   const baseProps = {
     networth: -89158,
     monoTotal: 255,
@@ -57,86 +92,28 @@ describe("HeroCard", () => {
     )[0]!;
   }
 
-  /**
-   * Підпис «Капітал» іде ПІД числом — число має зустрічати око першим.
-   * Перевіряємо порядок у DOM: до цієї зміни обидва вузли теж існували,
-   * просто в зворотному порядку, тож перевірка наявності нічого б не ловила.
-   */
-  it("puts the Капітал caption after the number, not before", () => {
+  it("shows the remaining daily amount and capital as supporting text", () => {
     render(<HeroCard {...baseProps} />);
-    const number = screen.getByText(
-      (_, el) =>
-        el?.textContent?.replace(/\s/g, " ") === "−89 158 ₴" &&
-        el.tagName === "P",
-    );
-    const position = number.compareDocumentPosition(
-      screen.getByText("Капітал"),
-    );
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("renders networth, breakdown row and «Лишилось на сьогодні»", () => {
-    render(<HeroCard {...baseProps} />);
-    expect(screen.getByText("Капітал")).toBeInTheDocument();
-    // The networth is split across nodes: a leading "−" text node sibling to
-    // the CounterReveal span ("89 158 ₴"). Match the wrapper by textContent.
-    // Intl.NumberFormat("uk-UA") groups thousands with a non-breaking space
-    // (U+00A0), so normalise whitespace before comparing to a plain-space
-    // literal — the function matcher bypasses RTL's default normaliser.
-    expect(
-      screen.getByText(
-        (_, el) =>
-          el?.textContent?.replace(/\s/g, " ") === "−89 158 ₴" &&
-          el.tagName === "P",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/На картках/)).toBeInTheDocument();
-    // Суми набрані `Money`: знак, розряди й символ — окремі вузли (П4),
-    // тож звіряємось із textContent, а не з єдиним текстовим вузлом.
-    expect(money("+255 ₴")).toBeInTheDocument();
-    expect(money("−89 413 ₴")).toBeInTheDocument();
-    // Головне число — `todayRemaining` (1691 − 500), не голий `dayBudget`.
+    expect(screen.getByText("Сьогодні ще можна")).toBeInTheDocument();
     expect(money("1 191 ₴")).toBeInTheDocument();
-    expect(screen.getByText(/Лишилось на сьогодні/)).toBeInTheDocument();
-    // Рядок під числом — «витрачено X ₴ із Y ₴» (рішення 2 спеки).
-    const subline = screen.getByTestId("hero-today-subline");
-    expect(subline.textContent).toMatch(/витрачено/);
-    expect(money("500 ₴")).toBeInTheDocument();
-    expect(money("1 691 ₴")).toBeInTheDocument();
-  });
-
-  it("renders «−N ₴ понад бюджет дня» in the accent tone when todayRemaining < 0", () => {
-    render(<HeroCard {...baseProps} todayRemaining={-120} />);
-    const amount = money("120 ₴ понад бюджет дня");
-    expect(amount).toBeInTheDocument();
-    // Tier-400 фінансовий акцент, не червоний (рішення 1 спеки — hero не карає).
-    expect(amount.className).toContain("text-chart-finyk");
-    expect(amount.className).not.toContain("text-danger");
-  });
-
-  it("footer shows spent-of-plan and percent when a plan is set", () => {
-    render(
-      <HeroCard
-        {...baseProps}
-        hasExpensePlan={true}
-        spendPlanRatio={0.3}
-        planExpense={10000}
-      />,
+    expect(money("−89 158 ₴")).toBeInTheDocument();
+    expect(screen.getByText(/На картках/)).toBeInTheDocument();
+    expect(screen.getByTestId("hero-today-subline")).toHaveTextContent(
+      "Витрачено сьогодні",
     );
-    const footer = screen.getByTestId("hero-strip-footer");
-    expect(footer.textContent).toMatch(/30% плану/);
-    expect(footer.textContent).toMatch(/день 2 із 31/);
+  });
+  it("preserves the minus sign when today's budget is exceeded", () => {
+    render(<HeroCard {...baseProps} todayRemaining={-120} />);
+    expect(money("−120 ₴")).toBeInTheDocument();
+    expect(screen.getByText("Понад бюджет дня")).toBeInTheDocument();
+  });
+  it("shows monthly fact and plan without a second hero number", () => {
+    render(<HeroCard {...baseProps} hasExpensePlan planExpense={10000} />);
+    expect(screen.getByTestId("hero-strip-footer")).toHaveTextContent(
+      "План місяця",
+    );
     expect(money("10 000 ₴")).toBeInTheDocument();
   });
-
-  it("footer shows «за місяць» without a percent when no plan is set", () => {
-    render(<HeroCard {...baseProps} hasExpensePlan={false} />);
-    const footer = screen.getByTestId("hero-strip-footer");
-    expect(footer.textContent).toMatch(/за місяць/);
-    expect(footer.textContent).toMatch(/день 2 із 31/);
-    expect(footer.textContent).not.toMatch(/% плану/);
-  });
-
   it("renders the MonthStrip when dailySpend is non-empty", () => {
     render(
       <HeroCard
@@ -169,63 +146,18 @@ describe("HeroCard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("masks numbers when showBalance is false", () => {
-    render(<HeroCard {...baseProps} showBalance={false} />);
-    const dots = screen.getAllByText("••••");
-    // Networth + hero-число + рядок «витрачено» + футер — усі маскуються.
-    expect(dots.length).toBeGreaterThanOrEqual(2);
+  it("masks every financial figure when showBalance is false", () => {
+    const { container } = render(
+      <HeroCard {...baseProps} showBalance={false} />,
+    );
+    expect(container.textContent).toContain("••••");
+    expect(container.textContent).not.toContain("89");
+    expect(container.textContent).not.toContain("191");
     expect(screen.getByText(/На картках/)).toHaveTextContent(
       "На картках •••• · Борги ••••",
     );
   });
 
-  it("uses pulseStyle status text — 'В межах плану' when plan present and ratio low", () => {
-    render(
-      <HeroCard {...baseProps} hasExpensePlan={true} spendPlanRatio={0.2} />,
-    );
-    expect(screen.getByText("В межах плану")).toBeInTheDocument();
-  });
-
-  it("uses pulseStyle status text — 'Перевитрата' when dayBudget < 0 and no plan", () => {
-    render(<HeroCard {...baseProps} hasExpensePlan={false} dayBudget={-100} />);
-    expect(screen.getByText("Перевитрата")).toBeInTheDocument();
-  });
-
-  it("keeps the daily allowance readable on the light hero", () => {
-    render(<HeroCard {...baseProps} />);
-    // Тон живе на контейнері числа; `Money` успадковує його, а приглушені
-    // тири беруть hero-ink-палітру (інакше text-muted тоне в градієнті).
-    const amount = money("1 191 ₴");
-    expect(amount.closest("div")?.className).toContain("text-hero-ink");
-    // Тир не має власного кольору й не гаситься прозорістю (аудит
-    // 2026-10-01, A5): на градієнті лишається того самого чорнила, що й число.
-    expect(amount.querySelector(".text-\\[0\\.72em\\]")?.className).not.toMatch(
-      /opacity-/,
-    );
-    expect(screen.getByText("В нормі").className).toContain("text-hero-ink");
-  });
-
-  it("renders negative networth in the hero ink tone, not red", () => {
-    const { container } = render(<HeroCard {...baseProps} />);
-    // Червоне на тонованому зеленому hero читалось найгірше на екрані
-    // (звіт власника 2026-09-03): мінус несе сам знак, тон лишається
-    // чорнильним. The "−" sign and the CounterReveal span ("89 158 ₴")
-    // together form the full text; uk-UA groups thousands with U+00A0.
-    const networthEl = screen.getByText(
-      (_, el) =>
-        el?.textContent?.replace(/\s/g, " ") === "−89 158 ₴" &&
-        el.tagName === "P",
-    );
-    expect(networthEl.className).not.toMatch(/text-danger/);
-    expect(networthEl.className).toMatch(/text-hero-ink/);
-    // sanity: the negative networth lives inside the card root
-    expect(container.firstChild).toContainElement(networthEl);
-  });
-
-  // Regression: founder report 2026-07-31 — with no monthly plan the hero
-  // showed «124 686 ₴/день · В нормі», a number derived from the very spend
-  // it claimed to budget. `dayBudget`/`todayRemaining` are now `null` in that
-  // state.
   describe("no monthly plan (todayRemaining = null)", () => {
     const noPlanProps = {
       ...baseProps,
@@ -236,9 +168,7 @@ describe("HeroCard", () => {
 
     it("renders the set-a-plan CTA instead of a fabricated number", () => {
       render(<HeroCard {...noPlanProps} onSetPlan={() => {}} />);
-      expect(
-        screen.getByText("Скільки можна витрачати на день?"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Денний бюджет не задано")).toBeInTheDocument();
       expect(screen.queryByText("₴/день")).not.toBeInTheDocument();
       expect(
         screen.queryByText(/Лишилось на сьогодні/),
@@ -259,9 +189,7 @@ describe("HeroCard", () => {
         screen.queryByRole("button", { name: "Задати план" }),
       ).not.toBeInTheDocument();
       // The explanatory copy still stands in for the missing number.
-      expect(
-        screen.getByText("Скільки можна витрачати на день?"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Денний бюджет не задано")).toBeInTheDocument();
     });
   });
 

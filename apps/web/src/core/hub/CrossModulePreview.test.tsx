@@ -30,6 +30,7 @@ describe("CrossModulePreview — single-primary affordance (S6.4 audit-guard)", 
     const card = screen.getByLabelText("Що Сержант покаже далі");
     expect(card.textContent ?? "").toMatch(/гроші\s*×\s*їжа/i);
     expect(card.textContent ?? "").toMatch(/коли додаси ще/i);
+    expect(card.querySelectorAll("svg")).toHaveLength(1);
   });
 
   it("emits CROSS_MODULE_PREVIEW_SEEN exactly once on mount, with both modules in payload", () => {

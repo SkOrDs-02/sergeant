@@ -214,10 +214,10 @@ describe("HabitForm – recurrence", () => {
     render(<Harness />);
     const dailyChip = screen.getByRole("radio", { name: "Щодня" });
     const weekdaysChip = screen.getByRole("radio", { name: "Будні" });
-    expect(dailyChip).toHaveAttribute("aria-checked", "true");
+    expect(dailyChip).toBeChecked();
     fireEvent.click(weekdaysChip);
-    expect(weekdaysChip).toHaveAttribute("aria-checked", "true");
-    expect(dailyChip).toHaveAttribute("aria-checked", "false");
+    expect(weekdaysChip).toBeChecked();
+    expect(dailyChip).not.toBeChecked();
   });
 });
 

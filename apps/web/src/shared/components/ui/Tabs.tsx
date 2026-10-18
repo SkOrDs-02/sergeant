@@ -208,7 +208,7 @@ export function Tabs<V extends string = string>({
         "flex items-stretch",
         style === "underline"
           ? "gap-1 border-b border-divider"
-          : "gap-1 p-1 rounded-2xl bg-surface-muted",
+          : "gap-1 p-1 rounded-lg bg-surface-muted",
         fill && "w-full",
         className,
       )}
@@ -244,7 +244,7 @@ export function Tabs<V extends string = string>({
                 // resting `border-surface-line` hairline so each segment
                 // reads as a chip at rest, not bare text on the track
                 // (mirrors the ModuleSwitcher treatment).
-                "rounded-xl border border-transparent",
+                "rounded-lg border border-transparent",
                 isActive
                   ? VARIANT_PILL[variant]
                   : "border-surface-line text-fg-muted hover:text-fg hover:bg-surface",

@@ -103,7 +103,7 @@ describe("MonthStrip", () => {
     const normalButton = buttons[0]!; // day 1
     expect(overButton.querySelector(".bg-chart-finyk")).not.toBeNull();
     expect(normalButton.querySelector(".bg-chart-finyk")).toBeNull();
-    expect(normalButton.querySelector(".bg-finyk\\/50")).not.toBeNull();
+    expect(normalButton.querySelector(".bg-chart-finyk\\/50")).not.toBeNull();
   });
 
   it("calls onOpenDay with the tapped day-key", () => {

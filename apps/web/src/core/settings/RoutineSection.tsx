@@ -34,45 +34,38 @@ export function RoutineSection() {
   return (
     // V-13 — акцент бейджа вимагає пари `icon` + `module`; чому саме так,
     // розписано у `FinykSection.tsx`.
-    <SettingsGroup title="Рутина" icon="check" module="routine">
-      <SettingsSubGroup title="Календар">
-        <ToggleRow
-          label="Показувати тренування з Фізрука в календарі"
-          description="Заплановані тренування з Фізрука зʼявляться у місячному календарі поряд зі звичками."
-          checked={routine.prefs?.showFizrukInCalendar !== false}
-          onChange={(checked) => updatePref("showFizrukInCalendar", checked)}
-        />
-        <ToggleRow
-          label="Показувати планові платежі підписок Фініка в календарі"
-          description="Майбутні списання за підписками зʼявлятимуться у календарі рутини поруч із завданнями дня."
-          checked={routine.prefs?.showFinykSubscriptionsInCalendar !== false}
-          onChange={(checked) =>
-            updatePref("showFinykSubscriptionsInCalendar", checked)
-          }
-        />
-      </SettingsSubGroup>
+    <SettingsGroup title="Рутина">
+      <div className="space-y-7 [&_[data-row]]:mx-0 [&_[data-row]]:px-0">
+        <SettingsSubGroup variant="bounded" title="Календар">
+          <ToggleRow
+            label="Показувати тренування з Фізрука в календарі"
+            description="Заплановані тренування з Фізрука зʼявляться у місячному календарі поряд зі звичками."
+            checked={routine.prefs?.showFizrukInCalendar !== false}
+            onChange={(checked) => updatePref("showFizrukInCalendar", checked)}
+          />
+          <ToggleRow
+            label="Показувати планові платежі підписок Фініка в календарі"
+            description="Майбутні списання за підписками зʼявлятимуться у календарі рутини поруч із завданнями дня."
+            checked={routine.prefs?.showFinykSubscriptionsInCalendar !== false}
+            onChange={(checked) =>
+              updatePref("showFinykSubscriptionsInCalendar", checked)
+            }
+          />
+        </SettingsSubGroup>
 
-      <SettingsSubGroup title="Теги та категорії">
-        <div className="space-y-4">
-          <p className="text-style-body text-subtle leading-snug">
-            Тег – вільна мітка («ранок», «робота»), категорія – сфера життя з
-            власною іконкою. І те, і те призначається звичці у формі під «Більше
-            опцій», а фільтрувати за ними можна на вкладці «Огляд».
-          </p>
-          <TagsSection
-            routine={routine}
-            setRoutine={setRoutine}
-            tagDraft={tagDraft}
-            setTagDraft={setTagDraft}
-          />
-          <CategoriesSection
-            routine={routine}
-            setRoutine={setRoutine}
-            catDraft={catDraft}
-            setCatDraft={setCatDraft}
-          />
-        </div>
-      </SettingsSubGroup>
+        <TagsSection
+          routine={routine}
+          setRoutine={setRoutine}
+          tagDraft={tagDraft}
+          setTagDraft={setTagDraft}
+        />
+        <CategoriesSection
+          routine={routine}
+          setRoutine={setRoutine}
+          catDraft={catDraft}
+          setCatDraft={setCatDraft}
+        />
+      </div>
     </SettingsGroup>
   );
 }

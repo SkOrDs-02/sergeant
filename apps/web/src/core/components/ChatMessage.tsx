@@ -5,7 +5,6 @@
 import { memo, useState } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
 import { AssistantMessageBody } from "@shared/components/AssistantMessageBody";
 import { speak } from "../lib/hubChatSpeech";
 import type { ChatMessage as ChatMessageData } from "../lib/hubChatUtils";
@@ -33,9 +32,7 @@ interface ChatMessageProps {
  * `hub` тут навмисно відсутній: кросмодульні tool-и ведуть у хаб, а чат
  * уже в хабі — посилання «сюди ж» лише додає шуму.
  *
- * Класи чіпа статичні (а не `bg-${module}-soft`), бо Tailwind збирає
- * класи текстовим скануванням і динамічне імʼя до білда не потрапляє.
- * Ті самі пари вживає `MODULE_COLORS` у hub-пошуку.
+ * Посилання нейтральні: чат — поверхня H.1, модуль названо текстом.
  */
 const MODULE_LINK: Partial<
   Record<ChatActionCardModule, { to: string; label: string; chip: string }>
@@ -43,22 +40,22 @@ const MODULE_LINK: Partial<
   finyk: {
     to: "/finyk",
     label: "Фінік",
-    chip: "bg-finyk-soft text-finyk-soft-fg",
+    chip: "bg-panel text-text",
   },
   fizruk: {
     to: "/fizruk",
     label: "Фізрук",
-    chip: "bg-fizruk-soft text-fizruk-soft-fg",
+    chip: "bg-panel text-text",
   },
   routine: {
     to: "/routine",
     label: "Рутина",
-    chip: "bg-routine-soft text-routine-soft-fg",
+    chip: "bg-panel text-text",
   },
   nutrition: {
     to: "/nutrition",
     label: "Їжа",
-    chip: "bg-nutrition-soft text-nutrition-soft-fg",
+    chip: "bg-panel text-text",
   },
 };
 
@@ -77,14 +74,13 @@ function ModuleLink({ module }: { module: ChatActionCardModule }) {
       to={target.to}
       data-testid={`chat-card-link-${module}`}
       className={cn(
-        "mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5",
+        "mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5",
         "text-style-caption font-medium transition-opacity hover:opacity-80",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40",
         target.chip,
       )}
     >
       {target.label}
-      <Icon name="chevron-right" size="xs" />
     </Link>
   );
 }
@@ -109,22 +105,10 @@ function ActionCard({ card }: { card: ChatActionCard }) {
       role="status"
       aria-label={`${card.title}: ${card.summary}`}
       className={cn(
-        "mt-2 flex items-start gap-2 rounded-xl border px-3 py-2",
-        failed
-          ? "bg-warning/10 border-warning/30"
-          : "bg-brand-500/5 border-brand-500/30",
+        "mt-2 flex items-start gap-2 rounded-panel border px-3 py-2",
+        failed ? "bg-warning/10 border-warning/30" : "bg-panel border-line",
       )}
     >
-      <span
-        className={cn(
-          "shrink-0 mt-0.5",
-          failed ? "text-warning" : "text-brand-500",
-        )}
-        aria-hidden
-      >
-        <Icon name={card.icon || (failed ? "alert" : "check")} size="sm" />
-      </span>
-
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 flex-wrap text-style-label font-semibold text-text">
           <span className="truncate">{card.title}</span>
@@ -144,7 +128,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="text-style-caption text-brand-strong hover:text-brand-600 mt-0.5 transition-colors"
+                className="text-style-caption text-text hover:underline mt-0.5 transition-colors"
               >
                 {expanded ? "Згорнути" : "Показати все"}
               </button>
@@ -169,7 +153,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
       data-testid={`chat-confirm-card-${card.toolName}`}
       role="status"
       aria-label={`Виконано: ${card.title}`}
-      className="mt-2 rounded-xl border border-danger/30 bg-danger/5 overflow-hidden"
+      className="mt-2 rounded-panel border border-danger/30 bg-danger/5 overflow-hidden"
     >
       {/* Header row */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-danger/20">
@@ -193,7 +177,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
         <span className="text-style-label font-semibold text-danger-strong dark:text-danger flex-1 truncate">
           {card.title}
         </span>
-        <span className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger rounded-full bg-danger/10 px-1.5 py-0.5">
+        <span className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger rounded-lg bg-danger/10 px-1.5 py-0.5">
           Виконано
         </span>
       </div>
@@ -221,36 +205,15 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
         isAssistant ? "flex-row" : "flex-row-reverse",
       )}
     >
-      {isAssistant && (
-        <span
-          className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/10 text-brand-500"
-          aria-hidden
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            <circle cx="12" cy="5" r="1" />
-          </svg>
-        </span>
-      )}
       <div
         {...(isError ? { role: "alert" as const } : {})}
         className={cn(
-          "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-style-body leading-relaxed",
+          "max-w-[82%] rounded-panel px-3.5 py-2.5 text-style-body leading-relaxed",
           isAssistant && isError
             ? "bg-danger/10 border border-danger/30 text-text rounded-bl-sm whitespace-normal"
             : isAssistant
               ? "bg-panel border border-line text-text rounded-bl-sm whitespace-normal"
-              : "bg-primary text-bg rounded-br-sm whitespace-pre-wrap",
+              : "bg-panelHi text-text rounded-br-sm whitespace-pre-wrap",
         )}
       >
         {isAssistant ? <AssistantMessageBody text={text} /> : text}
@@ -281,24 +244,10 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
               speak(text);
               onSpeak?.();
             }}
-            className="mt-1.5 flex items-center gap-1 text-style-label text-subtle hover:text-text transition-colors"
+            className="mt-1.5 flex min-h-11 items-center text-style-label text-subtle hover:text-text transition-colors focus-ring"
             title="Озвучити"
             aria-label="Озвучити відповідь"
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-            </svg>
             Озвучити
           </button>
         )}
@@ -316,34 +265,15 @@ export function TypingIndicator() {
       role="status"
       aria-label="Сержант набирає відповідь"
     >
-      <span
-        className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/10 text-brand-500"
-        aria-hidden
-      >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          <circle cx="12" cy="5" r="1" />
-        </svg>
-      </span>
       {/* Animated dots — hidden when prefers-reduced-motion is active. */}
       <div
         aria-hidden
-        className="motion-safe:flex hidden bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 gap-1.5 items-center"
+        className="motion-safe:flex hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 gap-1.5 items-center"
       >
         {[0, 0.15, 0.3].map((d, i) => (
           <span
             key={i}
-            className="w-1.5 h-1.5 bg-subtle rounded-full motion-safe:animate-bounce"
+            className="w-1.5 h-1.5 bg-subtle rounded-mark motion-safe:animate-bounce"
             style={{ animationDelay: `${d}s` }}
           />
         ))}
@@ -351,7 +281,7 @@ export function TypingIndicator() {
       {/* Static label shown only when prefers-reduced-motion is set. */}
       <div
         aria-hidden
-        className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 items-center"
+        className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 items-center"
       >
         <span className="text-style-body text-muted">Думаю…</span>
       </div>

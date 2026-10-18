@@ -21,7 +21,6 @@ import {
   moduleColors,
   inkTheme,
   moduleAccentRgb,
-  moduleSurfaces,
   statusInkHex,
   accentInkHex,
   accentStrongHex,
@@ -66,8 +65,8 @@ const THEME_CSS = readFileSync(
 );
 
 /**
- * Джерело осередків `MealStrip` — з нього гейт читає класи перехідних
- * станів (`hover:bg-hero-ink/N`, `active:bg-hero-ink/N`), а не копію чисел.
+ * Джерело `MealStrip` — гейт перевіряє, що hero Їжі на тинті лишається
+ * без `hero-ink` (мова H, редизайн v3 PR4).
  */
 const MEAL_STRIP_SRC = readFileSync(
   path.join(
@@ -85,21 +84,6 @@ const MEAL_STRIP_SRC = readFileSync(
   "utf8",
 );
 
-function heroGradientStops(module) {
-  const decl = new RegExp(
-    `--hero-grad-${module}:\\s*linear-gradient\\(([^)]*)\\)`,
-  ).exec(THEME_CSS);
-  if (!decl) throw new Error(`--hero-grad-${module} не знайдено в theme.css`);
-  return [...decl[1].matchAll(/#([0-9a-fA-F]{6})\b/g)].map((m) =>
-    `#${m[1]}`.toLowerCase(),
-  );
-}
-
-/** Найсвітліша зупинка: саме під нею чорнило найгірше. */
-function lightestStop(stops) {
-  return stops.reduce((a, b) => (luminance(b) > luminance(a) ? b : a));
-}
-
 /** `moduleAccentRgb` тримає значення як "R G B"; тут потрібен hex. */
 function rgbTripleToHex(triple) {
   return (
@@ -115,46 +99,7 @@ function rgbTripleToHex(triple) {
 // `shouldPassAA === false` means the pair is documented as failing AA;
 // the test asserts the failure so we don't accidentally start treating
 // it as a viable text colour.
-// Третинні тони світлої теми (`--c-muted` / `--c-subtle` у theme.css).
-//
-// AI-DANGER: **обидва мусять критись проти СТОЛУ І ЗОНИ, не лише проти
-// білого.** До 2026-09-11 цей гейт перевіряв `subtle` тільки на столі, а
-// зону — лише під `-strong` акцентом, бо вважалося, що в зоні буває лише
-// акцентний текст або чорнило. У коді це було не так: `ModuleHeader`
-// рендерить свою кнопку «Назад» у `text-muted` саме в зоні. Гейт був
-// зелений, а axe знайшов 14 вузлів на 11 маршрутах у діапазоні
-// 4.21-4.49:1 — усі під порогом AA і всі через те, що «стіл і зона»
-// (#1063) прибрали з-під третинного тексту білу картку. Не звужуй ці
-// матриці назад до однієї поверхні.
-const MUTED_LIGHT = "#535c56";
-const SUBTLE_LIGHT = "#605a54";
-
-// Стіл — фон сторінки; на ньому живе будь-який текстовий тір.
-const DESK_PAIRS = Object.entries(moduleSurfaces).flatMap(([name, s]) => [
-  [`muted on ${name} desk (light)`, MUTED_LIGHT, s.light.desk, true],
-  [`subtle on ${name} desk (light)`, SUBTLE_LIGHT, s.light.desk, true],
-]);
-
-// Зона — смуга під шапкою і табами модуля. Крім `-strong` акценту й
-// чорнила, туди сідає третинний текст контролів шапки, тож перевіряємо
-// всі три тіри. Зона хаба (#dad6ce) — найтемніша з реальних поверхонь,
-// саме вона тут визначає поріг.
-const ZONE_PAIRS = [
-  ...Object.entries(moduleSurfaces).flatMap(([name, s]) => [
-    [`muted on ${name} zone (light)`, MUTED_LIGHT, s.light.zone, true],
-    [`subtle on ${name} zone (light)`, SUBTLE_LIGHT, s.light.zone, true],
-  ]),
-  ...["finyk", "fizruk", "routine", "nutrition"].map((m) => [
-    `${m}-strong on ${m} zone (light)`,
-    rgbTripleToHex(moduleAccentRgb[m].strong),
-    moduleSurfaces[m].light.zone,
-    true,
-  ]),
-];
-
 const PAIRS = [
-  ...DESK_PAIRS,
-  ...ZONE_PAIRS,
   ["nutrition text on white", moduleColors.nutrition.primary, "#ffffff", false],
   ["nutrition-strong on white", brandColors.lime[800], "#ffffff", true],
   [
@@ -182,74 +127,6 @@ const PAIRS = [
     "accent (dark, teal-400) on ink bg",
     brandColors.teal[400],
     inkTheme.surface.bg,
-    true,
-  ],
-  // Routine hero (light) — реальні пари з рендера (design-audit F2):
-  // світлий градієнт стиснуто до rose-800→700, текст hero-ink #fdf9f3.
-  // Пари фіксують обидва стопи, щоб майбутнє «освітлення» героя знову
-  // не впустило дрібний текст під 4.5:1 (виміряний фейл був 2.12:1 на
-  // старому стопі rose-400).
-  [
-    "routine hero-ink on rose-700 (hero light end)",
-    "#fdf9f3",
-    brandColors.rose[700],
-    true,
-  ],
-  [
-    "routine hero-ink on rose-800 (hero dark end)",
-    "#fdf9f3",
-    brandColors.rose[800],
-    true,
-  ],
-  [
-    "routine hero-ink on rose-400 (старий стоп — задокументований фейл)",
-    "#fdf9f3",
-    brandColors.rose[400],
-    false,
-  ],
-  // Fizruk + nutrition hero (light) — 2026-08 design-audit T2: same
-  // failure class as routine F2 above (light end measured ~1.7–2.2:1 for
-  // hero-ink text), fixed the same way — compress to `-800`/`-700`.
-  [
-    "fizruk hero-ink on cyan-700 (hero light end)",
-    "#fdf9f3",
-    brandColors.cyan[700],
-    true,
-  ],
-  [
-    "fizruk hero-ink on cyan-800 (hero dark end)",
-    "#fdf9f3",
-    brandColors.cyan[800],
-    true,
-  ],
-  [
-    // Колишній світлий кінець. Голий він проходить (4.67), але під заливкою
-    // осередка `MealStrip` — ні (4.27), тому з 2026-10-01 кінець `#4e6f10`;
-    // реальні зупинки й заливку міряє блок «кожна зупинка» нижче.
-    "nutrition hero-ink on lime-700 (колишній світлий кінець, голий)",
-    "#fdf9f3",
-    brandColors.lime[700],
-    true,
-  ],
-  [
-    "nutrition hero-ink on lime-800 (hero dark end)",
-    "#fdf9f3",
-    brandColors.lime[800],
-    true,
-  ],
-  // Finyk hero (light) — 2026-08 design-audit T2 follow-up: compressed to
-  // teal-800 → teal-700 like the other three modules (the old teal-400
-  // light end measured ~1.77:1 for hero-ink text).
-  [
-    "finyk hero-ink on teal-700 (hero light end)",
-    "#fdf9f3",
-    brandColors.teal[700],
-    true,
-  ],
-  [
-    "finyk hero-ink on teal-800 (hero dark end)",
-    "#fdf9f3",
-    brandColors.teal[800],
     true,
   ],
   // Макро-шкала (бриф «Папір» §3; родина переглянута N-13, продуктовий
@@ -533,208 +410,6 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
       ).toBeGreaterThanOrEqual(weakestModule - 0.5);
     }
   });
-
-  /**
-   * Альфа на `hero-ink` — знахідка WF-23 (аудит шуму 2026-09-16), рішення
-   * власника 2026-10-01 (аудит контрасту, A9): «чорнило без альфи».
-   *
-   * Пари вище міряють РІВНО 100%-чорнило, і саме тому дефект прожив довго:
-   * `text-hero-ink/70` у коді композитно підмішує колір градієнта, а гейт
-   * цього не бачив. Тест нижче міряє те, чим воно стає на екрані.
-   *
-   * Лічильник call-site-ів живе окремо — метрика `heroInkAlpha` у
-   * `scripts/check-ui-canon-ratchet.mjs` (з 2026-10-01 baseline = 0: це
-   * заборона, не стеля над боргом; 20 місць прибрано, градієнт не чіпали).
-   * Тут закріплені ЧИСЛА, які пояснюють, чому нуль, а не «трохи менше
-   * прозорості»: /80 і нижче не тримає жоден із чотирьох градієнтів, а
-   * проміжні кроки (/90-/95) тримають на одних і не тримають на інших
-   * (teal-700 /90 = 4.55, rose-700 /90 = 4.42), тож «безпечної» альфи
-   * немає навіть формально. Якщо хтось освітлить геро-градієнт, впаде
-   * перший тест і назве модуль; якщо потемнить настільки, що /80 почне
-   * проходити, впаде другий і змусить перечитати рішення, а не мовчки
-   * лишить заборону без підстав.
-   *
-   * Світлий кінець береться зі `theme.css` (див. `heroGradientStops`), а не
-   * з палітри: з 2026-10-01 кінець градієнта Їжі — `#4e6f10`, середина між
-   * lime-800 і lime-700, і в палітрі такого щабля немає.
-   */
-  describe("«Чорнило» на геро-градієнті — альфа", () => {
-    const HERO_INK = "#fdf9f3";
-    // Світлий (гірший) кінець кожного геро-градієнта зі `theme.css`.
-    const heroLightEnds = Object.fromEntries(
-      ["finyk", "fizruk", "routine", "nutrition"].map((m) => [
-        m,
-        lightestStop(heroGradientStops(m)),
-      ]),
-    );
-
-    /** sRGB-композит чорнила з альфою поверх непрозорого фону. */
-    function compositeHex(fgHex, bgHex, alpha) {
-      const mix = (i) => {
-        const fg = parseInt(fgHex.slice(1 + i * 2, 3 + i * 2), 16);
-        const bg = parseInt(bgHex.slice(1 + i * 2, 3 + i * 2), 16);
-        return Math.round(fg * alpha + bg * (1 - alpha));
-      };
-      return (
-        "#" +
-        [0, 1, 2].map((i) => mix(i).toString(16).padStart(2, "0")).join("")
-      );
-    }
-
-    for (const [name, bg] of Object.entries(heroLightEnds)) {
-      it(`${name}: повна непрозорість тримає AA на світлому кінці`, () => {
-        expect(contrastRatio(HERO_INK, bg)).toBeGreaterThanOrEqual(4.5);
-      });
-
-      it(`${name}: /80 і нижче AA НЕ тримає — чому чорнило без альфи, а не випадковість`, () => {
-        // Негативне твердження навмисне: воно фіксує, ЧОМУ метрика
-        // `heroInkAlpha` стоїть на нулі. Якщо градієнт колись потемнішає
-        // настільки, що /80 почне проходити, цей тест впаде і змусить
-        // перечитати рішення, а не мовчки лишить заборону без підстав.
-        expect(contrastRatio(compositeHex(HERO_INK, bg, 0.8), bg)).toBeLessThan(
-          4.5,
-        );
-      });
-    }
-
-    it("nutrition — найтісніший модуль: кінець градієнта темніший за lime-700", () => {
-      // До 2026-10-01 кінець був lime-700 `#567c0f` (4.67): прохідна лише
-      // повна непрозорість, навіть /95 давав 4.40. Рішення власника
-      // («темніший кінець градієнта») затемнило його до `#4e6f10` (5.55):
-      // тепер /95 і /90 формально проходять, /80 ні (цикл вище). Цей тест
-      // не дає тихо повернути кінець назад на lime-700.
-      const end = heroLightEnds.nutrition;
-      expect(luminance(end)).toBeLessThan(luminance(brandColors.lime[700]));
-      expect(contrastRatio(HERO_INK, end)).toBeGreaterThanOrEqual(5.5);
-    });
-  });
-});
-
-/**
- * Чорнило проти КОЖНОЇ зупинки геро-градієнта й проти найсвітлішої зупинки
- * під заливкою осередка (follow-up аудиту контрасту 2026-10-01, A9;
- * рішення власника по Їжі: «темніший кінець градієнта»).
- *
- * Пари вище міряють чорнило проти ГОЛОЇ зупинки. Але осередки `MealStrip`
- * (Сніданок/Обід/Вечеря/Перекус) мають заливку `bg-hero-ink/5`, тож текст
- * у них лежить на зупинці, підсвіченій чорнилом: на колишньому кінці
- * lime-700 це 4.27 замість 4.67 (піксельний замір цього ж дня давав
- * 3.98-4.32 на найсвітлішому пікселі під написом). Тест міряє саме цей
- * найгірший реальний випадок для всіх чотирьох модулів: решта проходить із
- * запасом (4.59-4.73), Їжа до зміни — ні.
- */
-describe("«Чорнило» на геро-градієнті — кожна зупинка і заливка осередка", () => {
-  const HERO_INK = "#fdf9f3";
-  const WASH_ALPHA = 0.05; // `bg-hero-ink/5` у MealStrip
-  const mixHex = (fg, bg, a) =>
-    "#" +
-    [0, 1, 2]
-      .map((i) => {
-        const f = parseInt(fg.slice(1 + i * 2, 3 + i * 2), 16);
-        const b = parseInt(bg.slice(1 + i * 2, 3 + i * 2), 16);
-        return Math.round(f * a + b * (1 - a))
-          .toString(16)
-          .padStart(2, "0");
-      })
-      .join("");
-
-  for (const module of ["finyk", "fizruk", "routine", "nutrition"]) {
-    const stops = heroGradientStops(module);
-    it(`${module}: у градієнті щонайменше дві зупинки`, () => {
-      expect(stops.length).toBeGreaterThanOrEqual(2);
-    });
-    for (const stop of stops) {
-      it(`${module}: hero-ink проти зупинки ${stop} ≥ 4.5:1`, () => {
-        expect(contrastRatio(HERO_INK, stop)).toBeGreaterThanOrEqual(4.5);
-      });
-    }
-    it(`${module}: найсвітліша зупинка під заливкою осередка (/5) ≥ 4.5:1`, () => {
-      const lightest = lightestStop(stops);
-      expect(
-        contrastRatio(HERO_INK, mixHex(HERO_INK, lightest, WASH_ALPHA)),
-      ).toBeGreaterThanOrEqual(4.5);
-    });
-  }
-
-  it("nutrition: колишній кінець lime-700 під заливкою осередка не проходить (чому градієнт затемнено)", () => {
-    // Негативна пара фіксує причину зміни: без неї «повернути як було»
-    // виглядало б безпечним, бо голий lime-700 проходить (4.67).
-    expect(
-      contrastRatio(
-        HERO_INK,
-        mixHex(HERO_INK, brandColors.lime[700], WASH_ALPHA),
-      ),
-    ).toBeLessThan(4.5);
-  });
-
-  /**
-   * Перехідні стани осередків `MealStrip` (follow-up 2026-10-01, рішення
-   * власника: «слабша підсвітка»). Заливка на hover/active лежить під тим
-   * самим чорнилом, що й спокій, тож її теж міряємо проти найсвітлішої
-   * зупинки Їжі. Читається з джерела компонента: повернення `/15` і `/20`
-   * (4.06 і 3.67) валить тест.
-   */
-  describe("MealStrip: hover/active заливка осередка тримає ≥ 4.5:1", () => {
-    // Зареєстрована шкала непрозорості (`sergeant-web-ui`: «0, 5, 8, 10,
-    // 15, … 100»; `8` додано в `tailwind-preset.js`).
-    const REGISTERED_SCALE = [
-      0, 5, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85,
-      90, 95, 100,
-    ];
-    const lightest = lightestStop(heroGradientStops("nutrition"));
-    const washContrast = (alphaPct) =>
-      contrastRatio(HERO_INK, mixHex(HERO_INK, lightest, alphaPct / 100));
-    const fillAlpha = (variant) => {
-      const hits = [
-        ...MEAL_STRIP_SRC.matchAll(
-          new RegExp(`(?<![\\w:-])${variant}:bg-hero-ink/(\\d+)`, "g"),
-        ),
-      ];
-      return hits.map((m) => Number(m[1]));
-    };
-    // Спокій осередка — окремий рядок-літерал у `cn(...)`; смуга частки
-    // (`bg-hero-ink/15`, `/60`) і макро-треки мають власні `bg-hero-ink/NN`,
-    // тож шукаємо літерал, що займає рядок сам.
-    const restAlpha = Number(
-      /^\s*"bg-hero-ink\/(\d+)",$/m.exec(MEAL_STRIP_SRC)?.[1],
-    );
-
-    it("спокій осередка — `bg-hero-ink/5` (база порівняння)", () => {
-      expect(restAlpha).toBe(5);
-    });
-
-    for (const variant of ["hover", "active"]) {
-      it(`${variant}: заливка знайдена, на зареєстрованій шкалі, не слабша за спокій`, () => {
-        const alphas = fillAlpha(variant);
-        expect(alphas.length).toBeGreaterThan(0);
-        for (const a of alphas) {
-          expect(REGISTERED_SCALE).toContain(a);
-          expect(a).toBeGreaterThanOrEqual(restAlpha);
-        }
-      });
-
-      it(`${variant}: чорнило проти найсвітлішої зупинки під заливкою ≥ 4.5:1`, () => {
-        for (const a of fillAlpha(variant)) {
-          expect(
-            washContrast(a),
-            `${variant}:bg-hero-ink/${a} → ${washContrast(a).toFixed(2)}:1`,
-          ).toBeGreaterThanOrEqual(4.5);
-        }
-      });
-    }
-
-    it("hover і active мають видимий відгук поза заливкою (контур), бо між `/5` і `/10` лишається лише `/8`", () => {
-      expect(MEAL_STRIP_SRC).toMatch(/(?<![\w:-])hover:border-hero-ink\/\d+/);
-      expect(MEAL_STRIP_SRC).toMatch(/(?<![\w:-])active:border-hero-ink\/\d+/);
-    });
-
-    it("шкала: `/8` проходить, `/10` і вище — ні (чому стеля hover — `/8`)", () => {
-      expect(washContrast(8)).toBeGreaterThanOrEqual(4.5);
-      expect(washContrast(10)).toBeLessThan(4.5);
-      expect(washContrast(15)).toBeLessThan(4.5);
-      expect(washContrast(20)).toBeLessThan(4.5);
-    });
-  });
 });
 
 /**
@@ -768,9 +443,8 @@ describe("@sergeant/design-tokens — `{module}-edge`: контур вибран
     for (const [name, surface] of [
       ["картка", LIGHT_PANEL],
       ["panelHi", LIGHT_PANEL_HI],
-      ["стіл модуля", moduleSurfaces[m].light.desk],
-      ["зона модуля", moduleSurfaces[m].light.zone],
-      ["стіл хаба", "#e7e5df"],
+      ["сторінка H", "#fbfbfa"],
+      ["панель H", "#f2f2f0"],
       ["тонована заливка (surface)", moduleColors[m].surface],
     ]) {
       it(`light: ${m}-edge проти ${name} ≥ 3:1`, () => {
@@ -784,7 +458,6 @@ describe("@sergeant/design-tokens — `{module}-edge`: контур вибран
       ["картка", DARK.surface],
       ["panelHi", DARK.surfaceHi],
       ["фон", DARK.bg],
-      ["зона модуля", moduleSurfaces[m].dark.zone],
     ]) {
       it(`dark: ${m}-edge проти ${name} ≥ 3:1`, () => {
         expect(contrastRatio(accentInkHex[m], surface)).toBeGreaterThanOrEqual(
@@ -993,9 +666,9 @@ describe("@sergeant/design-tokens — `fizruk-surface`: темна пара за
       path.join(FIZRUK_COMPONENTS, "session", "SessionExtrasRow.tsx"),
       "utf8",
     );
-    const active = classLiteralWith(src, "bg-fizruk-surface");
-    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
-    expect(active).toMatch(/(?<![\w:-])text-fizruk-soft-fg(?![\w-])/);
+    const active = classLiteralWith(src, "border-text bg-panelHi");
+    expect(active).toMatch(/(?<![\w:-])border-text(?![\w-])/);
+    expect(active).toMatch(/(?<![\w:-])text-text(?![\w-])/);
     // `border-fizruk-ring` (cyan-200) давав 1.01:1 проти столу у світлій.
     expect(active).not.toMatch(/border-fizruk-ring/);
   });
@@ -1005,7 +678,72 @@ describe("@sergeant/design-tokens — `fizruk-surface`: темна пара за
       path.join(FIZRUK_COMPONENTS, "workouts", "LogPastActivityPicker.tsx"),
       "utf8",
     );
-    const active = classLiteralWith(src, "bg-fizruk-surface");
-    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
+    const active = classLiteralWith(src, "border-text bg-panelHi");
+    expect(active).toMatch(/(?<![\w:-])border-text(?![\w-])/);
+  });
+});
+
+// Мова H (redesign v3, PR1): пари з таблиці `redesign-v3.md § Токени`, як їх
+// реально малює `theme.css`. Тинт модуля несе текст лише чорнилом, у hue лише
+// ярлик, тому гейт міряє саме ці дві ролі на тинті.
+describe("@sergeant/design-tokens — мова H: сторінка, панель, тинт", () => {
+  const CSS = THEME_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
+  // Тіла всіх блоків із точним селектором: `:root` у файлі кілька.
+  const blocks = (selector) =>
+    CSS.split("}")
+      .map((chunk) => chunk.split("{").slice(-2))
+      .filter(
+        ([head, body]) =>
+          body !== undefined &&
+          head.trim().split("\n").pop().trim() === selector,
+      )
+      .map(([, body]) => body);
+  const read = (selector, name) => {
+    for (const body of blocks(selector)) {
+      const d = new RegExp(`${name}:\\s*(\\d+\\s+\\d+\\s+\\d+)\\s*;`).exec(
+        body,
+      );
+      if (d) return rgbTripleToHex(d[1]);
+    }
+    throw new Error(`${name} не знайдено в ${selector}`);
+  };
+  const MODULES = ["finyk", "fizruk", "routine", "nutrition"];
+
+  for (const theme of [":root", ".dark"]) {
+    const tag = theme === ":root" ? "світла" : "темна";
+    it(`${tag}: чорнило на сторінці й панелі ≥ 7:1`, () => {
+      for (const bg of ["--c-bg", "--c-panel"]) {
+        expect(
+          contrastRatio(read(theme, "--c-text"), read(theme, bg)),
+        ).toBeGreaterThanOrEqual(7);
+      }
+    });
+    it(`${tag}: другий і третій сірий на сторінці, панелі й полі ≥ 4.5:1`, () => {
+      for (const fg of ["--c-muted", "--c-subtle"]) {
+        for (const bg of ["--c-bg", "--c-panel", "--c-panel-hi"]) {
+          const r = contrastRatio(read(theme, fg), read(theme, bg));
+          expect(r, `${fg} на ${bg} → ${r.toFixed(2)}`).toBeGreaterThanOrEqual(
+            4.5,
+          );
+        }
+      }
+    });
+    for (const m of MODULES) {
+      it(`${tag}: ${m} - чорнило і ярлик на тинті ≥ 4.5:1`, () => {
+        const tint = read(theme, `--c-${m}-tint`);
+        expect(
+          contrastRatio(read(theme, "--c-text"), tint),
+        ).toBeGreaterThanOrEqual(7);
+        const r = contrastRatio(read(theme, `--c-${m}-tint-label`), tint);
+        expect(r, `${m} ярлик → ${r.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+});
+
+describe("Мова H: MealStrip", () => {
+  it("числа на тинті чорнилом", () => {
+    expect(MEAL_STRIP_SRC).not.toMatch(/hero-ink/);
+    expect(MEAL_STRIP_SRC).toMatch(/text-text/);
   });
 });

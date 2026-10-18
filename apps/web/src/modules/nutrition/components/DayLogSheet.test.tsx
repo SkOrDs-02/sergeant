@@ -65,8 +65,8 @@ describe("DayLogSheet — межа аркуша", () => {
     const sheet = renderWithMeals();
     // Кнопка додавання, перемикач дати й пошук — органи керування. Вони
     // існують на екрані, але не всередині перфорованої поверхні.
-    expect(screen.getByText("+ Додати прийом їжі")).toBeTruthy();
-    expect(within(sheet).queryByText("+ Додати прийом їжі")).toBeNull();
+    expect(screen.getByText("Додати прийом їжі")).toBeTruthy();
+    expect(within(sheet).queryByText("Додати прийом їжі")).toBeNull();
 
     expect(screen.getByLabelText("Попередній день")).toBeTruthy();
     expect(within(sheet).queryByLabelText("Попередній день")).toBeNull();

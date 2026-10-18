@@ -1,11 +1,13 @@
+import { Card } from "@shared/components/ui/Card";
 /**
  * Last validated: 2026-09-11
  * Status: Active
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { pluralUa } from "@sergeant/shared";
 import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { messages } from "@shared/i18n/uk";
 import { RecurringSuggestions } from "../../components/RecurringSuggestions";
 import { useRecurringHistory } from "../../hooks/useRecurringHistory";
@@ -108,8 +110,8 @@ export function PlanningSubscriptions({
     // повторний запуск безпечний: `prevSubscriptionSignal` уже дорівнює сигналу.
   }, [openSubscriptionSignal, openSubscriptionForm]);
 
-  // Київські частини «сьогодні» — раз на монтування, як в `useOverviewData`.
-  const [kyivToday] = useState(() => getKyivDateParts(Date.now()));
+  const nowMs = useKyivDayNow();
+  const kyivToday = getKyivDateParts(nowMs);
   const { plannedFlows } = useFlowSchedule({
     subscriptions,
     manualDebts,
@@ -144,7 +146,7 @@ export function PlanningSubscriptions({
   }
 
   return (
-    <div className="space-y-3" id="finyk-subscriptions-section">
+    <div className="space-y-7" id="finyk-subscriptions-section">
       <PlannedFlowsCard plannedFlows={plannedFlows} showBalance={showBalance} />
 
       <RecurringSuggestions
@@ -157,7 +159,7 @@ export function PlanningSubscriptions({
         defaultOpen={initialOpenRecurring}
       />
 
-      <div>
+      <Card padding="none" className="overflow-hidden">
         <SectionBar
           title={t.subscriptionsTitle}
           iconName="refresh-cw"
@@ -172,8 +174,12 @@ export function PlanningSubscriptions({
             setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))
           }
         />
-        {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
-      </div>
+        {open.subscriptions && (
+          <div className="px-4 pt-4">
+            <AssetsSubscriptionsSection state={state} />
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

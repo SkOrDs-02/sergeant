@@ -62,7 +62,7 @@ export function HubSearch({
   return (
     <div
       ref={panelRef}
-      className="fixed inset-0 z-200 flex flex-col bg-bg safe-area-pt-pb page-enter"
+      className="fixed inset-0 z-200 flex flex-col bg-bg safe-area-pt-pb "
       role="dialog"
       aria-modal="true"
       aria-label={messages.nav.globalSearch}

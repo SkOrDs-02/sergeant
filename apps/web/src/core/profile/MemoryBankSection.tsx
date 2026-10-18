@@ -234,7 +234,7 @@ export function MemoryBankSection() {
   const manualStep = MEMORY_MANUAL_STEPS[manualStepIndex];
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       {/* V-4 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»):
           цей `<div>` раніше малював власний текстовий заголовок
           «Памʼять AI» поверх `text-style-label` — БІЛЬШИМ за зовнішній
@@ -248,7 +248,6 @@ export function MemoryBankSection() {
           усередині — цей коментар канонічний, решта секцій Профілю з тим
           самим фіксом лише посилаються на нього. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="sergeant" size={18} className="text-muted" />
         <span className="ml-auto text-style-caption text-muted">
           {entries.length} {pluralUa(entries.length, MEMORY_ENTRY_FORMS)}
           {" \u00b7 "}
@@ -266,9 +265,6 @@ export function MemoryBankSection() {
           <>
             <EmptyState
               size="sm"
-              icon={
-                <Icon name="sergeant" size={22} className="text-brand-500" />
-              }
               title="Банк памʼяті порожній"
               description="Сержант поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
               action={
@@ -277,7 +273,6 @@ export function MemoryBankSection() {
                   size="sm"
                   onClick={() => openMemoryChat("interview")}
                 >
-                  <Icon name="sergeant" size="sm" className="mr-1.5" />
                   Заповнити профіль
                 </Button>
               }
@@ -296,7 +291,6 @@ export function MemoryBankSection() {
                   size="sm"
                   onClick={() => importRef.current?.click()}
                 >
-                  <Icon name="upload" size="sm" className="mr-1.5" />
                   Імпорт
                 </Button>
               }
@@ -314,12 +308,10 @@ export function MemoryBankSection() {
             {Object.entries(grouped).map(([cat, items]) => {
               const meta = CATEGORY_META[cat] || {
                 label: cat,
-                icon: "pen" as const,
               };
               return (
                 <div key={cat}>
                   <div className="text-style-overline text-muted mb-2 flex items-center gap-1.5">
-                    <Icon name={meta.icon} size="xs" aria-hidden />
                     {meta.label}
                   </div>
                   <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
@@ -340,7 +332,7 @@ export function MemoryBankSection() {
                         <button
                           type="button"
                           onClick={() => handleDelete(entry.id)}
-                          className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-xl flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                          className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-lg flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
                           aria-label={`Видалити: ${entry.fact}`}
                         >
                           <Icon name="close" size="sm" />
@@ -361,7 +353,6 @@ export function MemoryBankSection() {
                 ariaLabel="Як додати факт"
                 trigger={
                   <Button variant="outline" size="sm" className="gap-1.5">
-                    <Icon name="plus" size="sm" />
                     Додати
                   </Button>
                 }
@@ -371,7 +362,6 @@ export function MemoryBankSection() {
                     id: "chat",
                     label: "Додати інфо в чаті",
                     description: "Розкажи Сержанту, він запише",
-                    icon: <Icon name="sergeant" size="md" />,
                     onSelect: () => openMemoryChat("add"),
                   },
                   {
@@ -379,7 +369,6 @@ export function MemoryBankSection() {
                     id: "interview",
                     label: "Пройти інтервʼю",
                     description: "Ширші питання: цілі, обмеження, звички",
-                    icon: <Icon name="message-circle" size="md" />,
                     onSelect: () => openMemoryChat("interview"),
                   },
                   {
@@ -387,7 +376,6 @@ export function MemoryBankSection() {
                     id: "manual",
                     label: "Вручну",
                     description: "Крок за кроком, без чату",
-                    icon: <Icon name="pen" size="md" />,
                     onSelect: () => setManualOpen(true),
                   },
                 ]}
@@ -409,14 +397,12 @@ export function MemoryBankSection() {
                     type: "item",
                     id: "export",
                     label: "Експорт памʼяті",
-                    icon: <Icon name="download" size="md" />,
                     onSelect: handleExport,
                   },
                   {
                     type: "item",
                     id: "import",
                     label: "Імпорт памʼяті",
-                    icon: <Icon name="upload" size="md" />,
                     onSelect: () => importRef.current?.click(),
                   },
                 ]}
@@ -432,7 +418,7 @@ export function MemoryBankSection() {
           </div>
         )}
         {manualOpen && manualStep && (
-          <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3 text-left">
+          <div className="mt-4 rounded-panel border border-line bg-panelHi p-3 text-left">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-style-caption text-muted">
@@ -446,7 +432,7 @@ export function MemoryBankSection() {
               <button
                 type="button"
                 onClick={closeManualFlow}
-                className="shrink-0 rounded-xl p-2 text-muted hover:bg-panel hover:text-text"
+                className="shrink-0 rounded-lg p-2 text-muted hover:bg-panel hover:text-text"
                 aria-label="Закрити ручне заповнення"
               >
                 <Icon name="close" size="sm" />
@@ -476,7 +462,7 @@ export function MemoryBankSection() {
           </div>
         )}
         {pendingImport && (
-          <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3 text-left">
+          <div className="mt-4 rounded-panel border border-line bg-panelHi p-3 text-left">
             <p className="text-style-label text-text">
               Перевір імпорт: {pendingImport.fileName}
             </p>
@@ -504,14 +490,6 @@ export function MemoryBankSection() {
               // <p> тепер той самий примітив, що й два інші.
               <EmptyState
                 size="sm"
-                variant="warning"
-                // Іконка тут не декор: `variant` у `EmptyState` фарбує
-                // РІВНО контейнер іконки і чип eyebrow — сам title/description
-                // лишаються нейтральними завжди. Без жодного з двох слотів
-                // `variant="warning"` — мертвий проп, і попереджувальний тон,
-                // який до V-14 несло саме забарвлення тексту
-                // (`text-warning-strong`), зник би при переїзді на примітив.
-                icon={<Icon name="alert-triangle" size={18} />}
                 title="Нових записів немає"
                 description="Існуюча памʼять не буде перезаписана."
                 className="mt-2"

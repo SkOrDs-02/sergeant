@@ -1,0 +1,317 @@
+{
+  "seed": {
+    "legacyOwnRecordsPerModule": 200,
+    "legacyForeignRecordsPerModule": 40,
+    "legacyOwnPending": 1000
+  },
+  "transfer": {
+    "imported": true,
+    "bytes": 0,
+    "diagnostics": {
+      "capacity": 24,
+      "fileCount": 1
+    },
+    "counts": {
+      "routine_habits": [
+        {
+          "user_id": "audit-user-a",
+          "n": 200
+        }
+      ],
+      "finyk_manual_expenses": [
+        {
+          "user_id": "audit-user-a",
+          "n": 200
+        }
+      ],
+      "nutrition_meals": [
+        {
+          "user_id": "audit-user-a",
+          "n": 200
+        }
+      ],
+      "fizruk_workouts": [
+        {
+          "user_id": "audit-user-a",
+          "n": 200
+        }
+      ],
+      "sync_op_outbox": [
+        {
+          "user_id": "audit-user-a",
+          "n": 1000
+        }
+      ],
+      "payload": [
+        {
+          "data_json": "{\"amountMinor\":12345,\"note\":\"Київ · перенос 👍\",\"tags\":[\"кава\",\"звичка\"]}"
+        }
+      ]
+    }
+  },
+  "reopened": {
+    "imported": false,
+    "bytes": 0,
+    "diagnostics": {
+      "capacity": 24,
+      "fileCount": 1
+    },
+    "counts": {
+      "routine_habits": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "finyk_manual_expenses": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "nutrition_meals": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "fizruk_workouts": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "sync_op_outbox": [
+        {
+          "user_id": "audit-user-a",
+          "n": 1000
+        }
+      ],
+      "payload": [
+        {
+          "data_json": "{\"amountMinor\":12345,\"note\":\"Київ · перенос 👍\",\"tags\":[\"кава\",\"звичка\"]}"
+        }
+      ]
+    }
+  },
+  "partitions": {
+    "other": {
+      "imported": true,
+      "bytes": 0,
+      "diagnostics": {
+        "capacity": 24,
+        "fileCount": 2
+      },
+      "counts": {
+        "routine_habits": [
+          {
+            "user_id": "audit-user-b",
+            "n": 20
+          }
+        ],
+        "finyk_manual_expenses": [
+          {
+            "user_id": "audit-user-b",
+            "n": 20
+          }
+        ],
+        "nutrition_meals": [
+          {
+            "user_id": "audit-user-b",
+            "n": 20
+          }
+        ],
+        "fizruk_workouts": [
+          {
+            "user_id": "audit-user-b",
+            "n": 20
+          }
+        ],
+        "sync_op_outbox": [
+          {
+            "user_id": "audit-user-b",
+            "n": 20
+          }
+        ],
+        "payload": []
+      }
+    },
+    "original": {
+      "imported": false,
+      "bytes": 0,
+      "diagnostics": {
+        "capacity": 24,
+        "fileCount": 2
+      },
+      "counts": {
+        "routine_habits": [
+          {
+            "user_id": "audit-user-a",
+            "n": 201
+          }
+        ],
+        "finyk_manual_expenses": [
+          {
+            "user_id": "audit-user-a",
+            "n": 201
+          }
+        ],
+        "nutrition_meals": [
+          {
+            "user_id": "audit-user-a",
+            "n": 201
+          }
+        ],
+        "fizruk_workouts": [
+          {
+            "user_id": "audit-user-a",
+            "n": 201
+          }
+        ],
+        "sync_op_outbox": [
+          {
+            "user_id": "audit-user-a",
+            "n": 1000
+          }
+        ],
+        "payload": [
+          {
+            "data_json": "{\"amountMinor\":12345,\"note\":\"Київ · перенос 👍\",\"tags\":[\"кава\",\"звичка\"]}"
+          }
+        ]
+      }
+    }
+  },
+  "hardReload": {
+    "imported": false,
+    "bytes": 0,
+    "diagnostics": {
+      "capacity": 24,
+      "fileCount": 2
+    },
+    "counts": {
+      "routine_habits": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "finyk_manual_expenses": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "nutrition_meals": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "fizruk_workouts": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "sync_op_outbox": [
+        {
+          "user_id": "audit-user-a",
+          "n": 1000
+        }
+      ],
+      "payload": [
+        {
+          "data_json": "{\"amountMinor\":12345,\"note\":\"Київ · перенос 👍\",\"tags\":[\"кава\",\"звичка\"]}"
+        }
+      ]
+    }
+  },
+  "backlog": {
+    "before": {
+      "pending": 24944,
+      "rejected": 0,
+      "dead_letter": 0,
+      "quarantined": 0
+    },
+    "afterFirst": {
+      "pending": 24844,
+      "rejected": 0,
+      "dead_letter": 0,
+      "quarantined": 0
+    },
+    "afterSecond": {
+      "pending": 24744,
+      "rejected": 0,
+      "dead_letter": 0,
+      "quarantined": 0
+    },
+    "interval": 30000,
+    "httpCalls": 2,
+    "transport": "fake acknowledgements; real SQLite/drain/lifecycle/scheduler"
+  },
+  "fastBacklog": {
+    "before": {
+      "pending": 24744,
+      "rejected": 0,
+      "dead_letter": 0,
+      "quarantined": 0
+    },
+    "after": {
+      "pending": 23744,
+      "rejected": 0,
+      "dead_letter": 0,
+      "quarantined": 0
+    },
+    "elapsedMs": 8589,
+    "batches": 5,
+    "uploaded": 1000,
+    "uniqueKeys": 1000,
+    "transport": "fake acknowledgements; real OPFS SQLite and push scheduler"
+  },
+  "resumed": {
+    "imported": false,
+    "bytes": 0,
+    "diagnostics": {
+      "capacity": 24,
+      "fileCount": 2
+    },
+    "counts": {
+      "routine_habits": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "finyk_manual_expenses": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "nutrition_meals": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "fizruk_workouts": [
+        {
+          "user_id": "audit-user-a",
+          "n": 201
+        }
+      ],
+      "sync_op_outbox": [
+        {
+          "user_id": "audit-user-a",
+          "n": 23744
+        }
+      ],
+      "payload": [
+        {
+          "data_json": "{\"amountMinor\":12345,\"note\":\"Київ · перенос 👍\",\"tags\":[\"кава\",\"звичка\"]}"
+        }
+      ]
+    }
+  }
+}

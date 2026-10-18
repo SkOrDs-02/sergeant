@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -139,6 +140,180 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
   afterEach(() => {
     cleanup();
     __resetAnalyticsConsentForTests();
+  });
+
+  it("невдала згода не відкочує іншу зміну й не зупиняє її запис", async () => {
+    let rejectFirst!: (reason: Error) => void;
+    let resolveSecond!: (prefs: UserPreferences) => void;
+    vi.mocked(meApi.updatePreferences)
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectFirst = reject;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    renderSection();
+    await openSection();
+    const analytics = await screen.findByRole("switch", {
+      name: "Аналітика продукту",
+    });
+    const memory = screen.getByRole("switch", { name: "Памʼять для Сержанта" });
+    fireEvent.click(analytics);
+    fireEvent.click(memory);
+    expect(memory).not.toBeChecked();
+    await waitFor(() => expect(meApi.updatePreferences).toHaveBeenCalled());
+    await act(async () => {
+      rejectFirst(new Error("network"));
+    });
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledTimes(2),
+    );
+    expect(memory).not.toBeChecked();
+    await act(async () => {
+      resolveSecond({ ...basePrefs, analytics: true, aiMemory: false });
+    });
+    expect(memory).not.toBeChecked();
+    expect(analytics).toBeChecked();
+    expect(getAnalyticsConsent()).toBe(true);
+  });
+
+  it("застаріла відповідь іншої згоди не затирає нове рішення про аналітику", async () => {
+    let resolveMemory!: (prefs: UserPreferences) => void;
+    let resolveAnalytics!: (prefs: UserPreferences) => void;
+    vi.mocked(meApi.updatePreferences)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveMemory = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveAnalytics = resolve;
+          }),
+      );
+    renderSection();
+    await openSection();
+    const analytics = await screen.findByRole("switch", {
+      name: "Аналітика продукту",
+    });
+    const memory = screen.getByRole("switch", { name: "Памʼять для Сержанта" });
+    fireEvent.click(memory);
+    fireEvent.click(analytics);
+    await waitFor(() => expect(meApi.updatePreferences).toHaveBeenCalled());
+    await act(async () => {
+      resolveMemory({ ...basePrefs, aiMemory: false, analytics: true });
+    });
+    expect(analytics).not.toBeChecked();
+    expect(getAnalyticsConsent()).toBe(false);
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledTimes(2),
+    );
+    await act(async () => {
+      resolveAnalytics({ ...basePrefs, aiMemory: false, analytics: false });
+    });
+    expect(memory).not.toBeChecked();
+    expect(analytics).not.toBeChecked();
+    expect(getAnalyticsConsent()).toBe(false);
+  });
+
+  it("зберігає обидві згоди після повторного читання сервера з read-modify-write", async () => {
+    let server = { ...basePrefs };
+    const commits: Array<() => void> = [];
+    vi.mocked(meApi.getPreferences).mockImplementation(async () => ({
+      ...server,
+    }));
+    vi.mocked(meApi.updatePreferences).mockImplementation((patch) => {
+      // Чинний сервер читає рядок перед upsert усіх полів. Два одночасні
+      // читання тут втратять перший patch, навіть якщо UI його памʼятає.
+      const snapshot = {
+        ...server,
+        analytics: patch.analytics ?? server.analytics,
+        aiMemory: patch.aiMemory ?? server.aiMemory,
+        healthDataConsent: patch.healthDataConsent ?? server.healthDataConsent,
+      };
+      return new Promise((resolve) => {
+        commits.push(() => {
+          server = snapshot;
+          resolve({ ...server });
+        });
+      });
+    });
+    const view = renderSection();
+    await openSection();
+    const memory = await screen.findByRole("switch", {
+      name: "Памʼять для Сержанта",
+    });
+    const health = screen.getByRole("switch", {
+      name: "Дані про здоровʼя для Сержанта",
+    });
+    fireEvent.click(memory);
+    fireEvent.click(health);
+    expect(memory).not.toBeChecked();
+    expect(health).toBeChecked();
+    await waitFor(() => expect(commits.length).toBeGreaterThan(0));
+    await act(async () => {
+      commits[0]!();
+    });
+    await waitFor(() => expect(commits).toHaveLength(2));
+    await act(async () => {
+      commits[1]!();
+    });
+    view.unmount();
+    renderSection();
+    await openSection();
+    const restoredMemory = await screen.findByRole("switch", {
+      name: "Памʼять для Сержанта",
+    });
+    expect(restoredMemory).not.toBeChecked();
+    expect(
+      screen.getByRole("switch", { name: "Дані про здоровʼя для Сержанта" }),
+    ).toBeChecked();
+  });
+
+  it("забороняє повторний запис тієї ж згоди, поки її запит триває", async () => {
+    let resolveFirst!: (prefs: UserPreferences) => void;
+    vi.mocked(meApi.updatePreferences).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirst = resolve;
+        }),
+    );
+    renderSection();
+    await openSection();
+    const analytics = await screen.findByRole("switch", {
+      name: "Аналітика продукту",
+    });
+    fireEvent.click(analytics);
+    expect(analytics).toBeDisabled();
+    fireEvent.click(analytics);
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledTimes(1),
+    );
+    await act(async () => {
+      resolveFirst({ ...basePrefs, analytics: false });
+    });
+    expect(analytics).not.toBeDisabled();
+    expect(analytics).not.toBeChecked();
+    expect(getAnalyticsConsent()).toBe(false);
+  });
+
+  it("відкриває саме памʼять профілю", async () => {
+    renderSection();
+    await openSection();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Відкрити Профіль → Памʼять" }),
+    );
+    expect(mockSetHubView).toHaveBeenCalledWith("profile", {
+      hash: "#profile-memory",
+    });
   });
 
   it("loads and displays preferences from the API on mount", async () => {
@@ -335,7 +510,9 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     // юзера — це саме те вікно, в яке може встигнути race-нути dismiss
     // `InsightCard`.
     expect(getAnalyticsConsent()).toBe(false);
-    expect(meApi.updatePreferences).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledTimes(1),
+    );
 
     // Запит зрештою падає (обрив мережі, 5xx) — оптимістичне значення
     // consent має відкотитись разом із самим тумблером. Банер
@@ -546,10 +723,12 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
       expect(
         screen.getByText(/Видалити акаунт разом з усіма даними/),
       ).toBeInTheDocument();
-      const open = screen.getByRole("button", { name: /Небезпечна зона/ });
+      const open = screen.getByRole("button", { name: /Видалення акаунта/ });
       fireEvent.click(open);
       // Вказівник, який нікуди не веде, гірший за його відсутність.
-      expect(mockSetHubView).toHaveBeenCalledWith("profile");
+      expect(mockSetHubView).toHaveBeenCalledWith("profile", {
+        hash: "#profile-account-deletion",
+      });
       // Ключова половина тесту: саме дія сюди НЕ переїхала.
       expect(
         screen.queryByRole("button", { name: /^Видалити акаунт$/ }),
@@ -568,7 +747,9 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
       expect(screen.getByText(/щонайменше за 30 днів/)).toBeInTheDocument();
       // Друга половина обіцянки — чесне застереження про банк (рішення #2).
       // Без нього «твої дані твої» обіцяло б більше, ніж продукт виконує.
-      expect(screen.getByText(/не відновить ніхто/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/входять до серверного експорту акаунта/),
+      ).toBeInTheDocument();
     });
   });
 });

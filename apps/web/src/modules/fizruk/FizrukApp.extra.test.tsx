@@ -341,7 +341,9 @@ describe("FizrukApp (extra) — contextual back navigation", () => {
       fireEvent.click(
         screen.getByRole("button", { name: `Назад: ${backLabel}` }),
       );
-      expect(navigateMock).toHaveBeenCalledWith(expectedTarget);
+      expect(navigateMock).toHaveBeenCalledWith(expectedTarget, {
+        back: true,
+      });
     },
   );
 });
@@ -413,11 +415,14 @@ describe("FizrukApp (extra) — header callbacks", () => {
     expect(onBackToHub).toHaveBeenCalled();
   });
 
-  it("renders settings button when onOpenSettings is provided", () => {
-    const onOpenSettings = vi.fn();
-    render(<FizrukApp onOpenSettings={onOpenSettings} />);
-    fireEvent.click(screen.getByLabelText("Налаштування модуля"));
-    expect(onOpenSettings).toHaveBeenCalled();
+  it("keeps the assistant in the header and settings in the hub", () => {
+    render(<FizrukApp />);
+    expect(
+      screen.queryByLabelText("Налаштування модуля"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Відкрити Сержанта" }),
+    ).toBeInTheDocument();
   });
 
   it("shows contextual page title on atlas", () => {

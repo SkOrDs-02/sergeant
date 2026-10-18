@@ -107,7 +107,7 @@ export function WeeklyVolumeChart({
             aria-hidden
           >
             <span
-              className="inline-block w-2 h-2 rounded-full"
+              className="inline-block w-2 h-2 rounded-lg"
               style={{ backgroundColor: FIZRUK_CHART_COLOR }}
             />
             кг×повт
@@ -115,7 +115,7 @@ export function WeeklyVolumeChart({
         </div>
         <EmptyState
           compact
-          className="rounded-2xl border border-dashed border-line bg-panelHi/50"
+          className="rounded-panel border border-dashed border-line bg-panelHi/50"
           title="Поки без обʼєму за тиждень"
           description="Заверши тренування з силовими підходами, тут зʼявиться сумарний обʼєм (кг×повторення) по днях."
         />
@@ -172,7 +172,7 @@ export function WeeklyVolumeChart({
           ) : (
             <>
               <span
-                className="inline-block w-2 h-2 rounded-full"
+                className="inline-block w-2 h-2 rounded-lg"
                 style={{ backgroundColor: FIZRUK_CHART_COLOR }}
               />
               кг×повт

@@ -16,6 +16,10 @@ import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
 } from "@nutrition/lib/sqliteReader";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "@finyk/lib/sqliteReader";
 import type { Rec } from "../../lib/recommendationEngine";
 import { formatNumberUk } from "@sergeant/shared";
 
@@ -108,6 +112,7 @@ describe("computeClosedToday", () => {
     clearSqliteCompletionsCache();
     clearFizrukSqliteCache();
     clearNutritionSqliteCache();
+    clearFinykSqliteCache();
     vi.useRealTimers();
   });
 
@@ -221,6 +226,19 @@ describe("computeClosedToday", () => {
         statement: "записано · у межах лімітів",
       });
       expect(row?.value).toContain("250");
+    });
+
+    it("«Приховувати суми» увімкнено → замість суми «••••», решта рядка та сама", () => {
+      finykMock.txs = [
+        { id: "t1", amount: -25000, time: NOW.getTime() - 3600_000 },
+      ];
+      __setFinykSqliteStateCacheForTests({ showBalance: false });
+      expect(compute()[0]).toMatchObject({
+        statement: "записано",
+        value: "••••",
+      });
+      __setFinykSqliteStateCacheForTests({ showBalance: true });
+      expect(compute()[0]?.value).toContain("250");
     });
 
     it("без жодного ліміту → просто «записано»: про ліміти нема що казати", () => {

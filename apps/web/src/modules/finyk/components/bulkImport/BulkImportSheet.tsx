@@ -26,7 +26,6 @@
 import { pluralUa } from "@sergeant/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
@@ -418,7 +417,7 @@ export function BulkImportSheet({
             )}
             <Button
               variant="solid"
-              tone="finyk"
+              tone="ink"
               className="w-full"
               loading={commit.isPending}
               disabled={overCommitCap || reviewRows.every((r) => !r.selected)}
@@ -485,12 +484,11 @@ export function BulkImportSheet({
           />
           <Button
             variant="solid"
-            tone="finyk"
             className="w-full"
 
             onClick={() => screenshotInputRef.current?.click()}
+            tone="ink"
           >
-            <Icon name="upload" size="md" aria-hidden />
             Скрін банкінгу
           </Button>
           <Button
@@ -498,7 +496,6 @@ export function BulkImportSheet({
             className="w-full"
             onClick={() => csvInputRef.current?.click()}
           >
-            <Icon name="file-text" size="md" aria-hidden />
             Виписка файлом
           </Button>
           {/* Не «CSV, XLS або XLSX»: сервер читає CSV, XLSX і HTML-таблицю,
@@ -560,8 +557,8 @@ export function BulkImportSheet({
         // Success-тон карткою (бета-фідбек №4: «Створено на зеленому
         // фоні, як Витрата») — той самий фінік-акцент, що й активний чип
         // «Витрата» у ManualExpenseSheet, а не сірий panelHi.
-        <div className="space-y-1.5 rounded-2xl border border-finyk/30 bg-finyk/15 p-3 text-style-body text-text">
-          <p className="font-semibold text-finyk-strong dark:text-finyk">
+        <div className="space-y-1.5 rounded-panel border border-line bg-panel p-3 text-style-body text-text">
+          <p className="font-semibold text-text">
             Створено: {commitResult.created}
           </p>
           {commitResult.skipped.monoMatched > 0 && (

@@ -1,11 +1,10 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Lazy-loaded per-domain card for routine/habits data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
  */
 import { ReportSheet } from "./ReportSheet";
 import { useMemo } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { messages } from "@shared/i18n/uk";
@@ -119,9 +118,11 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
 
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const dayKey = useDeviceDayKey();
   const bump = useHubStorageBump();
 
   const { cur, prev, dates, partial } = useMemo(() => {
+    void dayKey;
     void bump; // storage-write tick — forces re-read without calling load* inside deps
     // Canonical routine state from the SQLite warm cache — `hub_routine_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
@@ -149,7 +150,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       dates: w.dates,
       partial: w.partial,
     };
-  }, [period, offset, bump]);
+  }, [period, offset, bump, dayKey]);
 
   const formattedCurrent = formatNumberUk(cur.pct);
   const formattedPrev = formatNumberUk(prev.pct);
@@ -164,27 +165,14 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
         type="button"
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
-        className={cn(
-          "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
-        )}
+        className="flex min-h-11 w-full items-center gap-3 text-left focus-ring"
       >
-        <Icon
-          name="check-circle"
-          size="lg"
-          className="shrink-0 text-routine"
-          aria-hidden
-        />
-        <SectionHeading
-          as="span"
-          size="xs"
-          className="flex-1 min-w-0 text-muted truncate"
-        >
+        <span className="min-w-0 flex-1 truncate text-style-body font-medium text-text">
           {messages.routine.reportHeading}
-        </SectionHeading>
+        </span>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <span className="text-style-body font-bold text-text">
+            <span className="text-style-body tnum text-text">
               {empty ? "–" : `${formattedCurrent}%`}
             </span>
             {!empty && (
@@ -192,23 +180,6 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
             )}
           </span>
         )}
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className={cn(
-            "shrink-0 text-muted transition-transform",
-            collapsed ? "-rotate-90" : "rotate-0",
-          )}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
       </button>
       {!collapsed && empty && (
         <p className="text-style-body text-muted">

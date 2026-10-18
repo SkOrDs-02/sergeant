@@ -34,6 +34,12 @@ describe("CapabilitiesSection", () => {
     renderOpen();
 
     expect(screen.getByTestId("open-app-capabilities")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("open-app-capabilities").querySelector("svg"),
+    ).toBeNull();
+    expect(
+      screen.getByTestId("open-assistant-catalogue").querySelector("svg"),
+    ).toBeNull();
     expect(screen.getByTestId("open-assistant-catalogue")).toBeInTheDocument();
   });
 

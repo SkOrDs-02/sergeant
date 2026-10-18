@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -63,7 +62,6 @@ export function JournalSection({
   return (
     <Card
       as="section"
-      radius="lg"
       padding="none"
       aria-label={messages.fizruk.journal.sectionAriaLabel}
     >
@@ -80,7 +78,7 @@ export function JournalSection({
           aria-controls={contentId}
           className={cn(
             "focus-ring w-full flex items-center gap-3 px-4 py-3 text-left",
-            "rounded-2xl transition-colors hover:bg-panelHi/40",
+            "rounded-lg transition-colors hover:bg-panelHi/40",
           )}
         >
           <div className="flex-1 min-w-0 flex items-baseline gap-2">
@@ -102,9 +100,7 @@ export function JournalSection({
               "inline-flex justify-center w-4 text-muted transition-transform shrink-0",
               open ? "rotate-180" : "rotate-0",
             )}
-          >
-            <Icon name="chevron-down" size="md" />
-          </span>
+          ></span>
         </button>
       </h2>
       {open && (
@@ -125,8 +121,8 @@ export function JournalSection({
                 {messages.fizruk.journal.shownOfWord} {totalCount}
               </p>
               <Button
-                variant="soft"
-                tone="fizruk"
+                variant="outline"
+                tone="neutral"
                 size="sm"
                 onClick={() =>
                   setVisibleCount((c) => Math.min(c + PAGE_SIZE, totalCount))

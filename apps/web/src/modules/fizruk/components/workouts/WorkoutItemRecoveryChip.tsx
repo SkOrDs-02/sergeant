@@ -6,7 +6,6 @@ import {
   recoveryConflictsForWorkoutItem,
   type WorkoutItem,
 } from "@sergeant/fizruk-domain";
-import { Icon } from "@shared/components/ui/Icon";
 import { Popover } from "@shared/components/ui/Popover";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -87,13 +86,12 @@ export function WorkoutItemRecoveryChip({
           // тобто рівно те, що ця зміна й мала прибрати.
           aria-label={`${rc.triggerAriaLabel}: ${summary.label}`}
           className={cn(
-            "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 min-h-[28px] cursor-pointer select-none text-style-caption font-semibold",
+            "inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2.5 min-h-[28px] cursor-pointer select-none text-style-caption font-semibold",
             isRed
               ? "border-danger/40 bg-danger/10 text-danger-strong dark:text-danger"
-              : "border-warning/40 bg-warning/10 text-warning-strong dark:text-warning",
+              : "border-line bg-panelHi text-text",
           )}
         >
-          <Icon name="alert-triangle" size="xs" aria-hidden />
           <span className="truncate">{summary.label}</span>
         </span>
       }

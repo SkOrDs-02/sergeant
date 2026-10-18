@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MODULE_COLORS, SearchResultItem } from "./SearchResultItem";
+import { SearchResultItem } from "./SearchResultItem";
 import type { Hit } from "./searchTypes";
 
 function makeHit(overrides: Partial<Hit> = {}): Hit {
@@ -61,17 +61,7 @@ describe("SearchResultItem", () => {
     expect(option).toHaveAttribute("aria-selected", "false");
   });
 
-  it("pairs module soft swatches with the theme-aware soft foreground", () => {
-    for (const module of ["finyk", "fizruk", "routine", "nutrition"] as const) {
-      expect(MODULE_COLORS[module]).toContain(`text-${module}-soft-fg`);
-      expect(MODULE_COLORS[module]).not.toContain(`text-${module}-strong`);
-      expect(MODULE_COLORS[module]).not.toContain(`dark:text-${module}`);
-    }
-  });
-
-  it("keeps system pseudo-modules on the neutral swatch", () => {
-    expect(MODULE_COLORS["settings"]).toBe("bg-panelHi text-muted");
-
+  it("renders neutral text search results without decorative icons", () => {
     render(
       <SearchResultItem
         hit={makeHit({
@@ -90,8 +80,8 @@ describe("SearchResultItem", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("option", { name: /Налаштування Hub/ }),
-    ).toBeInTheDocument();
+    const option = screen.getByRole("option", { name: /Налаштування Hub/ });
+    expect(option).toBeInTheDocument();
+    expect(option.querySelector("svg")).toBeNull();
   });
 });

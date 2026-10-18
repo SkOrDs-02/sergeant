@@ -22,10 +22,10 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { messages } from "@shared/i18n/uk";
 import { isLightWorkout, type Workout } from "@sergeant/fizruk-domain";
+import { deleteWorkoutWithUndo } from "../../lib/deleteWorkoutWithUndo";
 
 export interface WorkoutHistoryListProps {
   workouts: readonly Workout[];
@@ -83,16 +83,16 @@ function WorkoutRow({ w, onOpen }: WorkoutRowProps) {
               завершений, і легкий — це два факти, і другий пояснює, чому
               серія на цьому дні не зросла (канон §8, 2026-09-15). */}
           {isEnded && isLightWorkout(w) ? (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk-strong dark:text-fizruk border border-fizruk/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-text border border-line">
               {copy.lightBadge}
             </span>
           ) : null}
           {isEnded ? (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-panelHi text-subtle border border-line">
+            <span className="text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-subtle border border-line">
               {copy.endedBadge}
             </span>
           ) : (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-success/15 text-success-strong dark:text-success border border-success/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-text border border-line">
               {copy.activeBadge}
             </span>
           )}
@@ -121,13 +121,14 @@ export function WorkoutHistoryList({
     (id: string) => {
       const snapshot = (workouts || []).find((w) => w.id === id);
       if (!snapshot) return;
-      deleteWorkout(id);
-      showUndoToast(toast, {
-        msg: copy.deletedToast,
-        onUndo: () => restoreWorkout?.(snapshot),
+      deleteWorkoutWithUndo({
+        toast,
+        workout: snapshot,
+        deleteWorkout,
+        restoreWorkout,
       });
     },
-    [workouts, deleteWorkout, restoreWorkout, toast, copy.deletedToast],
+    [workouts, deleteWorkout, restoreWorkout, toast],
   );
 
   const listHeight = Math.min(
@@ -136,7 +137,7 @@ export function WorkoutHistoryList({
   );
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       <div className="px-4 py-3 bg-panelHi border-b border-line">
         <SectionHeading as="div" size="xs" variant="fizruk">
           {copy.title}
@@ -146,20 +147,6 @@ export function WorkoutHistoryList({
       {workoutList.length === 0 && (
         <EmptyState
           compact
-          icon={
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3" />
-            </svg>
-          }
           title={copy.emptyTitle}
           description={copy.emptyDescription}
         />

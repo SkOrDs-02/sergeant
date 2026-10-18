@@ -191,7 +191,7 @@ describe("WorkoutTemplatesSection", () => {
     // Select both items.
     const checkboxes = screen
       .getAllByRole("button")
-      .filter((b) => b.className.includes("w-5 h-5"));
+      .filter((b) => b.hasAttribute("aria-pressed"));
     fireEvent.click(checkboxes[0]!);
     fireEvent.click(checkboxes[1]!);
     // Create the superset.
@@ -209,7 +209,7 @@ describe("WorkoutTemplatesSection", () => {
     fireEvent.click(screen.getByText("Суперсет"));
     const checkboxes = screen
       .getAllByRole("button")
-      .filter((b) => b.className.includes("w-5 h-5"));
+      .filter((b) => b.hasAttribute("aria-pressed"));
     fireEvent.click(checkboxes[0]!);
     fireEvent.click(checkboxes[1]!);
 

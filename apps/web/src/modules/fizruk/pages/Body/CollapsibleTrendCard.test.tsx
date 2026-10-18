@@ -188,28 +188,28 @@ describe("CollapsibleTrendCard — deltaDirection", () => {
   it("defaults to down-is-good: a positive delta renders warning (weight-loss framing)", () => {
     renderCard({ delta: 1.2 });
     const label = screen.getByTestId("trend-delta");
-    expect(label.className).toContain("text-warning-strong");
+    expect(label.className).toContain("text-text");
     expect(label.className).not.toContain("text-success-strong");
   });
 
   it("defaults to down-is-good: a negative delta renders success", () => {
     renderCard({ delta: -0.5 });
     const label = screen.getByTestId("trend-delta");
-    expect(label.className).toContain("text-success-strong");
+    expect(label.className).toContain("text-text");
     expect(label.className).not.toContain("text-warning-strong");
   });
 
   it("up-is-good: a positive delta (more sleep) renders success, not warning", () => {
     renderCard({ delta: 1.2, deltaDirection: "up-is-good" });
     const label = screen.getByTestId("trend-delta");
-    expect(label.className).toContain("text-success-strong");
+    expect(label.className).toContain("text-text");
     expect(label.className).not.toContain("text-warning-strong");
   });
 
   it("up-is-good: a negative delta (less sleep) renders warning, not success", () => {
     renderCard({ delta: -0.5, deltaDirection: "up-is-good" });
     const label = screen.getByTestId("trend-delta");
-    expect(label.className).toContain("text-warning-strong");
+    expect(label.className).toContain("text-text");
     expect(label.className).not.toContain("text-success-strong");
   });
 

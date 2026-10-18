@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BUILTIN_PROGRAMS, getTodaySession } from "@sergeant/fizruk-domain";
 import {
@@ -9,6 +10,7 @@ import {
 const ACTIVE_PROGRAM_KEY = "fizruk_active_program_id_v1";
 
 export function useTrainingProgram() {
+  const dayKey = useDeviceDayKey();
   const [activeProgramId, setActiveProgramId] = useState(() =>
     safeReadStringLS(ACTIVE_PROGRAM_KEY),
   );
@@ -34,10 +36,10 @@ export function useTrainingProgram() {
     setActiveProgramId(null);
   }, []);
 
-  const todaySession = useMemo(
-    () => getTodaySession(activeProgram),
-    [activeProgram],
-  );
+  const todaySession = useMemo(() => {
+    void dayKey;
+    return getTodaySession(activeProgram);
+  }, [activeProgram, dayKey]);
 
   return {
     programs: BUILTIN_PROGRAMS,

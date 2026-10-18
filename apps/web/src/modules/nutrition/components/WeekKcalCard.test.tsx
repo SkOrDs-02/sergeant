@@ -136,8 +136,8 @@ describe("WeekKcalCard", () => {
       />,
     );
     const bar = screen.getByTestId("week-kcal-bar-2026-08-10");
-    expect(bar.className).toContain("bg-warning");
-    expect(bar.className).not.toContain("bg-nutrition");
+    expect(bar.className).toContain("bg-danger");
+    expect(bar.className).not.toContain("bg-chart-nutrition");
   });
 
   it("чесно повідомляє порожній тиждень замість порожнього графіка", () => {

@@ -4,7 +4,6 @@
  */
 import type { ChangeEvent } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
@@ -98,7 +97,7 @@ export function RoutineFeedControls({
         {/* Без підпису голий ряд «Сьогодні / Завтра / Тиждень / Місяць»
             читався як перемикач статистики, хоча фільтрує стрічку (репорт
             тестера 2026-08-17). */}
-        <SectionHeading as="p" size="xs" variant="routine">
+        <SectionHeading as="p" size="lg">
           {M.heading}
         </SectionHeading>
 
@@ -122,11 +121,11 @@ export function RoutineFeedControls({
         />
       </div>
 
-      <Card variant="default" radius="lg" padding="sm">
+      <section>
         {/* Шеврони тут, а не в ряду днів: там вони забирали 100px і не давали
     сімці клітинок влізти без скролера (див. `WeekDayStrip`). */}
         <div className="mb-2 flex items-center justify-between gap-2">
-          <SectionHeading as="p" size="xs" variant="routine">
+          <SectionHeading as="p" size="lg">
             {M.weekHeading}
           </SectionHeading>
           <WeekShiftControls onShiftWeek={shiftWeekStrip} />
@@ -161,7 +160,7 @@ export function RoutineFeedControls({
             {M.singleDayHint}
           </p>
         )}
-      </Card>
+      </section>
 
       <Input
         className="routine-touch-field w-full max-w-md"

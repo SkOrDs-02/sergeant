@@ -8,6 +8,7 @@ import { RoutineMomentLine } from "./RoutineMomentLine";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { messages } from "@shared/i18n/uk";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { FizrukDayPlanSheet } from "@fizruk/components/planning/FizrukDayPlanSheet";
@@ -17,6 +18,7 @@ import { useCompletionNoteDrafts } from "../hooks/useCompletionNoteDrafts";
 import { DayReportSheet } from "./DayReportSheet";
 import {
   isFlexibleHabit,
+  timeOfDayBucket,
   weekDoneCountExcludingDate,
   type HabitSkip,
 } from "@sergeant/routine-domain";
@@ -28,7 +30,6 @@ import {
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
 import { addDays, dateKeyFromDate } from "../lib/weekUtils";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import {
   useRoutineCalendarActions,
   useRoutineCalendarData,
@@ -38,7 +39,7 @@ import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingInsight";
 import type { HubCalendarEvent } from "../lib/types";
-import { Icon } from "@shared/components/ui/Icon";
+import { HabitStateButton } from "./HabitStateButton";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 type GroupedListItem =
@@ -183,7 +184,7 @@ export function RoutineCalendarPanel({
       id="routine-panel-calendar"
       aria-labelledby="routine-tab-calendar"
       hidden={panelHidden}
-      className="space-y-4"
+      className="space-y-7"
     >
       <RoutineCalendarHero
         rangeLabel={rangeLabel}
@@ -214,7 +215,7 @@ export function RoutineCalendarPanel({
       {/* Список дня стоїть одразу під героєм, фільтри й тиждень під ним.
           «Відмітити всі» тиха дія в шапці списку: великою кнопкою над
           списком вона підштовхувала відмічати не глядя. */}
-      <section className="space-y-4 pb-2">
+      <section className="space-y-3 pb-2">
         {canBulkMark && (
           <div className="flex justify-end">
             <Button
@@ -233,6 +234,7 @@ export function RoutineCalendarPanel({
             description={`За цим фільтром подій немає${hasNoHabits ? " (і звичок ще немає)" : ""}.`}
             action={
               <Button
+                tone="neutral"
                 type="button"
                 variant="outline"
                 onClick={() => {
@@ -246,41 +248,20 @@ export function RoutineCalendarPanel({
           />
         )}
         {listIsEmpty && !hasListFilter && hasNoHabits && (
-          <EmptyState
-            className={C.emptyStateWarm}
-            title="Почни з однієї звички"
-            description="Потім вона зʼявиться тут і в календарі, з відмітками по днях."
-            action={
-              <Button
-                type="button"
-                className={cn("w-full max-w-xs font-bold", C.primary)}
-                onClick={() => onOpenQuickAddHabit()}
-              >
-                Додати звичку в «Рутина»
-              </Button>
-            }
-          />
+          <EmptyState className="py-7" title={messages.routine.emptyHabits} />
         )}
         {listIsEmpty && !hasListFilter && !hasNoHabits && (
           <EmptyState
             compact
             title="Порожній період"
-            description={
-              <>
-                У цьому періоді подій немає. Перевір регулярність звичок або{" "}
-                {/* Inline link inside body text — WCAG 2.5.5 exception
-                    "inline links in flowing text". data-compact opts out of
-                    the global 44×44 floor so the text baseline stays aligned. */}
-                <button
-                  type="button"
-                  data-compact
-                  className={C.linkAccent}
-                  onClick={() => setFizrukPlanDateKey(selectedDay)}
-                >
-                  заплануй тренування
-                </button>
-                .
-              </>
+            action={
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFizrukPlanDateKey(selectedDay)}
+              >
+                заплануй тренування
+              </Button>
             }
           />
         )}
@@ -298,9 +279,11 @@ export function RoutineCalendarPanel({
                   <SectionHeading
                     key={key}
                     as="h2"
-                    size="xs"
-                    className="mb-2 mt-3"
-                    variant="routine"
+                    size="lg"
+                    variant={
+                      item.label === timeOfDayBucket(null) ? "muted" : "text"
+                    }
+                    className="mb-3 mt-7"
                   >
                     {item.label}
                   </SectionHeading>
@@ -311,7 +294,7 @@ export function RoutineCalendarPanel({
               // the guarded closures below without a non-null assertion.
               const habitId = e.habitId;
               return (
-                <div key={key} className="mb-2">
+                <div key={key} className="">
                   <SwipeToAction
                     onSwipeRight={
                       habitId && !e.completed
@@ -324,22 +307,11 @@ export function RoutineCalendarPanel({
                         : undefined
                     }
                     leftLabel="Виконано"
-                    leftColor="bg-success"
+                    leftColor="bg-text"
                     rightLabel="Скасувати"
                     rightColor="bg-muted"
                   >
-                    <div
-                      className={cn(
-                        "overflow-hidden rounded-2xl border border-line bg-panel pl-4 pr-4 py-3 shadow-card flex flex-col gap-2 border-l-4",
-                        e.fizruk
-                          ? "border-l-info"
-                          : e.finykSub
-                            ? "border-l-success"
-                            : e.habitId
-                              ? C.habitRowAccent
-                              : "border-l-transparent",
-                      )}
-                    >
+                    <div className="border-b border-line py-1.5 flex flex-col gap-2">
                       <div className="flex items-start justify-between gap-3 sm:gap-2">
                         <div
                           className={cn(
@@ -371,10 +343,10 @@ export function RoutineCalendarPanel({
                                 : undefined
                           }
                         >
-                          <p className="font-semibold text-text text-style-body leading-snug">
+                          <p className="font-semibold text-text text-style-label-lg leading-snug">
                             {e.title}
                           </p>
-                          <p className="text-style-caption text-subtle mt-0.5">
+                          <p className="text-style-label text-muted mt-0.5">
                             {parseDateKey(e.date).toLocaleDateString("uk-UA", {
                               weekday: "short",
                               day: "numeric",
@@ -384,11 +356,37 @@ export function RoutineCalendarPanel({
                           </p>
                         </div>
                         <div className="flex items-start gap-2 shrink-0">
+                          {habitId &&
+                            e.completed &&
+                            !(
+                              noteExpanded[
+                                completionNoteKey(habitId, e.date)
+                              ] ??
+                              (
+                                routine.completionNotes?.[
+                                  completionNoteKey(habitId, e.date)
+                                ] || ""
+                              ).length > 0
+                            ) && (
+                              <button
+                                type="button"
+                                className="text-style-label text-muted min-h-11 min-w-11 px-1 focus-ring"
+                                onClick={() =>
+                                  setNoteExpanded((p) => ({
+                                    ...p,
+                                    [completionNoteKey(habitId, e.date)]: true,
+                                  }))
+                                }
+                              >
+                                {messages.routine.noteAction}
+                              </button>
+                            )}
                           {e.fizruk && (
                             <Button
+                              tone="neutral"
                               size="sm"
                               variant="outline"
-                              className="h-9! px-3! text-xs! bg-info/5"
+                              className="h-9! px-3! text-style-label"
                               type="button"
                               onClick={() => setFizrukPlanDateKey(e.date)}
                             >
@@ -397,9 +395,10 @@ export function RoutineCalendarPanel({
                           )}
                           {e.finykSub && typeof onOpenModule === "function" && (
                             <Button
+                              tone="neutral"
                               size="sm"
                               variant="outline"
-                              className="h-9! px-3! text-xs! bg-success/5"
+                              className="h-9! px-3! text-style-label"
                               type="button"
                               onClick={() =>
                                 onOpenModule("finyk", { hash: "assets" })
@@ -409,27 +408,13 @@ export function RoutineCalendarPanel({
                             </Button>
                           )}
                           {habitId && (
-                            <Button
-                              iconOnly
-                              size="md"
-                              variant="ghost"
-                              type="button"
+                            <HabitStateButton
+                              completed={e.completed === true}
                               onClick={() => onToggleHabit(habitId, e.date)}
-                              className={cn(
-                                "rounded-xl border text-style-title",
-                                e.completed ? C.done : "border-line text-muted",
-                              )}
                               aria-label={
                                 e.completed ? "Скасувати виконання" : "Виконано"
                               }
-                              title={e.completed ? "Скасувати" : "Виконано"}
-                            >
-                              <Icon
-                                name={e.completed ? "check" : "circle-outline"}
-                                size={18}
-                                aria-hidden
-                              />
-                            </Button>
+                            />
                           )}
                         </div>
                       </div>
@@ -476,20 +461,7 @@ export function RoutineCalendarPanel({
                               />
                             );
                           }
-                          return (
-                            <button
-                              type="button"
-                              className="text-style-caption text-subtle min-h-[44px] min-w-[44px] px-1 text-left rounded-lg focus-ring"
-                              onClick={() =>
-                                setNoteExpanded((p) => ({
-                                  ...p,
-                                  [noteKey]: true,
-                                }))
-                              }
-                            >
-                              + Нотатка
-                            </button>
-                          );
+                          return null;
                         })()}
                     </div>
                   </SwipeToAction>
@@ -498,6 +470,15 @@ export function RoutineCalendarPanel({
             })}
           </div>
         )}
+        {/* Вхід «нова звичка» рядком у кінці списку (redesign v3, PR4b),
+            замість смуги над tab bar. Він же єдина дія порожнього стану. */}
+        <button
+          type="button"
+          className="flex min-h-14 w-full items-center border-y border-line text-left text-style-body font-semibold text-text focus-ring"
+          onClick={() => onOpenQuickAddHabit()}
+        >
+          {messages.routine.newHabit}
+        </button>
       </section>
 
       {/* Інсайт майже-рекорду стоїть під списком, бо список дня головний

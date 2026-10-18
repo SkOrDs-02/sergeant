@@ -95,7 +95,7 @@ export function ManualExpenseDescriptionSection({
                   setAiAppliedCategory(suggested);
                 }
               }}
-              className="px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
+              className="px-2.5 py-1 rounded-lg text-style-caption bg-panel text-muted border border-line hover:border-muted/50 transition-colors"
               title={`${m.count} ${pluralTimes(m.count)} · ${formatMoney(m.total)}`}
             >
               {m.name}

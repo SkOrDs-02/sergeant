@@ -76,7 +76,7 @@ export function useRecurringDetectedInsight({
       id: "finyk-recurring-detected",
       module: "finyk",
       title: `Знайшов повторення: ${merchantName}`,
-      subtitle: `~${amountDisplay} ${symbol} щомісяця. Зробити регулярним платежем?`,
+      subtitle: `~${amountDisplay} ${symbol} щомісяця. Можна зробити регулярним платежем.`,
       askAiPrompt: `Схоже, зʼявився регулярний платіж "${merchantName}" ~${amountDisplay} ${symbol}/міс. Підкажи, як його краще обліковувати і чи не дублюється він із наявними.`,
       // AI-CONTEXT: до 2026-09-13 вело на `/finyk/assets` — сторінку, де
       // підписки й «Можливі підписки» жили ДО переносу 2026-09-03

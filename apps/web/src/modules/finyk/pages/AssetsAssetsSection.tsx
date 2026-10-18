@@ -3,6 +3,7 @@ import { DebtCard } from "../components/DebtCard";
 import { Icon } from "@shared/components/ui/Icon";
 import { AssetsGroupCard } from "./AssetsGroupCard";
 import { Money } from "@shared/components/ui/Money";
+import { FinanceItemHeading } from "../components/FinanceItemHeading";
 import {
   getRecvPaid,
   calcReceivableRemaining,
@@ -63,7 +64,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
   const assetsOpen = assetsExpanded || showAssetForm;
 
   return (
-    <div className="mb-3 space-y-3">
+    <div className="space-y-0">
       <AssetsMonoCards
         accounts={accounts}
         hiddenAccounts={hiddenAccounts}
@@ -126,7 +127,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           <button
             type="button"
             onClick={() => setAllReceivablesVisible((visible) => !visible)}
-            className="touch-target w-full text-style-caption text-primary hover:underline"
+            className="touch-target w-full text-style-caption text-text hover:underline"
           >
             {allReceivablesVisible
               ? "Згорнути"
@@ -180,7 +181,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 (chip) => (
                   <span
                     key={chip}
-                    className="inline-flex items-center text-style-caption text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+                    className="inline-flex items-center text-style-caption text-muted"
                   >
                     {chip}
                   </span>
@@ -211,26 +212,14 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         )}
         {manualAssets.slice(0, allAssetsVisible ? undefined : 3).map((a, i) => (
           <div
-            key={i}
-            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3 hover:bg-panelHi transition-colors"
+            key={a.id}
+            className="border-t border-line py-4 first:border-t-0 first:pt-0 last:pb-0"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-panelHi leading-none shrink-0"
-                aria-hidden
-              >
-                <Icon name="wallet" size={18} className="text-muted" />
-              </span>
-              <div className="min-w-0">
-                <div className="text-style-label truncate">{a.name}</div>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {a.currency}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-style-label tabular-nums text-success-strong dark:text-success">
-                {showBalance ? (
+            <FinanceItemHeading
+              title={a.name}
+              meta={a.currency}
+              value={
+                showBalance ? (
                   <Money
                     amount={Number(a.amount)}
                     symbol={
@@ -244,56 +233,60 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                   />
                 ) : (
                   "\u2022\u2022\u2022\u2022"
-                )}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingAssetId(a.id);
-                  setNewAsset({
-                    name: a.name ?? "",
-                    amount: String(a.amount ?? ""),
-                    currency: a.currency ?? "UAH",
-                    emoji: a.emoji ?? "",
-                  });
-                  setShowAssetForm(true);
-                }}
-                className="text-subtle hover:text-text transition-colors"
-                aria-label={`Редагувати актив ${a.name}`}
-              >
-                <Icon name="edit" size="md" aria-hidden />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const removed = a;
-                  const removedIdx = i;
-                  setManualAssets((as) =>
-                    as.filter((_, j) => j !== removedIdx),
-                  );
-                  showUndoToast(toast, {
-                    msg: `Видалено актив «${removed.name}»`,
-                    onUndo: () =>
-                      setManualAssets((as) => {
-                        const next = [...as];
-                        next.splice(removedIdx, 0, removed);
-                        return next;
-                      }),
-                  });
-                }}
-                className="text-subtle hover:text-danger transition-colors"
-                aria-label={`Видалити актив ${a.name}`}
-              >
-                <Icon name="trash" size="md" aria-hidden />
-              </button>
-            </div>
+                )
+              }
+              actions={
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingAssetId(a.id);
+                      setNewAsset({
+                        name: a.name ?? "",
+                        amount: String(a.amount ?? ""),
+                        currency: a.currency ?? "UAH",
+                        emoji: a.emoji ?? "",
+                      });
+                      setShowAssetForm(true);
+                    }}
+                    className="touch-target focus-ring text-subtle hover:text-text transition-colors"
+                    aria-label={`Редагувати актив ${a.name}`}
+                  >
+                    <Icon name="edit" size="md" aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const removed = a;
+                      const removedIdx = i;
+                      setManualAssets((as) =>
+                        as.filter((_, j) => j !== removedIdx),
+                      );
+                      showUndoToast(toast, {
+                        msg: `Видалено актив «${removed.name}»`,
+                        onUndo: () =>
+                          setManualAssets((as) => {
+                            const next = [...as];
+                            next.splice(removedIdx, 0, removed);
+                            return next;
+                          }),
+                      });
+                    }}
+                    className="touch-target focus-ring text-subtle hover:text-danger transition-colors"
+                    aria-label={`Видалити актив ${a.name}`}
+                  >
+                    <Icon name="trash" size="md" aria-hidden />
+                  </button>
+                </>
+              }
+            />
           </div>
         ))}
         {manualAssets.length > 3 && (
           <button
             type="button"
             onClick={() => setAllAssetsVisible((visible) => !visible)}
-            className="touch-target w-full text-style-caption text-primary hover:underline"
+            className="touch-target w-full text-style-caption text-text hover:underline"
           >
             {allAssetsVisible
               ? "Згорнути"

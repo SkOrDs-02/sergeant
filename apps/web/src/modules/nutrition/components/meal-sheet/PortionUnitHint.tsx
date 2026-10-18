@@ -17,12 +17,12 @@ interface PortionUnitHintProps {
 export function PortionUnitHint({ onSwitchToPackage }: PortionUnitHintProps) {
   const copy = messages.nutrition.portionUnitHint;
   return (
-    <div className="mb-3 rounded-2xl border border-line bg-panelHi px-3 py-2">
-      <p className="text-style-body text-muted">{copy.body}</p>
+    <div className="mb-3 border-y border-line py-2">
+      <p className="text-style-label text-muted">{copy.body}</p>
       <button
         type="button"
         onClick={onSwitchToPackage}
-        className="min-h-11 text-style-caption text-nutrition-strong dark:text-nutrition underline underline-offset-2"
+        className="min-h-11 rounded-lg text-style-label font-semibold text-text underline underline-offset-2 focus-ring"
       >
         {copy.packageCta}
       </button>

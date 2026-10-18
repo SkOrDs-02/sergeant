@@ -2108,7 +2108,7 @@ How the loss happens:
 
 ### `data-23` [medium] Чат-екзекутори обходять серверні межі: create_transaction на будь-яку 400 пише локально з поясненням «сервер недоступний», а log_weight, log_measurement і log_meal не мають меж
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-23-chat-server-bounds (лишилось: Idempotency-Key/client id у POST /manual-expenses, межі решти мутаторів у toolCallSchema, серверна валідація data_json у sync; add_asset, recurring_expense та log_meal/log_water без стелі)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (serverActions, toolCallSchema, nutritionActions, fizrukActions)
 - **Де:** apps/web/src/core/lib/chatActions/serverActions.ts:183-250; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:28-71; apps/web/src/core/lib/chatActions/nutritionActions.ts:66-111,419-437; apps/web/src/core/lib/chatActions/fizrukActions/measurements.ts:13-62; apps/web/src/core/hub/chat/toolCallSchema.ts:41-337
 - **Першопричина:** serverActions ловить будь-яку помилку голим catch і йде в локальний fallback без MAX_AMOUNT, ліміту опису й межі дати, а sync потім доносить запис у ту саму таблицю. Аргументи інших мутаторів не валідуються спільними примітивами меж: toolCallSchema покриває близько 20 мутаторів лише numOrStr без діапазонів.
@@ -3101,7 +3101,7 @@ v8-kcal.mjs / v8b-loop.mjs (пул-юзер vfy-smf-fiz1, «Біг, легкий
 
 ### `data-37` [medium] Ретро-тренування «Вправи по підходах»: введений кінець живе лише в sessionStorage, і після перезапуску вкладки чи PWA «Завершити» робить тренування на 60-111 годин
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-37-ux-11-fizruk-history (слот кінця durable у localStorage; лишилось: перевірка implausiblyLong на «Завершити», редактор часу на WorkoutSummaryView, fizrukClosed за startedAt)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (pendingRetroEnd, useWorkouts)
 - **Де:** apps/web/src/modules/fizruk/lib/pendingRetroEnd.ts:1-81; apps/web/src/modules/fizruk/hooks/useWorkouts.ts:187-206; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:524-533; apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx:160-162; apps/web/src/core/hub/now/closedToday.ts (fizrukClosed)
 - **Першопричина:** Кінець ретро-сесії зберігається лише в sessionStorage, а endWorkout бере takePendingRetroEnd(id) ?? now без перевірки неправдоподібної тривалості. Завершене тренування відкривається read-only без WorkoutTimeEditor, всупереч коментарю в коді, що мітки лишаються редагованими.
@@ -3523,7 +3523,7 @@ Reproduced live with <scratch>/agents/verify-client-static-react-correctness/v2-
 
 ### `data-45` [medium] Оновлення сервіс-воркера і перехоплення бази іншою вкладкою перезавантажують чи розмонтовують сторінку без перевірки незбережених форм
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-45-rel-14-sw-update (chunk-recovery reload теж не стирає незбережений ввід; лишилось: перехоплення бази іншою вкладкою, dbOwnership/yieldOwnership — окреме UX-рішення)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: PWA (autoUpdate, registerSW) + dbOwnership
 - **Де:** apps/web/src/core/app/autoUpdate.ts:247-265; apps/web/src/main.tsx:376-381; node_modules/vite-plugin-pwa/dist/client/build/register.js:55-64; apps/web/src/core/db/sqlite.ts:309-325; apps/web/src/core/db/dbOwnership.ts:106-140; docs/engineering/web/service-worker.md:41-43
 - **Першопричина:** Реєстру «брудного» стану немає: autoUpdate після 5+ хв у фоні робить triggerUpdate(true) при поверненні у вкладку, ігноруючи відкриті аркуші й «Пізніше»; слухач controlling у vite-plugin-pwa перезавантажує всі вкладки, коли оновлення прийнято в одній (onNeedReload не передано); yieldOwnership на claim іншої вкладки розмонтовує дерево маршрутів.

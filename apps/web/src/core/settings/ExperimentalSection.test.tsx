@@ -121,24 +121,11 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
     expandSection();
 
     const note = screen.getByRole("note");
-    // Ступінь прозорості і soft-заливку банер бере зі спільного варіанта,
-    // тож пінимо лише сам токен `warning`, а не його відтінок.
-    expect(note.className).toMatch(/\bborder-warning\/\d+\b/);
-    expect(note.className).toMatch(/\bbg-warning(-soft|\/\d+)\b/);
-    expect(note.className).not.toMatch(/\bborder-warn\//);
-    expect(note.className).not.toMatch(/\bbg-warn\//);
-
-    const icon = note.querySelector("svg");
-    if (!icon) throw new Error("warning icon missing");
-    expect(icon.getAttribute("class") ?? "").toMatch(/\btext-warning\b/);
-    expect(icon.getAttribute("class") ?? "").not.toMatch(/\btext-warn\b/);
-
-    // Ревʼю знахідка #3 (2026-08-08): голий `text-warning` як foreground —
-    // насичений #f59e0b, ~1.8:1 на світлому фоні. Іконка мусить нести
-    // `-strong` companion (панівний патерн репо: SyncIndicator, ProfilePage,
-    // TodayFocusCard, …), інакше попереджувальний гліф ледь видимий.
-    expect(icon.getAttribute("class") ?? "").toMatch(/\btext-warning-strong\b/);
-    expect(icon.getAttribute("class") ?? "").toMatch(/dark:text-warning\b/);
+    // Мова H: попередження - рядок факту чорнилом (`Notice tone="ink"`),
+    // без боксу й іконки.
+    expect(note.className).toContain("text-text");
+    expect(note.className).not.toMatch(/warn|border-|bg-/);
+    expect(note.querySelector("svg")).toBeNull();
   });
 
   it("hides the opt-in once acknowledged and persists the ack", () => {

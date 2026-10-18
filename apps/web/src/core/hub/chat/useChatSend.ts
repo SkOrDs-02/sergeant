@@ -4,6 +4,7 @@ import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
+import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { billingKeys, chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { safeReadLS } from "@shared/lib/storage/storage";
@@ -192,6 +193,9 @@ export function useChatSend({
   });
 
   const [input, setInput] = useState("");
+  // Непорожній композер — незбережений ввід: тихий idle-reload сервіс-воркера
+  // його не знищує (data-45, `core/app/autoUpdate.ts`).
+  useRegisterDirtyState(input.trim() !== "");
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
@@ -411,11 +415,12 @@ export function useChatSend({
       }, 90_000);
 
       try {
-        const context = contextRef.current.text || buildContextMeasured();
-        if (!contextRef.current.text) {
-          contextRef.current = { text: context, ts: Date.now() };
-          setContextState({ status: "ready", ts: contextRef.current.ts });
-        }
+        // The idle snapshot can predate a pull, a local write in another
+        // module, or midnight. Read canonical data at the user's turn;
+        // a Finyk-only preview notification cannot invalidate every input.
+        const context = buildContextMeasured();
+        contextRef.current = { text: context, ts: Date.now() };
+        setContextState({ status: "ready", ts: contextRef.current.ts });
 
         let data;
         try {

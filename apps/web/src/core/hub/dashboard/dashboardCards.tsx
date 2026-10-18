@@ -2,112 +2,19 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useEffect, useMemo, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
-import { StreakBadge } from "@shared/components/ui/StreakFlame";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import {
   STORAGE_KEYS,
   TRACKED_STREAK_MILESTONES,
   claimStreakMilestone,
   pluralDays,
-  pluralUa,
-  type UaPluralForms,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
-import { countRealEntries } from "../../onboarding/firstRealEntry";
 import { ANALYTICS_EVENTS, trackEvent } from "../../observability/analytics";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
-import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
 import { useHubStorageBump } from "../useHubStorageBump";
-
-const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
-
-/** «Вже 1 запис» / «Вже 2 записи» / «Вже 5 записів» — не бінарна форма. */
-const RECORD_FORMS: UaPluralForms = {
-  one: "запис",
-  few: "записи",
-  many: "записів",
-};
-
-// AI-CONTEXT: Pill numbers render as bold text on the cream `bg-panel`
-// surface. The saturated `text-{module}` shades only clear ~2.4–3.1:1
-// against cream; switch to the `-strong` companion in light mode and
-// keep the saturated tone in dark mode where it clears AA on the
-// charcoal panel. See docs/design/BRANDBOOK.md → "WCAG-AA `-strong` Tier".
-const PILL_ACCENT: Record<ModuleId, string> = {
-  finyk: "text-finyk-strong dark:text-finyk",
-  fizruk: "text-fizruk-strong dark:text-fizruk-300",
-  routine: "text-routine-strong dark:text-routine",
-  nutrition: "text-nutrition-strong dark:text-nutrition",
-};
-
-/**
- * Horizontal pill strip ("Твій день") that surfaces the latest `main`
- * preview value per module — glanceable numbers without opening the
- * full bento card. Hidden entirely when no module has data.
- */
-export function TodaySummaryStrip({
-  onOpenModule,
-}: {
-  onOpenModule: (m: string) => void;
-}) {
-  const pills = useMemo(() => {
-    return PILL_MODULES.map((id) => {
-      const cfg = MODULE_CONFIGS[id];
-      const preview = cfg.getPreview();
-      return {
-        id,
-        label: cfg.label,
-        main: preview.main,
-        accent: PILL_ACCENT[id],
-      };
-    });
-  }, []);
-
-  const hasSomeData = pills.some((p) => p.main);
-  if (!hasSomeData) return null;
-
-  return (
-    <div
-      className="relative -mx-1 px-1"
-      style={{
-        maskImage: "linear-gradient(to right, black 85%, transparent 100%)",
-        WebkitMaskImage:
-          "linear-gradient(to right, black 85%, transparent 100%)",
-      }}
-    >
-      <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-        {pills.map((pill) => (
-          <button
-            key={pill.id}
-            type="button"
-            onClick={() => onOpenModule(pill.id)}
-            className={cn(
-              "shrink-0 flex flex-col items-center rounded-2xl",
-              "bg-panel border border-line px-3 py-2 min-w-[72px]",
-              "transition-all active:scale-[0.97]",
-              "hover:bg-panelHi hover:border-line",
-            )}
-          >
-            <span
-              className={cn(
-                "text-style-body font-bold tabular-nums",
-                pill.main ? pill.accent : "text-subtle",
-              )}
-            >
-              {pill.main || "\u2014"}
-            </span>
-            <span className="text-style-caption text-muted font-medium mt-0.5">
-              {pill.label}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /**
  * Streak chip rendered above the hero card. Picks the longest active
@@ -190,73 +97,11 @@ export function StreakIndicator() {
 
   if (streak < 2) return null;
 
+  // Мова H: факт одним рядком, без пігулки, іконки й тіні.
   return (
-    <StreakBadge
-      streak={streak}
-      label={`${pluralDays(streak)} поспіль`}
-      className="shadow-sm"
-    />
-  );
-}
-
-/**
- * Wraps a dashboard *group* in a fade-up animation. The hub uses three
- * stable groups — Hero / Modules / Insights — and each `index` maps to
- * a fixed delay (`index * 30ms`, capped at 150ms — бюджет анімації,
- * ex-Hard Rule #17, retired ADR-0081; числа лишаються конвенцією)
- * instead of the per-element ramp we used before. Grouping keeps the
- * reveal under ~100ms for the three current groups so users don't see
- * a long staircase of fades on slower devices, and prevents the index
- * counter from drifting whenever a section toggles in or out.
- */
-export function StaggerChild({
-  index,
-  children,
-}: {
-  index: number;
-  children: ReactNode;
-}) {
-  const style: CSSProperties = {
-    // Бюджет анімації (ex-Hard Rule #17, retired ADR-0081, конвенція
-    // лишається): stagger ≤ 30 ms between children,
-    // total delay cap ≤ 150 ms. Three fixed groups (Hero / Modules /
-    // Insights) map to indices 0–2 → 0/30/60ms, so the cap rarely bites
-    // — but keep the `Math.min` so any future fourth group still
-    // respects the rule.
-    animationDelay: `${Math.min(index * 30, 150)}ms`,
-  };
-  return (
-    <div className="motion-safe:animate-stagger-in" style={style}>
-      {children}
-    </div>
-  );
-}
-
-/**
- * Bottom-of-dashboard small-talk: counts real entries (across all modules)
- * and shows a "Вже N записів" line once the user has at
- * least one real entry across any module. Returns `null` until then —
- * до першого real entry юзер бачить онбординг-нагадування / FirstAction
- * вгорі дашборду, і pre-emptive «Sergeant працює офлайн» внизу плутав
- * 'one-hero rule' — два полюси уваги до того, як зʼявилась причина
- * святкувати. Реальний engagement-маркер живе вище (StreakIndicator).
- */
-export function MotivationalFooter() {
-  // Re-count when any module emits storageUpdated (same-tab) or when the
-  // native storage event fires (cross-tab). See useHubStorageBump.ts.
-  const bump = useHubStorageBump();
-
-  const entryCount = useMemo(() => {
-    void bump; // storage-write tick — forces re-count of cross-module entries
-    return countRealEntries();
-  }, [bump]);
-
-  if (entryCount === 0) return null;
-
-  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}. Продовжуй.`;
-
-  return (
-    <p className="text-style-caption text-subtle text-center py-8">{message}</p>
+    <p className="text-style-label tnum text-muted">
+      {streak} {pluralDays(streak)} поспіль
+    </p>
   );
 }
 
@@ -280,14 +125,14 @@ export function WeeklyDigestFooter({
       // «новий», тож свіжість звіту була лише візуальною.
       aria-expanded={false}
       className={cn(
-        "w-full flex items-center gap-3 rounded-2xl border border-line bg-panel px-3 py-2.5 focus-ring",
+        "w-full flex items-center gap-3 rounded-lg border border-line bg-panel px-3 py-2.5 focus-ring",
         "shadow-card hover:shadow-float transition-[box-shadow,filter,opacity,transform]",
         "text-left",
       )}
     >
       <span
         className={cn(
-          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
           "bg-brand-soft",
         )}
       >
@@ -316,7 +161,7 @@ export function WeeklyDigestFooter({
           {fresh && (
             <>
               <span
-                className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
+                className="inline-block w-1.5 h-1.5 rounded-mark bg-primary"
                 aria-hidden
               />
               <span className="sr-only">, новий</span>
@@ -327,12 +172,6 @@ export function WeeklyDigestFooter({
           {weekRange}
         </span>
       </span>
-      <Icon
-        name="chevron-right"
-        size="sm"
-        strokeWidth={2.5}
-        className="text-muted shrink-0"
-      />
     </button>
   );
 }

@@ -47,9 +47,8 @@ test("@critical a11y: reduced-motion зупиняє анімації хаба (�
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
   // Дочекатись маунту хаба, потім дати reduce-шару догасити fade-и.
-  // Рейок модулів — перший блок головної під віссю дії (спека
-  // `hub-action-axis.md`); до неї тут чекали заголовок сітки «Модулі».
-  await expect(page.getByTestId("module-rail")).toBeVisible({
+  // Панель модулів хаба (мова H, redesign v3); до неї тут чекали рейок.
+  await expect(page.getByTestId("module-panel")).toBeVisible({
     timeout: 15_000,
   });
   await page.waitForTimeout(1_200);

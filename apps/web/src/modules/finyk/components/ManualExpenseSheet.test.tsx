@@ -202,27 +202,19 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
     await act(async () => {});
 
-    expect(screen.getByRole("tab", { name: "Витрата" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Витрата" })).toBeChecked();
     expect(
       screen.getByRole("button", { name: "Додати витрату" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
 
-    expect(screen.getByRole("tab", { name: "Надходження" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Надходження" })).toBeChecked();
     const dialog = categoryDialog();
     const allSection = dialog.getByText("Усі категорії").closest("section");
     expect(allSection).not.toBeNull();
-    const optionLabels = within(allSection!)
-      .getAllByRole("button")
-      .map((button) => button.textContent?.trim());
-    expect(optionLabels).toEqual([
+    const optionButtons = within(allSection!).getAllByRole("button");
+    const optionLabels = [
       "Зарплата",
       "Фріланс",
       "Подарунок",
@@ -231,9 +223,17 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       "Пенсія/соц.",
       "Борг",
       "Інше",
-    ]);
+    ];
+    expect(optionButtons).toHaveLength(optionLabels.length);
+    optionLabels.forEach((label, index) =>
+      expect(optionButtons[index]).toHaveAccessibleName(label),
+    );
     // Expense-only categories must not leak into income mode.
-    expect(optionLabels).not.toContain("Продукти");
+    expect(
+      within(allSection!).queryByRole("button", {
+        name: "Продукти",
+      }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Додати надходження" }),
     ).toBeInTheDocument();
@@ -244,7 +244,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
     await act(async () => {});
 
-    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "5000" },
     });
@@ -283,10 +283,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     );
     await act(async () => {});
 
-    expect(screen.getByRole("tab", { name: "Надходження" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Надходження" })).toBeChecked();
     expect(
       screen.getByRole("button", { name: "Зберегти" }),
     ).toBeInTheDocument();
@@ -311,7 +308,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     );
     await act(async () => {});
 
-    fireEvent.click(screen.getByRole("tab", { name: "Витрата" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Витрата" }));
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
 
     await waitFor(() => {
@@ -347,10 +344,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     );
     await act(async () => {});
 
-    expect(screen.getByRole("tab", { name: "Надходження" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Надходження" })).toBeChecked();
   });
 
   it("switching kind clears the old taxonomy category", async () => {
@@ -358,8 +352,8 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
     await act(async () => {});
 
-    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Витрата" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Витрата" }));
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "42" },
     });
@@ -381,7 +375,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     await act(async () => {});
 
     // Switching kind blanks the category → warning paints immediately.
-    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Обери категорію");
     });
@@ -400,7 +394,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     async (tab) => {
       render(<ManualExpenseSheet open onClose={() => {}} onSave={vi.fn()} />);
       await act(async () => {});
-      fireEvent.click(screen.getByRole("tab", { name: tab }));
+      fireEvent.click(screen.getByRole("radio", { name: tab }));
 
       const amount = screen.getByLabelText("Сума ₴");
       fireEvent.focus(amount);
@@ -579,7 +573,7 @@ describe("ManualExpenseSheet — власні категорії", () => {
       <ManualExpenseSheet open onClose={vi.fn()} customCategories={CUSTOM} />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
 
     expect(
       categoryDialog().queryByRole("button", { name: "Кава з друзями" }),

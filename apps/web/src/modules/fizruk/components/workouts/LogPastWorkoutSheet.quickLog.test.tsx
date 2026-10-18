@@ -36,7 +36,7 @@ function setup(
 }
 
 function quickMode() {
-  fireEvent.click(screen.getByRole("tab", { name: "Швидкий запис" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Швидкий запис" }));
 }
 
 afterEach(() => {
@@ -50,16 +50,13 @@ describe("LogPastWorkoutSheet — режим «Швидкий запис»", () 
     expect(
       screen.queryByRole("tab", { name: "Швидкий запис" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Заняття й час" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Заняття й час" })).toBeVisible();
   });
 
   it("дефолт — відтискання × 20, «Записати» одразу активна, часових полів немає", () => {
     const { onQuickLog, onSubmit } = setup();
     quickMode();
-    expect(screen.getByRole("tab", { name: "Відтискання" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Відтискання" })).toBeChecked();
     // Дата й час — не для цього режиму: запис «щойно».
     expect(screen.queryByLabelText("Дата")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Початок")).not.toBeInTheDocument();
@@ -77,7 +74,7 @@ describe("LogPastWorkoutSheet — режим «Швидкий запис»", () 
   it("пресет підставляє число, чіп міняє вправу", () => {
     const { onQuickLog } = setup();
     quickMode();
-    fireEvent.click(screen.getByRole("tab", { name: "Присідання" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Присідання" }));
     fireEvent.click(screen.getByRole("button", { name: "50" }));
     fireEvent.click(screen.getByRole("button", { name: "Записати" }));
     expect(onQuickLog).toHaveBeenCalledWith(
@@ -122,7 +119,7 @@ describe("LogPastWorkoutSheet — режим «Швидкий запис»", () 
   it("повернення в «Заняття й час» вертає часові поля, а кнопку знову тримає його умова", () => {
     const { onQuickLog, onSubmit } = setup();
     quickMode();
-    fireEvent.click(screen.getByRole("tab", { name: "Заняття й час" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Заняття й час" }));
     expect(screen.getByLabelText("Дата")).toBeInTheDocument();
     // Заняття не обрано — у цьому режимі «Записати» заблоковано.
     expect(screen.getByRole("button", { name: "Записати" })).toBeDisabled();

@@ -60,7 +60,12 @@ export class ErrorBoundary extends Component<
     // module` після деплою (нові хеші чанків), пробуємо одноразовий
     // `location.reload()` — cooldown через sessionStorage страхує від
     // нескінченного циклу, якщо це не stale-кеш, а реальна поломка.
-    if (isChunkLoadError(error) && reloadOnceForChunkError()) {
+    // Гейт незбереженого вводу вимкнено: цей boundary сам розмонтує дерево
+    // (data-45), відмова не вбереже форму, а лише відніме авто-відновлення.
+    if (
+      isChunkLoadError(error) &&
+      reloadOnceForChunkError(undefined, { guardUnsavedInput: false })
+    ) {
       return { error: null, copied: false };
     }
     return { error, copied: false };
@@ -110,7 +115,7 @@ export class ErrorBoundary extends Component<
       const showRequestId = !!requestId && isServerLikeError(error);
       return (
         <div className="min-h-dvh bg-bg flex flex-col items-center justify-center p-6 text-text safe-area-pt-pb">
-          <div className="w-14 h-14 rounded-2xl bg-danger/10 text-danger flex items-center justify-center mb-4">
+          <div className="w-14 h-14 rounded-panel bg-danger/10 text-danger flex items-center justify-center mb-4">
             <svg
               width="28"
               height="28"
@@ -132,13 +137,13 @@ export class ErrorBoundary extends Component<
             Виникла непередбачена помилка. Спробуй перезавантажити сторінку.
           </p>
           {import.meta.env.DEV && (
-            <pre className="text-style-code text-danger-strong dark:text-danger mb-4 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-xl p-3 border border-line">
+            <pre className="text-style-code text-danger-strong dark:text-danger mb-4 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-panel p-3 border border-line">
               {error.message}
             </pre>
           )}
           {showRequestId && (
             <div
-              className="mb-6 max-w-lg w-full bg-panel rounded-xl p-3 border border-line flex items-center gap-2"
+              className="mb-6 max-w-lg w-full bg-panel rounded-panel p-3 border border-line flex items-center gap-2"
               data-testid="error-request-id"
             >
               <span className="text-style-caption text-muted shrink-0">
@@ -161,14 +166,14 @@ export class ErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.resetError}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="flex-1 px-5 py-2.5 rounded-lg bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             >
               Спробувати ще
             </button>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="flex-1 px-5 py-2.5 rounded-lg bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             >
               Перезавантажити
             </button>

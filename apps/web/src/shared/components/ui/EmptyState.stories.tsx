@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { EmptyState } from "./EmptyState";
-import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 
@@ -46,11 +45,6 @@ const meta: Meta<typeof EmptyState> = {
   tags: ["autodocs"],
   argTypes: {
     compact: { control: "boolean" },
-    disableAnimation: { control: "boolean" },
-    module: {
-      control: "select",
-      options: [undefined, "finyk", "fizruk", "routine", "nutrition"],
-    },
     ariaLive: {
       control: "select",
       options: ["polite", "off"],
@@ -59,9 +53,6 @@ const meta: Meta<typeof EmptyState> = {
   args: {
     title: "Поки що порожньо",
     description: "Додай перший запис, щоб побачити статистику.",
-    // Stories ловлять рендер у не-детермінований кадр — вирубаємо анімацію,
-    // щоб autodocs-скріншоти не моргали.
-    disableAnimation: true,
   },
 };
 export default meta;
@@ -79,7 +70,6 @@ export const Default: Story = {};
  */
 export const WithIconAndAction: Story = {
   args: {
-    icon: <Icon name="plus" />,
     title: "Список звичок порожній",
     description: "Додай першу звичку — Sergeant нагадає про неї щодня.",
     action: (
@@ -97,7 +87,6 @@ export const WithIconAndAction: Story = {
  */
 export const WithIconOnlyAction: Story = {
   args: {
-    icon: <Icon name="plus" />,
     title: "Список порожній",
     description: "Натисни плюс, щоб додати перший запис.",
     action: (
@@ -116,7 +105,6 @@ export const WithIconOnlyAction: Story = {
  */
 export const Compact: Story = {
   args: {
-    icon: <Icon name="search" />,
     title: "Нічого не знайшов",
     description: "Спробуй інший запит.",
     compact: true,
@@ -139,7 +127,6 @@ export const Compact: Story = {
 export const AsPageHeading: Story = {
   args: {
     size: "lg",
-    variant: "info",
     eyebrow: "404",
     title: "Сторінку не знайдено",
     titleAs: "h1",
@@ -160,11 +147,9 @@ export const AsPageHeading: Story = {
  */
 export const CompactNoAction: Story = {
   args: {
-    icon: <Icon name="dumbbell" />,
     title: "Поки немає шаблонів",
     description: "Створи свій перший, кнопка вище.",
     compact: true,
-    module: "fizruk",
   },
 };
 
@@ -174,7 +159,6 @@ export const CompactNoAction: Story = {
  */
 export const ModuleFinyk: Story = {
   args: {
-    illustration: <ModuleEmptyIllustration module="finyk" size={120} />,
     title: "Жодної операції",
     description: "Підключи Mono або додай витрату вручну, щоб почати облік.",
     action: (
@@ -182,7 +166,6 @@ export const ModuleFinyk: Story = {
         Підключити Mono
       </Button>
     ),
-    module: "finyk",
   },
 };
 
@@ -191,7 +174,6 @@ export const ModuleFinyk: Story = {
  */
 export const ModuleFizruk: Story = {
   args: {
-    illustration: <ModuleEmptyIllustration module="fizruk" size={120} />,
     title: "Як прогресують мої тренування?",
     description: "Запиши перше тренування, і побачиш ріст у цифрах.",
     action: (
@@ -199,7 +181,6 @@ export const ModuleFizruk: Story = {
         Почати тренування
       </Button>
     ),
-    module: "fizruk",
   },
 };
 
@@ -208,7 +189,6 @@ export const ModuleFizruk: Story = {
  */
 export const ModuleRoutine: Story = {
   args: {
-    illustration: <ModuleEmptyIllustration module="routine" size={120} />,
     title: "Що насправді стало звичкою?",
     description: "Відстежуй щоденні дії, серія днів покаже правду.",
     action: (
@@ -216,7 +196,6 @@ export const ModuleRoutine: Story = {
         Створити звичку
       </Button>
     ),
-    module: "routine",
   },
 };
 
@@ -226,7 +205,6 @@ export const ModuleRoutine: Story = {
  */
 export const ModuleNutrition: Story = {
   args: {
-    illustration: <ModuleEmptyIllustration module="nutrition" size={120} />,
     title: "Що ти їси насправді?",
     description: "Запиши перший прийом їжі, і тут зʼявляться калорії за день.",
     action: (
@@ -234,7 +212,6 @@ export const ModuleNutrition: Story = {
         Додати їжу
       </Button>
     ),
-    module: "nutrition",
   },
 };
 
@@ -247,17 +224,10 @@ export const ModuleNutrition: Story = {
  */
 export const WithHintAndExample: Story = {
   args: {
-    icon: <Icon name="lightbulb" />,
     title: "Готовий до першої цілі?",
     description:
       "Додай ціль: і Sergeant порахує крок-за-кроком, як її досягти.",
     hint: "Ціль = сума + дата. Наприклад, «зекономити 50 000 грн до 31.12».",
-    examplePreview: (
-      <div className="text-sm text-text">
-        <span className="font-medium">Резерв на ремонт</span>{" "}
-        <span className="text-muted">— 50 000 ₴ до 31.12.2025</span>
-      </div>
-    ),
     action: (
       <Button variant="primary" size="md">
         Додати ціль

@@ -935,7 +935,7 @@ Independent repro with v5-chunk.mjs (serviceWorkers: block, abort FinykApp-*.js)
 
 ### `rel-14` [medium] Кнопка «Оновити» PWA ненадійна: активація зависає на 5 хв або проходить без перезавантаження
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-45-rel-14-sw-update (лишилось: web-vitals beacon на першому input і далі тримає старий SW до 5 хв, але тап «Оновити» вже не мовчить: статус-тост через 3 с з ручним reload)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: SW update flow
 - **Де:** apps/web/src/core/app/useSWUpdate.ts:74-91; apps/web/src/sw/messages.ts:24; apps/web/src/core/observability/webVitals.ts:59-69,224; node_modules/workbox-window/Workbox.js:294; vite-plugin-pwa register.js:57-63
 - **Першопричина:** applyUpdate шле SKIP_WAITING і покладається на reload від vite-plugin-pwa, а той спрацьовує лише при event.isUpdate. Якщо першим input на сторінці став тап «Оновити», LCP-beacon web-vitals іде через fetch-обробник старого SW і тримає його до 5-хвилинного ліміту. У першій сесії, коли SW встановився під час цього ж завантаження, isUpdate=false і reload не відбувається взагалі.
@@ -1012,13 +1012,15 @@ verify dir v20.log: `after tap {"sw":{"waiting":null,...},"newLoads":[],"toastSt
 
 ### `rel-15` [medium] Перша звичка нового користувача: відмітка одразу після створення «відкочується» в UI
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-15-routine-first-habit
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Рутина (кеші після pull)
 - **Де:** apps/web/src/modules/routine/lib/routineStorage.ts:150-230; apps/web/src/modules/routine/hooks/useRoutineState.ts; apps/web/src/core/syncEngine/refreshCachesAfterPull.ts
 - **Першопричина:** Перший цикл синку (pull since=0 → refreshCachesAfterPull → refreshSqliteCompletions/RoutineState → emitRoutineStorage) перезаписує свіжіший write-through кеш старішим снапшотом SQLite. Кеш не версіонований відносно останнього локального запису.
 - **Вплив:** Перша дія нового користувача виглядає так, ніби не спрацювала: кільце 0/1, кнопка знову «Виконано», а поруч напис «усі звички відмічені». Людина тисне повторно і втрачає довіру до модуля. Дані при цьому збережені, після reload видно 1/1.
 - **Що зробити:** Версіонувати write-through кеш, щоб він не приймав снапшот SQLite, старший за останній локальний запис, або перечитувати кеш після завершення dual-write. Додати e2e: створити звичку, одразу відмітити, стан стабільний 5 с.
 - **Примітка:** Гонка: верифікатор відтворив 2 з 3 спроб, у третій перший pull стартував до відмітки.
+- **Уточнення першопричини (відтворення 2026-10-08):** винен не pull, а **boot-refresh** `refreshSqliteCompletions` (`sqliteReadBoot.ts` → `bootSqliteReadPath`). Він чекає, поки відкриється sqlite-wasm (секунди на новому акаунті), і читає `routine_entries`, куди dual-write відмітки ще не дійшов (`rows=0`, локальне вікно запису `moved=true`), після чого публікує порожній знімок: кеш 1→0. Перший pull стартує у ту саму мить лише тому, що теж чекає на SQLite (відповідь `ops: []`, кешів не оновлює), тож кореляція з pull у верифікатора була збігом. `refreshSqliteRoutineState` причинний гвард мав, `refreshSqliteCompletions` ні. Фікс: той самий гвард (`markRoutineLocalWrites` до читання, `routineLocalWritesMoved` перед публікацією), seq-гвард не змінено, кеш у циклі не перечитується.
+- **Уточнення фіксу (перевірка 2026-10-09):** гвард діє лише на тепле кеш (`refreshedAt !== null`, звіряється після читання). Реплей журналу на старті відкриває вікно запису без write-through, і безумовний гвард лишав би `completions` холодними на всю сесію (історії відміток немає, стріки нульові, повторного читання немає). Для холодного кеша знімок публікується, як до фіксу; для теплого (write-through відмітка) лишається захист. Те саме застосовано до `refreshSqliteRoutineState`.
 
 Знахідок у кластері: 1.
 

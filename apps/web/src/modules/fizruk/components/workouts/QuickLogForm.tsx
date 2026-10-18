@@ -29,7 +29,7 @@ import { useId, useMemo, useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { Segmented } from "@shared/components/ui/Segmented";
+import { FizrukChoiceList } from "../FizrukChoiceList";
 import { messages } from "@shared/i18n/uk";
 import { computeKcalBurned, FizrukData } from "@sergeant/fizruk-domain";
 
@@ -156,9 +156,7 @@ export function QuickLogFields({ state, onSubmit }: QuickLogFieldsProps) {
     >
       <div className="space-y-2">
         <span className="text-style-label text-text block">{t.exercise}</span>
-        <Segmented
-          variant="fizruk"
-          layout="pill"
+        <FizrukChoiceList
           ariaLabel={t.exercise}
           items={items}
           value={state.exerciseId}
@@ -187,8 +185,8 @@ export function QuickLogFields({ state, onSubmit }: QuickLogFieldsProps) {
             <Button
               key={n}
               type="button"
-              variant={state.reps === n ? "solid" : "soft"}
-              tone="fizruk"
+              variant={state.reps === n ? "solid" : "outline"}
+              tone="neutral"
               size="sm"
               className="tabular-nums"
               onClick={() => state.setRepsInput(String(n))}
@@ -200,7 +198,7 @@ export function QuickLogFields({ state, onSubmit }: QuickLogFieldsProps) {
       </div>
 
       {state.kcal !== null ? (
-        <p className="text-style-caption text-fizruk-strong">
+        <p className="text-style-caption text-text">
           {t.kcalPreview} {state.kcal} {t.kcalUnit}
         </p>
       ) : null}

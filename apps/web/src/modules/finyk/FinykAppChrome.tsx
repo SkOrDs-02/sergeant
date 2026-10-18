@@ -52,18 +52,14 @@ export function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
         // у `SyncIndicator.getSyncTone`.
         syncTone.needsAttention ? "flex" : "hidden sm:flex",
         "items-center gap-1.5 select-none shrink-0",
-        "text-style-caption px-1.5 sm:px-2 py-0.5 rounded-full border",
+        "text-style-caption",
         "transition-colors duration-base",
         syncTone.pill,
       )}
       role="status"
       aria-label={`Стан синхронізації: ${syncTone.text}`}
     >
-      {/* Іконка — другий, не-кольоровий канал стану: сама крапка одна на
-          вузьких екранах (текст ховається `hidden sm:inline`) не дає зрячим
-          людям розрізнити 5 станів без кольору. */}
-      <Icon name={syncTone.icon} size="xs" className="shrink-0" />
-      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
+      <Icon name={syncTone.icon} size="sm" aria-hidden />
       <span className="hidden sm:inline">{syncTone.text}</span>
     </div>
   );
@@ -93,22 +89,17 @@ export function AuthErrorBanner({
   // ішла його перегенеровувати.
   const needsAccount =
     authError === messages.finyk.monoConnectErrors.accountRequired;
-  // Offset clears the in-flow ModuleHeader stack: safe-area-pt + 68px title
-  // row (min-h-[68px], ModuleHeader.tsx) + ~40px ModuleSwitcher row.
+  // Offset clears the in-flow ModuleHeader: safe-area-pt + 68px title row
+  // (min-h-[68px], ModuleHeader.tsx).
   return (
     <div
       role="alert"
-      className="fixed top-[calc(108px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
+      className="fixed top-[calc(68px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
     >
-      <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
-        <Icon
-          name="alert-triangle"
-          size={18}
-          className="shrink-0 mt-0.5 text-warning-strong dark:text-warning"
-          aria-hidden
-        />
+      {/* Мова H: плаваюча поверхня без іконки, тінь як у тоста. */}
+      <div className="bg-bg rounded-panel px-4 py-3 flex items-start gap-3 shadow-e4">
         <div className="flex-1 min-w-0">
-          <p className="text-style-label text-text">
+          <p className="text-style-label font-semibold text-text">
             {needsAccount ? "Потрібен вхід" : "Токен потребує оновлення"}
           </p>
           <p className="text-style-caption text-muted mt-0.5">{authError}</p>
@@ -116,7 +107,7 @@ export function AuthErrorBanner({
             <button
               type="button"
               onClick={onOpenAuth}
-              className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
+              className="touch-target focus-ring rounded-lg text-style-caption text-text mt-2 hover:underline"
             >
               Увійти
             </button>
@@ -125,7 +116,7 @@ export function AuthErrorBanner({
               <button
                 type="button"
                 onClick={onOpenSettings}
-                className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
+                className="touch-target focus-ring rounded-lg text-style-caption text-text mt-2 hover:underline"
               >
                 Оновити токен у Налаштуваннях
               </button>
@@ -135,7 +126,7 @@ export function AuthErrorBanner({
         <button
           type="button"
           onClick={() => setAuthError("")}
-          className="touch-target focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
+          className="touch-target focus-ring rounded-lg text-muted hover:text-text transition-colors shrink-0"
           aria-label="Закрити"
         >
           <Icon name="close" size="md" aria-hidden />

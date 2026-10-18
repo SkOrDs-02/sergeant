@@ -24,14 +24,14 @@ const TONE_CLASSES: Record<
     borderColor: "border-danger/20",
   },
   hypertrophy: {
-    color: "text-success-strong dark:text-success",
-    bgColor: "bg-success/10",
-    borderColor: "border-success/20",
+    color: "text-text",
+    bgColor: "bg-panelHi",
+    borderColor: "border-line",
   },
   endurance: {
-    color: "text-info-strong dark:text-info",
-    bgColor: "bg-info/10",
-    borderColor: "border-info/20",
+    color: "text-text",
+    bgColor: "bg-panelHi",
+    borderColor: "border-line",
   },
 };
 
@@ -61,7 +61,7 @@ export function LoadCalculator({
   if (zones.length === 0) return null;
 
   return (
-    <Card radius="lg">
+    <Card>
       <div className="flex items-baseline justify-between gap-2 mb-3">
         <SectionHeading as="div" size="xs" variant="fizruk">
           Калькулятор навантаження
@@ -76,7 +76,7 @@ export function LoadCalculator({
           <div
             key={zone.tone}
             className={cn(
-              "rounded-xl border p-3",
+              "rounded-panel border p-3",
               TONE_CLASSES[zone.tone].bgColor,
               TONE_CLASSES[zone.tone].borderColor,
             )}
@@ -103,7 +103,7 @@ export function LoadCalculator({
                   // `border-line` (як картки в плані дня). Межа додає 1px з
                   // кожного боку, тому `py-[5px]` замість `py-1.5` тримає
                   // висоту осередка (і зон) тією самою.
-                  className="text-center bg-panel border border-line rounded-xl py-[5px] px-1"
+                  className="text-center bg-panel border border-line rounded-panel py-[5px] px-1"
                 >
                   <div className="text-style-caption text-subtle leading-none mb-0.5">
                     {entry.percent}%

@@ -321,21 +321,15 @@ describe("NotificationsSection", () => {
     stubNotification("granted");
     renderSettingsSection(<NotificationsSection />);
     await waitFor(() =>
-      expect(screen.getByRole("tab", { name: "2" })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      ),
+      expect(screen.getByRole("radio", { name: "2" })).toBeChecked(),
     );
-    fireEvent.click(screen.getByRole("tab", { name: "1" }));
+    fireEvent.click(screen.getByRole("radio", { name: "1" }));
     await waitFor(() =>
       expect(meApiMock.updatePreferences).toHaveBeenCalledWith({
         pushDailyCap: 1,
       }),
     );
-    expect(screen.getByRole("tab", { name: "1" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "1" })).toBeChecked();
   });
 
   it("на нулі прямо каже, що нагадувань не буде", async () => {

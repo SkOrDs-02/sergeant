@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import { useEffect, useRef } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { computeRoutineQuickStats } from "@sergeant/routine-domain";
@@ -28,15 +29,17 @@ export function useRoutineQuickStatsWriter({
   completions: Record<string, string[]>;
   skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }): void {
+  const dayKey = useDeviceDayKey();
   const lastWrittenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    void dayKey;
     lastWrittenRef.current = writeRoutineQuickStatsSnapshot({
       habits,
       completions,
       skips,
     });
-  }, [habits, completions, skips]);
+  }, [habits, completions, skips, dayKey]);
 }
 
 /**

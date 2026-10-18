@@ -13,9 +13,9 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@shared/api";
 import { finykKeys } from "@shared/lib/api/queryKeys";
 import { formatReceiptError } from "../lib/receiptErrors";
-import { Icon } from "@shared/components/ui/Icon";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { Badge } from "@shared/components/ui/Badge";
+import { Card } from "@shared/components/ui/Card";
 import { Money } from "@shared/components/ui/Money";
 
 export interface ReceiptItemsSectionProps {
@@ -30,16 +30,17 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
   });
 
   return (
-    <section
+    <Card
+      as="section"
+      prominence="receipt"
+      padding="sm"
       aria-labelledby="receipt-items-title"
-      className="rounded-2xl border border-line bg-panel p-3"
     >
       <div className="flex items-center justify-between gap-2">
         <h3
           id="receipt-items-title"
           className="flex items-center gap-1.5 text-style-label text-text"
         >
-          <Icon name="file-text" size={15} aria-hidden />
           Позиції чека
         </h3>
         {query.data?.receipt.source === "vision" && (
@@ -66,7 +67,7 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
           <button
             type="button"
             onClick={() => void query.refetch()}
-            className="mt-1 touch-target text-style-caption text-primary hover:underline"
+            className="mt-1 touch-target text-style-caption text-text hover:underline"
           >
             Спробуй ще раз
           </button>
@@ -98,7 +99,7 @@ export function ReceiptItemsSection({ receiptId }: ReceiptItemsSectionProps) {
           Позиції не розпізнано, лише сума й магазин.
         </p>
       ) : null}
-    </section>
+    </Card>
   );
 }
 

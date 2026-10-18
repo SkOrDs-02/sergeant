@@ -74,7 +74,6 @@ export function RestTimerOverlay({
   if (!restTimer || hidden) return null;
 
   const pct = restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0;
-  const urgent = restTimer.remaining <= 10 && restTimer.remaining > 0;
 
   return (
     // AI-NOTE: `data-testid` — навмисний контракт для E2E, а не зайвий
@@ -90,8 +89,8 @@ export function RestTimerOverlay({
     >
       <div
         className={
-          "pointer-events-auto ml-auto flex w-fit max-w-full items-center gap-1.5 rounded-full border bg-panel px-2 py-1.5 shadow-float fizruk-sheet " +
-          (urgent ? "border-warning/60" : "border-line")
+          " pointer-events-auto ml-auto flex w-fit max-w-full items-center gap-1.5 rounded-lg border bg-panel px-2 py-1.5 fizruk-sheet " +
+          " border-line "
         }
       >
         {/*
@@ -105,35 +104,18 @@ export function RestTimerOverlay({
           role="timer"
           aria-label={rt.ariaLabel}
         >
-          <div className="relative w-8 h-8 shrink-0">
-            <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-              <circle
-                cx="18"
-                cy="18"
-                r="15"
-                fill="none"
-                stroke="currentColor"
-                className="text-line/40"
-                strokeWidth="3"
-              />
-              <circle
-                cx="18"
-                cy="18"
-                r="15"
-                fill="none"
-                stroke="currentColor"
-                className={urgent ? "text-warning" : "text-success"}
-                strokeWidth="3"
-                strokeDasharray={`${94.2 * pct} 94.2`}
-                strokeLinecap="round"
-                style={{ transition: "stroke-dasharray 1s linear" }}
-              />
-            </svg>
-          </div>
+          <span
+            aria-hidden
+            className="h-[5px] w-10 shrink-0 overflow-hidden rounded-[3px] bg-line"
+          >
+            <span
+              className="block h-full rounded-[3px] bg-chart-fizruk transition-[width] duration-base"
+              style={{ width: `${pct * 100}%` }}
+            />
+          </span>
           <span
             className={
-              "text-style-label tabular-nums whitespace-nowrap " +
-              (urgent ? "text-warning-strong dark:text-warning" : "text-text")
+              "text-style-label tabular-nums whitespace-nowrap text-text"
             }
           >
             {formatRestClock(restTimer.remaining)}
@@ -145,7 +127,7 @@ export function RestTimerOverlay({
               key={seconds}
               type="button"
               className={
-                "min-h-[44px] min-w-[44px] rounded-full px-2 text-xs font-semibold text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45" +
+                " min-h-[44px] min-w-[44px] rounded-lg px-2 text-xs font-semibold text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 " +
                 // ±30 hidden below `sm` (640px) — on a 390px viewport the
                 // full 6-control pill (dial+digits, 4 adjust buttons,
                 // skip) overflows its `max-w-full` bound: content needed
@@ -166,7 +148,7 @@ export function RestTimerOverlay({
             </button>
           ))}
         <button
-          className="min-h-[44px] rounded-full px-3 text-xs font-semibold text-danger-strong dark:text-danger hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          className="min-h-[44px] rounded-lg px-3 text-xs font-semibold text-danger-strong dark:text-danger hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           type="button"
           onClick={onCancel}
         >
