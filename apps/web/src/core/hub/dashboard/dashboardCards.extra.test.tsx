@@ -37,12 +37,7 @@ vi.mock("../../observability/analytics", () => ({
   ANALYTICS_EVENTS: { STREAK_MILESTONE_REACHED: "streak_milestone_reached" },
 }));
 
-import {
-  StaggerChild,
-  StreakIndicator,
-  TodaySummaryStrip,
-  WeeklyDigestFooter,
-} from "./dashboardCards";
+import { StreakIndicator, WeeklyDigestFooter } from "./dashboardCards";
 
 beforeEach(() => {
   localStorage.clear();
@@ -54,54 +49,6 @@ afterEach(() => {
   localStorage.clear();
   __resetHubBusForTests();
   vi.clearAllMocks();
-});
-
-describe("TodaySummaryStrip", () => {
-  it("renders nothing when no module has data", () => {
-    const { container } = render(<TodaySummaryStrip onOpenModule={vi.fn()} />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  it("renders pills and fires onOpenModule when a module has data", () => {
-    previews["finyk"] = { main: "1 200 ₴" };
-    const onOpenModule = vi.fn();
-    render(<TodaySummaryStrip onOpenModule={onOpenModule} />);
-    expect(screen.getByText("1 200 ₴")).toBeInTheDocument();
-    // Each pill carries the module label.
-    fireEvent.click(screen.getByText("lbl-finyk"));
-    expect(onOpenModule).toHaveBeenCalledWith("finyk");
-  });
-
-  it("renders an em-dash placeholder for modules without a value", () => {
-    previews["finyk"] = { main: "5" };
-    render(<TodaySummaryStrip onOpenModule={vi.fn()} />);
-    // routine/nutrition/fizruk have no data -> em-dash placeholders.
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
-  });
-});
-
-describe("StaggerChild", () => {
-  it("applies an animation delay scaled by index", () => {
-    const { container } = render(
-      <StaggerChild index={2}>
-        <span>child</span>
-      </StaggerChild>,
-    );
-    const el = container.firstChild as HTMLElement;
-    expect(el.style.animationDelay).toBe("60ms");
-    expect(screen.getByText("child")).toBeInTheDocument();
-  });
-
-  it("caps the animation delay at 150ms for large indices", () => {
-    const { container } = render(
-      <StaggerChild index={20}>
-        <span>x</span>
-      </StaggerChild>,
-    );
-    expect((container.firstChild as HTMLElement).style.animationDelay).toBe(
-      "150ms",
-    );
-  });
 });
 
 describe("WeeklyDigestFooter", () => {

@@ -74,9 +74,9 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
                   {h.done}/{h.total}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
+              <div className="h-1.5 rounded-mark bg-white/15 overflow-hidden">
                 <div
-                  className="h-full bg-white rounded-full"
+                  className="h-full bg-white rounded-lg"
                   style={{ width: `${h.completionRate}%` }}
                 />
               </div>
@@ -86,7 +86,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
       )}
 
       {ai?.summary && (
-        <div className="mt-auto rounded-2xl bg-brand-strong px-4 py-3 border border-white/20">
+        <div className="mt-auto rounded-panel bg-brand-strong px-4 py-3 border border-white/20">
           <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
             <p className="text-style-caption text-white/85 mt-2 leading-relaxed">

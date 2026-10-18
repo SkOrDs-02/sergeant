@@ -120,8 +120,8 @@ describe("PickedFoodCard", () => {
         {...baseProps({ pickedFood: { ...picked, source: "off" } })}
       />,
     );
-    // Позначка «Open Food Facts» — тепер `<Icon title="…">`, а не emoji.
-    expect(screen.getByTitle("Open Food Facts")).toBeInTheDocument();
+    // Позначка джерела текстом у рядку назви (мова H: без іконки в рядку).
+    expect(screen.getByText(/Open Food Facts/)).toBeInTheDocument();
   });
 
   it("increments and decrements the gram portion", () => {

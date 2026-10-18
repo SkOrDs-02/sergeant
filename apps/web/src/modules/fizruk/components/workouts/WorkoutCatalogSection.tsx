@@ -12,9 +12,7 @@ import { equipmentForLocation } from "@sergeant/fizruk-domain/data";
 import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Icon } from "@shared/components/ui/Icon";
-import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Segmented } from "@shared/components/ui/Segmented";
@@ -144,7 +142,7 @@ export function WorkoutCatalogSection({
       <div className="relative mb-3">
         <Input
           {...searchFieldProps("workout-catalog-search")}
-          placeholder="Пошук (жим, підтягування, спина…)"
+          placeholder="Пошук вправи"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -179,18 +177,17 @@ export function WorkoutCatalogSection({
             <button
               type="button"
               onClick={() => setEquipmentOpen(true)}
-              className="focus-ring flex min-h-[44px] flex-1 items-center justify-between rounded-2xl border border-line bg-panelHi px-3 text-sm text-text transition-colors hover:border-muted"
+              className="focus-ring flex min-h-[44px] flex-1 items-center justify-between rounded-lg border border-line bg-panelHi px-3 text-sm text-text transition-colors hover:border-muted"
             >
               <span>Обладнання</span>
               <span className="flex items-center gap-2 text-style-caption text-muted">
                 {selectedEquipment.length > 0 ? (
-                  <span className="rounded-full bg-fizruk-surface px-2 py-0.5 font-semibold text-fizruk-soft-fg">
+                  <span className="rounded-lg bg-panelHi px-2 py-0.5 font-semibold text-text">
                     {fmt(selectedEquipment.length)}
                   </span>
                 ) : (
                   <span>{fmt(availableEquipment.length)} видів</span>
                 )}
-                <Icon name="chevron-down" size="md" aria-hidden />
               </span>
             </button>
             {selectedEquipment.length > 0 && (
@@ -237,13 +234,13 @@ export function WorkoutCatalogSection({
                   <span
                     aria-hidden
                     className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+                      "flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-check border transition-colors",
                       active
-                        ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg"
+                        ? "border-line bg-panelHi text-text"
                         : "border-border-strong",
                     )}
                   >
-                    {active ? <Icon name="check" size="xs" /> : null}
+                    {active ? <span aria-hidden>✓</span> : null}
                   </span>
                   <span className="flex-1">{equipmentUk[id]}</span>
                   <span className="text-style-caption tabular-nums text-muted">
@@ -263,7 +260,7 @@ export function WorkoutCatalogSection({
         </p>
       )}
 
-      <Card radius="lg" padding="none" className="overflow-hidden">
+      <Card padding="none" className="overflow-hidden">
         {grouped.length === 0 ? (
           /*
             Порожній каталог і порожній РЕЗУЛЬТАТ ПОШУКУ — різні стани, і
@@ -274,19 +271,17 @@ export function WorkoutCatalogSection({
           */
           hasQuery ? (
             <EmptyState
-              illustration={<FizrukEmptyIllustration size={96} />}
               title="Нічого не знайшлось"
               description={
                 q
                   ? `За запитом «${q}» вправ немає. Спробуй іншу назву, групу мʼязів або скинь пошук.`
                   : "Під вибрані фільтри вправ немає. Скинь їх або обери інші."
               }
-              module="fizruk"
               action={
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="focus-ring min-h-[44px] rounded-xl border border-line px-4 text-style-caption text-text transition-colors hover:bg-panelHi"
+                  className="focus-ring min-h-[44px] rounded-lg border border-line px-4 text-style-caption text-text transition-colors hover:bg-panelHi"
                 >
                   Скинути пошук
                 </button>
@@ -294,10 +289,8 @@ export function WorkoutCatalogSection({
             />
           ) : (
             <EmptyState
-              illustration={<FizrukEmptyIllustration size={96} />}
               title="Поки немає вправ"
               description="Додай першу через кнопку «+ Додати»."
-              module="fizruk"
             />
           )
         ) : (
@@ -322,7 +315,11 @@ export function WorkoutCatalogSection({
                   <div className="text-style-label text-text">{g.label}</div>
                   <div className="text-style-caption text-muted flex items-center gap-2">
                     <span>{g.total}</span>
-                    <MorphChevron open={isOpen} size={16} />
+                    <span className="text-style-body text-muted">
+                      {isOpen
+                        ? messages.fizruk.disclosure.hide
+                        : messages.fizruk.disclosure.show}
+                    </span>
                   </div>
                 </button>
 
@@ -348,32 +345,33 @@ export function WorkoutCatalogSection({
                             className={cn(
                               "flex-1 min-w-0 text-left px-4 py-3 transition-colors",
                               mode === "log"
-                                ? "hover:bg-success/10 active:bg-success/15"
+                                ? "hover:bg-panelHi active:bg-panelHi"
                                 : "hover:bg-panelHi",
-                              addedCount > 0 && "bg-success/10",
+                              addedCount > 0 && "bg-panelHi",
                             )}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <div className="text-style-label text-text truncate flex items-center gap-2">
                                   {ex?.name?.uk || ex?.name?.en}
-                                  {catCf.hasWarning ? (
-                                    <Icon
-                                      name="alert-triangle"
-                                      size={15}
-                                      className="text-warning shrink-0"
-                                      title={
-                                        catCf.injury.blocked
-                                          ? "Позначено біль: не раджу навантажувати"
-                                          : "Мʼязи ще відновлюються"
-                                      }
-                                    />
-                                  ) : null}
                                 </div>
+                                {catCf.hasWarning && (
+                                  <p
+                                    className={
+                                      catCf.injury.blocked
+                                        ? "text-style-body text-danger-strong"
+                                        : "text-style-body text-muted"
+                                    }
+                                  >
+                                    {catCf.injury.blocked
+                                      ? messages.fizruk.recoveryWarnings.injury
+                                      : messages.fizruk.recoveryWarnings
+                                          .recovering}
+                                  </p>
+                                )}
                                 {addedCount > 0 && (
                                   <div className="mt-1">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-style-caption font-semibold text-success">
-                                      <Icon name="check" size="xs" />
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-panelHi px-2 py-0.5 text-style-caption font-semibold text-text">
                                       {catalogCopy.addedBadge}
                                       {addedCount > 1
                                         ? ` ${catalogCopy.addedBadgeTimes}${addedCount}`

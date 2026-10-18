@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ComponentProps } from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
@@ -36,7 +36,6 @@ function renderActions(
         setRoutine={vi.fn()}
         quickAddHabitOpen={false}
         quickAddFocusTick={0}
-        onOpenQuickAddHabit={vi.fn()}
         onCloseQuickAddHabit={vi.fn()}
         {...props}
       />
@@ -48,12 +47,13 @@ function renderActions(
 describe("RoutineActions", () => {
   afterEach(cleanup);
 
-  it("renders bottom nav and opens quick-add dialog", () => {
-    const onOpenQuickAddHabit = vi.fn();
-    renderActions({ onOpenQuickAddHabit });
+  it("renders the bottom nav without a pinned add bar", () => {
+    renderActions();
 
-    fireEvent.click(screen.getByRole("button", { name: /Додати звичку/i }));
-    expect(onOpenQuickAddHabit).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("navigation")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Нова звичка" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows quick-add dialog when open", () => {

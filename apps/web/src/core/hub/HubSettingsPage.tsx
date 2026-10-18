@@ -620,33 +620,17 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
       <h1 className="sr-only">Налаштування</h1>
-      {/* «Острів» (рішення власника 2026-08-28): sticky-обгортка прозора —
-          суцільної плашки більше немає; вкладки живуть у піднятій картці (bg-panel + shadow-e2), а контент при скролі
-          «розчиняється» позаду через градієнт-фейд нижче, замість різкого
-          зрізу об border-b. Попередня плашка була `bg-surface-soft-glass`,
-          який після «Чорнила» — НЕпрозорий #f6f5f2 (panel-hi): він не
-          збігався ні з фоном сторінки, ні з білими картками і читався як
-          чужа сіра плита, а `backdrop-blur-md` при альфі 1 не мав чого
-          блюрити (скарга власника 2026-08-28).
-
-          Safe-area відступу тут більше немає навмисно: Налаштування живуть
-          рівно в одному місці — вкладці хаба під його фіксованою шапкою
-          (L-1, `settings/route.tsx`: `/settings` — redirect-only), тож цей
-          sticky ніколи не досягає статус-бара, і `env(safe-area-inset-top)`
-          давав лише ~60px мертвої порожнечі у standalone/shell. */}
+      {/* Sticky-смуга вкладок на непрозорому фоні сторінки (мова H, redesign
+          v3): острів з тінню й градієнт-фейд знято. Safe-area відступу тут
+          немає навмисно: Налаштування живуть лише у вкладці хаба під його
+          фіксованою шапкою (L-1, `settings/route.tsx`), тож sticky ніколи не
+          досягає статус-бара. */}
       <div
         ref={stickyHeaderRef}
-        className="sticky top-0 z-10 -mx-4 -mt-3 px-4 pt-2 pb-1"
+        // Мова H: непрозорий фон сторінки замість градієнт-фейду.
+        className="sticky top-0 z-10 -mx-4 -mt-3 bg-bg px-4 pb-2 pt-2"
       >
-        {/* Фейд позаду острова: фон сторінки → прозорий, на 32px нижче
-            картки. Саме він пом'якшує зріз контенту в бокових проміжках і
-            під карткою. pointer-events-none — крізь прозору частину все ще
-            видно (і має клікатись) контент. */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 -bottom-8 bg-linear-to-b from-bg from-55% to-transparent pointer-events-none"
-        />
-        <div className="relative flex flex-col gap-2.5 rounded-2xl bg-panel border border-surface-line shadow-e2 p-3">
+        <div>
           <Tabs
             style="pill"
             variant="brand"
@@ -656,17 +640,12 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
             value={tab}
             onChange={(v) => setTab(v)}
             getPanelId={() => groupPanelId}
-            // Трек — panel-hi всередині білої картки (та сама логіка, що
-            // в пошуку вище). На такому треці дефолтний активний піл
-            // `bg-brand-soft` (stone-100) був би невідрізнюваний від
-            // фону — тому активний перекрито на панельно-білий чип із
-            // контуром `control` (≥3:1, аудит 2026-10-01, A4: hairline
-            // `line` давав 1.3-1.44) + e1 через `aria-selected:` (cn = twMerge, і
-            // `[aria-selected="true"]` специфічніший за базові класи
-            // Tabs). `rounded-lg` — концентричний радіус до треку
-            // `rounded-xl` з його p-1.
-            className="overflow-x-auto bg-panelHi rounded-xl border border-line"
-            tabsClassName="rounded-lg border-transparent aria-selected:bg-panel aria-selected:border-control aria-selected:shadow-e1"
+            // Мова H (redesign v3): iOS-сегмент, як `Segmented` — доріжка
+            // `track`, активний сегмент `segment` з тінню 1 px. `Tabs`, а не
+            // `Segmented`, бо панелі груп мають звʼязок `aria-controls`
+            // (аудит V-1), якого `Segmented` не дає.
+            className="overflow-x-auto rounded-[10px] bg-track p-0.5"
+            tabsClassName="rounded-lg border-transparent text-muted aria-selected:bg-segment aria-selected:text-text aria-selected:shadow-segment"
           />
         </div>
       </div>
@@ -701,7 +680,8 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
           бо `aria-controls` кожної вкладки вказує саме на `groupPanelId`. */}
       <SwipePages ids={GROUP_IDS} activeId={tab} onChange={setTab}>
         <div
-          className="flex flex-col gap-4"
+          // Мова H: групи стоять рядками на hairline впритул, без проміжку.
+          className="flex flex-col"
           role="tabpanel"
           id={groupPanelId}
           aria-label={

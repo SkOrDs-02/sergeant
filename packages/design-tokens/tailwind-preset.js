@@ -101,6 +101,9 @@ const preset = {
         bg: "rgb(var(--c-bg) / <alpha-value>)",
         panel: "rgb(var(--c-panel) / <alpha-value>)",
         panelHi: "rgb(var(--c-panel-hi) / <alpha-value>)",
+        // Мова H: доріжка й активний сегмент `Segmented` (iOS-форма).
+        track: "rgb(var(--c-track) / <alpha-value>)",
+        segment: "rgb(var(--c-segment) / <alpha-value>)",
         line: "rgb(var(--c-line) / <alpha-value>)",
         text: "rgb(var(--c-text) / <alpha-value>)",
         muted: "rgb(var(--c-muted) / <alpha-value>)",
@@ -192,17 +195,14 @@ const preset = {
         "module-accent-strong":
           "rgb(var(--module-accent-strong-rgb) / <alpha-value>)",
 
-        // Hero-surface text — «Чорнило» v3.1 § 3. Content nested inside a
-        // `prominence="hero"` Card sits on a saturated module gradient in
-        // BOTH themes (light: the new `--hero-grad-*` anchor; dark: the
-        // `--hero-ink-*` near-black fill from § 2) — the surface is always
-        // dark enough to need light text, so this is one flat colour with
-        // no `.dark` flip. Always full opacity as TEXT (owner decision
-        // 2026-10-01, contrast audit A9: no `text-hero-ink/NN` — any alpha
-        // mixes the gradient into the ink and fails AA); hierarchy comes from
-        // size and weight. Alpha stays legal only for decor (`bg-`, `border-`,
-        // `stroke-hero-ink/NN`).
-        "hero-ink": "#fdf9f3",
+        // Hero-surface text. Мова H (redesign v3): hero - тинт модуля
+        // (`bg-{m}-tint`), світлий у світлій темі й темний у темній, тож
+        // текст на ньому - звичайне чорнило теми, а не світлий колір під
+        // насичений градієнт, як було до v3. Пару «чорнило на тинті ≥ 7:1»
+        // тримає `contrast.test.js` (мова H). Як TEXT лише повна
+        // непрозорість (аудит A9, 2026-10-01); альфа легальна для декору
+        // (`bg-`, `border-`, `stroke-hero-ink/NN`).
+        "hero-ink": "rgb(var(--c-text) / <alpha-value>)",
 
         // ═══════════════════════════════════════════════════════════════════
         // BRAND COLORS — Neutral hub chrome (warm stone)
@@ -240,7 +240,6 @@ const preset = {
         // Use `cyan-700` / `cyan-800` instead of `teal-500` / `teal-700`
         // for fizruk module surfaces — see docs/design/redesign-v2.md.
         cyan: brandColors.cyan,
-        cream: brandColors.cream,
         rose: brandColors.rose,
         lime: brandColors.lime,
 
@@ -376,6 +375,10 @@ const preset = {
           // Fallback — світлий тир, щоб платформа без змінних (mobile)
           // рендерила -800.
           edge: `rgb(var(--c-finyk-ink, ${hexToRgbTriple(accentStrongHex.finyk)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - мова H.2 (redesign v3): одна тинтована
+          // поверхня на екран і ярлик на ній. Текст і числа на тинті чорнилом.
+          tint: "rgb(var(--c-finyk-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-finyk-tint-label) / <alpha-value>)",
         },
 
         /** Фізрук — Cyan fitness tracker (v2 redesign 2026-05; was teal). */
@@ -421,6 +424,9 @@ const preset = {
           "soft-fg": "rgb(var(--c-fizruk-soft-fg) / <alpha-value>)",
           // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
           edge: `rgb(var(--c-fizruk-ink, ${hexToRgbTriple(accentStrongHex.fizruk)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - див. `finyk.tint`.
+          tint: "rgb(var(--c-fizruk-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-fizruk-tint-label) / <alpha-value>)",
           // `tile` + `tile-border` — subtle stat-tile wash on the
           // fizruk hero gradient (Wave 2a). Light=teal-800,
           // dark=white. Apply with the registered opacity scale,
@@ -470,6 +476,9 @@ const preset = {
           "soft-fg": "rgb(var(--c-routine-soft-fg) / <alpha-value>)",
           // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
           edge: `rgb(var(--c-routine-ink, ${hexToRgbTriple(accentStrongHex.routine)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - див. `finyk.tint`.
+          tint: "rgb(var(--c-routine-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-routine-tint-label) / <alpha-value>)",
         },
 
         /** Харчування — Fresh lime nutrition tracker */
@@ -492,6 +501,9 @@ const preset = {
           "soft-fg": "rgb(var(--c-nutrition-soft-fg) / <alpha-value>)",
           // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
           edge: `rgb(var(--c-nutrition-ink, ${hexToRgbTriple(accentStrongHex.nutrition)}) / <alpha-value>)`,
+          // `tint` / `tint-label` - див. `finyk.tint`.
+          tint: "rgb(var(--c-nutrition-tint) / <alpha-value>)",
+          "tint-label": "rgb(var(--c-nutrition-tint-label) / <alpha-value>)",
         },
 
         // ═══════════════════════════════════════════════════════════════════
@@ -646,32 +658,14 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BORDER RADIUS — 3 semantic tiers (see docs/design/design/radius-rhythm.md)
-      //
-      //   CONTROL  (12 px, rounded-xl)   — buttons, inputs, badges, chips,
-      //                                    icon-buttons, segmented controls
-      //   CARD     (16 px, rounded-2xl)  — cards, panels, list items,
-      //                                    dropdowns, sticky banners
-      //   HERO     (24 px, rounded-3xl)  — modals, sheets, hero cards,
-      //                                    module bento tiles
-      //
-      //   PILL     (9999 px, rounded-full) — FAB, avatars, status dots, tags
-      //   SWATCH   (2 px, rounded-sm)      — heatmap cells, chart legend dots
-      //
-      // 4xl / 5xl exist for one-off illustration surfaces (onboarding
-      // hero blob); they are NOT part of the regular rhythm.
-      //
-      // Forbidden in new code:
-      //   `rounded-lg` (8 px)  — sits between CONTROL and CARD with no role
-      //   `rounded-md` (6 px)  — folded into CONTROL; reach for `rounded-xl`
-      //   `rounded` / `rounded-DEFAULT` (4 px) — no semantic slot at all
-      //
-      // Lint: see `eslint-plugin-sergeant-design`. The design-system audit
-      // sweeps remaining call sites incrementally — when touching a file
-      // you usually want `rounded-xl` for ≤ 40 px controls and `rounded-2xl`
-      // for surfaces ≥ 48 px tall.
-      // ════��══════════════════════════════════════════════════════════════
+      // BORDER RADIUS — мова H: панель 12, контрол 8, дія 7, сегмент 6, чекбокс 5, бар/свотч 3.
       borderRadius: {
+        // Мова H: роль поверхні й позначки, без великих радіусів контролів.
+        panel: "12px",
+        action: "7px",
+        segment: "6px",
+        check: "5px",
+        mark: "3px",
         "2xl": "16px",
         "3xl": "24px",
         "4xl": "32px",
@@ -704,6 +698,8 @@ const preset = {
       // ═══════════════════════════════════════════════════════════════════
       boxShadow: {
         // Semantic elevation scale (preferred for new code).
+        // Мова H: єдина тінь на контенті - активний сегмент.
+        segment: "0 1px 2px rgba(0, 0, 0, 0.1)",
         e0: "var(--shadow-e0)",
         e1: "var(--shadow-e1)",
         e2: "var(--shadow-e2)",
@@ -826,29 +822,6 @@ const preset = {
         "card-rose": "linear-gradient(135deg, #fff5f6 0%, #ffffff 100%)",
         "card-lime": "linear-gradient(135deg, #f8fee7 0%, #ffffff 100%)",
 
-        // Dark-mode overlays for module hero Card variants. Layered on top
-        // of `bg-panel` so branded cards keep a faint module tint in dark
-        // mode instead of reading as a neutral warm surface.
-        "card-finyk-dark": "var(--gradient-card-finyk-dark)",
-        "card-fizruk-dark": "var(--gradient-card-fizruk-dark)",
-        "card-routine-dark": "var(--gradient-card-routine-dark)",
-        "card-nutrition-dark": "var(--gradient-card-nutrition-dark)",
-
-        // Hero-ink gradients (dark) — «Чорнило» v3.1 § 2. CSS vars defined
-        // in theme.css `.dark`. Module hero Card variant fill; identity
-        // carried by the accent border/glow, not fill saturation.
-        "hero-ink-finyk": "var(--hero-ink-finyk)",
-        "hero-ink-fizruk": "var(--hero-ink-fizruk)",
-        "hero-ink-routine": "var(--hero-ink-routine)",
-        "hero-ink-nutrition": "var(--hero-ink-nutrition)",
-
-        // Module hero gradients — CSS vars defined in theme.css:705-708.
-        // Used by PR-E..PR-H module page headers (bg-hero-grad-* utility).
-        "hero-grad-finyk": "var(--hero-grad-finyk)",
-        "hero-grad-fizruk": "var(--hero-grad-fizruk)",
-        "hero-grad-routine": "var(--hero-grad-routine)",
-        "hero-grad-nutrition": "var(--hero-grad-nutrition)",
-
         hero: "linear-gradient(150deg, #fdf9f3 0%, #fefdfb 100%)",
         // `hero-g` (pre-teal-migration orphan) removed 2026-08
         // design-audit T10 — zero consumers.
@@ -957,10 +930,6 @@ const preset = {
         // Bounce for notifications (CELEBRATE tier)
         "bounce-in":
           "bounceIn var(--motion-duration-slower) var(--motion-ease-overshoot)",
-        // Stagger enter — children use animation-delay: index × 30 ms,
-        // capped at 150 ms total (Hard Rule #17).
-        "stagger-in":
-          "fadeSlideUp var(--motion-duration-slow) var(--motion-ease-standard) both",
         // Modal / sheet exits (RESPONSE tier)
         "fade-out":
           "fadeOut var(--motion-duration-fast) var(--motion-ease-accelerate) forwards",
@@ -1042,10 +1011,6 @@ const preset = {
           "50%": { transform: "scale(1.05)" },
           "70%": { transform: "scale(0.9)" },
           "100%": { opacity: "1", transform: "scale(1)" },
-        },
-        fadeSlideUp: {
-          "0%": { opacity: "0", transform: "translateY(8px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
         },
         wiggle: {
           "0%, 100%": { transform: "rotate(-0.6deg)" },
@@ -1254,31 +1219,44 @@ const preset = {
         // широка за наслідками: з 19 місць із цією роллю лише 4 містять
         // слова (IntroSlide, ResetPasswordPage, VerifyEmailPage,
         // LegalDocumentView) — решта числа, де різниця майже невидима.
+        // Мова H (redesign v3, 2026-10-09): hero 40 / 700 / −0,03 em / line 1,
+        // фіксовано. Спека `redesign-v3.md § Токени` перекриває калібрування
+        // трекінгу 2026-08-05 вище.
         ".text-style-display": {
-          fontSize: "clamp(2.5rem, 2rem + 2.5vw, 4rem)",
+          fontSize: "2.5rem",
           lineHeight: "1",
-          fontWeight: "800",
-          letterSpacing: "-0.012em",
+          fontWeight: "700",
+          letterSpacing: "-0.03em",
         },
         // v2 hero display — Manrope-800 weight, tight leading.
         // Slot: Finyk balance reveal, Expensa amount hero (Phase 6.2),
         // Workout Win celebration headline (Phase 4.4 W2).
         // Separate from `.text-style-display` so existing display call-sites
         // keep their 700 weight; this opts you into the 800 hero look.
+        // Мова H: заголовок екрана модуля 26 / 700 / −0,03 em.
         ".text-style-headline": {
-          fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
+          fontSize: "1.625rem",
           lineHeight: "1.15",
           fontWeight: "700",
-          letterSpacing: "-0.02em",
+          letterSpacing: "-0.03em",
+        },
+        // Size-variant `headline`: заголовок екрана хаба (дата) 30 px. Лише
+        // для `HubHeader`, не для сторінкового коду.
+        ".text-style-headline-lg": {
+          fontSize: "1.875rem",
+          lineHeight: "1.15",
+          fontWeight: "700",
+          letterSpacing: "-0.03em",
         },
         // Back-compat alias — `.text-style-hero` was the prior name for
         // the page-H1 / hero-stat slot. New code should reach for
         // `.text-style-headline`; existing call-sites keep working.
+        // Мова H: заголовок секції 20 / 700 / −0,02 em.
         ".text-style-title": {
-          fontSize: "clamp(1.125rem, 1.054rem + 0.357vw, 1.375rem)",
-          lineHeight: "1.3",
-          fontWeight: "600",
-          letterSpacing: "-0.01em",
+          fontSize: "1.25rem",
+          lineHeight: "1.25",
+          fontWeight: "700",
+          letterSpacing: "-0.02em",
         },
         ".text-style-body": {
           fontSize: "clamp(0.9375rem, 0.920rem + 0.089vw, 1rem)",
@@ -1356,11 +1334,18 @@ const preset = {
         // call-site-ів заради синоніма, а «overline» у типографіці — це
         // рядок НАД заголовком, не «великі літери». Капс у це імʼя вклали
         // ми самі.
+        //
+        // Мова H (redesign v3, 2026-10-09) повертає капс: ярлик 12 / 600 /
+        // caps / +0,06 em (`redesign-v3.md § Токени`, канон рядів H.1 / H.2).
+        // Ярлик тепер короткий (одне-два слова над числом), а не кікер над
+        // секцією, тож ціна силуету, описана вище, мала. Смужку `SectionHeading`
+        // знято.
         ".text-style-overline": {
           fontSize: "0.75rem",
           lineHeight: "1.4",
           fontWeight: "600",
-          letterSpacing: "0.005em",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
         },
         ".text-style-code": {
           fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",

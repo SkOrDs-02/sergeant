@@ -2,7 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction, ReactNode } from "react";
 import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
 import {
@@ -88,28 +88,34 @@ export function NutritionMenuPage({
   wrappedSaveMeal,
   selectedDate,
 }: NutritionMenuPageProps) {
+  // Перший запуск одноразовий: людина вже на сторінці плану, підказки немає.
+  useEffect(() => {
+    if (firstRunHint) onDismissFirstRunHint();
+  }, [firstRunHint, onDismissFirstRunHint]);
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   return (
     <SectionErrorBoundary key="page-menu" title="Не вдалось показати «Меню»">
-      <>
+      <div className="flex flex-col gap-7">
         <h1 className="sr-only">Меню</h1>
-        <SubTabs
-          ariaLabel="Розділи меню"
-          value={menuSubTab}
-          onChange={(id) => setMenuSubTab(id as MenuSubTab)}
-          tabs={[
-            { id: "plan", label: "План на день" },
-            { id: "recipes", label: "Рецепти" },
-          ]}
-        />
-        <div className="mb-2 flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMyFoodsOpen(true)}
-          >
-            {messages.nutrition.myFoods.open}
-          </Button>
+        <div className="space-y-2">
+          <SubTabs
+            ariaLabel="Розділи меню"
+            value={menuSubTab}
+            onChange={(id) => setMenuSubTab(id as MenuSubTab)}
+            tabs={[
+              { id: "plan", label: "План на день" },
+              { id: "recipes", label: "Рецепти" },
+            ]}
+          />
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMyFoodsOpen(true)}
+            >
+              {messages.nutrition.myFoods.open}
+            </Button>
+          </div>
         </div>
         <MyFoodsSheet
           open={myFoodsOpen}
@@ -148,8 +154,6 @@ export function NutritionMenuPage({
                 weekPlanRaw={weekPlanRaw}
                 weekPlanBusy={weekPlanBusy}
                 fetchWeekPlan={fetchWeekPlan}
-                firstRunHint={firstRunHint}
-                onDismissFirstRunHint={onDismissFirstRunHint}
               />
             )}
           </DataState>
@@ -169,7 +173,7 @@ export function NutritionMenuPage({
             selectedDate={selectedDate}
           />
         )}
-      </>
+      </div>
     </SectionErrorBoundary>
   );
 }

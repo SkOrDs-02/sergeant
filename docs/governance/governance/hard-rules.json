@@ -425,12 +425,12 @@
       "category": "lint-enforced-convention",
       "enforced_by": [
         {
-          "kind": "hook",
-          "ref": "SUSPENDED since 2026-09-30: повноту реєстру ніщо не стереже. Нагадування в pre-push прибрано разом із перевіркою PR на Bitbucket (ADR-0102), а .github/workflows/pr-backlinks.yml вимкнено (змінна репо PR_LEDGER_ON_GITHUB), доки фетчер не читає GitHub"
+          "kind": "ci",
+          "ref": ".github/workflows/pr-backlinks.yml - після мержу кличе update-pr-backlinks.mjs --pr <N> (GitHub REST API, GITHUB_TOKEN) і відкриває follow-up PR; працює лише за змінної репо PR_LEDGER_ON_GITHUB=true (вмикає власник), доти повноту автоматично ніщо не стереже"
         },
         {
           "kind": "convention",
-          "ref": "pnpm docs:sync-pr-ledger - дочитує метадані змерджених PR лише з Bitbucket API (архівні PR 2026-09-23..29); PR на GitHub з 2026-09-30 він не бачить"
+          "ref": "pnpm docs:sync-pr-ledger - дочитує змерджені PR з GitHub REST API (GITHUB_TOKEN/GH_TOKEN; бекфіл --since YYYY-MM-DD); архівні Bitbucket-PR 2026-09-23..29 - через --host bitbucket"
         },
         {
           "kind": "ci",

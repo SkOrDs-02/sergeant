@@ -5,9 +5,8 @@ import {
   type SetStateAction,
 } from "react";
 import { z } from "zod";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { CollectionManager } from "@shared/components/ui/CollectionManager";
 import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
@@ -15,7 +14,13 @@ import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
-import { createTag, deleteTag, updateTag } from "../../lib/routineStorage";
+import {
+  createTag,
+  deleteTag,
+  updateTag,
+  loadRoutineState,
+  restoreTag,
+} from "../../lib/routineStorage";
 import type { RoutineState } from "../../lib/types";
 
 export interface TagsSectionProps {
@@ -105,145 +110,174 @@ export function TagsSection({
   }, [reset]);
 
   return (
-    <Card as="section" radius="lg" padding="md" className="space-y-3">
-      <SectionHeading as="h2" size="xs" variant="routine">
-        Теги
-      </SectionHeading>
-      <div className="flex gap-2 items-stretch">
-        <Input
-          className="routine-touch-field min-w-0 flex-1"
-          placeholder="Новий тег"
-          value={tagDraft}
-          error={!!draftError}
-          helperText={draftError ?? undefined}
-          onChange={(e) => {
-            setTagDraft(e.target.value);
-            if (draftError) setDraftError(null);
-          }}
-        />
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-[44px] shrink-0 px-4"
-          onClick={() => {
-            // PR-058 (web): пара з reducer-level dedupe у `applyCreateTag`.
-            // Якщо запис із такою trim-назвою (case-insensitive) уже існує,
-            // reducer повертає той самий state — раніше `setRoutine` тихо
-            // запускався без жодного UI feedback, тож натиск «+» вдруге
-            // підряд виглядав так, ніби нічого не відбулось (хоча в
-            // деяких попередніх версіях він навпаки створював дублікат).
-            // Тепер ми перехоплюємо обидва no-op кейси (порожнє + дублікат)
-            // в UI і показуємо точний copy у toast.
-            const trimmed = tagDraft.trim();
-            if (!trimmed) return;
-            const isDuplicate = routine.tags.some(
-              (t) =>
-                t.name.trim().toLocaleLowerCase() ===
-                trimmed.toLocaleLowerCase(),
-            );
-            if (isDuplicate) {
-              // Тут поле повнорозмірне — помилка живе під ним, а не в
-              // тості в протилежному куті екрана.
-              setDraftError(messages.validation.tagNameDuplicate);
-              return;
-            }
-            setDraftError(null);
-            setRoutine((s) => createTag(s, trimmed));
-            setTagDraft("");
-          }}
-          aria-label="Додати тег"
-        >
-          <Icon name="plus" size="md" aria-hidden />
-        </Button>
-      </div>
-      <ul className="flex flex-wrap gap-2">
-        {routine.tags.map((t) => (
-          <li
-            key={t.id}
-            className="text-style-caption inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-panelHi border border-line"
-          >
-            {editingTagId === t.id ? (
-              <form
-                className="inline-flex items-center gap-1"
-                onSubmit={submit}
+    <CollectionManager
+      title="Теги"
+      count={routine.tags.length}
+      description={messages.collection.routineTagsDescription}
+    >
+      {(query) => {
+        const visibleItems = routine.tags.filter((item) =>
+          item.name.toLocaleLowerCase("uk-UA").includes(query),
+        );
+        return (
+          <>
+            <p className="text-style-caption text-muted" role="status">
+              {messages.collection.foundLabel}: {visibleItems.length}
+            </p>
+            <div className="flex gap-2 items-stretch">
+              <Input
+                className="routine-touch-field min-w-0 flex-1"
+                placeholder="Новий тег"
+                value={tagDraft}
+                error={!!draftError}
+                helperText={draftError ?? undefined}
+                onChange={(e) => {
+                  setTagDraft(e.target.value);
+                  if (draftError) setDraftError(null);
+                }}
+              />
+              <Button
+                tone="neutral"
+                type="button"
+                variant="outline"
+                className="min-h-[44px] shrink-0 px-4"
+                onClick={() => {
+                  // PR-058 (web): пара з reducer-level dedupe у `applyCreateTag`.
+                  // Якщо запис із такою trim-назвою (case-insensitive) уже існує,
+                  // reducer повертає той самий state — раніше `setRoutine` тихо
+                  // запускався без жодного UI feedback, тож натиск «+» вдруге
+                  // підряд виглядав так, ніби нічого не відбулось (хоча в
+                  // деяких попередніх версіях він навпаки створював дублікат).
+                  // Тепер ми перехоплюємо обидва no-op кейси (порожнє + дублікат)
+                  // в UI і показуємо точний copy у toast.
+                  const trimmed = tagDraft.trim();
+                  if (!trimmed) return;
+                  const isDuplicate = routine.tags.some(
+                    (t) =>
+                      t.name.trim().toLocaleLowerCase() ===
+                      trimmed.toLocaleLowerCase(),
+                  );
+                  if (isDuplicate) {
+                    // Тут поле повнорозмірне — помилка живе під ним, а не в
+                    // тості в протилежному куті екрана.
+                    setDraftError(messages.validation.tagNameDuplicate);
+                    return;
+                  }
+                  setDraftError(null);
+                  setRoutine((s) => createTag(s, trimmed));
+                  setTagDraft("");
+                }}
+                aria-label="Додати тег"
               >
-                <Input
-                  className="h-7! px-1.5! text-xs! w-24"
-                  aria-label={`Назва тега ${t.name}`}
-                  aria-invalid={Boolean(formState.errors.tagName) || undefined}
-                  disabled={isSubmitting}
-                  {...register("tagName", {
-                    onBlur: () => {
-                      // Submit on blur, але тільки якщо input не порожній —
-                      // інакше zod refine впаде на min(1) і onSuccess не
-                      // зачинить edit, що дасть користувачу другу спробу.
-                      void submit();
-                    },
-                  })}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      cancelEdit();
-                    }
-                  }}
-                />
-              </form>
-            ) : (
-              <>
-                {t.name}
-                {/*
+                {messages.routine.addTag}
+              </Button>
+            </div>
+            <ul className="divide-y divide-line">
+              {visibleItems.map((t) => (
+                <li
+                  key={t.id}
+                  className="text-style-label-lg flex min-h-14 items-center gap-2 py-2"
+                >
+                  {editingTagId === t.id ? (
+                    <form
+                      className="flex-1 flex items-center gap-1"
+                      onSubmit={submit}
+                    >
+                      <Input
+                        className="routine-touch-field w-full"
+                        aria-label={`Назва тега ${t.name}`}
+                        aria-invalid={
+                          Boolean(formState.errors.tagName) || undefined
+                        }
+                        disabled={isSubmitting}
+                        {...register("tagName", {
+                          onBlur: () => {
+                            // Submit on blur, але тільки якщо input не порожній —
+                            // інакше zod refine впаде на min(1) і onSuccess не
+                            // зачинить edit, що дасть користувачу другу спробу.
+                            void submit();
+                          },
+                        })}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            cancelEdit();
+                          }
+                        }}
+                      />
+                    </form>
+                  ) : (
+                    <>
+                      <span className="min-w-0 flex-1 break-words">
+                        {t.name}
+                      </span>
+                      {/*
                   Скільки звичок носять тег. До 2026-08-03 це число існувало
                   лише в тексті undo-тоста ПІСЛЯ видалення — тобто дізнатись
                   «а чи використовується цей тег» можна було, тільки видаливши
                   його.
                 */}
-                <span className="text-style-caption text-subtle tabular-nums">
-                  {
-                    routine.habits.filter((h) =>
-                      (h.tagIds || []).includes(t.id),
-                    ).length
-                  }
-                </span>
-                <IconButton
-                  size="xs"
-                  variant="ghost"
-                  className="rounded-xl text-subtle hover:text-text"
-                  onClick={() => startEdit(t.id, t.name)}
-                  aria-label={`Змінити ${t.name}`}
-                >
-                  <Icon name="edit" size="sm" aria-hidden />
-                </IconButton>
-                <IconButton
-                  size="xs"
-                  variant="ghost"
-                  className="rounded-xl text-subtle hover:text-danger"
-                  onClick={() => {
-                    // Soft-delete with undo (see docs/design/UNDO-PATTERN.md):
-                    // snapshot the routine before applying the delete, then
-                    // surface a 5 s undo toast that restores the snapshot.
-                    // No ConfirmDialog — confirms are reserved for
-                    // non-reversible flows per the unified undo policy.
-                    const snapshot = routine;
-                    const usageCount = routine.habits.filter((h) =>
-                      (h.tagIds || []).includes(t.id),
-                    ).length;
-                    setRoutine((s) => deleteTag(s, t.id));
-                    const detail =
-                      usageCount > 0 ? ` (відʼєднано від ${usageCount})` : "";
-                    showUndoToast(toast, {
-                      msg: `Видалено тег «${t.name}»${detail}`,
-                      onUndo: () => setRoutine(snapshot),
-                    });
-                  }}
-                  aria-label={`Видалити ${t.name}`}
-                >
-                  <Icon name="close" size="sm" aria-hidden />
-                </IconButton>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-    </Card>
+                      <span className="text-style-label text-subtle tabular-nums">
+                        {
+                          routine.habits.filter((h) =>
+                            (h.tagIds || []).includes(t.id),
+                          ).length
+                        }
+                      </span>
+                      <IconButton
+                        size="xs"
+                        variant="ghost"
+                        className="rounded-lg text-subtle hover:text-text"
+                        onClick={() => startEdit(t.id, t.name)}
+                        aria-label={`Змінити ${t.name}`}
+                      >
+                        <Icon name="edit" size="sm" aria-hidden />
+                      </IconButton>
+                      <IconButton
+                        size="xs"
+                        variant="ghost"
+                        className="rounded-lg text-subtle hover:text-danger"
+                        onClick={() => {
+                          const habitIds = routine.habits
+                            .filter((habit) => habit.tagIds?.includes(t.id))
+                            .map((habit) => habit.id);
+                          const index = routine.tags.findIndex(
+                            (tag) => tag.id === t.id,
+                          );
+                          const usageCount = routine.habits.filter((h) =>
+                            (h.tagIds || []).includes(t.id),
+                          ).length;
+                          setRoutine((s) => deleteTag(s, t.id));
+                          const detail =
+                            usageCount > 0
+                              ? ` (відʼєднано від ${usageCount})`
+                              : "";
+                          showUndoToast(toast, {
+                            msg: `Видалено тег «${t.name}»${detail}`,
+                            onUndo: () =>
+                              setRoutine(
+                                restoreTag(
+                                  loadRoutineState(),
+                                  t,
+                                  habitIds,
+                                  index,
+                                ),
+                              ),
+                          });
+                        }}
+                        aria-label={`Видалити ${t.name}`}
+                      >
+                        <Icon name="close" size="sm" aria-hidden />
+                      </IconButton>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        );
+      }}
+    </CollectionManager>
   );
 }

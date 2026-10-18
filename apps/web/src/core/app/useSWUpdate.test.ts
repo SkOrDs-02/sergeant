@@ -38,6 +38,16 @@ vi.mock("@shared/hooks/useToast", () => ({
 
 // Import AFTER mocks are registered.
 import { useSWUpdate } from "./useSWUpdate";
+import {
+  registerDirtyState,
+  resetDirtyStateForTests,
+} from "@shared/lib/ui/dirtyState";
+import { reloadOnceForChunkError } from "../lib/chunkReload";
+import {
+  PWA_RELOAD_DEFERRED_EVENT,
+  handleNeedReload,
+  resetSwReloadForTests,
+} from "./swReload";
 
 // -------------------------------------------------------------------------
 // Helpers
@@ -73,16 +83,21 @@ function stubServiceWorker({ waiting }: { waiting: boolean }) {
     configurable: true,
     value: { ...originalLocation, reload: reloadSpy },
   });
+  // Справжній EventTarget: `applyUpdate` підписується на `controllerchange`.
+  const swTarget = new EventTarget();
   Object.defineProperty(navigator, "serviceWorker", {
     configurable: true,
-    value: {
+    value: Object.assign(swTarget, {
       getRegistration: vi
         .fn()
         .mockResolvedValue({ waiting: waiting ? {} : null }),
-    },
+    }),
   });
   return {
     reloadSpy,
+    fireControllerChange() {
+      swTarget.dispatchEvent(new Event("controllerchange"));
+    },
     restore() {
       Object.defineProperty(window, "location", {
         configurable: true,
@@ -118,6 +133,8 @@ describe("useSWUpdate — defer-while-busy", () => {
     mockIsHubStreaming.mockReturnValue(false);
     mockToastInfo.mockReset();
     mockToastSuccess.mockReset();
+    resetSwReloadForTests();
+    resetDirtyStateForTests();
 
     queryClient = new QueryClient({
       defaultOptions: {
@@ -345,6 +362,348 @@ describe("useSWUpdate — defer-while-busy", () => {
     });
 
     expect(reloadSpy).toHaveBeenCalledTimes(1);
+    restore();
+  });
+  // rel-14: з waiting-воркером reload більше не віддається на
+  // `vite-plugin-pwa` (у першій сесії `isUpdate=false` і reload не наставав).
+  it("waiting є: reload рівно один раз після controllerchange", async () => {
+    const mockUpdateSW = vi.fn();
+    window.__pwaUpdateSW = mockUpdateSW;
+    const { reloadSpy, fireControllerChange, restore } = stubServiceWorker({
+      waiting: true,
+    });
+
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+    expect(mockUpdateSW).toHaveBeenCalledWith(true);
+    expect(reloadSpy).not.toHaveBeenCalled();
+
+    act(() => {
+      fireControllerChange();
+      fireControllerChange(); // повторна подія не дає другого reload
+    });
+    // `onNeedReload` з vite-plugin-pwa приходить слідом — теж не дублює.
+    handleNeedReload();
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    // Слухач знято після спрацювання.
+    act(() => {
+      fireControllerChange();
+    });
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  it("controllerchange не прийшов за 3 с: показує статус-тост, а пізній controllerchange усе одно перезавантажує", async () => {
+    window.__pwaUpdateSW = vi.fn();
+    const { reloadSpy, fireControllerChange, restore } = stubServiceWorker({
+      waiting: true,
+    });
+
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(2_999);
+    });
+    expect(mockToastInfo).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(mockToastInfo).toHaveBeenCalledOnce();
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      "Застосовую оновлення…",
+      null,
+      expect.objectContaining({ label: "Перезавантажити" }),
+    );
+    expect(reloadSpy).not.toHaveBeenCalled();
+
+    // Кнопка «Перезавантажити» з тоста — ручний reload.
+    const action = mockToastInfo.mock.calls[0]?.[2] as { onClick: () => void };
+    act(() => {
+      action.onClick();
+    });
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    // Пізня активація не дає другого reload.
+    act(() => {
+      fireControllerChange();
+    });
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  it("controllerchange раніше за 3 с: статус-тост не показується (таймер знято)", async () => {
+    window.__pwaUpdateSW = vi.fn();
+    const { reloadSpy, fireControllerChange, restore } = stubServiceWorker({
+      waiting: true,
+    });
+
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+    act(() => {
+      fireControllerChange();
+      vi.advanceTimersByTime(10_000);
+    });
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(mockToastInfo).not.toHaveBeenCalled();
+
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  // data-45: оновлення прийняла ІНША вкладка — ця не перезавантажується мовчки.
+  it("вкладка, що не ініціювала оновлення, показує тост замість reload", () => {
+    const { reloadSpy, restore } = stubServiceWorker({ waiting: false });
+
+    renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+
+    act(() => {
+      handleNeedReload(); // що робить onNeedReload у main.tsx
+    });
+
+    expect(reloadSpy).not.toHaveBeenCalled();
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      expect.stringContaining("в іншій вкладці"),
+      null,
+      expect.objectContaining({ label: "Перезавантажити" }),
+    );
+    expect(PWA_RELOAD_DEFERRED_EVENT).toBe("pwa-reload-deferred");
+
+    restore();
+  });
+
+  it("вкладка, що натиснула «Оновити», перезавантажується через onNeedReload без тоста", async () => {
+    window.__pwaUpdateSW = vi.fn();
+    const { reloadSpy, restore } = stubServiceWorker({ waiting: true });
+
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+
+    act(() => {
+      handleNeedReload();
+    });
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(mockToastInfo).not.toHaveBeenCalled();
+
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  // rel-14 / data-45: пізній controllerchange (старий воркер тримав
+  // lame-duck) не має стирати форму, відкриту ПІСЛЯ кліку «Оновити».
+  describe("пізня активація проти незбереженого вводу", () => {
+    async function clickUpdateAndWaitStatusToast() {
+      window.__pwaUpdateSW = vi.fn();
+      const stub = stubServiceWorker({ waiting: true });
+      const hook = renderHook(() => useSWUpdate(), {
+        wrapper: makeWrapper(queryClient),
+      });
+      await act(async () => {
+        hook.result.current.applyUpdate();
+        await flushMicrotasks();
+      });
+      act(() => {
+        vi.advanceTimersByTime(3_000);
+      });
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        "Застосовую оновлення…",
+        null,
+        expect.anything(),
+      );
+      mockToastInfo.mockClear();
+      return stub;
+    }
+
+    it("пізній controllerchange при відкритій формі: reload не викликається, тост з ручним «Перезавантажити»", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      const unregister = registerDirtyState(); // користувач відкрив аркуш
+      act(() => {
+        fireControllerChange();
+        // `onNeedReload` з vite-plugin-pwa приходить слідом у тому ж тіку.
+        handleNeedReload();
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledOnce();
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Оновлення готове"),
+        null,
+        expect.objectContaining({ label: "Перезавантажити" }),
+      );
+
+      // Користувач сам вирішує: «Перезавантажити» з тоста працює.
+      const action = mockToastInfo.mock.calls[0]?.[2] as {
+        onClick: () => void;
+      };
+      unregister();
+      act(() => {
+        action.onClick();
+      });
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("пізній controllerchange без брудного стану: reload рівно один раз", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      act(() => {
+        fireControllerChange();
+        handleNeedReload();
+      });
+
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+      expect(mockToastInfo).not.toHaveBeenCalled();
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("пізній controllerchange під час стріму HubChat: reload відкладено", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      mockIsHubStreaming.mockReturnValue(true);
+      act(() => {
+        fireControllerChange();
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledOnce();
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("пізній controllerchange при мутації в польоті (QueryClient хука): reload відкладено", async () => {
+      const { reloadSpy, fireControllerChange, restore } =
+        await clickUpdateAndWaitStatusToast();
+
+      vi.spyOn(queryClient, "getMutationCache").mockReturnValue(
+        makeMutationCache(1) as ReturnType<QueryClient["getMutationCache"]>,
+      );
+      act(() => {
+        fireControllerChange();
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledOnce();
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+
+    it("мутація в польоті блокує reload з onNeedReload", async () => {
+      window.__pwaUpdateSW = vi.fn();
+      const { reloadSpy, restore } = stubServiceWorker({ waiting: true });
+      const { result } = renderHook(() => useSWUpdate(), {
+        wrapper: makeWrapper(queryClient),
+      });
+      await act(async () => {
+        result.current.applyUpdate();
+        await flushMicrotasks();
+      });
+
+      act(() => {
+        handleNeedReload(window, () => true);
+      });
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(mockToastInfo).toHaveBeenCalledWith(
+        expect.stringContaining("Оновлення готове"),
+        null,
+        expect.anything(),
+      );
+
+      restore();
+      delete window.__pwaUpdateSW;
+    });
+  });
+});
+
+// data-45: chunk-recovery (stale-чанк у вкладці, що не оновилась) не має тихо
+// перезавантажувати вкладку з відкритою формою; замість цього useSWUpdate
+// показує тост з ручним «Перезавантажити». Справжній `chunkReload`.
+describe("useSWUpdate — chunk-recovery проти незбереженого вводу", () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    mockIsHubStreaming.mockReturnValue(false);
+    mockToastInfo.mockReset();
+    resetSwReloadForTests();
+    resetDirtyStateForTests();
+    sessionStorage.clear();
+    queryClient = new QueryClient();
+    delete window.__pwaUpdateReady;
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+    resetDirtyStateForTests();
+  });
+
+  it("форма відкрита: reload немає, тост stale-chunk з ручною кнопкою; без форми reload є", async () => {
+    const { reloadSpy, restore } = stubServiceWorker({ waiting: false });
+    renderHook(() => useSWUpdate(), { wrapper: makeWrapper(queryClient) });
+
+    const release = registerDirtyState();
+    await act(async () => {
+      expect(reloadOnceForChunkError(1_000)).toBe(false);
+      await Promise.resolve();
+    });
+
+    expect(reloadSpy).not.toHaveBeenCalled();
+    expect(mockToastInfo).toHaveBeenCalledOnce();
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      expect.stringContaining("Частину застосунку не вдалося завантажити"),
+      null,
+      expect.objectContaining({ label: "Перезавантажити" }),
+    );
+
+    const action = mockToastInfo.mock.calls[0]?.[2] as { onClick: () => void };
+    release();
+    act(() => {
+      action.onClick();
+    });
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
     restore();
   });
 });

@@ -16,7 +16,17 @@
  *   - todayKey equals the Kyiv date key
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "@fizruk/lib/sqliteReader";
+import { notifyFizrukSqliteCacheRefresh } from "@fizruk/lib/sqliteReadGate";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "@finyk/lib/sqliteReader";
+import { notifyFinykSqliteCacheRefresh } from "@finyk/lib/sqliteReadGate";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 import { useRoutineDerivedData } from "./useRoutineDerivedData";
 import type { TimeState } from "./useRoutineTimeState";
@@ -569,6 +579,67 @@ describe("useRoutineDerivedData", () => {
         ),
       );
       expect(result.current.filtered).toHaveLength(0);
+    });
+  });
+
+  // logic-09: SQLite-кеші прогріваються асинхронно — події Фізрука й підписок
+  // Фініка мають зʼявитись після тіку без зміни `routine`/`finykCalendarTick`.
+  describe("SQLite read-tick (logic-09)", () => {
+    afterEach(() => {
+      clearFizrukSqliteCache();
+      clearFinykSqliteCache();
+    });
+
+    it("перебудовує події Фізрука після прогріву кешу", () => {
+      // Стабільні params: інакше нова `routine` на кожному рендері сама
+      // інвалідує useMemo, і тест не перевіряє залежність від тіків.
+      const params = buildParams({
+        timeState: mkTimeState({ timeMode: "today" }),
+      });
+      const { result } = renderHook(() => useRoutineDerivedData(params));
+      expect(result.current.events.some((e) => e.fizruk)).toBe(false);
+
+      act(() => {
+        __setFizrukSqliteCacheForTests({
+          monthlyPlan: {
+            reminderEnabled: false,
+            reminderHour: 8,
+            reminderMinute: 0,
+            days: { "2026-06-04": { templateId: "t1" } },
+          },
+          workoutTemplates: [
+            {
+              id: "t1",
+              name: "Ноги",
+              exerciseIds: [],
+              groups: [],
+              updatedAt: "2026-06-01T00:00:00.000Z",
+            },
+          ],
+        });
+        notifyFizrukSqliteCacheRefresh();
+      });
+      expect(result.current.events.filter((e) => e.fizruk)).toHaveLength(1);
+    });
+
+    it("перебудовує події підписок Фініка після прогріву кешу", () => {
+      // Стабільні params: інакше нова `routine` на кожному рендері сама
+      // інвалідує useMemo, і тест не перевіряє залежність від тіків.
+      const params = buildParams({
+        timeState: mkTimeState({ timeMode: "today" }),
+      });
+      const { result } = renderHook(() => useRoutineDerivedData(params));
+      expect(result.current.events.some((e) => e.finykSub)).toBe(false);
+
+      act(() => {
+        __setFinykSqliteStateCacheForTests({
+          subscriptions: [
+            { id: "s1", name: "Netflix", billingDay: 4 },
+          ] as never[],
+        });
+        notifyFinykSqliteCacheRefresh();
+      });
+      expect(result.current.events.filter((e) => e.finykSub)).toHaveLength(1);
     });
   });
 });

@@ -1,4 +1,6 @@
+import { getFinykDayPlan } from "../lib/dayPlan";
 import { useEffect } from "react";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { computeFinykQuickStats } from "@sergeant/finyk-domain/utils";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
@@ -10,6 +12,7 @@ import type {
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { getKyivDayKey, parseKyivDate } from "@shared/lib/time/kyivTime";
+
 import type { useStorage } from "./useStorage";
 import type { useUnifiedFinanceData } from "./useUnifiedFinanceData";
 
@@ -23,6 +26,10 @@ interface FinykQuickStatsSnapshotInput {
   planExpense?: number;
   /** Кількість лімітів на категорії: доказ кроку чекліста «Встановити бюджет». */
   limitsCount?: number;
+  subscriptions?: StorageLike["subscriptions"];
+  manualDebts?: StorageLike["manualDebts"];
+  receivables?: StorageLike["receivables"];
+  scheduleTransactions?: Transaction[];
   nowMs?: number;
 }
 
@@ -38,9 +45,8 @@ function kyivWindows(nowMs: number) {
   const todayEnd =
     parseKyivDate(getKyivDayKey(todayStart + 25 * 60 * 60 * 1000))?.getTime() ??
     todayStart + 24 * 60 * 60 * 1000;
-  const [year, month] = todayKey.split("-");
   const monthStart =
-    parseKyivDate(`${year}-${month}-01`)?.getTime() ?? todayStart;
+    parseKyivDate(`${todayKey.slice(0, 7)}-01`)?.getTime() ?? todayStart;
   return { todayStart, todayEnd, monthStart };
 }
 
@@ -57,19 +63,37 @@ export function writeFinykQuickStatsSnapshot({
   txSplits = {},
   planExpense = 0,
   limitsCount = 0,
+  scheduleTransactions,
+  subscriptions = [],
+  manualDebts = [],
+  receivables = [],
   nowMs = Date.now(),
 }: FinykQuickStatsSnapshotInput): string {
   const { todayStart, todayEnd, monthStart } = kyivWindows(nowMs);
+  const stats = computeFinykQuickStats({
+    transactions,
+    excludedTxIds,
+    txSplits,
+    planExpense,
+    todayStartMs: todayStart,
+    todayEndMs: todayEnd,
+    monthStartMs: monthStart,
+  });
+  const { dayPlan, todaySpent } = getFinykDayPlan({
+    transactions,
+    scheduleTransactions,
+    subscriptions,
+    manualDebts,
+    receivables,
+    planExpense,
+    excludedTxIds,
+    txSplits,
+    nowMs,
+  });
   const payload = JSON.stringify({
-    ...computeFinykQuickStats({
-      transactions,
-      excludedTxIds,
-      txSplits,
-      planExpense,
-      todayStartMs: todayStart,
-      todayEndMs: todayEnd,
-      monthStartMs: monthStart,
-    }),
+    ...stats,
+    todaySpent,
+    ...(dayPlan !== null ? { dayPlan } : {}),
     ...(limitsCount > 0 ? { limitsCount } : {}),
   });
 
@@ -103,9 +127,18 @@ export function useFinykQuickStatsWriter({
   mono: MergedMonoLike;
   storage: StorageLike;
 }): void {
-  const { realTx } = mono;
-  const { manualExpenses, excludedTxIds, txSplits, monthlyPlan, budgets } =
-    storage;
+  const nowMs = useKyivDayNow();
+  const { realTx, transactions: scheduleBankTx } = mono;
+  const {
+    manualExpenses,
+    excludedTxIds,
+    txSplits,
+    monthlyPlan,
+    budgets,
+    subscriptions,
+    manualDebts,
+    receivables,
+  } = storage;
 
   useEffect(() => {
     const manualTxs = manualExpenses.map((e) => manualExpenseToTransaction(e));
@@ -113,11 +146,28 @@ export function useFinykQuickStatsWriter({
       manualTxs.length > 0 ? [...realTx, ...manualTxs] : realTx;
 
     writeFinykQuickStatsSnapshot({
+      nowMs,
       transactions,
+      scheduleTransactions: [...scheduleBankTx, ...manualTxs],
       excludedTxIds,
       txSplits,
       planExpense: Number(monthlyPlan?.expense || 0),
       limitsCount: getLimitBudgets(budgets).length,
+      subscriptions,
+      manualDebts,
+      receivables,
     });
-  }, [realTx, manualExpenses, excludedTxIds, txSplits, monthlyPlan, budgets]);
+  }, [
+    realTx,
+    scheduleBankTx,
+    manualExpenses,
+    excludedTxIds,
+    txSplits,
+    monthlyPlan,
+    budgets,
+    subscriptions,
+    manualDebts,
+    receivables,
+    nowMs,
+  ]);
 }

@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from "react";
 
 import { Button } from "@shared/components/ui/Button";
+import { Notice } from "@shared/components/ui/Notice";
 import { messages } from "@shared/i18n/uk";
 
 import {
@@ -33,15 +34,11 @@ export function MemoryOnlyStorageBanner() {
   const otherTab = readSqliteVfsFallbackReason() === "pool-busy";
 
   return (
-    <div
+    <Notice
+      tone="danger"
       role="alert"
-      className="mx-3 mt-2 shrink-0 rounded-2xl border border-danger bg-danger/10 p-3"
-    >
-      <p className="text-style-label text-text">{m.title}</p>
-      <p className="mt-1 text-style-caption text-subtle leading-relaxed">
-        {otherTab ? m.bodyOtherTab : m.body}
-      </p>
-      <div className="mt-2">
+      className="mx-4 mt-2 shrink-0"
+      action={
         <Button
           type="button"
           variant="outline"
@@ -50,7 +47,12 @@ export function MemoryOnlyStorageBanner() {
         >
           {m.reload}
         </Button>
-      </div>
-    </div>
+      }
+    >
+      <p>{m.title}</p>
+      <p className="mt-0.5 font-normal text-muted">
+        {otherTab ? m.bodyOtherTab : m.body}
+      </p>
+    </Notice>
   );
 }

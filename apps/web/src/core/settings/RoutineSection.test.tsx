@@ -90,9 +90,4 @@ describe("RoutineSection", () => {
   // без `module="routine"` іконка секції рендериться нейтрально-сірою
   // (`bg-surface-soft-glass`), і всі чотири модульні секції виглядають
   // однаково. Перевіряємо, що бейдж іконки несе саме routine-акцент.
-  it("renders the section glyph with the routine module accent (без тонованого квадрата, огляд 2026-09-04)", () => {
-    const { container } = renderSettingsSection(<RoutineSection />);
-    const badge = container.querySelector(`.text-${"routine"}`);
-    expect(badge).not.toBeNull();
-  });
 });

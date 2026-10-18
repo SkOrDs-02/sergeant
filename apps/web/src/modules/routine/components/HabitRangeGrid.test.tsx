@@ -106,6 +106,7 @@ describe("HabitRangeGrid", () => {
     for (const label of [
       "виконано",
       "не зміг",
+      "планована пауза",
       "не виконано",
       "не заплановано",
     ]) {
@@ -135,9 +136,46 @@ describe("HabitRangeGrid", () => {
         hint="останні 7 днів"
       />,
     );
-    expect(
-      screen.getByText(/жодна звичка не була запланована/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/немає запланованих звичок/)).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+  it("distinguishes a dated pause from off-schedule days without changing totals", () => {
+    render(
+      <HabitRangeGrid
+        habits={[
+          habit("pause", "Пауза", {
+            pauseIntervals: [{ from: "2026-01-06", to: "2026-01-07" }],
+          }),
+        ]}
+        completions={{ pause: ["2026-01-08"] }}
+        days={7}
+        hint="останні 7 днів"
+      />,
+    );
+    expect(
+      screen.getByRole("img", {
+        name: "Пауза: 1 з 5 виконано · останні 7 днів",
+      }),
+    ).toBeInTheDocument();
+    const pauseCells = screen.getAllByTitle(/планована пауза/);
+    expect(pauseCells).toHaveLength(2);
+    expect(pauseCells[0]).toHaveClass("border-dashed");
+  });
+  it("legacy pause only marks today and does not rewrite history", () => {
+    render(
+      <HabitRangeGrid
+        habits={[habit("pause", "Пауза", { paused: true })]}
+        completions={{}}
+        days={7}
+        hint="останні 7 днів"
+      />,
+    );
+    expect(
+      screen.getByRole("img", {
+        name: "Пауза: 0 з 6 виконано · останні 7 днів",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByTitle(/планована пауза/)).toHaveLength(1);
+    expect(screen.getAllByTitle(/не виконано/)).toHaveLength(6);
   });
 });

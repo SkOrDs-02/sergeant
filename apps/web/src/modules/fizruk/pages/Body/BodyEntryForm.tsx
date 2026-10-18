@@ -17,6 +17,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Label } from "@shared/components/ui/FormField";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useApiForm } from "@shared/forms";
+import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { messages } from "@shared/i18n/uk";
 import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { cn } from "@shared/lib/ui/cn";
@@ -229,6 +230,11 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
     note,
   });
 
+  // Форма стоїть на сторінці, не в `Sheet`: без реєстрації тихий reload
+  // оновлення стер би неподаний замір (оцінки енергії/настрою — кнопки, їх
+  // трекер полів не бачить).
+  useRegisterDirtyState(!isEntryEmpty);
+
   const energyGroupRef = useRef<HTMLDivElement | null>(null);
   const moodGroupRef = useRef<HTMLDivElement | null>(null);
 
@@ -257,12 +263,8 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
   );
 
   return (
-    <Card
-      as="section"
-      radius="lg"
-      aria-label={messages.fizruk.body.formAriaLabel}
-    >
-      <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+    <Card as="section" aria-label={messages.fizruk.body.formAriaLabel}>
+      <SectionHeading as="h2" size="lg" className="mb-3" variant="fizruk">
         {messages.fizruk.body.formHeading}
       </SectionHeading>
       <form onSubmit={submit} noValidate className="space-y-4">
@@ -279,7 +281,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
               // не зберігалась. `inputMode` лишає цифрову клавіатуру.
               type="text"
               inputMode="decimal"
-              className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+              className="input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-sm text-text"
               placeholder="70,5"
               disabled={isSubmitting}
               aria-invalid={weightError ? true : undefined}
@@ -305,7 +307,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
               // Той самий привід, що й у полі ваги вище.
               type="text"
               inputMode="decimal"
-              className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+              className="input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-sm text-text"
               placeholder="8,0"
               disabled={isSubmitting}
               aria-invalid={sleepError ? true : undefined}
@@ -399,7 +401,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
           <input
             id="body-note"
             type="text"
-            className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+            className="input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-sm text-text"
             placeholder={messages.fizruk.body.notePlaceholder}
             maxLength={200}
             disabled={isSubmitting}
@@ -425,15 +427,15 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             isEntryEmpty && !submitSuccess ? "body-entry-empty" : undefined
           }
           className={cn(
-            "focus-ring w-full py-3 rounded-xl text-style-label transition-[background-color,box-shadow,opacity,transform]",
+            "focus-ring w-full py-3 rounded-lg text-style-label transition-[background-color,box-shadow,opacity,transform]",
             // WHY: the resting CTA carries the module accent (fizruk cyan)
             // for module-accent containment (Hard Rule #12) — it must not
             // borrow another module's accent. The confirmed state stays
             // green because that green is success semantics (shared across
             // modules), not a module accent.
             submitSuccess
-              ? "bg-success-strong text-white"
-              : "bg-fizruk-strong text-white hover:bg-fizruk-hover active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90",
+              ? "bg-text text-bg"
+              : "bg-text text-bg hover:bg-panelHi dark:text-bg dark:hover:bg-panelHi",
             (isSubmitting || isEntryEmpty) && "opacity-60",
           )}
         >

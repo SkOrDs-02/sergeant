@@ -6,6 +6,7 @@ import {
   setVisualKeyboardInsetAdapter,
 } from "@sergeant/shared";
 import { Sheet } from "./Sheet";
+import { hasDirtyState } from "../../lib/ui/dirtyState";
 
 afterEach(() => {
   cleanup();
@@ -71,7 +72,7 @@ describe("Sheet", () => {
     );
     // Sheet is portaled to <body>, so query against the document, not the
     // RTL container (which only owns the mount wrapper).
-    const handleSelector = 'div[aria-hidden][class*="rounded-full"]';
+    const handleSelector = 'div[aria-hidden][class*="w-9"]';
     expect(document.body.querySelector(handleSelector)).not.toBeNull();
     rerender(
       <Sheet open onClose={() => {}} title="T" hideHandle>
@@ -279,5 +280,31 @@ describe("Sheet", () => {
     const dialog = getByRole("dialog");
     expect(dialog.style.marginBottom).toBe("280px");
     expect(dialog.style.maxHeight).toContain("100dvh - 280px");
+  });
+
+  // data-45: відкритий аркуш не дає тихому idle-reload сервіс-воркера
+  // знищити незбережений ввід.
+  it("реєструє брудний стан, поки відкритий, і знімає на close/unmount", () => {
+    expect(hasDirtyState()).toBe(false);
+    const { rerender, unmount } = render(
+      <Sheet open onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+    expect(hasDirtyState()).toBe(true);
+    rerender(
+      <Sheet open={false} onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+    expect(hasDirtyState()).toBe(false);
+    rerender(
+      <Sheet open onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+    expect(hasDirtyState()).toBe(true);
+    unmount();
+    expect(hasDirtyState()).toBe(false);
   });
 });

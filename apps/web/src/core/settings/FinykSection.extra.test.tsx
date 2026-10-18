@@ -176,7 +176,7 @@ describe("FinykSection extra branches", () => {
   it("cancels the cache-clear confirm modal without clearing anything", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+    fireEvent.click(await screen.findByText("Перезавантажити операції"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Скасувати"));
@@ -290,7 +290,12 @@ describe("FinykSection extra branches", () => {
   it("adds a category via the button even when Enter guard is skipped", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
+    const input = await screen.findByPlaceholderText("Назва категорії");
     // An Enter on empty input should NOT call add (guard: newCategoryLabel.trim())
     // We can verify the button path clears the input on each add cycle.
     fireEvent.change(input, { target: { value: "Test" } });
@@ -314,20 +319,16 @@ describe("FinykSection extra branches", () => {
 
   // ── Cache clear confirm executes clearTxCache ─────────────────────────────
 
-  it("clears tx cache when the confirm modal Очистити button is clicked", async () => {
+  it("reloads transactions without removing local storage when confirmed", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+    fireEvent.click(await screen.findByText("Перезавантажити операції"));
 
     const dialog = await screen.findByRole("alertdialog");
-    fireEvent.click(within(dialog).getByText("Очистити"));
+    fireEvent.click(within(dialog).getByText("Перезавантажити"));
 
-    await waitFor(() =>
-      expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
-    );
-    expect(removeFinykStorageItem).toHaveBeenCalledWith(
-      "finyk_tx_cache_last_good",
-    );
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(removeFinykStorageItem).not.toHaveBeenCalled();
   });
 
   // ── Connect: auth error with no server message falls back to default ───────
@@ -368,7 +369,12 @@ describe("FinykSection extra branches", () => {
   it("does not crash when Enter is pressed on empty category input", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
+    const input = await screen.findByPlaceholderText("Назва категорії");
     // Guard: newCategoryLabel.trim() must be truthy
     fireEvent.keyDown(input, { key: "Enter" });
     // Component stays stable

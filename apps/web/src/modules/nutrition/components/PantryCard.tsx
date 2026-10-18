@@ -5,12 +5,11 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import { formatPantryQty } from "../lib/formatPantryQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
@@ -38,15 +37,7 @@ type PantryItemView = Partial<PantryItem> & {
   pantryId?: string;
 };
 
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <Icon
-      name="chevron-right"
-      size="sm"
-      className={cn("transition-transform shrink-0", open && "rotate-90")}
-    />
-  );
-}
+const DISCLOSE = { open: "Сховати", closed: "Показати" } as const;
 
 interface ItemRowProps {
   item: PantryItemView;
@@ -63,7 +54,7 @@ interface ItemRowProps {
  */
 function VariantList({ sources }: { sources: readonly PantryItemSource[] }) {
   return (
-    <ul className="pl-8 pr-2 pb-1 grid gap-0.5">
+    <ul className="pl-4 pb-2 grid gap-0.5">
       {sources.map((s, i) => (
         <li
           key={`${s.name}_${s.addedAt ?? ""}_${i}`}
@@ -106,7 +97,41 @@ function ItemRow({
   const [open, setOpen] = useState(false);
   return (
     <div>
-      <div className="flex items-center gap-2 px-2 rounded-xl group min-h-[44px] hover:bg-panelHi/50 transition-colors">
+      <div className="flex items-center gap-2 group min-h-[44px]">
+        <button
+          type="button"
+          onClick={() => editItemAt(idx)}
+          disabled={busy}
+          // `items-center` тримає текст по центру 44px-кнопки, а базову
+          // лінію між назвою і кількістю дає внутрішній `items-baseline`.
+          className="flex-1 min-w-0 flex items-center gap-3 text-left min-h-[44px] rounded-lg focus-ring"
+          aria-label={`Редагувати ${item?.name || "продукт"}`}
+        >
+          {/*
+           * `title` тут не косметика: назви з чека довші за рядок майже
+           * завжди («Йогурт Галичина Карпатський чорниця» - 248 px при
+           * доступних 202), і без підказки повний текст видно лише в
+           * аркуші редагування (браузерний аудит 2026-09-01).
+           */}
+          <span className="min-w-0 flex-1 grid">
+            <span
+              className="text-style-body font-semibold text-text truncate"
+              title={item?.name || undefined}
+            >
+              {item?.name || "—"}
+            </span>
+            {isPantryItemLowStock(item) && (
+              <span className="text-style-caption text-muted truncate">
+                {messages.nutrition.pantryLowStock.badge}
+              </span>
+            )}
+          </span>
+          {qtyLabel && (
+            <span className="shrink-0 text-style-body font-medium text-text tabular-nums">
+              {qtyLabel}
+            </span>
+          )}
+        </button>
         {expandable && (
           <button
             type="button"
@@ -117,49 +142,11 @@ function ItemRow({
                 ? messages.nutrition.pantrySources.collapseLabel
                 : messages.nutrition.pantrySources.expandLabel
             }
-            className="shrink-0 text-subtle touch-target flex items-center justify-center rounded-xl hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 transition-colors"
+            className="shrink-0 touch-target flex items-center justify-center rounded-lg px-1 text-style-caption text-subtle hover:text-text focus-ring transition-colors"
           >
-            <ChevronIcon open={open} />
+            {open ? DISCLOSE.open : DISCLOSE.closed}
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => editItemAt(idx)}
-          disabled={busy}
-          // `items-center` тримає текст по центру 44px-кнопки, а базову
-          // лінію між назвою і кількістю дає внутрішній `items-baseline`.
-          // З одним лише `items-baseline` вміст прилипав до верху, і після
-          // зняття перемикача місця (який раніше тримав висоту) хрестик
-          // видалення поїхав нижче назви.
-          className="flex-1 min-w-0 flex items-center gap-1.5 text-left min-h-[44px]"
-          aria-label={`Редагувати ${item?.name || "продукт"}`}
-        >
-          {/*
-           * `title` тут не косметика: назви з чека довші за рядок майже
-           * завжди («Йогурт Галичина Карпатський чорниця» — 248 px при
-           * доступних 202), і без підказки повний текст видно лише в
-           * аркуші редагування (браузерний аудит 2026-09-01).
-           */}
-          <span className="min-w-0 flex items-baseline gap-1.5">
-            <span
-              className="text-style-label text-text truncate"
-              title={item?.name || undefined}
-            >
-              {item?.name || "—"}
-            </span>
-            {qtyLabel && (
-              <span className="text-style-caption text-subtle shrink-0">
-                {qtyLabel}
-              </span>
-            )}
-          </span>
-          {isPantryItemLowStock(item) && (
-            <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
-              <Icon name="trending-down" size="xs" aria-hidden />
-              {messages.nutrition.pantryLowStock.badge}
-            </span>
-          )}
-        </button>
         <Button
           variant="ghost"
           size="xs"
@@ -168,7 +155,7 @@ function ItemRow({
           disabled={busy}
           aria-label={`Прибрати ${item?.name || "продукт"}`}
           title="Прибрати"
-          className="shrink-0 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:ring-2 sm:focus-visible:ring-focus/45 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
+          className="shrink-0 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger-strong"
         >
           ×
         </Button>
@@ -179,7 +166,7 @@ function ItemRow({
 }
 
 interface CategorySectionProps {
-  cat: Pick<FoodCategory, "id" | "iconName" | "label">;
+  cat: Pick<FoodCategory, "id" | "label">;
   items: Array<{ item: PantryItemView; idx: number }>;
   editItemAt: (idx: number) => void;
   removeItemAtOrByName: (idx: number, name?: string) => void;
@@ -197,31 +184,23 @@ function CategorySection({
 }: CategorySectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border border-line bg-panel">
+    <section>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between w-full gap-2 px-3 py-2 min-h-[44px]"
+        className="flex items-baseline justify-between w-full gap-2 min-h-[44px] text-left rounded-lg focus-ring"
         aria-expanded={open}
       >
-        <span className="flex items-center gap-2 min-w-0">
-          <ChevronIcon open={open} />
-          <Icon
-            name={cat.iconName as IconName}
-            size="md"
-            className="text-nutrition shrink-0"
-            aria-hidden
-          />
-          <span className="text-style-label text-text truncate">
-            {cat.label}
-          </span>
-        </span>
-        <span className="text-style-caption text-subtle shrink-0">
-          {items.length}
+        <SectionHeading as="span" size="md" className="truncate">
+          {cat.label}
+        </SectionHeading>
+        <span className="flex shrink-0 items-baseline gap-2 text-style-caption text-subtle">
+          <span className="tabular-nums">{items.length}</span>
+          <span>{open ? DISCLOSE.open : DISCLOSE.closed}</span>
         </span>
       </button>
       {open && (
-        <div className="px-3 pb-1 divide-y divide-line/40">
+        <div className="divide-y divide-line border-t border-line">
           {items.map(({ item, idx }) => (
             <ItemRow
               key={`${String(item?.name || idx)}_${idx}`}
@@ -234,7 +213,7 @@ function CategorySection({
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -289,21 +268,7 @@ function InventoryCard({
   if (effectiveItems.length === 0) {
     return (
       <Card className="p-4">
-        <EmptyState
-          size="sm"
-          module="nutrition"
-          icon={<Icon name="package" size="lg" />}
-          title={messages.nutrition.pantryEmpty.title}
-          description={messages.nutrition.pantryEmpty.description}
-          examplePreview={
-            <div className="grid gap-1 text-style-caption text-subtle">
-              <span>курка 500 г</span>
-              <span>яйце 10 шт</span>
-              <span>огірок 4 шт</span>
-            </div>
-          }
-          hint={messages.nutrition.pantryEmpty.hint}
-        />
+        <EmptyState compact title={messages.nutrition.pantryEmpty.title} />
       </Card>
     );
   }
@@ -320,31 +285,33 @@ function InventoryCard({
             userToggledRef.current = true;
             setMainOpen((v) => !v);
           }}
-          className="flex flex-1 min-w-0 items-center justify-between gap-2 min-h-[44px]"
+          className="flex flex-1 min-w-0 items-baseline justify-between gap-2 min-h-[44px] text-left rounded-lg focus-ring"
           aria-expanded={mainOpen}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <ChevronIcon open={mainOpen} />
-            <span className="text-style-label text-text">Моя комора</span>
-            <span className="text-style-caption text-subtle">
+          <span className="flex min-w-0 items-baseline gap-2">
+            <SectionHeading as="span" size="lg">
+              Моя комора
+            </SectionHeading>
+            <span className="text-style-label text-subtle tabular-nums">
               (
               {placeFilter
                 ? `${visibleCount} з ${pantryItemsLength}`
                 : pantryItemsLength}
               )
             </span>
-          </div>
+          </span>
+          <span className="shrink-0 text-style-caption text-subtle">
+            {mainOpen ? DISCLOSE.open : DISCLOSE.closed}
+          </span>
         </button>
         <Button
-          variant="soft"
-          tone="nutrition"
+          variant="outline"
           size="sm"
           onClick={onAdd}
           disabled={busy}
           aria-label="Додати продукти"
           className="shrink-0"
         >
-          <Icon name="plus" size="sm" aria-hidden />
           Додати
         </Button>
       </div>
@@ -355,7 +322,7 @@ function InventoryCard({
           це повний текст назви під `truncate` (`white-space: nowrap`). Довгі
           назви з чека Сільпо через це розпирали картку за межі екрана. */}
       {mainOpen && (
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-2">
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-5">
           {groups.map((g) => (
             <CategorySection
               key={g.cat.id}
@@ -493,32 +460,26 @@ export function PantryCard({
             // картки вже каже, що це комора (підтверджено живим прогоном
             // 2026-09-16: поле було єдиним на екрані без назви).
             aria-label="Назва продукту"
-            placeholder="напр. лосось 300 г"
+            placeholder="Продукт"
             // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
             autoFocus={!formInline}
             maxLength={NAME_MAX_LEN}
             disabled={busy}
           />
-          <button
+          <Button
             type="button"
+            variant="solid"
             onClick={() => {
               upsertItem(newItemName);
               setNewItemName("");
             }}
             disabled={busy || !newItemName.trim()}
-            className={cn(
-              // `h-11` = 2.75rem, а на 320px корінний шрифт 15px → 41.25px і провал
-              // 44px-флору; px-флор під coarse pointer, як у `Button`/`Input`.
-              "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-              // Канонічна утиліта, а не рукописний `focus-visible:ring-2`:
-              // останній рахує храповик `check-ui-canon-ratchet.mjs`, і
-              // його стелю можна лише опускати (аудит 2026-09-16).
-              "focus-ring",
-            )}
+            // `h-11` = 2.75rem, а на 320px корінний шрифт 15px → 41.25px і провал
+            // 44px-флору; px-флор під coarse pointer, як у `Input`.
+            className="shrink-0 pointer-coarse:min-h-[44px]"
           >
             Додати
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="flex gap-2 items-start">
@@ -533,26 +494,21 @@ export function PantryCard({
             aria-label="Список продуктів"
             // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
             autoFocus={!formInline}
-            placeholder={'напр. "2 яйця, курка 500 г, рис, огірки, сир"'}
-            className="input-focus-nutrition flex-1 min-h-[96px] rounded-2xl bg-panel border border-line px-4 py-3 text-sm text-text placeholder:text-subtle"
+            placeholder="Список продуктів"
+            className="input-focus-nutrition flex-1 min-h-[96px] rounded-lg bg-panelHi border border-control px-3 py-2.5 text-style-body text-text placeholder:text-subtle"
             maxLength={NOTE_MAX_LEN}
             disabled={busy}
           />
-          <button
+          <Button
             type="button"
+            variant="solid"
             onClick={parsePantry}
             disabled={busy || !pantryText.trim()}
-            className={cn(
-              // Той самий 44px-флор, що й у «Додати» вище: `h-11` дає
-              // 41.25px на 320px, а це вже дві кнопки того самого блоку
-              // з тим самим дефектом (ревʼю CodeRabbit 2026-08-26).
-              "text-style-label shrink-0 px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl mt-0.5",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-              "focus-ring",
-            )}
+            // Той самий 44px-флор, що й у «Додати» вище (ревʼю CodeRabbit 2026-08-26).
+            className="shrink-0 mt-0.5 pointer-coarse:min-h-[44px]"
           >
             Розібрати
-          </button>
+          </Button>
         </div>
       )}
 
@@ -588,7 +544,9 @@ export function PantryCard({
     <>
       {formInline && (
         <Card className="p-4">
-          <div className="text-style-label text-text mb-3">Додати продукти</div>
+          <SectionHeading as="h2" size="lg" className="mb-3">
+            Додати продукти
+          </SectionHeading>
           {addForm}
         </Card>
       )}

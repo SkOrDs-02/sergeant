@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { safeRemoveLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
+import { restRemainingSeconds } from "../lib/restTimer";
 import type { RestTimerState } from "./useFizrukRestSound";
 
 // PR-Z8: `useWorkoutsViewFromSession` і ключ `fizruk_workouts_mode` знято.
@@ -100,33 +101,55 @@ export function useStaleActiveWorkoutCleanup(
 }
 
 /**
- * Tick the rest timer once per second; when `remaining` reaches 0
- * call `markCompletedNaturally` so the rest-sound hook can play the
- * end-cue, then clear the timer.
+ * Рахує відпочинок за годинником, а не за тіками: `remaining` завжди
+ * `ceil((endsAt − Date.now()) / 1000)`. Перераховується на кожен тік
+ * `setInterval` і на `visibilitychange` / `pageshow` — на заблокованому
+ * екрані чи в замороженому PWA інтервал не тікає, а годинник іде. Коли
+ * `endsAt` досягнуто, один раз викликає `markCompletedNaturally` (звук +
+ * телеметрія) і скидає таймер у `null`.
  */
 export function useRestTimerCountdown(
   restTimer: RestTimerState | null,
   setRestTimer: Dispatch<SetStateAction<RestTimerState | null>>,
   markCompletedNaturally: () => void,
 ): void {
+  const endsAt = restTimer?.endsAt ?? null;
   useEffect(() => {
-    if (!restTimer || restTimer.remaining <= 0) return;
-    // AI-DANGER: rest-timer countdown. The functional updater, the
-    // `<= 1` boundary (fires `markCompletedNaturally` on the final tick,
-    // not at 0), and the `clearInterval` cleanup are load-bearing. Changing
-    // the boundary or dropping the cleanup double-fires the end-cue or
-    // leaks intervals across navigation. Verify against RestTimerProvider.
-    const id = setInterval(() => {
-      setRestTimer((r) => {
-        if (!r || r.remaining <= 1) {
-          markCompletedNaturally();
-          return null;
-        }
-        return { ...r, remaining: r.remaining - 1 };
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [restTimer, markCompletedNaturally, setRestTimer]);
+    if (endsAt == null) return;
+    // AI-DANGER: rest-timer countdown. Істина — `endsAt` (Date.now()), не
+    // лічильник тіків: інтервал стоїть, коли екран заблоковано. Load-bearing:
+    // (1) `finished` — end-cue рівно один раз, навіть коли тік і
+    // visibilitychange/pageshow збіглись до ре-рендеру; (2) side-effect
+    // (`markCompletedNaturally`) іде ПОЗА updater-ом setRestTimer (updater
+    // має лишатись чистим — StrictMode викликає його двічі); (3) mark
+    // ПЕРЕД `setRestTimer(null)`: useFizrukRestSound грає звук на переході
+    // в null лише за піднятим прапорцем; (4) cleanup знімає інтервал і
+    // слухачі — інакше витік між навігаціями. Звіряй з RestTimerProvider.
+    let finished = false;
+    const sync = () => {
+      if (finished) return;
+      const remaining = restRemainingSeconds(endsAt);
+      if (remaining <= 0) {
+        finished = true;
+        markCompletedNaturally();
+        setRestTimer(null);
+        return;
+      }
+      setRestTimer((r) =>
+        r && r.endsAt === endsAt && r.remaining !== remaining
+          ? { ...r, remaining }
+          : r,
+      );
+    };
+    const id = setInterval(sync, 1000);
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("pageshow", sync);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", sync);
+      window.removeEventListener("pageshow", sync);
+    };
+  }, [endsAt, markCompletedNaturally, setRestTimer]);
 }
 
 /**

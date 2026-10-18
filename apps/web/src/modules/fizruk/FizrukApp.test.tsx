@@ -146,7 +146,6 @@ describe("FizrukApp smoke tests", () => {
       render(
         <FizrukApp
           onBackToHub={vi.fn()}
-          onOpenSettings={vi.fn()}
           pwaAction={null}
           onPwaActionConsumed={vi.fn()}
         />,

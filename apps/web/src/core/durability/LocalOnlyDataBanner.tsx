@@ -42,6 +42,7 @@
  * сервер, — а банер, який бреше, вчить ігнорувати всі банери в продукті.
  */
 import { Button } from "@shared/components/ui/Button";
+import { Notice } from "@shared/components/ui/Notice";
 import { messages } from "@shared/i18n/uk";
 
 import { useLocalUserId } from "../auth/useLocalUserId";
@@ -77,29 +78,24 @@ export function LocalOnlyDataBanner({
   if (!hasSlot) return null;
 
   return (
-    <div
+    <Notice
+      tone="ink"
       role="status"
-      className="rounded-2xl border border-warning bg-warning/10 p-3"
-    >
-      <p className="text-style-label text-text">{m.title}</p>
-      <p className="mt-1 text-style-caption text-subtle leading-relaxed">
-        {m.body}
-      </p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {/* AI-NOTE: `secondary`, не `ghost` (A1, 2026-09-11) — це єдина
-            дія в попередженні про втрату даних, а `ghost` (без заливки й
-            рамки) читався як менш важливий за сусідній текст, хоча саме
-            цей текст раніше й обіцяв дію, якої в ньому не було (див.
-            докстрінг вище про видалену фразу з `body`). */}
-        <Button type="button" variant="outline" size="sm" onClick={onSignIn}>
-          {m.signIn}
-        </Button>
-        {onBackup ? (
-          <Button type="button" variant="ghost" size="sm" onClick={onBackup}>
-            {m.backup}
+      action={
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onSignIn}>
+            {m.signIn}
           </Button>
-        ) : null}
-      </div>
-    </div>
+          {onBackup ? (
+            <Button type="button" variant="ghost" size="sm" onClick={onBackup}>
+              {m.backup}
+            </Button>
+          ) : null}
+        </div>
+      }
+    >
+      <p>{m.title}</p>
+      <p className="mt-0.5 font-normal text-muted">{m.body}</p>
+    </Notice>
   );
 }

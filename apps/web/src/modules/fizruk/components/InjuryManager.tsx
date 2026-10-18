@@ -8,7 +8,6 @@ import {
 } from "@sergeant/fizruk-domain/data";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
@@ -28,7 +27,7 @@ import { useInjuries } from "../hooks/useInjuries";
  * поводитись як фініш-фло — мʼязи у згорнутому вигляді.
  *
  * Items render as a rectangular grid (`InjuryChip`-style row: label + check
- * glyph), not `rounded-full` pills in `flex-wrap` — that divergence made the
+ * glyph), not `rounded-lg` pills in `flex-wrap` — that divergence made the
  * "same layout" claim above false (founder audit round2 2026-09-11, D2):
  * 27 pills of uneven width gave a ragged rhythm the finish flow never had.
  * `grid-cols-2 sm:grid-cols-3` mirrors the wellbeing rating grid in
@@ -113,15 +112,13 @@ export function InjuryManager() {
               className={cn(
                 "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 disabled:opacity-50",
                 active
-                  ? "border-warning-strong bg-warning/15 text-warning-strong dark:text-warning"
+                  ? "border-line bg-panelHi text-text"
                   : "border-line bg-bg text-muted hover:border-muted hover:text-text",
               )}
               onClick={() => toggle(site)}
             >
               <span className="min-w-0">{INJURY_SITE_LABELS_UK[site]}</span>
-              {active && (
-                <Icon name="check" size="sm" aria-hidden className="shrink-0" />
-              )}
+              {active && <span aria-hidden>✓</span>}
             </button>
           );
         })}
@@ -130,9 +127,9 @@ export function InjuryManager() {
   );
 
   return (
-    <Card radius="lg" padding="lg" className="space-y-3">
+    <Card padding="lg" className="space-y-3">
       <div>
-        <SectionHeading as="h2" size="xs" variant="fizruk">
+        <SectionHeading as="h2" size="lg" variant="fizruk">
           {t.title}
         </SectionHeading>
         <p className="text-style-caption text-subtle mt-1">{t.description}</p>
@@ -143,7 +140,7 @@ export function InjuryManager() {
           {active.map((injury) => (
             <div
               key={injury.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-panel border border-line bg-panelHi px-3 py-2"
             >
               <span className="text-style-body text-text">
                 {injurySiteLabelUk(injury.site)}
@@ -168,12 +165,12 @@ export function InjuryManager() {
           type="button"
           aria-expanded={musclesOpen}
           onClick={() => setMusclesOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-xl border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-lg border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
         >
           <span className="inline-flex items-center gap-2">
             {t.groupMuscles}
             {selectedMuscleCount > 0 && (
-              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-style-caption text-warning-strong dark:text-warning">
+              <span className="rounded-lg bg-panelHi px-2 py-0.5 text-style-caption text-text">
                 {selectedMuscleCount}
               </span>
             )}
@@ -195,7 +192,7 @@ export function InjuryManager() {
 
       <Button
         variant="solid"
-        tone="fizruk"
+        tone="neutral"
 
         className="w-full h-12"
         disabled={busy || selected.length === 0}

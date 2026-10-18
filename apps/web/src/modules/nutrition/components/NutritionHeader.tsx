@@ -9,28 +9,19 @@ import {
   ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
-import { cn } from "@shared/lib/ui/cn";
 import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
 
 function AppleBadge() {
+  // Гліф модуля в шапці без тонованого квадрата (мова H, як `FinykHeaderIcon`).
   return (
-    <div
-      className={cn(
-        "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
-        "bg-nutrition-soft dark:bg-nutrition/15",
-        "text-nutrition-strong dark:text-nutrition",
-        "border border-nutrition-soft-border/60",
-        "shadow-sm",
-      )}
-      aria-hidden
-    >
+    <span className="shrink-0 text-text" aria-hidden>
       <svg
         width="20"
         height="20"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
@@ -40,7 +31,7 @@ function AppleBadge() {
         <path d="M7 5c0-1 1-2 2-2s2 1 2 2c0 2-2 4-2 6" />
         <path d="M17 5c0-1-1-2-2-2s-2 1-2 2c0 2 2 4 2 6" />
       </svg>
-    </div>
+    </span>
   );
 }
 

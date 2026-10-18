@@ -117,11 +117,9 @@ vi.mock("./chat/HubChatBody", () => ({
   HubChatBody: ({
     onSpeak,
     onCancel,
-    onPickSuggestion,
   }: {
     onSpeak: () => void;
     onCancel: () => void;
-    onPickSuggestion: (text: string) => void;
   }) => (
     <section data-testid="chat-body">
       <button type="button" onClick={onSpeak}>
@@ -129,9 +127,6 @@ vi.mock("./chat/HubChatBody", () => ({
       </button>
       <button type="button" onClick={onCancel}>
         cancel
-      </button>
-      <button type="button" onClick={() => onPickSuggestion("suggested")}>
-        suggestion
       </button>
     </section>
   ),
@@ -263,7 +258,6 @@ describe("HubChat", () => {
     fireEvent.click(screen.getByText("close"));
     fireEvent.click(screen.getByText("speak"));
     fireEvent.click(screen.getByText("cancel"));
-    fireEvent.click(screen.getByText("suggestion"));
     fireEvent.click(screen.getByText("send"));
     fireEvent.click(screen.getByText("help"));
     fireEvent.click(screen.getByText("type"));
@@ -282,8 +276,6 @@ describe("HubChat", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(setSpeakingMock).toHaveBeenCalledWith(true);
     expect(cancelInFlightMock).toHaveBeenCalledTimes(1);
-    expect(setInputMock).toHaveBeenCalledWith("suggested");
-    expect(focusInputMock).toHaveBeenCalledTimes(1);
     expect(sendMock).toHaveBeenCalledWith("manual prompt");
     expect(sendMock).toHaveBeenCalledWith("/help");
     expect(setInputMock).toHaveBeenCalledWith("typed");

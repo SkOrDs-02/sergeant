@@ -1,11 +1,10 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Lazy-loaded per-domain card for nutrition/kcal data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
  */
 import { ReportSheet } from "./ReportSheet";
 import { useMemo, useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { messages } from "@shared/i18n/uk";
@@ -156,6 +155,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
 
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const dayKey = useDeviceDayKey();
   const bump = useHubStorageBump();
   // CALC-4 (аудит 2026-09): на холодному deep-link кеш SQLite модуля
   // наповнюється ПІСЛЯ першого рендера; hub-bump цього не бачить, тік
@@ -164,6 +164,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   const sqliteTick = useNutritionSqliteReadTick();
 
   const { cur, prev, prevAny, dates, partial } = useMemo(() => {
+    void dayKey;
     void bump; // storage-write tick
     void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling load* inside deps
     // Canonical meal log from the SQLite warm cache — `nutrition_log_v1`
@@ -190,7 +191,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
       dates: w.dates,
       partial: w.partial,
     };
-  }, [period, offset, bump, sqliteTick]);
+  }, [period, offset, bump, sqliteTick, dayKey]);
 
   const formattedCurrent = formatNumberUk(cur.avg);
   const formattedPrev = formatNumberUk(prev.avg);
@@ -203,27 +204,14 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
         type="button"
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
-        className={cn(
-          "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
-        )}
+        className="flex min-h-11 w-full items-center gap-3 text-left focus-ring"
       >
-        <Icon
-          name="utensils"
-          size="lg"
-          className="shrink-0 text-nutrition"
-          aria-hidden
-        />
-        <SectionHeading
-          as="span"
-          size="xs"
-          className="flex-1 min-w-0 text-muted truncate"
-        >
+        <span className="min-w-0 flex-1 truncate text-style-body font-medium text-text">
           {messages.nutrition.reportHeading}
-        </SectionHeading>
+        </span>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <span className="text-style-body font-bold text-text">
+            <span className="text-style-body tnum text-text">
               {empty
                 ? "–"
                 : `${formattedCurrent} ${messages.nutrition.kcalUnit}`}
@@ -233,23 +221,6 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
             )}
           </span>
         )}
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className={cn(
-            "shrink-0 text-muted transition-transform",
-            collapsed ? "-rotate-90" : "rotate-0",
-          )}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
       </button>
       {!collapsed && empty && (
         <p className="text-style-body text-muted">

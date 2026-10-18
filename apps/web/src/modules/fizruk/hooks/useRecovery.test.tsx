@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, renderHook } from "@testing-library/react";
 import { useRecovery } from "./useRecovery";
 import { useInjuries } from "./useInjuries";
 import { useWorkouts } from "./useWorkouts";
@@ -27,6 +27,7 @@ function withInjuries(sites: string[]) {
 }
 
 describe("useRecovery", () => {
+  afterEach(() => vi.useRealTimers());
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
@@ -51,6 +52,39 @@ describe("useRecovery", () => {
     const { result } = renderHook(() => useRecovery());
     expect(result.current.ready.length).toBeLessThanOrEqual(4);
     expect(result.current.avoid.length).toBeLessThanOrEqual(4);
+  });
+
+  it("ages recovery after waking without adding or editing a workout", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-18T12:00:00Z"));
+    mockWorkouts.mockReturnValue({
+      workouts: [
+        {
+          id: "w",
+          startedAt: "2026-10-18T11:00:00Z",
+          endedAt: "2026-10-18T12:00:00Z",
+          items: [
+            {
+              id: "i",
+              exerciseId: "press",
+              nameUk: "Жим",
+              primaryGroup: "chest",
+              musclesPrimary: ["chest"],
+              musclesSecondary: [],
+              type: "strength",
+              sets: [{ weightKg: 50, reps: 10 }],
+            },
+          ],
+        },
+      ],
+    } as never);
+    const { result } = renderHook(useRecovery);
+    expect(result.current.by["chest"]?.daysSince).toBeLessThan(1);
+    act(() => {
+      vi.setSystemTime(new Date("2026-10-23T12:00:00Z"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(result.current.by["chest"]?.daysSince).toBeGreaterThanOrEqual(5);
   });
 
   describe("injury overlay (ADR-0083)", () => {

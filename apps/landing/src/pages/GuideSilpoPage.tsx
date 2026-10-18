@@ -208,7 +208,7 @@ export default function GuideSilpoPage() {
 
         <div className="flex flex-col gap-2.5 border-t border-cardline pt-6">
           <p className="text-sm leading-relaxed text-muted">
-            Звʼязка з Сільпо доповнює чотири входи витрат у Фініку:
+            Звʼязка з Сільпо доповнює способи додати витрату у Фініку:
             автосинхронізацію Monobank, фото чека, виписку файлом і ручну форму.{" "}
             <a href="/hroshi" className={link}>
               Як влаштовані гроші

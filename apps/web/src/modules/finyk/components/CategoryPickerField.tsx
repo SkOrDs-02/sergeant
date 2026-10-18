@@ -12,11 +12,12 @@
  * дешевше набрати кілька літер, ніж гортати сітку.
  */
 import { useMemo, useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Input } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Label } from "@shared/components/ui/FormField";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n";
 import { catChipVars } from "../lib/categoryChip";
 import { stripLeadingEmoji } from "./txRowHelpers";
 
@@ -108,22 +109,28 @@ export function CategoryPickerField({
       key={category.id}
       type="button"
       aria-pressed={category.id === selectedId}
+      aria-label={stripLeadingEmoji(category.label)}
       onClick={() => choose(category.id)}
       style={catChipVars(category.id, categories)}
       className={cn(
-        "w-full touch-target rounded-xl border px-2.5 py-2.5 text-left",
+        "w-full touch-target rounded-lg border px-2.5 py-2.5 text-left",
         "flex items-center justify-between gap-2 transition-colors",
         category.id === selectedId
-          ? "cat-chip border-transparent"
-          : "border-line hover:bg-panelHi",
+          ? "bg-bg border-line"
+          : "border-line hover:bg-line/40",
       )}
     >
       <span className="inline-flex min-w-0 items-center gap-2 text-style-body">
-        <span aria-hidden className="cat-dot h-2 w-2 shrink-0 rounded-full" />
+        <span
+          aria-hidden
+          className="cat-dot h-2.5 w-2.5 shrink-0 rounded-[3px]"
+        />
         <span className="truncate">{stripLeadingEmoji(category.label)}</span>
       </span>
       {category.id === selectedId && (
-        <Icon name="check" size="md" aria-hidden />
+        <span className="text-style-caption font-semibold text-text">
+          {messages.finykRedesign.selected}
+        </span>
       )}
     </button>
   );
@@ -139,7 +146,7 @@ export function CategoryPickerField({
         aria-describedby={describedBy}
         onClick={() => setOpen(true)}
         className={cn(
-          "input-focus-finyk w-full min-h-11 rounded-xl border bg-panelHi px-3",
+          "focus-ring w-full min-h-11 rounded-lg border bg-panel px-3",
           "flex items-center justify-between gap-3 text-left text-style-body",
           error ? "border-danger" : "border-line",
         )}
@@ -147,7 +154,6 @@ export function CategoryPickerField({
         <span className={selected ? "text-text" : "text-subtle"}>
           {selected ? stripLeadingEmoji(selected.label) : placeholder}
         </span>
-        <Icon name="chevron-down" size="md" aria-hidden />
       </button>
 
       <Sheet
@@ -165,7 +171,6 @@ export function CategoryPickerField({
           onChange={(event) => setQuery(event.target.value)}
           placeholder={copy.search}
           aria-label={copy.search}
-          icon={<Icon name="search" size="md" aria-hidden />}
         />
         {filtered.length === 0 ? (
           <p className="py-6 text-center text-style-body text-subtle">
@@ -205,12 +210,9 @@ export function CategoryPickerField({
           <button
             type="button"
             onClick={reset}
-            className="touch-target w-full rounded-xl border border-dashed border-line px-3 py-2.5 text-left text-style-body text-subtle transition-colors hover:border-muted hover:text-text"
+            className="touch-target w-full rounded-lg border border-dashed border-line px-3 py-2.5 text-left text-style-body text-subtle transition-colors hover:border-muted hover:text-text"
           >
-            <span className="inline-flex items-center gap-2">
-              <Icon name="refresh-cw" size="md" aria-hidden />
-              {resetLabel}
-            </span>
+            <span className="inline-flex items-center gap-2">{resetLabel}</span>
           </button>
         )}
       </Sheet>

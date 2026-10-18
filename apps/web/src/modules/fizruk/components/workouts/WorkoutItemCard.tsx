@@ -15,6 +15,7 @@ import {
   REST_CATEGORY_LABELS,
 } from "../../hooks/useRestSettings";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import { startRestTimerState } from "../../lib/restTimer";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseWorkoutSetSpeech } from "@sergeant/shared";
 import {
@@ -32,7 +33,7 @@ import {
   WorkoutSetRow,
 } from "./WorkoutSetRow";
 import { buildTypeSwitchPatch } from "./WorkoutItemTypeSwitcher";
-import { Segmented } from "@shared/components/ui/Segmented";
+import { FizrukChoiceList } from "../FizrukChoiceList";
 import { messages } from "@shared/i18n/uk";
 
 export type WorkoutItemCardProps = {
@@ -166,7 +167,7 @@ export function WorkoutItemCard({
 
   const startRest = () => {
     if (activeWorkout.endedAt || restSec == null) return;
-    setRestTimer({ remaining: restSec, total: restSec });
+    setRestTimer(startRestTimerState(restSec));
   };
 
   const showTypeSwitcher = !isReadOnly && !(it.type === "strength" && anyDone);
@@ -178,11 +179,8 @@ export function WorkoutItemCard({
 
       {showTypeSwitcher && (
         <div className="mt-2">
-          <Segmented
-            variant="fizruk"
-            size="sm"
+          <FizrukChoiceList
             ariaLabel={`${messages.fizruk.typeSwitcher.ariaLabel}: ${it.nameUk}`}
-            className="gap-1.5"
             value={it.type || "strength"}
             items={[
               {

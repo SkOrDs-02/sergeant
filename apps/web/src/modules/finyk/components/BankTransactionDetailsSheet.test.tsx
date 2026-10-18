@@ -217,10 +217,9 @@ describe("BankTransactionDetailsSheet", () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Створити новий пасив" }),
       );
-      fireEvent.change(
-        screen.getByPlaceholderText("Назва пасиву (кредит, борг)"),
-        { target: { value: "Позика в Олі" } },
-      );
+      fireEvent.change(screen.getByPlaceholderText("Назва пасиву"), {
+        target: { value: "Позика в Олі" },
+      });
       fireEvent.click(screen.getByRole("button", { name: "Створити" }));
 
       expect(setManualDebts).toHaveBeenCalledTimes(1);

@@ -8,7 +8,6 @@ import {
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderHubButton,
-  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -30,7 +29,6 @@ export interface FizrukHeaderProps {
    * in sync — see `FizrukApp.contextualBackTarget`.
    */
   onContextualBack: () => void;
-  onOpenSettings?: (() => void) | undefined;
 }
 
 function titleFor(_page: FizrukPage): string {
@@ -42,13 +40,8 @@ function backLabelFor(page: FizrukPage): string {
   switch (page) {
     case "atlas":
       return "Моє тіло";
-    // PR-Z7: каталог і шаблони приєднані до `exercise`. Раніше на їх місці
-    // стояв коментар, що вони лишаються осторонь через власну стрілку
-    // `WorkoutsHeader` — але та стрілка малювалась ОДНОЧАСНО з парою
-    // «Назад»/«На хаб» із цієї ж шапки, тобто намір «не дублювати» код не
-    // виконував: на екрані було три виходи замість одного. Тепер вихід
-    // один і живе тут, а `WorkoutsHeader` свою стрілку на маршрутних
-    // екранах не малює (`section` != undefined).
+    // Контекстна стрілка одна, у шапці. Окрема «На хаб» виходить із
+    // модуля незалежно від історії; це інша дія, а не друга стрілка назад.
     case "exercise":
     case "catalog":
     case "templates":
@@ -81,7 +74,7 @@ function ContextualBackButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
+        "-ml-1 flex items-center gap-1 rounded-lg px-2 py-2 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
         "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
@@ -107,47 +100,14 @@ function ContextualBackButton({
   );
 }
 
-function DumbbellBadge() {
-  return (
-    <div
-      className={cn(
-        "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
-        "bg-linear-to-br from-cyan-100 to-cyan-200",
-        "dark:from-cyan-900/40 dark:to-cyan-900/30",
-        "text-fizruk-strong dark:text-fizruk-300",
-        "border border-fizruk-soft-border/60",
-        "shadow-sm",
-      )}
-      aria-hidden
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3" />
-      </svg>
-    </div>
-  );
-}
-
 export function FizrukHeader({
   page,
   onBackToHub,
   onGoToHub,
   onContextualBack,
-  onOpenSettings,
 }: FizrukHeaderProps) {
-  // Один вихід на підсторінку, і він завжди тут. До PR-Z7 набір був
-  // вужчий (atlas / exercise / measurements), тож на `catalog`,
-  // `templates` і `history` шапка малювала пару «Назад» + «На хаб», а
-  // сторінка згори докладала власну стрілку — два-три різні виходи поруч;
-  // на `programs` при цьому не було жодного.
+  // Контекстний back не замінює прямий вихід на хаб: history-back може
+  // вести на іншу вкладку модуля, а людина має бачити обидва призначення.
   const showContextualBack =
     page === "atlas" ||
     page === "exercise" ||
@@ -157,10 +117,6 @@ export function FizrukHeader({
     page === "history" ||
     page === "programs";
 
-  // Module-level settings drawer was dropped per user request — all
-  // Fizruk settings (backup, reminders, data reset) now live in the
-  // Hub-wide Settings screen. The header no longer owns a gear icon,
-  // so the right slot is left empty.
   let left: React.ReactNode = null;
   if (showContextualBack) {
     left = (
@@ -170,22 +126,22 @@ export function FizrukHeader({
       />
     );
   } else if (typeof onBackToHub === "function") {
-    left = (
-      <div className="flex items-center gap-1">
-        <ModuleHeaderBackButton onClick={onBackToHub} />
-        {typeof onGoToHub === "function" && (
-          <ModuleHeaderHubButton onClick={onGoToHub} />
-        )}
-      </div>
-    );
+    left = <ModuleHeaderBackButton onClick={onBackToHub} />;
   } else {
-    left = <DumbbellBadge />;
+    left = null;
   }
 
   return (
     <ModuleHeader
       module={showContextualBack ? undefined : "fizruk"}
-      left={left}
+      left={
+        left || onGoToHub ? (
+          <div className="flex items-center gap-1">
+            {left}
+            {onGoToHub && <ModuleHeaderHubButton onClick={onGoToHub} />}
+          </div>
+        ) : null
+      }
       title={titleFor(page)}
       subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
       subtitleShort={
@@ -194,9 +150,6 @@ export function FizrukHeader({
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />
-          {onOpenSettings && (
-            <ModuleHeaderSettingsButton onClick={onOpenSettings} />
-          )}
         </div>
       }
     />

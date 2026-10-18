@@ -5,10 +5,12 @@
 import { memo, useState } from "react";
 import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
 import { Money } from "@shared/components/ui/Money";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { fmtDate } from "../utils";
 import { getSubscriptionDueDate } from "../lib/upcomingSchedule";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
+import { FinanceItemHeading } from "./FinanceItemHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
@@ -68,7 +70,7 @@ function SubCardComponent({
   const { amount, currency } = getSubscriptionAmountMeta(sub, [
     ...transactions,
   ]);
-  const [now] = useState(Date.now);
+  const now = useKyivDayNow();
   const days = kyivCalendarDaysBetween(
     getSubscriptionDueDate(
       Number(sub.billingDay) || 1,
@@ -108,7 +110,7 @@ function SubCardComponent({
 
   if (editing) {
     return (
-      <Card variant="finyk-soft" padding="md" className="mb-3 space-y-3">
+      <Card prominence="panel" padding="md" className="mb-3 space-y-3">
         <Input
           placeholder="Назва"
           value={form.name}
@@ -163,6 +165,8 @@ function SubCardComponent({
             className="flex-1"
             onClick={saveEdit}
             disabled={!editValid}
+            tone="ink"
+            variant="solid"
           >
             Зберегти
           </Button>
@@ -195,85 +199,70 @@ function SubCardComponent({
   // колонка несе лише суму, а дії живуть окремим рядком під текстом.
   return (
     <Card
-      variant="default"
-      padding="md"
-      className={cn(
-        "mb-3",
-        veryClose ? "border-danger/50" : soon ? "border-warning/40" : null,
-      )}
+      as="article"
+      aria-label={sub.name}
+      prominence="ghost"
+      padding="none"
+      className="py-4 border-t border-line rounded-none"
     >
-      <div className="flex items-start gap-3">
-        <Icon
-          name="refresh-cw"
-          size="lg"
-          className="mt-0.5 shrink-0 text-finyk"
-          aria-hidden
-        />
-        <div className="flex-1 min-w-0">
-          <div className="text-style-label truncate">{sub.name}</div>
-          <div
-            className={cn(
-              "text-style-caption mt-0.5",
-              veryClose
-                ? "text-danger-strong dark:text-danger"
-                : soon
-                  ? "text-warning-strong dark:text-warning"
-                  : "text-subtle",
-            )}
-          >
-            <Icon
-              name={veryClose ? "alert-triangle" : soon ? "clock" : "calendar"}
-              size={13}
-              aria-hidden
-            />{" "}
-            {days === 0
-              ? "Сьогодні"
-              : days === 1
-                ? "Завтра"
-                : `Через ${days} ${pluralDays(days)}`}{" "}
-            · {sub.billingDay}-го
-          </div>
-          {sub.linkedTxId && lastTx && (
-            <div className="text-style-caption text-finyk mt-0.5">
-              Привʼязано до операції · оновлює суму та дату
+      <FinanceItemHeading
+        title={sub.name}
+        meta={
+          <>
+            <div
+              className={cn(
+                "text-style-caption mt-0.5",
+                veryClose
+                  ? "text-danger-strong dark:text-danger"
+                  : soon
+                    ? "text-warning-strong dark:text-warning"
+                    : "text-subtle",
+              )}
+            >
+              {" "}
+              {days === 0
+                ? "Сьогодні"
+                : days === 1
+                  ? "Завтра"
+                  : `Через ${days} ${pluralDays(days)}`}{" "}
+              · {sub.billingDay}-го
             </div>
-          )}
-          {lastTx && lastTx.time != null ? (
-            <div className="text-style-caption text-subtle mt-0.5">
-              Останнє: {fmtDate(lastTx.time)}
-            </div>
-          ) : (
-            amount == null && (
-              <div className="text-style-caption text-subtle mt-0.5">
-                Ще не списувалось
+            {sub.linkedTxId && lastTx && (
+              <div className="text-style-caption text-text mt-0.5">
+                Привʼязано до операції · оновлює суму та дату
               </div>
-            )
-          )}
-        </div>
-        {amount != null && (
-          <div className="text-style-label tabular-nums shrink-0">
-            {showBalance ? (
-              // `maxFractionDigits` без `minFractionDigits` навмисно: як і
-              // раніше, «500» лишається «500», а «500,5» — «500,5». Копійки
-              // тут не факт, а залишок ділення, і дописувати «,00» до
-              // кожної підписки означало б додати шум у кожен рядок.
-              <Money amount={amount} symbol={currency} maxFractionDigits={2} />
-            ) : (
-              "••••"
             )}
-          </div>
-        )}
-      </div>
+            {lastTx && lastTx.time != null ? (
+              <div className="text-style-caption text-subtle mt-0.5">
+                Останнє: {fmtDate(lastTx.time)}
+              </div>
+            ) : (
+              amount == null && (
+                <div className="text-style-caption text-subtle mt-0.5">
+                  Ще не списувалось
+                </div>
+              )
+            )}
+          </>
+        }
+        value={
+          amount == null ? undefined : showBalance ? (
+            <Money amount={amount} symbol={currency} maxFractionDigits={2} />
+          ) : (
+            "••••"
+          )
+        }
+      />
       <div className="mt-2 flex items-center justify-end gap-1">
         {onLinkTransactions && (
           <Button
             variant="ghost"
             size="xs"
-            // AI-DANGER: `text-xs` — розмір КОНТРОЛА, не роль тексту.
+            // AI-DANGER: `text-style-caption` — розмір КОНТРОЛА, не роль тексту.
             // Це `Button` із власним `size="xs"`, якому тут збивають
             // геометрію (`h-auto`, свій падинг), щоб він сів у ряд дій.
             // Роль тексту описувала б інше.
-            className="px-1.5 h-auto py-0.5 text-xs text-primary hover:bg-transparent hover:underline hover:text-primary"
+            className="px-1.5 h-auto py-0.5 text-style-caption text-text hover:bg-transparent hover:underline hover:text-text"
             onClick={onLinkTransactions}
           >
             {sub.linkedTxId ? "Змінити операцію" : "Привʼязати операцію"}
@@ -286,7 +275,7 @@ function SubCardComponent({
             iconOnly
             aria-label="Редагувати підписку"
             onClick={() => setEditing(true)}
-            className="text-subtle hover:text-primary"
+            className="text-subtle hover:text-text"
           >
             <Icon name="edit" size="md" aria-hidden />
           </Button>

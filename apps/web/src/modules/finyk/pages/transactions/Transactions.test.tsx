@@ -572,6 +572,19 @@ describe("Transactions page shell", () => {
     expect(screen.getByText("Схоже на внутрішній переказ")).toBeInTheDocument();
   });
 
+  it("re-shows the snoozed transfer on a new Kyiv day without remounting", () => {
+    renderTransactions({ mono: { realTx: buildTransferPair() } });
+    fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+    act(() => {
+      vi.setSystemTime(new Date("2026-06-16T09:00:00Z"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(screen.getByText("Схоже на внутрішній переказ")).toBeInTheDocument();
+  });
+
   it("permanently rejects a transfer suggestion via 'Не переказ', surviving reload and day changes", () => {
     const pair = buildTransferPair();
     const { unmount } = renderTransactions({ mono: { realTx: pair } });

@@ -106,7 +106,7 @@ describe("ActiveHabitsSection", () => {
 
   it("renders an empty state when there are no active habits", () => {
     render(<Harness initial={defaultRoutineState()} />);
-    expect(screen.getByText("Поки порожньо")).toBeInTheDocument();
+    expect(screen.getByText("Звичок ще немає")).toBeInTheDocument();
   });
 
   it("offers a 'Перейти до календаря' CTA only when onOpenCalendar is provided", () => {
@@ -164,13 +164,13 @@ describe("ActiveHabitsSection", () => {
   });
 
   // Порожній список і порожній пошук не мають накладатись: коли активних
-  // звичок немає взагалі, працює `EmptyState` «Поки порожньо», а не цей.
+  // звичок немає взагалі, працює `EmptyState` «Звичок ще немає», а не цей.
   it("keeps the no-habits empty state when the list is empty and a query is typed", () => {
     render(<Harness initial={makeRoutine([])} />);
     fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
       target: { value: "будь-що" },
     });
-    expect(screen.getByText("Поки порожньо")).toBeInTheDocument();
+    expect(screen.getByText("Звичок ще немає")).toBeInTheDocument();
     expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
   });
 

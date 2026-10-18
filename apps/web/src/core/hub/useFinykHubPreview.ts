@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLS } from "@shared/lib/storage/storage";
 import { hubKeys } from "@shared/lib/api/queryKeys";
+import { getVisibleFinykMonoMirrorState } from "../../modules/finyk/lib/monoMirrorReader";
+import { useFinykMonoMirrorTick } from "../../modules/finyk/lib/monoMirrorGate";
+import { useFinykSqliteReadTick } from "../../modules/finyk/lib/sqliteReadGate";
 
 /**
  * React Query-backed signal for "does Finyk have Monobank data loaded?".
@@ -13,9 +15,9 @@ import { hubKeys } from "@shared/lib/api/queryKeys";
  * cache" button) invalidate `hubKeys.preview("finyk")`, and every consumer
  * that subscribes to this hook re-renders without a manual bus.
  *
- * Cross-tab updates are covered by listening to the `storage` event and
- * triggering the same invalidation — `localStorage` already broadcasts the
- * write to other tabs, so we only need to rebuild the derived value there.
+ * The canonical SQLite mirror and account preferences notify this preview
+ * after hydration/pull. The old LS transaction shard is no longer written.
+ * Cross-tab storage events remain an additional invalidation signal.
  */
 
 export interface FinykHubPreview {
@@ -23,12 +25,7 @@ export interface FinykHubPreview {
 }
 
 function readHasMonoData(): boolean {
-  // Intentional LS-backed preview signal; this hook's source of truth is
-  // localStorage by design (see header). Key centralized to STORAGE_KEYS via
-  // #3171; full SQLite-overlay migration is separate storage-roadmap work.
-  // eslint-disable-next-line no-restricted-syntax -- intentional LS-shard preview via STORAGE_KEYS; SQLite overlay is storage-roadmap work
-  const parsed = safeReadLS<{ txs?: unknown[] }>(STORAGE_KEYS.FINYK_TX_CACHE);
-  return Array.isArray(parsed?.txs) && parsed.txs.length > 0;
+  return getVisibleFinykMonoMirrorState().transactions.length > 0;
 }
 
 function readPreview(): FinykHubPreview {
@@ -37,6 +34,14 @@ function readPreview(): FinykHubPreview {
 
 export function useFinykHubPreview() {
   const queryClient = useQueryClient();
+  const mirrorTick = useFinykMonoMirrorTick();
+  const sqliteTick = useFinykSqliteReadTick();
+
+  useEffect(() => {
+    void mirrorTick;
+    void sqliteTick;
+    void queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+  }, [queryClient, mirrorTick, sqliteTick]);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
@@ -53,7 +58,7 @@ export function useFinykHubPreview() {
   return useQuery({
     queryKey: hubKeys.preview("finyk"),
     queryFn: readPreview,
-    // The source of truth is `localStorage`; RQ is used purely as a pub/sub
+    // The source of truth is the SQLite mirror; RQ is used as a pub/sub
     // broadcaster for derived values. Explicit invalidations refetch.
     staleTime: 60_000,
     gcTime: Infinity,

@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-08-17
  * Status: Active
@@ -18,20 +19,21 @@
  * лишаються декоративними.
  */
 import { useMemo } from "react";
-import { buildHabitRangeRows, WEEKDAY_LABELS } from "@sergeant/routine-domain";
+import {
+  buildHabitRangeRows,
+  dateKeyInPauseInterval,
+  WEEKDAY_LABELS,
+} from "@sergeant/routine-domain";
 import type { HabitRangeCellState } from "@sergeant/routine-domain";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { chartHeatmap } from "@shared/charts";
 import { messages } from "@shared/i18n/uk";
 import { anchoredTodayDate } from "../lib/dayAnchor";
-import { HabitGlyph } from "./HabitGlyph";
 import type { Habit, RoutineState } from "../lib/types";
 
-const HEATMAP = chartHeatmap.routine;
 const M = messages.routine.statsRange;
 
 /**
@@ -50,26 +52,39 @@ const M = messages.routine.statsRange;
  * `skipped` навмисно сірий, а не проміжний рожевий щабель: «не зміг» —
  * не часткове виконання (канон §5).
  */
-const CELL_BG: Record<HabitRangeCellState, string> = {
-  done: HEATMAP.levels[3],
-  skipped: "bg-line/55",
-  missed: "bg-line/30",
-  unscheduled: "bg-line/10",
+type DayState = HabitRangeCellState | "pause";
+const CELL_BG: Record<DayState, string> = {
+  done: "bg-chart-routine",
+  skipped: "border-2 border-muted bg-transparent",
+  pause: "border border-dashed border-muted bg-panel",
+  missed: "bg-line/55",
+  unscheduled: "border border-line bg-transparent",
 };
-
-const CELL_LABEL: Record<HabitRangeCellState, string> = {
+const CELL_LABEL: Record<DayState, string> = {
   done: M.stateDone,
   skipped: M.stateSkipped,
+  pause: M.statePaused,
   missed: M.stateMissed,
   unscheduled: M.stateUnscheduled,
 };
-
-const LEGEND: readonly HabitRangeCellState[] = [
+const LEGEND: readonly DayState[] = [
   "done",
   "skipped",
+  "pause",
   "missed",
   "unscheduled",
 ];
+
+function displayState(
+  cell: { state: HabitRangeCellState; dateKey: string; isToday: boolean },
+  habit: Habit | undefined,
+): DayState {
+  if (cell.state !== "unscheduled" || !habit) return cell.state;
+  return dateKeyInPauseInterval(habit.pauseIntervals, cell.dateKey) ||
+    (habit.paused && cell.isToday)
+    ? "pause"
+    : "unscheduled";
+}
 
 /** Підписи осі малюємо лише на тижневому зрізі — на 30 колонках вони не влізають. */
 const WEEKDAY_LABEL_MAX_DAYS = 7;
@@ -91,7 +106,9 @@ export function HabitRangeGrid({
   days,
   hint,
 }: HabitRangeGridProps) {
+  const dayKey = useDeviceDayKey();
   const rows = useMemo(() => {
+    void dayKey;
     // Той самий анкер доби, що й у хітмапі та «Зведенні» (`lib/dayAnchor.ts`),
     // не окрема копія — інакше зріз зсувався б на клітинку при роумінгу.
     const today = anchoredTodayDate();
@@ -102,7 +119,7 @@ export function HabitRangeGrid({
       freezePausedPast: true,
       ...(skips ? { skips } : {}),
     });
-  }, [habits, completions, skips, days]);
+  }, [habits, completions, skips, days, dayKey]);
 
   const habitsById = useMemo(() => {
     const map = new Map<string, Habit>();
@@ -115,8 +132,8 @@ export function HabitRangeGrid({
   const firstRowCells = rows[0]?.cells;
 
   return (
-    <Card as="section" radius="lg" aria-label={M.heading}>
-      <SectionHeading as="p" size="xs" className="mb-1" variant="routine">
+    <Card as="section" aria-label={M.heading}>
+      <SectionHeading as="p" size="lg" className="mb-2">
         {M.heading}
       </SectionHeading>
       <p className="mb-3 text-style-caption text-subtle">
@@ -161,11 +178,10 @@ export function HabitRangeGrid({
               return (
                 <li key={row.habitId} className="flex flex-col gap-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="flex min-w-0 items-center gap-1.5 text-style-label text-text">
-                      <HabitGlyph value={habit?.emoji} size="sm" />
+                    <span className="flex min-w-0 items-center gap-1.5 text-style-label-lg font-semibold text-text">
                       <span className="truncate">{name}</span>
                     </span>
-                    <span className="shrink-0 text-style-caption text-subtle tabular-nums">
+                    <span className="shrink-0 text-style-label text-muted tabular-nums">
                       {row.completed}/{row.scheduled} ·{" "}
                       <Measure value={Math.round(row.rate * 100)} unit="%" />
                     </span>
@@ -187,7 +203,7 @@ export function HabitRangeGrid({
                         // не каже, ПРО ЯКУ клітинку йдеться.
                         title={`${formatDayKeyUk(cell.dateKey, {
                           relative: false,
-                        })}: ${CELL_LABEL[cell.state]}`}
+                        })}: ${CELL_LABEL[displayState(cell, habit)]}`}
                         className={cn(
                           // `max-w-5` + `mx-auto`: колонки — `1fr`, тож на
                           // тижневому зрізі клітинка інакше роздувалась би до
@@ -195,9 +211,10 @@ export function HabitRangeGrid({
                           // перевірка 2026-08-17). Стеля 20px тримає той самий
                           // «дот», що й на 30 днях, і лишає клітинку по центру
                           // своєї колонки — під підписом дня тижня.
-                          "aspect-square w-full max-w-5 mx-auto rounded-[2px]",
-                          CELL_BG[cell.state],
-                          cell.isToday && cn("ring-1", HEATMAP.ring),
+                          "aspect-square w-full max-w-5 mx-auto rounded-[3px]",
+                          CELL_BG[displayState(cell, habit)],
+                          cell.isToday &&
+                            "outline outline-1 outline-text outline-offset-2",
                         )}
                       />
                     ))}
@@ -217,7 +234,7 @@ export function HabitRangeGrid({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "inline-block h-2.5 w-2.5 shrink-0 rounded-[2px]",
+                    "inline-block h-2.5 w-2.5 shrink-0 rounded-[3px]",
                     CELL_BG[state],
                   )}
                 />

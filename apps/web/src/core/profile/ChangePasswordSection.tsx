@@ -5,7 +5,6 @@
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms";
@@ -73,17 +72,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
   const disabled = !online || isSubmitting;
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
-      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
-          (канонічний коментар там): текстовий заголовок «Пароль» дослівно
-          дублював заголовок `CollapsibleSection` у `ProfilePage.tsx` і
-          малювався `text-style-label`, більшим за `xs`-кікер. Прибрано;
-          іконка лишилась — тут немає власної мета-інформації (лічильника
-          чи статусу), яку варто було б винести на її місце. */}
-      <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="lock" size="md" className="text-muted" />
-      </div>
-
+    <Card padding="none" className="overflow-hidden">
       <form onSubmit={submit} noValidate className="px-4 py-4 space-y-3">
         <div className="space-y-1.5">
           <label
@@ -174,7 +163,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
         {serverError && (
           <div
             role="alert"
-            className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-3 py-2"
+            className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-panel px-3 py-2"
           >
             {serverError}
           </div>

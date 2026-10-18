@@ -9,7 +9,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { RoutineEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
+import { messages } from "@shared/i18n/uk";
 import { sortHabitsByOrder } from "../../lib/habitOrder";
 import {
   moveHabitInOrder,
@@ -62,13 +62,12 @@ export function ActiveHabitsSection({
   const hasActive = routine.habits.some((h) => !h.archived);
 
   return (
-    <Card as="section" radius="lg" padding="md" className="space-y-2">
-      <SectionHeading as="h2" size="xs" variant="routine">
+    <Card as="section" padding="md" className="space-y-3">
+      <SectionHeading as="h2" size="lg">
         Активні звички
       </SectionHeading>
       <p className="text-style-body text-subtle leading-snug">
-        Порядок у списку = порядок у календарі. На десктопі можна перетягнути,
-        на телефоні й з клавіатури: «Вище» і «Нижче» в меню «⋯».
+        {messages.routine.reorderHint}
       </p>
       <Input
         className="routine-touch-field w-full max-w-md"
@@ -83,16 +82,15 @@ export function ActiveHabitsSection({
       </p>
       {!hasActive && (
         <EmptyState
-          illustration={<RoutineEmptyIllustration size={96} />}
-          title="Поки порожньо"
-          // Форми «вище» на цьому екрані немає — вище лише поле пошуку по
-          // списку. Додавання йде через плаваючу «+», як і каже підказка
-          // зверху сторінки (`uk.routine.ts` → `habitsHint`).
-          description="Додай першу звичку кнопкою «+» унизу екрана."
-          module="routine"
+          title={messages.routine.emptyHabits}
           action={
             typeof onOpenCalendar === "function" ? (
-              <Button type="button" variant="outline" onClick={onOpenCalendar}>
+              <Button
+                tone="neutral"
+                type="button"
+                variant="outline"
+                onClick={onOpenCalendar}
+              >
                 Перейти до календаря
               </Button>
             ) : undefined
@@ -110,9 +108,9 @@ export function ActiveHabitsSection({
         <EmptyState
           title="Нічого не знайшов"
           description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
-          module="routine"
           action={
             <Button
+              tone="neutral"
               type="button"
               variant="outline"
               onClick={() => setHabitListQuery("")}
@@ -122,7 +120,7 @@ export function ActiveHabitsSection({
           }
         />
       )}
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {filteredActiveHabits.map((h) => (
           <HabitListItem
             key={h.id}

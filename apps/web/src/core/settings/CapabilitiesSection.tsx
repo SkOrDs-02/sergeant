@@ -21,14 +21,12 @@
  * і «Експорт/імпорт JSON».
  */
 import { useNavigate } from "react-router-dom";
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { ASSISTANT_PATH, CAPABILITIES_PATH } from "../app/appPaths";
 import { SettingsGroup } from "./SettingsPrimitives";
 
 interface CapabilityLink {
   id: string;
-  icon: string;
   label: string;
   description: string;
   href: string;
@@ -38,7 +36,6 @@ interface CapabilityLink {
 const LINKS: readonly CapabilityLink[] = [
   {
     id: "app",
-    icon: "compass",
     label: messages.onboarding.tourLaunchLabel,
     description: messages.onboarding.appCapabilitiesHint,
     href: CAPABILITIES_PATH,
@@ -46,7 +43,6 @@ const LINKS: readonly CapabilityLink[] = [
   },
   {
     id: "assistant",
-    icon: "sergeant",
     label: messages.sergeant.capabilitiesSectionTitle,
     description: messages.sergeant.capabilitiesSectionBody,
     href: ASSISTANT_PATH,
@@ -58,39 +54,24 @@ export function CapabilitiesSection() {
   const navigate = useNavigate();
 
   return (
-    <SettingsGroup
-      title={messages.onboarding.capabilitiesGroupTitle}
-      icon="compass"
-    >
-      <ul className="space-y-3">
+    <SettingsGroup title={messages.onboarding.capabilitiesGroupTitle}>
+      <ul className="divide-y divide-line border-y border-line">
         {LINKS.map((link) => (
           <li key={link.id}>
             <button
               type="button"
               onClick={() => navigate(link.href)}
               data-testid={link.testId}
-              className="flex w-full min-h-[44px] items-start gap-3 rounded-2xl border border-line/60 bg-surface-soft-glass p-3 text-left shadow-soft transition-[background-color,border-color] hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="flex w-full min-h-[56px] items-center py-3 text-left text-text transition-colors hover:bg-panel focus-ring"
             >
-              <span
-                aria-hidden
-                className="mt-0.5 flex shrink-0 items-center justify-center rounded-xl border border-surface-line bg-surface-soft-glass p-1.5 text-muted-v2"
-              >
-                <Icon name={link.icon} size={18} />
-              </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-style-label text-text">
+                <span className="block text-style-label-lg font-semibold text-text">
                   {link.label}
                 </span>
-                <span className="mt-1 block text-style-caption text-subtle leading-relaxed">
+                <span className="mt-1 block text-style-label text-muted">
                   {link.description}
                 </span>
               </span>
-              <Icon
-                name="chevron-right"
-                size="md"
-                className="mt-1 shrink-0 text-muted"
-                aria-hidden
-              />
             </button>
           </li>
         ))}

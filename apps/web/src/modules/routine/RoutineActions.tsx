@@ -3,13 +3,12 @@
  *
  * Split out of `RoutineApp.tsx` as part of the Phase 2 decomposition
  * (initiative 0001). The bottom nav and the bottom-sheet dialog form
- * a tight visual cluster — both anchor to the bottom of the viewport
- * and react to the same "+ Add habit" affordance.
+ * a tight visual cluster — both anchor to the bottom of the viewport.
+ * The «Нова звичка» entry is a row at the end of the day list
+ * (`RoutineCalendarPanel`).
  */
 
 import type { Dispatch, SetStateAction } from "react";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
-import { messages } from "@shared/i18n/uk";
 import { HabitQuickCreateDialog } from "./components/HabitQuickCreateDialog";
 import { RoutineBottomNav } from "./components/RoutineBottomNav";
 import type { RoutineMainTab } from "./context/RoutineCalendarContext";
@@ -22,7 +21,6 @@ export interface RoutineActionsProps {
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
   quickAddHabitOpen: boolean;
   quickAddFocusTick: number;
-  onOpenQuickAddHabit: () => void;
   onCloseQuickAddHabit: () => void;
 }
 
@@ -33,20 +31,10 @@ export function RoutineActions({
   setRoutine,
   quickAddHabitOpen,
   quickAddFocusTick,
-  onOpenQuickAddHabit,
   onCloseQuickAddHabit,
 }: RoutineActionsProps) {
   return (
     <>
-      {/* fab-and-manual-income spec §5-6: replaces the old center-docked
-          nav FAB with the shared component, placed/styled identically to
-          the other 3 modules. */}
-      <FloatingActionButton
-        variant="v2-routine"
-        icon="plus"
-        onClick={onOpenQuickAddHabit}
-        aria-label={messages.routine.addHabitFab}
-      />
       <RoutineBottomNav mainTab={mainTab} onSelectTab={setMainTab} />
       <HabitQuickCreateDialog
         open={quickAddHabitOpen}

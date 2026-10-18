@@ -26,7 +26,7 @@ export function LegalDocumentView({ document }: LegalDocumentViewProps) {
         <header className="text-center space-y-5">
           <Link
             to="/"
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             aria-label={messages.legal.homeLogoAria}
           >
             <BrandLogo size="lg" />
@@ -40,7 +40,7 @@ export function LegalDocumentView({ document }: LegalDocumentViewProps) {
               {document.intro}
             </p>
           </div>
-          <div className="rounded-3xl border border-warning-soft bg-warning-soft/40 p-4 text-left text-style-label text-text">
+          <div className="rounded-lg border border-warning-soft bg-warning-soft/40 p-4 text-left text-style-label text-text">
             <strong>Founder/lawyer review gate:</strong>{" "}
             {messages.legal.reviewGateNotice}
           </div>
@@ -53,7 +53,7 @@ export function LegalDocumentView({ document }: LegalDocumentViewProps) {
           {document.sections.map((section) => (
             <section
               key={section.title}
-              className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
+              className="rounded-panel border border-line bg-panel p-5 sm:p-6"
             >
               <h2 className="text-style-headline text-text">{section.title}</h2>
               <div className="mt-3 space-y-3 text-style-label text-muted">

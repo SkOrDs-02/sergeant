@@ -109,13 +109,14 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
     expect(screen.queryAllByText("Аналіз фото страви")).toHaveLength(0);
   });
 
-  it("a genuinely first Nutrition visit auto-routes to Меню → План на день with the first-run hint", async () => {
+  it("a genuinely first Nutrition visit auto-routes to Меню → План на день without a hint banner", async () => {
     // No seeded seen-flag — exercises the real `useNutritionFirstRun` jump.
     renderApp();
     expect(
       await screen.findByRole("tab", { name: "План на день" }),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("first-run-hint-banner")).toBeInTheDocument();
+    // Банер-підказку першого входу знято (redesign v3, наджі геть).
+    expect(screen.queryByTestId("first-run-hint-banner")).toBeNull();
   });
 
   it("clicking the 'Журнал' bottom-nav tab navigates to the real log page", async () => {

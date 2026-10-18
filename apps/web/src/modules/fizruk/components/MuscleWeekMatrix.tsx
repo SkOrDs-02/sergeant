@@ -67,7 +67,7 @@ function LatestWeekBars({ matrix }: MuscleVolumeBlockProps) {
               {fmt(row.latest, 1)}
             </div>
           </div>
-          <div className="h-2 overflow-hidden rounded-full border border-line bg-bg">
+          <div className="h-2 overflow-hidden rounded-lg border border-line bg-bg">
             <div
               className="h-full bg-success/70"
               style={{

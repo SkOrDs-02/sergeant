@@ -9,8 +9,17 @@
  * Спредиться в `messages.nutrition` з `uk.ts`.
  */
 export const nutritionPageMessages = {
+  // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): ті самі джерела,
+  // що в кроці «Джерело страви» аркуша прийому.
+  addSources: {
+    search: { label: "Пошук продукту", hint: "Продукт або страва з бази" },
+    scan: { label: "Штрихкод", hint: "Штрихкод на упаковці" },
+    photo: { label: "Фото страви", hint: "AI оцінить страву на фото" },
+    manual: { label: "Ввести вручну", hint: "На 100 г або за всю порцію" },
+  },
   // Крок «Звідки страва?» і чекбокс повтору в `AddMealSheet`.
   addMeal: {
+    editTitle: "Редагувати прийом їжі",
     copyYesterday: "Як учора",
     rememberForRepeat: "Запамʼятати для повтору",
     rememberForRepeatHint:
@@ -202,7 +211,7 @@ export const nutritionPageMessages = {
     collapseLabel: "Сховати покупки",
     variantsHeading: "Покупки",
     unknownAddedAt: "без дати",
-    consumeTitle: "З чого списати?",
+    consumeTitle: "Списати з покупки",
     consumeDescription:
       "У цій позиції кілька покупок. Обери, з якої списати, або лишай найстарішу: вона псується першою.",
     consumeOldestCta: "З найстарішої",
@@ -289,7 +298,7 @@ export const nutritionPageMessages = {
    */
   shoppingListManualAdd: {
     inputLabel: "Назва товару для списку покупок",
-    placeholder: "напр. хліб",
+    placeholder: "Товар",
     addCta: "Додати",
   },
 
@@ -408,6 +417,12 @@ export const nutritionPageMessages = {
     addCta: "+ Додати позицію з каталогу",
     kcalUnit: "ккал",
     gramsUnit: "г",
+    editCta: "Змінити позиції",
+    total: "Разом",
+    saveHint: "Кожна позиція збережеться окремим записом у журналі.",
+    protein: "Білки",
+    fat: "Жири",
+    carbs: "Вуглеводи",
   },
 
   /** Додавання позиції у фото-список через каталог продуктів. */
@@ -496,7 +511,7 @@ export const nutritionPageMessages = {
     titleEdit: "Редагувати страву",
     description: "Склади страву з продуктів і грамів, КБЖВ порахується само.",
     nameLabel: "Назва",
-    namePlaceholder: "напр. Гречка з філе",
+    namePlaceholder: "Назва страви",
     nameAria: "Назва страви",
     gramsAriaPrefix: "Грами:",
     gramUnit: "г",

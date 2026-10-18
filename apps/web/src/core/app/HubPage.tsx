@@ -139,9 +139,6 @@ export function HubPage() {
       canInstall={shell.canInstall}
       onInstall={shell.onInstall}
       onDismissInstall={shell.onDismissInstall}
-      iosVisible={shell.iosVisible}
-      onDismissIosForever={shell.onDismissIosForever}
-      onSnoozeIos={shell.onSnoozeIos}
       updateAvailable={shell.updateAvailable}
       onApplyUpdate={shell.onApplyUpdate}
       openModule={shell.openModule}

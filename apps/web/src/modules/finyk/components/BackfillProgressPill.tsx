@@ -5,7 +5,6 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { ProgressBar } from "@shared/components/ui";
-
 import type { MonoBackfillProgress } from "@shared/api";
 import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
 
@@ -66,10 +65,10 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
       : 0;
 
   const tone = isFailed
-    ? "bg-danger/10 border-danger/30 text-danger-strong dark:text-danger"
+    ? "bg-panel border-danger/30 text-danger-strong dark:text-danger"
     : isCompleted
-      ? "bg-success/10 border-success/30 text-text"
-      : "bg-panelHi border-line text-text";
+      ? "bg-panel border-success/30 text-text"
+      : "bg-panel border-line text-text";
 
   const dotTone = isFailed
     ? "bg-danger"
@@ -92,14 +91,18 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
 
   return (
     <div
-      className={cn("rounded-xl border px-3 py-2.5 space-y-2", tone, className)}
+      className={cn(
+        "rounded-panel border px-3 py-2.5 space-y-2",
+        tone,
+        className,
+      )}
       role={isRunning ? "status" : undefined}
       aria-live={isRunning ? "polite" : undefined}
       aria-label={`${headline}: ${detail}`}
     >
       <div className="flex items-center gap-2 text-style-caption">
         <span
-          className={cn("inline-block w-2 h-2 rounded-full shrink-0", dotTone)}
+          className={cn("inline-block w-2 h-2 rounded-[3px] shrink-0", dotTone)}
           aria-hidden
         />
         <span className="flex-1 truncate">{headline}</span>

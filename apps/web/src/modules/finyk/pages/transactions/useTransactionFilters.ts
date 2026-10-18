@@ -1,3 +1,4 @@
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
@@ -359,7 +360,9 @@ export function useTransactionFilters({
     return next;
   }, [txsToShow]);
 
+  const kyivNow = useKyivDayNow();
   const filtered = useMemo(() => {
+    void kyivNow;
     const m = perfMark("finyk:tx:filter");
     // `dayFilter` accepts the `"today"` shortcut (resolved fresh, not
     // cached — the Kyiv day can roll over while the tab is open) or a
@@ -389,7 +392,14 @@ export function useTransactionFilters({
     });
     perfEnd(m, { n: res.length });
     return res;
-  }, [sortedTxs, effectiveFilter, creditAccIds, getEffectiveCat, dayFilter]);
+  }, [
+    sortedTxs,
+    effectiveFilter,
+    creditAccIds,
+    getEffectiveCat,
+    dayFilter,
+    kyivNow,
+  ]);
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");

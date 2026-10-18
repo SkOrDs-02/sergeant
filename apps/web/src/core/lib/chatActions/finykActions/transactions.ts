@@ -1,6 +1,7 @@
 // Chat-action executors run outside React. Стан читається з SQLite warm
 // cache (`warmFinykCache`), а не з kv — див. warmCache.ts (data-08).
 import { finykChatWrite } from "./dualWriteBridge";
+import { validateTransactionInput } from "./transactionInputValidation";
 import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
@@ -36,11 +37,12 @@ type ManualExpenseRow = {
 export function createTransaction(
   action: CreateTransactionAction,
 ): ChatActionResult {
-  const { type, amount, category, description, date } = action.input;
-  const amt = Number(amount);
-  if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума операції.";
-  }
+  const { type, category, description, date } = action.input;
+  // Ті самі межі, що на сервері (сума, довжина опису, діапазон дати): цей шлях
+  // — дохід і офлайн-фолбек витрати — не проходить `ManualExpenseCreateSchema`.
+  const checked = validateTransactionInput(action.input);
+  if (!checked.ok) return checked.message;
+  const amt = checked.amount;
   const txType = type === "income" ? "income" : "expense";
   const nowIso = new Date().toISOString();
   const isoDate =

@@ -35,7 +35,7 @@ describe("HeroRecoveryBars", () => {
     render(
       <HeroRecoveryBars rows={[]} recoverByDate={{}} onOpenAtlas={vi.fn()} />,
     );
-    expect(screen.getByText(/Тіло ще не має історії/)).toBeInTheDocument();
+    expect(screen.getByText(/Історії тренувань ще немає/)).toBeInTheDocument();
   });
 
   it("bar width equals fatiguePercent(fatigue)", () => {

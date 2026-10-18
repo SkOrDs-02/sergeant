@@ -4,10 +4,10 @@
  */
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
+import { HabitStateButton } from "./HabitStateButton";
 import { parseDateKey } from "../lib/hubCalendarAggregate";
 import type { HubCalendarEvent } from "../lib/types";
 import { Icon } from "@shared/components/ui/Icon";
@@ -87,16 +87,13 @@ export function RoutineCalendarMonthGrid({
           variant="ghost"
           size="sm"
           onClick={goToToday}
-          className={cn(
-            "w-full rounded-xl text-xs! font-semibold border",
-            C.chipOn,
-          )}
+          className={cn("w-full text-style-label font-semibold", C.chipOn)}
         >
           Сьогодні
         </Button>
       </div>
 
-      <Card as="section" radius="lg" padding="md">
+      <section>
         <div className="grid grid-cols-7 gap-1 text-center text-style-caption font-semibold text-subtle mb-2">
           {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"].map((d) => (
             <div key={d}>{d}</div>
@@ -130,16 +127,16 @@ export function RoutineCalendarMonthGrid({
                 // зони натиску накладались. Висота 44px лишається, ширина = колонка.
                 data-compact
                 className={cn(
-                  "text-style-label aspect-square min-h-[44px] w-full rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors focus-ring",
+                  "text-style-label aspect-square min-h-[44px] w-full flex flex-col items-center justify-center gap-0.5 transition-colors focus-ring",
                   sel
                     ? C.monthSel
-                    : "hover:bg-panelHi border border-transparent",
+                    : "border-b-2 border-transparent hover:text-text",
                 )}
               >
                 <span aria-hidden>{day}</span>
                 {n > 0 && (
                   <span className="flex items-center gap-0.5" aria-hidden>
-                    <span className={cn("w-1.5 h-1.5 rounded-full", C.dot)} />
+                    <span className={cn("w-1.5 h-1.5 rounded-[3px]", C.dot)} />
                     {n > 1 && (
                       <span className="text-style-caption text-subtle tabular-nums">
                         {n}
@@ -159,7 +156,7 @@ export function RoutineCalendarMonthGrid({
             variant="ghost"
             size="sm"
             onClick={() => onPlanFizruk(selectedDay)}
-            className="text-style-caption mt-2 w-full rounded-xl border border-info/30 bg-info/5 hover:bg-info/10 px-3! text-info-strong dark:text-info text-center"
+            className="text-style-label mt-3 w-full border border-line rounded-lg text-text"
           >
             Планувати тренування
           </Button>
@@ -172,9 +169,8 @@ export function RoutineCalendarMonthGrid({
                   <SectionHeading
                     key={`dh-${item.label}`}
                     as="p"
-                    size="xs"
-                    variant="subtle"
-                    className={cn(idx > 0 && "mt-2")}
+                    size="lg"
+                    className={cn("mb-3", idx > 0 && "mt-7")}
                   >
                     {item.label}
                   </SectionHeading>
@@ -194,15 +190,15 @@ export function RoutineCalendarMonthGrid({
                     }
                   }}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel",
+                    "flex min-h-14 items-center gap-2 border-b border-line py-2",
                     e.fizruk &&
-                      "cursor-pointer hover:bg-info/5 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+                      "cursor-pointer hover:text-text min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
                   )}
                 >
                   <span
                     className={cn(
-                      "w-1.5 h-1.5 rounded-full shrink-0",
-                      e.fizruk ? "bg-info" : e.finykSub ? "bg-success" : C.dot,
+                      "w-1.5 h-1.5 rounded-[3px] shrink-0",
+                      C.dot,
                       // Виконане приглушуємо лише на маркері: opacity на всьому
                       // рядку тягнула `text-subtle` підпис нижче AA.
                       e.completed && "opacity-40",
@@ -215,26 +211,15 @@ export function RoutineCalendarMonthGrid({
                     {e.subtitle}
                   </span>
                   {e.habitId && (
-                    <IconButton
-                      size="xs"
-                      variant="ghost"
+                    <HabitStateButton
+                      completed={e.completed === true}
                       onClick={() => {
                         if (e.habitId) onToggleHabit(e.habitId, e.date);
                       }}
-                      className={cn(
-                        "shrink-0 rounded-xl border font-bold",
-                        e.completed ? C.done : "border-line text-muted",
-                      )}
                       aria-label={
                         e.completed ? "Скасувати виконання" : "Виконано"
                       }
-                    >
-                      <Icon
-                        name={e.completed ? "check" : "circle-outline"}
-                        size="sm"
-                        aria-hidden
-                      />
-                    </IconButton>
+                    />
                   )}
                 </div>
               );
@@ -246,7 +231,7 @@ export function RoutineCalendarMonthGrid({
             Подій на цей день немає
           </p>
         )}
-      </Card>
+      </section>
     </>
   );
 }

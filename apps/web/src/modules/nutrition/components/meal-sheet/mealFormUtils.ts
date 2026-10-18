@@ -1,5 +1,5 @@
 import { mealTypeByNow, type MealTypeId } from "../../lib/mealTypes";
-import type { NullableMacros } from "@sergeant/shared";
+import { sumMacrosNullable, type NullableMacros } from "@sergeant/shared";
 import type {
   Meal,
   MealMacroSource,
@@ -7,7 +7,7 @@ import type {
   MealTemplate,
 } from "@sergeant/nutrition-domain";
 import { deviceTimeOfDay } from "@sergeant/nutrition-domain";
-import type { NutritionPhotoItem } from "@shared/api";
+import type { NutritionPhotoItem, NutritionPhotoResult } from "@shared/api";
 import { clampText } from "@shared/lib/text/limits";
 import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { newMealId } from "../../lib/mealId";
@@ -22,6 +22,96 @@ import { newMealId } from "../../lib/mealId";
  * повз межу і могло лягти в `amount_g`.
  */
 export const MAX_PORTION_GRAMS = 10_000;
+export const MAX_KCAL_PER_MEAL = 10_000;
+export const MAX_MACRO_GRAMS = 2_000;
+
+/** Nullable fields and comma decimals retain the same save-time validation. */
+export function validateMealMacroFields(
+  form: MealFormState,
+):
+  | { macros: NullableMacros; error?: never }
+  | { error: string; macros?: never } {
+  const inputs = (["kcal", "protein_g", "fat_g", "carbs_g"] as const).map(
+    (key) => (form[key] === "" ? null : parseDecimalInput(form[key])),
+  );
+  if (inputs.some((value) => value != null && !value.ok)) {
+    return { error: "Некоректне значення КБЖВ. Впиши число, наприклад 12,5." };
+  }
+  const [kcal, protein_g, fat_g, carbs_g] = inputs.map((value) =>
+    value != null && value.ok ? value.value : null,
+  ) as [number | null, number | null, number | null, number | null];
+  if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
+    return {
+      error: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
+    };
+  }
+  if (
+    [protein_g, fat_g, carbs_g].some(
+      (value) => value != null && value > MAX_MACRO_GRAMS,
+    )
+  ) {
+    return {
+      error: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом. Зменш значення.`,
+    };
+  }
+  return { macros: { kcal, protein_g, fat_g, carbs_g } };
+}
+
+/** The same product label seeds the form and supplies its save fallback. */
+export function foodDisplayName(
+  food: { name?: string | undefined; brand?: string | null | undefined } | null,
+): string {
+  return food ? [food.name, food.brand].filter(Boolean).join(" ").trim() : "";
+}
+
+/** Apply photo totals while retaining the meal type and time already chosen. */
+export function photoResultToForm(
+  result: NutritionPhotoResult,
+  previous: MealFormState,
+): MealFormState {
+  const macros = result.items?.length
+    ? sumMacrosNullable(result.items.map((item) => item.macros))
+    : result.macros;
+  return {
+    ...emptyForm({ ...result, macros }),
+    mealType: previous.mealType,
+    time: previous.time,
+  };
+}
+
+/** Untouched metadata belongs to the original row; explicit unlink wins. */
+export function mealSaveOrigin({
+  initialMeal,
+  foodId,
+  photo,
+  sourceReplaced,
+  manualMacros,
+}: {
+  initialMeal: Partial<Meal> | null | undefined;
+  foodId: string | number | undefined;
+  photo: boolean;
+  sourceReplaced: boolean;
+  manualMacros: boolean;
+}): Pick<Meal, "source" | "macroSource" | "foodId"> {
+  const keepOriginal = !sourceReplaced && !manualMacros;
+  const effectiveFoodId = foodId ?? (keepOriginal ? initialMeal?.foodId : null);
+  return {
+    source: photo
+      ? "photo"
+      : !sourceReplaced
+        ? (initialMeal?.source ?? "manual")
+        : "manual",
+    macroSource: photo
+      ? "photoAI"
+      : foodId != null
+        ? "productDb"
+        : keepOriginal
+          ? (initialMeal?.macroSource ??
+            (initialMeal?.foodId ? "productDb" : "manual"))
+          : "manual",
+    foodId: effectiveFoodId != null ? String(effectiveFoodId) : null,
+  };
+}
 
 /**
  * Значення для touch-колеса ваги. До кілограма точний крок 5 г, вище —
@@ -106,54 +196,6 @@ export function macrosToFormFields(mac: {
     fat_g: f(mac.fat_g),
     carbs_g: f(mac.carbs_g),
   };
-}
-
-/**
- * Чи людина змінила КБЖВ відносно збереженого прийому. Порівнюємо рядки полів
- * форми, а не числа: `macrosToFormFields` — та сама функція, що наповнила
- * форму при відкритті, тож неторкнуті поля збігаються точно.
- */
-export function macroFieldsEdited(
-  form: Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g">,
-  initialMacros: Parameters<typeof macrosToFormFields>[0] | null | undefined,
-): boolean {
-  const initial = macrosToFormFields(initialMacros ?? {});
-  return (["kcal", "protein_g", "fat_g", "carbs_g"] as const).some(
-    (key) => form[key] !== initial[key],
-  );
-}
-
-/**
- * Походження КБЖВ для збереження. Прийом із `foodId`, чий продукт не вдалося
- * відновити (`hasPickedFood: false`), лишається `productDb` лише тоді, коли
- * він уже був `productDb` і КБЖВ не чіпали. Після ручної правки це вже не
- * значення з бази: інакше запис ніс би `productDb` з макросами, що не
- * відповідають ні базі, ні `amount_g` (аудит 2026-10-01, ux-13).
- *
- * AI-DANGER: `foodId` сам по собі не доказ походження. Ручна правка КБЖВ
- * лишає `foodId` (`effectiveFoodId` в `AddMealSheet`), тож `manual`-прийом з
- * `foodId` і нечіпаною формою (змінили лише час чи назву) без перевірки
- * `initialMeal.macroSource` тихо ставав би `productDb` і знімав гард
- * `useEditedFoodRehydration`, який не відновлює такі прийоми заради ручних цифр.
- */
-export function resolveMacroSource(args: {
-  fromPhoto: boolean;
-  hasPickedFood: boolean;
-  form: Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g">;
-  initialMeal: {
-    foodId?: string | null | undefined;
-    macroSource?: string | null | undefined;
-    macros?: Parameters<typeof macrosToFormFields>[0] | null | undefined;
-  };
-}): MealMacroSource {
-  const { fromPhoto, hasPickedFood, form, initialMeal } = args;
-  if (fromPhoto) return "photoAI";
-  if (hasPickedFood) return "productDb";
-  const keepsDb =
-    !!initialMeal.foodId &&
-    initialMeal.macroSource === "productDb" &&
-    !macroFieldsEdited(form, initialMeal.macros);
-  return keepsDb ? "productDb" : "manual";
 }
 
 export interface MealFormPhotoResult {
@@ -310,4 +352,21 @@ export function upsertMealTemplate(
     0,
     40,
   );
+}
+
+/**
+ * True when every macro field is null or 0 — mirrors the `hasPhotoMacros`
+ * predicate below (photo AI returns all-null macros when it can't
+ * identify the food). A meal saved with all-empty macros won't move the
+ * daily stats at all, so `handleSave` routes through a confirm step
+ * instead of blocking the save outright (founder decision: warn, don't
+ * block).
+ */
+export function macrosAreAllEmpty(macros: {
+  kcal: number | null;
+  protein_g: number | null;
+  fat_g: number | null;
+  carbs_g: number | null;
+}): boolean {
+  return !Object.values(macros).some((v) => v != null && v !== 0);
 }

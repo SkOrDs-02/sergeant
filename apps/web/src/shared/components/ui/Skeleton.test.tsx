@@ -15,10 +15,10 @@ import {
 
 describe("Skeleton", () => {
   it.each([
-    ["rect", "rounded-2xl"],
-    ["text", "rounded-xl h-3"],
+    ["rect", "rounded-panel"],
+    ["text", "rounded-mark h-3"],
     ["avatar", "rounded-full aspect-square"],
-    ["card", "rounded-3xl min-h-32"],
+    ["card", "rounded-panel min-h-32"],
   ] as const)("renders the %s variant", (variant, expectedClass) => {
     const { container } = render(
       <Skeleton variant={variant} className="custom-size" />,

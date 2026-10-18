@@ -390,7 +390,7 @@ describe("AssetsTxPickerView", () => {
       fireEvent.click(screen.getByText("Магазин"));
       // Тап більше не привʼязує напряму — спершу питаємо роль.
       expect(setLinkedTxRole).not.toHaveBeenCalled();
-      expect(screen.getByText("Чим є ця операція?")).toBeInTheDocument();
+      expect(screen.getByText("Тип операції")).toBeInTheDocument();
       fireEvent.click(screen.getByText(/Збільшення боргу/));
       expect(setLinkedTxRole).toHaveBeenCalledWith(
         "d1",

@@ -83,6 +83,23 @@ describe("computeFinykQuickStats", () => {
         todayEndMs,
         monthStartMs,
       }),
-    ).toEqual({ todaySpent: 0, budgetLeft: null });
+    ).toEqual({ todaySpent: 0, budgetLeft: null, todayPoints: [] });
+  });
+
+  it("lists today's spends as [minutes since Kyiv midnight, UAH] in time order", () => {
+    const { todayPoints, todaySpent } = computeFinykQuickStats({
+      transactions: txs,
+      excludedTxIds: [],
+      todayStartMs,
+      todayEndMs,
+      monthStartMs,
+    });
+    // midnight edge first (minute 0), then Kyiv 10:00 (minute 600); yesterday,
+    // earlier-month and income are out.
+    expect(todayPoints).toEqual([
+      [0, 200],
+      [600, 300],
+    ]);
+    expect(todayPoints.reduce((s, [, a]) => s + a, 0)).toBe(todaySpent);
   });
 });
