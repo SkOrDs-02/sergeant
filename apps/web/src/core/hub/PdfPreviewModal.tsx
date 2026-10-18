@@ -16,7 +16,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 
 // UA copy is kept local rather than in the shared `uk.ts` catalog: that
 // file is already at its 600-line `max-lines` ceiling (Hard Rule #18), so
@@ -72,26 +71,12 @@ export function PdfPreviewModal({ html, onClose }: PdfPreviewModalProps) {
     >
       <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line shrink-0">
         <Button variant="ghost" size="sm" onClick={onClose}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
           {COPY.back}
         </Button>
         <span className="text-style-label text-text truncate">
           {COPY.title}
         </span>
         <Button variant="solid" size="sm" onClick={handlePrint}>
-          <Icon name="download" size="md" aria-hidden />
           {COPY.save}
         </Button>
       </div>

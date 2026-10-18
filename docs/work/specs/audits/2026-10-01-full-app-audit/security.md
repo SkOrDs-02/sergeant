@@ -1247,7 +1247,7 @@ routes/nutrition.ts:100-104 analyze-photo: `requireAiQuota("photo")`; :117-130 r
 
 ### `sec-15` [medium] Сільпо OAuth: state не прив'язаний до браузера, тож посилання атакера прив'язує Сільпо-акаунт жертви до Sergeant-акаунта атакера
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-15-silpo-oauth-state
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: інтеграція Сільпо
 - **Де:** apps/server/src/routes/silpo.ts:103-133,135-225 (165-197),582-592; apps/server/src/modules/silpo/oauth.ts:246-265
 - **Першопричина:** /api/silpo/connect зберігає state з userId ініціатора і віддає 302 на authorize-URL, а анонімний /api/silpo/callback визначає власника лише за state з БД (PKCE verifier теж лежить на сервері). Немає ні cookie-nonce, ні звірки сесії, а коментар у callbackHandler вважає цей сценарій нешкідливим.

@@ -10,6 +10,16 @@ import {
   installChunkLoadRecover,
   __resetChunkReloadInstalledForTests,
 } from "./chunkReload";
+import {
+  installTypedInputTracker,
+  registerDirtyState,
+  resetDirtyStateForTests,
+} from "@shared/lib/ui/dirtyState";
+import { setMutationProbe } from "../app/updateGate";
+import {
+  PWA_RELOAD_DEFERRED_EVENT,
+  type ReloadDeferredDetail,
+} from "../app/swReload";
 
 describe("isChunkLoadError", () => {
   it("matches Vite dynamic import error message", () => {
@@ -139,6 +149,110 @@ describe("reloadOnceForChunkError", () => {
       setOnLine(true);
       expect(reloadOnceForChunkError(2_000)).toBe(true);
       expect(reloadSpy).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // data-45: stale-чанк у вкладці, яку SW-оновлення вже не перезавантажило
+  // (інша вкладка прийняла оновлення), не має тихо стирати незбережений ввід.
+  // Тести ганяють справжні `dirtyState` / `updateGate` / `swReload`.
+  describe("незбережений ввід (data-45)", () => {
+    const deferred: ReloadDeferredDetail[] = [];
+    const onDeferred = (event: Event) => {
+      deferred.push((event as CustomEvent<ReloadDeferredDetail>).detail);
+    };
+
+    beforeEach(() => {
+      deferred.length = 0;
+      resetDirtyStateForTests();
+      setMutationProbe(null);
+      window.addEventListener(PWA_RELOAD_DEFERRED_EVENT, onDeferred);
+    });
+
+    afterEach(() => {
+      window.removeEventListener(PWA_RELOAD_DEFERRED_EVENT, onDeferred);
+      resetDirtyStateForTests();
+      setMutationProbe(null);
+      document.body.innerHTML = "";
+    });
+
+    it("відкрита форма (реєстр непорожній): reload немає, тост-подія stale-chunk", async () => {
+      const release = registerDirtyState();
+
+      expect(reloadOnceForChunkError(1_000)).toBe(false);
+      expect(reloadSpy).not.toHaveBeenCalled();
+
+      await Promise.resolve();
+      expect(deferred).toEqual([{ reason: "stale-chunk" }]);
+
+      // Людина зберегла/закрила форму: наступний збій лікується reload-ом.
+      release();
+      expect(reloadOnceForChunkError(2_000)).toBe(true);
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("guardUnsavedInput: false (boundary сам розмонтував форму): reload є, подія відкладення не шлеться", async () => {
+      registerDirtyState();
+
+      expect(reloadOnceForChunkError(1_000, { guardUnsavedInput: false })).toBe(
+        true,
+      );
+      expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+      await Promise.resolve();
+      expect(deferred).toEqual([]);
+    });
+
+    it("відмова не зʼїдає бюджет cooldown/MAX_RELOADS", () => {
+      const release = registerDirtyState();
+      for (let i = 0; i < MAX_RELOADS + 2; i += 1) {
+        expect(reloadOnceForChunkError(1_000 + i)).toBe(false);
+      }
+      expect(sessionStorage.getItem("__sergeant_chunk_reload_at")).toBeNull();
+      expect(
+        sessionStorage.getItem("__sergeant_chunk_reload_count"),
+      ).toBeNull();
+      release();
+      expect(reloadOnceForChunkError(5_000)).toBe(true);
+    });
+
+    it("непорожнє інлайн-поле (трекер вводу) блокує reload", () => {
+      const untrack = installTypedInputTracker(document);
+      const input = document.createElement("input");
+      input.type = "text";
+      document.body.appendChild(input);
+      input.value = "82,5";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+
+      expect(reloadOnceForChunkError(1_000)).toBe(false);
+      expect(reloadSpy).not.toHaveBeenCalled();
+
+      input.remove();
+      expect(reloadOnceForChunkError(2_000)).toBe(true);
+      untrack();
+    });
+
+    it("мутація в польоті (проба з main.tsx) блокує reload", () => {
+      setMutationProbe(() => true);
+      expect(reloadOnceForChunkError(1_000)).toBe(false);
+      expect(reloadSpy).not.toHaveBeenCalled();
+
+      setMutationProbe(() => false);
+      expect(reloadOnceForChunkError(2_000)).toBe(true);
+    });
+
+    it("installChunkLoadRecover: vite:preloadError при відкритій формі не перезавантажує", async () => {
+      __resetChunkReloadInstalledForTests();
+      installChunkLoadRecover();
+      const release = registerDirtyState();
+
+      const event = new Event("vite:preloadError", { cancelable: true });
+      window.dispatchEvent(event);
+
+      expect(reloadSpy).not.toHaveBeenCalled();
+      // Не preventDefault: помилка доходить до ErrorBoundary з ручним reload.
+      expect(event.defaultPrevented).toBe(false);
+      release();
+      __resetChunkReloadInstalledForTests();
     });
   });
 

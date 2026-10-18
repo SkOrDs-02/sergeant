@@ -57,7 +57,7 @@ describe("ClosedTodayPile", () => {
       />,
     );
     expect(
-      screen.getByRole("heading", { name: "Закрито сьогодні" }),
+      screen.getByRole("heading", { name: "Закрито" }),
     ).toBeInTheDocument();
     const rows = screen.getAllByTestId("closed-row");
     expect(rows).toHaveLength(2);
@@ -87,5 +87,32 @@ describe("ClosedTodayPile", () => {
       />,
     );
     expect(mocks.compute).toHaveBeenCalledTimes(2);
+  });
+
+  it("закритий чекбоксом пункт «Зараз» стоїть рядком і повертається тапом", () => {
+    mocks.compute.mockReturnValue([]);
+    const item = {
+      id: "fizruk_long_break",
+      module: "fizruk" as const,
+      priority: 80,
+      title: "Тренування не відмічене",
+      action: { kind: "open_module" as const, module: "fizruk" },
+    };
+    const onUncheck = vi.fn();
+    render(
+      <ClosedTodayPile
+        activeModules={["fizruk"]}
+        recs={[]}
+        onOpenModule={vi.fn()}
+        checked={[item]}
+        onUncheck={onUncheck}
+      />,
+    );
+    const row = screen.getByRole("checkbox", {
+      name: /Тренування не відмічене/,
+    });
+    expect(row).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(row);
+    expect(onUncheck).toHaveBeenCalledWith(item);
   });
 });

@@ -1,3 +1,5 @@
+import { messages } from "@shared/i18n";
+import { cn } from "@shared/lib/ui/cn";
 /**
  * Last validated: 2026-09-03
  * Status: Active
@@ -16,9 +18,9 @@
  * останнім і обрізається першим.
  */
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { Icon } from "@shared/components/ui/Icon";
+
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
-import { catChipVars } from "../lib/categoryChip";
+
 import type { TxRowTx } from "./txRowHelpers";
 
 interface TxRowMetaChipsProps {
@@ -85,13 +87,13 @@ export function TxRowMetaChips({
   showAccount = true,
   hasReceipt = false,
   note,
-  customCategories = [],
   isExcludedFromStats = false,
   isCancelled = false,
 }: TxRowMetaChipsProps) {
   const isTransfer = catId === INTERNAL_TRANSFER_ID;
   // Порядок фіксований: рахунок → переказ → «змін.» → П24 → спліт.
   const statuses: string[] = [];
+  if (isCreditCard) statuses.push(messages.finykRedesign.creditCard);
   // Переказ виключений НЕЯВНО (доменне правило), явне виключення —
   // окремою дією людини; обидва шляхи ведуть до того самого видимого
   // маркера, бо для людини наслідок однаковий: рядок не рахується в
@@ -119,10 +121,14 @@ export function TxRowMetaChips({
           категорії (`.cat-chip` бере його з CSS-змінних), і єдина
           пігулка. Решта — приглушений текст. */}
       <span
-        style={catChipVars(catId, customCategories)}
-        className="cat-chip shrink-0 text-style-caption border px-1.5 py-0.5 rounded-full font-medium"
+        className={cn(
+          "shrink-0 text-style-label",
+          catId === "other" && !isIncome ? "text-danger-strong" : "text-muted",
+        )}
       >
-        {catName}
+        {catId === "other" && !isIncome
+          ? messages.finykRedesign.uncategorized
+          : catName}
       </span>
       {hasMeta && (
         <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-muted">
@@ -139,24 +145,18 @@ export function TxRowMetaChips({
                 – "other" fallback: no real inference happened
           */}
           {showAiMark && (
-            <span
-              className="inline-flex items-center"
-              title="Категорію визначив Сержант за описом і типом магазину"
-            >
-              <Icon name="sergeant" size="xs" aria-hidden />
+            <span title={messages.finykRedesign.autoCategoryHint}>
+              {messages.finykRedesign.autoCategorySource}
               <span className="sr-only">
-                Категорію визначив Сержант за описом і типом магазину
+                {messages.finykRedesign.autoCategoryHint}
               </span>
             </span>
           )}
           {showAccountName && (
             <span className="inline-flex items-center gap-1" data-tx-account>
               {showAiMark && <span aria-hidden>·</span>}
-              {/* §2: рахунок завжди нейтральний — «кредитна» позначає
-                  іконка, не колір. Червоне лишається боргам/активам. */}
-              {isCreditCard && (
-                <Icon name="credit-card" size="xs" aria-hidden />
-              )}
+              {/* Account and credit-card labels remain neutral text. */}
+
               {accountName}
             </span>
           )}
@@ -171,15 +171,8 @@ export function TxRowMetaChips({
         </span>
       )}
       {hasReceipt && (
-        <span
-          className="shrink-0 inline-flex items-center text-muted"
-          title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
-        >
-          <Icon
-            name="file-text"
-            size="xs"
-            title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
-          />
+        <span className="text-style-caption text-muted">
+          {messages.finykRedesign.receipt}
         </span>
       )}
       {note && (

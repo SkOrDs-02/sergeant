@@ -1,4 +1,3 @@
-import { Icon } from "@shared/components/ui/Icon";
 import { AssetsGroupCard, usePersistedGroupOpen } from "./AssetsGroupCard";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
@@ -55,17 +54,11 @@ export function AssetsMonoJars({
         return (
           <div
             key={id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3"
+            className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0 bg-finyk/10 text-finyk-strong dark:bg-finyk/15 dark:text-finyk"
-                aria-hidden
-              >
-                <Icon name="piggy-bank" size={18} />
-              </span>
               <div className="min-w-0">
-                <div className="text-style-label truncate">
+                <div className="text-style-body font-semibold truncate">
                   {j.title?.trim() || t.fallbackName}
                 </div>
                 {goalPct !== null && (
@@ -76,7 +69,7 @@ export function AssetsMonoJars({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-style-label tabular-nums text-text">
+              <div className="text-style-body font-medium tabular-nums text-text">
                 {showBalance ? (
                   // Копійки увімкнено з тієї ж причини, що й на картках:
                   // це залишок на рахунку банку, а не зведена сума.

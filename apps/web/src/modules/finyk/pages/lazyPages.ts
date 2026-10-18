@@ -23,7 +23,7 @@
  */
 import { useEffect } from "react";
 import { lazyImport } from "../../../core/lib/lazyImport";
-import { CategoryPieChart } from "../components/charts/lazy";
+import { CategoryBars } from "../components/charts/lazy";
 
 export const Transactions = lazyImport(
   () => import("./transactions/Transactions"),
@@ -43,7 +43,7 @@ export const Analytics = lazyImport(() => import("./Analytics"), "Analytics");
 const PAGE_PRELOADERS: Record<string, () => void> = {
   transactions: () => Transactions.preload(),
   budgets: () => Budgets.preload(),
-  // Analytics page shell AND its nested `CategoryPieChart` chunk (own
+  // Analytics page shell AND its nested `CategoryBars` chunk (own
   // `React.lazy` boundary, `components/charts/lazy.ts`) both need to be
   // warm before the tab commits — otherwise the page-level chunk lands in
   // time but the donut chart still suspends on mount, so the transition
@@ -52,7 +52,7 @@ const PAGE_PRELOADERS: Record<string, () => void> = {
   // tap/swipe into "Аналітика".
   analytics: () => {
     Analytics.preload();
-    CategoryPieChart.preload();
+    CategoryBars.preload();
   },
   assets: () => Assets.preload(),
 };

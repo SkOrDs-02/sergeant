@@ -1,5 +1,5 @@
 import { Button } from "@shared/components/ui/Button";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import type { DashboardModuleId } from "./hub.types";
 
@@ -54,7 +54,7 @@ export function OutcomeCard({
 
   return (
     <section
-      className="rounded-2xl border border-line bg-panel p-4 sm:p-5 space-y-4"
+      className="rounded-panel border border-line bg-panel p-4 sm:p-5 space-y-4"
       aria-labelledby="ftux-outcome-card-title"
       data-testid="ftux-outcome-card"
     >
@@ -79,7 +79,6 @@ export function OutcomeCard({
           aria-label={`Відкрити: ${preferred.title}`}
         >
           Відкрити
-          <Icon name="chevron-right" size="sm" className="ml-1" />
         </Button>
       </div>
 
@@ -96,16 +95,13 @@ export function OutcomeCard({
               // було видно лише кольором рамки.
               aria-current={selected ? "true" : undefined}
               className={cn(
-                "text-left rounded-xl border p-3 transition-colors focus-ring",
+                "text-left rounded-lg border p-3 transition-colors focus-ring",
                 selected
-                  ? "border-brand-strong dark:border-brand-400 bg-brand-soft"
+                  ? "border-line bg-panel"
                   : "border-line bg-bg hover:bg-panelHi",
               )}
             >
               <span className="flex items-start gap-3">
-                <span className="mt-0.5 text-brand-strong" aria-hidden="true">
-                  <Icon name={module.icon} size="md" />
-                </span>
                 <span className="space-y-1">
                   <span className="block text-style-label font-semibold text-text">
                     {module.title}

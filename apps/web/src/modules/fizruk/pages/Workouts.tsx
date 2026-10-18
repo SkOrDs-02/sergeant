@@ -339,7 +339,6 @@ export function Workouts({
                   endWorkout={o.endWorkout}
                   summarizeWorkoutForFinish={o.summarizeWorkoutForFinish}
                   deleteWorkout={o.deleteWorkout}
-                  restoreWorkout={o.restoreWorkout}
                   onRepeatWorkout={o.repeatWorkout}
                   onClose={() => onNavigate?.("workouts")}
                 />
@@ -401,7 +400,7 @@ export function Workouts({
             footer={
               <Button
                 variant="solid"
-                tone="fizruk"
+                tone="neutral"
 
                 className="w-full h-11"
                 onClick={() => setCatalogSheetOpen(false)}
@@ -502,6 +501,11 @@ export function Workouts({
         <WorkoutFinishSheets
           finishFlash={o.finishFlash}
           setFinishFlash={o.setFinishFlash}
+          workoutWellbeing={
+            o.workouts.find(
+              (workout) => workout.id === o.finishFlash?.workoutId,
+            )?.wellbeing
+          }
           updateWorkout={o.updateWorkout}
           onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
         />

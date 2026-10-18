@@ -34,16 +34,18 @@ export function FoodHitRow({
     <li>
       <button
         type="button"
-        className="w-full text-left px-3 py-2.5 hover:bg-panelHi/60 active:bg-panelHi transition-colors"
+        className="w-full text-left py-2.5 hover:bg-line/40 focus-ring"
         onClick={onPick}
       >
         <div className="flex items-center justify-between gap-2">
-          <div className="text-style-label text-text truncate">
-            {[p.name, p.brand].filter(Boolean).join(" · ")}
+          <div className="flex min-w-0 items-baseline gap-1.5">
+            <span className="min-w-0 truncate text-style-body font-semibold text-text">
+              {[p.name, p.brand].filter(Boolean).join(" · ")}
+            </span>
             {externalSourceLabel && (
               <span
                 data-testid="food-source-badge"
-                className="ml-1.5 inline-block align-baseline rounded-md bg-panelHi px-1.5 text-style-caption text-subtle"
+                className="shrink-0 text-style-caption text-subtle"
               >
                 {externalSourceLabel}
               </span>
@@ -53,10 +55,10 @@ export function FoodHitRow({
             value={Math.round(p.per100?.kcal || 0)}
             unit="ккал"
             tone="inherit"
-            className="text-style-caption text-nutrition-strong dark:text-nutrition shrink-0"
+            className="text-style-label font-medium text-text tabular-nums shrink-0"
           />
         </div>
-        <div className="text-style-caption text-subtle mt-0.5">
+        <div className="text-style-caption text-muted mt-0.5 tabular-nums">
           Б <Measure value={Math.round(p.per100?.protein_g || 0)} unit="г" /> ·
           Ж <Measure value={Math.round(p.per100?.fat_g || 0)} unit="г" /> · В{" "}
           <Measure value={Math.round(p.per100?.carbs_g || 0)} unit="г" />{" "}

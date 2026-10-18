@@ -129,9 +129,10 @@ describe("MealStrip", () => {
     const fill = container.querySelector(
       '[data-testid="meal-strip-fill"]',
     ) as HTMLElement;
-    expect(fill.className).toContain("bottom-0");
-    expect(fill.className).toContain("h-1");
-    expect(fill.className).not.toContain("inset-y-0");
+    // Бар під підписом колонки: заливка займає висоту доріжки 3 px,
+    // а не всю колонку (та читалась як збій рендера).
+    expect(fill.className).toContain("inset-y-0");
+    expect(fill.parentElement?.className).toContain("h-[3px]");
   });
 
   it("accents only the segment that crosses the norm boundary", () => {
@@ -152,10 +153,13 @@ describe("MealStrip", () => {
     );
     const fills = container.querySelectorAll('[data-testid="meal-strip-fill"]');
     // cumulative: 500, 1200, 2100 (> 2000 here — dinner crosses), 2300
-    expect((fills[2] as HTMLElement).className).toContain("bg-nutrition");
-    expect((fills[0] as HTMLElement).className).not.toContain("bg-nutrition");
-    expect((fills[1] as HTMLElement).className).not.toContain("bg-nutrition");
-    expect((fills[3] as HTMLElement).className).not.toContain("bg-nutrition");
+    expect((fills[2] as HTMLElement).className).toContain("bg-text");
+    for (const i of [0, 1, 3]) {
+      expect((fills[i] as HTMLElement).className).toContain(
+        "bg-chart-nutrition",
+      );
+      expect((fills[i] as HTMLElement).className).not.toContain("bg-text");
+    }
   });
 
   it("shows the set-goal CTA and calls onSetGoal when there is no norm", () => {

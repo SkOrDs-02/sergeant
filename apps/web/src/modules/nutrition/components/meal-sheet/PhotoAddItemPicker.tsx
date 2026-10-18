@@ -18,7 +18,6 @@ import { useState } from "react";
 import type { NutritionPhotoItem } from "@shared/api";
 import { Input } from "@shared/components/ui/Input";
 import { useLocale } from "@shared/i18n/useLocale";
-import { cn } from "@shared/lib/ui/cn";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
 import { FoodPickerSection, type PickedFood } from "./FoodPickerSection";
 import { useFoodSearch } from "./useFoodSearch";
@@ -71,10 +70,10 @@ export function PhotoAddItemPicker({
   };
 
   return (
-    <div className="rounded-xl border border-line bg-panelHi p-3">
+    <div className="border-y border-line py-3">
       {pickedFood ? (
         <div className="grid gap-2">
-          <div className="text-style-label text-text truncate">
+          <div className="text-style-body font-semibold text-text truncate">
             {pickedFood.name}
           </div>
           <Input
@@ -93,11 +92,7 @@ export function PhotoAddItemPicker({
               type="button"
               onClick={add}
               disabled={busy}
-              className={cn(
-                "touch-target text-style-label flex-1 rounded-xl px-4",
-                "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-              )}
+              className="touch-target text-style-label font-semibold flex-1 rounded-lg px-4 bg-text text-bg disabled:opacity-50 focus-ring"
             >
               {copy.addCta}
             </button>
@@ -107,7 +102,7 @@ export function PhotoAddItemPicker({
                 setPickedFood(null);
                 setPickedGrams("");
               }}
-              className="touch-target text-style-caption rounded-xl px-4 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="touch-target text-style-label rounded-lg px-4 text-muted hover:text-text focus-ring"
             >
               {copy.otherProductCta}
             </button>
@@ -130,7 +125,7 @@ export function PhotoAddItemPicker({
           <button
             type="button"
             onClick={onCancel}
-            className="touch-target text-style-caption rounded-xl px-3 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="touch-target text-style-label rounded-lg px-3 text-muted hover:text-text focus-ring"
           >
             {copy.cancelCta}
           </button>

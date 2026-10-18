@@ -79,13 +79,13 @@ export function SessionExtrasRow({
               aria-expanded={active}
               onClick={() => toggle(c.key)}
               className={cn(
-                "focus-ring flex h-11 items-center gap-1.5 rounded-xl border px-3 text-style-caption transition-colors",
+                "focus-ring flex h-11 items-center gap-1.5 rounded-lg border px-3 text-style-caption transition-colors",
                 // Вибраний чип — тонований фон + контур `fizruk-edge` (мова
                 // вибору з аудиту контрасту, A4): ≥3:1 проти столу в обох
                 // темах. Раніше `border-fizruk-ring` (cyan-200) давав 1.01:1
                 // у світлій. Заливка `bg-fizruk-surface` тема-залежна.
                 active
-                  ? "border-fizruk-edge bg-fizruk-surface text-fizruk-soft-fg font-semibold"
+                  ? "border-text bg-panelHi text-text font-semibold"
                   : "border-line bg-panelHi text-muted hover:text-text",
               )}
             >
@@ -117,7 +117,7 @@ export function SessionExtrasRow({
         />
       )}
       {open === "note" && (
-        <div className="rounded-xl border border-line bg-panelHi px-3 py-2">
+        <div className="rounded-panel border border-line bg-panelHi px-3 py-2">
           <label
             htmlFor={noteId}
             className="block text-style-caption text-subtle"
@@ -126,7 +126,7 @@ export function SessionExtrasRow({
           </label>
           <textarea
             id={noteId}
-            className="input-focus-fizruk mt-2 w-full min-h-[72px] rounded-xl border border-line bg-bg px-3 py-2.5 text-style-body text-text placeholder:text-subtle resize-none"
+            className="input-focus-fizruk mt-2 w-full min-h-[72px] rounded-lg border border-line bg-bg px-3 py-2.5 text-style-body text-text placeholder:text-subtle resize-none"
             placeholder={ss.notePlaceholder}
             value={activeWorkout.note || ""}
             maxLength={NOTE_MAX_LEN}

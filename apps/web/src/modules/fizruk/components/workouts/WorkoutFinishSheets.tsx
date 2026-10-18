@@ -1,5 +1,4 @@
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -11,7 +10,7 @@ import {
   isCrossModulePromptSuppressed,
   recordCrossModulePromptAccepted,
 } from "@shared/lib/modules/crossModulePrompt";
-import { formatDurShort } from "@sergeant/fizruk-domain";
+import { formatDurShort, type WorkoutWellbeing } from "@sergeant/fizruk-domain";
 import {
   BODY_ATLAS_MUSCLE_IDS,
   INJURY_SITE_LABELS_UK,
@@ -23,10 +22,6 @@ import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../../hooks/useInjuries";
 import { useDailyLog } from "../../hooks/useDailyLog";
 import { planWellbeingHandoff } from "../../lib/wellbeingBridge";
-import { WorkoutStatTile } from "./WorkoutStatTile";
-// `FinishFlashState` живе у `../../pages/Workouts.types` (там `useState`
-// setter, що ходить між обома sheet-ами). Імпортуємо звідти, щоб не дублювати
-// оголошення (aislop `ai-slop/duplicate-type-declaration`).
 import type { FinishFlashState } from "../../pages/Workouts.types";
 
 // Реекспорт для споживачів цього компонента (тест + orchestrator), що вже
@@ -57,7 +52,7 @@ function InjuryChip({
       className={cn(
         "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         selected
-          ? "border-warning-strong bg-warning/15 text-warning-strong dark:text-warning"
+          ? "border-line bg-panelHi text-text"
           : "border-line bg-bg text-muted hover:border-muted hover:text-text",
       )}
       onClick={() => onToggle(site)}
@@ -65,7 +60,7 @@ function InjuryChip({
       <span>
         {INJURY_SITE_LABELS_UK[site as keyof typeof INJURY_SITE_LABELS_UK]}
       </span>
-      {selected && <Icon name="check" size="sm" aria-hidden />}
+      {selected && "✓"}
     </button>
   );
 }
@@ -73,16 +68,15 @@ function InjuryChip({
 interface WorkoutFinishSheetsProps {
   finishFlash: FinishFlashState | null;
   setFinishFlash: Dispatch<SetStateAction<FinishFlashState | null>>;
-  updateWorkout: (
-    id: string,
-    patch: { wellbeing?: { energy?: number; mood?: number } },
-  ) => void;
+  workoutWellbeing?: WorkoutWellbeing | null | undefined;
+  updateWorkout: (id: string, patch: { wellbeing?: WorkoutWellbeing }) => void;
   onDone?: (() => void) | undefined;
 }
 
 export function WorkoutFinishSheets({
   finishFlash,
   setFinishFlash,
+  workoutWellbeing,
   updateWorkout,
   onDone,
 }: WorkoutFinishSheetsProps) {
@@ -128,8 +122,7 @@ export function WorkoutFinishSheets({
       >
         {finishFlash.step === "wellbeing" && (
           <Card
-            prominence="elevated"
-            radius="lg"
+            prominence="panel"
             // `overscroll-contain`: без нього жест, доведений до межі
             // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
             // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
@@ -169,7 +162,7 @@ export function WorkoutFinishSheets({
                     key={`e${n}`}
                     type="button"
                     className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-xl border text-style-label transition-colors",
+                      "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
                       finishFlash.energy === n
                         ? "bg-text text-bg border-text"
                         : "border-line bg-bg text-muted hover:border-muted",
@@ -204,7 +197,7 @@ export function WorkoutFinishSheets({
                     key={`m${n}`}
                     type="button"
                     className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-xl border text-style-label transition-colors",
+                      "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
                       finishFlash.mood === n
                         ? "bg-text text-bg border-text"
                         : "border-line bg-bg text-muted hover:border-muted",
@@ -232,7 +225,7 @@ export function WorkoutFinishSheets({
               </Button>
               <Button
                 variant="solid"
-                tone="fizruk"
+                tone="neutral"
 
                 className="flex-1 h-12 min-h-[44px]"
                 type="button"
@@ -241,6 +234,7 @@ export function WorkoutFinishSheets({
                   if (wid && (finishFlash.energy || finishFlash.mood)) {
                     updateWorkout(wid, {
                       wellbeing: {
+                        ...workoutWellbeing,
                         ...(finishFlash.energy != null
                           ? { energy: finishFlash.energy }
                           : {}),
@@ -284,8 +278,7 @@ export function WorkoutFinishSheets({
 
         {finishFlash.step === "injury" && (
           <Card
-            prominence="elevated"
-            radius="lg"
+            prominence="panel"
             // `overscroll-contain`: без нього жест, доведений до межі
             // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
             // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
@@ -299,7 +292,7 @@ export function WorkoutFinishSheets({
             {/*
               Липка шапка — пара до липкого рядка дій унизу. Розкриті
               мʼязи роблять вміст удвічі вищим за вікно картки, і
-              заголовок «Щось болить?» їхав під верхню межу: щоб зрозуміти,
+              заголовок «Біль після тренування» їхав під верхню межу: щоб зрозуміти,
               де ти взагалі перебуваєш, доводилось скролити назад угору
               (скарга власника 2026-08-08). Тепер верх видно завжди, а
               скрол лишається тільки за зонами. Відʼємні поля компенсують
@@ -349,12 +342,12 @@ export function WorkoutFinishSheets({
                 type="button"
                 aria-expanded={musclesOpen}
                 onClick={() => setMusclesOpen((open) => !open)}
-                className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-xl border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-lg border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               >
                 <span className="inline-flex items-center gap-2">
                   {injuryCopy.groupMuscles}
                   {selectedMuscleCount > 0 && (
-                    <span className="rounded-full bg-warning/15 px-2 py-0.5 text-style-caption text-warning-strong dark:text-warning">
+                    <span className="rounded-lg bg-panelHi px-2 py-0.5 text-style-caption text-text">
                       {selectedMuscleCount}
                     </span>
                   )}
@@ -405,7 +398,7 @@ export function WorkoutFinishSheets({
               </Button>
               <Button
                 variant="solid"
-                tone="fizruk"
+                tone="neutral"
 
                 className="flex-1 h-12"
                 disabled={
@@ -442,13 +435,13 @@ export function WorkoutFinishSheets({
         {finishFlash.step === "summary" && finishFlash.collapsed && (
           <button
             type="button"
-            className="w-full flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel px-4 py-3 min-h-[44px] shadow-float text-left"
+            className="w-full flex items-center justify-between gap-3 rounded-lg border border-line bg-panel px-4 py-3 min-h-[44px] text-left"
             onClick={() =>
               setFinishFlash((f) => f && { ...f, collapsed: false })
             }
           >
             <span className="text-style-label text-text inline-flex items-center gap-1.5">
-              <Icon name="check" size={15} aria-hidden /> Результати
+              Результати
             </span>
             <span className="text-style-caption text-subtle tabular-nums">
               {formatDurShort(finishFlash.durationSec)}
@@ -457,14 +450,14 @@ export function WorkoutFinishSheets({
         )}
 
         {finishFlash.step === "summary" && !finishFlash.collapsed && (
-          <div className="rounded-2xl overflow-hidden border border-line shadow-float">
+          <div className="rounded-panel overflow-hidden bg-panel">
             <div className="fizruk-summary-header">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <SectionHeading size="xs" variant="fizruk" as="div">
                     Завершено
                   </SectionHeading>
-                  <div className="text-style-title text-fizruk-soft-fg mt-1 leading-tight">
+                  <div className="text-style-title text-text mt-1 leading-tight">
                     Тренування виконано
                   </div>
                 </div>
@@ -474,54 +467,16 @@ export function WorkoutFinishSheets({
                   // тобто SVG із власним розміром, на який шкала шрифта не
                   // впливає. Клас нічого не робив, лише тягнув за собою
                   // попередження про сиру шкалу.
-                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-fizruk-soft-fg hover:opacity-70"
+                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-lg bg-panelHi text-text hover:opacity-70"
                   aria-label="Закрити"
                   onClick={closeFinish}
                 >
                   <Icon name="close" size="md" aria-hidden />
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                <WorkoutStatTile
-                  label="Час"
-                  value={formatDurShort(finishFlash.durationSec)}
-                />
-                <WorkoutStatTile
-                  label="Вправ"
-                  value={finishFlash.items}
-                  size="lg"
-                />
-                <WorkoutStatTile
-                  label="Обʼєм"
-                  value={
-                    finishFlash.tonnageKg > 0 ? (
-                      // PR-Z3 (аудит 2026-09-13, хвиля 6): "кг" читалось як
-                      // маса, а це `вага_кг × повторення` — канонічний
-                      // варіант "кг×повт", як у `WorkoutSummaryView` і
-                      // `WeeklyVolumeChart`.
-                      <Measure
-                        value={Math.round(finishFlash.tonnageKg)}
-                        unit="кг×повт"
-                      />
-                    ) : (
-                      "—"
-                    )
-                  }
-                />
-              </div>
+              {/* Метрики (час, вправи, обʼєм, самопочуття) показує сторінка
+                  підсумку просто під цією карткою; тут вони дублювались. */}
             </div>
-            {finishFlash.savedWellbeing &&
-              (finishFlash.savedWellbeing.energy ||
-                finishFlash.savedWellbeing.mood) && (
-                <div className="px-4 py-2.5 bg-panel border-b border-line flex items-center gap-3 text-style-caption text-subtle">
-                  <span>Самопочуття:</span>
-                  <span className="font-semibold text-text">
-                    енергія {finishFlash.savedWellbeing.energy ?? "—"}/5
-                    {" · "}
-                    настрій {finishFlash.savedWellbeing.mood ?? "—"}/5
-                  </span>
-                </div>
-              )}
             <div className="flex flex-col gap-2 p-3 bg-panel">
               {/* Cross-module nudge → Nutrition. Inline (not a toast)
                   because the finish-sheet itself is the natural moment
@@ -545,7 +500,6 @@ export function WorkoutFinishSheets({
                     openHubModule("nutrition", "log");
                   }}
                 >
-                  <Icon name="egg" size={15} aria-hidden />
                   <span>Додати білок після тренування</span>
                   <span aria-hidden>→</span>
                 </button>
@@ -553,7 +507,7 @@ export function WorkoutFinishSheets({
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 min-h-[44px] rounded-full"
+                  className="flex-1 h-12 min-h-[44px] rounded-lg"
                   type="button"
                   onClick={() =>
                     setFinishFlash((f) => f && { ...f, collapsed: true })
@@ -564,7 +518,7 @@ export function WorkoutFinishSheets({
                 <button
                   type="button"
 
-                  className="fizruk-cta-accent flex-1 py-3 rounded-full text-base"
+                  className="fizruk-cta-accent flex-1 py-3 rounded-lg text-base"
                   onClick={closeFinish}
                 >
                   Готово

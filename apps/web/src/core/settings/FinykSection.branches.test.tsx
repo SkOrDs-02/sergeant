@@ -282,12 +282,12 @@ describe("FinykSection branch gaps", () => {
 
   // ── Active webhook status styling ─────────────────────────────────────────
 
-  it("applies green border styling when webhook status is active", async () => {
+  it("shows a green status indicator when webhook status is active", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
     const label = await screen.findByText("Синхронізація активна");
-    const card = label.closest("[class*='border-']");
-    expect(card?.className).toContain("border-success/30");
+    const row = label.closest("[data-content-row]");
+    expect(row?.querySelector(".bg-success")).toBeInTheDocument();
   });
 
   // ── Disconnect confirm copy ───────────────────────────────────────────────
@@ -310,8 +310,13 @@ describe("FinykSection branch gaps", () => {
   it("invokes addCustomCategory via the Додати button and clears the input", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
     const input = (await screen.findByPlaceholderText(
-      "Напр. Хобі",
+      "Назва категорії",
     )) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "Спорт" } });
     fireEvent.click(screen.getByText("Додати"));

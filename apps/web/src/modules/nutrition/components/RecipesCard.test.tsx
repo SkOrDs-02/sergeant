@@ -206,7 +206,7 @@ describe("RecipesCard — saved-recipes section", () => {
     await waitFor(() => expect(screen.getByText(/Інгредієнти/i)).toBeTruthy());
   });
 
-  it("shows '+ У журнал' and 'Видалити' buttons in the saved section", async () => {
+  it("shows 'У журнал' and 'Видалити' buttons in the saved section", async () => {
     mockListSavedRecipes.mockResolvedValue([SAVED_RECIPE]);
     renderCard(makeProps());
     fireEvent.click(screen.getByRole("button", { name: /Мої рецепти/i }));
@@ -281,7 +281,7 @@ describe("RecipesCard — recipe generator section", () => {
     expect(screen.getByText(/Збити яйця/i)).toBeTruthy();
   });
 
-  it("renders 'Зберегти' and '+ У журнал' buttons for generated recipes", () => {
+  it("renders 'Зберегти' and 'У журнал' buttons for generated recipes", () => {
     renderCard(makeProps({ recipes: [GENERATED_RECIPE] }));
     expect(screen.getByRole("button", { name: "Зберегти" })).toBeTruthy();
     expect(
@@ -318,7 +318,7 @@ describe("RecipesCard — recipe generator section", () => {
     expect(screen.getByText(/Показати діагностику/i)).toBeTruthy();
   });
 
-  it("calls addMealToLog with correct meal when '+ У журнал' is clicked", async () => {
+  it("calls addMealToLog with correct meal when 'У журнал' is clicked", async () => {
     const addMealToLog = vi
       .fn<(meal: Meal) => Promise<void>>()
       .mockResolvedValue(undefined);

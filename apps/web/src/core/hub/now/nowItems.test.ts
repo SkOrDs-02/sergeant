@@ -246,7 +246,7 @@ describe("mergeNowItems — ціль «Звіт тижня»", () => {
     expect(item?.action).toEqual({ kind: "open_module", module: "finyk" });
   });
 
-  it("коли блоку «Порада й звіт тижня» немає, дія повертається в модуль", () => {
+  it("коли блоку «Порада й тиждень» немає, дія повертається в модуль", () => {
     const [item] = mergeNowItems([weekRec], []);
     expect(withoutWeekReportTarget(item!).action).toEqual({
       kind: "open_module",
@@ -278,7 +278,7 @@ describe("mergeNowItems — ціль «Звіт тижня»", () => {
       expect(item?.action).toEqual({ kind: "open_week_report" });
     });
 
-    it("коли блоку «Порада й звіт тижня» немає, веде у вкладку «Звіти», а не в неіснуючий модуль", () => {
+    it("коли блоку «Порада й тиждень» немає, веде у вкладку «Звіти», а не в неіснуючий модуль", () => {
       const [item] = mergeNowItems([digestRec], []);
       expect(withoutWeekReportTarget(item!).action).toEqual({
         kind: "navigate",

@@ -62,9 +62,9 @@ export type InputVariant = FormVariant;
 const COARSE_TOUCH_FLOOR = "pointer-coarse:min-h-[44px]";
 
 const sizes: Record<InputSize, string> = {
-  sm: `h-9 px-3 text-style-body rounded-xl ${COARSE_TOUCH_FLOOR}`,
-  md: `h-11 px-4 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
-  lg: `h-12 px-5 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
+  sm: `h-9 px-3 text-style-body rounded-lg ${COARSE_TOUCH_FLOOR}`,
+  md: `h-11 px-4 text-style-body rounded-lg ${COARSE_TOUCH_FLOOR}`,
+  lg: `h-12 px-5 text-style-body rounded-lg ${COARSE_TOUCH_FLOOR}`,
 };
 
 /**
@@ -290,7 +290,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={error ? true : undefined}
           aria-describedby={helperText && id ? `${id}-helper` : undefined}
           className={cn(
-            "w-full px-4 py-3 text-style-body text-text placeholder:text-subtle rounded-2xl",
+            "w-full px-4 py-3 text-style-body text-text placeholder:text-subtle rounded-lg",
             "outline-none transition-colors duration-base resize-none",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             variants[variant],

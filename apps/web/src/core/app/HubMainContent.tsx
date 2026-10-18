@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { readProfileSectionHash } from "../profile/profileSectionNavigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@shared/lib/ui/cn";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -17,10 +18,8 @@ import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
-import { IOSInstallBanner } from "./IOSInstallBanner";
 import { LocalOnlyDataBanner } from "../durability/LocalOnlyDataBanner";
 import { HubBannerBudgetProvider } from "../hub/bannerBudget";
-import { TrialBanner } from "../billing";
 
 /**
  * Mounts only after the parent Suspense boundary resolves. Inside a
@@ -82,7 +81,7 @@ function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
       <button
         type="button"
         onClick={resetError}
-        className="px-4 py-2 rounded-xl bg-panel border border-line text-text text-style-label hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="px-4 py-2 rounded-lg bg-panel border border-line text-text text-style-label hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         Спробувати ще раз
       </button>
@@ -95,34 +94,21 @@ export interface HubMainContentProps {
     id: string | null | undefined,
     opts?: OpenModuleOptions,
   ) => void;
-  iosVisible: boolean;
-  onDismissIosForever: () => void;
-  onSnoozeIos: () => void;
   hubView: HubView;
   user: User | null;
   onShowAuth: () => void;
   inFtuxSession?: boolean;
 }
 
-/** Канонічний порядок вкладок хабу для напрямку slide-анімації (#11). */
-const HUB_TAB_ORDER: readonly HubView[] = [
-  "dashboard",
-  "reports",
-  "profile",
-  "settings",
-];
-
 export const HubMainContent = memo(function HubMainContent({
   onOpenModule,
-  iosVisible,
-  onDismissIosForever,
-  onSnoozeIos,
   hubView,
   user,
   onShowAuth,
   inFtuxSession = false,
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
+  const location = useLocation();
 
   // Per-tab scroll persistence. Кожна hub-вкладка запамʼятовує свою
   // позицію скролу; при поверненні на вкладку її прокрутку відновлюємо
@@ -167,6 +153,12 @@ export const HubMainContent = memo(function HubMainContent({
   useEffect(() => {
     liveViewRef.current = hubView;
     if (prevHubViewRef.current !== null && prevHubViewRef.current !== hubView) {
+      // Явний підрозділ Профілю сам розгортає й показує ціль. Відновлення
+      // старої позиції вкладки не має перебивати цей перехід.
+      if (hubView === "profile" && readProfileSectionHash(location.hash)) {
+        prevHubViewRef.current = hubView;
+        return undefined;
+      }
       const el = scrollElRef.current;
       const saved = scrollPositionsRef.current.get(hubView) ?? 0;
       // Відкладаємо на два rAF, щоб контент нової вкладки встиг
@@ -187,7 +179,7 @@ export const HubMainContent = memo(function HubMainContent({
     }
     prevHubViewRef.current = hubView;
     return undefined;
-  }, [hubView]);
+  }, [hubView, location.hash]);
 
   // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches.
   useEffect(() => {
@@ -200,28 +192,6 @@ export const HubMainContent = memo(function HubMainContent({
     }
   }, [hubView]);
 
-  // #11 — directional slide choreography between hub tabs.
-  // The canonical tab order is: dashboard → reports → profile → settings.
-  // Switching to a tab that is further right → slide-in from the right;
-  // switching left → slide-in from the left. This mirrors the spatial model
-  // of a physical tab strip, matching the user's mental map.
-  const prevHubViewForAnim = useRef<HubView>(hubView);
-  const [slideClass, setSlideClass] = useState<string>("");
-
-  useEffect(() => {
-    const prev = prevHubViewForAnim.current;
-    if (prev === hubView) return;
-    const prevIdx = HUB_TAB_ORDER.indexOf(prev);
-    const nextIdx = HUB_TAB_ORDER.indexOf(hubView);
-    const goRight = nextIdx > prevIdx;
-    setSlideClass(goRight ? "animate-slide-in-right" : "animate-slide-in-left");
-    prevHubViewForAnim.current = hubView;
-    // Clear the class after the animation completes so re-mounting
-    // the same tab doesn't re-trigger the enter keyframe.
-    const id = setTimeout(() => setSlideClass(""), 260);
-    return () => clearTimeout(id);
-  }, [hubView]);
-
   const handleRefresh = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: coachKeys.all }),
@@ -230,30 +200,13 @@ export const HubMainContent = memo(function HubMainContent({
     ]);
   }, [queryClient]);
 
-  // SW-update + PWA-install chrome banners moved to the header bell
-  // (`NotificationBell`) as part of the C · Контроль home redesign — they
-  // were the loudest inline «шум» above the dashboard. The iOS-install
-  // banner keeps its inline placement (bespoke step-by-step instructions
-  // that don't compress into a bell row). Suppressed during the FTUX
-  // session so the one signal on screen stays the FirstAction CTA.
-  const showIos = !inFtuxSession && iosVisible;
-
   return (
     <>
-      {!inFtuxSession && <TrialBanner />}
-
-      {showIos && (
-        <IOSInstallBanner
-          onDismissForever={onDismissIosForever}
-          onSnooze={onSnoozeIos}
-        />
-      )}
-
       <PullToRefresh
         as="main"
         id="main"
         tabIndex={-1}
-        className="max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full rounded-xl focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
+        className="max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full rounded-panel focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         contentClassName="px-5 pb-28"
         onRefresh={handleRefresh}
         onScrollElement={handleScrollElement}
@@ -265,7 +218,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-dashboard"
               role="tabpanel"
               aria-labelledby="hub-tab-dashboard"
-              className={cn("flex flex-col gap-5 pt-2", slideClass)}
+              className="flex flex-col gap-5 pt-2"
             >
               <h1 className="sr-only">{messages.nav.dashboard}</h1>
               {/* Канон finyk §6.2 — durability. Банер жив лише всередині
@@ -302,7 +255,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-reports"
               role="tabpanel"
               aria-labelledby="hub-tab-reports"
-              className={cn("pt-2", slideClass)}
+              className="pt-2"
             >
               <h1 className="sr-only">{messages.nav.reports}</h1>
               <SuspenseWithMinDelay fallback={<PageLoader />}>
@@ -328,10 +281,9 @@ export const HubMainContent = memo(function HubMainContent({
               // згори проти 12px у сусідній вкладці — рівно та розбіжність
               // сусідніх вкладок одного хаба, яку V-10 і фіксує, просто
               // переїхала б на рівень вище.
-              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
-                <ProfilePage />
+                <ProfilePage scrollContainer={scrollElement} />
                 <TabReadyProbe tab="profile" />
               </SuspenseWithMinDelay>
             </div>
@@ -344,7 +296,6 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-settings"
               role="tabpanel"
               aria-labelledby="hub-tab-settings"
-              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubSettingsPage scrollContainer={scrollElement} />

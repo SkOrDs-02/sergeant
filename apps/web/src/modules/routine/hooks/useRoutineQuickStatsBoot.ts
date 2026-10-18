@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import { useEffect } from "react";
 import { ROUTINE_EVENT, loadRoutineState } from "../lib/routineStorage";
 import { writeRoutineQuickStatsSnapshot } from "./useRoutineQuickStatsWriter";
@@ -16,7 +17,9 @@ import { writeRoutineQuickStatsSnapshot } from "./useRoutineQuickStatsWriter";
  * знімок лишається свіжим і поки екран модуля закритий.
  */
 export function useRoutineQuickStatsBoot(): void {
+  const dayKey = useDeviceDayKey();
   useEffect(() => {
+    void dayKey;
     const write = () => {
       const state = loadRoutineState();
       writeRoutineQuickStatsSnapshot({
@@ -31,5 +34,5 @@ export function useRoutineQuickStatsBoot(): void {
     return () => {
       window.removeEventListener(ROUTINE_EVENT, write);
     };
-  }, []);
+  }, [dayKey]);
 }

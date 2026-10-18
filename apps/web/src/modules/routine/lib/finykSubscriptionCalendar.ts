@@ -1,5 +1,3 @@
-import { safeReadLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import {
   buildFinykSubscriptionEvents as buildFinykSubscriptionEventsPure,
@@ -8,20 +6,19 @@ import {
   type FinykSubscriptionLike,
   type HubCalendarEvent,
 } from "@sergeant/routine-domain";
+import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorStateWithLastGood } from "../../finyk/lib/monoMirrorReader";
 
 export { FINYK_SUB_GROUP_LABEL };
 
-const SUBS_KEY = STORAGE_KEYS.FINYK_SUBS;
-
 // Fresh installs (or users who removed every subscription) get no
-// calendar events — mirrors the empty `finyk_subs` default in
-// `useFinykStorageSlots`. The old `DEFAULT_SUBSCRIPTIONS` fallback
-// injected the owner's preset catalog into new visitors' calendars
-// (live-deploy audit 2026-06-11).
-export function loadFinykSubscriptionsFromStorage() {
-  const arr = safeReadLS<unknown[] | null>(SUBS_KEY, null);
-  return Array.isArray(arr) ? arr : [];
+// calendar events. The old `DEFAULT_SUBSCRIPTIONS` fallback injected the
+// owner's preset catalog into new visitors' calendars (live-deploy audit
+// 2026-06-11). Підписки пишуться лише в SQLite (LS-ключ `finyk_subs` —
+// tombstone, у нього ніхто не пише), тож читаємо SQLite-кеш Фініка.
+export function loadFinykSubscriptionsFromStorage(): unknown[] {
+  const subs = getCachedFinykSqliteState().subscriptions;
+  return Array.isArray(subs) ? subs : [];
 }
 
 /**

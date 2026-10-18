@@ -1,3 +1,5 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 /**
  * Last validated: 2026-05-19
  * Status: Active
@@ -95,7 +97,12 @@ export function Dashboard({
 }: DashboardProps) {
   // Use the shared nominative formatter so weekday matches HubHeader
   // ("Пʼятниця" not "пʼятницю") and the Kyiv timezone is anchored correctly.
-  const today = useMemo(() => formatKyivNominativeDate(), []);
+  const dayKey = useDeviceDayKey();
+  const kyivNow = useKyivDayNow();
+  const today = useMemo(() => {
+    void kyivNow;
+    return formatKyivNominativeDate();
+  }, [kyivNow]);
   const rec = useRecovery();
   const {
     workouts,
@@ -325,13 +332,12 @@ export function Dashboard({
     }
   }, [monthlyPlan, templates]);
 
-  const dashboardKpis = useMemo(
-    () =>
-      computeDashboardKpis(workouts || [], {
-        measurements: measurements || [],
-      }),
-    [workouts, measurements],
-  );
+  const dashboardKpis = useMemo(() => {
+    void dayKey;
+    return computeDashboardKpis(workouts || [], {
+      measurements: measurements || [],
+    });
+  }, [workouts, measurements, dayKey]);
 
   const recentWorkouts = useMemo(
     () => listRecentCompletedWorkouts(workouts || [], { limit: 3 }),
@@ -454,7 +460,7 @@ export function Dashboard({
     return (
       <div className="flex-1 overflow-y-auto">
         <div
-          className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4"
+          className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7"
           role="status"
           aria-live="polite"
           aria-label="Завантаження дашборду"
@@ -469,7 +475,7 @@ export function Dashboard({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         <h1 className="sr-only">{messages.nav.fizrukOverview}</h1>
         <HeroCard
           state={heroState}
@@ -525,17 +531,12 @@ export function Dashboard({
             ).filter((tpl) => tpl.id !== heroTemplateId);
             if (quickTemplates.length === 0) return null;
             return (
-              <Card
-                as="section"
-                prominence="glass"
-                radius="lg"
-                aria-label="Шаблони"
-              >
+              <Card as="section" prominence="panel" aria-label="Шаблони">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   {/* Була «Швидкий старт» — так само називалась кнопка на
                       вкладці «Тренування», яка робила інше. Одна назва на
                       дві різні речі (власник 2026-09-16). */}
-                  <SectionHeading as="h2" size="xs" variant="fizruk">
+                  <SectionHeading as="h2" size="lg" variant="fizruk">
                     Шаблони
                   </SectionHeading>
                   <span className="text-style-caption text-muted">
@@ -553,7 +554,7 @@ export function Dashboard({
                       <button
                         key={tpl.id}
                         type="button"
-                        className="w-full text-left flex items-center gap-3 rounded-2xl hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent disabled:active:scale-100"
+                        className="w-full text-left flex items-center gap-3 rounded-lg hover:bg-panelHi p-3 min-h-[52px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent"
                         onClick={() => tryStartPlan(picks, tpl.id)}
                         disabled={!picks.length}
                       >
@@ -562,20 +563,11 @@ export function Dashboard({
                         <span
                           className={
                             picks.length
-                              ? "text-success shrink-0"
+                              ? "text-text shrink-0"
                               : "text-muted shrink-0"
                           }
                           aria-hidden
-                        >
-                          <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </span>
+                        ></span>
                         <div className="min-w-0 flex-1">
                           <div className="text-style-label text-text truncate">
                             {tpl.name}
@@ -633,7 +625,7 @@ export function Dashboard({
             </Button>
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
 
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
@@ -665,7 +657,7 @@ export function Dashboard({
           <div className="flex flex-col gap-2">
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
 
               className="w-full h-12"
               onClick={() => resolveStartConflict("finish")}

@@ -6,54 +6,14 @@
  * Винесено з `WeeklyDigestCard.tsx`, коли той упритул підійшов до
  * `max-lines: 600` (Hard Rule #18) — сама картка лишилась контейнером.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
 
-// Wave 1b: `bgClass` / `borderClass` consolidated onto the
-// `{module}-soft` / `{module}-soft-border` token family (preset-owned
-// light/dark pair via `--c-{module}-soft*`). `colorClass` keeps the
-// explicit `-600 / dark:-400` pair because the module accent text uses
-// the saturated `-500` family (not the `-soft` wash) and does not have
-// a theme-adaptive semantic token today.
-const MODULE_CONFIG: Record<
-  ModuleKey,
-  {
-    icon: IconName;
-    label: string;
-    colorClass: string;
-    bgClass: string;
-    borderClass: string;
-  }
-> = {
-  finyk: {
-    icon: "credit-card",
-    label: "Фінанси",
-    colorClass: "text-brand-strong",
-    bgClass: "bg-finyk-soft",
-    borderClass: "border-finyk-soft-border/60",
-  },
-  fizruk: {
-    icon: "dumbbell",
-    label: "Тренування",
-    colorClass: "text-fizruk-strong dark:text-fizruk-300",
-    bgClass: "bg-fizruk-soft",
-    borderClass: "border-fizruk-soft-border/60",
-  },
-  nutrition: {
-    icon: "utensils",
-    label: "Їжа",
-    colorClass: "text-nutrition-strong dark:text-nutrition",
-    bgClass: "bg-nutrition-soft",
-    borderClass: "border-nutrition-soft-border/60",
-  },
-  routine: {
-    icon: "check-circle",
-    label: "Звички",
-    colorClass: "text-routine-strong dark:text-routine",
-    bgClass: "bg-routine-soft",
-    borderClass: "border-routine-soft-border/60",
-  },
+const MODULE_CONFIG: Record<ModuleKey, { label: string }> = {
+  finyk: { label: "Фінанси" },
+  fizruk: { label: "Тренування" },
+  nutrition: { label: "Їжа" },
+  routine: { label: "Звички" },
 };
 
 // `WeeklyDigestReport` (the AI-generated body) lives in
@@ -97,20 +57,6 @@ export function coverageBadge(
     : `· залоговано ${coverage.logged}/${coverage.total}`;
 }
 
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <Icon
-      name="chevron-right"
-      size={15}
-      strokeWidth={2.5}
-      className={cn(
-        "transition-transform duration-base shrink-0 text-muted",
-        expanded && "rotate-90",
-      )}
-    />
-  );
-}
-
 interface ModuleBlockProps {
   moduleKey: ModuleKey;
   data: DigestModuleData | null | undefined;
@@ -126,25 +72,19 @@ interface ModuleBlockProps {
 
 export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
   const [open, setOpen] = useState(false);
+  const bodyId = useId();
   const cfg = MODULE_CONFIG[moduleKey];
   if (!cfg || !data) return null;
 
   return (
-    <div className="rounded-xl border border-line bg-bg overflow-hidden">
+    <div className="border-b border-line overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-3 py-2.5 flex items-center gap-2.5 hover:bg-panelHi/50 transition-colors"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        className="min-h-11 w-full px-3 py-2.5 flex items-center gap-2.5 hover:bg-panelHi/50 transition-colors"
       >
-        <div
-          className={cn(
-            "w-6 h-6 rounded-xl flex items-center justify-center shrink-0",
-            cfg.bgClass,
-            cfg.colorClass,
-          )}
-        >
-          <Icon name={cfg.icon} size="sm" aria-hidden />
-        </div>
         <div className="flex-1 min-w-0 text-left">
           <span className="text-style-label font-semibold text-text">
             {cfg.label}
@@ -160,10 +100,14 @@ export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
             </p>
           )}
         </div>
-        <ChevronIcon expanded={open} />
+        <span className="text-style-caption text-muted">
+          {open ? "Згорнути" : "Розгорнути"}
+        </span>
       </button>
 
       <div
+        id={bodyId}
+        aria-hidden={!open}
         className={cn(
           "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
@@ -180,16 +124,7 @@ export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
               data.recommendations.length > 0 && (
                 <div className="space-y-1">
                   {data.recommendations.map((rec: string, i: number) => (
-                    <div key={i} className="flex items-start gap-1.5">
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "text-style-caption font-bold mt-0.5 shrink-0",
-                          cfg.colorClass,
-                        )}
-                      >
-                        →
-                      </span>
+                    <div key={i} className="border-t border-line py-2">
                       <span className="text-style-body text-text leading-snug">
                         {rec}
                       </span>

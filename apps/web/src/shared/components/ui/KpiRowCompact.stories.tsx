@@ -23,7 +23,7 @@ type Story = StoryObj<typeof KpiRowCompact>;
 
 export const Default: Story = {
   render: () => (
-    <Card module="routine" prominence="hero" radius="xl">
+    <Card tone="routine" prominence="hero">
       <KpiRowCompact
         module="routine"
         tone="hero-ink"

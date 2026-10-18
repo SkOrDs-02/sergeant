@@ -124,7 +124,6 @@ export function MyFoodsSheet({ open, onClose, zIndex }: MyFoodsSheetProps) {
         open={open}
         onClose={onClose}
         title={editing ? t.editTitle : t.title}
-        panelClassName="nutrition-sheet"
         zIndex={zIndex ?? 120}
       >
         {editing && draft ? (
@@ -151,7 +150,6 @@ export function MyFoodsSheet({ open, onClose, zIndex }: MyFoodsSheetProps) {
               <Button
                 type="button"
                 variant="solid"
-                tone="nutrition"
                 className="min-h-[44px]"
                 onClick={() => void handleSave()}
               >
@@ -173,14 +171,14 @@ export function MyFoodsSheet({ open, onClose, zIndex }: MyFoodsSheetProps) {
         ) : foods === null ? null : foods.length === 0 ? (
           <p className="text-style-body text-muted">{t.emptyBody}</p>
         ) : (
-          <ul className="divide-y divide-line/20">
+          <ul className="divide-y divide-line border-y border-line">
             {foods.map((food) => (
-              <li key={food.id} className="flex items-center gap-2 py-2">
+              <li key={food.id} className="flex items-center gap-2 py-3">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-style-label text-text">
+                  <div className="truncate text-style-body font-semibold text-text">
                     {food.name}
                   </div>
-                  <div className="text-style-caption text-subtle">
+                  <div className="text-style-caption text-muted">
                     {Math.round(food.per100.kcal)} {t.kcalPer100}
                     {food.portions.length > 0 &&
                       ` · ${t.portionsCount.replace("{n}", String(food.portions.length))}`}
@@ -198,7 +196,7 @@ export function MyFoodsSheet({ open, onClose, zIndex }: MyFoodsSheetProps) {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-[44px] shrink-0"
+                  className="min-h-[44px] shrink-0 text-danger-strong hover:text-danger-strong"
                   aria-label={t.deleteAria.replace("{name}", food.name)}
                   onClick={() => setDeleting(food)}
                 >

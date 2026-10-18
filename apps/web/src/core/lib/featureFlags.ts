@@ -64,14 +64,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
-  {
-    id: "finyk_import_reminder",
-    label: "Нагадування залити документи",
-    description:
-      "Плашка в Огляді Фініка, коли ти давно не додавав виписку чи скрін банкінгу. Показується лише за твоїм звичним ритмом: якщо імпортів не було, вона мовчить.",
-    defaultValue: false,
-    experimental: true,
-  },
   // `hub_action_axis_v1` retired 2026-09-29 (спека `hub-action-axis.md`
   // PR 3): вісь дії стала єдиною головною, стару сітку прибрано. Збережене
   // у `hub_flags_v1` значення не читається — `getFlag` для невідомого id

@@ -1,5 +1,6 @@
+import { Card } from "@shared/components/ui/Card";
 import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
-import { Icon } from "@shared/components/ui/Icon";
+
 import { Money } from "@shared/components/ui/Money";
 import { FinykStatsStrip } from "../components/FinykStatsStrip";
 import { QuickActionButton, SectionBar } from "./AssetsBars";
@@ -70,7 +71,6 @@ export function AssetsTable({ state }: { state: State }) {
               id: "asset",
               label: "Актив",
               description: "Готівка, депозит, інвестиції, авто",
-              icon: <Icon name="wallet" size="md" aria-hidden />,
               onSelect: openAssetForm,
             },
             {
@@ -78,7 +78,6 @@ export function AssetsTable({ state }: { state: State }) {
               id: "receivable",
               label: "Мені винні",
               description: "Борг, який мають повернути тобі",
-              icon: <Icon name="hand-coins" size="md" aria-hidden />,
               onSelect: openReceivableForm,
             },
           ]}
@@ -88,38 +87,52 @@ export function AssetsTable({ state }: { state: State }) {
       </div>
 
       {/* Assets section */}
-      <SectionBar
-        title="Активи"
-        iconName="trending-up"
-        iconTone="success"
-        summary={
-          showBalance ? (
-            <Money amount={totalAssets} signed />
-          ) : (
-            "\u2022\u2022\u2022\u2022"
-          )
-        }
-        open={open.assets}
-        onToggle={() => setOpen((v) => ({ ...v, assets: !v.assets }))}
-      />
-      {open.assets && <AssetsAssetsSection state={state} />}
+      <Card padding="none" className="mb-7 overflow-hidden">
+        <SectionBar
+          title="Активи"
+          iconName="trending-up"
+          iconTone="success"
+          summary={
+            showBalance ? (
+              <Money amount={totalAssets} signed />
+            ) : (
+              "\u2022\u2022\u2022\u2022"
+            )
+          }
+          open={open.assets}
+          onToggle={() => setOpen((v) => ({ ...v, assets: !v.assets }))}
+        />
+        {open.assets && (
+          <div className="px-4">
+            <AssetsAssetsSection state={state} />
+          </div>
+        )}
+      </Card>
 
       {/* Liabilities section */}
-      <SectionBar
-        title="Пасиви"
-        iconName="trending-down"
-        iconTone="danger"
-        summary={
-          showBalance ? (
-            <Money amount={-totalDebt} />
-          ) : (
-            "\u2022\u2022\u2022\u2022"
-          )
-        }
-        open={open.liabilities}
-        onToggle={() => setOpen((v) => ({ ...v, liabilities: !v.liabilities }))}
-      />
-      {open.liabilities && <AssetsLiabilitiesSection state={state} />}
+      <Card padding="none" className="mb-7 overflow-hidden">
+        <SectionBar
+          title="Пасиви"
+          iconName="trending-down"
+          iconTone="danger"
+          summary={
+            showBalance ? (
+              <Money amount={-totalDebt} />
+            ) : (
+              "\u2022\u2022\u2022\u2022"
+            )
+          }
+          open={open.liabilities}
+          onToggle={() =>
+            setOpen((v) => ({ ...v, liabilities: !v.liabilities }))
+          }
+        />
+        {open.liabilities && (
+          <div className="px-4 pb-4 pt-4">
+            <AssetsLiabilitiesSection state={state} />
+          </div>
+        )}
+      </Card>
     </>
   );
 }

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useState } from "react";
 import {
-  render,
+  render as renderBase,
   screen,
   fireEvent,
   waitFor,
@@ -36,6 +36,12 @@ vi.mock("@shared/lib/storage/storage", async () => {
 const hasText = (needle: string) => (content: string) =>
   content.includes(needle);
 
+function render(...args: Parameters<typeof renderBase>) {
+  const result = renderBase(...args);
+  fireEvent.click(screen.getByRole("button", { name: "Керувати: Категорії" }));
+  return result;
+}
+
 function Harness({ initial }: { initial: RoutineState }) {
   const [routine, setRoutine] = useState(initial);
   const [catDraft, setCatDraft] = useState<CategoryDraft>({
@@ -67,7 +73,9 @@ afterEach(() => {
 describe("CategoriesSection", () => {
   it("renders the create heading and inputs", () => {
     render(<Harness initial={defaultRoutineState()} />);
-    expect(screen.getByText("Категорії")).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Категорії" }),
+    ).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Назва категорії")).toBeInTheDocument();
     // Emoji-текстове поле замінено пікером іконок (2026-08-03).
     expect(
@@ -131,7 +139,9 @@ describe("CategoriesSection", () => {
     await waitFor(() => {
       expect(screen.getByText(hasText("Дача"))).toBeInTheDocument();
     });
-    expect(screen.getByText("Категорії")).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Категорії" }),
+    ).toBeInTheDocument();
   });
 
   it("cancel exits edit mode without renaming", () => {
@@ -145,7 +155,9 @@ describe("CategoriesSection", () => {
       target: { value: "X" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
-    expect(screen.getByText("Категорії")).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Категорії" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(hasText("Дім"))).toBeInTheDocument();
   });
 

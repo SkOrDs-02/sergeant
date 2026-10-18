@@ -9,12 +9,11 @@ import {
 } from "@testing-library/react";
 import { useState } from "react";
 import { RestTimerContext } from "../../context/RestTimerContext";
+import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { RestTimerOverlayConnected } from "./RestTimerOverlayConnected";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 
-function Harness({
-  initial = null as { remaining: number; total: number } | null,
-}) {
+function Harness({ initial = null as RestTimerState | null }) {
   const [restTimer, setRestTimer] = useState(initial);
   return (
     <ScreenReaderAnnouncerProvider>
@@ -34,14 +33,22 @@ describe("RestTimerOverlayConnected", () => {
   });
 
   it("clears rest timer via overlay cancel", () => {
-    render(<Harness initial={{ remaining: 30, total: 60 }} />);
+    render(
+      <Harness
+        initial={{ remaining: 30, total: 60, endsAt: Date.now() + 30_000 }}
+      />,
+    );
     expect(screen.getByRole("timer")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Пропустити/i }));
     expect(screen.queryByRole("timer")).not.toBeInTheDocument();
   });
 
   it("adjusts the running timer without changing the (static) aria-label", () => {
-    render(<Harness initial={{ remaining: 30, total: 60 }} />);
+    render(
+      <Harness
+        initial={{ remaining: 30, total: 60, endsAt: Date.now() + 30_000 }}
+      />,
+    );
     const labelBefore = screen.getByRole("timer").getAttribute("aria-label");
 
     fireEvent.click(screen.getByRole("button", { name: "Додати 15 секунд" }));
@@ -58,7 +65,11 @@ describe("RestTimerOverlayConnected", () => {
   // continuous per-second `aria-live` chatter this replaces is asserted
   // gone in `RestTimerOverlay.test.tsx`.
   it("announces a start milestone via the shared screen-reader live region", async () => {
-    render(<Harness initial={{ remaining: 30, total: 60 }} />);
+    render(
+      <Harness
+        initial={{ remaining: 30, total: 60, endsAt: Date.now() + 30_000 }}
+      />,
+    );
     // The message lands inside a `requestAnimationFrame` callback — see
     // `ScreenReaderAnnouncer.tsx`.
     await waitFor(() =>
@@ -69,7 +80,11 @@ describe("RestTimerOverlayConnected", () => {
   });
 
   it("announces a finish milestone once cancelled", async () => {
-    render(<Harness initial={{ remaining: 30, total: 60 }} />);
+    render(
+      <Harness
+        initial={{ remaining: 30, total: 60, endsAt: Date.now() + 30_000 }}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: /Пропустити/i }));
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent(

@@ -32,14 +32,14 @@ import { useOutboxPurgeNotice } from "../syncEngine/outboxPurgeNotice";
  *
  * The pill is a button — tapping it opens {@link SyncStatusSheet} with the
  * full state (connection, queue, errors + retry). The safe-area inset is
- * applied to the `top` position (not padding) so the `rounded-full` shape
+ * applied to the `top` position (not padding) so the `rounded-lg` shape
  * stays symmetric on notched devices (mobile-audit A6).
  */
 
 // Плашка виняткового стану розміщується під 68px-хедером і не перекриває
 // його назву та дії. У нормальному стані індикатор не показується.
 const PILL_CLS =
-  "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-lg bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 type BannerState =
   "session" | "blocked" | "offline" | "syncing" | "rejected" | "purged";

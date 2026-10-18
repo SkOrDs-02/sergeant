@@ -76,7 +76,7 @@ export function ModuleRow({
       onClick={onToggle}
       aria-pressed={active}
       className={cn(
-        "relative w-full text-left rounded-2xl border transition-all duration-base",
+        "relative w-full text-left rounded-lg border transition-all duration-base",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         expanded ? "p-3.5" : "p-3",
         active
@@ -86,7 +86,7 @@ export function ModuleRow({
     >
       <span
         className={cn(
-          "absolute top-2.5 right-2.5 w-5 h-5 rounded-full text-white flex items-center justify-center transition-opacity",
+          "absolute top-2.5 right-2.5 w-5 h-5 rounded-lg text-white flex items-center justify-center transition-opacity",
           active ? activeClasses.check : "bg-panelHi/0",
           active ? "opacity-100" : "opacity-0",
         )}
@@ -97,7 +97,7 @@ export function ModuleRow({
       <div className="flex items-center gap-3">
         <span
           className={cn(
-            "shrink-0 rounded-xl flex items-center justify-center",
+            "shrink-0 rounded-panel flex items-center justify-center",
             expanded ? "w-10 h-10" : "w-9 h-9",
             active ? activeClasses.icon : "bg-panelHi text-muted",
           )}

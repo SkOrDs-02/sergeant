@@ -14,6 +14,7 @@ import {
   PasswordStrengthBar,
   PasswordVisibilityToggle,
 } from "./authFormPrimitives";
+import { restoreFocusIfLost } from "./restoreFocusIfLost";
 
 interface RegisterFormProps {
   onAlreadyRegistered: () => void;
@@ -26,6 +27,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
   const {
     register,
     submit,
+    setFocus,
     formState: { errors },
     isSubmitting,
     watch,
@@ -45,6 +47,10 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
         // auto-switch на login ніколи не спрацьовував на першій спробі.
         if (result === "exists") {
           onAlreadyRegistered();
+        } else {
+          // Кнопка сабміту на час запиту `disabled`, і браузер скидає з неї
+          // фокус на <body>; поля лише `readOnly` і фокус зберігають.
+          restoreFocusIfLost(() => setFocus("email"));
         }
         throw new Error("");
       }
@@ -71,7 +77,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
           error={!!errors.name}
           aria-invalid={!!errors.name}
           aria-describedby={errors.name ? "auth-name-error" : undefined}
-          disabled={isSubmitting}
+          readOnly={isSubmitting}
           {...register("name")}
         />
         <FieldError id="auth-name-error" message={errors.name?.message} />
@@ -94,7 +100,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
           error={!!errors.email}
           aria-invalid={!!errors.email}
           aria-describedby={errors.email ? "auth-email-error" : undefined}
-          disabled={isSubmitting}
+          readOnly={isSubmitting}
           {...register("email")}
         />
         <FieldError id="auth-email-error" message={errors.email?.message} />
@@ -117,7 +123,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
             error={!!errors.password}
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? "auth-pw-error" : undefined}
-            disabled={isSubmitting}
+            readOnly={isSubmitting}
             {...register("password")}
           />
           <PasswordVisibilityToggle
@@ -132,7 +138,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
       {authError && (
         <div
           role="alert"
-          className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
+          className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-panel px-4 py-2.5"
         >
           {authError}
         </div>

@@ -66,7 +66,11 @@ vi.mock("@shared/api", async () => {
 });
 
 const storageMock = vi.hoisted(() => ({
-  customCategories: [] as { id: string; label: string }[],
+  customCategories: [] as {
+    id: string;
+    label: string;
+    kind?: "expense" | "income";
+  }[],
   budgets: [] as unknown[],
   addCustomCategory: vi.fn(),
   removeCustomCategory: vi.fn(),
@@ -173,9 +177,53 @@ describe("FinykSection interactions", () => {
     sessionStorage.clear();
   });
 
+  it("keeps expense and income lists separate and searches category names", () => {
+    storageMock.customCategories = [
+      { id: "expense-1", label: "Хобі", kind: "expense" },
+      { id: "expense-2", label: "Подорожі", kind: "expense" },
+      { id: "income-1", label: "Оренда", kind: "income" },
+    ];
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    expect(screen.queryByText("Хобі")).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Керувати: Власні категорії" }),
+    );
+    expect(screen.getByText("Хобі")).toBeInTheDocument();
+    expect(screen.queryByText("Оренда")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "хобі" },
+    });
+    expect(screen.queryByText("Подорожі")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Надходження" }));
+    expect(screen.getByText("Оренда")).toBeInTheDocument();
+    expect(screen.queryByText("Хобі")).not.toBeInTheDocument();
+  });
+
+  it("shows the existing 80-category limit before adding a category", () => {
+    storageMock.customCategories = Array.from({ length: 80 }, (_, i) => ({
+      id: `cat-${i}`,
+      label: `Категорія ${i}`,
+    }));
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Керувати: Власні категорії" }),
+    );
+    expect(screen.getByLabelText("Назва нової категорії")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(storageMock.addCustomCategory).not.toHaveBeenCalled();
+  });
+
   it("renders an empty-state when there are no custom categories", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
     expect(
       await screen.findByText("Поки немає власних категорій"),
     ).toBeInTheDocument();
@@ -184,7 +232,12 @@ describe("FinykSection interactions", () => {
   it("adds a custom category via the Додати button", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
+    const input = await screen.findByPlaceholderText("Назва категорії");
     fireEvent.change(input, { target: { value: "Хобі" } });
     fireEvent.click(screen.getByText("Додати"));
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Хобі");
@@ -194,7 +247,12 @@ describe("FinykSection interactions", () => {
   it("adds a custom category via the Enter key", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
+    const input = await screen.findByPlaceholderText("Назва категорії");
     fireEvent.change(input, { target: { value: "Подорожі" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Подорожі");
@@ -203,8 +261,13 @@ describe("FinykSection interactions", () => {
   it("adds an income category to the separate income catalog", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
     fireEvent.click(await screen.findByRole("button", { name: "Надходження" }));
-    const input = screen.getByPlaceholderText("Напр. Підробіток");
+    const input = screen.getByPlaceholderText("Назва категорії");
     fireEvent.change(input, { target: { value: "Оренда" } });
     fireEvent.click(screen.getByText("Додати"));
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Оренда", {
@@ -216,6 +279,11 @@ describe("FinykSection interactions", () => {
     storageMock.customCategories = [{ id: "c1", label: "🎨 Хобі" }];
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
     expect(await screen.findByText("🎨 Хобі")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Видалити"));
     // Без підтвердження видалення не відбувається.
@@ -247,6 +315,11 @@ describe("FinykSection interactions", () => {
     ];
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
     fireEvent.click(await screen.findByText("Видалити"));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("зараз їх: 2");
@@ -256,6 +329,11 @@ describe("FinykSection interactions", () => {
     storageMock.customCategories = [{ id: "c1", label: "Хобі" }];
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Керувати: Власні категорії",
+      }),
+    );
     fireEvent.click(await screen.findByText("Видалити"));
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Скасувати" }));
@@ -358,19 +436,15 @@ describe("FinykSection interactions", () => {
     await waitFor(() => expect(mockedDisconnect).toHaveBeenCalledTimes(1));
   });
 
-  it("clears the transaction cache through the confirm modal", async () => {
+  it("reloads transaction queries through the confirm modal without removing local storage", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+    fireEvent.click(await screen.findByText("Перезавантажити операції"));
 
     const dialog = await screen.findByRole("alertdialog");
-    fireEvent.click(within(dialog).getByText("Очистити"));
-    await waitFor(() =>
-      expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
-    );
-    expect(removeFinykStorageItem).toHaveBeenCalledWith(
-      "finyk_tx_cache_last_good",
-    );
+    fireEvent.click(within(dialog).getByText("Перезавантажити"));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(removeFinykStorageItem).not.toHaveBeenCalled();
   });
 
   it("refreshes all data on demand", async () => {
@@ -396,10 +470,10 @@ describe("FinykSection interactions", () => {
     });
     renderSection();
     expect(await screen.findByText("Синхронізація очікує")).toBeInTheDocument();
-    const card = screen
+    const row = screen
       .getByText("Синхронізація очікує")
-      .closest("[class*='border-']");
-    expect(card?.className).toContain("border-warning/30");
+      .closest("[data-content-row]");
+    expect(row?.querySelector(".bg-warning")).toBeInTheDocument();
   });
 
   it("renders a red error indicator when status is an unknown/error value", async () => {
@@ -414,10 +488,10 @@ describe("FinykSection interactions", () => {
     expect(
       await screen.findByText("Синхронізація не працює"),
     ).toBeInTheDocument();
-    const card = screen
+    const row = screen
       .getByText("Синхронізація не працює")
-      .closest("[class*='border-']");
-    expect(card?.className).toContain("border-danger/30");
+      .closest("[data-content-row]");
+    expect(row?.querySelector(".bg-danger")).toBeInTheDocument();
   });
 
   it("shows Re-sync… and disables the button when backfill is running", async () => {

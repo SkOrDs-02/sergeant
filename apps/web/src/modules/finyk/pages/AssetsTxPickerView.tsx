@@ -5,7 +5,6 @@
 import { useMemo, useState } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { getAccountLabel, getMonoDebt } from "../utils";
@@ -191,7 +190,7 @@ export function AssetsTxPickerView({
         aria-label="Період операцій"
         value={month}
         onChange={(event) => setMonth(event.target.value)}
-        className="input-focus-finyk h-10 w-full rounded-xl border border-line bg-bg px-3 text-sm text-text"
+        className="focus-ring h-10 w-full rounded-lg border border-line bg-bg px-3 text-style-label text-text"
       >
         <option value="">Останні 90 днів</option>
         {monthOptions.map((option) => (
@@ -202,17 +201,17 @@ export function AssetsTxPickerView({
       </select>
       {isLoading && sourceTransactions.length === 0 && (
         <div aria-busy="true" className="space-y-2">
-          <Skeleton className="h-14 rounded-xl" />
-          <Skeleton className="h-14 rounded-xl" />
-          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-panel" />
+          <Skeleton className="h-14 rounded-panel" />
+          <Skeleton className="h-14 rounded-panel" />
         </div>
       )}
       {Boolean(loadError) && sourceTransactions.length === 0 && (
-        <Card variant="flat" radius="md" className="space-y-2">
+        <Card className="space-y-2">
           <p className="text-style-caption text-danger-strong dark:text-danger">
             Не вдалося завантажити операції.
           </p>
-          <Button size="sm" onClick={retry}>
+          <Button size="sm" onClick={retry} tone="ink" variant="solid">
             Повторити
           </Button>
         </Card>
@@ -240,7 +239,6 @@ export function AssetsTxPickerView({
               onClick={() => setTxPicker(null)}
               className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
             >
-              <Icon name="chevron-left" size="sm" />
               Назад
             </button>
           </div>
@@ -280,14 +278,13 @@ export function AssetsTxPickerView({
             onClick={() => setTxPicker(null)}
             className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
           >
-            <Icon name="chevron-left" size="sm" />
             Назад
           </button>
           <span className="text-style-label">Погашення: {label}</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-            <Card variant="flat" radius="md" className="mb-3">
+            <Card className="mb-3">
               <div className="text-style-caption text-subtle mb-1">{label}</div>
               <div className="text-style-headline text-danger-strong dark:text-danger">
                 <Money amount={-Math.round(remaining)} tone="inherit" /> залишок
@@ -301,9 +298,9 @@ export function AssetsTxPickerView({
                 Погашено цього місяця: <Money amount={Math.round(paid)} /> ·
                 Базовий борг: <Money amount={Math.round(total)} />
               </div>
-              <div className="h-1.5 bg-line rounded-full overflow-hidden mt-3">
+              <div className="h-1.5 bg-line rounded-[3px] overflow-hidden mt-3">
                 <div
-                  className="h-full bg-danger rounded-full transition-[width,background-color] duration-slower"
+                  className="h-full bg-danger rounded-[3px] transition-[width,background-color] duration-slower"
                   style={{
                     width: `${total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0}%`,
                   }}
@@ -322,7 +319,6 @@ export function AssetsTxPickerView({
                 <div key={i}>
                   {suggested && !isLinked && (
                     <div className="inline-flex items-center gap-1 text-style-caption font-semibold text-success-strong dark:text-success px-1 pt-1">
-                      <Icon name="arrow-up" size="sm" />
                       Поповнення картки
                     </div>
                   )}
@@ -372,7 +368,6 @@ export function AssetsTxPickerView({
               onClick={() => setTxPicker(null)}
               className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
             >
-              <Icon name="chevron-left" size="sm" />
               Назад
             </button>
           </div>
@@ -392,14 +387,13 @@ export function AssetsTxPickerView({
             onClick={() => setTxPicker(null)}
             className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
           >
-            <Icon name="chevron-left" size="sm" />
             Назад
           </button>
           <span className="text-style-label">Операція для «{sub.name}»</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-            <Card variant="flat" radius="md" className="mb-4">
+            <Card className="mb-4">
               <p className="text-style-body text-subtle leading-relaxed">
                 Обери списання (наприклад через Apple/Google). День місяця з
                 операції підставиться в «день списання»; сума піде в огляд і в
@@ -469,7 +463,6 @@ export function AssetsTxPickerView({
             onClick={() => setTxPicker(null)}
             className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
           >
-            <Icon name="chevron-left" size="sm" />
             Назад
           </button>
         </div>

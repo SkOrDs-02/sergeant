@@ -136,7 +136,7 @@ describe("RoutineStatsPanel", () => {
     ).toContain("Місяць");
     // Default month slice = rolling 30 days ending today.
     expect(lastRateWindow()).toEqual(["2026-06-11", "2026-07-10"]);
-    expect(screen.getByText("Зведення · останні 30 днів")).toBeInTheDocument();
+    expect(screen.getByText("Виконання · останні 30 днів")).toBeInTheDocument();
   });
 
   it("re-scopes the summary window when the range changes", () => {

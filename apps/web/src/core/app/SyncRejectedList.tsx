@@ -88,7 +88,7 @@ export function SyncRejectedList() {
   return (
     <section
       aria-label={COPY.heading}
-      className="mt-3 rounded-xl border border-danger/30 bg-danger/5 px-3 py-2.5"
+      className="mt-3 rounded-panel border border-danger/30 bg-danger/5 px-3 py-2.5"
       data-testid="sync-rejected-list"
     >
       <p className="text-style-label font-semibold text-danger-strong dark:text-danger">

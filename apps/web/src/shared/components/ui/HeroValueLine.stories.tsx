@@ -26,7 +26,7 @@ type Story = StoryObj<typeof HeroValueLine>;
 
 export const Default: Story = {
   render: () => (
-    <Card module="routine" prominence="hero" radius="xl">
+    <Card tone="routine" prominence="hero">
       <HeroValueLine
         ring={<ProgressRing variant="routine" value={4} max={6} size="lg" />}
         metric={<CounterReveal value={4} max={6} maxTone="hero-ink" />}
@@ -39,7 +39,7 @@ export const Default: Story = {
 /** Edge case — no ring slot (Nutrition partial-progress hero без kcal ring). */
 export const NoRing: Story = {
   render: () => (
-    <Card module="nutrition" prominence="hero" radius="xl">
+    <Card tone="nutrition" prominence="hero">
       <HeroValueLine
         metric={<CounterReveal value={1820} max={2200} />}
         narrative="Залишилось 380 kcal · 3 прийоми їжі"

@@ -1,0 +1,9 @@
+{
+  "status": 200,
+  "accepted": 200,
+  "applied": 200,
+  "rejected": 0,
+  "serverRows": 200,
+  "elapsedMs": 1948,
+  "environment": "isolated local API and PostgreSQL; Chromium; no production data"
+}

@@ -14,7 +14,7 @@ describe("ChartFallback (branches)", () => {
     const skeleton = container.firstChild as HTMLElement;
     expect(skeleton).toHaveAttribute("aria-hidden", "true");
     expect(skeleton.className).toMatch(/h-20/);
-    expect(skeleton.className).toMatch(/rounded-xl/);
+    expect(skeleton.className).toMatch(/rounded-panel/);
   });
 
   it("merges custom className onto skeleton", () => {

@@ -1,11 +1,6 @@
 import { Suspense, useEffect } from "react";
 import { useRouteError } from "react-router-dom";
-
-// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
-// каталог тягне з собою десять модульних файлів плюс en-копію
-// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
 import { coreMessages as messages } from "@shared/i18n/uk.core";
-
 import { isChunkLoadError, reloadOnceForChunkError } from "../lib/chunkReload";
 import { lazyImport } from "../lib/lazyImport";
 
@@ -36,7 +31,11 @@ export function RouteErrorElement() {
   const chunkError = isChunkLoadError(error);
 
   useEffect(() => {
-    if (chunkError) reloadOnceForChunkError();
+    // Гейт незбереженого вводу вимкнено (data-45): `errorElement` уже замінив
+    // піддерево маршруту карткою, форми там немає, відмова нічого б не вбереже.
+    if (chunkError) {
+      reloadOnceForChunkError(undefined, { guardUnsavedInput: false });
+    }
   }, [chunkError]);
 
   if (chunkError) {
@@ -51,7 +50,7 @@ export function RouteErrorElement() {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
         >
           {messages.actions.reload}
         </button>

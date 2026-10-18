@@ -46,8 +46,10 @@ export function NotFoodNotice({
   const what = (dishName || "").trim();
   const copy = NOT_FOOD_COPY[kind ?? "other"];
   return (
-    <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3">
-      <div className="text-style-label text-text">{copy.title}</div>
+    <div className="mt-4 border-t border-line pt-3">
+      <div className="text-style-body font-semibold text-text">
+        {copy.title}
+      </div>
       <p className="mt-1 text-style-caption text-muted leading-relaxed">
         {what
           ? `На фото схоже на «${what}», порахувати КБЖВ немає з чого.`

@@ -36,9 +36,7 @@ test("@critical routine: calendar → add-habit CTA opens create dialog", async 
 
   await page.goto("/routine", { waitUntil: "domcontentloaded" });
 
-  await page
-    .getByRole("button", { name: "Додати звичку", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Нова звичка", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Нова звичка" })).toBeVisible({
     timeout: 10_000,
   });
@@ -56,9 +54,7 @@ test("@critical routine: mobile habit dates stay contained and stacked", async (
   const errors = await collectPageErrors(page);
 
   await page.goto("/routine", { waitUntil: "domcontentloaded" });
-  await page
-    .getByRole("button", { name: "Додати звичку", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Нова звичка", exact: true }).click();
 
   const dialog = page.getByRole("dialog", { name: "Нова звичка" });
   await expect(dialog).toBeVisible({ timeout: 10_000 });
@@ -128,9 +124,7 @@ test("@critical routine: today → tomorrow → week keeps one selected day", as
   // гортати нічого. Регресію, заради якої цей тест існує (тап по даті давав
   // режим `day` замість `today`/`tomorrow`, репорт власника 2026-08-17), він
   // перевіряє так само — просто на непорожній стрічці.
-  await page
-    .getByRole("button", { name: "Додати звичку", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Нова звичка", exact: true }).click();
   const createDialog = page.getByRole("dialog", { name: "Нова звичка" });
   await expect(createDialog).toBeVisible();
   await createDialog.getByLabel("Назва звички").fill("Смоук діапазон");

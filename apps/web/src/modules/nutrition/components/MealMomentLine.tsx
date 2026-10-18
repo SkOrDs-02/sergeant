@@ -34,7 +34,7 @@ export function MealMomentLine({ date }: { date: string }) {
       target={NUTRITION_MOMENT_TARGET}
       onDate={date}
       format={mealMomentText}
-      className="text-nutrition-strong dark:text-nutrition"
+      className="text-text"
     />
   );
 }

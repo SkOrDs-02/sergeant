@@ -1,3 +1,5 @@
+import { getFinykDayPlan } from "../../lib/dayPlan";
+import type { UseFlowScheduleParams } from "../../lib/flowSchedule";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Skeleton, SkeletonBudgetBar } from "@shared/components/ui/Skeleton";
@@ -41,6 +43,7 @@ import {
   type BudgetFormType,
 } from "../../components/budgets/AddBudgetForm";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useToast } from "@shared/hooks/useToast";
 import {
   trackEvent,
@@ -64,7 +67,6 @@ import type { MonoJarDto } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { QuickActionButton } from "../AssetsBars";
 import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
-import { Icon } from "@shared/components/ui/Icon";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -121,13 +123,11 @@ export interface BudgetsProps {
   focusLimitCategoryId?: string | null;
   /**
    * When true, the embedded `MonthlyPlanCard` auto-opens its inline
-   * editor and renders a `<FirstRunHintBanner />` framing the
-   * income/expense/savings inputs as the canonical home of the user's
-   * monthly plan. Set on the user's first Finyk entry by `FinykApp`
-   * via `useModuleFirstRun`.
+   * editor once. Set on the user's first Finyk entry by `FinykApp` via
+   * `useModuleFirstRun`.
    */
   monthlyPlanFirstRunHint?: boolean;
-  /** Dismiss callback for the first-run hint banner. */
+  /** Позначає перший запуск як побачений, щойно редактор відкрився сам. */
   onDismissMonthlyPlanFirstRunHint?: () => void;
   /**
    * Блок «майбутнього» між планом і лімітами: найближчі платежі, підказки
@@ -171,6 +171,10 @@ export function Budgets({
   planningSlot,
   onAddSubscription,
 }: BudgetsProps) {
+  // Перший запуск одноразовий: редактор плану відкрився сам, і цього досить.
+  useEffect(() => {
+    if (monthlyPlanFirstRunHint) onDismissMonthlyPlanFirstRunHint?.();
+  }, [monthlyPlanFirstRunHint, onDismissMonthlyPlanFirstRunHint]);
   const toast = useToast();
   const { realTx: networkTx, loadingTx, jars = [] } = mono;
   // Мережа дає лише поточний місяць: історію для вікон лімітів добирає дзеркало.
@@ -188,8 +192,8 @@ export function Budgets({
     manualExpenses = [],
   } = storage;
 
-  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
-  const now = useMemo(() => new Date(), []);
+  const nowMs = useKyivDayNow();
+  const now = useMemo(() => new Date(nowMs), [nowMs]);
   const { monthStart, daysPassed, daysInMonth } = getCurrentMonthContext(now);
 
   // Manual expenses/income live in storage (LS + React state), not in the
@@ -481,13 +485,13 @@ export function Budgets({
 
   const budgetsLoadingSkeleton = (
     <div
-      className="flex-1 overflow-y-auto px-4 pt-4 page-tabbar-pad space-y-3 max-w-4xl mx-auto w-full"
+      className="flex-1 overflow-y-auto px-5 pt-4 page-tabbar-pad space-y-3 max-w-4xl mx-auto w-full"
       aria-busy="true"
       aria-live="polite"
     >
       {/* Shape-aware: header bar + 3 budget rows so the layout doesn't
           reflow when data lands. */}
-      <Skeleton className="h-28 rounded-2xl" />
+      <Skeleton className="h-28 rounded-panel" />
       <SkeletonBudgetBar />
       <SkeletonBudgetBar className="opacity-80" />
       <SkeletonBudgetBar className="opacity-60" />
@@ -496,15 +500,27 @@ export function Budgets({
 
   const {
     remaining: remaining2,
-    safePerDay,
     pctExpense,
     isOver,
     daysLeft: daysLeft2,
   } = getMonthlyPlanUsage(
     { planIncome, planExpense, totalFact: totalExpenseFact },
-    // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getMonthlyPlanUsage
-    new Date(),
+    now,
   );
+
+  const { dayPlan } = getFinykDayPlan({
+    transactions: allTx,
+    planExpense,
+    excludedTxIds: new Set(excludedTxIds),
+    txSplits,
+    nowMs: now.getTime(),
+    subscriptions: (storage.subscriptions ??
+      []) as UseFlowScheduleParams["subscriptions"],
+    manualDebts: (storage.manualDebts ??
+      []) as UseFlowScheduleParams["manualDebts"],
+    receivables: (storage.receivables ??
+      []) as UseFlowScheduleParams["receivables"],
+  });
 
   return (
     // See comment in Overview.tsx — FinykApp's tab body is a vertical
@@ -519,8 +535,10 @@ export function Budgets({
     >
       {() => (
         <div className="flex-1 overflow-y-auto">
-          <h1 className="sr-only">Бюджети</h1>
-          <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+          <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
+            <h1 className="text-style-headline text-text">
+              {messages.finykRedesign.planningTitle}
+            </h1>
             <MonthlyPlanCard
               monthlyPlan={monthlyPlan}
               onChangeMonthlyPlan={setMonthlyPlan}
@@ -532,13 +550,12 @@ export function Budgets({
               factIncome={factIncome}
               factSavings={factSavings}
               remaining={remaining2}
-              safePerDay={safePerDay}
+              safePerDay={dayPlan ?? 0}
               pctExpense={pctExpense}
               isOver={isOver}
               daysLeft={daysLeft2}
               forecastExpense={forecastExpense}
               firstRunHint={monthlyPlanFirstRunHint}
-              onDismissFirstRunHint={onDismissMonthlyPlanFirstRunHint}
             />
 
             {planningSlot}
@@ -608,7 +625,6 @@ export function Budgets({
                     label: messages.finyk.planning.addSubscription,
                     description:
                       messages.finyk.planning.addSubscriptionDescription,
-                    icon: <Icon name="refresh-cw" size="md" aria-hidden />,
                     onSelect: () => onAddSubscription?.(),
                   },
                   {
@@ -616,7 +632,6 @@ export function Budgets({
                     id: "limit",
                     label: messages.finyk.planning.addLimitLabel,
                     description: messages.finyk.planning.addLimitDescription,
-                    icon: <Icon name="flag" size="md" aria-hidden />,
                     onSelect: () => openBudgetForm("limit"),
                   },
                   {
@@ -624,7 +639,6 @@ export function Budgets({
                     id: "goal",
                     label: messages.finyk.planning.addGoalLabel,
                     description: messages.finyk.planning.addGoalDescription,
-                    icon: <Icon name="target" size="md" aria-hidden />,
                     onSelect: () => openBudgetForm("goal"),
                   },
                 ]}
@@ -632,7 +646,7 @@ export function Budgets({
                   <QuickActionButton
                     label={messages.finyk.planning.schedule}
                     tone="finyk"
-                    className="rounded-2xl shadow-soft"
+                    className="rounded-lg"
                   />
                 }
               />

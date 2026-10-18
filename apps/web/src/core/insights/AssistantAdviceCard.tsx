@@ -127,26 +127,20 @@ export function AssistantAdviceCard({
   return (
     <div
       className={cn(
-        "rounded-2xl overflow-hidden",
+        "rounded-panel overflow-hidden",
         "transition-all duration-base",
-        "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
+        "border border-line bg-panel",
       )}
     >
-      <div className="rounded-2xl bg-panel overflow-hidden">
+      <div className="rounded-panel bg-panel overflow-hidden">
         <button
           type="button"
           onClick={toggle}
           aria-expanded={!collapsed}
           aria-controls={bodyId}
-          className="flex items-center justify-between w-full px-4 py-3 text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
+          className="flex items-center justify-between w-full px-4 py-3 text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         >
           <div className="flex items-center gap-2">
-            <span
-              className="w-6 h-6 rounded-full bg-brand-soft flex items-center justify-center text-xs" /* glyph scales with container, not a type role */
-              aria-hidden
-            >
-              S
-            </span>
             <SectionHeading as="span" size="xs" variant="muted">
               {messages.sergeant.adviceCardTitle}
             </SectionHeading>
@@ -165,11 +159,9 @@ export function AssistantAdviceCard({
               </Badge>
             )}
           </div>
-          <Icon
-            name={collapsed ? "chevron-down" : "chevron-up"}
-            size="sm"
-            className="text-muted"
-          />
+          <span className="text-style-caption text-muted">
+            {collapsed ? "Розгорнути" : "Згорнути"}
+          </span>
         </button>
 
         {!collapsed && (
@@ -194,7 +186,6 @@ export function AssistantAdviceCard({
                 aria-label={messages.sergeant.adviceLoadingAria}
                 className="space-y-2 py-0.5 motion-safe:animate-pulse"
               >
-                <span className="sr-only">Готую пораду…</span>
                 <SkeletonText className="h-3.5 w-full" pulse={false} />
                 <SkeletonText className="h-3.5 w-11/12" pulse={false} />
                 <SkeletonText className="h-3.5 w-4/5" pulse={false} />
@@ -250,17 +241,11 @@ export function AssistantAdviceCard({
                       });
                     }}
                     className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl touch-target",
-                      "bg-brand-soft text-brand-soft-fg text-style-caption font-semibold",
-                      "hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
+                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg touch-target",
+                      "border border-line bg-panel text-text text-style-caption font-semibold",
+                      "hover:bg-panelHi transition-colors",
                     )}
                   >
-                    <Icon
-                      name="sergeant"
-                      size={13}
-                      strokeWidth={2}
-                      aria-hidden
-                    />
                     Запитати Сержанта про це
                   </button>
                 )}
@@ -275,7 +260,7 @@ export function AssistantAdviceCard({
                   aria-label="Оновити пораду"
                   className={cn(
                     "inline-flex items-center justify-center",
-                    "p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
+                    "p-1.5 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors",
                     loading &&
                       "opacity-40 cursor-not-allowed motion-safe:animate-spin",
                   )}

@@ -5,12 +5,11 @@
 import { useEffect } from "react";
 import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
-import { StreakFlame } from "@shared/components/ui/StreakFlame";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
 } from "../../../core/observability/analytics";
-import { DayProgressRing } from "./DayProgressRing";
+import { DayProgress } from "./DayProgress";
 import { RoutineMomentLine } from "./RoutineMomentLine";
 import { DAY_TARGET } from "../../../core/insights/moments/moments";
 import type { RoutineTimeMode } from "../context/RoutineCalendarContext";
@@ -66,18 +65,7 @@ export interface RoutineCalendarHeroProps {
   onOpenDayReport: () => void;
 }
 
-/**
- * Top "hero" card for the Routine calendar tab. Uses the v2 hero Card
- * shell (prominence="hero" module="routine" radius="xl") with:
- *
- *   - `HeroValueLine` — narrative sentence (date · progress · streak),
- *     animated `CounterReveal` metric, and the `DayProgressRing` (ring
- *     slot, clickable to open the day-report sheet).
- *   - `KpiRowCompact` — one-row compact meta strip: events in range,
- *     active habits, completion %, current streak.
- *
- * Props interface is unchanged from v1; all call sites remain compatible.
- */
+/** H hero: progress count, N segments and one day-report entry. */
 export function RoutineCalendarHero({
   rangeLabel,
   timeMode,
@@ -86,9 +74,9 @@ export function RoutineCalendarHero({
   currentStreak,
   onOpenDayReport,
 }: RoutineCalendarHeroProps) {
-  // «N з M виконано» тут не пишемо: те саме число вже стоїть у кільці поруч,
+  // «N з M виконано» тут не пишемо: те саме число вже стоїть у прогресі,
   // а список звичок одразу під героєм. Текстом лишається лише порожній день,
-  // бо кільце тоді показує тире.
+  // бо прогрес тоді показує тире.
   const streakText =
     currentStreak > 0
       ? `Найкраща серія ${currentStreak} ${pluralDays(currentStreak)}`
@@ -126,76 +114,36 @@ export function RoutineCalendarHero({
     });
   }, [flame.visible, flame.count]);
 
-  /*
-    AI-CONTEXT: у `Card` нижче НЕМА пропа `edge` — і це рішення, а не
-    пропуск.
-
-    «Край і зріз» (П3) — матеріал ЗАПИСІВ І ЗВІТІВ; межу зафіксовано
-    рішенням власника 2026-08-07, див. `docs/design/design/anti-slop-strategy.md`
-    §4/П3. Тест простий: чи існує ця річ у житті як аркуш. Операція —
-    так (чек), тижневий дайджест — так. А це календарний навігатор:
-    керівна поверхня, якою обирають діапазон. Аркушем вона не є.
-
-    Край тут стояв від першої хвилі застосування, ще до того, як межу
-    сформулювали. Знято, бо перший же виняток розмиває тест, а без тесту
-    матеріал за пару ітерацій розповзеться на всю оболонку й перестане
-    щось означати — рівно доля скруглення (§3.2/3).
-  */
+  // H replaces the flame glyph with text; keep the historical analytics
+  // surface "hero_flame" so existing exposure/check-in funnels stay intact.
   return (
     <Card
       as="section"
-      prominence="hero"
-      module="routine"
+      prominence={dayProgress.scheduled > 0 ? "hero" : "panel"}
+      tone={dayProgress.scheduled > 0 ? "routine" : undefined}
       aria-label={rangeLabel}
-      className="routine-hero relative"
     >
-      {flame.visible && (
-        <span
-          className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-center"
-          aria-hidden="true"
-        >
-          <StreakFlame streak={flame.count} size="sm" />
-        </span>
+      <p
+        className={
+          dayProgress.scheduled > 0
+            ? "text-style-overline text-routine-tint-label mb-2"
+            : "text-style-overline text-muted mb-2"
+        }
+      >
+        {SLICE_LABEL[timeMode]}
+      </p>
+      <DayProgress
+        completed={dayProgress.completed}
+        scheduled={dayProgress.scheduled}
+        onClick={onOpenDayReport}
+      />
+      <p className="mt-3 text-style-label text-muted">{headlineDate}</p>
+      {metaText && (
+        <p className="mt-1 text-style-label text-muted">{metaText}</p>
       )}
-      <div className="flex flex-row items-center gap-4 sm:gap-6">
-        <div className="flex shrink-0 items-center justify-center">
-          <DayProgressRing
-            completed={dayProgress.completed}
-            scheduled={dayProgress.scheduled}
-            onClick={onOpenDayReport}
-          />
-        </div>
-        {/* Місце під вогник лише тоді, коли він є: без серії 48px фантому
-            на 320-360px загортали дату в 2-3 рядки. */}
-        <div
-          className={flame.visible ? "min-w-0 flex-1 pr-12" : "min-w-0 flex-1"}
-        >
-          <p className="text-style-caption font-semibold text-hero-ink">
-            {SLICE_LABEL[timeMode]}
-          </p>
-          {/* Дата — ДРУГИЙ рівень: рішення власника 2026-09-12 (D1 крок 3).
-              Перший віддано числу прогресу в кільці (`DayProgressRing`), бо
-              предмет екрана — виконання дня, а календар — навігатор до нього.
-              Кільце стоїть поруч із датою, тож тримати обидва на `headline`
-              означало б два перші рівні пліч-о-пліч, а це проти правила 1
-              `density-hierarchy-spec.md`. */}
-          <p className="mt-1 text-style-title text-hero-ink">{headlineDate}</p>
-          {/* `currentStreak` = `flexibleMaxActiveStreak`: максимум СЕРЕД
-              звичок, не «тримаю все N днів» (телеметрія чесно шле
-              `scope: "max_across_habits"`, аудит 2026-09, PR-R10). «Найкраща»
-              називає це без імені звички (founder-рішення 2026-08-30,
-              `useStreakRecordPendingInsight`: без підстановки назви). */}
-          {metaText && (
-            <p className="mt-1 text-style-label text-hero-ink">{metaText}</p>
-          )}
-          {timeMode === "today" && (
-            <RoutineMomentLine
-              target={DAY_TARGET}
-              className="mt-1 text-hero-ink dark:text-hero-ink"
-            />
-          )}
-        </div>
-      </div>
+      {timeMode === "today" && (
+        <RoutineMomentLine target={DAY_TARGET} className="mt-2" />
+      )}
     </Card>
   );
 }

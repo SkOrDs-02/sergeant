@@ -60,7 +60,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("disables an incomplete goal and explains the required fields", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
 
     const submit = screen.getByRole("button", { name: "Додати" });
     expect(submit).toBeDisabled();
@@ -298,7 +298,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("submits a valid goal budget with trimmed name and number conversion (no more editable saved-amount field)", async () => {
     const { onSubmit } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
 
     expect(screen.queryByLabelText("Вже відкладено")).not.toBeInTheDocument();
 
@@ -327,7 +327,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("does not render the jar dropdown when the user has no Monobank jars", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
     expect(screen.queryByLabelText("Банка Monobank")).not.toBeInTheDocument();
   });
 
@@ -346,7 +346,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       },
     ];
     const { onSubmit } = setup([], jars);
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
 
     fireEvent.change(screen.getByLabelText("Назва цілі"), {
       target: { value: "Відпустка" },
@@ -381,7 +381,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       },
     ];
     setup([], jars);
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
     fireEvent.change(screen.getByLabelText("Банка Monobank"), {
       target: { value: "jar-1" },
     });
@@ -405,7 +405,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       },
     ];
     setup([], jars);
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
     fireEvent.change(screen.getByLabelText("Сума цілі"), {
       target: { value: "9999" },
     });
@@ -417,7 +417,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("blocks goal submit when name is whitespace-only via .trim().min(1)", async () => {
     const { onSubmit } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
     fireEvent.change(screen.getByLabelText("Назва цілі"), {
       target: { value: "   " },
     });
@@ -434,7 +434,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("caps the goal name at NAME_MAX_LEN (client maxLength, beta-input-boundaries)", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
 
     const nameInput = screen.getByLabelText("Назва цілі");
     expect(nameInput).toHaveAttribute("maxLength", "200");
@@ -442,7 +442,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("rejects a decimal goal target amount", async () => {
     const { onSubmit } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
     fireEvent.change(screen.getByLabelText("Назва цілі"), {
       target: { value: "Подорож" },
     });
@@ -464,7 +464,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("goal icon selection reflects in submit payload", async () => {
     const { onSubmit } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Ціль/ }));
 
     fireEvent.change(screen.getByLabelText("Іконка цілі"), {
       target: { value: "home" },

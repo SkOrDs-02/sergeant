@@ -20,7 +20,7 @@ import {
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { openHubModule } from "@shared/lib/modules/hubNav";
-import { useDashboardFocus } from "../insights/TodayFocusCard";
+import { useDashboardFocus } from "../insights/dashboardFocus";
 import { hasLiveWeeklyDigest } from "../insights/WeeklyDigestCard";
 import { useCoachInsight } from "../insights/useCoachInsight";
 import {

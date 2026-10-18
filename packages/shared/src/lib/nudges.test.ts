@@ -15,6 +15,22 @@ import {
 } from "./nudges";
 
 describe("getActiveNudge", () => {
+  it("усі щоденні повідомлення — факти без риторичних питань чи мотивації", () => {
+    const store = createMemoryKVStore();
+    const seen: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      const nudge = getActiveNudge(store, 7, {
+        picks: ["routine", "finyk"],
+        modulesWithEntries: new Set(["finyk"]),
+      });
+      if (!nudge) break;
+      expect(nudge.message).not.toMatch(/[!?]|Спробуй|Подивись|Додай другий/);
+      seen.push(nudge.id);
+      dismissNudge(store, nudge.id);
+    }
+    expect(seen).toHaveLength(5);
+  });
+
   it("returns null for sessionDays < 2", () => {
     const store = createMemoryKVStore();
     expect(getActiveNudge(store, 0)).toBeNull();

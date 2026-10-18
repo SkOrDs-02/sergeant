@@ -20,7 +20,7 @@ export interface WorkoutItemCardioFieldsProps {
 }
 
 const INPUT_CLASS =
-  "input-focus-fizruk h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text tabular-nums read-only:opacity-70 read-only:cursor-not-allowed";
+  "input-focus-fizruk h-11 rounded-lg border border-line bg-panelHi px-3 text-style-body text-text tabular-nums read-only:opacity-70 read-only:cursor-not-allowed";
 
 /**
  * Time / distance inputs of a non-strength item. Split out of

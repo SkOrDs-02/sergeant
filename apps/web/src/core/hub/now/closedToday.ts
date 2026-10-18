@@ -46,6 +46,7 @@ import {
   loadNutritionLog,
 } from "@nutrition/lib/nutritionStorage";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
+import { maskAmount } from "@finyk/lib/balanceVisibility";
 import type { Rec } from "../../lib/recommendationEngine";
 
 export interface ClosedTodayItem {
@@ -217,7 +218,7 @@ function finykClosed(now: Date, recs: readonly Rec[]): ClosedTodayItem | null {
     module: "finyk",
     label: CLOSED_TODAY_LABELS.finyk,
     statement: hasLimits ? "записано · у межах лімітів" : "записано",
-    value: formatMoney(totalSpent),
+    value: maskAmount(formatMoney(totalSpent)),
   };
 }
 

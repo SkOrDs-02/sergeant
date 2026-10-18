@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import { useEffect, useRef } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
@@ -27,13 +28,15 @@ export function useNutritionQuickStatsWriter({
   prefs,
 }: {
   log: NutritionLog;
-  prefs: NutritionPrefs;
+  prefs: NutritionPrefs | null;
 }): void {
+  const dayKey = useDeviceDayKey();
   const lastWrittenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    void dayKey;
     lastWrittenRef.current = writeNutritionQuickStatsSnapshot({ log, prefs });
-  }, [log, prefs]);
+  }, [log, prefs, dayKey]);
 }
 
 /**

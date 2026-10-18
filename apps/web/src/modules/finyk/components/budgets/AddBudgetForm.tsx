@@ -1,3 +1,4 @@
+import { messages } from "@shared/i18n";
 import { memo, useCallback, useId, useMemo, useState } from "react";
 import { z } from "zod";
 import {
@@ -12,9 +13,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
-import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms";
-import { messages } from "@shared/i18n/uk";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import {
   findLimitCategoryOverlaps,
@@ -24,7 +23,6 @@ import {
 } from "@sergeant/finyk-domain/domain/budget";
 import type { MonoJarDto } from "@shared/api";
 import { CategorySelector } from "../CategorySelector";
-import { CategoryIconChip } from "../CategoryIconChip";
 import { JarSelector } from "../JarSelector";
 import { stripLeadingEmoji } from "../txRowHelpers";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
@@ -377,35 +375,30 @@ function AddBudgetFormComponent({
     formType === "limit" ? limitForm.isSubmitting : goalForm.isSubmitting;
 
   return (
-    <Card radius="lg" padding="lg" className="space-y-3">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setFormType("limit")}
-          className={cn(
-            "flex-1 py-2 flex items-center justify-center gap-1.5 text-style-label rounded-xl border transition-colors",
-            formType === "limit"
-              ? "bg-primary border-primary text-bg"
-              : "border-line text-subtle",
-          )}
-        >
-          <Icon name="flag" size="sm" />
-          Ліміт
-        </button>
-        <button
-          type="button"
-          onClick={() => setFormType("goal")}
-          className={cn(
-            "flex-1 py-2 flex items-center justify-center gap-1.5 text-style-label rounded-xl border transition-colors",
-            formType === "goal"
-              ? "bg-success-strong border-success-strong text-white"
-              : "border-line text-subtle",
-          )}
-        >
-          <Icon name="target" size="sm" />
-          Ціль
-        </button>
-      </div>
+    <Card padding="lg" className="space-y-3">
+      <fieldset className="divide-y divide-line" disabled={isSubmitting}>
+        <legend className="sr-only">{messages.finykRedesign.budgetType}</legend>
+        {(
+          [
+            ["limit", messages.finykRedesign.limit],
+            ["goal", messages.finykRedesign.goal],
+          ] as const
+        ).map(([type, label]) => (
+          <label
+            key={type}
+            className="flex min-h-touch-target items-center justify-between gap-3 py-3 text-style-body text-text"
+          >
+            <span>{label}</span>
+            <input
+              type="radio"
+              name="budget-type"
+              value={type}
+              checked={formType === type}
+              onChange={() => setFormType(type)}
+            />
+          </label>
+        ))}
+      </fieldset>
       {formType === "limit" ? (
         <form
           onSubmit={limitForm.submit}
@@ -417,7 +410,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={`${fieldId}-period`}>Період</Label>
             <select
               id={`${fieldId}-period`}
-              className="input-focus-finyk w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-sm text-text"
+              className="focus-ring w-full h-10 min-w-0 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
               disabled={isSubmitting}
               {...limitForm.register("period")}
             >
@@ -432,11 +425,10 @@ function AddBudgetFormComponent({
                 {limitCategoryIds.map((id) => (
                   <li
                     key={id}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-1.5"
+                    className="flex items-center justify-between gap-2 rounded-panel border border-line bg-bg px-3 py-1.5"
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <CategoryIconChip categoryId={id} size={24} />
-                      <span className="text-sm text-text truncate">
+                      <span className="text-style-label text-text truncate">
                         {resolveCategoryLabel(id)}
                       </span>
                     </span>
@@ -445,7 +437,7 @@ function AddBudgetFormComponent({
                       onClick={() => removeLimitCategory(id)}
                       disabled={isSubmitting}
                       aria-label={`Прибрати категорію ${resolveCategoryLabel(id)}`}
-                      className="touch-target flex items-center justify-center rounded-xl text-muted hover:text-text transition-colors"
+                      className="touch-target flex items-center justify-center rounded-lg text-muted hover:text-text transition-colors"
                     >
                       <Icon name="close" size="md" aria-hidden />
                     </button>
@@ -467,7 +459,7 @@ function AddBudgetFormComponent({
             />
             {limitCategoriesError && (
               <p
-                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {limitCategoriesError}
@@ -475,7 +467,7 @@ function AddBudgetFormComponent({
             )}
             {limitOverlaps.length > 0 && (
               <p
-                className="mt-1 text-style-caption text-subtle bg-bg rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-subtle bg-bg rounded-panel px-3 py-2"
                 role="status"
               >
                 {limitOverlaps
@@ -498,7 +490,7 @@ function AddBudgetFormComponent({
               <Label htmlFor={limitNameId}>{"Назва (необовʼязково)"}</Label>
               <Input
                 id={limitNameId}
-                placeholder="Напр. Їжа"
+                placeholder="Назва"
                 maxLength={NAME_MAX_LEN}
                 disabled={isSubmitting}
                 {...limitForm.register("label")}
@@ -512,7 +504,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={limitAmountId}>Ліміт</Label>
             <Input
               id={limitAmountId}
-              placeholder="Напр. 5 000 ₴"
+              placeholder="Сума"
               type="text"
               inputMode="decimal"
               autoComplete="off"
@@ -522,7 +514,7 @@ function AddBudgetFormComponent({
             />
             {limitAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {limitAmountError}
@@ -547,6 +539,8 @@ function AddBudgetFormComponent({
               className="flex-1"
               size="sm"
               disabled={isSubmitting || !limitDraftValid}
+              tone="ink"
+              variant="solid"
             >
               Додати
             </Button>
@@ -571,11 +565,9 @@ function AddBudgetFormComponent({
           <div className="flex items-center gap-2">
             {/* Превʼю обраної іконки — нативний `<option>` малює лише
                 текст, тож без нього вибір лишався б невидимим. */}
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-panelHi text-finyk">
-              <Icon name={goalIconOf(goalEmoji)} size={18} aria-hidden />
-            </span>
+
             <select
-              className="input-focus-finyk h-10 min-w-0 flex-1 rounded-xl border border-line bg-bg px-3 text-sm text-text"
+              className="focus-ring h-10 min-w-0 flex-1 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
               value={goalIconOf(goalEmoji)}
               aria-label="Іконка цілі"
               onChange={(e) =>
@@ -595,7 +587,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={goalNameId}>Назва цілі</Label>
             <Input
               id={goalNameId}
-              placeholder="Напр. На відпустку"
+              placeholder="Назва"
               maxLength={NAME_MAX_LEN}
               aria-invalid={goalNameError ? true : undefined}
               disabled={isSubmitting}
@@ -603,7 +595,7 @@ function AddBudgetFormComponent({
             />
             {goalNameError && (
               <p
-                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {goalNameError}
@@ -614,7 +606,7 @@ function AddBudgetFormComponent({
             <Label htmlFor={goalAmountId}>Сума цілі</Label>
             <Input
               id={goalAmountId}
-              placeholder="Напр. 20 000 ₴"
+              placeholder="Сума"
               type="text"
               inputMode="decimal"
               autoComplete="off"
@@ -624,7 +616,7 @@ function AddBudgetFormComponent({
             />
             {goalAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {goalAmountError}
@@ -651,7 +643,7 @@ function AddBudgetFormComponent({
               // 2026-07-24 supersedes the earlier round-2 M1 call to skip
               // an external label — every form field now gets a visible
               // label + example placeholder.
-              emptyLabel="Напр. 31.12.2026"
+              emptyLabel="Дата"
               value={goalTargetDate}
               className="w-full"
               disabled={isSubmitting}
@@ -669,6 +661,8 @@ function AddBudgetFormComponent({
               className="flex-1"
               size="sm"
               disabled={isSubmitting || !goalDraftValid}
+              tone="ink"
+              variant="solid"
             >
               Додати
             </Button>

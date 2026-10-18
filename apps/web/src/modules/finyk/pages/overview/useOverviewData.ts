@@ -1,13 +1,12 @@
+import { getFinykDayPlan } from "../../lib/dayPlan";
+
 /**
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import { useMemo, useEffect } from "react";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { ucFirst } from "@shared/lib/ui/ucFirst";
-import {
-  trackEvent,
-  ANALYTICS_EVENTS,
-} from "../../../../core/observability/analytics";
 import { calcFinykSpendingTotal } from "../../utils";
 import { useFlowSchedule } from "./useFlowSchedule";
 import type { useStorage } from "../../hooks/useStorage";
@@ -25,7 +24,6 @@ import {
   filterStatTransactions,
   withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
@@ -47,11 +45,7 @@ export interface UseOverviewDataParams {
   onNavigate?: ((page: string) => void) | undefined;
 }
 
-export function useOverviewData({
-  mono,
-  storage,
-  onNavigate,
-}: UseOverviewDataParams) {
+export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
   const {
     realTx,
     loadingTx,
@@ -90,14 +84,14 @@ export function useOverviewData({
     manualExpenses,
   } = storage;
 
-  // The raw current instant is captured once as a primitive epoch and
+  // The current financial day is kept as a primitive epoch, refreshed at midnight, and
   // immediately routed through Kyiv helpers (getKyivDateParts below +
   // getCurrentMonthContext), so no host-local day boundary ever leaks out of
   // this hook. Using `Date.now()` (a number) instead of a `new Date()` object
   // keeps this instant a scalar the React Compiler can track — a component-scope
   // `Date` reads as a locally-created mutable value that poisons every derived
   // memo dependency (react-hooks/preserve-manual-memoization).
-  const [nowMs] = useState(() => Date.now());
+  const nowMs = useKyivDayNow();
   // Anchor every calendar-window computation below to Europe/Kyiv (the
   // domain time invariant) instead of host-local Date getters, so month and
   // day boundaries never drift off-by-one on a non-Kyiv device. getKyivDateParts
@@ -286,29 +280,7 @@ export function useOverviewData({
     saveNetworthSnapshot,
   ]);
 
-  // First-insight banner
   const hasAnyData = manualExpenses.length > 0 || realTx.length > 0;
-  const [firstInsightUnseen, setShowFirstInsight] = useState(
-    () => safeReadStringLS("finyk_first_insight_seen_v1", null) === null,
-  );
-  // Підказка веде ставити бюджет. Людині, у якої бюджети вже є, вона лише
-  // забирає місце над першою цифрою огляду (критика екранів 2026-09-25).
-  const showFirstInsight = firstInsightUnseen && budgets.length === 0;
-  const insightFiredRef = useRef(false);
-  useEffect(() => {
-    if (insightFiredRef.current) return;
-    if (!showFirstInsight || !hasAnyData) return;
-    insightFiredRef.current = true;
-    safeWriteLS("finyk_first_insight_seen_v1", "1");
-    trackEvent(ANALYTICS_EVENTS.FIRST_INSIGHT_SEEN, {
-      source: manualExpenses.length > 0 ? "manual" : "bank",
-    });
-  }, [showFirstInsight, hasAnyData, manualExpenses.length]);
-  const dismissFirstInsight = useCallback(() => setShowFirstInsight(false), []);
-  const handleSetBudgetFromInsight = useCallback(() => {
-    dismissFirstInsight();
-    onNavigate?.("budgets");
-  }, [dismissFirstInsight, onNavigate]);
 
   // Один прохід `calcLimitUsages` з вікном періоду кожного ліміту (місяць,
   // тиждень з понеділка, разовий від `createdAt`) по повній історії: та сама
@@ -346,7 +318,6 @@ export function useOverviewData({
   // plan progress bar and the day-budget number below.
   const hasExpensePlan = planExpense > 0;
   const dailyPlan = hasExpensePlan ? planExpense / daysInMonth : null;
-  const remainingDays = Math.max(1, daysInMonth - daysPassed + 1);
   const currentYear = kyivYear;
   const currentMonth = kyivMonth;
   const monthFlows = useMemo(
@@ -423,14 +394,17 @@ export function useOverviewData({
   // (надлишок рівно `todaySpent / remainingDays`). Тепер `dayBudget` —
   // денна норма на початок дня: вона не смикається протягом доби, і саме
   // тому лишається чесним спільним знаменником стрічки (ADR-0079).
-  const spentBeforeToday = spent - todaySummary.spent;
-  const dayBudget = hasExpensePlan
-    ? (planExpense -
-        spentBeforeToday -
-        recurringOutThisMonth +
-        recurringInThisMonth) /
-      remainingDays
-    : null;
+  const { dayPlan: dayBudget, todaySpent } = getFinykDayPlan({
+    transactions: txForStats,
+    scheduleTransactions: linkableTx,
+    subscriptions,
+    manualDebts,
+    receivables,
+    planExpense,
+    excludedTxIds: new Set(excludedTxIds),
+    txSplits,
+    nowMs,
+  });
 
   // `todayRemaining` — «Лишилось на сьогодні» (hero, рішення 2 спеки
   // finyk-hero-month-strip). `null` РІВНО тоді, коли `dayBudget === null`
@@ -438,8 +412,7 @@ export function useOverviewData({
   // тобто без плану hero показав би бадьоре «−495 ₴ понад бюджет дня» замість
   // CTA «Постав план». З планом лишається живим протягом дня: зменшується з
   // кожною витратою сьогодні, може піти у мінус.
-  const todayRemaining =
-    dayBudget === null ? null : dayBudget - todaySummary.spent;
+  const todayRemaining = dayBudget === null ? null : dayBudget - todaySpent;
 
   // Стрічка місяця (`MonthStrip`) — по одному елементу на кожен день місяця,
   // за тими самими правилами виключення, що дають `spent` вище
@@ -515,6 +488,10 @@ export function useOverviewData({
     lastUpdated,
     monoError,
     monoRefresh,
+    todayTransactions: statTx.filter((tx) => {
+      const ms = txEpochMs(tx);
+      return ms != null && getKyivDayKey(ms) === todayKey;
+    }),
     // Computed values
     networth,
     monoTotal,
@@ -531,8 +508,8 @@ export function useOverviewData({
     dateLabel,
     spent,
     income,
-    todaySpent: todaySummary.spent,
-    todayIncome: todaySummary.income,
+    todaySpent,
+    todayIncome: todaySummary.incomeMinor / 100,
     dailyPlan,
     showMonthForecast,
     projectedSpend,
@@ -552,9 +529,6 @@ export function useOverviewData({
     customCategories,
     plannedFlows,
     // First-insight banner
-    showFirstInsight,
     hasAnyData,
-    handleSetBudgetFromInsight,
-    dismissFirstInsight,
   };
 }

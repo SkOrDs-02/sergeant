@@ -12,8 +12,6 @@ import {
 } from "@shared/charts";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
-// Один форматер на модуль — інакше «Тіло» друкує «82,5 кг», а «Прогрес»
-// «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
 import { fmt, fmtLoose } from "../lib/numberFmt";
 
 export interface MiniLineChartDataPoint {
@@ -113,7 +111,7 @@ export function MiniLineChart({
     return (
       <EmptyState
         compact
-        className="rounded-2xl border border-dashed border-line bg-panelHi/50"
+        className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Немає числових даних"
         description={`Додай записи в розділі «Заміри», щоб відстежувати ${metricLabel}.`}
       />
@@ -123,7 +121,7 @@ export function MiniLineChart({
     return (
       <EmptyState
         compact
-        className="rounded-2xl border border-dashed border-line bg-panelHi/50"
+        className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Замало точок для лінії"
         description={`Щоб відстежувати ${metricLabel}, потрібні щонайменше два заміри.`}
       />

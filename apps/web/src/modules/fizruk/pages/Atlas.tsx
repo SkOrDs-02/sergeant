@@ -28,6 +28,9 @@ export function Atlas({ onOpenBody, focusMuscleId }: AtlasProps = {}) {
   // Memoized per `rec.by` so the SVG gets identity-stable input across
   // storage / BroadcastChannel ticks that don't change the recovery snapshot.
   const atlasData = useMemo(() => buildAtlasData(rec.by), [rec.by]);
+  const hasData = Object.values(atlasData).some(
+    (row) => row?.daysSince != null,
+  );
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -36,45 +39,34 @@ export function Atlas({ onOpenBody, focusMuscleId }: AtlasProps = {}) {
           `page-tabbar-pad` clearance meant for that chrome would just be
           dead space here. `safe-area-pb` still clears the iOS home
           indicator on standalone/PWA. */}
-      <div className="max-w-4xl mx-auto px-4 pt-4 safe-area-pb space-y-3">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         <Card
           as="section"
-          module="fizruk"
-          prominence="hero"
-          radius="xl"
+          tone="fizruk"
+          prominence={hasData ? "hero" : "panel"}
           padding="none"
           className="relative overflow-hidden"
           aria-label="Атлас мʼязів"
         >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{ background: "var(--hero-grad-fizruk)", opacity: 0.08 }}
-          />
           <div className="relative p-5">
-            {/* «Чорнило» v3.1 § 3: overrides `variant="fizruk"`'s
-                `text-fizruk-strong` light color (invisible on the new
-                saturated hero gradient) with the theme-invariant
-                hero-ink tone; the existing `dark:text-fizruk-300/70`
-                already reads fine on the dark hero and stays. */}
             <SectionHeading
               size="xs"
               variant="fizruk"
               as="p"
-              className="text-hero-ink"
+              className={hasData ? "text-fizruk-tint-label" : "text-subtle"}
             >
               Атлас мʼязів
             </SectionHeading>
-            <h1 className="text-style-headline font-black text-hero-ink mt-2 leading-tight">
+            <h1 className="text-style-headline font-black text-text mt-2 leading-tight">
               Стан відновлення
             </h1>
-            <p className="text-style-body text-hero-ink mt-2">
+            <p className="text-style-body text-text mt-2">
               Карта втоми, давності тренувань і обʼєму по групах мʼязів.
             </p>
           </div>
         </Card>
 
-        <Card radius="lg" padding="lg">
+        <Card padding="lg">
           <BodyAtlas data={atlasData} focusMuscleId={focusMuscleId} />
         </Card>
 

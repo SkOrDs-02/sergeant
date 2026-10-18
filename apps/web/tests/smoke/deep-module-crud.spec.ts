@@ -182,10 +182,15 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "finyk");
 
-    // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка
-    // «Додати», дія «Додати витрату» — menuitem усередині фану.
-    await page.getByRole("button", { name: "Додати", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Додати витрату" }).click();
+    // «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел.
+    await page
+      .getByTestId("corner-action")
+      .getByRole("button", { name: "Додати" })
+      .click();
+    await page
+      .getByTestId("add-sources")
+      .getByRole("button", { name: /^Вручну/ })
+      .click();
     const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
     await expect(createDialog).toBeVisible();
     await page.getByLabel("Сума ₴").fill("123");
@@ -284,7 +289,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "nutrition");
 
-    const pantryInput = page.getByPlaceholder("напр. лосось 300 г");
+    const pantryInput = page.getByPlaceholder("Продукт", { exact: true });
     await pantryInput.fill("DCRUD йогурт");
     await waitForSqliteRefreshAfter(page, "nutrition", async () => {
       await page.getByRole("button", { name: "Додати", exact: true }).click();
@@ -386,7 +391,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/routine", { waitUntil: "domcontentloaded" });
 
     await page
-      .getByRole("button", { name: "Додати звичку", exact: true })
+      .getByRole("button", { name: "Нова звичка", exact: true })
       .click();
     const createDialog = page.getByRole("dialog", { name: "Нова звичка" });
     await expect(createDialog).toBeVisible();

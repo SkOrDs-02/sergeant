@@ -91,10 +91,7 @@ test("чужі утиліти не зачіпаються — родина не 
 });
 
 test("утиліти, що читають не `colors`, валідні: boxShadow і backgroundImage", () => {
-  assert.deepEqual(
-    rulesOf(`const a = "shadow-hero-finyk bg-hero-grad-finyk";`),
-    [],
-  );
+  assert.deepEqual(rulesOf(`const a = "shadow-hero-finyk bg-card-teal";`), []);
 });
 
 test("ручні CSS-утиліти з apps/web/src/styles валідні", () => {

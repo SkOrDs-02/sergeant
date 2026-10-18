@@ -11,7 +11,7 @@ export const NetworthChart = lazyImport(
   "NetworthChart",
 );
 
-export const CategoryPieChart = lazyImport(
-  () => import("../analytics/CategoryPieChart"),
-  "CategoryPieChart",
+export const CategoryBars = lazyImport(
+  () => import("../analytics/CategoryBars"),
+  "CategoryBars",
 );

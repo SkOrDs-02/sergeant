@@ -150,7 +150,7 @@ describe("OptimizedImage variants", () => {
     );
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper.style.aspectRatio).toBe("16/9");
-    expect(wrapper.className).toContain("rounded-2xl");
+    expect(wrapper.className).toContain("rounded-panel");
   });
 
   it("OptimizedThumbnail maps size token to a width/height class", () => {

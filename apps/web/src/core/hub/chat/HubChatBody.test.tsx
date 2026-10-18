@@ -20,20 +20,6 @@ vi.mock("@shared/components/ui/Tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("./ChatEmpty", () => ({
-  ChatEmpty: ({
-    onPickSuggestion,
-  }: {
-    onPickSuggestion: (s: string) => void;
-  }) => (
-    <div data-testid="chat-empty">
-      <button onClick={() => onPickSuggestion("Яка моя сума витрат?")}>
-        suggestion
-      </button>
-    </div>
-  ),
-}));
-
 // ─── Import after mocks ───────────────────────────────────────────────────────
 
 import { HubChatBody } from "./HubChatBody";
@@ -52,7 +38,6 @@ function renderBody(overrides: Partial<HubChatBodyProps> = {}) {
     loading: false,
     onSpeak: vi.fn(),
     onCancel: vi.fn(),
-    onPickSuggestion: vi.fn(),
     ...overrides,
   };
   return { ...render(<HubChatBody {...props} />), props };
@@ -125,16 +110,6 @@ describe("HubChatBody", () => {
     expect(screen.getByRole("status")).toHaveTextContent("");
   });
 
-  it("renders ChatEmpty when there are no messages and not loading", () => {
-    renderBody({ messages: [], loading: false });
-    expect(screen.getByTestId("chat-empty")).toBeInTheDocument();
-  });
-
-  it("does not render ChatEmpty when loading with no messages", () => {
-    renderBody({ messages: [], loading: true });
-    expect(screen.queryByTestId("chat-empty")).not.toBeInTheDocument();
-  });
-
   it("renders all provided messages", () => {
     renderBody({
       messages: [msg("1", "user", "Привіт"), msg("2", "assistant", "Вітаю")],
@@ -165,13 +140,6 @@ describe("HubChatBody", () => {
     expect(
       screen.queryByRole("button", { name: /Скасувати поточний запит/i }),
     ).not.toBeInTheDocument();
-  });
-
-  it("calls onPickSuggestion from ChatEmpty callback", () => {
-    const onPickSuggestion = vi.fn();
-    renderBody({ messages: [], loading: false, onPickSuggestion });
-    fireEvent.click(screen.getByText("suggestion"));
-    expect(onPickSuggestion).toHaveBeenCalledWith("Яка моя сума витрат?");
   });
 
   it("sets aria-busy when loading", () => {

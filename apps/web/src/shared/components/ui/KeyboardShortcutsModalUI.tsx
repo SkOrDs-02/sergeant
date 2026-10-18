@@ -82,7 +82,7 @@ function KeyBadge({ children }: { children: string }) {
       className={cn(
         "inline-flex items-center justify-center min-w-[24px] h-6 px-1.5",
         "text-style-caption text-text",
-        "bg-surface border border-line rounded-xl shadow-sm",
+        "bg-surface border border-line rounded-panel shadow-sm",
       )}
     >
       {children}
@@ -131,7 +131,7 @@ export function KeyboardShortcutsModal({
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-base cursor-default"
+        className="absolute inset-0 bg-black/50 animate-in fade-in duration-base cursor-default"
         onClick={onClose}
         aria-label="Закрити модальне вікно"
         tabIndex={-1}
@@ -142,12 +142,12 @@ export function KeyboardShortcutsModal({
         ref={modalRef}
         className={cn(
           "relative w-full max-w-lg max-h-[80vh] overflow-y-auto",
-          "bg-panel border border-line rounded-2xl shadow-float",
+          "bg-panel border border-line rounded-panel shadow-float",
           "animate-in fade-in zoom-in-95 duration-base",
         )}
       >
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between p-4 border-b border-line bg-panel/95 backdrop-blur-sm rounded-t-2xl">
+        <div className="sticky top-0 flex items-center justify-between p-4 border-b border-line bg-panel/95 rounded-t-panel">
           <h2
             id="keyboard-shortcuts-title"
             className="text-style-title text-text"
@@ -157,7 +157,7 @@ export function KeyboardShortcutsModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-muted hover:text-text hover:bg-surface transition-colors"
+            className="p-2 rounded-lg text-muted hover:text-text hover:bg-surface transition-colors"
             aria-label="Закрити"
           >
             <Icon name="close" size="lg" />
@@ -173,7 +173,7 @@ export function KeyboardShortcutsModal({
                 {items.map((shortcut, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-surface/50 transition-colors"
+                    className="flex items-center justify-between py-2 px-3 rounded-panel hover:bg-surface/50 transition-colors"
                   >
                     <span className="text-style-body text-text">
                       {shortcut.description}

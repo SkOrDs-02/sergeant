@@ -126,11 +126,11 @@ function Probe() {
   );
 }
 
-function renderPage() {
+function renderPage(initialEntry = "/", scrollContainer?: HTMLElement) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <ToastProvider>
-        <ProfilePage />
+        <ProfilePage {...(scrollContainer ? { scrollContainer } : {})} />
         <Probe />
       </ToastProvider>
     </MemoryRouter>,
@@ -174,6 +174,36 @@ describe("ProfilePage", () => {
     mockUser.emailVerified = true;
   });
 
+  it.each([
+    ["memory", "Памʼять", "sergeant.profile.memory.open"],
+    ["account-deletion", "Видалення акаунта", "sergeant.profile.danger.open"],
+  ])(
+    "відкриває ціль %s попри збережений закритий стан і прокручує лише контейнер",
+    async (target, title, storageKey) => {
+      localStorage.setItem(storageKey, "false");
+      const host = document.createElement("div");
+      host.scrollTop = 50;
+      host.scrollTo = vi.fn();
+      const viewportScroll = vi.spyOn(window, "scrollTo");
+      renderPage(`/?tab=profile#profile-${target}`, host);
+      const toggle = await screen.findByRole("button", {
+        name: new RegExp(title),
+      });
+      await waitFor(() =>
+        expect(toggle).toHaveAttribute("aria-expanded", "true"),
+      );
+      fireEvent.transitionEnd(toggle.nextElementSibling!);
+      expect(host.scrollTo).toHaveBeenCalledWith({
+        top: 34,
+        behavior: expect.any(String),
+      });
+      expect(viewportScroll).not.toHaveBeenCalled();
+      expect(localStorage.getItem(storageKey)).toBe("true");
+      expect(toggle.closest("section")).toHaveFocus();
+      viewportScroll.mockRestore();
+    },
+  );
+
   describe("rendering", () => {
     it("exposes an sr-only page heading for screen readers", () => {
       renderPage();
@@ -189,16 +219,16 @@ describe("ProfilePage", () => {
       expect(emails.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("shows verified badge when emailVerified is true", () => {
+    it("статус пошти текстом: підтверджено", () => {
       renderPage();
-      const badges = screen.getAllByText("Підтверджено");
-      expect(badges.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText("· підтверджено")).toBeInTheDocument();
     });
 
-    it("hides verified badge when emailVerified is false", () => {
+    it("статус пошти текстом: не підтверджено", () => {
       mockUser.emailVerified = false;
       renderPage();
-      expect(screen.queryByText("Підтверджено")).not.toBeInTheDocument();
+      expect(screen.getByText("· не підтверджено")).toBeInTheDocument();
+      expect(screen.queryByText("· підтверджено")).not.toBeInTheDocument();
     });
 
     it("shows initial letter when no avatar image", () => {

@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-08-05
  * Status: Active
@@ -105,6 +106,7 @@ export default function CrossModuleLinksSection() {
   // `window "storage"`). Його документація описує рівно наш збій: hub-картка
   // агрегує крос-модульні дані в `useMemo` і лишається протухлою. Ряди
   // Рутини читаються НЕ з SQLite, тож самих тіків для них не досить.
+  const dayKey = useDeviceDayKey();
   const storageBump = useHubStorageBump();
   const finykTick = useFinykSqliteReadTick();
   const nutritionTick = useNutritionSqliteReadTick();
@@ -115,6 +117,7 @@ export default function CrossModuleLinksSection() {
   // дані з ОДНОГО обчислення, а не з двох незалежних.
   const { links, silent, smallData, quiet } = useMemo(() => {
     // Ключі інвалідації «використано» явно — див. коментар до deps нижче.
+    void dayKey;
     void storageBump;
     void finykTick;
     void nutritionTick;
@@ -189,15 +192,15 @@ export default function CrossModuleLinksSection() {
     // `buildCrossModuleSeries` бере дані з модульних кешів і сховища, тобто
     // ззовні React. Правило їх не бачить і зве «unnecessary» — але без них
     // секція застигає на холодному першому рендері (B1). Не прибирай.
-  }, [storageBump, finykTick, nutritionTick, fizrukTick]);
+  }, [storageBump, finykTick, nutritionTick, fizrukTick, dayKey]);
 
   return (
     <section className="space-y-3">
       <div className="space-y-1">
-        <SectionHeading as="h2" size="xs">
+        <SectionHeading as="h2" size="lg">
           {messages.crossModuleLink.sectionTitle}
         </SectionHeading>
-        <p className="text-style-body text-muted leading-relaxed">
+        <p className="text-style-label text-muted">
           {messages.crossModuleLink.sectionHint}
         </p>
       </div>
@@ -232,8 +235,8 @@ export default function CrossModuleLinksSection() {
           )}
         </div>
       ) : smallData ? (
-        <div className="space-y-2 rounded-2xl border border-dashed border-line bg-panel p-4">
-          <p className="text-style-label font-bold text-text">
+        <div className="space-y-1">
+          <p className="text-style-body font-semibold text-text">
             {messages.crossModuleLink.smallDataTitle}
           </p>
           <p className="text-style-body leading-relaxed text-muted">

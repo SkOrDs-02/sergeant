@@ -7,27 +7,19 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
-import { ModuleRail } from "./ModuleRail";
-import type { HubModuleId } from "@shared/lib/modules/moduleLabels";
 import { messages } from "@shared/i18n/uk";
 
 /**
- * Sticky module header used by Фінік / Фізрук / Рутина.
- *
- * Owns the layout contract — safe-area padding, 68px min-height, divider,
- * backdrop blur, sticky flex row — and exposes slots so each module can
- * drop in its own back/hub/settings buttons without re-declaring the shell
- * styles. Title/subtitle/eyebrow are conventional text rows; modules that
- * need a completely custom title body can pass `titleSlot` instead.
- *
- * Typical composition:
+ * Шапка модуля (мова H, redesign v3): кнопка «назад» 44 px ліворуч, назва
+ * модуля 26 / 700, під нею контекстний рядок 14 px другим сірим (період,
+ * лічильник), праворуч слот дій (один вхід до Сержанта). Без ряду пігулок
+ * модулів, без скла, без смужки акценту: колір модуля живе лише в даних.
  *
  *     <ModuleHeader
  *       left={<ModuleHeaderBackButton onClick={onBackToHub} />}
- *       right={<ModuleHeaderIconButton ... />}
- *       title="ФІЗРУК"
- *       eyebrow="ОСОБИСТИЙ ЖУРНАЛ"
- *       subtitle="Тренування · прогрес"
+ *       right={<ModuleHeaderAssistantButton />}
+ *       title="Фінік"
+ *       subtitle="Жовтень"
  *     />
  */
 
@@ -35,154 +27,58 @@ export interface ModuleHeaderProps {
   title?: ReactNode | undefined;
   subtitle?: ReactNode | undefined;
   /**
-   * Коротша версія `subtitle` для вузьких екранів (< `sm`). На 390 px
-   * підпис Фізрука «Рух · сила · відновлення» не вміщався поруч із двома
-   * кнопками дій і різався до «…віднов…» (VIS-1, аудит 2026-09) — замість
-   * крапок показуємо осмислений короткий рядок.
+   * Коротша версія `subtitle` для вузьких екранів (< `sm`): осмислений
+   * короткий рядок замість обрізання крапками (VIS-1, аудит 2026-09).
    */
   subtitleShort?: string | undefined;
-  eyebrow?: ReactNode | undefined;
   left?: ReactNode | undefined;
   right?: ReactNode | undefined;
-  /** Override the default title/eyebrow/subtitle body entirely. */
+  /** Override the default title/subtitle body entirely. */
   titleSlot?: ReactNode | undefined;
-  /** Optional: when provided the header gets a module-colored gradient tint and subtitle uses the module color. */
+  /** Модуль шапки: дає `view-transition-name` для морфу з хаба. */
   module?: ModuleAccent | undefined;
-  /**
-   * Render a row of module-switching chips below the title. Defaults to
-   * `true` whenever {@link module} is set so top-level module shells get
-   * cross-module navigation for free; sub-pages that should keep the
-   * header compact can opt out with `showSwitcher={false}`.
-   */
-  showSwitcher?: boolean | undefined;
   className?: string | undefined;
 }
 
-const MODULE_HEADER_TOKENS: Record<
-  ModuleAccent,
-  {
-    border: string;
-    subtitle: string;
-    /** Title accent — applied as a left accent dot for module identity. */
-    accentDot: string;
-    /** Saturated accent strip below the header. */
-    accentStrip: string;
-  }
-> = {
-  finyk: {
-    border: "border-finyk/15",
-    subtitle: "text-finyk-strong dark:text-finyk-300/70",
-    accentDot: "bg-finyk",
-    accentStrip: "bg-finyk/45",
-  },
-  fizruk: {
-    border: "border-fizruk/15",
-    subtitle: "text-fizruk-strong dark:text-fizruk-300/70",
-    accentDot: "bg-fizruk",
-    accentStrip: "bg-fizruk/45",
-  },
-  routine: {
-    border: "border-routine/15",
-    subtitle: "text-routine-strong dark:text-routine-300/70",
-    accentDot: "bg-routine",
-    accentStrip: "bg-routine/45",
-  },
-  nutrition: {
-    border: "border-nutrition/15",
-    subtitle: "text-nutrition-strong dark:text-nutrition/70",
-    accentDot: "bg-nutrition",
-    accentStrip: "bg-nutrition/45",
-  },
-};
+const ICON_BUTTON =
+  "shrink-0 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-text hover:bg-panel transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 export function ModuleHeader({
   title,
   subtitle,
   subtitleShort,
-  eyebrow,
   left,
   right,
   titleSlot,
   module,
-  showSwitcher,
   className,
 }: ModuleHeaderProps) {
-  const mt = module ? MODULE_HEADER_TOKENS[module] : null;
-  const renderSwitcher = module ? (showSwitcher ?? true) : false;
-
   return (
     <div
-      className={cn(
-        "shrink-0 backdrop-blur-md z-40 relative safe-area-pt",
-        // Зона: шапка і таби модуля стоять на тоні модуля на крок глибшому
-        // за стіл (`--module-zone-rgb`), не на градієнті до панелі. Текст
-        // тут завжди чорнило або `-strong`, тож глибший тон не зачіпає AA.
-        mt
-          ? cn("bg-zone", mt.border, "border-b")
-          : "bg-panel/95 border-b border-line",
-        className,
-      )}
-      // R2-V-2 · Shared-element morph counterpart to the hub bento tile
-      // (see `BentoCard` SortableCard root). Matching `view-transition-name`
-      // makes the module chrome grow out of the tapped card on entry and
-      // collapse back on exit. Only set when the header is module-scoped;
-      // generic headers stay part of the plain root crossfade.
+      className={cn("shrink-0 z-40 relative safe-area-pt bg-bg", className)}
       style={
         module ? { viewTransitionName: `sgt-module-${module}` } : undefined
       }
     >
-      <div className="flex min-h-[68px] items-center px-4 py-2 sm:px-5 gap-3">
+      <div className="flex min-h-[68px] items-center px-3 py-2 sm:px-4 gap-2">
         {left}
         <div className="min-w-0 flex-1">
           {titleSlot ?? (
             <>
-              {eyebrow ? (
-                // AI-NOTE: 2026-09-02 було `text-brand-700 dark:text-brand`
-                // — пара-нуль: обидва класи віддають stone-700, тобто в
-                // темній темі надрядок був 1.75:1. `text-brand-strong`
-                // резолвиться через `--c-brand-ink` і перемикається сам
-                // (розбір — `accentInkHex` у @sergeant/design-tokens).
-                <span className="text-style-overline text-brand-strong block leading-none mb-0.5">
-                  {eyebrow}
-                </span>
-              ) : null}
               {title ? (
-                // AI-CONTEXT: навмисно `<p>`, не заголовок — назва модуля це
+                // AI-CONTEXT: навмисно `<p>`, не заголовок - назва модуля це
                 // хром оболонки, який у DOM-порядку йде ПЕРЕД сторінковим
-                // `<h1>` і інвертував би структуру заголовків (#527). Тому
-                // тести адресують його через `data-testid`, а не
-                // `getByRole("heading")` — роль тут не повинна зʼявитись.
+                // `<h1>` і інвертував би структуру заголовків (#527).
                 <p
                   data-testid="module-header-title"
-                  className="text-style-body font-semibold tracking-wide text-text leading-tight flex items-center gap-2"
+                  className="text-style-headline text-text truncate"
                 >
-                  {mt ? (
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "inline-block w-1.5 h-1.5 rounded-full shrink-0",
-                        mt.accentDot,
-                      )}
-                    />
-                  ) : null}
-                  <span className="truncate">{title}</span>
+                  {title}
                 </p>
               ) : null}
               {subtitle ? (
-                // AI-DANGER: `block` тут обовʼязковий. `truncate` — це
-                // `overflow:hidden` + `text-overflow:ellipsis`, а на ІНЛАЙН-боксі
-                // `overflow` не діє взагалі: підпис ігнорував `min-w-0 flex-1`
-                // батька, розтягувався на всю потрібну ширину і заповзав ПІД
-                // кнопки дій праворуч («Рух · сила · відновлення» під AI-кнопкою
-                // на 390px, «Фінанси» під «Приховати суми» на 320px — браузерний
-                // аудит 2026-08-26). Заголовок вище обрізається правильно лише
-                // тому, що він flex-item і його span блокифікується.
-                <span
-                  className={cn(
-                    "block text-style-caption font-medium truncate",
-                    mt ? mt.subtitle : "text-subtle",
-                  )}
-                >
+                // `block` обовʼязковий: `truncate` на інлайн-боксі не діє.
+                <span className="block text-style-label text-muted truncate">
                   {subtitleShort ? (
                     <>
                       <span className="sm:hidden">{subtitleShort}</span>
@@ -199,19 +95,6 @@ export function ModuleHeader({
         <span data-sync-status-slot className="contents" />
         {right}
       </div>
-      {renderSwitcher && module ? <ModuleSwitcher active={module} /> : null}
-      {/* Saturated accent strip — pinned to the bottom edge so module
-          identity stays visible even when the header gradient is muted
-          (e.g. dark mode, contextual sub-page overrides). */}
-      {mt ? (
-        <span
-          aria-hidden
-          className={cn(
-            "absolute left-0 right-0 -bottom-px h-px",
-            mt.accentStrip,
-          )}
-        />
-      ) : null}
     </div>
   );
 }
@@ -225,7 +108,7 @@ export interface ModuleHeaderIconButtonProps {
 }
 
 /**
- * Standardized 40×40 icon button used in module headers (back, settings).
+ * Кнопка-іконка 44 px у шапці модуля (назад, налаштування).
  */
 export function ModuleHeaderIconButton({
   onClick,
@@ -238,10 +121,7 @@ export function ModuleHeaderIconButton({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
-        className,
-      )}
+      className={cn(ICON_BUTTON, className)}
       aria-label={ariaLabel}
       title={title ?? ariaLabel}
     >
@@ -281,11 +161,7 @@ export function ModuleHeaderAssistantButton({
         hapticTap();
         emitHubBus("openChat", { message: null, autoSend: false });
       }}
-      className={cn(
-        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-        className,
-      )}
+      className={cn(ICON_BUTTON, className)}
       aria-label={ariaLabel}
       title={title ?? ariaLabel}
     >
@@ -316,7 +192,7 @@ export function ModuleHeaderAssistantButton({
 
 export interface ModuleHeaderBackButtonProps {
   onClick: () => void;
-  /** Visible label next to the chevron. Defaults to "Назад". */
+  /** Видимий підпис біля шеврона. За замовчуванням лише шеврон 44 px. */
   label?: string;
   ariaLabel?: string;
   className?: string;
@@ -333,7 +209,7 @@ export interface ModuleHeaderBackButtonProps {
  */
 export function ModuleHeaderBackButton({
   onClick,
-  label = "Назад",
+  label,
   ariaLabel = "Назад",
   className,
 }: ModuleHeaderBackButtonProps) {
@@ -346,7 +222,9 @@ export function ModuleHeaderBackButton({
         // (back + hub) meet the 44px touch-target floor explicitly, even
         // though other module-header icon buttons in this file stayed at
         // 40px (pre-existing, out of scope here).
-        "shrink-0 h-11 min-h-[44px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
+        ICON_BUTTON,
+        "-ml-1 gap-1.5",
+        label && "w-auto px-2",
         className,
       )}
       aria-label={ariaLabel}
@@ -392,9 +270,7 @@ export function ModuleHeaderHubButton({
     <ModuleHeaderIconButton
       onClick={onClick}
       ariaLabel={ariaLabel}
-      // Overrides `ModuleHeaderIconButton`'s 40px default — round-2 UI
-      // audit X3 explicitly requires this pair (back + hub) at 44px.
-      className={cn("w-11 h-11 min-w-[44px] min-h-[44px]", className)}
+      className={className}
     >
       <svg
         width="20"
@@ -411,27 +287,6 @@ export function ModuleHeaderHubButton({
         <path d="M5 9.5V20a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V9.5" />
       </svg>
     </ModuleHeaderIconButton>
-  );
-}
-
-/**
- * Перемикач модулів у шапці — тепер лише тонка обгортка над спільним
- * `ModuleRail` (спека `hub-action-axis.md`: один компонент і на хабі, і в
- * модулях). Джерело `module_switcher` лишається, щоб базова лінія
- * `module_opened` не втратила неперервності.
- */
-export interface ModuleSwitcherProps {
-  active: HubModuleId;
-  className?: string;
-}
-
-export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
-  return (
-    <ModuleRail
-      active={active}
-      source="module_switcher"
-      className={cn("px-3 sm:px-4 pb-2", className)}
-    />
   );
 }
 
@@ -453,10 +308,7 @@ export function ModuleHeaderChevronButton({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "w-10 h-10 min-w-[40px] min-h-[40px] -ml-1 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
-        className,
-      )}
+      className={cn(ICON_BUTTON, "-ml-1", className)}
       aria-label={ariaLabel}
     >
       <svg

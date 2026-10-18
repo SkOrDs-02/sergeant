@@ -27,6 +27,10 @@ import type {
 } from "@sergeant/nutrition-domain";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
 import type { MealFormState } from "./mealFormUtils";
+import { useState } from "react";
+import { messages } from "@shared/i18n/uk";
+import { Button } from "@shared/components/ui/Button";
+import { MyFoodsSheet } from "../MyFoodsSheet";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { FoodPickerSection } from "./FoodPickerSection";
@@ -70,8 +74,10 @@ export function SearchTabPanel({
   setFromPantryItem,
   picker,
 }: SearchTabPanelProps) {
+  const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   return (
     <>
+      <FoodPickerSection {...picker} />
       {mealTemplates.length > 0 && (
         <MealTemplatesRow
           mealTemplates={mealTemplates}
@@ -116,7 +122,18 @@ export function SearchTabPanel({
         />
       )}
 
-      <FoodPickerSection {...picker} />
+      <Button
+        variant="ghost"
+        className="w-full min-h-[44px]"
+        onClick={() => setMyFoodsOpen(true)}
+      >
+        {messages.nutrition.myFoods.open}
+      </Button>
+      <MyFoodsSheet
+        open={myFoodsOpen}
+        onClose={() => setMyFoodsOpen(false)}
+        zIndex={130}
+      />
     </>
   );
 }

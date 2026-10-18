@@ -141,4 +141,27 @@ describe("RegisterForm", () => {
     });
     expect(screen.getByText("Надійний")).toBeTruthy();
   });
+
+  it("після невдалої реєстрації фокус не губиться на body, поля не disabled", async () => {
+    registerMock.mockResolvedValue("error");
+    render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "bob@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Пароль"), {
+      target: { value: "longenoughpw" },
+    });
+    const submit = screen.getByRole("button", { name: /^Зареєструватися$/ });
+    submit.focus();
+    fireEvent.click(submit);
+
+    await waitFor(() => expect(registerMock).toHaveBeenCalled());
+    const email = screen.getByLabelText("Email") as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(email));
+    expect(email.disabled).toBe(false);
+    expect((screen.getByLabelText("Пароль") as HTMLInputElement).disabled).toBe(
+      false,
+    );
+  });
 });

@@ -10,6 +10,7 @@ import {
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import { startRestTimerState } from "../../lib/restTimer";
 
 export interface WorkoutItemRestPresetsProps {
   catLabel: string;
@@ -50,7 +51,7 @@ export function WorkoutItemRestPresets({
     label: `${sec} ${rt.presetsSecondsShort}`,
     onSelect: () => {
       if (exerciseId) setDefaultForExercise?.(exerciseId, sec);
-      setRestTimer({ remaining: sec, total: sec });
+      setRestTimer(startRestTimerState(sec));
     },
   }));
 
@@ -60,16 +61,15 @@ export function WorkoutItemRestPresets({
     <div className="flex items-center gap-1.5">
       <Button
         type="button"
-        variant="soft"
+        variant="outline"
         // SLOP-2 (аудит 2026-09): «рекомендований» пресет — це вибір, не
         // успіх; зелений тут конфліктував із модульним акцентом Фізрука.
-        tone="fizruk"
+        tone="neutral"
         size="md"
         className="h-11 min-h-[44px]"
-        onClick={() => setRestTimer({ remaining: defSec, total: defSec })}
+        onClick={() => setRestTimer(startRestTimerState(defSec))}
         title={`${rt.presetsRecommendedTitle} ${catLabel.toLowerCase()}`}
       >
-        <Icon name="clock" size="sm" aria-hidden />
         {defSec} {rt.presetsSecondsShort}
       </Button>
       {menuItems.length > 0 && (

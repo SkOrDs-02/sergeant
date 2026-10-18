@@ -373,7 +373,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
           }}
           style={positionStyle}
           className={cn(
-            "absolute rounded-full bg-panel border-2 border-brand-strong shadow-card",
+            "absolute rounded-lg bg-panel border-2 border-brand-strong shadow-card",
             "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             "touch-none",
             thumbSize[size],
@@ -427,7 +427,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
             // Незаповнений трек — `bg-control` (≥3:1, WCAG 1.4.11), як вимкнений
             // трек `Switch` і межа полів; `bg-line` давав 1.32 / 1.56 (аудит
             // 2026-10-01, A3; рішення власника: у тому ж follow-up).
-            "relative rounded-full bg-control",
+            "relative rounded-mark bg-control",
             isVertical
               ? cn(trackThicknessVertical[size], "h-full mx-auto")
               : cn(trackThickness[size], "w-full my-3"),
@@ -436,7 +436,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
         >
           <div
             aria-hidden="true"
-            className="absolute rounded-full bg-brand-strong"
+            className="absolute rounded-mark bg-brand-strong"
             style={{
               ...filledStyle,
               ...(isVertical ? { left: 0, right: 0 } : { top: 0, bottom: 0 }),
@@ -457,7 +457,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
                       // Мітки на темнішому `bg-control`: `bg-muted/60` зливався б
                       // із треком, непрозорий `bg-panel` читається і на ньому,
                       // і на заливці.
-                      "absolute block rounded-full bg-panel",
+                      "absolute block rounded-mark bg-panel",
                       isVertical
                         ? "w-1 h-1 left-1/2 -translate-x-1/2"
                         : "w-1 h-1 top-1/2 -translate-y-1/2",

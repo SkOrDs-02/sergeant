@@ -85,14 +85,13 @@ describe("Budgets page (branches)", () => {
     vi.useRealTimers();
   });
 
-  it("shows and dismisses the monthly-plan first-run hint banner", () => {
+  it("гасить прапорець підказки плану місяця без банера (наджі геть)", () => {
     const onDismiss = vi.fn();
     renderBudgets({
       monthlyPlanFirstRunHint: true,
       onDismissMonthlyPlanFirstRunHint: onDismiss,
     });
-    expect(screen.getByTestId("first-run-hint-banner")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Зрозуміло" }));
+    expect(screen.queryByTestId("first-run-hint-banner")).toBeNull();
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 

@@ -81,7 +81,7 @@ function SwitchIconButton({ choice, isActive, onSelect }: SwitchButtonProps) {
         // стискався ВУЖЧЕ за текст і різав «Контраст» на ВСІХ ширинах,
         // включно з 1280px (браузерний аудит 2026-08-26: треба 54px, було 42).
         // Підпис — одне коротке слово, обрізати його нема сенсу.
-        "flex-1 min-h-11 flex flex-col items-center justify-center gap-1 px-1.5 py-1.5 rounded-xl border transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none",
+        "flex-1 min-h-11 flex flex-col items-center justify-center gap-1 px-1.5 py-1.5 rounded-lg border transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none",
         FOCUS_RING,
         isActive
           ? "bg-brand-soft border-control text-brand-strong shadow-sm"
@@ -103,7 +103,7 @@ export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
       role="radiogroup"
       aria-label="Тема"
       className={cn(
-        "inline-flex items-stretch gap-1 rounded-2xl border border-line bg-panel/80 backdrop-blur-sm p-1",
+        "inline-flex items-stretch gap-1 rounded-lg border border-line bg-panel/80 p-1",
         className,
       )}
     >

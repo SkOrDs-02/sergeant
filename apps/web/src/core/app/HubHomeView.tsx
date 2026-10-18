@@ -10,7 +10,6 @@ import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
 import { MemoryOnlyStorageBanner } from "../durability/MemoryOnlyStorageBanner";
@@ -45,9 +44,6 @@ export interface HubHomeViewProps {
   canInstall: boolean;
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
-  iosVisible: boolean;
-  onDismissIosForever: () => void;
-  onSnoozeIos: () => void;
   updateAvailable: boolean;
   onApplyUpdate: () => void;
   openModule: HubNavigation["openModule"];
@@ -69,9 +65,6 @@ export function HubHomeView(props: HubHomeViewProps) {
     canInstall,
     onInstall,
     onDismissInstall,
-    iosVisible,
-    onDismissIosForever,
-    onSnoozeIos,
     updateAvailable,
     onApplyUpdate,
     openModule,
@@ -167,7 +160,7 @@ export function HubHomeView(props: HubHomeViewProps) {
     // from theme.css) renders behind all hub content. `h-dvh flex flex-col
     // overflow-hidden` is baked into MeshBackground; the remaining
     // `safe-area-pt` slots through as className. The full-height shell must
-    // not carry `page-enter`: its translateY keyframe creates document-level
+    // not carry ``: its translateY keyframe creates document-level
     // overflow on iOS and moves bottom-edge hit targets during the gesture.
     // Sergeant v2 redesign Phase 1 (T6 synergy) — exposes
     // `--bottom-nav-height` so portaled <Sheet>s resolve their
@@ -182,10 +175,6 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubHeader
         onOpenSearch={() => ui.setSearchOpen(true)}
-        user={user}
-        authLoading={authLoading}
-        onShowAuth={onOpenAuth}
-        hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
         activeTab={ui.hubView}
       />
@@ -194,9 +183,6 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubMainContent
         onOpenModule={openFromDashboard}
-        iosVisible={iosVisible}
-        onDismissIosForever={onDismissIosForever}
-        onSnoozeIos={onSnoozeIos}
         hubView={ui.hubView}
         user={user}
         onShowAuth={onOpenAuth}

@@ -89,10 +89,10 @@
     `inkTheme.surface`; синхронність тримає `tokens.drift.test.ts`, бо
     спільного рантайму в лендінга з preset-ом нема.
   */
-  --color-ink: #14100e;
-  --color-ink-hi: #3a302b;
-  --color-ink-surface: #2a231f;
-  --color-ink-line: rgba(255, 255, 255, 0.1);
+  --color-ink: #0e1116;
+  --color-ink-hi: #1f252e;
+  --color-ink-surface: #171c23;
+  --color-ink-line: #262c35;
   --color-ink-text: #f2f6f2;
   /* 2026-08-21: inkTheme підняв нейтральні тири на щабель – `muted`
      пішов з #8a968e (5.61:1) на #a3aea6 (7.52:1) після репорту, що

@@ -1,7 +1,5 @@
-/**
- * Last validated: 2026-08-21
- * Status: Active
- */
+import { formatTimeHm } from "@shared/lib/time/formatDate";
+import { txEpochMs } from "../lib/monthWindow";
 import { memo, useMemo } from "react";
 import {
   getExpenseCategoryForTransaction,
@@ -14,8 +12,6 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
-import { CategoryIconChip } from "./CategoryIconChip";
 import { getAccountShortName, type TxRowTx } from "./txRowHelpers";
 import { TxRowMetaChips } from "./TxRowMetaChips";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
@@ -127,22 +123,10 @@ function TxRowImpl({
   );
   const mainRowInner = (
     <>
-      {highlighted ? (
-        <span className="text-success shrink-0">
-          <Icon name="check-circle" size={22} title="Вибрана операція" />
-        </span>
-      ) : (
-        // Спільний чип — та сама іконка й той самий відтінок, що в
-        // картці ліміту й алертах бюджету (`CategoryIconChip`).
-        <CategoryIconChip
-          categoryId={cat.id}
-          customCategories={customCategories}
-        />
-      )}
       <div className="min-w-0">
         <div
           className={cn(
-            "text-style-label text-text truncate",
+            "text-style-body font-semibold text-text truncate",
             hidden && "line-through",
           )}
         >
@@ -179,7 +163,7 @@ function TxRowImpl({
     <div
       className={cn(
         divider && "border-b border-line last:border-0",
-        highlighted && "bg-primary/5 rounded-xl border-0 my-0.5",
+        highlighted && "bg-line/40 rounded-panel border-0 my-0.5",
       )}
     >
       {/* Main row */}
@@ -208,10 +192,17 @@ function TxRowImpl({
         )}
 
         <div className="shrink-0 ml-2 text-right">
+          {tx.time != null && (
+            <time className="block text-style-caption text-subtle">
+              {formatTimeHm(new Date(txEpochMs(tx) ?? 0), {
+                timeZone: "Europe/Kyiv",
+              })}
+            </time>
+          )}
           <div
             className={cn(
-              "text-style-label tabular-nums",
-              isIncome ? "text-success-strong dark:text-success" : "text-text",
+              "text-style-body font-medium tabular-nums",
+              "text-text",
             )}
           >
             {/* AI-CONTEXT: `fmtAmt` тут замінено на `Money` (анти-слоп П4).

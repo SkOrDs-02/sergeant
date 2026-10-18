@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import { useEffect } from "react";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
@@ -14,12 +15,14 @@ import { writeFizrukQuickStatsSnapshot } from "./useFizrukQuickStatsWriter";
  * хоча тренування вже лежали в базі (browser QA 2026-08-05, F-007).
  */
 export function useFizrukQuickStatsBoot(): void {
+  const dayKey = useDeviceDayKey();
   const sqliteTick = useFizrukSqliteReadTick();
 
   useEffect(() => {
+    void dayKey; // Rebuild even when midnight brought no record changes.
     const state = getCachedFizrukSqliteState();
     // Не затирати корисний знімок нулями, поки канонічний кеш ще вантажиться.
     if (!state.refreshedAt) return;
     writeFizrukQuickStatsSnapshot(state.workouts);
-  }, [sqliteTick]);
+  }, [sqliteTick, dayKey]);
 }

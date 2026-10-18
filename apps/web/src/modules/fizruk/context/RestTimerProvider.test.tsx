@@ -33,6 +33,7 @@ import { useEffect, type ReactNode } from "react";
 import { RestTimerProvider } from "./RestTimerProvider";
 import { useRestTimer } from "./RestTimerContext";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
+import { startRestTimerState } from "../lib/restTimer";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -143,10 +144,14 @@ describe("RestTimerProvider", () => {
     const { result } = renderHook(() => useRestTimer(), { wrapper });
 
     act(() => {
-      result.current.setRestTimer({ remaining: 30, total: 30 });
+      result.current.setRestTimer(startRestTimerState(30));
     });
 
-    expect(result.current.restTimer).toEqual({ remaining: 30, total: 30 });
+    expect(result.current.restTimer).toEqual({
+      remaining: 30,
+      total: 30,
+      endsAt: Date.now() + 30_000,
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -154,7 +159,7 @@ describe("RestTimerProvider", () => {
     const { result } = renderHook(() => useRestTimer(), { wrapper });
 
     act(() => {
-      result.current.setRestTimer({ remaining: 5, total: 5 });
+      result.current.setRestTimer(startRestTimerState(5));
     });
 
     act(() => {
@@ -169,7 +174,7 @@ describe("RestTimerProvider", () => {
     const { result } = renderHook(() => useRestTimer(), { wrapper });
 
     act(() => {
-      result.current.setRestTimer({ remaining: 10, total: 10 });
+      result.current.setRestTimer(startRestTimerState(10));
     });
 
     act(() => {
@@ -191,7 +196,7 @@ describe("RestTimerProvider", () => {
     const { result } = renderHook(() => useRestTimer(), { wrapper });
 
     act(() => {
-      result.current.setRestTimer({ remaining: 3, total: 3 });
+      result.current.setRestTimer(startRestTimerState(3));
     });
 
     // Let all 3 ticks fire.
@@ -222,7 +227,10 @@ describe("RestTimerProvider", () => {
     expect(screen.queryByRole("timer")).toBeNull();
 
     act(() => {
-      hookResult.current.setRestTimer({ remaining: 15, total: 30 });
+      hookResult.current.setRestTimer({
+        ...startRestTimerState(15),
+        total: 30,
+      });
     });
 
     expect(screen.getByRole("timer")).toBeTruthy();
@@ -257,7 +265,7 @@ describe("RestTimerProvider", () => {
 
     // Start the timer (simulating the user logging a set on the Workouts page).
     act(() => {
-      workoutsApi!.setRestTimer({ remaining: 60, total: 60 });
+      workoutsApi!.setRestTimer(startRestTimerState(60));
     });
 
     expect(screen.getByRole("timer")).toBeTruthy();
@@ -304,7 +312,7 @@ describe("RestTimerProvider", () => {
     const { rerender } = render(<AppShell showWorkouts={true} />);
 
     act(() => {
-      workoutsApi!.setRestTimer({ remaining: 3, total: 3 });
+      workoutsApi!.setRestTimer(startRestTimerState(3));
     });
 
     // Navigate away before the countdown finishes.
@@ -320,6 +328,35 @@ describe("RestTimerProvider", () => {
 
     // AudioContext was constructed → beep was played.
     expect(audioCtxSpy).toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
+  it("survives a suspended page: the clock jump is applied on visibilitychange (logic-10)", () => {
+    const { result } = renderHook(() => useRestTimer(), { wrapper });
+
+    act(() => {
+      result.current.setRestTimer(startRestTimerState(90));
+    });
+
+    // Екран заблоковано: таймери не тікали, годинник пішов на 60 с.
+    act(() => {
+      vi.setSystemTime(Date.now() + 60_000);
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(result.current.restTimer?.remaining).toBe(30);
+    expect(audioCtxSpy).not.toHaveBeenCalled();
+
+    // Ще один стрибок за межу кінця: сигнал рівно один раз, таймер скинуто.
+    act(() => {
+      vi.setSystemTime(Date.now() + 120_000);
+      document.dispatchEvent(new Event("visibilitychange"));
+      window.dispatchEvent(new Event("pageshow"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.restTimer).toBeNull();
+    expect(audioCtxSpy).toHaveBeenCalledTimes(1);
   });
 
   // -------------------------------------------------------------------------

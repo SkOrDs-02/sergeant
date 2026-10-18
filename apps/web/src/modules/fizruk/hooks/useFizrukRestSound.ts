@@ -62,8 +62,15 @@ function vibrateRestComplete() {
 }
 
 export interface RestTimerState {
+  /** Секунд до кінця — похідне від `endsAt`, для відображення. */
   remaining: number;
   total: number;
+  /**
+   * Момент закінчення, мс епохи. Єдина істина відліку: `remaining`
+   * перераховується з нього на кожен тік і на visibilitychange/pageshow
+   * (див. `useRestTimerCountdown`). Створюй через `startRestTimerState`.
+   */
+  endsAt: number;
 }
 
 /**
@@ -73,13 +80,11 @@ export interface RestTimerState {
  * Usage:
  *   const { markCompletedNaturally } = useFizrukRestSound(restTimer);
  *   ...
- *   setRestTimer((r) => {
- *     if (!r || r.remaining <= 1) {
- *       markCompletedNaturally();
- *       return null;
- *     }
- *     return { ...r, remaining: r.remaining - 1 };
- *   });
+ *   // у тіку відліку (НЕ всередині updater-а setState):
+ *   if (restRemainingSeconds(endsAt) <= 0) {
+ *     markCompletedNaturally();
+ *     setRestTimer(null);
+ *   }
  *
  * Encapsulates the shared `AudioContext`, iOS Safari `webkitAudioContext`
  * fallback, and the "did the timer hit zero on its own" flag so that
