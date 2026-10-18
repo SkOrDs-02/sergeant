@@ -27,13 +27,13 @@ import type { FinykDualWriteState } from "./diff.js";
  *      `finyk_hidden_transactions` (key column `transaction_id`).
  *      The LS shape is `{ id }` where `id` is the external Mono id.
  *   3. **Per-tx mappings (3)** — composite PK on
- *      `(user_id, transaction_id)` without `deleted_at`:
- *      `finyk_tx_categories`, `finyk_tx_splits`,
- *      `finyk_mono_debt_links`. "No mapping" is the same as the row
- *      not existing — the sync apply path treats `delete` as
- *      `DELETE FROM`.
+ *      `(user_id, transaction_id)` with `deleted_at` (data-15, міграція
+ *      005): `finyk_tx_categories`, `finyk_tx_splits`,
+ *      `finyk_mono_debt_links`. "No mapping" = рядок відсутній АБО
+ *      tombstone (`deleted_at IS NOT NULL`) — як і sync apply path, який
+ *      трактує `delete` як soft-delete.
  *   4. **Time-series (1)** — composite PK on `(user_id, month)`
- *      without `deleted_at`: `finyk_networth_history`. `month` is a
+ *      with `deleted_at` (data-15): `finyk_networth_history`. `month` is a
  *      TEXT `YYYY-MM` to mirror the LS shape verbatim.
  *   5. **Singleton prefs (1)** — `user_id` PK, no `id`, no
  *      `deleted_at`: `finyk_prefs`. Compared as a presence boolean:
@@ -124,28 +124,28 @@ export async function probeFinykParity(
     userId,
   );
 
-  // --- Per-tx mappings (3) — no deleted_at ---
-  const sqliteTxCategories = await readKeyedIdsNoSoftDelete(
+  // --- Per-tx mappings (3) — soft-delete (data-15) ---
+  const sqliteTxCategories = await readTombstonedKeyedIds(
     client,
     "finyk_tx_categories",
     "transaction_id",
     userId,
   );
-  const sqliteTxSplits = await readKeyedIdsNoSoftDelete(
+  const sqliteTxSplits = await readTombstonedKeyedIds(
     client,
     "finyk_tx_splits",
     "transaction_id",
     userId,
   );
-  const sqliteMonoDebtLinks = await readKeyedIdsNoSoftDelete(
+  const sqliteMonoDebtLinks = await readTombstonedKeyedIds(
     client,
     "finyk_mono_debt_links",
     "transaction_id",
     userId,
   );
 
-  // --- Time-series (1) — no deleted_at ---
-  const sqliteNetworthHistory = await readKeyedIdsNoSoftDelete(
+  // --- Time-series (1) — soft-delete (data-15) ---
+  const sqliteNetworthHistory = await readTombstonedKeyedIds(
     client,
     "finyk_networth_history",
     "month",
@@ -380,11 +380,12 @@ async function readKeyedIds(
 }
 
 /**
- * Read keys from tables that have no `deleted_at` column. Used for
+ * Read active keys from per-tx / time-series tables (soft-delete з
+ * data-15: tombstone-рядки не рахуються). Used for
  * `finyk_tx_categories`, `finyk_tx_splits`, `finyk_mono_debt_links`,
  * and `finyk_networth_history`.
  */
-async function readKeyedIdsNoSoftDelete(
+async function readTombstonedKeyedIds(
   client: SqliteMigrationClient,
   table:
     | "finyk_tx_categories"
@@ -396,7 +397,7 @@ async function readKeyedIdsNoSoftDelete(
 ): Promise<Set<string>> {
   const rows = await client.all<Record<string, unknown>>(
     `SELECT ${keyColumn} AS key FROM ${table}
-       WHERE user_id = ?`,
+       WHERE user_id = ? AND deleted_at IS NULL`,
     [userId],
   );
   return collectStringKeys(rows);
