@@ -95,6 +95,12 @@ export interface BankTransactionDetailsSheetProps {
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
   onToggleHidden: (id: string) => void;
   onToggleExcludedFromStats: (id: string) => void;
+  /**
+   * Зняття готівки після створення «Готівки на руках» (ADR-0076): видима
+   * підказка «переказ на готівку» з перемикачем «Рахувати як витрату».
+   */
+  cashWithdrawal?:
+    { countedAsExpense: boolean; onToggle: () => void } | undefined;
   onClose: () => void;
 }
 
@@ -161,6 +167,7 @@ export function BankTransactionDetailsSheet({
   onSplitChange,
   onToggleHidden,
   onToggleExcludedFromStats,
+  cashWithdrawal,
   onClose,
 }: BankTransactionDetailsSheetProps) {
   const copy = messages.finyk.transactionDetails;
@@ -421,6 +428,25 @@ export function BankTransactionDetailsSheet({
             customCategories={customCategories}
             existingSplitsCount={existingSplits.length}
           />
+        )}
+
+        {cashWithdrawal && (
+          <section
+            data-testid="finyk-cash-withdrawal"
+            className="rounded-panel border border-line bg-panel p-3"
+          >
+            <Switch
+              checked={cashWithdrawal.countedAsExpense}
+              onChange={(next) => {
+                if (next !== cashWithdrawal.countedAsExpense) {
+                  cashWithdrawal.onToggle();
+                }
+              }}
+              label={messages.finyk.cashOnHand.countAsExpense}
+              description={messages.finyk.cashOnHand.countAsExpenseHint}
+              className="w-full"
+            />
+          </section>
         )}
 
         <section className="space-y-2 rounded-panel border border-line bg-panel p-3">

@@ -11,6 +11,7 @@ import {
   buildFinykSpendingUniverse,
 } from "@sergeant/finyk-domain";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import type { CashOnHandState } from "@sergeant/finyk-domain/domain/cashOnHand";
 import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
 import {
   buildMerchantRuleIndex,
@@ -52,6 +53,8 @@ interface FinykPrefsSources {
   budgets: Budget[];
   /** Правила «Завжди так для цього магазину» (лише SQLite: у LS їх ніколи не було). */
   merchantRules: MerchantRule[];
+  /** «Готівка на руках» (лише SQLite): зняття після створення не є витратою. */
+  cashOnHand: CashOnHandState | null;
 }
 
 function asObject<T extends object>(value: unknown, fallback: T): T {
@@ -78,6 +81,7 @@ function readFinykPrefsSources(): FinykPrefsSources {
       customCategories: cache.customCategories as CategoryLike[],
       budgets: cache.budgets,
       merchantRules: cache.merchantRules ?? [],
+      cashOnHand: cache.cashOnHand ?? null,
     };
   }
   return {
@@ -101,6 +105,7 @@ function readFinykPrefsSources(): FinykPrefsSources {
     ),
     budgets: asArray<Budget>(safeReadLS<Budget[]>("finyk_budgets", [])),
     merchantRules: [],
+    cashOnHand: null,
   };
 }
 
@@ -118,6 +123,7 @@ export function getFinykExcludedTxIdsFromStorage() {
     txCategories: prefs.txCategories,
     receivables: prefs.receivables,
     excludedStatTxIds: prefs.excludedStatTxIds,
+    cashOnHand: prefs.cashOnHand,
     // Банк із дзеркала: пара «списання ↔ скасування» потребує обох ніг
     // (рішення власника 2026-10-01).
     transactions: getVisibleFinykMonoMirrorState().transactions,
@@ -191,6 +197,7 @@ export function readFinykStatsContext(): FinykStatsContext {
     txCategories: prefs.txCategories,
     receivables: prefs.receivables,
     excludedStatTxIds: prefs.excludedStatTxIds,
+    cashOnHand: prefs.cashOnHand,
   });
 
   // Правила «Завжди так для цього магазину»: дайджест, коуч і quick-stats

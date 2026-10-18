@@ -62,6 +62,7 @@ export function readAllData(): AllData {
     txCategories,
     receivables,
     excludedStatTxIds: sqlite.excludedStatTxIds ?? [],
+    cashOnHand: sqlite.cashOnHand,
   });
   const excludedIds = universe.excludedTxIds;
 

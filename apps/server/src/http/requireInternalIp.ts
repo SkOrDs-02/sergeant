@@ -1,6 +1,6 @@
 import net from "node:net";
 import type { Request, RequestHandler } from "express";
-import { getIp } from "./rateLimit.js";
+import { getNetworkIp } from "./clientIp.js";
 
 /**
  * IP-allowlist middleware for internal endpoints
@@ -22,11 +22,15 @@ import { getIp } from "./rateLimit.js";
  *     instance — `BlockList.check()` is O(entries) per call but the
  *     allowlist is small (single-digit count in production), so the
  *     hot-path cost is one synchronous string parse.
- *   * `getIp(req)` is the single source of truth for "what IP is this
- *     call from" — it already honours `app.set('trust proxy', …)` so
- *     X-Forwarded-For from Railway's edge is parsed consistently with
- *     `rateLimitSubject(req)`. This middleware deliberately does NOT
- *     reach into `req.socket.remoteAddress` directly: behind a proxy
+ *   * `getNetworkIp(req)` (= `req.ip`) is the source of truth for "what IP
+ *     is this call from" — it honours `app.set('trust proxy', …)` so
+ *     X-Forwarded-For from the edge is parsed consistently with
+ *     `rateLimitSubject(req)`. It deliberately ignores the signed
+ *     `x-sergeant-client-ip` header (rel-03, `getIp`/`getClientIp`): this
+ *     gate must stay a NETWORK check, otherwise a leaked
+ *     `SERGEANT_CLIENT_IP_SECRET` (it also lives in Vercel) would let an
+ *     attacker sign `127.0.0.1` and bypass the allowlist. This middleware
+ *     deliberately does NOT reach into `req.socket.remoteAddress` directly: behind a proxy
  *     that would always resolve to the proxy's own IP and the
  *     allowlist would degrade into "always 403" or "always 200"
  *     depending on whether the proxy itself is listed.
@@ -210,7 +214,9 @@ export function requireInternalIp(
       return;
     }
 
-    const rawIp = getIp(req);
+    // Навмисно НЕ getIp/getClientIp: підписаний x-sergeant-client-ip
+    // (rel-03) не має впливати на мережевий гейт (див. шапку файла).
+    const rawIp = getNetworkIp(req) ?? "unknown";
     const { ip, type } = normalizeIp(rawIp);
     if (built.list.check(ip, type)) {
       next();

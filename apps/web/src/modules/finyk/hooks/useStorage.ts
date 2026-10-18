@@ -13,6 +13,7 @@ import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
 import { useFinykMonoMirrorBoot } from "./useFinykMonoMirrorBoot";
 import { useFinykMirrorTransactions } from "./useFinykStatTransactions";
+import { useFinykCashOnHand } from "./useFinykCashOnHand";
 
 // Public type re-exports — стабільний import path для зовнішніх consumer-ів
 // (`AssetsForm.tsx`, `Overview.tsx`, тощо). Декомпозиція внутрішнього коду
@@ -187,12 +188,20 @@ export function useStorage({
     () => new Set<string>(JSON.parse(cancelledKey) as string[]),
     [cancelledKey],
   );
+  // «Готівка на руках» (ADR-0076): банківські зняття після створення
+  // рахунку стали переказом на готівку і теж виходять зі статистики. Те саме
+  // правило `buildFinykExcludedTxIds` застосовує поза модулем.
+  const cash = useFinykCashOnHand(slots, bankTxs);
+  const { cashTransferTxIds } = cash;
   const excludedTxIds = useMemo(() => {
-    if (cancelledTxIds.size === 0) return excludedBase;
+    if (cancelledTxIds.size === 0 && cashTransferTxIds.size === 0) {
+      return excludedBase;
+    }
     const merged = new Set(excludedBase);
     for (const id of cancelledTxIds) merged.add(id);
+    for (const id of cashTransferTxIds) merged.add(id);
     return merged;
-  }, [excludedBase, cancelledTxIds]);
+  }, [excludedBase, cancelledTxIds, cashTransferTxIds]);
 
   const saveNetworthSnapshot = (networth: number) => {
     const today = toKyivISODate();
@@ -246,6 +255,13 @@ export function useStorage({
     importData: backupSync.importData,
     excludedTxIds,
     cancelledTxIds,
+    cashOnHand: cash.cashOnHand,
+    cashBalanceMinor: cash.cashBalanceMinor,
+    cashTransferTxIds,
+    createCashOnHand: cash.createCashOnHand,
+    setCashActualAmount: cash.setCashActualAmount,
+    toggleCashCountAsExpense: cash.toggleCashCountAsExpense,
+    rememberManualAccount: cash.rememberManualAccount,
     debtTxIds: debtLinkedTxIds, // зворотна сумісність
     txCategories,
     customCategories,

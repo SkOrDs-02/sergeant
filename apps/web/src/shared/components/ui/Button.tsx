@@ -177,7 +177,7 @@ const variants: Record<ButtonStyleKey, string> = {
 
   // Sergeant v2 inverted primary — see `ButtonVariant` JSDoc above.
   // `bg-ink-strong` is emerald-900 in light + white in dark (HC: pure
-  // #000 / #fff). `text-bg-base` is the corresponding warm-cream / dark
+  // #000 / #fff). `text-bg-base` is the corresponding light page / dark
   // base, so the contrast inverts cleanly with the theme.
   "primary-ink":
     "bg-ink-strong text-bg-base hover:opacity-90 active:opacity-80",

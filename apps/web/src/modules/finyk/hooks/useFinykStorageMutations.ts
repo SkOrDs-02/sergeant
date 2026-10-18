@@ -94,6 +94,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       amount: Number(expense.amount) || 0,
       category: expense.category || (isIncome ? "other-income" : "other"),
       kind: isIncome ? "income" : "expense",
+      ...(expense.account === "cash" ? { account: "cash" as const } : {}),
     };
     setManualExpenses((prev) => [entry, ...prev]);
     if (restoredLinks && restoredLinks.length > 0) {
@@ -213,6 +214,12 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         if (patch?.amount != null) next.amount = Number(patch.amount) || 0;
         if (patch?.kind === "income" || patch?.kind === "expense")
           next.kind = patch.kind;
+        // Ключ `account` у патчі означає вибір рахунку у формі: `"cash"`
+        // ставить готівку, будь-що інше повертає «Без рахунку».
+        if (patch && "account" in patch) {
+          if (patch.account === "cash") next.account = "cash";
+          else delete next.account;
+        }
         return next;
       }),
     );

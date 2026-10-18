@@ -158,7 +158,7 @@ Scripts are in <sc …[обрізано]
 
 ### `rel-03` [medium] Per-IP ліміти за Vercel-проксі злипаються в адреси egress-вузлів: одна людина блокує вхід іншим
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-03-signed-client-ip (код підписаного IP клієнта: Vercel Edge ставить `x-sergeant-client-ip` + HMAC-підпис, сервер довіряє лише за збігу `SERGEANT_CLIENT_IP_SECRET`; діє після того, як власник виставить секрет у Coolify і Vercel; без секрету поведінка не змінена. Лишається: виставити змінні, перевірити на проді; ключування auth-лімітів за email не робилось)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: edge middleware + server: rate limit
 - **Де:** apps/web/middleware.ts:23,61-81; apps/server/src/config.ts:46-49; apps/server/src/http/rateLimit.ts:277-281,716; apps/server/src/modules/chat/aiQuota.ts:282
 - **Першопричина:** apps/web/middleware.ts проксіює /api на бекенд, копіює заголовки й виставляє лише x-forwarded-host/proto. Express з trust proxy=1 бере req.ip від Traefik, тобто адресу egress Vercel. Усі per-IP бакети ключуються за цією спільною адресою: auth 5/60 с fail-closed, анонімна AI-квота, анонімні ліміти.

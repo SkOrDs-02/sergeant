@@ -10,7 +10,7 @@
  * очікує саме такий формат, тож одиниці зберігаємо, а нові поля лише додаємо.
  */
 
-import { INTERNAL_TRANSFER_ID } from "../constants";
+import { CASH_ACCOUNT_ID, INTERNAL_TRANSFER_ID } from "../constants";
 import { txTimeMs } from "../lib/transactions.js";
 import type { Transaction, TransactionSource, TransactionType } from "./types";
 
@@ -317,6 +317,11 @@ export interface ManualExpenseEntry {
    * ніколи не пишеться новим кодом.
    */
   type?: string;
+  /**
+   * Рахунок запису (Р3 спеки `finyk-analytics-v3.md`): `"cash"` означає
+   * «Готівку на руках», відсутнє поле означає «Без рахунку».
+   */
+  account?: "cash";
 }
 
 export type ManualExpenseKind = "expense" | "income";
@@ -358,7 +363,11 @@ export function manualExpenseToTransaction(
       mcc: 0,
       raw: { category: e.category },
     },
-    { source: "manual", accountId: null, categoryId: e.category || "" },
+    {
+      source: "manual",
+      accountId: e.account === "cash" ? CASH_ACCOUNT_ID : null,
+      categoryId: e.category || "",
+    },
   );
 }
 

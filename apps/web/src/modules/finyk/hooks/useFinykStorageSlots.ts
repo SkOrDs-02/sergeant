@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
+import type { CashOnHandState } from "@sergeant/finyk-domain/domain/cashOnHand";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
 import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
@@ -88,6 +89,12 @@ export interface FinykStorageSlots {
    */
   merchantRules: MerchantRule[];
   setMerchantRules: Dispatch<SetStateAction<MerchantRule[]>>;
+  /**
+   * «Готівка на руках» (ADR-0076): `null`, поки рахунок не створено. Живе
+   * поруч із правилами в `finyk_prefs.prefs_json`, LS-ключа не має.
+   */
+  cashOnHand: CashOnHandState | null;
+  setCashOnHand: Dispatch<SetStateAction<CashOnHandState | null>>;
   /**
    * Balance-visibility flag (Stage 13 PR #074). LS first-paint fallback,
    * SQLite-overlay once warm. Mutations flow through dual-write —
@@ -181,6 +188,7 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   // Правила мерчантів: нового LS-ключа свідомо немає — слот живе лише в
   // SQLite (`prefs_json`) і sync-у, переносити нема чого.
   const [merchantRules, setMerchantRules] = useState<MerchantRule[]>([]);
+  const [cashOnHand, setCashOnHand] = useState<CashOnHandState | null>(null);
   // Stage 13 PR #074 — `finyk_show_balance_v1` slot. Default `true`
   // (UI shows balances unless user toggled off). Raw-string LS shape
   // (`"0"` / `"1"`), не JSON, тож беремо ручну useState + readRaw
@@ -250,6 +258,7 @@ export function useFinykStorageSlots(): FinykStorageSlots {
       if (cache.merchantRules !== null) {
         setMerchantRules(cache.merchantRules);
       }
+      if (cache.cashOnHand !== undefined) setCashOnHand(cache.cashOnHand);
     }
   }
 
@@ -293,6 +302,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setDismissedRecurring,
     merchantRules,
     setMerchantRules,
+    cashOnHand,
+    setCashOnHand,
     showBalance,
     setShowBalance,
     networthSnapshotRef,

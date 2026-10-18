@@ -36,6 +36,10 @@ import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { readJSON, writeJSON } from "./finykStorage";
 import { getCachedFinykSqliteState } from "./sqliteReader";
 import {
+  sanitizeCashOnHand,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
+import {
   dualWriteFinykState,
   type FinykDualWriteState,
 } from "./sqliteWriter/index.js";
@@ -139,6 +143,8 @@ export function readFinykBackupFromStorage() {
     // нема: холодний кеш → порожньо, як і для решти prefs без LS-дубля.
     merchantRules:
       warm && cache.merchantRules !== null ? cache.merchantRules : [],
+    // «Готівка на руках» теж лише в SQLite; без рахунку поля у файлі немає.
+    ...(warm && cache.cashOnHand ? { cashOnHand: cache.cashOnHand } : {}),
   };
 }
 
@@ -225,7 +231,7 @@ function cacheToDualWriteState(): FinykDualWriteState {
       showBalance: cache.showBalance ?? true,
       excludedStatTxIdsJson: toJson(cache.excludedStatTxIds ?? [], "[]"),
       dismissedRecurringJson: toJson(cache.dismissedRecurring ?? [], "[]"),
-      prefsJson: serializePrefsJson(cache.merchantRules),
+      prefsJson: serializePrefsJson(cache.merchantRules, cache.cashOnHand),
     },
   };
 }
@@ -399,7 +405,7 @@ function mergePrefs(
           "[]",
         )
       : curRaw;
-  const hasRules = (getCachedFinykSqliteState().merchantRules ?? []).length > 0;
+  const curBlob = parsePrefsBlob(cur.prefsJson);
   return {
     showBalance: cur.showBalance,
     monthlyPlanJson: isEmptyJson(cur.monthlyPlanJson)
@@ -413,8 +419,33 @@ function mergePrefs(
       cur.dismissedRecurringJson,
       b.dismissedRecurring,
     ),
-    prefsJson: hasRules ? cur.prefsJson : fromFile.prefsJson,
+    // Злиття лише додає відсутнє: наявні правила і наявна готівка на
+    // пристрої лишаються, з файлу береться тільки те, чого тут немає.
+    prefsJson: serializePrefsJson(
+      curBlob.merchantRules.length > 0
+        ? curBlob.merchantRules
+        : (b.merchantRules ?? []),
+      curBlob.cashOnHand ?? sanitizeCashOnHand(b.cashOnHand),
+    ),
   };
+}
+
+/** Розібраний `prefs_json`; зіпсований рядок дає порожній стан. */
+function parsePrefsBlob(raw: string): {
+  merchantRules: unknown[];
+  cashOnHand: CashOnHandState | null;
+} {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown> | null;
+    return {
+      merchantRules: Array.isArray(parsed?.["merchantRules"])
+        ? (parsed["merchantRules"] as unknown[])
+        : [],
+      cashOnHand: sanitizeCashOnHand(parsed?.["cashOnHand"]),
+    };
+  } catch {
+    return { merchantRules: [], cashOnHand: null };
+  }
 }
 
 const EMPTY_PREFS: FinykPrefsSnapshot = {
@@ -447,9 +478,15 @@ function prefsOntoSnapshot(
       : base.dismissedRecurringJson,
     // Файл без правил (старий бекап) лишає наявні: «Замінити» діє на
     // зріз лише тоді, коли файл його несе — як і для решти полів.
-    prefsJson: b.merchantRules
-      ? serializePrefsJson(b.merchantRules)
-      : base.prefsJson,
+    prefsJson:
+      b.merchantRules || b.cashOnHand
+        ? serializePrefsJson(
+            b.merchantRules ?? parsePrefsBlob(base.prefsJson).merchantRules,
+            b.cashOnHand
+              ? sanitizeCashOnHand(b.cashOnHand)
+              : parsePrefsBlob(base.prefsJson).cashOnHand,
+          )
+        : base.prefsJson,
   };
 }
 

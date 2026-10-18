@@ -50,6 +50,8 @@ export type ManualExpense = {
   category: string;
   /** Відсутнє поле = `"expense"` — старі записи валідні без міграції даних. */
   kind?: "expense" | "income";
+  /** `"cash"` = «Готівка на руках»; відсутнє поле = «Без рахунку». */
+  account?: "cash";
 };
 
 export type CustomCategory = {

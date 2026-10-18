@@ -10,6 +10,7 @@ import { AppError, ValidationError } from "../obs/errors.js";
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
 import { ipPrefix } from "../auth/sessionFingerprint.js";
+import { getClientIp } from "./clientIp.js";
 import { normaliseUserAgent } from "../lib/uaNormalise.js";
 
 /**
@@ -225,7 +226,8 @@ function networkOriginFor(
   ipPrefix?: string | undefined;
   ua_family: string;
 } {
-  const prefix = ipPrefix(req.ip) ?? undefined;
+  const clientIp = getClientIp(req);
+  const prefix = ipPrefix(clientIp) ?? undefined;
   const ua_family = normaliseUserAgent(req.get("user-agent"));
   const isSecurityEvent =
     outcome === "bad_credentials" ||
@@ -233,7 +235,7 @@ function networkOriginFor(
     outcome === "invalid";
 
   if (isSecurityEvent) {
-    return { ip: req.ip, ipPrefix: prefix, ua_family };
+    return { ip: clientIp, ipPrefix: prefix, ua_family };
   }
   return { ipPrefix: prefix, ua_family };
 }
