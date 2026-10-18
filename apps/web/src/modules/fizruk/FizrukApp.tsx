@@ -43,16 +43,16 @@ import { RestTimerProvider } from "./context/RestTimerProvider";
 import { RestTimerOverlayConnected } from "./components/workouts/RestTimerOverlayConnected";
 
 interface FizrukAppProps {
-  onBackToHub?: () => void;
   onGoToHub?: () => void;
+  onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
 
 export default function FizrukApp({
-  onBackToHub,
   onGoToHub,
+  onOpenSettings,
   onOpenModule,
   pwaAction,
   onPwaActionConsumed,
@@ -230,8 +230,8 @@ export default function FizrukApp({
               <FizrukHeader
                 page={page}
                 activeProgram={activeProgram}
-                onBackToHub={onBackToHub}
                 onGoToHub={onGoToHub}
+                onOpenSettings={onOpenSettings}
                 onContextualBack={() =>
                   navigate(contextualBackTarget, { back: true })
                 }

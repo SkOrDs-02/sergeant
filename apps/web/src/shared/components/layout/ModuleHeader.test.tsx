@@ -1,23 +1,33 @@
 // @vitest-environment jsdom
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 
-const { hapticTap, emitHubBus } = vi.hoisted(() => ({
+const { hapticTap, emitHubBus, openHubModule } = vi.hoisted(() => ({
   hapticTap: vi.fn(),
   emitHubBus: vi.fn(),
+  openHubModule: vi.fn(),
 }));
 
 vi.mock("@shared/lib/adapters/haptic", () => ({ hapticTap }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
+vi.mock("@shared/lib/modules/hubNav", () => ({ openHubModule }));
+vi.mock("../../../core/hub/ModulePanel", () => ({
+  MODULE_ORDER: ["finyk", "fizruk", "routine", "nutrition"],
+  MODULE_HUE: {
+    finyk: "bg-chart-finyk",
+    fizruk: "bg-chart-fizruk",
+    routine: "bg-chart-routine",
+    nutrition: "bg-chart-nutrition",
+  },
+  readModuleFact: (id: string) => (id === "routine" ? "3 / 5" : null),
+}));
 
 import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
-  ModuleHeaderBackButton,
   ModuleHeaderChevronButton,
   ModuleHeaderHubButton,
   ModuleHeaderIconButton,
-  ModuleHeaderSettingsButton,
 } from "./ModuleHeader";
 
 describe("ModuleHeader", () => {
@@ -25,26 +35,11 @@ describe("ModuleHeader", () => {
     vi.clearAllMocks();
   });
 
-  it("renders a short subtitle for narrow screens next to the full one (VIS-1)", () => {
-    render(
-      <ModuleHeader
-        title="ФІЗРУК"
-        subtitle="Рух · сила · відновлення"
-        subtitleShort="Рух і відновлення"
-      />,
-    );
-    expect(screen.getByText("Рух і відновлення")).toHaveClass("sm:hidden");
-    expect(screen.getByText("Рух · сила · відновлення")).toHaveClass(
-      "hidden",
-      "sm:inline",
-    );
-  });
-
   it("renders the default title stack and optional slots", () => {
     render(
       <ModuleHeader
         title="ФІЗРУК"
-        subtitle="Тренування · прогрес"
+        subtitle="Тиждень 42"
         left={<button type="button">Назад</button>}
         right={<button type="button">Дія</button>}
         className="custom-header"
@@ -56,7 +51,7 @@ describe("ModuleHeader", () => {
     // precedes each page's own <h1> in DOM order, so it must not register
     // as a heading (would invert the a11y heading outline).
     expect(screen.queryByRole("heading", { name: "ФІЗРУК" })).toBeNull();
-    expect(screen.getByText("Тренування · прогрес")).toBeInTheDocument();
+    expect(screen.getByText("Тиждень 42")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Назад" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Дія" })).toBeInTheDocument();
     expect(screen.queryByRole("tablist")).toBeNull();
@@ -86,44 +81,124 @@ describe("ModuleHeader", () => {
   });
 });
 
+describe("ModuleHeader: перемикач модулів", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function renderSwitcher(onOpenSettings = vi.fn()) {
+    render(
+      <ModuleHeader
+        module="finyk"
+        switcher="finyk"
+        title="Фінік"
+        onOpenSettings={onOpenSettings}
+      />,
+    );
+    return onOpenSettings;
+  }
+
+  it("тап по назві відкриває аркуш «Модулі» з чотирма модулями", () => {
+    renderSwitcher();
+    const title = screen.getByTestId("module-header-title");
+    expect(title.tagName).toBe("BUTTON");
+    expect(title).toHaveAttribute("aria-haspopup", "dialog");
+    expect(title).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(title);
+
+    expect(title).toHaveAttribute("aria-expanded", "true");
+    const sheet = screen.getByRole("dialog", { name: "Модулі" });
+    for (const name of ["Фінік", "Фізрук", "Рутина", "Їжа"]) {
+      expect(
+        within(sheet).getByRole("button", { name: new RegExp(name) }),
+      ).toBeInTheDocument();
+    }
+    // Факт модуля другим рядком, як у панелі модулів хаба.
+    expect(within(sheet).getByText("3 / 5")).toBeInTheDocument();
+  });
+
+  it("поточний модуль позначено aria-current і заливкою чорнилом, без тексту «Обрано»", () => {
+    renderSwitcher();
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    const sheet = screen.getByRole("dialog", { name: "Модулі" });
+    const current = within(sheet).getByRole("button", { name: /Фінік/ });
+    expect(current).toHaveAttribute("aria-current", "true");
+    expect(current).toHaveClass("bg-text", "text-bg", "rounded-lg");
+    expect(
+      within(sheet).getByRole("button", { name: /Рутина/ }),
+    ).not.toHaveAttribute("aria-current");
+    expect(within(sheet).queryByText("Обрано")).toBeNull();
+  });
+
+  it("рядок іншого модуля веде туди тим самим входом, що й хаб", () => {
+    renderSwitcher();
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    const sheet = screen.getByRole("dialog", { name: "Модулі" });
+
+    fireEvent.click(within(sheet).getByRole("button", { name: /Рутина/ }));
+
+    expect(openHubModule).toHaveBeenCalledWith(
+      "routine",
+      undefined,
+      "module_switcher",
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("тап по поточному модулю лише закриває аркуш", () => {
+    renderSwitcher();
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: /Фінік/ }),
+    );
+    expect(openHubModule).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("«Налаштування модуля» останнім рядком кличе той самий обробник, що й колишня шестерня", () => {
+    const onOpenSettings = renderSwitcher();
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    const sheet = screen.getByRole("dialog", { name: "Модулі" });
+    const rows = within(sheet).getAllByRole("button", {
+      name: /Фінік|Фізрук|Рутина|Їжа|Налаштування модуля/,
+    });
+    expect(rows.at(-1)).toHaveTextContent("Налаштування модуля");
+
+    fireEvent.click(rows.at(-1)!);
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 describe("ModuleHeader buttons", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("runs callbacks from icon, back, hub, chevron and settings buttons", () => {
+  it("runs callbacks from icon, hub and chevron buttons", () => {
     const onIcon = vi.fn();
-    const onBack = vi.fn();
     const onHub = vi.fn();
     const onChevron = vi.fn();
-    const onSettings = vi.fn();
     render(
       <>
         <ModuleHeaderIconButton ariaLabel="Іконка" onClick={onIcon}>
           I
         </ModuleHeaderIconButton>
-        <ModuleHeaderBackButton onClick={onBack} label="" />
         <ModuleHeaderHubButton onClick={onHub} />
         <ModuleHeaderChevronButton onClick={onChevron} ariaLabel="До списку" />
-        <ModuleHeaderSettingsButton onClick={onSettings} title="Налаштувати" />
       </>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Іконка" }));
-    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
     fireEvent.click(screen.getByRole("button", { name: "До списку" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Налаштування модуля" }),
-    );
 
     expect(onIcon).toHaveBeenCalledTimes(1);
-    expect(onBack).toHaveBeenCalledTimes(1);
     expect(onHub).toHaveBeenCalledTimes(1);
     expect(onChevron).toHaveBeenCalledTimes(1);
-    expect(onSettings).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("Назад")).toBeNull();
-    expect(screen.getByTitle("Налаштувати")).toBeInTheDocument();
   });
 
   it("opens the assistant through the hub bus", () => {

@@ -415,6 +415,7 @@ export const messagesEn: Partial<{
 
   modules: {
     openSettings: "Module settings",
+    switcherTitle: "Modules",
   },
 
   // Групи fizruk / finyk / nutrition / routine НЕ оголошені навмисно:

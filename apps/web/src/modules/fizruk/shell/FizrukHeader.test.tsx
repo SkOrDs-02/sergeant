@@ -28,39 +28,25 @@ describe("FizrukHeader", () => {
     expect(backBtn).toHaveClass("pointer-coarse:min-w-[44px]");
   });
 
-  it("shows hub back button when onBackToHub is provided", () => {
-    const onBackToHub = vi.fn();
-    render(
-      <FizrukHeader
-        page="dashboard"
-        onContextualBack={vi.fn()}
-        onBackToHub={onBackToHub}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
-    expect(onBackToHub).toHaveBeenCalledTimes(1);
-  });
-
-  it("keeps a direct hub exit beside the history back action", () => {
-    const onBackToHub = vi.fn();
+  // v3.1 (В1): на вкладці модуля «назад» знято, бо поруч із «додому» він
+  // читався як дубль; лишається прямий вихід на хаб і назва-перемикач.
+  it("on a module tab shows only the hub exit, no back arrow and no subtitle", () => {
     const onGoToHub = vi.fn();
     render(
       <FizrukHeader
         page="dashboard"
         onContextualBack={vi.fn()}
-        onBackToHub={onBackToHub}
         onGoToHub={onGoToHub}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
-    expect(onBackToHub).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: /^Назад/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
     expect(onGoToHub).toHaveBeenCalledTimes(1);
-    expect(onBackToHub).toHaveBeenCalledTimes(1);
     expect(
       screen.getByRole("button", { name: "Відкрити Сержанта" }),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Рух · сила · відновлення")).toBeNull();
+    expect(screen.queryByText("Тренування")).toBeNull();
   });
 
   it("keeps the module name in the header on programs page", () => {
@@ -97,7 +83,6 @@ describe("FizrukHeader", () => {
         <FizrukHeader
           page={page}
           onContextualBack={onContextualBack}
-          onBackToHub={vi.fn()}
           onGoToHub={onGoToHub}
         />,
       );
@@ -113,13 +98,23 @@ describe("FizrukHeader", () => {
     },
   );
 
-  it("keeps settings in the hub instead of adding another header action", () => {
-    render(<FizrukHeader page="dashboard" onContextualBack={vi.fn()} />);
+  it("keeps settings out of the header and in the «Модулі» sheet", () => {
+    const onOpenSettings = vi.fn();
+    render(
+      <FizrukHeader
+        page="atlas"
+        onContextualBack={vi.fn()}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
     expect(
       screen.queryByRole("button", { name: /Налаштування модуля/i }),
     ).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Відкрити Сержанта" }),
-    ).toBeInTheDocument();
+    // Перемикач лишається й на вкладеній сторінці.
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Налаштування модуля" }),
+    );
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 });

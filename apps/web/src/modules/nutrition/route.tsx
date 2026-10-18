@@ -14,13 +14,8 @@ const NutritionApp = lazyDefault(() => import("./NutritionApp"));
  * Lazy route entry for `/nutrition/*` (initiative 0006 Phase 5).
  */
 export function Component() {
-  const {
-    goBackOrHub,
-    goToHub,
-    goToModuleSettings,
-    pwaAction,
-    clearPwaAction,
-  } = useHubShell();
+  const { goToHub, goToModuleSettings, pwaAction, clearPwaAction } =
+    useHubShell();
 
   return (
     <ModuleShell moduleId="nutrition">
@@ -29,7 +24,6 @@ export function Component() {
         className="flex-1 min-h-0 flex flex-col"
       >
         <NutritionApp
-          onBackToHub={goBackOrHub}
           onGoToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("nutrition")}
           pwaAction={pwaAction}

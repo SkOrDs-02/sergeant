@@ -355,6 +355,8 @@ export const messages = {
   modules: {
     // PR-2 UX-roast 2026-Q2 — gear-icon shortcut in module headers.
     openSettings: "Налаштування модуля",
+    // Аркуш перемикача модулів, що відкривається тапом по назві в шапці.
+    switcherTitle: "Модулі",
   },
 
   // Планована пауза звички (канон `routine.md` §4, Хвиля 4 — гнучкий стрік).

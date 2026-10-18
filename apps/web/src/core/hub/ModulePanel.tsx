@@ -22,21 +22,34 @@ import {
 } from "@shared/lib/modules/moduleLabels";
 import { coreMessages } from "@shared/i18n/uk.core";
 import { isFinykBalanceHidden, maskAmount } from "@finyk/lib/balanceVisibility";
+import type { ModulePreview } from "@sergeant/shared";
 import { MODULE_CONFIGS } from "./dashboard/moduleConfigs";
 
-const ORDER: readonly HubModuleId[] = [
+export const MODULE_ORDER: readonly HubModuleId[] = [
   "finyk",
   "fizruk",
   "routine",
   "nutrition",
 ];
 
-const HUE: Record<HubModuleId, string> = {
+export const MODULE_HUE: Record<HubModuleId, string> = {
   finyk: "bg-chart-finyk",
   fizruk: "bg-chart-fizruk",
   routine: "bg-chart-routine",
   nutrition: "bg-chart-nutrition",
 };
+
+/** Значення дня модуля для рядка панелі й аркуша «Модулі» (`null` = даних немає). */
+export function readModuleFact(
+  id: HubModuleId,
+  preview: ModulePreview = MODULE_CONFIGS[id].getPreview(),
+  balanceHidden: boolean = isFinykBalanceHidden(),
+): string | null {
+  if (preview.main === null) return null;
+  return id === "finyk"
+    ? maskAmount(preview.main, balanceHidden)
+    : preview.main;
+}
 
 export interface ModulePanelProps {
   activeModules: readonly string[];
@@ -48,7 +61,7 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
   const balanceHidden = isFinykBalanceHidden();
   const rows = useMemo(() => {
     void storageBump;
-    return ORDER.map((id) => ({
+    return MODULE_ORDER.map((id) => ({
       id,
       preview: MODULE_CONFIGS[id].getPreview(),
     }));
@@ -86,7 +99,10 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
               >
                 <span
                   aria-hidden
-                  className={cn("h-2.5 w-2.5 shrink-0 rounded-sm", HUE[id])}
+                  className={cn(
+                    "h-2.5 w-2.5 shrink-0 rounded-sm",
+                    MODULE_HUE[id],
+                  )}
                 />
                 <span
                   className={cn(
@@ -102,15 +118,13 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
                 >
                   {progress !== null && (
                     <span
-                      className={cn("block h-full", HUE[id])}
+                      className={cn("block h-full", MODULE_HUE[id])}
                       style={{ width: `${progress}%` }}
                     />
                   )}
                 </span>
                 <span className="w-20 shrink-0 text-right text-style-body font-medium tnum text-text">
-                  {id === "finyk" && preview.main !== null
-                    ? maskAmount(preview.main, balanceHidden)
-                    : (preview.main ?? "–")}
+                  {readModuleFact(id, preview, balanceHidden) ?? "–"}
                 </span>
               </button>
             </li>

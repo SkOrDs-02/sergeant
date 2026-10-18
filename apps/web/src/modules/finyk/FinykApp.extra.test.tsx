@@ -575,19 +575,19 @@ describe("FinykApp (extra) — authError banner onOpenSettings link", () => {
       transactions: [],
       syncState: null,
     } as unknown as ReturnType<typeof useMonobank>);
-    const onBackToHub = vi.fn();
+    const onGoToHub = vi.fn();
     const onOpenSettings = vi.fn();
     render(
       <FinykApp
         onOpenAuth={NOOP_AUTH}
-        onBackToHub={onBackToHub}
+        onGoToHub={onGoToHub}
         onOpenSettings={onOpenSettings}
       />,
     );
     const link = screen.getByText("Оновити токен у Налаштуваннях");
     fireEvent.click(link);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
-    expect(onBackToHub).not.toHaveBeenCalled();
+    expect(onGoToHub).not.toHaveBeenCalled();
   });
 
   it("does not render the link when onOpenSettings is missing", () => {
@@ -602,7 +602,7 @@ describe("FinykApp (extra) — authError banner onOpenSettings link", () => {
       transactions: [],
       syncState: null,
     } as unknown as ReturnType<typeof useMonobank>);
-    render(<FinykApp onOpenAuth={NOOP_AUTH} onBackToHub={vi.fn()} />);
+    render(<FinykApp onOpenAuth={NOOP_AUTH} onGoToHub={vi.fn()} />);
     expect(
       screen.queryByText("Оновити токен у Налаштуваннях"),
     ).not.toBeInTheDocument();

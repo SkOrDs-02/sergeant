@@ -10,14 +10,14 @@ import type { ReactNode } from "react";
 const useHubShellMock = vi.fn();
 const { RoutineAppStub } = vi.hoisted(() => ({
   RoutineAppStub: (props: {
-    onBackToHub: () => void;
+    onOpenSettings: () => void;
     onGoToHub: () => void;
     onOpenModule: (moduleId: string, opts?: { hash?: string }) => void;
     pwaAction: string | null;
     onPwaActionConsumed: () => void;
   }) => (
     <div data-testid="routine-app-stub">
-      <button onClick={props.onBackToHub}>back</button>
+      <button onClick={props.onOpenSettings}>settings</button>
       <button onClick={props.onGoToHub}>hub</button>
       <button onClick={() => props.onOpenModule("finyk", { hash: "assets" })}>
         open-module
@@ -76,12 +76,12 @@ describe("routine route Component", () => {
     expect(screen.getByTestId("routine-app-stub")).toBeInTheDocument();
     expect(screen.getByTestId("pwa-action")).toHaveTextContent("add_habit");
 
-    fireEvent.click(screen.getByText("back"));
+    fireEvent.click(screen.getByText("settings"));
     fireEvent.click(screen.getByText("hub"));
     fireEvent.click(screen.getByText("open-module"));
     fireEvent.click(screen.getByText("consume-pwa"));
 
-    expect(hub.goBackOrHub).toHaveBeenCalledTimes(1);
+    expect(hub.goToModuleSettings).toHaveBeenCalledWith("routine");
     expect(hub.goToHub).toHaveBeenCalledTimes(1);
     expect(hub.openModule).toHaveBeenCalledWith("finyk", { hash: "assets" });
     expect(hub.clearPwaAction).toHaveBeenCalledTimes(1);
