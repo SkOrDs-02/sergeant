@@ -51,7 +51,7 @@ export function CashAmountForm({
         }}
       />
       <div className="flex gap-2">
-        <Button type="button" variant="finyk" size="sm" onClick={submit}>
+        <Button type="button" variant="solid" tone="finyk" size="sm" onClick={submit}>
           {submitLabel}
         </Button>
         {onCancel && (
