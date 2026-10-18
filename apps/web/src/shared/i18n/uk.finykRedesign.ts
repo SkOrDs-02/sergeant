@@ -1,6 +1,8 @@
 export const finykRedesign = {
   assetsTitle: "Активи",
   transactionsTitle: "Операції",
+  transactionsEmptyTitle: "Операцій ще немає",
+  transactionsEmptyDescription: "Додай витрату вручну або підключи Monobank.",
   planningTitle: "План",
 
   analyticsTitle: "Аналіз",

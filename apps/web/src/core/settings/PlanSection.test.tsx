@@ -139,7 +139,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     vi.restoreAllMocks();
   });
 
-  it("shows the Free badge + «Перейти на Premium» CTA when no active subscription is on file", async () => {
+  it("shows the Free badge + «Дивитися плани» CTA when no active subscription is on file", async () => {
     statusMock.mockResolvedValue(FREE_RESPONSE);
     renderSection();
     await openSection();
@@ -471,7 +471,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     // Регресія WF-19 (аудит 2026-09-16): `usePlan` повертає `plan: "free"`
     // як ДЕФОЛТ під час запиту, тож платний користувач до відповіді
     // сервера бачив бейдж «Free», абзац «Ти на безкоштовному тарифі…» і
-    // кнопку «Перейти на Premium», яка вела його на /pricing.
+    // кнопку «Дивитися плани», яка вела його на /pricing.
     statusMock.mockImplementation(() => new Promise(() => {}));
     renderSection();
     await openSection();

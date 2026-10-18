@@ -6,7 +6,6 @@ import { useMemo } from "react";
 import { pluralExercises } from "@sergeant/shared";
 import { setsCountLabel } from "../session/sessionLib";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { messages } from "@shared/i18n/uk";
 import { formatDateShort } from "@shared/lib/time/formatDate";
@@ -104,10 +103,10 @@ export function WorkoutsHome({
   return (
     <div className="space-y-4">
       {hasActive ? (
-        <div className="rounded-2xl border border-fizruk-ring bg-fizruk-surface p-4 dark:border-fizruk-ring/40 dark:bg-fizruk/10">
+        <div className="rounded-panel bg-fizruk-tint p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-style-caption text-fizruk-strong">
+              <div className="text-style-overline text-fizruk-tint-label">
                 Активне тренування
               </div>
               <div className="mt-1 text-sm text-text">
@@ -119,7 +118,7 @@ export function WorkoutsHome({
             </div>
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
 
               className="h-11 px-4"
               onClick={onOpenSession}
@@ -136,12 +135,12 @@ export function WorkoutsHome({
             className="mt-3 w-full h-11"
             onClick={onLogPast}
           >
-            <Icon name="edit" size="md" aria-hidden />{" "}
+            {" "}
             {messages.fizruk.logPast.cta}
           </Button>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border bg-surface p-4 text-center">
+        <div className="rounded-panel border border-border bg-surface p-4 text-center">
           <div className="text-style-label text-text">
             Немає активного тренування
           </div>
@@ -162,31 +161,31 @@ export function WorkoutsHome({
           >
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
               className="h-12 text-base"
               onClick={onRequestStart}
             >
-              <Icon name="play" size="md" aria-hidden /> Почати тренування
+              Почати тренування
             </Button>
             <Button
               variant="outline"
               className="h-12 text-base"
               onClick={onLogPast}
             >
-              <Icon name="edit" size="md" aria-hidden />{" "}
+              {" "}
               {messages.fizruk.logPast.cta}
             </Button>
           </div>
         </div>
       )}
 
-      <Card as="section" radius="lg" aria-label="Останні тренування">
+      <Card as="section" aria-label="Останні тренування">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-style-label text-text">Останні тренування</h2>
           {recentWorkouts.length > 0 ? (
             <button
               type="button"
-              className="text-style-caption text-fizruk-strong hover:underline active:opacity-70 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              className="text-style-caption text-text hover:underline active:opacity-70 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={onOpenJournal}
             >
               Всі
@@ -199,60 +198,46 @@ export function WorkoutsHome({
               <li key={w.id}>
                 <button
                   type="button"
-                  className="w-full text-left rounded-xl border border-line bg-bg px-3 py-3 flex items-center justify-between hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                  className="w-full text-left border-b border-line px-3 py-3 flex items-center justify-between hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                   onClick={() =>
                     onOpenWorkout ? onOpenWorkout(w.id) : onOpenJournal()
                   }
                 >
                   <RecentWorkoutSummary workout={w} />
-                  <Icon
-                    name="chevron-right"
-                    size="sm"
-                    className="text-subtle"
-                    aria-hidden
-                  />
                 </button>
               </li>
             ))}
           </ul>
         ) : (
-          <div className="rounded-2xl border border-dashed border-line p-4 text-style-body text-subtle text-center">
+          <div className="py-3 text-style-body text-subtle text-center">
             Після першого завершеного тренування тут зʼявляться останні сесії.
           </div>
         )}
       </Card>
 
-      <Card as="section" radius="lg" aria-label="Довідники">
+      <Card as="section" aria-label="Довідники">
         <h2 className="text-style-label text-text mb-3">Довідники</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             type="button"
-            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="border-b border-line py-3 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             onClick={onOpenCatalog}
           >
             <div className="flex items-center gap-3">
-              <Icon name="book-open" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">Каталог вправ</div>
                 <div className="text-style-caption text-subtle mt-0.5">
                   Пошук · групи мʼязів · своя вправа
                 </div>
               </div>
-              <Icon
-                name="chevron-right"
-                size="sm"
-                className="text-subtle"
-                aria-hidden
-              />
             </div>
           </button>
           <button
             type="button"
-            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="border-b border-line py-3 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             onClick={onOpenPrograms}
           >
             <div className="flex items-center gap-3">
-              <Icon name="list-checks" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   {messages.fizruk.programsRow.title}
@@ -263,44 +248,30 @@ export function WorkoutsHome({
                     : messages.fizruk.programsRow.subtitle}
                 </div>
               </div>
-              <Icon
-                name="chevron-right"
-                size="sm"
-                className="text-subtle"
-                aria-hidden
-              />
             </div>
           </button>
           {onOpenSchedule && (
             <button
               type="button"
-              className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              className="border-b border-line py-3 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={onOpenSchedule}
             >
               <div className="flex items-center gap-3">
-                <Icon name="calendar" size={22} className="text-muted" />
                 <div className="flex-1 min-w-0">
                   <div className="text-style-label text-text">Планування</div>
                   <div className="text-style-caption text-subtle mt-0.5">
                     Відкрити календар тренувань у Рутині
                   </div>
                 </div>
-                <Icon
-                  name="chevron-right"
-                  size="sm"
-                  className="text-subtle"
-                  aria-hidden
-                />
               </div>
             </button>
           )}
           <button
             type="button"
-            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="border-b border-line py-3 text-left hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             onClick={onOpenStrongImport}
           >
             <div className="flex items-center gap-3">
-              <Icon name="upload" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   {messages.fizruk.strongImport.rowTitle}
@@ -309,12 +280,6 @@ export function WorkoutsHome({
                   {messages.fizruk.strongImport.rowSubtitle}
                 </div>
               </div>
-              <Icon
-                name="chevron-right"
-                size="sm"
-                className="text-subtle"
-                aria-hidden
-              />
             </div>
           </button>
         </div>
@@ -352,13 +317,13 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
       <div className="flex items-center gap-2">
         <span className="text-style-label text-text">{dateLabel}</span>
         {!summary.isFinished ? (
-          <span className="text-style-caption font-semibold text-warning-strong bg-warning/15 px-2 py-0.5 rounded-full">
+          <span className="text-style-caption font-semibold text-text bg-panelHi px-2 py-0.5 rounded-lg">
             Чернетка
           </span>
         ) : isLightWorkout(workout as never) ? (
           // Той самий бейдж, що в історії: легкий запис на дні є, серію не
           // рухає (канон §8, 2026-09-15).
-          <span className="text-style-caption font-semibold text-fizruk-strong dark:text-fizruk bg-fizruk/10 px-2 py-0.5 rounded-full">
+          <span className="text-style-caption font-semibold text-text bg-panelHi px-2 py-0.5 rounded-lg">
             {messages.fizruk.workoutHistory.lightBadge}
           </span>
         ) : null}

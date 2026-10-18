@@ -97,7 +97,7 @@ describe("PantryManagerSheet — місця зберігання", () => {
     expect(screen.queryByRole("button", { name: "Зберегти" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Створити" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Скасувати" })).toBeNull();
-    expect(screen.getByRole("button", { name: "+ Нове місце" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Нове місце" })).toBeTruthy();
   });
 
   it("renames the place whose row was tapped", () => {

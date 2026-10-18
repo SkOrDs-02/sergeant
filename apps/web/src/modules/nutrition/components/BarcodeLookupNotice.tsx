@@ -9,7 +9,6 @@
  * рядка, щоб різниця доходила до людини, а не губилась у catch-блоці.
  */
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 
 export type BarcodeLookupNoticeKind = "not-found" | "unavailable";
@@ -35,19 +34,14 @@ export interface BarcodeLookupNoticeProps {
   onManualEntry?: (() => void) | undefined;
 }
 
-const COPY: Record<
-  BarcodeLookupNoticeKind,
-  { title: string; body: string; icon: "search" | "wifi-off" }
-> = {
+const COPY: Record<BarcodeLookupNoticeKind, { title: string; body: string }> = {
   "not-found": {
     title: "Продукт не знайдено",
     body: "Цього штрихкоду немає в базі, введи КБЖВ вручну.",
-    icon: "search",
   },
   unavailable: {
     title: "Джерела тимчасово не відповідають",
     body: "Це не означає, що продукту немає, бази лежать, а не порожні. Спробуй ще раз за хвилину.",
-    icon: "wifi-off",
   },
 };
 
@@ -60,21 +54,12 @@ export function BarcodeLookupNotice({
 }: BarcodeLookupNoticeProps) {
   const copy = COPY[kind];
   return (
-    <div
-      role="status"
-      className="mt-2 rounded-2xl border border-line bg-panelHi p-3 grid gap-2"
-    >
-      <div className="flex items-start gap-2">
-        <Icon
-          name={copy.icon}
-          size="sm"
-          className="mt-0.5 text-muted shrink-0"
-          aria-hidden
-        />
-        <div className="min-w-0">
-          <div className="text-style-label text-text">{copy.title}</div>
-          <p className="text-style-caption text-subtle mt-0.5">{copy.body}</p>
+    <div role="status" className="mt-2 border-t border-line pt-3 grid gap-2">
+      <div className="min-w-0">
+        <div className="text-style-body font-semibold text-text">
+          {copy.title}
         </div>
+        <p className="text-style-caption text-muted mt-0.5">{copy.body}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {kind === "unavailable" && onRetry && (
@@ -85,13 +70,11 @@ export function BarcodeLookupNotice({
         {kind === "not-found" && onUsePhoto && (
           <Button
             type="button"
-            variant="soft"
-            tone="nutrition"
+            variant="outline"
             size="sm"
             onClick={onUsePhoto}
           >
-            <Icon name="camera" size="sm" aria-hidden />
-            <span>{messages.nutrition.barcodeNoticeUsePhoto}</span>
+            {messages.nutrition.barcodeNoticeUsePhoto}
           </Button>
         )}
         <Button

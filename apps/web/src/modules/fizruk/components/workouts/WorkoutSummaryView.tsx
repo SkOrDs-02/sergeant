@@ -104,7 +104,7 @@ export function WorkoutSummaryView({
   );
 
   return (
-    <Card radius="lg">
+    <Card>
       <div className="flex items-start gap-2">
         {/* PR-Z1 — session chrome (header + bottom nav) is off for the
             whole `workout` route, so this is the only way out that does
@@ -113,7 +113,7 @@ export function WorkoutSummaryView({
           type="button"
           onClick={onClose}
           aria-label={copy.backAria}
-          className="-ml-1 -mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] text-text hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="-ml-1 -mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] text-text hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         >
           <Icon name="chevron-left" size="sm" aria-hidden />
         </button>
@@ -174,7 +174,7 @@ export function WorkoutSummaryView({
           {items.map((item) => (
             <li
               key={item.id}
-              className="rounded-xl border border-line bg-bg px-3 py-2.5"
+              className="rounded-panel border border-line bg-bg px-3 py-2.5"
             >
               <div className="text-style-label text-text">{item.nameUk}</div>
               <div className="text-style-caption text-subtle mt-0.5">
@@ -198,13 +198,13 @@ export function WorkoutSummaryView({
 
       <Button
         variant="solid"
-        tone="fizruk"
+        tone="neutral"
 
         className="w-full h-12 mt-4"
         type="button"
         onClick={onRepeat}
       >
-        <Icon name="refresh-cw" size="md" aria-hidden /> {copy.repeatCta}
+        {copy.repeatCta}
       </Button>
 
       {/* ux-11: свайп в історії — touch-only жест (WCAG 2.1.1 / 2.5.1), тож

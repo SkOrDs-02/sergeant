@@ -246,6 +246,19 @@ describe("Button", () => {
       expect(cls).toContain("bg-transparent");
     });
 
+    it("outline/danger keeps risk visible without a filled button", () => {
+      const { getByRole } = render(
+        <Button variant="outline" tone="danger">
+          Відʼєднати
+        </Button>,
+      );
+      const cls = getByRole("button").className;
+      expect(cls).toContain("text-danger-strong");
+      expect(cls).toContain("border-border-strong");
+      expect(cls).toContain("bg-transparent");
+      expect(cls).not.toContain("bg-danger-soft");
+    });
+
     it("solid/ink renders the inverted ink primary", () => {
       const { getByRole } = render(
         <Button variant="solid" tone="ink">

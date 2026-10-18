@@ -1,3 +1,4 @@
+import { pluralTimes } from "@sergeant/shared";
 import {
   useEffect,
   useId,
@@ -8,7 +9,8 @@ import {
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
-import { Icon } from "@shared/components/ui/Icon";
+import { RoutineChoiceList } from "./RoutineChoiceList";
+import { messages } from "@shared/i18n/uk";
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
@@ -19,7 +21,6 @@ import {
   DATE_WARN_MESSAGE,
 } from "@shared/lib/time/dateBounds";
 import {
-  ROUTINE_THEME as C,
   RECURRENCE_OPTIONS,
   WEEKLY_TARGET_CHOICES,
 } from "../../lib/routineConstants";
@@ -192,7 +193,7 @@ export function HabitForm({
         {errors?.name && (
           <p
             id={nameErrId}
-            className="text-style-caption text-danger-strong mt-1 dark:text-danger"
+            className="text-style-label text-danger-strong mt-1 dark:text-danger"
           >
             {errors.name}
           </p>
@@ -208,33 +209,18 @@ export function HabitForm({
           single date), so we only surface the 4 repeating patterns
           here. */}
       <div>
-        <div className="text-style-caption text-subtle mb-1">Регулярність</div>
-        <div
-          className="flex flex-wrap gap-1.5"
-          role="radiogroup"
-          aria-label="Регулярність"
-        >
-          {RECURRENCE_OPTIONS.map((o) => {
-            const active = (habitDraft.recurrence || "daily") === o.value;
-            return (
-              <button
-                key={o.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                className={cn(
-                  "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[44px]",
-                  active ? C.chipOn : C.chipOff,
-                )}
-                onClick={() =>
-                  setHabitDraft((d) => ({ ...d, recurrence: o.value }))
-                }
-              >
-                {o.shortLabel ?? o.label}
-              </button>
-            );
-          })}
-        </div>
+        <div className="text-style-label text-subtle mb-1">Регулярність</div>
+        <RoutineChoiceList
+          label="Регулярність"
+          value={habitDraft.recurrence || "daily"}
+          options={RECURRENCE_OPTIONS.map((o) => ({
+            value: o.value,
+            label: o.shortLabel ?? o.label,
+          }))}
+          onChange={(recurrence) =>
+            setHabitDraft((d) => ({ ...d, recurrence }))
+          }
+        />
       </div>
 
       {/* When user picks «По тижню», surface the weekday selector inline
@@ -245,10 +231,10 @@ export function HabitForm({
         <div
           ref={weekdaysRef}
           className={cn(
-            "rounded-2xl border p-3 transition-colors",
+            "border-l-2 pl-3 transition-colors",
             errors?.weekdays
               ? "border-danger bg-danger/5"
-              : "border-line bg-panel",
+              : "border-transparent",
           )}
           aria-invalid={errors?.weekdays ? true : undefined}
           aria-describedby={errors?.weekdays ? weekdaysErrId : undefined}
@@ -262,7 +248,7 @@ export function HabitForm({
           {errors?.weekdays && (
             <p
               id={weekdaysErrId}
-              className="text-style-caption text-danger-strong mt-2 dark:text-danger"
+              className="text-style-label text-danger-strong mt-2 dark:text-danger"
             >
               {errors.weekdays}
             </p>
@@ -276,34 +262,20 @@ export function HabitForm({
           Стеля 7: ціль «8 разів на тиждень» означала б двічі за день, а
           відмітка в моделі одна на день. */}
       {habitDraft.recurrence === "flexible" && (
-        <div className="rounded-2xl border border-line bg-panel p-3">
-          <div
-            role="radiogroup"
-            aria-label="Скільки разів на тиждень"
-            className="flex flex-wrap gap-1.5"
-          >
-            {WEEKLY_TARGET_CHOICES.map((n) => {
-              const active = habitDraft.weeklyTarget === n;
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={`${n} разів на тиждень`}
-                  className={cn(
-                    "text-style-caption rounded-xl border transition-colors touch-target",
-                    active ? C.chipOn : C.chipOff,
-                  )}
-                  onClick={() =>
-                    setHabitDraft((d) => ({ ...d, weeklyTarget: n }))
-                  }
-                >
-                  {n}
-                </button>
-              );
-            })}
-          </div>
+        <div>
+          <RoutineChoiceList
+            label="Скільки разів на тиждень"
+            value={habitDraft.weeklyTarget}
+            options={WEEKLY_TARGET_CHOICES.map((n) => ({
+              value: n,
+              label: messages.routine.weeklyTarget
+                .replace("{n}", String(n))
+                .replace("{times}", pluralTimes(n)),
+            }))}
+            onChange={(weeklyTarget) =>
+              setHabitDraft((d) => ({ ...d, weeklyTarget }))
+            }
+          />
           <p className="text-style-body text-muted mt-2">
             Дні обирати не треба: відмічай тоді, коли вийшло.
           </p>
@@ -323,18 +295,9 @@ export function HabitForm({
         onClick={() => setShowAdvanced((v) => !v)}
         aria-expanded={showAdvanced}
         aria-controls={advancedId}
-        className="flex items-center gap-1 text-style-caption text-muted hover:text-text transition-colors"
+        className="flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
       >
         <span>{showAdvanced ? "Менше опцій" : "Більше опцій"}</span>
-        <span
-          aria-hidden
-          className={cn(
-            "inline-flex shrink-0 transition-transform",
-            showAdvanced ? "rotate-180" : "rotate-0",
-          )}
-        >
-          <Icon name="chevron-down" size="sm" />
-        </span>
       </button>
 
       {showAdvanced && (
@@ -365,7 +328,7 @@ export function HabitForm({
           </div>
           {/* Мʼяке вікно: зберігати дозволено, попереджаємо про рік. */}
           {dateWarning ? (
-            <p className="text-style-caption text-warning-strong dark:text-warning">
+            <p className="text-style-label text-warning-strong dark:text-warning">
               {dateWarning}
             </p>
           ) : null}
@@ -377,7 +340,7 @@ export function HabitForm({
               полями дат над ним, а не як окремий абзац. */}
           {(habitDraft.recurrence === "once" ||
             habitDraft.recurrence === "monthly") && (
-            <p className="text-style-caption text-subtle leading-snug">
+            <p className="text-style-label text-subtle leading-snug">
               {habitDraft.recurrence === "once"
                 ? "Подія зʼявиться лише в день «Початок». Кінець можна залишити порожнім."
                 : "Орієнтир – день місяця з «Початок». У коротких місяцях (наприклад 31 → лютий): останній день місяця."}
@@ -393,12 +356,12 @@ export function HabitForm({
             під одним чипом. Чипи-тумблери знімають обмеження, не чіпаючи схему.
           */}
           {routine.tags.length > 0 && (
-            <div className="block text-style-caption text-subtle">
+            <div className="block text-style-label text-subtle">
               <span id={tagsLabelId}>Теги</span>
               <div
                 role="group"
                 aria-labelledby={tagsLabelId}
-                className="mt-1 flex flex-wrap gap-1.5"
+                className="mt-1 divide-y divide-line"
               >
                 {routine.tags.map((t) => {
                   const active = habitDraft.tagIds.includes(t.id);
@@ -408,8 +371,8 @@ export function HabitForm({
                       type="button"
                       aria-pressed={active}
                       className={cn(
-                        "text-style-caption min-h-[44px] rounded-xl border px-2.5 py-1.5 transition-colors",
-                        active ? C.chipOn : C.chipOff,
+                        "flex min-h-11 w-full items-center justify-between gap-3 py-2 text-left text-style-label-lg focus-ring",
+                        active ? "font-semibold text-text" : "text-muted",
                       )}
                       onClick={() =>
                         setHabitDraft((d) => ({
@@ -420,7 +383,8 @@ export function HabitForm({
                         }))
                       }
                     >
-                      {t.name}
+                      <span>{t.name}</span>
+                      <span aria-hidden>{active ? "✓" : ""}</span>
                     </button>
                   );
                 })}
@@ -428,7 +392,7 @@ export function HabitForm({
               {/* AI-NOTE: caption навмисний — підказка під контролом,
                   названий виняток `no-sentence-in-caption`
                   (docs/design/design/density-hierarchy-spec.md §4). */}
-              <span className="mt-1 block text-style-caption text-subtle leading-snug">
+              <span className="mt-1 block text-style-label text-subtle leading-snug">
                 Можна обрати кілька. Теги створюються в Налаштуваннях →
                 «Рутина».
               </span>
@@ -436,7 +400,7 @@ export function HabitForm({
           )}
 
           {routine.categories.length > 0 && (
-            <label className="block text-style-caption text-subtle">
+            <label className="block text-style-label text-subtle">
               Категорія
               <select
                 className="routine-touch-select mt-1"

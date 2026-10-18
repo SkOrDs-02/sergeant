@@ -69,7 +69,7 @@ function NumberField({
           disabled={disabled}
           className={cn(
             "input-focus h-10 w-24 px-2.5 text-right text-style-body",
-            "bg-panelHi border border-line rounded-xl text-text",
+            "bg-panelHi border border-line rounded-lg text-text",
             "placeholder:text-muted",
             "disabled:opacity-60 disabled:cursor-not-allowed",
           )}
@@ -114,9 +114,9 @@ export function NutritionSection() {
   return (
     // V-13 — акцент бейджа вимагає пари `icon` + `module`; чому саме так,
     // розписано у `FinykSection.tsx`.
-    <SettingsGroup title="Їжа" icon="utensils" module="nutrition">
+    <SettingsGroup title="Їжа">
       {storageErr && (
-        <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-style-body text-danger-strong dark:text-danger">
+        <div className="rounded-panel border border-danger/40 bg-danger/10 px-3 py-2 text-style-body text-danger-strong dark:text-danger">
           {storageErr}
         </div>
       )}
@@ -128,7 +128,7 @@ export function NutritionSection() {
         </p>
       )}
 
-      <SettingsSubGroup title="Вода">
+      <SettingsSubGroup variant="bounded" title="Вода">
         <p className="text-style-body text-subtle leading-snug">
           Денна норма для трекера води в картці дня Їжі.
         </p>
@@ -146,7 +146,7 @@ export function NutritionSection() {
         />
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Автокалібрування цілі">
+      <SettingsSubGroup variant="bounded" title="Автокалібрування цілі">
         <ToggleRow
           label="Автокалібрування"
           description="Щотижня уточнює ціль за журналом їжі та зміною ваги. Ручна правка полів денного плану призупиняє його."
@@ -161,7 +161,7 @@ export function NutritionSection() {
         />
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Підстановка з комори">
+      <SettingsSubGroup variant="bounded" title="Підстановка з комори">
         <p className="text-style-body text-subtle leading-snug">
           У діалозі «Додати прийом їжі» поряд з пошуком і штрихкодом показуються
           продукти з усіх комор, їх можна вибрати одним тапом.

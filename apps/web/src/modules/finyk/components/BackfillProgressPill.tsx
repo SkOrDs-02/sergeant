@@ -5,7 +5,6 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { ProgressBar } from "@shared/components/ui";
-
 import type { MonoBackfillProgress } from "@shared/api";
 import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
 
@@ -92,7 +91,11 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
 
   return (
     <div
-      className={cn("rounded-xl border px-3 py-2.5 space-y-2", tone, className)}
+      className={cn(
+        "rounded-panel border px-3 py-2.5 space-y-2",
+        tone,
+        className,
+      )}
       role={isRunning ? "status" : undefined}
       aria-live={isRunning ? "polite" : undefined}
       aria-label={`${headline}: ${detail}`}

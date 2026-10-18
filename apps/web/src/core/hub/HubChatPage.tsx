@@ -82,7 +82,7 @@ export function HubChatPage() {
     <main
       id="main"
       tabIndex={-1}
-      className="h-app-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb page-enter outline-none"
+      className="h-app-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb outline-none"
     >
       <h1 className="sr-only">{messages.nav.chat}</h1>
       {/* Той самий height-chain фікс, що в HubChatOverlay: wrapper мусить

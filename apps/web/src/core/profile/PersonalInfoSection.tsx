@@ -234,7 +234,7 @@ export function PersonalInfoSection({
   const initial = (user.name || user.email || "?").charAt(0).toUpperCase();
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <div className="px-6 pt-6 pb-5 flex flex-col items-center gap-3 border-b border-line/60">
         {/* Avatar */}
@@ -245,7 +245,7 @@ export function PersonalInfoSection({
             onClick={() => fileRef.current?.click()}
             aria-label="Змінити аватар"
             className={cn(
-              "relative w-20 h-20 rounded-full overflow-hidden",
+              "relative w-20 h-20 rounded-lg overflow-hidden",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             )}
           >

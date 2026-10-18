@@ -1,5 +1,5 @@
 import { mealTypeByNow, type MealTypeId } from "../../lib/mealTypes";
-import type { NullableMacros } from "@sergeant/shared";
+import { sumMacrosNullable, type NullableMacros } from "@sergeant/shared";
 import type {
   Meal,
   MealMacroSource,
@@ -7,7 +7,7 @@ import type {
   MealTemplate,
 } from "@sergeant/nutrition-domain";
 import { deviceTimeOfDay } from "@sergeant/nutrition-domain";
-import type { NutritionPhotoItem } from "@shared/api";
+import type { NutritionPhotoItem, NutritionPhotoResult } from "@shared/api";
 import { clampText } from "@shared/lib/text/limits";
 import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { newMealId } from "../../lib/mealId";
@@ -22,6 +22,96 @@ import { newMealId } from "../../lib/mealId";
  * повз межу і могло лягти в `amount_g`.
  */
 export const MAX_PORTION_GRAMS = 10_000;
+export const MAX_KCAL_PER_MEAL = 10_000;
+export const MAX_MACRO_GRAMS = 2_000;
+
+/** Nullable fields and comma decimals retain the same save-time validation. */
+export function validateMealMacroFields(
+  form: MealFormState,
+):
+  | { macros: NullableMacros; error?: never }
+  | { error: string; macros?: never } {
+  const inputs = (["kcal", "protein_g", "fat_g", "carbs_g"] as const).map(
+    (key) => (form[key] === "" ? null : parseDecimalInput(form[key])),
+  );
+  if (inputs.some((value) => value != null && !value.ok)) {
+    return { error: "Некоректне значення КБЖВ. Впиши число, наприклад 12,5." };
+  }
+  const [kcal, protein_g, fat_g, carbs_g] = inputs.map((value) =>
+    value != null && value.ok ? value.value : null,
+  ) as [number | null, number | null, number | null, number | null];
+  if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
+    return {
+      error: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
+    };
+  }
+  if (
+    [protein_g, fat_g, carbs_g].some(
+      (value) => value != null && value > MAX_MACRO_GRAMS,
+    )
+  ) {
+    return {
+      error: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом. Зменш значення.`,
+    };
+  }
+  return { macros: { kcal, protein_g, fat_g, carbs_g } };
+}
+
+/** The same product label seeds the form and supplies its save fallback. */
+export function foodDisplayName(
+  food: { name?: string | undefined; brand?: string | null | undefined } | null,
+): string {
+  return food ? [food.name, food.brand].filter(Boolean).join(" ").trim() : "";
+}
+
+/** Apply photo totals while retaining the meal type and time already chosen. */
+export function photoResultToForm(
+  result: NutritionPhotoResult,
+  previous: MealFormState,
+): MealFormState {
+  const macros = result.items?.length
+    ? sumMacrosNullable(result.items.map((item) => item.macros))
+    : result.macros;
+  return {
+    ...emptyForm({ ...result, macros }),
+    mealType: previous.mealType,
+    time: previous.time,
+  };
+}
+
+/** Untouched metadata belongs to the original row; explicit unlink wins. */
+export function mealSaveOrigin({
+  initialMeal,
+  foodId,
+  photo,
+  sourceReplaced,
+  manualMacros,
+}: {
+  initialMeal: Partial<Meal> | null | undefined;
+  foodId: string | number | undefined;
+  photo: boolean;
+  sourceReplaced: boolean;
+  manualMacros: boolean;
+}): Pick<Meal, "source" | "macroSource" | "foodId"> {
+  const keepOriginal = !sourceReplaced && !manualMacros;
+  const effectiveFoodId = foodId ?? (keepOriginal ? initialMeal?.foodId : null);
+  return {
+    source: photo
+      ? "photo"
+      : !sourceReplaced
+        ? (initialMeal?.source ?? "manual")
+        : "manual",
+    macroSource: photo
+      ? "photoAI"
+      : foodId != null
+        ? "productDb"
+        : keepOriginal
+          ? (initialMeal?.macroSource ??
+            (initialMeal?.foodId ? "productDb" : "manual"))
+          : "manual",
+    foodId: effectiveFoodId != null ? String(effectiveFoodId) : null,
+  };
+}
 
 /**
  * Значення для touch-колеса ваги. До кілограма точний крок 5 г, вище —

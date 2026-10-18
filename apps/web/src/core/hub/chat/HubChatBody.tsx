@@ -3,11 +3,9 @@
  * Status: Active
  */
 import { useEffect, useRef } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { ChatMessage, TypingIndicator } from "../../components/ChatMessage";
 import type { HubChatSession } from "../hubChatSessions";
-// Аліас: проп цього компонента теж зветься `messages` (стрічка повідомлень).
 import { messages as uiCopy } from "@shared/i18n/uk";
 
 type ChatMessageEntry = HubChatSession["messages"][number];
@@ -132,10 +130,9 @@ export function HubChatBody({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-full bg-panelHi hover:bg-line/40 text-muted hover:text-text text-style-caption font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-lg bg-panelHi hover:bg-line/40 text-muted hover:text-text text-style-caption font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               aria-label="Скасувати поточний запит"
             >
-              <Icon name="close" size="xs" />
               Скасувати
             </button>
           </Tooltip>

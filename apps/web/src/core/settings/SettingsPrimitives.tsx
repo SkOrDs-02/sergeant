@@ -10,18 +10,12 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Switch } from "@shared/components/ui/Switch";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
+import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
 
-/** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
-type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
-
 export interface SettingsGroupProps {
   title: string;
-  /** @deprecated мова H: рядок без іконки. @removeBy 2026-12-01 */
-  icon?: string;
-  /** @deprecated мова H: рядок без акценту модуля. @removeBy 2026-12-01 */
-  module?: SettingsModule;
   children: ReactNode;
   defaultOpen?: boolean;
   /**
@@ -158,7 +152,6 @@ export function SettingsGroup({
 
   // Мова H (redesign v3, H-settings): секція це рядок на hairline, без
   // картки, тіні, іконки й шеврона; стан розкриття несе `aria-expanded`.
-  // Пропи `icon` і `module` лишились для call-site-ів, PR7 їх прибирає.
 
   return (
     <section className="-mt-px border-y border-line first:mt-0">
@@ -229,6 +222,8 @@ export function SettingsGroup({
 export interface SettingsSubGroupProps {
   title: string;
   children: ReactNode;
+  /** Functional controls own one neutral boundary; prose stays plain. */
+  variant?: "plain" | "bounded";
 }
 
 /**
@@ -243,17 +238,29 @@ export interface SettingsSubGroupProps {
  * кнопки, стану, `aria-expanded`, `inert` чи власної рамки. Підрозділ
  * візуально відділяється лейблом, а не вкладеною панеллю.
  */
-export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
+export function SettingsSubGroup({
+  title,
+  children,
+  variant = "plain",
+}: SettingsSubGroupProps) {
+  const titleId = useId();
   return (
-    <div className="space-y-3">
-      <h3 className="text-style-overline text-text">{title}</h3>
+    <ContentGroup
+      as={variant === "bounded" ? "section" : "div"}
+      variant={variant}
+      aria-labelledby={variant === "bounded" ? titleId : undefined}
+      className="space-y-3"
+    >
+      <h3 id={titleId} className="text-style-overline text-text">
+        {title}
+      </h3>
       {/* Сусідні рядки (`data-row`, див. `ToggleRow`) стоять впритул на
           спільній hairline — проміжок лишається лише між рядком і
           абзацом/кнопкою. */}
       <div className="flex flex-col gap-3 [&>[data-row]+[data-row]]:-mt-3">
         {children}
       </div>
-    </div>
+    </ContentGroup>
   );
 }
 
@@ -319,7 +326,7 @@ export function ToggleRow({
         // Рядок списку на hairline, а не картка в картці (огляд 2026-09-04,
         // П2 анти-слоп стратегії: контекст під заголовком — щільний список
         // без карток). Тап лишається на всю ширину рядка.
-        "py-3 -mx-2 px-2 rounded-lg border-b border-line/60 last:border-b-0",
+        "py-3 px-2 rounded-lg border-b border-line/60 last:border-b-0",
         !disabled && "hover:bg-panelHi active:bg-panelHi",
         "transition-[background-color]",
       )}
@@ -360,7 +367,7 @@ export function ToggleRow({
 
 // `ConfirmModal` видалено (V-8, аудит Профілю/Налаштувань 2026-08-08).
 // Це була ДРУГА оболонка підтвердження на тих самих двох сторінках, з
-// власним затемненням (`bg-black/60 backdrop-blur-md` проти `bg-black/40`
+// власним затемненням (`bg-black/60` проти `bg-black/40`
 // у канонічному `ConfirmDialog`) і — головне — БЕЗ `createPortal`: вона
 // малювалась у потоці батька, тож усередині glass-картки Налаштувань її
 // обрізало (той самий симптом, що вже описаний у `OnboardingWizard.tsx`).

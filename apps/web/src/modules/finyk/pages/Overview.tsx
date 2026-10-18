@@ -10,7 +10,6 @@ import { useNavigate } from "react-router-dom";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
-
 import { FinykInsightsBlock } from "../components/FinykInsightsBlock";
 import { HeroCard } from "./overview/HeroCard";
 import { OverviewTextRows } from "./overview/OverviewTextRows";
@@ -59,10 +58,10 @@ interface OverviewProps {
 const overviewLoadingSkeleton = (
   <div className="flex-1 overflow-y-auto">
     <div className="px-5 pt-4 page-tabbar-pad space-y-7 max-w-4xl mx-auto">
-      <Skeleton className="h-[168px] rounded-xl" />
-      <Skeleton className="h-[120px] opacity-80 rounded-xl" />
-      <Skeleton className="h-[110px] opacity-60 rounded-xl" />
-      <Skeleton className="h-[90px] opacity-40 rounded-xl" />
+      <Skeleton className="h-[168px] rounded-panel" />
+      <Skeleton className="h-[120px] opacity-80 rounded-panel" />
+      <Skeleton className="h-[110px] opacity-60 rounded-panel" />
+      <Skeleton className="h-[90px] opacity-40 rounded-panel" />
     </div>
   </div>
 );
@@ -255,7 +254,7 @@ export function Overview({
                   <NetworthSection networthHistory={d.networthHistory} />
 
                   {d.nonUahManualAssetCount > 0 && (
-                    <div className="rounded-xl px-4 py-3 border bg-panel border-warning/20">
+                    <div className="rounded-panel px-4 py-3 border bg-panel border-warning/20">
                       <span className="text-style-caption text-warning-strong dark:text-warning">
                         {d.nonUahManualAssetCount}{" "}
                         {pluralize(

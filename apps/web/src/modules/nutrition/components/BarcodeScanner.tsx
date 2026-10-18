@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import {
   scanBarcodeNative,
   useBarcodeScanner,
@@ -146,6 +147,11 @@ function WebBarcodeScanner({
     inertBackground: true,
   });
 
+  // Системний Back (Android/PWA) закриває лише сканер. Без запису в історії
+  // він виводив з Комори або закривав аркуш із напівзаповненим прийомом їжі,
+  // а камера лишалась увімкненою над іншим маршрутом (аудит ux-02).
+  useHistoryDismiss(true, handleClose);
+
   // Таймер лише зводить прапорець угору; «опустити» його не треба —
   // помилка камери має пріоритет у розмітці нижче. Скидати стан прямо в
   // тілі ефекту не можна (`react-hooks/set-state-in-effect`), та й нема
@@ -172,22 +178,22 @@ function WebBarcodeScanner({
         role="dialog"
         aria-modal="true"
         aria-labelledby="barcode-scanner-title"
-        className="relative flex w-full max-h-[100dvh] flex-col bg-panel rounded-t-3xl border-t border-line shadow-soft"
+        className="relative flex w-full max-h-[100dvh] flex-col bg-panel rounded-t-panel border-t border-line"
       >
         <div className="flex shrink-0 justify-center pt-3 pb-1">
-          <div className="w-10 h-1 bg-line rounded-full" aria-hidden />
+          <div className="w-10 h-1 bg-line rounded-[3px]" aria-hidden />
         </div>
         <div className="flex shrink-0 items-center justify-between px-4 pb-2">
           <div
             id="barcode-scanner-title"
-            className="text-sm font-extrabold text-text"
+            className="text-style-body font-semibold text-text"
           >
             Сканер штрих-коду
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="w-10 h-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
+            className="w-10 h-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-muted hover:bg-line/40 hover:text-text transition-colors focus-ring"
             aria-label="Закрити сканер"
           >
             <Icon name="close" size={18} aria-hidden />
@@ -197,7 +203,7 @@ function WebBarcodeScanner({
             низькому вʼюпорті (ноутбук, зум, ландшафт) панель не виїжджає за
             верх екрана, а прокручується лише тіло з відео і статусом. */}
         <div className="min-h-0 space-y-3 overflow-y-auto px-4 pb-8">
-          <div className="rounded-2xl overflow-hidden border border-line bg-black relative">
+          <div className="rounded-panel overflow-hidden border border-line bg-black relative">
             <video
               ref={videoRef}
               className="w-full aspect-video max-h-[60dvh] object-cover"
@@ -206,14 +212,11 @@ function WebBarcodeScanner({
               autoPlay
             />
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-3/4 h-1/2 border-2 border-nutrition/80 rounded-xl" />
+              <div className="w-3/4 h-1/2 border-2 border-white/80 rounded-panel" />
             </div>
           </div>
           {status ? (
-            <p
-              role="alert"
-              className="text-style-caption text-danger-strong dark:text-danger"
-            >
+            <p role="alert" className="text-style-caption text-danger-strong">
               {status}
             </p>
           ) : noRead ? (

@@ -42,13 +42,12 @@ export const Expanded: Story = {
   ),
 };
 
-/** Collapsed — `defaultOpen=false` із collapsedIcon-ом. */
+/** Collapsed — `defaultOpen=false` із текстовою дією розгортання. */
 export const Collapsed: Story = {
   args: {
     storageKey: "sb-collapsible-collapsed",
     defaultOpen: false,
     title: "Аналітика тижня",
-    collapsedIcon: "bar-chart",
   },
   render: (args) => (
     <CollapsibleSection {...args}>
@@ -63,7 +62,6 @@ export const CollapsedWithSubtitle: Story = {
     storageKey: "sb-collapsible-subtitle",
     defaultOpen: false,
     title: "AI-порада",
-    collapsedIcon: "sparkles",
     collapsedSubtitle: "Оновлено хвилину тому",
   },
   render: (args) => (

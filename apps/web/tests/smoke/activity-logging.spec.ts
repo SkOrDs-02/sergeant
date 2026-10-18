@@ -42,12 +42,14 @@ test("@critical fizruk: заняття з каталогу пишеться од
   // пошуку (у каталозі ~55 позицій, колесо iOS змушувало гортати всі).
   // Поки аркуш відкритий, на сторінці два діалоги, тож пікер адресуємо за
   // заголовком, а не за роллю.
-  await sheet.getByLabel("Заняття").click();
+  await sheet.getByRole("button", { name: "Заняття", exact: true }).click();
   const picker = page.getByRole("dialog", { name: "Обери заняття" });
   await expect(picker).toBeVisible();
   await picker.getByRole("option", { name: "Body Pump" }).click();
   await expect(picker).toHaveCount(0);
-  await expect(sheet.getByLabel("Заняття")).toHaveText(/Body Pump/);
+  await expect(
+    sheet.getByRole("button", { name: "Заняття", exact: true }),
+  ).toHaveText(/Body Pump/);
   // Учорашня дата, а не дефолтне «сьогодні»: форма блокує «Записати», якщо
   // початок + тривалість ще в майбутньому (`times.inFuture`). Із «сьогодні
   // 10:00» тест був зелений лише після 10:45 за годинником раннера і
@@ -55,9 +57,9 @@ test("@critical fizruk: заняття з каталогу пишеться од
   await sheet.getByLabel("Дата").fill(yesterdayLocalDateString());
   await sheet.getByLabel("Початок").fill("10:00");
   // 45 хв - дефолт форми; клікаємо явно, щоб тест ловив і зникнення чипів.
-  await sheet.getByRole("tab", { name: "45 хв" }).click();
-  await sheet.getByRole("tab", { name: "Все тіло" }).click();
-  await sheet.getByRole("tab", { name: "Середньо" }).click();
+  await sheet.getByRole("radio", { name: "45 хв" }).click();
+  await sheet.getByRole("radio", { name: "Все тіло" }).click();
+  await sheet.getByRole("radio", { name: "Середньо" }).click();
   // Ваги в свіжому профілі немає, тож форма просить її тут - без неї
   // витрати рахувати нічим.
   await sheet.getByLabel("Твоя вага, кг").fill("60");

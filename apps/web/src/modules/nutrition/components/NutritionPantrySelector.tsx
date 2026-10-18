@@ -51,7 +51,7 @@ export function NutritionPantrySelector({
         disabled={busy}
         aria-label="Місце зберігання"
         className={cn(
-          "input-focus-nutrition min-h-[44px] min-w-0 rounded-xl border border-control bg-panel px-3 text-style-caption text-text truncate",
+          "input-focus-nutrition min-h-[44px] min-w-0 rounded-lg border border-control bg-panelHi px-3 text-style-body text-text truncate",
           compact ? "flex-1" : "max-w-[42%]",
         )}
       >
@@ -69,7 +69,7 @@ export function NutritionPantrySelector({
         type="button"
         onClick={() => pantry.setPantryManagerOpen(true)}
         disabled={busy}
-        className="touch-target flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-nutrition/20 text-nutrition-strong/90 transition-colors hover:bg-nutrition/10 hover:text-nutrition-strong dark:text-nutrition/70 dark:hover:text-nutrition"
+        className="touch-target flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line text-text transition-colors hover:bg-line/40 focus-ring"
         aria-label="Керування місцями зберігання"
         title="Місця"
       >
@@ -97,17 +97,12 @@ export function NutritionPantrySelector({
   }
 
   return (
-    <div className="mb-4 flex items-center gap-3 rounded-2xl border border-nutrition/20 bg-nutrition/10 px-4 py-3">
+    <div className="mb-4 flex items-center gap-3">
       <div className="min-w-0 flex-1">
-        <SectionHeading
-          as="div"
-          size="xs"
-          variant="nutrition"
-          className="mb-0.5"
-        >
+        <SectionHeading as="div" size="xs" className="mb-0.5">
           Місце перегляду
         </SectionHeading>
-        <div className="truncate text-style-label font-extrabold text-text">
+        <div className="truncate text-style-body font-semibold text-text">
           {selectedPlace?.name || "Усі місця"}
         </div>
       </div>

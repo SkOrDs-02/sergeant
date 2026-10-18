@@ -20,8 +20,12 @@ function mockPool(routes: { match: string; response: { rows: unknown[] } }[]) {
     const route = routes.find((r) => sql.includes(r.match));
     return route ? route.response : { rows: [] };
   });
+  // `applyActive` працює в транзакції на виділеному клієнті (data-21): клієнт
+  // ділить із пулом той самий `query`, тож усі виклики лишаються в `calls`.
+  const client = { query, release: vi.fn() };
+  const connect = vi.fn(async () => client);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { pool: { query } as any, calls };
+  return { pool: { query, connect } as any, calls, client };
 }
 
 afterEach(() => {
@@ -94,12 +98,13 @@ describe("reconcileSubscription — subscription/status is the arbiter", () => {
     const shift = calls.find(
       (c) =>
         c.sql.includes("UPDATE subscriptions") &&
-        c.sql.includes("current_period_end = $2"),
+        c.sql.includes("current_period_end = $3"),
     );
     expect(shift).toBeDefined();
-    const params = shift?.params as [string, Date];
+    const params = shift?.params as [string, string, Date];
     expect(params[0]).toBe("usr_2");
-    const graceMs = params[1].getTime() - before;
+    expect(params[1]).toBe("s2_2");
+    const graceMs = params[2].getTime() - before;
     expect(graceMs).toBeGreaterThan(2.9 * 24 * 60 * 60 * 1000);
     expect(graceMs).toBeLessThan(3.1 * 24 * 60 * 60 * 1000);
   });
@@ -219,8 +224,8 @@ describe("reconcileBySubscriptionId — webhook trigger", () => {
     );
     const { pool, calls } = mockPool([
       {
-        match: "SELECT user_id FROM plata_subscription",
-        response: { rows: [{ user_id: "usr_6" }] },
+        match: "SELECT user_id, superseded_at FROM plata_subscription",
+        response: { rows: [{ user_id: "usr_6", superseded_at: null }] },
       },
     ]);
 
@@ -236,7 +241,7 @@ describe("reconcileBySubscriptionId — webhook trigger", () => {
     vi.stubGlobal("fetch", fetchMock);
     const { pool } = mockPool([
       {
-        match: "SELECT user_id FROM plata_subscription",
+        match: "SELECT user_id, superseded_at FROM plata_subscription",
         response: { rows: [] },
       },
     ]);
@@ -320,7 +325,7 @@ describe("reconcileSubscription - штамп звірки для slow tick (rel-
       status: "active",
       walletData: { failureDescription: "Недостатньо коштів" },
     });
-    expect(stamp(calls).map((c) => c.params)).toEqual([["usr_stamp"]]);
+    expect(stamp(calls).map((c) => c.params)).toEqual([["s2_stamp"]]);
   });
 
   it("невідомий статус штампує updated_at, але subscriptions не чіпає", async () => {
@@ -493,6 +498,8 @@ describe("applyPastDue — юзер із кількома plata-рядками",
     status: string;
     current_period_end: string | null;
     updated_at: number;
+    /** id підписки, яку тримає рядок; `applyPastDue` скоупиться по ньому (data-21). */
+    provider_subscription_id?: string;
   }
 
   /**
@@ -508,9 +515,13 @@ describe("applyPastDue — юзер із кількома plata-рядками",
       const scopedToActive = sql.includes(
         "status IN ('active', 'trialing', 'past_due')",
       );
+      const scopedToSubscription = sql.includes(
+        "provider_subscription_id = $2",
+      );
       const matches = (r: FakeRow) =>
         r.user_id === userId &&
         r.provider === "plata" &&
+        (!scopedToSubscription || r.provider_subscription_id === params?.[1]) &&
         (!scopedToActive || ACTIVE_SET.includes(r.status));
 
       if (sql.includes("SELECT current_period_end")) {
@@ -540,8 +551,8 @@ describe("applyPastDue — юзер із кількома plata-рядками",
         }
         for (const r of hits) {
           r.status = "past_due";
-          if (sql.includes("current_period_end = $2")) {
-            r.current_period_end = (params?.[1] as Date).toISOString();
+          if (sql.includes("current_period_end = $3")) {
+            r.current_period_end = (params?.[2] as Date).toISOString();
           }
         }
         return { rows: [] };
@@ -583,6 +594,7 @@ describe("applyPastDue — юзер із кількома plata-рядками",
       status: "active",
       current_period_end: null,
       updated_at: 2,
+      provider_subscription_id: "s2_multi",
     };
     const { pool } = tablePool([canceled, active]);
 
@@ -616,6 +628,7 @@ describe("applyPastDue — юзер із кількома plata-рядками",
       status: "active",
       current_period_end: null,
       updated_at: 1,
+      provider_subscription_id: "s2_multi",
     };
     const { pool, calls } = tablePool([canceled, active]);
 
@@ -629,7 +642,7 @@ describe("applyPastDue — юзер із кількома plata-рядками",
     const shift = calls.find(
       (c) =>
         c.sql.includes("UPDATE subscriptions") &&
-        c.sql.includes("current_period_end = $2"),
+        c.sql.includes("current_period_end = $3"),
     );
     expect(shift).toBeDefined();
     expect(active.status).toBe("past_due");
@@ -647,6 +660,7 @@ describe("applyPastDue — юзер із кількома plata-рядками",
         status: "active",
         current_period_end: null,
         updated_at: 1,
+        provider_subscription_id: "s2_multi",
       },
     ]);
     await reconcileSubscription(pool, {

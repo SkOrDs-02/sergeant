@@ -19,6 +19,12 @@ import {
   emitSubscriptionRenewed,
   emitSubscriptionStarted,
 } from "./stripeLifecycle.js";
+import {
+  findSupersededRecurrence,
+  recordSupersededRecurrence,
+  settleSupersededRecurrence,
+  type PreviousRecurrence,
+} from "./supersede.js";
 
 async function insertWebhookEvent(
   client: PoolClient,
@@ -100,17 +106,31 @@ export function mapStripeSubscriptionStatus(
   return "incomplete";
 }
 
+/**
+ * @returns замінену рекурентку, яку треба скасувати у провайдера ПІСЛЯ COMMIT
+ *   (supersede.ts), або `null`.
+ */
 async function upsertCheckoutCompleted(
   client: PoolClient,
   object: Record<string, unknown>,
-): Promise<void> {
+): Promise<PreviousRecurrence | null> {
   const metadata = getStripeMetadata(object);
   const userId =
     getStripeObjectString(object, "client_reference_id") ||
     (typeof metadata["user_id"] === "string" ? metadata["user_id"] : null);
   const sessionId = getStripeObjectString(object, "id");
-  if (!userId || !sessionId) return;
+  if (!userId || !sessionId) return null;
 
+  const stripeSubscriptionId = getStripeObjectString(object, "subscription");
+  // Живу рекурентку іншого провайдера (чи інший Stripe id) не перезаписуємо
+  // мовчки: запамʼятовуємо ДО upsert-у й скасовуємо нижче (аудит data-21).
+  const previous = await findSupersededRecurrence(client, userId, {
+    provider: "stripe",
+    subscriptionId: stripeSubscriptionId,
+  });
+
+  // `cancel_at_period_end` скидаємо, коли підписка інша (провайдер чи id), -
+  // прапорець належав старій (аудит data-20).
   await client.query(
     `INSERT INTO subscriptions
        (user_id, provider, plan, status, provider_customer_id, provider_subscription_id)
@@ -118,6 +138,13 @@ async function upsertCheckoutCompleted(
      ON CONFLICT (user_id) WHERE status IN ('active', 'trialing', 'past_due') DO UPDATE SET
        plan = EXCLUDED.plan,
        status = EXCLUDED.status,
+       cancel_at_period_end = CASE
+         WHEN subscriptions.provider = 'stripe'
+          AND subscriptions.provider_subscription_id IS NOT DISTINCT FROM
+              COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id)
+         THEN subscriptions.cancel_at_period_end
+         ELSE FALSE
+       END,
        provider = EXCLUDED.provider,
        provider_customer_id = COALESCE(EXCLUDED.provider_customer_id, subscriptions.provider_customer_id),
        provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
@@ -126,9 +153,10 @@ async function upsertCheckoutCompleted(
       userId,
       normalizePlan(),
       getStripeObjectString(object, "customer"),
-      getStripeObjectString(object, "subscription"),
+      stripeSubscriptionId,
     ],
   );
+  return previous ? recordSupersededRecurrence(client, userId, previous) : null;
 }
 
 async function upsertSubscriptionEvent(
@@ -152,6 +180,12 @@ async function upsertSubscriptionEvent(
     // старий `active` живим і дописував другий рядок (див. коментар до
     // TERMINAL_STATUSES). `cancel_at_period_end = FALSE`, бо підписки більше
     // немає — це не «скасуємо наприкінці періоду», а вже кінець.
+    //
+    // Скоуп по `provider_subscription_id`: коли нова підписка замінила стару
+    // (supersede.ts ставить старій `cancel_at_period_end`), наприкінці періоду
+    // Stripe шле `deleted` з id СТАРОЇ, і без цього фільтра вона гасила б
+    // щойно оплачену нову. Рядок без id (checkout до першого subscription-події)
+    // гаситься як і раніше.
     await client.query(
       `UPDATE subscriptions
           SET status = $2,
@@ -159,12 +193,19 @@ async function upsertSubscriptionEvent(
               updated_at = NOW()
         WHERE user_id = $1
           AND provider = 'stripe'
+          AND (provider_subscription_id = $3 OR provider_subscription_id IS NULL)
           AND status IN ('active', 'trialing', 'past_due')`,
-      [userId, subscriptionStatus],
+      [userId, subscriptionStatus, subscriptionId],
     );
     return;
   }
 
+  // Подія про підписку, яка НЕ є поточною (інша Stripe-підписка, живий рядок
+  // іншого провайдера), не перезаписує поточний рядок: інакше
+  // `customer.subscription.updated` старої підписки (його шле сам Stripe,
+  // щойно supersede.ts виставив їй `cancel_at_period_end`) підмінив би id,
+  // період і прапорець щойно оплаченої нової. Активує і замінює підписки лише
+  // `checkout.session.completed`. Умова нижче в `DO UPDATE ... WHERE`.
   await client.query(
     `INSERT INTO subscriptions
        (user_id, provider, plan, status, provider_customer_id, provider_subscription_id,
@@ -177,7 +218,11 @@ async function upsertSubscriptionEvent(
        provider_subscription_id = COALESCE(EXCLUDED.provider_subscription_id, subscriptions.provider_subscription_id),
        current_period_end = EXCLUDED.current_period_end,
        cancel_at_period_end = EXCLUDED.cancel_at_period_end,
-       updated_at = NOW()`,
+       updated_at = NOW()
+     WHERE subscriptions.provider IN ('stripe', 'manual')
+       AND (subscriptions.provider <> 'stripe'
+            OR subscriptions.provider_subscription_id IS NULL
+            OR subscriptions.provider_subscription_id = EXCLUDED.provider_subscription_id)`,
     [
       userId,
       normalizePlan(),
@@ -274,9 +319,10 @@ export async function processStripeWebhook(
     type LifecycleEmit = "started" | "renewed" | "canceled";
     let lifecycleEmit: LifecycleEmit | null = null;
     let paymentFailedEmit: PaymentFailedEmit | null = null;
+    let toCancel: PreviousRecurrence | null = null;
     if (object && typeof object === "object" && !Array.isArray(object)) {
       if (event.type === "checkout.session.completed") {
-        await upsertCheckoutCompleted(client, object);
+        toCancel = await upsertCheckoutCompleted(client, object);
       } else if (
         event.type === "customer.subscription.created" ||
         event.type === "customer.subscription.updated" ||
@@ -325,6 +371,9 @@ export async function processStripeWebhook(
     }
 
     await client.query("COMMIT");
+    // Скасування замінених рекуренток - після COMMIT і без впливу на нього
+    // (supersede.ts: ніколи не кидає, невдачі добиває ретрай-полер).
+    if (toCancel) await settleSupersededRecurrence(pool, toCancel);
     // PostHog subscription lifecycle capture — POST-COMMIT, щоб не блокувати
     // транзакцію і щоб мережева помилка PostHog НЕ призводила до rollback-у
     // (DB row уже записано — idempotency по `stripe_webhook_events.event_id`

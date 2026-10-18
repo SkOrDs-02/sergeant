@@ -62,7 +62,7 @@ function pickActivity(id = "body_pump") {
 
 /** Режим «Вправи по підходах»: дата, початок, завершення й живий журнал. */
 function manualMode() {
-  fireEvent.click(screen.getByRole("tab", { name: "Вправи по підходах" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Вправи по підходах" }));
 }
 
 function field(name: string): HTMLInputElement {
@@ -324,7 +324,7 @@ describe("LogPastWorkoutSheet", () => {
     fireEvent.change(field("Назва заняття"), {
       target: { value: "TRX у моєму залі" },
     });
-    fireEvent.click(screen.getByRole("tab", { name: "Інтенсивне" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Інтенсивне" }));
     fireEvent.click(screen.getByText("Зберегти заняття"));
 
     expect(onCreateActivity).toHaveBeenCalledTimes(1);

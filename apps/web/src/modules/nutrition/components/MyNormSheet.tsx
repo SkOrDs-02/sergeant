@@ -11,9 +11,9 @@
 import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { Segmented } from "@shared/components/ui/Segmented";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { normalizeAmountInput } from "@shared/lib/format/amount";
+import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -84,6 +84,51 @@ function parseGoalWeight(raw: string): number | null | "invalid" {
     : "invalid";
 }
 
+interface RadioListProps<V extends string> {
+  label: string;
+  value: V;
+  onChange: (value: V) => void;
+  items: ReadonlyArray<{ value: V; label: string; title?: string }>;
+}
+
+/** Вибір налаштування: список радіо на hairline, обраний пункт жирніший. */
+function RadioList<V extends string>({
+  label,
+  value,
+  onChange,
+  items,
+}: RadioListProps<V>) {
+  return (
+    <div role="radiogroup" aria-label={label} className="space-y-1">
+      <div className="text-style-overline text-subtle">{label}</div>
+      <div className="divide-y divide-line border-y border-line">
+        {items.map((item) => {
+          const checked = item.value === value;
+          return (
+            <button
+              key={item.value}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              title={item.title}
+              onClick={() => onChange(item.value)}
+              className={cn(
+                "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg text-left text-style-body focus-ring",
+                checked ? "font-semibold text-text" : "font-medium text-muted",
+              )}
+            >
+              <span>{item.label}</span>
+              <span aria-hidden className="text-text">
+                {checked ? "✓" : ""}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 interface MyNormSheetProps {
   open: boolean;
   onClose: () => void;
@@ -96,7 +141,6 @@ export function MyNormSheet({ open, onClose }: MyNormSheetProps) {
       onClose={onClose}
       title={COPY.title}
       description={COPY.description}
-      panelClassName="nutrition-sheet"
       zIndex={120}
     >
       {/* Тіло змонтоване лише поки аркуш відкритий: форма щоразу стартує зі
@@ -206,42 +250,30 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-3">
-      <div className="space-y-1">
-        <div className="text-style-caption text-muted">{COPY.goalLabel}</div>
-        <Segmented
-          layout="bar"
-          size="md"
-          variant="nutrition"
-          ariaLabel={COPY.goalLabel}
-          value={goal}
-          onChange={setGoal}
-          items={NUTRITION_GOALS.map((value) => ({
-            value,
-            label: GOAL_LABEL[value],
-          }))}
-        />
-      </div>
+      <RadioList
+        label={COPY.goalLabel}
+        value={goal}
+        onChange={setGoal}
+        items={NUTRITION_GOALS.map((value) => ({
+          value,
+          label: GOAL_LABEL[value],
+        }))}
+      />
 
       {goal === "cutting" && (
-        <div className="space-y-1">
-          <div className="text-style-caption text-muted">{COPY.rateLabel}</div>
-          <Segmented
-            layout="bar"
-            size="md"
-            variant="nutrition"
-            ariaLabel={COPY.rateLabel}
-            value={String(rate)}
-            onChange={(v) => setRate(Number(v) as WeeklyRateKg)}
-            items={WEEKLY_RATES_KG.map((value) => ({
-              value: String(value),
-              label: fill(COPY.rateOption, { rate: fmtDecimal(value) }),
-              title: `-${weeklyRateDeficitKcal(value)}`,
-            }))}
-          />
-        </div>
+        <RadioList
+          label={COPY.rateLabel}
+          value={String(rate)}
+          onChange={(v) => setRate(Number(v) as WeeklyRateKg)}
+          items={WEEKLY_RATES_KG.map((value) => ({
+            value: String(value),
+            label: fill(COPY.rateOption, { rate: fmtDecimal(value) }),
+            title: `-${weeklyRateDeficitKcal(value)}`,
+          }))}
+        />
       )}
 
-      <div className="divide-y divide-line/60 rounded-xl border border-line">
+      <div className="divide-y divide-line border-y border-line">
         <BiometricsFormFields
           state={formState}
           fieldClassName="px-3 py-3 space-y-2"
@@ -252,7 +284,7 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
         <div className="space-y-2">
           <label
             htmlFor="my-norm-goal-weight"
-            className="text-style-caption block text-muted"
+            className="block text-style-overline text-subtle"
           >
             {COPY.goalWeightLabel}
           </label>
@@ -285,13 +317,10 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      <div
-        className="rounded-xl border border-line bg-panel px-3 py-3"
-        aria-live="polite"
-      >
+      <div className="border-t border-line pt-3" aria-live="polite">
         {explanation ? (
           <>
-            <div className="text-style-caption text-muted">
+            <div className="text-style-overline text-subtle">
               {COPY.resultLabel}
             </div>
             <div className="text-style-heading text-text">
@@ -312,7 +341,7 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
                   })}
             </p>
             <details className="mt-1 text-style-caption text-muted">
-              <summary className="cursor-pointer pointer-coarse:min-h-[44px] pointer-coarse:flex pointer-coarse:items-center text-nutrition-strong dark:text-nutrition">
+              <summary className="cursor-pointer pointer-coarse:min-h-[44px] pointer-coarse:flex pointer-coarse:items-center font-semibold text-text">
                 {COPY.howToggle}
               </summary>
               <p className="mt-1">
@@ -337,7 +366,6 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
 
       <Button
         variant="solid"
-        tone="nutrition"
         className="w-full"
         disabled={!canApply}
         onClick={handleApply}

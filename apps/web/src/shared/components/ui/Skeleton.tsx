@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-
 import { cn } from "../../lib/ui/cn";
 
 export type SkeletonVariant = "rect" | "text" | "avatar" | "card";
@@ -65,8 +64,8 @@ export const MODULE_ACCENT_TINT: Record<ModuleAccent, string> = {
  *   use the dedicated `<SkeletonText>` component which supports
  *   randomized widths.
  * - `avatar` — a perfect circle; size via `className`
- *   (`w-12 h-12 rounded-full`).
- * - `card` — a tall block with `rounded-3xl` (card radius); intended
+ *   (`w-12 h-12 rounded-lg`).
+ * - `card` — a tall block with `rounded-panel` (card radius); intended
  *   for full card-sized placeholders.
  */
 export function Skeleton({
@@ -81,10 +80,10 @@ export function Skeleton({
     variant === "avatar"
       ? "rounded-full aspect-square"
       : variant === "text"
-        ? "rounded-xl h-3"
+        ? "rounded-mark h-3"
         : variant === "card"
-          ? "rounded-3xl min-h-32"
-          : "rounded-2xl";
+          ? "rounded-panel min-h-32"
+          : "rounded-panel";
 
   return (
     <div
@@ -129,7 +128,7 @@ export function SkeletonCardBlock({
   return (
     <div
       className={cn(
-        "rounded-3xl border border-line bg-panel p-4 space-y-3",
+        "rounded-panel border border-line bg-panel p-4 space-y-3",
         className,
       )}
       style={style}
@@ -216,7 +215,7 @@ export function SkeletonText({
     <div
       className={cn(
         module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
-        "rounded-xl h-3",
+        "rounded-mark h-3",
         shimmer
           ? "relative overflow-hidden"
           : pulse && "motion-safe:animate-pulse",
@@ -260,7 +259,7 @@ export function SkeletonTransactionRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-line bg-panel",
+        "flex items-center gap-3 px-3 py-2.5 rounded-panel border border-line bg-panel",
         className,
       )}
       style={style}
@@ -268,7 +267,7 @@ export function SkeletonTransactionRow({
     >
       <div
         className={cn(
-          "w-10 h-10 rounded-xl shrink-0",
+          "w-10 h-10 rounded-lg shrink-0",
           shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
           module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         )}
@@ -301,7 +300,7 @@ export function SkeletonBudgetBar({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-line bg-panel p-3.5 space-y-2.5",
+        "rounded-panel border border-line bg-panel p-3.5 space-y-2.5",
         className,
       )}
       aria-hidden="true"
@@ -311,10 +310,10 @@ export function SkeletonBudgetBar({
         <SkeletonText shimmer={shimmer} className="w-16 h-2.5" />
       </div>
       {/* Progress track */}
-      <div className="relative h-2 rounded-full overflow-hidden bg-panelHi">
+      <div className="relative h-2 rounded-mark overflow-hidden bg-panelHi">
         <div
           className={cn(
-            "absolute inset-y-0 left-0 w-2/5 rounded-full",
+            "absolute inset-y-0 left-0 w-2/5 rounded-mark",
             shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
             module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
           )}
@@ -348,7 +347,7 @@ export function SkeletonHabitRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-line bg-panel",
+        "flex items-center gap-3 px-3 py-2.5 rounded-panel border border-line bg-panel",
         className,
       )}
       style={style}
@@ -357,7 +356,7 @@ export function SkeletonHabitRow({
       <Skeleton
         shimmer={shimmer}
         className={cn(
-          "w-7 h-7 rounded-xl shrink-0",
+          "w-7 h-7 rounded-panel shrink-0",
           module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         )}
       />
@@ -365,7 +364,7 @@ export function SkeletonHabitRow({
         <SkeletonText shimmer={shimmer} className="w-1/2" />
         <SkeletonText shimmer={shimmer} className="w-1/4 h-2" />
       </div>
-      <Skeleton shimmer={shimmer} className="w-10 h-5 rounded-full" />
+      <Skeleton shimmer={shimmer} className="w-10 h-5 rounded-lg" />
     </div>
   );
 }
@@ -383,7 +382,7 @@ export function SkeletonWorkoutSet({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-xl border border-line bg-panel",
+        "flex items-center gap-2 px-3 py-2 rounded-panel border border-line bg-panel",
         className,
       )}
       style={style}
@@ -392,13 +391,13 @@ export function SkeletonWorkoutSet({
       <Skeleton
         shimmer={shimmer}
         className={cn(
-          "w-7 h-7 rounded-xl shrink-0",
+          "w-7 h-7 rounded-panel shrink-0",
           module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         )}
       />
-      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
-      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
-      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
+      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-panel" />
+      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-panel" />
+      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-panel" />
     </div>
   );
 }
@@ -415,7 +414,7 @@ export function SkeletonMealCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 p-3 rounded-2xl border border-line bg-panel",
+        "flex items-center gap-3 p-3 rounded-panel border border-line bg-panel",
         className,
       )}
       aria-hidden="true"
@@ -423,16 +422,16 @@ export function SkeletonMealCard({
       <Skeleton
         shimmer={shimmer}
         className={cn(
-          "w-14 h-14 rounded-xl shrink-0",
+          "w-14 h-14 rounded-panel shrink-0",
           module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         )}
       />
       <div className="flex-1 min-w-0 space-y-2">
         <SkeletonText shimmer={shimmer} className="w-3/5" />
         <div className="flex items-center gap-1.5">
-          <Skeleton shimmer={shimmer} className="w-12 h-4 rounded-full" />
-          <Skeleton shimmer={shimmer} className="w-12 h-4 rounded-full" />
-          <Skeleton shimmer={shimmer} className="w-12 h-4 rounded-full" />
+          <Skeleton shimmer={shimmer} className="w-12 h-4 rounded-lg" />
+          <Skeleton shimmer={shimmer} className="w-12 h-4 rounded-lg" />
+          <Skeleton shimmer={shimmer} className="w-12 h-4 rounded-lg" />
         </div>
       </div>
     </div>

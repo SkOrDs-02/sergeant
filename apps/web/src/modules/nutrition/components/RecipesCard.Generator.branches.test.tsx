@@ -64,13 +64,13 @@ describe("GeneratorCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
     expect(onSave).toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "+ У журнал" }));
+    fireEvent.click(screen.getByRole("button", { name: "У журнал" }));
     expect(onAddToLog).toHaveBeenCalled();
   });
 
   it("підписує ккал згенерованого рецепта як «на порцію»", () => {
     // Макроси рецепта - на ОДНУ порцію (рішення власника 2026-10-01), а
-    // «+ У журнал» на згенерованій картці пише рівно одну порцію.
+    // «У журнал» на згенерованій картці пише рівно одну порцію.
     render(
       <GeneratorCard
         prefs={PREFS}
@@ -196,7 +196,7 @@ describe("GeneratorCard", () => {
     expect(screen.getByText("Порада 6")).toBeInTheDocument();
     expect(screen.queryByText("Порада 7")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "+ У журнал" }));
+    fireEvent.click(screen.getByRole("button", { name: "У журнал" }));
     expect(onAddToLog).toHaveBeenCalledWith(expect.any(Object), "0");
   });
 

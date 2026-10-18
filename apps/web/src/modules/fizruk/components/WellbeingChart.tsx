@@ -17,7 +17,7 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
     return (
       <EmptyState
         compact
-        className="rounded-2xl border border-dashed border-line bg-panelHi/50"
+        className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Немає даних для графіка"
         description="Після кількох тренувань з оцінкою енергії та настрою тут зʼявиться діаграма."
       />
@@ -27,7 +27,7 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
     return (
       <EmptyState
         compact
-        className="rounded-2xl border border-dashed border-line bg-panelHi/50"
+        className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Замало точок"
         description="Потрібно щонайменше два тренування з оцінкою самопочуття, щоб порівняти динаміку."
       />

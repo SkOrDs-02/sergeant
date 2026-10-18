@@ -263,7 +263,7 @@ export function VoiceMicButton({
         aria-label={ariaLabel}
         title={ariaLabel}
         className={cn(
-          "relative flex items-center justify-center rounded-2xl shrink-0 touch-manipulation",
+          "relative flex items-center justify-center rounded-lg shrink-0 touch-manipulation",
           "motion-safe:transition-all motion-reduce:transition-none",
           sizeMap[size] || sizeMap.md,
           busy

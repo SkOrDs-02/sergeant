@@ -128,14 +128,14 @@ function reportPullRejection(
 }
 
 /**
- * Виняток із `applyPullOp` (CHECK, NOT NULL, I/O у SQLite) — у Sentry, іменем
+ * Термінальне порушення constraint у `applyPullOp` — у Sentry, іменем
  * таблиці й опа, і з текстом помилки.
  *
  * AI-CONTEXT (rel-11): без цього виняток вилітав із циклу сторінки, курсор
  * не писався, і наступний тік брав ту саму сторінку та падав на тому ж опі:
  * пристрій назавжди переставав отримувати зміни, а неідемпотентні опи ДО
  * отруйного (`routine_streaks` `increment`) застосовувались повторно щотіку.
- * Тепер такий оп рахується як `rejected` (той самий принцип «просуваємось і
+ * Такий оп рахується як `rejected` (той самий принцип «просуваємось і
  * галасуємо», що й у `reportPullRejection`), а курсор іде далі.
  *
  * `row` сюди НЕ потрапляє (Hard Rule #21); текст помилки SQLite називає
@@ -165,6 +165,19 @@ function reportPullApplyFailure(
   } catch {
     /* обсервабіліті ніколи не має ламати шлях читання */
   }
+}
+
+/** Only a deterministic constraint violation can be skipped permanently. */
+function isConstraintFailure(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const { code, resultCode } = error as {
+    code?: unknown;
+    resultCode?: unknown;
+  };
+  return (
+    (typeof code === "string" && code.startsWith("SQLITE_CONSTRAINT")) ||
+    (typeof resultCode === "number" && (resultCode & 0xff) === 19)
+  );
 }
 
 /**
@@ -301,6 +314,9 @@ export function createSyncEngineReaderRuntime(
               deps.originDeviceId,
             );
           } catch (error) {
+            // BUSY/IOERR/full disk/closed worker must retry this cursor.
+            // Advancing it would permanently omit a valid server record.
+            if (!isConstraintFailure(error)) throw error;
             // rel-11: отруйний оп не має заклинювати курсор. Без BEGIN/COMMIT
             // навмисно: спільне з'єднання SQLite пишуть і інші писарі, тож
             // транзакція поглинула б їхні записи.

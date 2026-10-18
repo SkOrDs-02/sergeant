@@ -278,14 +278,14 @@ describe("NutritionMenuPage", () => {
     expect(fetchDayPlan).toHaveBeenCalledWith("breakfast");
   });
 
-  it("real meal row's '+ Журнал' button calls addMealFromPlan with the meal", async () => {
+  it("real meal row's 'Журнал' button calls addMealFromPlan with the meal", async () => {
     const addMealFromPlan = vi.fn();
     renderMenuPage({
       addMealFromPlan,
       dayPlan: { meals: [SAMPLE_MEAL], totalKcal: 300 } as NutritionDayPlan,
     });
 
-    await userEvent.click(screen.getByRole("button", { name: "+ Журнал" }));
+    await userEvent.click(screen.getByRole("button", { name: "Журнал" }));
     expect(addMealFromPlan).toHaveBeenCalledTimes(1);
     const firstCall = (addMealFromPlan as ReturnType<typeof vi.fn>).mock
       .calls[0];

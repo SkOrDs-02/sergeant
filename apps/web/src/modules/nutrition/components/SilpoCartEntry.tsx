@@ -13,7 +13,6 @@
  */
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { SilpoCartSheet } from "./SilpoCartSheet";
@@ -36,14 +35,11 @@ export function SilpoCartEntry({ shoppingList }: SilpoCartEntryProps) {
     <>
       <Button
         type="button"
-        variant="soft"
-        tone="nutrition"
+        variant="outline"
         size="sm"
-
         className="min-h-[44px]"
         onClick={() => setOpen(true)}
       >
-        <Icon name="shopping-cart" size={15} aria-hidden />
         {messages.nutrition.silpoCart.entryCta}
       </Button>
       <SilpoCartSheet

@@ -20,6 +20,7 @@ import type { StatusResponse } from "../../../src/core/status/types";
 import emptyWorld from "./empty.json" with { type: "json" };
 import finykMonthWorld from "./finyk-month.json" with { type: "json" };
 import fizrukActiveSessionWorld from "./fizruk-active-session.json" with { type: "json" };
+import nutritionDayWorld from "./nutrition-day.json" with { type: "json" };
 import pantryReceiptNamesWorld from "./pantry-receipt-names.json" with { type: "json" };
 import routineStreaksWorld from "./routine-streaks.json" with { type: "json" };
 
@@ -28,7 +29,8 @@ export type WorldId =
   | "pantry-receipt-names"
   | "finyk-month"
   | "routine-streaks"
-  | "fizruk-active-session";
+  | "fizruk-active-session"
+  | "nutrition-day";
 
 /** Банківська операція світу. `amount` у копійках, відʼємна = витрата. */
 export interface WorldMonoTransaction {
@@ -159,6 +161,7 @@ const RAW: Record<WorldId, unknown> = {
   "finyk-month": finykMonthWorld,
   "routine-streaks": routineStreaksWorld,
   "fizruk-active-session": fizrukActiveSessionWorld,
+  "nutrition-day": nutritionDayWorld,
 };
 
 export function getWorld(id: WorldId): ScenarioWorld {

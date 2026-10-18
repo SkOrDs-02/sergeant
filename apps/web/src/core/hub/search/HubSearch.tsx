@@ -5,6 +5,7 @@ import { SearchResults } from "./SearchResults";
 import { useSearchEngine } from "./useSearchEngine";
 import { messages } from "@shared/i18n/uk";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 
 export interface HubSearchProps {
   onClose: () => void;
@@ -47,6 +48,7 @@ export function HubSearch({
     setActiveIdx,
     recents,
     openHit,
+    openModule,
     pickRecent,
     clearRecents,
     commitQuery,
@@ -57,12 +59,17 @@ export function HubSearch({
 
   useDialogFocusTrap(true, panelRef, { inertBackground: true });
 
+  // Пошук монтується лише відкритим (`HubModals`), тож `open` тут завжди true.
+  // Системний Back (Android/PWA) закриває палітру, а не виводить із модуля чи
+  // закриває застосунок з першого запису історії (аудит ux-02).
+  useHistoryDismiss(true, onClose);
+
   const activeHit = flat[activeIdx];
 
   return (
     <div
       ref={panelRef}
-      className="fixed inset-0 z-200 flex flex-col bg-bg safe-area-pt-pb page-enter"
+      className="fixed inset-0 z-200 flex flex-col bg-bg safe-area-pt-pb "
       role="dialog"
       aria-modal="true"
       aria-label={messages.nav.globalSearch}
@@ -97,8 +104,7 @@ export function HubSearch({
         onPickRecent={pickRecent}
         onClearRecents={clearRecents}
         onCommitQuery={commitQuery}
-        onOpenModule={onOpenModule}
-        onClose={onClose}
+        onOpenModule={openModule}
       />
     </div>
   );

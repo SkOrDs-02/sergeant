@@ -87,7 +87,7 @@ describe("RestTimerOverlay", () => {
     );
 
     const panel = screen.getByRole("timer").closest(".fizruk-sheet");
-    expect(panel).toHaveClass("border-warning/60");
+    expect(panel).toHaveClass("border-line");
   });
 
   // E2E-контракт (2026-08-08). `apps/web/tests/smoke/fizruk-active-workout`

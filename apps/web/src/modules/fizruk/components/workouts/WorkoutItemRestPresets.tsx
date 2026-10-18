@@ -61,16 +61,15 @@ export function WorkoutItemRestPresets({
     <div className="flex items-center gap-1.5">
       <Button
         type="button"
-        variant="soft"
+        variant="outline"
         // SLOP-2 (аудит 2026-09): «рекомендований» пресет — це вибір, не
         // успіх; зелений тут конфліктував із модульним акцентом Фізрука.
-        tone="fizruk"
+        tone="neutral"
         size="md"
         className="h-11 min-h-[44px]"
         onClick={() => setRestTimer(startRestTimerState(defSec))}
         title={`${rt.presetsRecommendedTitle} ${catLabel.toLowerCase()}`}
       >
-        <Icon name="clock" size="sm" aria-hidden />
         {defSec} {rt.presetsSecondsShort}
       </Button>
       {menuItems.length > 0 && (

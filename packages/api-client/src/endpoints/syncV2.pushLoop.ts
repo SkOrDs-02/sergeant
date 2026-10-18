@@ -1,4 +1,5 @@
 import { ApiError } from "../ApiError";
+import { fittingPushPrefixLength } from "./syncV2.pushBatch";
 
 import type {
   SyncV2OpKind,
@@ -273,6 +274,10 @@ export interface SyncEnginePushDeps {
   readonly drain: DrainSyncOpOutboxFn;
   readonly push: SyncV2PushFn;
   readonly markSuccess: MarkOutboxSuccessFn;
+  /** Optional SQLite batch delete for acknowledged rows; retained rows stay pending. */
+  readonly markSuccessBatch?: (ids: readonly number[]) => Promise<void>;
+  /** Preserve per-receipt observability when acknowledged deletes are batched. */
+  readonly onBatchedSuccess?: () => void;
   readonly markRetry: MarkOutboxRetryFn;
   readonly markRejected: MarkOutboxRejectedFn;
   readonly planRetry: PlanRetryFn;
@@ -332,10 +337,12 @@ export interface SyncEnginePushOptions {
    * `pull` from the same device can exclude its own writes.
    */
   readonly originDeviceId?: string;
+  /** Optional UTF-8 request-body budget, including the `{ops}` envelope. */
+  readonly maxBodyBytes?: number;
 }
 
 export interface SyncEnginePushResult {
-  /** Number of rows the drain returned (same as `pushed + retried + rejected`). */
+  /** Number of selected rows processed (same as `pushed + retried + rejected`). */
   readonly drained: number;
   /** Rows the server acknowledged (`applied` or `duplicate`) — DELETED. */
   readonly pushed: number;
@@ -343,6 +350,8 @@ export interface SyncEnginePushResult {
   readonly retried: number;
   /** Rows the server terminally rejected — UPDATEd to `status='rejected'`. */
   readonly rejected: number;
+  /** The byte budget left a suffix pending; a successful tick can continue. */
+  readonly hasMore?: boolean;
 }
 
 /**
@@ -366,13 +375,18 @@ export async function runSyncEnginePushOnce(
   }
 
   const now = deps.now();
-  const drained = await deps.drain({ limit: options.limit, now });
+  const available = await deps.drain({ limit: options.limit, now });
 
-  if (drained.length === 0) {
+  if (available.length === 0) {
     return { drained: 0, pushed: 0, retried: 0, rejected: 0 };
   }
 
-  const ops: SyncV2PushOp[] = drained.map(mapDrainedRowToSyncV2PushOp);
+  const mapped = available.map(mapDrainedRowToSyncV2PushOp);
+  const count = fittingPushPrefixLength(mapped, options.maxBodyBytes);
+  const drained = available.slice(0, count);
+  const ops = mapped.slice(0, count);
+  const continuation =
+    count < available.length ? { hasMore: true as const } : {};
   const pushOptions: SyncV2PushOptions | undefined =
     options.originDeviceId !== undefined
       ? { originDeviceId: options.originDeviceId }
@@ -398,6 +412,7 @@ export async function runSyncEnginePushOnce(
         pushed: 0,
         retried: 0,
         rejected: drained.length,
+        ...continuation,
       };
     }
 
@@ -420,6 +435,7 @@ export async function runSyncEnginePushOnce(
         pushed: 0,
         retried: drained.length,
         rejected: 0,
+        ...continuation,
       };
     }
 
@@ -433,6 +449,7 @@ export async function runSyncEnginePushOnce(
       pushed: 0,
       retried: drained.length,
       rejected: 0,
+      ...continuation,
     };
   }
 
@@ -445,6 +462,7 @@ export async function runSyncEnginePushOnce(
   let pushed = 0;
   let retried = 0;
   let rejected = 0;
+  const acknowledgedIds: number[] = [];
 
   for (const row of drained) {
     const result = resultByKey.get(row.idempotencyKey);
@@ -459,7 +477,10 @@ export async function runSyncEnginePushOnce(
     }
 
     if (result.status === "applied" || result.status === "duplicate") {
-      await deps.markSuccess(row.id);
+      if (deps.markSuccessBatch) {
+        deps.onBatchedSuccess?.();
+        acknowledgedIds.push(row.id);
+      } else await deps.markSuccess(row.id);
       pushed += 1;
       continue;
     }
@@ -491,11 +512,16 @@ export async function runSyncEnginePushOnce(
     retried += 1;
   }
 
+  if (acknowledgedIds.length > 0) {
+    await deps.markSuccessBatch?.(acknowledgedIds);
+  }
+
   return {
     drained: drained.length,
     pushed,
     retried,
     rejected,
+    ...continuation,
   };
 }
 

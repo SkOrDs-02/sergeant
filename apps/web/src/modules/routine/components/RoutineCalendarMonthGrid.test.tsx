@@ -120,7 +120,7 @@ describe("RoutineCalendarMonthGrid", () => {
       <RoutineCalendarMonthGrid {...baseProps({ dayCounts })} />,
     );
     // A dot is a small rounded-full element inside the day cell
-    const dots = container.querySelectorAll(".rounded-full.bg-routine");
+    const dots = container.querySelectorAll(".bg-chart-routine");
     expect(dots.length).toBeGreaterThan(0);
   });
 

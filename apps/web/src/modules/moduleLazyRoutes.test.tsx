@@ -90,11 +90,19 @@ describe("module lazy route entries", () => {
       expect(lastLazyProps).not.toBeNull();
 
       (lastLazyProps!["onBackToHub"] as () => void)();
-      (lastLazyProps!["onOpenSettings"] as () => void)();
       (lastLazyProps!["onPwaActionConsumed"] as () => void)();
 
       expect(hubShell.goBackOrHub).toHaveBeenCalledTimes(1);
-      expect(hubShell.goToModuleSettings).toHaveBeenCalledWith(moduleId);
+      if (moduleId === "routine" || moduleId === "fizruk") {
+        // H: налаштування Рутини — у хабі; у шапці лише Сержант.
+        expect(lastLazyProps).not.toHaveProperty("onOpenSettings");
+        (lastLazyProps!["onGoToHub"] as () => void)();
+        expect(hubShell.goToHub).toHaveBeenCalledTimes(1);
+        expect(hubShell.goToModuleSettings).not.toHaveBeenCalled();
+      } else {
+        (lastLazyProps!["onOpenSettings"] as () => void)();
+        expect(hubShell.goToModuleSettings).toHaveBeenCalledWith(moduleId);
+      }
       expect(hubShell.clearPwaAction).toHaveBeenCalledTimes(1);
       expect(lastLazyProps!["pwaAction"]).toBeNull();
     },

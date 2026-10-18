@@ -1,73 +1,12 @@
-/**
- * Sergeant Design System — Routine Module Theme Constants
- *
- * Soft & Organic aesthetic with rose accent.
- * Inspired by: Duolingo gamification, warm friendly feel
- */
-
+/** H: controls are neutral; hue is reserved for data and the hero. */
 export const ROUTINE_THEME = {
-  // Text accents
-  eyebrow: "text-routine-strong dark:text-routine",
-  heroKicker: "text-routine-strong dark:text-routine",
-
-  // Empty state — Wave 1b: `border-routine-soft-border` +
-  // `bg-routine-soft` are preset-owned, light/dark pair lives in
-  // `--c-routine-soft*` (apps/web/src/index.css).
-  emptyStateWarm:
-    "rounded-2xl border border-routine-soft-border/60 bg-routine-soft/50 p-6 text-center shadow-card",
-
-  // Links & accents
-  linkAccent:
-    "font-semibold text-routine-strong dark:text-routine hover:text-routine-hover underline decoration-routine-ring/60 dark:decoration-routine/50 transition-colors",
-
-  // Habit list items — Wave 1b: `bg-routine-soft` carries both themes.
-  habitRowAccent: "border-l-routine",
-  habitRowDone: "border-l-routine bg-routine-soft/50",
-
-  // Icon containers
-  iconBox: "bg-routine-soft border-routine-soft-border text-routine-soft-fg",
-
-  // Navigation
-  navActive: "text-routine-strong dark:text-routine",
-  navBar: "bg-routine",
-
-  // Chips/pills
-  chipOn:
-    "border-routine-soft-border bg-routine-soft text-routine-soft-fg shadow-sm",
-  chipOff:
-    "border-line bg-panel text-muted hover:text-text hover:bg-panelHi transition-colors",
-
-  // Calendar dots
-  dot: "bg-routine",
-  dotComplete: "bg-routine/80",
-
-  // Month selector
-  monthSel:
-    "bg-routine-surface dark:bg-routine-surface-dark/15 border-routine-ring dark:border-routine-border-dark/40 ring-1 ring-rose-100/50 dark:ring-routine-border-dark/30",
-
-  // Completion states
-  done: "border-routine-soft-border bg-routine-soft text-routine-soft-fg",
-  doneCheck: "text-routine-strong dark:text-routine",
-
-  // Primary button
-  primary:
-    "bg-routine-strong hover:bg-routine-hover text-white border-0 shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-base active:scale-[0.98] dark:bg-routine dark:text-bg dark:hover:bg-routine/90",
-  primarySoft:
-    "bg-routine-soft hover:bg-routine-soft-hover text-routine-soft-fg border border-routine-soft-border transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-base",
-
-  // Secondary/ghost
-  secondary:
-    "bg-panel hover:bg-panelHi text-text border border-line transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-base",
-
-  // Progress ring colors
-  progressTrack: "text-routine-soft",
-  progressFill: "text-routine-strong dark:text-routine",
-
-  // Hero card gradient
-  heroGradient: "bg-hero-rose",
-
-  // Success animation colors
-  successPulse: "rgba(249, 112, 102, 0.4)",
+  emptyStateWarm: "py-7 text-left",
+  linkAccent: "font-semibold text-text underline underline-offset-2",
+  chipOn: "border-text bg-panelHi text-text",
+  chipOff: "border-line bg-transparent text-muted hover:text-text",
+  dot: "bg-chart-routine",
+  monthSel: "border-b-2 border-text text-text font-semibold",
+  done: "border-text bg-text text-bg",
 };
 
 // Pure time-mode / recurrence / weekday constants moved into the

@@ -122,7 +122,7 @@ describe("Programs page", () => {
     props.activeProgram = firstProgram;
     const { container } = render(<Programs {...props} />);
     expect(container.querySelector('[class*="success"]')).toBeNull();
-    expect(container.querySelector('[class*="bg-fizruk"]')).not.toBeNull();
+    expect(screen.getByText("Активна")).toBeInTheDocument();
   });
 
   it('shows "Сьогодні відпочинок" on a rest day for the active program', () => {

@@ -1,5 +1,6 @@
 import {
   BillingCancelResponseSchema,
+  BillingCheckoutConflictCodeSchema,
   BillingCheckoutRequestSchema,
   BillingCheckoutResponseSchema,
   BillingPortalResponseSchema,
@@ -7,6 +8,7 @@ import {
   BillingStatusResponseSchema,
   z,
 } from "@sergeant/shared";
+import { isApiError } from "../ApiError";
 import type { HttpClient } from "../httpClient";
 import type { RequestOptions } from "../types";
 
@@ -17,6 +19,8 @@ export const BillingPortalResponseBodySchema = BillingPortalResponseSchema;
 export const BillingCancelResponseBodySchema = BillingCancelResponseSchema;
 export const BillingProvidersResponseBodySchema =
   BillingProvidersResponseSchema;
+export const BillingCheckoutConflictCodeBodySchema =
+  BillingCheckoutConflictCodeSchema;
 
 export type BillingCheckoutRequest = z.infer<
   typeof BillingCheckoutRequestBodySchema
@@ -38,6 +42,27 @@ export type BillingCancelResponse = z.infer<
 export type BillingProvidersResponse = z.infer<
   typeof BillingProvidersResponseBodySchema
 >;
+
+/** `code` 409-відповіді `POST /api/billing/checkout`: вже є підписка або живий checkout. */
+export type BillingCheckoutConflictCode = z.infer<
+  typeof BillingCheckoutConflictCodeBodySchema
+>;
+
+/**
+ * Розпізнає 409-відмову checkout-у (`ALREADY_SUBSCRIBED` / `CHECKOUT_PENDING`).
+ * `null` для будь-якої іншої помилки, зокрема 409 з чужим `code`.
+ */
+export function billingCheckoutConflictCode(
+  err: unknown,
+): BillingCheckoutConflictCode | null {
+  if (!isApiError(err) || err.status !== 409) return null;
+  const code =
+    err.body && typeof err.body === "object"
+      ? (err.body as { code?: unknown }).code
+      : undefined;
+  const parsed = BillingCheckoutConflictCodeBodySchema.safeParse(code);
+  return parsed.success ? parsed.data : null;
+}
 
 export interface BillingEndpoints {
   createCheckout: (

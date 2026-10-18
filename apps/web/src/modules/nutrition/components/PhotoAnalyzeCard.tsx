@@ -3,6 +3,7 @@
  * Status: Active
  */
 import type { Dispatch, Ref, SetStateAction } from "react";
+import { Button } from "@shared/components/ui/Button";
 import { Input, Textarea } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
@@ -153,17 +154,15 @@ export function PhotoAnalyzeCard({
           </div>
         </div>
         {analyzeLabel !== null && (
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={analyzePhoto}
             disabled={busy}
-            className={cn(
-              "text-style-label shrink-0 px-5 h-10 rounded-xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-            )}
+            className="shrink-0"
           >
             {busy ? "…" : analyzeLabel}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -177,10 +176,8 @@ export function PhotoAnalyzeCard({
       {/* Drop-zone */}
       <label
         className={cn(
-          "block w-full rounded-2xl border-2 border-dashed cursor-pointer transition-colors",
-          photoPreviewUrl
-            ? "border-nutrition/30 bg-nutrition/5"
-            : "border-line hover:border-nutrition/40 bg-panel",
+          "block w-full rounded-lg border border-border-strong cursor-pointer transition-colors",
+          photoPreviewUrl ? "bg-panel" : "bg-panel hover:bg-line/40",
         )}
       >
         <input
@@ -205,29 +202,14 @@ export function PhotoAnalyzeCard({
               decoding="async"
               width="600"
               height="280"
-              className="block w-full max-w-full max-h-[280px] object-cover rounded-2xl"
+              className="block w-full max-w-full max-h-[280px] object-cover rounded-panel"
             />
-            <span className="absolute bottom-3 right-3 rounded-xl bg-panel/95 px-3 py-2 text-style-caption text-text shadow-soft">
+            <span className="absolute bottom-3 right-3 rounded-lg bg-panel px-3 py-2 text-style-caption text-text">
               Замінити фото
             </span>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
             <span className="text-style-label">Натисни щоб обрати фото</span>
             <span className="text-style-caption">
               jpg / png / heic · до 4 МБ
@@ -241,7 +223,7 @@ export function PhotoAnalyzeCard({
           type="button"
           onClick={() => void onPickPhoto(null)}
           disabled={busy}
-          className="mt-2 min-h-11 px-3 text-style-caption text-danger-strong hover:underline disabled:opacity-50"
+          className="mt-2 min-h-11 px-3 rounded-lg text-style-caption text-danger-strong hover:underline disabled:opacity-50 focus-ring"
         >
           Прибрати фото
         </button>
@@ -258,7 +240,7 @@ export function PhotoAnalyzeCard({
         <div className="mt-4 grid gap-3">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-style-label text-text">
+              <div className="text-style-body font-semibold text-text">
                 {photoResult.dishName || "Страва"}
               </div>
               {/* Підпис навмисно довший за «Впевненість»: це впевненість у
@@ -273,8 +255,8 @@ export function PhotoAnalyzeCard({
             </div>
           </div>
 
-          {/* 4 macro tiles */}
-          <div className="grid grid-cols-4 gap-2">
+          {/* КБЖВ рядком на hairline, без плиток */}
+          <div className="grid grid-cols-4 gap-2 border-y border-line py-2">
             {[
               { label: "Ккал", value: fmtMacro(photoResult.macros?.kcal) },
               {
@@ -290,26 +272,15 @@ export function PhotoAnalyzeCard({
                 value: `${fmtMacro(photoResult.macros?.carbs_g)} г`,
               },
             ].map((m) => (
-              <div
-                key={m.label}
-                className="min-w-0 rounded-xl border border-nutrition/20 bg-nutrition/8 px-2 py-2 text-center"
-              >
+              <div key={m.label} className="min-w-0 px-2 text-center">
                 <SectionHeading
                   as="div"
                   size="xs"
-                  variant="nutrition"
                   className="leading-none mb-1"
                 >
                   {m.label}
                 </SectionHeading>
-                {/* AI-DANGER: `text-sm` тут лишається навмисно. Роль
-                    `text-style-label` явно задає `font-weight: 500`, а
-                    поруч стоїть `font-extrabold` — два правила ваги на
-                    одному вузлі, і хто виграє, залежить від порядку в
-                    CSS. Це те саме місце, де прохід типографіки вже
-                    двічі ламав вагу тихо. Значення метрики має лишатись
-                    найважчим у своєму блоці. */}
-                <div className="text-sm font-extrabold text-text leading-none truncate">
+                <div className="text-style-body font-semibold tabular-nums text-text leading-none truncate">
                   {m.value}
                 </div>
               </div>
@@ -335,31 +306,15 @@ export function PhotoAnalyzeCard({
                окремо: з самої картки не видно, що без кліку аналіз нікуди
                не дінеться. */
             <div className="grid gap-1.5">
-              <button
+              <Button
                 type="button"
+                size="lg"
                 onClick={onSaveToLog}
                 disabled={busy}
-                className={cn(
-                  "text-style-label inline-flex w-full items-center justify-center gap-2 h-12 rounded-2xl shadow-soft",
-                  "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                )}
+                className="w-full"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
                 Зберегти в журнал
-              </button>
+              </Button>
               {/* AI-NOTE: підказка під кнопкою: класичний випадок, який
                   правило дозволяє лишити в caption, вона супроводжує контрол,
                   а не читається окремо. */}
@@ -387,8 +342,8 @@ export function PhotoAnalyzeCard({
               з 3, питань — жодного, тож канал «сказати своїми словами» був
               недосяжний рівно в тому випадку, заради якого потрібен. Порція
               і вільне зауваження доступні завжди; питання — коли є. */}
-          <div className="rounded-2xl border border-line bg-panelHi p-3 grid gap-3">
-            <SectionHeading as="div" size="xs" variant="nutrition">
+          <div className="border-t border-line pt-3 grid gap-3">
+            <SectionHeading as="div" size="md">
               Уточнення
             </SectionHeading>
 
@@ -437,18 +392,16 @@ export function PhotoAnalyzeCard({
               />
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="md"
               onClick={refinePhoto}
               disabled={busy}
-              className={cn(
-                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-                "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-              )}
+              className="w-full"
             >
               Перерахувати з урахуванням уточнень
-            </button>
+            </Button>
             {/* AI-NOTE: дисклеймер під контролом, кегль навмисно дрібний,
                 щоб не сперечатися вагою з самою кнопкою.
                 Чесність про ціну кнопки: перерахунок — це новий прогін

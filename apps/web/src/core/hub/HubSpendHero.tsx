@@ -1,3 +1,4 @@
+import { useMinuteNow } from "@shared/hooks/useMinuteNow";
 /**
  * Hero хаба «Витрати сьогодні» (redesign v3, H.2): тинт Фініка, число дня
  * 40 px, «₴ · ще N» до плану дня і лінія накопичених витрат від 06:00 до
@@ -10,12 +11,13 @@
  * Last validated: 2026-10-09
  * Status: Active
  */
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { STORAGE_KEYS, formatNumberUk } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { coreMessages } from "@shared/i18n/uk.core";
+import { isFinykBalanceHidden, maskAmount } from "@finyk/lib/balanceVisibility";
 import { cn } from "@shared/lib/ui/cn";
 import { buildSpendLine, LINE_H, LINE_W } from "./spendHeroLine";
 
@@ -50,21 +52,27 @@ export interface HubSpendHeroProps {
 
 export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
   const t = coreMessages.hub.spendHero;
-  // ponytail: «зараз» фіксується на монтуванні хаба; тік раз на хвилину
-  // додати, якщо лінія має повзти, поки екран відкритий.
-  const [mountedAt] = useState(() => Date.now());
+  const balanceHidden = isFinykBalanceHidden();
+  const formatAmount = (amount: number) =>
+    maskAmount(
+      formatNumberUk(amount, { maximumFractionDigits: 0 }),
+      balanceHidden,
+    );
+  // Refresh the clock each minute and when the browser resumes.
+  // The line must not clip new transactions to the original mount hour.
+  const nowMs = useMinuteNow();
   const view = useMemo(() => {
     void storageBump;
     const snap = readSnapshot();
     if (!snap) return null;
-    const { hour, minute } = getKyivDateParts(mountedAt);
+    const { hour, minute } = getKyivDateParts(nowMs);
     const nowMinute = hour * 60 + minute;
     return {
       ...snap,
       nowLabel: `${pad(hour)}:${pad(minute)}`,
       line: buildSpendLine(snap.todayPoints, nowMinute, snap.dayPlan),
     };
-  }, [storageBump, mountedAt]);
+  }, [storageBump, nowMs]);
 
   if (!view) return null;
   const left = view.dayPlan === null ? null : view.dayPlan - view.todaySpent;
@@ -84,11 +92,11 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
         <span className="tnum">
           {view.dayPlan === null
             ? t.noPlan
-            : `${t.plan} ${formatNumberUk(view.dayPlan, { maximumFractionDigits: 0 })}`}
+            : `${t.plan} ${formatAmount(view.dayPlan)}`}
         </span>
       </div>
       <p className="mt-1.5 text-style-display tnum text-text">
-        {formatNumberUk(view.todaySpent, { maximumFractionDigits: 0 })}{" "}
+        {formatAmount(view.todaySpent)}{" "}
         <span
           className={cn(
             "text-style-label-lg font-medium tracking-normal",
@@ -97,7 +105,7 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
         >
           ₴
           {left !== null &&
-            ` · ${left < 0 ? t.over : t.left} ${formatNumberUk(Math.abs(left), { maximumFractionDigits: 0 })}`}
+            ` · ${left < 0 ? t.over : t.left} ${formatAmount(Math.abs(left))}`}
         </span>
       </p>
       <svg

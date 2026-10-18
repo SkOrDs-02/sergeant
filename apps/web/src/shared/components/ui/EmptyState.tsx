@@ -13,31 +13,13 @@
  * naked-string placeholders that used to drift in copy, focus styling,
  * and a11y wiring.
  *
- * Slots (all optional except `title`):
- * - `illustration` — large SVG (preferred for full-page surfaces); when
- *   passed, the smaller `icon` slot is suppressed.
- * - `icon` — compact glyph for dense surfaces (in-card placeholders).
- * - `eyebrow` — short tag above the title (e.g. "404", "ERROR", "WARNING").
- * - `title` — single-line headline (required for SR announcement).
- * - `description` — supporting copy under the title.
- * - `action` / `primaryAction` — CTA button.
- * - `secondaryAction` — supportive button next to the primary CTA.
- * - `tertiaryLink` — text link (e.g. "Дізнатись більше").
- * - `hint` — small lightbulb-prefixed footer note.
- * - `examplePreview` — optional inline mock of what real data would look like.
+ * Компактний стан показує факт і дію. Модульний first-run додає стриману
+ * лінійну ілюстрацію та видимий наступний крок.
  *
  * Sizes (`size: sm | md | lg`):
  * - `sm` (compact): in-card / inline empty placeholder
  * - `md` (default): full-page empty states inside Card or page bodies
  * - `lg`: error pages (`/404`, `/500`, `/offline`)
- *
- * Variants (`variant: neutral | info | success | warning | danger`):
- * - Drives the icon container tint and the eyebrow chip colour. Module
- *   accents (`module: finyk | fizruk | routine | nutrition`) are an
- *   orthogonal axis and take precedence over `variant` when both are set,
- *   because module belongingness is a stronger semantic signal than tone.
- *   Saturated brand fills used as background for white text always go
- *   through `-strong` companions (Hard Rule #9).
  *
  * Backward compat:
  * - `compact: true` keeps working — maps to `size="sm"`.
@@ -50,25 +32,18 @@
  * - `focus-visible:` only on CTAs (delegated to `<Button>` / `<a>`), per
  *   Hard Rule #14.
  */
-import type { ReactNode } from "react";
-import type { ModuleAccent } from "@sergeant/design-tokens";
+import { cloneElement, isValidElement, useId, type ReactNode } from "react";
 import type { OnboardingGoals } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
-import { Button } from "./Button";
+import { Button, type ButtonProps } from "./Button";
 import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { coreMessages } from "@shared/i18n/uk.core";
+import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
-export type EmptyStateVariant =
-  "neutral" | "info" | "success" | "warning" | "danger";
-
 export interface EmptyStateProps {
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  icon?: ReactNode | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  illustration?: ReactNode | undefined;
   /** Ярлик над фактом (12 / 600 / caps), напр. «404». */
   eyebrow?: ReactNode | undefined;
   title?: ReactNode | undefined;
@@ -81,6 +56,13 @@ export interface EmptyStateProps {
    */
   titleAs?: "p" | "h1" | "h2" | "h3" | undefined;
   description?: ReactNode | undefined;
+  /**
+   * Видимий контекст для first-run станів. У компактних списках опис за
+   * замовчуванням лишається доступним лише скрінрідеру.
+   */
+  showDescription?: boolean | undefined;
+  /** Декоративна графіка для featured empty-state; завжди aria-hidden. */
+  illustration?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
    * supported; `primaryAction` is the explicit alias new code should
@@ -101,16 +83,8 @@ export interface EmptyStateProps {
   compact?: boolean | undefined;
   /** Density token. Defaults to `md`. `sm` matches the legacy `compact` look. */
   size?: EmptyStateSize | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  variant?: EmptyStateVariant | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  disableAnimation?: boolean | undefined;
   /** Рядок мети під дією. */
   hint?: string | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  examplePreview?: ReactNode | undefined;
-  /** @deprecated мова H: не рендериться. @removeBy 2026-12-01 */
-  module?: ModuleAccent | undefined;
   /**
    * Override live-region politeness. Default `"polite"`. Set to `"off"`
    * for empty states that mount on initial page load alongside other
@@ -134,11 +108,8 @@ const PADDING: Record<EmptyStateSize, string> = {
 };
 
 /**
- * Мова H (redesign v3): факт одним рядком 16 / 600, під ним дія кнопкою
- * outline. Без іконки в колі, ілюстрації й «Прикладу» в пунктирі: ці пропи
- * ще приймаються, але не рендеряться (@removeBy 2026-12-01, PR7). Текстові
- * пропи лишаються текстом: `eyebrow` ярликом над фактом, `description` і
- * `hint` рядками мети другим сірим.
+ * Мова H (redesign v3): компактний стан лишається фактом і дією. Featured
+ * стан може додати одну лінійну ілюстрацію та короткий видимий опис.
  */
 export function EmptyState({
   eyebrow,
@@ -146,6 +117,8 @@ export function EmptyState({
   title,
   titleAs: TitleTag = "p",
   description,
+  showDescription = false,
+  illustration,
   action,
   primaryAction,
   secondaryAction,
@@ -157,6 +130,15 @@ export function EmptyState({
 }: EmptyStateProps) {
   const resolvedSize = resolveSize(size, compact);
   const primary = primaryAction ?? action;
+  const id = useId();
+  const describedBy =
+    [description && `${id}-description`, hint && `${id}-hint`]
+      .filter(Boolean)
+      .join(" ") || undefined;
+  const primaryControl =
+    isValidElement<ButtonProps>(primary) && primary.type === Button
+      ? cloneElement(primary, { variant: "outline" })
+      : primary;
   return (
     // `role="status"` + `aria-live="polite"` keep the empty-state silent
     // until it appears dynamically (e.g. after a filter clears the list).
@@ -164,24 +146,48 @@ export function EmptyState({
       role="status"
       aria-live={ariaLive}
       aria-atomic="true"
-      className={cn("flex flex-col gap-1", PADDING[resolvedSize], className)}
+      aria-describedby={describedBy}
+      className={cn(
+        "flex flex-col gap-1",
+        illustration && "items-center text-center",
+        PADDING[resolvedSize],
+        className,
+      )}
     >
+      {illustration && <div aria-hidden="true">{illustration}</div>}
       {eyebrow && <p className="text-style-overline text-subtle">{eyebrow}</p>}
-      <TitleTag className="text-style-body font-semibold text-text text-pretty">
+      <TitleTag
+        className={cn(
+          "font-semibold text-text text-pretty",
+          illustration ? "mt-2 text-style-title" : "text-style-body",
+        )}
+      >
         {title}
       </TitleTag>
-      {description && (
-        <p className="text-style-label text-muted text-pretty">{description}</p>
-      )}
+      {description &&
+        (showDescription ? (
+          <p
+            id={`${id}-description`}
+            className="mt-1 max-w-sm text-style-body leading-snug text-subtle text-pretty"
+          >
+            {description}
+          </p>
+        ) : (
+          <span id={`${id}-description`} hidden>
+            {description}
+          </span>
+        ))}
       {(primary || secondaryAction) && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {primary}
+          {primaryControl}
           {secondaryAction}
         </div>
       )}
       {tertiaryLink && <div className="mt-1">{tertiaryLink}</div>}
       {hint && (
-        <p className="mt-2 text-style-label text-muted text-pretty">{hint}</p>
+        <span id={`${id}-hint`} hidden>
+          {hint}
+        </span>
       )}
     </div>
   );
@@ -195,6 +201,7 @@ export function EmptyState({
 export interface ModuleEmptyStateProps {
   module: "finyk" | "fizruk" | "routine" | "nutrition";
   variant?: "default" | "compact";
+  title?: string;
   onAction?: () => void;
   actionLabel?: string;
   /** Show a dismiss/close button in the top-right corner. */
@@ -292,6 +299,7 @@ function resolveGoalAwareDesc(
 export function ModuleEmptyState({
   module,
   variant = "default",
+  title,
   onAction,
   actionLabel,
   dismissible = false,
@@ -328,8 +336,12 @@ export function ModuleEmptyState({
         </button>
       )}
       <EmptyState
-        title={config.title}
+        title={title ?? config.title}
         description={resolvedDescription}
+        showDescription
+        illustration={
+          <ModuleEmptyIllustration module={module} size={compact ? 56 : 64} />
+        }
         size={compact ? "sm" : "md"}
         className={className}
         action={

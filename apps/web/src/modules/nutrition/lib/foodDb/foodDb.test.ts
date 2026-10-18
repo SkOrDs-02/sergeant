@@ -12,6 +12,7 @@ import { IDBFactory } from "fake-indexeddb";
 vi.mock("./seedFoodsUk", () => ({
   SEED_FOODS_UK: [
     {
+      slug: "moloko-2-5",
       name: "Молоко 2.5%",
       per100: { kcal: 52, protein_g: 2.8, fat_g: 2.5, carbs_g: 4.7 },
     },
@@ -32,6 +33,7 @@ import {
   listFoods,
   lookupFoodByBarcode,
   macrosForGrams,
+  macrosForGramsNullable,
   makeFoodProduct,
   replaceAllFoodsFromList,
   searchFoods,
@@ -96,6 +98,39 @@ describe("macrosForGrams (pure)", () => {
     expect(
       macrosForGrams({ kcal: 100, protein_g: 10, fat_g: 5, carbs_g: 20 }, -3),
     ).toEqual({ kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 });
+  });
+});
+
+describe("macrosForGramsNullable (pure)", () => {
+  it("scales like macrosForGrams when every nutrient is known", () => {
+    const per100 = { kcal: 100, protein_g: 10, fat_g: 5, carbs_g: 20 };
+    expect(macrosForGramsNullable(per100, 50)).toEqual(
+      macrosForGrams(per100, 50),
+    );
+  });
+
+  it("keeps an unknown nutrient null instead of turning it into 0", () => {
+    expect(
+      macrosForGramsNullable({ kcal: 100, protein_g: null, carbs_g: 20 }, 50),
+    ).toEqual({ kcal: 50, protein_g: null, fat_g: null, carbs_g: 10 });
+  });
+
+  it("keeps a real zero as 0", () => {
+    expect(
+      macrosForGramsNullable(
+        { kcal: 100, protein_g: 0, fat_g: 0, carbs_g: 0 },
+        50,
+      ),
+    ).toEqual({ kcal: 50, protein_g: 0, fat_g: 0, carbs_g: 0 });
+  });
+
+  it("returns all-null for non-object input", () => {
+    expect(macrosForGramsNullable(undefined, 100)).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
   });
 });
 
@@ -222,6 +257,26 @@ describe("replaceAllFoodsFromList", () => {
 });
 
 describe("ensureSeedFoods", () => {
+  // ux-13: id seed-продукту детермінований (`gen_<slug>`), бо прийом зберігає
+  // лише `foodId`, а випадковий `food_<uuid>` існував тільки на одному пристрої.
+  it("дає seed-продукту з slug стабільний id gen_<slug>", async () => {
+    await ensureSeedFoods();
+    const byName = new Map((await listFoods()).map((x) => [x.name, x.id]));
+    expect(byName.get("Молоко 2.5%")).toBe("gen_moloko-2-5");
+    // Сід без slug лишає випадковий id (старий шлях).
+    expect(byName.get("Яйце куряче")).toMatch(/^food_/);
+  });
+
+  it("не перейменовує наявний локальний запис і не затирає зайнятий gen_ id", async () => {
+    const kept = await upsertFood({ name: "Моє молоко", id: "gen_moloko-2-5" });
+    expect(kept.ok).toBe(true);
+    await ensureSeedFoods();
+    const list = await listFoods();
+    expect(list.find((x) => x.id === "gen_moloko-2-5")?.name).toBe(
+      "Моє молоко",
+    );
+  });
+
   it("seeds an empty DB from the (mocked) seed list", async () => {
     const ok = await ensureSeedFoods();
     expect(ok).toBe(true);

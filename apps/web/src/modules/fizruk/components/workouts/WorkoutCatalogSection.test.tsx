@@ -381,7 +381,7 @@ describe("WorkoutCatalogSection — recovery warning", () => {
         })}
       />,
     );
-    expect(screen.getByTitle("Мʼязи ще відновлюються")).toBeInTheDocument();
+    expect(screen.getByText("Мʼязи ще відновлюються")).toBeInTheDocument();
   });
 
   it("hides ⚠ when there is no warning", () => {

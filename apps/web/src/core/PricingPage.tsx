@@ -12,7 +12,10 @@ import { billingApi } from "@shared/api";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { useToast } from "@shared/hooks/useToast";
 import { useLocale } from "@shared/i18n/useLocale";
-import type { BillingCheckoutResponse } from "@sergeant/api-client";
+import {
+  billingCheckoutConflictCode,
+  type BillingCheckoutResponse,
+} from "@sergeant/api-client";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
@@ -199,6 +202,22 @@ export function PricingPage() {
       window.location.assign(safeUrl);
       return;
     } catch (err) {
+      // 409: сервер відхилив checkout до звернення до провайдера, бо друга
+      // сторінка оплати дала б подвійне списання. Це не збій: показуємо
+      // причину, не сторінку waitlist, і не шлемо в Sentry.
+      const conflict = billingCheckoutConflictCode(err);
+      if (conflict) {
+        setCheckoutError(
+          conflict === "ALREADY_SUBSCRIBED"
+            ? t.errors.checkoutAlreadySubscribed
+            : t.errors.checkoutPending,
+        );
+        if (conflict === "ALREADY_SUBSCRIBED") {
+          // Кеш плану застарів: після оновлення CTA стане «Керувати підпискою».
+          void queryClient.invalidateQueries({ queryKey: billingKeys.status });
+        }
+        return;
+      }
       captureException(err, {
         tags: { scope: "pricing-checkout-redirect" },
       });
@@ -413,10 +432,9 @@ export function PricingPage() {
                 <Card
                   key={tier.id}
                   as="article"
-                  radius="xl"
                   padding="lg"
                   className={cn(
-                    "flex flex-col gap-4 motion-safe:animate-stagger-in",
+                    "flex flex-col gap-4 motion-safe:",
                     isPremium &&
                       "bg-brand-strong border-transparent dark:bg-brand-100",
                   )}
@@ -571,7 +589,7 @@ export function PricingPage() {
 
           <section
             id="waitlist-anchor"
-            className="rounded-3xl border border-line bg-panel p-6 sm:p-8 max-w-2xl mx-auto"
+            className="rounded-panel border border-line bg-panel p-6 sm:p-8 max-w-2xl mx-auto"
           >
             <header className="space-y-2 mb-6">
               <h2 className="text-style-headline text-text">

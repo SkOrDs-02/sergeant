@@ -11,6 +11,7 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import {
   useTablistArrowKeys,
   type TablistActivation,
+  type TablistOrientation,
 } from "./useTablistArrowKeys";
 
 const onSelect = vi.fn();
@@ -20,13 +21,15 @@ function Harness({
   disabledIds = [],
   selected = "a",
   activation,
+  orientation,
 }: {
   enabled?: boolean;
   disabledIds?: string[];
   selected?: string;
   activation?: TablistActivation;
+  orientation?: TablistOrientation;
 }) {
-  const onTabKeyDown = useTablistArrowKeys(enabled, activation);
+  const onTabKeyDown = useTablistArrowKeys(enabled, activation, orientation);
   return (
     <div role="tablist" aria-label="Проба">
       {["a", "b", "c"].map((id) => (
@@ -217,5 +220,18 @@ describe("useTablistArrowKeys", () => {
       press("a", "ArrowRight");
       expect(onSelect).toHaveBeenCalledWith("b");
     });
+  });
+});
+
+describe("useTablistArrowKeys — вертикальний ряд", () => {
+  it("ходить ArrowDown/ArrowUp і не реагує на ArrowRight", () => {
+    render(<Harness orientation="vertical" />);
+    fireEvent.keyDown(tab("a"), { key: "ArrowRight" });
+    expect(onSelect).not.toHaveBeenCalled();
+    fireEvent.keyDown(tab("a"), { key: "ArrowDown" });
+    expect(document.activeElement).toBe(tab("b"));
+    expect(onSelect).toHaveBeenLastCalledWith("b");
+    fireEvent.keyDown(tab("a"), { key: "ArrowUp" });
+    expect(document.activeElement).toBe(tab("c"));
   });
 });

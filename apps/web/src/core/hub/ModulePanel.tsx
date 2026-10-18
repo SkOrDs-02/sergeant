@@ -21,6 +21,7 @@ import {
   type HubModuleId,
 } from "@shared/lib/modules/moduleLabels";
 import { coreMessages } from "@shared/i18n/uk.core";
+import { isFinykBalanceHidden, maskAmount } from "@finyk/lib/balanceVisibility";
 import { MODULE_CONFIGS } from "./dashboard/moduleConfigs";
 
 const ORDER: readonly HubModuleId[] = [
@@ -44,6 +45,7 @@ export interface ModulePanelProps {
 }
 
 export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
+  const balanceHidden = isFinykBalanceHidden();
   const rows = useMemo(() => {
     void storageBump;
     return ORDER.map((id) => ({
@@ -54,7 +56,7 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
 
   return (
     <nav aria-label={coreMessages.hub.moduleRail} data-testid="module-panel">
-      <ul className="rounded-xl bg-panel px-4">
+      <ul className="rounded-panel bg-panel px-4">
         {rows.map(({ id, preview }, i) => {
           const enabled = activeModules.includes(id);
           const label = MODULE_LABELS[id];
@@ -106,7 +108,9 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
                   )}
                 </span>
                 <span className="w-20 shrink-0 text-right text-style-body font-medium tnum text-text">
-                  {preview.main ?? "–"}
+                  {id === "finyk" && preview.main !== null
+                    ? maskAmount(preview.main, balanceHidden)
+                    : (preview.main ?? "–")}
                 </span>
               </button>
             </li>

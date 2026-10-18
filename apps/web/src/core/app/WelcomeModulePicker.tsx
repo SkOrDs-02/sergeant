@@ -13,13 +13,9 @@
  * via `onComplete(picks)`.
  *
  * Visual contract:
- *   - Module cards use the existing `--c-{module}` accent token family
- *     (matches Hub bento + Settings module toggles). Picked state adds
- *     a ring + accent surface; unpicked stays neutral.
+ *   - H.1: neutral text rows; a 22px check shows the picked state.
  *   - Tap target ≥44px (Hard Rule #11). Card body itself is the button.
- *   - Active-press animation = `active:scale-[0.97]` (Hard Rule #17
- *     RESPONSE class). No ambient motion — `MeshBackground` at the
- *     page level already supplies AMBIENT motion.
+ *   - Рух на hover/press знято мовою H; вибір показується станом.
  *   - All four cards default to *picked* on mount. Matches the
  *     existing onboarding A/B "all" arm (post-S6.1 default) so legacy
  *     users who already saw the row-based wizard observe identical
@@ -32,60 +28,9 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { BrandLogo } from "./BrandLogo";
 import { ALL_MODULES } from "../onboarding/vibePicks";
-import {
-  ONBOARDING_VIBE_ICONS,
-  type DashboardModuleId,
-} from "@sergeant/shared";
+import type { DashboardModuleId } from "@sergeant/shared";
 import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
 import { messages } from "@shared/i18n/uk";
-
-/**
- * Per-module visual tokens. Maps each module to:
- *   - `border` — outline when the card is picked: `{m}-edge` (≥3:1 проти
- *     столу в обох темах; було `{m}/60` = 2.7-2.9:1, A4, рішення власника
- *     2026-10-01).
- *   - `bg` — soft tint applied to the picked card body.
- *   - `icon` — chip background for the top-left module icon.
- *   - `ring` — focus / picked outer ring.
- *   - `check` — solid swatch behind the corner ✓ glyph.
- *
- * Classes mirror the existing `ModuleRow` palette in
- * `apps/web/src/core/onboarding/ModuleRow.tsx` so the picked-state look
- * stays coherent across onboarding surfaces.
- */
-const MODULE_VISUALS: Record<
-  DashboardModuleId,
-  { border: string; bg: string; icon: string; ring: string; check: string }
-> = {
-  finyk: {
-    border: "border-finyk-edge",
-    bg: "bg-finyk/8",
-    icon: "bg-finyk/15 text-finyk",
-    ring: "ring-finyk/40",
-    check: "bg-finyk-strong dark:bg-finyk dark:text-bg",
-  },
-  fizruk: {
-    border: "border-fizruk-edge",
-    bg: "bg-fizruk/8",
-    icon: "bg-fizruk/15 text-fizruk",
-    ring: "ring-fizruk/40",
-    check: "bg-fizruk-strong dark:bg-fizruk dark:text-bg",
-  },
-  routine: {
-    border: "border-routine-edge",
-    bg: "bg-routine/8",
-    icon: "bg-routine/15 text-routine",
-    ring: "ring-routine/40",
-    check: "bg-routine-strong dark:bg-routine dark:text-bg",
-  },
-  nutrition: {
-    border: "border-nutrition-edge",
-    bg: "bg-nutrition/8",
-    icon: "bg-nutrition/15 text-nutrition",
-    ring: "ring-nutrition/40",
-    check: "bg-nutrition-strong dark:bg-nutrition dark:text-bg",
-  },
-};
 
 export interface WelcomeModulePickerProps {
   /**
@@ -153,10 +98,9 @@ export function WelcomeModulePicker({
       <div
         role="group"
         aria-label={copy.gridAriaLabel}
-        className={cn("grid w-full gap-3", "grid-cols-2 sm:grid-cols-4")}
+        className="w-full divide-y divide-line"
       >
         {ALL_MODULES.map((id) => {
-          const v = MODULE_VISUALS[id];
           const active = picks.includes(id);
           return (
             <button
@@ -166,40 +110,26 @@ export function WelcomeModulePicker({
               aria-pressed={active}
               aria-label={MODULE_LABELS[id]}
               className={cn(
-                "relative min-h-[120px] sm:min-h-[140px] p-3.5 text-left",
-                "rounded-2xl border bg-panel transition-all duration-base",
+                "relative w-full min-h-11 py-3 text-left pr-9",
+                "transition-colors",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-                "active:scale-[0.97] motion-reduce:active:scale-100",
-                active
-                  ? cn(v.border, v.bg, "shadow-card ring-2", v.ring)
-                  : "border-line hover:border-brand-500/30",
+                active ? "text-text" : "text-muted",
               )}
             >
               <span
                 aria-hidden
                 className={cn(
-                  "absolute top-2.5 right-2.5 w-5 h-5 rounded-full",
-                  "text-white flex items-center justify-center",
+                  "absolute top-3 right-0 w-[22px] h-[22px] rounded-check border border-control",
+                  "flex items-center justify-center",
                   "transition-opacity",
-                  active ? cn(v.check, "opacity-100") : "opacity-0",
+                  active
+                    ? "bg-ink text-bg border-ink"
+                    : "bg-bg text-transparent",
                 )}
               >
                 <Icon name="check" size="xs" strokeWidth={3} />
               </span>
-              <span
-                aria-hidden
-                className={cn(
-                  "flex w-10 h-10 items-center justify-center rounded-xl",
-                  active ? v.icon : "bg-panelHi text-muted",
-                )}
-              >
-                <Icon
-                  name={ONBOARDING_VIBE_ICONS[id]}
-                  size="lg"
-                  strokeWidth={2}
-                />
-              </span>
-              <span className="mt-2.5 block text-style-label text-text">
+              <span className="block text-style-label text-text">
                 {MODULE_LABELS[id]}
               </span>
               <span className="mt-1 block text-style-caption text-muted leading-snug">
@@ -241,9 +171,8 @@ export function WelcomeModulePicker({
         onClick={onOpenAuth}
         variant="outline"
         size="md"
-        className="w-full h-11 min-h-[44px] rounded-2xl border-line bg-panel text-style-label text-text hover:bg-panelHi hover:border-brand-500/40"
+        className="w-full h-11 min-h-[44px] rounded-lg border-line bg-panel text-style-label text-text hover:bg-panelHi hover:border-brand-500/40"
       >
-        <Icon name="user" size="md" strokeWidth={2} aria-hidden />
         <span>{copy.haveAccount}</span>
       </Button>
     </div>

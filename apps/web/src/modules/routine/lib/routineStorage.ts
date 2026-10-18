@@ -56,6 +56,8 @@ import {
   type RoutineState,
   type Habit,
   type HabitSnapshot,
+  type Category,
+  type Tag,
   type SkipReason,
 } from "@sergeant/routine-domain";
 import {
@@ -595,4 +597,42 @@ export function deleteCategory(state: RoutineState, id: string): RoutineState {
 
 export function deleteTag(state: RoutineState, id: string): RoutineState {
   return persist(applyDeleteTag(state, id));
+}
+
+/** Undo only this category deletion; newer habit assignments stay authoritative. */
+export function restoreCategory(
+  state: RoutineState,
+  category: Category,
+  habitIds: readonly string[],
+  index: number,
+): RoutineState {
+  const categories = [...state.categories];
+  let changed = !categories.some((item) => item.id === category.id);
+  if (changed) categories.splice(index, 0, category);
+  const affected = new Set(habitIds);
+  const habits = state.habits.map((habit) => {
+    if (!affected.has(habit.id) || habit.categoryId) return habit;
+    changed = true;
+    return { ...habit, categoryId: category.id };
+  });
+  return changed ? persist({ ...state, categories, habits }) : state;
+}
+
+/** Restore the removed tag and memberships without rolling back other changes. */
+export function restoreTag(
+  state: RoutineState,
+  tag: Tag,
+  habitIds: readonly string[],
+  index: number,
+): RoutineState {
+  const tags = [...state.tags];
+  let changed = !tags.some((item) => item.id === tag.id);
+  if (changed) tags.splice(index, 0, tag);
+  const affected = new Set(habitIds);
+  const habits = state.habits.map((habit) => {
+    if (!affected.has(habit.id) || habit.tagIds?.includes(tag.id)) return habit;
+    changed = true;
+    return { ...habit, tagIds: [...(habit.tagIds || []), tag.id] };
+  });
+  return changed ? persist({ ...state, tags, habits }) : state;
 }

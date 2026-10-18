@@ -13,7 +13,6 @@
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
-
 import { Select } from "@shared/components/ui/Select";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { Money } from "@shared/components/ui/Money";
@@ -208,7 +207,7 @@ export function BulkReceiptsProgress({
 
   return (
     <div className="space-y-3">
-      <ul className="divide-y divide-line rounded-xl border border-line">
+      <ul className="divide-y divide-line rounded-panel border border-line">
         {items.map((item) => (
           <ItemRow
             key={item.id}

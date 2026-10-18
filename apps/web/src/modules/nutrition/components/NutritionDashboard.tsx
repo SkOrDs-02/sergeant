@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-09-01
  * Status: Active
@@ -19,7 +20,6 @@ import {
   countKcalStreakDays,
   deviceWeekStartKey,
   resolveKcalGoalsForDays,
-  todayISODate,
   type MealTypeId,
   type NutritionLog,
   type NutritionPrefs,
@@ -46,10 +46,6 @@ import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 // тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
 // Kyiv, бо журнал, з якого читаються ці дані, сам пишеться під ключем дня
 // пристрою (useNutritionLog). unification-modules.md #1.18.
-function todayISO(): string {
-  return todayISODate();
-}
-
 interface NutritionDashboardProps {
   log: NutritionLog;
   prefs: NutritionPrefs;
@@ -66,7 +62,7 @@ export function NutritionDashboard({
   onGoToDailyPlan,
   onPickMeal,
 }: NutritionDashboardProps) {
-  const today = todayISO();
+  const today = useDeviceDayKey();
   const goalPeriods = useNutritionGoalPeriods();
   const adaptiveGoal = useAdaptiveNutritionGoal(log, prefs);
 
@@ -78,10 +74,11 @@ export function NutritionDashboard({
   // oldest→newest ending at the given day, so anchoring `endIso` on Sunday
   // yields Mon…Sun in order.
   const weekRows = useMemo(() => {
+    void today;
     const weekStart = deviceWeekStartKey();
     const weekEnd = addDaysISODate(weekStart, 6);
     return getMacrosForDateRange(log, weekEnd, 7);
-  }, [log]);
+  }, [log, today]);
 
   // Поденна ціль із append-only журналу: зміна норми сьогодні не
   // перефарбовує попередні стовпчики, а лінія стає східчастою.
@@ -201,8 +198,8 @@ export function NutritionDashboard({
   // Дашборд монтується лише після бута читання (гейт у
   // `NutritionStartPage`), тож нуль холодного старту сюди не доходить.
   const kcalStreak = useMemo(
-    () => countKcalStreakDays(log, goalPeriods, todayISODate()),
-    [log, goalPeriods],
+    () => countKcalStreakDays(log, goalPeriods, today),
+    [log, goalPeriods, today],
   );
   useStreakMilestoneCelebration(
     "nutrition",
@@ -219,7 +216,7 @@ export function NutritionDashboard({
 
   return (
     <div
-      className="grid min-w-0 gap-3 pb-[calc(10rem+env(safe-area-inset-bottom,0px))]"
+      className="grid min-w-0 gap-7 pb-[calc(10rem+env(safe-area-inset-bottom,0px))]"
       data-testid="nutrition-dashboard"
     >
       {/* The start screen has a fixed add-meal FAB 96px above the bottom nav.
@@ -232,68 +229,60 @@ export function NutritionDashboard({
           колонки роздувся і разом із ним — УСІ картки цього гріда. */}
       <Card
         prominence="hero"
-        module="nutrition"
-        padding="none"
-        className="min-w-0"
+        tone="nutrition"
+        padding="lg"
+        className="min-w-0 text-text"
       >
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="text-style-label text-hero-ink">Сьогодні</div>
-              <div className="text-style-caption text-hero-ink">
-                {summary.loggedMealTypesCount}{" "}
-                {pluralUa(summary.loggedMealTypesCount, {
-                  one: "прийом",
-                  few: "прийоми",
-                  many: "прийомів",
-                })}{" "}
-                їжі
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {hasGoal && isMostlyEstimated && (
-              <p className="text-style-caption text-hero-ink text-center text-pretty">
-                <span aria-hidden="true">
-                  {messages.nutrition.estimatedBadge.label}{" "}
-                </span>
-                {messages.nutrition.estimatedBadge.caption}
-              </p>
-            )}
-            <MealStrip
-              onPickMeal={onPickMeal}
-              segments={segments}
-              goalKcal={hasGoal ? kcalGoal : null}
-              remainingLabel={remainingLabel}
-              macros={[
-                {
-                  label: "Білки",
-                  consumed: protein.consumed,
-                  goal: protein.goal,
-                  unit: "г",
-                },
-                {
-                  label: "Жири",
-                  consumed: fat.consumed,
-                  goal: fat.goal,
-                  unit: "г",
-                },
-                {
-                  label: "Вугл.",
-                  consumed: carbs.consumed,
-                  goal: carbs.goal,
-                  unit: "г",
-                },
-              ]}
-              onSetGoal={onGoToDailyPlan ?? onGoToLog}
-              incompleteNote={
-                hasGoal && isIncompleteDay
-                  ? `Записано ${summary.loggedMealTypesCount} із ${MEAL_ORDER.length}`
-                  : undefined
-              }
-            />
-          </div>
+        <p className="text-style-overline text-nutrition-tint-label">
+          Сьогодні · {summary.loggedMealTypesCount}{" "}
+          {pluralUa(summary.loggedMealTypesCount, {
+            one: "прийом",
+            few: "прийоми",
+            many: "прийомів",
+          })}{" "}
+          їжі
+        </p>
+        <div className="mt-2 flex flex-col gap-2">
+          {hasGoal && isMostlyEstimated && (
+            <p className="text-style-caption text-text text-pretty">
+              <span aria-hidden="true">
+                {messages.nutrition.estimatedBadge.label}{" "}
+              </span>
+              {messages.nutrition.estimatedBadge.caption}
+            </p>
+          )}
+          <MealStrip
+            onPickMeal={onPickMeal}
+            segments={segments}
+            goalKcal={hasGoal ? kcalGoal : null}
+            remainingLabel={remainingLabel}
+            macros={[
+              {
+                label: "Білки",
+                consumed: protein.consumed,
+                goal: protein.goal,
+                unit: "г",
+              },
+              {
+                label: "Жири",
+                consumed: fat.consumed,
+                goal: fat.goal,
+                unit: "г",
+              },
+              {
+                label: "Вугл.",
+                consumed: carbs.consumed,
+                goal: carbs.goal,
+                unit: "г",
+              },
+            ]}
+            onSetGoal={onGoToDailyPlan ?? onGoToLog}
+            incompleteNote={
+              hasGoal && isIncompleteDay
+                ? `Записано ${summary.loggedMealTypesCount} із ${MEAL_ORDER.length}`
+                : undefined
+            }
+          />
         </div>
       </Card>
 

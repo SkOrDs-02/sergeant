@@ -97,8 +97,8 @@ const FILE = payload({
 });
 
 describe("applyNutritionBackupPayload — режими відновлення", () => {
-  it("merge: жодного delete, поточне лишається, нове додається", () => {
-    applyNutritionBackupPayload(FILE, "merge");
+  it("merge: жодного delete, поточне лишається, нове додається", async () => {
+    await applyNutritionBackupPayload(FILE, "merge");
 
     const kinds = emittedKinds();
     expect(kinds).not.toContain("meal-delete");
@@ -115,8 +115,8 @@ describe("applyNutritionBackupPayload — режими відновлення", 
     expect(mealIds).toEqual(["m-day2", "m-file", "m-now"]);
   });
 
-  it("merge: непорожня комора лишається такою, яка є, а активна комора не змінюється", () => {
-    applyNutritionBackupPayload(FILE, "merge");
+  it("merge: непорожня комора лишається такою, яка є, а активна комора не змінюється", async () => {
+    await applyNutritionBackupPayload(FILE, "merge");
     const pantryCall = triggerSpy.mock.calls[0] as [
       NutritionDualWriteState,
       NutritionDualWriteState,
@@ -127,12 +127,12 @@ describe("applyNutritionBackupPayload — режими відновлення", 
     expect(pantryCall[1].prefs?.activePantryId).toBe("home");
   });
 
-  it("merge: порожню комору (наприклад свіжу home) файл заповнює", () => {
+  it("merge: порожню комору (наприклад свіжу home) файл заповнює", async () => {
     __setNutritionSqliteCacheForTests({
       pantries: [{ id: "home", name: "Дім", text: "", items: [] }] as never,
       activePantryId: "home",
     });
-    applyNutritionBackupPayload(FILE, "merge");
+    await applyNutritionBackupPayload(FILE, "merge");
     const pantryCall = triggerSpy.mock.calls[0] as [
       NutritionDualWriteState,
       NutritionDualWriteState,
@@ -141,8 +141,8 @@ describe("applyNutritionBackupPayload — режими відновлення", 
     expect(JSON.stringify(home)).toContain("сир");
   });
 
-  it("replace (явний вибір): прибирає те, чого немає у файлі", () => {
-    applyNutritionBackupPayload(FILE, "replace");
+  it("replace (явний вибір): прибирає те, чого немає у файлі", async () => {
+    await applyNutritionBackupPayload(FILE, "replace");
     const kinds = emittedKinds();
     expect(kinds).toContain("meal-delete");
     expect(kinds).toContain("pantry-delete");

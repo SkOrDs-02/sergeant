@@ -1,6 +1,12 @@
 /** @status Active */
 
 export const finykPageMessages = {
+  // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): наявні входи модуля.
+  addSources: {
+    manual: { label: "Вручну", hint: "Сума, категорія і дата" },
+    receipt: { label: "Чек", hint: "Фото чека з магазину" },
+    import: { label: "Документи", hint: "Скріншоти банку й виписки" },
+  },
   reportHeading: "Витрати",
   budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",
@@ -470,7 +476,9 @@ export const finykPageMessages = {
   // ті самі числа, що називає картка «Витрати на N% вище ніж минулого тижня».
   weekReport: {
     heading: "Витрати тижня",
-    empty: "На цьому тижні записів ще немає",
+    // Звіт лише про гроші: «записів» читалось як усі модулі й суперечило
+    // 12 прийомам їжі за тиждень (hands-on 2026-09-29, пункт 13).
+    empty: "На цьому тижні витрат ще немає",
     totalMore:
       "За тиждень витрачено {spent}, на {change} більше, ніж за ті самі дні минулого тижня ({prev})",
     totalLess:

@@ -151,7 +151,7 @@ export function Modal({
 
   // Portal the centered dialog to <body> so the modal escapes every
   // ancestor stacking / containing-block context. Several routes wrap
-  // their root in a `.page-enter` element whose entry animation keeps
+  // their root in a `.` element whose entry animation keeps
   // `transform: translateY(0)` via `animation-fill-mode: both`. Per the
   // CSS spec, any non-`none` `transform` on an ancestor establishes a
   // new containing block — which means our `position: fixed` overlay is
@@ -175,10 +175,10 @@ export function Modal({
         // `bg-text` resolves to a near-white in dark mode and a near-black
         // in light mode, so `bg-text/40` *lightens* the page on dark and
         // dims on light — opposite of what a modal scrim is supposed to
-        // do. Switch to the same `bg-black/40 backdrop-blur-sm` Sheet has
+        // do. Switch to the same `bg-black/40 ` Sheet has
         // used since portaling so both primitives behave consistently
         // across themes.
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 "
       />
       <div
         ref={panelRef}
@@ -196,7 +196,7 @@ export function Modal({
           // `zIndex={200}` prop (`zTier.modal`); a Modal must always
           // sit at e4+z-modal so it clears every dropdown, popover
           // and sticky header.
-          "relative w-full bg-surface border border-line rounded-3xl shadow-e4",
+          "relative w-full bg-surface border border-line rounded-panel shadow-e4",
           "flex flex-col max-h-[min(90vh,calc(100dvh-2rem))]",
           "motion-safe:animate-scale-in",
           sizes[size],

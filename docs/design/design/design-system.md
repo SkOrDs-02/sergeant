@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-09-16 by @claude (індекс і п'ять частин звірено з `packages/design-tokens` і `apps/web/src/styles`; v2-блок переведено в історію, showcase — `/design`). **Next review:** 2027-01-25.
+> **Last touched:** 2026-10-12 by @claude (redesign v3 PR7). **Last validated:** 2026-09-16 by @claude (індекс і п'ять частин звірено з `packages/design-tokens` і `apps/web/src/styles`; v2-блок переведено в історію, showcase — `/design`). **Next review:** 2027-01-25.
 > **Status:** Active (brand → stone via 2026-07 M1; канон кнопки `(variant, tone)` з 2026-09-16; редизайн v2 закрито 2026-05-21)
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -11,9 +11,9 @@
 
 > **Про v2 (травень 2026) — історія, не інструкція.** Редизайн v2 додав
 > паралельний namespace (glass surfaces, mesh background, ink-strong, `rounded-r-*`)
-> поверх `--c-*` токенів. Станом на 2026-09-16 з нього чинні Manrope,
+> поверх `--c-*` токенів. Після редизайну v3 з нього чинні Manrope,
 > ink-типографіка і три теми; glass-токени — back-compat-аліаси з непрозорою
-> заливкою, mesh-свічення зняті 2026-09-03 (фон — «стіл» у hue модуля, див.
+> заливкою, mesh-свічення і тоновані «стіл»/«зона» зняті (фон — сторінка H, див.
 > [`03 § 8`](./design-system/03-spacing-elevation-theming.md)), `rounded-r-*`
 > видалено в аудиті 2026-07. **Не бери BEFORE/AFTER з
 > [`redesign-v2/migration.md`](./redesign-v2/migration.md) як канон** — кластер
@@ -33,6 +33,10 @@
 > `text-gray-500` / `bg-white`.
 
 ---
+
+## Мова H (редизайн v3)
+
+Web-поверхні, типографіку й радіуси задає [спека v3](../../work/specs/planning/redesign-v3.md); радіуси за ролями — [radius-rhythm.md](./radius-rhythm.md). Старі приклади нижче поступаються цьому канону. `Card` має `panel / hero / receipt / ghost` і `tone`, без сумісних пропів старого дизайну. `EmptyState` не приймає декоративні іконки, ілюстрації й приклади; текстова мета для системних помилок збережена.
 
 ## Зміст — тематичні частини
 

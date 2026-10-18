@@ -8,9 +8,9 @@ describe("purgeSyncOpOutboxForUser", () => {
     const run = vi.fn();
     const client = { run } as unknown as SqliteMigrationClient;
 
-    await expect(
-      purgeSyncOpOutboxForUser(client, ""),
-    ).rejects.toThrow(/userId is required/);
+    await expect(purgeSyncOpOutboxForUser(client, "")).rejects.toThrow(
+      /userId is required/,
+    );
     expect(run).not.toHaveBeenCalled();
   });
 

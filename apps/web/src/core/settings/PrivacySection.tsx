@@ -1,9 +1,17 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { Button } from "@shared/components/ui/Button";
+import { ContentGroup, ContentRow } from "@shared/components/ui/ContentGroup";
 import { meApi, type UserPreferences } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
 import { useOptionalHubShell } from "../app/HubShellContext";
+import { PROFILE_SECTION_HASHES } from "../profile/profileSectionNavigation";
 import { LegalLinks } from "../legal/LegalLinks";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import {
@@ -29,6 +37,10 @@ import {
 // напряму, а не виводити з відрендереного виводу (2026-08-08 adversarial
 // review, finding #4).
 const disclosure = messages.dataDisclosure;
+const AI_DATA_ROW_TITLES = {
+  text: "Текстові запити",
+  photo: "Фото",
+} as const;
 
 export const DEFAULT_PREFERENCES: UserPreferences = {
   // L-3: продукт — opt-in analytics, не opt-out. Дефолт тут мусить
@@ -73,8 +85,14 @@ export function PrivacySection() {
   const [loadFailure, setLoadFailure] = useState<PreferenceLoadFailure | null>(
     null,
   );
-  const [savingPreference, setSavingPreference] =
-    useState<PreferenceKey | null>(null);
+  const [savingPreferences, setSavingPreferences] = useState<
+    Partial<Record<PreferenceKey, boolean>>
+  >({});
+  // Різні згоди незалежні. Одну згоду не записуємо двічі паралельно:
+  // порядок відповідей не гарантує порядок фактичних записів сервера.
+  const pendingPreferences = useRef(new Set<PreferenceKey>());
+  const preferenceWriteQueue = useRef(Promise.resolve());
+  const analyticsChoiceVersion = useRef(0);
   // Локальна згода на аналітику — для гостя (див. гілку `loadFailure ===
   // "auth"` нижче): сервера в нього немає, а рішення живе на пристрої.
   const localAnalyticsConsent = useSyncExternalStore(
@@ -120,11 +138,16 @@ export function PrivacySection() {
   useEffect(() => loadPreferences(), [loadPreferences]);
 
   const updatePreference = async (key: PreferenceKey, checked: boolean) => {
+    if (pendingPreferences.current.has(key)) return;
+    const mayHydrateAnalytics = !pendingPreferences.current.has("analytics");
+    pendingPreferences.current.add(key);
+    if (key === "analytics") analyticsChoiceVersion.current += 1;
+    const analyticsVersion = analyticsChoiceVersion.current;
     setPreferencesError(null);
     setLoadFailure(null);
-    setSavingPreference(key);
-    const previous = preferences;
-    setPreferences({ ...previous, [key]: checked });
+    setSavingPreferences((current) => ({ ...current, [key]: true }));
+    const previous = preferences[key];
+    setPreferences((current) => ({ ...current, [key]: checked }));
     if (key === "analytics") {
       // Оптимістично, ще ДО мережевого round trip (CodeRabbit PR #627):
       // dismiss між кліком і відповіддю сервера має вже враховувати новий
@@ -132,36 +155,53 @@ export function PrivacySection() {
       setAnalyticsConsent(checked);
     }
     try {
-      const next = await meApi.updatePreferences({ [key]: checked });
-      setPreferences(next);
+      // Сервер читає й перезаписує весь рядок налаштувань. Оптимістичні
+      // зміни незалежні, але PATCH мають іти послідовно, щоб не втратити їх.
+      const write = preferenceWriteQueue.current.then(() =>
+        meApi.updatePreferences({ [key]: checked }),
+      );
+      preferenceWriteQueue.current = write.then(
+        () => undefined,
+        () => undefined,
+      );
+      const next = await write;
+      setPreferences((current) => ({ ...current, [key]: next[key] }));
       setPreferencesLoaded(true);
       if (key === "analytics") {
         // Явний вибір людини на цьому пристрої — фіксуємо як рішення.
         setAnalyticsConsent(next.analytics);
-      } else {
+      } else if (
+        mayHydrateAnalytics &&
+        analyticsVersion === analyticsChoiceVersion.current &&
+        !pendingPreferences.current.has("analytics")
+      ) {
         // Інший тумблер (aiMemory, healthDataConsent…) — не відповідь про
         // аналітику: лише синхронізуємо кеш із сервером, не записуючи
         // «рішення» на пристрої (інакше банер згоди мовчки зникав би).
         hydrateAnalyticsConsent(next.analytics);
+        setPreferences((current) => ({
+          ...current,
+          analytics: next.analytics,
+        }));
       }
     } catch {
-      setPreferences(previous);
+      setPreferences((current) => ({ ...current, [key]: previous }));
       if (key === "analytics") {
-        setAnalyticsConsent(previous.analytics);
+        setAnalyticsConsent(previous);
       }
       setPreferencesError("Не вдалося зберегти налаштування. Спробуй ще раз.");
     } finally {
-      setSavingPreference(null);
+      pendingPreferences.current.delete(key);
+      setSavingPreferences((current) => ({ ...current, [key]: false }));
     }
   };
 
   return (
     <SettingsGroup
       title={settingsSectionTitle("privacy")}
-      icon="shield"
       anchorId="settings-privacy"
     >
-      <SettingsSubGroup title="Згода та дані">
+      <SettingsSubGroup variant="bounded" title="Згода та дані">
         <p className="text-style-body text-subtle leading-relaxed">
           Обери, що Sergeant може використовувати для якості продукту та
           персоналізації. Дані для входу, безпеки й оплати залишаються
@@ -173,11 +213,12 @@ export function PrivacySection() {
             <ToggleRow
               label="Аналітика продукту"
               description={
-                savingPreference === "analytics"
+                savingPreferences.analytics
                   ? "Зберігаю…"
                   : "Допомагає бачити, де інтерфейс незручний або ламається."
               }
               checked={preferences.analytics}
+              disabled={savingPreferences.analytics === true}
               onChange={(checked) =>
                 void updatePreference("analytics", checked)
               }
@@ -185,11 +226,12 @@ export function PrivacySection() {
             <ToggleRow
               label="Памʼять для Сержанта"
               description={
-                savingPreference === "aiMemory"
+                savingPreferences.aiMemory
                   ? "Зберігаю…"
                   : "Дозволяє Сержанту памʼятати корисні факти між сесіями, щоб відповіді були точнішими. Вимкнення не видаляє вже збережене."
               }
               checked={preferences.aiMemory}
+              disabled={savingPreferences.aiMemory === true}
               onChange={(checked) => void updatePreference("aiMemory", checked)}
             />
             {/* Рішення власника 2026-09-29 (вузький гейт, GDPR Art. 9): це
@@ -205,11 +247,12 @@ export function PrivacySection() {
             <ToggleRow
               label="Дані про здоровʼя для Сержанта"
               description={
-                savingPreference === "healthDataConsent"
+                savingPreferences.healthDataConsent
                   ? "Зберігаю…"
                   : "Дозволяє Сержанту бачити й запамʼятовувати тренування, вагу, самопочуття та харчування: у чаті, повідомленнях дня, тижневих звітах і при аналізі фото страв. Без згоди він цього не бачить і скаже, що потрібен дозвіл; фінанси й звички працюють як завжди. Вимкнення не видаляє вже збережене."
               }
               checked={preferences.healthDataConsent}
+              disabled={savingPreferences.healthDataConsent === true}
               onChange={(checked) =>
                 void updatePreference("healthDataConsent", checked)
               }
@@ -285,22 +328,26 @@ export function PrivacySection() {
         {/* Що саме Сержант памʼятає і як це стерти — у Профілі, поруч із
             фактами, які людина розповіла сама (один вхід замість двох). */}
         {shell ? (
-          <div className="flex flex-col items-start gap-1">
-            <p className="text-style-body text-subtle leading-relaxed">
-              Що саме Сержант памʼятає і як це стерти: у Профілі, поруч із
-              твоїми фактами.
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => shell.ui.setHubView("profile")}
-            >
-              Відкрити Профіль → Памʼять
-            </Button>
-          </div>
-        ) : null}
-        {/* Рішення founder-а 2026-09-14. Видалення акаунта ІСНУЄ —
+          <ContentGroup>
+            <ContentRow className="flex flex-col items-start gap-1">
+              <p className="text-style-body text-subtle leading-relaxed">
+                Що саме Сержант памʼятає і як це стерти: у Профілі, поруч із
+                твоїми фактами.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  shell.ui.setHubView("profile", {
+                    hash: PROFILE_SECTION_HASHES.memory,
+                  })
+                }
+              >
+                Відкрити Профіль → Памʼять
+              </Button>
+            </ContentRow>
+            {/* Рішення founder-а 2026-09-14. Видалення акаунта ІСНУЄ —
             `profile/DangerZoneSection` із підтвердженням, — але живе воно в
             Профілі, а шукають його тут: це та сама поличка «мої дані й що з
             ними можна зробити», що й експорт зі згодами. Продуктовий огляд
@@ -311,21 +358,25 @@ export function PrivacySection() {
             в два місця означало б два шляхи до неї й два місця, де може
             розʼїхатись підтвердження. Форма та сама, що у вказівника на
             памʼять вище. */}
-        {shell ? (
-          <div className="flex flex-col items-start gap-1">
-            <p className="text-style-body text-subtle leading-relaxed">
-              Видалити акаунт разом з усіма даними можна в Профілі, у розділі
-              «Небезпечна зона».
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => shell.ui.setHubView("profile")}
-            >
-              Відкрити Профіль → Небезпечна зона
-            </Button>
-          </div>
+            <ContentRow className="flex flex-col items-start gap-1">
+              <p className="text-style-body text-subtle leading-relaxed">
+                Видалити акаунт разом з усіма даними можна в Профілі, у розділі
+                «Видалення акаунта».
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  shell.ui.setHubView("profile", {
+                    hash: PROFILE_SECTION_HASHES["account-deletion"],
+                  })
+                }
+              >
+                Відкрити Профіль → Видалення акаунта
+              </Button>
+            </ContentRow>
+          </ContentGroup>
         ) : null}
         <LegalLinks compact className="justify-start" />
       </SettingsSubGroup>
@@ -335,12 +386,24 @@ export function PrivacySection() {
           навмисно — спершу те, чим людина керує, потім те, що їй обіцяють.
           Текст не змінено жодним словом, лише місце. */}
       <SettingsSubGroup title={disclosure.subprocessors.title}>
-        <p className="text-style-body text-subtle leading-relaxed">
-          {disclosure.subprocessors.body}
-        </p>
-        <p className="text-style-body text-subtle leading-relaxed">
-          {disclosure.subprocessors.photoNote}
-        </p>
+        <ContentGroup>
+          <ContentRow>
+            <p className="text-style-label text-text">
+              {AI_DATA_ROW_TITLES.text}
+            </p>
+            <p className="mt-1 text-style-body text-subtle leading-relaxed">
+              {disclosure.subprocessors.body}
+            </p>
+          </ContentRow>
+          <ContentRow>
+            <p className="text-style-label text-text">
+              {AI_DATA_ROW_TITLES.photo}
+            </p>
+            <p className="mt-1 text-style-body text-subtle leading-relaxed">
+              {disclosure.subprocessors.photoNote}
+            </p>
+          </ContentRow>
+        </ContentGroup>
       </SettingsSubGroup>
 
       <SettingsSubGroup title={disclosure.sunset.title}>

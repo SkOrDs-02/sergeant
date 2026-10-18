@@ -274,7 +274,7 @@ export const messagesEn: Partial<{
       title: "If Sergeant ever shuts down",
       body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
       bankNote:
-        "One honest caveat: we do not duplicate bank transactions, they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
+        "Monobank transactions Sergeant has already received are stored on Sergeant's server and included in your account's server export. Without bank access, recovery of bank history missing from Sergeant cannot be guaranteed.",
     },
   },
 

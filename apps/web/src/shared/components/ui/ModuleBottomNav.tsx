@@ -247,9 +247,8 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               onClick={() => handleSelect(item.id)}
               className={cn(
                 "relative flex items-center justify-center min-h-touch-target min-w-0",
-                "my-1.5 rounded-xl border border-transparent",
-                "transition-[color,transform,border-color] duration-base",
-                "active:scale-95",
+                "my-1.5 rounded-lg border border-transparent",
+                "transition-[color,border-color] duration-base",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 active
                   ? "text-text font-semibold"
@@ -268,7 +267,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                   {item.badge && !active && (
                     <span
                       className={cn(
-                        "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
+                        "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-mark border border-panel",
                         badgeClass,
                       )}
                       aria-hidden

@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -72,6 +73,11 @@ export const ConfirmDialog = memo(function ConfirmDialog({
 
   useBodyScrollLock(open);
 
+  // Системний Back = «скасувати»: підтвердження не виконується, а діалог
+  // закривається, не виводячи з екрана й не закриваючи Sheet під ним.
+  // `onCancel` необовʼязковий, тож обгортка.
+  useHistoryDismiss(open, () => onCancel?.());
+
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
@@ -102,7 +108,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
         aria-label={messages.actions.close}
         onClick={onCancel}
         onKeyDown={handleScrimKey}
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 "
       />
 
       {/* Sheet */}
@@ -136,7 +142,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
         onPointerCancel={swipe.bind.onPointerCancel}
         className={cn(
           "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain touch-pan-y",
-          "bg-panel rounded-3xl shadow-float border border-line p-6",
+          "bg-panel rounded-panel shadow-float border border-line p-6",
           "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-base",
         )}
       >

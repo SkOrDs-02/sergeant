@@ -1040,7 +1040,7 @@ describe("applyPullOp", () => {
     expect(stillDeleted[0]?.deleted_at).not.toBeNull();
   });
 
-  it("rejects generic delete on tables without deleted_at and reuses pragma caches", async () => {
+  it("generic delete on tables without deleted_at is a hard DELETE (skipped when row absent) and reuses pragma caches", async () => {
     const userId = "u-prefs";
 
     expect(
@@ -1058,7 +1058,7 @@ describe("applyPullOp", () => {
         userId,
         "device-a",
       ),
-    ).toBe("rejected");
+    ).toBe("skipped");
 
     await applyPullOp(
       client,

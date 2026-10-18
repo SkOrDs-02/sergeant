@@ -315,7 +315,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // 87, не 86: +1 інтеракція на ВЖЕ покритому `statement/preview`
     // (logic-06): `mapping.creditCol` для виписок Дебет/Кредит.
     // `expectedRoutes` не росте.
-    expect(pact.interactions).toHaveLength(87);
+    // 89, не 87: +2 інтеракції billing на ВЖЕ покритому `POST /billing/checkout`
+    // (data-21): 409 `ALREADY_SUBSCRIBED` і 409 `CHECKOUT_PENDING`.
+    // `expectedRoutes` не росте.
+    expect(pact.interactions).toHaveLength(89);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",

@@ -182,11 +182,14 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "finyk");
 
-    // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка
-    // «Додати», дія «Додати витрату» — menuitem усередині фану.
+    // «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел.
     await page
-      .getByTestId("add-action-bar")
-      .getByRole("button", { name: "Додати витрату" })
+      .getByTestId("corner-action")
+      .getByRole("button", { name: "Додати" })
+      .click();
+    await page
+      .getByTestId("add-sources")
+      .getByRole("button", { name: /^Вручну/ })
       .click();
     const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
     await expect(createDialog).toBeVisible();
@@ -388,8 +391,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.goto("/routine", { waitUntil: "domcontentloaded" });
 
     await page
-      .getByTestId("add-action-bar")
-      .getByRole("button", { name: "Нова звичка" })
+      .getByRole("button", { name: "Нова звичка", exact: true })
       .click();
     const createDialog = page.getByRole("dialog", { name: "Нова звичка" });
     await expect(createDialog).toBeVisible();

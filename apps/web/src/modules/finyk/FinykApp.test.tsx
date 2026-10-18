@@ -28,6 +28,7 @@
  */
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import {
+  act,
   configure,
   fireEvent,
   render,
@@ -294,6 +295,20 @@ describe("FinykApp — connect flow (real FinykLoginScreen)", () => {
     expect(
       within(dialog).getByPlaceholderText("Встав токен Mono API"),
     ).toBeInTheDocument();
+  });
+
+  // Аудит ux-02: Back виводив із Фініка і губив вставлений токен.
+  it("системний Back закриває оверлей Monobank, а не модуль", async () => {
+    renderApp({ onOpenAuth: NOOP_AUTH, pwaAction: "connect_bank" });
+    await screen.findByRole("dialog", { name: "Підключення Monobank" });
+
+    act(() => {
+      window.dispatchEvent(new PopStateEvent("popstate", { state: null }));
+    });
+
+    expect(
+      screen.queryByRole("dialog", { name: "Підключення Monobank" }),
+    ).not.toBeInTheDocument();
   });
 });
 

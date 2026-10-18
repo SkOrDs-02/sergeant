@@ -30,8 +30,7 @@ import {
   processStripeWebhook,
   verifyStripeSignature,
 } from "./stripe.js";
-
-const STRIPE_SUBSCRIPTIONS_URL = "https://api.stripe.com/v1/subscriptions";
+import { cancelStripeRemoteSubscription } from "./stripeRemote.js";
 
 export const stripeProvider: BillingProvider = {
   id: "stripe",
@@ -99,26 +98,11 @@ export const stripeProvider: BillingProvider = {
     // Уже скасовано до кінця періоду — Stripe вдруге не смикаємо.
     if (row.cancel_at_period_end === true) return "already_canceling";
     const subscriptionId = row.provider_subscription_id;
-    const secretKey = env.STRIPE_SECRET_KEY;
-    if (!subscriptionId || !secretKey) return "none"; // no-op — DB-side cancel covers it
+    if (!subscriptionId || !env.STRIPE_SECRET_KEY) return "none"; // no-op — DB-side cancel covers it
 
     // `cancel_at_period_end=true` — доступ до кінця оплаченого періоду
     // (паритет із LiqPay/Plata cancel-семантикою, ADR-1.11).
-    const body = new URLSearchParams({ cancel_at_period_end: "true" });
-    const response = await fetch(
-      `${STRIPE_SUBSCRIPTIONS_URL}/${subscriptionId}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${secretKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body,
-      },
-    );
-    if (!response.ok) {
-      throw new Error(`Stripe cancel failed: HTTP ${response.status}`);
-    }
+    await cancelStripeRemoteSubscription(subscriptionId);
     await pool.query(
       `UPDATE subscriptions
           SET cancel_at_period_end = TRUE, updated_at = NOW()

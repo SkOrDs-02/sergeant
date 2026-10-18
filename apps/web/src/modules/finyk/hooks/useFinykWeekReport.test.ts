@@ -67,11 +67,11 @@ describe("useFinykWeekReport", () => {
     expect(result.current.join("")).not.toContain("₴");
   });
 
-  it("каже одним рядком, що на цьому тижні записів ще немає", () => {
+  it("каже одним рядком, що на цьому тижні витрат ще немає", () => {
     // Витрата минулого тижня (чт 11) – поза календарним тижнем пн–чт.
     state.statTransactions = [tx("old", -10_000, 7)];
     const { result } = renderHook(() => useFinykWeekReport());
-    expect(result.current).toEqual(["На цьому тижні записів ще немає"]);
+    expect(result.current).toEqual(["На цьому тижні витрат ще немає"]);
   });
 
   it("мовчить зовсім, коли Фінік вимкнено", () => {

@@ -56,8 +56,7 @@ describe("WeekDayStrip", () => {
     expect(container.querySelector(".overflow-x-auto")).toBeNull();
     const grid = container.querySelector(".grid");
     expect(grid).not.toBeNull();
-    expect(grid?.className).toContain("grid-cols-4");
-    expect(grid?.className).toContain("sm:grid-cols-7");
+    expect(grid?.className).toContain("grid-cols-7");
   });
 
   it("repaints exactly one complete selected day after today → tomorrow → week changes", () => {
@@ -95,10 +94,7 @@ describe("WeekDayStrip", () => {
     assertSelectedDay("3");
   });
 
-  it("вибраний день: тонований фон + контур `routine-edge`, а не тихий `routine-ring` (A4 аудиту контрасту)", () => {
-    // Тихий контур (`routine-ring`, 1.63 / 2.41 проти сусіда) для СТАНУ замало:
-    // WCAG 1.4.11 вимагає ≥3:1. `routine-edge` = `--c-routine-ink` (світла -800,
-    // темна -400); гейт чисел — `packages/design-tokens/contrast.test.js`.
+  it("selected day is underlined in ink without a tinted day box", () => {
     render(
       <WeekDayStrip
         anchorKey="2026-08-03"
@@ -107,21 +103,9 @@ describe("WeekDayStrip", () => {
         onSelectDay={vi.fn()}
       />,
     );
-    const selected = screen
-      .getAllByRole("button")
-      .find((button) => button.getAttribute("aria-pressed") === "true");
-    expect(selected).toHaveClass("border-routine-edge", "bg-routine-surface2");
-    expect(selected?.className).not.toMatch(
-      /border-routine-ring|ring-routine-line/,
-    );
-    // Невибраний день: тонкий контур `border-line` без напівпрозорої
-    // заливки (S 1.05 / 1.09 → 1.57 / 1.56, хвиля 5 аудиту контрасту). Межа
-    // є в обох станах, тож висота клітинки не стрибає при зміні вибору.
-    const other = screen
-      .getAllByRole("button")
-      .find((button) => button.getAttribute("aria-pressed") === "false");
-    expect(other).toHaveClass("border", "border-line");
-    expect(other).not.toHaveClass("border-transparent");
-    expect(other?.className).not.toMatch(/bg-panelHi\/\d+/);
+    const selected = screen.getByRole("button", { name: /Вівторок/ });
+    expect(selected).toHaveAttribute("aria-pressed", "true");
+    expect(selected).toHaveClass("border-text");
+    expect(selected.className).not.toMatch(/bg-routine|rounded|ring-routine/);
   });
 });

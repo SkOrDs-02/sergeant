@@ -139,7 +139,7 @@ export function WorkoutItemNextSetHint({
       <button
         type="button"
         onClick={() => onApply(suggestion.weightKg, suggestion.reps, "planned")}
-        className="focus-ring min-h-[44px] rounded-full border border-fizruk-ring bg-fizruk-surface px-3 text-style-caption text-fizruk-soft-fg font-semibold transition-colors hover:bg-fizruk-surface/80 dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
+        className="focus-ring min-h-[44px] rounded-lg border border-line bg-panelHi px-3 text-style-caption text-text font-semibold transition-colors hover:bg-panelHi"
       >
         {`${t.prefix} ${fmt(suggestion.weightKg, 1)}\u202F${t.kgUnit} × ${suggestion.reps}`}
       </button>
@@ -147,7 +147,7 @@ export function WorkoutItemNextSetHint({
         <button
           type="button"
           onClick={() => onApply(second.weightKg, second.reps, second.variant)}
-          className="focus-ring min-h-[44px] rounded-full border border-fizruk-ring/60 bg-transparent px-3 text-style-caption text-subtle font-semibold transition-colors hover:bg-fizruk-surface/60 dark:border-fizruk-border-dark/30"
+          className="focus-ring min-h-[44px] rounded-lg border border-line bg-transparent px-3 text-style-caption text-subtle font-semibold transition-colors hover:bg-panelHi"
         >
           {`${second.label} ${fmt(second.weightKg, 1)} ${t.kgUnit} × ${second.reps}`}
         </button>

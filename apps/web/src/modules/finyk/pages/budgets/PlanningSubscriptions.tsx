@@ -1,3 +1,4 @@
+import { Card } from "@shared/components/ui/Card";
 /**
  * Last validated: 2026-09-11
  * Status: Active
@@ -158,7 +159,7 @@ export function PlanningSubscriptions({
         defaultOpen={initialOpenRecurring}
       />
 
-      <div>
+      <Card padding="none" className="overflow-hidden">
         <SectionBar
           title={t.subscriptionsTitle}
           iconName="refresh-cw"
@@ -173,8 +174,12 @@ export function PlanningSubscriptions({
             setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))
           }
         />
-        {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
-      </div>
+        {open.subscriptions && (
+          <div className="px-4 pt-4">
+            <AssetsSubscriptionsSection state={state} />
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

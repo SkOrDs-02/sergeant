@@ -1,3 +1,10 @@
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../modules/finyk/lib/monoMirrorReader";
+function seedTransactions(txs: unknown[]) {
+  __setFinykMonoMirrorCacheForTests({ transactions: txs as never[] });
+}
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
@@ -19,9 +26,11 @@ function makeWrapper() {
 
 beforeEach(() => {
   localStorage.clear();
+  clearFinykMonoMirrorCache();
 });
 afterEach(() => {
   localStorage.clear();
+  clearFinykMonoMirrorCache();
   vi.restoreAllMocks();
 });
 
@@ -34,22 +43,16 @@ describe("useFinykHubPreview", () => {
     expect(result.current.data?.hasMonoData).toBe(false);
   });
 
-  it("reports hasMonoData=true when the cache holds transactions", async () => {
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_TX_CACHE,
-      JSON.stringify({ txs: [{ id: "t1" }] }),
-    );
+  it("reports hasMonoData=true when the canonical mirror holds transactions", async () => {
+    seedTransactions([{ id: "t1" }]);
     const { result } = renderHook(() => useFinykHubPreview(), {
       wrapper: makeWrapper(),
     });
     await waitFor(() => expect(result.current.data?.hasMonoData).toBe(true));
   });
 
-  it("reports false when txs is present but empty", async () => {
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_TX_CACHE,
-      JSON.stringify({ txs: [] }),
-    );
+  it("reports false when canonical mirror is empty", async () => {
+    seedTransactions([]);
     const { result } = renderHook(() => useFinykHubPreview(), {
       wrapper: makeWrapper(),
     });
@@ -63,10 +66,7 @@ describe("useFinykHubPreview", () => {
     });
     await waitFor(() => expect(result.current.data?.hasMonoData).toBe(false));
 
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_TX_CACHE,
-      JSON.stringify({ txs: [{ id: "t1" }] }),
-    );
+    seedTransactions([{ id: "t1" }]);
     window.dispatchEvent(
       new StorageEvent("storage", { key: STORAGE_KEYS.FINYK_TX_CACHE }),
     );
@@ -80,10 +80,7 @@ describe("useFinykHubPreview", () => {
     });
     await waitFor(() => expect(result.current.data?.hasMonoData).toBe(false));
 
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_TX_CACHE,
-      JSON.stringify({ txs: [{ id: "t1" }] }),
-    );
+    seedTransactions([{ id: "t1" }]);
     // An unrelated key must NOT trigger invalidation, so the stale cached
     // value (false) is retained.
     window.dispatchEvent(

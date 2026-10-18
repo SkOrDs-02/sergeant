@@ -375,9 +375,9 @@ function SilentBody({
         {messages.crossModuleLink.silentBody}
       </p>
       <div className="mt-3 flex items-center gap-2.5">
-        <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-panelHi">
+        <div className="h-[3px] flex-1 overflow-hidden rounded-lg bg-panelHi">
           <div
-            className="h-full rounded-full bg-muted"
+            className="h-full rounded-lg bg-muted"
             style={{ width: `${pct}%` }}
           />
         </div>

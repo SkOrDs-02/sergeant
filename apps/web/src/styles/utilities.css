@@ -62,14 +62,16 @@
 
 @utility input-focus-fizruk {
   @apply outline-hidden transition-colors
-           focus-visible:border-fizruk/60
-           focus-visible:ring-2 focus-visible:ring-fizruk/25;
+           focus-visible:border-border-strong
+           focus-visible:ring-2 focus-visible:ring-focus/25;
 }
 
+/* Мова H (редизайн v3 PR4): hue Їжі лише в даних, тож фокус поля
+   нейтральний, як базовий `input-focus`. */
 @utility input-focus-nutrition {
   @apply outline-hidden transition-colors
-           focus-visible:border-nutrition/60
-           focus-visible:ring-2 focus-visible:ring-nutrition/25;
+           focus-visible:border-brand-500/60
+           focus-visible:ring-2 focus-visible:ring-focus/30;
 }
 
 @utility input-focus-routine {
@@ -162,8 +164,8 @@
 }
 
 @utility routine-main-pad {
-  padding-left: max(1rem, env(safe-area-inset-left, 0px));
-  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
 }
 
 @utility routine-sheet-pad {
@@ -225,10 +227,10 @@
      FOCUS STATES — Accessible, branded
      ═══════════════════════════════════════════════════════════════════════ */
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
 }
 
@@ -243,12 +245,13 @@
 }
 
 @utility nutrition-sheet {
+  /* Мова H (редизайн v3 PR4): нейтральна рамка фокуса, як `finyk-sheet`. */
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-lime-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
 
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-lime-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-focus/45 ring-offset-2 ring-offset-panel;
   }
 }
 

@@ -9,8 +9,21 @@
  * Спредиться в `messages.nutrition` з `uk.ts`.
  */
 export const nutritionPageMessages = {
+  journalEmpty: {
+    title: "Поки немає записів",
+    description: "Додай перший прийом їжі. Калорії та КБЖВ порахуються тут.",
+  },
+  // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): ті самі джерела,
+  // що в кроці «Джерело страви» аркуша прийому.
+  addSources: {
+    search: { label: "Пошук продукту", hint: "Продукт або страва з бази" },
+    scan: { label: "Штрихкод", hint: "Штрихкод на упаковці" },
+    photo: { label: "Фото страви", hint: "AI оцінить страву на фото" },
+    manual: { label: "Ввести вручну", hint: "На 100 г або за всю порцію" },
+  },
   // Крок «Звідки страва?» і чекбокс повтору в `AddMealSheet`.
   addMeal: {
+    editTitle: "Редагувати прийом їжі",
     copyYesterday: "Як учора",
     rememberForRepeat: "Запамʼятати для повтору",
     rememberForRepeatHint:
@@ -408,6 +421,12 @@ export const nutritionPageMessages = {
     addCta: "+ Додати позицію з каталогу",
     kcalUnit: "ккал",
     gramsUnit: "г",
+    editCta: "Змінити позиції",
+    total: "Разом",
+    saveHint: "Кожна позиція збережеться окремим записом у журналі.",
+    protein: "Білки",
+    fat: "Жири",
+    carbs: "Вуглеводи",
   },
 
   /** Додавання позиції у фото-список через каталог продуктів. */

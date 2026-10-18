@@ -68,13 +68,13 @@ export function MonoTokenInlineForm({
           onChange={(event) => onChange(event.target.value)}
           placeholder={COPY.tokenPlaceholder}
           autoComplete="off"
-          className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
+          className="input-focus-finyk w-full h-11 rounded-lg border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
           onKeyDown={(event) => event.key === "Enter" && onSubmit()}
         />
         <button
           type="button"
           onClick={() => setShowToken((visible) => !visible)}
-          className="focus-ring touch-target absolute right-0 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
+          className="focus-ring touch-target absolute right-0 top-1/2 -translate-y-1/2 rounded-lg text-subtle hover:text-text"
           aria-label={showToken ? COPY.hideToken : COPY.showToken}
         >
           <Icon name={showToken ? "eye-off" : "eye"} size="md" aria-hidden />
