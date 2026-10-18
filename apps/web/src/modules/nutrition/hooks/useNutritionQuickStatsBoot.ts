@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import { useEffect } from "react";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -14,12 +15,14 @@ import { writeNutritionQuickStatsSnapshot } from "./useNutritionQuickStatsWriter
  * КБЖВ», хоча прийоми їжі вже лежали в базі (browser QA 2026-08-04, F-007).
  */
 export function useNutritionQuickStatsBoot(): void {
+  const dayKey = useDeviceDayKey();
   const sqliteTick = useNutritionSqliteReadTick();
 
   useEffect(() => {
+    void dayKey; // Rebuild even when midnight brought no record changes.
     const state = getCachedNutritionSqliteState();
     // Не затирати корисний знімок нулями, поки канонічний кеш ще вантажиться.
     if (!state.refreshedAt) return;
     writeNutritionQuickStatsSnapshot({ log: state.log, prefs: state.prefs });
-  }, [sqliteTick]);
+  }, [sqliteTick, dayKey]);
 }

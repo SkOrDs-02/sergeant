@@ -16,7 +16,6 @@
  */
 
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import type { DashboardRecentWorkout } from "@sergeant/fizruk-domain/domain";
@@ -75,14 +74,14 @@ export function RecentWorkoutsSection({
     <Card as="section" padding="none" aria-label="Останні тренування">
       <div className="p-4">
         <div className="flex items-baseline justify-between gap-2 mb-3">
-          <SectionHeading as="h2" size="xs" variant="fizruk">
+          <SectionHeading as="h2" size="lg">
             Останні тренування
           </SectionHeading>
           {recent.length > 0 ? (
             <button
               type="button"
               onClick={onSeeAll}
-              className="inline-flex items-center gap-0.5 text-style-caption text-fizruk-strong dark:text-fizruk hover:underline active:opacity-70 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              className="inline-flex items-center gap-0.5 text-style-caption text-text hover:underline active:opacity-70 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               aria-label="Усі тренування"
             >
               {/* Без гліфа «→»: типографічна стрілка бралася з системного
@@ -90,14 +89,13 @@ export function RecentWorkoutsSection({
                   розмірний токен. Той самий прохід, що зняв 30 гліфів зі
                   слотів іконок. */}
               Усі
-              <Icon name="chevron-right" size="xs" />
             </button>
           ) : null}
         </div>
 
         {recent.length === 0 ? (
           <div
-            className="rounded-2xl border border-dashed border-surface-line p-6 flex flex-col items-center text-center"
+            className="py-3 flex flex-col items-center text-center"
             data-testid="fizruk-dashboard-recent-empty"
           >
             <p className="text-style-label text-text">
@@ -108,11 +106,11 @@ export function RecentWorkoutsSection({
             </p>
           </div>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col divide-y divide-line">
             {recent.map((row, idx) => (
               <li
                 key={`${row.startedAt}-${idx}`}
-                className="rounded-2xl p-3 flex items-center justify-between gap-3"
+                className="py-3 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-style-label text-text truncate">
@@ -124,7 +122,7 @@ export function RecentWorkoutsSection({
                   </p>
                 </div>
                 <div className="flex flex-col items-end shrink-0">
-                  <span className="text-style-label text-fizruk-strong dark:text-fizruk">
+                  <span className="text-style-label text-text">
                     {formatTonnage(row.tonnageKg)}
                   </span>
                   {/* PR-Z3: назва метрики уніфікована з `WorkoutSummaryView`

@@ -142,7 +142,7 @@ export const StreakFlame = memo(function StreakFlame({
     return (
       <span
         className={cn(
-          "inline-flex items-center justify-center rounded-full",
+          "inline-flex items-center justify-center rounded-lg",
           styles.wrapper,
           "text-muted opacity-40",
           className,
@@ -165,7 +165,7 @@ export const StreakFlame = memo(function StreakFlame({
     >
       <span
         className={cn(
-          "inline-flex items-center justify-center rounded-full",
+          "inline-flex items-center justify-center rounded-lg",
           styles.wrapper,
           intensity.color,
           intensity.glow,
@@ -213,7 +213,7 @@ export const StreakBadge = memo(function StreakBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full",
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg",
         "bg-panelHi border border-line",
         "text-style-label text-text",
         className,

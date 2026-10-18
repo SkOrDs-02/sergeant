@@ -66,7 +66,7 @@ export function WorkoutSetRpeMenu({
       <span
         aria-label={triggerAria}
         data-testid={testID}
-        className="flex h-11 w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-panelHi text-style-caption tabular-nums text-subtle"
+        className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-panelHi text-style-caption tabular-nums text-subtle"
       >
         {rpe ?? "–"}
       </span>
@@ -90,10 +90,10 @@ export function WorkoutSetRpeMenu({
           title={sr.rpeTriggerTitle}
           data-testid={testID}
           className={cn(
-            "flex h-11 w-9 shrink-0 cursor-pointer select-none items-center justify-center rounded-xl border text-style-caption font-semibold tabular-nums transition-colors",
+            "flex h-11 w-9 shrink-0 cursor-pointer select-none items-center justify-center rounded-lg border text-style-caption font-semibold tabular-nums transition-colors",
             "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
             rpe != null
-              ? "border-fizruk-edge bg-fizruk-surface text-fizruk-strong dark:text-fizruk"
+              ? "border-line bg-panelHi text-text"
               : "border-line bg-panelHi text-subtle hover:text-text",
           )}
         >
@@ -101,7 +101,7 @@ export function WorkoutSetRpeMenu({
         </span>
       }
     >
-      <div className="w-56 px-3 pb-3 pt-1">
+      <div className="w-72 max-w-[calc(100vw-40px)] px-3 pb-3 pt-1">
         <p className="mb-2 text-style-caption text-subtle">{sr.rpeMenuHint}</p>
         <div className="grid grid-cols-5 gap-1.5">
           {RPE_VALUES.map((n) => {
@@ -121,11 +121,11 @@ export function WorkoutSetRpeMenu({
               "data-testid": `${testID}-option-${n}`,
             };
             return rpe === n ? (
-              <Button key={n} {...common} variant="solid" tone="fizruk">
+              <Button key={n} {...common} variant="solid" tone="neutral">
                 {n}
               </Button>
             ) : (
-              <Button key={n} {...common} variant="soft" tone="fizruk">
+              <Button key={n} {...common} variant="outline" tone="neutral">
                 {n}
               </Button>
             );

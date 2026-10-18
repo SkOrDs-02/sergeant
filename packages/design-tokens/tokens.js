@@ -56,15 +56,6 @@ export const brandColors = {
     800: "#155e75",
     900: "#164e63",
   },
-  // Warm cream backgrounds (replacing cold blue-gray)
-  cream: {
-    50: "#fefdfb",
-    100: "#fdf9f3",
-    200: "#faf3e8",
-    300: "#f5ead8",
-    400: "#eedcc4",
-    500: "#e4ccab",
-  },
   // Тепла троянда для Рутини (рішення власника Б1+Р2, 2026-08-07).
   //
   // AI-CONTEXT: рампа побудована як ІЗОЛЮМІНАНТНА до попередньої коралової —
@@ -464,52 +455,6 @@ export const moduleAccentRgb = {
   fizruk: { default: "14 116 144", strong: "21 94 117" }, // cyan-700 / cyan-800 — disambiguates fizruk from finyk emerald (was teal-500 / teal-700). `strong` companion ≈ 7.5:1 on white for hover/active states.
   routine: { default: "235 118 145", strong: "141 66 86" }, // rose-500 / -800 (2026-08-07: was rose-700, 4.43 на фоні сторінки)
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
-};
-
-/**
- * Стіл і зона — фонова система web (рішення власника 2026-09-03).
- *
- * `desk` — фон сторінки, зсунутий у hue модуля; хрома ≤5%, світлота майже
- * як у `--c-bg`: темніший стіл тягне третинний текст до порогу AA (гейт —
- * contrast.test.js). `zone` — той самий hue на крок глибше, лише під шапкою
- * і табами модуля. Хаб нейтральний: без hue, щоб не читатись як п'ятий
- * модуль. Темна тема: стіл один для всіх (ink base), зона — 7% tier-400
- * акценту на ньому.
- *
- * AI-DANGER: **у зоні живе не лише `-strong` акцент.** Саме це припущення
- * лишило гейт сліпим: `ModuleHeader` рендерить кнопку «Назад» у
- * `text-muted`, а картки й банери підкладають під третинний текст ще й
- * напівпрозорі тони. Заміри axe 2026-09-11: 14 вузлів на 11 маршрутах у
- * діапазоні 4.21-4.49:1. Лікували не поверхнями, а драбиною — третинні
- * тони світлої теми стояли рівно на порозі й не мали запасу на жодне
- * тонування фону (`--c-muted` #5c665f → #535c56, `--c-subtle` #6b645d →
- * #605a54, theme.css). Поглиблюєш `zone` чи `desk` — спершу подивись у
- * contrast.test.js, чи тримає драбина новий тон.
- *
- * Дзеркало — `--module-desk-rgb` / `--module-zone-rgb` у
- * apps/web/src/styles/theme.css; міняй парою.
- */
-export const moduleSurfaces = {
-  hub: {
-    light: { desk: "#e7e5df", zone: "#dad6ce" },
-    dark: { desk: "#14100e", zone: "#1f1b19" },
-  },
-  finyk: {
-    light: { desk: "#e4e9e6", zone: "#d3e3de" },
-    dark: { desk: "#14100e", zone: "#161e1a" },
-  },
-  fizruk: {
-    light: { desk: "#e3e8ea", zone: "#cfdfe4" },
-    dark: { desk: "#14100e", zone: "#151e1e" },
-  },
-  routine: {
-    light: { desk: "#eae3e5", zone: "#efd8dd" },
-    dark: { desk: "#14100e", zone: "#241918" },
-  },
-  nutrition: {
-    light: { desk: "#e6e9e0", zone: "#dde5c9" },
-    dark: { desk: "#14100e", zone: "#1f1f11" },
-  },
 };
 
 /**

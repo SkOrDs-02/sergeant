@@ -2,6 +2,8 @@ import { memo } from "react";
 import { pluralDays } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
+import { FinanceItemHeading } from "./FinanceItemHeading";
 import { Money } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { formatDateShort } from "@shared/lib/time/formatDate";
@@ -72,56 +74,54 @@ function DebtCardComponent({
   const isOverdue = dueText?.includes("Прострочено");
 
   return (
-    <div className="border-b border-line py-4 last:border-0">
-      <div className="flex items-start justify-between mb-3">
-        <span className="text-style-body font-semibold leading-snug">
-          {name}
-        </span>
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          <span
-            className={cn(
-              "text-style-body font-medium tabular-nums",
-              isReceivable
-                ? "text-success-strong dark:text-success"
-                : "text-danger-strong dark:text-danger",
+    <article
+      aria-label={name}
+      className="border-t border-line py-4 first:border-t-0 first:pt-0 last:pb-0"
+    >
+      <FinanceItemHeading
+        title={name}
+        value={
+          showBalance ? (
+            <Money
+              amount={isReceivable ? remaining : -remaining}
+              signed
+              kopecks={showKopecks}
+              tone="inherit"
+            />
+          ) : (
+            "••••"
+          )
+        }
+        actions={
+          <>
+            {onEdit && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                iconOnly
+                onClick={onEdit}
+                aria-label={`Редагувати ${name}`}
+              >
+                <Icon name="edit" size="md" aria-hidden />
+              </Button>
             )}
-          >
-            {showBalance ? (
-              // Знак веде НАПРЯМОК боргу, не арифметику: «мені винні» —
-              // плюс, «я винен» — мінус, а `remaining` в обох випадках
-              // додатне. Тому знак задається множенням, а не `signed`.
-              <Money
-                amount={isReceivable ? remaining : -remaining}
-                signed
-                kopecks={showKopecks}
-                tone="inherit"
-              />
-            ) : (
-              "••••"
+            {onDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-subtle hover:text-danger"
+                size="sm"
+                iconOnly
+                onClick={onDelete}
+                aria-label={`Видалити ${name}`}
+              >
+                <Icon name="trash" size="md" aria-hidden />
+              </Button>
             )}
-          </span>
-          {onEdit && (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="text-subtle hover:text-text"
-              aria-label={`Редагувати ${name}`}
-            >
-              <Icon name="edit" size="md" aria-hidden />
-            </button>
-          )}
-          {onDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="text-subtle hover:text-danger transition-colors"
-              aria-label={`Видалити ${name}`}
-            >
-              <Icon name="trash" size="md" aria-hidden />
-            </button>
-          )}
-        </div>
-      </div>
+          </>
+        }
+      />
       <div className="h-1.5 bg-line rounded-[3px] overflow-hidden">
         <div
           className={cn(
@@ -153,14 +153,17 @@ function DebtCardComponent({
         </div>
       )}
       {onLink && (
-        <button
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
           onClick={onLink}
-          className="mt-3 w-full text-style-caption text-muted border border-dashed border-line rounded-lg py-2 hover:border-primary hover:text-text transition-colors"
+          className="mt-3 w-full"
         >
           Привʼязати операції ({linkedCount || 0})
-        </button>
+        </Button>
       )}
-    </div>
+    </article>
   );
 }
 

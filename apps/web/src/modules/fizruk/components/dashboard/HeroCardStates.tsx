@@ -14,69 +14,33 @@ import { pluralDays, pluralExercises, pluralUa } from "@sergeant/shared";
 import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { messages } from "@shared/i18n/uk";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { HeroRecoveryBars } from "./HeroRecoveryBars";
 import type { HeroCardState } from "./HeroCard";
 import { formatDayMonth } from "@shared/lib/time/formatDate";
 
-/**
- * Phase 2.3 v2 redesign (C4): chrome тепер через `<Card prominence="hero"
- * module="fizruk">` + decorative `--hero-grad-fizruk` wash overlay.
- * Замінив рукописний `bg-hero-teal` + dark gradient на orthogonal Card
- * primitive — module identity та dark-mode parity тепер тримаються
- * через `MODULE_PROMINENCE.fizruk.hero` у `Card.tsx`, без дублювання
- * gradient-літералів у feature-коді.
- */
+/** Мова H: один тинтований блок із даними, порожній план нейтральний. */
 function HeroShell({
   ariaLabel,
   children,
   cornerSlot,
+  tinted = true,
 }: {
   readonly ariaLabel: string;
   readonly children: ReactNode;
   readonly cornerSlot?: ReactNode;
+  readonly tinted?: boolean;
 }) {
   return (
     <Card
       as="section"
-      prominence="hero"
-      module="fizruk"
-      padding="none"
-      className="relative overflow-hidden"
+      prominence={tinted ? "hero" : "panel"}
+      tone="fizruk"
       aria-label={ariaLabel}
+      className="space-y-3"
     >
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "var(--hero-grad-fizruk)",
-          opacity: 0.08,
-        }}
-      />
-      {/* Перший рядок героя мусить лишити місце під `cornerSlot`, інакше
-          довгий kicker їде ПІД пілюлю: замір 2026-09-16 на 393px дав
-          накладання 114px («Четвер, 17 вересня · серія 0 тижн. · 2
-          тренування» проти «PR · Станова · 100 кг»), причому текст навіть
-          не обрізався — просто малювався під нею.
-
-          Чому 10rem, а не «на око»: ширина пілюлі має стелю. Назва вправи
-          різиться до 10 символів (`PrBadge.shortExerciseName`), тож
-          найдовший можливий рядок — «PR · <10 символів> · <вага> кг» ≈
-          139px; плюс власний відступ слота `right-3` (12px). 160px
-          покриває обидва з запасом. Ростиме межа в `PrBadge` — рости й
-          тут, інакше накладання повернеться.
-
-          Резервуємо саме на першому нащадку, бо всі чотири стани героя
-          рендерять `HeroKicker` першим, а сам слот позиціює себе сам
-          (контракт `cornerSlot` у `HeroCard`). */}
-      <div
-        className={
-          cornerSlot ? "relative p-6 [&>*:first-child]:pe-40" : "relative p-6"
-        }
-      >
-        {children}
-      </div>
+      {children}
       {cornerSlot}
     </Card>
   );
@@ -204,47 +168,12 @@ function HeroKicker({
     streakWeeks > 0 ? `серія ${streakWeeks} ${weeksLabel}` : null,
     weeklyWorkoutsCount > 0 ? `${weeklyWorkoutsCount} ${workoutsLabel}` : null,
   ].filter(Boolean);
-  return (
-    // «Чорнило» v3.1 § 3: overrides the light `text-fizruk-strong` (now
-    // invisible on the saturated hero gradient) with hero-ink;
-    // `dark:text-fizruk-300/70` already reads fine on the dark hero.
-    <SectionHeading as="p" size="xs" variant="fizruk" className="text-hero-ink">
-      {parts.join(" · ")}
-    </SectionHeading>
-  );
+  return <p className="text-style-body text-muted">{parts.join(" · ")}</p>;
 }
 
-/**
- * Secondary eyebrow that labels each state ("Тренування триває", etc.)
- * Sits directly under the `HeroKicker` and uses the theme-invariant
- * full-opacity `hero-ink` so it reads as an overlay label on the saturated
- * fizruk hero gradient («Чорнило» v3.1 § 3 — same treatment in both themes;
- * без альфи, A9 2026-10-01).
- */
 function HeroStateLabel({ children }: { readonly children: ReactNode }) {
   return (
-    <SectionHeading as="p" size="xs" className="mt-3 text-hero-ink">
-      {children}
-    </SectionHeading>
-  );
-}
-
-/**
- * "Play" icon that headlines the primary CTA. Inlined (rather than an
- * `Icon name="play"` call) so the hero stays self-contained and zero
- * extra import surfaces get dragged in.
- */
-function PlayIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M8 5v14l11-7z" />
-    </svg>
+    <p className="text-style-overline text-fizruk-tint-label">{children}</p>
   );
 }
 
@@ -262,71 +191,37 @@ export function ActiveState({
   const elapsedSec = useElapsedSec(state.startedAtIso);
   const { announce } = useAnnounce();
   const hasAnnouncedStartRef = useRef(false);
-  // A11y (fixed 2026-08-08): this used to be `aria-live="polite"` plus an
-  // `aria-label` embedding `elapsedSec` — i.e. a label that changes every
-  // second inside a live region, so a screen reader read the elapsed
-  // duration out loud continuously for the whole active session. The
-  // visible digits still tick every second for sighted users; a screen
-  // reader only needs the duration once, at the moment the card first
-  // shows the active session (mount-only announce, deliberately `[]`
-  // deps — see `RestTimerOverlay.tsx` for the same pattern).
   useEffect(() => {
     if (hasAnnouncedStartRef.current) return;
     hasAnnouncedStartRef.current = true;
-    announce(`Тренування триває, ${formatElapsed(elapsedSec)}`);
-    // `hasAnnouncedStartRef` робить ефект одноразовим: `elapsedSec` тикає
-    // щосекунди, але повторні запуски одразу виходять.
+    announce(
+      `${messages.fizruk.hero.activeLabel}, ${formatElapsed(elapsedSec)}`,
+    );
   }, [announce, elapsedSec]);
-  const meta =
-    state.itemsCount != null && state.itemsCount > 0
-      ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`
-      : "Сесія відкрита, підходи й таймер чекають";
   return (
     <HeroShell ariaLabel="Активне тренування" cornerSlot={cornerSlot}>
       <HeroKicker {...kicker} />
-      <HeroStateLabel>Тренування триває</HeroStateLabel>
+      <HeroStateLabel>{messages.fizruk.hero.activeLabel}</HeroStateLabel>
       <p
-        className="mt-1 text-style-headline font-black text-hero-ink leading-none tabular-nums"
+        className="text-style-display font-bold text-text tabular-nums"
         role="timer"
         aria-label="Тривалість активного тренування"
       >
         {formatElapsed(elapsedSec)}
       </p>
-      <p className="mt-2 text-style-body text-hero-ink">{meta}</p>
-      <div className="mt-6">
-        {/* Фокус CTA (follow-up аудиту контрасту 2026-10-01): кільце того ж
-            кольору, що й заливка кнопки, лише «розширювало» її (ratio 1.0).
-            Світла тема: `hero-ink` ≥4.7:1 проти градієнта й заливки (правило
-            `bg-hero-grad-*` у `theme.css` ставить колір кільця, клас тут
-            лише називає намір). Темна: заливка `dark:bg-fizruk` = `-400`
-            = колір кільця, тож кільце відсунуте на 2px (`ring-offset-bg`).
-            Та сама рецептура на двох інших CTA нижче. */}
-        <button
-          type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
-          onClick={onResume}
-          aria-label="Повернутись до активного тренування"
-        >
-          <span
-            className="shrink-0 w-11 h-11 rounded-full bg-white/15 flex items-center justify-center"
-            aria-hidden
-          >
-            <PlayIcon />
-          </span>
-          <span className="min-w-0 flex-1">
-            <SectionHeading
-              as="span"
-              size="xs"
-              className="block text-white dark:text-bg"
-            >
-              Продовжити
-            </SectionHeading>
-            <span className="block text-style-title leading-tight">
-              Повернутись у сесію
-            </span>
-          </span>
-        </button>
-      </div>
+      <p className="text-style-body text-muted">
+        {state.itemsCount != null && state.itemsCount > 0
+          ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`
+          : messages.fizruk.hero.openSession}
+      </p>
+      <Button
+        variant="outline"
+        tone="neutral"
+        onClick={onResume}
+        aria-label="Повернутись до активного тренування"
+      >
+        {messages.fizruk.resumeWorkoutFab}
+      </Button>
     </HeroShell>
   );
 }
@@ -344,7 +239,7 @@ export function TodayState({
   readonly onStartToday: () => void;
   readonly cornerSlot?: ReactNode;
 }) {
-  const metaParts: string[] = [
+  const metaParts = [
     `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
   ];
   if (state.estimatedMin) metaParts.push(`~${state.estimatedMin}\u202Fхв`);
@@ -352,48 +247,21 @@ export function TodayState({
   return (
     <HeroShell ariaLabel="Сьогоднішнє тренування" cornerSlot={cornerSlot}>
       <HeroKicker {...kicker} />
-      {/*
-        Назви шаблону тут навмисно НЕМАЄ окремим заголовком: вона стоїть у
-        CTA нижче («Почати · Ноги і спина»), і другий раз на тому самому
-        екрані була б дублем. Hero тепер відповідає на «що з тілом», а не
-        «що в розкладі» (спека § Проблема), тож смуги йдуть одразу під
-        кікером, а обсяг тренування лишається одним рядком-підписом.
-      */}
-      <p className="mt-2 text-style-caption text-hero-ink truncate">
-        {metaParts.join(" · ")}
-      </p>
+      <HeroStateLabel>{messages.fizruk.hero.recovery}</HeroStateLabel>
       <HeroRecoveryBars
         rows={body.recoveryRows}
         recoverByDate={body.recoverByDate}
         onOpenAtlas={body.onOpenAtlas}
       />
-      <div className="mt-6">
-        <button
-          type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
-          onClick={onStartToday}
-          aria-label={`Почати тренування: ${state.label}`}
-        >
-          <span
-            className="shrink-0 w-11 h-11 rounded-full bg-white/15 flex items-center justify-center"
-            aria-hidden
-          >
-            <PlayIcon />
-          </span>
-          <span className="min-w-0 flex-1">
-            <SectionHeading
-              as="span"
-              size="xs"
-              className="block text-white dark:text-bg"
-            >
-              Почати
-            </SectionHeading>
-            <span className="block text-style-title truncate leading-tight">
-              {state.label}
-            </span>
-          </span>
-        </button>
-      </div>
+      <p className="text-style-body text-muted">{metaParts.join(" · ")}</p>
+      <Button
+        variant="outline"
+        tone="neutral"
+        onClick={onStartToday}
+        aria-label={`Почати тренування: ${state.label}`}
+      >
+        {messages.fizruk.hero.start} · {state.label}
+      </Button>
     </HeroShell>
   );
 }
@@ -411,41 +279,33 @@ export function UpcomingState({
   readonly onOpenPlan: () => void;
   readonly cornerSlot?: ReactNode;
 }) {
-  // Назва шаблону йде першою в мета-рядок, а не окремим заголовком: на
-  // відміну від стану `today`, тутешній CTA («Відкрити план») її не несе,
-  // тож без цього рядка вона зникла б з екрана зовсім.
-  const metaParts: string[] = [
+  const metaParts = [
     state.label,
     formatDaysAway(state.daysFromNow),
     formatDayMonthFromKey(state.dateKey),
   ];
-  if (state.exerciseCount != null && state.exerciseCount > 0) {
+  if (state.exerciseCount != null && state.exerciseCount > 0)
     metaParts.push(
       `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
     );
-  }
   return (
     <HeroShell ariaLabel="Наступне тренування" cornerSlot={cornerSlot}>
       <HeroKicker {...kicker} />
-      <p className="mt-2 text-style-caption text-hero-ink truncate">
-        {metaParts.join(" · ")}
-      </p>
+      <HeroStateLabel>{messages.fizruk.hero.recovery}</HeroStateLabel>
       <HeroRecoveryBars
         rows={body.recoveryRows}
         recoverByDate={body.recoverByDate}
         onOpenAtlas={body.onOpenAtlas}
       />
-      <div className="mt-6">
-        <Button
-          variant="soft"
-          tone="fizruk"
-          className="w-full h-12 min-h-[44px]"
-          onClick={onOpenPlan}
-          aria-label="Відкрити план тренувань"
-        >
-          Відкрити план
-        </Button>
-      </div>
+      <p className="text-style-body text-muted">{metaParts.join(" · ")}</p>
+      <Button
+        variant="outline"
+        tone="neutral"
+        onClick={onOpenPlan}
+        aria-label="Відкрити план тренувань"
+      >
+        {messages.fizruk.hero.openPlan}
+      </Button>
     </HeroShell>
   );
 }
@@ -468,66 +328,38 @@ export function EmptyState({
   readonly cornerSlot?: ReactNode;
 }) {
   const templatesLabel = state.hasTemplates
-    ? "Обрати шаблон"
-    : "Створити шаблон";
-  // PR-Z6: коли старт доступний, він і є головною дією — порожній план не
-  // повинен вимагати спершу завести шаблон. Ієрархія повторює вкладку
-  // «Тренування» (звіт 2026-09-03): старт кнопкою, шаблон посиланням.
-  // Без `onQuickStart` розкладка лишається дослівно старою, тож Storybook і
-  // споживачі поза `Dashboard` нічого не помічають.
-  const primaryLabel = onQuickStart ? "Швидкий старт" : templatesLabel;
+    ? messages.fizruk.hero.chooseTemplate
+    : messages.fizruk.hero.createTemplate;
   return (
-    <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
+    <HeroShell
+      ariaLabel="План на сьогодні порожній"
+      cornerSlot={cornerSlot}
+      tinted={body.recoveryRows.length > 0}
+    >
       <HeroKicker {...kicker} />
-      <HeroStateLabel>План порожній</HeroStateLabel>
-      <h2 className="text-style-headline font-black text-hero-ink mt-1 leading-tight text-balance">
-        {onQuickStart
-          ? "Почни зараз або обери шаблон"
-          : "Обери шаблон або заплануй день"}
+      <h2 className="text-style-title font-bold text-text">
+        {messages.fizruk.hero.noPlan}
       </h2>
-      <p className="mt-2 text-style-body text-hero-ink">
-        {onQuickStart
-          ? "Нічого не заплановано. Почни порожнє тренування і додавай вправи на ходу."
-          : state.hasTemplates
-            ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
-            : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
-      </p>
       <HeroRecoveryBars
         rows={body.recoveryRows}
         recoverByDate={body.recoverByDate}
         onOpenAtlas={body.onOpenAtlas}
       />
-      <div className="mt-6 flex flex-col gap-3">
-        {/*
-          Primary CTA uses the raw `bg-fizruk-strong` surface (cyan-800,
-          #155e75) rather than the `variant="fizruk"` default (cyan-700,
-          #0e7490). The latter ships contrast 2.48:1 against white text —
-          below WCAG AA — and so the axe-core check flags it. cyan-800 +
-          white clears 4.5:1 comfortably.
-        */}
-        <button
-          type="button"
-          className="w-full py-4 rounded-2xl text-style-label font-bold bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          tone="neutral"
           onClick={onQuickStart ?? onOpenTemplates}
         >
-          {primaryLabel}
-        </button>
-        {onQuickStart ? (
-          <button
-            type="button"
-            onClick={onOpenTemplates}
-            className="focus-ring min-h-[44px] w-full rounded-xl text-style-caption font-semibold text-hero-ink underline-offset-4 hover:underline"
-          >
-            {state.hasTemplates ? "або із шаблону" : "або створити шаблон"}
-          </button>
-        ) : null}
-        <Button
-          variant="soft"
-          tone="fizruk"
-          className="w-full h-12 min-h-[44px]"
-          onClick={onOpenPrograms}
-        >
-          До програм
+          {onQuickStart ? messages.fizruk.hero.quickStart : templatesLabel}
+        </Button>
+        {onQuickStart && (
+          <Button variant="outline" tone="neutral" onClick={onOpenTemplates}>
+            {templatesLabel}
+          </Button>
+        )}
+        <Button variant="outline" tone="neutral" onClick={onOpenPrograms}>
+          {messages.fizruk.hero.programs}
         </Button>
       </div>
     </HeroShell>

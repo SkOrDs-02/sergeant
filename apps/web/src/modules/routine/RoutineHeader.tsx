@@ -12,22 +12,15 @@ import {
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderHubButton,
-  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
-import { cn } from "@shared/lib/ui/cn";
-import { ROUTINE_THEME as C } from "./lib/routineConstants";
+import { Icon } from "@shared/components/ui/Icon";
 
 export interface RoutineHeaderProps {
   onBackToHub?: (() => void) | undefined;
   onGoToHub?: (() => void) | undefined;
-  onOpenSettings?: (() => void) | undefined;
 }
 
-export function RoutineHeader({
-  onBackToHub,
-  onGoToHub,
-  onOpenSettings,
-}: RoutineHeaderProps) {
+export function RoutineHeader({ onBackToHub, onGoToHub }: RoutineHeaderProps) {
   return (
     <ModuleHeader
       module="routine"
@@ -40,38 +33,12 @@ export function RoutineHeader({
             )}
           </div>
         ) : (
-          <div
-            className={cn(
-              "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border",
-              C.iconBox,
-            )}
-            aria-hidden
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              aria-hidden
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <path d="M8 14h.01M12 14h.01M16 14h.01" />
-            </svg>
-          </div>
+          <Icon name="calendar" size="xl" className="text-muted" aria-hidden />
         )
       }
       title="Рутина"
       subtitle="Звички й події"
-      right={
-        <div className="flex items-center gap-2">
-          <ModuleHeaderAssistantButton />
-          {onOpenSettings && (
-            <ModuleHeaderSettingsButton onClick={onOpenSettings} />
-          )}
-        </div>
-      }
+      right={<ModuleHeaderAssistantButton />}
     />
   );
 }

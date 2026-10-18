@@ -26,7 +26,6 @@
 import { pluralUa } from "@sergeant/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
@@ -63,7 +62,10 @@ import {
 } from "../../hooks/useBulkImport";
 import type { ManualExpenseWriteThroughStorage } from "../../hooks/manualExpenseWriteThrough";
 import {
+  commitCapMessage,
+  exceedsCommitCap,
   screenshotRowsToBulkReviewRows,
+  selectedRowCount,
   statementRowsToBulkReviewRows,
   toCommitRows,
   toggleRowSelected,
@@ -354,8 +356,10 @@ export function BulkImportSheet({
     }
   };
 
+  const overCommitCap = exceedsCommitCap(reviewRows);
+
   const handleCommit = async () => {
-    if (!importSource) return;
+    if (!importSource || overCommitCap) return;
     setFlowError(null);
     try {
       const response = await commit.mutateAsync({
@@ -402,17 +406,36 @@ export function BulkImportSheet({
       bodyClassName="space-y-4"
       footer={
         stage === "bulk-review" ? (
-          <Button
-            variant="solid"
-            className="w-full"
-
-            loading={commit.isPending}
-            disabled={reviewRows.every((r) => !r.selected)}
-            onClick={() => void handleCommit()}
-            tone="ink"
-          >
-            Імпортувати
-          </Button>
+          <div className="space-y-2">
+            {/* Live-регіон змонтований завжди: вимкнена кнопка не фокусується,
+                тож aria-describedby сам перетин ліміту не озвучить. */}
+            <p
+              id="bulk-import-cap-hint"
+              aria-live="polite"
+              className={
+                overCommitCap
+                  ? "text-style-caption text-danger-strong dark:text-danger"
+                  : "sr-only"
+              }
+            >
+              {overCommitCap
+                ? commitCapMessage(selectedRowCount(reviewRows))
+                : ""}
+            </p>
+            <Button
+              variant="solid"
+              tone="ink"
+              className="w-full"
+              loading={commit.isPending}
+              disabled={overCommitCap || reviewRows.every((r) => !r.selected)}
+              aria-describedby={
+                overCommitCap ? "bulk-import-cap-hint" : undefined
+              }
+              onClick={() => void handleCommit()}
+            >
+              Імпортувати
+            </Button>
+          </div>
         ) : stage === "commit-summary" &&
           commitResult &&
           commitResult.created > 0 ? (
@@ -541,7 +564,7 @@ export function BulkImportSheet({
         // Success-тон карткою (бета-фідбек №4: «Створено на зеленому
         // фоні, як Витрата») — той самий фінік-акцент, що й активний чип
         // «Витрата» у ManualExpenseSheet, а не сірий panelHi.
-        <div className="space-y-1.5 rounded-xl border border-line bg-panel p-3 text-style-body text-text">
+        <div className="space-y-1.5 rounded-panel border border-line bg-panel p-3 text-style-body text-text">
           <p className="font-semibold text-text">
             Створено: {commitResult.created}
           </p>

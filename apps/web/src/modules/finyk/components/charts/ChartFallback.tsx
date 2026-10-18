@@ -7,7 +7,7 @@ export function ChartFallback({ className }: { className?: string }) {
   return (
     <Skeleton
       aria-hidden="true"
-      className={cn("w-full h-20 rounded-xl", className)}
+      className={cn("w-full h-20 rounded-panel", className)}
     />
   );
 }

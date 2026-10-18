@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, screen } from "@testing-library/react";
 import { EmptyState, ModuleEmptyState } from "./EmptyState";
 import { Button } from "./Button";
 
@@ -13,7 +13,23 @@ afterEach(cleanup);
  * прямо стосується Hard Rule #14 (`focus-visible:ring-*`).
  */
 describe("EmptyState — a11y", () => {
-  it("renders title + description у live-region з role='status' / aria-live='polite' / aria-atomic", () => {
+  it("мова H: контекст доступний скрінрідеру, на екрані лише факт і дія", () => {
+    render(
+      <EmptyState
+        title="Записів немає"
+        description="Створи свій перший запис"
+        hint="Збережи запис"
+        action={<Button variant="solid">Додати</Button>}
+      />,
+    );
+    expect(screen.getByText("Створи свій перший запис")).not.toBeVisible();
+    expect(screen.getByText("Збережи запис")).not.toBeVisible();
+    expect(screen.getByRole("status")).toHaveAccessibleDescription(
+      "Створи свій перший запис Збережи запис",
+    );
+  });
+
+  it("renders title + hidden description у live-region з role='status' / aria-live='polite' / aria-atomic", () => {
     const { container, getByText } = render(
       <EmptyState
         title="Поки немає шаблонів"
@@ -24,11 +40,13 @@ describe("EmptyState — a11y", () => {
     expect(status).not.toBeNull();
     expect(status!.getAttribute("aria-live")).toBe("polite");
     expect(status!.getAttribute("aria-atomic")).toBe("true");
-    // title + description видимі і живуть всередині live-region.
+    // title + description живуть всередині live-region; звичайний компактний
+    // стан не витрачає місце на видимий пояснювальний абзац.
     expect(status!.contains(getByText("Поки немає шаблонів"))).toBe(true);
     expect(
       status!.contains(getByText("Створи свій перший, кнопка вище.")),
     ).toBe(true);
+    expect(getByText("Створи свій перший, кнопка вище.")).not.toBeVisible();
   });
 
   it("ariaLive='off' вимикає озвучку (для empty-state-ів на initial page load)", () => {
@@ -40,15 +58,9 @@ describe("EmptyState — a11y", () => {
     expect(status!.getAttribute("aria-live")).toBe("off");
   });
 
-  it("мова H: icon, illustration і examplePreview не рендеряться, hint лишається текстом", () => {
+  it("мова H: факт без декоративної іконки, hint лишається текстом", () => {
     const { container, queryByText } = render(
-      <EmptyState
-        icon={<svg data-testid="ico" />}
-        illustration={<svg data-testid="ill" />}
-        title="Записів немає"
-        hint="Підказка"
-        examplePreview={<span>Приклад-рядок</span>}
-      />,
+      <EmptyState title="Записів немає" hint="Підказка" />,
     );
     expect(container.querySelector("svg")).toBeNull();
     expect(queryByText("Підказка")).not.toBeNull();
@@ -105,6 +117,21 @@ describe("EmptyState — a11y", () => {
 });
 
 describe("ModuleEmptyState — dismiss button a11y", () => {
+  it("показує стриману ілюстрацію та видимий наступний крок", () => {
+    const { container } = render(
+      <ModuleEmptyState
+        module="routine"
+        title="Звичок ще немає"
+        description="Створи одну звичку, щоб почати серію."
+      />,
+    );
+
+    expect(
+      screen.getByText("Створи одну звичку, щоб почати серію."),
+    ).toBeVisible();
+    expect(container.querySelector('[role="status"] svg')).not.toBeNull();
+  });
+
   it("dismiss-кнопка має aria-label і focus-visible:ring (Hard Rule #14)", () => {
     const { getByRole } = render(
       <ModuleEmptyState module="finyk" dismissible onDismiss={() => {}} />,

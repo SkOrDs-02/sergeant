@@ -61,7 +61,7 @@ describe("FeedbackSection", () => {
     openDialog();
 
     fireEvent.click(
-      screen.getByRole("tab", { name: messages.feedback.categoryBug }),
+      screen.getByRole("radio", { name: messages.feedback.categoryBug }),
     );
     fireEvent.change(screen.getByLabelText(messages.feedback.messageLabel), {
       target: { value: "  Кнопка не працює на екрані бюджету  " },

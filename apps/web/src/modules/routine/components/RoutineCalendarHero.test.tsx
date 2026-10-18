@@ -32,7 +32,7 @@ describe("RoutineCalendarHero", () => {
 
     expect(screen.getByText(/10 липня/)).toBeInTheDocument();
     expect(screen.getByText("Сьогоднішні звички")).toBeInTheDocument();
-    // Число прогресу живе лише в кільці: текстовий дубль «2 з 4 виконано»
+    // Число прогресу живе лише в hero: текстовий дубль «2 з 4 виконано»
     // поруч із ним повторював ту саму цифру.
     expect(screen.queryByText(/2 з 4 звичок виконано/)).not.toBeInTheDocument();
     expect(
@@ -71,7 +71,7 @@ describe("RoutineCalendarHero", () => {
     expect(seen.size).toBe(5);
   });
 
-  it("opens day report via progress ring click", () => {
+  it("opens day report via segmented progress click", () => {
     const onOpenDayReport = vi.fn();
     render(
       <RoutineCalendarHero

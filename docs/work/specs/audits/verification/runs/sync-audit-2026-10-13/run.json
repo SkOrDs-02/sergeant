@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "id": "sync-audit-2026-10-13",
+  "status": "closed",
+  "createdAt": "2026-10-13T21:16:23.171Z",
+  "kind": "live",
+  "metadata": {
+    "executor": "Codex",
+    "deployment": "isolated local API + PostgreSQL sync_audit_20261013 + production web preview",
+    "environment": "Linux cloud; Node 22.19.0 / pnpm 9.15.1; isolated local API and PostgreSQL; no production account access",
+    "baseUrl": "http://127.0.0.1:4173",
+    "browser": "Playwright Chromium 1243; iPhone viewport emulation is not real iOS",
+    "viewport": "390x844 and Desktop Chrome",
+    "timezone": "Europe/Kyiv",
+    "flags": {
+      "externalIntegrations": false,
+      "coopCoep": true
+    },
+    "seedRevision": "origin/main cadabd846; branch codex/sync-backlog-drain; disposable local accounts/data",
+    "accounts": ["sync-audit-disposable-a", "sync-audit-disposable-b"],
+    "ai": {
+      "mode": "none",
+      "model": "n/a",
+      "configuration": "AI not tested",
+      "budgetUsd": 0
+    },
+    "baseline": null,
+    "commit": "cadabd846a3cfd28399aeca9037d0e20746fd01e",
+    "dirty": true
+  },
+  "scenarios": [
+    {
+      "id": "SYNC-fresh-device-pull",
+      "revision": 1,
+      "title": "Pull на новому пристрої",
+      "suite": "data",
+      "modules": ["sync", "finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["sync-same-user-device-a", "sync-same-user-device-b"],
+      "source": "docs/work/specs/audits/2026-09-01-product-audit/accounts.md#6-пастка-storagestate--новий-пристрій",
+      "preconditions": "Той самий одноразовий користувач; витрата створена у чистому context A; підтверджено успішний push до входу у context B.",
+      "steps": [
+        "Відкрити новий browser context без storageState.",
+        "Увійти тим самим логіном у чистому context B без storageState.",
+        "Дочекатися pull та відкрити транзакції."
+      ],
+      "expected": ["Витрата відображається один раз; outbox не зростає."],
+      "evidence": ["screenshot другого контексту", "мережевий trace sync"],
+      "cleanup": "Видалити disposable акаунти.",
+      "pitfalls": "storageState не моделює інший пристрій."
+    },
+    {
+      "id": "SYNC-offline-conflict-isolation",
+      "revision": 1,
+      "title": "Offline queue, LWW conflict, logout purge й user isolation",
+      "suite": "data",
+      "modules": ["sync", "web", "server"],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "docs/engineering/architecture/domain-invariants.md",
+      "preconditions": "Два contexts одного user для conflict; два окремих users для isolation; контроль мережі.",
+      "steps": [
+        "Offline створити три доменні записи, повернути online й дочекатися drain.",
+        "Змінити ту саму сутність з двох devices з контрольними timestamps.",
+        "Перевірити cross-user IDOR, logout purge, stale session 401 і fresh login."
+      ],
+      "expected": [
+        "Outbox переходить pending→0 без дубля; server і обидва devices сходяться.",
+        "LWW результат відповідає контракту й не губить сторонні поля.",
+        "User B не читає дані A; logout очищає локальні дані/keys."
+      ],
+      "evidence": [
+        "sync push/pull traces",
+        "op/timestamp table",
+        "local storage/OPFS inventory без секретів",
+        "401/404 statuses"
+      ],
+      "cleanup": "Видалити disposable users/contexts після збереження redacted evidence.",
+      "pitfalls": "Cross-device — один user; isolation — два users. Не стартувати B до підтвердженого push A."
+    },
+    {
+      "id": "DATA-durability-live",
+      "revision": 1,
+      "title": "Живучість записів: reload, перенос аноніма, офлайн, пристрої, вкладки, вихід",
+      "suite": "data",
+      "modules": [
+        "sync",
+        "web",
+        "finyk",
+        "nutrition",
+        "routine",
+        "fizruk",
+        "ai-memory"
+      ],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "apps/web/tests/verification-live/data-durability.spec.ts",
+      "preconditions": "Локальний API на :3000 з окремою БД, прод-білд web (VERCEL=1, VITE_API_BASE_URL=http://127.0.0.1:3000) через vite preview на :4173; див. local-environment.md.",
+      "steps": [
+        "Запустити `pnpm -C apps/web exec playwright test -c playwright.verify.config.ts data-durability` з VERIFY_RESULTS і PW_VERIFY_OUT.",
+        "Фази P1-P9: reload аноніма, перенос в акаунт, новий пристрій, офлайн-черга, правки з B, LWW-конфлікт, дві вкладки, вихід із незбереженим, ізоляція користувачів.",
+        "Звести результати скриптом-зведенням JSONL (кожна перевірка = рядок pass/fail з деталлю)."
+      ],
+      "expected": [
+        "Кожен запис у чотирьох модулях і памʼяті профілю переживає reload, доїжджає на сервер і на другий пристрій рівно один раз.",
+        "Після виходу інший користувач не бачить ні локальних, ні серверних даних попереднього."
+      ],
+      "evidence": [
+        "verify-results JSONL",
+        "скріншоти fail-*.png",
+        "SQL-лічильники рядків на сервері"
+      ],
+      "cleanup": "Тимчасова БД перевірки видаляється або лишається ізольованою; прод не зачіпається.",
+      "pitfalls": "P7: Playwright емулює фокус для кожної сторінки, тож повернення до вкладки харнес моделює подією focus, а не bringToFront. Рідкісний білий екран (B1) на одній навігації каскадом валить наступні кроки фази; дивись fail-*.png перед висновками. Прод-варіанти: prod-anon-smoke без акаунта; prod-account-smoke створює акаунт, тож його запускає лише людина."
+    }
+  ],
+  "attempts": [
+    {
+      "id": "sync-audit-fresh-device",
+      "scenarioId": "SYNC-fresh-device-pull",
+      "status": "pass",
+      "reason": "",
+      "actual": "Свіжий Chromium context B без storageState увійшов у той самий одноразовий акаунт і побачив витрату, створену в A; сервер має рівно один рядок. A після офлайн-запису та reload передав ще одну витрату, B побачив її після pull. Два POST push: HTTP 200, по одному applied, 0 rejected.",
+      "evidence": [
+        {
+          "path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-transfer.json",
+          "type": "structured-result",
+          "sha256": "490407e4e1746c95538547fae9a48b41265e4db641611fc9586c007db94aa1d0"
+        },
+        {
+          "path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
+          "type": "screenshot",
+          "sha256": "100b434437ca1d92db2f979a144ffe2fa96f570fbdb39496639d1d118274735b"
+        }
+      ],
+      "metrics": {
+        "serverRowsPerExpense": 1,
+        "successfulPushes": 2,
+        "rejected": 0
+      },
+      "findingIds": [],
+      "at": "2026-10-14T09:36:31.736Z"
+    },
+    {
+      "id": "sync-audit-offline-partial",
+      "scenarioId": "SYNC-offline-conflict-isolation",
+      "status": "not-run",
+      "reason": "Повну картку не виконано: LWW-конфлікт, cross-user IDOR, logout purge і stale-session 401 не повторювались у цьому прогоні. Офлайн reload, reconnect і другий пристрій перевірені окремо; попередній повний DATA-довговічності: durability-2026-10-08.",
+      "actual": "Офлайн витрата пережила reload у context A, була записана на локальний сервер рівно один раз після reconnect і з’явилась у свіжому context B. Ця часткова перевірка не означає pass для всього сценарію.",
+      "evidence": [
+        {
+          "path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-transfer.json",
+          "type": "structured-result",
+          "sha256": "490407e4e1746c95538547fae9a48b41265e4db641611fc9586c007db94aa1d0"
+        }
+      ],
+      "metrics": {
+        "offlineServerRows": 1
+      },
+      "findingIds": [],
+      "at": "2026-10-14T09:36:32.330Z"
+    },
+    {
+      "id": "sync-audit-migration-partial",
+      "scenarioId": "DATA-durability-live",
+      "status": "not-run",
+      "reason": "Повний P1–P9 для всіх модулів, вкладок, LWW, виходу й ізоляції не запускався; перевірено окремий legacy→OPFS перенос чотирьох модулів і велику чергу.",
+      "actual": "Реальні міграції SQLite: 200 власних записів у кожному з routine, finyk, nutrition, fizruk + 1000 власних pending ops перенесено з kvvfs localStorage в OPFS; чужі 40 записів/модуль та 40 ops відсічено, інший користувач отримав власні 20/модуль. Повторний import і hard reload не затерли нові записи. OPFS-черга 24944: старий алгоритм 2×100; новий алгоритм з batch DELETE 5×200 за 8589 мс, 1000 унікальних ключів. Решта 23744 лишилась після hard reload. HTTP-відповіді в OPFS-замірі тестові. Окремий справжній HTTP push 200 routine ops локальному API: 200 applied, 0 rejected, 200 SQL-рядків за 1948 мс.",
+      "evidence": [
+        {
+          "path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/legacy-opfs-after.json",
+          "type": "structured-result",
+          "sha256": "7917ad91bc59c9d9eb7aa241b74ab3e4a65ee3565d4e01a4b8d1a4232f0eb11c"
+        },
+        {
+          "path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/live-batch-200.json",
+          "type": "structured-result",
+          "sha256": "3f2c22226d674079b8912b3a59747704ea330d86486f7bbc4dc29339280e91f2"
+        }
+      ],
+      "metrics": {
+        "legacyOwnRowsPerModule": 200,
+        "legacyOwnPending": 1000,
+        "sampleBacklog": 24944,
+        "fastUploaded": 1000,
+        "fastElapsedMs": 8589,
+        "remainingAfterReload": 23744,
+        "apiBatchApplied": 200,
+        "apiBatchElapsedMs": 1948
+      },
+      "findingIds": [],
+      "at": "2026-10-14T09:36:32.921Z"
+    }
+  ],
+  "closedAt": "2026-10-14T09:36:45.311Z",
+  "outcome": "incomplete"
+}

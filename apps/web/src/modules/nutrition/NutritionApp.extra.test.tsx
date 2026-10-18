@@ -288,11 +288,13 @@ vi.mock("./components/NutritionOverlays", () => ({
   NutritionOverlays: ({
     wrappedSaveMeal,
     addMealInitialStep,
+    addMealInitialSourceTab,
     onQuickAddMeal,
     editingMeal,
   }: {
     wrappedSaveMeal: (meal: Meal) => Promise<void>;
     addMealInitialStep?: "source" | "photo";
+    addMealInitialSourceTab?: string;
     onQuickAddMeal: (chip: {
       label: string;
       macros: {
@@ -308,6 +310,7 @@ vi.mock("./components/NutritionOverlays", () => ({
     <div
       data-testid="nutrition-overlays"
       data-initial-step={addMealInitialStep ?? "source"}
+      data-initial-source-tab={addMealInitialSourceTab ?? "search"}
     >
       <button
         type="button"
@@ -498,18 +501,28 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
 
   it("a later plain add-meal open resets the sheet back to the source step", () => {
     // Регресія залишкового кроку: після входу через фото-шорткат звичайний
-    // «Додати страву» не має відкривати sheet на кроці фото.
+    // «Додати» → «Пошук» не має відкривати sheet на кроці фото.
     render(<NutritionApp />, { wrapper: QueryWrapper });
     openMealPhoto();
     expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
       "data-initial-step",
       "photo",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Додати страву" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Пошук/ }));
     expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
       "data-initial-step",
       "source",
     );
+  });
+
+  it("рядок «Штрихкод» аркуша «Додати» відкриває крок джерела на вкладці скану", () => {
+    render(<NutritionApp />, { wrapper: QueryWrapper });
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Штрихкод/ }));
+    const overlays = screen.getByTestId("nutrition-overlays");
+    expect(overlays).toHaveAttribute("data-initial-step", "source");
+    expect(overlays).toHaveAttribute("data-initial-source-tab", "scan");
   });
 });
 

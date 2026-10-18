@@ -26,7 +26,8 @@ describe("BarcodeSection", () => {
     expect(
       screen.queryByRole("button", { name: "Привʼязати" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByTestId("barcode-action-icon")).toBeInTheDocument();
+    // Мова H: кнопка з текстом без іконки.
+    expect(screen.queryByTestId("barcode-action-icon")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Сканувати штрихкод" }));
     expect(setBarcodeStatus).toHaveBeenCalledWith("");

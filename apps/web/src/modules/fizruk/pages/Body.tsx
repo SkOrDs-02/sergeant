@@ -135,10 +135,10 @@ export function Body({ onOpenAtlas }: BodyProps) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-style-title text-text">
+            <h1 className="text-style-headline text-text">
               {messages.fizruk.body.title}
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
@@ -306,7 +306,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
         {[weightData, sleepData, energyData, moodData].every(
           (d) => d.length < 2,
         ) && (
-          <Card radius="lg" padding="lg">
+          <Card padding="lg">
             {/* Defect #5: `aria-label` on a generic `<div>` (no ARIA role)
                 is dropped by AT and flagged by axe (`aria-prohibited-attr`).
                 The label text is already the visible first paragraph below —

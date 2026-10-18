@@ -33,7 +33,7 @@ export function CategoryTrend({
   const trend = useMonthlyTrend(storage, categoryId, fetchRange);
   if (trend.points.length === 0) return null;
   return (
-    <div className="rounded-xl border border-line bg-panel px-3 py-3 space-y-2">
+    <div className="rounded-panel border border-line bg-panel px-3 py-3 space-y-2">
       <p className="text-style-caption text-subtle">
         {label} {messages.finyk.monthlyTrend.categorySuffix}
       </p>

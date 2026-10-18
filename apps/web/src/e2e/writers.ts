@@ -5,11 +5,13 @@
  * мовчки стає no-op без зареєстрованого контексту.
  */
 import {
+  MEAL_META,
   buildPlacedItems,
   displayFoodName,
   ensureStoragePlaces,
   mergeItemsIntoPlaces,
   normalizeUnit,
+  type Meal,
 } from "@sergeant/nutrition-domain";
 import { applyCreateHabit, type RoutineState } from "@sergeant/routine-domain";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
@@ -17,9 +19,13 @@ import type { LimitBudget } from "@sergeant/finyk-domain/domain/types";
 import { safeWriteLSDurable } from "@shared/lib/storage/storage";
 
 import {
+  isNutritionPrefsHydrated,
+  loadNutritionLog,
   loadPantries,
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_PANTRIES_KEY,
+  patchNutritionPrefs,
+  persistNutritionLog,
   persistPantries,
 } from "../modules/nutrition/lib/nutritionStorage";
 import { isNutritionDualWriteRegistered } from "../modules/nutrition/lib/sqliteWriter/index";
@@ -45,6 +51,7 @@ import {
 } from "../modules/finyk/lib/sqliteWriter/extract";
 import { getCachedFinykSqliteState } from "../modules/finyk/lib/sqliteReader";
 import {
+  dateKeyDaysAgo,
   resolveFizrukWorkout,
   resolveRoutineHabit,
   waitUntil,
@@ -96,6 +103,77 @@ export async function applyPantry(world: ScenarioLocalWorld): Promise<void> {
       ),
     );
     return items.every((item) => stored.has(item.name));
+  });
+}
+
+/**
+ * Журнал Їжі й норма: ті самі писачі, що й UI (`patchNutritionPrefs`,
+ * `persistNutritionLog`). Норму пишемо першою й чекаємо її в кеші, бо писач
+ * журналу накладає зміну на останній записаний стан.
+ */
+export async function applyNutrition(world: ScenarioLocalWorld): Promise<void> {
+  if (world.nutritionMeals.length === 0 && world.nutritionGoal === null) return;
+  await waitUntil(
+    "nutrition",
+    () =>
+      isNutritionDualWriteRegistered() &&
+      getCachedNutritionSqliteState().refreshedAt !== null &&
+      isNutritionPrefsHydrated(),
+  );
+  const goal = world.nutritionGoal;
+  if (goal !== null) {
+    check(
+      "nutrition",
+      patchNutritionPrefs(
+        {
+          dailyTargetKcal: goal.kcal,
+          dailyTargetProtein_g: goal.protein_g,
+          dailyTargetFat_g: goal.fat_g,
+          dailyTargetCarbs_g: goal.carbs_g,
+        },
+        "manual",
+      ),
+      "писач норми не підтвердив запис",
+    );
+    await waitUntil(
+      "nutrition",
+      () =>
+        getCachedNutritionSqliteState().prefs?.dailyTargetKcal === goal.kcal,
+    );
+  }
+  if (world.nutritionMeals.length === 0) return;
+  const log = { ...loadNutritionLog() };
+  const ids = world.nutritionMeals.map((meal, index) => {
+    const date = dateKeyDaysAgo(meal.daysAgo);
+    const id = `e2e-meal-${index}`;
+    const entry: Meal = {
+      id,
+      name: meal.name,
+      time: meal.time,
+      mealType: meal.mealType,
+      label: MEAL_META[meal.mealType].label,
+      macros: {
+        kcal: meal.kcal,
+        protein_g: meal.protein_g,
+        fat_g: meal.fat_g,
+        carbs_g: meal.carbs_g,
+      },
+      source: "manual",
+      macroSource: "manual",
+      amount_g: meal.amount_g,
+      foodId: null,
+    };
+    log[date] = { meals: [...(log[date]?.meals ?? []), entry] };
+    return id;
+  });
+  check("nutrition", persistNutritionLog(log), "писач журналу відмовив");
+  await waitUntil("nutrition", () => {
+    const stored = new Set(
+      Object.values(loadNutritionLog()).flatMap((day) =>
+        day.meals.map((m) => m.id),
+      ),
+    );
+    return ids.every((id) => stored.has(id));
   });
 }
 

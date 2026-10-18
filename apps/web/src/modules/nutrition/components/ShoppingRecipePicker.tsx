@@ -60,9 +60,9 @@ function OptionRow({
     <li>
       <label
         className={cn(
-          "flex items-center gap-2.5 px-3 touch-target transition-colors",
+          "flex items-center gap-2.5 touch-target transition-colors",
           disabled ? "cursor-default opacity-60" : "cursor-pointer",
-          !disabled && "hover:bg-panelHi/50",
+          !disabled && "hover:bg-line/40",
         )}
       >
         <input
@@ -70,15 +70,15 @@ function OptionRow({
           checked={checked}
           disabled={disabled}
           onChange={() => onToggle(option.key)}
-          className="shrink-0 w-5 h-5 accent-nutrition"
+          className="shrink-0 w-5 h-5 accent-text"
         />
         {/* `min-w-0` на кожній дитині grid: інакше трек тримає
             `min-width: auto` і довга назва рецепта розпирає картку. */}
         <span className="min-w-0 flex-1 grid">
-          <span className="min-w-0 text-style-label text-text truncate">
+          <span className="min-w-0 text-style-body font-semibold text-text truncate">
             {option.title}
           </span>
-          <span className="min-w-0 text-style-caption text-subtle truncate">
+          <span className="min-w-0 text-style-caption text-muted truncate">
             {ingredientsLabel(option.ingredientCount)}
           </span>
         </span>
@@ -105,10 +105,8 @@ function Group({
   if (options.length === 0) return null;
   return (
     <div role="group" aria-label={title}>
-      <div className="px-3 py-1.5 text-style-caption text-muted bg-panelHi border-b border-line">
-        {title}
-      </div>
-      <ul className="divide-y divide-line/30">
+      <div className="pt-3 pb-1 text-style-overline text-subtle">{title}</div>
+      <ul className="divide-y divide-line border-t border-line">
         {options.map((o) => {
           const checked = selectedKeys.has(o.key);
           return (
@@ -167,13 +165,9 @@ export function ShoppingRecipePicker({
   }
 
   return (
-    <div
-      className="rounded-2xl border border-line bg-panel overflow-hidden"
-      aria-label={pk.listAria}
-      role="group"
-    >
-      <div className="px-3 py-1 flex items-center justify-between gap-2 border-b border-line">
-        <span className="text-style-caption text-text">
+    <div className="border-t border-line" aria-label={pk.listAria} role="group">
+      <div className="py-1 flex items-center justify-between gap-2">
+        <span className="text-style-caption text-muted tabular-nums">
           {pk.selectedLabel} {selectedCount} {pk.selectedOf} {total}
         </span>
         <div className="flex flex-wrap justify-end gap-1">
@@ -219,13 +213,13 @@ export function ShoppingRecipePicker({
           onToggle={onToggle}
         />
         {savedBusy && (
-          <div className="px-3 py-2 text-style-caption text-muted">
+          <div className="py-2 text-style-caption text-muted">
             {pk.savedLoading}
           </div>
         )}
       </div>
       {atLimit && (
-        <div className="px-3 py-1.5 text-style-caption text-muted border-t border-line">
+        <div className="py-1.5 text-style-caption text-muted border-t border-line">
           {pk.maxHint}
         </div>
       )}

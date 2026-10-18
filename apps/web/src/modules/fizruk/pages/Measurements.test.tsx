@@ -83,7 +83,7 @@ describe("Measurements page", () => {
       name: /Як правильно робити заміри/,
     });
     expect(trigger.querySelector('[class*="success"]')).toBeNull();
-    expect(trigger.querySelector('[class*="fizruk"]')).not.toBeNull();
+    expect(trigger.querySelector('[class*="text-text"]')).not.toBeNull();
   });
 
   it("opens the internal measurement guide with primary-source links", () => {
@@ -384,7 +384,7 @@ describe("Measurements page", () => {
     it("не рендерить плитку «Полів»", () => {
       mockEntries = twoEntries;
       render(<Measurements />);
-      expect(screen.getByText("Записів")).toBeInTheDocument();
+      expect(screen.getByText(/Записів:/)).toBeInTheDocument();
       expect(screen.queryByText("Полів")).toBeNull();
     });
 

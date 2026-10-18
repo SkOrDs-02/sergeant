@@ -44,14 +44,14 @@ const measurementSchema = z.object(
 );
 
 const inp =
-  "input-focus-fizruk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text";
+  "input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-4 text-text";
 
 // Field-caption styling for the measurements grid. This is a genuine form
 // <label> (htmlFor/id bound below), not a narrative eyebrow, so the
 // uppercase + tracking combo is intentional here.
 const lbl =
   // eslint-disable-next-line sergeant-design/no-raw-type-size -- перенесено дослівно з `Measurements.tsx` разом із формою; це справжній form-label (htmlFor/id), і його типографіку не змінюємо в PR, який про прогресивне розкриття полів.
-  "px-1 block text-xs uppercase tracking-wider font-bold text-fizruk-strong dark:text-fizruk-300/70";
+  "px-1 block text-xs uppercase tracking-wider font-bold text-text";
 
 // V-9: the 3 most-checked metrics stay visible without an extra tap; the
 // remaining 11 (limb girths etc.) collapse behind "Більше полів". Order
@@ -207,7 +207,7 @@ export function AddMeasurementForm({
       {!hasFilledSecondaryValue && (
         <button
           type="button"
-          className="focus-ring touch-target mt-3 -mx-1 px-1 rounded-lg inline-flex items-center text-style-caption text-fizruk-strong dark:text-fizruk font-semibold hover:underline"
+          className="focus-ring touch-target mt-3 -mx-1 px-1 rounded-lg inline-flex items-center text-style-caption text-text font-semibold hover:underline"
           aria-expanded={secondaryVisible}
           onClick={() => setSecondaryOpen((o) => !o)}
         >
@@ -229,7 +229,7 @@ export function AddMeasurementForm({
           disabled={!hasAnyValue}
           aria-disabled={!hasAnyValue}
           // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА: висота кнопки тримається на парі `text-base` + `py-4`; перенесено дослівно з `Measurements.tsx`.
-          className="focus-ring w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 dark:bg-fizruk dark:text-bg"
+          className="focus-ring w-full py-4 rounded-lg font-bold text-base bg-text text-bg transition-[background-color,box-shadow,opacity,transform] disabled:opacity-50 disabled:cursor-not-allowed dark:text-bg"
           onClick={handleSubmit}
         >
           {messages.fizruk.measurements.submit}
@@ -241,7 +241,7 @@ export function AddMeasurementForm({
   if (inSheet) return body;
 
   return (
-    <Card radius="lg">
+    <Card>
       <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
         {messages.fizruk.measurements.addHeading}
       </SectionHeading>

@@ -95,25 +95,27 @@ export function NutritionMenuPage({
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   return (
     <SectionErrorBoundary key="page-menu" title="Не вдалось показати «Меню»">
-      <>
+      <div className="flex flex-col gap-7">
         <h1 className="sr-only">Меню</h1>
-        <SubTabs
-          ariaLabel="Розділи меню"
-          value={menuSubTab}
-          onChange={(id) => setMenuSubTab(id as MenuSubTab)}
-          tabs={[
-            { id: "plan", label: "План на день" },
-            { id: "recipes", label: "Рецепти" },
-          ]}
-        />
-        <div className="mb-2 flex justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMyFoodsOpen(true)}
-          >
-            {messages.nutrition.myFoods.open}
-          </Button>
+        <div className="space-y-2">
+          <SubTabs
+            ariaLabel="Розділи меню"
+            value={menuSubTab}
+            onChange={(id) => setMenuSubTab(id as MenuSubTab)}
+            tabs={[
+              { id: "plan", label: "План на день" },
+              { id: "recipes", label: "Рецепти" },
+            ]}
+          />
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMyFoodsOpen(true)}
+            >
+              {messages.nutrition.myFoods.open}
+            </Button>
+          </div>
         </div>
         <MyFoodsSheet
           open={myFoodsOpen}
@@ -171,7 +173,7 @@ export function NutritionMenuPage({
             selectedDate={selectedDate}
           />
         )}
-      </>
+      </div>
     </SectionErrorBoundary>
   );
 }

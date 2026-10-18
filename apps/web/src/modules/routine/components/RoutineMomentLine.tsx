@@ -43,7 +43,7 @@ export function RoutineMomentLine({
       target={target}
       {...(onDate !== undefined ? { onDate } : {})}
       format={momentText}
-      className={cn("text-routine-strong dark:text-routine", className)}
+      className={cn("text-style-label text-muted", className)}
     />
   );
 }

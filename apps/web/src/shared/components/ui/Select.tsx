@@ -6,8 +6,8 @@ import type { FormVariant, SmallMediumLarge } from "./types";
  * Sergeant Design System — Select
  *
  * Pairs with <Input> — same sizes, same border/focus treatment, so
- * forms stop mixing `h-11 rounded-2xl` inputs with ad-hoc `h-10
- * rounded-xl` selects.
+ * forms stop mixing `h-11 rounded-lg` inputs with ad-hoc `h-10
+ * rounded-lg` selects.
  *
  * Keep using the native <select> for accessibility & mobile native
  * pickers; this component is a styled wrapper with a caret affordance.
@@ -19,9 +19,9 @@ export type SelectAccent =
   "brand" | "finyk" | "fizruk" | "nutrition" | "routine";
 
 const sizes: Record<SelectSize, string> = {
-  sm: "h-9 pl-3 pr-9 text-style-body rounded-xl",
-  md: "h-11 pl-4 pr-10 text-style-body rounded-2xl",
-  lg: "h-12 pl-5 pr-10 text-style-body rounded-2xl",
+  sm: "h-9 pl-3 pr-9 text-style-body rounded-lg",
+  md: "h-11 pl-4 pr-10 text-style-body rounded-lg",
+  lg: "h-12 pl-5 pr-10 text-style-body rounded-lg",
 };
 
 const variants: Record<SelectVariant, string> = {

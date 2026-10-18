@@ -90,7 +90,7 @@ export function TransferSuggestionCard({
   ] as const;
 
   return (
-    <Card module="finyk" prominence="soft" radius="lg" className="space-y-3">
+    <Card tone="finyk" prominence="panel" className="space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-style-label text-text">

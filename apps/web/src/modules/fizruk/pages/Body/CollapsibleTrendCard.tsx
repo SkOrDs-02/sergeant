@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { safeWriteLS } from "@shared/lib/storage/storage";
@@ -93,11 +92,11 @@ export function CollapsibleTrendCard({
       : deltaDirection === "neutral"
         ? "text-subtle"
         : (deltaDirection === "up-is-good") === delta > 0
-          ? "text-success-strong dark:text-success"
-          : "text-warning-strong dark:text-warning";
+          ? "text-text"
+          : "text-text";
 
   return (
-    <Card as="section" radius="lg" padding="none" aria-label={ariaLabel}>
+    <Card as="section" padding="none" aria-label={ariaLabel}>
       {/* AI-CONTEXT: `<h2>` wraps the WHOLE toggle button (WAI-ARIA
           disclosure/accordion pattern) instead of living inside it —
           a heading nested inside a `role="button"` (native `<button>`)
@@ -112,7 +111,7 @@ export function CollapsibleTrendCard({
           aria-controls={contentId}
           className={cn(
             "focus-ring w-full flex items-center gap-3 px-4 py-3 text-left",
-            "rounded-2xl transition-colors",
+            "rounded-lg transition-colors",
             "hover:bg-panelHi/40",
           )}
         >
@@ -166,9 +165,7 @@ export function CollapsibleTrendCard({
               "inline-flex justify-center w-4 text-muted transition-transform shrink-0",
               open ? "rotate-180" : "rotate-0",
             )}
-          >
-            <Icon name="chevron-down" size="md" />
-          </span>
+          ></span>
         </button>
       </h2>
       {open && (

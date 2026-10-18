@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { Sheet } from "./Sheet";
 
 describe("ConfirmDialog", () => {
   // CodeRabbit post-merge review PR #757 (зауваження #4): раніше
@@ -228,5 +229,39 @@ describe("ConfirmDialog — доступні імена скрима і кноп
     expect(screen.getAllByRole("button", { name: "Скасувати" })).toHaveLength(
       1,
     );
+  });
+
+  // Аудит ux-02: ConfirmDialog не мав запису в історії, тож системний Back
+  // (Android/PWA) закривав Sheet під ним разом із введеним, а діалог лишався.
+  it("Back закриває лише діалог підтвердження, Sheet під ним лишається", () => {
+    const onSheetClose = vi.fn();
+    const onCancel = vi.fn();
+    const sheet = (confirmOpen: boolean) => (
+      <Sheet open onClose={onSheetClose} title="Форма">
+        <ConfirmDialog
+          open={confirmOpen}
+          confirmLabel="Видалити"
+          title="Видалити звичку?"
+          onConfirm={() => {}}
+          onCancel={onCancel}
+        />
+      </Sheet>
+    );
+    const { rerender } = render(sheet(false));
+    // Запис історії, який належить Sheet: саме він стає верхнім після
+    // того, як діалог відкотить свій.
+    const sheetEntry = window.history.state;
+
+    rerender(sheet(true));
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+
+    window.dispatchEvent(new PopStateEvent("popstate", { state: sheetEntry }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onSheetClose).not.toHaveBeenCalled();
+  });
+
+  it("Back без onCancel не падає", () => {
+    render(<ConfirmDialog open confirmLabel="Ок" title="T" />);
+    expect(() => fireEvent.popState(window)).not.toThrow();
   });
 });

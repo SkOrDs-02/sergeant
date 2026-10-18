@@ -463,6 +463,8 @@ describe("plataProvider.cancelSubscription", () => {
   function mockCancelPool(
     subscriptionId: string | null,
     options: {
+      /** Живого plata-рядка в `subscriptions` немає. */
+      noActiveRow?: boolean;
       /** Рядок `subscriptions` уже має `cancel_at_period_end = TRUE`. */
       alreadyCanceling?: boolean;
       /** Скільки рядків зачепить `UPDATE … cancel_at_period_end = TRUE`. */
@@ -472,16 +474,16 @@ describe("plataProvider.cancelSubscription", () => {
     const calls: { sql: string; params: unknown[] | undefined }[] = [];
     const query = vi.fn(async (sql: string, params?: unknown[]) => {
       calls.push({ sql, params });
-      if (sql.includes("SELECT subscription_id FROM plata_subscription")) {
+      if (sql.includes("SELECT provider_subscription_id")) {
         return {
-          rows: subscriptionId ? [{ subscription_id: subscriptionId }] : [],
-        };
-      }
-      if (sql.includes("SELECT cancel_at_period_end")) {
-        return {
-          rows: options.alreadyCanceling
-            ? [{ cancel_at_period_end: true }]
-            : [{ cancel_at_period_end: false }],
+          rows: options.noActiveRow
+            ? []
+            : [
+                {
+                  provider_subscription_id: subscriptionId,
+                  cancel_at_period_end: options.alreadyCanceling === true,
+                },
+              ],
         };
       }
       return { rowCount: options.updateRowCount ?? 1, rows: [] };
@@ -489,6 +491,10 @@ describe("plataProvider.cancelSubscription", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { pool: { query } as any, calls };
   }
+
+  const flagUpdates = (
+    calls: { sql: string; params: unknown[] | undefined }[],
+  ) => calls.filter((c) => c.sql.includes("cancel_at_period_end = TRUE"));
 
   it("sends action:cancel WITHOUT refundAmount, then marks cancel_at_period_end", async () => {
     const fetchMock = vi
@@ -507,10 +513,27 @@ describe("plataProvider.cancelSubscription", () => {
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
     expect(body).toEqual({ subscriptionId: "s2_cancel", action: "cancel" });
     expect(body["refundAmount"]).toBeUndefined();
-    const cancelUpdate = calls.find((c) =>
-      c.sql.includes("cancel_at_period_end = TRUE"),
+    // Прапорець ставиться лише тому рядку, чий id скасували.
+    const [cancelUpdate] = flagUpdates(calls);
+    expect(cancelUpdate?.params).toEqual(["usr_1", "s2_cancel"]);
+  });
+
+  it("cancels subscriptions.provider_subscription_id, not the latest checkout mapping (data-21)", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { pool, calls } = mockCancelPool("s2_paid_one");
+
+    await plataProvider.cancelSubscription(pool, "usr_1");
+
+    expect(calls.some((c) => c.sql.includes("FROM plata_subscription"))).toBe(
+      false,
     );
-    expect(cancelUpdate).toBeDefined();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      subscriptionId: "s2_paid_one",
+    });
   });
 
   it("falls back to subscription/remove on 404", async () => {
@@ -519,34 +542,59 @@ describe("plataProvider.cancelSubscription", () => {
       .mockResolvedValueOnce(new Response("", { status: 404 }))
       .mockResolvedValueOnce(new Response("", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const { pool } = mockCancelPool("s2_404");
+    const { pool, calls } = mockCancelPool("s2_404");
 
-    await plataProvider.cancelSubscription(pool, "usr_1");
+    await expect(plataProvider.cancelSubscription(pool, "usr_1")).resolves.toBe(
+      "canceled",
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [removeUrl] = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(removeUrl).toBe(
       "https://api.monobank.ua/api/merchant/subscription/remove",
     );
+    expect(flagUpdates(calls)).toHaveLength(1);
   });
 
-  it("returns none (no fetch, no row changed) when there is nothing left to cancel", async () => {
+  it("treats subscription/remove 404 as already gone (nothing left to charge)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response("", { status: 400 }))
+        .mockResolvedValueOnce(new Response("", { status: 404 })),
+    );
+    const { pool, calls } = mockCancelPool("s2_gone");
+
+    await expect(plataProvider.cancelSubscription(pool, "usr_1")).resolves.toBe(
+      "canceled",
+    );
+    expect(flagUpdates(calls)).toHaveLength(1);
+  });
+
+  it("returns none (no fetch, no row changed) when there is no active plata subscription", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const { pool, calls } = mockCancelPool(null, { updateRowCount: 0 });
+    const { pool, calls } = mockCancelPool(null, { noActiveRow: true });
 
     await expect(plataProvider.cancelSubscription(pool, "usr_1")).resolves.toBe(
       "none",
     );
 
     expect(fetchMock).not.toHaveBeenCalled();
-    // WHERE-guard on the UPDATE leaves everything that is not an active
-    // plata subscription untouched (0 rows affected) — the query itself still
-    // runs, but no provider call happens without a stored subscriptionId.
-    const cancelUpdate = calls.find((c) =>
-      c.sql.includes("cancel_at_period_end = TRUE"),
+    expect(flagUpdates(calls)).toHaveLength(0);
+  });
+
+  it("returns none when the active row carries no provider_subscription_id", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { pool, calls } = mockCancelPool(null);
+
+    await expect(plataProvider.cancelSubscription(pool, "usr_1")).resolves.toBe(
+      "none",
     );
-    expect(cancelUpdate).toBeDefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(flagUpdates(calls)).toHaveLength(0);
   });
 
   it("is idempotent: an already cancel_at_period_end subscription is not sent to monobank again", async () => {
@@ -561,23 +609,72 @@ describe("plataProvider.cancelSubscription", () => {
     );
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(
-      calls.some((c) => c.sql.includes("cancel_at_period_end = TRUE")),
-    ).toBe(false);
+    expect(flagUpdates(calls)).toHaveLength(0);
   });
 
-  it("swallows a network error from monobank (best-effort) and still marks locally", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new Error("network down")),
-    );
-    const { pool, calls } = mockCancelPool("s2_err");
+  // data-20 (рішення власника 2026-10-10, варіант A): Plata поводиться як
+  // LiqPay. Раніше відмову monobank ковтали й прапорець ставили все одно, а
+  // повторне скасування вже віддавало `already_canceling` без запиту.
+  describe("monobank refusal is an error and does NOT set the flag (data-20)", () => {
+    it("rejects on a non-2xx from subscription/edit and leaves the row alone", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(new Response("", { status: 500 })),
+      );
+      const { pool, calls } = mockCancelPool("s2_500");
 
-    await expect(plataProvider.cancelSubscription(pool, "usr_1")).resolves.toBe(
-      "canceled",
-    );
-    expect(
-      calls.some((c) => c.sql.includes("cancel_at_period_end = TRUE")),
-    ).toBe(true);
+      await expect(
+        plataProvider.cancelSubscription(pool, "usr_1"),
+      ).rejects.toThrow(/subscription\/edit failed: HTTP 500/);
+      expect(flagUpdates(calls)).toHaveLength(0);
+    });
+
+    it("rejects on a network error and leaves the row alone", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockRejectedValue(new Error("network down")),
+      );
+      const { pool, calls } = mockCancelPool("s2_err");
+
+      await expect(
+        plataProvider.cancelSubscription(pool, "usr_1"),
+      ).rejects.toThrow("network down");
+      expect(flagUpdates(calls)).toHaveLength(0);
+    });
+
+    it("rejects when the subscription/remove fallback is refused", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValueOnce(new Response("", { status: 404 }))
+          .mockResolvedValueOnce(new Response("", { status: 502 })),
+      );
+      const { pool, calls } = mockCancelPool("s2_remove_fail");
+
+      await expect(
+        plataProvider.cancelSubscription(pool, "usr_1"),
+      ).rejects.toThrow(/subscription\/remove failed: HTTP 502/);
+      expect(flagUpdates(calls)).toHaveLength(0);
+    });
+
+    it("can be retried after a refusal: the second attempt reaches monobank again", async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(new Response("", { status: 503 }))
+        .mockResolvedValueOnce(new Response("", { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+      const { pool, calls } = mockCancelPool("s2_retry");
+
+      await expect(
+        plataProvider.cancelSubscription(pool, "usr_1"),
+      ).rejects.toThrow();
+      await expect(
+        plataProvider.cancelSubscription(pool, "usr_1"),
+      ).resolves.toBe("canceled");
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(flagUpdates(calls)).toHaveLength(1);
+    });
   });
 });

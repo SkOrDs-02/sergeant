@@ -78,6 +78,23 @@ describe("useMonthlyPlan", () => {
     expect(result.current.todayTemplateId).toBe("today-tpl");
   });
 
+  it("changes today's template after waking the next day without editing the plan", () => {
+    process.env["TZ"] = "Europe/Kyiv";
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-18T20:59:59Z"));
+    const { result } = renderHook(() => useMonthlyPlan());
+    act(() => {
+      result.current.setDayTemplate("2026-10-18", "sunday");
+      result.current.setDayTemplate("2026-10-19", "monday");
+    });
+    expect(result.current.todayTemplateId).toBe("sunday");
+    act(() => {
+      vi.setSystemTime(new Date("2026-10-19T08:00:00Z"));
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(result.current.todayTemplateId).toBe("monday");
+  });
+
   // Removed (teardown Phase 3): the "fizruk-storage-monthly-plan" custom-event
   // + storage-listener sync was LS-coupled (loadState read localStorage) and
   // reset state to defaults once the LS write-mirror was dropped. Cross-instance

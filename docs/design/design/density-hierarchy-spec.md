@@ -1,6 +1,6 @@
 # Специфікація ієрархії густини — правила 1–3 на модульних екранах
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-03-18.
+> **Last touched:** 2026-10-11 by @codex (PR5: чинний контракт прогресу Рутини). **Next review:** 2027-03-18.
 > **Status:** Active
 
 > **Аудиторія:** founder, будь-який агент, що робить типографічну зміну в `apps/web`.
@@ -105,13 +105,14 @@
 
 ### 3.3. Рутина → `RoutineCalendarHero` — рішення власника ухвалене, веде прогрес
 
-[`RoutineCalendarHero.tsx`](../../../apps/web/src/modules/routine/components/RoutineCalendarHero.tsx) + [`DayProgressRing.tsx`](../../../apps/web/src/modules/routine/components/DayProgressRing.tsx).
+[`RoutineCalendarHero.tsx`](../../../apps/web/src/modules/routine/components/RoutineCalendarHero.tsx) + [`DayProgress.tsx`](../../../apps/web/src/modules/routine/components/DayProgress.tsx).
 
-> **ЧИННИЙ КОНТРАКТ (від 2026-09-12):** дата — `title`, число прогресу — кегль,
-> **обчислюваний** `fitRingFontPx()` зі стелею 26px (`text-style-headline-fixed`)
-> і підлогою 12px, назва зрізу — `caption`. Усе до підзаголовка «Ухвалено» нижче
-> описує стан **ДО** цього рішення і лишене як історія розбору — не як
-> інструкція. Правиш типографіку цього блоку — читай від «Ухвалено».
+> **ЧИННИЙ КОНТРАКТ (redesign v3, PR5, 2026-10-11):** число виконаних звичок —
+> `text-style-display` (40/700), знаменник — `text-style-title` (20/700), дата й
+> мета — `text-style-label` (14/500), назва зрізу — `text-style-overline` (12 caps).
+> Прогрес показано N сегментами; кільце та `fitRingFontPx()` видалено.
+> Немає запланованих звичок — тире без сегментів, нейтральна панель.
+> Нижче лишено історію рішення 2026-09-12; вона не задає поточну реалізацію.
 
 Три рівні на цій поверхні були **вже тоді**: `headline` на даті, `label` на «0 з 3 звичок виконано», `caption` на назві зрізу. Правило 2 не порушене — назва зрізу («Сьогодні» / «Тиждень») не підпис до дати, а індикатор режиму, і механічний детектор «caption над headline» дає тут хибне спрацювання. Записано, щоб наступний прохід не «виправив» це назад.
 
@@ -217,16 +218,16 @@
 
 ### 3.5. Що змінено фактично і як перевірено
 
-| Файл                                                  | Зміна                                                                                    | Перевірка                         |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------- |
-| `fizruk/components/dashboard/HeroCardStates.tsx` (×2) | `text-hero` → `text-style-headline`                                                      | рендер 393/1280; 26.6px / 34.6px  |
-| `fizruk/pages/Atlas.tsx`                              | те саме на `h1`                                                                          | те саме                           |
-| ~~`finyk/pages/overview/MonthPulseCard.tsx`~~         | правка відпала: main замінив картку на `MonthStrip` (PR #1025), сирих розмірів там немає | —                                 |
-| `finyk/pages/AssetsNetworthCard.tsx`                  | правило 2 ×3 + один сірий на блок                                                        | рендер 393/1280                   |
-| `packages/design-tokens/tailwind-preset.js`           | `fontSize.hero` вилучено (нуль call-site-ів у монорепо)                                  | ґреп по `apps/**`, `packages/**`  |
-| `routine/components/RoutineCalendarHero.tsx`          | дата `headline` → `title` (D1 крок 3, 2026-09-12)                                        | рендер 393/1280                   |
-| `routine/components/DayProgressRing.tsx`              | число прогресу: обчислюваний кегль 12–26px + кліпер на просвіт                           | рендер «0/3»…«12345/12345»; юніти |
-| `packages/design-tokens/tailwind-preset.js` (крок 3)  | додано `text-style-headline-fixed` — стеля кегля в кільці                                | `tailwind-preset.test.js`         |
+| Файл                                                        | Зміна                                                                                    | Перевірка                         |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------- |
+| `fizruk/components/dashboard/HeroCardStates.tsx` (×2)       | `text-hero` → `text-style-headline`                                                      | рендер 393/1280; 26.6px / 34.6px  |
+| `fizruk/pages/Atlas.tsx`                                    | те саме на `h1`                                                                          | те саме                           |
+| ~~`finyk/pages/overview/MonthPulseCard.tsx`~~               | правка відпала: main замінив картку на `MonthStrip` (PR #1025), сирих розмірів там немає | —                                 |
+| `finyk/pages/AssetsNetworthCard.tsx`                        | правило 2 ×3 + один сірий на блок                                                        | рендер 393/1280                   |
+| `packages/design-tokens/tailwind-preset.js`                 | `fontSize.hero` вилучено (нуль call-site-ів у монорепо)                                  | ґреп по `apps/**`, `packages/**`  |
+| `routine/components/RoutineCalendarHero.tsx`                | дата `headline` → `title` (D1 крок 3, 2026-09-12)                                        | рендер 393/1280                   |
+| `routine/components/DayProgress.tsx` (PR5; кільце видалено) | число 40/700 + N сегментів; DOM сталий для великих лічильників                           | рендер «0/3»…«12345/12345»; юніти |
+| `packages/design-tokens/tailwind-preset.js` (крок 3)        | додано `text-style-headline-fixed` — стеля кегля в кільці                                | `tailwind-preset.test.js`         |
 
 Довгу назву вправи («Присідання зі штангою на спині») на новому кеглі поміряно окремо, бо три call-site-и мають `truncate`: на 1280px вона займає рівно ширину контейнера без переповнення, на 393px кегль не змінився взагалі (26px — нижня межа `clamp`), тож обрізки більше, ніж було, не з'явиться.
 

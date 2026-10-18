@@ -1,3 +1,5 @@
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Lazy-loaded per-domain card for finyk/expense data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
@@ -199,6 +201,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
 
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const kyivNow = useKyivDayNow();
+  const dayKey = useDeviceDayKey();
   const bump = useHubStorageBump();
   const mirrorTick = useFinykMonoMirrorTick();
   // CALC-4 (2026-09-01 product audit): `readFinykStatsContext()` reads
@@ -216,6 +220,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   const hidden = isFinykBalanceHidden();
 
   const { cur, prev, prevAny, dates, partial } = useMemo(() => {
+    void kyivNow;
+    void dayKey;
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
     void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
@@ -242,7 +248,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       dates: w.dates,
       partial: w.money.partial,
     };
-  }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
+  }, [period, offset, bump, mirrorTick, sqliteCacheTick, dayKey, kyivNow]);
 
   // Нуль в обох вікнах: витрат ще не записували, «0 ₴» тут не результат.
   const empty = cur.total === 0 && !prevAny;

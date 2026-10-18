@@ -27,7 +27,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
-
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
@@ -225,7 +224,7 @@ export function SilpoReceiptSection({
   if (status === "disconnected") {
     if (!looksLikeSilpo) return null;
     return (
-      <section className="rounded-xl border border-line bg-panel p-3">
+      <section className="rounded-panel border border-line bg-panel p-3">
         <div className="flex items-center gap-2">
           <h3 className="text-style-label text-text">
             {copy.connectPromptTitle}
@@ -304,7 +303,7 @@ export function SilpoReceiptSection({
   };
 
   return (
-    <section className="rounded-xl border border-line bg-panel p-3">
+    <section className="rounded-panel border border-line bg-panel p-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="text-style-label text-text">{copy.title}</h3>
@@ -332,7 +331,7 @@ export function SilpoReceiptSection({
       )}
 
       {proposalOpen && canPropose && (
-        <div className="mt-3 space-y-2 rounded-xl border border-line bg-panel p-3">
+        <div className="mt-3 space-y-2 rounded-panel border border-line bg-panel p-3">
           <p className="text-style-caption text-subtle">{copy.proposalTitle}</p>
           <ul className="space-y-1.5">
             {finalSplits.map((split) => {

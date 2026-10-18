@@ -1,18 +1,13 @@
 import { messages } from "@shared/i18n";
 import { txEpochMs } from "../../lib/monthWindow";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-/**
- * Last validated: 2026-05-19
- * Status: Active
- */
 import { useState, useMemo, type ReactNode } from "react";
 import { VirtualList } from "@shared/components/ui/VirtualList";
 import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState } from "@shared/components/ui/EmptyState";
-
+import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
   DataState,
@@ -82,8 +77,8 @@ function DayCardShell({
       <div
         className={cn(
           today ? "bg-finyk-tint" : "bg-panel",
-          roundTop && "rounded-t-xl",
-          roundBottom && "rounded-b-xl",
+          roundTop && "rounded-t-panel",
+          roundBottom && "rounded-b-panel",
         )}
       >
         {inset && <div aria-hidden className="mx-3 border-t border-line" />}
@@ -327,7 +322,7 @@ export function TransactionList({
   //     the surface still feels owned by the module.
   const emptyFallback =
     activeTx.length === 0 && hasTransactionsOutsideMonth ? (
-      <div className="rounded-xl border border-dashed border-line bg-panel">
+      <div className="rounded-panel border border-dashed border-line bg-panel">
         <EmptyState
           title="Цей місяць ще порожній"
           description={
@@ -338,7 +333,6 @@ export function TransactionList({
               ? `За ${monthLabel} операцій поки немає. Попередні місяці на місці, гортай назад або додай запис вручну.`
               : "Операцій за цей місяць поки немає. Попередні місяці на місці, гортай назад або додай запис вручну."
           }
-          module="finyk"
           action={
             onGoPreviousMonth ? (
               <Button variant="outline" onClick={onGoPreviousMonth}>
@@ -349,19 +343,19 @@ export function TransactionList({
         />
       </div>
     ) : activeTx.length === 0 ? (
-      <div className="rounded-xl border border-dashed border-line bg-panel">
-        <EmptyState
-          title="Операцій ще немає"
-          description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+      <div className="rounded-panel bg-panel px-5">
+        <ModuleEmptyState
           module="finyk"
+          variant="compact"
+          title={messages.finykRedesign.transactionsEmptyTitle}
+          description={messages.finykRedesign.transactionsEmptyDescription}
         />
       </div>
     ) : (
-      <div className="rounded-xl border border-dashed border-line bg-panel">
+      <div className="rounded-panel border border-dashed border-line bg-panel">
         <EmptyState
           title="Немає операцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
-          module="finyk"
         />
       </div>
     );

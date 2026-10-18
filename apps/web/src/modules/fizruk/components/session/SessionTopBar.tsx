@@ -44,7 +44,6 @@ export function SessionTopBar({
       type: "item",
       id: "delete-workout",
       label: messages.fizruk.sessionHeader.deleteWorkout,
-      icon: <Icon name="trash" size="md" aria-hidden />,
       destructive: true,
       onSelect: onDeleteWorkout,
     },
@@ -56,18 +55,18 @@ export function SessionTopBar({
     // навмисно прибрано (theme.css § v2) — інсет застосовує КОЖЕН споживач
     // сам, тож без цього рядка смуга залазить під системний статус-бар
     // (звіт власника 2026-09-11, скріншот з LTE/годинником поверх кнопок).
-    <div className="safe-area-pt sticky top-0 z-30 border-b border-line bg-panel">
+    <div className="safe-area-pt sticky top-0 z-30 rounded-b-panel bg-fizruk-tint">
       <div className="mx-auto flex h-14 max-w-xl items-center gap-1 px-1">
         <button
           type="button"
           onClick={onLeft}
-          className="focus-ring flex h-11 items-center gap-0.5 rounded-xl pl-1.5 pr-3 text-style-label font-semibold text-fizruk-strong dark:text-fizruk hover:bg-panelHi"
+          className="focus-ring flex h-11 items-center gap-0.5 rounded-lg pl-1.5 pr-3 text-style-label font-semibold text-text hover:bg-panelHi"
         >
           <Icon name="chevron-left" size={18} aria-hidden />
           {leftLabel}
         </button>
         <div
-          className="flex-1 text-center text-style-title font-bold tracking-tight tabular-nums text-text"
+          className="flex-1 text-center text-style-display font-bold tracking-tight tabular-nums text-text"
           role="timer"
           aria-label={ss.durationAria}
         >
@@ -75,7 +74,7 @@ export function SessionTopBar({
         </div>
         <Button
           variant="solid"
-          tone="fizruk"
+          tone="neutral"
 
           size="sm"
           className="h-9 px-4"

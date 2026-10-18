@@ -45,12 +45,19 @@
  */
 import { computePantryDelta } from "./diff.pantryDelta.js";
 import {
+  diffGoalPeriodRestoreOps,
+  type GoalPeriodRestoreOp,
+  type NutritionGoalPeriodRestoreSnapshot,
+} from "./diff.goalPeriodRestore.js";
+import {
   diffPantryEventOps,
   type NutritionPantryEventSnapshot,
   type PantryEventAppendOp,
 } from "./diff.pantryEvents.js";
 // Re-export: types live in `diff.pantryEvents.ts` (Hard Rule #18 split).
 export type { NutritionPantryEventSnapshot, PantryEventAppendOp };
+// Те саме для відновлення сходинок цілей з бекапу (`diff.goalPeriodRestore.ts`).
+export type { GoalPeriodRestoreOp, NutritionGoalPeriodRestoreSnapshot };
 
 // -----------------------------------------------------------------------
 // Snapshot shapes — loose mirrors of the domain types, kept minimal so
@@ -264,6 +271,7 @@ export type NutritionDualWriteOp =
   | WaterLogSetOp
   | ShoppingListSetOp
   | GoalPeriodInsertOp
+  | GoalPeriodRestoreOp
   | PantryEventAppendOp;
 
 // -----------------------------------------------------------------------
@@ -291,6 +299,8 @@ export interface NutritionDualWriteState {
    * стани, зібрані вручну в тестах, не несуть цього поля — трактується як
    * `[]` (`diffPantryEventOps` уже робить `?? []`). */
   readonly pantryEvents?: readonly NutritionPantryEventSnapshot[];
+  /** Черга сходинок цілей, які відновлює бекап (`diff.goalPeriodRestore.ts`). */
+  readonly goalPeriodRestores?: readonly NutritionGoalPeriodRestoreSnapshot[];
   /** Походження зміни цілі лише для поточного переходу. */
   readonly goalOrigin?: "manual" | "preset" | "tdee";
 }
@@ -377,6 +387,7 @@ export function diffNutritionDualWriteOps(
   // --- Журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1) ---
   // ДОДАТКОВО до `prefs-upsert` вище, який навмисно лишився недоторканим.
   diffGoalPeriodOps(prev, next, ops);
+  diffGoalPeriodRestoreOps(prev, next, ops); // data-35: відновлення з бекапу
 
   // --- Recipes ---
   diffArray(

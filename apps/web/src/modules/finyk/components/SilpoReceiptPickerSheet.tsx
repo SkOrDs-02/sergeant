@@ -24,7 +24,6 @@
  */
 import { useMemo } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
-
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
@@ -102,7 +101,6 @@ export function SilpoReceiptPickerSheet({
         {!isLoading && candidates.length === 0 && (
           <EmptyState
             size="sm"
-            module="finyk"
 
             title={COPY.emptyTitle}
             description={COPY.emptyHint}

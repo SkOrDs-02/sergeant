@@ -149,10 +149,10 @@ describe("auth-shell scroll contract", () => {
   }
 
   it.each(["/sign-in", "/reset-password", "/verify-email"])(
-    "gives the %s page-enter wrapper a definite height so the shell can scroll",
+    "gives the %s wrapper a definite height so the shell can scroll",
     (pathname) => {
       const className = wrapperClassName(pathname);
-      expect(className).toContain("page-enter");
+      expect(className).not.toContain("page-enter");
       expect(className).toContain("h-app-dvh");
       expect(className).toContain("min-h-0");
     },

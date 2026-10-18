@@ -1,3 +1,4 @@
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useMemo } from "react";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
@@ -5,7 +6,6 @@ import { SubCard } from "../components/SubCard";
 import { MonthOutflowComb } from "../components/MonthOutflowComb";
 import type { CombEntry } from "../lib/monthOutflowComb";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-
 import { Money } from "@shared/components/ui/Money";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
@@ -17,6 +17,7 @@ import type { useAssetsState } from "./useAssetsState";
 type State = ReturnType<typeof useAssetsState>;
 
 export function AssetsSubscriptionsSection({ state }: { state: State }) {
+  const nowMs = useKyivDayNow();
   const {
     subscriptions,
     setSubscriptions,
@@ -52,7 +53,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
   // тут те саме, з якого рахуються звіти, а не те, яке показує телефон
   // у роумінгу.
   const { combEntries, daysInMonth, todayDom } = useMemo(() => {
-    const kyiv = getKyivDateParts();
+    const kyiv = getKyivDateParts(nowMs);
     const entries: CombEntry[] = subscriptions.map((sub) => ({
       id: String(sub.id),
       name: String(sub.name ?? ""),
@@ -65,7 +66,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
       daysInMonth: new Date(Date.UTC(kyiv.year, kyiv.month, 0)).getUTCDate(),
       todayDom: kyiv.day,
     };
-  }, [subscriptions, transactions]);
+  }, [subscriptions, transactions, nowMs]);
 
   return (
     <div className="mb-3 space-y-0">
@@ -77,7 +78,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
         showBalance={showBalance}
         className="mb-2"
       />
-      <div className="mb-2 rounded-xl border border-line bg-panel px-4 py-3 flex items-center justify-between gap-3">
+      <div className="mb-2 rounded-panel border border-line bg-panel px-4 py-3 flex items-center justify-between gap-3">
         <span className="text-style-caption text-muted">
           Витрати на підписки за місяць
         </span>

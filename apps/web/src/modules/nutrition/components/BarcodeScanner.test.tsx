@@ -162,6 +162,14 @@ describe("BarcodeScanner — web variant", () => {
       expect.objectContaining({ active: false }),
     );
   });
+
+  // Аудит ux-02: Back лишав камеру увімкненою над іншим маршрутом.
+  it("системний Back закриває веб-сканер", () => {
+    const onClose = vi.fn();
+    render(<BarcodeScanner onDetected={vi.fn()} onClose={onClose} />);
+    fireEvent.popState(window);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("BarcodeScanner — native variant", () => {

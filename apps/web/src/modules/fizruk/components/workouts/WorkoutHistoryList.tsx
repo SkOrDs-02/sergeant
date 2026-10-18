@@ -11,14 +11,14 @@
  * start-CTA of its own: starting a session lives only on `WorkoutsHome`.
  * Each row navigates to the route-owned single-workout view
  * (`/fizruk/workout/<id>`, `WorkoutJournalSection`) instead of toggling a
- * local selection — that view already renders the right thing for both
- * an in-flight and a finished session (02-A).
+ * local selection. The empty state may route to the canonical Workouts
+ * home; it does not start a session in place.
  */
 import { useCallback } from "react";
 import { VirtualList } from "@shared/components/ui/VirtualList";
 import { deviceDayKey, pluralExercises } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
@@ -33,6 +33,8 @@ export interface WorkoutHistoryListProps {
   restoreWorkout: (workout: Workout) => void;
   /** Navigates to `/fizruk/workout/<id>` (route-owned single-workout view). */
   onOpenWorkout: (id: string) => void;
+  /** Routes the empty state to the canonical Workouts start surface. */
+  onStartWorkout?: () => void;
 }
 
 interface WorkoutRowProps {
@@ -83,16 +85,16 @@ function WorkoutRow({ w, onOpen }: WorkoutRowProps) {
               завершений, і легкий — це два факти, і другий пояснює, чому
               серія на цьому дні не зросла (канон §8, 2026-09-15). */}
           {isEnded && isLightWorkout(w) ? (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-fizruk/10 text-fizruk-strong dark:text-fizruk border border-fizruk/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-text border border-line">
               {copy.lightBadge}
             </span>
           ) : null}
           {isEnded ? (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-panelHi text-subtle border border-line">
+            <span className="text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-subtle border border-line">
               {copy.endedBadge}
             </span>
           ) : (
-            <span className="text-style-caption px-2 py-0.5 rounded-full bg-success/15 text-success-strong dark:text-success border border-success/20">
+            <span className="text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-text border border-line">
               {copy.activeBadge}
             </span>
           )}
@@ -112,6 +114,7 @@ export function WorkoutHistoryList({
   deleteWorkout,
   restoreWorkout,
   onOpenWorkout,
+  onStartWorkout,
 }: WorkoutHistoryListProps) {
   const toast = useToast();
   const copy = messages.fizruk.workoutHistory;
@@ -137,7 +140,7 @@ export function WorkoutHistoryList({
   );
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       <div className="px-4 py-3 bg-panelHi border-b border-line">
         <SectionHeading as="div" size="xs" variant="fizruk">
           {copy.title}
@@ -145,24 +148,14 @@ export function WorkoutHistoryList({
       </div>
 
       {workoutList.length === 0 && (
-        <EmptyState
-          compact
-          icon={
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3" />
-            </svg>
-          }
+        <ModuleEmptyState
+          module="fizruk"
+          variant="compact"
           title={copy.emptyTitle}
           description={copy.emptyDescription}
+          {...(onStartWorkout ? { onAction: onStartWorkout } : {})}
+          actionLabel={copy.startCta}
+          className="px-5"
         />
       )}
 

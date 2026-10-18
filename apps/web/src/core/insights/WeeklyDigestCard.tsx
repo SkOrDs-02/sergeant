@@ -9,7 +9,7 @@ import {
   DataState,
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
-import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
+import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Badge } from "@shared/components/ui/Badge";
 import { messages } from "@shared/i18n/uk";
@@ -30,6 +30,11 @@ import {
   type AdviceSurface,
 } from "../observability/adviceTelemetry";
 import { formatDateShort } from "@shared/lib/time/formatDate";
+import {
+  ModuleBlock,
+  coverageBadge,
+  type DigestPayload,
+} from "./WeeklyDigestModuleBlock";
 
 // `hasLiveWeeklyDigest` now lives in `@sergeant/shared` (DOM-free, reused by
 // mobile). The web-side adapter in `@shared/lib/weeklyDigestStorage` binds
@@ -44,18 +49,13 @@ export { hasLiveWeeklyDigest } from "@shared/lib/storage/weeklyDigestStorage";
 export {
   ModuleBlock,
   coverageBadge,
-  type ModuleKey,
   type DigestModuleData,
   type DigestPayload,
-} from "./WeeklyDigestModuleBlock";
-import {
-  ModuleBlock,
-  coverageBadge,
-  type DigestPayload,
+  type ModuleKey,
 } from "./WeeklyDigestModuleBlock";
 
 // Shape-aware loader: matches the real digest layout — 4 module rows
-// (icon + 2 lines of summary text). When the digest lands, only the
+// (2 lines of summary text). When the digest lands, only the
 // content swaps in; the rough shape is already on screen.
 function LoadingSpinner() {
   return (
@@ -73,7 +73,7 @@ function LoadingSpinner() {
           <div
             key={i}
             className={cn(
-              "flex items-start gap-3 p-3 rounded-2xl border border-line bg-panel",
+              "flex items-start gap-3 p-3 rounded-panel border border-line bg-panel",
               i === 0
                 ? "opacity-100"
                 : i === 1
@@ -83,7 +83,6 @@ function LoadingSpinner() {
                     : "opacity-45",
             )}
           >
-            <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
             <div className="flex-1 min-w-0 space-y-1.5 pt-0.5">
               <SkeletonText className="w-1/3 h-3" />
               <SkeletonText className="w-2/3 h-2.5" />
@@ -208,7 +207,7 @@ function DigestContent({
           <button
             type="button"
             onClick={handleRegenerate(onGenerate)}
-            className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+            className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
           >
             Спробувати знову
           </button>
@@ -233,14 +232,14 @@ function DigestContent({
 
   const errorSlot = (
     <div className="px-4 pb-3">
-      <p className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
+      <p className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 rounded-panel px-3 py-2 mb-2">
         {error}
       </p>
       {canGenerate && (
         <button
           type="button"
           onClick={handleRegenerate(onGenerate)}
-          className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+          className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
         >
           Спробувати знову
         </button>
@@ -278,24 +277,8 @@ function DigestContent({
             <button
               type="button"
               onClick={onPlayStories}
-              className={cn(
-                "w-full h-11 rounded-xl text-style-label font-bold text-white",
-                "bg-linear-to-r from-brand-500 via-brand-400 to-teal-400",
-                "dark:from-brand-600 dark:via-brand-500 dark:to-teal-500",
-                "shadow-card hover:brightness-110 active:scale-[0.98] transition-[box-shadow,filter,opacity,transform]",
-                "flex items-center justify-center gap-2",
-                "focus-ring",
-              )}
+              className="w-full h-11 rounded-lg border border-line bg-panel text-style-label font-semibold text-text hover:bg-panelHi transition-colors focus-ring"
             >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
               Переглянути як сторіс
             </button>
           </div>
@@ -325,19 +308,13 @@ function DigestContent({
                 {d &&
                   Array.isArray(d.overallRecommendations) &&
                   d.overallRecommendations.length > 0 && (
-                    <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 space-y-1.5">
-                      <p className="text-style-caption font-semibold text-primary">
+                    <div className="border-y border-line px-3 py-2.5 space-y-1.5">
+                      <p className="text-style-caption font-semibold text-text">
                         Загальні рекомендації
                       </p>
                       {d.overallRecommendations.map(
                         (rec: string, i: number) => (
-                          <div key={i} className="flex items-start gap-1.5">
-                            <Icon
-                              name="sergeant"
-                              size="xs"
-                              className="text-primary mt-1 shrink-0"
-                              aria-hidden
-                            />
+                          <div key={i} className="border-t border-line py-2">
                             <span className="text-style-body text-text leading-snug">
                               {rec}
                             </span>
@@ -364,7 +341,7 @@ function DigestContent({
                   <button
                     type="button"
                     onClick={handleRegenerate(onUpdate)}
-                    className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+                    className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
                   >
                     Оновити звіт
                   </button>
@@ -378,7 +355,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpandedTracked(true)}
-                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Переглянути звіт
               </button>
@@ -389,7 +366,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpandedTracked(false)}
-                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Згорнути
               </button>
@@ -500,42 +477,16 @@ export function WeeklyDigestCard({
 
   return (
     // Мова H: панель без бордера й тіні; матеріал «край і зріз» лише на чеку.
-    <div className="rounded-xl bg-panel overflow-hidden">
+    <div className="rounded-panel bg-panel overflow-hidden">
       <div>
-        <div className="px-4 py-3.5 flex items-center gap-3 bg-linear-to-r from-transparent via-brand-50/30 to-teal-50/20 dark:from-transparent dark:via-brand-900/10 dark:to-teal-900/5">
-          <div
-            className={cn(
-              "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-              "bg-linear-to-br from-brand-100 to-teal-100",
-              "dark:from-brand-900/40 dark:to-teal-900/30",
-              "shadow-sm",
-            )}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-brand-strong"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
-          </div>
+        <div className="px-4 py-3.5 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-style-title font-bold text-text truncate">
                 Звіт тижня
               </span>
               {hasUnreadDigest && (
-                <Badge variant="accent" size="xs">
+                <Badge variant="neutral" size="xs">
                   {messages.sergeant.weeklyDigestUnread}
                 </Badge>
               )}
@@ -565,9 +516,9 @@ export function WeeklyDigestCard({
                 onClick={() => setShowHistory((v) => !v)}
                 title="Попередні тижні"
                 className={cn(
-                  "w-7 h-7 flex items-center justify-center rounded-xl transition-colors",
+                  "w-7 h-7 flex items-center justify-center rounded-lg transition-colors",
                   showHistory
-                    ? "bg-primary/15 text-primary"
+                    ? "bg-segment text-text"
                     : "text-muted hover:text-text hover:bg-panelHi",
                 )}
               >
@@ -598,7 +549,7 @@ export function WeeklyDigestCard({
                     onCollapse();
                   }}
                   aria-label="Згорнути звіт тижня"
-                  className="w-7 h-7 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+                  className="w-7 h-7 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors"
                 >
                   <Icon name="chevron-up" size={15} strokeWidth={2.5} />
                 </button>
@@ -619,9 +570,9 @@ export function WeeklyDigestCard({
                     setShowHistory(false);
                   }}
                   className={cn(
-                    "px-2.5 py-1 rounded-xl text-style-label font-semibold transition-colors",
+                    "px-2.5 py-1 rounded-lg text-style-label font-semibold transition-colors",
                     selectedWeekKey === h.weekKey
-                      ? "bg-primary/15 text-primary"
+                      ? "bg-segment text-text"
                       : "bg-panelHi text-muted hover:text-text",
                   )}
                 >
@@ -642,9 +593,8 @@ export function WeeklyDigestCard({
             <button
               type="button"
               onClick={() => setSelectedWeekKey(currentWeekKey)}
-              className="inline-flex items-center gap-1 text-style-label text-primary hover:underline"
+              className="inline-flex items-center text-style-label text-text hover:underline"
             >
-              <Icon name="chevron-left" size="sm" />
               Поточний тиждень
             </button>
           </div>

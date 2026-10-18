@@ -51,7 +51,7 @@ export function ColumnMapper({
       </p>
 
       {sampleRows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-line">
+        <div className="overflow-x-auto rounded-panel border border-line">
           <table className="w-full text-style-caption">
             <thead>
               <tr className="border-b border-line bg-panel">

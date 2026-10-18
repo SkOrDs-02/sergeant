@@ -297,7 +297,7 @@ export async function applyHubBackupPayload(
     );
   }
   if (parsed.nutrition) {
-    applyNutritionBackupPayload(parsed.nutrition, mode);
+    await applyNutritionBackupPayload(parsed.nutrition, mode);
     await applyNutritionBackupFoods(parsed.nutrition);
     await nutritionDualWriteIdle();
   }

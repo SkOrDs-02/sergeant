@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
 import { useBrowserLocation } from "./useBrowserLocation";
+import { readProfileSectionHash } from "../profile/profileSectionNavigation";
 
 export type HubView = "dashboard" | "reports" | "profile" | "settings";
 
@@ -34,7 +35,10 @@ export interface HubUIState {
    */
   searchQuery: string;
   hubView: HubView;
-  setHubView: (view: HubView, options?: { syncUrl?: boolean }) => void;
+  setHubView: (
+    view: HubView,
+    options?: { syncUrl?: boolean; hash?: string },
+  ) => void;
   setSearchOpen: (value: boolean) => void;
   /** Відкрити пошук із готовим запитом (порожній — як `setSearchOpen(true)`). */
   openSearch: (query?: string) => void;
@@ -69,7 +73,7 @@ export function useHubUIState(): HubUIState {
   }, [location]);
 
   const setHubView = useCallback(
-    (view: HubView, options?: { syncUrl?: boolean }) => {
+    (view: HubView, options?: { syncUrl?: boolean; hash?: string }) => {
       setHubViewRaw(view);
 
       if (options?.syncUrl === false) return;
@@ -97,7 +101,11 @@ export function useHubUIState(): HubUIState {
         {
           pathname: current.pathname,
           search: qs ? `?${qs}` : "",
-          hash: current.hash,
+          // Підрозділ Профілю — явна ціль цього переходу, не наступних
+          // натискань на вкладки. Початковий history entry лишається для Back.
+          hash:
+            options?.hash ??
+            (readProfileSectionHash(current.hash) ? "" : current.hash),
         },
         { replace: false },
       );

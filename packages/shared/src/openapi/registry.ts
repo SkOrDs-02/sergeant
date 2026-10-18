@@ -402,6 +402,12 @@ const BillingCancelResponse = schemas.BillingCancelResponseSchema.meta({
   description:
     "Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal).",
 });
+const BillingCheckoutConflictCode =
+  schemas.BillingCheckoutConflictCodeSchema.meta({
+    id: "BillingCheckoutConflictCode",
+    description:
+      "Значення `code` у 409-відповіді POST /api/billing/checkout: ALREADY_SUBSCRIBED (є діючий платний ентайтлмент) або CHECKOUT_PENDING (є непідтверджений Plata-checkout молодший за годину).",
+  });
 const BillingProvidersResponse = schemas.BillingProvidersResponseSchema.meta({
   id: "BillingProvidersResponse",
   description:
@@ -621,6 +627,7 @@ export const namedSchemas = {
   BillingStatusResponse,
   BillingPortalResponse,
   BillingCancelResponse,
+  BillingCheckoutConflictCode,
   BillingProvidersResponse,
   TranscribeQuery,
   TranscribeResponse,

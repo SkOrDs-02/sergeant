@@ -23,7 +23,6 @@ import {
 } from "@sergeant/finyk-domain/domain/budget";
 import type { MonoJarDto } from "@shared/api";
 import { CategorySelector } from "../CategorySelector";
-
 import { JarSelector } from "../JarSelector";
 import { stripLeadingEmoji } from "../txRowHelpers";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
@@ -376,7 +375,7 @@ function AddBudgetFormComponent({
     formType === "limit" ? limitForm.isSubmitting : goalForm.isSubmitting;
 
   return (
-    <Card radius="lg" padding="lg" className="space-y-3">
+    <Card padding="lg" className="space-y-3">
       <fieldset className="divide-y divide-line" disabled={isSubmitting}>
         <legend className="sr-only">{messages.finykRedesign.budgetType}</legend>
         {(
@@ -426,7 +425,7 @@ function AddBudgetFormComponent({
                 {limitCategoryIds.map((id) => (
                   <li
                     key={id}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-1.5"
+                    className="flex items-center justify-between gap-2 rounded-panel border border-line bg-bg px-3 py-1.5"
                   >
                     <span className="flex items-center gap-2 min-w-0">
                       <span className="text-style-label text-text truncate">
@@ -460,7 +459,7 @@ function AddBudgetFormComponent({
             />
             {limitCategoriesError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {limitCategoriesError}
@@ -468,7 +467,7 @@ function AddBudgetFormComponent({
             )}
             {limitOverlaps.length > 0 && (
               <p
-                className="mt-1 text-style-caption text-subtle bg-bg rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-subtle bg-bg rounded-panel px-3 py-2"
                 role="status"
               >
                 {limitOverlaps
@@ -515,7 +514,7 @@ function AddBudgetFormComponent({
             />
             {limitAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {limitAmountError}
@@ -596,7 +595,7 @@ function AddBudgetFormComponent({
             />
             {goalNameError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {goalNameError}
@@ -617,7 +616,7 @@ function AddBudgetFormComponent({
             />
             {goalAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-strong bg-panel rounded-panel px-3 py-2"
                 role="alert"
               >
                 {goalAmountError}

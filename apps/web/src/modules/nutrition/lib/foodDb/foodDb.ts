@@ -9,7 +9,11 @@ import {
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../../shared/lib/idb/sergeantDb";
-import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
+import {
+  clampNonNegative,
+  generatePrefixedId,
+  type NullableMacros,
+} from "@sergeant/shared";
 
 /**
  * Lazy-loader для 1600+ seed-продуктів. Статичний import затягував весь
@@ -208,6 +212,21 @@ export function makeFoodProduct(partial: unknown): FoodProduct {
   };
 }
 
+/**
+ * Seed-продукт отримує детермінований id `gen_<slug>` (як у серверному
+ * пошуку), а не випадковий `food_<uuid>`: прийом зберігає лише `foodId`, і
+ * випадковий id існував тільки на пристрої-авторі. Наявні локальні записи не
+ * перейменовуються (їхні прийоми вже посилаються на старі id).
+ */
+function seedToProduct(seed: SeedFood): FoodProduct {
+  return makeFoodProduct({
+    ...(seed.slug ? { id: `gen_${seed.slug}` } : {}),
+    name: seed.name,
+    per100: seed.per100,
+    origin: "seed",
+  });
+}
+
 export async function ensureSeedFoods(): Promise<boolean> {
   try {
     await ensureMigrated();
@@ -224,11 +243,7 @@ export async function ensureSeedFoods(): Promise<boolean> {
     const seeds = await loadSeedFoods();
 
     if (count === 0) {
-      return await replaceAllFoodsFromList(
-        seeds.map((x) =>
-          makeFoodProduct({ name: x.name, per100: x.per100, origin: "seed" }),
-        ),
-      );
+      return await replaceAllFoodsFromList(seeds.map(seedToProduct));
     }
 
     // Merge: додати тільки ті seeds, яких ще немає в базі
@@ -236,15 +251,14 @@ export async function ensureSeedFoods(): Promise<boolean> {
     const byNorm = new Map(
       existing.map((x) => [normText(x.norm || x.name), x]),
     );
+    const existingIds = new Set(existing.map((x) => x.id));
     for (const seed of seeds) {
       if (byNorm.has(normText(seed.name))) continue;
-      await upsertFood(
-        makeFoodProduct({
-          name: seed.name,
-          per100: seed.per100,
-          origin: "seed",
-        }),
-      );
+      const product = seedToProduct(seed);
+      // Людина могла перейменувати seed-запис: його `gen_` id вже зайнятий,
+      // і `put` затер би її правку.
+      if (existingIds.has(product.id)) continue;
+      await upsertFood(product);
     }
     return true;
   } catch {
@@ -410,6 +424,36 @@ export function macrosForGrams(per100: unknown, grams: unknown): Macros {
     protein_g: Math.round(m.protein_g * k * 10) / 10,
     fat_g: Math.round(m.fat_g * k * 10) / 10,
     carbs_g: Math.round(m.carbs_g * k * 10) / 10,
+  };
+}
+
+/**
+ * Те саме, що `macrosForGrams`, але невідомий нутрієнт лишається `null`.
+ *
+ * `macrosForGrams` зводить відсутнє значення до `0` (`normalizeMacros`), і
+ * для форми прийому це різні речі: `null` - «не вказано» (порожнє поле,
+ * у журнал їде `null`), `0` - «рівно нуль». Продукт без білка в `per100`
+ * після зміни ваги не має отримувати «0 г білка».
+ */
+export function macrosForGramsNullable(
+  per100: unknown,
+  grams: unknown,
+): NullableMacros {
+  const k = clampNonNegative(grams) / 100;
+  const m =
+    per100 && typeof per100 === "object"
+      ? (per100 as Record<string, unknown>)
+      : {};
+  const scale = (key: string): number | null => {
+    const v = m[key];
+    if (typeof v !== "number" || !Number.isFinite(v)) return null;
+    return Math.round(clampNonNegative(v) * k * 10) / 10;
+  };
+  return {
+    kcal: scale("kcal"),
+    protein_g: scale("protein_g"),
+    fat_g: scale("fat_g"),
+    carbs_g: scale("carbs_g"),
   };
 }
 

@@ -158,7 +158,7 @@ export function GoalFirstScreen({
                 onClick={() => handlePick(outcome)}
                 aria-disabled={busy}
                 className={cn(
-                  "w-full text-left rounded-2xl border p-4 transition-all duration-base",
+                  "w-full text-left rounded-lg border p-4 transition-all duration-base",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   busy
                     ? "border-line bg-panel opacity-60"
@@ -170,7 +170,7 @@ export function GoalFirstScreen({
                   <span
                     aria-hidden
                     className={cn(
-                      "shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-xl",
+                      "shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-lg",
                       accent.icon,
                     )}
                   >

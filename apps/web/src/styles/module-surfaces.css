@@ -3,120 +3,6 @@
    Extracted from index.css for maintainability.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Module card base ────────────────────────────────────────────────── */
-
-@utility module-card {
-  @apply relative rounded-3xl p-5 border overflow-hidden
-         transition-interactive;
-
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  &:hover::before {
-    opacity: 1;
-  }
-}
-
-/* ── Finyk (teal) ────────────────────────────────────────────────────── */
-/* 2026-07: migrated from emerald to teal (moduleColors.finyk = teal-700). */
-
-.module-card-finyk {
-  @apply module-card bg-linear-to-br from-teal-50 via-teal-50/50 to-white;
-  border-color: rgba(153, 246, 228, 0.6); /* teal-200 */
-}
-
-.module-card-finyk::before {
-  background: linear-gradient(
-    135deg,
-    rgba(13, 148, 136, 0.08) 0%,
-    transparent 60%
-  ); /* teal-600 */
-}
-
-.dark .module-card-finyk {
-  @apply bg-panel;
-  border-color: rgba(13, 148, 136, 0.2); /* teal-600 */
-  background-image: linear-gradient(
-    135deg,
-    rgba(13, 148, 136, 0.12) 0%,
-    transparent 60%
-  ); /* teal-600 */
-}
-
-/* ── Fizruk (cyan) ───────────────────────────────────────────────────── */
-
-.module-card-fizruk {
-  @apply module-card bg-linear-to-br from-cyan-50 via-cyan-50/50 to-white;
-  border-color: rgba(153, 246, 228, 0.6);
-}
-
-.module-card-fizruk::before {
-  background: linear-gradient(
-    135deg,
-    rgba(6, 182, 212, 0.08) 0%,
-    transparent 60%
-  );
-}
-
-.dark .module-card-fizruk {
-  @apply bg-panel;
-  border-color: rgba(6, 182, 212, 0.2);
-  background-image: linear-gradient(
-    135deg,
-    rgba(6, 182, 212, 0.12) 0%,
-    transparent 60%
-  );
-}
-
-/* ── Routine (rose) ─────────────────────────────────────────────────── */
-
-.module-card-routine {
-  @apply module-card bg-linear-to-br from-rose-50/80 via-orange-50/30 to-white;
-  border-color: rgba(255, 212, 203, 0.6);
-}
-
-.module-card-routine::before {
-  background: linear-gradient(
-    135deg,
-    rgba(249, 112, 102, 0.08) 0%,
-    transparent 60%
-  );
-}
-
-.dark .module-card-routine {
-  @apply bg-panel;
-  border-color: rgba(249, 112, 102, 0.2);
-  background-image: linear-gradient(
-    135deg,
-    rgba(249, 112, 102, 0.12) 0%,
-    transparent 60%
-  );
-}
-
-/* ── Routine calendar hero — dark-mode on-color text ─────────────────────
-   WHY: in dark mode the routine hero Card resolves to a saturated, opaque
-   rose-900 fill (`dark:bg-routine-soft`, rgb(117 57 73)). The shared
-   `KpiRowCompact` labels and the `HeroValueLine` narrative paint with the
-   neutral `text-subtle` tertiary token (rgb(135 128 121)) — tuned for the
-   app's dark panel, not for a coloured surface — yielding only ~1.96:1
-   against the rose fill (WCAG AA fails small text). We can't retint the
-   shared token (it would shift every other surface) so we scope an on-color
-   override to this hero only. rose-100 lands ~6.6:1 on rose-900; the
-   `tabular-nums` value/metric already use `text-text` (warm-white, ~7.8:1)
-   so they stay untouched. Light theme keeps the soft-pink hero where the
-   neutral subtle token is already compliant — hence `.dark`-only. */
-.dark .routine-hero .text-subtle {
-  color: rgb(255 231 235); /* rose-100 — ≥4.5:1 on rose-900 */
-}
-.dark .routine-hero .text-routine {
-  color: rgb(251 175 190); /* rose-300 — visible separator on rose-900 */
-}
-
 /* ── Routine heatmap cells ───────────────────────────────────────────────
    Wave 2b: chart-side palette tokens for the routine activity heatmap.
    The CSS layer owns the per-theme (light, dark) pair so consumers in
@@ -153,64 +39,14 @@
   background-color: rgb(235 118 145 / 0.8); /* rose-500 @ 80% */
 }
 
-/* ── Nutrition (lime) ────────────────────────────────────────────────── */
-
-.module-card-nutrition {
-  @apply module-card bg-linear-to-br from-lime-50 via-green-50/30 to-white;
-  border-color: rgba(217, 249, 157, 0.6);
-}
-
-.module-card-nutrition::before {
-  background: linear-gradient(
-    135deg,
-    rgba(132, 204, 22, 0.08) 0%,
-    transparent 60%
-  );
-}
-
-.dark .module-card-nutrition {
-  @apply bg-panel;
-  border-color: rgba(132, 204, 22, 0.2);
-  background-image: linear-gradient(
-    135deg,
-    rgba(132, 204, 22, 0.12) 0%,
-    transparent 60%
-  );
-}
-
 /* ── Fizruk-specific surface helpers ─────────────────────────────────── */
 
 .fizruk-cta-accent {
-  @apply bg-fizruk-strong text-white font-semibold rounded-2xl
-         transition-interactive
-         hover:bg-cyan-900
-         active:scale-[0.98];
-}
-
-.dark .fizruk-cta-accent {
-  @apply bg-fizruk text-bg hover:bg-fizruk/90;
-}
-
-.fizruk-cta-accent:hover {
-  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.15);
+  @apply bg-text text-bg font-semibold rounded-lg transition-colors hover:opacity-90;
 }
 
 .fizruk-summary-header {
-  @apply p-4;
-  background-image: linear-gradient(
-    135deg,
-    #ecfeff 0%,
-    #cffafe 50%,
-    #a5f3fc 100%
-  );
-}
-.dark .fizruk-summary-header {
-  @apply bg-panel;
-  background-image: linear-gradient(
-    135deg,
-    rgba(34, 211, 238, 0.15) 0%,
-    transparent 100%
-  );
+  @apply p-4 bg-panel;
 }
 
 /* ── Module-scoped input focus (design-audit F3) ─────────────────────────

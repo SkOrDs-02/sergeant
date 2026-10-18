@@ -5,7 +5,6 @@
 import { useMemo, useState } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
-
 import { Money } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { getAccountLabel, getMonoDebt } from "../utils";
@@ -202,13 +201,13 @@ export function AssetsTxPickerView({
       </select>
       {isLoading && sourceTransactions.length === 0 && (
         <div aria-busy="true" className="space-y-2">
-          <Skeleton className="h-14 rounded-xl" />
-          <Skeleton className="h-14 rounded-xl" />
-          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-panel" />
+          <Skeleton className="h-14 rounded-panel" />
+          <Skeleton className="h-14 rounded-panel" />
         </div>
       )}
       {Boolean(loadError) && sourceTransactions.length === 0 && (
-        <Card variant="flat" radius="md" className="space-y-2">
+        <Card className="space-y-2">
           <p className="text-style-caption text-danger-strong dark:text-danger">
             Не вдалося завантажити операції.
           </p>
@@ -285,7 +284,7 @@ export function AssetsTxPickerView({
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-            <Card variant="flat" radius="md" className="mb-3">
+            <Card className="mb-3">
               <div className="text-style-caption text-subtle mb-1">{label}</div>
               <div className="text-style-headline text-danger-strong dark:text-danger">
                 <Money amount={-Math.round(remaining)} tone="inherit" /> залишок
@@ -394,7 +393,7 @@ export function AssetsTxPickerView({
         </div>
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-            <Card variant="flat" radius="md" className="mb-4">
+            <Card className="mb-4">
               <p className="text-style-body text-subtle leading-relaxed">
                 Обери списання (наприклад через Apple/Google). День місяця з
                 операції підставиться в «день списання»; сума піде в огляд і в

@@ -41,12 +41,9 @@ export function PantryAmbiguousQtyPrompt({
   if (items.length === 0) return null;
 
   return (
-    <ul className="mt-3 grid gap-2">
+    <ul className="mt-3 divide-y divide-line border-t border-line">
       {items.map((item, i) => (
-        <li
-          key={`${item.name}_${item.qty}_${i}`}
-          className="rounded-2xl border border-warning/30 bg-warning/5 px-3 py-2"
-        >
+        <li key={`${item.name}_${item.qty}_${i}`} className="py-2">
           <div className="flex items-center justify-between gap-2 mb-1.5">
             <span className="min-w-0 flex items-baseline gap-1.5">
               <span className="text-style-label text-text truncate">
@@ -56,7 +53,7 @@ export function PantryAmbiguousQtyPrompt({
                 {item.qty}
               </span>
             </span>
-            <span className="shrink-0 text-style-caption text-warning-strong dark:text-warning">
+            <span className="shrink-0 text-style-caption text-muted">
               {COPY.badge}
             </span>
           </div>
@@ -66,8 +63,7 @@ export function PantryAmbiguousQtyPrompt({
             </span>
             <Button
               type="button"
-              variant="soft"
-              tone="nutrition"
+              variant="outline"
               size="xs"
               disabled={busy}
               onClick={() => onResolve(i, UNIT_PIECES)}
@@ -76,8 +72,7 @@ export function PantryAmbiguousQtyPrompt({
             </Button>
             <Button
               type="button"
-              variant="soft"
-              tone="nutrition"
+              variant="outline"
               size="xs"
               disabled={busy}
               onClick={() => onResolve(i, UNIT_GRAMS)}

@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Last validated: 2026-08-07
  * Status: Active
@@ -70,7 +71,9 @@ export function useStreakSevenDaysInsight(
   log: NutritionLog,
   goalPeriods: readonly GoalPeriod[],
 ): Insight | null {
+  const dayKey = useDeviceDayKey();
   return useMemo(() => {
+    void dayKey;
     // ADR-0078: walk back from the day the log is actually keyed under —
     // device, not Kyiv.
     const today = todayISODate();
@@ -109,5 +112,5 @@ export function useStreakSevenDaysInsight(
       // on the Hub where it can co-occur with other module progress signals.
       showOn: "both",
     } satisfies Insight;
-  }, [goalPeriods, log]);
+  }, [goalPeriods, log, dayKey]);
 }

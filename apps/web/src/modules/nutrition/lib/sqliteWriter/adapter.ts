@@ -16,7 +16,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { deviceWallClockToInstant } from "@sergeant/nutrition-domain";
 import { logger as webLogger } from "@shared/lib";
 
-import { insertGoalPeriod } from "./adapter.goalPeriods.js";
+import { insertGoalPeriod, restoreGoalPeriod } from "./adapter.goalPeriods.js";
 import { appendPantryEvent } from "./adapter.pantryEvents.js";
 import {
   softDeletePantryItemsById,
@@ -108,6 +108,11 @@ const applyOps = createApplyOps<NutritionDualWriteOp>({
     // із LWW-upsert-ами).
     "goal-period-insert": async (client, op, rt) => {
       await insertGoalPeriod(client, op, rt);
+      return "applied";
+    },
+    // data-35: відновлення сходинки цілей з бекапу (id/дата з файлу).
+    "goal-period-restore": async (client, op, rt) => {
+      await restoreGoalPeriod(client, op, rt);
       return "applied";
     },
     // W1-PANTRY-APPEND стадія 2 — сходинка в append-only журналі комори.

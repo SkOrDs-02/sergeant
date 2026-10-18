@@ -1,6 +1,7 @@
 import {
   resolveOriginDeviceId,
   sweepStaleTerminalOutbox,
+  SYNC_V2_MAX_OPS_PER_PUSH,
   SYNC_V2_PULL_MAX_LIMIT,
 } from "@sergeant/shared";
 import type { RecoverDeadLetterTarget } from "@sergeant/db-schema/sqlite";
@@ -610,12 +611,22 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   const shared = await createSyncSharedContext();
   const clock = createClockSkewMonitor({ report: reportClockSkew });
 
+  // The scheduler serializes ticks. Resolve a fresh handle for each drain,
+  // then keep all its receipts on that handle even after an account switch.
+  let drainedClient: SqliteMigrationClient | null = null;
+  const receiptClient = (): SqliteMigrationClient => {
+    if (!drainedClient) throw new Error("sync receipt without a drained batch");
+    return drainedClient;
+  };
+
+  let pushedSincePull = false;
   return createSyncEngineWriterRuntime({
     pushDeps: {
       drain: async (options) => {
         const userId = await shared.resolveUserId();
         if (!userId) return [];
-        return shared.dbSchema.drainSyncOpOutbox(await shared.resolveClient(), {
+        drainedClient = await shared.resolveClient();
+        return shared.dbSchema.drainSyncOpOutbox(drainedClient, {
           ...options,
           userId,
           onQuarantine: shared.onOutboxQuarantine,
@@ -628,13 +639,14 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       },
       markSuccess: async (id) => {
         clock.noteOutcome(null);
-        return shared.dbSchema.markOutboxSuccess(
-          await shared.resolveClient(),
-          id,
-        );
+        return shared.dbSchema.markOutboxSuccess(receiptClient(), id);
       },
+      markSuccessBatch: async (ids) => {
+        await shared.dbSchema.markOutboxSuccessBatch(receiptClient(), ids);
+      },
+      onBatchedSuccess: () => clock.noteOutcome(null),
       markRetry: async (id, plan) =>
-        shared.dbSchema.markOutboxRetry(await shared.resolveClient(), id, plan),
+        shared.dbSchema.markOutboxRetry(receiptClient(), id, plan),
       markRejected: async (id, reason, meta) => {
         clock.noteOutcome(reason);
         reportTerminalRejection(
@@ -643,11 +655,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
           meta,
           clock.isSkewed() ? { skewMs: clock.skewMs() } : undefined,
         );
-        return shared.dbSchema.markOutboxRejected(
-          await shared.resolveClient(),
-          id,
-          reason,
-        );
+        return shared.dbSchema.markOutboxRejected(receiptClient(), id, reason);
       },
       planRetry: shared.dbSchema.planRetry,
       now: () => new Date(),
@@ -696,15 +704,32 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     addBreadcrumb: shared.addBreadcrumb,
     captureException: shared.captureException,
     intervalMs: shared.writerIntervalMs,
-    limit: 100,
+    // The existing server contract accepts 200 ops. A full acknowledged
+    // batch continues after 2 s instead of waiting another ~30 s.
+    limit: SYNC_V2_MAX_OPS_PER_PUSH,
+    catchUpDelayMs: 2_000,
+    // The HTTP endpoint allows 6 MiB; reserve headroom and split by actual
+    // UTF-8 size instead of terminally rejecting an oversized whole batch.
+    maxBodyBytes: 5 * 1024 * 1024,
+    flushOnStart: true,
     originDeviceId: shared.originDeviceId,
     onTickComplete: (result) => {
       // Тік міг спорожнити чергу — без цього плашка «Синхронізація · N»
       // висіла до наступного 30-секундного опитування.
       emitSyncOutboxChanged();
-      if (result.pushed > 0) {
+      // Avoid one pull per full catch-up batch: push/pull share the 60/min
+      // budget. An exact multiple of 200 ends with an empty tick, so retain
+      // this signal until that tick (or a partial/unsettled batch) arrives.
+      if (result.pushed > 0) pushedSincePull = true;
+      const caughtUp =
+        result.drained < SYNC_V2_MAX_OPS_PER_PUSH && !result.hasMore;
+      const unsettled = result.retried > 0 || result.rejected > 0;
+      if (pushedSincePull && (caughtUp || unsettled)) {
+        pushedSincePull = false;
         void bootSyncEngineReader().then((reader) => {
-          void reader?.pullOnce();
+          void reader?.pullOnce().catch(() => {
+            /* reader already reported this; its next tick retries */
+          });
         });
       }
     },

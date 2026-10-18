@@ -65,7 +65,7 @@ export function SubscriptionForm({
     ? getLastTxForSubscription({ keyword: newSub.keyword }, [...transactions])
     : null;
   return (
-    <Card variant="flat" radius="md" className="space-y-3 mt-2">
+    <Card className="space-y-3 mt-2">
       <Input
         aria-label="Назва підписки"
         placeholder="Назва"
@@ -197,7 +197,7 @@ export function ReceivableForm({
   onUpdate?: (id: string, value: Receivable) => void;
 }) {
   return (
-    <Card variant="flat" radius="md" className="space-y-3">
+    <Card className="space-y-3">
       <div className="text-style-label text-text">
         {editingId ? "Редагування запису" : "Новий запис «Мені винні»"}
       </div>
@@ -317,12 +317,7 @@ export function AssetForm({
   const isLegacyNonUah = newAsset.currency !== "UAH";
   return (
     <>
-      <Card
-        ref={assetFormRef as React.Ref<HTMLElement>}
-        variant="finyk-soft"
-        radius="md"
-        className="space-y-3"
-      >
+      <Card ref={assetFormRef as React.Ref<HTMLElement>} className="space-y-3">
         <div>
           <div className="text-style-label text-text">
             {editingId ? "Редагування активу" : "Новий актив"}
@@ -351,7 +346,7 @@ export function AssetForm({
             }))
           }
         />
-        <div className="rounded-xl border border-line bg-panel px-4 py-3">
+        <div className="rounded-panel border border-line bg-panel px-4 py-3">
           <div className="text-style-caption text-muted">Валюта активу</div>
           <div className="text-style-label text-text">
             {isLegacyNonUah ? newAsset.currency : "UAH"}
@@ -465,8 +460,6 @@ export function DebtForm({
   return (
     <Card
       ref={debtFormRef as React.Ref<HTMLElement>}
-      variant="flat"
-      radius="md"
       className="space-y-3 mb-2 border-danger/30 bg-panel/40 dark:bg-panel"
     >
       <div>
@@ -523,7 +516,7 @@ export function DebtForm({
         />
       </div>
       {editingDebt && (
-        <div className="rounded-xl border border-line bg-panel px-3 py-2.5 space-y-1.5">
+        <div className="rounded-panel border border-line bg-panel px-3 py-2.5 space-y-1.5">
           <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
             <span>Виникнення за операціями</span>
             <Money amount={sourced} kopecks />

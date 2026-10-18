@@ -5,7 +5,6 @@ import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import type { HubModuleId } from "@shared/lib/modules/hubNav";
 import { CAPABILITY_GROUPS, type Capability } from "./capabilityRegistry";
 
 /**
@@ -20,17 +19,6 @@ import { CAPABILITY_GROUPS, type Capability } from "./capabilityRegistry";
  * застосунку.
  */
 
-/**
- * Акцент іконки за модулем. Зареєстровані `-soft` / `-soft-border` пари
- * замість сирого RGB (Hard Rule #12 — акцент модуля не тече назовні).
- */
-const MODULE_ICON_ACCENT: Record<HubModuleId, string> = {
-  finyk: "bg-finyk-soft border-finyk-soft-border text-finyk",
-  fizruk: "bg-fizruk-soft border-fizruk-soft-border text-fizruk",
-  routine: "bg-routine-soft border-routine-soft-border text-routine",
-  nutrition: "bg-nutrition-soft border-nutrition-soft-border text-nutrition",
-};
-
 export interface CapabilitiesPageProps {
   /** Закриття повноекранної поверхні. */
   onClose?: (() => void) | undefined;
@@ -38,7 +26,6 @@ export interface CapabilitiesPageProps {
 
 function CapabilityCard({ item }: { item: Capability }) {
   const navigate = useNavigate();
-  const accent = item.module ? MODULE_ICON_ACCENT[item.module] : "";
 
   return (
     <button
@@ -46,23 +33,13 @@ function CapabilityCard({ item }: { item: Capability }) {
       onClick={() => navigate(item.href)}
       data-testid={`capability-${item.id}`}
       className={cn(
-        "w-full text-left flex items-start gap-3 p-4 rounded-2xl",
-        "bg-surface-soft-glass border border-surface-line shadow-soft",
-        "hover:border-brand/40 hover:bg-surface-strong-glass",
-        "active:scale-[0.99] transition-[background-color,border-color,transform]",
+        "w-full text-left min-h-11 py-4 border-b border-line",
+        "hover:bg-panel",
+        "transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center",
-          accent || "bg-surface-soft-glass border-surface-line text-muted-v2",
-        )}
-      >
-        <Icon name={item.icon} size="lg" />
-      </span>
       <span className="flex-1 min-w-0">
         <span className="block text-style-label text-text">{item.title}</span>
         {/* Founder-ux-review round 2 (O4): "scenario first, details after" —
@@ -79,12 +56,6 @@ function CapabilityCard({ item }: { item: Capability }) {
           {item.description}
         </span>
       </span>
-      <Icon
-        name="chevron-right"
-        size="md"
-        className="shrink-0 mt-1 text-muted"
-        aria-hidden
-      />
     </button>
   );
 }
@@ -104,16 +75,10 @@ export function CapabilitiesPage({ onClose }: CapabilitiesPageProps) {
       className="h-dvh overflow-y-auto overscroll-contain bg-bg outline-none safe-area-pt"
     >
       <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 pt-3 pb-8">
-        <Card prominence="glass" radius="lg" padding="md">
+        <Card prominence="panel" padding="md">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <h1 className="flex items-center gap-2 text-style-title text-text leading-tight">
-                <Icon
-                  name="compass"
-                  size="md"
-                  className="shrink-0 text-brand-strong"
-                  aria-hidden
-                />
                 {messages.onboarding.tourLaunchLabel}
               </h1>
               <p className="text-style-body text-subtle mt-1 leading-relaxed">

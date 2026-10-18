@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  cleanup,
+} from "@testing-library/react";
 import { SubCard } from "./SubCard";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
@@ -19,6 +25,7 @@ describe("SubCard", () => {
     vi.setSystemTime(new Date("2026-06-10T09:00:00+03:00"));
   });
   afterEach(() => {
+    cleanup();
     vi.useRealTimers();
   });
 
@@ -69,6 +76,49 @@ describe("SubCard", () => {
     } as unknown as Transaction;
     render(<SubCard sub={sub} transactions={[paid]} onDelete={vi.fn()} />);
     expect(screen.getByText(/Через 30 днів · 10-го/)).toBeInTheDocument();
+  });
+
+  it("updates tomorrow to today at Kyiv midnight without remounting", () => {
+    vi.setSystemTime(new Date("2026-06-09T23:59:59+03:00"));
+    render(
+      <SubCard
+        sub={{ ...baseSub, billingDay: 10 }}
+        transactions={[]}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Завтра · 10-го/)).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(2_001);
+    });
+
+    expect(screen.getByText(/Сьогодні · 10-го/)).toBeInTheDocument();
+  });
+
+  it("refreshes a paid cycle after browser suspension without marking it due again", () => {
+    vi.setSystemTime(new Date("2026-06-09T23:00:00+03:00"));
+    const paid = {
+      id: "tx-paid",
+      amount: -29900,
+      time: new Date("2026-06-09T08:30:00+03:00").getTime() / 1000,
+      description: "netflix.com",
+      currencyCode: 980,
+    } as unknown as Transaction;
+    render(
+      <SubCard
+        sub={{ ...baseSub, billingDay: 10, linkedTxId: "tx-paid" }}
+        transactions={[paid]}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Через 31 день · 10-го/)).toBeInTheDocument();
+
+    vi.setSystemTime(new Date("2026-06-10T08:00:00+03:00"));
+    fireEvent(window, new Event("focus"));
+
+    expect(screen.getByText(/Через 30 днів · 10-го/)).toBeInTheDocument();
+    expect(screen.queryByText(/Сьогодні · 10-го/)).not.toBeInTheDocument();
   });
 
   it("fires onDelete from the trash button", () => {

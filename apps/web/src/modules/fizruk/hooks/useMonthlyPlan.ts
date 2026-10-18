@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from "react";
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
+import { useCallback } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
@@ -90,6 +91,7 @@ function saveState(
 }
 
 export function useMonthlyPlan() {
+  const dayKey = useDeviceDayKey();
   const sqliteCacheTick = useFizrukSqliteReadTick();
   const intended = useFizrukIntendedSlice<"monthlyPlan">(sqliteCacheTick);
   const [state, setState] = useSqliteTickOverlay<MonthlyPlanState>(
@@ -150,10 +152,7 @@ export function useMonthlyPlan() {
     [state.days],
   );
 
-  const todayTemplateId = useMemo(
-    () => state.days[todayKey()]?.templateId ?? null,
-    [state.days],
-  );
+  const todayTemplateId = state.days[dayKey]?.templateId ?? null;
 
   return {
     reminderEnabled: state.reminderEnabled,

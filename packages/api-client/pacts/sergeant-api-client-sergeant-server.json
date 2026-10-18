@@ -1982,6 +1982,70 @@
       }
     },
     {
+      "description": "a POST /api/v1/billing/checkout request (plan=pro, provider=plata) answered with 409 ALREADY_SUBSCRIBED",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 in UA with an active liqpay subscription"
+        }
+      ],
+      "request": {
+        "body": {
+          "plan": "pro",
+          "provider": "plata"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/checkout"
+      },
+      "response": {
+        "body": {
+          "code": "ALREADY_SUBSCRIBED",
+          "error": "User already has an active subscription"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 409
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/checkout request (plan=pro, provider=plata) answered with 409 CHECKOUT_PENDING",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 in UA with an unconfirmed plata checkout younger than one hour"
+        }
+      ],
+      "request": {
+        "body": {
+          "plan": "pro",
+          "provider": "plata"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/checkout"
+      },
+      "response": {
+        "body": {
+          "code": "CHECKOUT_PENDING",
+          "error": "A checkout for this user is still pending"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 409
+      }
+    },
+    {
       "description": "a POST /api/v1/billing/portal request (no body)",
       "providerStates": [
         {

@@ -119,6 +119,9 @@ describe("TransactionList — DataState routing", () => {
     );
 
     expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
+    expect(
+      screen.getByText("Додай витрату вручну або підключи Monobank."),
+    ).toBeVisible();
     // Must NOT repeat Overview's hero title verbatim.
     expect(
       screen.queryByText("Куди йдуть твої гроші?"),

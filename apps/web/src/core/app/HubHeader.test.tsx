@@ -5,7 +5,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 const mockKyivParts = vi.hoisted(() => ({
   fn: vi.fn(() => ({ year: 2026, month: 6, day: 24, hour: 9 })),
 }));
-vi.mock("@shared/lib/time/kyivTime", () => ({
+vi.mock("@shared/lib/time/kyivTime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@shared/lib/time/kyivTime")>()),
   getKyivDateParts: () => mockKyivParts.fn(),
 }));
 

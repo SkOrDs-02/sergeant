@@ -16,6 +16,7 @@ import {
   type WaterLog,
 } from "@sergeant/nutrition-domain";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
@@ -89,12 +90,7 @@ export function WaterHistorySheet({
   return (
     <Sheet open={open} onClose={onClose} title={t.title}>
       {!hasAnyData ? (
-        <EmptyState
-          compact
-          module="nutrition"
-          title={t.emptyTitle}
-          description={t.emptyDescription}
-        />
+        <EmptyState compact title={t.emptyTitle} />
       ) : (
         <div className="flex flex-col gap-5">
           <div>
@@ -104,7 +100,7 @@ export function WaterHistorySheet({
             <div className="relative h-24 flex items-end gap-2">
               {goalPct !== null && (
                 <div
-                  className="absolute left-0 right-0 border-t border-dashed border-nutrition/50"
+                  className="absolute left-0 right-0 border-t border-dashed border-chart-nutrition/50"
                   style={{ bottom: `${goalPct}%` }}
                   aria-hidden="true"
                 />
@@ -120,11 +116,11 @@ export function WaterHistorySheet({
                     <div className="w-full h-24 flex items-end">
                       <div
                         className={cn(
-                          "w-full rounded-t-md transition-[height]",
+                          "w-full rounded-t-[3px] transition-[height]",
                           d.ml > 0
                             ? met
-                              ? "bg-nutrition"
-                              : "bg-nutrition/40"
+                              ? "bg-chart-nutrition"
+                              : "bg-chart-nutrition/40"
                             : "bg-line/40",
                         )}
                         style={{ height: `${d.ml > 0 ? pct : 2}%` }}
@@ -140,33 +136,22 @@ export function WaterHistorySheet({
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <Stat
-              label={t.avg7Label}
-              value={fmt(avg7)}
-              variant="nutrition"
-              size="sm"
-            />
-            <Stat
-              label={t.avg30Label}
-              value={fmt(avg30)}
-              variant="nutrition"
-              size="sm"
-            />
+            <Stat label={t.avg7Label} value={fmt(avg7)} size="sm" />
+            <Stat label={t.avg30Label} value={fmt(avg30)} size="sm" />
             {goalMl > 0 && (
               <Stat
                 label={t.streakLabel}
                 value={`${streak} ${t.streakUnit}`}
-                variant="nutrition"
                 size="sm"
               />
             )}
           </div>
 
           <div>
-            <div className="text-style-caption text-subtle mb-2">
+            <SectionHeading as="div" size="md" className="mb-2">
               {t.dayListTitle}
-            </div>
-            <ul className="flex flex-col divide-y divide-line/60">
+            </SectionHeading>
+            <ul className="flex flex-col divide-y divide-line">
               {last14.map((d) => {
                 const pct =
                   goalMl > 0 ? Math.round((d.ml / goalMl) * 100) : null;
@@ -178,7 +163,7 @@ export function WaterHistorySheet({
                     <span className="text-text">
                       {dayListLabel(d.dayKey, todayKey, yesterdayKey)}
                     </span>
-                    <span className="tabular-nums text-subtle">
+                    <span className="tabular-nums font-medium text-text">
                       {fmt(d.ml)}
                       {pct !== null && ` · ${pct}${t.goalPctSuffix}`}
                     </span>
@@ -190,10 +175,10 @@ export function WaterHistorySheet({
 
           {earlierDays.length > 0 && (
             <div>
-              <div className="text-style-caption text-subtle mb-2">
+              <SectionHeading as="div" size="md" className="mb-2">
                 {EARLIER_TITLE}
-              </div>
-              <ul className="flex flex-col divide-y divide-line/60">
+              </SectionHeading>
+              <ul className="flex flex-col divide-y divide-line">
                 {earlierDays.map((d) => {
                   const pct =
                     goalMl > 0 ? Math.round((d.ml / goalMl) * 100) : null;
@@ -205,7 +190,7 @@ export function WaterHistorySheet({
                       <span className="text-text">
                         {dayListLabel(d.dayKey, todayKey, yesterdayKey)}
                       </span>
-                      <span className="tabular-nums text-subtle">
+                      <span className="tabular-nums font-medium text-text">
                         {fmt(d.ml)}
                         {pct !== null && ` · ${pct}${t.goalPctSuffix}`}
                       </span>

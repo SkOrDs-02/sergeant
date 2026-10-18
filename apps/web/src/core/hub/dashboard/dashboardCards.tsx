@@ -4,7 +4,6 @@
  */
 import { useEffect, useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import {
   STORAGE_KEYS,
@@ -126,14 +125,14 @@ export function WeeklyDigestFooter({
       // «новий», тож свіжість звіту була лише візуальною.
       aria-expanded={false}
       className={cn(
-        "w-full flex items-center gap-3 rounded-2xl border border-line bg-panel px-3 py-2.5 focus-ring",
+        "w-full flex items-center gap-3 rounded-lg border border-line bg-panel px-3 py-2.5 focus-ring",
         "shadow-card hover:shadow-float transition-[box-shadow,filter,opacity,transform]",
         "text-left",
       )}
     >
       <span
         className={cn(
-          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
           "bg-brand-soft",
         )}
       >
@@ -162,7 +161,7 @@ export function WeeklyDigestFooter({
           {fresh && (
             <>
               <span
-                className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
+                className="inline-block w-1.5 h-1.5 rounded-mark bg-primary"
                 aria-hidden
               />
               <span className="sr-only">, новий</span>
@@ -173,12 +172,6 @@ export function WeeklyDigestFooter({
           {weekRange}
         </span>
       </span>
-      <Icon
-        name="chevron-right"
-        size="sm"
-        strokeWidth={2.5}
-        className="text-muted shrink-0"
-      />
     </button>
   );
 }

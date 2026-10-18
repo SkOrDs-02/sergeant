@@ -146,7 +146,7 @@ export function BulkReviewTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-panel p-2.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-panel border border-line bg-panel p-2.5">
         <button
           type="button"
           onClick={() => onToggleAll(!allSelected)}
@@ -207,7 +207,7 @@ export function BulkReviewTable({
         </p>
       )}
 
-      <ul className="divide-y divide-line rounded-xl border border-line">
+      <ul className="divide-y divide-line rounded-panel border border-line">
         {rows.map((row) => {
           const options = categoryOptionsFor(
             row.direction,
