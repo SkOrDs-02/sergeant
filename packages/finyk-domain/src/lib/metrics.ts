@@ -26,6 +26,10 @@
  */
 
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import {
+  findCashTransferTxIds,
+  type CashOnHandState,
+} from "../domain/cashOnHand.js";
 import { findCancelledTxIds } from "../domain/refundMatching.js";
 import {
   manualExpenseToTransaction,
@@ -82,6 +86,13 @@ export interface FinykExcludedTxIdsInput {
    * передавати сюди й БАНКІВСЬКІ транзакції, а не лише ручні.
    */
   transactions?: readonly (FinykUniverseTx | null | undefined)[] | null;
+  /**
+   * «Готівка на руках» (ADR-0076). Банківське зняття з MCC 6010/6011,
+   * датоване від створення рахунку і не перебите «Рахувати як витрату», стає
+   * переказом на готівку і виходить зі статистики. Правило дивиться на
+   * банківські операції з `transactions`, тож викликач передає їх сюди.
+   */
+  cashOnHand?: CashOnHandState | null | undefined;
 }
 
 /** Переказ, позначений на самій транзакції (не через мапу оверрайдів). */
@@ -122,6 +133,13 @@ export function buildFinykExcludedTxIds(
   // «Uklon −189» і «Скасування. Uklon +189» — обидві ноги: ні витрата, ні
   // дохід. Рішення власника 2026-10-01; правила пари — `refundMatching.ts`.
   for (const id of findCancelledTxIds(input.transactions)) out.add(id);
+
+  for (const id of findCashTransferTxIds(
+    input.transactions,
+    input.cashOnHand,
+  )) {
+    out.add(id);
+  }
 
   for (const r of input.receivables ?? []) {
     for (const id of r?.linkedTxIds ?? []) {

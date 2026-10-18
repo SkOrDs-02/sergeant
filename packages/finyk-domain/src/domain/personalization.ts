@@ -30,6 +30,8 @@ export interface ManualExpense {
   category?: string;
   /** Відсутнє поле = `"expense"` — старі записи валідні без міграції даних. */
   kind?: "expense" | "income";
+  /** `"cash"` = «Готівка на руках»; відсутнє поле = «Без рахунку» (Р3). */
+  account?: "cash";
 }
 
 export interface FrequentCategory {
